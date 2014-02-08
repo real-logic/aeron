@@ -1,1 +1,2 @@
-* Specification of the Protocol
+Aeron Protocol Specification
+============================

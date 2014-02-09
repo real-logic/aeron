@@ -1,0 +1,16 @@
+*~
+target
+GTAGS
+GRTAGS
+GPATH
+prop
+out
+.DS_Store
+.idea
+*.iml
+.project
+.classpath
+.settings
+*.sublime-project
+*.sublime-workspace
+build-local.properties

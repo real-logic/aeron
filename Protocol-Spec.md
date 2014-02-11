@@ -6,23 +6,28 @@
 
 ## Channel Framing
 
-<table style="margin: 0 auto; text-align: center;">
-<tr>
-    <th colspan="32">Bit</th>
-</tr>
-<tr>
-    <th colspan="8">0</th>
-    <th colspan="8">1</th>
-    <th colspan="8">2</th>
-    <th colspan="8">3</th>
-</tr>
-<tr>
-    <th>0</th> <th>1</th> <th>2</th> <th>3</th> <th>4</th> <th>5</th> <th>6</th> <th>7</th> <th>8</th> <th>9</th>
-    <th>0</th> <th>1</th> <th>2</th> <th>3</th> <th>4</th> <th>5</th> <th>6</th> <th>7</th> <th>8</th> <th>9</th>
-    <th>0</th> <th>1</th> <th>2</th> <th>3</th> <th>4</th> <th>5</th> <th>6</th> <th>7</th> <th>8</th> <th>9</th>
-    <th>0</th> <th>1</th>
-</tr>
-<tr>
-    <td colspan="4">Version</td>
-</tr>
-</table>
+Stylistic way of representation for doc
+
+     0                   1                   2                   3
+     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |         Length (16)           |   Type (8)    |   Flags (8)   |
+    +-+-------------+---------------+-------------------------------+
+    |R|                 Stream Identifier (31)                      |
+    +-+-------------------------------------------------------------+
+    |                   Frame Payload (0...)                      ...
+    +---------------------------------------------------------------+
+
+                               Frame Header
+
+The fields of the frame header are defined as:
+
+__Length:__  The length of the frame payload expressed as an unsigned 16-
+bit integer.  The 8 octets of the frame header are not included in
+this value.
+
+__Type:__ The 8-bit type of the frame.  The frame type determines how
+the remainder of the frame header and payload are interpreted.
+Implementations MUST ignore unsupported and unrecognized frame
+types.
+

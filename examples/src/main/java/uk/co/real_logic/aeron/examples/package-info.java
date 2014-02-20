@@ -1,4 +1,4 @@
 /**
- * Examples of Aeron protocol usage.
+ * Examples for Aeron.
  */
 package uk.co.real_logic.aeron.examples;

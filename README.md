@@ -30,9 +30,13 @@ Unit tests
 
     src/test
 
-Examples of usage
+Examples of usage (separate POM)
 
     examples
+
+Benchmarks (separate POM - TBD)
+
+    benchmark
 
 Build
 -----
@@ -44,4 +48,9 @@ You require the following to build Aeron:
 
 Full clean build and install
 
+    mvn clean install
+
+Full clean. build, and install of Examples
+
+    cd examples
     mvn clean install

@@ -30,7 +30,7 @@ Unit tests
 
     src/test
 
-Examples of usage (separate POM)
+Examples of usage (separate POM/JAR)
 
     examples
 

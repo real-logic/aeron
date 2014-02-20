@@ -1,4 +1,4 @@
-package uk.co.real_logic;
+package uk.co.real_logic.aeron;
 
 /**
  * Hello world!

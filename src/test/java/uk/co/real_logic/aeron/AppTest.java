@@ -1,4 +1,4 @@
-package uk.co.real_logic;
+package uk.co.real_logic.aeron;
 
 import junit.framework.Test;
 import junit.framework.TestCase;

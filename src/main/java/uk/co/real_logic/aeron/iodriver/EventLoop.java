@@ -29,7 +29,7 @@ import java.nio.channels.Selector;
  * Does not provide timers
  * Deliberately simple and braindead
  */
-public class EventLoop implements Closeable
+public class EventLoop implements Closeable, Runnable
 {
     /** Default select timeout (20 msec) */
     public static final long DEFAULT_SELECT_TIMEOUT = 20;
@@ -54,8 +54,9 @@ public class EventLoop implements Closeable
     /**
      * Main loop of the EventLoop
      *
-     * Everything is done here and bubbles up to handlers.
+     * Everything is done here and bubbles up via the handlers.
      */
+    @Override
     public void run()
     {
         try
@@ -75,6 +76,7 @@ public class EventLoop implements Closeable
     /**
      * Close EventLoop down. Returns immediately.
      */
+    @Override
     public void close()
     {
         done = 1;

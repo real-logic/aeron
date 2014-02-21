@@ -1,4 +1,4 @@
 /**
- * Created by tmont on 2/19/14.
+ * Main Aeron API and processing logic
  */
 package uk.co.real_logic.aeron;

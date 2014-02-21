@@ -61,7 +61,7 @@ public class HeaderFlyweight
     private static final int FRAME_LENGTH_FIELD_OFFSET = 2;
     private static final int SESSION_ID_FIELD_OFFSET = 4;
 
-    private DirectBuffer directBuffer;
+    protected DirectBuffer directBuffer;
 
     public HeaderFlyweight()
     {

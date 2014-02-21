@@ -32,7 +32,7 @@ import java.nio.channels.Selector;
 public class EventLoop implements Closeable, Runnable
 {
     /** Default select timeout (20 msec) */
-    public static final long DEFAULT_SELECT_TIMEOUT = 20;
+    public static final long DEFAULT_SELECT_TIMEOUT = 20; // TODO: should probably be a property.
 
     private Selector selector;
     private volatile int done;
@@ -43,12 +43,28 @@ public class EventLoop implements Closeable, Runnable
         this.done = 0;
     }
 
-    /*
-     * TODO: add handler to call when selected
+    /**
+     * Register channel for read.
+     * @param channel to select for read
+     * @param obj to associate with read
+     * @return SelectionKey for registration for cancel
+     * @throws Exception
      */
-    public SelectionKey registerForRead(final SelectableChannel channel) throws Exception
+    public SelectionKey registerForRead(final SelectableChannel channel, final Object obj) throws Exception
     {
-        return channel.register(selector, SelectionKey.OP_READ);
+        final SelectionKey key = channel.register(selector, SelectionKey.OP_READ, obj);
+        // now wake up if blocked
+        wakeup();
+        return key;
+    }
+
+    /**
+     * Cancel pending reads for selection key.
+     * @param key to cancel
+     */
+    public void cancelRead(final SelectionKey key)
+    {
+        key.cancel();
     }
 
     /**
@@ -64,7 +80,7 @@ public class EventLoop implements Closeable, Runnable
             while (0 == done)
             {
                 select();
-                processSelectedKeys();
+                handleSelectedKeys();
             }
         }
         catch (Exception e)
@@ -88,6 +104,7 @@ public class EventLoop implements Closeable, Runnable
      */
     public void wakeup()
     {
+        // TODO: add in control for state here. Only wakeup if actually blocked as it is usually expensive.
         selector.wakeup();
     }
 
@@ -101,29 +118,19 @@ public class EventLoop implements Closeable, Runnable
         int readyChannels = selector.selectNow();
     }
 
-    private void processSelectedKey(final SelectionKey key)
+    private void handleKeyReadable(final SelectionKey key)
     {
-        if (key.isAcceptable())
-        {
+        Object obj = key.attachment();
 
-        }
-        else if (key.isConnectable())
-        {
 
-        }
-        else if (key.isReadable())
-        {
-
-        }
-        else if (key.isWritable())
-        {
-
-        }
     }
 
-    private void processSelectedKeys() throws Exception
+    private void handleSelectedKeys() throws Exception
     {
         // Try this as we would like to be able to have the JVM optimize the Set<SelectionKey> for us instead of instrumenting it.
-        selector.selectedKeys().stream().forEach(this::processSelectedKey);
+        // Only have to handle readable at the moment. Will change if this is used with TCP.
+        selector.selectedKeys().stream()
+                .filter(key -> key.isReadable())
+                .forEach(this::handleKeyReadable);
     }
 }

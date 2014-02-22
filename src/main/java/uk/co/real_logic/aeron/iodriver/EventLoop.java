@@ -97,6 +97,7 @@ public class EventLoop implements Closeable, Runnable
     {
         done = 1;
         wakeup();
+        // TODO: if needed, use a CountdownLatch to sync...
     }
 
     /**
@@ -118,19 +119,25 @@ public class EventLoop implements Closeable, Runnable
         int readyChannels = selector.selectNow();
     }
 
-    private void handleKeyReadable(final SelectionKey key)
+    private void handleReadable(final SelectionKey key)
     {
-        Object obj = key.attachment();
-
-
+        try
+        {
+            ((ReadHandler)key.attachment()).handleRead();
+        }
+        catch (Exception e)
+        {
+            // TODO: log exception
+        }
     }
 
     private void handleSelectedKeys() throws Exception
     {
         // Try this as we would like to be able to have the JVM optimize the Set<SelectionKey> for us instead of instrumenting it.
         // Only have to handle readable at the moment. Will change if this is used with TCP.
+        // Could filter based on key.attachment() being instanceof ReadHandler
         selector.selectedKeys().stream()
-                .filter(key -> key.isReadable())
-                .forEach(this::handleKeyReadable);
+                .filter(SelectionKey::isReadable)
+                .forEach(this::handleReadable);
     }
 }

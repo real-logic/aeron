@@ -22,21 +22,25 @@ limitations under the License.
 Directory Structure
 -------------------
 
-Main source code
+API and protocol processing
 
-    src/main
+    aeron-core
 
-Unit tests
+Examples
 
-    src/test
+    aeron-examples
 
-Examples of usage (separate POM/JAR)
+Media/IO Driver
 
-    examples
+    aeron-iodriver
 
-Benchmarks (separate POM - TBD)
+Utility Class/Methods
 
-    benchmark
+    aeron-util
+
+Benchmarks (TBD)
+
+    aeron-benchmark
 
 Build
 -----
@@ -44,14 +48,20 @@ Build
 You require the following to build Aeron:
 
 * Latest stable [Oracle JDK 8](http://www.oracle.com/technetwork/java/)
-* Latest stable [Apache Maven](http://maven.apache.org/)
 * Latest [Simple Binary Encoding (SBE)] (https://github.com/real-logic/simple-binary-encoding) installed in local maven repo
 
-Full clean build and install
+### Gradle Build
 
-    mvn clean install
+The preferred way to build is using the gradle script included.
 
-Full clean. build, and install of Examples
+Full clean and build of all modules
 
-    cd examples
+    ./gradlew clean build
+
+### Maven Build
+
+A maven build is currently also supported. But could go away.
+
+Full clean build and install of all modules
+
     mvn clean install

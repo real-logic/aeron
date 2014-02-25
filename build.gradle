@@ -38,6 +38,12 @@ subprojects {
         configFile = new File(rootDir, 'config/checkstyle/checkstyle.xml')
     }
 
+    test {
+        testLogging {
+            events 'passed', 'skipped', 'failed'
+        }
+    }
+
     javadoc {
         title = '<h1>Aeron Transport Protocol</h1>'
 

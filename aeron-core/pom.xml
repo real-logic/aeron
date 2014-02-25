@@ -14,63 +14,34 @@
  * limitations under the License.
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>uk.co.real_logic</groupId>
-    <artifactId>aeron-parent</artifactId>
-    <packaging>pom</packaging>
-    <version>0.1-SNAPSHOT</version>
+    <parent>
+        <groupId>uk.co.real_logic</groupId>
+        <artifactId>aeron-parent</artifactId>
+        <version>0.1-SNAPSHOT</version>
+    </parent>
 
-    <name>aeron/parent</name>
+    <artifactId>aeron-core</artifactId>
+    <version>0.1-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>Aeron/core</name>
     <url>https://github.com/real-logic/Aeron</url>
     <description>
-        Efficient reliable unicast and multicast transport protocol.
+        Core API and protocol processing.
     </description>
-
-    <licenses>
-        <license>
-            <name>The Apache Software License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-            <distribution>repo</distribution>
-        </license>
-    </licenses>
-    <inceptionYear>2014</inceptionYear>
-
-    <scm>
-        <url>https://github.com/real-logic/Aeron.git</url>
-        <connection>scm:git:https://github.com/real-logic/Aeron.git</connection>
-    </scm>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <checkstyle.config.location>config/checkstyle/checkstyle.xml</checkstyle.config.location>
+        <checkstyle.config.location>../config/checkstyle/checkstyle.xml</checkstyle.config.location>
     </properties>
-
-    <modules>
-        <module>aeron-core</module>
-        <module>aeron-util</module>
-        <module>aeron-iodriver</module>
-        <module>aeron-examples</module>
-    </modules>
 
     <dependencies>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.11</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
-            <version>1.9.5</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>uk.co.real_logic</groupId>
-            <artifactId>sbe</artifactId>
+            <artifactId>aeron-util</artifactId>
             <version>0.1-SNAPSHOT</version>
         </dependency>
     </dependencies>
@@ -152,4 +123,5 @@
             </plugin>
         </plugins>
     </build>
+
 </project>

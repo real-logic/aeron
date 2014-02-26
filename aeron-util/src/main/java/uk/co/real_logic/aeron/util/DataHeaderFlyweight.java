@@ -42,10 +42,13 @@ import java.nio.ByteOrder;
 public class DataHeaderFlyweight extends HeaderFlyweight
 {
     private static final int CHANNEL_ID_FIELD_OFFSET = 8;
+    private static final int TERM_ID_FIELD_OFFSET = 12;
+    private static final int SEQUENCE_NUMBER_FIELD_OFFSET = 16;
+    private static final int DATA_OFFSET = 20;
 
     /**
-     * return session id field
-     * @return session id field
+     * return channel id field
+     * @return channel id field
      */
     public long channelId()
     {
@@ -63,4 +66,52 @@ public class DataHeaderFlyweight extends HeaderFlyweight
         return this;
     }
 
+    /**
+     * return term id field
+     * @return term id field
+     */
+    public long termId()
+    {
+        return CodecUtil.uint32Get(directBuffer, offset + TERM_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+    }
+
+    /**
+     * set term id field
+     * @param termId field value
+     * @return flyweight
+     */
+    public HeaderFlyweight termId(final long termId)
+    {
+        CodecUtil.uint32Put(directBuffer, offset + TERM_ID_FIELD_OFFSET, termId, ByteOrder.LITTLE_ENDIAN);
+        return this;
+    }
+
+    /**
+     * return sequence number field
+     * @return sequence number field
+     */
+    public long sequenceNumber()
+    {
+        return CodecUtil.uint32Get(directBuffer, offset + SEQUENCE_NUMBER_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+    }
+
+    /**
+     * set sequence number field
+     * @param sequenceNumber field value
+     * @return flyweight
+     */
+    public HeaderFlyweight sequenceNumber(final long sequenceNumber)
+    {
+        CodecUtil.uint32Put(directBuffer, offset + SEQUENCE_NUMBER_FIELD_OFFSET, sequenceNumber, ByteOrder.LITTLE_ENDIAN);
+        return this;
+    }
+
+    /**
+     * Return offset in buffer for data
+     * @return offset of data in the buffer
+     */
+    public int dataOffset()
+    {
+        return offset + DATA_OFFSET;
+    }
 }

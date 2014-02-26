@@ -15,6 +15,10 @@
  */
 package uk.co.real_logic.aeron.iodriver;
 
+import java.net.InetSocketAddress;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+
 /**
  * Main class for JVM-based iodriver
  */
@@ -22,6 +26,34 @@ public class IoDriver
 {
     public static void main(String[] args)
     {
-        System.out.println("iodriver main");
+        try (final EventLoop selectLoop = new EventLoop())
+        {
+            Executor executor = Executors.newFixedThreadPool(2);
+
+            executor.execute(selectLoop);
+
+            // TODO: need the other thread scanning Term buffers and control buffer or have this thread do it.
+
+            // Example of using FrameHandler. A receiver and a source sending to it.
+
+            RecvFrameHandler rcv = new RecvFrameHandler(new InetSocketAddress(41234), selectLoop);
+            SrcFrameHandler src = new SrcFrameHandler(new InetSocketAddress(0),
+                                                      new InetSocketAddress("localhost", 41234),
+                                                      selectLoop);
+
+
+            while (true)
+            {
+                Thread.sleep(1000);
+            }
+        }
+        catch (InterruptedException ie)
+        {
+            // catch this OK. We should finally close on it also.
+        }
+        catch (Exception e)
+        {
+            System.err.println(e);
+        }
     }
 }

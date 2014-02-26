@@ -41,7 +41,7 @@ public final class UDPChannel implements ReadHandler
     private final DataHeaderFlyweight dataHeader;
     private final FrameHandler frameHandler;
 
-    UDPChannel(final FrameHandler frameHandler) throws Exception
+    public UDPChannel(final FrameHandler frameHandler) throws Exception
     {
         this.readByteBuffer = ByteBuffer.allocateDirect(READ_BYTE_BUFFER_SZ);
         this.readBuffer = new DirectBuffer(this.readByteBuffer);

@@ -21,7 +21,10 @@ import uk.co.real_logic.aeron.util.HeaderFlyweight;
 import java.net.InetSocketAddress;
 
 /**
- * Handler interface for various Frame types. For iodriver, specifically, this is Data or Control
+ * Handler interface for various Frame types. For iodriver, specifically, this is Data or Control.
+ *
+ * This interface should expand to handle various addressing models. But InetSocketAddress is exposed
+ * at the moment.
  */
 public interface FrameHandler
 {

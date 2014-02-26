@@ -57,11 +57,3 @@ The preferred way to build is using the gradle script included.
 Full clean and build of all modules
 
     ./gradlew clean build
-
-### Maven Build
-
-A maven build is currently also supported. But could go away.
-
-Full clean build and install of all modules
-
-    mvn clean install

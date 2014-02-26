@@ -56,26 +56,32 @@ public class HeaderFlyweight
     /** header type EXT */
     public static final int HDR_TYPE_EXT = 0xFF;
 
+    /** default version */
+    public static final int CURRENT_VERSION = 0x0;
+
     private static final int VERS_FIELD_OFFSET = 0;
     private static final int TYPE_FIELD_OFFSET = 1;
     private static final int FRAME_LENGTH_FIELD_OFFSET = 2;
     private static final int SESSION_ID_FIELD_OFFSET = 4;
 
     protected DirectBuffer directBuffer;
+    protected int offset;
 
     public HeaderFlyweight()
     {
     }
 
-    public HeaderFlyweight reset(final ByteBuffer buffer)
+    public HeaderFlyweight reset(final ByteBuffer buffer, final int offset)
     {
         this.directBuffer = new DirectBuffer(buffer);
+        this.offset = offset;
         return this;
     }
 
-    public HeaderFlyweight reset(final DirectBuffer buffer)
+    public HeaderFlyweight reset(final DirectBuffer buffer, final int offset)
     {
         this.directBuffer = buffer;
+        this.offset = offset;
         return this;
     }
 
@@ -85,7 +91,7 @@ public class HeaderFlyweight
      */
     public byte version()
     {
-        int versAndFlags = CodecUtil.uint8Get(directBuffer, VERS_FIELD_OFFSET);
+        int versAndFlags = CodecUtil.uint8Get(directBuffer, offset + VERS_FIELD_OFFSET);
 
         return (byte)(versAndFlags >> 4);
     }
@@ -97,7 +103,7 @@ public class HeaderFlyweight
      */
     public HeaderFlyweight version(final byte ver)
     {
-        CodecUtil.uint8Put(directBuffer, VERS_FIELD_OFFSET, (short)(ver << 4));
+        CodecUtil.uint8Put(directBuffer, offset + VERS_FIELD_OFFSET, (short)(ver << 4));
         return this;
     }
 
@@ -107,7 +113,7 @@ public class HeaderFlyweight
      */
     public short headerType()
     {
-        return CodecUtil.uint8Get(directBuffer, TYPE_FIELD_OFFSET);
+        return CodecUtil.uint8Get(directBuffer, offset + TYPE_FIELD_OFFSET);
     }
 
     /**
@@ -117,7 +123,7 @@ public class HeaderFlyweight
      */
     public HeaderFlyweight headerType(final short type)
     {
-        CodecUtil.uint8Put(directBuffer, TYPE_FIELD_OFFSET, type);
+        CodecUtil.uint8Put(directBuffer, offset + TYPE_FIELD_OFFSET, type);
         return this;
     }
 
@@ -127,7 +133,7 @@ public class HeaderFlyweight
      */
     public int frameLength()
     {
-        return CodecUtil.uint16Get(directBuffer, FRAME_LENGTH_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return CodecUtil.uint16Get(directBuffer, offset + FRAME_LENGTH_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
@@ -137,7 +143,7 @@ public class HeaderFlyweight
      */
     public HeaderFlyweight frameLength(final int length)
     {
-        CodecUtil.uint16Put(directBuffer, FRAME_LENGTH_FIELD_OFFSET, length, ByteOrder.LITTLE_ENDIAN);
+        CodecUtil.uint16Put(directBuffer, offset + FRAME_LENGTH_FIELD_OFFSET, length, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
@@ -147,7 +153,7 @@ public class HeaderFlyweight
      */
     public long sessionId()
     {
-        return CodecUtil.uint32Get(directBuffer, SESSION_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return CodecUtil.uint32Get(directBuffer, offset + SESSION_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
@@ -157,7 +163,7 @@ public class HeaderFlyweight
      */
     public HeaderFlyweight sessionId(final long sessionId)
     {
-        CodecUtil.uint32Put(directBuffer, SESSION_ID_FIELD_OFFSET, sessionId, ByteOrder.LITTLE_ENDIAN);
+        CodecUtil.uint32Put(directBuffer, offset + SESSION_ID_FIELD_OFFSET, sessionId, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 }

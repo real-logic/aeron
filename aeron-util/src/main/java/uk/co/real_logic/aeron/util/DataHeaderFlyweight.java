@@ -49,7 +49,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      */
     public long channelId()
     {
-        return CodecUtil.uint32Get(directBuffer, CHANNEL_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return CodecUtil.uint32Get(directBuffer, offset + CHANNEL_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
@@ -59,7 +59,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      */
     public HeaderFlyweight channelId(final long channelId)
     {
-        CodecUtil.uint32Put(directBuffer, CHANNEL_ID_FIELD_OFFSET, channelId, ByteOrder.LITTLE_ENDIAN);
+        CodecUtil.uint32Put(directBuffer, offset + CHANNEL_ID_FIELD_OFFSET, channelId, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 

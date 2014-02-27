@@ -28,12 +28,17 @@ import java.util.concurrent.Executors;
 
 public class EventLoopTest
 {
+    private static final int PORT = 40123;
+
     private final ByteBuffer buffer = ByteBuffer.allocateDirect(256);
     private final DirectBuffer dBuff = new DirectBuffer(buffer);
     private final HeaderFlyweight encodeHeader = new HeaderFlyweight();
     private final HeaderFlyweight decodeHeader = new HeaderFlyweight();
     private final DataHeaderFlyweight encodeDataHeader = new DataHeaderFlyweight();
     private final DataHeaderFlyweight decodeDataHeader = new DataHeaderFlyweight();
+    private final InetSocketAddress srcRemoteAddr = new InetSocketAddress("localhost", PORT);
+    private final InetSocketAddress rcvLocalAddr = new InetSocketAddress(PORT);
+    private final InetSocketAddress srcLocalAddr = new InetSocketAddress(0);
 
     @Test
     public void shouldHandleBasicSetupAndTeardown()
@@ -42,8 +47,8 @@ public class EventLoopTest
 
         try (final EventLoop evLoop = new EventLoop())
         {
-            RcvFrameHandler rcv = new RcvFrameHandler(new InetSocketAddress(40123), evLoop);
-            SrcFrameHandler src = new SrcFrameHandler(new InetSocketAddress(0), new InetSocketAddress("localhost", 40123), evLoop);
+            RcvFrameHandler rcv = new RcvFrameHandler(rcvLocalAddr, evLoop);
+            SrcFrameHandler src = new SrcFrameHandler(srcLocalAddr, srcRemoteAddr, evLoop);
 
             executor.execute(evLoop);
 

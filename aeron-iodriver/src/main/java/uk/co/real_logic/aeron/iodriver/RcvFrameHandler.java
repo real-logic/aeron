@@ -24,11 +24,11 @@ import java.nio.ByteBuffer;
 /**
  * Frame processing for receivers
  */
-public class RecvFrameHandler implements FrameHandler
+public class RcvFrameHandler implements FrameHandler
 {
     private final UDPChannel channel;
 
-    public RecvFrameHandler(final InetSocketAddress local, final EventLoop loop) throws Exception
+    public RcvFrameHandler(final InetSocketAddress local, final EventLoop loop) throws Exception
     {
         channel = new UDPChannel(this);
         channel.bind(local, loop);

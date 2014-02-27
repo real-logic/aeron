@@ -16,6 +16,8 @@
 package uk.co.real_logic.aeron.iodriver;
 
 import java.net.InetSocketAddress;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -24,10 +26,18 @@ import java.util.concurrent.Executors;
  */
 public class IoDriver
 {
+    // This is used by senders to associate Session IDs to SrcFrameHandlers for sending.
+    private final Map<Long, SrcFrameHandler> sessionIdMap = new HashMap<>();
+
+    // This is used for tracking receivers (local port numbers to RcvFrameHandlers).
+    private final Map<Integer, RcvFrameHandler> rcvPortMap = new HashMap<>();
+
     public static void main(String[] args)
     {
         try (final EventLoop selectLoop = new EventLoop())
         {
+            // 1 for EventLoop (Selectors)
+            // 1 for BuffersLoop (Data Buffers and Control Buffer)
             Executor executor = Executors.newFixedThreadPool(2);
 
             executor.execute(selectLoop);
@@ -36,11 +46,10 @@ public class IoDriver
 
             // Example of using FrameHandler. A receiver and a source sending to it.
 
-            RecvFrameHandler rcv = new RecvFrameHandler(new InetSocketAddress(41234), selectLoop);
+            RcvFrameHandler rcv = new RcvFrameHandler(new InetSocketAddress(41234), selectLoop);
             SrcFrameHandler src = new SrcFrameHandler(new InetSocketAddress(0),
                                                       new InetSocketAddress("localhost", 41234),
                                                       selectLoop);
-
 
             while (true)
             {
@@ -49,7 +58,7 @@ public class IoDriver
         }
         catch (InterruptedException ie)
         {
-            // catch this OK. We should finally close on it also.
+            // catch this OK. We should finally close on it also... oh look, try-with-resources just did.
         }
         catch (Exception e)
         {

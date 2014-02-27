@@ -22,6 +22,7 @@ import uk.co.real_logic.sbe.codec.java.DirectBuffer;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
+import java.nio.channels.SelectionKey;
 
 /**
  * Transport abstraction for UDP sources and receivers.
@@ -40,8 +41,10 @@ public final class UDPChannel implements ReadHandler
     private final HeaderFlyweight header;
     private final DataHeaderFlyweight dataHeader;
     private final FrameHandler frameHandler;
+    private final EventLoop evLoop;
+    private final SelectionKey registeredKey;
 
-    public UDPChannel(final FrameHandler frameHandler) throws Exception
+    public UDPChannel(final FrameHandler frameHandler, final InetSocketAddress local, final EventLoop evLoop) throws Exception
     {
         this.readByteBuffer = ByteBuffer.allocateDirect(READ_BYTE_BUFFER_SZ);
         this.readBuffer = new DirectBuffer(this.readByteBuffer);
@@ -49,17 +52,28 @@ public final class UDPChannel implements ReadHandler
         this.header = new HeaderFlyweight();
         this.dataHeader = new DataHeaderFlyweight();
         this.frameHandler = frameHandler;
-    }
-
-    public void bind(final InetSocketAddress local, final EventLoop loop) throws Exception
-    {
+        this.evLoop = evLoop;
         channel.bind(local);
-        loop.registerForRead(channel, this);
+        channel.configureBlocking(false);
+        this.registeredKey = evLoop.registerForRead(channel, this);
     }
 
     public int sendto(final ByteBuffer buffer, final InetSocketAddress remote) throws Exception
     {
         return channel.send(buffer, remote);
+    }
+
+    public void close()
+    {
+        try
+        {
+            registeredKey.cancel();
+            channel.close();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
     }
 
     @Override

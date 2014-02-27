@@ -31,14 +31,18 @@ public class SrcFrameHandler implements FrameHandler
 
     public SrcFrameHandler(final InetSocketAddress local, final InetSocketAddress remoteAddr, final EventLoop loop) throws Exception
     {
-        this.channel = new UDPChannel(this);
-        this.channel.bind(local, loop);
+        this.channel = new UDPChannel(this, local, loop);
         this.remoteAddr = remoteAddr;
     }
 
     public int send(final ByteBuffer buffer) throws Exception
     {
         return channel.sendto(buffer, remoteAddr);
+    }
+
+    public void close()
+    {
+        channel.close();
     }
 
     @Override

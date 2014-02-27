@@ -15,13 +15,25 @@
  */
 package uk.co.real_logic.aeron.iodriver;
 
+import org.junit.Ignore;
 import org.junit.Test;
+import uk.co.real_logic.aeron.util.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.util.HeaderFlyweight;
+import uk.co.real_logic.sbe.codec.java.DirectBuffer;
 
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 public class EventLoopTest
 {
+    private final ByteBuffer buffer = ByteBuffer.allocateDirect(256);
+    private final DirectBuffer dBuff = new DirectBuffer(buffer);
+    private final HeaderFlyweight encodeHeader = new HeaderFlyweight();
+    private final HeaderFlyweight decodeHeader = new HeaderFlyweight();
+    private final DataHeaderFlyweight encodeDataHeader = new DataHeaderFlyweight();
+    private final DataHeaderFlyweight decodeDataHeader = new DataHeaderFlyweight();
 
     @Test
     public void shouldHandleBasicSetupAndTeardown()
@@ -30,13 +42,43 @@ public class EventLoopTest
 
         try (final EventLoop evLoop = new EventLoop())
         {
+            RcvFrameHandler rcv = new RcvFrameHandler(new InetSocketAddress(40123), evLoop);
+            SrcFrameHandler src = new SrcFrameHandler(new InetSocketAddress(0), new InetSocketAddress("localhost", 40123), evLoop);
+
             executor.execute(evLoop);
 
+            rcv.close();
+            src.close();
         }
         catch (Exception e)
         {
-
+            e.printStackTrace();
         }
+
+    }
+
+    @Ignore
+    @Test
+    public void shouldBeAbleToSendToReceiverFromSource()
+    {
+        encodeDataHeader.reset(dBuff, 0);
+
+        encodeDataHeader.version((byte)1);
+        encodeDataHeader.headerType((short)HeaderFlyweight.HDR_TYPE_DATA);
+        encodeDataHeader.frameLength(8);
+        encodeDataHeader.sessionId(0xdeadbeefL);
+        encodeDataHeader.channelId(0x44332211L);
+        encodeDataHeader.termId(0x99887766L);
+
+        //src.send(buffer);
+
+        // TODO: need to add asserts on incoming header to make sure they work
+    }
+
+    @Ignore
+    @Test
+    public void shouldBeAbleToSendToSourceFromReceiver()
+    {
 
     }
 }

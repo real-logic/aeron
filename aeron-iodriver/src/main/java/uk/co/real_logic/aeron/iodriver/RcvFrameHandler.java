@@ -30,14 +30,18 @@ public class RcvFrameHandler implements FrameHandler
 
     public RcvFrameHandler(final InetSocketAddress local, final EventLoop loop) throws Exception
     {
-        channel = new UDPChannel(this);
-        channel.bind(local, loop);
+        channel = new UDPChannel(this, local, loop);
     }
 
     public int sendto(final ByteBuffer buffer, final long sessionId)
     {
         // TODO: look up sessionId to find saved InetSocketAddress and channel.sendto
         return 0;
+    }
+
+    public void close()
+    {
+        channel.close();
     }
 
     @Override

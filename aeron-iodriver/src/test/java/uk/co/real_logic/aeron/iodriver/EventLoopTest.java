@@ -23,8 +23,10 @@ import uk.co.real_logic.sbe.codec.java.DirectBuffer;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 public class EventLoopTest
 {
@@ -43,23 +45,24 @@ public class EventLoopTest
     @Test
     public void shouldHandleBasicSetupAndTeardown()
     {
-        Executor executor = Executors.newSingleThreadExecutor();
+        ExecutorService executor = Executors.newSingleThreadExecutor();
 
         try (final EventLoop evLoop = new EventLoop())
         {
             RcvFrameHandler rcv = new RcvFrameHandler(rcvLocalAddr, evLoop);
             SrcFrameHandler src = new SrcFrameHandler(srcLocalAddr, srcRemoteAddr, evLoop);
 
-            executor.execute(evLoop);
+            Future<?> loopFuture = executor.submit(evLoop);
 
             rcv.close();
             src.close();
+            evLoop.close();
+            loopFuture.get(100, TimeUnit.MILLISECONDS);
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
-
     }
 
     @Ignore
@@ -78,6 +81,10 @@ public class EventLoopTest
         //src.send(buffer);
 
         // TODO: need to add asserts on incoming header to make sure they work
+
+        // use Future to sync? with countdownLatch or just Future on end of event loop
+
+        // Maybe subclass RcvFrameHandler and override handleDataFrame() with asserts?
     }
 
     @Ignore

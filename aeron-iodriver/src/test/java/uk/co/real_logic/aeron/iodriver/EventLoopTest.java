@@ -27,6 +27,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
 import static org.hamcrest.core.Is.is;
@@ -65,6 +66,7 @@ public class EventLoopTest
     public void shouldHandleEmptyDataFrameFromSourceToReceiver() throws Exception
     {
         final EventLoop evLoop = new EventLoop();
+        final AtomicInteger dataHeadersRcved = new AtomicInteger(0);
         final UDPChannel rcv = new UDPChannel(new FrameHandler() {
             @Override
             public void handleDataFrame(DataHeaderFlyweight header, InetSocketAddress srcAddr)
@@ -76,6 +78,7 @@ public class EventLoopTest
                 assertThat(header.channelId(), is(0x44332211L));
                 assertThat(header.termId(), is(0x99887766L));
                 assertThat(header.dataOffset(), is(20));
+                dataHeadersRcved.incrementAndGet();
             }
 
             @Override
@@ -104,9 +107,9 @@ public class EventLoopTest
         rcv.close();
         src.close();
         evLoop.close();
-        //assertThat(headersRcved, is(1));
 
-        // TODO: make this assert on receiving at least one message
+        assertThat(dataHeadersRcved.get(), is(1));
+
         // TODO: abstract out session ID, channel ID, and term ID
         // TODO: reuse this and use lambda for assert section in
     }

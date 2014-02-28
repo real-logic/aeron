@@ -39,6 +39,11 @@ public class RcvFrameHandler implements FrameHandler
         return 0;
     }
 
+    public int sendto(final ByteBuffer buffer, final InetSocketAddress addr) throws Exception
+    {
+        return channel.sendto(buffer, addr);
+    }
+
     public void close()
     {
         channel.close();

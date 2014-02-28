@@ -60,7 +60,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      * @param channelId field value
      * @return flyweight
      */
-    public HeaderFlyweight channelId(final long channelId)
+    public DataHeaderFlyweight channelId(final long channelId)
     {
         CodecUtil.uint32Put(directBuffer, offset + CHANNEL_ID_FIELD_OFFSET, channelId, ByteOrder.LITTLE_ENDIAN);
         return this;
@@ -80,7 +80,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      * @param termId field value
      * @return flyweight
      */
-    public HeaderFlyweight termId(final long termId)
+    public DataHeaderFlyweight termId(final long termId)
     {
         CodecUtil.uint32Put(directBuffer, offset + TERM_ID_FIELD_OFFSET, termId, ByteOrder.LITTLE_ENDIAN);
         return this;
@@ -100,7 +100,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      * @param sequenceNumber field value
      * @return flyweight
      */
-    public HeaderFlyweight sequenceNumber(final long sequenceNumber)
+    public DataHeaderFlyweight sequenceNumber(final long sequenceNumber)
     {
         CodecUtil.uint32Put(directBuffer, offset + SEQUENCE_NUMBER_FIELD_OFFSET, sequenceNumber, ByteOrder.LITTLE_ENDIAN);
         return this;

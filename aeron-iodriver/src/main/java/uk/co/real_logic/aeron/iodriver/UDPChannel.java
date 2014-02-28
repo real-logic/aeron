@@ -81,8 +81,13 @@ public final class UDPChannel implements ReadHandler
     {
         readByteBuffer.clear();
         final InetSocketAddress srcAddr = (InetSocketAddress)channel.receive(readByteBuffer);
-        final int len = readByteBuffer.limit();
+        final int len = readByteBuffer.position();
         int offset = 0;
+
+        if (srcAddr == null)
+        {
+            return;
+        }
 
         // parse through buffer for each Frame.
         while (offset < len)

@@ -50,7 +50,7 @@ public class EventLoop implements Closeable, Runnable
      * @return SelectionKey for registration for cancel
      * @throws Exception
      */
-    public SelectionKey registerForRead(final SelectableChannel channel, final Object obj) throws Exception
+    public SelectionKey registerForRead(final SelectableChannel channel, final ReadHandler obj) throws Exception
     {
         final SelectionKey key = channel.register(selector, SelectionKey.OP_READ, obj);
         // now wake up if blocked
@@ -85,7 +85,7 @@ public class EventLoop implements Closeable, Runnable
         }
         catch (Exception e)
         {
-            // TODO: log exception
+            e.printStackTrace();
         }
     }
 
@@ -109,6 +109,23 @@ public class EventLoop implements Closeable, Runnable
         selector.wakeup();
     }
 
+    /**
+     * Explicit event loop processing (Primarily for unit testing)
+     * @throws Exception
+     */
+    public void process()
+    {
+        try
+        {
+            selectNow();
+            handleSelectedKeys();
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
     private void select() throws Exception
     {
         int readyChannels = selector.select(DEFAULT_SELECT_TIMEOUT);
@@ -127,7 +144,7 @@ public class EventLoop implements Closeable, Runnable
         }
         catch (Exception e)
         {
-            // TODO: log exception
+            e.printStackTrace();
         }
     }
 

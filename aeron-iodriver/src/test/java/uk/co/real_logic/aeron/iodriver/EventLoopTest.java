@@ -27,6 +27,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
+
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
 
 public class EventLoopTest
 {
@@ -42,54 +46,88 @@ public class EventLoopTest
     private final InetSocketAddress rcvLocalAddr = new InetSocketAddress(PORT);
     private final InetSocketAddress srcLocalAddr = new InetSocketAddress(0);
 
-    @Test
-    public void shouldHandleBasicSetupAndTeardown()
+    @Test(timeout = 100)
+    public void shouldHandleBasicSetupAndTeardown() throws Exception
     {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
+        final ExecutorService executor = Executors.newSingleThreadExecutor();
+        final EventLoop evLoop = new EventLoop();
+        final RcvFrameHandler rcv = new RcvFrameHandler(rcvLocalAddr, evLoop);
+        final SrcFrameHandler src = new SrcFrameHandler(srcLocalAddr, srcRemoteAddr, evLoop);
+        final Future<?> loopFuture = executor.submit(evLoop);
 
-        try (final EventLoop evLoop = new EventLoop())
-        {
-            RcvFrameHandler rcv = new RcvFrameHandler(rcvLocalAddr, evLoop);
-            SrcFrameHandler src = new SrcFrameHandler(srcLocalAddr, srcRemoteAddr, evLoop);
-
-            Future<?> loopFuture = executor.submit(evLoop);
-
-            rcv.close();
-            src.close();
-            evLoop.close();
-            loopFuture.get(100, TimeUnit.MILLISECONDS);
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e);
-        }
+        rcv.close();
+        src.close();
+        evLoop.close();
+        loopFuture.get(100, TimeUnit.MILLISECONDS);
     }
 
-    @Ignore
-    @Test
-    public void shouldBeAbleToSendToReceiverFromSource()
+    @Test(timeout = 100)
+    public void shouldHandleEmptyDataFrameFromSourceToReceiver() throws Exception
     {
+        final EventLoop evLoop = new EventLoop();
+        final UDPChannel rcv = new UDPChannel(new FrameHandler() {
+            @Override
+            public void handleDataFrame(DataHeaderFlyweight header, InetSocketAddress srcAddr)
+            {
+                assertThat(header.version(), is((byte) HeaderFlyweight.CURRENT_VERSION));
+                assertThat(header.headerType(), is((short) HeaderFlyweight.HDR_TYPE_DATA));
+                assertThat(header.frameLength(), is(20));
+                assertThat(header.sessionId(), is(0xdeadbeefL));
+                assertThat(header.channelId(), is(0x44332211L));
+                assertThat(header.termId(), is(0x99887766L));
+                assertThat(header.dataOffset(), is(20));
+            }
+
+            @Override
+            public void handleControlFrame(HeaderFlyweight header, InetSocketAddress srcAddr)
+            {
+
+            }
+        }, rcvLocalAddr, evLoop);
+
+        final SrcFrameHandler src = new SrcFrameHandler(srcLocalAddr, srcRemoteAddr, evLoop);
+
         encodeDataHeader.reset(dBuff, 0);
 
-        encodeDataHeader.version((byte)1);
+        encodeDataHeader.version((byte)HeaderFlyweight.CURRENT_VERSION);
         encodeDataHeader.headerType((short)HeaderFlyweight.HDR_TYPE_DATA);
-        encodeDataHeader.frameLength(8);
+        encodeDataHeader.frameLength(20);
         encodeDataHeader.sessionId(0xdeadbeefL);
         encodeDataHeader.channelId(0x44332211L);
         encodeDataHeader.termId(0x99887766L);
+        buffer.position(0);
+        buffer.limit(20);
 
-        //src.send(buffer);
+        evLoop.process();
+        src.send(buffer);
+        IntStream.range(0,4).forEach(nbr -> evLoop.process());
+        rcv.close();
+        src.close();
+        evLoop.close();
+        //assertThat(headersRcved, is(1));
 
-        // TODO: need to add asserts on incoming header to make sure they work
-
-        // use Future to sync? with countdownLatch or just Future on end of event loop
-
-        // Maybe subclass RcvFrameHandler and override handleDataFrame() with asserts?
+        // TODO: make this assert on receiving at least one message
+        // TODO: abstract out session ID, channel ID, and term ID
+        // TODO: reuse this and use lambda for assert section in
     }
 
     @Ignore
     @Test
-    public void shouldBeAbleToSendToSourceFromReceiver()
+    public void shouldHandleConnFrameFromSourceToReceiver()
+    {
+
+    }
+
+    @Ignore
+    @Test
+    public void shouldHandleConnFrameFromReceiverToSender()
+    {
+
+    }
+
+    @Ignore
+    @Test
+    public void shouldHandleMultipleFramesPerMessageFromSourceToReceiver()
     {
 
     }

@@ -22,6 +22,14 @@ allprojects {
     apply plugin: 'eclipse'
 }
 
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:0.8'
+    }
+}
 
 subprojects {
     apply plugin: 'java'
@@ -108,6 +116,25 @@ project(':aeron-core') {
 project(':aeron-examples') {
     dependencies {
         compile project(':aeron-core'), project(':aeron-iodriver')
+    }
+}
+
+project(':aeron-benchmark') {
+    apply plugin: 'shadow'
+    dependencies {
+        compile project(':aeron-core'), project(':aeron-iodriver')
+        compile 'org.openjdk.jmh:jmh-core:0.4.2'
+    }
+    shadow {
+        outputFile = new File('aeron-benchmark/build/libs/microbenchmarks.jar')
+    }
+    jar {
+        manifest {
+            attributes 'Main-Class': 'org.openjdk.jmh.Main'
+        }
+    }
+    build.doLast {
+        tasks.shadowJar.execute()
     }
 }
 

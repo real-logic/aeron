@@ -38,7 +38,7 @@ Utility Class/Methods
 
     aeron-util
 
-Benchmarks (TBD)
+Benchmarks
 
     aeron-benchmark
 

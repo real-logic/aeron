@@ -111,7 +111,6 @@ public class EventLoop implements Closeable, Runnable
 
     /**
      * Explicit event loop processing (Primarily for unit testing)
-     * @throws Exception
      */
     public void process()
     {

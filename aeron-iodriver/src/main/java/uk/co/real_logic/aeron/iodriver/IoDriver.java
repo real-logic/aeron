@@ -62,7 +62,7 @@ public class IoDriver
         }
         catch (Exception e)
         {
-            System.err.println(e);
+            e.printStackTrace();
         }
     }
 }

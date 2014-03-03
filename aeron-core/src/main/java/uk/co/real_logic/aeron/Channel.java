@@ -22,9 +22,18 @@ import java.nio.ByteBuffer;
  */
 public class Channel
 {
+    private final Source source;
+    private final long channelId;
+
     public Channel(final Source source, final long channelId)
     {
+        this.source = source;
+        this.channelId = channelId;
+    }
 
+    public long channelId()
+    {
+        return channelId;
     }
 
     public void send(final ByteBuffer buffer) throws Exception

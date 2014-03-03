@@ -73,6 +73,22 @@ public final class Aeron
     }
 
     /**
+     * Create an array of sources.
+     *
+     * Convenience function to make it easier to create a number of Sources easier.
+     *
+     * @param builders for the source options, etc.
+     * @return array of new sources.
+     */
+    public Source[] newSources(final Source.Builder[] builders)
+    {
+        final Source[] sources = new Source[builders.length];
+
+        IntStream.range(0, builders.length - 1).forEach((i) -> sources[i] = new Source(this, builders[i]));
+        return sources;
+    }
+
+    /**
      * Create a new source that will listen on {@link uk.co.real_logic.aeron.Destination}
      * @param builder builder for receiver options.
      * @return new receiver

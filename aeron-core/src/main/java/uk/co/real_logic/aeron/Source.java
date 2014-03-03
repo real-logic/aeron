@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
-import java.io.Closeable;
+import java.util.stream.IntStream;
 
 /**
  * Aeron source
@@ -23,16 +23,18 @@ import java.io.Closeable;
  * All channels and data must be contained within a session.
  *
  */
-public class Source implements Closeable
+public class Source implements AutoCloseable
 {
     private final Destination destination;
     private final Aeron aeron;
+    private final long sessionId;
 
     // called by Aeron to create new sessions
     public Source(final Aeron aeron, final Builder builder)
     {
         this.aeron = aeron;
         this.destination = builder.destination;
+        this.sessionId = builder.sessionId;
     }
 
     /**
@@ -45,9 +47,30 @@ public class Source implements Closeable
         return new Channel(this, channelId);
     }
 
+    /**
+     * Create an array of new Channels on this Source
+     *
+     * Convenience function.
+     *
+     * @param channelIds for the channels
+     * @return array of channels
+     */
+    public Channel[] newChannels(final long[] channelIds)
+    {
+        final Channel[] channels = new Channel[channelIds.length];
+
+        IntStream.range(0, channelIds.length - 1).forEach((i) -> channels[i] = new Channel(this, channelIds[i]));
+        return channels;
+    }
+
     public void close()
     {
 
+    }
+
+    public long sessionId()
+    {
+        return sessionId;
     }
 
     public static class Builder

@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.util.Iterator;
+import java.util.Set;
 
 /**
  * Event loop for JVM based iodriver
@@ -152,8 +154,29 @@ public class EventLoop implements Closeable, Runnable
         // Try this as we would like to be able to have the JVM optimize the Set<SelectionKey> for us instead of instrumenting it.
         // Only have to handle readable at the moment. Will change if this is used with TCP.
         // Could filter based on key.attachment() being instanceof ReadHandler
-        selector.selectedKeys().stream()
-                .filter(SelectionKey::isReadable)
-                .forEach(this::handleReadable);
+        //        selector.selectedKeys().stream()
+        //                .filter(SelectionKey::isReadable)
+        //                .forEach(this::handleReadable);
+
+        Set<SelectionKey> selectedKeys = selector.selectedKeys();
+
+        if (selectedKeys.isEmpty())
+        {
+            return;
+        }
+
+        Iterator<SelectionKey> keyIterator = selectedKeys.iterator();
+
+        while (keyIterator.hasNext())
+        {
+            SelectionKey key = keyIterator.next();
+
+            if (key.isReadable())
+            {
+                handleReadable(key);
+            }
+
+            keyIterator.remove();
+        }
     }
 }

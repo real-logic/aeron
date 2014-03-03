@@ -15,8 +15,6 @@
  */
 package uk.co.real_logic.aeron;
 
-import java.util.stream.IntStream;
-
 /**
  * Encapsulation of I/O driver
  *
@@ -44,7 +42,10 @@ public final class Aeron
     {
         final Aeron[] aerons = new Aeron[builders.length];
 
-        IntStream.range(0, builders.length - 1).forEach((i) -> aerons[i] = new Aeron(builders[i]));
+        for (int i = 0, max = builders.length; i < max; i++)
+        {
+            aerons[i] = new Aeron(builders[i]);
+        }
         return aerons;
     }
 
@@ -84,7 +85,10 @@ public final class Aeron
     {
         final Source[] sources = new Source[builders.length];
 
-        IntStream.range(0, builders.length - 1).forEach((i) -> sources[i] = new Source(this, builders[i]));
+        for (int i = 0, max = builders.length; i < max; i++)
+        {
+            sources[i] = new Source(this, builders[i]);
+        }
         return sources;
     }
 

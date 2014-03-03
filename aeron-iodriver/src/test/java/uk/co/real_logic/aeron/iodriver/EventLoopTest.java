@@ -258,7 +258,6 @@ public class EventLoopTest
 
         assertThat(dataHeadersRcved.get(), is(0));
         assertThat(cntlHeadersRcved.get(), is(1));
-
     }
 
 }

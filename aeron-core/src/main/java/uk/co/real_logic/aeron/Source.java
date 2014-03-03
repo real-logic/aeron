@@ -15,8 +15,6 @@
  */
 package uk.co.real_logic.aeron;
 
-import java.util.stream.IntStream;
-
 /**
  * Aeron source
  *
@@ -59,7 +57,10 @@ public class Source implements AutoCloseable
     {
         final Channel[] channels = new Channel[channelIds.length];
 
-        IntStream.range(0, channelIds.length - 1).forEach((i) -> channels[i] = new Channel(this, channelIds[i]));
+        for (int i = 0, max = channelIds.length; i < max; i++)
+        {
+            channels[i] = new Channel(this, channelIds[i]);
+        }
         return channels;
     }
 

@@ -25,7 +25,7 @@ package uk.co.real_logic.aeron;
  *  udp://[<localaddress>@]<destination|multicastgroup>[:<port>]
  *
  * InfiniBand
- *  TBD
+ *  TBD (16-bit LID?)
  *
  * Shared Memory (memory mapped files)
  *  shm:///path/name
@@ -37,5 +37,10 @@ public class Destination
     public Destination(final String destination)
     {
         this.destination = destination;
+    }
+
+    public String destination()
+    {
+        return destination;
     }
 }

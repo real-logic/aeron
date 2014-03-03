@@ -27,7 +27,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.IntStream;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -47,6 +46,14 @@ public class EventLoopTest
     private final InetSocketAddress rcvRemoteAddr = new InetSocketAddress("localhost", SRC_PORT);
     private final InetSocketAddress rcvLocalAddr = new InetSocketAddress(RCV_PORT);
     private final InetSocketAddress srcLocalAddr = new InetSocketAddress(SRC_PORT);
+
+    private void processLoop(final EventLoop evLoop, final int iterations)
+    {
+        for (int i = 0; i < iterations; i++)
+        {
+            evLoop.process();
+        }
+    }
 
     @Test(timeout = 100)
     public void shouldHandleBasicSetupAndTeardown() throws Exception
@@ -102,7 +109,7 @@ public class EventLoopTest
 
         evLoop.process();
         src.send(buffer);
-        IntStream.range(0,4).forEach(nbr -> evLoop.process());
+        processLoop(evLoop, 4);
         rcv.close();
         src.close();
         evLoop.close();
@@ -145,7 +152,7 @@ public class EventLoopTest
 
         evLoop.process();
         src.send(buffer);
-        IntStream.range(0,4).forEach(nbr -> evLoop.process());
+        processLoop(evLoop, 4);
         rcv.close();
         src.close();
         evLoop.close();
@@ -200,7 +207,7 @@ public class EventLoopTest
 
         evLoop.process();
         src.send(buffer);
-        IntStream.range(0,4).forEach(nbr -> evLoop.process());
+        processLoop(evLoop, 4);
         rcv.close();
         src.close();
         evLoop.close();
@@ -244,7 +251,7 @@ public class EventLoopTest
 
         evLoop.process();
         rcv.sendto(buffer, rcvRemoteAddr);
-        IntStream.range(0,4).forEach(nbr -> evLoop.process());
+        processLoop(evLoop, 4);
         rcv.close();
         src.close();
         evLoop.close();

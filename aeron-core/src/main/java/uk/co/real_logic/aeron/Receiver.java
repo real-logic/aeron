@@ -48,15 +48,38 @@ public class Receiver implements Closeable
         NONE, START_MESSAGE, END_MESSAGE
     }
 
+    /**
+     * Interface for delivery of data to a {@link uk.co.real_logic.aeron.Receiver}
+     */
     public interface DataHandler
     {
-        void handleData(final ByteBuffer buffer, final int offset, final MessageFlags flags);
+        /**
+         * Method called by Aeron to deliver data to a {@link uk.co.real_logic.aeron.Receiver}
+         * @param buffer to be delivered
+         * @param offset within buffer that data starts
+         * @param sessionId for the data source
+         * @param flags for the data
+         */
+        void handleData(final ByteBuffer buffer, final int offset, final long sessionId, final MessageFlags flags);
     }
 
+    /**
+     * Interface for delivery of events to a {@link uk.co.real_logic.aeron.Receiver}
+     */
     public interface EventHandler
     {
+        /**
+         * Method called by Aeron to deliver notification of a new source session
+         * @param channelId for the event
+         * @param sessionId of the new source
+         */
         void handleNewSource(final int channelId, final long sessionId);
 
+        /**
+         * Method called by Aeron to deliver notification that a source has gone inactive
+         * @param channelId for the event
+         * @param sessionId of the inactive source
+         */
         void handleInactiveSource(final int channelId, final long sessionId);
     }
 

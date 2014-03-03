@@ -6,7 +6,7 @@
  * {@code
  * Aeron aeron = Aeron.newSingleIoDriver(null);
  *
- * Source source = aeron.newSource(new UDPDestination("172.16.29.29", 40123));
+ * Source source = aeron.newSource(new Destination("udp://172.16.29.29:40123"));
  * Channel aChannel = source.newChannel(10);
  * ByteBuffer buffer;
  *
@@ -21,7 +21,7 @@
  * Aeron aeron = Aeron.newSingleIoDriver(null);
  *
  * Receiver.Builder builder = new Receiver.Builder()
- *     .destination(new UDPDestination("224.10.9.8", 40123))
+ *     .destination(new Destination("udp://224.10.9.8:40123"))
  *     .channel(10, myChannel10Handler)
  *     .channel(20, myChannel20Handler)
  *     .events(myEventHandler)

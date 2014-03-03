@@ -18,7 +18,24 @@ package uk.co.real_logic.aeron;
 /**
  * Interface for Aeron session address.
  *
+ * Destinations follow a URI-type scheme
+ *
+ * UDP (unicast and multicast) - https://www.iana.org/assignments/uri-schemes/prov/udp
+ *  udp://<server>[:<port>]/
+ *  udp://[<localaddress>@]<destination|multicastgroup>[:<port>]
+ *
+ * InfiniBand
+ *  TBD
+ *
+ * Shared Memory (memory mapped files)
+ *  shm:///path/name
  */
-public interface Destination
+public class Destination
 {
+    private final String destination;
+
+    public Destination(final String destination)
+    {
+        this.destination = destination;
+    }
 }

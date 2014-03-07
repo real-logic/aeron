@@ -30,9 +30,9 @@ Examples
 
     aeron-examples
 
-Media/IO Driver
+Media Driver
 
-    aeron-iodriver
+    aeron-mediadriver
 
 Utility Class/Methods
 

@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
@@ -30,7 +29,7 @@ import java.util.Set;
  *
  * Does not provide timers
  */
-public class EventLoop implements Closeable, Runnable
+public class EventLoop implements AutoCloseable, Runnable
 {
     /** Default select timeout (20 msec) */
     public static final long DEFAULT_SELECT_TIMEOUT = 20; // TODO: should probably be a property.

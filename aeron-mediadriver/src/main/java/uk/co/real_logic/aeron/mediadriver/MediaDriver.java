@@ -23,9 +23,40 @@ import java.util.concurrent.Executors;
 
 /**
  * Main class for JVM-based mediadriver
+ *
+ *
+ * <p/>
+ * Usage:
+ * <code>
+ *     <pre>
+ *     $ java -jar aeron-mediadriver.jar
+ *     $ java -Doption=value -jar aeron-mediadriver.jar
+ *     </pre>
+ * </code>
+ * <p/>
+ * Properties
+ * <ul>
+ *     <li><code>aeron.admin.dir</code>: Use value as directory name for admin buffers.</li>
+ *     <li><code>aeron.data.dir</code>: Use value as directory name for data buffers.</li>
+ * </ul>
  */
 public class MediaDriver
 {
+    /** Directory of the admin buffers */
+    public static final String ADMIN_DIR_PROPERTY_NAME = "aeron.admin.dir";
+
+    /** Default directory for admin buffers */
+    public static final String ADMIN_DIR_PROPERTY_NAME_DEFAULT = "/tmp/aeron/admin";
+
+    /** Directory of the data buffers */
+    public static final String DATA_DIR_PROPERTY_NAME = "aeron.data.dir";
+
+    /** Default directory for data buffers */
+    public static final String DATA_DIR_PROPERTY_NAME_DEFAULT = "/tmp/aeron/data";
+
+    public static final String ADMIN_DIR = System.getProperty(ADMIN_DIR_PROPERTY_NAME, ADMIN_DIR_PROPERTY_NAME_DEFAULT);
+    public static final String DATA_DIR = System.getProperty(DATA_DIR_PROPERTY_NAME, DATA_DIR_PROPERTY_NAME_DEFAULT);
+
     // This is used by senders to associate Session IDs to SrcFrameHandlers for sending.
     private final Map<Long, SrcFrameHandler> sessionIdMap = new HashMap<>();
 
@@ -43,6 +74,8 @@ public class MediaDriver
             executor.execute(selectLoop);
 
             // TODO: need the other thread scanning Term buffers and control buffer or have this thread do it.
+
+            // TODO: spin off admin thread to do
 
             // Example of using FrameHandler. A receiver and a source sending to it.
 

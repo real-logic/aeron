@@ -15,6 +15,8 @@
  */
 package uk.co.real_logic.aeron;
 
+import java.util.function.Consumer;
+
 /**
  * Encapsulation of media driver and API for source and receiver construction
  */
@@ -92,12 +94,24 @@ public final class Aeron
     }
 
     /**
-     * Create a new source that will listen on {@link uk.co.real_logic.aeron.Destination}
+     * Create a new receiver that will listen on {@link uk.co.real_logic.aeron.Destination}
      * @param builder builder for receiver options.
      * @return new receiver
      */
     public Receiver newReceiver(final Receiver.Builder builder)
     {
+        return new Receiver(this, builder);
+    }
+
+    /**
+     * Create a new receiver that will listen on a given destination, etc.
+     * @param block to fill in receiver builder
+     * @return new receiver
+     */
+    public Receiver newReceiver(final Consumer<Receiver.Builder> block)
+    {
+        Receiver.Builder builder = new Receiver.Builder();
+        block.accept(builder);
         return new Receiver(this, builder);
     }
 

@@ -26,7 +26,8 @@ public class Receiver implements AutoCloseable
 {
     private final Destination destination;
     private final Aeron aeron;
-    private final EventHandler eventHandler;
+    private final NewSourceEventHandler newSourceEventHandler;
+    private final InactiveSourceEventHandler inactiveSourceEventHandler;
     private final Map<Long, DataHandler> channelMap;
 
     public Receiver(final Aeron aeron, final Builder builder)
@@ -34,7 +35,8 @@ public class Receiver implements AutoCloseable
         this.aeron = aeron;
         this.destination = builder.destination;
         this.channelMap = builder.channelMap;
-        this.eventHandler = builder.eventHandler;
+        this.newSourceEventHandler = builder.newSourceEventHandler;
+        this.inactiveSourceEventHandler = builder.inactiveSourceEventHandler;
     }
 
     public void close()
@@ -43,7 +45,7 @@ public class Receiver implements AutoCloseable
     }
 
     /**
-     * Process a waiting data or event and deliver to {@link uk.co.real_logic.aeron.Receiver.DataHandler}s and/or {@link uk.co.real_logic.aeron.Receiver.EventHandler}.
+     * Process a waiting data or event and deliver to {@link uk.co.real_logic.aeron.Receiver.DataHandler}s and/or event handlers.
      *
      * Returns after handling a single data and/or event.
      *
@@ -75,9 +77,9 @@ public class Receiver implements AutoCloseable
     }
 
     /**
-     * Interface for delivery of events to a {@link uk.co.real_logic.aeron.Receiver}
+     * Interface for delivery of new source events to a {@link uk.co.real_logic.aeron.Receiver}
      */
-    public interface EventHandler
+    public interface NewSourceEventHandler
     {
         /**
          * Method called by Aeron to deliver notification of a new source session
@@ -85,7 +87,13 @@ public class Receiver implements AutoCloseable
          * @param sessionId of the new source
          */
         void handleNewSource(final int channelId, final long sessionId);
+    }
 
+    /**
+     * Interface for delivery of inactive source events to a {@link uk.co.real_logic.aeron.Receiver}
+     */
+    public interface InactiveSourceEventHandler
+    {
         /**
          * Method called by Aeron to deliver notification that a source has gone inactive
          * @param channelId for the event
@@ -99,7 +107,8 @@ public class Receiver implements AutoCloseable
         private Aeron aeron;
         private Destination destination;
         private Map<Long, DataHandler> channelMap = new HashMap<>();
-        private EventHandler eventHandler = null;
+        private NewSourceEventHandler newSourceEventHandler;
+        private InactiveSourceEventHandler inactiveSourceEventHandler;
 
         public Builder()
         {
@@ -123,9 +132,15 @@ public class Receiver implements AutoCloseable
             return this;
         }
 
-        public Builder events(final EventHandler handler)
+        public Builder newSourceEvent(final NewSourceEventHandler handler)
         {
-            eventHandler = handler;
+            this.newSourceEventHandler = handler;
+            return this;
+        }
+
+        public Builder inactiveSourceEvent(final InactiveSourceEventHandler handler)
+        {
+            inactiveSourceEventHandler = handler;
             return this;
         }
     }

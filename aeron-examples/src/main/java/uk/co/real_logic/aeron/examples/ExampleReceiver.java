@@ -22,6 +22,7 @@ import uk.co.real_logic.aeron.Receiver;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
 /**
@@ -31,11 +32,10 @@ public class ExampleReceiver
 {
     public static final Destination DESTINATION = new Destination("udp://172.16.29.29:40123");
     private static final ExampleDataHandler[] CHANNELS = { new ExampleDataHandler(10), new ExampleDataHandler(20) };
-    private static final ExampleEventHandler EVENTS = new ExampleEventHandler();
 
     public static void main(String[] args)
     {
-        Executor executor = Executors.newSingleThreadExecutor();
+        Executor executor = Executors.newFixedThreadPool(2);
 
         try
         {
@@ -43,13 +43,28 @@ public class ExampleReceiver
             Receiver.Builder builder = new Receiver.Builder()
                     .destination(DESTINATION);
 
+            // register some channels that use stateful objects
             IntStream.range(0, CHANNELS.length).forEach(i -> builder.channel(CHANNELS[i].channelId(), CHANNELS[i]));
 
-            builder.events(EVENTS);
+            // register a channel that uses a lambda
+            builder.channel(30, (buffer, offset, sessionId, flags) -> { /* do something with message */ });
 
-            final Receiver rcv = aeron.newReceiver(builder);
+            // register for events that uses lambdas
+            builder.newSourceEvent((channelId, sessionId) -> System.out.println("new source for channel"))
+                   .inactiveSourceEvent((channelId, sessionId) -> System.out.println("inactive source for channel"));
 
-            executor.execute(() ->
+            final Receiver rcv1 = aeron.newReceiver(builder);
+
+            // create a receiver using the fluent style lambda
+            final Receiver rcv2 = aeron.newReceiver((bld) ->
+            {
+                bld.destination(DESTINATION)
+                   .channel(100, (buffer, offset, sessionId, flags) -> { /* do something */ })
+                   .newSourceEvent((channelId, sessionId) -> System.out.println("new source for channel"));
+            });
+
+            // make a reusable event loop
+            final Consumer<Receiver> loop = (rcv) ->
             {
                 try
                 {
@@ -62,8 +77,11 @@ public class ExampleReceiver
                 {
                     e.printStackTrace();
                 }
+            };
 
-            });
+            // spin off the two receiver threads
+            executor.execute(() -> loop.accept(rcv1));
+            executor.execute(() -> loop.accept(rcv2));
         }
         catch (Exception e)
         {
@@ -87,25 +105,6 @@ public class ExampleReceiver
 
         @Override
         public void handleData(final ByteBuffer buffer, final int offset, final long sessionId, final Receiver.MessageFlags flags)
-        {
-
-        }
-    }
-
-    public static class ExampleEventHandler implements Receiver.EventHandler
-    {
-        public ExampleEventHandler()
-        {
-        }
-
-        @Override
-        public void handleNewSource(final int channelId, final long sessionId)
-        {
-
-        }
-
-        @Override
-        public void handleInactiveSource(final int channelId, final long sessionId)
         {
 
         }

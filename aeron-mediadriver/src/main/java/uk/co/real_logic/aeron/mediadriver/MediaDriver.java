@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.iodriver;
+package uk.co.real_logic.aeron.mediadriver;
 
 import java.net.InetSocketAddress;
 import java.util.HashMap;
@@ -22,9 +22,9 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 /**
- * Main class for JVM-based iodriver
+ * Main class for JVM-based mediadriver
  */
-public class IoDriver
+public class MediaDriver
 {
     // This is used by senders to associate Session IDs to SrcFrameHandlers for sending.
     private final Map<Long, SrcFrameHandler> sessionIdMap = new HashMap<>();

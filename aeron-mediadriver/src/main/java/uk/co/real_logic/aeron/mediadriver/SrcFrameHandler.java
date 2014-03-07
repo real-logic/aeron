@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.iodriver;
+package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.HeaderFlyweight;
@@ -22,26 +22,22 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 /**
- * Frame processing for receivers
+ * Frame processing for sources
  */
-public class RcvFrameHandler implements FrameHandler
+public class SrcFrameHandler implements FrameHandler
 {
     private final UDPChannel channel;
+    private final InetSocketAddress remoteAddr;
 
-    public RcvFrameHandler(final InetSocketAddress local, final EventLoop loop) throws Exception
+    public SrcFrameHandler(final InetSocketAddress local, final InetSocketAddress remoteAddr, final EventLoop loop) throws Exception
     {
-        channel = new UDPChannel(this, local, loop);
+        this.channel = new UDPChannel(this, local, loop);
+        this.remoteAddr = remoteAddr;
     }
 
-    public int sendto(final ByteBuffer buffer, final long sessionId)
+    public int send(final ByteBuffer buffer) throws Exception
     {
-        // TODO: look up sessionId to find saved InetSocketAddress and channel.sendto
-        return 0;
-    }
-
-    public int sendto(final ByteBuffer buffer, final InetSocketAddress addr) throws Exception
-    {
-        return channel.sendto(buffer, addr);
+        return channel.sendto(buffer, remoteAddr);
     }
 
     public void close()
@@ -52,7 +48,7 @@ public class RcvFrameHandler implements FrameHandler
     @Override
     public void handleDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
     {
-        // TODO: demux onto Terms for API to pick up
+        // no frames should come in this way, so just drop it silently.
     }
 
     @Override

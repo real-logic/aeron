@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.iodriver;
+package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.HeaderFlyweight;
@@ -21,7 +21,7 @@ import uk.co.real_logic.aeron.util.HeaderFlyweight;
 import java.net.InetSocketAddress;
 
 /**
- * Handler interface for various Frame types. For iodriver, specifically, this is Data or Control.
+ * Handler interface for various Frame types. For mediadriver, specifically, this is Data or Control.
  *
  * This interface should expand to handle various addressing models. But InetSocketAddress is exposed
  * at the moment.

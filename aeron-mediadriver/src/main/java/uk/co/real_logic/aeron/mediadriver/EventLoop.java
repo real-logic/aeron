@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.iodriver;
+package uk.co.real_logic.aeron.mediadriver;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -24,12 +24,11 @@ import java.util.Iterator;
 import java.util.Set;
 
 /**
- * Event loop for JVM based iodriver
+ * Event loop for JVM based mediadriver
  *
  * Contains Selector logic
  *
  * Does not provide timers
- * Deliberately simple and braindead
  */
 public class EventLoop implements Closeable, Runnable
 {

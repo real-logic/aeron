@@ -101,7 +101,7 @@ subprojects {
     }
 }
 
-project(':aeron-iodriver') {
+project(':aeron-mediadriver') {
     dependencies {
         compile project(':aeron-util')
     }
@@ -115,14 +115,14 @@ project(':aeron-core') {
 
 project(':aeron-examples') {
     dependencies {
-        compile project(':aeron-core'), project(':aeron-iodriver')
+        compile project(':aeron-core'), project(':aeron-mediadriver')
     }
 }
 
 project(':aeron-benchmark') {
     apply plugin: 'shadow'
     dependencies {
-        compile project(':aeron-core'), project(':aeron-iodriver')
+        compile project(':aeron-core'), project(':aeron-mediadriver')
         compile 'org.openjdk.jmh:jmh-core:0.4.2'
     }
     shadow {

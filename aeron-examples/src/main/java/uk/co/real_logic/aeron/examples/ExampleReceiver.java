@@ -49,23 +49,20 @@ public class ExampleReceiver
 
             final Receiver rcv = aeron.newReceiver(builder);
 
-            executor.execute(new Runnable()
+            executor.execute(() ->
             {
-                @Override
-                public void run()
+                try
                 {
-                    try
+                    while (true)
                     {
-                        while (true)
-                        {
-                            rcv.process();
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        e.printStackTrace();
+                        rcv.process();
                     }
                 }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                }
+
             });
         }
         catch (Exception e)

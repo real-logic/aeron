@@ -79,17 +79,17 @@ public class Source implements AutoCloseable
         private Destination destination;
         private long sessionId = 0;
 
-        Builder()
+        public Builder()
         {
         }
 
-        Builder desintation(final Destination destination)
+        public Builder desintation(final Destination destination)
         {
             this.destination = destination;
             return this;
         }
 
-        Builder sessionId(final long sessionId)
+        public Builder sessionId(final long sessionId)
         {
             this.sessionId = sessionId;
             return this;

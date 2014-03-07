@@ -16,29 +16,28 @@
 package uk.co.real_logic.aeron;
 
 /**
- * Encapsulation of I/O driver
- *
+ * Encapsulation of media driver and API for source and receiver construction
  */
 public final class Aeron
 {
 
     // factory methods
     /**
-     * Creates an I/O driver associated with this Aeron instance that can be used to create sources and receivers on
-     * @param builder of the I/O driver and Aeron configuration or null for default configuration
+     * Creates an media driver associated with this Aeron instance that can be used to create sources and receivers on
+     * @param builder of the media driver and Aeron configuration or null for default configuration
      * @return Aeron instance
      */
-    public static Aeron newSingleIoDriver(final Builder builder)
+    public static Aeron newSingleMediaDriver(final Builder builder)
     {
         return new Aeron(builder);
     }
 
     /**
-     * Creates multiple I/O drivers associated with multiple Aeron instances that can be used to create sources and receivers
-     * @param builders of the I/O drivers
+     * Creates multiple media drivers associated with multiple Aeron instances that can be used to create sources and receivers
+     * @param builders of the media drivers
      * @return array of Aeron instances
      */
-    public static Aeron[] newMultipleIoDrivers(final Builder[] builders)
+    public static Aeron[] newMultipleMediaDrivers(final Builder[] builders)
     {
         final Aeron[] aerons = new Aeron[builders.length];
 
@@ -104,7 +103,7 @@ public final class Aeron
 
     public static class Builder
     {
-        Builder()
+        public Builder()
         {
         }
     }

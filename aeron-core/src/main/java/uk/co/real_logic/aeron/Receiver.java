@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron;
 
-import java.io.Closeable;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
@@ -23,7 +22,7 @@ import java.util.Map;
 /**
  * Aeron receiver
  */
-public class Receiver implements Closeable
+public class Receiver implements AutoCloseable
 {
     private final Destination destination;
     private final Aeron aeron;
@@ -39,6 +38,18 @@ public class Receiver implements Closeable
     }
 
     public void close()
+    {
+
+    }
+
+    /**
+     * Process a waiting data or event and deliver to {@link uk.co.real_logic.aeron.Receiver.DataHandler}s and/or {@link uk.co.real_logic.aeron.Receiver.EventHandler}.
+     *
+     * Returns after handling a single data and/or event.
+     *
+     * @throws Exception
+     */
+    public void process() throws Exception
     {
 
     }
@@ -90,29 +101,29 @@ public class Receiver implements Closeable
         private Map<Long, DataHandler> channelMap = new HashMap<>();
         private EventHandler eventHandler = null;
 
-        Builder()
+        public Builder()
         {
         }
 
-        Builder aeron(final Aeron aeron)
+        public Builder aeron(final Aeron aeron)
         {
             this.aeron = aeron;
             return this;
         }
 
-        Builder destination(final Destination destination)
+        public Builder destination(final Destination destination)
         {
             this.destination = destination;
             return this;
         }
 
-        Builder channel(final long channelId, final DataHandler handler)
+        public Builder channel(final long channelId, final DataHandler handler)
         {
             channelMap.put(channelId, handler);
             return this;
         }
 
-        Builder events(final EventHandler handler)
+        public Builder events(final EventHandler handler)
         {
             eventHandler = handler;
             return this;

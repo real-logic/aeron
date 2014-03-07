@@ -49,7 +49,7 @@ public class ExampleReceiver
             // register a channel that uses a lambda
             builder.channel(30, (buffer, offset, sessionId, flags) -> { /* do something with message */ });
 
-            // register for events that uses lambdas
+            // register for events using lambdas
             builder.newSourceEvent((channelId, sessionId) -> System.out.println("new source for channel"))
                    .inactiveSourceEvent((channelId, sessionId) -> System.out.println("inactive source for channel"));
 
@@ -63,7 +63,7 @@ public class ExampleReceiver
                    .newSourceEvent((channelId, sessionId) -> System.out.println("new source for channel"));
             });
 
-            // make a reusable event loop
+            // make a reusable, parameterized event loop function
             final Consumer<Receiver> loop = (rcv) ->
             {
                 try

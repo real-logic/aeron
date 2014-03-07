@@ -68,8 +68,9 @@ public class MediaDriver
         try (final EventLoop selectLoop = new EventLoop())
         {
             // 1 for EventLoop (Selectors)
-            // 1 for BuffersLoop (Data Buffers and Control Buffer)
-            Executor executor = Executors.newFixedThreadPool(2);
+            // 1 for DataBuffersLoop (Data Buffers)
+            // 1 for AdminLoop (Admin Thread)
+            Executor executor = Executors.newFixedThreadPool(3);
 
             executor.execute(selectLoop);
 

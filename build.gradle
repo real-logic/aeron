@@ -115,7 +115,7 @@ project(':aeron-core') {
 
 project(':aeron-examples') {
     dependencies {
-        compile project(':aeron-core'), project(':aeron-mediadriver')
+        compile project(':aeron-core')
     }
 }
 

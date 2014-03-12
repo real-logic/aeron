@@ -15,10 +15,42 @@
  */
 package uk.co.real_logic.aeron.util.command;
 
+import java.util.Arrays;
+import java.util.Optional;
+
 /**
  * Error codes between mediadriver and library
  */
 public enum ErrorCode
 {
-    DESTINATION_MALFORMED
+    DESTINATION_MALFORMED(100);
+
+    private final int value;
+
+    ErrorCode(final int value)
+    {
+        this.value = value;
+    }
+
+    public int value()
+    {
+        return value;
+    }
+
+    public static ErrorCode get(final int value)
+    {
+        Optional<ErrorCode> code = Arrays.stream(Singleton.VALUES).filter((e) -> e.value == value).findFirst();
+
+        if (code.isPresent())
+        {
+            return code.get();
+        }
+
+        throw new IllegalArgumentException("no ErrorCode for value: " + value);
+    }
+
+    static class Singleton
+    {
+        public static final ErrorCode[] VALUES = ErrorCode.values();
+    }
 }

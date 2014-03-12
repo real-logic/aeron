@@ -122,8 +122,9 @@ public interface LibraryFacade
      * Notify the library of an error for a request that it sent previously
      *
      * @see uk.co.real_logic.aeron.util.command.MediaDriverFacade#handleErrorResponse(int, byte[])
+     * @see uk.co.real_logic.aeron.util.command.ErrorCode
      *
-     * @param code for the error (TODO: need enums for these)
+     * @param code for the error
      * @param message for the error to be included in the notification
      */
     void errorResponse(final int code, final byte[] message);
@@ -132,8 +133,9 @@ public interface LibraryFacade
      * Notify the library of an error in operation not associated with a request from the application
      *
      * @see uk.co.real_logic.aeron.util.command.MediaDriverFacade#handleErrorNotification(int, byte[])
+     * @see uk.co.real_logic.aeron.util.command.ErrorCode
      *
-     * @param code for the error (TODO: need enums for these)
+     * @param code for the error
      * @param message for the error to be included in the notification
      */
     void errorNotification(final int code, final byte[] message);

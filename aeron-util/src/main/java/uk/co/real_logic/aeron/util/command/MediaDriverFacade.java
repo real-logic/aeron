@@ -124,8 +124,9 @@ public interface MediaDriverFacade
      * This is an error in response to a command.
      *
      * @see uk.co.real_logic.aeron.util.command.LibraryFacade#errorResponse(int, byte[])
+     * @see uk.co.real_logic.aeron.util.command.ErrorCode
      *
-     * @param code of the error (TODO: will need an enum for these)
+     * @param code of the error
      * @param message returned by the media driver for the error
      */
     void handleErrorResponse(final int code, final byte[] message);
@@ -136,8 +137,9 @@ public interface MediaDriverFacade
      * This is an error in operation (not in response to a command).
      *
      * @see uk.co.real_logic.aeron.util.command.LibraryFacade#errorNotification(int, byte[])
+     * @see uk.co.real_logic.aeron.util.command.ErrorCode
      *
-     * @param code of the error (TODO: will need an enum for these)
+     * @param code of the error
      * @param message returned by the media driver for the error
      */
     void handleErrorNotification(final int code, final byte[] message);

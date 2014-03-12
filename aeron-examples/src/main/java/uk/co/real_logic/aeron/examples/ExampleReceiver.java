@@ -31,7 +31,7 @@ import java.util.stream.IntStream;
 public class ExampleReceiver
 {
     public static final Destination DESTINATION = new Destination("udp://172.16.29.29:40123");
-    private static final ExampleDataHandler[] CHANNELS = { new ExampleDataHandler(10), new ExampleDataHandler(20) };
+    private static final ExampleDataHandler[] CHANNELS = {new ExampleDataHandler(10), new ExampleDataHandler(20)};
 
     public static void main(String[] args)
     {
@@ -56,12 +56,13 @@ public class ExampleReceiver
             final Receiver rcv1 = aeron.newReceiver(builder);
 
             // create a receiver using the fluent style lambda
-            final Receiver rcv2 = aeron.newReceiver((bld) ->
-            {
-                bld.destination(DESTINATION)
-                   .channel(100, (buffer, offset, sessionId, flags) -> { /* do something */ })
-                   .newSourceEvent((channelId, sessionId) -> System.out.println("new source for channel"));
-            });
+            final Receiver rcv2 =
+                    aeron.newReceiver((bld) ->
+                                      {
+                                          bld.destination(DESTINATION)
+                                             .channel(100, (buffer, offset, sessionId, flags) -> { /* do something */ })
+                                             .newSourceEvent((channelId, sessionId) -> System.out.println("new source for channel"));
+                                      });
 
             // make a reusable, parameterized event loop function
             final Consumer<Receiver> loop = (rcv) ->
@@ -83,7 +84,7 @@ public class ExampleReceiver
             executor.execute(() -> loop.accept(rcv1));
             executor.execute(() -> loop.accept(rcv2));
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
             e.printStackTrace();
         }
@@ -103,8 +104,7 @@ public class ExampleReceiver
             return channelId;
         }
 
-        @Override
-        public void handleData(final ByteBuffer buffer, final int offset, final long sessionId, final Receiver.MessageFlags flags)
+        public void onData(final ByteBuffer buffer, final int offset, final long sessionId, final Receiver.MessageFlags flags)
         {
 
         }

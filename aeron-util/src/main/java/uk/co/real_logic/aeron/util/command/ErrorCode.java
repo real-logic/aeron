@@ -15,9 +15,6 @@
  */
 package uk.co.real_logic.aeron.util.command;
 
-import java.util.Arrays;
-import java.util.Optional;
-
 /**
  * Error codes between mediadriver and library
  */
@@ -39,11 +36,12 @@ public enum ErrorCode
 
     public static ErrorCode get(final int value)
     {
-        Optional<ErrorCode> code = Arrays.stream(Singleton.VALUES).filter((e) -> e.value == value).findFirst();
-
-        if (code.isPresent())
+        for (final ErrorCode code : Singleton.VALUES)
         {
-            return code.get();
+            if (code.value == value)
+            {
+                return code;
+            }
         }
 
         throw new IllegalArgumentException("no ErrorCode for value: " + value);

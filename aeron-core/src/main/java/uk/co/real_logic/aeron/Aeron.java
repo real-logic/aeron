@@ -47,6 +47,7 @@ public final class Aeron
         {
             aerons[i] = new Aeron(builders[i]);
         }
+
         return aerons;
     }
 
@@ -71,7 +72,7 @@ public final class Aeron
      */
     public Source newSource(final Destination destination)
     {
-        return new Source(this, new Source.Builder().desintation(destination));
+        return new Source(this, new Source.Builder().destination(destination));
     }
 
     /**
@@ -90,6 +91,7 @@ public final class Aeron
         {
             sources[i] = new Source(this, builders[i]);
         }
+
         return sources;
     }
 
@@ -112,6 +114,7 @@ public final class Aeron
     {
         Receiver.Builder builder = new Receiver.Builder();
         block.accept(builder);
+
         return new Receiver(this, builder);
     }
 

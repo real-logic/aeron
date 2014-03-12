@@ -43,7 +43,7 @@ public class ExampleSender
             aChannel.send(buffer);
             // TODO: wait around for something...
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
             e.printStackTrace();
         }

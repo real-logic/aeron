@@ -45,7 +45,7 @@ public class Receiver implements AutoCloseable
     }
 
     /**
-     * Process a waiting data or event and deliver to {@link uk.co.real_logic.aeron.Receiver.DataHandler}s and/or event handlers.
+     * Process a waiting data or event and deliver to {@link Receiver.DataHandler}s and/or event handlers.
      *
      * Returns after handling a single data and/or event.
      *
@@ -62,22 +62,22 @@ public class Receiver implements AutoCloseable
     }
 
     /**
-     * Interface for delivery of data to a {@link uk.co.real_logic.aeron.Receiver}
+     * Interface for delivery of data to a {@link Receiver}
      */
     public interface DataHandler
     {
         /**
-         * Method called by Aeron to deliver data to a {@link uk.co.real_logic.aeron.Receiver}
+         * Method called by Aeron to deliver data to a {@link Receiver}
          * @param buffer to be delivered
          * @param offset within buffer that data starts
          * @param sessionId for the data source
          * @param flags for the data
          */
-        void handleData(final ByteBuffer buffer, final int offset, final long sessionId, final MessageFlags flags);
+        void onData(final ByteBuffer buffer, final int offset, final long sessionId, final MessageFlags flags);
     }
 
     /**
-     * Interface for delivery of new source events to a {@link uk.co.real_logic.aeron.Receiver}
+     * Interface for delivery of new source events to a {@link Receiver}
      */
     public interface NewSourceEventHandler
     {
@@ -90,7 +90,7 @@ public class Receiver implements AutoCloseable
     }
 
     /**
-     * Interface for delivery of inactive source events to a {@link uk.co.real_logic.aeron.Receiver}
+     * Interface for delivery of inactive source events to a {@link Receiver}
      */
     public interface InactiveSourceEventHandler
     {

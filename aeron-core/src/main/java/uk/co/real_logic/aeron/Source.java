@@ -61,6 +61,7 @@ public class Source implements AutoCloseable
         {
             channels[i] = new Channel(this, channelIds[i]);
         }
+
         return channels;
     }
 
@@ -83,7 +84,7 @@ public class Source implements AutoCloseable
         {
         }
 
-        public Builder desintation(final Destination destination)
+        public Builder destination(final Destination destination)
         {
             this.destination = destination;
             return this;

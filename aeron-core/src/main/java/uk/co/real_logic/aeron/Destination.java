@@ -20,6 +20,7 @@ package uk.co.real_logic.aeron;
  *
  * Destinations follow a URI-type scheme
  *
+ * {@code
  * UDP (unicast and multicast) - https://www.iana.org/assignments/uri-schemes/prov/udp
  *  udp://<server>[:<port>]/
  *  udp://[<localaddress>@]<destination|multicastgroup>[:<port>]
@@ -29,6 +30,7 @@ package uk.co.real_logic.aeron;
  *
  * Shared Memory (memory mapped files)
  *  shm:///path/name
+ * }
  */
 public class Destination
 {

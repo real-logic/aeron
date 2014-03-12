@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 /**
- * Interface for a handler of SelectionKey.OP_READ events
+ * Interface for a handler of {@link java.nio.channels.SelectionKey#OP_READ} events
  */
 public interface ReadHandler
 {

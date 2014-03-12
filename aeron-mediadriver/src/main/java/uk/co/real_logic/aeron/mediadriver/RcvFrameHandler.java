@@ -26,27 +26,27 @@ import java.nio.ByteBuffer;
  */
 public class RcvFrameHandler implements FrameHandler, AutoCloseable
 {
-    private final UdpChannel channel;
+    private final UdpTransport transport;
 
     public RcvFrameHandler(final InetSocketAddress local, final EventLoop loop) throws Exception
     {
-        channel = new UdpChannel(this, local, loop);
+        transport = new UdpTransport(this, local, loop);
     }
 
     public int sendTo(final ByteBuffer buffer, final long sessionId)
     {
-        // TODO: look up sessionId to find saved InetSocketAddress and channel.sendTo
+        // TODO: look up sessionId to find saved InetSocketAddress and transport.sendTo
         return 0;
     }
 
     public int sendTo(final ByteBuffer buffer, final InetSocketAddress addr) throws Exception
     {
-        return channel.sendTo(buffer, addr);
+        return transport.sendTo(buffer, addr);
     }
 
     public void close()
     {
-        channel.close();
+        transport.close();
     }
 
     public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)

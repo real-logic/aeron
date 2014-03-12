@@ -65,7 +65,7 @@ public class EventLoopTest
         final AtomicInteger dataHeadersRcved = new AtomicInteger(0);
 
         final EventLoop eventLoop = new EventLoop();
-        final UdpChannel rcv = new UdpChannel(new FrameHandler()
+        final UdpTransport rcv = new UdpTransport(new FrameHandler()
         {
             public void onDataFrame(DataHeaderFlyweight header, InetSocketAddress srcAddr)
             {
@@ -113,7 +113,7 @@ public class EventLoopTest
         final AtomicInteger cntlHeadersRcved = new AtomicInteger(0);
 
         final EventLoop eventLoop = new EventLoop();
-        final UdpChannel rcv = new UdpChannel(new FrameHandler()
+        final UdpTransport rcv = new UdpTransport(new FrameHandler()
         {
             public void onDataFrame(DataHeaderFlyweight header, InetSocketAddress srcAddr)
             {
@@ -158,7 +158,7 @@ public class EventLoopTest
         final AtomicInteger cntlHeadersRcved = new AtomicInteger(0);
 
         final EventLoop eventLoop = new EventLoop();
-        final UdpChannel rcv = new UdpChannel(new FrameHandler()
+        final UdpTransport rcv = new UdpTransport(new FrameHandler()
         {
             public void onDataFrame(DataHeaderFlyweight header, InetSocketAddress srcAddr)
             {
@@ -214,7 +214,7 @@ public class EventLoopTest
         final AtomicInteger cntlHeadersRcved = new AtomicInteger(0);
 
         final EventLoop eventLoop = new EventLoop();
-        final UdpChannel src = new UdpChannel(new FrameHandler()
+        final UdpTransport src = new UdpTransport(new FrameHandler()
         {
             public void onDataFrame(DataHeaderFlyweight header, InetSocketAddress srcAddr)
             {

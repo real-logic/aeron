@@ -20,6 +20,7 @@ import uk.co.real_logic.aeron.util.HeaderFlyweight;
 import uk.co.real_logic.sbe.codec.java.DirectBuffer;
 
 import java.net.InetSocketAddress;
+import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
@@ -31,7 +32,7 @@ import java.nio.channels.SelectionKey;
  *
  * Holds DatagramChannel, read Buffer, etc.
  */
-public final class UDPChannel implements ReadHandler
+public final class UdpTransport implements ReadHandler, AutoCloseable
 {
     public static final int READ_BYTE_BUFFER_SZ = 4096; // TODO: this needs to be configured in some way
 
@@ -41,10 +42,10 @@ public final class UDPChannel implements ReadHandler
     private final HeaderFlyweight header;
     private final DataHeaderFlyweight dataHeader;
     private final FrameHandler frameHandler;
-    private final EventLoop evLoop;
+    private final EventLoop eventLoop;
     private final SelectionKey registeredKey;
 
-    public UDPChannel(final FrameHandler frameHandler, final InetSocketAddress local, final EventLoop evLoop) throws Exception
+    public UdpTransport(final FrameHandler frameHandler, final InetSocketAddress local, final EventLoop eventLoop) throws Exception
     {
         this.readByteBuffer = ByteBuffer.allocateDirect(READ_BYTE_BUFFER_SZ);
         this.readBuffer = new DirectBuffer(this.readByteBuffer);
@@ -52,13 +53,14 @@ public final class UDPChannel implements ReadHandler
         this.header = new HeaderFlyweight();
         this.dataHeader = new DataHeaderFlyweight();
         this.frameHandler = frameHandler;
-        this.evLoop = evLoop;
+        this.eventLoop = eventLoop;
+        channel.setOption(StandardSocketOptions.SO_REUSEADDR, Boolean.TRUE);
         channel.bind(local);
         channel.configureBlocking(false);
-        this.registeredKey = evLoop.registerForRead(channel, this);
+        this.registeredKey = eventLoop.registerForRead(channel, this);
     }
 
-    public int sendto(final ByteBuffer buffer, final InetSocketAddress remote) throws Exception
+    public int sendTo(final ByteBuffer buffer, final InetSocketAddress remote) throws Exception
     {
         return channel.send(buffer, remote);
     }
@@ -70,14 +72,14 @@ public final class UDPChannel implements ReadHandler
             registeredKey.cancel();
             channel.close();
         }
-        catch (Exception e)
+        catch (final Exception ex)
         {
-            e.printStackTrace();
+            ex.printStackTrace();
         }
     }
 
     @Override
-    public void handleRead() throws Exception
+    public void onRead() throws Exception
     {
         readByteBuffer.clear();
         final InetSocketAddress srcAddr = (InetSocketAddress)channel.receive(readByteBuffer);
@@ -103,11 +105,11 @@ public final class UDPChannel implements ReadHandler
             if (header.headerType() == HeaderFlyweight.HDR_TYPE_DATA)
             {
                 dataHeader.reset(readBuffer, offset);
-                frameHandler.handleDataFrame(dataHeader, srcAddr);
+                frameHandler.onDataFrame(dataHeader, srcAddr);
             }
             else
             {
-                frameHandler.handleControlFrame(header, srcAddr);
+                frameHandler.onControlFrame(header, srcAddr);
             }
 
             offset += header.frameLength();

@@ -24,20 +24,20 @@ import java.nio.ByteBuffer;
 /**
  * Frame processing for sources
  */
-public class SrcFrameHandler implements FrameHandler
+public class SrcFrameHandler implements FrameHandler, AutoCloseable
 {
-    private final UDPChannel channel;
+    private final UdpChannel channel;
     private final InetSocketAddress remoteAddr;
 
     public SrcFrameHandler(final InetSocketAddress local, final InetSocketAddress remoteAddr, final EventLoop loop) throws Exception
     {
-        this.channel = new UDPChannel(this, local, loop);
+        this.channel = new UdpChannel(this, local, loop);
         this.remoteAddr = remoteAddr;
     }
 
     public int send(final ByteBuffer buffer) throws Exception
     {
-        return channel.sendto(buffer, remoteAddr);
+        return channel.sendTo(buffer, remoteAddr);
     }
 
     public void close()
@@ -45,14 +45,12 @@ public class SrcFrameHandler implements FrameHandler
         channel.close();
     }
 
-    @Override
-    public void handleDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
+    public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
     {
         // no frames should come in this way, so just drop it silently.
     }
 
-    @Override
-    public void handleControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
+    public void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
     {
         // TODO: these pretty much just go right onto the control buffer for the API
     }

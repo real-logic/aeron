@@ -21,7 +21,7 @@ import uk.co.real_logic.aeron.util.HeaderFlyweight;
 import java.net.InetSocketAddress;
 
 /**
- * Handler interface for various Frame types. For mediadriver, specifically, this is Data or Control.
+ * Callback interface for various Frame types. For mediadriver, specifically, this is Data or Control.
  *
  * This interface should expand to handle various addressing models. But InetSocketAddress is exposed
  * at the moment.
@@ -29,16 +29,18 @@ import java.net.InetSocketAddress;
 public interface FrameHandler
 {
     /**
-     * Handle a Data Frame
+     * Handle a Data Frame.
+     *
      * @param header of the Frame
      * @param srcAddr of the Frame
      */
-    void handleDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr);
+    void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr);
 
     /**
-     * Heandle a Control Frame, such as a NAK, CONN, FCR, etc.
+     * Handle a Control Frame, such as a NAK, CONN, FCR, etc.
+     *
      * @param header of the Frame
      * @param srcAddr of the Frame
      */
-    void handleControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr);
+    void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr);
 }

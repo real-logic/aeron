@@ -92,7 +92,6 @@ public class EventLoop implements AutoCloseable, Runnable
     /**
      * Close EventLoop down. Returns immediately.
      */
-    @Override
     public void close()
     {
         done = 1;
@@ -119,7 +118,7 @@ public class EventLoop implements AutoCloseable, Runnable
             selectNow();
             handleSelectedKeys();
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
             throw new RuntimeException(e);
         }
@@ -139,9 +138,9 @@ public class EventLoop implements AutoCloseable, Runnable
     {
         try
         {
-            ((ReadHandler)key.attachment()).handleRead();
+            ((ReadHandler)key.attachment()).onRead();
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
             e.printStackTrace();
         }
@@ -156,25 +155,22 @@ public class EventLoop implements AutoCloseable, Runnable
         //                .filter(SelectionKey::isReadable)
         //                .forEach(this::handleReadable);
 
-        Set<SelectionKey> selectedKeys = selector.selectedKeys();
-
+        final Set<SelectionKey> selectedKeys = selector.selectedKeys();
         if (selectedKeys.isEmpty())
         {
             return;
         }
 
-        Iterator<SelectionKey> keyIterator = selectedKeys.iterator();
-
-        while (keyIterator.hasNext())
+        final Iterator<SelectionKey> iter = selectedKeys.iterator();
+        while (iter.hasNext())
         {
-            SelectionKey key = keyIterator.next();
-
+            final SelectionKey key = iter.next();
             if (key.isReadable())
             {
                 handleReadable(key);
             }
 
-            keyIterator.remove();
+            iter.remove();
         }
     }
 }

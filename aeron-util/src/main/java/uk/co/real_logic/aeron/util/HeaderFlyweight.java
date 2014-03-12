@@ -91,7 +91,7 @@ public class HeaderFlyweight
      */
     public byte version()
     {
-        int versAndFlags = CodecUtil.uint8Get(directBuffer, offset + VERS_FIELD_OFFSET);
+        final int versAndFlags = CodecUtil.uint8Get(directBuffer, offset + VERS_FIELD_OFFSET);
 
         return (byte)(versAndFlags >> 4);
     }

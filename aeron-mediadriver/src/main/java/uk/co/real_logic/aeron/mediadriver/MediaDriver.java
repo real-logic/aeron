@@ -63,7 +63,7 @@ public class MediaDriver
     // This is used for tracking receivers (local port numbers to RcvFrameHandlers).
     private final Map<Integer, RcvFrameHandler> rcvPortMap = new HashMap<>();
 
-    public static void main(String[] args)
+    public static void main(final String[] args)
     {
         try (final EventLoop selectLoop = new EventLoop())
         {
@@ -90,11 +90,11 @@ public class MediaDriver
                 Thread.sleep(1000);
             }
         }
-        catch (InterruptedException ie)
+        catch (final InterruptedException ie)
         {
             // catch this OK. We should finally close on it also... oh look, try-with-resources just did.
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
             e.printStackTrace();
         }

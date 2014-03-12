@@ -24,24 +24,24 @@ import java.nio.ByteBuffer;
 /**
  * Frame processing for receivers
  */
-public class RcvFrameHandler implements FrameHandler
+public class RcvFrameHandler implements FrameHandler, AutoCloseable
 {
-    private final UDPChannel channel;
+    private final UdpChannel channel;
 
     public RcvFrameHandler(final InetSocketAddress local, final EventLoop loop) throws Exception
     {
-        channel = new UDPChannel(this, local, loop);
+        channel = new UdpChannel(this, local, loop);
     }
 
-    public int sendto(final ByteBuffer buffer, final long sessionId)
+    public int sendTo(final ByteBuffer buffer, final long sessionId)
     {
-        // TODO: look up sessionId to find saved InetSocketAddress and channel.sendto
+        // TODO: look up sessionId to find saved InetSocketAddress and channel.sendTo
         return 0;
     }
 
-    public int sendto(final ByteBuffer buffer, final InetSocketAddress addr) throws Exception
+    public int sendTo(final ByteBuffer buffer, final InetSocketAddress addr) throws Exception
     {
-        return channel.sendto(buffer, addr);
+        return channel.sendTo(buffer, addr);
     }
 
     public void close()
@@ -49,14 +49,12 @@ public class RcvFrameHandler implements FrameHandler
         channel.close();
     }
 
-    @Override
-    public void handleDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
+    public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
     {
         // TODO: demux onto Terms for API to pick up
     }
 
-    @Override
-    public void handleControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
+    public void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
     {
         // TODO: these pretty much just go right onto the control buffer for the API
     }

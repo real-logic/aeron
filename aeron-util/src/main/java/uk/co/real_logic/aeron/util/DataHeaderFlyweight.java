@@ -88,6 +88,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
 
     /**
      * return sequence number field
+     * 
      * @return sequence number field
      */
     public long sequenceNumber()

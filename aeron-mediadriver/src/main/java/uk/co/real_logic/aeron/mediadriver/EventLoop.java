@@ -35,12 +35,12 @@ public class EventLoop implements AutoCloseable, Runnable
     public static final long DEFAULT_SELECT_TIMEOUT = 20; // TODO: should probably be a property.
 
     private Selector selector;
-    private volatile int done;
+    private volatile boolean done;
 
     public EventLoop() throws Exception
     {
         this.selector = Selector.open(); // yes, SelectorProvider, blah, blah
-        this.done = 0;
+        this.done = false;
     }
 
     /**
@@ -55,6 +55,7 @@ public class EventLoop implements AutoCloseable, Runnable
         final SelectionKey key = channel.register(selector, SelectionKey.OP_READ, obj);
         // now wake up if blocked
         wakeup();
+
         return key;
     }
 
@@ -72,18 +73,17 @@ public class EventLoop implements AutoCloseable, Runnable
      *
      * Everything is done here and bubbles up via the handlers.
      */
-    @Override
     public void run()
     {
         try
         {
-            while (0 == done)
+            while (!done)
             {
                 select();
                 handleSelectedKeys();
             }
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
             e.printStackTrace();
         }
@@ -94,7 +94,7 @@ public class EventLoop implements AutoCloseable, Runnable
      */
     public void close()
     {
-        done = 1;
+        done = true;
         wakeup();
         // TODO: if needed, use a CountdownLatch to sync...
     }

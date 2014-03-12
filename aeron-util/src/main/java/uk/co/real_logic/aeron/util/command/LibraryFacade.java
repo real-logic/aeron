@@ -112,7 +112,7 @@ public interface LibraryFacade
      *
      * This is an Aeron control frame.
      *
-     * @see MediaDriverFacade#handleFlowControlResponse(uk.co.real_logic.aeron.util.HeaderFlyweight)
+     * @see MediaDriverFacade#onFlowControlResponse(uk.co.real_logic.aeron.util.HeaderFlyweight)
      *
      * @param header flyweight for the FCR
      */
@@ -121,7 +121,7 @@ public interface LibraryFacade
     /**
      * Notify the library of an error for a request that it sent previously
      *
-     * @see MediaDriverFacade#handleErrorResponse(int, byte[])
+     * @see MediaDriverFacade#onErrorResponse(int, byte[])
      * @see ErrorCode
      *
      * @param code for the error
@@ -132,7 +132,7 @@ public interface LibraryFacade
     /**
      * Notify the library of an error in operation not associated with a request from the application
      *
-     * @see MediaDriverFacade#handleErrorNotification(int, byte[])
+     * @see MediaDriverFacade#onError(int, byte[])
      * @see ErrorCode
      *
      * @param code for the error
@@ -143,7 +143,7 @@ public interface LibraryFacade
     /**
      * Notify the library of locations of Term filenames
      *
-     * @see MediaDriverFacade#handleLocationResponse(java.util.List)
+     * @see MediaDriverFacade#onLocationResponse(java.util.List)
      *
      * @param filenames list of filenames of Terms
      */
@@ -152,7 +152,7 @@ public interface LibraryFacade
     /**
      * Notify the library of new source sessions for interested channels
      *
-     * @see MediaDriverFacade#handleNewSessionNotification(long, java.util.List)
+     * @see MediaDriverFacade#onNewSession(long, java.util.List)
      *
      * @param sessionId for the new session
      * @param filenames for the channels of the new session

@@ -35,13 +35,12 @@ public class ExampleReceiver
 
     public static void main(String[] args)
     {
-        Executor executor = Executors.newFixedThreadPool(2);
+        final Executor executor = Executors.newFixedThreadPool(2);
 
         try
         {
             final Aeron aeron = Aeron.newSingleMediaDriver(null);
-            Receiver.Builder builder = new Receiver.Builder()
-                    .destination(DESTINATION);
+            final Receiver.Builder builder = new Receiver.Builder().destination(DESTINATION);
 
             // register some channels that use stateful objects
             IntStream.range(0, CHANNELS.length).forEach(i -> builder.channel(CHANNELS[i].channelId(), CHANNELS[i]));
@@ -106,7 +105,6 @@ public class ExampleReceiver
 
         public void onData(final ByteBuffer buffer, final int offset, final long sessionId, final Receiver.MessageFlags flags)
         {
-
         }
     }
 }

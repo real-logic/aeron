@@ -21,8 +21,8 @@ import java.nio.ByteOrder;
 
 /**
  * HeaderFlyweight for Data Header
- *
- *      0                   1                   2                   3
+ * <p>
+ * 0                   1                   2                   3
  * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  * |  Vers |S|E|H|R| Type (=0x00)  |   Frame Length (=data + 20)   |
@@ -36,7 +36,7 @@ import java.nio.ByteOrder;
  * |                        Sequence Number                        |
  * +---------------------------------------------------------------+
  * |                             Data                             ...
- *...                                                              |
+ * ...                                                              |
  * +---------------------------------------------------------------+
  */
 public class DataHeaderFlyweight extends HeaderFlyweight
@@ -48,6 +48,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
 
     /**
      * return channel id field
+     *
      * @return channel id field
      */
     public long channelId()
@@ -57,6 +58,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
 
     /**
      * set channel id field
+     *
      * @param channelId field value
      * @return flyweight
      */
@@ -68,6 +70,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
 
     /**
      * return term id field
+     *
      * @return term id field
      */
     public long termId()
@@ -77,6 +80,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
 
     /**
      * set term id field
+     *
      * @param termId field value
      * @return flyweight
      */
@@ -88,7 +92,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
 
     /**
      * return sequence number field
-     * 
+     *
      * @return sequence number field
      */
     public long sequenceNumber()
@@ -98,6 +102,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
 
     /**
      * set sequence number field
+     *
      * @param sequenceNumber field value
      * @return flyweight
      */
@@ -109,6 +114,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
 
     /**
      * Return offset in buffer for data
+     *
      * @return offset of data in the buffer
      */
     public int dataOffset()

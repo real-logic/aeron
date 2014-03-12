@@ -17,3 +17,8 @@
 dependencies {
     compile 'uk.co.real_logic:sbe:0.1-SNAPSHOT'
 }
+
+checkstyle {
+    // lambdas break checkstyle currently. Grrrr!
+    ignoreFailures = true
+}

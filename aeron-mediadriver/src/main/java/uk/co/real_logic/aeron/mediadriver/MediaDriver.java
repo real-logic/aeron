@@ -25,15 +25,11 @@ import java.util.concurrent.Executors;
  * Main class for JVM-based mediadriver
  *
  *
- * <p/>
  * Usage:
  * <code>
- *     <pre>
  *     $ java -jar aeron-mediadriver.jar
  *     $ java -Doption=value -jar aeron-mediadriver.jar
- *     </pre>
  * </code>
- * <p/>
  * Properties
  * <ul>
  *     <li><code>aeron.admin.dir</code>: Use value as directory name for admin buffers.</li>

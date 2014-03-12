@@ -49,7 +49,7 @@ public class Receiver implements AutoCloseable
      *
      * Returns after handling a single data and/or event.
      *
-     * @throws Exception
+     * @throws java.lang.Exception
      */
     public void process() throws Exception
     {

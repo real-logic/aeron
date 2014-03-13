@@ -168,9 +168,8 @@ public class EventLoop implements AutoCloseable, Runnable
             if (key.isReadable())
             {
                 handleReadable(key);
+                iter.remove();
             }
-
-            iter.remove();
         }
     }
 }

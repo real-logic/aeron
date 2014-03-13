@@ -52,17 +52,17 @@ public class EventLoopTest
     @Test(timeout = 1000)
     public void shouldHandleBasicSetupAndTeardown() throws Exception
     {
-        final ExecutorService executor = Executors.newSingleThreadExecutor();
         final EventLoop eventLoop = new EventLoop();
-        try (final RcvFrameHandler rcv = new RcvFrameHandler(rcvLocalAddr, eventLoop);
-             final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), eventLoop))
-        {
-            eventLoop.close();
-            executor.submit(eventLoop).get(900, TimeUnit.MILLISECONDS);
-        }
+        final RcvFrameHandler rcv = new RcvFrameHandler(rcvLocalAddr, eventLoop);
+        final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), eventLoop);
+
+        processLoop(eventLoop, 5);
+        rcv.close();
+        src.close();
+        processLoop(eventLoop, 5);
+        eventLoop.close();
     }
 
-    @Ignore
     @Test(timeout = 1000)
     public void shouldHandleEmptyDataFrameFromSourceToReceiver() throws Exception
     {
@@ -99,19 +99,18 @@ public class EventLoopTest
                         .termId(TERM_ID);
         buffer.position(0).limit(20);
 
-        eventLoop.process();
+        processLoop(eventLoop, 5);
         src.send(buffer);
-        processLoop(eventLoop, 4);
-
+        processLoop(eventLoop, 5);
         rcv.close();
         src.close();
+        processLoop(eventLoop, 5);
         eventLoop.close();
 
         assertThat(dataHeadersRcved.get(), is(1));
     }
 
-    @Ignore
-    @Test(timeout = 100)
+    @Test(timeout = 1000)
     public void shouldHandleConnFrameFromSourceToReceiver() throws Exception
     {
         final AtomicInteger dataHeadersRcved = new AtomicInteger(0);
@@ -144,20 +143,19 @@ public class EventLoopTest
                         .sessionId(SESSION_ID);
         buffer.position(0).limit(8);
 
-        eventLoop.process();
+        processLoop(eventLoop, 5);
         src.send(buffer);
-        processLoop(eventLoop, 4);
-
+        processLoop(eventLoop, 5);
         rcv.close();
         src.close();
+        processLoop(eventLoop, 5);
         eventLoop.close();
 
         assertThat(dataHeadersRcved.get(), is(0));
         assertThat(cntlHeadersRcved.get(), is(1));
     }
 
-    @Ignore
-    @Test(timeout = 100)
+    @Test(timeout = 1000)
     public void shouldHandleMultipleFramesPerDatagramFromSourceToReceiver() throws Exception
     {
         final AtomicInteger dataHeadersRcved = new AtomicInteger(0);
@@ -201,20 +199,19 @@ public class EventLoopTest
                         .termId(TERM_ID);
         buffer.position(0).limit(40);
 
-        eventLoop.process();
+        processLoop(eventLoop, 5);
         src.send(buffer);
-        processLoop(eventLoop, 4);
-
+        processLoop(eventLoop, 5);
         rcv.close();
         src.close();
+        processLoop(eventLoop, 5);
         eventLoop.close();
 
         assertThat(dataHeadersRcved.get(), is(2));
         assertThat(cntlHeadersRcved.get(), is(0));
     }
 
-    @Ignore
-    @Test
+    @Test(timeout = 1000)
     public void shouldHandleConnFrameFromReceiverToSender() throws Exception
     {
         final AtomicInteger dataHeadersRcved = new AtomicInteger(0);
@@ -247,12 +244,12 @@ public class EventLoopTest
                         .sessionId(SESSION_ID);
         buffer.position(0).limit(8);
 
-        eventLoop.process();
+        processLoop(eventLoop, 5);
         rcv.sendTo(buffer, rcvRemoteAddr);
-        processLoop(eventLoop, 4);
-
+        processLoop(eventLoop, 5);
         rcv.close();
         src.close();
+        processLoop(eventLoop, 5);
         eventLoop.close();
 
         assertThat(dataHeadersRcved.get(), is(0));

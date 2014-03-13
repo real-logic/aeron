@@ -35,12 +35,12 @@ public class EventLoopTest
     private static final long CHANNEL_ID = 0x44332211L;
     private static final long TERM_ID = 0x99887766L;
     private static final String SRC_UDP_URI = "udp://localhost:40124@localhost:40123";
-    private static final String RCV_UDP_URI = "udp://localhost:40123@localhost:40124";
+    //private static final String RCV_UDP_URI = "udp://localhost:40123@localhost:40124";
 
     private final ByteBuffer buffer = ByteBuffer.allocateDirect(256);
     private final DirectBuffer directBuffer = new DirectBuffer(buffer);
     private final DataHeaderFlyweight encodeDataHeader = new DataHeaderFlyweight();
-    private final InetSocketAddress srcRemoteAddr = new InetSocketAddress("localhost", RCV_PORT);
+    //private final InetSocketAddress srcRemoteAddr = new InetSocketAddress("localhost", RCV_PORT);
     private final InetSocketAddress rcvRemoteAddr = new InetSocketAddress("localhost", SRC_PORT);
     private final InetSocketAddress rcvLocalAddr = new InetSocketAddress(RCV_PORT);
     private final InetSocketAddress srcLocalAddr = new InetSocketAddress(SRC_PORT);
@@ -67,19 +67,19 @@ public class EventLoopTest
         final EventLoop eventLoop = new EventLoop();
         final UdpTransport rcv = new UdpTransport(new FrameHandler()
         {
-            public void onDataFrame(DataHeaderFlyweight header, InetSocketAddress srcAddr)
+            public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
             {
-                assertThat(header.version(), is((byte)HeaderFlyweight.CURRENT_VERSION));
-                assertThat(header.headerType(), is((short)HeaderFlyweight.HDR_TYPE_DATA));
-                assertThat(header.frameLength(), is(20));
-                assertThat(header.sessionId(), is(SESSION_ID));
-                assertThat(header.channelId(), is(CHANNEL_ID));
-                assertThat(header.termId(), is(TERM_ID));
-                assertThat(header.dataOffset(), is(20));
+                assertThat(Byte.valueOf(header.version()), is(Byte.valueOf((byte)HeaderFlyweight.CURRENT_VERSION)));
+                assertThat(Short.valueOf(header.headerType()), is(Short.valueOf((short)HeaderFlyweight.HDR_TYPE_DATA)));
+                assertThat(Integer.valueOf(header.frameLength()), is(Integer.valueOf(20)));
+                assertThat(Long.valueOf(header.sessionId()), is(Long.valueOf(SESSION_ID)));
+                assertThat(Long.valueOf(header.channelId()), is(Long.valueOf(CHANNEL_ID)));
+                assertThat(Long.valueOf(header.termId()), is(Long.valueOf(TERM_ID)));
+                assertThat(Integer.valueOf(header.dataOffset()), is(Integer.valueOf(20)));
                 dataHeadersRcved.incrementAndGet();
             }
 
-            public void onControlFrame(HeaderFlyweight header, InetSocketAddress srcAddr)
+            public void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
             {
             }
         }, rcvLocalAddr, eventLoop);
@@ -106,7 +106,7 @@ public class EventLoopTest
         processLoop(eventLoop, 5);
         eventLoop.close();
 
-        assertThat(dataHeadersRcved.get(), is(1));
+        assertThat(Integer.valueOf(dataHeadersRcved.get()), is(Integer.valueOf(1)));
     }
 
     @Test(timeout = 1000)
@@ -118,17 +118,17 @@ public class EventLoopTest
         final EventLoop eventLoop = new EventLoop();
         final UdpTransport rcv = new UdpTransport(new FrameHandler()
         {
-            public void onDataFrame(DataHeaderFlyweight header, InetSocketAddress srcAddr)
+            public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
             {
                 dataHeadersRcved.incrementAndGet();
             }
 
-            public void onControlFrame(HeaderFlyweight header, InetSocketAddress srcAddr)
+            public void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
             {
-                assertThat(header.version(), is((byte)HeaderFlyweight.CURRENT_VERSION));
-                assertThat(header.headerType(), is((short)HeaderFlyweight.HDR_TYPE_CONN));
-                assertThat(header.frameLength(), is(8));
-                assertThat(header.sessionId(), is(SESSION_ID));
+                assertThat(Byte.valueOf(header.version()), is(Byte.valueOf((byte)HeaderFlyweight.CURRENT_VERSION)));
+                assertThat(Short.valueOf(header.headerType()), is(Short.valueOf((short)HeaderFlyweight.HDR_TYPE_CONN)));
+                assertThat(Integer.valueOf(header.frameLength()), is(Integer.valueOf(8)));
+                assertThat(Long.valueOf(header.sessionId()), is(Long.valueOf(SESSION_ID)));
                 cntlHeadersRcved.incrementAndGet();
             }
         }, rcvLocalAddr, eventLoop);
@@ -153,8 +153,8 @@ public class EventLoopTest
         processLoop(eventLoop, 5);
         eventLoop.close();
 
-        assertThat(dataHeadersRcved.get(), is(0));
-        assertThat(cntlHeadersRcved.get(), is(1));
+        assertThat(Integer.valueOf(dataHeadersRcved.get()), is(Integer.valueOf(0)));
+        assertThat(Integer.valueOf(cntlHeadersRcved.get()), is(Integer.valueOf(1)));
     }
 
     @Test(timeout = 1000)
@@ -166,18 +166,18 @@ public class EventLoopTest
         final EventLoop eventLoop = new EventLoop();
         final UdpTransport rcv = new UdpTransport(new FrameHandler()
         {
-            public void onDataFrame(DataHeaderFlyweight header, InetSocketAddress srcAddr)
+            public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
             {
-                assertThat(header.version(), is((byte)HeaderFlyweight.CURRENT_VERSION));
-                assertThat(header.headerType(), is((short)HeaderFlyweight.HDR_TYPE_DATA));
-                assertThat(header.frameLength(), is(20));
-                assertThat(header.sessionId(), is(SESSION_ID));
-                assertThat(header.channelId(), is(CHANNEL_ID));
-                assertThat(header.termId(), is(TERM_ID));
+                assertThat(Byte.valueOf(header.version()), is(Byte.valueOf((byte)HeaderFlyweight.CURRENT_VERSION)));
+                assertThat(Short.valueOf(header.headerType()), is(Short.valueOf((short)HeaderFlyweight.HDR_TYPE_DATA)));
+                assertThat(Integer.valueOf(header.frameLength()), is(Integer.valueOf(20)));
+                assertThat(Long.valueOf(header.sessionId()), is(Long.valueOf(SESSION_ID)));
+                assertThat(Long.valueOf(header.channelId()), is(Long.valueOf(CHANNEL_ID)));
+                assertThat(Long.valueOf(header.termId()), is(Long.valueOf(TERM_ID)));
                 dataHeadersRcved.incrementAndGet();
             }
 
-            public void onControlFrame(HeaderFlyweight header, InetSocketAddress srcAddr)
+            public void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
             {
                 cntlHeadersRcved.incrementAndGet();
             }
@@ -212,8 +212,8 @@ public class EventLoopTest
         processLoop(eventLoop, 5);
         eventLoop.close();
 
-        assertThat(dataHeadersRcved.get(), is(2));
-        assertThat(cntlHeadersRcved.get(), is(0));
+        assertThat(Integer.valueOf(dataHeadersRcved.get()), is(Integer.valueOf(2)));
+        assertThat(Integer.valueOf(cntlHeadersRcved.get()), is(Integer.valueOf(0)));
     }
 
     @Test(timeout = 1000)
@@ -225,17 +225,17 @@ public class EventLoopTest
         final EventLoop eventLoop = new EventLoop();
         final UdpTransport src = new UdpTransport(new FrameHandler()
         {
-            public void onDataFrame(DataHeaderFlyweight header, InetSocketAddress srcAddr)
+            public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
             {
                 dataHeadersRcved.incrementAndGet();
             }
 
-            public void onControlFrame(HeaderFlyweight header, InetSocketAddress srcAddr)
+            public void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
             {
-                assertThat(header.version(), is((byte)HeaderFlyweight.CURRENT_VERSION));
-                assertThat(header.headerType(), is((short)HeaderFlyweight.HDR_TYPE_CONN));
-                assertThat(header.frameLength(), is(8));
-                assertThat(header.sessionId(), is(SESSION_ID));
+                assertThat(Byte.valueOf(header.version()), is(Byte.valueOf((byte)HeaderFlyweight.CURRENT_VERSION)));
+                assertThat(Short.valueOf(header.headerType()), is(Short.valueOf((short)HeaderFlyweight.HDR_TYPE_CONN)));
+                assertThat(Integer.valueOf(header.frameLength()), is(Integer.valueOf(8)));
+                assertThat(Long.valueOf(header.sessionId()), is(Long.valueOf(SESSION_ID)));
                 cntlHeadersRcved.incrementAndGet();
             }
         }, srcLocalAddr, eventLoop);
@@ -255,13 +255,14 @@ public class EventLoopTest
         {
             processLoop(eventLoop, 1);
         }
+
         rcv.close();
         src.close();
         processLoop(eventLoop, 5);
         eventLoop.close();
 
-        assertThat(dataHeadersRcved.get(), is(0));
-        assertThat(cntlHeadersRcved.get(), is(1));
+        assertThat(Integer.valueOf(dataHeadersRcved.get()), is(Integer.valueOf(0)));
+        assertThat(Integer.valueOf(cntlHeadersRcved.get()), is(Integer.valueOf(1)));
     }
 
     private void processLoop(final EventLoop eventLoop, final int iterations)

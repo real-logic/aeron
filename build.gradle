@@ -84,6 +84,7 @@ subprojects {
         title = '<h1>Aeron Transport Protocol</h1>'
 
         options.bottom = '<i>Copyright &#169; 2014 Real Logic Ltd. All Rights Reserved.</i>'
+        options.addStringOption('XDignore.symbol.file', '-quiet')
     }
 
     task sourcesJar(type: Jar) {

@@ -18,6 +18,13 @@ dependencies {
     compile 'uk.co.real_logic:sbe:0.1-SNAPSHOT'
 }
 
+compileJava {
+    // Suppress warnings about using Unsafe
+    options.compilerArgs << '-XDignore.symbol.file'
+    options.fork = true
+    options.forkOptions.executable = 'javac'
+}
+
 checkstyle {
     // lambdas break checkstyle currently. Grrrr!
     ignoreFailures = true

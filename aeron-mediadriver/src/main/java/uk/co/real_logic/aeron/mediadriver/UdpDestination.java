@@ -22,10 +22,10 @@ import java.net.URI;
 
 /**
  * Encapsulation of UDP destinations
- *
+ * <p>
  * Format of URI:
  * <code>
- *     udp://[interface[:port]@]ip:port
+ * udp://[interface[:port]@]ip:port
  * </code>
  */
 public class UdpDestination
@@ -35,17 +35,17 @@ public class UdpDestination
 
     public static UdpDestination parse(final String destinationUri) throws Exception
     {
-        final URI u = new URI(destinationUri);
-        final String userInfo = u.getUserInfo();
+        final URI uri = new URI(destinationUri);
+        final String userInfo = uri.getUserInfo();
 
-        if (!u.getScheme().equals("udp") || u.getPort() == -1)
+        if (!"udp".equals(uri.getScheme()) || uri.getPort() == -1)
         {
             throw new IllegalArgumentException("malformed destination URI: " + destinationUri);
         }
 
         final Builder builder = new Builder()
-                .remotePort(u.getPort())
-                .remoteAddr(InetAddress.getByName(u.getHost()));
+                .remotePort(uri.getPort())
+                .remoteAddr(InetAddress.getByName(uri.getHost()));
 
         if (userInfo != null)
         {
@@ -103,7 +103,7 @@ public class UdpDestination
         {
             final UdpDestination rhs = (UdpDestination)obj;
 
-            return (rhs.local.equals(this.local) && rhs.remote.equals(this.remote));
+            return rhs.local.equals(this.local) && rhs.remote.equals(this.remote);
         }
 
         return false;
@@ -111,8 +111,9 @@ public class UdpDestination
 
     public String toString()
     {
-        return String.format("udp://%1$s:$2$d@%3$s:%4$d", local.getAddress().getHostAddress(), local.getPort(),
-                remote.getAddress().getHostAddress(), remote.getPort());
+        return String.format("udp://%1$s:$2$d@%3$s:%4$d",
+                             local.getAddress().getHostAddress(), Integer.valueOf(local.getPort()),
+                             remote.getAddress().getHostAddress(), Integer.valueOf(remote.getPort()));
     }
 
     public static class Builder

@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.util;
+package uk.co.real_logic.aeron.util.concurrent;
 
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
+import uk.co.real_logic.aeron.util.BitUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -27,6 +28,7 @@ import java.nio.ByteOrder;
 import static java.lang.Integer.valueOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(Theories.class)
 public class AtomicBufferTest
@@ -36,11 +38,11 @@ public class AtomicBufferTest
     private static final int INDEX = 8;
 
     private static final byte BYTE_VALUE = 1;
-    private static final short SHORT_VALUE = 2;
-    private static final int INT_VALUE = 4;
-    private static final float FLOAT_VALUE = 5.0f;
-    private static final long LONG_VALUE = 6;
-    private static final double DOUBLE_VALUE = 7.0d;
+    private static final short SHORT_VALUE = Byte.MAX_VALUE + 2;
+    private static final int INT_VALUE = Short.MAX_VALUE + 3;
+    private static final float FLOAT_VALUE = Short.MAX_VALUE + 4.0f;
+    private static final long LONG_VALUE = Integer.MAX_VALUE + 5L;
+    private static final double DOUBLE_VALUE = Integer.MAX_VALUE + 7.0d;
 
     @DataPoint
     public static final AtomicBuffer BYTE_ARRAY_BACKED = new AtomicBuffer(new byte[BUFFER_CAPACITY]);
@@ -53,7 +55,7 @@ public class AtomicBufferTest
 
     @DataPoint
     public static final AtomicBuffer HEAP_BYTE_BUFFER_SLICE =
-            new AtomicBuffer(((ByteBuffer)(ByteBuffer.allocate(BUFFER_CAPACITY * 2).position(BUFFER_CAPACITY))).slice());
+        new AtomicBuffer(((ByteBuffer)(ByteBuffer.allocate(BUFFER_CAPACITY * 2).position(BUFFER_CAPACITY))).slice());
 
     @Theory
     @Test(expected = IndexOutOfBoundsException.class)
@@ -84,6 +86,96 @@ public class AtomicBufferTest
     }
 
     @Theory
+    public void shouldGetLongFromNativeBuffer(final AtomicBuffer buffer)
+    {
+        final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(ByteOrder.nativeOrder());
+
+        duplicateBuffer.putLong(INDEX, LONG_VALUE);
+
+        assertThat(Long.valueOf(buffer.getLong(INDEX)), is(Long.valueOf(LONG_VALUE)));
+    }
+
+    @Theory
+    public void shouldPutLongToNativeBuffer(final AtomicBuffer buffer)
+    {
+        final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(ByteOrder.nativeOrder());
+
+        buffer.putLong(INDEX, LONG_VALUE);
+
+        assertThat(Long.valueOf(duplicateBuffer.getLong(INDEX)), is(Long.valueOf(LONG_VALUE)));
+    }
+
+    @Theory
+    public void shouldGetLongVolatileFromNativeBuffer(final AtomicBuffer buffer)
+    {
+        final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(ByteOrder.nativeOrder());
+
+        duplicateBuffer.putLong(INDEX, LONG_VALUE);
+
+        assertThat(Long.valueOf(buffer.getLongVolatile(INDEX)), is(Long.valueOf(LONG_VALUE)));
+    }
+
+    @Theory
+    public void shouldPutLongVolatileToNativeBuffer(final AtomicBuffer buffer)
+    {
+        final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(ByteOrder.nativeOrder());
+
+        buffer.putLongVolatile(INDEX, LONG_VALUE);
+
+        assertThat(Long.valueOf(duplicateBuffer.getLong(INDEX)), is(Long.valueOf(LONG_VALUE)));
+    }
+
+    @Theory
+    public void shouldPutLongOrderedToNativeBuffer(final AtomicBuffer buffer)
+    {
+        final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(ByteOrder.nativeOrder());
+
+        buffer.putLongOrdered(INDEX, LONG_VALUE);
+
+        assertThat(Long.valueOf(duplicateBuffer.getLong(INDEX)), is(Long.valueOf(LONG_VALUE)));
+    }
+
+    @Theory
+    public void shouldCompareAndSetLongToNativeBuffer(final AtomicBuffer buffer)
+    {
+        final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(ByteOrder.nativeOrder());
+
+        duplicateBuffer.putLong(INDEX, LONG_VALUE);
+
+        assertTrue(buffer.compareAndSetLong(INDEX, LONG_VALUE, LONG_VALUE + 1));
+
+        assertThat(Long.valueOf(duplicateBuffer.getLong(INDEX)), is(Long.valueOf(LONG_VALUE + 1)));
+    }
+
+    @Theory
+    public void shouldGetAndSetLongToNativeBuffer(final AtomicBuffer buffer)
+    {
+        final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(ByteOrder.nativeOrder());
+
+        duplicateBuffer.putLong(INDEX, LONG_VALUE);
+
+        final long afterValue = 1;
+        final long beforeValue = buffer.getAndSetLong(INDEX, afterValue);
+
+        assertThat(Long.valueOf(beforeValue), is(Long.valueOf(LONG_VALUE)));
+        assertThat(Long.valueOf(duplicateBuffer.getLong(INDEX)), is(Long.valueOf(afterValue)));
+    }
+
+    @Theory
+    public void shouldGetAndAddLongToNativeBuffer(final AtomicBuffer buffer)
+    {
+        final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(ByteOrder.nativeOrder());
+
+        duplicateBuffer.putLong(INDEX, LONG_VALUE);
+
+        final long delta = 1;
+        final long beforeValue = buffer.getAndAddLong(INDEX, delta);
+
+        assertThat(Long.valueOf(beforeValue), is(Long.valueOf(LONG_VALUE)));
+        assertThat(Long.valueOf(duplicateBuffer.getLong(INDEX)), is(Long.valueOf(LONG_VALUE + delta)));
+    }
+
+    @Theory
     public void shouldGetIntFromBuffer(final AtomicBuffer buffer)
     {
         final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(BYTE_ORDER);
@@ -94,6 +186,26 @@ public class AtomicBufferTest
     }
 
     @Theory
+    public void shouldPutIntToNativeBuffer(final AtomicBuffer buffer)
+    {
+        final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(ByteOrder.nativeOrder());
+
+        buffer.putInt(INDEX, INT_VALUE);
+
+        assertThat(valueOf(duplicateBuffer.getInt(INDEX)), is(valueOf(INT_VALUE)));
+    }
+
+    @Theory
+    public void shouldGetIntFromNativeBuffer(final AtomicBuffer buffer)
+    {
+        final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(ByteOrder.nativeOrder());
+
+        duplicateBuffer.putInt(INDEX, INT_VALUE);
+
+        assertThat(valueOf(buffer.getInt(INDEX)), is(valueOf(INT_VALUE)));
+    }
+
+    @Theory
     public void shouldPutIntToBuffer(final AtomicBuffer buffer)
     {
         final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(BYTE_ORDER);
@@ -101,6 +213,76 @@ public class AtomicBufferTest
         buffer.putInt(INDEX, INT_VALUE, BYTE_ORDER);
 
         assertThat(valueOf(duplicateBuffer.getInt(INDEX)), is(valueOf(INT_VALUE)));
+    }
+
+    @Theory
+    public void shouldGetIntVolatileFromNativeBuffer(final AtomicBuffer buffer)
+    {
+        final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(ByteOrder.nativeOrder());
+
+        duplicateBuffer.putInt(INDEX, INT_VALUE);
+
+        assertThat(valueOf(buffer.getIntVolatile(INDEX)), is(valueOf(INT_VALUE)));
+    }
+
+    @Theory
+    public void shouldPutIntVolatileToNativeBuffer(final AtomicBuffer buffer)
+    {
+        final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(ByteOrder.nativeOrder());
+
+        buffer.putIntVolatile(INDEX, INT_VALUE);
+
+        assertThat(valueOf(duplicateBuffer.getInt(INDEX)), is(valueOf(INT_VALUE)));
+    }
+
+    @Theory
+    public void shouldPutIntOrderedToNativeBuffer(final AtomicBuffer buffer)
+    {
+        final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(ByteOrder.nativeOrder());
+
+        buffer.putIntOrdered(INDEX, INT_VALUE);
+
+        assertThat(valueOf(duplicateBuffer.getInt(INDEX)), is(valueOf(INT_VALUE)));
+    }
+
+    @Theory
+    public void shouldCompareAndSetIntToNativeBuffer(final AtomicBuffer buffer)
+    {
+        final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(ByteOrder.nativeOrder());
+
+        duplicateBuffer.putInt(INDEX, INT_VALUE);
+
+        assertTrue(buffer.compareAndSetInt(INDEX, INT_VALUE, INT_VALUE + 1));
+
+        assertThat(valueOf(duplicateBuffer.getInt(INDEX)), is(valueOf(INT_VALUE + 1)));
+    }
+
+    @Theory
+    public void shouldGetAndSetIntToNativeBuffer(final AtomicBuffer buffer)
+    {
+        final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(ByteOrder.nativeOrder());
+
+        duplicateBuffer.putInt(INDEX, INT_VALUE);
+
+        final int afterValue = 1;
+        final int beforeValue = buffer.getAndSetInt(INDEX, afterValue);
+
+        assertThat(valueOf(beforeValue), is(valueOf(INT_VALUE)));
+        assertThat(valueOf(duplicateBuffer.getInt(INDEX)), is(valueOf(afterValue)));
+    }
+
+    @Theory
+    public void shouldGetAndAddIntToNativeBuffer(final AtomicBuffer buffer)
+    {
+        final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(ByteOrder.nativeOrder());
+
+        duplicateBuffer.putInt(INDEX, INT_VALUE);
+
+        final int delta = 1;
+        final int beforeValue = buffer.getAndAddInt(INDEX, delta);
+
+        assertThat(valueOf(beforeValue), is(valueOf(INT_VALUE)));
+        assertThat(valueOf(duplicateBuffer.getInt(INDEX)), is(valueOf(INT_VALUE + delta)));
     }
 
     @Theory
@@ -119,6 +301,26 @@ public class AtomicBufferTest
         final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(BYTE_ORDER);
 
         buffer.putShort(INDEX, SHORT_VALUE, BYTE_ORDER);
+
+        assertThat(Short.valueOf(duplicateBuffer.getShort(INDEX)), is(Short.valueOf(SHORT_VALUE)));
+    }
+
+    @Theory
+    public void shouldGetShortFromNativeBuffer(final AtomicBuffer buffer)
+    {
+        final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(ByteOrder.nativeOrder());
+
+        duplicateBuffer.putShort(INDEX, SHORT_VALUE);
+
+        assertThat(Short.valueOf(buffer.getShort(INDEX)), is(Short.valueOf(SHORT_VALUE)));
+    }
+
+    @Theory
+    public void shouldPutShortToNativeBuffer(final AtomicBuffer buffer)
+    {
+        final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(ByteOrder.nativeOrder());
+
+        buffer.putShort(INDEX, SHORT_VALUE);
 
         assertThat(Short.valueOf(duplicateBuffer.getShort(INDEX)), is(Short.valueOf(SHORT_VALUE)));
     }
@@ -144,6 +346,26 @@ public class AtomicBufferTest
     }
 
     @Theory
+    public void shouldGetDoubleFromNativeBuffer(final AtomicBuffer buffer)
+    {
+        final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(ByteOrder.nativeOrder());
+
+        duplicateBuffer.putDouble(INDEX, DOUBLE_VALUE);
+
+        assertThat(Double.valueOf(buffer.getDouble(INDEX)), is(Double.valueOf(DOUBLE_VALUE)));
+    }
+
+    @Theory
+    public void shouldPutDoubleToNativeBuffer(final AtomicBuffer buffer)
+    {
+        final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(ByteOrder.nativeOrder());
+
+        buffer.putDouble(INDEX, DOUBLE_VALUE);
+
+        assertThat(Double.valueOf(duplicateBuffer.getDouble(INDEX)), is(Double.valueOf(DOUBLE_VALUE)));
+    }
+
+    @Theory
     public void shouldGetFloatFromBuffer(final AtomicBuffer buffer)
     {
         final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(BYTE_ORDER);
@@ -159,6 +381,26 @@ public class AtomicBufferTest
         final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(BYTE_ORDER);
 
         buffer.putFloat(INDEX, FLOAT_VALUE, BYTE_ORDER);
+
+        assertThat(Float.valueOf(duplicateBuffer.getFloat(INDEX)), is(Float.valueOf(FLOAT_VALUE)));
+    }
+
+    @Theory
+    public void shouldGetFloatFromNativeBuffer(final AtomicBuffer buffer)
+    {
+        final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(ByteOrder.nativeOrder());
+
+        duplicateBuffer.putFloat(INDEX, FLOAT_VALUE);
+
+        assertThat(Float.valueOf(buffer.getFloat(INDEX)), is(Float.valueOf(FLOAT_VALUE)));
+    }
+
+    @Theory
+    public void shouldPutFloatToNativeBuffer(final AtomicBuffer buffer)
+    {
+        final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(ByteOrder.nativeOrder());
+
+        buffer.putFloat(INDEX, FLOAT_VALUE);
 
         assertThat(Float.valueOf(duplicateBuffer.getFloat(INDEX)), is(Float.valueOf(FLOAT_VALUE)));
     }
@@ -230,6 +472,7 @@ public class AtomicBufferTest
 
         assertThat(dstBuffer.array(), is(testBytes));
     }
+
     @Theory
     public void shouldGetBytesFromBufferToAtomicBuffer(final AtomicBuffer buffer)
     {
@@ -257,8 +500,7 @@ public class AtomicBufferTest
         duplicateBuffer.position(INDEX);
         duplicateBuffer.put(testBytes);
 
-        final ByteBuffer dstBuffer =
-                ((ByteBuffer) ByteBuffer.allocate(testBytes.length*2).position(testBytes.length)).slice();
+        final ByteBuffer dstBuffer = ((ByteBuffer)ByteBuffer.allocate(testBytes.length * 2).position(testBytes.length)).slice();
 
         buffer.getBytes(INDEX, dstBuffer, testBytes.length);
 
@@ -297,6 +539,7 @@ public class AtomicBufferTest
 
         assertThat(buff, is(testBytes));
     }
+
     @Theory
     public void shouldPutBytesToBufferFromAtomicBuffer(final AtomicBuffer buffer)
     {
@@ -314,12 +557,12 @@ public class AtomicBufferTest
 
         assertThat(buff, is(testBytes));
     }
+
     @Theory
     public void shouldPutBytesToBufferFromSlice(final AtomicBuffer buffer)
     {
         final byte[] testBytes = "Hello World".getBytes();
-        final ByteBuffer srcBuffer =
-                ((ByteBuffer) ByteBuffer.allocate(testBytes.length*2).position(testBytes.length)).slice();
+        final ByteBuffer srcBuffer = ((ByteBuffer)ByteBuffer.allocate(testBytes.length * 2).position(testBytes.length)).slice();
 
         srcBuffer.put(testBytes);
         srcBuffer.flip();

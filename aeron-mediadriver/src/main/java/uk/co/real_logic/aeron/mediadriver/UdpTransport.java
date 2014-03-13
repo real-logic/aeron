@@ -81,7 +81,6 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
         }
     }
 
-    @Override
     public void onRead() throws Exception
     {
         readByteBuffer.clear();

@@ -128,7 +128,7 @@ public class Receiver implements AutoCloseable
 
         public Builder channel(final long channelId, final DataHandler handler)
         {
-            channelMap.put(channelId, handler);
+            channelMap.put(Long.valueOf(channelId), handler);
             return this;
         }
 

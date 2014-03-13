@@ -22,7 +22,6 @@ import java.util.function.Consumer;
  */
 public final class Aeron
 {
-
     // factory methods
     /**
      * Creates an media driver associated with this Aeron instance that can be used to create sources and receivers on

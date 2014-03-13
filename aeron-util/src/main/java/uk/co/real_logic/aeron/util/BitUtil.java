@@ -46,7 +46,7 @@ public class BitUtil
     /** Size of a double in bytes */
     public static final int SIZE_OF_DOUBLE = 8;
 
-    private static final Unsafe UNSAFE;
+    public static final Unsafe UNSAFE;
 
     static
     {
@@ -71,12 +71,17 @@ public class BitUtil
     }
 
     /**
-     * Get the instance of {@link sun.misc.Unsafe}.
+     * Fast method of finding the next power of 2 greater than or equal to the supplied value.
      *
-     * @return the instance of Unsafe
+     * If the value is <= 0 then 1 will be returned.
+     *
+     * This method is not suitable for {@link Integer#MIN_VALUE} or numbers greater than 2^30.
+     *
+     * @param value from which to search for next power of 2
+     * @return The next power of 2 or the value itself if it is a power of 2
      */
-    public static Unsafe getUnsafe()
+    public static int findNextPositivePowerOfTwo(final int value)
     {
-        return UNSAFE;
+        return 1 << (32 - Integer.numberOfLeadingZeros(value - 1));
     }
 }

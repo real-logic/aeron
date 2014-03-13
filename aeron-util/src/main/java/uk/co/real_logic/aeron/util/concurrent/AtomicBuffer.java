@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.util;
+package uk.co.real_logic.aeron.util.concurrent;
 
 import sun.misc.Unsafe;
+import uk.co.real_logic.aeron.util.BitUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -27,8 +28,8 @@ import java.nio.ByteOrder;
 public class AtomicBuffer
 {
     private static final ByteOrder NATIVE_BYTE_ORDER = ByteOrder.nativeOrder();
-    private static final Unsafe UNSAFE = BitUtil.getUnsafe();
-    private static final long BYTE_ARRAY_OFFSET = UNSAFE.arrayBaseOffset(byte[].class);
+    private static final Unsafe UNSAFE = BitUtil.UNSAFE;
+    private static final long ARRAY_BASE_OFFSET = UNSAFE.arrayBaseOffset(byte[].class);
 
     private byte[] byteArray;
     private ByteBuffer byteBuffer;
@@ -63,7 +64,7 @@ public class AtomicBuffer
      */
     public void wrap(final byte[] buffer)
     {
-        addressOffset = BYTE_ARRAY_OFFSET;
+        addressOffset = ARRAY_BASE_OFFSET;
         capacity = buffer.length;
         byteArray = buffer;
         byteBuffer = null;
@@ -82,7 +83,7 @@ public class AtomicBuffer
         if (buffer.hasArray())
         {
             byteArray = buffer.array();
-            addressOffset = BYTE_ARRAY_OFFSET + buffer.arrayOffset();
+            addressOffset = ARRAY_BASE_OFFSET + buffer.arrayOffset();
         }
         else
         {
@@ -406,7 +407,7 @@ public class AtomicBuffer
      * @param index in bytes for where to put.
      * @param value for at a given index
      */
-    public long getAndSetInt(final int index, final int value)
+    public int getAndSetInt(final int index, final int value)
     {
         return UNSAFE.getAndSetInt(byteArray, addressOffset + index, value);
     }
@@ -418,7 +419,7 @@ public class AtomicBuffer
      * @param index in bytes for where to put.
      * @param delta to be added to the value at the index
      */
-    public long getAndAddInt(final int index, final int delta)
+    public int getAndAddInt(final int index, final int delta)
     {
         return UNSAFE.getAndAddInt(byteArray, addressOffset + index, delta);
     }
@@ -660,7 +661,7 @@ public class AtomicBuffer
     public int getBytes(final int index, final byte[] dst, final int offset, final int length)
     {
         final int count = Math.min(length, capacity - index);
-        UNSAFE.copyMemory(byteArray, addressOffset + index, dst, BYTE_ARRAY_OFFSET + offset, count);
+        UNSAFE.copyMemory(byteArray, addressOffset + index, dst, ARRAY_BASE_OFFSET + offset, count);
 
         return count;
     }
@@ -684,7 +685,7 @@ public class AtomicBuffer
         if (dstBuffer.hasArray())
         {
             dstByteArray = dstBuffer.array();
-            dstBaseOffset = BYTE_ARRAY_OFFSET + dstBuffer.arrayOffset();
+            dstBaseOffset = ARRAY_BASE_OFFSET + dstBuffer.arrayOffset();
         }
         else
         {
@@ -722,7 +723,7 @@ public class AtomicBuffer
     public int putBytes(final int index, final byte[] src, final int offset, final int length)
     {
         final int count = Math.min(length, capacity - index);
-        UNSAFE.copyMemory(src, BYTE_ARRAY_OFFSET + offset, byteArray, addressOffset + index,  count);
+        UNSAFE.copyMemory(src, ARRAY_BASE_OFFSET + offset, byteArray, addressOffset + index,  count);
 
         return count;
     }
@@ -746,7 +747,7 @@ public class AtomicBuffer
         if (srcBuffer.hasArray())
         {
             srcByteArray = srcBuffer.array();
-            srcBaseOffset = BYTE_ARRAY_OFFSET + srcBuffer.arrayOffset();
+            srcBaseOffset = ARRAY_BASE_OFFSET + srcBuffer.arrayOffset();
         }
         else
         {

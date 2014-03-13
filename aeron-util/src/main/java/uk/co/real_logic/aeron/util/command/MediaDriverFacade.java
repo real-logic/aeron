@@ -40,7 +40,7 @@ public interface MediaDriverFacade
      * @param sessionId to add the channel on
      * @param channelId to add
      */
-    void addChannel(final String destination, final long sessionId, final long channelId);
+    void sendAddChannel(final String destination, final long sessionId, final long channelId);
 
     /**
      * Request the media driver to remove a source for an entire session.
@@ -52,7 +52,7 @@ public interface MediaDriverFacade
      * @param destination to remove the session from
      * @param sessionId of the session to remove
      */
-    void removeSession(final String destination, final long sessionId);
+    void sendRemoveSession(final String destination, final long sessionId);
 
     /**
      * Request the media driver to remove a source for a given channel from a given session.
@@ -65,7 +65,7 @@ public interface MediaDriverFacade
      * @param sessionId to remove the channel from
      * @param channelId to remove
      */
-    void removeChannel(final String destination, final long sessionId, final long channelId);
+    void sendRemoveChannel(final String destination, final long sessionId, final long channelId);
 
     /**
      * Request the media driver to remove a Term from a channel for a source.
@@ -80,7 +80,7 @@ public interface MediaDriverFacade
      * @param channelId to remove the term from
      * @param termId to remove
      */
-    void removeTerm(final String destination, final long sessionId, final long channelId, final long termId);
+    void sendRemoveTerm(final String destination, final long sessionId, final long channelId, final long termId);
 
     /**
      * Request the media driver to add a receiver for a given list of channels on a destination on behalf of an application.
@@ -92,7 +92,7 @@ public interface MediaDriverFacade
      * @param destination to add the channels to
      * @param channelIdList of interested channels
      */
-    void addReceiver(final String destination, final List<Long> channelIdList);
+    void sendAddReceiver(final String destination, final List<Long> channelIdList);
 
     /**
      * Request the media driver to remove a receiver destination on behalf of the application.
@@ -103,7 +103,7 @@ public interface MediaDriverFacade
      *
      * @param destination to remove
      */
-    void removeReceiver(final String destination);
+    void sendRemoveReceiver(final String destination);
 
     /* callbacks from MediaDriver */
 
@@ -112,7 +112,7 @@ public interface MediaDriverFacade
      *
      * May not be necessary to have this Aeron header type pushed back to source applications
      *
-     * @see LibraryFacade#flowControlResponse(HeaderFlyweight)
+     * @see LibraryFacade#sendFlowControlResponse(HeaderFlyweight)
      *
      * @param header flyweight for the packet (TODO: make this its own subclass of HeaderFlyweight)
      */
@@ -123,7 +123,7 @@ public interface MediaDriverFacade
      *
      * This is an error in response to a command.
      *
-     * @see LibraryFacade#onErrorResponse(int, byte[])
+     * @see LibraryFacade#sendErrorResponse(int, byte[])
      * @see ErrorCode
      *
      * @param code of the error
@@ -136,7 +136,7 @@ public interface MediaDriverFacade
      *
      * This is an error in operation (not in response to a command).
      *
-     * @see LibraryFacade#onError(int, byte[])
+     * @see LibraryFacade#sendError(int, byte[])
      * @see ErrorCode
      *
      * @param code of the error
@@ -147,7 +147,7 @@ public interface MediaDriverFacade
     /**
      * Handle a response from the media driver of returning a list of filenames for buffers
      *
-     * @see LibraryFacade#onLocationResponse(java.util.List)
+     * @see LibraryFacade#sendLocationResponse(java.util.List)
      *
      * @param filenames list of filenames for buffers
      */
@@ -156,7 +156,7 @@ public interface MediaDriverFacade
     /**
      * Handle a notification from the media driver of a new session
      *
-     * @see LibraryFacade#onNewSession(long, List)
+     * @see LibraryFacade#sendNewSession(long, List)
      *
      * @param sessionId for the new session
      * @param filenames for the buffers associated with the session

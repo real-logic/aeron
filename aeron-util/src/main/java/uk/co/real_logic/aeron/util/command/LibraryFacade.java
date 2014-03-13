@@ -34,7 +34,7 @@ public interface LibraryFacade
      *
      * The destination and session will be created if necessary
      *
-     * @see MediaDriverFacade#addChannel(String, long, long)
+     * @see MediaDriverFacade#sendAddChannel(String, long, long)
      *
      * @param destination for the channel
      * @param sessionId for the channel
@@ -48,7 +48,7 @@ public interface LibraryFacade
      * This will remove all channels for this session.
      * The destination will be removed if necessary.
      *
-     * @see uk.co.real_logic.aeron.util.command.MediaDriverFacade#removeSession(String, long)
+     * @see uk.co.real_logic.aeron.util.command.MediaDriverFacade#sendRemoveSession(String, long)
      *
      * @param destination for the session to be removed from
      * @param sessionId for the session
@@ -60,7 +60,7 @@ public interface LibraryFacade
      *
      * The session and destination will NOT be removed.
      *
-     * @see MediaDriverFacade#removeChannel(String, long, long)
+     * @see MediaDriverFacade#sendRemoveChannel(String, long, long)
      *
      * @param destination for the channel to be removed from
      * @param sessionId for the channel to be removed from
@@ -73,7 +73,7 @@ public interface LibraryFacade
      *
      * Remove and delete a given Term. Terms must be explicitly removed by a library (or admin process/thread)
      *
-     * @see MediaDriverFacade#removeTerm(String, long, long, long)
+     * @see MediaDriverFacade#sendRemoveTerm(String, long, long, long)
      *
      * @param destination for the term to be removed from
      * @param sessionId for the term to be removed from
@@ -87,7 +87,7 @@ public interface LibraryFacade
      *
      * The destination will be created if not in use by another library/application.
      *
-     * @see MediaDriverFacade#addReceiver(String, java.util.List)
+     * @see MediaDriverFacade#sendAddReceiver(String, java.util.List)
      *
      * @param destination to be added
      * @param channelIdList of interested channels for destination
@@ -99,7 +99,7 @@ public interface LibraryFacade
      *
      * The destination will be removed if this library/application is the last one using this destination.
      *
-     * @see MediaDriverFacade#removeReceiver(String)
+     * @see MediaDriverFacade#sendRemoveReceiver(String)
      *
      * @param destination to be removed
      */
@@ -116,7 +116,7 @@ public interface LibraryFacade
      *
      * @param header flyweight for the FCR
      */
-    void flowControlResponse(final HeaderFlyweight header);
+    void sendFlowControlResponse(final HeaderFlyweight header);
 
     /**
      * Notify the library of an error for a request that it sent previously
@@ -127,7 +127,7 @@ public interface LibraryFacade
      * @param code for the error
      * @param message for the error to be included in the notification
      */
-    void onErrorResponse(final int code, final byte[] message);
+    void sendErrorResponse(final int code, final byte[] message);
 
     /**
      * Notify the library of an error in operation not associated with a request from the application
@@ -138,7 +138,7 @@ public interface LibraryFacade
      * @param code for the error
      * @param message for the error to be included in the notification
      */
-    void onError(final int code, final byte[] message);
+    void sendError(final int code, final byte[] message);
 
     /**
      * Notify the library of locations of Term filenames
@@ -147,7 +147,7 @@ public interface LibraryFacade
      *
      * @param filenames list of filenames of Terms
      */
-    void onLocationResponse(final List<byte[]> filenames);
+    void sendLocationResponse(final List<byte[]> filenames);
 
     /**
      * Notify the library of new source sessions for interested channels
@@ -157,5 +157,5 @@ public interface LibraryFacade
      * @param sessionId for the new session
      * @param filenames for the channels of the new session
      */
-    void onNewSession(final long sessionId, final List<byte[]> filenames);
+    void sendNewSession(final long sessionId, final List<byte[]> filenames);
 }

@@ -54,7 +54,10 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
         this.dataHeader = new DataHeaderFlyweight();
         this.frameHandler = frameHandler;
         this.eventLoop = eventLoop;
-        channel.setOption(StandardSocketOptions.SO_REUSEADDR, Boolean.TRUE);
+        if (local.getAddress().isMulticastAddress())
+        {
+            channel.setOption(StandardSocketOptions.SO_REUSEADDR, Boolean.TRUE);
+        }
         channel.bind(local);
         channel.configureBlocking(false);
         this.registeredKey = eventLoop.registerForRead(channel, this);
@@ -69,7 +72,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
     {
         try
         {
-            registeredKey.cancel();
+            eventLoop.cancelRead(registeredKey);
             channel.close();
         }
         catch (final Exception ex)

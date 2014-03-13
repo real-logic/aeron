@@ -74,13 +74,6 @@ public class MediaDriver
 
             // TODO: spin off admin thread to do
 
-            // Example of using FrameHandler. A receiver and a source sending to it.
-
-            RcvFrameHandler rcv = new RcvFrameHandler(new InetSocketAddress(41234), selectLoop);
-            SrcFrameHandler src = new SrcFrameHandler(new InetSocketAddress(0),
-                                                      new InetSocketAddress("localhost", 41234),
-                                                      selectLoop);
-
             while (true)
             {
                 Thread.sleep(1000);

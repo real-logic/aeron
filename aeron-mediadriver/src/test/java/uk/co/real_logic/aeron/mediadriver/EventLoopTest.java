@@ -38,6 +38,8 @@ public class EventLoopTest
     private static final long SESSION_ID = 0xdeadbeefL;
     private static final long CHANNEL_ID = 0x44332211L;
     private static final long TERM_ID = 0x99887766L;
+    private static final String SRC_UDP_URI = "udp://localhost:40124@localhost:40123";
+    private static final String RCV_UDP_URI = "udp://localhost:40123@localhost:40124";
 
     private final ByteBuffer buffer = ByteBuffer.allocateDirect(256);
     private final DirectBuffer directBuffer = new DirectBuffer(buffer);
@@ -53,7 +55,7 @@ public class EventLoopTest
         final ExecutorService executor = Executors.newSingleThreadExecutor();
         final EventLoop eventLoop = new EventLoop();
         try (final RcvFrameHandler rcv = new RcvFrameHandler(rcvLocalAddr, eventLoop);
-             final SrcFrameHandler src = new SrcFrameHandler(srcLocalAddr, srcRemoteAddr, eventLoop))
+             final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), eventLoop))
         {
             eventLoop.close();
             executor.submit(eventLoop).get(900, TimeUnit.MILLISECONDS);
@@ -86,7 +88,7 @@ public class EventLoopTest
             }
         }, rcvLocalAddr, eventLoop);
 
-        final SrcFrameHandler src = new SrcFrameHandler(srcLocalAddr, srcRemoteAddr, eventLoop);
+        final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), eventLoop);
 
         encodeDataHeader.reset(directBuffer, 0)
                         .version((byte)HeaderFlyweight.CURRENT_VERSION)
@@ -133,7 +135,7 @@ public class EventLoopTest
             }
         }, rcvLocalAddr, eventLoop);
 
-        final SrcFrameHandler src = new SrcFrameHandler(srcLocalAddr, srcRemoteAddr, eventLoop);
+        final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), eventLoop);
 
         encodeDataHeader.reset(directBuffer, 0)
                         .version((byte)HeaderFlyweight.CURRENT_VERSION)
@@ -181,7 +183,7 @@ public class EventLoopTest
             }
         }, rcvLocalAddr, eventLoop);
 
-        final SrcFrameHandler src = new SrcFrameHandler(srcLocalAddr, srcRemoteAddr, eventLoop);
+        final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), eventLoop);
 
         encodeDataHeader.reset(directBuffer, 0)
                         .version((byte) HeaderFlyweight.CURRENT_VERSION)

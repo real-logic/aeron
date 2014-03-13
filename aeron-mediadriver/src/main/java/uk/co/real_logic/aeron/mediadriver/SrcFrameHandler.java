@@ -27,22 +27,27 @@ import java.nio.ByteBuffer;
 public class SrcFrameHandler implements FrameHandler, AutoCloseable
 {
     private final UdpTransport transport;
-    private final InetSocketAddress remoteAddr;
+    private final UdpDestination destination;
 
-    public SrcFrameHandler(final InetSocketAddress local, final InetSocketAddress remoteAddr, final EventLoop loop) throws Exception
+    public SrcFrameHandler(final UdpDestination destination, final EventLoop loop) throws Exception
     {
-        this.transport = new UdpTransport(this, local, loop);
-        this.remoteAddr = remoteAddr;
+        this.transport = new UdpTransport(this, destination.local(), loop);
+        this.destination = destination;
     }
 
     public int send(final ByteBuffer buffer) throws Exception
     {
-        return transport.sendTo(buffer, remoteAddr);
+        return transport.sendTo(buffer, destination.remote());
     }
 
     public void close()
     {
         transport.close();
+    }
+
+    public UdpDestination destination()
+    {
+        return destination;
     }
 
     public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)

@@ -97,7 +97,10 @@ public class EventLoopTest
 
         processLoop(eventLoop, 5);
         src.send(buffer);
-        processLoop(eventLoop, 5);
+        while (dataHeadersRcved.get() < 1)
+        {
+            processLoop(eventLoop, 1);
+        }
         rcv.close();
         src.close();
         processLoop(eventLoop, 5);
@@ -141,7 +144,10 @@ public class EventLoopTest
 
         processLoop(eventLoop, 5);
         src.send(buffer);
-        processLoop(eventLoop, 5);
+        while (cntlHeadersRcved.get() < 1)
+        {
+            processLoop(eventLoop, 1);
+        }
         rcv.close();
         src.close();
         processLoop(eventLoop, 5);
@@ -197,7 +203,10 @@ public class EventLoopTest
 
         processLoop(eventLoop, 5);
         src.send(buffer);
-        processLoop(eventLoop, 5);
+        while (dataHeadersRcved.get() < 1)
+        {
+            processLoop(eventLoop, 1);
+        }
         rcv.close();
         src.close();
         processLoop(eventLoop, 5);
@@ -242,7 +251,10 @@ public class EventLoopTest
 
         processLoop(eventLoop, 5);
         rcv.sendTo(buffer, rcvRemoteAddr);
-        processLoop(eventLoop, 5);
+        while (cntlHeadersRcved.get() < 1)
+        {
+            processLoop(eventLoop, 1);
+        }
         rcv.close();
         src.close();
         processLoop(eventLoop, 5);

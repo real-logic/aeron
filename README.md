@@ -48,7 +48,6 @@ Build
 You require the following to build Aeron:
 
 * Latest stable [Oracle JDK 8](http://www.oracle.com/technetwork/java/)
-* Latest [Simple Binary Encoding (SBE)] (https://github.com/real-logic/simple-binary-encoding) installed in local maven repo
 
 ### Gradle Build
 

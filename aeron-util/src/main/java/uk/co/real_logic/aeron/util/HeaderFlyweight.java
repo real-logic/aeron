@@ -15,8 +15,7 @@
  */
 package uk.co.real_logic.aeron.util;
 
-import uk.co.real_logic.sbe.codec.java.CodecUtil;
-import uk.co.real_logic.sbe.codec.java.DirectBuffer;
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -59,12 +58,12 @@ public class HeaderFlyweight
     /** default version */
     public static final int CURRENT_VERSION = 0x0;
 
-    private static final int VERS_FIELD_OFFSET = 0;
-    private static final int TYPE_FIELD_OFFSET = 1;
-    private static final int FRAME_LENGTH_FIELD_OFFSET = 2;
-    private static final int SESSION_ID_FIELD_OFFSET = 4;
+    public static final int VERS_FIELD_OFFSET = 0;
+    public static final int TYPE_FIELD_OFFSET = 1;
+    public static final int FRAME_LENGTH_FIELD_OFFSET = 2;
+    public static final int SESSION_ID_FIELD_OFFSET = 4;
 
-    protected DirectBuffer directBuffer;
+    protected AtomicBuffer atomicBuffer;
     protected int offset;
 
     public HeaderFlyweight()
@@ -73,16 +72,46 @@ public class HeaderFlyweight
 
     public HeaderFlyweight reset(final ByteBuffer buffer, final int offset)
     {
-        this.directBuffer = new DirectBuffer(buffer);
+        this.atomicBuffer = new AtomicBuffer(buffer);
         this.offset = offset;
         return this;
     }
 
-    public HeaderFlyweight reset(final DirectBuffer buffer, final int offset)
+    public HeaderFlyweight reset(final AtomicBuffer buffer, final int offset)
     {
-        this.directBuffer = buffer;
+        this.atomicBuffer = buffer;
         this.offset = offset;
         return this;
+    }
+
+    public static short uint8Get(final AtomicBuffer buffer, final int offset)
+    {
+        return (short)(buffer.getByte(offset) & 0xFF);
+    }
+
+    public static void uint8Put(final AtomicBuffer buffer, final int offset, final short value)
+    {
+        buffer.putByte(offset, (byte)value);
+    }
+
+    public static int uint16Get(final AtomicBuffer buffer, final int offset, final ByteOrder byteOrder)
+    {
+        return (int)(buffer.getShort(offset, byteOrder) & 0xFFFF);
+    }
+
+    public static void uint16Put(final AtomicBuffer buffer, final int offset, final int value, final ByteOrder byteOrder)
+    {
+        buffer.putShort(offset, (short)value, byteOrder);
+    }
+
+    public static long uint32Get(final AtomicBuffer buffer, final int offset, final ByteOrder byteOrder)
+    {
+        return (long)(buffer.getInt(offset, byteOrder) & 0xFFFFFFFFL);
+    }
+
+    public static void uint32Put(final AtomicBuffer buffer, final int offset, final long value, final ByteOrder byteOrder)
+    {
+        buffer.putInt(offset, (int)value, byteOrder);
     }
 
     /**
@@ -91,7 +120,7 @@ public class HeaderFlyweight
      */
     public byte version()
     {
-        final int versAndFlags = CodecUtil.uint8Get(directBuffer, offset + VERS_FIELD_OFFSET);
+        final int versAndFlags = uint8Get(atomicBuffer, offset + VERS_FIELD_OFFSET);
 
         return (byte)(versAndFlags >> 4);
     }
@@ -103,7 +132,7 @@ public class HeaderFlyweight
      */
     public HeaderFlyweight version(final byte ver)
     {
-        CodecUtil.uint8Put(directBuffer, offset + VERS_FIELD_OFFSET, (short)(ver << 4));
+        uint8Put(atomicBuffer, offset + VERS_FIELD_OFFSET, (byte)(ver << 4));
         return this;
     }
 
@@ -113,7 +142,7 @@ public class HeaderFlyweight
      */
     public short headerType()
     {
-        return CodecUtil.uint8Get(directBuffer, offset + TYPE_FIELD_OFFSET);
+        return uint8Get(atomicBuffer, offset + TYPE_FIELD_OFFSET);
     }
 
     /**
@@ -123,7 +152,7 @@ public class HeaderFlyweight
      */
     public HeaderFlyweight headerType(final short type)
     {
-        CodecUtil.uint8Put(directBuffer, offset + TYPE_FIELD_OFFSET, type);
+        uint8Put(atomicBuffer, offset + TYPE_FIELD_OFFSET, (byte)type);
         return this;
     }
 
@@ -133,7 +162,7 @@ public class HeaderFlyweight
      */
     public int frameLength()
     {
-        return CodecUtil.uint16Get(directBuffer, offset + FRAME_LENGTH_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return uint16Get(atomicBuffer, offset + FRAME_LENGTH_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
@@ -143,7 +172,7 @@ public class HeaderFlyweight
      */
     public HeaderFlyweight frameLength(final int length)
     {
-        CodecUtil.uint16Put(directBuffer, offset + FRAME_LENGTH_FIELD_OFFSET, length, ByteOrder.LITTLE_ENDIAN);
+        uint16Put(atomicBuffer, offset + FRAME_LENGTH_FIELD_OFFSET, (short)length, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
@@ -153,7 +182,7 @@ public class HeaderFlyweight
      */
     public long sessionId()
     {
-        return CodecUtil.uint32Get(directBuffer, offset + SESSION_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return uint32Get(atomicBuffer, offset + SESSION_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
@@ -163,7 +192,7 @@ public class HeaderFlyweight
      */
     public HeaderFlyweight sessionId(final long sessionId)
     {
-        CodecUtil.uint32Put(directBuffer, offset + SESSION_ID_FIELD_OFFSET, sessionId, ByteOrder.LITTLE_ENDIAN);
+        uint32Put(atomicBuffer, offset + SESSION_ID_FIELD_OFFSET, (int)sessionId, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 }

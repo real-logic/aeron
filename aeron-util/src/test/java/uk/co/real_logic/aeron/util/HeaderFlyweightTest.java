@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.util;
 
 import org.junit.Test;
-import uk.co.real_logic.sbe.codec.java.DirectBuffer;
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import java.nio.ByteBuffer;
 
@@ -26,7 +26,7 @@ import static org.junit.Assert.assertThat;
 public class HeaderFlyweightTest
 {
     private final ByteBuffer buffer = ByteBuffer.allocateDirect(256);
-    private final DirectBuffer dBuff = new DirectBuffer(buffer);
+    private final AtomicBuffer aBuff = new AtomicBuffer(buffer);
     private final HeaderFlyweight encodeHeader = new HeaderFlyweight();
     private final HeaderFlyweight decodeHeader = new HeaderFlyweight();
     private final DataHeaderFlyweight encodeDataHeader = new DataHeaderFlyweight();
@@ -35,7 +35,7 @@ public class HeaderFlyweightTest
     @Test
     public void shouldWriteCorrectValuesForGenericHeaderFields()
     {
-        encodeHeader.reset(dBuff, 0);
+        encodeHeader.reset(aBuff, 0);
 
         encodeHeader.version((byte)1);
         encodeHeader.headerType((short)HeaderFlyweight.HDR_TYPE_DATA);
@@ -56,14 +56,14 @@ public class HeaderFlyweightTest
     @Test
     public void shouldReadWhatIsWrittenToGenericHeaderFields()
     {
-        encodeHeader.reset(dBuff, 0);
+        encodeHeader.reset(aBuff, 0);
 
         encodeHeader.version((byte)1);
         encodeHeader.headerType((short)HeaderFlyweight.HDR_TYPE_DATA);
         encodeHeader.frameLength(8);
         encodeHeader.sessionId(0xdeadbeefL);
 
-        decodeHeader.reset(dBuff, 0);
+        decodeHeader.reset(aBuff, 0);
         assertThat(decodeHeader.version(), is((byte)1));
         assertThat(decodeHeader.headerType(), is((short)HeaderFlyweight.HDR_TYPE_DATA));
         assertThat(decodeHeader.frameLength(), is(8));
@@ -73,26 +73,26 @@ public class HeaderFlyweightTest
     @Test
     public void shouldWriteAndReadMultipleFramesCorrectly()
     {
-        encodeHeader.reset(dBuff, 0);
+        encodeHeader.reset(aBuff, 0);
 
         encodeHeader.version((byte)1);
         encodeHeader.headerType((short)HeaderFlyweight.HDR_TYPE_DATA);
         encodeHeader.frameLength(8);
         encodeHeader.sessionId(0xdeadbeefL);
 
-        encodeHeader.reset(dBuff, 8);
+        encodeHeader.reset(aBuff, 8);
         encodeHeader.version((byte)2);
         encodeHeader.headerType((short)HeaderFlyweight.HDR_TYPE_CONN);
         encodeHeader.frameLength(8);
         encodeHeader.sessionId(0x11223344L);
 
-        decodeHeader.reset(dBuff, 0);
+        decodeHeader.reset(aBuff, 0);
         assertThat(decodeHeader.version(), is((byte)1));
         assertThat(decodeHeader.headerType(), is((short)HeaderFlyweight.HDR_TYPE_DATA));
         assertThat(decodeHeader.frameLength(), is(8));
         assertThat(decodeHeader.sessionId(), is(0xdeadbeefL));
 
-        decodeHeader.reset(dBuff, 8);
+        decodeHeader.reset(aBuff, 8);
         assertThat(decodeHeader.version(), is((byte)2));
         assertThat(decodeHeader.headerType(), is((short)HeaderFlyweight.HDR_TYPE_CONN));
         assertThat(decodeHeader.frameLength(), is(8));
@@ -102,7 +102,7 @@ public class HeaderFlyweightTest
     @Test
     public void shouldReadAndWriteDataHeaderCorrectly()
     {
-        encodeDataHeader.reset(dBuff, 0);
+        encodeDataHeader.reset(aBuff, 0);
 
         encodeDataHeader.version((byte)1);
         encodeDataHeader.headerType((short)HeaderFlyweight.HDR_TYPE_DATA);
@@ -111,7 +111,7 @@ public class HeaderFlyweightTest
         encodeDataHeader.channelId(0x44332211L);
         encodeDataHeader.termId(0x99887766L);
 
-        decodeDataHeader.reset(dBuff, 0);
+        decodeDataHeader.reset(aBuff, 0);
         assertThat(decodeDataHeader.version(), is((byte) 1));
         assertThat(decodeDataHeader.headerType(), is((short) HeaderFlyweight.HDR_TYPE_DATA));
         assertThat(decodeDataHeader.frameLength(), is(8));

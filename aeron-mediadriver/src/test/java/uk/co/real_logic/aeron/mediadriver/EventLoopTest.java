@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.mediadriver;
 import org.junit.Test;
 import uk.co.real_logic.aeron.util.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.HeaderFlyweight;
-import uk.co.real_logic.sbe.codec.java.DirectBuffer;
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -38,7 +38,7 @@ public class EventLoopTest
     //private static final String RCV_UDP_URI = "udp://localhost:40123@localhost:40124";
 
     private final ByteBuffer buffer = ByteBuffer.allocateDirect(256);
-    private final DirectBuffer directBuffer = new DirectBuffer(buffer);
+    private final AtomicBuffer atomicBuffer = new AtomicBuffer(buffer);
     private final DataHeaderFlyweight encodeDataHeader = new DataHeaderFlyweight();
     //private final InetSocketAddress srcRemoteAddr = new InetSocketAddress("localhost", RCV_PORT);
     private final InetSocketAddress rcvRemoteAddr = new InetSocketAddress("localhost", SRC_PORT);
@@ -86,7 +86,7 @@ public class EventLoopTest
 
         final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), eventLoop);
 
-        encodeDataHeader.reset(directBuffer, 0)
+        encodeDataHeader.reset(atomicBuffer, 0)
                         .version((byte)HeaderFlyweight.CURRENT_VERSION)
                         .headerType((short)HeaderFlyweight.HDR_TYPE_DATA)
                         .frameLength(20)
@@ -135,7 +135,7 @@ public class EventLoopTest
 
         final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), eventLoop);
 
-        encodeDataHeader.reset(directBuffer, 0)
+        encodeDataHeader.reset(atomicBuffer, 0)
                         .version((byte)HeaderFlyweight.CURRENT_VERSION)
                         .headerType((short)HeaderFlyweight.HDR_TYPE_CONN)
                         .frameLength(8)
@@ -185,14 +185,14 @@ public class EventLoopTest
 
         final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), eventLoop);
 
-        encodeDataHeader.reset(directBuffer, 0)
+        encodeDataHeader.reset(atomicBuffer, 0)
                         .version((byte) HeaderFlyweight.CURRENT_VERSION)
                         .headerType((short) HeaderFlyweight.HDR_TYPE_DATA)
                         .frameLength(20)
                         .sessionId(SESSION_ID);
         encodeDataHeader.channelId(CHANNEL_ID)
                         .termId(TERM_ID);
-        encodeDataHeader.reset(directBuffer, 20)
+        encodeDataHeader.reset(atomicBuffer, 20)
                         .version((byte)HeaderFlyweight.CURRENT_VERSION)
                         .headerType((short)HeaderFlyweight.HDR_TYPE_DATA)
                         .frameLength(20)
@@ -242,7 +242,7 @@ public class EventLoopTest
 
         final RcvFrameHandler rcv = new RcvFrameHandler(rcvLocalAddr, eventLoop);
 
-        encodeDataHeader.reset(directBuffer, 0)
+        encodeDataHeader.reset(atomicBuffer, 0)
                         .version((byte) HeaderFlyweight.CURRENT_VERSION)
                         .headerType((short) HeaderFlyweight.HDR_TYPE_CONN)
                         .frameLength(8)

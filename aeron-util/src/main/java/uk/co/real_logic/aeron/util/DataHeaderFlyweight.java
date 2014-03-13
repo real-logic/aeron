@@ -15,8 +15,6 @@
  */
 package uk.co.real_logic.aeron.util;
 
-import uk.co.real_logic.sbe.codec.java.CodecUtil;
-
 import java.nio.ByteOrder;
 
 /**
@@ -53,7 +51,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      */
     public long channelId()
     {
-        return CodecUtil.uint32Get(directBuffer, offset + CHANNEL_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return uint32Get(atomicBuffer, offset + CHANNEL_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
@@ -64,7 +62,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      */
     public DataHeaderFlyweight channelId(final long channelId)
     {
-        CodecUtil.uint32Put(directBuffer, offset + CHANNEL_ID_FIELD_OFFSET, channelId, ByteOrder.LITTLE_ENDIAN);
+        uint32Put(atomicBuffer, offset + CHANNEL_ID_FIELD_OFFSET, channelId, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
@@ -75,7 +73,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      */
     public long termId()
     {
-        return CodecUtil.uint32Get(directBuffer, offset + TERM_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return uint32Get(atomicBuffer, offset + TERM_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
@@ -86,7 +84,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      */
     public DataHeaderFlyweight termId(final long termId)
     {
-        CodecUtil.uint32Put(directBuffer, offset + TERM_ID_FIELD_OFFSET, termId, ByteOrder.LITTLE_ENDIAN);
+        uint32Put(atomicBuffer, offset + TERM_ID_FIELD_OFFSET, termId, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
@@ -97,7 +95,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      */
     public long sequenceNumber()
     {
-        return CodecUtil.uint32Get(directBuffer, offset + SEQUENCE_NUMBER_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return uint32Get(atomicBuffer, offset + SEQUENCE_NUMBER_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
@@ -108,7 +106,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      */
     public DataHeaderFlyweight sequenceNumber(final long sequenceNumber)
     {
-        CodecUtil.uint32Put(directBuffer, offset + SEQUENCE_NUMBER_FIELD_OFFSET, sequenceNumber, ByteOrder.LITTLE_ENDIAN);
+        uint32Put(atomicBuffer, offset + SEQUENCE_NUMBER_FIELD_OFFSET, sequenceNumber, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 

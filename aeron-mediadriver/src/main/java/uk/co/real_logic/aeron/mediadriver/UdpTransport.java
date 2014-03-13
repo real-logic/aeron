@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.HeaderFlyweight;
-import uk.co.real_logic.sbe.codec.java.DirectBuffer;
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
@@ -37,7 +37,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
     public static final int READ_BYTE_BUFFER_SZ = 4096; // TODO: this needs to be configured in some way
 
     private final ByteBuffer readByteBuffer;
-    private final DirectBuffer readBuffer;
+    private final AtomicBuffer readBuffer;
     private final DatagramChannel channel;
     private final HeaderFlyweight header;
     private final DataHeaderFlyweight dataHeader;
@@ -48,7 +48,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
     public UdpTransport(final FrameHandler frameHandler, final InetSocketAddress local, final EventLoop eventLoop) throws Exception
     {
         this.readByteBuffer = ByteBuffer.allocateDirect(READ_BYTE_BUFFER_SZ);
-        this.readBuffer = new DirectBuffer(this.readByteBuffer);
+        this.readBuffer = new AtomicBuffer(this.readByteBuffer);
         this.channel = DatagramChannel.open();
         this.header = new HeaderFlyweight();
         this.dataHeader = new DataHeaderFlyweight();

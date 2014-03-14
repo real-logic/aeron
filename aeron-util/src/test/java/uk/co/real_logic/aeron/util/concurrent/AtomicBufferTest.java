@@ -58,6 +58,12 @@ public class AtomicBufferTest
         new AtomicBuffer(((ByteBuffer)(ByteBuffer.allocate(BUFFER_CAPACITY * 2).position(BUFFER_CAPACITY))).slice());
 
     @Theory
+    public void shouldGetCapacity(final AtomicBuffer buffer)
+    {
+        assertThat(valueOf(buffer.capacity()), is(valueOf(BUFFER_CAPACITY)));
+    }
+
+    @Theory
     @Test(expected = IndexOutOfBoundsException.class)
     public void shouldThrowExceptionForLimitAboveCapacity(final AtomicBuffer buffer)
     {
@@ -485,9 +491,10 @@ public class AtomicBufferTest
         final ByteBuffer dstBuffer = ByteBuffer.allocateDirect(testBytes.length);
         buffer.getBytes(INDEX, dstBuffer, testBytes.length);
 
-        byte[] result = new byte[testBytes.length];
         dstBuffer.flip();
+        byte[] result = new byte[testBytes.length];
         dstBuffer.get(result);
+
         assertThat(result, is(testBytes));
     }
 
@@ -504,9 +511,10 @@ public class AtomicBufferTest
 
         buffer.getBytes(INDEX, dstBuffer, testBytes.length);
 
-        byte[] result = new byte[testBytes.length];
         dstBuffer.flip();
+        byte[] result = new byte[testBytes.length];
         dstBuffer.get(result);
+
         assertThat(result, is(testBytes));
     }
 
@@ -516,9 +524,10 @@ public class AtomicBufferTest
         final byte[] testBytes = "Hello World".getBytes();
         buffer.putBytes(INDEX, testBytes);
 
-        final byte[] buff = new byte[testBytes.length];
         final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(BYTE_ORDER);
         duplicateBuffer.position(INDEX);
+
+        final byte[] buff = new byte[testBytes.length];
         duplicateBuffer.get(buff);
 
         assertThat(buff, is(testBytes));
@@ -532,9 +541,10 @@ public class AtomicBufferTest
 
         buffer.putBytes(INDEX, srcBuffer, testBytes.length);
 
-        final byte[] buff = new byte[testBytes.length];
         final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(BYTE_ORDER);
         duplicateBuffer.position(INDEX);
+
+        final byte[] buff = new byte[testBytes.length];
         duplicateBuffer.get(buff);
 
         assertThat(buff, is(testBytes));
@@ -545,14 +555,14 @@ public class AtomicBufferTest
     {
         final byte[] testBytes = "Hello World".getBytes();
         final ByteBuffer srcBuffer = ByteBuffer.allocateDirect(testBytes.length);
-        srcBuffer.put(testBytes);
-        srcBuffer.flip();
+        srcBuffer.put(testBytes).flip();
 
         buffer.putBytes(INDEX, srcBuffer, testBytes.length);
 
-        final byte[] buff = new byte[testBytes.length];
         final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(BYTE_ORDER);
         duplicateBuffer.position(INDEX);
+
+        final byte[] buff = new byte[testBytes.length];
         duplicateBuffer.get(buff);
 
         assertThat(buff, is(testBytes));
@@ -563,18 +573,36 @@ public class AtomicBufferTest
     {
         final byte[] testBytes = "Hello World".getBytes();
         final ByteBuffer srcBuffer = ((ByteBuffer)ByteBuffer.allocate(testBytes.length * 2).position(testBytes.length)).slice();
-
-        srcBuffer.put(testBytes);
-        srcBuffer.flip();
+        srcBuffer.put(testBytes).flip();
 
         buffer.putBytes(INDEX, srcBuffer, testBytes.length);
 
-        final byte[] buff = new byte[testBytes.length];
         final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(BYTE_ORDER);
         duplicateBuffer.position(INDEX);
+
+        final byte[] buff = new byte[testBytes.length];
         duplicateBuffer.get(buff);
 
         assertThat(buff, is(testBytes));
     }
 
+    @Theory
+    public void shouldPutBytesToAtomicBufferFromAtomicBuffer(final AtomicBuffer buffer)
+    {
+        final byte[] testBytes = "Hello World".getBytes();
+        final ByteBuffer srcBuffer = ByteBuffer.allocateDirect(testBytes.length);
+        srcBuffer.put(testBytes).flip();
+
+        final AtomicBuffer srcAtomicBuffer = new AtomicBuffer(srcBuffer);
+
+        buffer.putBytes(INDEX, srcAtomicBuffer, 0, testBytes.length);
+
+        final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(BYTE_ORDER);
+        duplicateBuffer.position(INDEX);
+
+        final byte[] buff = new byte[testBytes.length];
+        duplicateBuffer.get(buff);
+
+        assertThat(buff, is(testBytes));
+    }
 }

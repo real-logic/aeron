@@ -95,26 +95,6 @@ public class AtomicBuffer
     }
 
     /**
-     * Return the underlying byte[] for this buffer or null if none is attached.
-     *
-     * @return the underlying byte[] for this buffer.
-     */
-    public byte[] array()
-    {
-        return byteArray;
-    }
-
-    /**
-     * Return the underlying {@link ByteBuffer} if one is attached.
-     *
-     * @return the underlying {@link ByteBuffer} if one is attached.
-     */
-    public ByteBuffer byteBuffer()
-    {
-        return byteBuffer;
-    }
-
-    /**
      * Get the capacity of the underlying buffer.
      *
      * @return the capacity of the underlying buffer in bytes.
@@ -729,7 +709,7 @@ public class AtomicBuffer
     }
 
     /**
-     * Put an bytes into the underlying buffer for the view.  Bytes will be copied from current
+     * Put bytes into the underlying buffer for the view.  Bytes will be copied from current
      * {@link java.nio.ByteBuffer#position()} to {@link java.nio.ByteBuffer#limit()}.
      *
      * @param index     in the underlying buffer to start from.
@@ -759,5 +739,18 @@ public class AtomicBuffer
         srcBuffer.position(srcBuffer.position() + count);
 
         return count;
+    }
+
+    /**
+     * Put bytes from a source {@link AtomicBuffer} into this {@link AtomicBuffer} at given indices.
+     *
+     * @param index in this buffer to begin putting the bytes.
+     * @param srcBuffer from which the bytes will be copied.
+     * @param srcIndex in the source buffer from which the byte copy will begin.
+     * @param length of the bytes to be copied.
+     */
+    public void putBytes(final int index, final AtomicBuffer srcBuffer, final int srcIndex, final int length)
+    {
+        UNSAFE.copyMemory(srcBuffer.byteArray, srcBuffer.addressOffset + srcIndex, byteArray, addressOffset + index, length);
     }
 }

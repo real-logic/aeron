@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.mediadriver;
 import uk.co.real_logic.aeron.util.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.HeaderFlyweight;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
@@ -27,10 +28,16 @@ import java.nio.ByteBuffer;
 public class RcvFrameHandler implements FrameHandler, AutoCloseable
 {
     private final UdpTransport transport;
+    private final UdpDestination destination;
 
-    public RcvFrameHandler(final InetSocketAddress local, final EventLoop loop) throws Exception
+    public RcvFrameHandler(final UdpDestination destination, final EventLoop loop) throws Exception
     {
-        transport = new UdpTransport(this, local, loop);
+        final InetSocketAddress endpoint = destination.remote();
+        final InetAddress mcastInterface = destination.local().getAddress();
+        final int localPort = destination.local().getPort();
+
+        this.transport = new UdpTransport(this, endpoint, mcastInterface, localPort, loop);
+        this.destination = destination;
     }
 
     public int sendTo(final ByteBuffer buffer, final long sessionId)
@@ -47,6 +54,11 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
     public void close()
     {
         transport.close();
+    }
+
+    public UdpDestination destination()
+    {
+        return destination;
     }
 
     public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)

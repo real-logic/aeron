@@ -49,8 +49,16 @@ public class MediaDriver
     /** Default directory for data buffers */
     public static final String DATA_DIR_PROPERTY_NAME_DEFAULT = "/tmp/aeron/data";
 
+    /** Byte buffer size for reads */
+    public static final String READ_BYTE_BUFFER_SZ_PROPERTY_NAME = "aeron.bytebuffer.sz";
+
+    /** Default byte buffer size for reads */
+    public static final String READ_BYTE_BUFFER_SZ_DEFAULT = "4096";
+
     public static final String ADMIN_DIR = System.getProperty(ADMIN_DIR_PROPERTY_NAME, ADMIN_DIR_PROPERTY_NAME_DEFAULT);
     public static final String DATA_DIR = System.getProperty(DATA_DIR_PROPERTY_NAME, DATA_DIR_PROPERTY_NAME_DEFAULT);
+    public static final int READ_BYTE_BUFFER_SZ = Integer.parseInt(System.getProperty(READ_BYTE_BUFFER_SZ_PROPERTY_NAME,
+            READ_BYTE_BUFFER_SZ_DEFAULT));
 
     // This is used by senders to associate Session IDs to SrcFrameHandlers for sending.
     private final Map<Long, SrcFrameHandler> sessionIdMap = new HashMap<>();

@@ -40,6 +40,11 @@ public class SrcFrameHandler implements FrameHandler, AutoCloseable
         return transport.sendTo(buffer, destination.remote());
     }
 
+    public int sendTo(final ByteBuffer buffer, final InetSocketAddress addr) throws Exception
+    {
+        return transport.sendTo(buffer, addr);
+    }
+
     public void close()
     {
         transport.close();

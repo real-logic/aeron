@@ -19,7 +19,10 @@ import uk.co.real_logic.aeron.util.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.HeaderFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
+import java.awt.*;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
@@ -34,31 +37,63 @@ import java.nio.channels.SelectionKey;
  */
 public final class UdpTransport implements ReadHandler, AutoCloseable
 {
-    public static final int READ_BYTE_BUFFER_SZ = 4096; // TODO: this needs to be configured in some way
-
-    private final ByteBuffer readByteBuffer;
+    private final ByteBuffer readByteBuffer = ByteBuffer.allocateDirect(MediaDriver.READ_BYTE_BUFFER_SZ);
     private final AtomicBuffer readBuffer;
-    private final DatagramChannel channel;
-    private final HeaderFlyweight header;
-    private final DataHeaderFlyweight dataHeader;
+    private final DatagramChannel channel = DatagramChannel.open();
+    private final HeaderFlyweight header = new HeaderFlyweight();
+    private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final FrameHandler frameHandler;
     private final EventLoop eventLoop;
     private final SelectionKey registeredKey;
 
     public UdpTransport(final FrameHandler frameHandler, final InetSocketAddress local, final EventLoop eventLoop) throws Exception
     {
-        this.readByteBuffer = ByteBuffer.allocateDirect(READ_BYTE_BUFFER_SZ);
         this.readBuffer = new AtomicBuffer(this.readByteBuffer);
-        this.channel = DatagramChannel.open();
-        this.header = new HeaderFlyweight();
-        this.dataHeader = new DataHeaderFlyweight();
         this.frameHandler = frameHandler;
         this.eventLoop = eventLoop;
+
+        channel.bind(local);
+        channel.configureBlocking(false);
+        this.registeredKey = eventLoop.registerForRead(channel, this);
+    }
+
+    public UdpTransport(final SrcFrameHandler frameHandler,
+                        final InetSocketAddress local,
+                        final EventLoop eventLoop) throws Exception
+    {
+        this.readBuffer = new AtomicBuffer(this.readByteBuffer);
+        this.frameHandler = frameHandler;
+        this.eventLoop = eventLoop;
+
+        channel.bind(local);
+        channel.configureBlocking(false);
+        this.registeredKey = eventLoop.registerForRead(channel, this);
+    }
+
+    public UdpTransport(final RcvFrameHandler frameHandler,
+                        final InetSocketAddress local,
+                        final InetAddress mcastInterfaceAddr,
+                        final int localPort,
+                        final EventLoop eventLoop) throws Exception
+    {
+        this.readBuffer = new AtomicBuffer(this.readByteBuffer);
+        this.frameHandler = frameHandler;
+        this.eventLoop = eventLoop;
+
         if (local.getAddress().isMulticastAddress())
         {
-            channel.setOption(StandardSocketOptions.SO_REUSEADDR, Boolean.TRUE);
+            final NetworkInterface mcastInterface = NetworkInterface.getByInetAddress(mcastInterfaceAddr);
+
+            channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
+            channel.bind(new InetSocketAddress(mcastInterfaceAddr, localPort));
+
+            channel.join(local.getAddress(), mcastInterface);
         }
-        channel.bind(local);
+        else
+        {
+            channel.bind(local);
+        }
+
         channel.configureBlocking(false);
         this.registeredKey = eventLoop.registerForRead(channel, this);
     }

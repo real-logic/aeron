@@ -35,12 +35,12 @@ public class EventLoopTest
     private static final long CHANNEL_ID = 0x44332211L;
     private static final long TERM_ID = 0x99887766L;
     private static final String SRC_UDP_URI = "udp://localhost:40124@localhost:40123";
-    //private static final String RCV_UDP_URI = "udp://localhost:40123@localhost:40124";
+    private static final String RCV_UDP_URI = "udp://localhost:40123";
 
     private final ByteBuffer buffer = ByteBuffer.allocateDirect(256);
     private final AtomicBuffer atomicBuffer = new AtomicBuffer(buffer);
     private final DataHeaderFlyweight encodeDataHeader = new DataHeaderFlyweight();
-    //private final InetSocketAddress srcRemoteAddr = new InetSocketAddress("localhost", RCV_PORT);
+    private final InetSocketAddress srcRemoteAddr = new InetSocketAddress("localhost", RCV_PORT);
     private final InetSocketAddress rcvRemoteAddr = new InetSocketAddress("localhost", SRC_PORT);
     private final InetSocketAddress rcvLocalAddr = new InetSocketAddress(RCV_PORT);
     private final InetSocketAddress srcLocalAddr = new InetSocketAddress(SRC_PORT);
@@ -49,7 +49,7 @@ public class EventLoopTest
     public void shouldHandleBasicSetupAndTeardown() throws Exception
     {
         final EventLoop eventLoop = new EventLoop();
-        final RcvFrameHandler rcv = new RcvFrameHandler(rcvLocalAddr, eventLoop);
+        final RcvFrameHandler rcv = new RcvFrameHandler(UdpDestination.parse(RCV_UDP_URI), eventLoop);
         final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), eventLoop);
 
         processLoop(eventLoop, 5);
@@ -240,7 +240,7 @@ public class EventLoopTest
             }
         }, srcLocalAddr, eventLoop);
 
-        final RcvFrameHandler rcv = new RcvFrameHandler(rcvLocalAddr, eventLoop);
+        final RcvFrameHandler rcv = new RcvFrameHandler(UdpDestination.parse(RCV_UDP_URI), eventLoop);
 
         encodeDataHeader.reset(atomicBuffer, 0)
                         .version((byte) HeaderFlyweight.CURRENT_VERSION)

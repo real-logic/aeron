@@ -96,7 +96,7 @@ public class HeaderFlyweight
 
     public static int uint16Get(final AtomicBuffer buffer, final int offset, final ByteOrder byteOrder)
     {
-        return (int)(buffer.getShort(offset, byteOrder) & 0xFFFF);
+        return (buffer.getShort(offset, byteOrder) & 0xFFFF);
     }
 
     public static void uint16Put(final AtomicBuffer buffer, final int offset, final int value, final ByteOrder byteOrder)
@@ -106,7 +106,7 @@ public class HeaderFlyweight
 
     public static long uint32Get(final AtomicBuffer buffer, final int offset, final ByteOrder byteOrder)
     {
-        return (long)(buffer.getInt(offset, byteOrder) & 0xFFFFFFFFL);
+        return (buffer.getInt(offset, byteOrder) & 0xFFFFFFFFL);
     }
 
     public static void uint32Put(final AtomicBuffer buffer, final int offset, final long value, final ByteOrder byteOrder)

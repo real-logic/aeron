@@ -19,7 +19,6 @@ import uk.co.real_logic.aeron.util.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.HeaderFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
-import java.awt.*;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;

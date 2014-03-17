@@ -72,9 +72,7 @@ public class HeaderFlyweight
 
     public HeaderFlyweight reset(final ByteBuffer buffer, final int offset)
     {
-        this.atomicBuffer = new AtomicBuffer(buffer);
-        this.offset = offset;
-        return this;
+        return reset(new AtomicBuffer(buffer), offset);
     }
 
     public HeaderFlyweight reset(final AtomicBuffer buffer, final int offset)

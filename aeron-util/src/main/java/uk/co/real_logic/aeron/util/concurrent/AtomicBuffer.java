@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.util.concurrent;
 
 import sun.misc.Unsafe;
-import uk.co.real_logic.aeron.util.BitUtil;
+import uk.co.real_logic.aeron.util.UnsafeAccess;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -28,7 +28,7 @@ import java.nio.ByteOrder;
 public class AtomicBuffer
 {
     private static final ByteOrder NATIVE_BYTE_ORDER = ByteOrder.nativeOrder();
-    private static final Unsafe UNSAFE = BitUtil.UNSAFE;
+    private static final Unsafe UNSAFE = UnsafeAccess.UNSAFE;
     private static final long ARRAY_BASE_OFFSET = UNSAFE.arrayBaseOffset(byte[].class);
 
     private byte[] byteArray;

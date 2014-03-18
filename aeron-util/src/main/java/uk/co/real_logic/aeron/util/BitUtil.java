@@ -15,12 +15,6 @@
  */
 package uk.co.real_logic.aeron.util;
 
-import sun.misc.Unsafe;
-
-import java.lang.reflect.Field;
-import java.security.AccessController;
-import java.security.PrivilegedExceptionAction;
-
 /**
  * Miscellaneous useful functions for dealing with low level bits and bytes.
  */
@@ -45,30 +39,6 @@ public class BitUtil
     public static final int SIZE_OF_LONG = 8;
     /** Size of a double in bytes */
     public static final int SIZE_OF_DOUBLE = 8;
-
-    public static final Unsafe UNSAFE;
-
-    static
-    {
-        try
-        {
-            final PrivilegedExceptionAction<Unsafe> action = new PrivilegedExceptionAction<Unsafe>()
-            {
-                public Unsafe run() throws Exception
-                {
-                    final Field f = Unsafe.class.getDeclaredField("theUnsafe");
-                    f.setAccessible(true);
-                    return (Unsafe)f.get(null);
-                }
-            };
-
-            UNSAFE = AccessController.doPrivileged(action);
-        }
-        catch (final Exception ex)
-        {
-            throw new RuntimeException(ex);
-        }
-    }
 
     /**
      * Fast method of finding the next power of 2 greater than or equal to the supplied value.

@@ -19,6 +19,8 @@ import uk.co.real_logic.aeron.util.BitUtil;
 
 import java.util.*;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * {@link java.util.Map} implementation specialised for long keys using open addressing and linear probing for cache efficient access.
  *
@@ -110,10 +112,7 @@ public class Long2ObjectOpenAddressingHashMap<V>
      */
     public boolean containsKey(final Object key)
     {
-        if (null == key)
-        {
-            throw new NullPointerException("Null keys are not permitted");
-        }
+        requireNonNull(key, "Null keys are not permitted");
 
         return containsKey(((Long)key).longValue());
     }
@@ -146,10 +145,7 @@ public class Long2ObjectOpenAddressingHashMap<V>
      */
     public boolean containsValue(final Object value)
     {
-        if (null == value)
-        {
-            throw new NullPointerException("Null values are not permitted");
-        }
+        requireNonNull(value, "Null values are not permitted");
 
         for (final Object v : values)
         {
@@ -213,10 +209,7 @@ public class Long2ObjectOpenAddressingHashMap<V>
     @SuppressWarnings("unchecked")
     public V put(final long key, final V value)
     {
-        if (null == value)
-        {
-            throw new NullPointerException("Value cannot be null");
-        }
+        requireNonNull(value, "Value cannot be null");
 
         V oldValue = null;
         int index = hash(key);
@@ -642,9 +635,7 @@ public class Long2ObjectOpenAddressingHashMap<V>
     {
         public Long next()
         {
-            findNext();
-
-            return Long.valueOf(keys[getPosition()]);
+            return Long.valueOf(nextLong());
         }
 
         public long nextLong()
@@ -679,10 +670,7 @@ public class Long2ObjectOpenAddressingHashMap<V>
 
         public V setValue(final V value)
         {
-            if (null == value)
-            {
-                throw new NullPointerException();
-            }
+            requireNonNull(value);
 
             final int pos = getPosition();
             Object oldValue = values[pos];

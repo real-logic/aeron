@@ -20,6 +20,7 @@ import org.junit.Test;
 import static java.lang.Integer.valueOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static uk.co.real_logic.aeron.util.BitUtil.align;
 import static uk.co.real_logic.aeron.util.BitUtil.findNextPositivePowerOfTwo;
 
 public class BitUtilTest
@@ -39,5 +40,22 @@ public class BitUtilTest
         assertThat(valueOf(findNextPositivePowerOfTwo(32)), is(valueOf(32)));
         assertThat(valueOf(findNextPositivePowerOfTwo(1 << 30)), is(valueOf(1 << 30)));
         assertThat(valueOf(findNextPositivePowerOfTwo((1 << 30) + 1)), is(valueOf(Integer.MIN_VALUE)));
+    }
+
+    @Test
+    public void shouldAlignValueToNextMultipleOfAlignment()
+    {
+        final int alignment = BitUtil.CACHE_LINE_SIZE;
+
+        assertThat(valueOf(align(0, alignment)), is(valueOf(0)));
+        assertThat(valueOf(align(1, alignment)), is(valueOf(alignment)));
+        assertThat(valueOf(align(alignment, alignment)), is(valueOf(alignment)));
+        assertThat(valueOf(align(alignment + 1, alignment)), is(valueOf(alignment * 2)));
+
+        final int reminder = Integer.MAX_VALUE % alignment;
+        final int maxMultiple = Integer.MAX_VALUE - reminder;
+
+        assertThat(valueOf(align(maxMultiple, alignment)), is(valueOf(maxMultiple)));
+        assertThat(valueOf(align(Integer.MAX_VALUE, alignment)), is(valueOf(Integer.MIN_VALUE)));
     }
 }

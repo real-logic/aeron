@@ -40,6 +40,9 @@ public class BitUtil
     /** Size of a double in bytes */
     public static final int SIZE_OF_DOUBLE = 8;
 
+    /** Size of the data blocks used by the CPU cache sub-system in bytes. */
+    public static final int CACHE_LINE_SIZE = 64;
+
     /**
      * Fast method of finding the next power of 2 greater than or equal to the supplied value.
      *
@@ -53,5 +56,17 @@ public class BitUtil
     public static int findNextPositivePowerOfTwo(final int value)
     {
         return 1 << (32 - Integer.numberOfLeadingZeros(value - 1));
+    }
+
+    /**
+     * Align a value to the next multiple up of alignment.
+     * If the value equals an alignment multiple then it is returned unchanged.
+     *
+     * @param value to be aligned up.
+     * @return the value aligned to the next boundary.
+     */
+    public static int align(final int value, final int alignment)
+    {
+        return (value + (alignment - 1)) & ~(alignment - 1);
     }
 }

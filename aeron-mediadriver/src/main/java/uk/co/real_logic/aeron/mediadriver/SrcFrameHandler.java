@@ -55,13 +55,28 @@ public class SrcFrameHandler implements FrameHandler, AutoCloseable
         return destination;
     }
 
+    public void addSessionAndChannel(final long sessionId, final long channelId, final ByteBuffer buffer)
+    {
+        // TODO: this is called from the AdminAgent thread, so probably need to handle it by
+    }
+
+    public void removeSessionAndChannel(final long sessionId, final long channelId)
+    {
+        // TODO: this is called from the AdminAgent thread
+        // TODO: the AdminAgent thread has removed it from its own destinationMap, so shutdown if needed.
+    }
+
     public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
     {
-        // no frames should come in this way, so just drop it silently.
+        // we don't care, so just drop it silently.
     }
 
     public void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
     {
-        // TODO: these pretty much just go right onto the control buffer for the API
+        /* TODO:
+           NAK - send retransmission, checking state of ignore timeout, checking that it is for us
+           FCR - adjust what can be sent, perhaps unblock send thread
+           Channel Announcement/Advertisement - ignore
+         */
     }
 }

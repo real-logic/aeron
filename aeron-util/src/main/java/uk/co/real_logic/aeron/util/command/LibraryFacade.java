@@ -45,19 +45,6 @@ public interface LibraryFacade
     /**
      * Handle a removeChannel request from the library
      *
-     * This will remove all channels for this session.
-     * The destination will be removed if necessary.
-     *
-     * @see uk.co.real_logic.aeron.util.command.MediaDriverFacade#sendRemoveSession(String, long)
-     *
-     * @param destination for the session to be removed from
-     * @param sessionId for the session
-     */
-    void onRemoveSession(final String destination, final long sessionId);
-
-    /**
-     * Handle a removeChannel request from the library
-     *
      * The session and destination will NOT be removed.
      *
      * @see MediaDriverFacade#sendRemoveChannel(String, long, long)
@@ -87,12 +74,11 @@ public interface LibraryFacade
      *
      * The destination will be created if not in use by another library/application.
      *
-     * @see MediaDriverFacade#sendAddReceiver(String, java.util.List)
-     *
-     * @param destination to be added
+     * @see MediaDriverFacade#sendAddReceiver(String, long[])
+     *@param destination to be added
      * @param channelIdList of interested channels for destination
      */
-    void onAddReceiver(final String destination, final List<Long> channelIdList);
+    void onAddReceiver(final String destination, final long[] channelIdList);
 
     /**
      * Handle a removeReceiver request from the library.

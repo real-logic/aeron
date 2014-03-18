@@ -43,18 +43,6 @@ public interface MediaDriverFacade
     void sendAddChannel(final String destination, final long sessionId, final long channelId);
 
     /**
-     * Request the media driver to remove a source for an entire session.
-     *
-     * If this is the last session on this destination, it will be removed.
-     *
-     * @see LibraryFacade#onRemoveSession(String, long)
-     *
-     * @param destination to remove the session from
-     * @param sessionId of the session to remove
-     */
-    void sendRemoveSession(final String destination, final long sessionId);
-
-    /**
      * Request the media driver to remove a source for a given channel from a given session.
      *
      * If this is the last channel on this session, it will NOT be removed. It must be removed explicitly later.
@@ -87,12 +75,11 @@ public interface MediaDriverFacade
      *
      * The destination will be created if not already in use by another application.
      *
-     * @see LibraryFacade#onAddReceiver(String, java.util.List)
-     *
-     * @param destination to add the channels to
+     * @see LibraryFacade#onAddReceiver(String, long[])
+     *@param destination to add the channels to
      * @param channelIdList of interested channels
      */
-    void sendAddReceiver(final String destination, final List<Long> channelIdList);
+    void sendAddReceiver(final String destination, final long[] channelIdList);
 
     /**
      * Request the media driver to remove a receiver destination on behalf of the application.

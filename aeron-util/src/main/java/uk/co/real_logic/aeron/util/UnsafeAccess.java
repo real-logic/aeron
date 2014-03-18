@@ -6,7 +6,8 @@ import java.lang.reflect.Field;
 import java.security.AccessController;
 import java.security.PrivilegedExceptionAction;
 
-public class UnsafeAccess {
+public class UnsafeAccess
+{
 
     public static final Unsafe UNSAFE;
 

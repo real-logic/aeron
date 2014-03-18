@@ -44,12 +44,13 @@ public class EventLoopTest
     private final InetSocketAddress rcvRemoteAddr = new InetSocketAddress("localhost", SRC_PORT);
     private final InetSocketAddress rcvLocalAddr = new InetSocketAddress(RCV_PORT);
     private final InetSocketAddress srcLocalAddr = new InetSocketAddress(SRC_PORT);
+    private final long channelIds[] = { CHANNEL_ID };
 
     @Test(timeout = 1000)
     public void shouldHandleBasicSetupAndTeardown() throws Exception
     {
         final EventLoop eventLoop = new EventLoop();
-        final RcvFrameHandler rcv = new RcvFrameHandler(UdpDestination.parse(RCV_UDP_URI), eventLoop);
+        final RcvFrameHandler rcv = new RcvFrameHandler(UdpDestination.parse(RCV_UDP_URI), eventLoop, channelIds);
         final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), eventLoop);
 
         processLoop(eventLoop, 5);
@@ -240,7 +241,7 @@ public class EventLoopTest
             }
         }, srcLocalAddr, eventLoop);
 
-        final RcvFrameHandler rcv = new RcvFrameHandler(UdpDestination.parse(RCV_UDP_URI), eventLoop);
+        final RcvFrameHandler rcv = new RcvFrameHandler(UdpDestination.parse(RCV_UDP_URI), eventLoop, channelIds);
 
         encodeDataHeader.reset(atomicBuffer, 0)
                         .version((byte) HeaderFlyweight.CURRENT_VERSION)

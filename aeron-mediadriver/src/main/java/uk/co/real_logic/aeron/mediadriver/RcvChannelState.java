@@ -15,17 +15,26 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-/**
- * Encapsulation of a session for sources
- */
-public class UdpSession
-{
-    private final long sessionId;
-    private final SrcFrameHandler frameHandler;
+import java.net.InetSocketAddress;
 
-    public UdpSession(final long sessionId, final SrcFrameHandler frameHandler)
+/**
+ * State maintained per channel for receiver processing
+ */
+public class RcvChannelState
+{
+    private final InetSocketAddress srcAddr;
+
+    public RcvChannelState(final UdpDestination destination, final long sessionId, final long channelId,
+                           final long termId, final InetSocketAddress srcAddr)
     {
-        this.sessionId = sessionId;
-        this.frameHandler = frameHandler;
+        // TODO: explicitly create new buffer
+        //final ByteBuffer termBuffer = bufferManagementStrategy.addRecieverTerm(destination, sessionId, channelId, termId);
+
+        this.srcAddr = srcAddr;
+    }
+
+    public InetSocketAddress sourceAddress()
+    {
+        return srcAddr;
     }
 }

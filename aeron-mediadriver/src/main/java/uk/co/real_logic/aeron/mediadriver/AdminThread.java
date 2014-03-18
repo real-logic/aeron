@@ -20,6 +20,8 @@ import uk.co.real_logic.aeron.util.HeaderFlyweight;
 import uk.co.real_logic.aeron.util.command.ErrorCode;
 import uk.co.real_logic.aeron.util.command.LibraryFacade;
 
+import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -28,23 +30,19 @@ import java.util.Map;
  */
 public class AdminThread extends ClosableThread implements LibraryFacade
 {
-    private final Map<Long, UdpSession> sessionIdMap;
-    private final Map<UdpDestination, SrcFrameHandler> srcDestinationMap;
-    private final Map<UdpDestination, RcvFrameHandler> rcvDestinationMap;
-    private final EventLoop evLoop;
+    private final Map<UdpDestination, SrcFrameHandler> srcDestinationMap = new HashMap<>();
+    private final Map<UdpDestination, RcvFrameHandler> rcvDestinationMap = new HashMap<>();
+    private final EventLoop eventLoop;
+    private final BufferManagementStrategy bufferManagementStrategy;
 
-    public AdminThread(final Map<Long, UdpSession> sessionIdMap,
-                       final Map<UdpDestination, SrcFrameHandler> srcDestinationMap,
-                       final Map<UdpDestination, RcvFrameHandler> rcvDestinationMap,
-                       final EventLoop evLoop)
+    public AdminThread(final EventLoop eventLoop, final BufferManagementStrategy bufferManagementStrategy)
     {
-        this.sessionIdMap = sessionIdMap;
-        this.srcDestinationMap = srcDestinationMap;
-        this.rcvDestinationMap = rcvDestinationMap;
-        this.evLoop = evLoop;
+        this.eventLoop = eventLoop;
+        this.bufferManagementStrategy = bufferManagementStrategy;
     }
 
-    public void work() {
+    public void work()
+    {
         // TODO: read from control buffer and call onAddChannel, etc.
     }
 
@@ -78,50 +76,50 @@ public class AdminThread extends ClosableThread implements LibraryFacade
         try
         {
             final UdpDestination srcDestination = UdpDestination.parse(destination);
-            UdpSession session = sessionIdMap.get(sessionId);
             SrcFrameHandler src = srcDestinationMap.get(srcDestination);
 
-            if (null == session)
+            if (null == src)
             {
-                // find destination, create if not found
-                if (null == src)
-                {
-                    src = new SrcFrameHandler(srcDestination, evLoop);
-                    srcDestinationMap.put(srcDestination, src);
-                }
-
-                session = new UdpSession(sessionId, src);
-                sessionIdMap.put(sessionId, session);
-            }
-            else
-            {
-                // TODO: validate same destination/SrcFrameHandler
+                src = new SrcFrameHandler(srcDestination, eventLoop);
+                srcDestinationMap.put(srcDestination, src);
             }
 
-            // TODO: add channel to SrcFrameHandler if not already there
+            final ByteBuffer termBuffer = bufferManagementStrategy.addSourceChannel(sessionId, channelId);
+
+            // TODO: to handle coordination with the event loop, this could use a command queue that causes a wakeup
+            // and handled by the SrcFrameHandler
+
+            src.addSessionAndChannel(sessionId, channelId, termBuffer);
         }
         catch (Exception e)
         {
-            byte[] message = String.format("malformed URI: %1$s", destination).getBytes();
-            sendErrorResponse(ErrorCode.DESTINATION_MALFORMED.value(), message);
+            sendErrorResponse(ErrorCode.GENERIC_ERROR.value(), e.getMessage().getBytes());
             // TODO: log this as well as send the error response
         }
     }
 
-    public void onRemoveSession(final String destination, final long sessionId)
-    {
-        final UdpSession session = sessionIdMap.get(sessionId);
-
-        if (session == null)
-        {
-            // TODO: remove session
-        }
-
-    }
-
     public void onRemoveChannel(final String destination, final long sessionId, final long channelId)
     {
+        try
+        {
+            final UdpDestination srcDestination = UdpDestination.parse(destination);
+            final SrcFrameHandler src = srcDestinationMap.get(srcDestination);
 
+            if (null == src)
+            {
+                throw new IllegalArgumentException("destination unknown for channel remove: " + destination);
+            }
+
+            src.removeSessionAndChannel(sessionId, channelId);
+
+            // TODO: only remove if no more channels.
+            //srcDestinationMap.remove(srcDestination);
+        }
+        catch (Exception e)
+        {
+            sendErrorResponse(ErrorCode.GENERIC_ERROR.value(), e.getMessage().getBytes());
+            // TODO: log this as well as send the error response
+        }
     }
 
     public void onRemoveTerm(final String destination, final long sessionId, final long channelId, final long termId)
@@ -129,9 +127,30 @@ public class AdminThread extends ClosableThread implements LibraryFacade
 
     }
 
-    public void onAddReceiver(final String destination, final List<Long> channelIdList)
+    public void onAddReceiver(final String destination, final long[] channelIdList)
     {
+        try
+        {
+            final UdpDestination rcvDestination = UdpDestination.parse(destination);
+            RcvFrameHandler rcv = rcvDestinationMap.get(rcvDestination);
 
+            if (null == rcv)
+            {
+                rcv = new RcvFrameHandler(rcvDestination, eventLoop, channelIdList);
+                rcvDestinationMap.put(rcvDestination, rcv);
+            }
+            else
+            {
+                // TODO: add new channels to an existing RcvFrameHandler - need to do this via command queue to that running thread
+            }
+
+            // this thread does not add buffers. The RcvFrameHandler handle methods will create new buffers on demand
+        }
+        catch (Exception e)
+        {
+            sendErrorResponse(ErrorCode.GENERIC_ERROR.value(), e.getMessage().getBytes());
+            // TODO: log this as well as send the error response
+        }
     }
 
     public void onRemoveReceiver(final String destination)

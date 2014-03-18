@@ -15,8 +15,6 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -50,7 +48,7 @@ public class MediaDriver
     public static final String DATA_DIR_PROPERTY_NAME_DEFAULT = "/tmp/aeron/data";
 
     /** Byte buffer size for reads */
-    public static final String READ_BYTE_BUFFER_SZ_PROPERTY_NAME = "aeron.bytebuffer.sz";
+    public static final String READ_BYTE_BUFFER_SZ_PROPERTY_NAME = "aeron.recv.bytebuffer.size";
 
     /** Default byte buffer size for reads */
     public static final String READ_BYTE_BUFFER_SZ_DEFAULT = "4096";
@@ -59,12 +57,6 @@ public class MediaDriver
     public static final String DATA_DIR = System.getProperty(DATA_DIR_PROPERTY_NAME, DATA_DIR_PROPERTY_NAME_DEFAULT);
     public static final int READ_BYTE_BUFFER_SZ = Integer.parseInt(System.getProperty(READ_BYTE_BUFFER_SZ_PROPERTY_NAME,
             READ_BYTE_BUFFER_SZ_DEFAULT));
-
-    // This is used by senders to associate Session IDs to SrcFrameHandlers for sending.
-    private final Map<Long, SrcFrameHandler> sessionIdMap = new HashMap<>();
-
-    // This is used for tracking receivers (local port numbers to RcvFrameHandlers).
-    private final Map<Integer, RcvFrameHandler> rcvPortMap = new HashMap<>();
 
     public static void main(final String[] args)
     {

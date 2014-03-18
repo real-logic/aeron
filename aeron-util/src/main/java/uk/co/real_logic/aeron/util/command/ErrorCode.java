@@ -20,7 +20,7 @@ package uk.co.real_logic.aeron.util.command;
  */
 public enum ErrorCode
 {
-    DESTINATION_MALFORMED(100);
+    GENERIC_ERROR(0);
 
     private final int value;
 

@@ -1,22 +1,27 @@
 package uk.co.real_logic.aeron.util;
 
-public abstract class ClosableThread implements Runnable, AutoCloseable {
+public abstract class ClosableThread implements Runnable, AutoCloseable
+{
 
     private volatile boolean running;
 
-    public ClosableThread() {
+    public ClosableThread()
+    {
         running = true;
     }
 
     @Override
-    public void run() {
-        while (running) {
+    public void run()
+    {
+        while (running)
+        {
             work();
         }
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() throws Exception
+    {
         running = false;
     }
 

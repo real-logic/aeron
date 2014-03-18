@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import uk.co.real_logic.aeron.util.ClosableThread;
 import uk.co.real_logic.aeron.util.HeaderFlyweight;
 import uk.co.real_logic.aeron.util.command.ErrorCode;
 import uk.co.real_logic.aeron.util.command.LibraryFacade;
@@ -25,7 +26,7 @@ import java.util.Map;
 /**
  * Admin thread to take commands from library and act on them. As well as pass control information to library.
  */
-public class AdminThread implements LibraryFacade, Runnable, AutoCloseable
+public class AdminThread extends ClosableThread implements LibraryFacade
 {
     private final Map<Long, UdpSession> sessionIdMap;
     private final Map<UdpDestination, SrcFrameHandler> srcDestinationMap;
@@ -43,13 +44,7 @@ public class AdminThread implements LibraryFacade, Runnable, AutoCloseable
         this.evLoop = evLoop;
     }
 
-    public void close()
-    {
-        // TODO: shutdown loop
-    }
-
-    public void run()
-    {
+    public void work() {
         // TODO: read from control buffer and call onAddChannel, etc.
     }
 

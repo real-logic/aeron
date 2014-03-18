@@ -61,6 +61,8 @@ public class BitUtil
     /**
      * Align a value to the next multiple up of alignment.
      * If the value equals an alignment multiple then it is returned unchanged.
+     * <p/>
+     * This method executes without branching.
      *
      * @param value to be aligned up.
      * @return the value aligned to the next boundary.

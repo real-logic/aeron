@@ -36,13 +36,42 @@ public class Channel
         return channelId;
     }
 
-    public void send(final ByteBuffer buffer) throws Exception
+    /**
+     * Non blocking message send
+     *
+     * @param buffer
+     * @return
+     */
+    public boolean offer(final ByteBuffer buffer)
     {
-
+        // TODO
+        return false;
     }
 
-    public void send(final ByteBuffer buffer, final int offset) throws Exception
+    public boolean offer(final ByteBuffer buffer, final int offset)
     {
-
+        // TODO
+        return false;
     }
+
+    public void send(final ByteBuffer buffer) throws BufferExhaustedException
+    {
+        // TODO
+    }
+
+    public void send(final ByteBuffer buffer, final int offset) throws BufferExhaustedException
+    {
+        // TODO
+    }
+
+    public void blockingSend(final ByteBuffer buffer)
+    {
+        // TODO: Is this necessary?
+    }
+
+    public void blockingSend(final ByteBuffer buffer, final int offset)
+    {
+        // TODO: Is this necessary?
+    }
+
 }

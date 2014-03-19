@@ -23,13 +23,13 @@ import java.nio.ByteBuffer;
 public interface BufferManagementStrategy
 {
 
-    ByteBuffer addSourceChannel(final long sessionId, final long channelId);
+    ByteBuffer addSenderChannel(final long sessionId, final long channelId);
 
-    ByteBuffer incrementSourceTerm(final long sessionId, final long channelId);
+    ByteBuffer incrementSenderTerm(final long sessionId, final long channelId);
 
-    void removeSourceChannel(final long sessionId, final long channelId);
+    void removeSenderChannel(final long sessionId, final long channelId);
 
-    void removeSourceTerm(final long sessionId, final long channelId, final long termId);
+    void removeSenderTerm(final long sessionId, final long channelId, final long termId);
 
     ByteBuffer addReceiverTerm(final UdpDestination destination, final long sessionId, final long channelId, final long termId);
 

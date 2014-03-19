@@ -49,7 +49,7 @@ public class ReceiverThreadTest
     @Test(timeout = 1000)
     public void shouldHandleBasicSetupAndTeardown() throws Exception
     {
-        final ReceiverThread receiverThread = new ReceiverThread();
+        final ReceiverThread receiverThread = new ReceiverThread(null, null);
         final RcvFrameHandler rcv = new RcvFrameHandler(UdpDestination.parse(RCV_UDP_URI), receiverThread, channelIds);
         final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), receiverThread);
 
@@ -65,7 +65,7 @@ public class ReceiverThreadTest
     {
         final AtomicInteger dataHeadersRcved = new AtomicInteger(0);
 
-        final ReceiverThread receiverThread = new ReceiverThread();
+        final ReceiverThread receiverThread = new ReceiverThread(null, null);
         final UdpTransport rcv = new UdpTransport(new FrameHandler()
         {
             public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
@@ -116,7 +116,7 @@ public class ReceiverThreadTest
         final AtomicInteger dataHeadersRcved = new AtomicInteger(0);
         final AtomicInteger cntlHeadersRcved = new AtomicInteger(0);
 
-        final ReceiverThread receiverThread = new ReceiverThread();
+        final ReceiverThread receiverThread = new ReceiverThread(null, null);
         final UdpTransport rcv = new UdpTransport(new FrameHandler()
         {
             public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
@@ -164,7 +164,7 @@ public class ReceiverThreadTest
         final AtomicInteger dataHeadersRcved = new AtomicInteger(0);
         final AtomicInteger cntlHeadersRcved = new AtomicInteger(0);
 
-        final ReceiverThread receiverThread = new ReceiverThread();
+        final ReceiverThread receiverThread = new ReceiverThread(null, null);
         final UdpTransport rcv = new UdpTransport(new FrameHandler()
         {
             public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
@@ -223,7 +223,7 @@ public class ReceiverThreadTest
         final AtomicInteger dataHeadersRcved = new AtomicInteger(0);
         final AtomicInteger cntlHeadersRcved = new AtomicInteger(0);
 
-        final ReceiverThread receiverThread = new ReceiverThread();
+        final ReceiverThread receiverThread = new ReceiverThread(null, null);
         final UdpTransport src = new UdpTransport(new FrameHandler()
         {
             public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)

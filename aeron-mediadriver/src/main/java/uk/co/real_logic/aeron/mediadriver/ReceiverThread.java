@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -32,14 +33,18 @@ import java.util.Set;
 public class ReceiverThread implements AutoCloseable, Runnable
 {
     /** Default select timeout (20 msec) */
-    public static final long DEFAULT_SELECT_TIMEOUT = 20; // TODO: should probably be a property.
+    public static final long DEFAULT_SELECT_TIMEOUT = 20; // TODO: should probably be a property in MediaDriver.
 
     private Selector selector;
     private volatile boolean done;
+    private final ByteBuffer commandBuffer;
+    private final ByteBuffer adminCommandBuffer;
 
-    public ReceiverThread() throws Exception
+    public ReceiverThread(final ByteBuffer commandBuffer, final ByteBuffer adminCommandBuffer) throws Exception
     {
         this.selector = Selector.open(); // yes, SelectorProvider, blah, blah
+        this.commandBuffer = commandBuffer;
+        this.adminCommandBuffer = adminCommandBuffer;
         this.done = false;
     }
 

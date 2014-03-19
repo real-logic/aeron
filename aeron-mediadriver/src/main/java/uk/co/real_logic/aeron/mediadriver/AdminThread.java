@@ -33,12 +33,16 @@ public class AdminThread extends ClosableThread implements LibraryFacade
     private final Map<UdpDestination, SrcFrameHandler> srcDestinationMap = new HashMap<>();
     private final Map<UdpDestination, RcvFrameHandler> rcvDestinationMap = new HashMap<>();
     private final ReceiverThread receiverThread;
+    private final SenderThread senderThread;
+    private final ByteBuffer commandBuffer;
     private final BufferManagementStrategy bufferManagementStrategy;
 
-    public AdminThread(final ReceiverThread receiverThread, final BufferManagementStrategy bufferManagementStrategy)
+    public AdminThread(final ByteBuffer commandBuffer, final ReceiverThread receiverThread, final SenderThread senderThread)
     {
         this.receiverThread = receiverThread;
-        this.bufferManagementStrategy = bufferManagementStrategy;
+        this.senderThread = senderThread;
+        this.commandBuffer = commandBuffer;
+        this.bufferManagementStrategy = null;
     }
 
     public void work()
@@ -84,7 +88,7 @@ public class AdminThread extends ClosableThread implements LibraryFacade
                 srcDestinationMap.put(srcDestination, src);
             }
 
-            final ByteBuffer termBuffer = bufferManagementStrategy.addSourceChannel(sessionId, channelId);
+            final ByteBuffer termBuffer = bufferManagementStrategy.addSenderChannel(sessionId, channelId);
 
             // TODO: to handle coordination with the ReceiverThread, this could use a command queue that causes a wakeup
             // and handled by the SrcFrameHandler

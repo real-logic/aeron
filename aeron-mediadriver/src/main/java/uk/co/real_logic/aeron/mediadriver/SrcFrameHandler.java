@@ -29,7 +29,7 @@ public class SrcFrameHandler implements FrameHandler, AutoCloseable
     private final UdpTransport transport;
     private final UdpDestination destination;
 
-    public SrcFrameHandler(final UdpDestination destination, final EventLoop loop) throws Exception
+    public SrcFrameHandler(final UdpDestination destination, final ReceiverThread loop) throws Exception
     {
         this.transport = new UdpTransport(this, destination.local(), loop);
         this.destination = destination;

@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
-public class EventLoopTest
+public class ReceiverThreadTest
 {
     private static final int RCV_PORT = 40123;
     private static final int SRC_PORT = 40124;
@@ -49,15 +49,15 @@ public class EventLoopTest
     @Test(timeout = 1000)
     public void shouldHandleBasicSetupAndTeardown() throws Exception
     {
-        final EventLoop eventLoop = new EventLoop();
-        final RcvFrameHandler rcv = new RcvFrameHandler(UdpDestination.parse(RCV_UDP_URI), eventLoop, channelIds);
-        final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), eventLoop);
+        final ReceiverThread receiverThread = new ReceiverThread();
+        final RcvFrameHandler rcv = new RcvFrameHandler(UdpDestination.parse(RCV_UDP_URI), receiverThread, channelIds);
+        final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), receiverThread);
 
-        processLoop(eventLoop, 5);
+        processLoop(receiverThread, 5);
         rcv.close();
         src.close();
-        processLoop(eventLoop, 5);
-        eventLoop.close();
+        processLoop(receiverThread, 5);
+        receiverThread.close();
     }
 
     @Test(timeout = 1000)
@@ -65,7 +65,7 @@ public class EventLoopTest
     {
         final AtomicInteger dataHeadersRcved = new AtomicInteger(0);
 
-        final EventLoop eventLoop = new EventLoop();
+        final ReceiverThread receiverThread = new ReceiverThread();
         final UdpTransport rcv = new UdpTransport(new FrameHandler()
         {
             public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
@@ -83,9 +83,9 @@ public class EventLoopTest
             public void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
             {
             }
-        }, rcvLocalAddr, eventLoop);
+        }, rcvLocalAddr, receiverThread);
 
-        final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), eventLoop);
+        final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), receiverThread);
 
         encodeDataHeader.reset(atomicBuffer, 0)
                         .version((byte)HeaderFlyweight.CURRENT_VERSION)
@@ -96,16 +96,16 @@ public class EventLoopTest
                         .termId(TERM_ID);
         buffer.position(0).limit(20);
 
-        processLoop(eventLoop, 5);
+        processLoop(receiverThread, 5);
         src.send(buffer);
         while (dataHeadersRcved.get() < 1)
         {
-            processLoop(eventLoop, 1);
+            processLoop(receiverThread, 1);
         }
         rcv.close();
         src.close();
-        processLoop(eventLoop, 5);
-        eventLoop.close();
+        processLoop(receiverThread, 5);
+        receiverThread.close();
 
         assertThat(Integer.valueOf(dataHeadersRcved.get()), is(Integer.valueOf(1)));
     }
@@ -116,7 +116,7 @@ public class EventLoopTest
         final AtomicInteger dataHeadersRcved = new AtomicInteger(0);
         final AtomicInteger cntlHeadersRcved = new AtomicInteger(0);
 
-        final EventLoop eventLoop = new EventLoop();
+        final ReceiverThread receiverThread = new ReceiverThread();
         final UdpTransport rcv = new UdpTransport(new FrameHandler()
         {
             public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
@@ -132,9 +132,9 @@ public class EventLoopTest
                 assertThat(Long.valueOf(header.sessionId()), is(Long.valueOf(SESSION_ID)));
                 cntlHeadersRcved.incrementAndGet();
             }
-        }, rcvLocalAddr, eventLoop);
+        }, rcvLocalAddr, receiverThread);
 
-        final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), eventLoop);
+        final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), receiverThread);
 
         encodeDataHeader.reset(atomicBuffer, 0)
                         .version((byte)HeaderFlyweight.CURRENT_VERSION)
@@ -143,16 +143,16 @@ public class EventLoopTest
                         .sessionId(SESSION_ID);
         buffer.position(0).limit(8);
 
-        processLoop(eventLoop, 5);
+        processLoop(receiverThread, 5);
         src.send(buffer);
         while (cntlHeadersRcved.get() < 1)
         {
-            processLoop(eventLoop, 1);
+            processLoop(receiverThread, 1);
         }
         rcv.close();
         src.close();
-        processLoop(eventLoop, 5);
-        eventLoop.close();
+        processLoop(receiverThread, 5);
+        receiverThread.close();
 
         assertThat(Integer.valueOf(dataHeadersRcved.get()), is(Integer.valueOf(0)));
         assertThat(Integer.valueOf(cntlHeadersRcved.get()), is(Integer.valueOf(1)));
@@ -164,7 +164,7 @@ public class EventLoopTest
         final AtomicInteger dataHeadersRcved = new AtomicInteger(0);
         final AtomicInteger cntlHeadersRcved = new AtomicInteger(0);
 
-        final EventLoop eventLoop = new EventLoop();
+        final ReceiverThread receiverThread = new ReceiverThread();
         final UdpTransport rcv = new UdpTransport(new FrameHandler()
         {
             public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
@@ -182,9 +182,9 @@ public class EventLoopTest
             {
                 cntlHeadersRcved.incrementAndGet();
             }
-        }, rcvLocalAddr, eventLoop);
+        }, rcvLocalAddr, receiverThread);
 
-        final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), eventLoop);
+        final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), receiverThread);
 
         encodeDataHeader.reset(atomicBuffer, 0)
                         .version((byte) HeaderFlyweight.CURRENT_VERSION)
@@ -202,16 +202,16 @@ public class EventLoopTest
                         .termId(TERM_ID);
         buffer.position(0).limit(40);
 
-        processLoop(eventLoop, 5);
+        processLoop(receiverThread, 5);
         src.send(buffer);
         while (dataHeadersRcved.get() < 1)
         {
-            processLoop(eventLoop, 1);
+            processLoop(receiverThread, 1);
         }
         rcv.close();
         src.close();
-        processLoop(eventLoop, 5);
-        eventLoop.close();
+        processLoop(receiverThread, 5);
+        receiverThread.close();
 
         assertThat(Integer.valueOf(dataHeadersRcved.get()), is(Integer.valueOf(2)));
         assertThat(Integer.valueOf(cntlHeadersRcved.get()), is(Integer.valueOf(0)));
@@ -223,7 +223,7 @@ public class EventLoopTest
         final AtomicInteger dataHeadersRcved = new AtomicInteger(0);
         final AtomicInteger cntlHeadersRcved = new AtomicInteger(0);
 
-        final EventLoop eventLoop = new EventLoop();
+        final ReceiverThread receiverThread = new ReceiverThread();
         final UdpTransport src = new UdpTransport(new FrameHandler()
         {
             public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
@@ -239,9 +239,9 @@ public class EventLoopTest
                 assertThat(Long.valueOf(header.sessionId()), is(Long.valueOf(SESSION_ID)));
                 cntlHeadersRcved.incrementAndGet();
             }
-        }, srcLocalAddr, eventLoop);
+        }, srcLocalAddr, receiverThread);
 
-        final RcvFrameHandler rcv = new RcvFrameHandler(UdpDestination.parse(RCV_UDP_URI), eventLoop, channelIds);
+        final RcvFrameHandler rcv = new RcvFrameHandler(UdpDestination.parse(RCV_UDP_URI), receiverThread, channelIds);
 
         encodeDataHeader.reset(atomicBuffer, 0)
                         .version((byte) HeaderFlyweight.CURRENT_VERSION)
@@ -250,27 +250,27 @@ public class EventLoopTest
                         .sessionId(SESSION_ID);
         buffer.position(0).limit(8);
 
-        processLoop(eventLoop, 5);
+        processLoop(receiverThread, 5);
         rcv.sendTo(buffer, rcvRemoteAddr);
         while (cntlHeadersRcved.get() < 1)
         {
-            processLoop(eventLoop, 1);
+            processLoop(receiverThread, 1);
         }
 
         rcv.close();
         src.close();
-        processLoop(eventLoop, 5);
-        eventLoop.close();
+        processLoop(receiverThread, 5);
+        receiverThread.close();
 
         assertThat(Integer.valueOf(dataHeadersRcved.get()), is(Integer.valueOf(0)));
         assertThat(Integer.valueOf(cntlHeadersRcved.get()), is(Integer.valueOf(1)));
     }
 
-    private void processLoop(final EventLoop eventLoop, final int iterations)
+    private void processLoop(final ReceiverThread receiverThread, final int iterations)
     {
         for (int i = 0; i < iterations; i++)
         {
-            eventLoop.process();
+            receiverThread.process();
         }
     }
 }

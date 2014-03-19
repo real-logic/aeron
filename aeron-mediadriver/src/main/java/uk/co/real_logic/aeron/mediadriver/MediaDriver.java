@@ -60,14 +60,14 @@ public class MediaDriver
 
     public static void main(final String[] args)
     {
-        try (final EventLoop selectLoop = new EventLoop())
+        try (final ReceiverThread receiverThread = new ReceiverThread())
         {
-            // 1 for EventLoop (Selectors)
+            // 1 for ReceiverThread (Selectors)
             // 1 for DataBuffersLoop (Data Buffers)
             // 1 for AdminLoop (Admin Thread)
             Executor executor = Executors.newFixedThreadPool(3);
 
-            executor.execute(selectLoop);
+            executor.execute(receiverThread);
 
             // TODO: need the other thread scanning Term buffers and control buffer or have this thread do it.
 

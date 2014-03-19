@@ -21,10 +21,12 @@ package uk.co.real_logic.aeron;
  *
  * TODO: should this log an error rather than silently swallowing it?
  */
-public class DummyErrorHandler implements ErrorHandler {
+public class DummyErrorHandler implements ErrorHandler
+{
 
     @Override
-    public void onError(long sessionId, long channelId, String message) {
+    public void onError(long sessionId, long channelId, String message)
+    {
 
     }
 

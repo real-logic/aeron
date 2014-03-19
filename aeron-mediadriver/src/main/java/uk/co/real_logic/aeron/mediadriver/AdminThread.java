@@ -32,12 +32,12 @@ public class AdminThread extends ClosableThread implements LibraryFacade
 {
     private final Map<UdpDestination, SrcFrameHandler> srcDestinationMap = new HashMap<>();
     private final Map<UdpDestination, RcvFrameHandler> rcvDestinationMap = new HashMap<>();
-    private final EventLoop eventLoop;
+    private final ReceiverThread receiverThread;
     private final BufferManagementStrategy bufferManagementStrategy;
 
-    public AdminThread(final EventLoop eventLoop, final BufferManagementStrategy bufferManagementStrategy)
+    public AdminThread(final ReceiverThread receiverThread, final BufferManagementStrategy bufferManagementStrategy)
     {
-        this.eventLoop = eventLoop;
+        this.receiverThread = receiverThread;
         this.bufferManagementStrategy = bufferManagementStrategy;
     }
 
@@ -80,13 +80,13 @@ public class AdminThread extends ClosableThread implements LibraryFacade
 
             if (null == src)
             {
-                src = new SrcFrameHandler(srcDestination, eventLoop);
+                src = new SrcFrameHandler(srcDestination, receiverThread);
                 srcDestinationMap.put(srcDestination, src);
             }
 
             final ByteBuffer termBuffer = bufferManagementStrategy.addSourceChannel(sessionId, channelId);
 
-            // TODO: to handle coordination with the event loop, this could use a command queue that causes a wakeup
+            // TODO: to handle coordination with the ReceiverThread, this could use a command queue that causes a wakeup
             // and handled by the SrcFrameHandler
 
             src.addSessionAndChannel(sessionId, channelId, termBuffer);
@@ -136,7 +136,7 @@ public class AdminThread extends ClosableThread implements LibraryFacade
 
             if (null == rcv)
             {
-                rcv = new RcvFrameHandler(rcvDestination, eventLoop, channelIdList);
+                rcv = new RcvFrameHandler(rcvDestination, receiverThread, channelIdList);
                 rcvDestinationMap.put(rcvDestination, rcv);
             }
             else

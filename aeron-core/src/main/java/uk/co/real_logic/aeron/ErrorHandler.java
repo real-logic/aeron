@@ -18,7 +18,8 @@ package uk.co.real_logic.aeron;
 /**
  * Client code should a
  */
-public interface ErrorHandler {
+public interface ErrorHandler
+{
 
     // TODO: identify how rich an API we're looking for here
     void onError(final long sessionId, final long channelId, String message);

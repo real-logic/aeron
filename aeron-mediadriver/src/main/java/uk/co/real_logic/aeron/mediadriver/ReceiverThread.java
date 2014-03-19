@@ -29,7 +29,7 @@ import java.util.Set;
  *
  * Does not provide timers
  */
-public class EventLoop implements AutoCloseable, Runnable
+public class ReceiverThread implements AutoCloseable, Runnable
 {
     /** Default select timeout (20 msec) */
     public static final long DEFAULT_SELECT_TIMEOUT = 20; // TODO: should probably be a property.
@@ -37,7 +37,7 @@ public class EventLoop implements AutoCloseable, Runnable
     private Selector selector;
     private volatile boolean done;
 
-    public EventLoop() throws Exception
+    public ReceiverThread() throws Exception
     {
         this.selector = Selector.open(); // yes, SelectorProvider, blah, blah
         this.done = false;
@@ -69,7 +69,7 @@ public class EventLoop implements AutoCloseable, Runnable
     }
 
     /**
-     * Main loop of the EventLoop
+     * Main loop of the ReceiverThread
      *
      * Everything is done here and bubbles up via the handlers.
      */
@@ -90,7 +90,7 @@ public class EventLoop implements AutoCloseable, Runnable
     }
 
     /**
-     * Close EventLoop down. Returns immediately.
+     * Close ReceiverThread down. Returns immediately.
      */
     public void close()
     {
@@ -100,7 +100,7 @@ public class EventLoop implements AutoCloseable, Runnable
     }
 
     /**
-     * Wake up EventLoop if blocked.
+     * Wake up ReceiverThread if blocked.
      */
     public void wakeup()
     {

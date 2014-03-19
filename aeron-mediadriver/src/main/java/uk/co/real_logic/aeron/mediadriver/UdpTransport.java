@@ -42,42 +42,42 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
     private final HeaderFlyweight header = new HeaderFlyweight();
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final FrameHandler frameHandler;
-    private final EventLoop eventLoop;
+    private final ReceiverThread receiverThread;
     private final SelectionKey registeredKey;
 
-    public UdpTransport(final FrameHandler frameHandler, final InetSocketAddress local, final EventLoop eventLoop) throws Exception
+    public UdpTransport(final FrameHandler frameHandler, final InetSocketAddress local, final ReceiverThread receiverThread) throws Exception
     {
         this.readBuffer = new AtomicBuffer(this.readByteBuffer);
         this.frameHandler = frameHandler;
-        this.eventLoop = eventLoop;
+        this.receiverThread = receiverThread;
 
         channel.bind(local);
         channel.configureBlocking(false);
-        this.registeredKey = eventLoop.registerForRead(channel, this);
+        this.registeredKey = receiverThread.registerForRead(channel, this);
     }
 
     public UdpTransport(final SrcFrameHandler frameHandler,
                         final InetSocketAddress local,
-                        final EventLoop eventLoop) throws Exception
+                        final ReceiverThread receiverThread) throws Exception
     {
         this.readBuffer = new AtomicBuffer(this.readByteBuffer);
         this.frameHandler = frameHandler;
-        this.eventLoop = eventLoop;
+        this.receiverThread = receiverThread;
 
         channel.bind(local);
         channel.configureBlocking(false);
-        this.registeredKey = eventLoop.registerForRead(channel, this);
+        this.registeredKey = receiverThread.registerForRead(channel, this);
     }
 
     public UdpTransport(final RcvFrameHandler frameHandler,
                         final InetSocketAddress local,
                         final InetAddress mcastInterfaceAddr,
                         final int localPort,
-                        final EventLoop eventLoop) throws Exception
+                        final ReceiverThread receiverThread) throws Exception
     {
         this.readBuffer = new AtomicBuffer(this.readByteBuffer);
         this.frameHandler = frameHandler;
-        this.eventLoop = eventLoop;
+        this.receiverThread = receiverThread;
 
         if (local.getAddress().isMulticastAddress())
         {
@@ -94,7 +94,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
         }
 
         channel.configureBlocking(false);
-        this.registeredKey = eventLoop.registerForRead(channel, this);
+        this.registeredKey = receiverThread.registerForRead(channel, this);
     }
 
     public int sendTo(final ByteBuffer buffer, final InetSocketAddress remote) throws Exception
@@ -106,7 +106,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
     {
         try
         {
-            eventLoop.cancelRead(registeredKey);
+            receiverThread.cancelRead(registeredKey);
             channel.close();
         }
         catch (final Exception ex)

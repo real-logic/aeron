@@ -44,31 +44,31 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
     /* commands to MediaDriver */
 
     @Override
-    public void sendAddChannel(String destination, long sessionId, long channelId)
+    public void sendAddChannel(final String destination, final long sessionId, final long channelId)
     {
 
     }
 
     @Override
-    public void sendRemoveChannel(String destination, long sessionId, long channelId)
+    public void sendRemoveChannel(final String destination, final long sessionId, final long channelId)
     {
 
     }
 
     @Override
-    public void sendRemoveTerm(String destination, long sessionId, long channelId, long termId)
+    public void sendRemoveTerm(final String destination, final long sessionId, final long channelId, final long termId)
     {
 
     }
 
     @Override
-    public void sendAddReceiver(String destination, long[] channelIdList)
+    public void sendAddReceiver(final String destination, final long[] channelIdList)
     {
 
     }
 
     @Override
-    public void sendRemoveReceiver(String destination)
+    public void sendRemoveReceiver(final String destination)
     {
 
     }
@@ -76,31 +76,31 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
     /* callbacks from MediaDriver */
 
     @Override
-    public void onFlowControlResponse(HeaderFlyweight header)
+    public void onFlowControlResponse(final HeaderFlyweight header)
     {
 
     }
 
     @Override
-    public void onErrorResponse(int code, byte[] message)
+    public void onErrorResponse(final int code, final byte[] message)
     {
 
     }
 
     @Override
-    public void onError(int code, byte[] message)
+    public void onError(final int code, final byte[] message)
     {
 
     }
 
     @Override
-    public void onLocationResponse(List<byte[]> filenames)
+    public void onLocationResponse(final List<byte[]> filenames)
     {
 
     }
 
     @Override
-    public void onNewSession(long sessionId, List<byte[]> filenames)
+    public void onNewSession(final long sessionId, final List<byte[]> filenames)
     {
 
     }

@@ -33,13 +33,13 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
     private final UdpDestination destination;
     private final Map<Long, Map<Long, RcvChannelState>> channelInterestMap = new Long2ObjectOpenAddressingHashMap<>();
 
-    public RcvFrameHandler(final UdpDestination destination, final ReceiverThread loop, final long[] channelIdList) throws Exception
+    public RcvFrameHandler(final UdpDestination destination, final ReceiverThread receiverThread, final long[] channelIdList) throws Exception
     {
         final InetSocketAddress endpoint = destination.remote();
         final InetAddress mcastInterface = destination.local().getAddress();
         final int localPort = destination.local().getPort();
 
-        this.transport = new UdpTransport(this, endpoint, mcastInterface, localPort, loop);
+        this.transport = new UdpTransport(this, endpoint, mcastInterface, localPort, receiverThread);
         this.destination = destination;
 
         // set up initial interest set

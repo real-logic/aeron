@@ -45,7 +45,9 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
     private final ReceiverThread receiverThread;
     private final SelectionKey registeredKey;
 
-    public UdpTransport(final FrameHandler frameHandler, final InetSocketAddress local, final ReceiverThread receiverThread) throws Exception
+    public UdpTransport(final FrameHandler frameHandler,
+                        final InetSocketAddress local,
+                        final ReceiverThread receiverThread) throws Exception
     {
         this.readBuffer = new AtomicBuffer(this.readByteBuffer);
         this.frameHandler = frameHandler;

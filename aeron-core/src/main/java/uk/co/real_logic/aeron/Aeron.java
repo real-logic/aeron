@@ -50,6 +50,13 @@ public final class Aeron
         return aerons;
     }
 
+    private final ErrorHandler errorHandler;
+
+    private Aeron(final Builder builder)
+    {
+        errorHandler = builder.errorHandler;
+    }
+
     /**
      * Create a new source that is to send to {@link uk.co.real_logic.aeron.Destination}.
      *
@@ -119,12 +126,19 @@ public final class Aeron
 
     public static class Builder
     {
+        private ErrorHandler errorHandler;
+
         public Builder()
         {
+            errorHandler = new DummyErrorHandler();
         }
+
+        public Builder errorHandler(ErrorHandler errorHandler)
+        {
+            this.errorHandler = errorHandler;
+            return this;
+        }
+
     }
 
-    private Aeron(final Builder builder)
-    {
-    }
 }

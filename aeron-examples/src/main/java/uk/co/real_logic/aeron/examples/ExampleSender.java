@@ -34,7 +34,8 @@ public class ExampleSender
     {
         try
         {
-            final Aeron aeron = Aeron.newSingleMediaDriver(null);
+            final Aeron.Builder builder = new Aeron.Builder().errorHandler(ExampleSender::onError);
+            final Aeron aeron = Aeron.newSingleMediaDriver(builder);
             final Source source = aeron.newSource(DESTINATION);
             final Channel aChannel = source.newChannel(CHANNEL_ID);
             final ByteBuffer buffer = ByteBuffer.allocateDirect(256);
@@ -48,4 +49,9 @@ public class ExampleSender
             e.printStackTrace();
         }
     }
+
+    public static void onError(final long sessionId, final long channelId, String message) {
+        System.err.println(message);
+    }
+
 }

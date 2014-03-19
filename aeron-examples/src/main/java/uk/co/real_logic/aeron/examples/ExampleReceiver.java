@@ -39,7 +39,8 @@ public class ExampleReceiver
 
         try
         {
-            final Aeron aeron = Aeron.newSingleMediaDriver(null);
+            final Aeron.Builder aeronBuilder = new Aeron.Builder().errorHandler(ExampleReceiver::onError);
+            final Aeron aeron = Aeron.newSingleMediaDriver(aeronBuilder);
             final Receiver.Builder builder = new Receiver.Builder().destination(DESTINATION);
 
             // register some channels that use stateful objects
@@ -87,6 +88,10 @@ public class ExampleReceiver
         {
             e.printStackTrace();
         }
+    }
+
+    public static void onError(final long sessionId, final long channelId, String message) {
+        System.err.println(message);
     }
 
     public static class ExampleDataHandler implements Receiver.DataHandler

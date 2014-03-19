@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.util.command;
 
-import uk.co.real_logic.aeron.util.HeaderFlyweight;
+import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.util.List;
 
@@ -98,7 +98,7 @@ public interface LibraryFacade
      *
      * This is an Aeron control frame.
      *
-     * @see MediaDriverFacade#onFlowControlResponse(uk.co.real_logic.aeron.util.HeaderFlyweight)
+     * @see MediaDriverFacade#onFlowControlResponse(uk.co.real_logic.aeron.util.protocol.HeaderFlyweight)
      *
      * @param header flyweight for the FCR
      */

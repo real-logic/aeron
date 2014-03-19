@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.util.command;
 
-import uk.co.real_logic.aeron.util.HeaderFlyweight;
+import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.util.List;
 

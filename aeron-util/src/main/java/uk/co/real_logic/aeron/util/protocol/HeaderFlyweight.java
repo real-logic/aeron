@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.util;
+package uk.co.real_logic.aeron.util.protocol;
 
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
@@ -52,11 +52,17 @@ public class HeaderFlyweight
     public static final int HDR_TYPE_NAK = 0x02;
     /** header type FCR */
     public static final int HDR_TYPE_FCR = 0x03;
+    /** header type Add Channel */
+    public static final int HDR_TYPE_ADD_CHANNEL = 0x04;
+    /** header type Remove Channel */
+    public static final int HDR_TYPE_REMOVE_CHANNEL = 0x05;
     /** header type EXT */
     public static final int HDR_TYPE_EXT = 0xFF;
 
     /** default version */
     public static final int CURRENT_VERSION = 0x0;
+
+    public static final int SIZE_OF_INT = 4;
 
     public static final int VERS_FIELD_OFFSET = 0;
     public static final int TYPE_FIELD_OFFSET = 1;
@@ -110,6 +116,21 @@ public class HeaderFlyweight
     public static void uint32Put(final AtomicBuffer buffer, final int offset, final long value, final ByteOrder byteOrder)
     {
         buffer.putInt(offset, (int)value, byteOrder);
+    }
+
+    // TODO: consider efficiency for String encoding/decoding
+    // TODO: is there a sensible error handling for getBytes/putBytes not reading/writing the current amount of data
+    public static String stringGet(AtomicBuffer buffer, final int offset, ByteOrder byteOrder) {
+        int length = buffer.getInt(offset);
+        byte[] stringInBytes = new byte[length];
+        buffer.getBytes(offset + SIZE_OF_INT, stringInBytes);
+        return new String(stringInBytes);
+    }
+
+    public static void stringPut(AtomicBuffer buffer, final int offset, String value, ByteOrder byteOrder) {
+        byte[] bytes = value.getBytes();
+        buffer.putInt(offset, bytes.length);
+        buffer.putBytes(offset + SIZE_OF_INT, bytes);
     }
 
     /**

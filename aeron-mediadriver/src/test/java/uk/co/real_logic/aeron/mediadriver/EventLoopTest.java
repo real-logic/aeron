@@ -16,8 +16,8 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import org.junit.Test;
-import uk.co.real_logic.aeron.util.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.util.HeaderFlyweight;
+import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import java.net.InetSocketAddress;

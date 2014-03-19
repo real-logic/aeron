@@ -17,6 +17,9 @@ package uk.co.real_logic.aeron.util;
 
 import org.junit.Test;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.protocol.ChannelFlyweight;
+import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.nio.ByteBuffer;
 
@@ -31,6 +34,8 @@ public class HeaderFlyweightTest
     private final HeaderFlyweight decodeHeader = new HeaderFlyweight();
     private final DataHeaderFlyweight encodeDataHeader = new DataHeaderFlyweight();
     private final DataHeaderFlyweight decodeDataHeader = new DataHeaderFlyweight();
+    private final ChannelFlyweight encodeChannel = new ChannelFlyweight();
+    private final ChannelFlyweight decodeChannel = new ChannelFlyweight();
 
     @Test
     public void shouldWriteCorrectValuesForGenericHeaderFields()
@@ -120,4 +125,18 @@ public class HeaderFlyweightTest
         assertThat(decodeDataHeader.termId(), is(0x99887766L));
         assertThat(decodeDataHeader.dataOffset(), is(20));
     }
+
+    @Test
+    public void shouldEncodeAndDecodeStringsCorrectly()
+    {
+        encodeChannel.reset(aBuff, 0);
+
+        String example = "abcç̀漢字仮名交じり文";
+        encodeChannel.destination(example);
+
+        decodeChannel.reset(aBuff, 0);
+
+        assertThat(decodeChannel.destination(), is(example));
+    }
+
 }

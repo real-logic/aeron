@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.util.protocol;
+package uk.co.real_logic.aeron.util.control;
+
+import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.nio.ByteOrder;
 
 /**
- * Control message for removing a receiver.
+ * Control message for adding and removing a channel.
  *
  * <p>
  * 0                   1                   2                   3
@@ -26,13 +28,40 @@ import java.nio.ByteOrder;
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  * |  Vers |S|E|H|R| Type (=0x00)  |   Frame Length (=data + 20)   |
  * +-------+-+-+-+-+---------------+-------------------------------+
+ * |                          Session ID                           |
+ * +---------------------------------------------------------------+
+ * |                          Channel ID                           |
+ * +---------------------------------------------------------------+
  * |      Destination Length       |   Destination               ...
  * |                                                             ...
  * +---------------------------------------------------------------+
  */
-public class AddReceiverFlyweight extends HeaderFlyweight
+public class ChannelMessageFlyweight extends HeaderFlyweight
 {
-    private static final int DESTINATION_OFFSET = 0;
+    private static final int CHANNEL_ID_FIELD_OFFSET = 8;
+    private static final int DESTINATION_OFFSET = 12;
+
+    /**
+     * return channel id field
+     *
+     * @return channel id field
+     */
+    public long channelId()
+    {
+        return uint32Get(atomicBuffer, offset + CHANNEL_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+    }
+
+    /**
+     * set channel id field
+     *
+     * @param channelId field value
+     * @return flyweight
+     */
+    public ChannelMessageFlyweight channelId(final long channelId)
+    {
+        uint32Put(atomicBuffer, offset + CHANNEL_ID_FIELD_OFFSET, channelId, ByteOrder.LITTLE_ENDIAN);
+        return this;
+    }
 
     /**
      * return destination field
@@ -50,7 +79,7 @@ public class AddReceiverFlyweight extends HeaderFlyweight
      * @param destination field value
      * @return flyweight
      */
-    public AddReceiverFlyweight destination(final String destination)
+    public ChannelMessageFlyweight destination(final String destination)
     {
         stringPut(atomicBuffer, offset + DESTINATION_OFFSET, destination, ByteOrder.LITTLE_ENDIAN);
         return this;

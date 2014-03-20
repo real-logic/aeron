@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.util.protocol;
+package uk.co.real_logic.aeron.util.control;
+
+import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.nio.ByteOrder;
 
@@ -30,9 +32,9 @@ import java.nio.ByteOrder;
  * |                                                             ...
  * +---------------------------------------------------------------+
  */
-public class RemoveReceiverMessageFlyweight extends HeaderFlyweight
+public class AddReceiverFlyweight extends HeaderFlyweight
 {
-    private static final int DESTINATION_OFFSET = 8;
+    private static final int DESTINATION_OFFSET = 0;
 
     /**
      * return destination field
@@ -50,7 +52,7 @@ public class RemoveReceiverMessageFlyweight extends HeaderFlyweight
      * @param destination field value
      * @return flyweight
      */
-    public RemoveReceiverMessageFlyweight destination(final String destination)
+    public AddReceiverFlyweight destination(final String destination)
     {
         stringPut(atomicBuffer, offset + DESTINATION_OFFSET, destination, ByteOrder.LITTLE_ENDIAN);
         return this;

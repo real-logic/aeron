@@ -17,10 +17,11 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.util.ClosableThread;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectOpenAddressingHashMap;
-import uk.co.real_logic.aeron.util.protocol.ChannelMessageFlyweight;
+import uk.co.real_logic.aeron.util.control.ChannelMessageFlyweight;
+import uk.co.real_logic.aeron.util.control.RequestTermFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
-import uk.co.real_logic.aeron.util.protocol.RemoveReceiverMessageFlyweight;
+import uk.co.real_logic.aeron.util.control.RemoveReceiverMessageFlyweight;
 
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -41,10 +42,11 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
     private final ByteBuffer sendBuffer;
     private final Map<Long, Map<Long, ByteBuffer>> termBufferMap;
 
-    // Message protocol Flyweights
+    // Control protocol Flyweights
 
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
     private final RemoveReceiverMessageFlyweight removeReceiverMessage = new RemoveReceiverMessageFlyweight();
+    private final RequestTermFlyweight requestTermMessage = new RequestTermFlyweight();
 
     public AdminThread(final ByteBuffer commandBuffer,
                        final ByteBuffer recvBuffer,
@@ -58,7 +60,18 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
 
     public void process()
     {
-        // read from recvBuffer and delegate to event handlers
+        handleReceiveBuffer();
+        handleCommandBuffer();
+    }
+
+    private void handleCommandBuffer()
+    {
+
+    }
+
+    private void handleReceiveBuffer()
+    {
+
     }
 
     /* commands to MediaDriver */
@@ -104,6 +117,16 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
         removeReceiverMessage.currentVersion();
         removeReceiverMessage.headerType(HDR_TYPE_REMOVE_RECEIVER);
         removeReceiverMessage.destination(destination);
+    }
+
+    @Override
+    public void sendRequestTerm(final long sessionId, final long channelId, final long termId)
+    {
+        requestTermMessage.reset(sendBuffer);
+        requestTermMessage.currentVersion();
+        requestTermMessage.sessionId(sessionId);
+        requestTermMessage.channelId(channelId);
+        requestTermMessage.termId(termId);
     }
 
     /* callbacks from MediaDriver */

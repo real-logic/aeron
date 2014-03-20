@@ -16,8 +16,9 @@
 package uk.co.real_logic.aeron;
 
 import org.junit.Test;
-import uk.co.real_logic.aeron.util.protocol.ChannelMessageFlyweight;
-import uk.co.real_logic.aeron.util.protocol.RemoveReceiverMessageFlyweight;
+import uk.co.real_logic.aeron.util.control.ChannelMessageFlyweight;
+import uk.co.real_logic.aeron.util.control.RemoveReceiverMessageFlyweight;
+import uk.co.real_logic.aeron.util.control.RequestTermFlyweight;
 
 import java.nio.ByteBuffer;
 
@@ -67,6 +68,20 @@ public class AdminThreadTest
 
         assertThat(removeReceiverMessage.headerType(), is(HDR_TYPE_REMOVE_RECEIVER));
         assertThat(removeReceiverMessage.destination(), is(DESTINATION));
+    }
+
+    @Test
+    public void threadSendsRequestTermBufferMessage()
+    {
+        RequestTermFlyweight requestTermBuffer = new RequestTermFlyweight();
+        requestTermBuffer.reset(sendBuffer);
+
+        thread.sendRequestTerm(1L, 2L, 3L);
+
+        assertThat(requestTermBuffer.headerType(), is(HDR_TYPE_REQUEST_TERM));
+        assertThat(requestTermBuffer.sessionId(), is(1L));
+        assertThat(requestTermBuffer.channelId(), is(2L));
+        assertThat(requestTermBuffer.termId(), is(3L));
     }
 
 }

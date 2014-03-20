@@ -91,6 +91,17 @@ public interface LibraryFacade
      */
     void onRemoveReceiver(final String destination);
 
+    /**
+     * Request the media driver should setup state for the next Term Buffer
+     *
+     * @see MediaDriverFacade#sendRequestTerm(long, long, long)
+     *
+     * @param sessionId
+     * @param channelId
+     * @param termId
+     */
+    void onRequestTerm(final long sessionId, final long channelId, final long termId);
+
     /* notifications to library/application */
 
     /**

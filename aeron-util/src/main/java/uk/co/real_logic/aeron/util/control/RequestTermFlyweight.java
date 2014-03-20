@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.util.protocol;
+package uk.co.real_logic.aeron.util.control;
+
+import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.nio.ByteOrder;
 
@@ -30,14 +32,13 @@ import java.nio.ByteOrder;
  * +---------------------------------------------------------------+
  * |                          Channel ID                           |
  * +---------------------------------------------------------------+
- * |      Destination Length       |   Destination               ...
- * |                                                             ...
+ * |                           Term ID                             |
  * +---------------------------------------------------------------+
  */
-public class ChannelMessageFlyweight extends HeaderFlyweight
+public class RequestTermFlyweight extends HeaderFlyweight
 {
     private static final int CHANNEL_ID_FIELD_OFFSET = 8;
-    private static final int DESTINATION_OFFSET = 12;
+    private static final int TERM_ID_FIELD_OFFSET = 12;
 
     /**
      * return channel id field
@@ -55,31 +56,31 @@ public class ChannelMessageFlyweight extends HeaderFlyweight
      * @param channelId field value
      * @return flyweight
      */
-    public ChannelMessageFlyweight channelId(final long channelId)
+    public RequestTermFlyweight channelId(final long channelId)
     {
         uint32Put(atomicBuffer, offset + CHANNEL_ID_FIELD_OFFSET, channelId, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
     /**
-     * return destination field
+     * return termId field
      *
-     * @return destination field
+     * @return termId field
      */
-    public String destination()
+    public long termId()
     {
-        return stringGet(atomicBuffer, offset + DESTINATION_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return uint32Get(atomicBuffer, offset + TERM_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
-     * set destination field
+     * set termId field
      *
-     * @param destination field value
+     * @param termId field value
      * @return flyweight
      */
-    public ChannelMessageFlyweight destination(final String destination)
+    public RequestTermFlyweight termId(final long termId)
     {
-        stringPut(atomicBuffer, offset + DESTINATION_OFFSET, destination, ByteOrder.LITTLE_ENDIAN);
+        uint32Put(atomicBuffer, offset + TERM_ID_FIELD_OFFSET, termId, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 

@@ -58,6 +58,8 @@ public class HeaderFlyweight
     public static final short HDR_TYPE_REMOVE_CHANNEL = 0x05;
     /** header type Remove Receiver */
     public static final short HDR_TYPE_REMOVE_RECEIVER = 0x06;
+    /** header type Request Term */
+    public static final short HDR_TYPE_REQUEST_TERM = 0x07;
     /** header type EXT */
     public static final short HDR_TYPE_EXT = 0xFF;
 

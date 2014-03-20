@@ -92,6 +92,17 @@ public interface MediaDriverFacade
      */
     void sendRemoveReceiver(final String destination);
 
+    /**
+     * Request the media driver should setup state for the next Term Buffer
+     *
+     * @see LibraryFacade#onRequestTerm(long, long, long)
+     *
+     * @param sessionId
+     * @param channelId
+     * @param termId
+     */
+    void sendRequestTerm(final long sessionId, final long channelId, final long termId);
+
     /* callbacks from MediaDriver */
 
     /**
@@ -149,4 +160,5 @@ public interface MediaDriverFacade
      * @param filenames for the buffers associated with the session
      */
     void onNewSession(final long sessionId, final List<byte[]> filenames);
+
 }

@@ -177,6 +177,12 @@ public class AdminThread extends ClosableThread implements LibraryFacade
 
     }
 
+    @Override
+    public void onRequestTerm(final long sessionId, final long channelId, final long termId)
+    {
+
+    }
+
     /**
      * Handling of NAKs as they come in via the command buffer from the SrcFrameHandler
      * @param header

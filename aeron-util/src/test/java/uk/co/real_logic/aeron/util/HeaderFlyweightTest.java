@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.util;
 
 import org.junit.Test;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.protocol.ChannelMessageFlyweight;
+import uk.co.real_logic.aeron.util.control.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 

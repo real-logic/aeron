@@ -27,9 +27,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 
-import static uk.co.real_logic.aeron.util.protocol.HeaderFlyweight.HDR_TYPE_ADD_CHANNEL;
-import static uk.co.real_logic.aeron.util.protocol.HeaderFlyweight.HDR_TYPE_REMOVE_CHANNEL;
-import static uk.co.real_logic.aeron.util.protocol.HeaderFlyweight.HDR_TYPE_REMOVE_RECEIVER;
+import static uk.co.real_logic.aeron.util.protocol.HeaderFlyweight.*;
 
 /**
  * Admin thread to take responses and notifications from mediadriver and act on them. As well as pass commands to the mediadriver.
@@ -124,6 +122,7 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
     {
         requestTermMessage.reset(sendBuffer);
         requestTermMessage.currentVersion();
+        requestTermMessage.headerType(HDR_TYPE_REQUEST_TERM);
         requestTermMessage.sessionId(sessionId);
         requestTermMessage.channelId(channelId);
         requestTermMessage.termId(termId);

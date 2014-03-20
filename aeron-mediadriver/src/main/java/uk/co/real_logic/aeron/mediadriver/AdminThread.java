@@ -16,9 +16,10 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.ClosableThread;
-import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.util.collections.Long2ObjectOpenAddressingHashMap;
 import uk.co.real_logic.aeron.util.command.ErrorCode;
 import uk.co.real_logic.aeron.util.command.LibraryFacade;
+import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -26,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Admin thread to take commands from library and act on them. As well as pass control information to library.
+ * Admin thread to take commands from Producers and Consumers as well as handle NAKs and retransmissions
  */
 public class AdminThread extends ClosableThread implements LibraryFacade
 {
@@ -36,8 +37,11 @@ public class AdminThread extends ClosableThread implements LibraryFacade
     private final SenderThread senderThread;
     private final ByteBuffer commandBuffer;
     private final BufferManagementStrategy bufferManagementStrategy;
+    private final Map<Long, Map<Long, ByteBuffer>> termBufferMap = new Long2ObjectOpenAddressingHashMap<>();
 
-    public AdminThread(final ByteBuffer commandBuffer, final ReceiverThread receiverThread, final SenderThread senderThread)
+    public AdminThread(final ByteBuffer commandBuffer,
+                       final ReceiverThread receiverThread,
+                       final SenderThread senderThread)
     {
         this.receiverThread = receiverThread;
         this.senderThread = senderThread;
@@ -45,9 +49,19 @@ public class AdminThread extends ClosableThread implements LibraryFacade
         this.bufferManagementStrategy = null;
     }
 
+    /**
+     * Add NAK frame to command buffer for this thread
+     * @param header for the NAK frame
+     */
+    public void offerNAK(final HeaderFlyweight header)
+    {
+        // TODO: add NAK frame to this threads command buffer
+    }
+
     public void work()
     {
         // TODO: read from control buffer and call onAddChannel, etc.
+        // TODO: read from commandBuffer and dispatch to onNAK, etc.
     }
 
     public void sendFlowControlResponse(final HeaderFlyweight header)
@@ -80,20 +94,22 @@ public class AdminThread extends ClosableThread implements LibraryFacade
         try
         {
             final UdpDestination srcDestination = UdpDestination.parse(destination);
+            final long termId = (long)(Math.random() * 0xFFFFFFFFL);  // FIXME: this may not be correct
             SrcFrameHandler src = srcDestinationMap.get(srcDestination);
 
             if (null == src)
             {
-                src = new SrcFrameHandler(srcDestination, receiverThread);
+                src = new SrcFrameHandler(srcDestination, receiverThread, this, senderThread);
                 srcDestinationMap.put(srcDestination, src);
             }
 
-            final ByteBuffer termBuffer = bufferManagementStrategy.addSenderChannel(sessionId, channelId);
+            // TODO: look in the termBufferMap for channelId, then sessionId, then termId
 
-            // TODO: to handle coordination with the ReceiverThread, this could use a command queue that causes a wakeup
-            // and handled by the SrcFrameHandler
+            final ByteBuffer termBuffer = bufferManagementStrategy.addSenderChannel(sessionId, channelId, termId);
 
-            src.addSessionAndChannel(sessionId, channelId, termBuffer);
+            // send command to SenderThread to start reading from new termBuffer and to send via SrcFrameHandler
+            senderThread.offerNewSenderTerm(sessionId, channelId, termId, termBuffer);
+
         }
         catch (Exception e)
         {
@@ -113,8 +129,6 @@ public class AdminThread extends ClosableThread implements LibraryFacade
             {
                 throw new IllegalArgumentException("destination unknown for channel remove: " + destination);
             }
-
-            src.removeSessionAndChannel(sessionId, channelId);
 
             // TODO: only remove if no more channels.
             //srcDestinationMap.remove(srcDestination);
@@ -160,5 +174,14 @@ public class AdminThread extends ClosableThread implements LibraryFacade
     public void onRemoveReceiver(final String destination)
     {
 
+    }
+
+    /**
+     * Handling of NAKs as they come in via the command buffer from the SrcFrameHandler
+     * @param header
+     */
+    public void onNAK(final HeaderFlyweight header)
+    {
+        // TODO: handle the NAK.
     }
 }

@@ -28,11 +28,18 @@ public class SrcFrameHandler implements FrameHandler, AutoCloseable
 {
     private final UdpTransport transport;
     private final UdpDestination destination;
+    private final AdminThread adminThread;
+    private final SenderThread senderThread;
 
-    public SrcFrameHandler(final UdpDestination destination, final ReceiverThread loop) throws Exception
+    public SrcFrameHandler(final UdpDestination destination,
+                           final ReceiverThread receiverThread,
+                           final AdminThread adminThread,
+                           final SenderThread senderThread) throws Exception
     {
-        this.transport = new UdpTransport(this, destination.local(), loop);
+        this.transport = new UdpTransport(this, destination.local(), receiverThread);
         this.destination = destination;
+        this.adminThread = adminThread;
+        this.senderThread = senderThread;
     }
 
     public int send(final ByteBuffer buffer) throws Exception
@@ -55,17 +62,6 @@ public class SrcFrameHandler implements FrameHandler, AutoCloseable
         return destination;
     }
 
-    public void addSessionAndChannel(final long sessionId, final long channelId, final ByteBuffer buffer)
-    {
-        // TODO: this is called from the AdminAgent thread, so probably need to handle it by
-    }
-
-    public void removeSessionAndChannel(final long sessionId, final long channelId)
-    {
-        // TODO: this is called from the AdminAgent thread
-        // TODO: the AdminAgent thread has removed it from its own destinationMap, so shutdown if needed.
-    }
-
     public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
     {
         // we don't care, so just drop it silently.
@@ -73,10 +69,14 @@ public class SrcFrameHandler implements FrameHandler, AutoCloseable
 
     public void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
     {
-        /* TODO:
-           NAK - send retransmission, checking state of ignore timeout, checking that it is for us
-           FCR - adjust what can be sent, perhaps unblock send thread
-           Channel Announcement/Advertisement - ignore
-         */
+        // dispatch frames to Admin or Sender Threads to handle
+        if (header.headerType() == HeaderFlyweight.HDR_TYPE_NAK)
+        {
+            adminThread.offerNAK(header);
+        }
+        else if (header.headerType() == HeaderFlyweight.HDR_TYPE_FCR)
+        {
+            senderThread.offerStatusMessage(header);
+        }
     }
 }

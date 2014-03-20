@@ -23,7 +23,7 @@ import java.nio.ByteBuffer;
 public interface BufferManagementStrategy
 {
 
-    ByteBuffer addSenderChannel(final long sessionId, final long channelId);
+    ByteBuffer addSenderChannel(final long sessionId, final long channelId, final long termId);
 
     ByteBuffer incrementSenderTerm(final long sessionId, final long channelId);
 

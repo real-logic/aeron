@@ -120,14 +120,16 @@ public class HeaderFlyweight
 
     // TODO: consider efficiency for String encoding/decoding
     // TODO: is there a sensible error handling for getBytes/putBytes not reading/writing the current amount of data
-    public static String stringGet(AtomicBuffer buffer, final int offset, ByteOrder byteOrder) {
+    public static String stringGet(AtomicBuffer buffer, final int offset, ByteOrder byteOrder)
+    {
         int length = buffer.getInt(offset);
         byte[] stringInBytes = new byte[length];
         buffer.getBytes(offset + SIZE_OF_INT, stringInBytes);
         return new String(stringInBytes);
     }
 
-    public static void stringPut(AtomicBuffer buffer, final int offset, String value, ByteOrder byteOrder) {
+    public static void stringPut(AtomicBuffer buffer, final int offset, String value, ByteOrder byteOrder)
+    {
         byte[] bytes = value.getBytes();
         buffer.putInt(offset, bytes.length);
         buffer.putBytes(offset + SIZE_OF_INT, bytes);

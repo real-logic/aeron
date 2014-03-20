@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.ClosableThread;
+import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.nio.ByteBuffer;
 
@@ -36,6 +37,27 @@ public class SenderThread extends ClosableThread
     @Override
     public void work()
     {
+        // TODO: handle data to send (with )
+        // TODO: handle commands added to command buffer (call onNewSenderTerm, onStatusMessage, etc.)
+    }
 
+    public void offerNewSenderTerm(final long sessionId, final long channelId, final long termId, final ByteBuffer buffer)
+    {
+
+    }
+
+    public void offerStatusMessage(final HeaderFlyweight header)
+    {
+        // TODO: serialize frame on to command buffer
+    }
+
+    public void onNewSenderTerm(final long sessionId, final long channelId, final long termId, final ByteBuffer buffer)
+    {
+
+    }
+
+    public void onStatusMessage(final HeaderFlyweight header)
+    {
+        // TODO: handle Status Message, perhaps sending more data
     }
 }

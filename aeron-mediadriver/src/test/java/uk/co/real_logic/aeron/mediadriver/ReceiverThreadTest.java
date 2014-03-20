@@ -16,9 +16,9 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import org.junit.Test;
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -51,7 +51,7 @@ public class ReceiverThreadTest
     {
         final ReceiverThread receiverThread = new ReceiverThread(null, null);
         final RcvFrameHandler rcv = new RcvFrameHandler(UdpDestination.parse(RCV_UDP_URI), receiverThread, channelIds);
-        final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), receiverThread);
+        final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), receiverThread, null, null);
 
         processLoop(receiverThread, 5);
         rcv.close();
@@ -85,7 +85,7 @@ public class ReceiverThreadTest
             }
         }, rcvLocalAddr, receiverThread);
 
-        final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), receiverThread);
+        final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), receiverThread, null, null);
 
         encodeDataHeader.reset(atomicBuffer, 0)
                         .version((byte)HeaderFlyweight.CURRENT_VERSION)
@@ -134,7 +134,7 @@ public class ReceiverThreadTest
             }
         }, rcvLocalAddr, receiverThread);
 
-        final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), receiverThread);
+        final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), receiverThread, null, null);
 
         encodeDataHeader.reset(atomicBuffer, 0)
                         .version((byte)HeaderFlyweight.CURRENT_VERSION)
@@ -184,7 +184,7 @@ public class ReceiverThreadTest
             }
         }, rcvLocalAddr, receiverThread);
 
-        final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), receiverThread);
+        final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), receiverThread, null, null);
 
         encodeDataHeader.reset(atomicBuffer, 0)
                         .version((byte) HeaderFlyweight.CURRENT_VERSION)

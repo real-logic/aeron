@@ -74,7 +74,7 @@ public class SrcFrameHandler implements FrameHandler, AutoCloseable
         {
             adminThread.offerNAK(header);
         }
-        else if (header.headerType() == HeaderFlyweight.HDR_TYPE_FCR)
+        else if (header.headerType() == HeaderFlyweight.HDR_TYPE_SM)
         {
             senderThread.offerStatusMessage(header);
         }

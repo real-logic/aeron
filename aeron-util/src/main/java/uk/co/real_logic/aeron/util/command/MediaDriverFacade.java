@@ -95,15 +95,15 @@ public interface MediaDriverFacade
     /* callbacks from MediaDriver */
 
     /**
-     * Handle a Flow Control Response (FCR) from a receiver back to a source
+     * Handle a Status Message (SM) from a receiver back to a source
      *
      * May not be necessary to have this Aeron header type pushed back to source applications
      *
-     * @see LibraryFacade#sendFlowControlResponse(HeaderFlyweight)
+     * @see LibraryFacade#sendStatusMessage(HeaderFlyweight)
      *
      * @param header flyweight for the packet (TODO: make this its own subclass of HeaderFlyweight)
      */
-    void onFlowControlResponse(final HeaderFlyweight header);
+    void onStatusMessage(final HeaderFlyweight header);
 
     /**
      * Handle an error response from the media driver

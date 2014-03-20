@@ -58,15 +58,15 @@ public class AdminThread extends ClosableThread implements LibraryFacade
         // TODO: add NAK frame to this threads command buffer
     }
 
-    public void work()
+    public void process()
     {
         // TODO: read from control buffer and call onAddChannel, etc.
         // TODO: read from commandBuffer and dispatch to onNAK, etc.
     }
 
-    public void sendFlowControlResponse(final HeaderFlyweight header)
+    public void sendStatusMessage(final HeaderFlyweight header)
     {
-        // TODO: send FCR on through to control buffer
+        // TODO: send SM on through to control buffer
     }
 
     public void sendErrorResponse(final int code, final byte[] message)

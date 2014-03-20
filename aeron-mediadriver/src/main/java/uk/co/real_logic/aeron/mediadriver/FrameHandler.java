@@ -37,7 +37,7 @@ public interface FrameHandler
     void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr);
 
     /**
-     * Handle a Control Frame, such as a NAK, CONN, FCR, etc.
+     * Handle a Control Frame, such as a NAK, CONN, SM, etc.
      *
      * @param header of the Frame
      * @param srcAddr of the Frame

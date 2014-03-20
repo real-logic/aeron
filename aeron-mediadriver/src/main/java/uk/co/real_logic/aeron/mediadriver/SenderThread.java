@@ -35,7 +35,7 @@ public class SenderThread extends ClosableThread
     }
 
     @Override
-    public void work()
+    public void process()
     {
         // TODO: handle data to send (with )
         // TODO: handle commands added to command buffer (call onNewSenderTerm, onStatusMessage, etc.)

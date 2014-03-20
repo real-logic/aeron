@@ -50,8 +50,8 @@ public class HeaderFlyweight
     public static final int HDR_TYPE_CONN = 0x01;
     /** header type NAK */
     public static final int HDR_TYPE_NAK = 0x02;
-    /** header type FCR */
-    public static final int HDR_TYPE_FCR = 0x03;
+    /** header type SM */
+    public static final int HDR_TYPE_SM = 0x03;
     /** header type Add Channel */
     public static final int HDR_TYPE_ADD_CHANNEL = 0x04;
     /** header type Remove Channel */

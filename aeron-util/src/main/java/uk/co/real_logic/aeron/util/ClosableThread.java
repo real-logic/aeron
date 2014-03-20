@@ -15,7 +15,7 @@ public abstract class ClosableThread implements Runnable, AutoCloseable
     {
         while (running)
         {
-            work();
+            process();
         }
     }
 
@@ -25,6 +25,6 @@ public abstract class ClosableThread implements Runnable, AutoCloseable
         running = false;
     }
 
-    public abstract void work();
+    public abstract void process();
 
 }

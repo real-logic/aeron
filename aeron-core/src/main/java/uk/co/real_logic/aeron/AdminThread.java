@@ -16,10 +16,13 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.util.ClosableThread;
+import uk.co.real_logic.aeron.util.collections.Long2ObjectOpenAddressingHashMap;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
 
+import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Admin thread to take responses and notifications from mediadriver and act on them. As well as pass commands to the mediadriver.
@@ -27,16 +30,22 @@ import java.util.List;
 public final class AdminThread extends ClosableThread implements MediaDriverFacade
 {
     // TODO: add correct types once comms buffers are committed
-    private final Object recvBuffer;
-    private final Object sendBuffer;
+    private final ByteBuffer recvBuffer;
+    private final ByteBuffer commandBuffer;
+    private final ByteBuffer sendBuffer;
+    private final Map<Long, Map<Long, ByteBuffer>> termBufferMap;
 
-    public AdminThread()
+    public AdminThread(final ByteBuffer commandBuffer,
+                       final ByteBuffer recvBuffer,
+                       final ByteBuffer sendBuffer)
     {
-        recvBuffer = null;
-        sendBuffer = null;
+        this.commandBuffer = commandBuffer;
+        this.recvBuffer = recvBuffer;
+        this.sendBuffer = sendBuffer;
+        termBufferMap = new Long2ObjectOpenAddressingHashMap<>();
     }
 
-    public void work()
+    public void process()
     {
         // read from recvBuffer and delegate to event handlers
     }
@@ -76,7 +85,7 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
     /* callbacks from MediaDriver */
 
     @Override
-    public void onFlowControlResponse(final HeaderFlyweight header)
+    public void onStatusMessage(final HeaderFlyweight header)
     {
 
     }

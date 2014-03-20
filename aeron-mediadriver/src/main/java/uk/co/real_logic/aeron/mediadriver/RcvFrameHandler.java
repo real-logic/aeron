@@ -107,8 +107,8 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
     {
         /* TODO:
            NAK - back-off any pending NAK
-           FCR - ignore
-           Channel Announcement/Advertisement - prompt sending FCR
+           SM - ignore
+           Channel Announcement/Advertisement - prompt sending SM
          */
     }
 }

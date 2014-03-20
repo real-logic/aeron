@@ -29,7 +29,7 @@ public class ManyToOneRingBuffer implements RingBuffer
     public static final int PADDING_EVENT_TYPE_ID = -1;
 
     /**
-     * Header size made up of fields for record length, event type, event length, reserved, then the encoded event.
+     * Header size made up of fields for record length, event length, event type, and reserved, then the encoded event.
      * <p/>
      * Writing of the evt type signals the event recording is complete.
      *

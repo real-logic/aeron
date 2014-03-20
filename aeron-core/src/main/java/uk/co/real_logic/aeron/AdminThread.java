@@ -20,6 +20,7 @@ import uk.co.real_logic.aeron.util.collections.Long2ObjectOpenAddressingHashMap;
 import uk.co.real_logic.aeron.util.protocol.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
+import uk.co.real_logic.aeron.util.protocol.RemoveReceiverMessageFlyweight;
 
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -27,6 +28,7 @@ import java.util.Map;
 
 import static uk.co.real_logic.aeron.util.protocol.HeaderFlyweight.HDR_TYPE_ADD_CHANNEL;
 import static uk.co.real_logic.aeron.util.protocol.HeaderFlyweight.HDR_TYPE_REMOVE_CHANNEL;
+import static uk.co.real_logic.aeron.util.protocol.HeaderFlyweight.HDR_TYPE_REMOVE_RECEIVER;
 
 /**
  * Admin thread to take responses and notifications from mediadriver and act on them. As well as pass commands to the mediadriver.
@@ -42,6 +44,7 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
     // Message protocol Flyweights
 
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
+    private final RemoveReceiverMessageFlyweight removeReceiverMessage = new RemoveReceiverMessageFlyweight();
 
     public AdminThread(final ByteBuffer commandBuffer,
                        final ByteBuffer recvBuffer,
@@ -63,18 +66,20 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
     @Override
     public void sendAddChannel(final String destination, final long sessionId, final long channelId)
     {
-        channelMessage.reset(sendBuffer, 0);
-        channelMessage.headerType(HDR_TYPE_ADD_CHANNEL);
-        channelMessage.destination(destination);
-        channelMessage.sessionId(sessionId);
-        channelMessage.channelId(channelId);
+        sendChannelMessage(destination, sessionId, channelId, HDR_TYPE_ADD_CHANNEL);
     }
 
     @Override
     public void sendRemoveChannel(final String destination, final long sessionId, final long channelId)
     {
-        channelMessage.reset(sendBuffer, 0);
-        channelMessage.headerType(HDR_TYPE_REMOVE_CHANNEL);
+        sendChannelMessage(destination, sessionId, channelId, HDR_TYPE_REMOVE_CHANNEL);
+    }
+
+    private void sendChannelMessage(final String destination, final long sessionId, final long channelId, final short type)
+    {
+        channelMessage.reset(sendBuffer);
+        channelMessage.currentVersion();
+        channelMessage.headerType(type);
         channelMessage.destination(destination);
         channelMessage.sessionId(sessionId);
         channelMessage.channelId(channelId);
@@ -95,7 +100,10 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
     @Override
     public void sendRemoveReceiver(final String destination)
     {
-        
+        removeReceiverMessage.reset(sendBuffer);
+        removeReceiverMessage.currentVersion();
+        removeReceiverMessage.headerType(HDR_TYPE_REMOVE_RECEIVER);
+        removeReceiverMessage.destination(destination);
     }
 
     /* callbacks from MediaDriver */

@@ -30,9 +30,9 @@ import java.nio.ByteOrder;
  * |                                                             ...
  * +---------------------------------------------------------------+
  */
-public class RemoveReceiverFlyweight extends HeaderFlyweight
+public class RemoveReceiverMessageFlyweight extends HeaderFlyweight
 {
-    private static final int DESTINATION_OFFSET = 0;
+    private static final int DESTINATION_OFFSET = 8;
 
     /**
      * return destination field
@@ -50,7 +50,7 @@ public class RemoveReceiverFlyweight extends HeaderFlyweight
      * @param destination field value
      * @return flyweight
      */
-    public RemoveReceiverFlyweight destination(final String destination)
+    public RemoveReceiverMessageFlyweight destination(final String destination)
     {
         stringPut(atomicBuffer, offset + DESTINATION_OFFSET, destination, ByteOrder.LITTLE_ENDIAN);
         return this;

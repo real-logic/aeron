@@ -17,13 +17,13 @@ package uk.co.real_logic.aeron;
 
 import org.junit.Test;
 import uk.co.real_logic.aeron.util.protocol.ChannelMessageFlyweight;
+import uk.co.real_logic.aeron.util.protocol.RemoveReceiverMessageFlyweight;
 
 import java.nio.ByteBuffer;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static uk.co.real_logic.aeron.util.protocol.HeaderFlyweight.HDR_TYPE_ADD_CHANNEL;
-import static uk.co.real_logic.aeron.util.protocol.HeaderFlyweight.HDR_TYPE_REMOVE_CHANNEL;
+import static uk.co.real_logic.aeron.util.protocol.HeaderFlyweight.*;
 
 public class AdminThreadTest
 {
@@ -47,14 +47,26 @@ public class AdminThreadTest
     private void threadSendsChannelMessage(final Runnable sendMessage, short type)
     {
         ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
+        channelMessage.reset(sendBuffer);
 
         sendMessage.run();
 
-        channelMessage.reset(sendBuffer, 0);
         assertThat(channelMessage.headerType(), is(type));
         assertThat(channelMessage.destination(), is(DESTINATION));
         assertThat(channelMessage.sessionId(), is(1L));
         assertThat(channelMessage.channelId(), is(2L));
+    }
+
+    @Test
+    public void threadSendsRemoveReceiverMessage()
+    {
+        RemoveReceiverMessageFlyweight removeReceiverMessage = new RemoveReceiverMessageFlyweight();
+        removeReceiverMessage.reset(sendBuffer);
+
+        thread.sendRemoveReceiver(DESTINATION);
+
+        assertThat(removeReceiverMessage.headerType(), is(HDR_TYPE_REMOVE_RECEIVER));
+        assertThat(removeReceiverMessage.destination(), is(DESTINATION));
     }
 
 }

@@ -56,6 +56,8 @@ public class HeaderFlyweight
     public static final short HDR_TYPE_ADD_CHANNEL = 0x04;
     /** header type Remove Channel */
     public static final short HDR_TYPE_REMOVE_CHANNEL = 0x05;
+    /** header type Remove Receiver */
+    public static final short HDR_TYPE_REMOVE_RECEIVER = 0x06;
     /** header type EXT */
     public static final short HDR_TYPE_EXT = 0xFF;
 
@@ -74,6 +76,11 @@ public class HeaderFlyweight
 
     public HeaderFlyweight()
     {
+    }
+
+    public HeaderFlyweight reset(final ByteBuffer buffer)
+    {
+        return reset(new AtomicBuffer(buffer), 0);
     }
 
     public HeaderFlyweight reset(final ByteBuffer buffer, final int offset)

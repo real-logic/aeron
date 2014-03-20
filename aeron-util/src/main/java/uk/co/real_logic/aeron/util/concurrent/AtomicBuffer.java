@@ -95,6 +95,18 @@ public class AtomicBuffer
     }
 
     /**
+     * Set a region of memory to a given byte value.
+     *
+     * @param index at which to start.
+     * @param length of the run of bytes to set.
+     * @param value the memory will be set to.
+     */
+    public void setMemory(final int index, final int length, final byte value)
+    {
+        UNSAFE.setMemory(byteArray, addressOffset + index, length, value);
+    }
+
+    /**
      * Get the capacity of the underlying buffer.
      *
      * @return the capacity of the underlying buffer in bytes.
@@ -109,7 +121,7 @@ public class AtomicBuffer
      *
      * Can be overridden in a DirectBuffer subclass to enable an extensible buffer or handle retry after a flush.
      *
-     * @param limit access is required to.
+     * @param limit up to which access is required.
      * @throws IndexOutOfBoundsException if limit is beyond buffer capacity.
      */
     public void checkLimit(final int limit)

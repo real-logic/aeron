@@ -72,6 +72,20 @@ public class AtomicBufferTest
     }
 
     @Theory
+    public void shouldCopyMemory(final AtomicBuffer buffer)
+    {
+        final byte[] testBytes = "xxxxxxxxxxx".getBytes();
+
+        buffer.setMemory(0, testBytes.length, (byte)'x');
+
+        final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(BYTE_ORDER);
+        final byte[] buff = new byte[testBytes.length];
+        duplicateBuffer.get(buff);
+
+        assertThat(buff, is(testBytes));
+    }
+
+    @Theory
     public void shouldGetLongFromBuffer(final AtomicBuffer buffer)
     {
         final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(BYTE_ORDER);

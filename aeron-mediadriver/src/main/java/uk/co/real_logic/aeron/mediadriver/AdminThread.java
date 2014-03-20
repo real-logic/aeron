@@ -104,6 +104,7 @@ public class AdminThread extends ClosableThread implements LibraryFacade
             }
 
             // TODO: look in the termBufferMap for channelId, then sessionId, then termId
+            // TODO: must error check if new channel or not. And sessionId collision
 
             final ByteBuffer termBuffer = bufferManagementStrategy.addSenderChannel(sessionId, channelId, termId);
 

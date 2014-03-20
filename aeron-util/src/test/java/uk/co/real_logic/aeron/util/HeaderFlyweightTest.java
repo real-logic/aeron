@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.util;
 
 import org.junit.Test;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.protocol.ChannelFlyweight;
+import uk.co.real_logic.aeron.util.protocol.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
@@ -34,8 +34,8 @@ public class HeaderFlyweightTest
     private final HeaderFlyweight decodeHeader = new HeaderFlyweight();
     private final DataHeaderFlyweight encodeDataHeader = new DataHeaderFlyweight();
     private final DataHeaderFlyweight decodeDataHeader = new DataHeaderFlyweight();
-    private final ChannelFlyweight encodeChannel = new ChannelFlyweight();
-    private final ChannelFlyweight decodeChannel = new ChannelFlyweight();
+    private final ChannelMessageFlyweight encodeChannel = new ChannelMessageFlyweight();
+    private final ChannelMessageFlyweight decodeChannel = new ChannelMessageFlyweight();
 
     @Test
     public void shouldWriteCorrectValuesForGenericHeaderFields()

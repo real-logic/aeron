@@ -45,22 +45,22 @@ import java.nio.ByteOrder;
 public class HeaderFlyweight
 {
     /** header type DATA */
-    public static final int HDR_TYPE_DATA = 0x00;
+    public static final short HDR_TYPE_DATA = 0x00;
     /** header type CONN */
-    public static final int HDR_TYPE_CONN = 0x01;
+    public static final short HDR_TYPE_CONN = 0x01;
     /** header type NAK */
-    public static final int HDR_TYPE_NAK = 0x02;
+    public static final short HDR_TYPE_NAK = 0x02;
     /** header type SM */
-    public static final int HDR_TYPE_SM = 0x03;
+    public static final short HDR_TYPE_SM = 0x03;
     /** header type Add Channel */
-    public static final int HDR_TYPE_ADD_CHANNEL = 0x04;
+    public static final short HDR_TYPE_ADD_CHANNEL = 0x04;
     /** header type Remove Channel */
-    public static final int HDR_TYPE_REMOVE_CHANNEL = 0x05;
+    public static final short HDR_TYPE_REMOVE_CHANNEL = 0x05;
     /** header type EXT */
-    public static final int HDR_TYPE_EXT = 0xFF;
+    public static final short HDR_TYPE_EXT = 0xFF;
 
     /** default version */
-    public static final int CURRENT_VERSION = 0x0;
+    public static final byte CURRENT_VERSION = 0x0;
 
     public static final int SIZE_OF_INT = 4;
 
@@ -155,6 +155,11 @@ public class HeaderFlyweight
     {
         uint8Put(atomicBuffer, offset + VERS_FIELD_OFFSET, (byte)(ver << 4));
         return this;
+    }
+
+    public HeaderFlyweight currentVersion()
+    {
+        return version(CURRENT_VERSION);
     }
 
     /**

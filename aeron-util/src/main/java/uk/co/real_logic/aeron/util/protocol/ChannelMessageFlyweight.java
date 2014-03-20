@@ -34,7 +34,7 @@ import java.nio.ByteOrder;
  * |                                                             ...
  * +---------------------------------------------------------------+
  */
-public class ChannelFlyweight extends HeaderFlyweight
+public class ChannelMessageFlyweight extends HeaderFlyweight
 {
     private static final int CHANNEL_ID_FIELD_OFFSET = 8;
     private static final int DESTINATION_OFFSET = 12;
@@ -55,7 +55,7 @@ public class ChannelFlyweight extends HeaderFlyweight
      * @param channelId field value
      * @return flyweight
      */
-    public ChannelFlyweight channelId(final long channelId)
+    public ChannelMessageFlyweight channelId(final long channelId)
     {
         uint32Put(atomicBuffer, offset + CHANNEL_ID_FIELD_OFFSET, channelId, ByteOrder.LITTLE_ENDIAN);
         return this;
@@ -77,7 +77,7 @@ public class ChannelFlyweight extends HeaderFlyweight
      * @param destination field value
      * @return flyweight
      */
-    public ChannelFlyweight destination(final String destination)
+    public ChannelMessageFlyweight destination(final String destination)
     {
         stringPut(atomicBuffer, offset + DESTINATION_OFFSET, destination, ByteOrder.LITTLE_ENDIAN);
         return this;

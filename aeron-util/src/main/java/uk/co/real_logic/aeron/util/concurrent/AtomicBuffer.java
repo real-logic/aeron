@@ -763,6 +763,10 @@ public class AtomicBuffer
      */
     public void putBytes(final int index, final AtomicBuffer srcBuffer, final int srcIndex, final int length)
     {
-        UNSAFE.copyMemory(srcBuffer.byteArray, srcBuffer.addressOffset + srcIndex, byteArray, addressOffset + index, length);
+        UNSAFE.copyMemory(srcBuffer.byteArray,
+                          srcBuffer.addressOffset + srcIndex,
+                          byteArray,
+                          addressOffset + index,
+                          length);
     }
 }

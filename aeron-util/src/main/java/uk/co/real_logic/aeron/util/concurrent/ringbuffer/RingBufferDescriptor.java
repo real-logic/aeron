@@ -17,6 +17,9 @@ package uk.co.real_logic.aeron.util.concurrent.ringbuffer;
 
 import uk.co.real_logic.aeron.util.BitUtil;
 
+/**
+ * Layout description for the underlying buffer used by a {@link RingBuffer}
+ */
 public class RingBufferDescriptor
 {
     /** Offset within the trailer for where the tail value is stored. */

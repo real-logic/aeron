@@ -57,7 +57,8 @@ public class ManyToOneRingBufferTest
         final int capacity = 777;
         final int totalBufferSize = capacity + RingBufferDescriptor.TRAILER_SIZE;
 
-        when(Integer.valueOf(atomicBuffer.capacity())).thenReturn(Integer.valueOf(totalBufferSize));
+        when(Integer.valueOf(atomicBuffer.capacity()))
+            .thenReturn(Integer.valueOf(totalBufferSize));
 
         new ManyToOneRingBuffer(atomicBuffer);
     }
@@ -78,9 +79,12 @@ public class ManyToOneRingBufferTest
         final long tail = 0L;
         final long head = 0L;
 
-        when(Long.valueOf(atomicBuffer.getLongVolatile(HEAD_COUNTER_INDEX))).thenReturn(Long.valueOf(head));
-        when(Long.valueOf(atomicBuffer.getLongVolatile(TAIL_COUNTER_INDEX))).thenReturn(Long.valueOf(tail));
-        when(Boolean.valueOf(atomicBuffer.compareAndSetLong(TAIL_COUNTER_INDEX, tail, tail + recordLength))).thenReturn(Boolean.TRUE);
+        when(Long.valueOf(atomicBuffer.getLongVolatile(HEAD_COUNTER_INDEX)))
+            .thenReturn(Long.valueOf(head));
+        when(Long.valueOf(atomicBuffer.getLongVolatile(TAIL_COUNTER_INDEX)))
+            .thenReturn(Long.valueOf(tail));
+        when(Boolean.valueOf(atomicBuffer.compareAndSetLong(TAIL_COUNTER_INDEX, tail, tail + recordLength)))
+            .thenReturn(Boolean.TRUE);
 
         final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[1024]);
 
@@ -100,8 +104,10 @@ public class ManyToOneRingBufferTest
         final long head = 0L;
         final long tail = head + (CAPACITY - align(length - ALIGNMENT, ALIGNMENT));
 
-        when(Long.valueOf(atomicBuffer.getLongVolatile(HEAD_COUNTER_INDEX))).thenReturn(Long.valueOf(head));
-        when(Long.valueOf(atomicBuffer.getLongVolatile(TAIL_COUNTER_INDEX))).thenReturn(Long.valueOf(tail));
+        when(Long.valueOf(atomicBuffer.getLongVolatile(HEAD_COUNTER_INDEX)))
+            .thenReturn(Long.valueOf(head));
+        when(Long.valueOf(atomicBuffer.getLongVolatile(TAIL_COUNTER_INDEX)))
+            .thenReturn(Long.valueOf(tail));
 
         final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[1024]);
 
@@ -120,8 +126,10 @@ public class ManyToOneRingBufferTest
         final long head = 0L;
         final long tail = head + CAPACITY;
 
-        when(Long.valueOf(atomicBuffer.getLongVolatile(HEAD_COUNTER_INDEX))).thenReturn(Long.valueOf(head));
-        when(Long.valueOf(atomicBuffer.getLongVolatile(TAIL_COUNTER_INDEX))).thenReturn(Long.valueOf(tail));
+        when(Long.valueOf(atomicBuffer.getLongVolatile(HEAD_COUNTER_INDEX)))
+            .thenReturn(Long.valueOf(head));
+        when(Long.valueOf(atomicBuffer.getLongVolatile(TAIL_COUNTER_INDEX)))
+            .thenReturn(Long.valueOf(tail));
 
         final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[1024]);
 
@@ -141,9 +149,12 @@ public class ManyToOneRingBufferTest
         final long tail = CAPACITY - ALIGNMENT;
         final long head = tail - (ALIGNMENT * 4);
 
-        when(Long.valueOf(atomicBuffer.getLongVolatile(HEAD_COUNTER_INDEX))).thenReturn(Long.valueOf(head));
-        when(Long.valueOf(atomicBuffer.getLongVolatile(TAIL_COUNTER_INDEX))).thenReturn(Long.valueOf(tail));
-        when(Boolean.valueOf(atomicBuffer.compareAndSetLong(TAIL_COUNTER_INDEX, tail, tail + recordLength + ALIGNMENT))).thenReturn(Boolean.TRUE);
+        when(Long.valueOf(atomicBuffer.getLongVolatile(HEAD_COUNTER_INDEX)))
+            .thenReturn(Long.valueOf(head));
+        when(Long.valueOf(atomicBuffer.getLongVolatile(TAIL_COUNTER_INDEX)))
+            .thenReturn(Long.valueOf(tail));
+        when(Boolean.valueOf(atomicBuffer.compareAndSetLong(TAIL_COUNTER_INDEX, tail, tail + recordLength + ALIGNMENT)))
+            .thenReturn(Boolean.TRUE);
 
         final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[1024]);
 
@@ -165,8 +176,10 @@ public class ManyToOneRingBufferTest
         final long tail = 0L;
         final long head = 0L;
 
-        when(Long.valueOf(atomicBuffer.getLongVolatile(HEAD_COUNTER_INDEX))).thenReturn(Long.valueOf(head));
-        when(Long.valueOf(atomicBuffer.getLongVolatile(TAIL_COUNTER_INDEX))).thenReturn(Long.valueOf(tail));
+        when(Long.valueOf(atomicBuffer.getLongVolatile(HEAD_COUNTER_INDEX)))
+            .thenReturn(Long.valueOf(head));
+        when(Long.valueOf(atomicBuffer.getLongVolatile(TAIL_COUNTER_INDEX)))
+            .thenReturn(Long.valueOf(tail));
 
         final EventHandler handler = (eventTypeId, buffer, index, length) -> fail("should not be called");
         final int eventsRead = ringBuffer.read(handler);
@@ -181,11 +194,15 @@ public class ManyToOneRingBufferTest
         final long head = 0L;
         final int headIndex = (int)head;
 
-        when(Long.valueOf(atomicBuffer.getLongVolatile(HEAD_COUNTER_INDEX))).thenReturn(Long.valueOf(head));
-        when(Long.valueOf(atomicBuffer.getLongVolatile(TAIL_COUNTER_INDEX))).thenReturn(Long.valueOf(tail));
-        when(Integer.valueOf(atomicBuffer.getInt(lengthOffset(headIndex)))).thenReturn(Integer.valueOf(ALIGNMENT));
-        when(Integer.valueOf(atomicBuffer.getIntVolatile(eventTypeOffset(headIndex)))).thenReturn(Integer.valueOf(0))
-                                                                                      .thenReturn(Integer.valueOf(EVENT_TYPE_ID));
+        when(Long.valueOf(atomicBuffer.getLongVolatile(HEAD_COUNTER_INDEX)))
+            .thenReturn(Long.valueOf(head));
+        when(Long.valueOf(atomicBuffer.getLongVolatile(TAIL_COUNTER_INDEX)))
+            .thenReturn(Long.valueOf(tail));
+        when(Integer.valueOf(atomicBuffer.getInt(lengthOffset(headIndex))))
+            .thenReturn(Integer.valueOf(ALIGNMENT));
+        when(Integer.valueOf(atomicBuffer.getIntVolatile(eventTypeOffset(headIndex))))
+            .thenReturn(Integer.valueOf(0))
+            .thenReturn(Integer.valueOf(EVENT_TYPE_ID));
 
         final int[] times = new int[1];
         final EventHandler handler = (eventTypeId, buffer, index, length) -> times[0]++;
@@ -206,12 +223,18 @@ public class ManyToOneRingBufferTest
         final long head = 0L;
         final int headIndex = (int)head;
 
-        when(Long.valueOf(atomicBuffer.getLongVolatile(HEAD_COUNTER_INDEX))).thenReturn(Long.valueOf(head));
-        when(Long.valueOf(atomicBuffer.getLongVolatile(TAIL_COUNTER_INDEX))).thenReturn(Long.valueOf(tail));
-        when(Integer.valueOf(atomicBuffer.getInt(lengthOffset(headIndex)))).thenReturn(Integer.valueOf(ALIGNMENT));
-        when(Integer.valueOf(atomicBuffer.getInt(lengthOffset(headIndex + ALIGNMENT)))).thenReturn(Integer.valueOf(ALIGNMENT));
-        when(Integer.valueOf(atomicBuffer.getIntVolatile(eventTypeOffset(headIndex)))).thenReturn(Integer.valueOf(EVENT_TYPE_ID));
-        when(Integer.valueOf(atomicBuffer.getIntVolatile(eventTypeOffset(headIndex + ALIGNMENT)))).thenReturn(Integer.valueOf(EVENT_TYPE_ID));
+        when(Long.valueOf(atomicBuffer.getLongVolatile(HEAD_COUNTER_INDEX)))
+            .thenReturn(Long.valueOf(head));
+        when(Long.valueOf(atomicBuffer.getLongVolatile(TAIL_COUNTER_INDEX)))
+            .thenReturn(Long.valueOf(tail));
+        when(Integer.valueOf(atomicBuffer.getInt(lengthOffset(headIndex))))
+            .thenReturn(Integer.valueOf(ALIGNMENT));
+        when(Integer.valueOf(atomicBuffer.getInt(lengthOffset(headIndex + ALIGNMENT))))
+            .thenReturn(Integer.valueOf(ALIGNMENT));
+        when(Integer.valueOf(atomicBuffer.getIntVolatile(eventTypeOffset(headIndex))))
+            .thenReturn(Integer.valueOf(EVENT_TYPE_ID));
+        when(Integer.valueOf(atomicBuffer.getIntVolatile(eventTypeOffset(headIndex + ALIGNMENT))))
+            .thenReturn(Integer.valueOf(EVENT_TYPE_ID));
 
         final int[] times = new int[1];
         final EventHandler handler = (eventTypeId, buffer, index, length) -> times[0]++;

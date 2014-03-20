@@ -25,14 +25,16 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescri
  */
 public class ManyToOneRingBuffer implements RingBuffer
 {
-    /** Event type is padding to prevent fragmentation in the buffer. */
+    /**
+     * Event type is padding to prevent fragmentation in the buffer.
+     */
     public static final int PADDING_EVENT_TYPE_ID = -1;
 
     /**
      * Header size made up of fields for record length, event length, event type, and reserved, then the encoded event.
-     * <p/>
+     * <p>
      * Writing of the evt type signals the event recording is complete.
-     *
+     * <p>
      * <pre>
      *   0        4        8        12       16 -byte position
      *   +--------+--------+--------+--------+------------------------+
@@ -42,10 +44,14 @@ public class ManyToOneRingBuffer implements RingBuffer
      */
     public static final int RECORD_HEADER_SIZE = SIZE_OF_INT * 4;
 
-    /** Alignment as a multiple of bytes for each record. */
+    /**
+     * Alignment as a multiple of bytes for each record.
+     */
     public static final int ALIGNMENT = 32;
 
-    /** Buffer has insufficient capacity to record an event. */
+    /**
+     * Buffer has insufficient capacity to record an event.
+     */
     public static final int INSUFFICIENT_CAPACITY = -1;
 
     private final AtomicBuffer buffer;
@@ -58,10 +64,12 @@ public class ManyToOneRingBuffer implements RingBuffer
 
     /**
      * Construct a new {@link RingBuffer} based on an underlying {@link AtomicBuffer}.
-     * The underlying buffer must a power of 2 in size plus sufficient space for the {@link RingBufferDescriptor#TRAILER_SIZE}.
+     * The underlying buffer must a power of 2 in size plus sufficient space
+     * for the {@link RingBufferDescriptor#TRAILER_SIZE}.
      *
      * @param buffer via which events will be exchanged.
-     * @throws java.lang.IllegalStateException if the buffer capacity is not a power of 2 plus {@link RingBufferDescriptor#TRAILER_SIZE} in capacity.
+     * @throws IllegalStateException if the buffer capacity is not a power of 2
+     *                               plus {@link RingBufferDescriptor#TRAILER_SIZE} in capacity.
      */
     public ManyToOneRingBuffer(final AtomicBuffer buffer)
     {
@@ -70,7 +78,9 @@ public class ManyToOneRingBuffer implements RingBuffer
 
         if (capacity < 1 || 1 != Integer.bitCount(capacity))
         {
-            throw new IllegalStateException("Capacity must be a positive power of 2 + TRAILER_SIZE: AtomicBuffer.capacity=" + capacity);
+            final String msg = "Capacity must be a positive power of 2 + TRAILER_SIZE: AtomicBuffer.capacity="
+                                + capacity;
+            throw new IllegalStateException(msg);
         }
 
         mask = capacity - 1;
@@ -154,6 +164,7 @@ public class ManyToOneRingBuffer implements RingBuffer
 
         return true;
     }
+
     /**
      * {@inheritDoc}
      */

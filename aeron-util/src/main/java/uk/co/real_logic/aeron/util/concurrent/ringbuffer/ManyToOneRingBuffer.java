@@ -78,8 +78,8 @@ public class ManyToOneRingBuffer implements RingBuffer
 
         if (capacity < 1 || 1 != Integer.bitCount(capacity))
         {
-            final String msg = "Capacity must be a positive power of 2 + TRAILER_SIZE: AtomicBuffer.capacity="
-                                + capacity;
+            final String msg =
+                "Capacity must be a positive power of 2 + TRAILER_SIZE: AtomicBuffer.capacity=" + capacity;
             throw new IllegalStateException(msg);
         }
 

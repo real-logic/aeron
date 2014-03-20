@@ -202,7 +202,7 @@ public class ManyToOneRingBuffer implements RingBuffer
             }
             finally
             {
-                buffer.setMemory(headIndex, bytesRead, (byte)0);
+                zeroBuffer(buffer, headIndex, bytesRead);
                 putHeadOrdered(head + bytesRead);
             }
         }
@@ -231,7 +231,7 @@ public class ManyToOneRingBuffer implements RingBuffer
         if (eventTypeId < 1)
         {
             final String msg = String.format("event type id must be greater than zero, eventTypeId=%d",
-                                             Integer.valueOf(eventTypeId));
+                                             eventTypeId);
 
             throw new IllegalArgumentException(msg);
         }
@@ -242,7 +242,7 @@ public class ManyToOneRingBuffer implements RingBuffer
         if (length > maxEventSize)
         {
             final String msg = String.format("encoded event exceeds maxEventSize of %d, length=%d",
-                                             Integer.valueOf(maxEventSize), Integer.valueOf(length));
+                                             maxEventSize, length);
 
             throw new IllegalArgumentException(msg);
         }
@@ -344,6 +344,11 @@ public class ManyToOneRingBuffer implements RingBuffer
     {
         return buffer.getInt(eventLengthOffset(recordIndex));
     }
+
+	private static void zeroBuffer(AtomicBuffer buffer, final int position, int length)
+	{
+		buffer.setMemory(position, length, (byte)0);
+	}
 
     private int waitForEventTypeId(final int recordIndex)
     {

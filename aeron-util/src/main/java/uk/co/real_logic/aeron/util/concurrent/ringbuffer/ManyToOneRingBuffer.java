@@ -276,7 +276,7 @@ public class ManyToOneRingBuffer implements RingBuffer
                 {
                     if (requiredCapacity > headIndex)
                     {
-                        return -1;
+                        return INSUFFICIENT_CAPACITY;
                     }
 
                     padding = bufferEndSize;
@@ -345,10 +345,10 @@ public class ManyToOneRingBuffer implements RingBuffer
         return buffer.getInt(eventLengthOffset(recordIndex));
     }
 
-	private static void zeroBuffer(AtomicBuffer buffer, final int position, int length)
-	{
-		buffer.setMemory(position, length, (byte)0);
-	}
+    private static void zeroBuffer(AtomicBuffer buffer, final int position, int length)
+    {
+        buffer.setMemory(position, length, (byte)0);
+    }
 
     private int waitForEventTypeId(final int recordIndex)
     {

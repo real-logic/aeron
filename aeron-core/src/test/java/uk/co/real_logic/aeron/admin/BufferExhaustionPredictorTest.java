@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron;
+package uk.co.real_logic.aeron.admin;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -41,7 +41,7 @@ public class BufferExhaustionPredictorTest
         return Arrays.asList(data);
     }
 
-    private final BufferExhaustionPredictor predictor = new BufferExhaustionPredictor(100);
+    private final BufferExhaustionPredictor predictor = new BufferExhaustionPredictor();
     private final long period;
     private final long[] amounts;
     private final boolean result;
@@ -56,11 +56,12 @@ public class BufferExhaustionPredictorTest
     @Test
     public void canPredictExhaustion()
     {
+        predictor.reset(100);
         long currentTime = System.nanoTime();
         long startTime = currentTime - period;
         for (int i = 0; i < amounts.length; i++)
         {
-            predictor.dataWritten(amounts[i], startTime + i);
+            predictor.onDataWritten(amounts[i], startTime + i);
         }
         assertThat(predictor.predictExhaustion(currentTime), is(result));
     }

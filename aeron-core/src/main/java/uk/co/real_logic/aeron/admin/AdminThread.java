@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron;
+package uk.co.real_logic.aeron.admin;
 
+import uk.co.real_logic.aeron.command.AdminThreadEvents;
+import uk.co.real_logic.aeron.command.DataWrittenFlyweight;
 import uk.co.real_logic.aeron.util.ClosableThread;
 import uk.co.real_logic.aeron.util.collections.TripletMap;
 import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
@@ -23,7 +25,7 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.RemoveReceiverMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.TripleMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.TripletMessageFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.nio.ByteBuffer;
@@ -51,15 +53,22 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
     /** Lookup map for receiver buffers */
     private final TripletMap<RingBuffer> receiverTermMap = new TripletMap<>();
 
+    private final TripletMap<BufferExhaustionPredictor> senderPredictors = new TripletMap<>();
+
+    private final TripletMap<BufferExhaustionPredictor> receiverPredictors = new TripletMap<>();
+
     /** Atomic buffer to write message flyweights into before they get sent */
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(WRITE_BUFFER_CAPACITY));
 
     // Control protocol Flyweights
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
     private final RemoveReceiverMessageFlyweight removeReceiverMessage = new RemoveReceiverMessageFlyweight();
-    private final TripleMessageFlyweight requestTermMessage = new TripleMessageFlyweight();
+    private final TripletMessageFlyweight requestTermMessage = new TripletMessageFlyweight();
 
-    private final TripleMessageFlyweight bufferNotificationMessage = new TripleMessageFlyweight();
+    private final TripletMessageFlyweight bufferNotificationMessage = new TripletMessageFlyweight();
+
+    // Command Buffer Flyweights
+    private final DataWrittenFlyweight dataWrittenMessage = new DataWrittenFlyweight();
 
     public AdminThread(final RingBuffer commandBuffer,
                        final RingBuffer recvBuffer,
@@ -82,7 +91,30 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
 
     private void handleCommandBuffer()
     {
+        commandBuffer.read((eventTypeId, buffer, index, length) ->
+        {
+            switch (eventTypeId)
+            {
+                case AdminThreadEvents.DATA_WRITTEN:
+                    dataWrittenMessage.reset(buffer, index);
+                    onDataWritten(dataWrittenMessage.sessionId(),
+                                  dataWrittenMessage.channelId(),
+                                  dataWrittenMessage.termId(),
+                                  dataWrittenMessage.amount(),
+                                  dataWrittenMessage.currentTime());
+                    return;
+            }
+        });
+    }
 
+    private void onDataWritten(final long sessionId,
+                               final long channelId,
+                               final long termId,
+                               final long amount,
+                               final long currentTime)
+    {
+        senderPredictors.get(sessionId, channelId, termId)
+                        .onDataWritten(amount, currentTime);
     }
 
     private void handleReceiveBuffer()
@@ -154,7 +186,7 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
         requestTermMessage.sessionId(sessionId);
         requestTermMessage.channelId(channelId);
         requestTermMessage.termId(termId);
-        sendBuffer.write(REQUEST_TERM, writeBuffer, 0, TripleMessageFlyweight.length());
+        sendBuffer.write(REQUEST_TERM, writeBuffer, 0, TripletMessageFlyweight.length());
     }
 
     /* callbacks from MediaDriver */
@@ -173,7 +205,8 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
 
     public void onNewBufferNotification(final long sessionId, final long channelId, final long termId, final boolean isSender)
     {
-        // TODO: map
+        TripletMap<BufferExhaustionPredictor> predictors = isSender ? senderPredictors : receiverPredictors;
+        predictors.put(sessionId, channelId, termId, new BufferExhaustionPredictor());
     }
 
 }

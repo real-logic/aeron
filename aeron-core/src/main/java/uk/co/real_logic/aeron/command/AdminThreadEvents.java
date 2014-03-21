@@ -13,35 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron;
+package uk.co.real_logic.aeron.command;
 
 /**
- * Record the data write rate as part of the buffer exhaustion process.
+ * Events that are sent to the admin thread's command buffer.
  */
-public class DataWriteRate
+public class AdminThreadEvents
 {
-
-    private long nanoTime;
-    private long amountInBytes;
-
-    public long nanoTime()
-    {
-        return nanoTime;
-    }
-
-    public void nanoTime(long nanoTime)
-    {
-        this.nanoTime = nanoTime;
-    }
-
-    public long amountInBytes()
-    {
-        return amountInBytes;
-    }
-
-    public void amountInBytes(final long amountInBytes)
-    {
-        this.amountInBytes = amountInBytes;
-    }
-
+    public static final int DATA_WRITTEN = 0x0;
 }

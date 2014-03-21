@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron;
+package uk.co.real_logic.aeron.admin;
 
 import java.util.List;
 import java.util.stream.IntStream;
@@ -31,22 +31,17 @@ public class BufferExhaustionPredictor
 
     private static final int DATA_COLLECTION_WINDOW = 10;
 
-    private final long bufferSize;
-    // TODO: replace with a flyweighted, threadsafe, buffer
+    private long bufferSize;
     private List<DataWriteRate> writeRates;
-
     private long bufferConsumed;
 
     private int writeCursor;
 
-    public BufferExhaustionPredictor(final long bufferSizeInBytes)
+    public BufferExhaustionPredictor()
     {
-        this.bufferSize = bufferSizeInBytes;
-
-        onBufferAllocated();
     }
 
-    public void dataWritten(final long amountInBytes, final long nanoTime)
+    public void onDataWritten(final long amountInBytes, final long nanoTime)
     {
         bufferConsumed += amountInBytes;
 
@@ -56,7 +51,8 @@ public class BufferExhaustionPredictor
         writeCursor = next(writeCursor);
     }
 
-    public void onBufferAllocated() {
+    public void reset(final long bufferSize) {
+        this.bufferSize = bufferSize;
         bufferConsumed = 0;
 
         writeCursor = 0;

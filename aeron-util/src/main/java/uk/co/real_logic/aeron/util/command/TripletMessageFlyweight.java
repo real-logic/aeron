@@ -42,7 +42,7 @@ import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
  * |                           Term ID                             |
  * +---------------------------------------------------------------+
  */
-public class TripleMessageFlyweight extends Flyweight
+public class TripletMessageFlyweight extends Flyweight
 {
     private static final int SESSION_ID_OFFSET = 0;
     private static final int CHANNEL_ID_FIELD_OFFSET = 4;
@@ -62,7 +62,7 @@ public class TripleMessageFlyweight extends Flyweight
      * @param sessionId field value
      * @return flyweight
      */
-    public TripleMessageFlyweight sessionId(final long sessionId)
+    public TripletMessageFlyweight sessionId(final long sessionId)
     {
         uint32Put(offset + SESSION_ID_OFFSET, (int)sessionId, ByteOrder.LITTLE_ENDIAN);
         return this;
@@ -84,7 +84,7 @@ public class TripleMessageFlyweight extends Flyweight
      * @param channelId field value
      * @return flyweight
      */
-    public TripleMessageFlyweight channelId(final long channelId)
+    public TripletMessageFlyweight channelId(final long channelId)
     {
         uint32Put(offset + CHANNEL_ID_FIELD_OFFSET, channelId, ByteOrder.LITTLE_ENDIAN);
         return this;
@@ -106,7 +106,7 @@ public class TripleMessageFlyweight extends Flyweight
      * @param termId field value
      * @return flyweight
      */
-    public TripleMessageFlyweight termId(final long termId)
+    public TripletMessageFlyweight termId(final long termId)
     {
         uint32Put(offset + TERM_ID_FIELD_OFFSET, termId, ByteOrder.LITTLE_ENDIAN);
         return this;

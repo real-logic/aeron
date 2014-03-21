@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron;
+package uk.co.real_logic.aeron.admin;
 
 import org.junit.Test;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -22,7 +22,7 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.RemoveReceiverMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.TripleMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.TripletMessageFlyweight;
 
 import java.nio.ByteBuffer;
 
@@ -88,7 +88,7 @@ public class AdminThreadTest
 
         assertReadsOneMessage((eventTypeId, buffer, index, length) ->
         {
-            TripleMessageFlyweight requestTermBuffer = new TripleMessageFlyweight();
+            TripletMessageFlyweight requestTermBuffer = new TripletMessageFlyweight();
             requestTermBuffer.reset(buffer, index);
 
             assertThat(eventTypeId, is(REQUEST_TERM));

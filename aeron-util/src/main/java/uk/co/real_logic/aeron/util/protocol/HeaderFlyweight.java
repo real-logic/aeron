@@ -15,13 +15,9 @@
  */
 package uk.co.real_logic.aeron.util.protocol;
 
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.Flyweight;
 
-import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.charset.StandardCharsets;
-
-import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 
 /**
  * Flyweight for general Aeron header
@@ -45,7 +41,7 @@ import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
  * |                       Depends on Type                        ...
  *
  */
-public class HeaderFlyweight
+public class HeaderFlyweight extends Flyweight
 {
     /** header type DATA */
     public static final short HDR_TYPE_DATA = 0x00;
@@ -66,90 +62,13 @@ public class HeaderFlyweight
     public static final int FRAME_LENGTH_FIELD_OFFSET = 2;
     public static final int SESSION_ID_FIELD_OFFSET = 4;
 
-    protected AtomicBuffer atomicBuffer;
-    protected int offset;
-
-    public HeaderFlyweight()
-    {
-    }
-
-    public HeaderFlyweight reset(final ByteBuffer buffer)
-    {
-        return reset(buffer, 0);
-    }
-
-    public HeaderFlyweight reset(final ByteBuffer buffer, final int offset)
-    {
-        return reset(new AtomicBuffer(buffer), offset);
-    }
-
-    public HeaderFlyweight reset(final AtomicBuffer buffer, final int offset)
-    {
-        this.atomicBuffer = buffer;
-        this.offset = offset;
-        return this;
-    }
-
-    public static short uint8Get(final AtomicBuffer buffer, final int offset)
-    {
-        return (short)(buffer.getByte(offset) & 0xFF);
-    }
-
-    public static void uint8Put(final AtomicBuffer buffer, final int offset, final short value)
-    {
-        buffer.putByte(offset, (byte)value);
-    }
-
-    public static int uint16Get(final AtomicBuffer buffer, final int offset, final ByteOrder byteOrder)
-    {
-        return (buffer.getShort(offset, byteOrder) & 0xFFFF);
-    }
-
-    public static void uint16Put(final AtomicBuffer buffer,
-                                 final int offset,
-                                 final int value,
-                                 final ByteOrder byteOrder)
-    {
-        buffer.putShort(offset, (short)value, byteOrder);
-    }
-
-    public static long uint32Get(final AtomicBuffer buffer, final int offset, final ByteOrder byteOrder)
-    {
-        return (buffer.getInt(offset, byteOrder) & 0xFFFFFFFFL);
-    }
-
-    public static void uint32Put(final AtomicBuffer buffer,
-                                 final int offset,
-                                 final long value,
-                                 final ByteOrder byteOrder)
-    {
-        buffer.putInt(offset, (int)value, byteOrder);
-    }
-
-    // TODO: consider efficiency for String encoding/decoding
-    // TODO: is there a sensible error handling for getBytes/putBytes not reading/writing the current amount of data
-    public static String stringGet(AtomicBuffer buffer, final int offset, ByteOrder byteOrder)
-    {
-        int length = buffer.getInt(offset);
-        byte[] stringInBytes = new byte[length];
-        buffer.getBytes(offset + SIZE_OF_INT, stringInBytes);
-        return new String(stringInBytes, StandardCharsets.UTF_8);
-    }
-
-    public static int stringPut(AtomicBuffer buffer, final int offset, String value, ByteOrder byteOrder)
-    {
-        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-        buffer.putInt(offset, bytes.length);
-        return SIZE_OF_INT + buffer.putBytes(offset + SIZE_OF_INT, bytes);
-    }
-
     /**
      * return version field value
      * @return ver field value
      */
     public byte version()
     {
-        final int versAndFlags = uint8Get(atomicBuffer, offset + VERS_FIELD_OFFSET);
+        final int versAndFlags = uint8Get(offset + VERS_FIELD_OFFSET);
 
         return (byte)(versAndFlags >> 4);
     }
@@ -161,13 +80,8 @@ public class HeaderFlyweight
      */
     public HeaderFlyweight version(final byte ver)
     {
-        uint8Put(atomicBuffer, offset + VERS_FIELD_OFFSET, (byte)(ver << 4));
+        uint8Put(offset + VERS_FIELD_OFFSET, (byte)(ver << 4));
         return this;
-    }
-
-    public HeaderFlyweight currentVersion()
-    {
-        return version(CURRENT_VERSION);
     }
 
     /**
@@ -176,7 +90,7 @@ public class HeaderFlyweight
      */
     public short headerType()
     {
-        return uint8Get(atomicBuffer, offset + TYPE_FIELD_OFFSET);
+        return uint8Get(offset + TYPE_FIELD_OFFSET);
     }
 
     /**
@@ -186,7 +100,7 @@ public class HeaderFlyweight
      */
     public HeaderFlyweight headerType(final short type)
     {
-        uint8Put(atomicBuffer, offset + TYPE_FIELD_OFFSET, (byte)type);
+        uint8Put(offset + TYPE_FIELD_OFFSET, (byte)type);
         return this;
     }
 
@@ -196,7 +110,7 @@ public class HeaderFlyweight
      */
     public int frameLength()
     {
-        return uint16Get(atomicBuffer, offset + FRAME_LENGTH_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return uint16Get(offset + FRAME_LENGTH_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
@@ -206,7 +120,7 @@ public class HeaderFlyweight
      */
     public HeaderFlyweight frameLength(final int length)
     {
-        uint16Put(atomicBuffer, offset + FRAME_LENGTH_FIELD_OFFSET, (short)length, ByteOrder.LITTLE_ENDIAN);
+        uint16Put(offset + FRAME_LENGTH_FIELD_OFFSET, (short)length, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
@@ -216,7 +130,7 @@ public class HeaderFlyweight
      */
     public long sessionId()
     {
-        return uint32Get(atomicBuffer, offset + SESSION_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return uint32Get(offset + SESSION_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
@@ -226,7 +140,8 @@ public class HeaderFlyweight
      */
     public HeaderFlyweight sessionId(final long sessionId)
     {
-        uint32Put(atomicBuffer, offset + SESSION_ID_FIELD_OFFSET, (int)sessionId, ByteOrder.LITTLE_ENDIAN);
+        uint32Put(offset + SESSION_ID_FIELD_OFFSET, (int)sessionId, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
+
 }

@@ -21,7 +21,7 @@ import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.control.ChannelMessageFlyweight;
-import uk.co.real_logic.aeron.util.control.ControlProtocolEventTypes;
+import uk.co.real_logic.aeron.util.control.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.control.RemoveReceiverMessageFlyweight;
 import uk.co.real_logic.aeron.util.control.TripleMessageFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
@@ -30,8 +30,8 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 
-import static uk.co.real_logic.aeron.util.control.ControlProtocolEventTypes.REMOVE_RECEIVER;
-import static uk.co.real_logic.aeron.util.control.ControlProtocolEventTypes.REQUEST_TERM;
+import static uk.co.real_logic.aeron.util.control.ControlProtocolEvents.REMOVE_RECEIVER;
+import static uk.co.real_logic.aeron.util.control.ControlProtocolEvents.REQUEST_TERM;
 
 
 /**
@@ -96,13 +96,13 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
     @Override
     public void sendAddChannel(final String destination, final long sessionId, final long channelId)
     {
-        sendChannelMessage(destination, sessionId, channelId, ControlProtocolEventTypes.ADD_CHANNEL);
+        sendChannelMessage(destination, sessionId, channelId, ControlProtocolEvents.ADD_CHANNEL);
     }
 
     @Override
     public void sendRemoveChannel(final String destination, final long sessionId, final long channelId)
     {
-        sendChannelMessage(destination, sessionId, channelId, ControlProtocolEventTypes.REMOVE_CHANNEL);
+        sendChannelMessage(destination, sessionId, channelId, ControlProtocolEvents.REMOVE_CHANNEL);
     }
 
     private void sendChannelMessage(final String destination,
@@ -110,7 +110,6 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
                                     final long channelId,
                                     final int eventTypeId)
     {
-        channelMessage.currentVersion();
         channelMessage.sessionId(sessionId);
         channelMessage.channelId(channelId);
         channelMessage.destination(destination);
@@ -132,14 +131,12 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
 
     public void sendRemoveReceiver(final String destination)
     {
-        removeReceiverMessage.currentVersion();
         removeReceiverMessage.destination(destination);
         sendBuffer.write(REMOVE_RECEIVER, writeBuffer, 0, removeReceiverMessage.length());
     }
 
     public void sendRequestTerm(final long sessionId, final long channelId, final long termId)
     {
-        requestTermMessage.currentVersion();
         requestTermMessage.sessionId(sessionId);
         requestTermMessage.channelId(channelId);
         requestTermMessage.termId(termId);

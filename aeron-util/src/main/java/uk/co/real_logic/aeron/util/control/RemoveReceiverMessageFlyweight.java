@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.util.control;
 
-import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.util.Flyweight;
 
 import java.nio.ByteOrder;
 
@@ -26,15 +26,13 @@ import java.nio.ByteOrder;
  * 0                   1                   2                   3
  * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |  Vers |S|E|H|R| Type (=0x00)  |   Frame Length (=data + 20)   |
- * +-------+-+-+-+-+---------------+-------------------------------+
  * |      Destination Length       |   Destination               ...
  * |                                                             ...
  * +---------------------------------------------------------------+
  */
-public class RemoveReceiverMessageFlyweight extends HeaderFlyweight
+public class RemoveReceiverMessageFlyweight extends Flyweight
 {
-    private static final int DESTINATION_OFFSET = 8;
+    private static final int DESTINATION_OFFSET = 0;
 
     private int lengthOfDestination;
 
@@ -45,7 +43,7 @@ public class RemoveReceiverMessageFlyweight extends HeaderFlyweight
      */
     public String destination()
     {
-        return stringGet(atomicBuffer, offset + DESTINATION_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return stringGet(offset + DESTINATION_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
@@ -56,8 +54,7 @@ public class RemoveReceiverMessageFlyweight extends HeaderFlyweight
      */
     public RemoveReceiverMessageFlyweight destination(final String destination)
     {
-        lengthOfDestination = stringPut(atomicBuffer,
-                                        offset + DESTINATION_OFFSET,
+        lengthOfDestination = stringPut(offset + DESTINATION_OFFSET,
                                         destination,
                                         ByteOrder.LITTLE_ENDIAN);
         return this;

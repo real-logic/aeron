@@ -27,12 +27,9 @@ import uk.co.real_logic.aeron.util.control.TripleMessageFlyweight;
 import java.nio.ByteBuffer;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_SIZE;
-import static uk.co.real_logic.aeron.util.control.ControlProtocolEventTypes.ADD_CHANNEL;
-import static uk.co.real_logic.aeron.util.control.ControlProtocolEventTypes.REMOVE_CHANNEL;
-import static uk.co.real_logic.aeron.util.control.ControlProtocolEventTypes.REMOVE_RECEIVER;
+import static uk.co.real_logic.aeron.util.control.ControlProtocolEvents.*;
 
 public class AdminThreadTest
 {
@@ -94,7 +91,7 @@ public class AdminThreadTest
             TripleMessageFlyweight requestTermBuffer = new TripleMessageFlyweight();
             requestTermBuffer.reset(buffer, index);
 
-            //assertThat(requestTermBuffer.headerType(), is(HDR_TYPE_REQUEST_TERM));
+            assertThat(eventTypeId, is(REQUEST_TERM));
             assertThat(requestTermBuffer.sessionId(), is(1L));
             assertThat(requestTermBuffer.channelId(), is(2L));
             assertThat(requestTermBuffer.termId(), is(3L));

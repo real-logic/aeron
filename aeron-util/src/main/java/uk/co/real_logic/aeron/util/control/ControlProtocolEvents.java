@@ -19,7 +19,7 @@ package uk.co.real_logic.aeron.util.control;
  * List of event types used in the control protocol between the
  * media driver and the core.
  */
-public class ControlProtocolEventTypes
+public class ControlProtocolEvents
 {
     /** Add Channel */
     public static final int ADD_CHANNEL = 0x01;

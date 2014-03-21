@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.util.control;
 
-import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.util.Flyweight;
 
 import java.nio.ByteOrder;
 
@@ -26,8 +26,6 @@ import java.nio.ByteOrder;
  * 0                   1                   2                   3
  * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |  Vers |S|E|H|R| Type (=0x00)  |   Frame Length (=data + 20)   |
- * +-------+-+-+-+-+---------------+-------------------------------+
  * |                          Session ID                           |
  * +---------------------------------------------------------------+
  * |                          Channel ID                           |
@@ -36,12 +34,33 @@ import java.nio.ByteOrder;
  * |                                                             ...
  * +---------------------------------------------------------------+
  */
-public class ChannelMessageFlyweight extends HeaderFlyweight
+public class ChannelMessageFlyweight extends Flyweight
 {
-    private static final int CHANNEL_ID_FIELD_OFFSET = 8;
-    private static final int DESTINATION_OFFSET = 12;
+    private static final int SESSION_ID_FIELD_OFFSET = 0;
+    private static final int CHANNEL_ID_FIELD_OFFSET = 4;
+    private static final int DESTINATION_OFFSET = 8;
 
     private int lengthOfDestination;
+
+    /**
+     * return session id field
+     * @return session id field
+     */
+    public long sessionId()
+    {
+        return uint32Get(offset + SESSION_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+    }
+
+    /**
+     * set session id field
+     * @param sessionId field value
+     * @return flyweight
+     */
+    public ChannelMessageFlyweight sessionId(final long sessionId)
+    {
+        uint32Put(offset + SESSION_ID_FIELD_OFFSET, (int)sessionId, ByteOrder.LITTLE_ENDIAN);
+        return this;
+    }
 
     /**
      * return channel id field
@@ -50,7 +69,7 @@ public class ChannelMessageFlyweight extends HeaderFlyweight
      */
     public long channelId()
     {
-        return uint32Get(atomicBuffer, offset + CHANNEL_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return uint32Get(offset + CHANNEL_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
@@ -61,7 +80,7 @@ public class ChannelMessageFlyweight extends HeaderFlyweight
      */
     public ChannelMessageFlyweight channelId(final long channelId)
     {
-        uint32Put(atomicBuffer, offset + CHANNEL_ID_FIELD_OFFSET, channelId, ByteOrder.LITTLE_ENDIAN);
+        uint32Put(offset + CHANNEL_ID_FIELD_OFFSET, channelId, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
@@ -72,7 +91,7 @@ public class ChannelMessageFlyweight extends HeaderFlyweight
      */
     public String destination()
     {
-        return stringGet(atomicBuffer, offset + DESTINATION_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return stringGet(offset + DESTINATION_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
@@ -83,13 +102,19 @@ public class ChannelMessageFlyweight extends HeaderFlyweight
      */
     public ChannelMessageFlyweight destination(final String destination)
     {
-        lengthOfDestination = stringPut(atomicBuffer,
-                                        offset + DESTINATION_OFFSET,
+        lengthOfDestination = stringPut(offset + DESTINATION_OFFSET,
                                         destination,
                                         ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
+    /**
+     * Get the length of the current message
+     *
+     * NB: must be called after the data is written in order to be accurate.
+     *
+     * @return the length of the current message
+     */
     public int length()
     {
         return DESTINATION_OFFSET + lengthOfDestination;

@@ -87,8 +87,8 @@ public class ReceiverThreadTest
 
         final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), receiverThread, null, null);
 
-        encodeDataHeader.reset(atomicBuffer, 0)
-                        .version(HeaderFlyweight.CURRENT_VERSION)
+        encodeDataHeader.reset(atomicBuffer, 0);
+        encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
                         .headerType(HeaderFlyweight.HDR_TYPE_DATA)
                         .frameLength(20)
                         .sessionId(SESSION_ID);
@@ -136,8 +136,8 @@ public class ReceiverThreadTest
 
         final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), receiverThread, null, null);
 
-        encodeDataHeader.reset(atomicBuffer, 0)
-                        .version(HeaderFlyweight.CURRENT_VERSION)
+        encodeDataHeader.reset(atomicBuffer, 0);
+        encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
                         .headerType(HeaderFlyweight.HDR_TYPE_CONN)
                         .frameLength(8)
                         .sessionId(SESSION_ID);
@@ -186,15 +186,15 @@ public class ReceiverThreadTest
 
         final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), receiverThread, null, null);
 
-        encodeDataHeader.reset(atomicBuffer, 0)
-                        .version(HeaderFlyweight.CURRENT_VERSION)
+        encodeDataHeader.reset(atomicBuffer, 0);
+        encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
                         .headerType(HeaderFlyweight.HDR_TYPE_DATA)
                         .frameLength(20)
                         .sessionId(SESSION_ID);
         encodeDataHeader.channelId(CHANNEL_ID)
                         .termId(TERM_ID);
-        encodeDataHeader.reset(atomicBuffer, 20)
-                        .version(HeaderFlyweight.CURRENT_VERSION)
+        encodeDataHeader.reset(atomicBuffer, 20);
+        encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
                         .headerType(HeaderFlyweight.HDR_TYPE_DATA)
                         .frameLength(20)
                         .sessionId(SESSION_ID);
@@ -243,8 +243,8 @@ public class ReceiverThreadTest
 
         final RcvFrameHandler rcv = new RcvFrameHandler(UdpDestination.parse(RCV_UDP_URI), receiverThread, channelIds);
 
-        encodeDataHeader.reset(atomicBuffer, 0)
-                        .version(HeaderFlyweight.CURRENT_VERSION)
+        encodeDataHeader.reset(atomicBuffer, 0);
+        encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
                         .headerType(HeaderFlyweight.HDR_TYPE_CONN)
                         .frameLength(8)
                         .sessionId(SESSION_ID);

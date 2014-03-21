@@ -26,7 +26,7 @@ import java.nio.ByteBuffer;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
-public class HeaderFlyweightTest
+public class FlyweightTest
 {
     private final ByteBuffer buffer = ByteBuffer.allocateDirect(256);
     private final AtomicBuffer aBuff = new AtomicBuffer(buffer);

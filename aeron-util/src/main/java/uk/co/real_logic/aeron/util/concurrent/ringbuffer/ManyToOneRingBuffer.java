@@ -202,7 +202,7 @@ public class ManyToOneRingBuffer implements RingBuffer
             }
             finally
             {
-                zeroBuffer(buffer, headIndex, bytesRead);
+                zeroBuffer(headIndex, bytesRead);
                 putHeadOrdered(head + bytesRead);
             }
         }
@@ -345,7 +345,7 @@ public class ManyToOneRingBuffer implements RingBuffer
         return buffer.getInt(eventLengthOffset(recordIndex));
     }
 
-    private static void zeroBuffer(AtomicBuffer buffer, final int position, int length)
+    private void zeroBuffer(final int position, int length)
     {
         buffer.setMemory(position, length, (byte)0);
     }

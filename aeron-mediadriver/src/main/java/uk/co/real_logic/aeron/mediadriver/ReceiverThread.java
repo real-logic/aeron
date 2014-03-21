@@ -153,7 +153,8 @@ public class ReceiverThread implements AutoCloseable, Runnable
 
     private void handleSelectedKeys() throws Exception
     {
-        // Try this as we would like to be able to have the JVM optimize the Set<SelectionKey> for us instead of instrumenting it.
+        // Try this as we would like to be able to have the JVM optimize the Set<SelectionKey>
+        // instead of instrumenting it.
         // Only have to handle readable at the moment. Will change if this is used with TCP.
         // Could filter based on key.attachment() being instanceof ReadHandler
         //        selector.selectedKeys().stream()

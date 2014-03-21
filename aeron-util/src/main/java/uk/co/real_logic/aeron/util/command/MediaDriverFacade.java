@@ -58,8 +58,8 @@ public interface MediaDriverFacade
     /**
      * Request the media driver to remove a Term from a channel for a source.
      *
-     * Terms are not removed unless this is done. It could be the app, but it could also be a separate admin process/thread to
-     * send this command to the media driver.
+     * Terms are not removed unless this is done. It could be the app, but it could also be a separate admin
+     * process/thread to send this command to the media driver.
      *
      * @see LibraryFacade#onRemoveTerm(String, long, long, long)
      *
@@ -71,12 +71,13 @@ public interface MediaDriverFacade
     void sendRemoveTerm(final String destination, final long sessionId, final long channelId, final long termId);
 
     /**
-     * Request the media driver to add a receiver for a given list of channels on a destination on behalf of an application.
+     * Request the media driver to add a receiver for a given list of channels on a destination on behalf
+     * of an application.
      *
      * The destination will be created if not already in use by another application.
      *
      * @see LibraryFacade#onAddReceiver(String, long[])
-     *@param destination to add the channels to
+     * @param destination to add the channels to
      * @param channelIdList of interested channels
      */
     void sendAddReceiver(final String destination, final long[] channelIdList);
@@ -97,9 +98,6 @@ public interface MediaDriverFacade
      *
      * @see LibraryFacade#onRequestTerm(long, long, long)
      *
-     * @param sessionId
-     * @param channelId
-     * @param termId
      */
     void sendRequestTerm(final long sessionId, final long channelId, final long termId);
 
@@ -111,7 +109,6 @@ public interface MediaDriverFacade
      * May not be necessary to have this Aeron header type pushed back to source applications
      *
      * @see LibraryFacade#sendStatusMessage(HeaderFlyweight)
-     *
      * @param header flyweight for the packet (TODO: make this its own subclass of HeaderFlyweight)
      */
     void onStatusMessage(final HeaderFlyweight header);

@@ -24,11 +24,15 @@ public class RcvChannelState
 {
     private final InetSocketAddress srcAddr;
 
-    public RcvChannelState(final UdpDestination destination, final long sessionId, final long channelId,
-                           final long termId, final InetSocketAddress srcAddr)
+    public RcvChannelState(final UdpDestination destination,
+                           final long sessionId,
+                           final long channelId,
+                           final long termId,
+                           final InetSocketAddress srcAddr)
     {
         // TODO: explicitly create new buffer
-        //final ByteBuffer termBuffer = bufferManagementStrategy.addRecieverTerm(destination, sessionId, channelId, termId);
+        //final ByteBuffer termBuffer =
+        //  bufferManagementStrategy.addRecieverTerm(destination, sessionId, channelId, termId);
 
         this.srcAddr = srcAddr;
     }

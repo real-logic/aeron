@@ -22,18 +22,18 @@ package uk.co.real_logic.aeron.util.collections;
  */
 public class TripletMap<V>
 {
-    final Long2ObjectOpenAddressingHashMap<Long2ObjectOpenAddressingHashMap<Long2ObjectOpenAddressingHashMap<V>>> map =
-        new Long2ObjectOpenAddressingHashMap<>();
+    final Long2ObjectHashMap<Long2ObjectHashMap<Long2ObjectHashMap<V>>> map =
+        new Long2ObjectHashMap<>();
 
     public V get(final long sessionId, final long channelId, final long termId)
     {
-        final Long2ObjectOpenAddressingHashMap<Long2ObjectOpenAddressingHashMap<V>> channelMap = map.get(sessionId);
+        final Long2ObjectHashMap<Long2ObjectHashMap<V>> channelMap = map.get(sessionId);
         if (null == channelMap)
         {
             return null;
         }
 
-        final Long2ObjectOpenAddressingHashMap<V> termMap = channelMap.get(channelId);
+        final Long2ObjectHashMap<V> termMap = channelMap.get(channelId);
         if (null == termMap)
         {
             return null;
@@ -44,17 +44,17 @@ public class TripletMap<V>
 
     public V put(final long sessionId, final long channelId, final long termId, final V value)
     {
-        Long2ObjectOpenAddressingHashMap<Long2ObjectOpenAddressingHashMap<V>> channelMap = map.get(sessionId);
+        Long2ObjectHashMap<Long2ObjectHashMap<V>> channelMap = map.get(sessionId);
         if (null == channelMap)
         {
-            channelMap = new Long2ObjectOpenAddressingHashMap<>();
+            channelMap = new Long2ObjectHashMap<>();
             map.put(sessionId, channelMap);
         }
 
-        Long2ObjectOpenAddressingHashMap<V> termMap = channelMap.get(channelId);
+        Long2ObjectHashMap<V> termMap = channelMap.get(channelId);
         if (null == termMap)
         {
-            termMap = new Long2ObjectOpenAddressingHashMap<>();
+            termMap = new Long2ObjectHashMap<>();
             channelMap.put(channelId, termMap);
         }
 

@@ -50,6 +50,15 @@ public interface RingBuffer
     int read(final EventHandler handler);
 
     /**
+     * Read as many events as are available from the ring buffer to up a supplied maximum.
+     *
+     * @param handler to be called for processing each event in turn.
+     * @param maxEvents that will be read in a single invocation.
+     * @return the number of event that have been processed.
+     */
+    int read(final EventHandler handler, final int maxEvents);
+
+    /**
      * The maximum event size supported by the underlying ring buffer.
      *
      * @return the maximum event size supported by the underlying ring buffer.

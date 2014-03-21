@@ -170,6 +170,14 @@ public class ManyToOneRingBuffer implements RingBuffer
      */
     public int read(final EventHandler handler)
     {
+        return read(handler, Integer.MAX_VALUE);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int read(final EventHandler handler, final int maxEvents)
+    {
         final long tail = getTailVolatile();
         final long head = getHeadVolatile();
         final int available = (int)(tail - head);
@@ -183,7 +191,7 @@ public class ManyToOneRingBuffer implements RingBuffer
 
             try
             {
-                while (bytesRead < contiguousBlockSize)
+                while ((bytesRead < contiguousBlockSize) && (recordsRead <= maxEvents))
                 {
                     final int recordIndex = headIndex + bytesRead;
                     final int eventTypeId = waitForEventTypeId(recordIndex);

@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.util.control;
 
+import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.nio.ByteOrder;
@@ -84,4 +85,8 @@ public class RequestTermFlyweight extends HeaderFlyweight
         return this;
     }
 
+    public static int length()
+    {
+        return TERM_ID_FIELD_OFFSET + BitUtil.SIZE_OF_INT;
+    }
 }

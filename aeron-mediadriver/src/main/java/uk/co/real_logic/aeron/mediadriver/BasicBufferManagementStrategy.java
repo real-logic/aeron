@@ -78,7 +78,10 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
 
         if (!channelDir.exists())
         {
-            channelDir.mkdirs();
+            if (!channelDir.mkdirs())
+            {
+                throw new IllegalStateException("failed to create channel directory: " + channelDir);
+            }
         }
 
         try (final RandomAccessFile randomAccessFile = new RandomAccessFile(termIdFile, "rw"))
@@ -94,38 +97,37 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
         }
     }
 
-    @Override
     public ByteBuffer addSenderChannel(final long sessionId, final long channelId, final long termId) throws Exception
     {
         return mapTerm(senderDir, sessionId, channelId, termId, BUFFER_SIZE);
     }
 
-    @Override
     public ByteBuffer incrementSenderTerm(final long sessionId, final long channelId)
     {
         return null;
     }
 
-    @Override
     public void removeSenderChannel(final long sessionId, final long channelId)
     {
 
     }
 
-    @Override
     public void removeSenderTerm(final long sessionId, final long channelId, final long termId)
     {
 
     }
 
-    @Override
-    public ByteBuffer addReceiverTerm(final UdpDestination destination, final long sessionId, final long channelId, final long termId)
+    public ByteBuffer addReceiverTerm(final UdpDestination destination,
+                                      final long sessionId,
+                                      final long channelId,
+                                      final long termId)
     {
         return null;
     }
 
-    @Override
-    public ByteBuffer incrementReceiverTerm(final UdpDestination destination, final long sessionId, final long channelId)
+    public ByteBuffer incrementReceiverTerm(final UdpDestination destination,
+                                            final long sessionId,
+                                            final long channelId)
     {
         return null;
     }

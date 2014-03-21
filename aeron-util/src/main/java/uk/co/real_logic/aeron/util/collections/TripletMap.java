@@ -15,27 +15,25 @@
  */
 package uk.co.real_logic.aeron.util.collections;
 
-import java.util.Map;
-
 /**
  * Map-like data structure for mapping of sessionId/channelId/termId to a type.
- * @param <V>
+ *
+ * @param <V> type of object stored for the triplet.
  */
 public class TripletMap<V>
 {
-    final Map<Long, Map<Long, Map<Long, V>>> map = new Long2ObjectOpenAddressingHashMap<>();
+    final Long2ObjectOpenAddressingHashMap<Long2ObjectOpenAddressingHashMap<Long2ObjectOpenAddressingHashMap<V>>> map =
+        new Long2ObjectOpenAddressingHashMap<>();
 
     public V get(final long sessionId, final long channelId, final long termId)
     {
-        final Map<Long, Map<Long, V>> channelMap = map.get(sessionId);
-
+        final Long2ObjectOpenAddressingHashMap<Long2ObjectOpenAddressingHashMap<V>> channelMap = map.get(sessionId);
         if (null == channelMap)
         {
             return null;
         }
 
-        final Map<Long, V> termMap = channelMap.get(channelId);
-
+        final Long2ObjectOpenAddressingHashMap<V> termMap = channelMap.get(channelId);
         if (null == termMap)
         {
             return null;
@@ -44,24 +42,22 @@ public class TripletMap<V>
         return termMap.get(termId);
     }
 
-    public void put(final long sessionId, final long channelId, final long termId, final V value)
+    public V put(final long sessionId, final long channelId, final long termId, final V value)
     {
-        Map<Long, Map<Long, V>> channelMap = map.get(sessionId);
-
+        Long2ObjectOpenAddressingHashMap<Long2ObjectOpenAddressingHashMap<V>> channelMap = map.get(sessionId);
         if (null == channelMap)
         {
             channelMap = new Long2ObjectOpenAddressingHashMap<>();
             map.put(sessionId, channelMap);
         }
 
-        Map<Long, V> termMap = channelMap.get(channelId);
-
+        Long2ObjectOpenAddressingHashMap<V> termMap = channelMap.get(channelId);
         if (null == termMap)
         {
             termMap = new Long2ObjectOpenAddressingHashMap<>();
             channelMap.put(channelId, termMap);
         }
 
-        termMap.put(termId, value);
+        return termMap.put(termId, value);
     }
 }

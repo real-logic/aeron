@@ -24,7 +24,8 @@ public final class Aeron
 {
     // factory methods
     /**
-     * Creates an media driver associated with this Aeron instance that can be used to create sources and receivers on
+     * Creates an media driver associated with this Aeron instance that can be used to create sources and receivers on.
+     *
      * @param builder of the media driver and Aeron configuration or null for default configuration
      * @return Aeron instance
      */
@@ -34,7 +35,9 @@ public final class Aeron
     }
 
     /**
-     * Creates multiple media drivers associated with multiple Aeron instances that can be used to create sources and receivers
+     * Creates multiple media drivers associated with multiple Aeron instances that can be used to create sources
+     * and receivers.
+     *
      * @param builders of the media drivers
      * @return array of Aeron instances
      */

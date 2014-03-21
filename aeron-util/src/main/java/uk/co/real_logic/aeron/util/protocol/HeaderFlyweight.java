@@ -20,7 +20,6 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -107,7 +106,10 @@ public class HeaderFlyweight
         return (buffer.getShort(offset, byteOrder) & 0xFFFF);
     }
 
-    public static void uint16Put(final AtomicBuffer buffer, final int offset, final int value, final ByteOrder byteOrder)
+    public static void uint16Put(final AtomicBuffer buffer,
+                                 final int offset,
+                                 final int value,
+                                 final ByteOrder byteOrder)
     {
         buffer.putShort(offset, (short)value, byteOrder);
     }
@@ -117,7 +119,10 @@ public class HeaderFlyweight
         return (buffer.getInt(offset, byteOrder) & 0xFFFFFFFFL);
     }
 
-    public static void uint32Put(final AtomicBuffer buffer, final int offset, final long value, final ByteOrder byteOrder)
+    public static void uint32Put(final AtomicBuffer buffer,
+                                 final int offset,
+                                 final long value,
+                                 final ByteOrder byteOrder)
     {
         buffer.putInt(offset, (int)value, byteOrder);
     }

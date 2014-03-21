@@ -17,12 +17,11 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
-import uk.co.real_logic.aeron.util.collections.Long2ObjectOpenAddressingHashMap;
+import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.Map;
 
 /**
  * Frame processing for receivers
@@ -31,9 +30,13 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
 {
     private final UdpTransport transport;
     private final UdpDestination destination;
-    private final Map<Long, Map<Long, RcvChannelState>> channelInterestMap = new Long2ObjectOpenAddressingHashMap<>();
+    private final Long2ObjectHashMap<Long2ObjectHashMap<RcvChannelState>> channelInterestMap =
+        new Long2ObjectHashMap<>();
 
-    public RcvFrameHandler(final UdpDestination destination, final ReceiverThread receiverThread, final long[] channelIdList) throws Exception
+    public RcvFrameHandler(final UdpDestination destination,
+                           final ReceiverThread receiverThread,
+                           final long[] channelIdList)
+        throws Exception
     {
         final InetSocketAddress endpoint = destination.remote();
         final InetAddress mcastInterface = destination.local().getAddress();
@@ -45,7 +48,7 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
         // set up initial interest set
         for (final long channelId : channelIdList)
         {
-            channelInterestMap.put(channelId, new Long2ObjectOpenAddressingHashMap<>());
+            channelInterestMap.put(channelId, new Long2ObjectHashMap<>());
         }
     }
 
@@ -72,9 +75,12 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
         return destination;
     }
 
-    public RcvChannelState findOrCreateChannelState(final long sessionId, final long channelId, final long termId, final InetSocketAddress srcAddr)
+    public RcvChannelState findOrCreateChannelState(final long sessionId,
+                                                    final long channelId,
+                                                    final long termId,
+                                                    final InetSocketAddress srcAddr)
     {
-        final Map<Long, RcvChannelState> sessionMap = channelInterestMap.get(channelId);
+        final Long2ObjectHashMap<RcvChannelState> sessionMap = channelInterestMap.get(channelId);
 
         if (null == sessionMap)
         {

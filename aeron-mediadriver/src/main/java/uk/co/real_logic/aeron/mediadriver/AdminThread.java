@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.ClosableThread;
-import uk.co.real_logic.aeron.util.collections.Long2ObjectOpenAddressingHashMap;
+import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.command.ErrorCode;
 import uk.co.real_logic.aeron.util.command.LibraryFacade;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
@@ -37,7 +37,7 @@ public class AdminThread extends ClosableThread implements LibraryFacade
     private final SenderThread senderThread;
     private final ByteBuffer commandBuffer;
     private final BufferManagementStrategy bufferManagementStrategy;
-    private final Map<Long, Map<Long, ByteBuffer>> termBufferMap = new Long2ObjectOpenAddressingHashMap<>();
+    private final Map<Long, Map<Long, ByteBuffer>> termBufferMap = new Long2ObjectHashMap<>();
 
     public AdminThread(final ByteBuffer commandBuffer,
                        final ReceiverThread receiverThread,
@@ -160,7 +160,8 @@ public class AdminThread extends ClosableThread implements LibraryFacade
             }
             else
             {
-                // TODO: add new channels to an existing RcvFrameHandler - need to do this via command queue to that running thread
+                // TODO: add new channels to an existing RcvFrameHandler
+                // - need to do this via command queue to that running thread
             }
 
             // this thread does not add buffers. The RcvFrameHandler handle methods will create new buffers on demand

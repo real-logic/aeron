@@ -40,11 +40,11 @@ public class ReceiverThreadTest
     private final ByteBuffer buffer = ByteBuffer.allocateDirect(256);
     private final AtomicBuffer atomicBuffer = new AtomicBuffer(buffer);
     private final DataHeaderFlyweight encodeDataHeader = new DataHeaderFlyweight();
-    private final InetSocketAddress srcRemoteAddr = new InetSocketAddress("localhost", RCV_PORT);
+    //private final InetSocketAddress srcRemoteAddr = new InetSocketAddress("localhost", RCV_PORT);
     private final InetSocketAddress rcvRemoteAddr = new InetSocketAddress("localhost", SRC_PORT);
     private final InetSocketAddress rcvLocalAddr = new InetSocketAddress(RCV_PORT);
     private final InetSocketAddress srcLocalAddr = new InetSocketAddress(SRC_PORT);
-    private final long channelIds[] = { CHANNEL_ID };
+    private final long channelIds[] = {CHANNEL_ID};
 
     @Test(timeout = 1000)
     public void shouldHandleBasicSetupAndTeardown() throws Exception
@@ -70,8 +70,8 @@ public class ReceiverThreadTest
         {
             public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
             {
-                assertThat(Byte.valueOf(header.version()), is(Byte.valueOf((byte)HeaderFlyweight.CURRENT_VERSION)));
-                assertThat(Short.valueOf(header.headerType()), is(Short.valueOf((short)HeaderFlyweight.HDR_TYPE_DATA)));
+                assertThat(Byte.valueOf(header.version()), is(Byte.valueOf(HeaderFlyweight.CURRENT_VERSION)));
+                assertThat(Short.valueOf(header.headerType()), is(Short.valueOf(HeaderFlyweight.HDR_TYPE_DATA)));
                 assertThat(Integer.valueOf(header.frameLength()), is(Integer.valueOf(20)));
                 assertThat(Long.valueOf(header.sessionId()), is(Long.valueOf(SESSION_ID)));
                 assertThat(Long.valueOf(header.channelId()), is(Long.valueOf(CHANNEL_ID)));
@@ -88,8 +88,8 @@ public class ReceiverThreadTest
         final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), receiverThread, null, null);
 
         encodeDataHeader.reset(atomicBuffer, 0)
-                        .version((byte)HeaderFlyweight.CURRENT_VERSION)
-                        .headerType((short)HeaderFlyweight.HDR_TYPE_DATA)
+                        .version(HeaderFlyweight.CURRENT_VERSION)
+                        .headerType(HeaderFlyweight.HDR_TYPE_DATA)
                         .frameLength(20)
                         .sessionId(SESSION_ID);
         encodeDataHeader.channelId(CHANNEL_ID)
@@ -126,8 +126,8 @@ public class ReceiverThreadTest
 
             public void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
             {
-                assertThat(Byte.valueOf(header.version()), is(Byte.valueOf((byte)HeaderFlyweight.CURRENT_VERSION)));
-                assertThat(Short.valueOf(header.headerType()), is(Short.valueOf((short)HeaderFlyweight.HDR_TYPE_CONN)));
+                assertThat(Byte.valueOf(header.version()), is(Byte.valueOf(HeaderFlyweight.CURRENT_VERSION)));
+                assertThat(Short.valueOf(header.headerType()), is(Short.valueOf(HeaderFlyweight.HDR_TYPE_CONN)));
                 assertThat(Integer.valueOf(header.frameLength()), is(Integer.valueOf(8)));
                 assertThat(Long.valueOf(header.sessionId()), is(Long.valueOf(SESSION_ID)));
                 cntlHeadersRcved.incrementAndGet();
@@ -137,8 +137,8 @@ public class ReceiverThreadTest
         final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), receiverThread, null, null);
 
         encodeDataHeader.reset(atomicBuffer, 0)
-                        .version((byte)HeaderFlyweight.CURRENT_VERSION)
-                        .headerType((short)HeaderFlyweight.HDR_TYPE_CONN)
+                        .version(HeaderFlyweight.CURRENT_VERSION)
+                        .headerType(HeaderFlyweight.HDR_TYPE_CONN)
                         .frameLength(8)
                         .sessionId(SESSION_ID);
         buffer.position(0).limit(8);
@@ -169,8 +169,8 @@ public class ReceiverThreadTest
         {
             public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
             {
-                assertThat(Byte.valueOf(header.version()), is(Byte.valueOf((byte)HeaderFlyweight.CURRENT_VERSION)));
-                assertThat(Short.valueOf(header.headerType()), is(Short.valueOf((short)HeaderFlyweight.HDR_TYPE_DATA)));
+                assertThat(Byte.valueOf(header.version()), is(Byte.valueOf(HeaderFlyweight.CURRENT_VERSION)));
+                assertThat(Short.valueOf(header.headerType()), is(Short.valueOf(HeaderFlyweight.HDR_TYPE_DATA)));
                 assertThat(Integer.valueOf(header.frameLength()), is(Integer.valueOf(20)));
                 assertThat(Long.valueOf(header.sessionId()), is(Long.valueOf(SESSION_ID)));
                 assertThat(Long.valueOf(header.channelId()), is(Long.valueOf(CHANNEL_ID)));
@@ -187,15 +187,15 @@ public class ReceiverThreadTest
         final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), receiverThread, null, null);
 
         encodeDataHeader.reset(atomicBuffer, 0)
-                        .version((byte) HeaderFlyweight.CURRENT_VERSION)
-                        .headerType((short) HeaderFlyweight.HDR_TYPE_DATA)
+                        .version(HeaderFlyweight.CURRENT_VERSION)
+                        .headerType(HeaderFlyweight.HDR_TYPE_DATA)
                         .frameLength(20)
                         .sessionId(SESSION_ID);
         encodeDataHeader.channelId(CHANNEL_ID)
                         .termId(TERM_ID);
         encodeDataHeader.reset(atomicBuffer, 20)
-                        .version((byte)HeaderFlyweight.CURRENT_VERSION)
-                        .headerType((short)HeaderFlyweight.HDR_TYPE_DATA)
+                        .version(HeaderFlyweight.CURRENT_VERSION)
+                        .headerType(HeaderFlyweight.HDR_TYPE_DATA)
                         .frameLength(20)
                         .sessionId(SESSION_ID);
         encodeDataHeader.channelId(CHANNEL_ID)
@@ -233,8 +233,8 @@ public class ReceiverThreadTest
 
             public void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
             {
-                assertThat(Byte.valueOf(header.version()), is(Byte.valueOf((byte)HeaderFlyweight.CURRENT_VERSION)));
-                assertThat(Short.valueOf(header.headerType()), is(Short.valueOf((short)HeaderFlyweight.HDR_TYPE_CONN)));
+                assertThat(Byte.valueOf(header.version()), is(Byte.valueOf(HeaderFlyweight.CURRENT_VERSION)));
+                assertThat(Short.valueOf(header.headerType()), is(Short.valueOf(HeaderFlyweight.HDR_TYPE_CONN)));
                 assertThat(Integer.valueOf(header.frameLength()), is(Integer.valueOf(8)));
                 assertThat(Long.valueOf(header.sessionId()), is(Long.valueOf(SESSION_ID)));
                 cntlHeadersRcved.incrementAndGet();
@@ -244,8 +244,8 @@ public class ReceiverThreadTest
         final RcvFrameHandler rcv = new RcvFrameHandler(UdpDestination.parse(RCV_UDP_URI), receiverThread, channelIds);
 
         encodeDataHeader.reset(atomicBuffer, 0)
-                        .version((byte) HeaderFlyweight.CURRENT_VERSION)
-                        .headerType((short) HeaderFlyweight.HDR_TYPE_CONN)
+                        .version(HeaderFlyweight.CURRENT_VERSION)
+                        .headerType(HeaderFlyweight.HDR_TYPE_CONN)
                         .frameLength(8)
                         .sessionId(SESSION_ID);
         buffer.position(0).limit(8);

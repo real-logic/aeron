@@ -22,8 +22,8 @@ import java.util.List;
 /**
  * Facade of application library for use by media driver to send/receiver control commands/responses
  *
- * The media driver (aeron-mediadriver) implements this interface to send notifications to a library/application and to handle
- * commands, Aeron control frames, etc. that come from the library/application.
+ * The media driver (aeron-mediadriver) implements this interface to send notifications to a library/application
+ * and to handle commands, Aeron control frames, etc. that come from the library/application.
  */
 public interface LibraryFacade
 {
@@ -96,9 +96,6 @@ public interface LibraryFacade
      *
      * @see MediaDriverFacade#sendRequestTerm(long, long, long)
      *
-     * @param sessionId
-     * @param channelId
-     * @param termId
      */
     void onRequestTerm(final long sessionId, final long channelId, final long termId);
 

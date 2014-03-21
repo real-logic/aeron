@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE module PUBLIC "-//Puppy Crawl//DTD Check Configuration 1.2//EN"
-    "http://www.puppycrawl.com/dtds/configuration_1_2.dtd">
+        "http://www.puppycrawl.com/dtds/configuration_1_2.dtd">
 <module name="Checker">
     <module name="SeverityMatchFilter">
         <property name="severity" value="info"/>
@@ -40,7 +40,7 @@
         <module name="UnusedImports"/>
 
         <module name="LineLength">
-            <property name="max" value="150"/>
+            <property name="max" value="120"/>
             <property name="ignorePattern" value="^[ \t]*\*.*@.*$"/>
         </module>
 
@@ -108,8 +108,6 @@
 
         <module name="MutableException"/>
 
-        <module name="ArrayTypeStyle"/>
-
         <module name="TodoComment">
             <property name="severity" value="info"/>
             <property name="format" value="TODO"/>
@@ -121,7 +119,7 @@
 
         <module name="IllegalType">
             <property name="legalAbstractClassNames"
-                      value="AbstractBeanDefinition, AbstractAccountEvInstruction, AbstractEmsInstruction, AbstractEvInstruction, AbstractEmsAction, AbstractInstrumentAction, AbstractEntry"/>
+                      value="AbstractBeanDefinition, AbstractEntry"/>
             <property name="illegalClassNames"
                       value="java.util.GregorianCalendar, java.util.Hashtable, java.util.HashSet, java.util.HashMap, java.util.ArrayList, java.util.LinkedHashSet, java.util.TreeSet, java.util.TreeMap, java.util.Vector"/>
         </module>

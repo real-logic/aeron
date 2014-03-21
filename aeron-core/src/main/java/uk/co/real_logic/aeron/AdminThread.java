@@ -16,15 +16,15 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.util.ClosableThread;
-import uk.co.real_logic.aeron.util.collections.Long2ObjectOpenAddressingHashMap;
+import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
+import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.control.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.control.ControlProtocolEventTypes;
+import uk.co.real_logic.aeron.util.control.RemoveReceiverMessageFlyweight;
 import uk.co.real_logic.aeron.util.control.RequestTermFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
-import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
-import uk.co.real_logic.aeron.util.control.RemoveReceiverMessageFlyweight;
 
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -32,10 +32,11 @@ import java.util.Map;
 
 import static uk.co.real_logic.aeron.util.control.ControlProtocolEventTypes.REMOVE_RECEIVER;
 import static uk.co.real_logic.aeron.util.control.ControlProtocolEventTypes.REQUEST_TERM;
-import static uk.co.real_logic.aeron.util.protocol.HeaderFlyweight.*;
+
 
 /**
- * Admin thread to take responses and notifications from mediadriver and act on them. As well as pass commands to the mediadriver.
+ * Admin thread to take responses and notifications from mediadriver and act on them. As well as pass commands
+ * to the mediadriver.
  */
 public final class AdminThread extends ClosableThread implements MediaDriverFacade
 {
@@ -48,7 +49,7 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
     /** Outgoing message buffer to media driver */
     private final RingBuffer sendBuffer;
     /** Maximum size of the write buffer */
-    private final Map<Long, Map<Long, ByteBuffer>> termBufferMap = new Long2ObjectOpenAddressingHashMap<>();
+    private final Map<Long, Map<Long, ByteBuffer>> termBufferMap = new Long2ObjectHashMap<>();
 
     /** Atomic buffer to write message flyweights into before they get sent */
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(WRITE_BUFFER_CAPACITY));
@@ -104,7 +105,10 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
         sendChannelMessage(destination, sessionId, channelId, ControlProtocolEventTypes.REMOVE_CHANNEL);
     }
 
-    private void sendChannelMessage(final String destination, final long sessionId, final long channelId, final int eventTypeId)
+    private void sendChannelMessage(final String destination,
+                                    final long sessionId,
+                                    final long channelId,
+                                    final int eventTypeId)
     {
         channelMessage.currentVersion();
         channelMessage.sessionId(sessionId);
@@ -113,19 +117,19 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
         sendBuffer.write(eventTypeId, writeBuffer, 0, channelMessage.length());
     }
 
-    @Override
-    public void sendRemoveTerm(final String destination, final long sessionId, final long channelId, final long termId)
+    public void sendRemoveTerm(final String destination,
+                               final long sessionId,
+                               final long channelId,
+                               final long termId)
     {
 
     }
 
-    @Override
     public void sendAddReceiver(final String destination, final long[] channelIdList)
     {
 
     }
 
-    @Override
     public void sendRemoveReceiver(final String destination)
     {
         removeReceiverMessage.currentVersion();
@@ -133,7 +137,6 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
         sendBuffer.write(REMOVE_RECEIVER, writeBuffer, 0, removeReceiverMessage.length());
     }
 
-    @Override
     public void sendRequestTerm(final long sessionId, final long channelId, final long termId)
     {
         requestTermMessage.currentVersion();
@@ -145,34 +148,23 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
 
     /* callbacks from MediaDriver */
 
-    @Override
     public void onStatusMessage(final HeaderFlyweight header)
     {
-
     }
 
-    @Override
     public void onErrorResponse(final int code, final byte[] message)
     {
-
     }
 
-    @Override
     public void onError(final int code, final byte[] message)
     {
-
     }
 
-    @Override
     public void onLocationResponse(final List<byte[]> filenames)
     {
-
     }
 
-    @Override
     public void onNewSession(final long sessionId, final List<byte[]> filenames)
     {
-
     }
-
 }

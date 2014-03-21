@@ -28,7 +28,7 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <V> values stored in the {@link java.util.Map}
  */
-public class Int2ObjectOpenAddressingHashMap<V>
+public class Int2ObjectHashMap<V>
     implements Map<Integer, V>
 {
     private final double loadFactor;
@@ -40,7 +40,7 @@ public class Int2ObjectOpenAddressingHashMap<V>
     private int[] keys;
     private Object[] values;
 
-    public Int2ObjectOpenAddressingHashMap()
+    public Int2ObjectHashMap()
     {
         this(8, 0.6);
     }
@@ -51,7 +51,7 @@ public class Int2ObjectOpenAddressingHashMap<V>
      * @param initialCapacity for the backing array
      * @param loadFactor      limit for resizing on puts
      */
-    public Int2ObjectOpenAddressingHashMap(final int initialCapacity, final double loadFactor)
+    public Int2ObjectHashMap(final int initialCapacity, final double loadFactor)
     {
         this.loadFactor = loadFactor;
         capacity = BitUtil.findNextPositivePowerOfTwo(initialCapacity);
@@ -446,22 +446,22 @@ public class Int2ObjectOpenAddressingHashMap<V>
     {
         public int size()
         {
-            return Int2ObjectOpenAddressingHashMap.this.size();
+            return Int2ObjectHashMap.this.size();
         }
 
         public boolean isEmpty()
         {
-            return Int2ObjectOpenAddressingHashMap.this.isEmpty();
+            return Int2ObjectHashMap.this.isEmpty();
         }
 
         public boolean contains(final Object o)
         {
-            return Int2ObjectOpenAddressingHashMap.this.containsKey(o);
+            return Int2ObjectHashMap.this.containsKey(o);
         }
 
         public boolean contains(final int key)
         {
-            return Int2ObjectOpenAddressingHashMap.this.containsKey(key);
+            return Int2ObjectHashMap.this.containsKey(key);
         }
 
         public KeyIterator iterator()
@@ -471,17 +471,17 @@ public class Int2ObjectOpenAddressingHashMap<V>
 
         public boolean remove(final Object o)
         {
-            return null != Int2ObjectOpenAddressingHashMap.this.remove(o);
+            return null != Int2ObjectHashMap.this.remove(o);
         }
 
         public boolean remove(final int key)
         {
-            return null != Int2ObjectOpenAddressingHashMap.this.remove(key);
+            return null != Int2ObjectHashMap.this.remove(key);
         }
 
         public void clear()
         {
-            Int2ObjectOpenAddressingHashMap.this.clear();
+            Int2ObjectHashMap.this.clear();
         }
     }
 
@@ -489,17 +489,17 @@ public class Int2ObjectOpenAddressingHashMap<V>
     {
         public int size()
         {
-            return Int2ObjectOpenAddressingHashMap.this.size();
+            return Int2ObjectHashMap.this.size();
         }
 
         public boolean isEmpty()
         {
-            return Int2ObjectOpenAddressingHashMap.this.isEmpty();
+            return Int2ObjectHashMap.this.isEmpty();
         }
 
         public boolean contains(final Object o)
         {
-            return Int2ObjectOpenAddressingHashMap.this.containsValue(o);
+            return Int2ObjectHashMap.this.containsValue(o);
         }
 
         public ValueIterator<V> iterator()
@@ -509,7 +509,7 @@ public class Int2ObjectOpenAddressingHashMap<V>
 
         public void clear()
         {
-            Int2ObjectOpenAddressingHashMap.this.clear();
+            Int2ObjectHashMap.this.clear();
         }
     }
 
@@ -517,12 +517,12 @@ public class Int2ObjectOpenAddressingHashMap<V>
     {
         public int size()
         {
-            return Int2ObjectOpenAddressingHashMap.this.size();
+            return Int2ObjectHashMap.this.size();
         }
 
         public boolean isEmpty()
         {
-            return Int2ObjectOpenAddressingHashMap.this.isEmpty();
+            return Int2ObjectHashMap.this.isEmpty();
         }
 
         public Iterator<Entry<Integer, V>> iterator()
@@ -532,7 +532,7 @@ public class Int2ObjectOpenAddressingHashMap<V>
 
         public void clear()
         {
-            Int2ObjectOpenAddressingHashMap.this.clear();
+            Int2ObjectHashMap.this.clear();
         }
     }
 
@@ -545,8 +545,8 @@ public class Int2ObjectOpenAddressingHashMap<V>
         private int posCounter;
         private int stopCounter;
         private boolean isPositionValid = false;
-        private final int[] keys = Int2ObjectOpenAddressingHashMap.this.keys;
-        private final Object[] values = Int2ObjectOpenAddressingHashMap.this.values;
+        private final int[] keys = Int2ObjectHashMap.this.keys;
+        private final Object[] values = Int2ObjectHashMap.this.values;
 
         protected AbstractIterator()
         {
@@ -610,7 +610,7 @@ public class Int2ObjectOpenAddressingHashMap<V>
         {
             if (isPositionValid)
             {
-                Int2ObjectOpenAddressingHashMap.this.remove(keys[getPosition()]);
+                Int2ObjectHashMap.this.remove(keys[getPosition()]);
                 isPositionValid = false;
             }
             else

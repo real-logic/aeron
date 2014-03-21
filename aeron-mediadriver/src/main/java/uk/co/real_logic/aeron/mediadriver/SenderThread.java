@@ -34,14 +34,16 @@ public class SenderThread extends ClosableThread
         this.adminCommandBuffer = adminCommandBuffer;
     }
 
-    @Override
     public void process()
     {
         // TODO: handle data to send (with )
         // TODO: handle commands added to command buffer (call onNewSenderTerm, onStatusMessage, etc.)
     }
 
-    public void offerNewSenderTerm(final long sessionId, final long channelId, final long termId, final ByteBuffer buffer)
+    public void offerNewSenderTerm(final long sessionId,
+                                   final long channelId,
+                                   final long termId,
+                                   final ByteBuffer buffer)
     {
 
     }

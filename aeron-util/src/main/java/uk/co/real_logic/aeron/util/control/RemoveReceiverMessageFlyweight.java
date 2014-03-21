@@ -56,7 +56,10 @@ public class RemoveReceiverMessageFlyweight extends HeaderFlyweight
      */
     public RemoveReceiverMessageFlyweight destination(final String destination)
     {
-        lengthOfDestination = stringPut(atomicBuffer, offset + DESTINATION_OFFSET, destination, ByteOrder.LITTLE_ENDIAN);
+        lengthOfDestination = stringPut(atomicBuffer,
+                                        offset + DESTINATION_OFFSET,
+                                        destination,
+                                        ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 

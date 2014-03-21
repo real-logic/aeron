@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.util.collections;
 
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -23,49 +24,49 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 
-import static java.lang.Integer.valueOf;
+import static java.lang.Long.valueOf;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.number.IsCloseTo.closeTo;
 import static org.hamcrest.number.OrderingComparison.lessThan;
 import static org.junit.Assert.assertThat;
 
-public class Int2ObjectOpenAddressingHashMapTest
+public class Long2ObjectHashMapTest
 {
-    private final Int2ObjectOpenAddressingHashMap<String> intToObjectMap = new Int2ObjectOpenAddressingHashMap<>();
+    private final Long2ObjectHashMap<String> longToObjectMap = new Long2ObjectHashMap<>();
 
     @Test
     public void shouldDoPutAndThenGet()
     {
         final String value = "Seven";
-        intToObjectMap.put(7, value);
+        longToObjectMap.put(7, value);
 
-        assertThat(intToObjectMap.get(7), is(value));
+        assertThat(longToObjectMap.get(7), is(value));
     }
 
     @Test
     public void shouldReplaceExistingValueForTheSameKey()
     {
-        final int key = 7;
+        final long key = 7;
         final String value = "Seven";
-        intToObjectMap.put(key, value);
+        longToObjectMap.put(key, value);
 
         final String newValue = "New Seven";
-        final String oldValue = intToObjectMap.put(key, newValue);
+        final String oldValue = longToObjectMap.put(key, newValue);
 
-        assertThat(intToObjectMap.get(key), is(newValue));
+        assertThat(longToObjectMap.get(key), is(newValue));
         assertThat(oldValue, is(value));
-        assertThat(valueOf(intToObjectMap.size()), is(valueOf(1)));
+        assertThat(valueOf(longToObjectMap.size()), is(valueOf(1)));
     }
 
     @Test
     public void shouldGrowWhenThresholdExceeded()
     {
         final double loadFactor = 0.5d;
-        final Int2ObjectOpenAddressingHashMap<String> map = new Int2ObjectOpenAddressingHashMap<>(32, loadFactor);
+        final Long2ObjectHashMap<String> map = new Long2ObjectHashMap<>(32, loadFactor);
         for (int i = 0; i < 16; i++)
         {
-            map.put(i, Integer.toString(i));
+            map.put(i, Long.toString(i));
         }
 
         assertThat(valueOf(map.getResizeThreshold()), is(valueOf(16)));
@@ -80,19 +81,20 @@ public class Int2ObjectOpenAddressingHashMapTest
 
         assertThat(map.get(16), equalTo("16"));
         assertThat(Double.valueOf(loadFactor), closeTo(map.getLoadFactor(), 0.0));
+
     }
 
     @Test
     public void shouldHandleCollisionAndThenLinearProbe()
     {
         final double loadFactor = 0.5d;
-        final Int2ObjectOpenAddressingHashMap<String> map = new Int2ObjectOpenAddressingHashMap<>(32, loadFactor);
-        final int key = 7;
+        final Long2ObjectHashMap<String> map = new Long2ObjectHashMap<>(32, loadFactor);
+        final long key = 7;
         final String value = "Seven";
         map.put(key, value);
 
-        final int collisionKey = key + map.getCapacity();
-        String collisionValue = Integer.toString(collisionKey);
+        final long collisionKey = key + map.getCapacity();
+        String collisionValue = Long.toString(collisionKey);
         map.put(collisionKey, collisionValue);
 
         assertThat(map.get(key), is(value));
@@ -105,16 +107,16 @@ public class Int2ObjectOpenAddressingHashMapTest
     {
         for (int i = 0; i < 15; i++)
         {
-            intToObjectMap.put(i, Integer.toString(i));
+            longToObjectMap.put(i, Long.toString(i));
         }
 
-        assertThat(valueOf(intToObjectMap.size()), is(valueOf(15)));
-        assertThat(intToObjectMap.get(1), is("1"));
+        assertThat(valueOf(longToObjectMap.size()), is(valueOf(15)));
+        assertThat(longToObjectMap.get(1), is("1"));
 
-        intToObjectMap.clear();
+        longToObjectMap.clear();
 
-        assertThat(valueOf(intToObjectMap.size()), is(valueOf(0)));
-        Assert.assertNull(intToObjectMap.get(1));
+        assertThat(valueOf(longToObjectMap.size()), is(valueOf(0)));
+        Assert.assertNull(longToObjectMap.get(1));
     }
 
     @Test
@@ -123,75 +125,75 @@ public class Int2ObjectOpenAddressingHashMapTest
         final int totalItems = 50;
         for (int i = 0; i < totalItems; i++)
         {
-            intToObjectMap.put(i, Integer.toString(i));
+            longToObjectMap.put(i, Long.toString(i));
         }
 
         for (int i = 0, limit = totalItems - 4; i < limit; i++)
         {
-            intToObjectMap.remove(i);
+            longToObjectMap.remove(i);
         }
 
-        final int capacityBeforeCompaction = intToObjectMap.getCapacity();
-        intToObjectMap.compact();
+        final int capacityBeforeCompaction = longToObjectMap.getCapacity();
+        longToObjectMap.compact();
 
-        assertThat(valueOf(intToObjectMap.getCapacity()), lessThan(valueOf(capacityBeforeCompaction)));
+        assertThat(valueOf(longToObjectMap.getCapacity()), lessThan(valueOf(capacityBeforeCompaction)));
     }
 
     @Test
     public void shouldContainValue()
     {
-        final int key = 7;
+        final long key = 7;
         final String value = "Seven";
 
-        intToObjectMap.put(key, value);
+        longToObjectMap.put(key, value);
 
-        Assert.assertTrue(intToObjectMap.containsValue(value));
-        Assert.assertFalse(intToObjectMap.containsValue("NoKey"));
+        Assert.assertTrue(longToObjectMap.containsValue(value));
+        Assert.assertFalse(longToObjectMap.containsValue("NoKey"));
     }
 
     @Test
     public void shouldContainKey()
     {
-        final int key = 7;
+        final long key = 7;
         final String value = "Seven";
 
-        intToObjectMap.put(key, value);
+        longToObjectMap.put(key, value);
 
-        Assert.assertTrue(intToObjectMap.containsKey(key));
-        Assert.assertFalse(intToObjectMap.containsKey(0));
+        Assert.assertTrue(longToObjectMap.containsKey(key));
+        Assert.assertFalse(longToObjectMap.containsKey(0));
     }
 
     @Test
     public void shouldRemoveEntry()
     {
-        final int key = 7;
+        final long key = 7;
         final String value = "Seven";
 
-        intToObjectMap.put(key, value);
+        longToObjectMap.put(key, value);
 
-        Assert.assertTrue(intToObjectMap.containsKey(key));
+        Assert.assertTrue(longToObjectMap.containsKey(key));
 
-        intToObjectMap.remove(key);
+        longToObjectMap.remove(key);
 
-        Assert.assertFalse(intToObjectMap.containsKey(key));
+        Assert.assertFalse(longToObjectMap.containsKey(key));
     }
 
     @Test
     public void shouldRemoveEntryAndCompactCollisionChain()
     {
-        final int key = 12;
+        final long key = 12;
         final String value = "12";
 
-        intToObjectMap.put(key, value);
-        intToObjectMap.put(13, "13");
+        longToObjectMap.put(key, value);
+        longToObjectMap.put(13, "13");
 
-        final int collisionKey = key + intToObjectMap.getCapacity();
-        final String collisionValue = Integer.toString(collisionKey);
+        final long collisionKey = key + longToObjectMap.getCapacity();
+        final String collisionValue = Long.toString(collisionKey);
 
-        intToObjectMap.put(collisionKey, collisionValue);
-        intToObjectMap.put(14, "14");
+        longToObjectMap.put(collisionKey, collisionValue);
+        longToObjectMap.put(14, "14");
 
-        assertThat(intToObjectMap.remove(key), is(value));
+        assertThat(longToObjectMap.remove(key), is(value));
     }
 
     @Test
@@ -201,14 +203,14 @@ public class Int2ObjectOpenAddressingHashMapTest
 
         for (int i = 0; i < 11; i++)
         {
-            String value = Integer.toString(i);
-            intToObjectMap.put(i, value);
+            String value = Long.toString(i);
+            longToObjectMap.put(i, value);
             initialSet.add(value);
         }
 
         final Collection<String> copyToSet = new HashSet<>();
 
-        for (final String s : intToObjectMap.values())
+        for (final String s : longToObjectMap.values())
         {
             copyToSet.add(s);
         }
@@ -217,22 +219,22 @@ public class Int2ObjectOpenAddressingHashMapTest
     }
 
     @Test
-    public void shouldIterateKeysGettingIntAsPrimitive()
+    public void shouldIterateKeysGettingLongAsPrimitive()
     {
-        final Collection<Integer> initialSet = new HashSet<>();
+        final Collection<Long> initialSet = new HashSet<>();
 
         for (int i = 0; i < 11; i++)
         {
-            String value = Integer.toString(i);
-            intToObjectMap.put(i, value);
+            String value = Long.toString(i);
+            longToObjectMap.put(i, value);
             initialSet.add(valueOf(i));
         }
 
-        final Collection<Integer> copyToSet = new HashSet<>();
+        final Collection<Long> copyToSet = new HashSet<>();
 
-        for (final Int2ObjectOpenAddressingHashMap.KeyIterator iter = intToObjectMap.keySet().iterator(); iter.hasNext();)
+        for (final Long2ObjectHashMap.KeyIterator iter = longToObjectMap.keySet().iterator(); iter.hasNext();)
         {
-            copyToSet.add(valueOf(iter.nextInt()));
+            copyToSet.add(valueOf(iter.nextLong()));
         }
 
         assertThat(copyToSet, is(initialSet));
@@ -241,20 +243,20 @@ public class Int2ObjectOpenAddressingHashMapTest
     @Test
     public void shouldIterateKeys()
     {
-        final Collection<Integer> initialSet = new HashSet<>();
+        final Collection<Long> initialSet = new HashSet<>();
 
         for (int i = 0; i < 11; i++)
         {
-            final String value = Integer.toString(i);
-            intToObjectMap.put(i, value);
+            final String value = Long.toString(i);
+            longToObjectMap.put(i, value);
             initialSet.add(valueOf(i));
         }
 
-        final Collection<Integer> copyToSet = new HashSet<>();
+        final Collection<Long> copyToSet = new HashSet<>();
 
-        for (final Integer aInteger : intToObjectMap.keySet())
+        for (final Long aLong : longToObjectMap.keySet())
         {
-            copyToSet.add(aInteger);
+            copyToSet.add(aLong);
         }
 
         assertThat(copyToSet, is(initialSet));
@@ -263,22 +265,22 @@ public class Int2ObjectOpenAddressingHashMapTest
     @Test
     public void shouldIterateAndHandleRemove()
     {
-        final Collection<Integer> initialSet = new HashSet<>();
+        final Collection<Long> initialSet = new HashSet<>();
 
         final int count = 11;
         for (int i = 0; i < count; i++)
         {
-            final String value = Integer.toString(i);
-            intToObjectMap.put(i, value);
+            final String value = Long.toString(i);
+            longToObjectMap.put(i, value);
             initialSet.add(valueOf(i));
         }
 
-        final Collection<Integer> copyOfSet = new HashSet<>();
+        final Collection<Long> copyOfSet = new HashSet<>();
 
         int i = 0;
-        for (final Iterator<Integer> iter = intToObjectMap.keySet().iterator(); iter.hasNext();)
+        for (final Iterator<Long> iter = longToObjectMap.keySet().iterator(); iter.hasNext();)
         {
-            final Integer item = iter.next();
+            final Long item = iter.next();
             if (i++ == 7)
             {
                 iter.remove();
@@ -290,8 +292,9 @@ public class Int2ObjectOpenAddressingHashMapTest
         }
 
         final int reducedSetSize = count - 1;
+
         assertThat(valueOf(initialSet.size()), is(valueOf(count)));
-        assertThat(valueOf(intToObjectMap.size()), is(valueOf(reducedSetSize)));
+        assertThat(valueOf(longToObjectMap.size()), is(valueOf(reducedSetSize)));
         assertThat(valueOf(copyOfSet.size()), is(valueOf(reducedSetSize)));
     }
 
@@ -301,12 +304,12 @@ public class Int2ObjectOpenAddressingHashMapTest
         final int count = 11;
         for (int i = 0; i < count; i++)
         {
-            final String value = Integer.toString(i);
-            intToObjectMap.put(i, value);
+            final String value = Long.toString(i);
+            longToObjectMap.put(i, value);
         }
 
         final String testValue = "Wibble";
-        for (final Map.Entry<Integer, String> entry : intToObjectMap.entrySet())
+        for (final Map.Entry<Long, String> entry : longToObjectMap.entrySet())
         {
             assertThat(entry.getKey(), equalTo(valueOf(entry.getValue())));
 
@@ -316,7 +319,7 @@ public class Int2ObjectOpenAddressingHashMapTest
             }
         }
 
-        assertThat(intToObjectMap.get(7), equalTo(testValue));
+        assertThat(longToObjectMap.get(7), equalTo(testValue));
     }
 
     @Test
@@ -326,11 +329,11 @@ public class Int2ObjectOpenAddressingHashMapTest
 
         for (final int testEntry : testEntries)
         {
-            intToObjectMap.put(testEntry, String.valueOf(testEntry));
+            longToObjectMap.put(testEntry, String.valueOf(testEntry));
         }
 
         final String mapAsAString = "{7=7, 12=12, 19=19, 3=3, 11=11, 1=1}";
-        assertThat(intToObjectMap.toString(), equalTo(mapAsAString));
+        assertThat(longToObjectMap.toString(), equalTo(mapAsAString));
     }
 }
 

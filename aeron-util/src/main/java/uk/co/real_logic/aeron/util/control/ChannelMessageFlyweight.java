@@ -83,7 +83,10 @@ public class ChannelMessageFlyweight extends HeaderFlyweight
      */
     public ChannelMessageFlyweight destination(final String destination)
     {
-        lengthOfDestination = stringPut(atomicBuffer, offset + DESTINATION_OFFSET, destination, ByteOrder.LITTLE_ENDIAN);
+        lengthOfDestination = stringPut(atomicBuffer,
+                                        offset + DESTINATION_OFFSET,
+                                        destination,
+                                        ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 

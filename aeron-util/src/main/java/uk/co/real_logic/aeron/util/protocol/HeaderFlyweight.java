@@ -15,12 +15,13 @@
  */
 package uk.co.real_logic.aeron.util.protocol;
 
-import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
+
+import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 
 /**
  * Flyweight for general Aeron header
@@ -59,8 +60,6 @@ public class HeaderFlyweight
 
     /** default version */
     public static final byte CURRENT_VERSION = 0x0;
-
-    public static final int SIZE_OF_INT = 4;
 
     public static final int VERS_FIELD_OFFSET = 0;
     public static final int TYPE_FIELD_OFFSET = 1;
@@ -141,7 +140,7 @@ public class HeaderFlyweight
     {
         byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
         buffer.putInt(offset, bytes.length);
-        return BitUtil.SIZE_OF_INT + buffer.putBytes(offset + SIZE_OF_INT, bytes);
+        return SIZE_OF_INT + buffer.putBytes(offset + SIZE_OF_INT, bytes);
     }
 
     /**

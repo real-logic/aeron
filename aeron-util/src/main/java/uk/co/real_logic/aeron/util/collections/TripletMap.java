@@ -15,6 +15,8 @@
  */
 package uk.co.real_logic.aeron.util.collections;
 
+import static java.util.Map.Entry;
+
 /**
  * Map-like data structure for mapping of sessionId/channelId/termId to a type.
  *
@@ -87,6 +89,23 @@ public class TripletMap<V>
         }
 
         return value;
+    }
+
+    public void forEach(TripletHandler<V> handler)
+    {
+        for (Entry<Long, Long2ObjectHashMap<Long2ObjectHashMap<V>>> sessionEntry :map.entrySet())
+        {
+            long sessionId = sessionEntry.getKey();
+            for (Entry<Long, Long2ObjectHashMap<V>> channelEntry : sessionEntry.getValue().entrySet())
+            {
+                long channelId = channelEntry.getKey();
+                for (Entry<Long, V> termEntry : channelEntry.getValue().entrySet())
+                {
+                    long termId = termEntry.getKey();
+                    handler.handle(sessionId, channelId, termId, termEntry.getValue());
+                }
+            }
+        }
     }
 
 }

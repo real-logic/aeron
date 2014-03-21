@@ -87,6 +87,7 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
     {
         handleReceiveBuffer();
         handleCommandBuffer();
+        evaluateBufferExhaustion();
     }
 
     private void handleCommandBuffer()
@@ -115,6 +116,19 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
     {
         senderPredictors.get(sessionId, channelId, termId)
                         .onDataWritten(amount, currentTime);
+    }
+
+    private void evaluateBufferExhaustion()
+    {
+        long currentTime = System.nanoTime();
+        senderPredictors.forEach((sessionId, channelId, termId, predictor) ->
+        {
+            if (predictor.predictExhaustion(currentTime))
+            {
+                // TODO: figure out whether to abstract termId increments
+                sendRequestTerm(sessionId, channelId, termId + 1);
+            }
+        });
     }
 
     private void handleReceiveBuffer()

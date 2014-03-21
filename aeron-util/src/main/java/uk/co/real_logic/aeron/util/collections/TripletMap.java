@@ -22,8 +22,7 @@ package uk.co.real_logic.aeron.util.collections;
  */
 public class TripletMap<V>
 {
-    final Long2ObjectHashMap<Long2ObjectHashMap<Long2ObjectHashMap<V>>> map =
-        new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<Long2ObjectHashMap<Long2ObjectHashMap<V>>> map = new Long2ObjectHashMap<>();
 
     public V get(final long sessionId, final long channelId, final long termId)
     {

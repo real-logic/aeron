@@ -20,8 +20,6 @@ group = 'uk.co.real_logic'
 
 allprojects {
     apply plugin: 'eclipse'
-
-    compileJava.options.encoding = 'UTF-8'
 }
 
 buildscript {
@@ -52,6 +50,8 @@ subprojects {
         sourceCompatibility = 1.8
         targetCompatibility = 1.8
     }
+
+    compileJava.options.encoding = 'UTF-8'
 
     repositories {
         mavenCentral()

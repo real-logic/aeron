@@ -59,4 +59,34 @@ public class TripletMap<V>
 
         return termMap.put(termId, value);
     }
+
+    public V remove(final long sessionId, final long channelId, final long termId)
+    {
+        final Long2ObjectHashMap<Long2ObjectHashMap<V>> channelMap = map.get(sessionId);
+        if (null == channelMap)
+        {
+            return null;
+        }
+
+        final Long2ObjectHashMap<V> termMap = channelMap.get(channelId);
+        if (null == termMap)
+        {
+            return null;
+        }
+
+        final V value = termMap.remove(termId);
+
+        if (termMap.size() == 0)
+        {
+            channelMap.remove(channelId);
+        }
+
+        if (channelMap.size() == 0)
+        {
+            map.remove(sessionId);
+        }
+
+        return value;
+    }
+
 }

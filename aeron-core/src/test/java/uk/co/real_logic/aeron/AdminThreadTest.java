@@ -20,16 +20,16 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.EventHandler;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
-import uk.co.real_logic.aeron.util.control.ChannelMessageFlyweight;
-import uk.co.real_logic.aeron.util.control.RemoveReceiverMessageFlyweight;
-import uk.co.real_logic.aeron.util.control.TripleMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.RemoveReceiverMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.TripleMessageFlyweight;
 
 import java.nio.ByteBuffer;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_SIZE;
-import static uk.co.real_logic.aeron.util.control.ControlProtocolEvents.*;
+import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 
 public class AdminThreadTest
 {

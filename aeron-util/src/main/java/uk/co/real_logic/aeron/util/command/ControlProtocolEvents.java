@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.util.control;
+package uk.co.real_logic.aeron.util.command;
 
 /**
  * List of event types used in the control protocol between the
@@ -21,16 +21,30 @@ package uk.co.real_logic.aeron.util.control;
  */
 public class ControlProtocolEvents
 {
+    // Library to Media Driver
+
     /** Add Channel */
     public static final int ADD_CHANNEL = 0x01;
     /** Remove Channel */
     public static final int REMOVE_CHANNEL = 0x02;
+    /** Remove Term */
+    public static final int REMOVE_TERM = 0x03;
+    /** Add Receiver */
+    public static final int ADD_RECEIVER = 0x04;
     /** Remove Receiver */
-    public static final int REMOVE_RECEIVER = 0x03;
+    public static final int REMOVE_RECEIVER = 0x05;
     /** Request Term */
-    public static final int REQUEST_TERM = 0x04;
+    public static final int REQUEST_TERM = 0x06;
+
+    // Media Driver to Library
+
+    /** Error Response */
+    public static final int ERROR_RESPONSE = 0x07;
+    /** Error Notification */
+    public static final int ERROR_NOTIFICATION = 0x08;
     /** New Receive Buffer Notification */
-    public static final int NEW_RECEIVE_BUFFER_NOTIFICATION = 0x05;
+    public static final int NEW_RECEIVE_BUFFER_NOTIFICATION = 0x09;
     /** New Send Buffer Notification */
-    public static final int NEW_SEND_BUFFER_NOTIFICATION = 0x06;
+    public static final int NEW_SEND_BUFFER_NOTIFICATION = 0x0A;
+
 }

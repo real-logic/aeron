@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.util.control;
+package uk.co.real_logic.aeron.util.command;
 
 import uk.co.real_logic.aeron.util.Flyweight;
 
@@ -30,9 +30,11 @@ import java.nio.ByteOrder;
  * |                                                             ...
  * +---------------------------------------------------------------+
  */
-public class AddReceiverFlyweight extends Flyweight
+public class RemoveReceiverMessageFlyweight extends Flyweight
 {
     private static final int DESTINATION_OFFSET = 0;
+
+    private int lengthOfDestination;
 
     /**
      * return destination field
@@ -50,10 +52,17 @@ public class AddReceiverFlyweight extends Flyweight
      * @param destination field value
      * @return flyweight
      */
-    public AddReceiverFlyweight destination(final String destination)
+    public RemoveReceiverMessageFlyweight destination(final String destination)
     {
-        stringPut(offset + DESTINATION_OFFSET, destination, ByteOrder.LITTLE_ENDIAN);
+        lengthOfDestination = stringPut(offset + DESTINATION_OFFSET,
+                                        destination,
+                                        ByteOrder.LITTLE_ENDIAN);
         return this;
+    }
+
+    public int length()
+    {
+        return DESTINATION_OFFSET + lengthOfDestination;
     }
 
 }

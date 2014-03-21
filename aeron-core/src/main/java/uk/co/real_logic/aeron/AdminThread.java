@@ -16,21 +16,19 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.util.ClosableThread;
-import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
+import uk.co.real_logic.aeron.util.collections.TripletMap;
 import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
-import uk.co.real_logic.aeron.util.control.ChannelMessageFlyweight;
-import uk.co.real_logic.aeron.util.control.ControlProtocolEvents;
-import uk.co.real_logic.aeron.util.control.RemoveReceiverMessageFlyweight;
-import uk.co.real_logic.aeron.util.control.TripleMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
+import uk.co.real_logic.aeron.util.command.RemoveReceiverMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.TripleMessageFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.nio.ByteBuffer;
-import java.util.Map;
 
-import static uk.co.real_logic.aeron.util.control.ControlProtocolEvents.REMOVE_RECEIVER;
-import static uk.co.real_logic.aeron.util.control.ControlProtocolEvents.REQUEST_TERM;
+import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 
 
 /**
@@ -47,8 +45,11 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
     private final RingBuffer commandBuffer;
     /** Outgoing message buffer to media driver */
     private final RingBuffer sendBuffer;
-    /** Maximum size of the write buffer */
-    private final Map<Long, Map<Long, ByteBuffer>> termBufferMap = new Long2ObjectHashMap<>();
+
+    /** Lookup map for sender buffers */
+    private final TripletMap<RingBuffer> senderTermMap = new TripletMap<>();
+    /** Lookup map for receiver buffers */
+    private final TripletMap<RingBuffer> receiverTermMap = new TripletMap<>();
 
     /** Atomic buffer to write message flyweights into before they get sent */
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(WRITE_BUFFER_CAPACITY));
@@ -57,6 +58,8 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
     private final RemoveReceiverMessageFlyweight removeReceiverMessage = new RemoveReceiverMessageFlyweight();
     private final TripleMessageFlyweight requestTermMessage = new TripleMessageFlyweight();
+
+    private final TripleMessageFlyweight bufferNotificationMessage = new TripleMessageFlyweight();
 
     public AdminThread(final RingBuffer commandBuffer,
                        final RingBuffer recvBuffer,
@@ -86,7 +89,19 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
     {
         recvBuffer.read((eventTypeId, buffer, index, length) ->
         {
-            // TODO
+            switch (eventTypeId)
+            {
+                case NEW_RECEIVE_BUFFER_NOTIFICATION:
+                case NEW_SEND_BUFFER_NOTIFICATION:
+                    bufferNotificationMessage.reset(buffer, index);
+                    final boolean isSender = eventTypeId == NEW_SEND_BUFFER_NOTIFICATION;
+                    onNewBufferNotification(bufferNotificationMessage.sessionId(),
+                                            bufferNotificationMessage.channelId(),
+                                            bufferNotificationMessage.termId(),
+                                            isSender);
+
+                    return;
+            }
         });
     }
 
@@ -158,6 +173,7 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
 
     public void onNewBufferNotification(final long sessionId, final long channelId, final long termId, final boolean isSender)
     {
+        // TODO: map
     }
 
 }

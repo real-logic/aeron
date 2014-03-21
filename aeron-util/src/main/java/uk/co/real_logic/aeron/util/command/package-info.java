@@ -18,4 +18,4 @@
  * Flyweights for protocol messages going on the control channel between
  * the core and the media driver.
  */
-package uk.co.real_logic.aeron.util.control;
+package uk.co.real_logic.aeron.util.command;

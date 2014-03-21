@@ -521,7 +521,8 @@ public class AtomicBufferTest
         duplicateBuffer.position(INDEX);
         duplicateBuffer.put(testBytes);
 
-        final ByteBuffer dstBuffer = ((ByteBuffer)ByteBuffer.allocate(testBytes.length * 2).position(testBytes.length)).slice();
+        final ByteBuffer dstBuffer = ((ByteBuffer)ByteBuffer.allocate(testBytes.length * 2).position(testBytes.length))
+                                                            .slice();
 
         buffer.getBytes(INDEX, dstBuffer, testBytes.length);
 

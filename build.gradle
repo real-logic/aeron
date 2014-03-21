@@ -20,6 +20,8 @@ group = 'uk.co.real_logic'
 
 allprojects {
     apply plugin: 'eclipse'
+
+    compileJava.options.encoding = 'UTF-8'
 }
 
 buildscript {

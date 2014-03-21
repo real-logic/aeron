@@ -29,7 +29,7 @@ public class ManyToOneRingBufferConcurrentTest
 {
     public static final int EVENT_TYPE_ID = 7;
 
-    private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect((256) + RingBufferDescriptor.TRAILER_SIZE);
+    private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect((16 * 1024) + RingBufferDescriptor.TRAILER_SIZE);
     private final AtomicBuffer atomicBuffer = new AtomicBuffer(byteBuffer);
     private final RingBuffer ringBuffer = new ManyToOneRingBuffer(atomicBuffer);
 

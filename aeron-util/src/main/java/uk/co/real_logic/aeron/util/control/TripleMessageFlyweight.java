@@ -21,7 +21,14 @@ import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 import java.nio.ByteOrder;
 
 /**
- * Control message for adding and removing a channel.
+ * Control message flyweight for any message that just needs to
+ * represent a Triple of Session ID/Channel Id/Term ID. These are:
+ *
+ * <ul>
+ *     <li>Request Term</li>
+ *     <li>New Receive Buffer Notification</li>
+ *     <li>New Send Buffer Notification</li>
+ * </ul>
  *
  * <p>
  * 0                   1                   2                   3
@@ -36,7 +43,7 @@ import java.nio.ByteOrder;
  * |                           Term ID                             |
  * +---------------------------------------------------------------+
  */
-public class RequestTermFlyweight extends HeaderFlyweight
+public class TripleMessageFlyweight extends HeaderFlyweight
 {
     private static final int CHANNEL_ID_FIELD_OFFSET = 8;
     private static final int TERM_ID_FIELD_OFFSET = 12;
@@ -57,7 +64,7 @@ public class RequestTermFlyweight extends HeaderFlyweight
      * @param channelId field value
      * @return flyweight
      */
-    public RequestTermFlyweight channelId(final long channelId)
+    public TripleMessageFlyweight channelId(final long channelId)
     {
         uint32Put(atomicBuffer, offset + CHANNEL_ID_FIELD_OFFSET, channelId, ByteOrder.LITTLE_ENDIAN);
         return this;
@@ -79,7 +86,7 @@ public class RequestTermFlyweight extends HeaderFlyweight
      * @param termId field value
      * @return flyweight
      */
-    public RequestTermFlyweight termId(final long termId)
+    public TripleMessageFlyweight termId(final long termId)
     {
         uint32Put(atomicBuffer, offset + TERM_ID_FIELD_OFFSET, termId, ByteOrder.LITTLE_ENDIAN);
         return this;

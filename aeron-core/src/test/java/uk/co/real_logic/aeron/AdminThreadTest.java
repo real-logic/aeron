@@ -20,11 +20,9 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.EventHandler;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
 import uk.co.real_logic.aeron.util.control.ChannelMessageFlyweight;
-import uk.co.real_logic.aeron.util.control.ControlProtocolEventTypes;
 import uk.co.real_logic.aeron.util.control.RemoveReceiverMessageFlyweight;
-import uk.co.real_logic.aeron.util.control.RequestTermFlyweight;
+import uk.co.real_logic.aeron.util.control.TripleMessageFlyweight;
 
 import java.nio.ByteBuffer;
 
@@ -35,7 +33,6 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescri
 import static uk.co.real_logic.aeron.util.control.ControlProtocolEventTypes.ADD_CHANNEL;
 import static uk.co.real_logic.aeron.util.control.ControlProtocolEventTypes.REMOVE_CHANNEL;
 import static uk.co.real_logic.aeron.util.control.ControlProtocolEventTypes.REMOVE_RECEIVER;
-import static uk.co.real_logic.aeron.util.protocol.HeaderFlyweight.*;
 
 public class AdminThreadTest
 {
@@ -94,7 +91,7 @@ public class AdminThreadTest
 
         assertReadsOneMessage((eventTypeId, buffer, index, length) ->
         {
-            RequestTermFlyweight requestTermBuffer = new RequestTermFlyweight();
+            TripleMessageFlyweight requestTermBuffer = new TripleMessageFlyweight();
             requestTermBuffer.reset(buffer, index);
 
             //assertThat(requestTermBuffer.headerType(), is(HDR_TYPE_REQUEST_TERM));
@@ -104,7 +101,8 @@ public class AdminThreadTest
         });
     }
 
-    private void assertReadsOneMessage(final EventHandler handler) {
+    private void assertReadsOneMessage(final EventHandler handler)
+    {
         final int messageCount = sendBuffer.read(handler);
         assertThat(messageCount, is(1));
     }

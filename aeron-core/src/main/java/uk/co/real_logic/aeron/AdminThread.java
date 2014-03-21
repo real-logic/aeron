@@ -23,7 +23,7 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.control.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.control.ControlProtocolEventTypes;
 import uk.co.real_logic.aeron.util.control.RemoveReceiverMessageFlyweight;
-import uk.co.real_logic.aeron.util.control.RequestTermFlyweight;
+import uk.co.real_logic.aeron.util.control.TripleMessageFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.nio.ByteBuffer;
@@ -57,7 +57,7 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
     // Control protocol Flyweights
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
     private final RemoveReceiverMessageFlyweight removeReceiverMessage = new RemoveReceiverMessageFlyweight();
-    private final RequestTermFlyweight requestTermMessage = new RequestTermFlyweight();
+    private final TripleMessageFlyweight requestTermMessage = new TripleMessageFlyweight();
 
     public AdminThread(final RingBuffer commandBuffer,
                        final RingBuffer recvBuffer,
@@ -143,7 +143,7 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
         requestTermMessage.sessionId(sessionId);
         requestTermMessage.channelId(channelId);
         requestTermMessage.termId(termId);
-        sendBuffer.write(REQUEST_TERM, writeBuffer, 0, RequestTermFlyweight.length());
+        sendBuffer.write(REQUEST_TERM, writeBuffer, 0, TripleMessageFlyweight.length());
     }
 
     /* callbacks from MediaDriver */

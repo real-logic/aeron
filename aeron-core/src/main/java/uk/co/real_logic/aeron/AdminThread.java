@@ -156,7 +156,7 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
     {
     }
 
-    public void onNewBufferNotification(final long sessionId, final long channelId, final long termId)
+    public void onNewBufferNotification(final long sessionId, final long channelId, final long termId, final boolean isSender)
     {
     }
 

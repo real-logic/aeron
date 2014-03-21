@@ -29,5 +29,8 @@ public class ControlProtocolEvents
     public static final int REMOVE_RECEIVER = 0x03;
     /** Request Term */
     public static final int REQUEST_TERM = 0x04;
-
+    /** New Receive Buffer Notification */
+    public static final int NEW_RECEIVE_BUFFER_NOTIFICATION = 0x05;
+    /** New Send Buffer Notification */
+    public static final int NEW_SEND_BUFFER_NOTIFICATION = 0x06;
 }

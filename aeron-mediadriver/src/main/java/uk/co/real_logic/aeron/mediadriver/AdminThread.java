@@ -23,7 +23,6 @@ import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -80,7 +79,10 @@ public class AdminThread extends ClosableThread implements LibraryFacade
     }
 
     @Override
-    public void sendNewBufferNotification(final long sessionId, final long channelId, final long termId)
+    public void sendNewBufferNotification(final long sessionId,
+                                          final long channelId,
+                                          final long termId,
+                                          final boolean isSender)
     {
 
     }

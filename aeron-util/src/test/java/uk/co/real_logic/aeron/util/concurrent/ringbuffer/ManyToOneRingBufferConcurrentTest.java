@@ -78,12 +78,10 @@ public class ManyToOneRingBufferConcurrentTest
         final int reps = 10 * 1000 * 1000;
         final int numProducers = 2;
         final CyclicBarrier barrier = new CyclicBarrier(numProducers);
-        final Thread[] threads = new Thread[numProducers];
 
         for (int i = 0; i < numProducers; i++)
         {
-            threads[i] = new Thread(new Producer(i, barrier, reps));
-            threads[i].start();
+            new Thread(new Producer(i, barrier, reps)).start();
         }
 
         final int[] counts = new int[numProducers];

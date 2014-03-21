@@ -275,14 +275,15 @@ public class ManyToOneRingBufferTest
             .thenReturn(Integer.valueOf(ALIGNMENT));
 
         final int[] times = new int[1];
-        final EventHandler handler = (eventTypeId, buffer, index, length) ->
-        {
-            times[0]++;
-            if (times[0] == 2)
+        final EventHandler handler =
+            (eventTypeId, buffer, index, length) ->
             {
-                throw new RuntimeException();
-            }
-        };
+                times[0]++;
+                if (times[0] == 2)
+                {
+                    throw new RuntimeException();
+                }
+            };
 
         try
         {

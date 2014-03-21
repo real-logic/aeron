@@ -242,7 +242,6 @@ public class ManyToOneRingBufferTest
         when(Integer.valueOf(atomicBuffer.getInt(lengthOffset(headIndex + ALIGNMENT))))
             .thenReturn(Integer.valueOf(ALIGNMENT));
 
-
         final int[] times = new int[1];
         final EventHandler handler = (eventTypeId, buffer, index, length) -> times[0]++;
         final int eventsRead = ringBuffer.read(handler);
@@ -253,5 +252,53 @@ public class ManyToOneRingBufferTest
         final InOrder inOrder = inOrder(atomicBuffer);
         inOrder.verify(atomicBuffer, times(1)).setMemory(headIndex, ALIGNMENT * 2, (byte)0);
         inOrder.verify(atomicBuffer, times(1)).putLongOrdered(HEAD_COUNTER_INDEX, tail);
+    }
+
+    @Test
+    public void shouldCopeWithExceptionFromHandler()
+    {
+        final long tail = ALIGNMENT * 2;
+        final long head = 0L;
+        final int headIndex = (int)head;
+
+        when(Long.valueOf(atomicBuffer.getLongVolatile(HEAD_COUNTER_INDEX)))
+            .thenReturn(Long.valueOf(head));
+        when(Long.valueOf(atomicBuffer.getLongVolatile(TAIL_COUNTER_INDEX)))
+            .thenReturn(Long.valueOf(tail));
+        when(Integer.valueOf(atomicBuffer.getIntVolatile(eventTypeOffset(headIndex))))
+            .thenReturn(Integer.valueOf(EVENT_TYPE_ID));
+        when(Integer.valueOf(atomicBuffer.getIntVolatile(eventTypeOffset(headIndex + ALIGNMENT))))
+            .thenReturn(Integer.valueOf(EVENT_TYPE_ID));
+        when(Integer.valueOf(atomicBuffer.getInt(lengthOffset(headIndex))))
+            .thenReturn(Integer.valueOf(ALIGNMENT));
+        when(Integer.valueOf(atomicBuffer.getInt(lengthOffset(headIndex + ALIGNMENT))))
+            .thenReturn(Integer.valueOf(ALIGNMENT));
+
+        final int[] times = new int[1];
+        final EventHandler handler = (eventTypeId, buffer, index, length) ->
+        {
+            times[0]++;
+            if (times[0] == 2)
+            {
+                throw new RuntimeException();
+            }
+        };
+
+        try
+        {
+            ringBuffer.read(handler);
+        }
+        catch (final RuntimeException ignore)
+        {
+            assertThat(Integer.valueOf(times[0]), is(Integer.valueOf(2)));
+
+            final InOrder inOrder = inOrder(atomicBuffer);
+            inOrder.verify(atomicBuffer, times(1)).setMemory(headIndex, ALIGNMENT * 2, (byte)0);
+            inOrder.verify(atomicBuffer, times(1)).putLongOrdered(HEAD_COUNTER_INDEX, tail);
+
+            return;
+        }
+
+        fail("Should have thrown exception");
     }
 }

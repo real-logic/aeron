@@ -231,7 +231,7 @@ public class ManyToOneRingBuffer implements RingBuffer
         if (eventTypeId < 1)
         {
             final String msg = String.format("event type id must be greater than zero, eventTypeId=%d",
-                                             eventTypeId);
+                                             Integer.valueOf(eventTypeId));
 
             throw new IllegalArgumentException(msg);
         }
@@ -242,7 +242,7 @@ public class ManyToOneRingBuffer implements RingBuffer
         if (length > maxEventSize)
         {
             final String msg = String.format("encoded event exceeds maxEventSize of %d, length=%d",
-                                             maxEventSize, length);
+                                             Integer.valueOf(maxEventSize), Integer.valueOf(length));
 
             throw new IllegalArgumentException(msg);
         }

@@ -34,13 +34,14 @@ public class BufferExhaustionPredictorTest
     {
         Object[][] data = new Object[][]
         {
-            { 10, new long[] {1, 1, 1}, false },
             { 10, new long[] {30, 30, 30}, true },
             { 100, new long[] {30, 10, 20}, true },
+            { 10, new long[] {1, 1, 1}, false },
         };
         return Arrays.asList(data);
     }
 
+    private final BufferExhaustionPredictor predictor = new BufferExhaustionPredictor(100);
     private final long period;
     private final long[] amounts;
     private final boolean result;
@@ -55,7 +56,6 @@ public class BufferExhaustionPredictorTest
     @Test
     public void canPredictExhaustion()
     {
-        BufferExhaustionPredictor predictor = new BufferExhaustionPredictor(100);
         long currentTime = System.nanoTime();
         long startTime = currentTime - period;
         for (int i = 0; i < amounts.length; i++)

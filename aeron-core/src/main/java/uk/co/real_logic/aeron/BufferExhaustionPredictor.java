@@ -33,7 +33,7 @@ public class BufferExhaustionPredictor
 
     private final long bufferSize;
     // TODO: replace with a flyweighted, threadsafe, buffer
-    private final List<DataWriteRate> writeRates;
+    private List<DataWriteRate> writeRates;
 
     private long bufferConsumed;
 
@@ -44,10 +44,6 @@ public class BufferExhaustionPredictor
         this.bufferSize = bufferSizeInBytes;
 
         onBufferAllocated();
-        writeCursor = 0;
-        writeRates = IntStream.range(0, DATA_COLLECTION_WINDOW)
-                              .mapToObj(i -> new DataWriteRate())
-                              .collect(toList());
     }
 
     public void dataWritten(final long amountInBytes, final long nanoTime)
@@ -62,6 +58,11 @@ public class BufferExhaustionPredictor
 
     public void onBufferAllocated() {
         bufferConsumed = 0;
+
+        writeCursor = 0;
+        writeRates = IntStream.range(0, DATA_COLLECTION_WINDOW)
+                              .mapToObj(i -> new DataWriteRate())
+                              .collect(toList());
     }
 
     /**

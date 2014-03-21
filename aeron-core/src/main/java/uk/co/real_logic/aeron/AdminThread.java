@@ -27,7 +27,6 @@ import uk.co.real_logic.aeron.util.control.TripleMessageFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.nio.ByteBuffer;
-import java.util.List;
 import java.util.Map;
 
 import static uk.co.real_logic.aeron.util.control.ControlProtocolEvents.REMOVE_RECEIVER;
@@ -157,11 +156,8 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
     {
     }
 
-    public void onLocationResponse(final List<byte[]> filenames)
+    public void onNewBufferNotification(final long sessionId, final long channelId, final long termId)
     {
     }
 
-    public void onNewSession(final long sessionId, final List<byte[]> filenames)
-    {
-    }
 }

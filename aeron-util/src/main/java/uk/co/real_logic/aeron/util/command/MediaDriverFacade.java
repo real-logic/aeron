@@ -17,8 +17,6 @@ package uk.co.real_logic.aeron.util.command;
 
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
-import java.util.List;
-
 /**
  * Facade of MediaDriver for use by Library to send/receiver control commands/responses
  *
@@ -142,20 +140,9 @@ public interface MediaDriverFacade
     /**
      * Handle a response from the media driver of returning a list of filenames for buffers
      *
-     * @see LibraryFacade#sendLocationResponse(java.util.List)
+     * @see LibraryFacade#sendNewBufferNotification(long, long, long)
      *
-     * @param filenames list of filenames for buffers
      */
-    void onLocationResponse(final List<byte[]> filenames);
-
-    /**
-     * Handle a notification from the media driver of a new session
-     *
-     * @see LibraryFacade#sendNewSession(long, List)
-     *
-     * @param sessionId for the new session
-     * @param filenames for the buffers associated with the session
-     */
-    void onNewSession(final long sessionId, final List<byte[]> filenames);
+    void onNewBufferNotification(final long sessionId, final long channelId, final long termId);
 
 }

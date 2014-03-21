@@ -79,14 +79,10 @@ public class AdminThread extends ClosableThread implements LibraryFacade
         // TODO: construct error notification for control buffer and write it in
     }
 
-    public void sendLocationResponse(final List<byte[]> filenames)
+    @Override
+    public void sendNewBufferNotification(final long sessionId, final long channelId, final long termId)
     {
-        // TODO: construct response for control buffer and write it in
-    }
 
-    public void sendNewSession(final long sessionId, final List<byte[]> filenames)
-    {
-        // TODO: construct notification for control buffer and write it in
     }
 
     public void onAddChannel(final String destination, final long sessionId, final long channelId)

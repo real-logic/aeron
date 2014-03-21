@@ -41,6 +41,8 @@ public class ChannelMessageFlyweight extends HeaderFlyweight
     private static final int CHANNEL_ID_FIELD_OFFSET = 8;
     private static final int DESTINATION_OFFSET = 12;
 
+    private int lengthOfDestination;
+
     /**
      * return channel id field
      *
@@ -81,8 +83,16 @@ public class ChannelMessageFlyweight extends HeaderFlyweight
      */
     public ChannelMessageFlyweight destination(final String destination)
     {
-        stringPut(atomicBuffer, offset + DESTINATION_OFFSET, destination, ByteOrder.LITTLE_ENDIAN);
+        lengthOfDestination = stringPut(atomicBuffer,
+                                        offset + DESTINATION_OFFSET,
+                                        destination,
+                                        ByteOrder.LITTLE_ENDIAN);
         return this;
+    }
+
+    public int length()
+    {
+        return DESTINATION_OFFSET + lengthOfDestination;
     }
 
 }

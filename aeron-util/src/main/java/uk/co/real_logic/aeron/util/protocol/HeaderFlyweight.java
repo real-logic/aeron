@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.util.protocol;
 
+import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import java.nio.ByteBuffer;
@@ -53,14 +54,6 @@ public class HeaderFlyweight
     public static final short HDR_TYPE_NAK = 0x02;
     /** header type SM */
     public static final short HDR_TYPE_SM = 0x03;
-    /** header type Add Channel */
-    public static final short HDR_TYPE_ADD_CHANNEL = 0x04;
-    /** header type Remove Channel */
-    public static final short HDR_TYPE_REMOVE_CHANNEL = 0x05;
-    /** header type Remove Receiver */
-    public static final short HDR_TYPE_REMOVE_RECEIVER = 0x06;
-    /** header type Request Term */
-    public static final short HDR_TYPE_REQUEST_TERM = 0x07;
     /** header type EXT */
     public static final short HDR_TYPE_EXT = 0xFF;
 
@@ -83,7 +76,7 @@ public class HeaderFlyweight
 
     public HeaderFlyweight reset(final ByteBuffer buffer)
     {
-        return reset(new AtomicBuffer(buffer), 0);
+        return reset(buffer, 0);
     }
 
     public HeaderFlyweight reset(final ByteBuffer buffer, final int offset)
@@ -144,11 +137,11 @@ public class HeaderFlyweight
         return new String(stringInBytes, StandardCharsets.UTF_8);
     }
 
-    public static void stringPut(AtomicBuffer buffer, final int offset, String value, ByteOrder byteOrder)
+    public static int stringPut(AtomicBuffer buffer, final int offset, String value, ByteOrder byteOrder)
     {
         byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
         buffer.putInt(offset, bytes.length);
-        buffer.putBytes(offset + SIZE_OF_INT, bytes);
+        return BitUtil.SIZE_OF_INT + buffer.putBytes(offset + SIZE_OF_INT, bytes);
     }
 
     /**

@@ -19,6 +19,8 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Flyweight for general Aeron header
@@ -134,12 +136,12 @@ public class HeaderFlyweight
         int length = buffer.getInt(offset);
         byte[] stringInBytes = new byte[length];
         buffer.getBytes(offset + SIZE_OF_INT, stringInBytes);
-        return new String(stringInBytes);
+        return new String(stringInBytes, StandardCharsets.UTF_8);
     }
 
     public static void stringPut(AtomicBuffer buffer, final int offset, String value, ByteOrder byteOrder)
     {
-        byte[] bytes = value.getBytes();
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
         buffer.putInt(offset, bytes.length);
         buffer.putBytes(offset + SIZE_OF_INT, bytes);
     }

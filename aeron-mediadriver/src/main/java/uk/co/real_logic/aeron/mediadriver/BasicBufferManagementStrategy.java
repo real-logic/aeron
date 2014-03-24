@@ -97,19 +97,9 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
         }
     }
 
-    public ByteBuffer addSenderChannel(final long sessionId, final long channelId, final long termId) throws Exception
+    public ByteBuffer addSenderTerm(final long sessionId, final long channelId, final long termId) throws Exception
     {
         return mapTerm(senderDir, sessionId, channelId, termId, BUFFER_SIZE);
-    }
-
-    public ByteBuffer incrementSenderTerm(final long sessionId, final long channelId)
-    {
-        return null;
-    }
-
-    public void removeSenderChannel(final long sessionId, final long channelId)
-    {
-
     }
 
     public void removeSenderTerm(final long sessionId, final long channelId, final long termId)
@@ -121,13 +111,6 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
                                       final long sessionId,
                                       final long channelId,
                                       final long termId)
-    {
-        return null;
-    }
-
-    public ByteBuffer incrementReceiverTerm(final UdpDestination destination,
-                                            final long sessionId,
-                                            final long channelId)
     {
         return null;
     }

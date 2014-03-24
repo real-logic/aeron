@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.admin;
 import uk.co.real_logic.aeron.command.AdminThreadEvents;
 import uk.co.real_logic.aeron.command.DataWrittenFlyweight;
 import uk.co.real_logic.aeron.util.ClosableThread;
-import uk.co.real_logic.aeron.util.collections.TripletMap;
+import uk.co.real_logic.aeron.util.collections.TripleLevelMap;
 import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
@@ -49,13 +49,13 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
     private final RingBuffer sendBuffer;
 
     /** Lookup map for sender buffers */
-    private final TripletMap<RingBuffer> senderTermMap = new TripletMap<>();
+    private final TripleLevelMap<RingBuffer> senderTermMap = new TripleLevelMap<>();
     /** Lookup map for receiver buffers */
-    private final TripletMap<RingBuffer> receiverTermMap = new TripletMap<>();
+    private final TripleLevelMap<RingBuffer> receiverTermMap = new TripleLevelMap<>();
 
-    private final TripletMap<BufferExhaustionPredictor> senderPredictors = new TripletMap<>();
+    private final TripleLevelMap<BufferExhaustionPredictor> senderPredictors = new TripleLevelMap<>();
 
-    private final TripletMap<BufferExhaustionPredictor> receiverPredictors = new TripletMap<>();
+    private final TripleLevelMap<BufferExhaustionPredictor> receiverPredictors = new TripleLevelMap<>();
 
     /** Atomic buffer to write message flyweights into before they get sent */
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(WRITE_BUFFER_CAPACITY));
@@ -219,7 +219,7 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
 
     public void onNewBufferNotification(final long sessionId, final long channelId, final long termId, final boolean isSender)
     {
-        TripletMap<BufferExhaustionPredictor> predictors = isSender ? senderPredictors : receiverPredictors;
+        TripleLevelMap<BufferExhaustionPredictor> predictors = isSender ? senderPredictors : receiverPredictors;
         predictors.put(sessionId, channelId, termId, new BufferExhaustionPredictor());
     }
 

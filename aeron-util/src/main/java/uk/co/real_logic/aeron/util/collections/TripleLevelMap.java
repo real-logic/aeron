@@ -20,9 +20,9 @@ import static java.util.Map.Entry;
 /**
  * Map-like data structure for mapping of sessionId/channelId/termId to a type.
  *
- * @param <V> type of object stored for the triplet.
+ * @param <V> type of object stored for the triple Ids.
  */
-public class TripletMap<V>
+public class TripleLevelMap<V>
 {
     private final Long2ObjectHashMap<Long2ObjectHashMap<Long2ObjectHashMap<V>>> map = new Long2ObjectHashMap<>();
 

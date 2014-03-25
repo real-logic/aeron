@@ -37,7 +37,7 @@ public class ClientAdminThreadTest
 
     public static final String DESTINATION = "udp://localhost:40123@localhost:40124";
     private final RingBuffer sendBuffer = new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocateDirect(TRAILER_SIZE + 1024)));
-    private final ClientAdminThread thread = new ClientAdminThread(null, null, sendBuffer);
+    private final ClientAdminThread thread = new ClientAdminThread(null, null, sendBuffer, null);
 
     @Test
     public void threadSendsAddChannelMessage()

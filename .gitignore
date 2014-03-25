@@ -1,18 +1,31 @@
-*~
 target
 GTAGS
 GRTAGS
 GPATH
 prop
 out
+
+# OS X
 .DS_Store
+
+# intellij
 .idea
 *.iml
+
+# eclipse
 .project
 .classpath
 .settings
+
+# editors
 *.sublime-project
 *.sublime-workspace
+*~
+
+# the build
 build-local.properties
 .gradle
 build
+
+# Benchmark timings
+timings.log

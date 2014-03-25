@@ -44,7 +44,7 @@ public class Receiver implements AutoCloseable
         this.mediaDriver = builder.mediaDriver;
 
         long[] channels = channelMap.keySet().stream().mapToLong(x -> x).toArray();
-        mediaDriver.sendAddReceiver(destination.destination(), channels);
+        this.mediaDriver.sendAddReceiver(destination.destination(), channels);
     }
 
     public void close()

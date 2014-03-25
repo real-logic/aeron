@@ -210,7 +210,8 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
                 // - need to do this via command queue to that running thread
             }
 
-            // this thread does not add buffers. The RcvFrameHandler handle methods will create new buffers on demand
+            // this thread does not add buffers. The RcvFrameHandler handle methods will send an event for this thread
+            // to create buffers as needed
         }
         catch (Exception e)
         {
@@ -222,7 +223,25 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     @Override
     public void onRemoveReceiver(final String destination)
     {
+        try
+        {
+            final UdpDestination rcvDestination = UdpDestination.parse(destination);
+            RcvFrameHandler rcv = rcvDestinationMap.get(rcvDestination);
 
+            if (null == rcv)
+            {
+                throw new IllegalArgumentException("destination unknown for receiver remove: " + destination);
+            }
+
+            rcvDestinationMap.remove(rcvDestination);
+
+            // TODO: send event to receiver thread to remove (and close) this framehandler
+        }
+        catch (Exception e)
+        {
+            sendErrorResponse(ErrorCode.GENERIC_ERROR.value(), e.getMessage().getBytes());
+            // TODO: log this as well as send the error response
+        }
     }
 
     @Override

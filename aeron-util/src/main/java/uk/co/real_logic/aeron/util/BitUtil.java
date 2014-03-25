@@ -43,6 +43,9 @@ public class BitUtil
     /** Size of the data blocks used by the CPU cache sub-system in bytes. */
     public static final int CACHE_LINE_SIZE = 64;
 
+    private static final byte[] HEX_DIGIT_TABLE = { '0', '1', '2', '3', '4', '5', '6', '7',
+                                                    '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
+
     /**
      * Fast method of finding the next power of 2 greater than or equal to the supplied value.
      *
@@ -70,5 +73,36 @@ public class BitUtil
     public static int align(final int value, final int alignment)
     {
         return (value + (alignment - 1)) & ~(alignment - 1);
+    }
+
+    /**
+     * Generate a byte array that is a hex representation of a given byte array.
+     *
+     * @param buffer to convert to a hex representation
+     * @return new byte array that is hex representation (in Big Endian) of the passed array
+     */
+    public static byte[] toHexByteArray(final byte[] buffer)
+    {
+        final byte[] outputBuffer = new byte[buffer.length << 1];
+
+        for (int i = 0; i < (buffer.length << 1); i += 2)
+        {
+            final byte b = buffer[i >> 1]; // readability
+
+            outputBuffer[i] = HEX_DIGIT_TABLE[(b >> 4) & 0x0F];
+            outputBuffer[i + 1] = HEX_DIGIT_TABLE[b & 0x0F];
+        }
+        return outputBuffer;
+    }
+
+    /**
+     * Generate a string that is the hex representation of a given byte array.
+     *
+     * @param buffer to convert to a hex representation
+     * @return new String holding the hex representation (in Big Endian) of the passed array
+     */
+    public static String toHex(final byte[] buffer) throws Exception
+    {
+        return new String(toHexByteArray(buffer), "UTF-8");
     }
 }

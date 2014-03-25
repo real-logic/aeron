@@ -125,7 +125,7 @@ public final class Aeron
      */
     public Receiver newReceiver(final Receiver.Builder builder)
     {
-        return new Receiver(this, builder);
+        return new Receiver(builder);
     }
 
     /**
@@ -138,7 +138,7 @@ public final class Aeron
         Receiver.Builder builder = new Receiver.Builder();
         block.accept(builder);
 
-        return new Receiver(this, builder);
+        return new Receiver(builder);
     }
 
     public static class Builder

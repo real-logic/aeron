@@ -53,10 +53,6 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
     /** Lookup map for receiver buffers */
     private final TripleLevelMap<RingBuffer> receiverTermMap = new TripleLevelMap<>();
 
-    private final TripleLevelMap<BufferExhaustionPredictor> senderPredictors = new TripleLevelMap<>();
-
-    private final TripleLevelMap<BufferExhaustionPredictor> receiverPredictors = new TripleLevelMap<>();
-
     /** Atomic buffer to write message flyweights into before they get sent */
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(WRITE_BUFFER_CAPACITY));
 
@@ -87,7 +83,6 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
     {
         handleReceiveBuffer();
         handleCommandBuffer();
-        evaluateBufferExhaustion();
     }
 
     private void handleCommandBuffer()
@@ -114,21 +109,7 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
                                final long amount,
                                final long currentTime)
     {
-        senderPredictors.get(sessionId, channelId, termId)
-                        .onDataWritten(amount, currentTime);
-    }
 
-    private void evaluateBufferExhaustion()
-    {
-        long currentTime = System.nanoTime();
-        senderPredictors.forEach((sessionId, channelId, termId, predictor) ->
-        {
-            if (predictor.predictExhaustion(currentTime))
-            {
-                // TODO: figure out whether to abstract termId increments
-                sendRequestTerm(sessionId, channelId, termId + 1);
-            }
-        });
     }
 
     private void handleReceiveBuffer()
@@ -219,8 +200,7 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
 
     public void onNewBufferNotification(final long sessionId, final long channelId, final long termId, final boolean isSender)
     {
-        TripleLevelMap<BufferExhaustionPredictor> predictors = isSender ? senderPredictors : receiverPredictors;
-        predictors.put(sessionId, channelId, termId, new BufferExhaustionPredictor());
+
     }
 
 }

@@ -15,6 +15,8 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import uk.co.real_logic.aeron.util.FileMappingConvention;
+import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.collections.TripleLevelMap;
 
 import java.io.File;
@@ -24,14 +26,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
 /**
- * Basic buffer management where each Term is a file
- *
- * Root directory is the "aeron.data.dir"
- * Senders are under "aeron.data.dir/sender"
- * Receivers are under "aeron.data.dir/receiver"
- *
- * Both sources and receivers share the same structure of "sessionId/channelId/termId".
- *
+ * Basic buffer management where each Term is a file.
  */
 public class BasicBufferManagementStrategy implements BufferManagementStrategy
 {
@@ -41,33 +36,16 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
     private final File receiverDir;
     private final TripleLevelMap<ByteBuffer> srcTermMap;
     private final TripleLevelMap<ByteBuffer> rcvTermMap;
+    private final FileMappingConvention fileConvention;
 
     public BasicBufferManagementStrategy(final String dataDir)
     {
-        final File dataDirFile = new File(dataDir);
+        fileConvention = new FileMappingConvention(dataDir);
+        senderDir = fileConvention.senderDir();
+        receiverDir = fileConvention.receiverDir();
 
-        if (!dataDirFile.exists() || !dataDirFile.isDirectory())
-        {
-            throw new IllegalArgumentException("data directory does not exist or is not a directory: " + dataDir);
-        }
-        senderDir = new File(dataDirFile, "sender");
-        receiverDir = new File(dataDirFile, "receiver");
-
-        if (!senderDir.exists())
-        {
-            if (!senderDir.mkdir())
-            {
-                throw new IllegalArgumentException("could not create sender directory: " + dataDir);
-            }
-        }
-
-        if (!receiverDir.exists())
-        {
-            if (!receiverDir.mkdir())
-            {
-                throw new IllegalArgumentException("could not create receiver directory: " + dataDir);
-            }
-        }
+        IoUtil.ensureDirectoryExists(senderDir, "sender");
+        IoUtil.ensureDirectoryExists(receiverDir, "receiver");
 
         srcTermMap = new TripleLevelMap<>();
         rcvTermMap = new TripleLevelMap<>();
@@ -79,18 +57,7 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
                                            final long termId,
                                            final long size) throws Exception
     {
-        final File sessionDir = new File(rootDir, Long.toString(sessionId));
-        final File channelDir = new File(sessionDir, Long.toString(channelId));
-        final File termIdFile = new File(channelDir, Long.toString(termId));
-
-        if (!channelDir.exists())
-        {
-            if (!channelDir.mkdirs())
-            {
-                throw new IllegalStateException("failed to create channel directory: " + channelDir);
-            }
-        }
-
+        final File termIdFile = FileMappingConvention.termIdFile(rootDir, sessionId, channelId, termId, true);
         try (final RandomAccessFile randomAccessFile = new RandomAccessFile(termIdFile, "rw"))
         {
             long sz = size;
@@ -115,7 +82,8 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
                  sessionId, channelId, termId));
         }
 
-        srcTermMap.put(sessionId, channelId, termId, mapTerm(senderDir, sessionId, channelId, termId, BUFFER_SIZE));
+        final MappedByteBuffer term = mapTerm(fileConvention.senderDir(), sessionId, channelId, termId, BUFFER_SIZE);
+        srcTermMap.put(sessionId, channelId, termId, term);
     }
 
     @Override

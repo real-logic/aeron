@@ -90,4 +90,33 @@ public class IoUtil
             throw new FileNotFoundException("Failed to delete file: " + file);
         }
     }
+
+    /**
+     * Create a directory if it doesn't already exist.
+     *
+     * @param directory the directory which definitely exists after this method call.
+     * @throws IllegalArgumentException thrown if the directory cannot be created
+     */
+    public static void ensureDirectoryExists(File directory, String name) throws IllegalArgumentException
+    {
+        if (!directory.exists())
+        {
+            if (!directory.mkdir())
+            {
+                throw new IllegalArgumentException("could not create " + name + " directory: " + directory);
+            }
+        }
+    }
+
+    /**
+     * Check that a direct exists, throwing an exception if it doesn't.
+     */
+    public static void checkDirectoryExists(File directory, String name)
+    {
+        if (!directory.exists() || !directory.isDirectory())
+        {
+            throw new IllegalArgumentException(name + " does not exist or is not a directory: " + directory);
+        }
+    }
+
 }

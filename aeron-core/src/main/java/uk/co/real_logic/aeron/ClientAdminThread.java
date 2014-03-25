@@ -16,9 +16,7 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.command.AdminThreadEvents;
-import uk.co.real_logic.aeron.command.DataWrittenFlyweight;
 import uk.co.real_logic.aeron.util.ClosableThread;
-import uk.co.real_logic.aeron.util.collections.TripleLevelMap;
 import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
@@ -48,10 +46,7 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
     /** Outgoing message buffer to media driver */
     private final RingBuffer sendBuffer;
 
-    /** Lookup map for sender buffers */
-    private final TripleLevelMap<RingBuffer> senderTermMap = new TripleLevelMap<>();
-    /** Lookup map for receiver buffers */
-    private final TripleLevelMap<RingBuffer> receiverTermMap = new TripleLevelMap<>();
+    private final BufferUsageStrategy bufferUsage;
 
     /** Atomic buffer to write message flyweights into before they get sent */
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(WRITE_BUFFER_CAPACITY));
@@ -63,16 +58,16 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
 
     private final TripletMessageFlyweight bufferNotificationMessage = new TripletMessageFlyweight();
 
-    // Command Buffer Flyweights
-    private final DataWrittenFlyweight dataWrittenMessage = new DataWrittenFlyweight();
 
     public ClientAdminThread(final RingBuffer commandBuffer,
                              final RingBuffer recvBuffer,
-                             final RingBuffer sendBuffer)
+                             final RingBuffer sendBuffer,
+                             final BufferUsageStrategy bufferUsage)
     {
         this.commandBuffer = commandBuffer;
         this.recvBuffer = recvBuffer;
         this.sendBuffer = sendBuffer;
+        this.bufferUsage = bufferUsage;
 
         channelMessage.reset(writeBuffer, 0);
         removeReceiverMessage.reset(writeBuffer, 0);
@@ -89,17 +84,7 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
     {
         commandBuffer.read((eventTypeId, buffer, index, length) ->
         {
-            switch (eventTypeId)
-            {
-                case AdminThreadEvents.DATA_WRITTEN:
-                    dataWrittenMessage.reset(buffer, index);
-                    onDataWritten(dataWrittenMessage.sessionId(),
-                                  dataWrittenMessage.channelId(),
-                                  dataWrittenMessage.termId(),
-                                  dataWrittenMessage.amount(),
-                                  dataWrittenMessage.currentTime());
-                    return;
-            }
+            // TODO
         });
     }
 
@@ -200,7 +185,15 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
 
     public void onNewBufferNotification(final long sessionId, final long channelId, final long termId, final boolean isSender)
     {
-
+        try
+        {
+            bufferUsage.onTermAdded(sessionId, channelId, termId, isSender);
+        }
+        catch (Exception e)
+        {
+            // TODO: establish correct client error handling strategy
+            e.printStackTrace();
+        }
     }
 
 }

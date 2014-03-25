@@ -104,16 +104,10 @@ public class BasicBufferManagementStrategy extends BasicBufferStrategy implement
     @Override
     public void addSenderTerm(final long sessionId, final long channelId, final long termId) throws Exception
     {
-        ByteBuffer buffer = srcTermMap.get(sessionId, channelId, termId);
-
-        if (null != buffer)
+        registerTerm(sessionId, channelId, termId, srcTermMap, () ->
         {
-            throw new IllegalArgumentException(String.format("buffer already exists: %1$s/%2$s/%3$s",
-                 sessionId, channelId, termId));
-        }
-
-        final MappedByteBuffer term = mapTerm(senderDir, sessionId, channelId, termId, BUFFER_SIZE);
-        srcTermMap.put(sessionId, channelId, termId, term);
+            return mapTerm(senderDir, sessionId, channelId, termId, BUFFER_SIZE);
+        });
     }
 
     @Override

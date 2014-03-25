@@ -19,8 +19,9 @@ import uk.co.real_logic.aeron.util.collections.TripleLevelMap;
 
 import java.io.File;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 
-public class BasicBufferStrategy implements BufferStrategy
+public abstract class BasicBufferStrategy implements BufferStrategy
 {
 
     protected final File senderDir;
@@ -50,6 +51,29 @@ public class BasicBufferStrategy implements BufferStrategy
         }
 
         return buffer;
+    }
+
+    protected static interface TermMapper
+    {
+        MappedByteBuffer mapTerm() throws Exception;
+    }
+
+    protected void registerTerm(final long sessionId,
+                                final long channelId,
+                                final long termId,
+                                final TripleLevelMap<ByteBuffer> termMap,
+                                final TermMapper mapper) throws Exception
+    {
+        ByteBuffer buffer = termMap.get(sessionId, channelId, termId);
+
+        if (null != buffer)
+        {
+            throw new IllegalArgumentException(String.format("buffer already exists: %1$s/%2$s/%3$s",
+                    sessionId, channelId, termId));
+        }
+
+        final MappedByteBuffer term = mapper.mapTerm();
+        termMap.put(sessionId, channelId, termId, term);
     }
 
 }

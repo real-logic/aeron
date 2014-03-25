@@ -20,5 +20,5 @@ package uk.co.real_logic.aeron.command;
  */
 public class AdminThreadEvents
 {
-    public static final int DATA_WRITTEN = 0x0;
+
 }

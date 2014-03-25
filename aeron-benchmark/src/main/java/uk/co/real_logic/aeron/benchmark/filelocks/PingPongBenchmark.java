@@ -16,162 +16,160 @@
 package uk.co.real_logic.aeron.benchmark.filelocks;
 
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.util.Random;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
+import java.util.stream.LongStream;
 
 public class PingPongBenchmark
 {
-    // private static final int RUN_COUNT = 1_000_000;
-    private static final int RUN_COUNT = 500;
+    private static final int RUN_COUNT = 1_000_000;
+    //private static final int RUN_COUNT = 10_000;
 
-    private static final int PING = 1;
-    private static final int PONG = 2;
-
-    private static final int WARM_UP_RUNS = 10_000;
-
-    public static final String NON_TMPFS_FILE = "/tmp/filelock_benchmark";
-    public static final String TMPFS_FILE = "/dev/shm/filelock_benchmark";
+    private static final int PING_OFFSET = 3;
+    private static final int PONG_OFFSET = 4;
 
     private final Lock lock;
     private final Condition pinged;
     private final Condition ponged;
-    private final RandomAccessFile randomAccessFile;
+    private final ByteBuffer data;
 
     public PingPongBenchmark(final Lock lock,
                              final Condition pinged,
                              final Condition ponged,
-                             final RandomAccessFile randomAccessFile) throws IOException
+                             final ByteBuffer data) throws IOException
     {
         this.lock = lock;
         this.pinged = pinged;
         this.ponged = ponged;
-        this.randomAccessFile = randomAccessFile;
+        this.data = data;
     }
 
-    public void runAsPinger()
+    public Runnable pinger()
     {
-        Thread.currentThread().setName("pinger");
-        final long[] times = new long[RUN_COUNT + 1];
-        try
+        return new Pinger();
+    }
+
+    public Runnable ponger()
+    {
+        return new Ponger();
+    }
+
+    private abstract class Runner implements Runnable
+    {
+
+        public void runLoop()
         {
             try
             {
-                for (int i = 0; i < RUN_COUNT; i++)
+                String name = Thread.currentThread().getName();
+                for (int i = 1; i < RUN_COUNT + 1; i++)
                 {
-                    lock.lock();
-                    try
-                    {
-                        times[i] = System.nanoTime();
-                        ping(i);
-                    }
-                    finally
-                    {
-                        lock.unlock();
-                    }
+                    runIteration(i);
                 }
             }
-            finally
+            catch (Exception e)
             {
-                randomAccessFile.close();
+                e.printStackTrace();
             }
         }
-        catch (Throwable e)
-        {
-            e.printStackTrace();
-        }
-        times[RUN_COUNT] = System.nanoTime();
-        printTimes(times);
+
+        protected abstract void runIteration(final int i) throws InterruptedException;
     }
 
-    public void runAsPonger()
+    public final class Pinger extends Runner
     {
-        Thread.currentThread().setName("ponger");
-        startOddToAvoidPinger();
-        try
-        {
-            try
-            {
-                for (int i = 0; i < RUN_COUNT; i++)
-                {
-                    lock.lock();
-                    try
-                    {
-                        this.pong(i);
-                    }
-                    finally
-                    {
-                        lock.unlock();
-                    }
-                }
-            }
-            finally
-            {
-                randomAccessFile.close();
-            }
-        }
-        catch (Throwable e)
-        {
-            e.printStackTrace();
-        }
-    }
+        private final long[] times = new long[RUN_COUNT + 1];
 
-    private void startOddToAvoidPinger()
-    {
-        try
+        @Override
+        public void run()
         {
-            randomAccessFile.seek(1);
+            Thread.currentThread().setName("Ping Thread");
+            runLoop();
+            times[RUN_COUNT] = System.nanoTime();
+            printTimes(times);
+        }
+
+        @Override
+        protected void runIteration(final int i) throws InterruptedException
+        {
+            times[i] = System.nanoTime();
             lock.lock();
-            pinged.await();
-            lock.unlock();
-        }
-        catch (IOException | InterruptedException e)
-        {
-            e.printStackTrace();
-        }
-    }
+            try
+            {
+                data.putInt(PING_OFFSET, i);
+                pinged.signal();
+            }
+            finally
+            {
+                lock.unlock();
+            }
 
-    interface Block
-    {
-        void run(final int i) throws IOException, InterruptedException;
-    }
-
-    public void ping(final int i) throws IOException, InterruptedException
-    {
-        randomAccessFile.write(PING);
-        pinged.signal();
-
-        if (i < RUN_COUNT - 1)
-        {
-            ponged.await();
-            int pong = randomAccessFile.read();
-            checkEqual(pong, PONG, randomAccessFile.getFilePointer());
+            lock.lock();
+            try
+            {
+                while (data.getInt(PONG_OFFSET) != i)
+                {
+                    ponged.await();
+                }
+            }
+            finally
+            {
+                lock.unlock();
+            }
         }
     }
 
-    public void pong(final int i) throws IOException, InterruptedException
+    public final class Ponger extends Runner
     {
-        randomAccessFile.write(PONG);
-        ponged.signal();
-
-        if (i < RUN_COUNT - 1)
+        @Override
+        public void run()
         {
-            pinged.await();
-            int ping = randomAccessFile.read();
-            checkEqual(ping, PING, randomAccessFile.getFilePointer());
+            Thread.currentThread().setName("Pong Thread");
+            runLoop();
+        }
+
+        @Override
+        protected void runIteration(final int i) throws InterruptedException
+        {
+            lock.lock();
+            try
+            {
+                while (data.getInt(PING_OFFSET) != i)
+                {
+                    pinged.await();
+                }
+            }
+            finally
+            {
+                lock.unlock();
+            }
+
+            lock.lock();
+            try
+            {
+                data.putInt(PONG_OFFSET, i);
+                ponged.signal();
+            }
+            finally
+            {
+                lock.unlock();
+            }
         }
     }
 
     private static void printTimes(final long[] times)
     {
+
+        long costOfNanoTime = estimateCostOfNanoTime();
         try (PrintStream out = new PrintStream(new FileOutputStream("timings.log")))
         {
             long startTime = times[0];
             for (int i = 1; i < RUN_COUNT + 1; i++)
             {
-                if (i > WARM_UP_RUNS)
-                {
-                    out.println(times[i] - startTime);
-                }
+                long iterationTime = (times[i] - startTime) - costOfNanoTime;
+                out.println(iterationTime);
                 startTime = times[i];
             }
         }
@@ -181,12 +179,20 @@ public class PingPongBenchmark
         }
     }
 
-    private static void checkEqual(final int left, final int right, final long filePointer)
+    private static long estimateCostOfNanoTime()
     {
-        if (left != right)
+        final int N = 1000;
+        long[] sink = new long[N];
+        for (int i = 0; i < N; i++)
         {
-            throw new IllegalStateException("values not equal: " + left + ", " + right + " @ " + filePointer);
+            sink[i] = System.nanoTime();
         }
+
+        // Printout to avoid DCE
+        System.out.println("Ignore this output: " + sink[new Random().nextInt(N)]);
+
+        long totalTime = sink[N - 1] - sink[0];
+        return totalTime / N;
     }
 
 }

@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.benchmark.filelocks;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -27,26 +28,15 @@ public class InProcessBenchmark
 
     public static void main(String[] args) throws IOException, InterruptedException
     {
-        final File file = new File(PingPongBenchmark.TMPFS_FILE);
-        final RandomAccessFile randomAccessFile = new RandomAccessFile(file, "rw");
-
         final Lock lock = new ReentrantLock();
         final Condition pinged = lock.newCondition();
         final Condition ponged = lock.newCondition();
+        final ByteBuffer data = ByteBuffer.allocate(10);
+        final PingPongBenchmark benchmark = new PingPongBenchmark(lock, pinged, ponged, data);
 
-        final PingPongBenchmark pinger = new PingPongBenchmark(lock, pinged, ponged, randomAccessFile);
-        final PingPongBenchmark ponger = new PingPongBenchmark(lock, pinged, ponged, randomAccessFile);
-
-        Thread pingThread = new Thread(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                pinger.runAsPinger();
-            }
-        });
+        Thread pingThread = new Thread(benchmark.pinger());
         pingThread.start();
-        ponger.runAsPonger();
+        benchmark.ponger().run();
         pingThread.join();
     }
 

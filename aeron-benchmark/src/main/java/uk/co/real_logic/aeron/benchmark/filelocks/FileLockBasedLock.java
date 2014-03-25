@@ -40,7 +40,7 @@ public class FileLockBasedLock implements Lock
     {
         try
         {
-            lock = channel.lock(position, position + 1, false);
+            lock = channel.lock(position, 1, true);
         }
         catch (IOException e)
         {
@@ -51,11 +51,6 @@ public class FileLockBasedLock implements Lock
     @Override
     public void unlock()
     {
-        if (lock == null)
-        {
-            return;
-        }
-
         try
         {
             lock.release();

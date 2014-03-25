@@ -18,11 +18,18 @@ package uk.co.real_logic.aeron.benchmark.filelocks;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.locks.Condition;
 
+import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
+
 public class FileLockBenchmark
 {
+
+    //public static final String NON_TMPFS_FILE = "/tmp/filelock_benchmark";
+    public static final String TMPFS_FILE = "/dev/shm/filelock_benchmark";
+
     private static final long MUTEX_OFFSET = 0;
     private static final long PING_LOCK_OFFSET = 2;
     private static final long PONG_LOCK_OFFSET = 4;
@@ -31,23 +38,18 @@ public class FileLockBenchmark
     {
         boolean isPinger = args.length == 1 && Boolean.parseBoolean(args[0]);
 
-        final File file = new File(PingPongBenchmark.TMPFS_FILE);
+        final File file = new File(TMPFS_FILE);
         final RandomAccessFile randomAccessFile = new RandomAccessFile(file, "rw");
         FileChannel channel = randomAccessFile.getChannel();
+        MappedByteBuffer data = channel.map(READ_WRITE, 0, 10);
 
         final FileLockBasedLock lock = new FileLockBasedLock(channel, MUTEX_OFFSET);
         final Condition pinged = new FileLockCondition(lock, channel, PING_LOCK_OFFSET);
         final Condition ponged = new FileLockCondition(lock, channel, PONG_LOCK_OFFSET);
 
-        final PingPongBenchmark benchmark = new PingPongBenchmark(lock, pinged, ponged, randomAccessFile);
-        if (isPinger)
-        {
-            benchmark.runAsPinger();
-        }
-        else
-        {
-            benchmark.runAsPonger();
-        }
+        final PingPongBenchmark benchmark = new PingPongBenchmark(lock, pinged, ponged, data);
+        final Runnable toRun = isPinger ? benchmark.pinger() : benchmark.ponger();
+        toRun.run();
     }
 
 }

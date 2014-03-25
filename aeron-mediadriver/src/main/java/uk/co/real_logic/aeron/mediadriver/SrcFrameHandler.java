@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
@@ -28,18 +29,18 @@ public class SrcFrameHandler implements FrameHandler, AutoCloseable
 {
     private final UdpTransport transport;
     private final UdpDestination destination;
-    private final AdminThread adminThread;
-    private final SenderThread senderThread;
+    private final RingBuffer adminThreadCommandBuffer;
+    private final RingBuffer senderThreadCommandBuffer;
 
     public SrcFrameHandler(final UdpDestination destination,
                            final ReceiverThread receiverThread,
-                           final AdminThread adminThread,
-                           final SenderThread senderThread) throws Exception
+                           final RingBuffer adminThreadCommandBuffer,
+                           final RingBuffer senderThreadCommandBuffer) throws Exception
     {
         this.transport = new UdpTransport(this, destination.local(), receiverThread);
         this.destination = destination;
-        this.adminThread = adminThread;
-        this.senderThread = senderThread;
+        this.adminThreadCommandBuffer = adminThreadCommandBuffer;
+        this.senderThreadCommandBuffer = senderThreadCommandBuffer;
     }
 
     public int send(final ByteBuffer buffer) throws Exception
@@ -52,6 +53,7 @@ public class SrcFrameHandler implements FrameHandler, AutoCloseable
         return transport.sendTo(buffer, addr);
     }
 
+    @Override
     public void close()
     {
         transport.close();
@@ -62,21 +64,23 @@ public class SrcFrameHandler implements FrameHandler, AutoCloseable
         return destination;
     }
 
+    @Override
     public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
     {
         // we don't care, so just drop it silently.
     }
 
+    @Override
     public void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
     {
         // dispatch frames to Admin or Sender Threads to handle
         if (header.headerType() == HeaderFlyweight.HDR_TYPE_NAK)
         {
-            adminThread.offerNAK(header);
+            AdminThread.addNakEvent(adminThreadCommandBuffer, header);
         }
         else if (header.headerType() == HeaderFlyweight.HDR_TYPE_SM)
         {
-            senderThread.offerStatusMessage(header);
+            SenderThread.addStatusMessageEvent(senderThreadCommandBuffer, header);
         }
     }
 }

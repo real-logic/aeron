@@ -15,8 +15,9 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
+
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -37,14 +38,14 @@ public class ReceiverThread implements AutoCloseable, Runnable
 
     private Selector selector;
     private volatile boolean done;
-    private final ByteBuffer commandBuffer;
-    private final ByteBuffer adminCommandBuffer;
+    private final RingBuffer commandBuffer;
+    private final RingBuffer adminThreadCommandBuffer;
 
-    public ReceiverThread(final ByteBuffer commandBuffer, final ByteBuffer adminCommandBuffer) throws Exception
+    public ReceiverThread(final MediaDriver.TopologyBuilder builder) throws Exception
     {
         this.selector = Selector.open(); // yes, SelectorProvider, blah, blah
-        this.commandBuffer = commandBuffer;
-        this.adminCommandBuffer = adminCommandBuffer;
+        this.commandBuffer = builder.receiverThreadCommandBuffer();
+        this.adminThreadCommandBuffer = builder.adminThreadCommandBuffer();
         this.done = false;
     }
 

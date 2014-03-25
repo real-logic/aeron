@@ -106,15 +106,14 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
         final RcvChannelState channelState = findOrCreateChannelState(sessionId, channelId, termId, srcAddr);
 
         // TODO: process the Data by placing it in the appropriate Term Buffer (hot path!)
-        // TODO: loss detection not done in this thread. Done in another thread.
+        // TODO: loss detection not done in this thread. Done in adminThread
     }
 
     public void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
     {
         /* TODO:
-           NAK - back-off any pending NAK
+           NAK - back-off any pending NAK - senderThread
            SM - ignore
-           Channel Announcement/Advertisement - prompt sending SM
          */
     }
 }

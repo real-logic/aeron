@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.ClosableThread;
+import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.nio.ByteBuffer;
@@ -25,40 +26,58 @@ import java.nio.ByteBuffer;
  */
 public class SenderThread extends ClosableThread
 {
-    private final ByteBuffer commandBuffer;
-    private final ByteBuffer adminCommandBuffer;
+    private final RingBuffer commandBuffer;
+    private final RingBuffer adminThreadCommandBuffer;
+    private final BufferManagementStrategy bufferManagementStrategy;
 
-    public SenderThread(final ByteBuffer commandBuffer, final ByteBuffer adminCommandBuffer)
+    public SenderThread(final MediaDriver.TopologyBuilder builder)
     {
-        this.commandBuffer = commandBuffer;
-        this.adminCommandBuffer = adminCommandBuffer;
+        this.commandBuffer = builder.senderThreadCommandBuffer();
+        this.adminThreadCommandBuffer = builder.adminThreadCommandBuffer();
+        this.bufferManagementStrategy = builder.bufferManagementStrategy();
     }
 
+    @Override
     public void process()
     {
         // TODO: handle data to send (with )
         // TODO: handle commands added to command buffer (call onNewSenderTerm, onStatusMessage, etc.)
     }
 
-    public void offerNewSenderTerm(final long sessionId,
-                                   final long channelId,
-                                   final long termId,
-                                   final ByteBuffer buffer)
+    public static void addNewTermEvent(final RingBuffer buffer,
+                                       final long sessionId,
+                                       final long channelId,
+                                       final long termId)
     {
 
     }
 
-    public void offerStatusMessage(final HeaderFlyweight header)
+    public static void addRemoveTermEvent(final RingBuffer buffer,
+                                          final long sessionId,
+                                          final long channelId,
+                                          final long termId)
+    {
+
+    }
+
+    public static void addStatusMessageEvent(final RingBuffer buffer, final HeaderFlyweight header)
     {
         // TODO: serialize frame on to command buffer
     }
 
-    public void onNewSenderTerm(final long sessionId, final long channelId, final long termId, final ByteBuffer buffer)
+    private void onNewTermEvent(final long sessionId, final long channelId, final long termId) throws Exception
     {
+        final ByteBuffer buffer = bufferManagementStrategy.lookupSenderTerm(sessionId, channelId, termId);
 
+        // TODO: add this buffer to our checks in process()
     }
 
-    public void onStatusMessage(final HeaderFlyweight header)
+    private void onRemoveTermEvent(final long sessionId, final long channelId, final long termId)
+    {
+        // TODO: remove term from being checked
+    }
+
+    private void onStatusMessageEvent(final HeaderFlyweight header)
     {
         // TODO: handle Status Message, perhaps sending more data
     }

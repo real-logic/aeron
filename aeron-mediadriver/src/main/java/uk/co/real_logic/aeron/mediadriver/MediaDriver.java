@@ -15,6 +15,11 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
+import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
+
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -70,15 +75,14 @@ public class MediaDriver
 
     public static void main(final String[] args)
     {
-        final ByteBuffer adminThreadBuffer = ByteBuffer.allocateDirect(COMMAND_BUFFER_SZ);
-        final ByteBuffer senderThreadBuffer = ByteBuffer.allocateDirect(COMMAND_BUFFER_SZ);
-        final ByteBuffer receiverThreadBuffer = ByteBuffer.allocateDirect(COMMAND_BUFFER_SZ);
+        TopologyBuilder builder = new TopologyBuilder().adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
+                .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
+                .senderThreadCommandBuffer(COMMAND_BUFFER_SZ)
+                .bufferManagementStrategy(new BasicBufferManagementStrategy(DATA_DIR));
 
-        // TODO: init buffers so they are ready for writing/reading
-
-        try (final ReceiverThread receiverThread = new ReceiverThread(receiverThreadBuffer, adminThreadBuffer);
-             final SenderThread senderThread = new SenderThread(senderThreadBuffer, adminThreadBuffer);
-             final AdminThread adminThread = new AdminThread(adminThreadBuffer, receiverThread, senderThread))
+        try (final ReceiverThread receiverThread = new ReceiverThread(builder);
+             final SenderThread senderThread = new SenderThread(builder);
+             final AdminThread adminThread = new AdminThread(builder, receiverThread, senderThread))
         {
             // 1 for Receive Thread (Sockets to Buffers)
             // 1 for Send Thread (Buffers to Sockets)
@@ -96,6 +100,66 @@ public class MediaDriver
         catch (final Exception e)
         {
             e.printStackTrace();
+        }
+    }
+
+    public static class TopologyBuilder
+    {
+        private RingBuffer adminThreadCommandBuffer;
+        private RingBuffer receiverThreadCommandBuffer;
+        private RingBuffer senderThreadCommandBuffer;
+        private BufferManagementStrategy bufferManagementStrategy;
+
+        private RingBuffer createNewCommandBuffer(final int sz)
+        {
+            final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(sz + RingBufferDescriptor.TRAILER_SIZE);
+            final AtomicBuffer atomicBuffer = new AtomicBuffer(byteBuffer);
+
+            return new ManyToOneRingBuffer(atomicBuffer);
+        }
+
+        public TopologyBuilder adminThreadCommandBuffer(final int sz)
+        {
+            this.adminThreadCommandBuffer = createNewCommandBuffer(sz);
+            return this;
+        }
+
+        public TopologyBuilder receiverThreadCommandBuffer(final int sz)
+        {
+            this.receiverThreadCommandBuffer = createNewCommandBuffer(sz);
+            return this;
+        }
+
+        public TopologyBuilder senderThreadCommandBuffer(final int sz)
+        {
+            this.senderThreadCommandBuffer = createNewCommandBuffer(sz);
+            return this;
+        }
+
+        public TopologyBuilder bufferManagementStrategy(final BufferManagementStrategy strategy)
+        {
+            this.bufferManagementStrategy = strategy;
+            return this;
+        }
+
+        public RingBuffer adminThreadCommandBuffer()
+        {
+            return adminThreadCommandBuffer;
+        }
+
+        public RingBuffer receiverThreadCommandBuffer()
+        {
+            return receiverThreadCommandBuffer;
+        }
+
+        public RingBuffer senderThreadCommandBuffer()
+        {
+            return senderThreadCommandBuffer;
+        }
+
+        public BufferManagementStrategy bufferManagementStrategy()
+        {
+            return bufferManagementStrategy;
         }
     }
 }

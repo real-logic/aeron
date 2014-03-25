@@ -15,6 +15,8 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import uk.co.real_logic.aeron.util.collections.TripleLevelMap;
+
 import java.io.File;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -37,6 +39,8 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
 
     private final File senderDir;
     private final File receiverDir;
+    private final TripleLevelMap<ByteBuffer> srcTermMap;
+    private final TripleLevelMap<ByteBuffer> rcvTermMap;
 
     public BasicBufferManagementStrategy(final String dataDir)
     {
@@ -64,6 +68,9 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
                 throw new IllegalArgumentException("could not create receiver directory: " + dataDir);
             }
         }
+
+        srcTermMap = new TripleLevelMap<>();
+        rcvTermMap = new TripleLevelMap<>();
     }
 
     public static MappedByteBuffer mapTerm(final File rootDir,
@@ -97,21 +104,91 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
         }
     }
 
-    public ByteBuffer addSenderTerm(final long sessionId, final long channelId, final long termId) throws Exception
+    @Override
+    public void addSenderTerm(final long sessionId, final long channelId, final long termId) throws Exception
     {
-        return mapTerm(senderDir, sessionId, channelId, termId, BUFFER_SIZE);
+        ByteBuffer buffer = srcTermMap.get(sessionId, channelId, termId);
+
+        if (null != buffer)
+        {
+            throw new IllegalArgumentException(String.format("buffer already exists: %1$s/%2$s/%3$s",
+                 sessionId, channelId, termId));
+        }
+
+        srcTermMap.put(sessionId, channelId, termId, mapTerm(senderDir, sessionId, channelId, termId, BUFFER_SIZE));
     }
 
+    @Override
+    public ByteBuffer lookupSenderTerm(final long sessionId, final long channelId, final long termId) throws Exception
+    {
+        final ByteBuffer buffer = srcTermMap.get(sessionId, channelId, termId);
+
+        if (null == buffer)
+        {
+            throw new IllegalArgumentException(String.format("buffer does not exist: %1$s/%2$s/%3$s",
+                    sessionId, channelId, termId));
+        }
+
+        return buffer;
+    }
+
+    @Override
     public void removeSenderTerm(final long sessionId, final long channelId, final long termId)
     {
+        srcTermMap.remove(sessionId, channelId, termId);
+    }
+
+    @Override
+    public void addReceiverTerm(final UdpDestination destination,
+                                final long sessionId,
+                                final long channelId,
+                                final long termId) throws Exception
+    {
 
     }
 
-    public ByteBuffer addReceiverTerm(final UdpDestination destination,
-                                      final long sessionId,
-                                      final long channelId,
-                                      final long termId)
+    @Override
+    public ByteBuffer lookupReceiverTerm(final UdpDestination destination,
+                                         final long sessionId,
+                                         final long channelId,
+                                         final long termId)
     {
         return null;
+    }
+
+    @Override
+    public int countSessions()
+    {
+        return srcTermMap.sessionCount();
+    }
+
+    @Override
+    public int countChannels(final long sessionId)
+    {
+        return srcTermMap.channelCount(sessionId);
+    }
+
+    @Override
+    public int countTerms(final long sessionId, final long channelId)
+    {
+        return srcTermMap.termCount(sessionId, channelId);
+    }
+
+    @Override
+    public int countSessions(final UdpDestination destination)
+    {
+        return rcvTermMap.sessionCount();
+    }
+
+    @Override
+    public int countChannels(final UdpDestination destination, final long sessionId)
+    {
+        return rcvTermMap.channelCount(sessionId);
+    }
+
+    @Override
+    public int countTerms(final UdpDestination destination, final long sessionId, final long channelId)
+    {
+        return rcvTermMap.termCount(sessionId, channelId);
     }
 }

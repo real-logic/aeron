@@ -19,6 +19,7 @@ import uk.co.real_logic.aeron.util.ClosableThread;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.command.ErrorCode;
 import uk.co.real_logic.aeron.util.command.LibraryFacade;
+import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.nio.ByteBuffer;
@@ -32,47 +33,53 @@ public class AdminThread extends ClosableThread implements LibraryFacade
 {
     private final Map<UdpDestination, SrcFrameHandler> srcDestinationMap = new HashMap<>();
     private final Map<UdpDestination, RcvFrameHandler> rcvDestinationMap = new HashMap<>();
+    private final RingBuffer commandBuffer;
+    private final RingBuffer senderThreadCommandBuffer;
     private final ReceiverThread receiverThread;
     private final SenderThread senderThread;
-    private final ByteBuffer commandBuffer;
     private final BufferManagementStrategy bufferManagementStrategy;
     private final Map<Long, Map<Long, ByteBuffer>> termBufferMap = new Long2ObjectHashMap<>();
 
-    public AdminThread(final ByteBuffer commandBuffer,
+    public AdminThread(final MediaDriver.TopologyBuilder builder,
                        final ReceiverThread receiverThread,
                        final SenderThread senderThread)
     {
+        this.commandBuffer = builder.adminThreadCommandBuffer();
+        this.senderThreadCommandBuffer = builder.senderThreadCommandBuffer();
+        this.bufferManagementStrategy = builder.bufferManagementStrategy();
         this.receiverThread = receiverThread;
         this.senderThread = senderThread;
-        this.commandBuffer = commandBuffer;
-        this.bufferManagementStrategy = null;
     }
 
     /**
      * Add NAK frame to command buffer for this thread
      * @param header for the NAK frame
      */
-    public void offerNAK(final HeaderFlyweight header)
+    public static void addNakEvent(final RingBuffer buffer, final HeaderFlyweight header)
     {
         // TODO: add NAK frame to this threads command buffer
     }
 
+    @Override
     public void process()
     {
         // TODO: read from control buffer and call onAddChannel, etc.
         // TODO: read from commandBuffer and dispatch to onNAK, etc.
     }
 
+    @Override
     public void sendStatusMessage(final HeaderFlyweight header)
     {
         // TODO: send SM on through to control buffer
     }
 
+    @Override
     public void sendErrorResponse(final int code, final byte[] message)
     {
         // TODO: construct error response for control buffer and write it in
     }
 
+    @Override
     public void sendError(final int code, final byte[] message)
     {
         // TODO: construct error notification for control buffer and write it in
@@ -87,6 +94,7 @@ public class AdminThread extends ClosableThread implements LibraryFacade
 
     }
 
+    @Override
     public void onAddChannel(final String destination, final long sessionId, final long channelId)
     {
         try
@@ -97,18 +105,15 @@ public class AdminThread extends ClosableThread implements LibraryFacade
 
             if (null == src)
             {
-                src = new SrcFrameHandler(srcDestination, receiverThread, this, senderThread);
+                src = new SrcFrameHandler(srcDestination, receiverThread, commandBuffer, senderThreadCommandBuffer);
                 srcDestinationMap.put(srcDestination, src);
             }
 
-            // TODO: look in the termBufferMap for channelId, then sessionId, then termId
-            // TODO: must error check if new channel or not. And sessionId collision
+            // create the buffer, but hold onto it in the strategy. The senderThread will do a lookup on it
+            bufferManagementStrategy.addSenderTerm(sessionId, channelId, termId);
 
-            final ByteBuffer termBuffer = bufferManagementStrategy.addSenderTerm(sessionId, channelId, termId);
-
-            // send command to SenderThread to start reading from new termBuffer and to send via SrcFrameHandler
-            senderThread.offerNewSenderTerm(sessionId, channelId, termId, termBuffer);
-
+            // tell senderThread about the new buffer that was created
+            SenderThread.addNewTermEvent(senderThreadCommandBuffer, sessionId, channelId, termId);
         }
         catch (Exception e)
         {
@@ -117,7 +122,14 @@ public class AdminThread extends ClosableThread implements LibraryFacade
         }
     }
 
+    @Override
     public void onRemoveChannel(final String destination, final long sessionId, final long channelId)
+    {
+        // TODO: loop through terms and remove each
+    }
+
+    @Override
+    public void onRemoveTerm(final String destination, final long sessionId, final long channelId, final long termId)
     {
         try
         {
@@ -129,8 +141,18 @@ public class AdminThread extends ClosableThread implements LibraryFacade
                 throw new IllegalArgumentException("destination unknown for channel remove: " + destination);
             }
 
-            // TODO: only remove if no more channels.
-            //srcDestinationMap.remove(srcDestination);
+            // remove from buffer management, but will be unmapped once SenderThread releases it and it can be GCed
+            bufferManagementStrategy.removeSenderTerm(sessionId, channelId, 0);
+
+            // inform SenderThread
+            SenderThread.addRemoveTermEvent(senderThreadCommandBuffer, sessionId, channelId, termId);
+
+            // if no more terms, then remove framehandler and close it
+            if (0 == bufferManagementStrategy.countTerms(sessionId, channelId))
+            {
+                srcDestinationMap.remove(srcDestination);
+                src.close();
+            }
         }
         catch (Exception e)
         {
@@ -139,11 +161,7 @@ public class AdminThread extends ClosableThread implements LibraryFacade
         }
     }
 
-    public void onRemoveTerm(final String destination, final long sessionId, final long channelId, final long termId)
-    {
-
-    }
-
+    @Override
     public void onAddReceiver(final String destination, final long[] channelIdList)
     {
         try
@@ -171,6 +189,7 @@ public class AdminThread extends ClosableThread implements LibraryFacade
         }
     }
 
+    @Override
     public void onRemoveReceiver(final String destination)
     {
 
@@ -182,11 +201,7 @@ public class AdminThread extends ClosableThread implements LibraryFacade
 
     }
 
-    /**
-     * Handling of NAKs as they come in via the command buffer from the SrcFrameHandler
-     * @param header
-     */
-    public void onNAK(final HeaderFlyweight header)
+    private void onNakEvent(final HeaderFlyweight header)
     {
         // TODO: handle the NAK.
     }

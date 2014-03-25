@@ -22,12 +22,31 @@ import java.nio.ByteBuffer;
  */
 public interface BufferManagementStrategy
 {
-    ByteBuffer addSenderTerm(final long sessionId, final long channelId, final long termId) throws Exception;
+    void addSenderTerm(final long sessionId, final long channelId, final long termId) throws Exception;
+
+    ByteBuffer lookupSenderTerm(final long sessionId, final long channelId, final long termId) throws Exception;
 
     void removeSenderTerm(final long sessionId, final long channelId, final long termId);
 
-    ByteBuffer addReceiverTerm(final UdpDestination destination,
-                               final long sessionId,
-                               final long channelId,
-                               final long termId);
+    void addReceiverTerm(final UdpDestination destination,
+                         final long sessionId,
+                         final long channelId,
+                         final long termId) throws Exception;
+
+    ByteBuffer lookupReceiverTerm(final UdpDestination destination,
+                                  final long sessionId,
+                                  final long channelId,
+                                  final long termId);
+
+    int countSessions();
+
+    int countChannels(final long sessionId);
+
+    int countTerms(final long sessionId, final long channelId);
+
+    int countSessions(final UdpDestination destination);
+
+    int countChannels(final UdpDestination destination, final long sessionId);
+
+    int countTerms(final UdpDestination destination, final long sessionId, final long channelId);
 }

@@ -91,6 +91,32 @@ public class TripleLevelMap<V>
         return value;
     }
 
+    public int sessionCount()
+    {
+        return map.size();
+    }
+
+    public int channelCount(final long sessionId)
+    {
+        final Long2ObjectHashMap<Long2ObjectHashMap<V>> channelMap = map.get(sessionId);
+
+        return (null == channelMap) ? 0 : channelMap.size();
+    }
+
+    public int termCount(final long sessionId, final long channelId)
+    {
+        final Long2ObjectHashMap<Long2ObjectHashMap<V>> channelMap = map.get(sessionId);
+
+        if (null == channelMap)
+        {
+            return 0;
+        }
+
+        final Long2ObjectHashMap<V> termMap = channelMap.get(channelId);
+
+        return (null == termMap) ? 0 : termMap.size();
+    }
+
     public void forEach(TripletHandler<V> handler)
     {
         for (Entry<Long, Long2ObjectHashMap<Long2ObjectHashMap<V>>> sessionEntry :map.entrySet())

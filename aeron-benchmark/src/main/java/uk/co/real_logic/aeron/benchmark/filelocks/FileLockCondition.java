@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.benchmark.filelocks;
 
-import java.nio.channels.FileChannel;
+import java.io.FileNotFoundException;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
@@ -26,10 +26,10 @@ public class FileLockCondition implements Condition
     private final FileLockBasedLock mutex;
     private final FileLockBasedLock semaphore;
 
-    public FileLockCondition(final FileLockBasedLock mutex, final FileChannel channel, final long position)
+    public FileLockCondition(final FileLockBasedLock mutex, final String path) throws FileNotFoundException
     {
         this.mutex = mutex;
-        semaphore = new FileLockBasedLock(channel, position);
+        semaphore = new FileLockBasedLock(path);
     }
 
     @Override

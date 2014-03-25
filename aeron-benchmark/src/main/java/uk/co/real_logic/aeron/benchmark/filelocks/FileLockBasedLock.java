@@ -15,7 +15,9 @@
  */
 package uk.co.real_logic.aeron.benchmark.filelocks;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.util.concurrent.TimeUnit;
@@ -26,13 +28,12 @@ public class FileLockBasedLock implements Lock
 {
 
     private final FileChannel channel;
-    private final long position;
     private FileLock lock;
 
-    public FileLockBasedLock(final FileChannel channel, final long position)
+    public FileLockBasedLock(final String path) throws FileNotFoundException
     {
-        this.channel = channel;
-        this.position = position;
+        final RandomAccessFile randomAccessFile = new RandomAccessFile(path, "rw");
+        channel = randomAccessFile.getChannel();
     }
 
     @Override
@@ -40,7 +41,7 @@ public class FileLockBasedLock implements Lock
     {
         try
         {
-            lock = channel.lock(position, 1, true);
+            lock = channel.lock();
         }
         catch (IOException e)
         {

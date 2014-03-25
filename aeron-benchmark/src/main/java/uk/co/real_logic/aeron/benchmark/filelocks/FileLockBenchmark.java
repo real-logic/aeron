@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.benchmark.filelocks;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
@@ -27,8 +26,10 @@ import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 public class FileLockBenchmark
 {
 
-    //public static final String NON_TMPFS_FILE = "/tmp/filelock_benchmark";
     public static final String TMPFS_FILE = "/dev/shm/filelock_benchmark";
+    public static final String LOCK_FILE = "/dev/shm/lock_file";
+    public static final String PING_FILE = "/dev/shm/ping_condition_file";
+    public static final String PONG_FILE = "/dev/shm/pong_condition_file";
 
     private static final long MUTEX_OFFSET = 0;
     private static final long PING_LOCK_OFFSET = 2;
@@ -38,14 +39,13 @@ public class FileLockBenchmark
     {
         boolean isPinger = args.length == 1 && Boolean.parseBoolean(args[0]);
 
-        final File file = new File(TMPFS_FILE);
-        final RandomAccessFile randomAccessFile = new RandomAccessFile(file, "rw");
+        final RandomAccessFile randomAccessFile = new RandomAccessFile(TMPFS_FILE, "rw");
         FileChannel channel = randomAccessFile.getChannel();
         MappedByteBuffer data = channel.map(READ_WRITE, 0, 10);
 
-        final FileLockBasedLock lock = new FileLockBasedLock(channel, MUTEX_OFFSET);
-        final Condition pinged = new FileLockCondition(lock, channel, PING_LOCK_OFFSET);
-        final Condition ponged = new FileLockCondition(lock, channel, PONG_LOCK_OFFSET);
+        final FileLockBasedLock lock = new FileLockBasedLock(LOCK_FILE);
+        final Condition pinged = new FileLockCondition(lock, PING_FILE);
+        final Condition ponged = new FileLockCondition(lock, PONG_FILE);
 
         final PingPongBenchmark benchmark = new PingPongBenchmark(lock, pinged, ponged, data);
         final Runnable toRun = isPinger ? benchmark.pinger() : benchmark.ponger();

@@ -15,20 +15,24 @@
  */
 package uk.co.real_logic.aeron.benchmark.filelocks;
 
-import java.io.*;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.util.Random;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
-import java.util.stream.LongStream;
 
 public class PingPongBenchmark
 {
     private static final int RUN_COUNT = 1_000_000;
     //private static final int RUN_COUNT = 10_000;
 
-    private static final int PING_OFFSET = 3;
-    private static final int PONG_OFFSET = 4;
+    private static final int NANOTIME_ESTIMATE_COUNT = 1000;
+
+    private static final int PING_OFFSET = 0;
+    private static final int PONG_OFFSET = 1;
 
     private final Lock lock;
     private final Condition pinged;
@@ -66,6 +70,7 @@ public class PingPongBenchmark
                 String name = Thread.currentThread().getName();
                 for (int i = 1; i < RUN_COUNT + 1; i++)
                 {
+                    System.out.println(name + i);
                     runIteration(i);
                 }
             }
@@ -138,6 +143,7 @@ public class PingPongBenchmark
             {
                 while (data.getInt(PING_OFFSET) != i)
                 {
+                    System.out.println("start loop");
                     pinged.await();
                 }
             }
@@ -181,18 +187,17 @@ public class PingPongBenchmark
 
     private static long estimateCostOfNanoTime()
     {
-        final int N = 1000;
-        long[] sink = new long[N];
-        for (int i = 0; i < N; i++)
+        long[] sink = new long[NANOTIME_ESTIMATE_COUNT];
+        for (int i = 0; i < NANOTIME_ESTIMATE_COUNT; i++)
         {
             sink[i] = System.nanoTime();
         }
 
         // Printout to avoid DCE
-        System.out.println("Ignore this output: " + sink[new Random().nextInt(N)]);
+        System.out.println("Ignore this output: " + sink[new Random().nextInt(NANOTIME_ESTIMATE_COUNT)]);
 
-        long totalTime = sink[N - 1] - sink[0];
-        return totalTime / N;
+        long totalTime = sink[NANOTIME_ESTIMATE_COUNT - 1] - sink[0];
+        return totalTime / NANOTIME_ESTIMATE_COUNT;
     }
 
 }

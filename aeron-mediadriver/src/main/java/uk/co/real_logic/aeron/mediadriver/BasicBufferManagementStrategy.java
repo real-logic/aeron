@@ -26,6 +26,8 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
+import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
+
 /**
  * Basic buffer management where each Term is a file.
  */
@@ -76,6 +78,9 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
         }
     }
 
+    /**
+     * Maps a buffer for a given term, ensuring that a file of the correct size is created.
+     */
     public MappedByteBuffer mapTerm(final File rootDir,
                                     final long sessionId,
                                     final long channelId,
@@ -103,7 +108,7 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
                 }
             }
 
-            return channel.map(FileChannel.MapMode.READ_WRITE, 0, size);
+            return channel.map(READ_WRITE, 0, size);
         }
     }
 
@@ -118,7 +123,7 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
                  sessionId, channelId, termId));
         }
 
-        final MappedByteBuffer term = mapTerm(fileConvention.senderDir(), sessionId, channelId, termId, BUFFER_SIZE);
+        final MappedByteBuffer term = mapTerm(senderDir, sessionId, channelId, termId, BUFFER_SIZE);
         srcTermMap.put(sessionId, channelId, termId, term);
     }
 

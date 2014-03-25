@@ -91,6 +91,22 @@ public class TripleLevelMap<V>
         return value;
     }
 
+    public void remove(final long sessionId, final long channelId)
+    {
+        final Long2ObjectHashMap<Long2ObjectHashMap<V>> channelMap = map.get(sessionId);
+        if (null == channelMap)
+        {
+            return;
+        }
+
+        // remove the entire map and let it all be GCed
+        channelMap.remove(channelId);
+        if (channelMap.size() == 0)
+        {
+            map.remove(sessionId);
+        }
+    }
+
     public int sessionCount()
     {
         return map.size();

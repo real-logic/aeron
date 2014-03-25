@@ -64,7 +64,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     public void process()
     {
         // TODO: read from control buffer and call onAddChannel, etc.
-        // TODO: read from commandBuffer and dispatch to onNAK, etc.
+        // TODO: read from commandBuffer and dispatch to onNakEvent, etc.
     }
 
     @Override
@@ -114,6 +114,9 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
 
             // tell senderThread about the new buffer that was created
             SenderThread.addNewTermEvent(senderThreadCommandBuffer, sessionId, channelId, termId);
+
+            // tell the client admin thread of the new buffer
+            sendNewBufferNotification(sessionId, channelId, termId, true);
         }
         catch (Exception e)
         {
@@ -124,12 +127,6 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
 
     @Override
     public void onRemoveChannel(final String destination, final long sessionId, final long channelId)
-    {
-        // TODO: loop through terms and remove each
-    }
-
-    @Override
-    public void onRemoveTerm(final String destination, final long sessionId, final long channelId, final long termId)
     {
         try
         {
@@ -142,13 +139,46 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             }
 
             // remove from buffer management, but will be unmapped once SenderThread releases it and it can be GCed
+            bufferManagementStrategy.removeSenderChannel(sessionId, channelId);
+
+            // inform SenderThread
+            SenderThread.addRemoveChannelEvent(senderThreadCommandBuffer, sessionId, channelId);
+
+            // if no more channels, then remove framehandler and close it
+            if (0 == bufferManagementStrategy.countChannels(sessionId))
+            {
+                srcDestinationMap.remove(srcDestination);
+                src.close();
+            }
+        }
+        catch (Exception e)
+        {
+            sendErrorResponse(ErrorCode.GENERIC_ERROR.value(), e.getMessage().getBytes());
+            // TODO: log this as well as send the error response
+        }
+    }
+
+    @Override
+    public void onRemoveTerm(final String destination, final long sessionId, final long channelId, final long termId)
+    {
+        try
+        {
+            final UdpDestination srcDestination = UdpDestination.parse(destination);
+            final SrcFrameHandler src = srcDestinationMap.get(srcDestination);
+
+            if (null == src)
+            {
+                throw new IllegalArgumentException("destination unknown for term remove: " + destination);
+            }
+
+            // remove from buffer management, but will be unmapped once SenderThread releases it and it can be GCed
             bufferManagementStrategy.removeSenderTerm(sessionId, channelId, 0);
 
             // inform SenderThread
             SenderThread.addRemoveTermEvent(senderThreadCommandBuffer, sessionId, channelId, termId);
 
-            // if no more terms, then remove framehandler and close it
-            if (0 == bufferManagementStrategy.countTerms(sessionId, channelId))
+            // if no more channels, then remove framehandler and close it
+            if (0 == bufferManagementStrategy.countChannels(sessionId))
             {
                 srcDestinationMap.remove(srcDestination);
                 src.close();

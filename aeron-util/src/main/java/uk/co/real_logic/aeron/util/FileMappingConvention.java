@@ -16,10 +16,11 @@ public class FileMappingConvention
 
     private final File receiverDir;
     private final File senderDir;
+    private final File dataDirFile;
 
     public FileMappingConvention(final String dataDir)
     {
-        final File dataDirFile = new File(dataDir);
+        dataDirFile = new File(dataDir);
         IoUtil.checkDirectoryExists(dataDirFile, "data directory");
         senderDir = new File(dataDirFile, "sender");
         receiverDir = new File(dataDirFile, "receiver");
@@ -43,6 +44,11 @@ public class FileMappingConvention
     public File receiverDir()
     {
         return receiverDir;
+    }
+
+    public File dataDirFile()
+    {
+        return dataDirFile;
     }
 
     /**

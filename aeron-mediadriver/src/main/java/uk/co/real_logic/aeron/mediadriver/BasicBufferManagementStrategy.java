@@ -20,6 +20,7 @@ import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.collections.TripleLevelMap;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
@@ -32,6 +33,7 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
 {
     private static final long BUFFER_SIZE = 256 * 1024;
 
+    private final FileChannel templateFile;
     private final File senderDir;
     private final File receiverDir;
     private final TripleLevelMap<ByteBuffer> srcTermMap;
@@ -49,25 +51,59 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
 
         srcTermMap = new TripleLevelMap<>();
         rcvTermMap = new TripleLevelMap<>();
+        templateFile = createTemplateFile();
     }
 
-    public static MappedByteBuffer mapTerm(final File rootDir,
-                                           final long sessionId,
-                                           final long channelId,
-                                           final long termId,
-                                           final long size) throws Exception
+    /**
+     * Create a blank, zero'd out file of the correct size.
+     * This lets us just use transferTo to initialize the buffers.
+     */
+    private FileChannel createTemplateFile()
+    {
+        try
+        {
+            final File tempFile = File.createTempFile("templateFile", "bin");
+            tempFile.deleteOnExit();
+
+            final RandomAccessFile randomAccessFile = new RandomAccessFile(tempFile, "rw");
+            final FileChannel templateFile = randomAccessFile.getChannel();
+            IoUtil.fill(templateFile, 0, BUFFER_SIZE, (byte) 0);
+            return templateFile;
+        }
+        catch (IOException e)
+        {
+            throw new IllegalStateException("Unable to create temporary file", e);
+        }
+    }
+
+    public MappedByteBuffer mapTerm(final File rootDir,
+                                    final long sessionId,
+                                    final long channelId,
+                                    final long termId,
+                                    final long requiredSize) throws Exception
     {
         final File termIdFile = FileMappingConvention.termIdFile(rootDir, sessionId, channelId, termId, true);
+        // must be checked at this point, opening a RandomAccessFile will cause this to be true
+        final boolean fileExists = termIdFile.exists();
         try (final RandomAccessFile randomAccessFile = new RandomAccessFile(termIdFile, "rw"))
         {
-            long sz = size;
+            long size = requiredSize;
+            final FileChannel channel = randomAccessFile.getChannel();
 
-            if (termIdFile.exists())
+            if (fileExists)
             {
-                sz = randomAccessFile.length();
+                size = randomAccessFile.length();
+            }
+            else
+            {
+                long transferred = templateFile.transferTo(0, requiredSize, channel);
+                if (transferred != requiredSize)
+                {
+                    throw new IllegalStateException("Unable to initialize the required size of " + requiredSize);
+                }
             }
 
-            return randomAccessFile.getChannel().map(FileChannel.MapMode.READ_WRITE, 0, sz);
+            return channel.map(FileChannel.MapMode.READ_WRITE, 0, size);
         }
     }
 

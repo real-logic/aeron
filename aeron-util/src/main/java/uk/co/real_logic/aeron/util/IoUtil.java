@@ -101,7 +101,7 @@ public class IoUtil
     {
         if (!directory.exists())
         {
-            if (!directory.mkdir())
+            if (!directory.mkdirs())
             {
                 throw new IllegalArgumentException("could not create " + name + " directory: " + directory);
             }

@@ -39,6 +39,7 @@ import java.util.concurrent.Executors;
  *     <li><code>aeron.admin.dir</code>: Use value as directory name for admin buffers.</li>
  *     <li><code>aeron.data.dir</code>: Use value as directory name for data buffers.</li>
  *     <li><code>aeron.recv.bytebuffer.size</code>: Use int value as size of buffer for receiving from network.</li>
+ *     <li><code>aeron.command.buffer.size</code>: Use int value as size of the command buffers between threads.</li>
  * </ul>
  */
 public class MediaDriver

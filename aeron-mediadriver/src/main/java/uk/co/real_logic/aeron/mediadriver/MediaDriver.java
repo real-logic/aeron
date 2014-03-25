@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import uk.co.real_logic.aeron.util.Directories;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
@@ -45,9 +46,6 @@ public class MediaDriver
     /** Directory of the admin buffers */
     public static final String ADMIN_DIR_PROPERTY_NAME = "aeron.admin.dir";
 
-    /** Directory of the data buffers */
-    public static final String DATA_DIR_PROPERTY_NAME = "aeron.data.dir";
-
     /** Byte buffer size (in bytes) for reads */
     public static final String READ_BYTE_BUFFER_SZ_PROPERTY_NAME = "aeron.recv.bytebuffer.size";
 
@@ -57,9 +55,6 @@ public class MediaDriver
     /** Default directory for admin buffers */
     public static final String ADMIN_DIR_PROPERTY_NAME_DEFAULT = "/tmp/aeron/admin";
 
-    /** Default directory for data buffers */
-    public static final String DATA_DIR_PROPERTY_NAME_DEFAULT = "/tmp/aeron/data";
-
     /** Default byte buffer size for reads */
     public static final String READ_BYTE_BUFFER_SZ_DEFAULT = "4096";
 
@@ -67,7 +62,7 @@ public class MediaDriver
     public static final String COMMAND_BUFFER_SZ_DEFAULT = "65536";
 
     public static final String ADMIN_DIR = System.getProperty(ADMIN_DIR_PROPERTY_NAME, ADMIN_DIR_PROPERTY_NAME_DEFAULT);
-    public static final String DATA_DIR = System.getProperty(DATA_DIR_PROPERTY_NAME, DATA_DIR_PROPERTY_NAME_DEFAULT);
+
     public static final int READ_BYTE_BUFFER_SZ = Integer.parseInt(System.getProperty(READ_BYTE_BUFFER_SZ_PROPERTY_NAME,
             READ_BYTE_BUFFER_SZ_DEFAULT));
     public static final int COMMAND_BUFFER_SZ = Integer.parseInt(System.getProperty(COMMAND_BUFFER_SZ_PROPERTY_NAME,
@@ -78,7 +73,7 @@ public class MediaDriver
         TopologyBuilder builder = new TopologyBuilder().adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .senderThreadCommandBuffer(COMMAND_BUFFER_SZ)
-                .bufferManagementStrategy(new BasicBufferManagementStrategy(DATA_DIR));
+                .bufferManagementStrategy(new BasicBufferManagementStrategy(Directories.DATA_DIR));
 
         try (final ReceiverThread receiverThread = new ReceiverThread(builder);
              final SenderThread senderThread = new SenderThread(builder);

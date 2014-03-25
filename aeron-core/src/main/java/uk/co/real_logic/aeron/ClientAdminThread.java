@@ -58,7 +58,6 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
 
     private final TripletMessageFlyweight bufferNotificationMessage = new TripletMessageFlyweight();
 
-
     public ClientAdminThread(final RingBuffer commandBuffer,
                              final RingBuffer recvBuffer,
                              final RingBuffer sendBuffer,
@@ -86,15 +85,6 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
         {
             // TODO
         });
-    }
-
-    private void onDataWritten(final long sessionId,
-                               final long channelId,
-                               final long termId,
-                               final long amount,
-                               final long currentTime)
-    {
-
     }
 
     private void handleReceiveBuffer()

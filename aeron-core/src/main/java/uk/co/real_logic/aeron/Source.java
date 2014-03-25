@@ -15,6 +15,8 @@
  */
 package uk.co.real_logic.aeron;
 
+import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
+
 /**
  * Aeron source
  *
@@ -23,9 +25,10 @@ package uk.co.real_logic.aeron;
  */
 public class Source implements AutoCloseable
 {
-    private final Destination destination;
     private final Aeron aeron;
+    private final Destination destination;
     private final long sessionId;
+    private final MediaDriverFacade mediaDriver;
 
     // called by Aeron to create new sessions
     public Source(final Aeron aeron, final Builder builder)
@@ -33,6 +36,7 @@ public class Source implements AutoCloseable
         this.aeron = aeron;
         this.destination = builder.destination;
         this.sessionId = builder.sessionId;
+        this.mediaDriver = builder.mediaDriver;
     }
 
     /**
@@ -42,7 +46,8 @@ public class Source implements AutoCloseable
      */
     public Channel newChannel(final long channelId)
     {
-        return new Channel(this, channelId);
+        mediaDriver.sendAddChannel(destination.destination(), sessionId, channelId);
+        return new Channel(this, mediaDriver, channelId);
     }
 
     /**
@@ -53,13 +58,13 @@ public class Source implements AutoCloseable
      * @param channelIds for the channels
      * @return array of channels
      */
-    public Channel[] newChannels(final long[] channelIds)
+    public Channel[] newChannels(final long ... channelIds)
     {
         final Channel[] channels = new Channel[channelIds.length];
 
         for (int i = 0, max = channelIds.length; i < max; i++)
         {
-            channels[i] = new Channel(this, channelIds[i]);
+            channels[i] = newChannel(channelIds[i]);
         }
 
         return channels;
@@ -67,7 +72,7 @@ public class Source implements AutoCloseable
 
     public void close()
     {
-
+        // TODO: does this even need to be closed if the channel is?
     }
 
     public long sessionId()
@@ -75,10 +80,16 @@ public class Source implements AutoCloseable
         return sessionId;
     }
 
+    public Destination destination()
+    {
+        return destination;
+    }
+
     public static class Builder
     {
         private Destination destination;
         private long sessionId = 0;
+        private MediaDriverFacade mediaDriver;
 
         public Builder()
         {
@@ -93,6 +104,12 @@ public class Source implements AutoCloseable
         public Builder sessionId(final long sessionId)
         {
             this.sessionId = sessionId;
+            return this;
+        }
+
+        public Builder mediaDriverFacade(final MediaDriverFacade mediaDriver)
+        {
+            this.mediaDriver = mediaDriver;
             return this;
         }
     }

@@ -15,6 +15,12 @@
  */
 package uk.co.real_logic.aeron;
 
+import uk.co.real_logic.aeron.util.Directories;
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
+import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
+
+import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
 /**
@@ -54,10 +60,18 @@ public final class Aeron
     }
 
     private final ErrorHandler errorHandler;
+    private final ClientAdminThread adminThread;
 
     private Aeron(final Builder builder)
     {
         errorHandler = builder.errorHandler;
+
+        final RingBuffer adminCommandBuffer = new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocateDirect(256)));
+        // TODO: should admin buffer management be split out as concern?
+        final RingBuffer recvBuffer = null;
+        final RingBuffer sendBuffer = null;
+        final BufferUsageStrategy bufferUsage = new BasicBufferUsageStrategy(Directories.DATA_DIR);
+        adminThread = new ClientAdminThread(adminCommandBuffer, recvBuffer, sendBuffer, bufferUsage);
     }
 
     /**

@@ -15,19 +15,23 @@
  */
 package uk.co.real_logic.aeron;
 
+import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
+
 import java.nio.ByteBuffer;
 
 /**
  * Aeron Channel
  */
-public class Channel
+public class Channel implements AutoCloseable
 {
     private final Source source;
+    private final MediaDriverFacade mediaDriver;
     private final long channelId;
 
-    public Channel(final Source source, final long channelId)
+    public Channel(final Source source, final MediaDriverFacade mediaDriver, final long channelId)
     {
         this.source = source;
+        this.mediaDriver = mediaDriver;
         this.channelId = channelId;
     }
 
@@ -72,6 +76,13 @@ public class Channel
     public void blockingSend(final ByteBuffer buffer, final int offset)
     {
         // TODO: Is this necessary?
+    }
+
+    @Override
+    public void close() throws Exception
+    {
+        String destinationString = source.destination().destination();
+        mediaDriver.sendRemoveChannel(destinationString, source.sessionId(), channelId);
     }
 
 }

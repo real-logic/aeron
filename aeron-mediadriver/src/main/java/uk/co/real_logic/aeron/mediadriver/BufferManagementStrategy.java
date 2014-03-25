@@ -28,6 +28,8 @@ public interface BufferManagementStrategy extends BufferStrategy
 
     void removeSenderTerm(final long sessionId, final long channelId, final long termId);
 
+    void removeSenderChannel(final long sessionId, final long channelId);
+
     void addReceiverTerm(final UdpDestination destination,
                          final long sessionId,
                          final long channelId,

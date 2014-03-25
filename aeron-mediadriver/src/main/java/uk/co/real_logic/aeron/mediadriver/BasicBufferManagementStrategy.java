@@ -117,6 +117,12 @@ public class BasicBufferManagementStrategy extends BasicBufferStrategy implement
     }
 
     @Override
+    public void removeSenderChannel(final long sessionId, final long channelId)
+    {
+        srcTermMap.remove(sessionId, channelId);
+    }
+
+    @Override
     public void addReceiverTerm(final UdpDestination destination,
                                 final long sessionId,
                                 final long channelId,

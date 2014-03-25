@@ -60,6 +60,13 @@ public class SenderThread extends ClosableThread
 
     }
 
+    public static void addRemoveChannelEvent(final RingBuffer buffer,
+                                             final long sessionId,
+                                             final long channelId)
+    {
+
+    }
+
     public static void addStatusMessageEvent(final RingBuffer buffer, final HeaderFlyweight header)
     {
         // TODO: serialize frame on to command buffer
@@ -75,6 +82,11 @@ public class SenderThread extends ClosableThread
     private void onRemoveTermEvent(final long sessionId, final long channelId, final long termId)
     {
         // TODO: remove term from being checked
+    }
+
+    private void onRemoveChannelEvent(final long sessionId, final long channelId)
+    {
+        // TODO: remove all terms in channel from being checked
     }
 
     private void onStatusMessageEvent(final HeaderFlyweight header)

@@ -16,13 +16,11 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.ClosableThread;
-import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.command.ErrorCode;
 import uk.co.real_logic.aeron.util.command.LibraryFacade;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
-import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -38,7 +36,6 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     private final ReceiverThread receiverThread;
     private final SenderThread senderThread;
     private final BufferManagementStrategy bufferManagementStrategy;
-    private final Map<Long, Map<Long, ByteBuffer>> termBufferMap = new Long2ObjectHashMap<>();
 
     public MediaDriverAdminThread(final MediaDriver.TopologyBuilder builder,
                                   final ReceiverThread receiverThread,
@@ -100,7 +97,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         try
         {
             final UdpDestination srcDestination = UdpDestination.parse(destination);
-            final long termId = (long)(Math.random() * 0xFFFFFFFFL);  // FIXME: this may not be correct
+            final long termId = (long)(Math.random() * 0xFFFFFFFFL);  // FIXME: this may not be random enough
             SrcFrameHandler src = srcDestinationMap.get(srcDestination);
 
             if (null == src)

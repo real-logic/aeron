@@ -43,25 +43,17 @@ import java.util.concurrent.Executors;
  */
 public class MediaDriver
 {
-    /** Directory of the admin buffers */
-    public static final String ADMIN_DIR_PROPERTY_NAME = "aeron.admin.dir";
-
     /** Byte buffer size (in bytes) for reads */
     public static final String READ_BYTE_BUFFER_SZ_PROPERTY_NAME = "aeron.recv.bytebuffer.size";
 
     /** Size (in bytes) of the command buffers between threads */
     public static final String COMMAND_BUFFER_SZ_PROPERTY_NAME = "aeron.command.buffer.size";
 
-    /** Default directory for admin buffers */
-    public static final String ADMIN_DIR_PROPERTY_NAME_DEFAULT = "/tmp/aeron/admin";
-
     /** Default byte buffer size for reads */
     public static final String READ_BYTE_BUFFER_SZ_DEFAULT = "4096";
 
     /** Default buffer size for command buffers between threads */
     public static final String COMMAND_BUFFER_SZ_DEFAULT = "65536";
-
-    public static final String ADMIN_DIR = System.getProperty(ADMIN_DIR_PROPERTY_NAME, ADMIN_DIR_PROPERTY_NAME_DEFAULT);
 
     public static final int READ_BYTE_BUFFER_SZ = Integer.parseInt(System.getProperty(READ_BYTE_BUFFER_SZ_PROPERTY_NAME,
             READ_BYTE_BUFFER_SZ_DEFAULT));

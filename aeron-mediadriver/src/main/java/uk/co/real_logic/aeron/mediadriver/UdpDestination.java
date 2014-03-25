@@ -19,6 +19,9 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.URI;
+import java.security.MessageDigest;
+
+import static uk.co.real_logic.aeron.util.BitUtil.toHex;
 
 /**
  * Encapsulation of UDP destinations
@@ -32,6 +35,7 @@ public class UdpDestination
 {
     private final InetSocketAddress remote;
     private final InetSocketAddress local;
+    private final String uriStr;
 
     public static UdpDestination parse(final String destinationUri) throws Exception
     {
@@ -44,6 +48,7 @@ public class UdpDestination
         }
 
         final Builder builder = new Builder()
+                .uriStr(destinationUri)
                 .remotePort(uri.getPort())
                 .remoteAddr(InetAddress.getByName(uri.getHost()));
 
@@ -90,6 +95,7 @@ public class UdpDestination
     {
         this.remote = new InetSocketAddress(builder.remoteAddr, builder.remotePort);
         this.local = new InetSocketAddress(builder.localAddr, builder.localPort);
+        this.uriStr = builder.uriStr;
     }
 
     public int hashCode()
@@ -116,12 +122,20 @@ public class UdpDestination
                              remote.getAddress().getHostAddress(), Integer.valueOf(remote.getPort()));
     }
 
+    public String sha1Hash() throws Exception
+    {
+        MessageDigest md = MessageDigest.getInstance("SHA-1");
+
+        return toHex(md.digest(uriStr.getBytes()));
+    }
+
     public static class Builder
     {
         private InetAddress remoteAddr;
         private InetAddress localAddr;
         private int remotePort;
         private int localPort;
+        private String uriStr;
 
         public Builder()
         {
@@ -129,6 +143,12 @@ public class UdpDestination
             this.localAddr = null;
             this.remotePort = 0;
             this.localPort = 0;
+        }
+
+        public Builder uriStr(final String uri)
+        {
+            uriStr = uri;
+            return this;
         }
 
         public Builder remoteAddr(final InetAddress addr)

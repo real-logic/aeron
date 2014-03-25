@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.admin;
 
 import org.junit.Test;
+import uk.co.real_logic.aeron.ClientAdminThread;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.EventHandler;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
@@ -31,12 +32,12 @@ import static org.junit.Assert.assertThat;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_SIZE;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 
-public class AdminThreadTest
+public class ClientAdminThreadTest
 {
 
     public static final String DESTINATION = "udp://localhost:40123@localhost:40124";
     private final RingBuffer sendBuffer = new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocateDirect(TRAILER_SIZE + 1024)));
-    private final AdminThread thread = new AdminThread(null, null, sendBuffer);
+    private final ClientAdminThread thread = new ClientAdminThread(null, null, sendBuffer);
 
     @Test
     public void threadSendsAddChannelMessage()

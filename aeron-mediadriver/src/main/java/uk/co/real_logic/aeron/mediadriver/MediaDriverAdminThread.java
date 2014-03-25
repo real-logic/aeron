@@ -29,7 +29,7 @@ import java.util.Map;
 /**
  * Admin thread to take commands from Producers and Consumers as well as handle NAKs and retransmissions
  */
-public class AdminThread extends ClosableThread implements LibraryFacade
+public class MediaDriverAdminThread extends ClosableThread implements LibraryFacade
 {
     private final Map<UdpDestination, SrcFrameHandler> srcDestinationMap = new HashMap<>();
     private final Map<UdpDestination, RcvFrameHandler> rcvDestinationMap = new HashMap<>();
@@ -40,9 +40,9 @@ public class AdminThread extends ClosableThread implements LibraryFacade
     private final BufferManagementStrategy bufferManagementStrategy;
     private final Map<Long, Map<Long, ByteBuffer>> termBufferMap = new Long2ObjectHashMap<>();
 
-    public AdminThread(final MediaDriver.TopologyBuilder builder,
-                       final ReceiverThread receiverThread,
-                       final SenderThread senderThread)
+    public MediaDriverAdminThread(final MediaDriver.TopologyBuilder builder,
+                                  final ReceiverThread receiverThread,
+                                  final SenderThread senderThread)
     {
         this.commandBuffer = builder.adminThreadCommandBuffer();
         this.senderThreadCommandBuffer = builder.senderThreadCommandBuffer();

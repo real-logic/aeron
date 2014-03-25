@@ -76,7 +76,7 @@ public class SrcFrameHandler implements FrameHandler, AutoCloseable
         // dispatch frames to Admin or Sender Threads to handle
         if (header.headerType() == HeaderFlyweight.HDR_TYPE_NAK)
         {
-            AdminThread.addNakEvent(adminThreadCommandBuffer, header);
+            MediaDriverAdminThread.addNakEvent(adminThreadCommandBuffer, header);
         }
         else if (header.headerType() == HeaderFlyweight.HDR_TYPE_SM)
         {

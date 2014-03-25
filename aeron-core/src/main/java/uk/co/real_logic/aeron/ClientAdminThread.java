@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.admin;
+package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.command.AdminThreadEvents;
 import uk.co.real_logic.aeron.command.DataWrittenFlyweight;
@@ -37,7 +37,7 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
  * Admin thread to take responses and notifications from mediadriver and act on them. As well as pass commands
  * to the mediadriver.
  */
-public final class AdminThread extends ClosableThread implements MediaDriverFacade
+public final class ClientAdminThread extends ClosableThread implements MediaDriverFacade
 {
     /** Maximum size of the write buffer */
     public static final int WRITE_BUFFER_CAPACITY = 256;
@@ -66,9 +66,9 @@ public final class AdminThread extends ClosableThread implements MediaDriverFaca
     // Command Buffer Flyweights
     private final DataWrittenFlyweight dataWrittenMessage = new DataWrittenFlyweight();
 
-    public AdminThread(final RingBuffer commandBuffer,
-                       final RingBuffer recvBuffer,
-                       final RingBuffer sendBuffer)
+    public ClientAdminThread(final RingBuffer commandBuffer,
+                             final RingBuffer recvBuffer,
+                             final RingBuffer sendBuffer)
     {
         this.commandBuffer = commandBuffer;
         this.recvBuffer = recvBuffer;

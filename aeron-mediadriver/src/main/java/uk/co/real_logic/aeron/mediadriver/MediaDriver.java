@@ -82,7 +82,7 @@ public class MediaDriver
 
         try (final ReceiverThread receiverThread = new ReceiverThread(builder);
              final SenderThread senderThread = new SenderThread(builder);
-             final AdminThread adminThread = new AdminThread(builder, receiverThread, senderThread))
+             final MediaDriverAdminThread adminThread = new MediaDriverAdminThread(builder, receiverThread, senderThread))
         {
             // 1 for Receive Thread (Sockets to Buffers)
             // 1 for Send Thread (Buffers to Sockets)

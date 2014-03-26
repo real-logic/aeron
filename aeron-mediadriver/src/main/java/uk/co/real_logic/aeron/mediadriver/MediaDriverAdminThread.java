@@ -209,11 +209,10 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     }
 
     @Override
-    public void onRemoveReceiver(final String destination)
+    public void onRemoveReceiver(final String destination, final long[] channelIdList)
     {
         // instruct receiver thread to get rid of channels and destination
-        // TODO: add channelIdList to signature and pass it here
-        ReceiverThread.addRemoveReceiverEvent(receiverThreadCommandBuffer, destination, null);
+        ReceiverThread.addRemoveReceiverEvent(receiverThreadCommandBuffer, destination, channelIdList);
     }
 
     @Override

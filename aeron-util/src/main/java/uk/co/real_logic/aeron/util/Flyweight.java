@@ -22,6 +22,7 @@ import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
+import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_LONG;
 
 /**
  * Parent class for flyweight implementations both in the messaging
@@ -87,11 +88,39 @@ public class Flyweight
         atomicBuffer.putInt(offset, (int)value, byteOrder);
     }
 
+    protected long[] uint32ArrayGet(final int offset, final ByteOrder byteOrder)
+    {
+        final int length = atomicBuffer.getInt(offset);
+        final long[] data = new long[length];
+        int location = offset + SIZE_OF_INT;
+        for (int i = 0; i < length; i++)
+        {
+            data[i] = uint32Get(location, byteOrder);
+            location += SIZE_OF_LONG;
+        }
+        return data;
+    }
+
+    protected int uint32ArrayPut(final int offset,
+                                 final long[] value,
+                                 final ByteOrder byteOrder)
+    {
+        int length = value.length;
+        atomicBuffer.putInt(offset, length, byteOrder);
+        int location = offset + SIZE_OF_INT;
+        for (int i = 0; i < length; i++)
+        {
+            uint32Put(location, value[i], byteOrder);
+            location += SIZE_OF_LONG;
+        }
+        return SIZE_OF_INT + (length * BitUtil.SIZE_OF_LONG);
+    }
+
     // TODO: consider efficiency for String encoding/decoding
     // TODO: is there a sensible error handling for getBytes/putBytes not reading/writing the current amount of data
     public String stringGet(final int offset, ByteOrder byteOrder)
     {
-        int length = atomicBuffer.getInt(offset);
+        int length = atomicBuffer.getInt(offset, byteOrder);
         byte[] stringInBytes = new byte[length];
         atomicBuffer.getBytes(offset + SIZE_OF_INT, stringInBytes);
         return new String(stringInBytes, StandardCharsets.UTF_8);

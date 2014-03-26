@@ -19,8 +19,6 @@ import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
 
 import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Aeron receiver
@@ -33,6 +31,7 @@ public class Receiver implements AutoCloseable
     private final InactiveSourceEventHandler inactiveSourceEventHandler;
     private final Long2ObjectHashMap<DataHandler> channelMap;
     private final MediaDriverFacade mediaDriver;
+    private final long[] channels;
 
     public Receiver(final Builder builder)
     {
@@ -42,14 +41,13 @@ public class Receiver implements AutoCloseable
         this.newSourceEventHandler = builder.newSourceEventHandler;
         this.inactiveSourceEventHandler = builder.inactiveSourceEventHandler;
         this.mediaDriver = builder.mediaDriver;
-
-        long[] channels = channelMap.keySet().stream().mapToLong(x -> x).toArray();
+        this.channels = channelMap.keySet().stream().mapToLong(x -> x).toArray();
         this.mediaDriver.sendAddReceiver(destination.destination(), channels);
     }
 
     public void close()
     {
-        mediaDriver.sendRemoveReceiver(destination.destination());
+        mediaDriver.sendRemoveReceiver(destination.destination(), channels);
     }
 
     /**

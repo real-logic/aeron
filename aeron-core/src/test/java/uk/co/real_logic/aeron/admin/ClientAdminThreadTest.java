@@ -35,6 +35,7 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 public class ClientAdminThreadTest
 {
 
+    private static final long[] CHANNEL_IDS = { 1L, 3L, 4L };
     public static final String DESTINATION = "udp://localhost:40123@localhost:40124";
     private final RingBuffer sendBuffer = new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocateDirect(TRAILER_SIZE + 1024)));
     private final ClientAdminThread thread = new ClientAdminThread(null, null, sendBuffer, null);
@@ -70,7 +71,7 @@ public class ClientAdminThreadTest
     @Test
     public void threadSendsRemoveReceiverMessage()
     {
-        thread.sendRemoveReceiver(DESTINATION);
+        thread.sendRemoveReceiver(DESTINATION, CHANNEL_IDS);
 
         assertReadsOneMessage((eventTypeId, buffer, index, length) ->
         {
@@ -79,6 +80,7 @@ public class ClientAdminThreadTest
 
             assertThat(eventTypeId, is(REMOVE_RECEIVER));
             assertThat(removeReceiverMessage.destination(), is(DESTINATION));
+            assertThat(removeReceiverMessage.channelIds(), is(CHANNEL_IDS));
         });
     }
 

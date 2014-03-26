@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.command.AdminThreadEvents;
 import uk.co.real_logic.aeron.util.ClosableThread;
 import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -145,8 +144,9 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
 
     }
 
-    public void sendRemoveReceiver(final String destination)
+    public void sendRemoveReceiver(final String destination, final long[] channelIdList)
     {
+        removeReceiverMessage.channelIds(channelIdList);
         removeReceiverMessage.destination(destination);
         sendBuffer.write(REMOVE_RECEIVER, writeBuffer, 0, removeReceiverMessage.length());
     }

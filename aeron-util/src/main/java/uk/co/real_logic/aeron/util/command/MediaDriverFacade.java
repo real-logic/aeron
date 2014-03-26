@@ -85,11 +85,11 @@ public interface MediaDriverFacade
      *
      * The destination will be removed if this application is the last application using the destination.
      *
-     * @see LibraryFacade#onRemoveReceiver(String)
-     *
+     * @see LibraryFacade#onRemoveReceiver(String, long[])
      * @param destination to remove
+     * @param channelIdList the list of channels to remove on
      */
-    void sendRemoveReceiver(final String destination);
+    void sendRemoveReceiver(final String destination, final long[] channelIdList);
 
     /**
      * Request the media driver should setup state for the next Term Buffer

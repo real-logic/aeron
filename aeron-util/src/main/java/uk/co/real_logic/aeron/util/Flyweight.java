@@ -54,36 +54,36 @@ public class Flyweight
         return this;
     }
 
-    public short uint8Get(final int offset)
+    protected short uint8Get(final int offset)
     {
         return (short)(atomicBuffer.getByte(offset) & 0xFF);
     }
 
-    public void uint8Put(final int offset, final short value)
+    protected void uint8Put(final int offset, final short value)
     {
         atomicBuffer.putByte(offset, (byte)value);
     }
 
-    public int uint16Get(final int offset, final ByteOrder byteOrder)
+    protected int uint16Get(final int offset, final ByteOrder byteOrder)
     {
         return (atomicBuffer.getShort(offset, byteOrder) & 0xFFFF);
     }
 
-    public void uint16Put(final int offset,
-                          final int value,
-                          final ByteOrder byteOrder)
+    protected void uint16Put(final int offset,
+                             final int value,
+                             final ByteOrder byteOrder)
     {
         atomicBuffer.putShort(offset, (short)value, byteOrder);
     }
 
-    public long uint32Get(final int offset, final ByteOrder byteOrder)
+    protected long uint32Get(final int offset, final ByteOrder byteOrder)
     {
         return (atomicBuffer.getInt(offset, byteOrder) & 0xFFFFFFFFL);
     }
 
-    public void uint32Put(final int offset,
-                          final long value,
-                          final ByteOrder byteOrder)
+    protected void uint32Put(final int offset,
+                             final long value,
+                             final ByteOrder byteOrder)
     {
         atomicBuffer.putInt(offset, (int)value, byteOrder);
     }

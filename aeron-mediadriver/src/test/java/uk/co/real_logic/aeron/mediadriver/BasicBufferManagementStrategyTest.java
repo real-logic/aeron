@@ -31,25 +31,25 @@ import static org.junit.Assert.assertThat;
 public class BasicBufferManagementStrategyTest
 {
 
-    private static final File dataDir = new File(System.getProperty("java.io.tmpdir"), "dataDir");
+    private static final File DATA_DIR = new File(System.getProperty("java.io.tmpdir"), "DATA_DIR");
 
     @After
     public void cleanupFiles() throws IOException
     {
-        IoUtil.delete(dataDir, true);
+        IoUtil.delete(DATA_DIR, true);
     }
 
     @Before
     public void createDataDir()
     {
-        IoUtil.ensureDirectoryExists(dataDir, "data");
+        IoUtil.ensureDirectoryExists(DATA_DIR, "data");
     }
 
     @Test
     public void mappedFilesAreCorrectSizeAndZeroed() throws Exception
     {
-        BasicBufferManagementStrategy strategy = new BasicBufferManagementStrategy(dataDir.getAbsolutePath());
-        MappedByteBuffer term = strategy.mapTerm(dataDir, 1, 1, 1, 256);
+        BasicBufferManagementStrategy strategy = new BasicBufferManagementStrategy(DATA_DIR.getAbsolutePath());
+        MappedByteBuffer term = strategy.mapTerm(DATA_DIR, 1, 1, 1, 256);
 
         assertThat(term.capacity(), is(256));
         assertThat(term.get(0), is((byte) 0));

@@ -25,5 +25,5 @@ import uk.co.real_logic.aeron.util.BufferStrategy;
  */
 public interface BufferUsageStrategy extends BufferStrategy
 {
-    public void onTermAdded(final long sessionId, final long channelId, final long termId, boolean isSender) throws Exception;
+    void onTermAdded(final long sessionId, final long channelId, final long termId, boolean isSender) throws Exception;
 }

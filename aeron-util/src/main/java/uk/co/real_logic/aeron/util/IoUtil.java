@@ -18,9 +18,13 @@ package uk.co.real_logic.aeron.util;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Arrays;
+
+import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 
 /**
  * Collection of IO utilities.
@@ -119,4 +123,42 @@ public class IoUtil
         }
     }
 
+    public static FileChannel createEmptyFile(final File file, final long size) throws IOException
+    {
+        final RandomAccessFile randomAccessFile = new RandomAccessFile(file, "rw");
+        final FileChannel templateFile = randomAccessFile.getChannel();
+        fill(templateFile, 0, size, (byte) 0);
+        return templateFile;
+    }
+
+    public static MappedByteBuffer mapExistingFile(final File location, final String name) throws IOException
+    {
+        ensureFileExists(location, name);
+        try (final RandomAccessFile file = new RandomAccessFile(location, "rw"))
+        {
+            long size = file.length();
+            final FileChannel channel = file.getChannel();
+            return channel.map(READ_WRITE, 0, size);
+        }
+    }
+
+    /**
+     * Create an initialised
+     */
+    public static MappedByteBuffer mapNewFile(final File location, final String name, final long size)
+            throws IOException
+    {
+        try (final FileChannel channel = createEmptyFile(location, size))
+        {
+            return channel.map(READ_WRITE, 0, size);
+        }
+    }
+
+    public static void ensureFileExists(final File file, final String name)
+    {
+        if (!file.exists())
+        {
+            throw new IllegalStateException(String.format("Missing file for %1$s: %2$s", name, file.getAbsolutePath()));
+        }
+    }
 }

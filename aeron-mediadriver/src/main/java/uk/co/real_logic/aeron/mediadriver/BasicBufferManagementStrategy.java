@@ -42,28 +42,26 @@ public class BasicBufferManagementStrategy extends BasicBufferStrategy implement
         super(dataDir);
         IoUtil.ensureDirectoryExists(senderDir, "sender");
         IoUtil.ensureDirectoryExists(receiverDir, "receiver");
-        templateFile = createTemplateFile();
+        templateFile = createTemplateFile(dataDir);
     }
 
     /**
      * Create a blank, zero'd out file of the correct size.
      * This lets us just use transferTo to initialize the buffers.
+     *
+     * @param dataDir
      */
-    private FileChannel createTemplateFile()
+    private FileChannel createTemplateFile(final String dataDir)
     {
+        final File templateFile = new File(dataDir, "templateFile");
+        templateFile.deleteOnExit();
         try
         {
-            final File tempFile = File.createTempFile("templateFile", "bin");
-            tempFile.deleteOnExit();
-
-            final RandomAccessFile randomAccessFile = new RandomAccessFile(tempFile, "rw");
-            final FileChannel templateFile = randomAccessFile.getChannel();
-            IoUtil.fill(templateFile, 0, BUFFER_SIZE, (byte) 0);
-            return templateFile;
+            return IoUtil.createEmptyFile(templateFile, BUFFER_SIZE);
         }
         catch (IOException e)
         {
-            throw new IllegalStateException("Unable to create temporary file", e);
+            throw new IllegalStateException("Cannot create temporary file", e);
         }
     }
 

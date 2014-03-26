@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.util.BasicBufferStrategy;
 import uk.co.real_logic.aeron.util.FileMappingConvention;
+import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.collections.TripleLevelMap;
 
 import java.io.File;
@@ -40,10 +41,7 @@ public class BasicBufferUsageStrategy extends BasicBufferStrategy implements Buf
     public MappedByteBuffer mapTerm(final File rootDir, final long sessionId, final long channelId, final long termId) throws IOException
     {
         final File termIdFile = FileMappingConvention.termIdFile(rootDir, sessionId, channelId, termId, false);
-        if (!termIdFile.exists())
-        {
-            throw new IllegalStateException("Missing term buffer: " + termIdFile);
-        }
+        IoUtil.ensureFileExists(termIdFile, "Term Buffer");
 
         try (final RandomAccessFile randomAccessFile = new RandomAccessFile(termIdFile, "rw"))
         {

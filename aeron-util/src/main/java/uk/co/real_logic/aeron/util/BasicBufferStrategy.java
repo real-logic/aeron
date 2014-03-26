@@ -53,7 +53,7 @@ public abstract class BasicBufferStrategy implements BufferStrategy
         return buffer;
     }
 
-    protected static interface TermMapper
+    protected interface TermMapper
     {
         MappedByteBuffer mapTerm() throws Exception;
     }

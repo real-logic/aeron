@@ -72,9 +72,9 @@ public class ReceiverMessageFlyweight extends Flyweight
     public String destination()
     {
         // destination comes after channels
-        final int destinationOffset = CHANNEL_IDS_OFFSET
-                                    + SIZE_OF_INT
-                                    + atomicBuffer.getInt(offset + CHANNEL_IDS_OFFSET, LITTLE_ENDIAN) * SIZE_OF_LONG;
+        final int destinationOffset = CHANNEL_IDS_OFFSET +
+                                      SIZE_OF_INT +
+                                      atomicBuffer.getInt(offset + CHANNEL_IDS_OFFSET, LITTLE_ENDIAN) * SIZE_OF_LONG;
 
         return stringGet(offset + destinationOffset, LITTLE_ENDIAN);
     }

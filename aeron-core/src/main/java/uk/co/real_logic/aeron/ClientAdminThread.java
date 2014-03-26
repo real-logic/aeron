@@ -21,7 +21,7 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
-import uk.co.real_logic.aeron.util.command.RemoveReceiverMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.TripletMessageFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
@@ -52,7 +52,7 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
 
     // Control protocol Flyweights
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
-    private final RemoveReceiverMessageFlyweight removeReceiverMessage = new RemoveReceiverMessageFlyweight();
+    private final ReceiverMessageFlyweight removeReceiverMessage = new ReceiverMessageFlyweight();
     private final TripletMessageFlyweight requestTermMessage = new TripletMessageFlyweight();
 
     private final TripletMessageFlyweight bufferNotificationMessage = new TripletMessageFlyweight();
@@ -141,14 +141,19 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
 
     public void sendAddReceiver(final String destination, final long[] channelIdList)
     {
-
+        sendReceiverMessage(ADD_RECEIVER, destination, channelIdList);
     }
 
     public void sendRemoveReceiver(final String destination, final long[] channelIdList)
     {
+        sendReceiverMessage(REMOVE_RECEIVER, destination, channelIdList);
+    }
+
+    private void sendReceiverMessage(final int eventTypeId, final String destination, final long[] channelIdList)
+    {
         removeReceiverMessage.channelIds(channelIdList);
         removeReceiverMessage.destination(destination);
-        sendBuffer.write(REMOVE_RECEIVER, writeBuffer, 0, removeReceiverMessage.length());
+        sendBuffer.write(eventTypeId, writeBuffer, 0, removeReceiverMessage.length());
     }
 
     public void sendRequestTerm(final long sessionId, final long channelId, final long termId)

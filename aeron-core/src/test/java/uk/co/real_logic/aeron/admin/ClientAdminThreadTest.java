@@ -22,7 +22,7 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.EventHandler;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.RemoveReceiverMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.TripletMessageFlyweight;
 
 import java.nio.ByteBuffer;
@@ -75,7 +75,7 @@ public class ClientAdminThreadTest
 
         assertReadsOneMessage((eventTypeId, buffer, index, length) ->
         {
-            RemoveReceiverMessageFlyweight removeReceiverMessage = new RemoveReceiverMessageFlyweight();
+            ReceiverMessageFlyweight removeReceiverMessage = new ReceiverMessageFlyweight();
             removeReceiverMessage.reset(buffer, index);
 
             assertThat(eventTypeId, is(REMOVE_RECEIVER));

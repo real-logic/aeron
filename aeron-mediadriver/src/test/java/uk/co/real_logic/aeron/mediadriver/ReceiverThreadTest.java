@@ -50,7 +50,7 @@ public class ReceiverThreadTest
     public void shouldHandleBasicSetupAndTeardown() throws Exception
     {
         final ReceiverThread receiverThread = new ReceiverThread(new MediaDriver.TopologyBuilder());
-        final RcvFrameHandler rcv = new RcvFrameHandler(UdpDestination.parse(RCV_UDP_URI), receiverThread, channelIds);
+        final RcvFrameHandler rcv = new RcvFrameHandler(UdpDestination.parse(RCV_UDP_URI), receiverThread);
         final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), receiverThread, null, null);
 
         processLoop(receiverThread, 5);
@@ -241,7 +241,7 @@ public class ReceiverThreadTest
             }
         }, srcLocalAddr, receiverThread);
 
-        final RcvFrameHandler rcv = new RcvFrameHandler(UdpDestination.parse(RCV_UDP_URI), receiverThread, channelIds);
+        final RcvFrameHandler rcv = new RcvFrameHandler(UdpDestination.parse(RCV_UDP_URI), receiverThread);
 
         encodeDataHeader.reset(atomicBuffer, 0);
         encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)

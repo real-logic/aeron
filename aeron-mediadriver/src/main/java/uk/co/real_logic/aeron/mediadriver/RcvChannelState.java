@@ -15,30 +15,55 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
+
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.util.Map;
 
 /**
  * State maintained per channel for receiver processing
  */
 public class RcvChannelState
 {
-    private final InetSocketAddress srcAddr;
+    private final long channelId;
+    private int referenceCount;
+    private final Map<Long, RcvSessionState> sessionStateMap;
 
-    public RcvChannelState(final UdpDestination destination,
-                           final long sessionId,
-                           final long channelId,
-                           final long termId,
-                           final InetSocketAddress srcAddr)
+    public RcvChannelState(final long channelId)
     {
-        // TODO: explicitly create new buffer
-        //final ByteBuffer termBuffer =
-        //  bufferManagementStrategy.addRecieverTerm(destination, sessionId, channelId, termId);
-
-        this.srcAddr = srcAddr;
+        this.channelId = channelId;
+        this.referenceCount = 1;
+        this.sessionStateMap = new Long2ObjectHashMap<>();
     }
 
-    public InetSocketAddress sourceAddress()
+    public int decrementReference()
     {
-        return srcAddr;
+        return --referenceCount;
+    }
+
+    public int incrementReference()
+    {
+        return ++referenceCount;
+    }
+
+    public int referenceCount()
+    {
+        return referenceCount;
+    }
+
+    public RcvSessionState getSessionState(final long sessionId)
+    {
+        return sessionStateMap.get(sessionId);
+    }
+
+    public void removeSessionState(final long sessionId)
+    {
+        sessionStateMap.remove(sessionId);
+    }
+
+    public RcvSessionState createSessionState(final long sessionId, final InetSocketAddress srcAddr)
+    {
+        return sessionStateMap.put(sessionId, new RcvSessionState(sessionId, srcAddr));
     }
 }

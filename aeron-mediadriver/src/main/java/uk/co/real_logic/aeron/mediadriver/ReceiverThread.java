@@ -21,7 +21,9 @@ import java.io.IOException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -40,6 +42,7 @@ public class ReceiverThread implements AutoCloseable, Runnable
     private volatile boolean done;
     private final RingBuffer commandBuffer;
     private final RingBuffer adminThreadCommandBuffer;
+    private final Map<UdpDestination, RcvFrameHandler> rcvDestinationMap = new HashMap<>();
 
     public ReceiverThread(final MediaDriver.TopologyBuilder builder) throws Exception
     {
@@ -65,6 +68,41 @@ public class ReceiverThread implements AutoCloseable, Runnable
         return key;
     }
 
+    public static void addNewReceiverEvent(final RingBuffer buffer,
+                                           final String destination,
+                                           final long[] channelIdList)
+    {
+        // TODO: add to command buffer
+        // TODO: may need to unblock thread... but can't as we are don't have a ref to object
+    }
+
+    public static void addRemoveReceiverEvent(final RingBuffer buffer,
+                                              final String destination,
+                                              final long[] channelIdList)
+    {
+        // TODO: add to command buffer
+        // TODO: may need to unblock thread... but can't as we are don't have a ref to object
+    }
+
+    public static void addTermBufferCreatedEvent(final RingBuffer buffer,
+                                                 final long sessionId,
+                                                 final long channelId,
+                                                 final long termId)
+    {
+        // TODO: add to command buffer
+        // TODO: may need to unblock thread... but can't as we are don't have a ref to object
+    }
+
+    public void addRcvCreateTermBufferEvent(final UdpDestination destination,
+                                            final long sessionId,
+                                            final long channelId,
+                                            final long termId)
+    {
+        // send on to admin thread
+        MediaDriverAdminThread.addRcvCreateNewTermBufferEvent(adminThreadCommandBuffer, destination,
+                                                              sessionId, channelId, termId);
+    }
+
     /**
      * Cancel pending reads for selection key.
      * @param key to cancel
@@ -87,6 +125,7 @@ public class ReceiverThread implements AutoCloseable, Runnable
             {
                 select();
                 handleSelectedKeys();
+                // TODO: check command buffer for commands
             }
         }
         catch (final Exception e)
@@ -179,4 +218,55 @@ public class ReceiverThread implements AutoCloseable, Runnable
             }
         }
     }
+
+    private void onNewReceiverEvent(final String destination, final long[] channelIdList)
+    {
+        try
+        {
+            final UdpDestination rcvDestination = UdpDestination.parse(destination);
+            RcvFrameHandler rcv = rcvDestinationMap.get(rcvDestination);
+
+            if (null == rcv)
+            {
+                rcv = new RcvFrameHandler(rcvDestination, this);
+                rcvDestinationMap.put(rcvDestination, rcv);
+            }
+
+            rcv.addChannels(channelIdList);
+        }
+        catch (Exception e)
+        {
+            // TODO: AdminThread.sendErrorResponse(ErrorCode.GENERIC_ERROR.value(), e.getMessage().getBytes());
+            // TODO: log this as well as send the error response
+        }
+    }
+
+    private void onRemoveReceiverEvent(final String destination, final long[] channelIdList)
+    {
+        try
+        {
+            final UdpDestination rcvDestination = UdpDestination.parse(destination);
+            RcvFrameHandler rcv = rcvDestinationMap.get(rcvDestination);
+
+            if (null == rcv)
+            {
+                throw new IllegalArgumentException("destination unknown for receiver remove: " + destination);
+            }
+
+            rcv.removeChannels(channelIdList);
+
+            // if all channels gone, then take care of removing everything and closing the framehandler
+            if (0 == rcv.channelCount())
+            {
+                rcvDestinationMap.remove(rcvDestination);
+                rcv.close();
+            }
+        }
+        catch (Exception e)
+        {
+            // TODO: AdminThread.sendErrorResponse(ErrorCode.GENERIC_ERROR.value(), e.getMessage().getBytes());
+            // TODO: log this as well as send the error response
+        }
+    }
+
 }

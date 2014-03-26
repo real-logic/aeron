@@ -30,9 +30,9 @@ import java.util.Map;
 public class MediaDriverAdminThread extends ClosableThread implements LibraryFacade
 {
     private final Map<UdpDestination, SrcFrameHandler> srcDestinationMap = new HashMap<>();
-    private final Map<UdpDestination, RcvFrameHandler> rcvDestinationMap = new HashMap<>();
     private final RingBuffer commandBuffer;
     private final RingBuffer senderThreadCommandBuffer;
+    private final RingBuffer receiverThreadCommandBuffer;
     private final ReceiverThread receiverThread;
     private final SenderThread senderThread;
     private final BufferManagementStrategy bufferManagementStrategy;
@@ -43,6 +43,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     {
         this.commandBuffer = builder.adminThreadCommandBuffer();
         this.senderThreadCommandBuffer = builder.senderThreadCommandBuffer();
+        this.receiverThreadCommandBuffer = builder.receiverThreadCommandBuffer();
         this.bufferManagementStrategy = builder.bufferManagementStrategy();
         this.receiverThread = receiverThread;
         this.senderThread = senderThread;
@@ -55,6 +56,15 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     public static void addNakEvent(final RingBuffer buffer, final HeaderFlyweight header)
     {
         // TODO: add NAK frame to this threads command buffer
+    }
+
+    public static void addRcvCreateNewTermBufferEvent(final RingBuffer buffer,
+                                                      final UdpDestination destination,
+                                                      final long sessionId,
+                                                      final long channelId,
+                                                      final long termId)
+    {
+        // TODO: add event to command buffer
     }
 
     @Override
@@ -191,54 +201,19 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     @Override
     public void onAddReceiver(final String destination, final long[] channelIdList)
     {
-        try
-        {
-            final UdpDestination rcvDestination = UdpDestination.parse(destination);
-            RcvFrameHandler rcv = rcvDestinationMap.get(rcvDestination);
+        // instruct receiver thread of new framehandler and new channelIdlist for such
+        ReceiverThread.addNewReceiverEvent(receiverThreadCommandBuffer, destination, channelIdList);
 
-            if (null == rcv)
-            {
-                rcv = new RcvFrameHandler(rcvDestination, receiverThread, channelIdList);
-                rcvDestinationMap.put(rcvDestination, rcv);
-            }
-            else
-            {
-                // TODO: add new channels to an existing RcvFrameHandler
-                // - need to do this via command queue to that running thread
-            }
-
-            // this thread does not add buffers. The RcvFrameHandler handle methods will send an event for this thread
-            // to create buffers as needed
-        }
-        catch (Exception e)
-        {
-            sendErrorResponse(ErrorCode.GENERIC_ERROR.value(), e.getMessage().getBytes());
-            // TODO: log this as well as send the error response
-        }
+        // this thread does not add buffers. The RcvFrameHandler handle methods will send an event for this thread
+        // to create buffers as needed
     }
 
     @Override
     public void onRemoveReceiver(final String destination)
     {
-        try
-        {
-            final UdpDestination rcvDestination = UdpDestination.parse(destination);
-            RcvFrameHandler rcv = rcvDestinationMap.get(rcvDestination);
-
-            if (null == rcv)
-            {
-                throw new IllegalArgumentException("destination unknown for receiver remove: " + destination);
-            }
-
-            rcvDestinationMap.remove(rcvDestination);
-
-            // TODO: send event to receiver thread to remove (and close) this framehandler
-        }
-        catch (Exception e)
-        {
-            sendErrorResponse(ErrorCode.GENERIC_ERROR.value(), e.getMessage().getBytes());
-            // TODO: log this as well as send the error response
-        }
+        // instruct receiver thread to get rid of channels and destination
+        // TODO: add channelIdList to signature and pass it here
+        ReceiverThread.addRemoveReceiverEvent(receiverThreadCommandBuffer, destination, null);
     }
 
     @Override
@@ -250,5 +225,15 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     private void onNakEvent(final HeaderFlyweight header)
     {
         // TODO: handle the NAK.
+    }
+
+    private void onRcvCreateNewTermBufferEvent(final String destination,
+                                               final long sessionId,
+                                               final long channelId,
+                                               final long termId)
+    {
+        // TODO: create new buffer via strategy, then instruct the receiver thread that we are done and it can grab it
+
+        ReceiverThread.addTermBufferCreatedEvent(receiverThreadCommandBuffer, sessionId, channelId, termId);
     }
 }

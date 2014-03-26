@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Event loop for JVM based mediadriver
+ * Receiver Thread for JVM based mediadriver, uses an event loop with command buffer.
  *
  * Contains Selector logic
  *

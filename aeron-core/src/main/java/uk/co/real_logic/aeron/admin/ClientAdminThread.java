@@ -41,6 +41,7 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
     public static final int WRITE_BUFFER_CAPACITY = 256;
     /** Incoming message buffer from media driver */
     private final RingBuffer recvBuffer;
+    private final long sessionId;
     /** Incoming message buffer from other Core threads */
     private final RingBuffer commandBuffer;
     /** Outgoing message buffer to media driver */
@@ -60,13 +61,15 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
 
     private final TripletMessageFlyweight bufferNotificationMessage = new TripletMessageFlyweight();
 
-    public ClientAdminThread(final RingBuffer commandBuffer,
+    public ClientAdminThread(final long sessionId,
+                             final RingBuffer commandBuffer,
                              final RingBuffer recvBuffer,
                              final RingBuffer sendBuffer,
                              final BufferUsageStrategy bufferUsage,
                              final Map<String, Long2ObjectHashMap<TermBufferNotifier>> sendNotifiers,
                              final Map<String, Long2ObjectHashMap<TermBufferNotifier>> recvNotifiers)
     {
+        this.sessionId = sessionId;
         this.commandBuffer = commandBuffer;
         this.recvBuffer = recvBuffer;
         this.sendBuffer = sendBuffer;
@@ -159,14 +162,17 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
 
     public void onNewBufferNotification(final long sessionId, final long channelId, final long termId, final boolean isSender)
     {
-        try
+        if (sessionId == this.sessionId)
         {
-            bufferUsage.onTermAdded(sessionId, channelId, termId, isSender);
-        }
-        catch (Exception e)
-        {
-            // TODO: establish correct client error handling strategy
-            e.printStackTrace();
+            try
+            {
+                bufferUsage.onTermAdded(sessionId, channelId, termId, isSender);
+            }
+            catch (Exception e)
+            {
+                // TODO: establish correct client error handling strategy
+                e.printStackTrace();
+            }
         }
     }
 

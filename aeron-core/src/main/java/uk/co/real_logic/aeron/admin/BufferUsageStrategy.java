@@ -13,12 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.command;
+package uk.co.real_logic.aeron.admin;
+
+import uk.co.real_logic.aeron.util.BufferStrategy;
 
 /**
- * Events that are sent to the admin thread's command buffer.
+ * Interface for encapsulating the strategy of mapping ByteBuffers for Session, Channel, and Term.
+ *
+ * This corresponds to BufferManagementStrategy, but doesn't deal with creating the files
+ * which need to be mapped.
  */
-public class AdminThreadEvents
+public interface BufferUsageStrategy extends BufferStrategy
 {
-
+    void onTermAdded(final long sessionId, final long channelId, final long termId, boolean isSender) throws Exception;
 }

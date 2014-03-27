@@ -71,7 +71,7 @@ public interface LibraryFacade
      * The destination will be created if not in use by another library/application.
      *
      * @see MediaDriverFacade#sendAddReceiver(String, long[])
-     *@param destination to be added
+     * @param destination to be added
      * @param channelIdList of interested channels for destination
      */
     void onAddReceiver(final String destination, final long[] channelIdList);

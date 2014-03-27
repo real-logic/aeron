@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron;
+package uk.co.real_logic.aeron.admin;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -23,15 +23,16 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  *
  * Specific to a channel.
  */
-public class TermBufferNotification
+public class TermBufferNotifier
 {
 
     public static final int TERMS_STORED = 2;
+
     private static final long HASH_MASK = 0x1;
 
     private final AtomicReferenceArray<ByteBuffer> buffers;
 
-    public TermBufferNotification()
+    public TermBufferNotifier()
     {
         buffers = new AtomicReferenceArray<>(TERMS_STORED);
     }

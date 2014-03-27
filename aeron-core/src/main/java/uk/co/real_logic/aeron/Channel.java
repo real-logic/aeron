@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
+import uk.co.real_logic.aeron.admin.TermBufferNotifier;
 import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
 
 import java.nio.ByteBuffer;
@@ -26,13 +27,22 @@ public class Channel implements AutoCloseable
 {
     private final Source source;
     private final MediaDriverFacade mediaDriver;
+    private final TermBufferNotifier bufferNotifier;
     private final long channelId;
 
-    public Channel(final Source source, final MediaDriverFacade mediaDriver, final long channelId)
+    private long currentTermId;
+
+    public Channel(final Source source, final MediaDriverFacade mediaDriver, final TermBufferNotifier bufferNotifier, final long channelId)
     {
         this.source = source;
         this.mediaDriver = mediaDriver;
+        this.bufferNotifier = bufferNotifier;
         this.channelId = channelId;
+        // TODO: think through the initialisation case
+        currentTermId = 0L;
+        requestTerm(0L);
+        requestTerm(1L);
+        startTerm();
     }
 
     public long channelId()
@@ -76,6 +86,25 @@ public class Channel implements AutoCloseable
     public void blockingSend(final ByteBuffer buffer, final int offset)
     {
         // TODO: Is this necessary?
+    }
+
+    private void requestTerm(final long termId)
+    {
+        // TODO: message
+    }
+
+    private void startTerm()
+    {
+        // TODO: set buffer
+        bufferNotifier.termBuffer(currentTermId);
+    }
+
+    private void rollTerm()
+    {
+        bufferNotifier.endOfTermBuffer(currentTermId);
+        currentTermId++;
+        requestTerm(currentTermId + 1);
+        startTerm();
     }
 
     @Override

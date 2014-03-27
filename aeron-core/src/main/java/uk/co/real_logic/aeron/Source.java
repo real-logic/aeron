@@ -15,6 +15,8 @@
  */
 package uk.co.real_logic.aeron;
 
+import uk.co.real_logic.aeron.admin.TermBufferNotifier;
+import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
 
 /**
@@ -26,14 +28,16 @@ import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
 public class Source implements AutoCloseable
 {
     private final Aeron aeron;
+    private final Long2ObjectHashMap<TermBufferNotifier> notifierMap;
     private final Destination destination;
     private final long sessionId;
     private final MediaDriverFacade mediaDriver;
 
     // called by Aeron to create new sessions
-    public Source(final Aeron aeron, final Builder builder)
+    public Source(final Aeron aeron, final Long2ObjectHashMap<TermBufferNotifier> notifierMap, final Builder builder)
     {
         this.aeron = aeron;
+        this.notifierMap = notifierMap;
         this.destination = builder.destination;
         this.sessionId = builder.sessionId;
         this.mediaDriver = builder.mediaDriver;
@@ -46,8 +50,10 @@ public class Source implements AutoCloseable
      */
     public Channel newChannel(final long channelId)
     {
+        final TermBufferNotifier bufferNotifier = new TermBufferNotifier();
+        notifierMap.put(channelId, bufferNotifier);
         mediaDriver.sendAddChannel(destination.destination(), sessionId, channelId);
-        return new Channel(this, mediaDriver, channelId);
+        return new Channel(this, mediaDriver, bufferNotifier, channelId);
     }
 
     /**
@@ -87,7 +93,8 @@ public class Source implements AutoCloseable
 
     public static class Builder
     {
-        private Destination destination;
+        Destination destination;
+
         private long sessionId = 0;
         private MediaDriverFacade mediaDriver;
 

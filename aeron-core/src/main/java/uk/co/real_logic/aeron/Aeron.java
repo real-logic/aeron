@@ -15,16 +15,26 @@
  */
 package uk.co.real_logic.aeron;
 
+import uk.co.real_logic.aeron.admin.BasicBufferUsageStrategy;
+import uk.co.real_logic.aeron.admin.BufferUsageStrategy;
+import uk.co.real_logic.aeron.admin.ClientAdminThread;
+import uk.co.real_logic.aeron.admin.TermBufferNotifier;
 import uk.co.real_logic.aeron.util.AdminBufferStrategy;
 import uk.co.real_logic.aeron.util.BasicAdminBufferStrategy;
 import uk.co.real_logic.aeron.util.Directories;
+import uk.co.real_logic.aeron.util.collections.CollectionUtil;
+import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import java.io.File;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
+
+import static uk.co.real_logic.aeron.util.collections.CollectionUtil.getOrDefault;
 
 /**
  * Encapsulation of media driver and API for source and receiver construction
@@ -65,11 +75,13 @@ public final class Aeron
     private final ErrorHandler errorHandler;
     private final ClientAdminThread adminThread;
     private final AdminBufferStrategy adminBuffers;
+    private final Map<String, Long2ObjectHashMap<TermBufferNotifier>> bufferNotifiers;
 
     private Aeron(final Builder builder)
     {
         errorHandler = builder.errorHandler;
         adminBuffers = builder.adminBuffers;
+        bufferNotifiers = new HashMap<>();
 
         try
         {
@@ -96,7 +108,9 @@ public final class Aeron
      */
     public Source newSource(final Source.Builder builder)
     {
-        return new Source(this, builder);
+        String destination = builder.destination.destination();
+        Long2ObjectHashMap<TermBufferNotifier> notifierMap = getOrDefault(bufferNotifiers, destination, dest -> new Long2ObjectHashMap<>());
+        return new Source(this, notifierMap, builder);
     }
 
     /**
@@ -106,7 +120,7 @@ public final class Aeron
      */
     public Source newSource(final Destination destination)
     {
-        return new Source(this, new Source.Builder().destination(destination));
+        return newSource(new Source.Builder().destination(destination));
     }
 
     /**
@@ -123,7 +137,7 @@ public final class Aeron
 
         for (int i = 0, max = builders.length; i < max; i++)
         {
-            sources[i] = new Source(this, builders[i]);
+            sources[i] = newSource(builders[i]);
         }
 
         return sources;

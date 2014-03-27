@@ -15,8 +15,6 @@
  */
 package uk.co.real_logic.aeron.util.command;
 
-import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
-
 /**
  * Facade of application library for use by media driver to send/receiver control commands/responses
  *

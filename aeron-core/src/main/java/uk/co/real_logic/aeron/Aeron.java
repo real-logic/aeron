@@ -15,11 +15,14 @@
  */
 package uk.co.real_logic.aeron;
 
+import uk.co.real_logic.aeron.util.AdminBufferStrategy;
+import uk.co.real_logic.aeron.util.BasicAdminBufferStrategy;
 import uk.co.real_logic.aeron.util.Directories;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
+import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
@@ -61,17 +64,25 @@ public final class Aeron
 
     private final ErrorHandler errorHandler;
     private final ClientAdminThread adminThread;
+    private final AdminBufferStrategy adminBuffers;
 
     private Aeron(final Builder builder)
     {
         errorHandler = builder.errorHandler;
+        adminBuffers = builder.adminBuffers;
 
-        final RingBuffer adminCommandBuffer = new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocateDirect(256)));
-        // TODO: should admin buffer management be split out as concern?
-        final RingBuffer recvBuffer = null;
-        final RingBuffer sendBuffer = null;
-        final BufferUsageStrategy bufferUsage = new BasicBufferUsageStrategy(Directories.DATA_DIR);
-        adminThread = new ClientAdminThread(adminCommandBuffer, recvBuffer, sendBuffer, bufferUsage);
+        try
+        {
+            final RingBuffer adminCommandBuffer = new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocate(256)));
+            final RingBuffer recvBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toApi()));
+            final RingBuffer sendBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toMediaDriver()));
+            final BufferUsageStrategy bufferUsage = new BasicBufferUsageStrategy(Directories.DATA_DIR);
+            adminThread = new ClientAdminThread(adminCommandBuffer, recvBuffer, sendBuffer, bufferUsage);
+        }
+        catch (Exception e)
+        {
+            throw new IllegalArgumentException("Unable to create Aeron", e);
+        }
     }
 
     /**
@@ -144,10 +155,13 @@ public final class Aeron
     public static class Builder
     {
         private ErrorHandler errorHandler;
+        private AdminBufferStrategy adminBuffers;
 
         public Builder()
         {
             errorHandler = new DummyErrorHandler();
+            // TODO: decide on where admin buffers get located and remove buffer size if needed
+            adminBuffers = new BasicAdminBufferStrategy(new File(Directories.ADMIN_DIR), 0, false);
         }
 
         public Builder errorHandler(ErrorHandler errorHandler)
@@ -156,6 +170,11 @@ public final class Aeron
             return this;
         }
 
+        public Builder adminBufferStrategy(AdminBufferStrategy adminBuffers)
+        {
+            this.adminBuffers = adminBuffers;
+            return this;
+        }
     }
 
 }

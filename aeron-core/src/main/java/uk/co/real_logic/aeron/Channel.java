@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
 
 import java.nio.ByteBuffer;
-import java.util.stream.IntStream;
 
 /**
  * Aeron Channel

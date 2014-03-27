@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.admin.ClientAdminCursor;
+import uk.co.real_logic.aeron.admin.ClientAdminThreadCursor;
 import uk.co.real_logic.aeron.admin.TermBufferNotifier;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 
@@ -30,7 +30,7 @@ public class Source implements AutoCloseable
     private final long sessionId;
     private final Long2ObjectHashMap<TermBufferNotifier> notifierMap;
     private final Destination destination;
-    private final ClientAdminCursor adminThread;
+    private final ClientAdminThreadCursor adminThread;
 
     // called by Aeron to create new sessions
     public Source(final long sessionId, final Long2ObjectHashMap<TermBufferNotifier> notifierMap, final Builder builder)
@@ -93,7 +93,7 @@ public class Source implements AutoCloseable
     {
         Destination destination;
 
-        private ClientAdminCursor adminThread;
+        private ClientAdminThreadCursor adminThread;
 
         public Builder()
         {
@@ -105,7 +105,7 @@ public class Source implements AutoCloseable
             return this;
         }
 
-        public Builder adminThread(final ClientAdminCursor adminThread)
+        public Builder adminThread(final ClientAdminThreadCursor adminThread)
         {
             this.adminThread = adminThread;
             return this;

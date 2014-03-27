@@ -108,7 +108,7 @@ public final class Aeron
     public Source newSource(final Source.Builder builder)
     {
         final String destination = builder.destination.destination();
-        builder.adminThread(new ClientAdminCursor(sessionId, adminCommandBuffer));
+        builder.adminThread(new ClientAdminThreadCursor(sessionId, adminCommandBuffer));
         final Long2ObjectHashMap<TermBufferNotifier> notifierMap = getOrDefault(bufferNotifiers, destination, dest -> new Long2ObjectHashMap<>());
         return new Source(sessionId, notifierMap, builder);
     }

@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.admin.ClientAdminCursor;
+import uk.co.real_logic.aeron.admin.ClientAdminThreadCursor;
 import uk.co.real_logic.aeron.admin.TermBufferNotifier;
 
 import java.nio.ByteBuffer;
@@ -26,14 +26,14 @@ import java.nio.ByteBuffer;
 public class Channel implements AutoCloseable
 {
     private final String destination;
-    private final ClientAdminCursor adminThread;
+    private final ClientAdminThreadCursor adminThread;
     private final TermBufferNotifier bufferNotifier;
     private final long channelId;
 
     private long currentTermId;
 
     public Channel(final String destination,
-                   final ClientAdminCursor adminCursor,
+                   final ClientAdminThreadCursor adminCursor,
                    final TermBufferNotifier bufferNotifier,
                    final long channelId)
     {
@@ -91,7 +91,8 @@ public class Channel implements AutoCloseable
 
     private void requestTerm(final long termId)
     {
-        adminThread.sendRequestTerm(destination, channelId, termId);
+        //adminThread.sendRequestTerm(destination, channelId, termId);
+        adminThread.sendRequestTerm(channelId, termId);
     }
 
     private void startTerm()

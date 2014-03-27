@@ -16,39 +16,39 @@
 package uk.co.real_logic.aeron.admin;
 
 import org.junit.Test;
+import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.TripletMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.EventHandler;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
-import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.TripletMessageFlyweight;
 
 import java.nio.ByteBuffer;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_SIZE;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
+import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_SIZE;
 
-public class ClientAdminThreadTest
+public class ClientAdminThreadCursorTest
 {
 
     private static final long[] CHANNEL_IDS = { 1L, 3L, 4L };
     public static final String DESTINATION = "udp://localhost:40123@localhost:40124";
     private final RingBuffer sendBuffer = new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocateDirect(TRAILER_SIZE + 1024)));
-    private final ClientAdminThread thread = new ClientAdminThread(null, null, sendBuffer, null);
+    private final ClientAdminThreadCursor thread = new ClientAdminThreadCursor(1L, sendBuffer);
 
     @Test
     public void threadSendsAddChannelMessage()
     {
-        threadSendsChannelMessage(() -> thread.sendAddChannel(DESTINATION, 1, 2), ADD_CHANNEL);
+        threadSendsChannelMessage(() -> thread.sendAddChannel(DESTINATION, 2), ADD_CHANNEL);
     }
 
     @Test
     public void threadSendsRemoveChannelMessage()
     {
-        threadSendsChannelMessage(() -> thread.sendRemoveChannel(DESTINATION, 1, 2), REMOVE_CHANNEL);
+        threadSendsChannelMessage(() -> thread.sendRemoveChannel(DESTINATION, 2), REMOVE_CHANNEL);
     }
 
     private void threadSendsChannelMessage(final Runnable sendMessage, final int expectedEventTypeId)
@@ -86,7 +86,7 @@ public class ClientAdminThreadTest
     @Test
     public void threadSendsRequestTermBufferMessage()
     {
-        thread.sendRequestTerm(1L, 2L, 3L);
+        thread.sendRequestTerm(2L, 3L);
 
         assertReadsOneMessage((eventTypeId, buffer, index, length) ->
         {

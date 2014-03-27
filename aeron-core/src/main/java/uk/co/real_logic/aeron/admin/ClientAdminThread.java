@@ -16,18 +16,17 @@
 package uk.co.real_logic.aeron.admin;
 
 import uk.co.real_logic.aeron.util.ClosableThread;
-import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
+import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
 import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.TripletMessageFlyweight;
-import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import java.nio.ByteBuffer;
 
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
+import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.NEW_RECEIVE_BUFFER_NOTIFICATION;
+import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.NEW_SEND_BUFFER_NOTIFICATION;
 
 
 /**
@@ -48,7 +47,7 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
     private final BufferUsageStrategy bufferUsage;
 
     /** Atomic buffer to write message flyweights into before they get sent */
-    private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(WRITE_BUFFER_CAPACITY));
+    private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
 
     // Control protocol Flyweights
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
@@ -108,27 +107,14 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
 
     /* commands to MediaDriver */
 
-    @Override
     public void sendAddChannel(final String destination, final long sessionId, final long channelId)
     {
-        sendChannelMessage(destination, sessionId, channelId, ControlProtocolEvents.ADD_CHANNEL);
+
     }
 
-    @Override
     public void sendRemoveChannel(final String destination, final long sessionId, final long channelId)
     {
-        sendChannelMessage(destination, sessionId, channelId, ControlProtocolEvents.REMOVE_CHANNEL);
-    }
 
-    private void sendChannelMessage(final String destination,
-                                    final long sessionId,
-                                    final long channelId,
-                                    final int eventTypeId)
-    {
-        channelMessage.sessionId(sessionId);
-        channelMessage.channelId(channelId);
-        channelMessage.destination(destination);
-        sendBuffer.write(eventTypeId, writeBuffer, 0, channelMessage.length());
     }
 
     public void sendRemoveTerm(final String destination,
@@ -141,27 +127,17 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
 
     public void sendAddReceiver(final String destination, final long[] channelIdList)
     {
-        sendReceiverMessage(ADD_RECEIVER, destination, channelIdList);
+
     }
 
     public void sendRemoveReceiver(final String destination, final long[] channelIdList)
     {
-        sendReceiverMessage(REMOVE_RECEIVER, destination, channelIdList);
-    }
 
-    private void sendReceiverMessage(final int eventTypeId, final String destination, final long[] channelIdList)
-    {
-        removeReceiverMessage.channelIds(channelIdList);
-        removeReceiverMessage.destination(destination);
-        sendBuffer.write(eventTypeId, writeBuffer, 0, removeReceiverMessage.length());
     }
 
     public void sendRequestTerm(final long sessionId, final long channelId, final long termId)
     {
-        requestTermMessage.sessionId(sessionId);
-        requestTermMessage.channelId(channelId);
-        requestTermMessage.termId(termId);
-        sendBuffer.write(REQUEST_TERM, writeBuffer, 0, TripletMessageFlyweight.length());
+
     }
 
     /* callbacks from MediaDriver */

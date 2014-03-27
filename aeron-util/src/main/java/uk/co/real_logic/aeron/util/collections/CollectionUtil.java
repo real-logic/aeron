@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron.util.collections;
 
 import java.util.Map;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * Utility functions for collection objects in general.

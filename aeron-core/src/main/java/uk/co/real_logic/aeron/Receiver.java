@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
+import uk.co.real_logic.aeron.admin.TermBufferNotifier;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
 
@@ -32,9 +33,11 @@ public class Receiver implements AutoCloseable
     private final Long2ObjectHashMap<DataHandler> channelMap;
     private final MediaDriverFacade mediaDriver;
     private final long[] channels;
+    private final Long2ObjectHashMap<TermBufferNotifier> notifier;
 
-    public Receiver(final Builder builder)
+    public Receiver(final Long2ObjectHashMap<TermBufferNotifier> notifier, final Builder builder)
     {
+        this.notifier = notifier;
         this.aeron = builder.aeron;
         this.destination = builder.destination;
         this.channelMap = builder.channelMap;
@@ -111,7 +114,7 @@ public class Receiver implements AutoCloseable
     public static class Builder
     {
         private Aeron aeron;
-        private Destination destination;
+        Destination destination;
         private Long2ObjectHashMap<DataHandler> channelMap = new Long2ObjectHashMap<>();
         private NewSourceEventHandler newSourceEventHandler;
         private InactiveSourceEventHandler inactiveSourceEventHandler;

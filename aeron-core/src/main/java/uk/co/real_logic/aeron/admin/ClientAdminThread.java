@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.admin;
 
 import uk.co.real_logic.aeron.util.ClosableThread;
+import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
 import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
@@ -24,6 +25,7 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import java.nio.ByteBuffer;
+import java.util.Map;
 
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.NEW_RECEIVE_BUFFER_NOTIFICATION;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.NEW_SEND_BUFFER_NOTIFICATION;
@@ -45,6 +47,8 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
     private final RingBuffer sendBuffer;
 
     private final BufferUsageStrategy bufferUsage;
+    private final Map<String, Long2ObjectHashMap<TermBufferNotifier>> sendNotifiers;
+    private final Map<String, Long2ObjectHashMap<TermBufferNotifier>> recvNotifiers;
 
     /** Atomic buffer to write message flyweights into before they get sent */
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
@@ -59,12 +63,16 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
     public ClientAdminThread(final RingBuffer commandBuffer,
                              final RingBuffer recvBuffer,
                              final RingBuffer sendBuffer,
-                             final BufferUsageStrategy bufferUsage)
+                             final BufferUsageStrategy bufferUsage,
+                             final Map<String, Long2ObjectHashMap<TermBufferNotifier>> sendNotifiers,
+                             final Map<String, Long2ObjectHashMap<TermBufferNotifier>> recvNotifiers)
     {
         this.commandBuffer = commandBuffer;
         this.recvBuffer = recvBuffer;
         this.sendBuffer = sendBuffer;
         this.bufferUsage = bufferUsage;
+        this.sendNotifiers = sendNotifiers;
+        this.recvNotifiers = recvNotifiers;
 
         channelMessage.reset(writeBuffer, 0);
         removeReceiverMessage.reset(writeBuffer, 0);
@@ -99,7 +107,6 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
                                             bufferNotificationMessage.channelId(),
                                             bufferNotificationMessage.termId(),
                                             isSender);
-
                     return;
             }
         });

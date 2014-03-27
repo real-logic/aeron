@@ -97,7 +97,6 @@ public class Channel implements AutoCloseable
 
     private void startTerm()
     {
-        // TODO: set buffer
         bufferNotifier.termBuffer(currentTermId);
     }
 

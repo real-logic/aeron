@@ -73,14 +73,17 @@ public final class Aeron
     private final ErrorHandler errorHandler;
     private final ClientAdminThread adminThread;
     private final AdminBufferStrategy adminBuffers;
-    private final Map<String, Long2ObjectHashMap<TermBufferNotifier>> bufferNotifiers;
+
+    private final Map<String, Long2ObjectHashMap<TermBufferNotifier>> sendNotifiers;
+    private final Map<String, Long2ObjectHashMap<TermBufferNotifier>> recvNotifiers;
 
     private Aeron(final Builder builder)
     {
         errorHandler = builder.errorHandler;
         adminBuffers = builder.adminBuffers;
         sessionId = builder.sessionId;
-        bufferNotifiers = new HashMap<>();
+        sendNotifiers = new HashMap<>();
+        recvNotifiers = new HashMap<>();
         adminCommandBuffer = new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocate(256)));
 
         try
@@ -88,7 +91,7 @@ public final class Aeron
             final RingBuffer recvBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toApi()));
             final RingBuffer sendBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toMediaDriver()));
             final BufferUsageStrategy bufferUsage = new BasicBufferUsageStrategy(Directories.DATA_DIR);
-            adminThread = new ClientAdminThread(adminCommandBuffer, recvBuffer, sendBuffer, bufferUsage);
+            adminThread = new ClientAdminThread(adminCommandBuffer, recvBuffer, sendBuffer, bufferUsage, sendNotifiers, recvNotifiers);
         }
         catch (Exception e)
         {
@@ -109,8 +112,7 @@ public final class Aeron
     {
         final String destination = builder.destination.destination();
         builder.adminThread(new ClientAdminThreadCursor(sessionId, adminCommandBuffer));
-        final Long2ObjectHashMap<TermBufferNotifier> notifierMap = getOrDefault(bufferNotifiers, destination, dest -> new Long2ObjectHashMap<>());
-        return new Source(sessionId, notifierMap, builder);
+        return new Source(sessionId, getNotifier(destination, sendNotifiers), builder);
     }
 
     /**
@@ -150,11 +152,13 @@ public final class Aeron
      */
     public Receiver newReceiver(final Receiver.Builder builder)
     {
-        return new Receiver(builder);
+        final String destination = builder.destination.destination();
+        return new Receiver(getNotifier(destination, recvNotifiers), builder);
     }
 
     /**
      * Create a new receiver that will listen on a given destination, etc.
+     *
      * @param block to fill in receiver builder
      * @return new receiver
      */
@@ -162,9 +166,16 @@ public final class Aeron
     {
         Receiver.Builder builder = new Receiver.Builder();
         block.accept(builder);
-
-        return new Receiver(builder);
+        return newReceiver(builder);
     }
+
+    private Long2ObjectHashMap<TermBufferNotifier> getNotifier(
+            final String destination,
+            final Map<String, Long2ObjectHashMap<TermBufferNotifier>> notifiers)
+    {
+        return getOrDefault(notifiers, destination, dest -> new Long2ObjectHashMap<>());
+    }
+
 
     public static class Builder
     {

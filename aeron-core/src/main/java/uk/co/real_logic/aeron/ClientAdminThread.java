@@ -166,10 +166,6 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
 
     /* callbacks from MediaDriver */
 
-    public void onStatusMessage(final HeaderFlyweight header)
-    {
-    }
-
     public void onErrorResponse(final int code, final byte[] message)
     {
     }

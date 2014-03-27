@@ -102,16 +102,6 @@ public interface MediaDriverFacade
     /* callbacks from MediaDriver */
 
     /**
-     * Handle a Status Message (SM) from a receiver back to a source
-     *
-     * May not be necessary to have this Aeron header type pushed back to source applications
-     *
-     * @see LibraryFacade#sendStatusMessage(HeaderFlyweight)
-     * @param header flyweight for the packet (TODO: make this its own subclass of HeaderFlyweight)
-     */
-    void onStatusMessage(final HeaderFlyweight header);
-
-    /**
      * Handle an error response from the media driver
      *
      * This is an error in response to a command.

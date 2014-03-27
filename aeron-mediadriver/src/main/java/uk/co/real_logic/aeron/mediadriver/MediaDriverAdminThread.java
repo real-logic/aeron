@@ -75,12 +75,6 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     }
 
     @Override
-    public void sendStatusMessage(final HeaderFlyweight header)
-    {
-        // TODO: send SM on through to control buffer
-    }
-
-    @Override
     public void sendErrorResponse(final int code, final byte[] message)
     {
         // TODO: construct error response for control buffer and write it in

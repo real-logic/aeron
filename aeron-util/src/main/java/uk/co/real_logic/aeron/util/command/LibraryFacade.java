@@ -100,17 +100,6 @@ public interface LibraryFacade
     /* notifications to library/application */
 
     /**
-     * Notify the library of a received Status Message (SM)
-     *
-     * This is an Aeron control frame.
-     *
-     * @see MediaDriverFacade#onStatusMessage(uk.co.real_logic.aeron.util.protocol.HeaderFlyweight)
-     *
-     * @param header flyweight for the SM
-     */
-    void sendStatusMessage(final HeaderFlyweight header);
-
-    /**
      * Notify the library of an error for a request that it sent previously
      *
      * @see MediaDriverFacade#onErrorResponse(int, byte[])

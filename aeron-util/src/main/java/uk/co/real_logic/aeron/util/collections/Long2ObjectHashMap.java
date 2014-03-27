@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.util.collections;
 import uk.co.real_logic.aeron.util.BitUtil;
 
 import java.util.*;
+import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
 
@@ -189,6 +190,17 @@ public class Long2ObjectHashMap<V>
         }
 
         return null;
+    }
+
+    public V getOrDefault(long key, Supplier<V> supplier)
+    {
+        V value = get(key);
+        if (value == null)
+        {
+            value = supplier.get();
+            put(key, value);
+        }
+        return value;
     }
 
     /**

@@ -45,20 +45,8 @@ public class TripleLevelMap<V>
 
     public V put(final long sessionId, final long channelId, final long termId, final V value)
     {
-        Long2ObjectHashMap<Long2ObjectHashMap<V>> channelMap = map.get(sessionId);
-        if (null == channelMap)
-        {
-            channelMap = new Long2ObjectHashMap<>();
-            map.put(sessionId, channelMap);
-        }
-
-        Long2ObjectHashMap<V> termMap = channelMap.get(channelId);
-        if (null == termMap)
-        {
-            termMap = new Long2ObjectHashMap<>();
-            channelMap.put(channelId, termMap);
-        }
-
+        Long2ObjectHashMap<Long2ObjectHashMap<V>> channelMap = map.getOrDefault(sessionId, Long2ObjectHashMap::new);
+        Long2ObjectHashMap<V> termMap = channelMap.getOrDefault(channelId, Long2ObjectHashMap::new);
         return termMap.put(termId, value);
     }
 

@@ -15,10 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.admin.BasicBufferUsageStrategy;
-import uk.co.real_logic.aeron.admin.BufferUsageStrategy;
-import uk.co.real_logic.aeron.admin.ClientAdminThread;
-import uk.co.real_logic.aeron.admin.TermBufferNotifier;
+import uk.co.real_logic.aeron.admin.*;
 import uk.co.real_logic.aeron.util.AdminBufferStrategy;
 import uk.co.real_logic.aeron.util.BasicAdminBufferStrategy;
 import uk.co.real_logic.aeron.util.Directories;
@@ -41,6 +38,7 @@ import static uk.co.real_logic.aeron.util.collections.CollectionUtil.getOrDefaul
 public final class Aeron
 {
     // factory methods
+
     /**
      * Creates an media driver associated with this Aeron instance that can be used to create sources and receivers on.
      *
@@ -51,7 +49,6 @@ public final class Aeron
     {
         return new Aeron(builder);
     }
-
     /**
      * Creates multiple media drivers associated with multiple Aeron instances that can be used to create sources
      * and receivers.
@@ -71,6 +68,8 @@ public final class Aeron
         return aerons;
     }
 
+    private final long sessionId;
+    private final ManyToOneRingBuffer adminCommandBuffer;
     private final ErrorHandler errorHandler;
     private final ClientAdminThread adminThread;
     private final AdminBufferStrategy adminBuffers;
@@ -80,11 +79,12 @@ public final class Aeron
     {
         errorHandler = builder.errorHandler;
         adminBuffers = builder.adminBuffers;
+        sessionId = builder.sessionId;
         bufferNotifiers = new HashMap<>();
+        adminCommandBuffer = new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocate(256)));
 
         try
         {
-            final RingBuffer adminCommandBuffer = new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocate(256)));
             final RingBuffer recvBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toApi()));
             final RingBuffer sendBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toMediaDriver()));
             final BufferUsageStrategy bufferUsage = new BasicBufferUsageStrategy(Directories.DATA_DIR);
@@ -107,9 +107,10 @@ public final class Aeron
      */
     public Source newSource(final Source.Builder builder)
     {
-        String destination = builder.destination.destination();
-        Long2ObjectHashMap<TermBufferNotifier> notifierMap = getOrDefault(bufferNotifiers, destination, dest -> new Long2ObjectHashMap<>());
-        return new Source(this, notifierMap, builder);
+        final String destination = builder.destination.destination();
+        builder.adminThread(new ClientAdminCursor(sessionId, adminCommandBuffer));
+        final Long2ObjectHashMap<TermBufferNotifier> notifierMap = getOrDefault(bufferNotifiers, destination, dest -> new Long2ObjectHashMap<>());
+        return new Source(sessionId, notifierMap, builder);
     }
 
     /**
@@ -167,6 +168,7 @@ public final class Aeron
 
     public static class Builder
     {
+        private long sessionId;
         private ErrorHandler errorHandler;
         private AdminBufferStrategy adminBuffers;
 
@@ -175,6 +177,12 @@ public final class Aeron
             errorHandler = new DummyErrorHandler();
             // TODO: decide on where admin buffers get located and remove buffer size if needed
             adminBuffers = new BasicAdminBufferStrategy(new File(Directories.ADMIN_DIR), 0, false);
+        }
+
+        public Builder sessionId(final long sessionId)
+        {
+            this.sessionId = sessionId;
+            return this;
         }
 
         public Builder errorHandler(ErrorHandler errorHandler)

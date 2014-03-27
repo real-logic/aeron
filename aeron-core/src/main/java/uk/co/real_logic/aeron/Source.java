@@ -15,9 +15,9 @@
  */
 package uk.co.real_logic.aeron;
 
+import uk.co.real_logic.aeron.admin.ClientAdminCursor;
 import uk.co.real_logic.aeron.admin.TermBufferNotifier;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
-import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
 
 /**
  * Aeron source
@@ -27,20 +27,18 @@ import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
  */
 public class Source implements AutoCloseable
 {
-    private final Aeron aeron;
+    private final long sessionId;
     private final Long2ObjectHashMap<TermBufferNotifier> notifierMap;
     private final Destination destination;
-    private final long sessionId;
-    private final MediaDriverFacade mediaDriver;
+    private final ClientAdminCursor adminThread;
 
     // called by Aeron to create new sessions
-    public Source(final Aeron aeron, final Long2ObjectHashMap<TermBufferNotifier> notifierMap, final Builder builder)
+    public Source(final long sessionId, final Long2ObjectHashMap<TermBufferNotifier> notifierMap, final Builder builder)
     {
-        this.aeron = aeron;
+        this.sessionId = sessionId;
         this.notifierMap = notifierMap;
         this.destination = builder.destination;
-        this.sessionId = builder.sessionId;
-        this.mediaDriver = builder.mediaDriver;
+        this.adminThread = builder.adminThread;
     }
 
     /**
@@ -52,8 +50,8 @@ public class Source implements AutoCloseable
     {
         final TermBufferNotifier bufferNotifier = new TermBufferNotifier();
         notifierMap.put(channelId, bufferNotifier);
-        mediaDriver.sendAddChannel(destination.destination(), sessionId, channelId);
-        return new Channel(this, mediaDriver, bufferNotifier, channelId);
+        adminThread.sendAddChannel(destination.destination(), channelId);
+        return new Channel(destination.destination(), adminThread, bufferNotifier, channelId);
     }
 
     /**
@@ -95,8 +93,7 @@ public class Source implements AutoCloseable
     {
         Destination destination;
 
-        private long sessionId = 0;
-        private MediaDriverFacade mediaDriver;
+        private ClientAdminCursor adminThread;
 
         public Builder()
         {
@@ -108,15 +105,9 @@ public class Source implements AutoCloseable
             return this;
         }
 
-        public Builder sessionId(final long sessionId)
+        public Builder adminThread(final ClientAdminCursor adminThread)
         {
-            this.sessionId = sessionId;
-            return this;
-        }
-
-        public Builder mediaDriverFacade(final MediaDriverFacade mediaDriver)
-        {
-            this.mediaDriver = mediaDriver;
+            this.adminThread = adminThread;
             return this;
         }
     }

@@ -15,8 +15,8 @@
  */
 package uk.co.real_logic.aeron;
 
+import uk.co.real_logic.aeron.admin.ClientAdminCursor;
 import uk.co.real_logic.aeron.admin.TermBufferNotifier;
-import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
 
 import java.nio.ByteBuffer;
 
@@ -25,17 +25,20 @@ import java.nio.ByteBuffer;
  */
 public class Channel implements AutoCloseable
 {
-    private final Source source;
-    private final MediaDriverFacade mediaDriver;
+    private final String destination;
+    private final ClientAdminCursor adminThread;
     private final TermBufferNotifier bufferNotifier;
     private final long channelId;
 
     private long currentTermId;
 
-    public Channel(final Source source, final MediaDriverFacade mediaDriver, final TermBufferNotifier bufferNotifier, final long channelId)
+    public Channel(final String destination,
+                   final ClientAdminCursor adminCursor,
+                   final TermBufferNotifier bufferNotifier,
+                   final long channelId)
     {
-        this.source = source;
-        this.mediaDriver = mediaDriver;
+        this.destination = destination;
+        this.adminThread = adminCursor;
         this.bufferNotifier = bufferNotifier;
         this.channelId = channelId;
         currentTermId = -1L;
@@ -88,7 +91,7 @@ public class Channel implements AutoCloseable
 
     private void requestTerm(final long termId)
     {
-        // TODO: message
+        adminThread.sendRequestTerm(destination, channelId, termId);
     }
 
     private void startTerm()
@@ -108,8 +111,7 @@ public class Channel implements AutoCloseable
     @Override
     public void close() throws Exception
     {
-        String destinationString = source.destination().destination();
-        mediaDriver.sendRemoveChannel(destinationString, source.sessionId(), channelId);
+        adminThread.sendRemoveChannel(destination, channelId);
     }
 
 }

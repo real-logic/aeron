@@ -15,22 +15,48 @@
  */
 package uk.co.real_logic.aeron.admin;
 
+import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
+
 /**
  * Separates the concern of talking the media driver protocol away from the rest of the API.
  *
  * Writes messages into the Client Admin Thread's admin buffer.
  */
-public interface ClientAdminCursor
+public class ClientAdminCursor
 {
 
-    void sendAddChannel(final String destination, final long channelId);
+    private final long sessionId;
+    private final RingBuffer adminThreadCommandBuffer;
 
-    void sendRemoveChannel(final String destination, final long channelId);
+    public ClientAdminCursor(final long sessionId, final RingBuffer adminThreadCommandBuffer)
+    {
+        this.sessionId = sessionId;
+        this.adminThreadCommandBuffer = adminThreadCommandBuffer;
+    }
 
-    void sendAddReceiver(final String destination, final long[] channelIdList);
+    public void sendAddChannel(final String destination, final long channelId)
+    {
 
-    void sendRemoveReceiver(final String destination, final long[] channelIdList);
+    }
 
-    void sendRequestTerm(final String destination, final long channelId, final long termId);
+    public void sendRemoveChannel(final String destination, final long channelId)
+    {
+
+    }
+
+    public void sendAddReceiver(final String destination, final long[] channelIdList)
+    {
+
+    }
+
+    public void sendRemoveReceiver(final String destination, final long[] channelIdList)
+    {
+
+    }
+
+    public void sendRequestTerm(final String destination, final long channelId, final long termId)
+    {
+
+    }
 
 }

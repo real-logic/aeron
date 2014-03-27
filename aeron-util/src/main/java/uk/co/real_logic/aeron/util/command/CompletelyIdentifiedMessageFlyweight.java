@@ -19,11 +19,9 @@ import uk.co.real_logic.aeron.util.Flyweight;
 
 import java.nio.ByteOrder;
 
-import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
-
 /**
- * Control message flyweight for any message that just needs to
- * represent a Triple of Session ID/Channel Id/Term ID. These are:
+ * Control message flyweight for any message that needs to
+ * represent a Triple of Session ID/Channel Id/Term ID and a destination. These are:
  *
  * <ul>
  *     <li>Request Term</li>
@@ -41,12 +39,18 @@ import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
  * +---------------------------------------------------------------+
  * |                           Term ID                             |
  * +---------------------------------------------------------------+
+ * |      Destination Length       |   Destination               ...
+ * |                                                             ...
+ * +---------------------------------------------------------------+
  */
-public class TripletMessageFlyweight extends Flyweight
+public class CompletelyIdentifiedMessageFlyweight extends Flyweight
 {
     private static final int SESSION_ID_OFFSET = 0;
     private static final int CHANNEL_ID_FIELD_OFFSET = 4;
     private static final int TERM_ID_FIELD_OFFSET = 8;
+    private static final int DESTINATION_OFFSET = 12;
+
+    private int lengthOfDestination;
 
     /**
      * return session id field
@@ -62,7 +66,7 @@ public class TripletMessageFlyweight extends Flyweight
      * @param sessionId field value
      * @return flyweight
      */
-    public TripletMessageFlyweight sessionId(final long sessionId)
+    public CompletelyIdentifiedMessageFlyweight sessionId(final long sessionId)
     {
         uint32Put(offset + SESSION_ID_OFFSET, (int)sessionId, ByteOrder.LITTLE_ENDIAN);
         return this;
@@ -84,7 +88,7 @@ public class TripletMessageFlyweight extends Flyweight
      * @param channelId field value
      * @return flyweight
      */
-    public TripletMessageFlyweight channelId(final long channelId)
+    public CompletelyIdentifiedMessageFlyweight channelId(final long channelId)
     {
         uint32Put(offset + CHANNEL_ID_FIELD_OFFSET, channelId, ByteOrder.LITTLE_ENDIAN);
         return this;
@@ -106,15 +110,46 @@ public class TripletMessageFlyweight extends Flyweight
      * @param termId field value
      * @return flyweight
      */
-    public TripletMessageFlyweight termId(final long termId)
+    public CompletelyIdentifiedMessageFlyweight termId(final long termId)
     {
         uint32Put(offset + TERM_ID_FIELD_OFFSET, termId, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
-    public static int length()
+    /**
+     * return destination field
+     *
+     * @return destination field
+     */
+    public String destination()
     {
-        return TERM_ID_FIELD_OFFSET + SIZE_OF_INT;
+        return stringGet(offset + DESTINATION_OFFSET, ByteOrder.LITTLE_ENDIAN);
+    }
+
+    /**
+     * set destination field
+     *
+     * @param destination field value
+     * @return flyweight
+     */
+    public CompletelyIdentifiedMessageFlyweight destination(final String destination)
+    {
+        lengthOfDestination = stringPut(offset + DESTINATION_OFFSET,
+                                        destination,
+                                        ByteOrder.LITTLE_ENDIAN);
+        return this;
+    }
+
+    /**
+     * Get the length of the current message
+     *
+     * NB: must be called after the data is written in order to be accurate.
+     *
+     * @return the length of the current message
+     */
+    public int length()
+    {
+        return DESTINATION_OFFSET + lengthOfDestination;
     }
 
 }

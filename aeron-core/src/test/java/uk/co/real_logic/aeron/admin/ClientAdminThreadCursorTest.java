@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.admin;
 import org.junit.Test;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.TripletMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.EventHandler;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
@@ -86,16 +86,17 @@ public class ClientAdminThreadCursorTest
     @Test
     public void threadSendsRequestTermBufferMessage()
     {
-        thread.sendRequestTerm(2L, 3L);
+        thread.sendRequestTerm(2L, 3L, DESTINATION);
 
         assertReadsOneMessage((eventTypeId, buffer, index, length) ->
         {
-            TripletMessageFlyweight requestTermBuffer = new TripletMessageFlyweight();
+            CompletelyIdentifiedMessageFlyweight requestTermBuffer = new CompletelyIdentifiedMessageFlyweight();
             requestTermBuffer.reset(buffer, index);
 
             assertThat(eventTypeId, is(REQUEST_TERM));
             assertThat(requestTermBuffer.sessionId(), is(1L));
             assertThat(requestTermBuffer.channelId(), is(2L));
+            assertThat(requestTermBuffer.destination(), is(DESTINATION));
             assertThat(requestTermBuffer.termId(), is(3L));
         });
     }

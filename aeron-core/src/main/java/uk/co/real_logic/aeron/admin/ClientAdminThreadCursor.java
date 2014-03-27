@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.admin;
 
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.TripletMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
@@ -40,7 +40,7 @@ public class ClientAdminThreadCursor
     private final AtomicBuffer writeBuffer;
     private final ChannelMessageFlyweight channelMessage;
     private final ReceiverMessageFlyweight removeReceiverMessage;
-    private final TripletMessageFlyweight requestTermMessage;
+    private final CompletelyIdentifiedMessageFlyweight requestTermMessage;
 
     public ClientAdminThreadCursor(final long sessionId, final RingBuffer adminThreadCommandBuffer)
     {
@@ -49,7 +49,7 @@ public class ClientAdminThreadCursor
         this.writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
         this.channelMessage = new ChannelMessageFlyweight();
         this.removeReceiverMessage = new ReceiverMessageFlyweight();
-        this.requestTermMessage = new TripletMessageFlyweight();
+        this.requestTermMessage = new CompletelyIdentifiedMessageFlyweight();
 
         channelMessage.reset(writeBuffer, 0);
         removeReceiverMessage.reset(writeBuffer, 0);
@@ -94,12 +94,13 @@ public class ClientAdminThreadCursor
         adminThreadCommandBuffer.write(eventTypeId, writeBuffer, 0, removeReceiverMessage.length());
     }
 
-    public void sendRequestTerm(final long channelId, final long termId)
+    public void sendRequestTerm(final long channelId, final long termId, final String destination)
     {
         requestTermMessage.sessionId(sessionId);
         requestTermMessage.channelId(channelId);
         requestTermMessage.termId(termId);
-        adminThreadCommandBuffer.write(REQUEST_TERM, writeBuffer, 0, TripletMessageFlyweight.length());
+        requestTermMessage.destination(destination);
+        adminThreadCommandBuffer.write(REQUEST_TERM, writeBuffer, 0, requestTermMessage.length());
     }
 
 }

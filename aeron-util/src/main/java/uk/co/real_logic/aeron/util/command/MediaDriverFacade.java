@@ -127,9 +127,13 @@ public interface MediaDriverFacade
     /**
      * Handle a response from the media driver of returning a list of filenames for buffers
      *
-     * @see LibraryFacade#sendNewBufferNotification(long, long, long, boolean)
+     * @see LibraryFacade#sendNewBufferNotification(long, long, long, boolean, String)
      *
      */
-    void onNewBufferNotification(final long sessionId, final long channelId, final long termId, final boolean isSender);
+    void onNewBufferNotification(final long sessionId,
+                                 final long channelId,
+                                 final long termId,
+                                 final boolean isSender,
+                                 final String destination);
 
 }

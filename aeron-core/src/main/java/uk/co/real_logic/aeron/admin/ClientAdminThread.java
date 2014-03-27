@@ -20,7 +20,7 @@ import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
 import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.TripletMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
@@ -57,9 +57,9 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
     // Control protocol Flyweights
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
     private final ReceiverMessageFlyweight removeReceiverMessage = new ReceiverMessageFlyweight();
-    private final TripletMessageFlyweight requestTermMessage = new TripletMessageFlyweight();
+    private final CompletelyIdentifiedMessageFlyweight requestTermMessage = new CompletelyIdentifiedMessageFlyweight();
 
-    private final TripletMessageFlyweight bufferNotificationMessage = new TripletMessageFlyweight();
+    private final CompletelyIdentifiedMessageFlyweight bufferNotificationMessage = new CompletelyIdentifiedMessageFlyweight();
 
     public ClientAdminThread(final long sessionId,
                              final RingBuffer commandBuffer,
@@ -109,7 +109,8 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
                     onNewBufferNotification(bufferNotificationMessage.sessionId(),
                                             bufferNotificationMessage.channelId(),
                                             bufferNotificationMessage.termId(),
-                                            isSender);
+                                            isSender,
+                                            bufferNotificationMessage.destination());
                     return;
             }
         });
@@ -160,7 +161,7 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
     {
     }
 
-    public void onNewBufferNotification(final long sessionId, final long channelId, final long termId, final boolean isSender)
+    public void onNewBufferNotification(final long sessionId, final long channelId, final long termId, final boolean isSender, final String destination)
     {
         if (sessionId == this.sessionId)
         {

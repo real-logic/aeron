@@ -90,7 +90,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     public void sendNewBufferNotification(final long sessionId,
                                           final long channelId,
                                           final long termId,
-                                          final boolean isSender)
+                                          final boolean isSender, final String destination)
     {
 
     }
@@ -117,7 +117,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             SenderThread.addNewTermEvent(senderThreadCommandBuffer, sessionId, channelId, termId);
 
             // tell the client admin thread of the new buffer
-            sendNewBufferNotification(sessionId, channelId, termId, true);
+            sendNewBufferNotification(sessionId, channelId, termId, true, destination);
         }
         catch (Exception e)
         {

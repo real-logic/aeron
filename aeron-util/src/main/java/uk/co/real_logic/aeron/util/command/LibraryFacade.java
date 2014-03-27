@@ -122,12 +122,12 @@ public interface LibraryFacade
     /**
      * Notify the library of new term buffers.
      *
-     * @see MediaDriverFacade#onNewBufferNotification(long, long, long, boolean)
+     * @see MediaDriverFacade#onNewBufferNotification(long, long, long, boolean, String)
      *
      */
     void sendNewBufferNotification(final long sessionId,
                                    final long channelId,
                                    final long termId,
-                                   final boolean isSender);
+                                   final boolean isSender, final String destination);
 
 }

@@ -91,8 +91,7 @@ public class Channel implements AutoCloseable
 
     private void requestTerm(final long termId)
     {
-        //adminThread.sendRequestTerm(destination, channelId, termId);
-        adminThread.sendRequestTerm(channelId, termId);
+        adminThread.sendRequestTerm(channelId, termId, destination);
     }
 
     private void startTerm()

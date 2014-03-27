@@ -38,11 +38,9 @@ public class Channel implements AutoCloseable
         this.mediaDriver = mediaDriver;
         this.bufferNotifier = bufferNotifier;
         this.channelId = channelId;
-        // TODO: think through the initialisation case
-        currentTermId = 0L;
+        currentTermId = -1L;
         requestTerm(0L);
-        requestTerm(1L);
-        startTerm();
+        rollTerm();
     }
 
     public long channelId()

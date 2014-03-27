@@ -15,8 +15,6 @@
  */
 package uk.co.real_logic.aeron.util.command;
 
-import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
-
 /**
  * Facade of MediaDriver for use by Library to send/receiver control commands/responses
  *
@@ -95,7 +93,6 @@ public interface MediaDriverFacade
      * Request the media driver should setup state for the next Term Buffer
      *
      * @see LibraryFacade#onRequestTerm(long, long, long)
-     *
      */
     void sendRequestTerm(final long sessionId, final long channelId, final long termId);
 

@@ -27,7 +27,7 @@ public class RcvChannelState
 {
     private final long channelId;
     private int referenceCount;
-    private final Map<Long, RcvSessionState> sessionStateMap;
+    private final Long2ObjectHashMap<RcvSessionState> sessionStateMap;
 
     public RcvChannelState(final long channelId)
     {

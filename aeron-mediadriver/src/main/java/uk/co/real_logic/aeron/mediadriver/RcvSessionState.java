@@ -28,7 +28,7 @@ public class RcvSessionState
 {
     private final InetSocketAddress srcAddr;
     private final long sessionId;
-    private final Map<Long, ByteBuffer> termStateMap;
+    private final Long2ObjectHashMap<ByteBuffer> termStateMap;
 
     public RcvSessionState(final long sessionId, final InetSocketAddress srcAddr)
     {

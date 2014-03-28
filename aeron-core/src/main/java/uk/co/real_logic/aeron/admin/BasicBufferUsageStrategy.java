@@ -17,15 +17,11 @@ package uk.co.real_logic.aeron.admin;
 
 import uk.co.real_logic.aeron.util.FileMappingConvention;
 import uk.co.real_logic.aeron.util.IoUtil;
-import uk.co.real_logic.aeron.util.collections.TripleLevelMap;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
-
-import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 
 /**
  * Basic buffer usage where each Term is a file.

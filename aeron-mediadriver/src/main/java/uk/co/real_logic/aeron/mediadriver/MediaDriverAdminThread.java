@@ -33,9 +33,9 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
 {
     private final Map<UdpDestination, SrcFrameHandler> srcDestinationMap = new HashMap<>();
     private final RingBuffer commandBuffer;
-    private final RingBuffer senderThreadCommandBuffer;
     private final ReceiverThreadCursor receiverThreadCursor;
     private final ReceiverThread receiverThread;
+    private final SenderThreadCursor senderThreadCursor;
     private final SenderThread senderThread;
     private final BufferManagementStrategy bufferManagementStrategy;
     private final RingBuffer adminReceiveBuffer;
@@ -45,7 +45,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
                                   final SenderThread senderThread)
     {
         this.commandBuffer = builder.adminThreadCommandBuffer();
-        this.senderThreadCommandBuffer = builder.senderThreadCommandBuffer();
+        this.senderThreadCursor = new SenderThreadCursor(builder.senderThreadCommandBuffer());
         this.receiverThreadCursor = new ReceiverThreadCursor(builder.receiverThreadCommandBuffer(), receiverThread);
         this.bufferManagementStrategy = builder.bufferManagementStrategy();
         this.receiverThread = receiverThread;
@@ -120,7 +120,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
 
             if (null == src)
             {
-                src = new SrcFrameHandler(srcDestination, receiverThread, commandBuffer, senderThreadCommandBuffer);
+                src = new SrcFrameHandler(srcDestination, receiverThread, commandBuffer, senderThreadCursor);
                 srcDestinationMap.put(srcDestination, src);
             }
 
@@ -128,7 +128,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             bufferManagementStrategy.addSenderTerm(sessionId, channelId, termId);
 
             // tell senderThread about the new buffer that was created
-            SenderThread.addNewTermEvent(senderThreadCommandBuffer, sessionId, channelId, termId);
+            senderThreadCursor.addNewTermEvent(sessionId, channelId, termId);
 
             // tell the client admin thread of the new buffer
             sendNewBufferNotification(sessionId, channelId, termId, true, destination);
@@ -157,7 +157,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             bufferManagementStrategy.removeSenderChannel(sessionId, channelId);
 
             // inform SenderThread
-            SenderThread.addRemoveChannelEvent(senderThreadCommandBuffer, sessionId, channelId);
+            senderThreadCursor.addRemoveChannelEvent(sessionId, channelId);
 
             // if no more channels, then remove framehandler and close it
             if (0 == bufferManagementStrategy.countChannels(sessionId))
@@ -190,7 +190,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             bufferManagementStrategy.removeSenderTerm(sessionId, channelId, 0);
 
             // inform SenderThread
-            SenderThread.addRemoveTermEvent(senderThreadCommandBuffer, sessionId, channelId, termId);
+            senderThreadCursor.addRemoveTermEvent(sessionId, channelId, termId);
 
             // if no more channels, then remove framehandler and close it
             if (0 == bufferManagementStrategy.countChannels(sessionId))

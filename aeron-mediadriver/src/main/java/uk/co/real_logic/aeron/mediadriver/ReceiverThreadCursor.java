@@ -22,9 +22,7 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import java.nio.ByteBuffer;
 
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ADD_RECEIVER;
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.NEW_RECEIVE_BUFFER_NOTIFICATION;
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.REMOVE_RECEIVER;
+import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 
 /**
  * Cursor for writing into the Receiver Thread's command buffer.

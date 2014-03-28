@@ -44,34 +44,6 @@ public class SenderThread extends ClosableThread
         // TODO: handle commands added to command buffer (call onNewSenderTerm, onStatusMessage, etc.)
     }
 
-    public static void addNewTermEvent(final RingBuffer buffer,
-                                       final long sessionId,
-                                       final long channelId,
-                                       final long termId)
-    {
-
-    }
-
-    public static void addRemoveTermEvent(final RingBuffer buffer,
-                                          final long sessionId,
-                                          final long channelId,
-                                          final long termId)
-    {
-
-    }
-
-    public static void addRemoveChannelEvent(final RingBuffer buffer,
-                                             final long sessionId,
-                                             final long channelId)
-    {
-
-    }
-
-    public static void addStatusMessageEvent(final RingBuffer buffer, final HeaderFlyweight header)
-    {
-        // TODO: serialize frame on to command buffer
-    }
-
     private void onNewTermEvent(final long sessionId, final long channelId, final long termId) throws Exception
     {
         final ByteBuffer buffer = bufferManagementStrategy.lookupSenderTerm(sessionId, channelId, termId);

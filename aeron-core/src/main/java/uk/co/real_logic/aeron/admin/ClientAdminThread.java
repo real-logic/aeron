@@ -92,7 +92,7 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
     {
         commandBuffer.read((eventTypeId, buffer, index, length) ->
         {
-            // TODO
+
         });
     }
 
@@ -170,13 +170,22 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
 
         try
         {
-            bufferUsage.onTermAdded(channelId, termId, isSender);
+            final ByteBuffer buffer = bufferUsage.onTermAdded(channelId, termId, isSender);
+            final Long2ObjectHashMap<TermBufferNotifier> channelNotifiers = getNotifiers(isSender).get(destination);
+
+            channelNotifiers.get(channelId)
+                            .newTermBufferMapped(termId, buffer);
         }
         catch (Exception e)
         {
             // TODO: establish correct client error handling strategy
             e.printStackTrace();
         }
+    }
+
+    private Map<String, Long2ObjectHashMap<TermBufferNotifier>> getNotifiers(final boolean isSender)
+    {
+        return isSender ? sendNotifiers : recvNotifiers;
     }
 
 }

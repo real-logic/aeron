@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.admin;
 
+import sun.nio.ch.DirectBuffer;
 import uk.co.real_logic.aeron.util.FileMappingConvention;
 import uk.co.real_logic.aeron.util.IoUtil;
 
@@ -40,8 +41,6 @@ public class BasicBufferUsageStrategy implements BufferUsageStrategy
     @Override
     public ByteBuffer onTermAdded(final long channelId, final long termId, boolean isSender) throws IOException
     {
-        /*TripleLevelMap<ByteBuffer> termMap = isSender ? srcTermMap : rcvTermMap;
-        return mapTerm(senderDir, sessionId, channelId, termId);*/
         final File rootDir = isSender ? fileConventions.senderDir() : fileConventions.receiverDir();
         return mapTerm(channelId, termId, rootDir);
     }

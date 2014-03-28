@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.admin;
 
-import sun.nio.ch.DirectBuffer;
 import uk.co.real_logic.aeron.util.FileMappingConvention;
 import uk.co.real_logic.aeron.util.IoUtil;
 

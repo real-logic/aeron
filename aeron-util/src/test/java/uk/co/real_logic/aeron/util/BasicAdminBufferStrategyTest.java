@@ -31,18 +31,6 @@ public class BasicAdminBufferStrategyTest
     private final BasicAdminBufferStrategy mediaDriverStrategy = new BasicAdminBufferStrategy(ADMIN_DIR, 5, true);
     private final BasicAdminBufferStrategy apiStrategy = new BasicAdminBufferStrategy(ADMIN_DIR, 10, false);
 
-    @Test(expected = IllegalStateException.class)
-    public void mediaDriverDoesntMapApiBuffer() throws IOException
-    {
-        mediaDriverStrategy.toApi();
-    }
-
-    @Test(expected = IllegalStateException.class)
-    public void apiDoesntMapMediaDriverBuffer() throws IOException
-    {
-        apiStrategy.toMediaDriver();
-    }
-
     @Test
     public void mediaDriverBuffersAreTheSame() throws IOException
     {

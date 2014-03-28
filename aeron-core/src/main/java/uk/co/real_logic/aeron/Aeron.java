@@ -188,7 +188,7 @@ public final class Aeron
         {
             errorHandler = new DummyErrorHandler();
             // TODO: decide on where admin buffers get located and remove buffer size if needed
-            adminBuffers = new BasicAdminBufferStrategy(new File(Directories.ADMIN_DIR), 0, false);
+            adminBuffers = new BasicAdminBufferStrategy(Directories.ADMIN_DIR, 0, false);
         }
 
         public Builder sessionId(final long sessionId)

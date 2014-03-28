@@ -18,7 +18,7 @@ public class BasicAdminBufferStrategy implements AdminBufferStrategy
     private final boolean isMediaDriver;
     private final int bufferSize;
 
-    public BasicAdminBufferStrategy(final File adminDir, final int bufferSize, final boolean isMediaDriver)
+    public BasicAdminBufferStrategy(final String adminDir, final int bufferSize, final boolean isMediaDriver)
     {
         this.bufferSize = bufferSize;
         toMediaDriver = new File(adminDir, MEDIA_DRIVER_FILE);

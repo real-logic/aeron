@@ -18,6 +18,8 @@ package uk.co.real_logic.aeron.mediadriver;
 import uk.co.real_logic.aeron.util.ClosableThread;
 import uk.co.real_logic.aeron.util.command.ErrorCode;
 import uk.co.real_logic.aeron.util.command.LibraryFacade;
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
@@ -36,6 +38,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     private final ReceiverThread receiverThread;
     private final SenderThread senderThread;
     private final BufferManagementStrategy bufferManagementStrategy;
+    private final RingBuffer adminReceiveBuffer;
 
     public MediaDriverAdminThread(final MediaDriver.TopologyBuilder builder,
                                   final ReceiverThread receiverThread,
@@ -47,6 +50,14 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         this.bufferManagementStrategy = builder.bufferManagementStrategy();
         this.receiverThread = receiverThread;
         this.senderThread = senderThread;
+        try
+        {
+            this.adminReceiveBuffer = new ManyToOneRingBuffer(new AtomicBuffer(builder.adminBufferStrategy().toMediaDriver()));
+        }
+        catch (Exception e)
+        {
+            throw new IllegalStateException("Unable to create the admin media buffers", e);
+        }
     }
 
     /**
@@ -70,7 +81,10 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     @Override
     public void process()
     {
-        // TODO: read from control buffer and call onAddChannel, etc.
+        adminReceiveBuffer.read((eventTypeId, buffer, index, length) ->
+        {
+            // TODO: call onAddChannel, etc.
+        });
         // TODO: read from commandBuffer and dispatch to onNakEvent, etc.
     }
 

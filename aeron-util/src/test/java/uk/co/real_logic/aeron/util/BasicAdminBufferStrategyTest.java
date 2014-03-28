@@ -15,6 +15,7 @@ public class BasicAdminBufferStrategyTest
 {
 
     private static final File ADMIN_DIR = new File(System.getProperty("java.io.tmpdir"), "ADMIN_DIR");
+    private static final String ADMIN_DIR_PATH = ADMIN_DIR.getAbsolutePath();
 
     @After
     public void cleanupFiles() throws IOException
@@ -28,8 +29,8 @@ public class BasicAdminBufferStrategyTest
         IoUtil.ensureDirectoryExists(ADMIN_DIR, "data");
     }
 
-    private final BasicAdminBufferStrategy mediaDriverStrategy = new BasicAdminBufferStrategy(ADMIN_DIR, 5, true);
-    private final BasicAdminBufferStrategy apiStrategy = new BasicAdminBufferStrategy(ADMIN_DIR, 10, false);
+    private final BasicAdminBufferStrategy mediaDriverStrategy = new BasicAdminBufferStrategy(ADMIN_DIR_PATH, 5, true);
+    private final BasicAdminBufferStrategy apiStrategy = new BasicAdminBufferStrategy(ADMIN_DIR_PATH, 10, false);
 
     @Test
     public void mediaDriverBuffersAreTheSame() throws IOException

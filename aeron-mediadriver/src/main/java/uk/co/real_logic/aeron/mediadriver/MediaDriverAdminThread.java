@@ -23,6 +23,7 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -52,7 +53,8 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         this.senderThread = senderThread;
         try
         {
-            this.adminReceiveBuffer = new ManyToOneRingBuffer(new AtomicBuffer(builder.adminBufferStrategy().toMediaDriver()));
+            final ByteBuffer buffer = builder.adminBufferStrategy().toMediaDriver();
+            this.adminReceiveBuffer = new ManyToOneRingBuffer(new AtomicBuffer(buffer));
         }
         catch (Exception e)
         {

@@ -15,16 +15,16 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.util.BufferStrategy;
-
 import java.nio.ByteBuffer;
 
 /**
  * Interface for encapsulating the strategy of allocating ByteBuffers for Session, Channel, and Term
  */
-public interface BufferManagementStrategy extends BufferStrategy
+public interface BufferManagementStrategy
 {
     void addSenderTerm(final long sessionId, final long channelId, final long termId) throws Exception;
+
+    ByteBuffer lookupSenderTerm(final long sessionId, final long channelId, final long termId) throws Exception;
 
     void removeSenderTerm(final long sessionId, final long channelId, final long termId);
 

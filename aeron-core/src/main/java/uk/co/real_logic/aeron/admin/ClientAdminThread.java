@@ -163,17 +163,19 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
 
     public void onNewBufferNotification(final long sessionId, final long channelId, final long termId, final boolean isSender, final String destination)
     {
-        if (sessionId == this.sessionId)
+        if (sessionId != this.sessionId)
         {
-            try
-            {
-                bufferUsage.onTermAdded(sessionId, channelId, termId, isSender);
-            }
-            catch (Exception e)
-            {
-                // TODO: establish correct client error handling strategy
-                e.printStackTrace();
-            }
+            return;
+        }
+
+        try
+        {
+            bufferUsage.onTermAdded(channelId, termId, isSender);
+        }
+        catch (Exception e)
+        {
+            // TODO: establish correct client error handling strategy
+            e.printStackTrace();
         }
     }
 

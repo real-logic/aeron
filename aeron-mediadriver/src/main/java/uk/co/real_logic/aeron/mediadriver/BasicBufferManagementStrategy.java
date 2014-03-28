@@ -15,9 +15,9 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.util.BasicBufferStrategy;
 import uk.co.real_logic.aeron.util.FileMappingConvention;
 import uk.co.real_logic.aeron.util.IoUtil;
+import uk.co.real_logic.aeron.util.collections.TripleLevelMap;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,15 +31,24 @@ import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 /**
  * Basic buffer management where each Term is a file.
  */
-public class BasicBufferManagementStrategy extends BasicBufferStrategy implements BufferManagementStrategy
+public class BasicBufferManagementStrategy implements BufferManagementStrategy
 {
     private static final long BUFFER_SIZE = 256 * 1024;
 
     private final FileChannel templateFile;
+    private final File senderDir;
+    private final File receiverDir;
+    private final TripleLevelMap<ByteBuffer> srcTermMap;
+    private final TripleLevelMap<ByteBuffer> rcvTermMap;
+    private final FileMappingConvention fileConvention;
 
     public BasicBufferManagementStrategy(final String dataDir)
     {
-        super(dataDir);
+        fileConvention = new FileMappingConvention(dataDir);
+        senderDir = fileConvention.senderDir();
+        receiverDir = fileConvention.receiverDir();
+        srcTermMap = new TripleLevelMap<>();
+        rcvTermMap = new TripleLevelMap<>();
         IoUtil.ensureDirectoryExists(senderDir, "sender");
         IoUtil.ensureDirectoryExists(receiverDir, "receiver");
         templateFile = createTemplateFile(dataDir);
@@ -102,10 +111,35 @@ public class BasicBufferManagementStrategy extends BasicBufferStrategy implement
     @Override
     public void addSenderTerm(final long sessionId, final long channelId, final long termId) throws Exception
     {
-        registerTerm(sessionId, channelId, termId, srcTermMap, () ->
+        ByteBuffer buffer = srcTermMap.get(sessionId, channelId, termId);
+
+        if (null != buffer)
         {
-            return mapTerm(senderDir, sessionId, channelId, termId, BUFFER_SIZE);
-        });
+            throw new IllegalArgumentException(String.format("buffer already exists: %1$s/%2$s/%3$s",
+                    sessionId, channelId, termId));
+        }
+
+        final MappedByteBuffer term = mapTerm(senderDir, sessionId, channelId, termId, BUFFER_SIZE);
+        srcTermMap.put(sessionId, channelId, termId, term);
+    }
+
+    @Override
+    public ByteBuffer lookupSenderTerm(final long sessionId, final long channelId, final long termId) throws Exception
+    {
+        final ByteBuffer buffer = srcTermMap.get(sessionId, channelId, termId);
+
+        if (null == buffer)
+        {
+            throw new IllegalArgumentException(String.format("buffer does not exist: %1$s/%2$s/%3$s",
+                    sessionId, channelId, termId));
+        }
+
+        return buffer;
+    }
+
+    protected interface TermMapper
+    {
+        MappedByteBuffer mapTerm() throws Exception;
     }
 
     @Override

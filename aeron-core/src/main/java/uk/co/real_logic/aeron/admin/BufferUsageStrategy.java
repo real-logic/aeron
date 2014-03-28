@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.admin;
 
-import uk.co.real_logic.aeron.util.BufferStrategy;
+import java.nio.ByteBuffer;
 
 /**
  * Interface for encapsulating the strategy of mapping ByteBuffers for Session, Channel, and Term.
@@ -23,7 +23,7 @@ import uk.co.real_logic.aeron.util.BufferStrategy;
  * This corresponds to BufferManagementStrategy, but doesn't deal with creating the files
  * which need to be mapped.
  */
-public interface BufferUsageStrategy extends BufferStrategy
+public interface BufferUsageStrategy
 {
-    void onTermAdded(final long sessionId, final long channelId, final long termId, boolean isSender) throws Exception;
+    ByteBuffer onTermAdded(final long channelId, final long termId, boolean isSender) throws Exception;
 }

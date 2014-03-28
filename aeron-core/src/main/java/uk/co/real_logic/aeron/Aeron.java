@@ -90,7 +90,7 @@ public final class Aeron
         {
             final RingBuffer recvBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toApi()));
             final RingBuffer sendBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toMediaDriver()));
-            final BufferUsageStrategy bufferUsage = new BasicBufferUsageStrategy(Directories.DATA_DIR);
+            final BufferUsageStrategy bufferUsage = new BasicBufferUsageStrategy(sessionId, Directories.DATA_DIR);
             adminThread = new ClientAdminThread(sessionId, adminCommandBuffer, recvBuffer, sendBuffer, bufferUsage,
                                                 sendNotifiers, recvNotifiers);
         }

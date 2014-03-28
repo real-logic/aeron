@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.admin;
 
-import uk.co.real_logic.aeron.util.BasicBufferStrategy;
 import uk.co.real_logic.aeron.util.FileMappingConvention;
 import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.collections.TripleLevelMap;
@@ -31,33 +30,30 @@ import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 /**
  * Basic buffer usage where each Term is a file.
  */
-public class BasicBufferUsageStrategy extends BasicBufferStrategy implements BufferUsageStrategy
+public class BasicBufferUsageStrategy implements BufferUsageStrategy
 {
-    public BasicBufferUsageStrategy(final String dataDir)
-    {
-        super(dataDir);
-    }
+    private final FileMappingConvention fileConventions;
+    private final long sessionId;
 
-    public MappedByteBuffer mapTerm(final File rootDir, final long sessionId, final long channelId, final long termId) throws IOException
+    public BasicBufferUsageStrategy(final long sessionId, final String dataDir)
     {
-        final File termIdFile = FileMappingConvention.termIdFile(rootDir, sessionId, channelId, termId, false);
-        IoUtil.ensureFileExists(termIdFile, "Term Buffer");
-
-        try (final RandomAccessFile randomAccessFile = new RandomAccessFile(termIdFile, "rw"))
-        {
-            long size = randomAccessFile.length();
-            return randomAccessFile.getChannel().map(READ_WRITE, 0, size);
-        }
+        this.sessionId = sessionId;
+        fileConventions = new FileMappingConvention(dataDir);
     }
 
     @Override
-    public void onTermAdded(final long sessionId, final long channelId, final long termId, boolean isSender) throws Exception
+    public ByteBuffer onTermAdded(final long channelId, final long termId, boolean isSender) throws IOException
     {
-        TripleLevelMap<ByteBuffer> termMap = isSender ? srcTermMap : rcvTermMap;
-        registerTerm(sessionId, channelId, termId, termMap, () ->
-        {
-            return mapTerm(senderDir, sessionId, channelId, termId);
-        });
+        /*TripleLevelMap<ByteBuffer> termMap = isSender ? srcTermMap : rcvTermMap;
+        return mapTerm(senderDir, sessionId, channelId, termId);*/
+        final File rootDir = isSender ? fileConventions.senderDir() : fileConventions.receiverDir();
+        return mapTerm(channelId, termId, rootDir);
+    }
+
+    private MappedByteBuffer mapTerm(final long channelId, final long termId, final File rootDir) throws IOException
+    {
+        final File termIdFile = FileMappingConvention.termIdFile(rootDir, sessionId, channelId, termId, false);
+        return IoUtil.mapExistingFile(termIdFile, "Term Buffer");
     }
 
 }

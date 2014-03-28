@@ -68,31 +68,6 @@ public class ReceiverThread implements AutoCloseable, Runnable
         return key;
     }
 
-    public static void addNewReceiverEvent(final RingBuffer buffer,
-                                           final String destination,
-                                           final long[] channelIdList)
-    {
-        // TODO: add to command buffer
-        // TODO: may need to unblock thread... but can't as we are don't have a ref to object
-    }
-
-    public static void addRemoveReceiverEvent(final RingBuffer buffer,
-                                              final String destination,
-                                              final long[] channelIdList)
-    {
-        // TODO: add to command buffer
-        // TODO: may need to unblock thread... but can't as we are don't have a ref to object
-    }
-
-    public static void addTermBufferCreatedEvent(final RingBuffer buffer,
-                                                 final long sessionId,
-                                                 final long channelId,
-                                                 final long termId)
-    {
-        // TODO: add to command buffer
-        // TODO: may need to unblock thread... but can't as we are don't have a ref to object
-    }
-
     public void addRcvCreateTermBufferEvent(final UdpDestination destination,
                                             final long sessionId,
                                             final long channelId,

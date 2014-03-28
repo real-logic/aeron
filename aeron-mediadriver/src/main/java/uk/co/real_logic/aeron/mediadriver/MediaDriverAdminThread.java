@@ -34,7 +34,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     private final Map<UdpDestination, SrcFrameHandler> srcDestinationMap = new HashMap<>();
     private final RingBuffer commandBuffer;
     private final RingBuffer senderThreadCommandBuffer;
-    private final RingBuffer receiverThreadCommandBuffer;
+    private final ReceiverThreadCursor receiverThreadCursor;
     private final ReceiverThread receiverThread;
     private final SenderThread senderThread;
     private final BufferManagementStrategy bufferManagementStrategy;
@@ -46,7 +46,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     {
         this.commandBuffer = builder.adminThreadCommandBuffer();
         this.senderThreadCommandBuffer = builder.senderThreadCommandBuffer();
-        this.receiverThreadCommandBuffer = builder.receiverThreadCommandBuffer();
+        this.receiverThreadCursor = new ReceiverThreadCursor(builder.receiverThreadCommandBuffer(), receiverThread);
         this.bufferManagementStrategy = builder.bufferManagementStrategy();
         this.receiverThread = receiverThread;
         this.senderThread = senderThread;
@@ -210,7 +210,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     public void onAddReceiver(final String destination, final long[] channelIdList)
     {
         // instruct receiver thread of new framehandler and new channelIdlist for such
-        ReceiverThread.addNewReceiverEvent(receiverThreadCommandBuffer, destination, channelIdList);
+        receiverThreadCursor.addNewReceiverEvent(destination, channelIdList);
 
         // this thread does not add buffers. The RcvFrameHandler handle methods will send an event for this thread
         // to create buffers as needed
@@ -220,7 +220,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     public void onRemoveReceiver(final String destination, final long[] channelIdList)
     {
         // instruct receiver thread to get rid of channels and destination
-        ReceiverThread.addRemoveReceiverEvent(receiverThreadCommandBuffer, destination, channelIdList);
+        receiverThreadCursor.addRemoveReceiverEvent(destination, channelIdList);
     }
 
     @Override
@@ -241,6 +241,6 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     {
         // TODO: create new buffer via strategy, then instruct the receiver thread that we are done and it can grab it
 
-        ReceiverThread.addTermBufferCreatedEvent(receiverThreadCommandBuffer, sessionId, channelId, termId);
+        receiverThreadCursor.addTermBufferCreatedEvent(destination, sessionId, channelId, termId);
     }
 }

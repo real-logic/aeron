@@ -42,7 +42,8 @@ import java.util.concurrent.Executors;
  *     <li><code>aeron.data.dir</code>: Use value as directory name for data buffers.</li>
  *     <li><code>aeron.recv.bytebuffer.size</code>: Use int value as size of buffer for receiving from network.</li>
  *     <li><code>aeron.command.buffer.size</code>: Use int value as size of the command buffers between threads.</li>
- *     <li><code>aeron.admin.buffer.size</code>: Use int value as size of the admin buffers between the media driver and the client.</li>
+ *     <li><code>aeron.admin.buffer.size</code>: Use int value as size of the admin buffers between the media driver
+       and the client.</li>
  * </ul>
  */
 public class MediaDriver
@@ -109,6 +110,7 @@ public class MediaDriver
     {
         private RingBuffer adminThreadCommandBuffer;
         private RingBuffer receiverThreadCommandBuffer;
+        private ReceiverThreadCursor receiverThreadCursor;
         private RingBuffer senderThreadCommandBuffer;
         private BufferManagementStrategy bufferManagementStrategy;
         private AdminBufferStrategy adminBufferStrategy;
@@ -175,5 +177,6 @@ public class MediaDriver
         {
             return adminBufferStrategy;
         }
+
     }
 }

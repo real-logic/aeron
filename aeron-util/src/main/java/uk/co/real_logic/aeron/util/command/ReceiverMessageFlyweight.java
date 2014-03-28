@@ -82,7 +82,7 @@ public class ReceiverMessageFlyweight extends Flyweight
     /**
      * set destination field
      *
-     * Assumes the channel has already been written
+     * Assumes the channel ids have already been written
      *
      * @param destination field value
      * @return flyweight

@@ -19,7 +19,6 @@ import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.Map;
 
 /**
  * State maintained for active sessionIds within a channel for receiver processing

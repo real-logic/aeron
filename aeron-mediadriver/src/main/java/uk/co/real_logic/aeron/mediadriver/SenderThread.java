@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.ClosableThread;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
@@ -29,19 +30,36 @@ public class SenderThread extends ClosableThread
     private final RingBuffer commandBuffer;
     private final RingBuffer adminThreadCommandBuffer;
     private final BufferManagementStrategy bufferManagementStrategy;
+    private final AtomicArray<ByteBuffer> bufferArray;
 
     public SenderThread(final MediaDriver.TopologyBuilder builder)
     {
         this.commandBuffer = builder.senderThreadCommandBuffer();
         this.adminThreadCommandBuffer = builder.adminThreadCommandBuffer();
         this.bufferManagementStrategy = builder.bufferManagementStrategy();
+        this.bufferArray = new AtomicArray<>(ByteBuffer.class);
     }
 
     @Override
     public void process()
     {
         // TODO: handle data to send (with )
+        bufferArray.forEach((buffer) ->
+        {
+            // TODO: check buffer
+        });
+
         // TODO: handle commands added to command buffer (call onNewSenderTerm, onStatusMessage, etc.)
+    }
+
+    public void addBuffer(final ByteBuffer buffer)
+    {
+        bufferArray.add(buffer);
+    }
+
+    public void removeBuffer(final ByteBuffer buffer)
+    {
+        bufferArray.remove(buffer);
     }
 
     private void onNewTermEvent(final long sessionId, final long channelId, final long termId) throws Exception

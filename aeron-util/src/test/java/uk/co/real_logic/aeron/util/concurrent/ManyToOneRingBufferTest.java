@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.util.concurrent.ringbuffer;
+package uk.co.real_logic.aeron.util.concurrent;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.*;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.util.BitUtil.align;
-import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer.*;
+import static uk.co.real_logic.aeron.util.concurrent.ManyToOneRingBuffer.*;
 
 public class ManyToOneRingBufferTest
 {

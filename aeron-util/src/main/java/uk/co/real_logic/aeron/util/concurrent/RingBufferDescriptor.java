@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.util.concurrent.ringbuffer;
+package uk.co.real_logic.aeron.util.concurrent;
 
 import uk.co.real_logic.aeron.util.BitUtil;
 

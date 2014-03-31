@@ -66,7 +66,6 @@ public final class Aeron
         return aerons;
     }
 
-    private final long sessionId;
     private final ManyToOneRingBuffer adminCommandBuffer;
     private final ErrorHandler errorHandler;
     private final ClientAdminThread adminThread;
@@ -79,7 +78,6 @@ public final class Aeron
     {
         errorHandler = builder.errorHandler;
         adminBuffers = builder.adminBuffers;
-        sessionId = builder.sessionId;
         sendNotifiers = new HashMap<>();
         recvNotifiers = new HashMap<>();
         adminCommandBuffer = new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocate(256)));
@@ -88,8 +86,8 @@ public final class Aeron
         {
             final RingBuffer recvBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toApi()));
             final RingBuffer sendBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toMediaDriver()));
-            final BufferUsageStrategy bufferUsage = new BasicBufferUsageStrategy(sessionId, Directories.DATA_DIR);
-            adminThread = new ClientAdminThread(sessionId, adminCommandBuffer, recvBuffer, sendBuffer, bufferUsage,
+            final BufferUsageStrategy bufferUsage = new BasicBufferUsageStrategy(Directories.DATA_DIR);
+            adminThread = new ClientAdminThread(adminCommandBuffer, recvBuffer, sendBuffer, bufferUsage,
                                                 sendNotifiers, recvNotifiers);
         }
         catch (Exception e)
@@ -110,8 +108,9 @@ public final class Aeron
     public Source newSource(final Source.Builder builder)
     {
         final String destination = builder.destination.destination();
+        final long sessionId = builder.sessionId();
         builder.adminThread(new ClientAdminThreadCursor(sessionId, adminCommandBuffer));
-        return new Source(sessionId, getNotifier(destination, sendNotifiers), builder);
+        return new Source(getNotifier(destination, sendNotifiers), builder);
     }
 
     /**
@@ -178,7 +177,6 @@ public final class Aeron
 
     public static class Builder
     {
-        private long sessionId;
         private ErrorHandler errorHandler;
         private AdminBufferStrategy adminBuffers;
 
@@ -187,12 +185,6 @@ public final class Aeron
             errorHandler = new DummyErrorHandler();
             // TODO: decide on where admin buffers get located and remove buffer size if needed
             adminBuffers = new MappingAdminBufferStrategy(Directories.ADMIN_DIR);
-        }
-
-        public Builder sessionId(final long sessionId)
-        {
-            this.sessionId = sessionId;
-            return this;
         }
 
         public Builder errorHandler(ErrorHandler errorHandler)

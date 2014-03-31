@@ -29,22 +29,26 @@ import java.nio.MappedByteBuffer;
 public class BasicBufferUsageStrategy implements BufferUsageStrategy
 {
     private final FileMappingConvention fileConventions;
-    private final long sessionId;
 
-    public BasicBufferUsageStrategy(final long sessionId, final String dataDir)
+    public BasicBufferUsageStrategy(final String dataDir)
     {
-        this.sessionId = sessionId;
         fileConventions = new FileMappingConvention(dataDir);
     }
 
     @Override
-    public ByteBuffer onTermAdded(final long channelId, final long termId, boolean isSender) throws IOException
+    public ByteBuffer onTermAdded(final long sessionId,
+                                  final long channelId,
+                                  final long termId,
+                                  boolean isSender) throws IOException
     {
         final File rootDir = isSender ? fileConventions.senderDir() : fileConventions.receiverDir();
-        return mapTerm(channelId, termId, rootDir);
+        return mapTerm(sessionId, channelId, termId, rootDir);
     }
 
-    private MappedByteBuffer mapTerm(final long channelId, final long termId, final File rootDir) throws IOException
+    private MappedByteBuffer mapTerm(final long sessionId,
+                                     final long channelId,
+                                     final long termId,
+                                     final File rootDir) throws IOException
     {
         final File termIdFile = FileMappingConvention.termIdFile(rootDir, sessionId, channelId, termId, false);
         return IoUtil.mapExistingFile(termIdFile, "Term Buffer");

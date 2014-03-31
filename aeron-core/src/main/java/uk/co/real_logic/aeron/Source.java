@@ -33,10 +33,10 @@ public class Source implements AutoCloseable
     private final ClientAdminThreadCursor adminThread;
 
     // called by Aeron to create new sessions
-    public Source(final long sessionId, final Long2ObjectHashMap<TermBufferNotifier> notifierMap, final Builder builder)
+    public Source(final Long2ObjectHashMap<TermBufferNotifier> notifierMap, final Builder builder)
     {
-        this.sessionId = sessionId;
         this.notifierMap = notifierMap;
+        this.sessionId = builder.sessionId();
         this.destination = builder.destination;
         this.adminThread = builder.adminThread;
     }
@@ -94,9 +94,16 @@ public class Source implements AutoCloseable
         Destination destination;
 
         private ClientAdminThreadCursor adminThread;
+        private long sessionId;
 
         public Builder()
         {
+        }
+
+        public Builder sessionId(final long sessionId)
+        {
+            this.sessionId = sessionId;
+            return this;
         }
 
         public Builder destination(final Destination destination)
@@ -109,6 +116,11 @@ public class Source implements AutoCloseable
         {
             this.adminThread = adminThread;
             return this;
+        }
+
+        public long sessionId()
+        {
+            return sessionId;
         }
     }
 }

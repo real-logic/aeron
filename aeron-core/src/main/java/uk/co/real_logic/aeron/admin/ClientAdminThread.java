@@ -41,7 +41,6 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
     public static final int WRITE_BUFFER_CAPACITY = 256;
     /** Incoming message buffer from media driver */
     private final RingBuffer recvBuffer;
-    private final long sessionId;
     /** Incoming message buffer from other Core threads */
     private final RingBuffer commandBuffer;
     /** Outgoing message buffer to media driver */
@@ -61,15 +60,13 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
 
     private final CompletelyIdentifiedMessageFlyweight bufferNotificationMessage = new CompletelyIdentifiedMessageFlyweight();
 
-    public ClientAdminThread(final long sessionId,
-                             final RingBuffer commandBuffer,
+    public ClientAdminThread(final RingBuffer commandBuffer,
                              final RingBuffer recvBuffer,
                              final RingBuffer sendBuffer,
                              final BufferUsageStrategy bufferUsage,
                              final Map<String, Long2ObjectHashMap<TermBufferNotifier>> sendNotifiers,
                              final Map<String, Long2ObjectHashMap<TermBufferNotifier>> recvNotifiers)
     {
-        this.sessionId = sessionId;
         this.commandBuffer = commandBuffer;
         this.recvBuffer = recvBuffer;
         this.sendBuffer = sendBuffer;
@@ -163,14 +160,14 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
 
     public void onNewBufferNotification(final long sessionId, final long channelId, final long termId, final boolean isSender, final String destination)
     {
-        if (sessionId != this.sessionId)
+        if (!subscribeTo(sessionId, destination))
         {
             return;
         }
 
         try
         {
-            final ByteBuffer buffer = bufferUsage.onTermAdded(channelId, termId, isSender);
+            final ByteBuffer buffer = bufferUsage.onTermAdded(sessionId, channelId, termId, isSender);
             final Long2ObjectHashMap<TermBufferNotifier> channelNotifiers = getNotifiers(isSender).get(destination);
 
             channelNotifiers.get(channelId)
@@ -181,6 +178,12 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
             // TODO: establish correct client error handling strategy
             e.printStackTrace();
         }
+    }
+
+    private boolean subscribeTo(final long sessionId, final String destination)
+    {
+        // TODO
+        return false;
     }
 
     private Map<String, Long2ObjectHashMap<TermBufferNotifier>> getNotifiers(final boolean isSender)

@@ -27,6 +27,11 @@ public interface BufferManagementStrategy
                              final long channelId,
                              final long termId) throws Exception;
 
+    ByteBuffer lookupSenderTerm(final UdpDestination destination,
+                                final long sessionId,
+                                final long channelId,
+                                final long termId) throws Exception;
+
     void removeSenderTerm(final UdpDestination destination,
                           final long sessionId,
                           final long channelId,

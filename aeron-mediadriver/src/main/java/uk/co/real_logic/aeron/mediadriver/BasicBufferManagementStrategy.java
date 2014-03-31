@@ -128,6 +128,15 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
         return buffer;
     }
 
+    @Override
+    public ByteBuffer lookupSenderTerm(final UdpDestination destination,
+                                       final long sessionId,
+                                       final long channelId,
+                                       final long termId) throws Exception
+    {
+        return null;
+    }
+
     protected interface TermMapper
     {
         MappedByteBuffer mapTerm() throws Exception;

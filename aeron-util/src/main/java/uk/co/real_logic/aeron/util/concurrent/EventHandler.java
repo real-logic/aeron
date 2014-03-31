@@ -13,9 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.util.concurrent.ringbuffer;
-
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+package uk.co.real_logic.aeron.util.concurrent;
 
 /**
  * Callback interface for processing of events that are read from a {@link RingBuffer}.

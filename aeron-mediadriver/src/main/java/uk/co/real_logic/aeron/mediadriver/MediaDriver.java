@@ -19,9 +19,9 @@ import uk.co.real_logic.aeron.util.AdminBufferStrategy;
 import uk.co.real_logic.aeron.util.BasicAdminBufferStrategy;
 import uk.co.real_logic.aeron.util.Directories;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
+import uk.co.real_logic.aeron.util.concurrent.ManyToOneRingBuffer;
+import uk.co.real_logic.aeron.util.concurrent.RingBuffer;
+import uk.co.real_logic.aeron.util.concurrent.RingBufferDescriptor;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;

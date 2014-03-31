@@ -19,8 +19,8 @@ import uk.co.real_logic.aeron.util.ClosableThread;
 import uk.co.real_logic.aeron.util.command.ErrorCode;
 import uk.co.real_logic.aeron.util.command.LibraryFacade;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.aeron.util.concurrent.ManyToOneRingBuffer;
+import uk.co.real_logic.aeron.util.concurrent.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.nio.ByteBuffer;

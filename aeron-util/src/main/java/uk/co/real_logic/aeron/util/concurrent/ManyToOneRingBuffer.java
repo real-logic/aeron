@@ -13,13 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.util.concurrent.ringbuffer;
-
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+package uk.co.real_logic.aeron.util.concurrent;
 
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.BitUtil.align;
-import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.*;
 
 /**
  * A ring-buffer that supports the exchange of events from many producers to a single consumer.
@@ -75,7 +72,7 @@ public class ManyToOneRingBuffer implements RingBuffer
     public ManyToOneRingBuffer(final AtomicBuffer buffer)
     {
         this.buffer = buffer;
-        capacity = buffer.capacity() - TRAILER_SIZE;
+        capacity = buffer.capacity() - RingBufferDescriptor.TRAILER_SIZE;
 
         if (capacity < 1 || 1 != Integer.bitCount(capacity))
         {
@@ -86,9 +83,9 @@ public class ManyToOneRingBuffer implements RingBuffer
 
         mask = capacity - 1;
         maxEventSize = capacity / 4;
-        tailCounterIndex = capacity + TAIL_COUNTER_OFFSET;
-        headCounterIndex = capacity + HEAD_COUNTER_OFFSET;
-        correlationIdCounterIndex = capacity + CORRELATION_COUNTER_OFFSET;
+        tailCounterIndex = capacity + RingBufferDescriptor.TAIL_COUNTER_OFFSET;
+        headCounterIndex = capacity + RingBufferDescriptor.HEAD_COUNTER_OFFSET;
+        correlationIdCounterIndex = capacity + RingBufferDescriptor.CORRELATION_COUNTER_OFFSET;
     }
 
     /**

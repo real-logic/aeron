@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.util.concurrent;
+package uk.co.real_logic.aeron.util.concurrent.ringbuffer;
 
 import org.junit.Test;
 import uk.co.real_logic.aeron.util.BitUtil;
-import uk.co.real_logic.aeron.util.concurrent.*;
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.EventHandler;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CyclicBarrier;

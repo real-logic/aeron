@@ -13,7 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.util.concurrent;
+package uk.co.real_logic.aeron.util.concurrent.ringbuffer;
+
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.EventHandler;
 
 /**
  * Ring-buffer for the concurrent exchanging of binary encoded events from producer to consumer in a FIFO manner.

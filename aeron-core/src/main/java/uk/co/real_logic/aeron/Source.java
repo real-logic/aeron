@@ -76,7 +76,7 @@ public class Source implements AutoCloseable
 
     public void close()
     {
-        // TODO: does this even need to be closed if the channel is?
+        // TODO: close all child channels
     }
 
     public long sessionId()

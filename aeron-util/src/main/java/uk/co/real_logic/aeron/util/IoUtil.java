@@ -133,7 +133,7 @@ public class IoUtil
 
     public static MappedByteBuffer mapExistingFile(final File location, final String name) throws IOException
     {
-        ensureFileExists(location, name);
+        checkFileExists(location, name);
         try (final RandomAccessFile file = new RandomAccessFile(location, "rw"))
         {
             long size = file.length();
@@ -154,11 +154,12 @@ public class IoUtil
         }
     }
 
-    public static void ensureFileExists(final File file, final String name)
+    public static void checkFileExists(final File file, final String name)
     {
         if (!file.exists())
         {
             throw new IllegalStateException(String.format("Missing file for %1$s: %2$s", name, file.getAbsolutePath()));
         }
     }
+
 }

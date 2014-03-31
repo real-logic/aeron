@@ -25,5 +25,8 @@ import java.nio.ByteBuffer;
  */
 public interface BufferUsageStrategy
 {
-    ByteBuffer onTermAdded(final long sessionId, final long channelId, final long termId, boolean isSender) throws Exception;
+    ByteBuffer onTermAdded(final long sessionId,
+                           final long channelId,
+                           final long termId,
+                           boolean isSender) throws Exception;
 }

@@ -69,11 +69,11 @@ public class FileMappingConvention
     /**
      * Get the file corresponding to a given session/channel/term triple.
      */
-    public static File termIdFile(final File rootDir,
-                                  final long sessionId,
-                                  final long channelId,
-                                  final long termId,
-                                  final boolean createChannelIfMissing)
+    public static File termLocation(final File rootDir,
+                                    final long sessionId,
+                                    final long channelId,
+                                    final long termId,
+                                    final boolean createChannelIfMissing)
     {
         final File sessionDir = new File(rootDir, Long.toString(sessionId));
         final File channelDir = new File(sessionDir, Long.toString(channelId));

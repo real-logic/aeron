@@ -15,6 +15,17 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import uk.co.real_logic.aeron.util.IoUtil;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
+
+import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
+
 /**
  * Encapsulates responsibility for rotating and reusing memory mapped files used by
  * the buffers.
@@ -24,6 +35,74 @@ package uk.co.real_logic.aeron.mediadriver;
 public class MappedBufferRotator
 {
 
+    private final FileChannel templateFile;
+    private final long bufferSize;
 
+    private FileChannel currentFile;
+    private FileChannel spareFile;
+    private FileChannel dirtyFile;
+
+    private MappedByteBuffer currentBuffer;
+    private MappedByteBuffer spareBuffer;
+    private MappedByteBuffer dirtyBuffer;
+
+    public MappedBufferRotator(final FileChannel templateFile, final File directory, final long bufferSize)
+    {
+        this.templateFile = templateFile;
+        this.bufferSize = bufferSize;
+        IoUtil.ensureDirectoryExists(directory, "buffer directory");
+        try
+        {
+            currentFile = openFile(directory, "1");
+            currentBuffer = map(bufferSize, currentFile);
+
+            spareFile = openFile(directory, "2");
+            spareBuffer = map(bufferSize, spareFile);
+
+            dirtyFile = openFile(directory, "3");
+            dirtyBuffer = map(bufferSize, dirtyFile);
+        }
+        catch (IOException e)
+        {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    public MappedByteBuffer rotate() throws IOException
+    {
+        final MappedByteBuffer newBuffer = spareBuffer;
+        final FileChannel newFile = spareFile;
+
+        spareBuffer = dirtyBuffer;
+        spareFile = dirtyFile;
+
+        dirtyBuffer = currentBuffer;
+        dirtyFile = currentFile;
+        reset(dirtyFile);
+        
+        currentBuffer = newBuffer;
+        currentFile = newFile;
+
+        return newBuffer;
+    }
+
+    private FileChannel openFile(final File directory, final String child) throws FileNotFoundException
+    {
+        final File fileToMap = new File(directory, child);
+        final RandomAccessFile file = new RandomAccessFile(fileToMap, "rw");
+        return file.getChannel();
+    }
+
+    private void reset(final FileChannel channel) throws IOException
+    {
+        channel.position(0);
+        templateFile.transferTo(0, bufferSize, channel);
+    }
+
+    private MappedByteBuffer map(final long bufferSize, final FileChannel channel) throws IOException
+    {
+        reset(channel);
+        return channel.map(READ_WRITE, 0, bufferSize);
+    }
 
 }

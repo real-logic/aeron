@@ -50,7 +50,7 @@ public class BasicBufferUsageStrategy implements BufferUsageStrategy
                                      final long termId,
                                      final File rootDir) throws IOException
     {
-        final File termIdFile = FileMappingConvention.termIdFile(rootDir, sessionId, channelId, termId, false);
+        final File termIdFile = FileMappingConvention.termLocation(rootDir, sessionId, channelId, termId, false);
         return IoUtil.mapExistingFile(termIdFile, "Term Buffer");
     }
 

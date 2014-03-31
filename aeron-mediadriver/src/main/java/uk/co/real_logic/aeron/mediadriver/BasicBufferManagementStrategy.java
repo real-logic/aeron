@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.FileMappingConvention;
 import uk.co.real_logic.aeron.util.IoUtil;
+import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.collections.TripleLevelMap;
 
 import java.io.File;
@@ -25,8 +26,11 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.HashMap;
+import java.util.Map;
 
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
+import static uk.co.real_logic.aeron.util.collections.CollectionUtil.getOrDefault;
 
 /**
  * Basic buffer management where each Term is a file.
@@ -38,6 +42,7 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
     private final FileChannel templateFile;
     private final File senderDir;
     private final File receiverDir;
+    private final Map<UdpDestination, Long2ObjectHashMap<MappedBufferRotator>> srcTermRotators;
     private final TripleLevelMap<ByteBuffer> srcTermMap;
     private final TripleLevelMap<ByteBuffer> rcvTermMap;
     private final FileMappingConvention fileConvention;
@@ -47,6 +52,7 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
         fileConvention = new FileMappingConvention(dataDir);
         senderDir = fileConvention.senderDir();
         receiverDir = fileConvention.receiverDir();
+        srcTermRotators = new HashMap<>();
         srcTermMap = new TripleLevelMap<>();
         rcvTermMap = new TripleLevelMap<>();
         IoUtil.ensureDirectoryExists(senderDir, "sender");
@@ -70,7 +76,7 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
         }
         catch (IOException e)
         {
-            throw new IllegalStateException("Cannot create temporary file", e);
+            throw new IllegalStateException("Cannot create template file", e);
         }
     }
 
@@ -83,7 +89,7 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
                                     final long termId,
                                     final long requiredSize) throws Exception
     {
-        final File termIdFile = FileMappingConvention.termIdFile(rootDir, sessionId, channelId, termId, true);
+        final File termIdFile = FileMappingConvention.termLocation(rootDir, sessionId, channelId, termId, true);
         // must be checked at this point, opening a RandomAccessFile will cause this to be true
         final boolean fileExists = termIdFile.exists();
         try (final RandomAccessFile randomAccessFile = new RandomAccessFile(termIdFile, "rw"))
@@ -114,18 +120,32 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
                                     final long channelId,
                                     final long termId) throws Exception
     {
-        ByteBuffer buffer = srcTermMap.get(sessionId, channelId, termId);
+        ByteBuffer termBuffer = srcTermMap.get(sessionId, channelId, termId);
 
-        if (null != buffer)
+        if (null != termBuffer)
         {
             throw new IllegalArgumentException(String.format("buffer already exists: %1$s/%2$s/%3$s",
                     sessionId, channelId, termId));
         }
 
-        final MappedByteBuffer term = mapTerm(senderDir, sessionId, channelId, termId, BUFFER_SIZE);
-        srcTermMap.put(sessionId, channelId, termId, term);
+        final Long2ObjectHashMap<MappedBufferRotator> channelToTerms = termsForDestination(destination);
+        MappedBufferRotator rotator = channelToTerms.get(channelId);
 
-        return buffer;
+        if (rotator == null)
+        {
+            final File file = fileConvention.termLocation(senderDir, sessionId, channelId, termId, true);
+            rotator = new MappedBufferRotator(templateFile, file, MediaDriver.READ_BYTE_BUFFER_SZ);
+            channelToTerms.put(channelId, rotator);
+        }
+
+        termBuffer = rotator.rotate();
+        srcTermMap.put(sessionId, channelId, termId, termBuffer);
+        return termBuffer;
+    }
+
+    private Long2ObjectHashMap<MappedBufferRotator> termsForDestination(final UdpDestination destination)
+    {
+        return getOrDefault(srcTermRotators, destination, k -> new Long2ObjectHashMap<>());
     }
 
     @Override
@@ -134,7 +154,15 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
                                        final long channelId,
                                        final long termId) throws Exception
     {
-        return null;
+        final ByteBuffer buffer = srcTermMap.get(sessionId, channelId, termId);
+
+        if (null == buffer)
+        {
+            throw new IllegalArgumentException(String.format("buffer does not exist: %1$s/%2$s/%3$s",
+                    sessionId, channelId, termId));
+        }
+
+        return buffer;
     }
 
     protected interface TermMapper
@@ -148,13 +176,13 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
                                  final long channelId,
                                  final long termId)
     {
-        srcTermMap.remove(sessionId, channelId, termId);
+
     }
 
     @Override
     public void removeSenderChannel(final UdpDestination destination, final long sessionId, final long channelId)
     {
-        srcTermMap.remove(sessionId, channelId);
+        srcTermRotators.remove(sessionId, channelId);
     }
 
     @Override
@@ -175,6 +203,7 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
         return null;
     }
 
+    // TODO: evaluate whether its possible to remove the reference counting
     @Override
     public int countSessions()
     {

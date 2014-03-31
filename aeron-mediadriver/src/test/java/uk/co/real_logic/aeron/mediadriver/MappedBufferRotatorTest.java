@@ -34,8 +34,8 @@ import static org.junit.Assert.assertThat;
 
 public class MappedBufferRotatorTest
 {
-
     public static final int BUFFER_SIZE = 1000;
+
     private static FileChannel templateFile;
     private static File directory;
 
@@ -53,29 +53,26 @@ public class MappedBufferRotatorTest
     {
         withRotatedBuffers(buffer ->
         {
-            // check you get a clean buffer
-            IntStream.range(0, BUFFER_SIZE)
-                    .forEach(i ->
-                    {
-                        assertThat(buffer.get(i), is((byte) 0));
-                    });
+           // check you get a clean buffer
+           IntStream.range(0, BUFFER_SIZE)
+                    .forEach(i -> assertThat(Byte.valueOf(buffer.get(i)), is(Byte.valueOf((byte)0))));
 
-            // dirty up the buffer
-            buffer.putInt(1, 4);
-            buffer.putInt(500, 4);
-            buffer.putInt(996, 4);
+           // dirty up the buffer
+           buffer.putInt(1, 4);
+           buffer.putInt(500, 4);
+           buffer.putInt(996, 4);
         });
     }
 
     @Test
     public void buffersAreReused() throws IOException
     {
-        Map<MappedByteBuffer, Boolean> buffers = new IdentityHashMap<>();
-        withRotatedBuffers(buffer -> buffers.put(buffer, true));
+        final Map<MappedByteBuffer, Boolean> buffers = new IdentityHashMap<>();
+        withRotatedBuffers(buffer -> buffers.put(buffer, Boolean.TRUE));
         assertThat(buffers.entrySet(), hasSize(3));
     }
 
-    private void withRotatedBuffers(Consumer<MappedByteBuffer> handler) throws IOException
+    private void withRotatedBuffers(final Consumer<MappedByteBuffer> handler) throws IOException
     {
         final MappedBufferRotator rotator = new MappedBufferRotator(templateFile, directory, BUFFER_SIZE);
         for (int iteration = 0; iteration < 20; iteration++)
@@ -84,6 +81,4 @@ public class MappedBufferRotatorTest
             handler.accept(buffer);
         }
     }
-
-
 }

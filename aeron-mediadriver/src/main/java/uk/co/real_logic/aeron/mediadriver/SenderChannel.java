@@ -60,7 +60,7 @@ public class SenderChannel implements AutoCloseable
         // create the buffer, but hold onto it in the strategy. The senderThread will do a lookup on it
         try
         {
-            bufferManagementStrategy.addSenderTerm(sessionId, channelId, termId);
+            bufferManagementStrategy.addSenderTerm(destination, sessionId, channelId, termId);
         }
         catch (Exception e)
         {

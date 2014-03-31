@@ -109,7 +109,10 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
     }
 
     @Override
-    public void addSenderTerm(final long sessionId, final long channelId, final long termId) throws Exception
+    public ByteBuffer addSenderTerm(final UdpDestination destination,
+                                    final long sessionId,
+                                    final long channelId,
+                                    final long termId) throws Exception
     {
         ByteBuffer buffer = srcTermMap.get(sessionId, channelId, termId);
 
@@ -121,18 +124,6 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
 
         final MappedByteBuffer term = mapTerm(senderDir, sessionId, channelId, termId, BUFFER_SIZE);
         srcTermMap.put(sessionId, channelId, termId, term);
-    }
-
-    @Override
-    public ByteBuffer lookupSenderTerm(final long sessionId, final long channelId, final long termId) throws Exception
-    {
-        final ByteBuffer buffer = srcTermMap.get(sessionId, channelId, termId);
-
-        if (null == buffer)
-        {
-            throw new IllegalArgumentException(String.format("buffer does not exist: %1$s/%2$s/%3$s",
-                    sessionId, channelId, termId));
-        }
 
         return buffer;
     }
@@ -143,13 +134,16 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
     }
 
     @Override
-    public void removeSenderTerm(final long sessionId, final long channelId, final long termId)
+    public void removeSenderTerm(final UdpDestination destination,
+                                 final long sessionId,
+                                 final long channelId,
+                                 final long termId)
     {
         srcTermMap.remove(sessionId, channelId, termId);
     }
 
     @Override
-    public void removeSenderChannel(final long sessionId, final long channelId)
+    public void removeSenderChannel(final UdpDestination destination, final long sessionId, final long channelId)
     {
         srcTermMap.remove(sessionId, channelId);
     }

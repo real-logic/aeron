@@ -198,7 +198,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             }
 
             // remove from buffer management, but will be unmapped once SenderThread releases it and it can be GCed
-            bufferManagementStrategy.removeSenderChannel(sessionId, channelId);
+            bufferManagementStrategy.removeSenderChannel(srcDestination, sessionId, channelId);
 
             senderThread.removeChannel(channel);
 
@@ -230,7 +230,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             }
 
             // remove from buffer management, but will be unmapped once SenderThread releases it and it can be GCed
-            bufferManagementStrategy.removeSenderTerm(sessionId, channelId, 0);
+            bufferManagementStrategy.removeSenderTerm(srcDestination, sessionId, channelId, termId);
 
             // inform SenderThread
             senderThreadCursor.addRemoveTermEvent(sessionId, channelId, termId);

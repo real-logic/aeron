@@ -20,8 +20,6 @@ import uk.co.real_logic.aeron.util.ClosableThread;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
-import java.nio.ByteBuffer;
-
 /**
  * Thread to take data in sender buffers and demux onto sending sockets
  */
@@ -44,8 +42,6 @@ public class SenderThread extends ClosableThread
     public void process()
     {
         channels.forEach(SenderChannel::process);
-
-        // TODO: handle commands added to command buffer (call onNewSenderTerm, onStatusMessage, etc.)
     }
 
     public void addChannel(final SenderChannel channel)
@@ -56,23 +52,6 @@ public class SenderThread extends ClosableThread
     public void removeChannel(final SenderChannel channel)
     {
         channels.remove(channel);
-    }
-
-    private void onNewTermEvent(final long sessionId, final long channelId, final long termId) throws Exception
-    {
-        final ByteBuffer buffer = bufferManagementStrategy.lookupSenderTerm(sessionId, channelId, termId);
-
-        // TODO: add this buffer to our checks in process()
-    }
-
-    private void onRemoveTermEvent(final long sessionId, final long channelId, final long termId)
-    {
-        // TODO: remove term from being checked
-    }
-
-    private void onRemoveChannelEvent(final long sessionId, final long channelId)
-    {
-        // TODO: remove all terms in channel from being checked
     }
 
     private void onStatusMessageEvent(final HeaderFlyweight header)

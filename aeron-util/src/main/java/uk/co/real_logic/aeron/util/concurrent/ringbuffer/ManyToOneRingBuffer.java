@@ -18,8 +18,8 @@ package uk.co.real_logic.aeron.util.concurrent.ringbuffer;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.EventHandler;
 
-import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.BitUtil.align;
+import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RecordDescriptor.*;
 
 /**
  * A ring-buffer that supports the exchange of events from many producers to a single consumer.
@@ -30,25 +30,6 @@ public class ManyToOneRingBuffer implements RingBuffer
      * Event type is padding to prevent fragmentation in the buffer.
      */
     public static final int PADDING_EVENT_TYPE_ID = -1;
-
-    /**
-     * Header size made up of fields for record length, event length, event type, and reserved, then the encoded event.
-     * <p>
-     * Writing of the evt type signals the event recording is complete.
-     * <p>
-     * <pre>
-     *   0        4        8        12       16 -byte position
-     *   +--------+--------+--------+--------+------------------------+
-     *   |rec len |evt len |evt type|reserve |encoded event...........|
-     *   +--------+--------+--------+--------+------------------------+
-     * </pre>
-     */
-    public static final int RECORD_HEADER_SIZE = SIZE_OF_INT * 4;
-
-    /**
-     * Alignment as a multiple of bytes for each record.
-     */
-    public static final int ALIGNMENT = 32;
 
     /**
      * Buffer has insufficient capacity to record an event.
@@ -92,50 +73,6 @@ public class ManyToOneRingBuffer implements RingBuffer
     }
 
     /**
-     * The offset from the beginning of a record at which the length field begins.
-     *
-     * @param recordOffset beginning index of the record.
-     * @return offset from the beginning of a record at which the length field begins.
-     */
-    public static int lengthOffset(final int recordOffset)
-    {
-        return recordOffset;
-    }
-
-    /**
-     * The offset from the beginning of a record at which the event length field begins.
-     *
-     * @param recordOffset beginning index of the record.
-     * @return offset from the beginning of a record at which the type field begins.
-     */
-    public static int eventLengthOffset(final int recordOffset)
-    {
-        return recordOffset + SIZE_OF_INT;
-    }
-
-    /**
-     * The offset from the beginning of a record at which the event type field begins.
-     *
-     * @param recordOffset beginning index of the record.
-     * @return offset from the beginning of a record at which the type field begins.
-     */
-    public static int eventTypeOffset(final int recordOffset)
-    {
-        return recordOffset + SIZE_OF_INT + SIZE_OF_INT;
-    }
-
-    /**
-     * The offset from the beginning of a record at which the encoded event begins.
-     *
-     * @param recordOffset beginning index of the record.
-     * @return offset from the beginning of a record at which the encoded event begins.
-     */
-    public static int encodedEventOffset(final int recordOffset)
-    {
-        return recordOffset + RECORD_HEADER_SIZE;
-    }
-
-    /**
      * {@inheritDoc}
      */
     public int capacity()
@@ -151,7 +88,7 @@ public class ManyToOneRingBuffer implements RingBuffer
         checkEventTypeId(eventTypeId);
         checkEventSize(length);
 
-        final int requiredCapacity = align(length + RECORD_HEADER_SIZE, ALIGNMENT);
+        final int requiredCapacity = align(length + RecordDescriptor.RECORD_HEADER_SIZE, RecordDescriptor.ALIGNMENT);
         final int ringBufferIndex = claimCapacity(requiredCapacity);
         if (INSUFFICIENT_CAPACITY == ringBufferIndex)
         {
@@ -354,11 +291,6 @@ public class ManyToOneRingBuffer implements RingBuffer
         return buffer.getInt(eventLengthOffset(recordIndex));
     }
 
-    private void zeroBuffer(final int position, int length)
-    {
-        buffer.setMemory(position, length, (byte)0);
-    }
-
     private int waitForEventTypeId(final int recordIndex)
     {
         int eventTypeId;
@@ -370,5 +302,10 @@ public class ManyToOneRingBuffer implements RingBuffer
         while (0 == eventTypeId);
 
         return eventTypeId;
+    }
+
+    private void zeroBuffer(final int position, int length)
+    {
+        buffer.setMemory(position, length, (byte)0);
     }
 }

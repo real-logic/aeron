@@ -65,7 +65,7 @@ public class MediaDriverAdminThreadTest
     @After
     public void cleanup() throws IOException
     {
-        IoUtil.delete(new File(adminPath), false);
+        IoUtil.delete(new File(adminPath), true);
     }
 
     @Test

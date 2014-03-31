@@ -16,12 +16,12 @@
 package uk.co.real_logic.aeron.util.concurrent;
 
 /**
- * Callback interface for processing of events that are read from a {@link RingBuffer}.
+ * Callback interface for processing of events that are read from a buffer.
  */
 public interface EventHandler
 {
     /**
-     * Called for the processing of each event read from the {@link RingBuffer} in turn.
+     * Called for the processing of each event read from a buffer in turn.
      *
      * @param eventTypeId type of the encoded event.
      * @param buffer containing the encoded event.

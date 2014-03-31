@@ -13,18 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.util.concurrent;
+package uk.co.real_logic.aeron.util.concurrent.ringbuffer;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
-import uk.co.real_logic.aeron.util.concurrent.*;
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.EventHandler;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.util.BitUtil.align;
-import static uk.co.real_logic.aeron.util.concurrent.ManyToOneRingBuffer.*;
+import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer.*;
+import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RecordDescriptor.*;
 
 public class ManyToOneRingBufferTest
 {
@@ -203,7 +205,7 @@ public class ManyToOneRingBufferTest
             .thenReturn(Integer.valueOf(EVENT_TYPE_ID));
         when(Integer.valueOf(atomicBuffer.getInt(lengthOffset(headIndex))))
             .thenReturn(Integer.valueOf(ALIGNMENT));
-        when(Integer.valueOf(atomicBuffer.getInt(eventLengthOffset(headIndex))))
+        when(Integer.valueOf(atomicBuffer.getInt(RecordDescriptor.eventLengthOffset(headIndex))))
             .thenReturn(Integer.valueOf(ALIGNMENT / 2));
 
         final int[] times = new int[1];
@@ -216,7 +218,7 @@ public class ManyToOneRingBufferTest
         final InOrder inOrder = inOrder(atomicBuffer);
         inOrder.verify(atomicBuffer, times(2)).getIntVolatile(eventTypeOffset(headIndex));
         inOrder.verify(atomicBuffer).getInt(lengthOffset(headIndex));
-        inOrder.verify(atomicBuffer).getInt(eventLengthOffset(headIndex));
+        inOrder.verify(atomicBuffer).getInt(RecordDescriptor.eventLengthOffset(headIndex));
 
         inOrder.verify(atomicBuffer, times(1)).setMemory(headIndex, ALIGNMENT, (byte)0);
         inOrder.verify(atomicBuffer, times(1)).putLongOrdered(HEAD_COUNTER_INDEX, tail);

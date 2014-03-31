@@ -20,6 +20,7 @@ import uk.co.real_logic.aeron.util.concurrent.EventHandler;
 
 import static uk.co.real_logic.aeron.util.BitUtil.align;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RecordDescriptor.*;
+import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.*;
 
 /**
  * A ring-buffer that supports the exchange of events from many producers to a single consumer.
@@ -67,9 +68,9 @@ public class ManyToOneRingBuffer implements RingBuffer
 
         mask = capacity - 1;
         maxEventSize = capacity / 4;
-        tailCounterIndex = capacity + RingBufferDescriptor.TAIL_COUNTER_OFFSET;
-        headCounterIndex = capacity + RingBufferDescriptor.HEAD_COUNTER_OFFSET;
-        correlationIdCounterIndex = capacity + RingBufferDescriptor.CORRELATION_COUNTER_OFFSET;
+        tailCounterIndex = capacity + TAIL_COUNTER_OFFSET;
+        headCounterIndex = capacity + HEAD_COUNTER_OFFSET;
+        correlationIdCounterIndex = capacity + CORRELATION_COUNTER_OFFSET;
     }
 
     /**
@@ -88,7 +89,7 @@ public class ManyToOneRingBuffer implements RingBuffer
         checkEventTypeId(eventTypeId);
         checkEventSize(length);
 
-        final int requiredCapacity = align(length + RecordDescriptor.RECORD_HEADER_SIZE, RecordDescriptor.ALIGNMENT);
+        final int requiredCapacity = align(length + RECORD_HEADER_SIZE, ALIGNMENT);
         final int ringBufferIndex = claimCapacity(requiredCapacity);
         if (INSUFFICIENT_CAPACITY == ringBufferIndex)
         {

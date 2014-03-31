@@ -95,10 +95,11 @@ public class ManyToOneRingBuffer implements RingBuffer
             return false;
         }
 
-        writeRecordLength(ringBufferIndex, requiredCapacity);
         writeEventLength(ringBufferIndex, length);
+        writeEventType(ringBufferIndex, eventTypeId);
         writeEvent(ringBufferIndex, srcBuffer, srcIndex, length);
-        writeEventTypeOrdered(ringBufferIndex, eventTypeId);
+
+        writeRecordLengthOrdered(ringBufferIndex, requiredCapacity);
 
         return true;
     }
@@ -132,10 +133,10 @@ public class ManyToOneRingBuffer implements RingBuffer
                 while ((bytesRead < contiguousBlockSize) && (recordsRead <= maxEvents))
                 {
                     final int recordIndex = headIndex + bytesRead;
-                    final int eventTypeId = waitForEventTypeId(recordIndex);
+                    final int recordLength = waitForRecordLengthOrdered(recordIndex);
 
-                    final int recordLength = getRecordLength(recordIndex);
                     final int eventLength = getEventLength(recordIndex);
+                    final int eventTypeId = getEventType(recordIndex);
 
                     bytesRead += recordLength;
 
@@ -257,13 +258,13 @@ public class ManyToOneRingBuffer implements RingBuffer
 
     private void writePaddingRecord(final int recordIndex, final int padding)
     {
-        writeRecordLength(recordIndex, padding);
-        writeEventTypeOrdered(recordIndex, PADDING_EVENT_TYPE_ID);
+        writeEventType(recordIndex, PADDING_EVENT_TYPE_ID);
+        writeRecordLengthOrdered(recordIndex, padding);
     }
 
-    private void writeRecordLength(final int recordIndex, final int length)
+    private void writeRecordLengthOrdered(final int recordIndex, final int length)
     {
-        buffer.putInt(lengthOffset(recordIndex), length);
+        buffer.putIntOrdered(lengthOffset(recordIndex), length);
     }
 
     private void writeEventLength(final int recordIndex, final int length)
@@ -271,9 +272,9 @@ public class ManyToOneRingBuffer implements RingBuffer
         buffer.putInt(eventLengthOffset(recordIndex), length);
     }
 
-    private void writeEventTypeOrdered(final int recordIndex, final int eventTypeId)
+    private void writeEventType(final int recordIndex, final int eventTypeId)
     {
-        buffer.putIntOrdered(eventTypeOffset(recordIndex), eventTypeId);
+        buffer.putInt(eventTypeOffset(recordIndex), eventTypeId);
     }
 
     private void writeEvent(final int recordIndex, final AtomicBuffer srcBuffer, final int srcIndex, final int length)
@@ -281,9 +282,9 @@ public class ManyToOneRingBuffer implements RingBuffer
         buffer.putBytes(encodedEventOffset(recordIndex), srcBuffer, srcIndex, length);
     }
 
-    private int getRecordLength(final int recordIndex)
+    private int getEventType(final int recordIndex)
     {
-        return buffer.getInt(lengthOffset(recordIndex));
+        return buffer.getInt(eventTypeOffset(recordIndex));
     }
 
     private int getEventLength(final int recordIndex)
@@ -291,17 +292,17 @@ public class ManyToOneRingBuffer implements RingBuffer
         return buffer.getInt(eventLengthOffset(recordIndex));
     }
 
-    private int waitForEventTypeId(final int recordIndex)
+    private int waitForRecordLengthOrdered(final int recordIndex)
     {
-        int eventTypeId;
+        int recordLength;
 
         do
         {
-            eventTypeId = buffer.getIntVolatile(eventTypeOffset(recordIndex));
+            recordLength = buffer.getIntVolatile(lengthOffset(recordIndex));
         }
-        while (0 == eventTypeId);
+        while (0 == recordLength);
 
-        return eventTypeId;
+        return recordLength;
     }
 
     private void zeroBuffer(final int position, int length)

@@ -25,7 +25,7 @@ public class RecordDescriptor
     /**
      * Header size made up of fields for record length, event length, event type, and reserved, then the encoded event.
      * <p>
-     * Writing of the evt type signals the event recording is complete.
+     * Writing of the record length signals the event recording is complete.
      * <p>
      * <pre>
      *   0        4        8        12       16 -byte position

@@ -1,7 +1,7 @@
 package uk.co.real_logic.aeron.mediadriver;
 
-import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.MappingAdminBufferStrategy;
@@ -25,24 +25,30 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescri
 public class MediaDriverAdminThreadTest
 {
 
-    private static final String adminPath;
     private static final String ADMIN_DIR = "adminDir";
     private static final String DESTINATION = "udp://localhost:40124@localhost:40123";
 
-    static
+    private static String adminPath;
+
+    @BeforeClass
+    public static void setupDirectories() throws IOException
     {
         final File adminDir = new File(System.getProperty("java.io.tmpdir"), ADMIN_DIR);
+        if (adminDir.exists())
+        {
+            IoUtil.delete(adminDir, false);
+        }
         IoUtil.ensureDirectoryExists(adminDir, ADMIN_DIR);
         adminPath = adminDir.getAbsolutePath();
     }
 
-    final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(256));
+    private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(256));
 
     private MediaDriverAdminThread mediaDriverAdminThread;
     private SenderChannel channel;
 
     @Before
-    public void setup()
+    public void setUp()
     {
         final MediaDriver.TopologyBuilder builder = new MediaDriver.TopologyBuilder()
                 .adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
@@ -60,12 +66,6 @@ public class MediaDriverAdminThreadTest
         };
         ReceiverThread receiverThread = mock(ReceiverThread.class);
         mediaDriverAdminThread = new MediaDriverAdminThread(builder, receiverThread, senderThread);
-    }
-
-    @After
-    public void cleanup() throws IOException
-    {
-        IoUtil.delete(new File(adminPath), true);
     }
 
     @Test

@@ -38,7 +38,7 @@ public interface RingBuffer
      * @param srcIndex at which the encoded event begins.
      * @param length of the encoded event in bytes.
      * @return true if written to the ring-srcBuffer, or false if insufficient space exists.
-     * @throws IllegalArgumentException if the length is greater than {@link RingBuffer#maxEventSize()}
+     * @throws IllegalArgumentException if the length is greater than {@link RingBuffer#maxEventLength()}
      */
     boolean write(final int eventTypeId, final AtomicBuffer srcBuffer, final int srcIndex, final int length);
 
@@ -60,11 +60,11 @@ public interface RingBuffer
     int read(final EventHandler handler, final int maxEvents);
 
     /**
-     * The maximum event size supported by the underlying ring buffer.
+     * The maximum event length in bytes supported by the underlying ring buffer.
      *
-     * @return the maximum event size supported by the underlying ring buffer.
+     * @return the maximum event length in bytes supported by the underlying ring buffer.
      */
-    int maxEventSize();
+    int maxEventLength();
 
     /**
      * Get the next value that can be used for a correlation id on an event when a response needs to be correlated.

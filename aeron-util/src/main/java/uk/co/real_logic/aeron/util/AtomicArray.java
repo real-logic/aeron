@@ -55,7 +55,7 @@ public class AtomicArray<T>
         {
             for (final T element : array)
             {
-                if (null == element)
+                if (null != element)
                 {
                     func.accept(element);
                 }

@@ -17,8 +17,13 @@ package uk.co.real_logic.aeron.util;
 
 import org.junit.Test;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import static java.lang.Integer.valueOf;
+import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertNull;
 
@@ -143,5 +148,20 @@ public class AtomicArrayTest
         assertThat(valueOf(intArray.length), is(valueOf(2)));
         assertThat(intArray[0], is(valueOf(10)));
         assertThat(intArray[1], is(valueOf(30)));
+    }
+
+    @Test
+    public void forEachShouldIterateOverValuesInTheArray()
+    {
+        // given
+        Set<Integer> values = new HashSet<>(asList(10, 20, 30));
+        AtomicArray<Integer> array = new AtomicArray<>(Integer.class);
+        values.forEach(array::add);
+
+        // when
+        array.forEach(values::remove);
+
+        // then
+        assertThat(values, empty());
     }
 }

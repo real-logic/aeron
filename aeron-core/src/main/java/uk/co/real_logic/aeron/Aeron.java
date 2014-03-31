@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.admin.*;
 import uk.co.real_logic.aeron.util.AdminBufferStrategy;
-import uk.co.real_logic.aeron.util.BasicAdminBufferStrategy;
 import uk.co.real_logic.aeron.util.Directories;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -187,7 +186,7 @@ public final class Aeron
         {
             errorHandler = new DummyErrorHandler();
             // TODO: decide on where admin buffers get located and remove buffer size if needed
-            adminBuffers = new BasicAdminBufferStrategy(Directories.ADMIN_DIR, 0, false);
+            adminBuffers = new MappingAdminBufferStrategy(Directories.ADMIN_DIR);
         }
 
         public Builder sessionId(final long sessionId)

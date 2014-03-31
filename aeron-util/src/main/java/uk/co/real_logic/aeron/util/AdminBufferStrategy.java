@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.util;
 
+import java.io.File;
 import java.nio.ByteBuffer;
 
 /**
@@ -22,9 +23,22 @@ import java.nio.ByteBuffer;
  *
  * Assumes one media driver per API instance.
  */
-public interface AdminBufferStrategy
+public abstract class AdminBufferStrategy
 {
-    ByteBuffer toMediaDriver() throws Exception;
 
-    ByteBuffer toApi() throws Exception;
+    protected static final String MEDIA_DRIVER_FILE = "media-driver";
+    protected static final String API_FILE = "api";
+
+    protected final File toMediaDriver;
+    protected final File toApi;
+
+    public AdminBufferStrategy(final String adminDir)
+    {
+        toMediaDriver = new File(adminDir, MEDIA_DRIVER_FILE);
+        toApi = new File(adminDir, API_FILE);
+    }
+
+    public abstract ByteBuffer toMediaDriver() throws Exception;
+
+    public abstract ByteBuffer toApi() throws Exception;
 }

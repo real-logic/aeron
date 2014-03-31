@@ -16,7 +16,6 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.AdminBufferStrategy;
-import uk.co.real_logic.aeron.util.BasicAdminBufferStrategy;
 import uk.co.real_logic.aeron.util.Directories;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ManyToOneRingBuffer;
@@ -78,7 +77,7 @@ public class MediaDriver
         TopologyBuilder builder = new TopologyBuilder().adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .senderThreadCommandBuffer(COMMAND_BUFFER_SZ)
-                .adminBufferStrategy(new BasicAdminBufferStrategy(Directories.ADMIN_DIR, ADMIN_BUFFER_SZ, true))
+                .adminBufferStrategy(new CreatingAdminBufferStrategy(Directories.ADMIN_DIR, ADMIN_BUFFER_SZ))
                 .bufferManagementStrategy(new BasicBufferManagementStrategy(Directories.DATA_DIR));
 
         try (final ReceiverThread receiverThread = new ReceiverThread(builder);

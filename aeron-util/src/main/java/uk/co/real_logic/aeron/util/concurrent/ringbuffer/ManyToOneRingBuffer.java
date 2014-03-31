@@ -40,7 +40,7 @@ public class ManyToOneRingBuffer implements RingBuffer
     private final AtomicBuffer buffer;
     private final int capacity;
     private final int mask;
-    private final int maxEventSize;
+    private final int maxEventLength;
     private final int tailCounterIndex;
     private final int headCounterIndex;
     private final int correlationIdCounterIndex;
@@ -67,7 +67,7 @@ public class ManyToOneRingBuffer implements RingBuffer
         }
 
         mask = capacity - 1;
-        maxEventSize = capacity / 4;
+        maxEventLength = capacity / 4;
         tailCounterIndex = capacity + TAIL_COUNTER_OFFSET;
         headCounterIndex = capacity + HEAD_COUNTER_OFFSET;
         correlationIdCounterIndex = capacity + CORRELATION_COUNTER_OFFSET;
@@ -87,7 +87,7 @@ public class ManyToOneRingBuffer implements RingBuffer
     public boolean write(final int eventTypeId, final AtomicBuffer srcBuffer, final int srcIndex, final int length)
     {
         checkEventTypeId(eventTypeId);
-        checkEventSize(length);
+        checkEventLength(length);
 
         final int requiredCapacity = align(length + RECORD_HEADER_SIZE, ALIGNMENT);
         final int ringBufferIndex = claimCapacity(requiredCapacity);
@@ -161,9 +161,9 @@ public class ManyToOneRingBuffer implements RingBuffer
     /**
      * {@inheritDoc}
      */
-    public int maxEventSize()
+    public int maxEventLength()
     {
-        return maxEventSize;
+        return maxEventLength;
     }
 
     /**
@@ -185,12 +185,12 @@ public class ManyToOneRingBuffer implements RingBuffer
         }
     }
 
-    private void checkEventSize(final int length)
+    private void checkEventLength(final int length)
     {
-        if (length > maxEventSize)
+        if (length > maxEventLength)
         {
-            final String msg = String.format("encoded event exceeds maxEventSize of %d, length=%d",
-                                             Integer.valueOf(maxEventSize), Integer.valueOf(length));
+            final String msg = String.format("encoded event exceeds maxEventLength of %d, length=%d",
+                                             Integer.valueOf(maxEventLength), Integer.valueOf(length));
 
             throw new IllegalArgumentException(msg);
         }

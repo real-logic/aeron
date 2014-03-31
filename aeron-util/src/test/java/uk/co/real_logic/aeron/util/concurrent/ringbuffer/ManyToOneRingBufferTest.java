@@ -70,7 +70,7 @@ public class ManyToOneRingBufferTest
     {
         final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[1024]);
 
-        ringBuffer.write(EVENT_TYPE_ID, srcBuffer, 0, ringBuffer.maxEventSize() + 1);
+        ringBuffer.write(EVENT_TYPE_ID, srcBuffer, 0, ringBuffer.maxEventLength() + 1);
     }
 
     @Test

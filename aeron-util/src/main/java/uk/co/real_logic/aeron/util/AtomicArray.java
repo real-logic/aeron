@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.util;
 
-import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -25,22 +24,36 @@ import java.util.function.Consumer;
  */
 public class AtomicArray<T>
 {
-    private final AtomicReference<T[]> arrayRef = new AtomicReference<>();
-    private final Class<T> clazz;
+    private static final Object[] EMPTY_ARRAY = new Object[0];
+    private final AtomicReference<Object[]> arrayRef = new AtomicReference<>(EMPTY_ARRAY);
 
-    public AtomicArray(final Class<T> clazz)
+    /**
+     * Return the {@link java.lang.Object} array for this atomic array
+     * @return the {@link java.lang.Object} array
+     */
+    public Object[] getObjArray()
     {
-        this.arrayRef.set(null);
-        this.clazz = clazz;
+        return arrayRef.get();
     }
 
     /**
-     * Return the underlying {@link java.util.concurrent.atomic.AtomicReference} to the array
-     * @return the underlying array {@link java.util.concurrent.atomic.AtomicReference}
+     * Return the length of the {@link java.lang.Object} array
+     * @return the length of the {@link java.lang.Object} array
      */
-    public AtomicReference<T[]> atomicReference()
+    public int length()
     {
-        return arrayRef;
+        return arrayRef.get().length;
+    }
+
+    /**
+     * Return the given element of the array
+     * @param index of the element to return
+     * @return the element
+     */
+    @SuppressWarnings("unchecked")
+    public T get(final int index)
+    {
+        return (T)arrayRef.get()[index];
     }
 
     /**
@@ -49,16 +62,14 @@ public class AtomicArray<T>
      */
     public void forEach(final Consumer<T> func)
     {
-        final T[] array = arrayRef.get();
+        @SuppressWarnings("unchecked")
+        final T[] array = (T[])arrayRef.get();
 
-        if (null != array)
+        for (final T element : array)
         {
-            for (final T element : array)
+            if (null != element)
             {
-                if (null != element)
-                {
-                    func.accept(element);
-                }
+                func.accept(element);
             }
         }
     }
@@ -69,8 +80,8 @@ public class AtomicArray<T>
      */
     public void add(final T element)
     {
-        final T[] oldArray = arrayRef.get();
-        final T[] newArray = addToEndOfArray(clazz, oldArray, element);
+        final Object[] oldArray = arrayRef.get();
+        final Object[] newArray = addToEndOfArray(oldArray, element);
 
         arrayRef.lazySet(newArray);
     }
@@ -81,39 +92,26 @@ public class AtomicArray<T>
      */
     public void remove(final T element)
     {
-        final T[] oldArray = arrayRef.get();
-        final T[] newArray = removeFromArray(clazz, oldArray, element);
+        final Object[] oldArray = arrayRef.get();
+        final Object[] newArray = removeFromArray(oldArray, element);
 
         arrayRef.lazySet(newArray);
     }
 
-    @SuppressWarnings("unchecked")
-    private static <T> T[] addToEndOfArray(final Class<T> clazz, final T[] oldArray, final T newElement)
+    private static Object[] addToEndOfArray(final Object[] oldArray, final Object newElement)
     {
-        final T[] newArray;
-        final int index;
+        final Object[] newArray;
 
-        if (null == oldArray)
-        {
-            newArray = (T[]) Array.newInstance(clazz, 1);
-            index = 0;
-        }
-        else
-        {
-            newArray = Arrays.copyOf(oldArray, oldArray.length + 1);
-            index = oldArray.length;
-        }
-
-        newArray[index] = newElement;
+        newArray = Arrays.copyOf(oldArray, oldArray.length + 1);
+        newArray[oldArray.length] = newElement;
         return newArray;
     }
 
-    @SuppressWarnings("unchecked")
-    private static<T> T[] removeFromArray(final Class<T> clazz, final T[] oldArray, final T oldElement)
+    private static Object[] removeFromArray(final Object[] oldArray, final Object oldElement)
     {
         if (null == oldArray || (oldArray.length == 1 && oldArray[0].equals(oldElement)))
         {
-            return null;
+            return EMPTY_ARRAY;
         }
 
         int index = -1;
@@ -131,7 +129,7 @@ public class AtomicArray<T>
             return oldArray;
         }
 
-        final T[] newArray = (T[])Array.newInstance(clazz, oldArray.length - 1);
+        final Object[] newArray = new Object[oldArray.length - 1];
         System.arraycopy(oldArray, 0, newArray, 0, index);
         System.arraycopy(oldArray, index + 1, newArray, index, newArray.length - index);
 

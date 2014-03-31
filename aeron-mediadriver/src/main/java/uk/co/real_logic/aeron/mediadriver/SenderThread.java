@@ -35,7 +35,7 @@ public class SenderThread extends ClosableThread
         this.commandBuffer = builder.senderThreadCommandBuffer();
         this.adminThreadCommandBuffer = builder.adminThreadCommandBuffer();
         this.bufferManagementStrategy = builder.bufferManagementStrategy();
-        this.channels = new AtomicArray<>(SenderChannel.class);
+        this.channels = new AtomicArray<>();
     }
 
     @Override

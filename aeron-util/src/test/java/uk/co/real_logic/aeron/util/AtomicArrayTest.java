@@ -32,122 +32,112 @@ public class AtomicArrayTest
     @Test
     public void shouldHandleAddToEmptyArray()
     {
-        AtomicArray<Integer> array = new AtomicArray<>(Integer.class);
+        AtomicArray<Integer> array = new AtomicArray<>();
 
         array.add(valueOf(10));
-        final Integer[] intArray = array.atomicReference().get();
-
-        assertThat(valueOf(intArray.length), is(valueOf(1)));
-        assertThat(intArray[0], is(valueOf(10)));
+        assertThat(valueOf(array.length()), is(valueOf(1)));
+        assertThat(array.get(0), is(valueOf(10)));
     }
 
     @Test
     public void shouldHandleAddToNonEmptyArray()
     {
-        AtomicArray<Integer> array = new AtomicArray<>(Integer.class);
+        AtomicArray<Integer> array = new AtomicArray<>();
 
         array.add(valueOf(10));
         array.add(valueOf(20));
-        final Integer[] intArray = array.atomicReference().get();
 
-        assertThat(valueOf(intArray.length), is(valueOf(2)));
-        assertThat(intArray[0], is(valueOf(10)));
-        assertThat(intArray[1], is(valueOf(20)));
+        assertThat(valueOf(array.length()), is(valueOf(2)));
+        assertThat(array.get(0), is(valueOf(10)));
+        assertThat(array.get(1), is(valueOf(20)));
     }
 
     @Test
     public void shouldHandleRemoveFromEmptyArray()
     {
-        AtomicArray<Integer> array = new AtomicArray<>(Integer.class);
+        AtomicArray<Integer> array = new AtomicArray<>();
 
         array.remove(valueOf(10));
-        final Integer[] intArray = array.atomicReference().get();
 
-        assertNull(intArray);
+        assertThat(valueOf(array.length()), is(valueOf(0)));
     }
 
     @Test
     public void shouldHandleRemoveFromOneElementArray()
     {
-        AtomicArray<Integer> array = new AtomicArray<>(Integer.class);
+        AtomicArray<Integer> array = new AtomicArray<>();
 
         array.add(valueOf(10));
         array.remove(valueOf(10));
-        final Integer[] intArray = array.atomicReference().get();
 
-        assertNull(intArray);
+        assertThat(valueOf(array.length()), is(valueOf(0)));
     }
 
     @Test
     public void shouldHandleRemoveOfNonExistentElementFromOneElementArray()
     {
-        AtomicArray<Integer> array = new AtomicArray<>(Integer.class);
+        AtomicArray<Integer> array = new AtomicArray<>();
 
         array.add(valueOf(10));
         array.remove(valueOf(20));
-        final Integer[] intArray = array.atomicReference().get();
 
-        assertThat(valueOf(intArray.length), is(valueOf(1)));
-        assertThat(intArray[0], is(valueOf(10)));
+        assertThat(valueOf(array.length()), is(valueOf(1)));
+        assertThat(array.get(0), is(valueOf(10)));
     }
 
     @Test
     public void shouldHandleRemoveOfNonExistentElementFromArray()
     {
-        AtomicArray<Integer> array = new AtomicArray<>(Integer.class);
+        AtomicArray<Integer> array = new AtomicArray<>();
 
         array.add(valueOf(10));
         array.add(valueOf(20));
         array.remove(valueOf(30));
-        final Integer[] intArray = array.atomicReference().get();
 
-        assertThat(valueOf(intArray.length), is(valueOf(2)));
-        assertThat(intArray[0], is(valueOf(10)));
-        assertThat(intArray[1], is(valueOf(20)));
+        assertThat(valueOf(array.length()), is(valueOf(2)));
+        assertThat(array.get(0), is(valueOf(10)));
+        assertThat(array.get(1), is(valueOf(20)));
     }
 
     @Test
     public void shouldHandleRemoveElementFromArrayEnd()
     {
-        AtomicArray<Integer> array = new AtomicArray<>(Integer.class);
+        AtomicArray<Integer> array = new AtomicArray<>();
 
         array.add(valueOf(10));
         array.add(valueOf(20));
         array.remove(valueOf(20));
-        final Integer[] intArray = array.atomicReference().get();
 
-        assertThat(valueOf(intArray.length), is(valueOf(1)));
-        assertThat(intArray[0], is(valueOf(10)));
+        assertThat(valueOf(array.length()), is(valueOf(1)));
+        assertThat(array.get(0), is(valueOf(10)));
     }
 
     @Test
     public void shouldHandleRemoveElementFromArrayBegin()
     {
-        AtomicArray<Integer> array = new AtomicArray<>(Integer.class);
+        AtomicArray<Integer> array = new AtomicArray<>();
 
         array.add(valueOf(10));
         array.add(valueOf(20));
         array.remove(valueOf(10));
-        final Integer[] intArray = array.atomicReference().get();
 
-        assertThat(valueOf(intArray.length), is(valueOf(1)));
-        assertThat(intArray[0], is(valueOf(20)));
+        assertThat(valueOf(array.length()), is(valueOf(1)));
+        assertThat(array.get(0), is(valueOf(20)));
     }
 
     @Test
     public void shouldHandleRemoveElementFromArrayMiddle()
     {
-        AtomicArray<Integer> array = new AtomicArray<>(Integer.class);
+        AtomicArray<Integer> array = new AtomicArray<>();
 
         array.add(valueOf(10));
         array.add(valueOf(20));
         array.add(valueOf(30));
         array.remove(valueOf(20));
-        final Integer[] intArray = array.atomicReference().get();
 
-        assertThat(valueOf(intArray.length), is(valueOf(2)));
-        assertThat(intArray[0], is(valueOf(10)));
-        assertThat(intArray[1], is(valueOf(30)));
+        assertThat(valueOf(array.length()), is(valueOf(2)));
+        assertThat(array.get(0), is(valueOf(10)));
+        assertThat(array.get(1), is(valueOf(30)));
     }
 
     @Test
@@ -155,7 +145,7 @@ public class AtomicArrayTest
     {
         // given
         Set<Integer> values = new HashSet<>(asList(10, 20, 30));
-        AtomicArray<Integer> array = new AtomicArray<>(Integer.class);
+        AtomicArray<Integer> array = new AtomicArray<>();
         values.forEach(array::add);
 
         // when

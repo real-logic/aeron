@@ -79,7 +79,7 @@ public class MappedBufferRotator
         dirtyBuffer = currentBuffer;
         dirtyFile = currentFile;
         reset(dirtyFile);
-        
+
         currentBuffer = newBuffer;
         currentFile = newFile;
 

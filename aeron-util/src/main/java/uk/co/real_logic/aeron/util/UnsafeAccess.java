@@ -8,7 +8,6 @@ import java.security.PrivilegedExceptionAction;
 
 public class UnsafeAccess
 {
-
     public static final Unsafe UNSAFE;
 
     static
@@ -32,5 +31,4 @@ public class UnsafeAccess
             throw new RuntimeException(ex);
         }
     }
-
 }

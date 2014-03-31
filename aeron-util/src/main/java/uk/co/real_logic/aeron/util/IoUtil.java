@@ -15,10 +15,13 @@
  */
 package uk.co.real_logic.aeron.util;
 
+import sun.nio.ch.FileChannelImpl;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -128,6 +131,7 @@ public class IoUtil
         final RandomAccessFile randomAccessFile = new RandomAccessFile(file, "rw");
         final FileChannel templateFile = randomAccessFile.getChannel();
         fill(templateFile, 0, size, (byte) 0);
+
         return templateFile;
     }
 
@@ -138,6 +142,7 @@ public class IoUtil
         {
             long size = file.length();
             final FileChannel channel = file.getChannel();
+
             return channel.map(READ_WRITE, 0, size);
         }
     }
@@ -159,6 +164,26 @@ public class IoUtil
         if (!file.exists())
         {
             throw new IllegalStateException(String.format("Missing file for %1$s: %2$s", name, file.getAbsolutePath()));
+        }
+    }
+
+    /**
+     * Unmap a {@link MappedByteBuffer} without waiting for the next GC cycle.
+     *
+     * @param buffer to be unmapped.
+     */
+    public static void unmap(final MappedByteBuffer buffer)
+    {
+        try
+        {
+            final Method method = FileChannelImpl.class.getDeclaredMethod("unmap", MappedByteBuffer.class);
+
+            method.setAccessible(true);
+            method.invoke(null, buffer);
+        }
+        catch (final Exception ex)
+        {
+            throw new RuntimeException(ex);
         }
     }
 

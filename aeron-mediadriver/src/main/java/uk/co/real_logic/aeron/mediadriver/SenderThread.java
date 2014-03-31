@@ -30,21 +30,21 @@ public class SenderThread extends ClosableThread
     private final RingBuffer commandBuffer;
     private final RingBuffer adminThreadCommandBuffer;
     private final BufferManagementStrategy bufferManagementStrategy;
-    private final AtomicArray<ByteBuffer> bufferArray;
+    private final AtomicArray<SenderChannel> channels;
 
     public SenderThread(final MediaDriver.TopologyBuilder builder)
     {
         this.commandBuffer = builder.senderThreadCommandBuffer();
         this.adminThreadCommandBuffer = builder.adminThreadCommandBuffer();
         this.bufferManagementStrategy = builder.bufferManagementStrategy();
-        this.bufferArray = new AtomicArray<>(ByteBuffer.class);
+        this.channels = new AtomicArray<>(SenderChannel.class);
     }
 
     @Override
     public void process()
     {
         // TODO: handle data to send (with )
-        bufferArray.forEach((buffer) ->
+        channels.forEach((buffer) ->
         {
             // TODO: check buffer
         });
@@ -52,14 +52,14 @@ public class SenderThread extends ClosableThread
         // TODO: handle commands added to command buffer (call onNewSenderTerm, onStatusMessage, etc.)
     }
 
-    public void addBuffer(final ByteBuffer buffer)
+    public void addBuffer(final SenderChannel channel)
     {
-        bufferArray.add(buffer);
+        channels.add(channel);
     }
 
-    public void removeBuffer(final ByteBuffer buffer)
+    public void removeBuffer(final SenderChannel channel)
     {
-        bufferArray.remove(buffer);
+        channels.remove(channel);
     }
 
     private void onNewTermEvent(final long sessionId, final long channelId, final long termId) throws Exception

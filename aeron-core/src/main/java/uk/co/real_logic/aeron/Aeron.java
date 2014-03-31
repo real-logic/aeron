@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.aeron.admin.*;
 import uk.co.real_logic.aeron.util.AdminBufferStrategy;
 import uk.co.real_logic.aeron.util.Directories;
+import uk.co.real_logic.aeron.util.MappingAdminBufferStrategy;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ManyToOneRingBuffer;

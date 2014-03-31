@@ -20,11 +20,12 @@ import uk.co.real_logic.aeron.util.Directories;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.RingBuffer;
-import uk.co.real_logic.aeron.util.concurrent.RingBufferDescriptor;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+
+import static uk.co.real_logic.aeron.util.concurrent.RingBufferDescriptor.TRAILER_SIZE;
 
 /**
  * Main class for JVM-based mediadriver
@@ -57,20 +58,20 @@ public class MediaDriver
     public static final String ADMIN_BUFFER_SZ_PROPERTY_NAME = "aeron.admin.buffer.size";
 
     /** Default byte buffer size for reads */
-    public static final String READ_BYTE_BUFFER_SZ_DEFAULT = "4096";
+    public static final int READ_BYTE_BUFFER_SZ_DEFAULT = 4096;
 
     /** Default buffer size for command buffers between threads */
-    public static final String COMMAND_BUFFER_SZ_DEFAULT = "65536";
+    public static final int COMMAND_BUFFER_SZ_DEFAULT = 65536;
 
     /** Default buffer size for admin buffers between the media driver and the client */
-    public static final String ADMIN_BUFFER_SZ_DEFAULT = "65536";
+    public static final int ADMIN_BUFFER_SZ_DEFAULT = 65536;
 
-    public static final int READ_BYTE_BUFFER_SZ = Integer.parseInt(System.getProperty(READ_BYTE_BUFFER_SZ_PROPERTY_NAME,
-            READ_BYTE_BUFFER_SZ_DEFAULT));
-    public static final int COMMAND_BUFFER_SZ = Integer.parseInt(System.getProperty(COMMAND_BUFFER_SZ_PROPERTY_NAME,
-            COMMAND_BUFFER_SZ_DEFAULT));
-    public static final int ADMIN_BUFFER_SZ = Integer.parseInt(System.getProperty(ADMIN_BUFFER_SZ_PROPERTY_NAME,
-            ADMIN_BUFFER_SZ_DEFAULT));
+    public static final int READ_BYTE_BUFFER_SZ = Integer.getInteger(READ_BYTE_BUFFER_SZ_PROPERTY_NAME,
+            READ_BYTE_BUFFER_SZ_DEFAULT);
+    public static final int COMMAND_BUFFER_SZ = Integer.getInteger(COMMAND_BUFFER_SZ_PROPERTY_NAME,
+            COMMAND_BUFFER_SZ_DEFAULT);
+    public static final int ADMIN_BUFFER_SZ = Integer.getInteger(ADMIN_BUFFER_SZ_PROPERTY_NAME,
+            ADMIN_BUFFER_SZ_DEFAULT);
 
     public static void main(final String[] args)
     {
@@ -116,7 +117,7 @@ public class MediaDriver
 
         private RingBuffer createNewCommandBuffer(final int sz)
         {
-            final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(sz + RingBufferDescriptor.TRAILER_SIZE);
+            final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(sz + TRAILER_SIZE);
             final AtomicBuffer atomicBuffer = new AtomicBuffer(byteBuffer);
 
             return new ManyToOneRingBuffer(atomicBuffer);

@@ -1,6 +1,4 @@
-package uk.co.real_logic.aeron.admin;
-
-import uk.co.real_logic.aeron.util.AdminBufferStrategy;
+package uk.co.real_logic.aeron.util;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

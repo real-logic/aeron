@@ -16,6 +16,9 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.ClosableThread;
+import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
+import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.ErrorCode;
 import uk.co.real_logic.aeron.util.command.LibraryFacade;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -27,12 +30,16 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
+import static uk.co.real_logic.aeron.util.collections.CollectionUtil.getOrDefault;
+
 /**
  * Admin thread to take commands from Producers and Consumers as well as handle NAKs and retransmissions
  */
 public class MediaDriverAdminThread extends ClosableThread implements LibraryFacade
 {
+    // TODO: figure out whether I can remove this
     private final Map<UdpDestination, SrcFrameHandler> srcDestinationMap = new HashMap<>();
+
     private final RingBuffer commandBuffer;
     private final ReceiverThreadCursor receiverThreadCursor;
     private final ReceiverThread receiverThread;
@@ -40,6 +47,10 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     private final SenderThread senderThread;
     private final BufferManagementStrategy bufferManagementStrategy;
     private final RingBuffer adminReceiveBuffer;
+
+    private final Map<UdpDestination, Long2ObjectHashMap<SenderChannel>> sendChannels;
+
+    private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
 
     public MediaDriverAdminThread(final MediaDriver.TopologyBuilder builder,
                                   final ReceiverThread receiverThread,
@@ -51,6 +62,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         this.bufferManagementStrategy = builder.bufferManagementStrategy();
         this.receiverThread = receiverThread;
         this.senderThread = senderThread;
+        this.sendChannels = new HashMap<>();
         try
         {
             final ByteBuffer buffer = builder.adminBufferStrategy().toMediaDriver();
@@ -86,6 +98,16 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         adminReceiveBuffer.read((eventTypeId, buffer, index, length) ->
         {
             // TODO: call onAddChannel, etc.
+
+            switch (eventTypeId)
+            {
+                case ControlProtocolEvents.ADD_CHANNEL:
+                    channelMessage.reset(buffer, index);
+                    onAddChannel(channelMessage.destination(),
+                                 channelMessage.sessionId(),
+                                 channelMessage.channelId());
+                    return;
+            }
         });
         // TODO: read from commandBuffer and dispatch to onNakEvent, etc.
     }
@@ -117,23 +139,25 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         try
         {
             final UdpDestination srcDestination = UdpDestination.parse(destination);
-            final long termId = (long)(Math.random() * 0xFFFFFFFFL);  // FIXME: this may not be random enough
-            SrcFrameHandler src = srcDestinationMap.get(srcDestination);
+            Long2ObjectHashMap<SenderChannel> idToChannel = channelsForDestination(srcDestination);
 
-            if (null == src)
+            if (idToChannel.containsKey(channelId))
             {
-                src = new SrcFrameHandler(srcDestination, receiverThread, commandBuffer, senderThreadCursor);
-                srcDestinationMap.put(srcDestination, src);
+                // TODO: error, only one session can send per channel
             }
 
-            // create the buffer, but hold onto it in the strategy. The senderThread will do a lookup on it
-            bufferManagementStrategy.addSenderTerm(sessionId, channelId, termId);
+            SenderChannel channel = new SenderChannel(srcDestination,
+                                                      null,
+                                                      bufferManagementStrategy,
+                                                      sessionId,
+                                                      channelId);
 
-            // tell senderThread about the new buffer that was created
-            senderThreadCursor.addNewTermEvent(sessionId, channelId, termId);
+            channel.initiateTermBuffers();
 
             // tell the client admin thread of the new buffer
-            sendNewBufferNotification(sessionId, channelId, termId, true, destination);
+            sendNewBufferNotification(sessionId, channelId, 0L, true, destination);
+
+            senderThread.addBuffer(channel);
         }
         catch (Exception e)
         {
@@ -142,9 +166,15 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         }
     }
 
+    private Long2ObjectHashMap<SenderChannel> channelsForDestination(final UdpDestination srcDestination)
+    {
+        return getOrDefault(sendChannels, srcDestination, dest -> new Long2ObjectHashMap<>());
+    }
+
     @Override
     public void onRemoveChannel(final String destination, final long sessionId, final long channelId)
     {
+        // TODO: rewrite this to follow the new "dumb sender thread" model
         try
         {
             final UdpDestination srcDestination = UdpDestination.parse(destination);

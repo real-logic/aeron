@@ -43,11 +43,7 @@ public class SenderThread extends ClosableThread
     @Override
     public void process()
     {
-        // TODO: handle data to send (with )
-        channels.forEach((buffer) ->
-        {
-            // TODO: check buffer
-        });
+        channels.forEach(SenderChannel::process);
 
         // TODO: handle commands added to command buffer (call onNewSenderTerm, onStatusMessage, etc.)
     }

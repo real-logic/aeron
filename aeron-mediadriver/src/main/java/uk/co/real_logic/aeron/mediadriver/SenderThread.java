@@ -48,12 +48,12 @@ public class SenderThread extends ClosableThread
         // TODO: handle commands added to command buffer (call onNewSenderTerm, onStatusMessage, etc.)
     }
 
-    public void addBuffer(final SenderChannel channel)
+    public void addChannel(final SenderChannel channel)
     {
         channels.add(channel);
     }
 
-    public void removeBuffer(final SenderChannel channel)
+    public void removeChannel(final SenderChannel channel)
     {
         channels.remove(channel);
     }

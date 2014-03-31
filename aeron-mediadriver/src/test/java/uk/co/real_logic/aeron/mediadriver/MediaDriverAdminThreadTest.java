@@ -20,6 +20,7 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.COMMAND_BUFFER_SZ;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ADD_CHANNEL;
+import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.REMOVE_CHANNEL;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_SIZE;
 
 public class MediaDriverAdminThreadTest
@@ -45,7 +46,8 @@ public class MediaDriverAdminThreadTest
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(256));
 
     private MediaDriverAdminThread mediaDriverAdminThread;
-    private SenderChannel channel;
+    private SenderChannel addedChannel;
+    private SenderChannel removedChannel;
 
     @Before
     public void setUp()
@@ -59,9 +61,15 @@ public class MediaDriverAdminThreadTest
 
         SenderThread senderThread = new SenderThread(builder) {
             @Override
-            public void addBuffer(final SenderChannel channel)
+            public void addChannel(final SenderChannel channel)
             {
-                MediaDriverAdminThreadTest.this.channel = channel;
+                MediaDriverAdminThreadTest.this.addedChannel = channel;
+            }
+
+            @Override
+            public void removeChannel(final SenderChannel channel)
+            {
+                MediaDriverAdminThreadTest.this.removedChannel = channel;
             }
         };
         ReceiverThread receiverThread = mock(ReceiverThread.class);
@@ -71,22 +79,38 @@ public class MediaDriverAdminThreadTest
     @Test
     public void addingChannelShouldNotifySenderThread() throws IOException
     {
+        writeChannelMessage(ADD_CHANNEL);
+
+        mediaDriverAdminThread.process();
+
+        assertThat(addedChannel, notNullValue());
+        assertThat(addedChannel.channelId(), is(1L));
+        assertThat(addedChannel.sessionId(), is(2L));
+    }
+
+    @Test
+    public void removingChannelShouldNotifySenderThread() throws IOException
+    {
+        writeChannelMessage(ADD_CHANNEL);
+        writeChannelMessage(REMOVE_CHANNEL);
+
+        mediaDriverAdminThread.process();
+
+        assertThat(removedChannel, is(addedChannel));
+    }
+
+    private void writeChannelMessage(final int eventTypeId) throws IOException
+    {
         final ByteBuffer buffer = new MappingAdminBufferStrategy(adminPath).toMediaDriver();
         final RingBuffer adminCommands = new ManyToOneRingBuffer(new AtomicBuffer(buffer));
 
-        final ChannelMessageFlyweight  channelMessage = new ChannelMessageFlyweight();
+        final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
         channelMessage.reset(writeBuffer, 0);
         channelMessage.channelId(1L);
         channelMessage.sessionId(2L);
         channelMessage.destination(DESTINATION);
 
-        adminCommands.write(ADD_CHANNEL, writeBuffer, 0, channelMessage.length());
-
-        mediaDriverAdminThread.process();
-
-        assertThat(channel, notNullValue());
-        assertThat(channel.channelId(), is(1L));
-        assertThat(channel.sessionId(), is(2L));
+        adminCommands.write(eventTypeId, writeBuffer, 0, channelMessage.length());
     }
 
 }

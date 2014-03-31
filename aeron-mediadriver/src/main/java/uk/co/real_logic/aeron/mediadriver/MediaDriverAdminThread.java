@@ -107,6 +107,12 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
                                  channelMessage.sessionId(),
                                  channelMessage.channelId());
                     return;
+                case ControlProtocolEvents.REMOVE_CHANNEL:
+                    channelMessage.reset(buffer, index);
+                    onRemoveChannel(channelMessage.destination(),
+                                    channelMessage.sessionId(),
+                                    channelMessage.channelId());
+                    return;
             }
         });
         // TODO: read from commandBuffer and dispatch to onNakEvent, etc.
@@ -139,7 +145,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         try
         {
             final UdpDestination srcDestination = UdpDestination.parse(destination);
-            Long2ObjectHashMap<SenderChannel> idToChannel = channelsForDestination(srcDestination);
+            final Long2ObjectHashMap<SenderChannel> idToChannel = channelsForDestination(srcDestination);
 
             if (idToChannel.containsKey(channelId))
             {
@@ -153,11 +159,12 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
                                                       channelId);
 
             channel.initiateTermBuffers();
+            idToChannel.put(channelId, channel);
 
             // tell the client admin thread of the new buffer
             sendNewBufferNotification(sessionId, channelId, 0L, true, destination);
 
-            senderThread.addBuffer(channel);
+            senderThread.addChannel(channel);
         }
         catch (Exception e)
         {
@@ -174,34 +181,38 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     @Override
     public void onRemoveChannel(final String destination, final long sessionId, final long channelId)
     {
-        // TODO: rewrite this to follow the new "dumb sender thread" model
         try
         {
             final UdpDestination srcDestination = UdpDestination.parse(destination);
-            final SrcFrameHandler src = srcDestinationMap.get(srcDestination);
+            final Long2ObjectHashMap<SenderChannel> idToChannel = channelsForDestination(srcDestination);
+            final SenderChannel channel = idToChannel.get(channelId);
 
-            if (null == src)
+            if (channel == null)
             {
-                throw new IllegalArgumentException("destination unknown for channel remove: " + destination);
+                // TODO: error
+            }
+
+            if (channel.sessionId() != sessionId)
+            {
+                // TODO: error
             }
 
             // remove from buffer management, but will be unmapped once SenderThread releases it and it can be GCed
             bufferManagementStrategy.removeSenderChannel(sessionId, channelId);
 
-            // inform SenderThread
-            senderThreadCursor.addRemoveChannelEvent(sessionId, channelId);
+            senderThread.removeChannel(channel);
 
             // if no more channels, then remove framehandler and close it
             if (0 == bufferManagementStrategy.countChannels(sessionId))
             {
                 srcDestinationMap.remove(srcDestination);
-                src.close();
             }
         }
         catch (Exception e)
         {
-            sendErrorResponse(ErrorCode.GENERIC_ERROR.value(), e.getMessage().getBytes());
             // TODO: log this as well as send the error response
+            e.printStackTrace();
+            sendErrorResponse(ErrorCode.GENERIC_ERROR.value(), e.getMessage().getBytes());
         }
     }
 

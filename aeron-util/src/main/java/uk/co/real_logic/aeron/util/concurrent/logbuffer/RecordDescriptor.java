@@ -31,6 +31,9 @@ public class RecordDescriptor
     /** Word alignment for fields. */
     public static final int WORD_ALIGNMENT = BitUtil.SIZE_OF_LONG;
 
+    /** Type of the field used to store record length */
+    public static final Class<Integer> LENGTH_FIELD_TYPE = int.class;
+
     /**
      * Calculate the maximum supported message length for a buffer of given capacity.
      *

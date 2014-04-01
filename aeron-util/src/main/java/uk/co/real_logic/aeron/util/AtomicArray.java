@@ -81,7 +81,7 @@ public class AtomicArray<T>
     public void add(final T element)
     {
         final Object[] oldArray = arrayRef.get();
-        final Object[] newArray = addToEndOfArray(oldArray, element);
+        final Object[] newArray = append(oldArray, element);
 
         arrayRef.lazySet(newArray);
     }
@@ -93,21 +93,20 @@ public class AtomicArray<T>
     public void remove(final T element)
     {
         final Object[] oldArray = arrayRef.get();
-        final Object[] newArray = removeFromArray(oldArray, element);
+        final Object[] newArray = remove(oldArray, element);
 
         arrayRef.lazySet(newArray);
     }
 
-    private static Object[] addToEndOfArray(final Object[] oldArray, final Object newElement)
+    private static Object[] append(final Object[] oldArray, final Object newElement)
     {
-        final Object[] newArray;
-
-        newArray = Arrays.copyOf(oldArray, oldArray.length + 1);
+        final Object[] newArray = Arrays.copyOf(oldArray, oldArray.length + 1);
         newArray[oldArray.length] = newElement;
+
         return newArray;
     }
 
-    private static Object[] removeFromArray(final Object[] oldArray, final Object oldElement)
+    private static Object[] remove(final Object[] oldArray, final Object oldElement)
     {
         if (null == oldArray || (oldArray.length == 1 && oldArray[0].equals(oldElement)))
         {
@@ -135,5 +134,4 @@ public class AtomicArray<T>
 
         return newArray;
     }
-
 }

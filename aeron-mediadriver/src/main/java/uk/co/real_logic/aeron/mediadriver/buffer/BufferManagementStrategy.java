@@ -51,11 +51,7 @@ public interface BufferManagementStrategy
                                   final long channelId,
                                   final long termId);
 
-    int countSessions();
-
     int countChannels(final long sessionId);
-
-    int countTerms(final long sessionId, final long channelId);
 
     int countSessions(final UdpDestination destination);
 

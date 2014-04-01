@@ -35,8 +35,6 @@ import java.util.Map;
  */
 public class MediaDriverAdminThread extends ClosableThread implements LibraryFacade
 {
-    // TODO: figure out whether I can remove this
-    private final Map<UdpDestination, SrcFrameHandler> srcDestinationMap = new HashMap<>();
 
     private final RingBuffer commandBuffer;
     private final ReceiverThreadCursor receiverThreadCursor;
@@ -45,6 +43,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     private final BufferManagementStrategy bufferManagementStrategy;
     private final RingBuffer adminReceiveBuffer;
 
+    private final Map<UdpDestination, SrcFrameHandler> srcDestinationMap;
     private final ChannelMap<SenderChannel> sendChannels;
 
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
@@ -59,6 +58,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         this.receiverThread = receiverThread;
         this.senderThread = senderThread;
         this.sendChannels = new ChannelMap<>();
+        this.srcDestinationMap = new HashMap<>();
         try
         {
             final ByteBuffer buffer = builder.adminBufferStrategy().toMediaDriver();
@@ -130,7 +130,8 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     public void sendNewBufferNotification(final long sessionId,
                                           final long channelId,
                                           final long termId,
-                                          final boolean isSender, final String destination)
+                                          final boolean isSender,
+                                          final String destination)
     {
 
     }
@@ -142,9 +143,19 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         {
             final UdpDestination srcDestination = UdpDestination.parse(destination);
             SenderChannel channel = sendChannels.get(srcDestination, sessionId, channelId);
+            if (channel != null)
+            {
+                // TODO: error
+            }
 
-            channel = new SenderChannel(srcDestination,
-                                        null,
+            SrcFrameHandler frameHandler = srcDestinationMap.get(srcDestination);
+            if (frameHandler == null)
+            {
+                frameHandler = new SrcFrameHandler(srcDestination, receiverThread, commandBuffer);
+                srcDestinationMap.put(srcDestination, frameHandler);
+            }
+
+            channel = new SenderChannel(frameHandler,
                                         bufferManagementStrategy,
                                         sessionId,
                                         channelId);
@@ -159,6 +170,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         }
         catch (Exception e)
         {
+            e.printStackTrace();
             sendErrorResponse(ErrorCode.GENERIC_ERROR.value(), e.getMessage().getBytes());
             // TODO: log this as well as send the error response
         }
@@ -170,7 +182,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         try
         {
             final UdpDestination srcDestination = UdpDestination.parse(destination);
-            final SenderChannel channel = sendChannels.get(srcDestination, sessionId, channelId);
+            final SenderChannel channel = sendChannels.remove(srcDestination, sessionId, channelId);
             if (channel == null)
             {
                 // TODO: error
@@ -182,9 +194,10 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             senderThread.removeChannel(channel);
 
             // if no more channels, then remove framehandler and close it
-            if (0 == bufferManagementStrategy.countChannels(sessionId))
+            if (sendChannels.isEmpty(srcDestination))
             {
-                srcDestinationMap.remove(srcDestination);
+                SrcFrameHandler frameHandler = srcDestinationMap.remove(srcDestination);
+                frameHandler.close();
             }
         }
         catch (Exception e)

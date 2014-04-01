@@ -34,7 +34,9 @@ public class SenderChannelBufferTest
     @Test
     public void buffersAreRotatedAroundWithIndexMapping() throws IOException
     {
-        final SenderChannelBuffer buffer = new SenderChannelBuffer(templateResource.templateFile(), templateResource.directory(), BUFFER_SIZE);
+        final SenderChannelBuffer buffer = new SenderChannelBuffer(templateResource.templateFile(),
+                                                                   templateResource.directory(),
+                                                                   BUFFER_SIZE);
         for (long termId = 0; termId < 20; termId++)
         {
             assertThat(buffer.newTermBuffer(termId), notNullValue());

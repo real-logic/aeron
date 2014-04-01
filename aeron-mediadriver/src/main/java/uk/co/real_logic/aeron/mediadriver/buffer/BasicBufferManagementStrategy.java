@@ -186,22 +186,9 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
         return null;
     }
 
-    // TODO: evaluate whether its possible to simplify the reference counting
-    // if not reinstate this for the ChannelMap
-    @Override
-    public int countSessions()
-    {
-        return 1;
-    }
-
+    // TODO: remove this method after cleaning up onRemoveTerm
     @Override
     public int countChannels(final long sessionId)
-    {
-        return 1;
-    }
-
-    @Override
-    public int countTerms(final long sessionId, final long channelId)
     {
         return 1;
     }

@@ -25,23 +25,20 @@ import java.nio.ByteBuffer;
  *
  * Stores Flow Control State
  */
-public class SenderChannel implements AutoCloseable
+public class SenderChannel
 {
 
-    private final UdpDestination destination;
-    private final UdpTransport transport;
+    private final SrcFrameHandler frameHandler;
     private final BufferManagementStrategy bufferManagementStrategy;
     private final long sessionId;
     private final long channelId;
 
-    public SenderChannel(final UdpDestination destination,
-                         final UdpTransport transport,
+    public SenderChannel(final SrcFrameHandler frameHandler,
                          final BufferManagementStrategy bufferManagementStrategy,
                          final long sessionId,
                          final long channelId)
     {
-        this.destination = destination;
-        this.transport = transport;
+        this.frameHandler = frameHandler;
         this.bufferManagementStrategy = bufferManagementStrategy;
         this.sessionId = sessionId;
         this.channelId = channelId;
@@ -54,7 +51,7 @@ public class SenderChannel implements AutoCloseable
         final ByteBuffer buffer = null;
         try
         {
-            int bytesSent = transport.sendTo(buffer, destination.remote());
+            int bytesSent = frameHandler.send(buffer);
             // TODO: error condition
         }
         catch (final Exception e)
@@ -64,25 +61,17 @@ public class SenderChannel implements AutoCloseable
         }
     }
 
-    @Override
-    public void close() throws Exception
+    public boolean isOpen()
     {
-        // TODO:
+        return frameHandler.isOpen();
     }
 
-    public void initiateTermBuffers()
+    public void initiateTermBuffers() throws Exception
     {
         final long termId = (long)(Math.random() * 0xFFFFFFFFL);  // FIXME: this may not be random enough
 
         // create the buffer, but hold onto it in the strategy. The senderThread will do a lookup on it
-        try
-        {
-            bufferManagementStrategy.addSenderTerm(destination, sessionId, channelId, termId);
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
+        bufferManagementStrategy.addSenderTerm(frameHandler.destination(), sessionId, channelId, termId);
     }
 
     public long sessionId()

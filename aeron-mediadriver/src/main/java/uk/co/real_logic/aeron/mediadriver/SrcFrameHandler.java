@@ -56,6 +56,11 @@ public class SrcFrameHandler implements FrameHandler, AutoCloseable
         transport.close();
     }
 
+    public boolean isOpen()
+    {
+        return transport.isOpen();
+    }
+
     public UdpDestination destination()
     {
         return destination;

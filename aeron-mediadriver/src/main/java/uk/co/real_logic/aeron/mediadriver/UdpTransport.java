@@ -104,6 +104,11 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
         return channel.send(buffer, remote);
     }
 
+    public boolean isOpen()
+    {
+        return channel.isOpen();
+    }
+
     public void close()
     {
         try

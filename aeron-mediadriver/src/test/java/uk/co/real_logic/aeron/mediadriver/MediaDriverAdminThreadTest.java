@@ -33,7 +33,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.COMMAND_BUFFER_SZ;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ADD_CHANNEL;
@@ -44,7 +46,7 @@ public class MediaDriverAdminThreadTest
 {
 
     private static final String ADMIN_DIR = "adminDir";
-    private static final String DESTINATION = "udp://localhost:40124@localhost:40123";
+    private static final String DESTINATION = "udp://localhost:";
 
     private static String adminPath;
 
@@ -63,12 +65,15 @@ public class MediaDriverAdminThreadTest
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(256));
 
     private MediaDriverAdminThread mediaDriverAdminThread;
-    private List<SenderChannel> addedChannels = new ArrayList<>();
-    private List<SenderChannel> removedChannels = new ArrayList<>();
+    private List<SenderChannel> addedChannels;
+    private List<SenderChannel> removedChannels;
 
     @Before
     public void setUp()
     {
+        addedChannels = new ArrayList<>();
+        removedChannels = new ArrayList<>();
+
         final MediaDriver.TopologyBuilder builder = new MediaDriver.TopologyBuilder()
                 .adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
@@ -95,12 +100,13 @@ public class MediaDriverAdminThreadTest
     @Test
     public void addingChannelShouldNotifySenderThread() throws IOException
     {
-        writeChannelMessage(ADD_CHANNEL, 1L, 2L);
+        writeChannelMessage(ADD_CHANNEL, 1L, 2L, 4000);
 
         mediaDriverAdminThread.process();
 
         assertThat(addedChannels, hasSize(1));
         assertChannelHas(addedChannels.get(0), 1L, 2L);
+        assertAddedChannelsWereConnected();
     }
 
     private void assertChannelHas(final SenderChannel channel, final long channelId, final long sessionId)
@@ -113,10 +119,10 @@ public class MediaDriverAdminThreadTest
     @Test
     public void addingMultipleChannelsNotifiesSenderThread() throws IOException
     {
-        writeChannelMessage(ADD_CHANNEL, 1L, 2L);
-        writeChannelMessage(ADD_CHANNEL, 1L, 3L);
-        writeChannelMessage(ADD_CHANNEL, 3L, 2L);
-        writeChannelMessage(ADD_CHANNEL, 3L, 4L);
+        writeChannelMessage(ADD_CHANNEL, 1L, 2L, 4001);
+        writeChannelMessage(ADD_CHANNEL, 1L, 3L, 4002);
+        writeChannelMessage(ADD_CHANNEL, 3L, 2L, 4003);
+        writeChannelMessage(ADD_CHANNEL, 3L, 4L, 4004);
 
         mediaDriverAdminThread.process();
 
@@ -125,38 +131,52 @@ public class MediaDriverAdminThreadTest
         assertChannelHas(addedChannels.get(1), 1L, 3L);
         assertChannelHas(addedChannels.get(2), 3L, 2L);
         assertChannelHas(addedChannels.get(3), 3L, 4L);
+
+        assertAddedChannelsWereConnected();
     }
 
     @Test
     public void removingChannelShouldNotifySenderThread() throws IOException
     {
-        writeChannelMessage(ADD_CHANNEL, 1L, 2L);
-        writeChannelMessage(REMOVE_CHANNEL, 1L, 2L);
+        writeChannelMessage(ADD_CHANNEL, 1L, 2L, 4005);
+        writeChannelMessage(REMOVE_CHANNEL, 1L, 2L, 4005);
 
         mediaDriverAdminThread.process();
 
         assertThat(removedChannels, is(addedChannels));
+        assertRemovedChannelsWereClosed();
     }
 
     @Test
     public void removingMultipleChannelsNotifiesSenderThread() throws IOException
     {
-        writeChannelMessage(ADD_CHANNEL, 1L, 2L);
-        writeChannelMessage(ADD_CHANNEL, 1L, 3L);
-        writeChannelMessage(ADD_CHANNEL, 3L, 2L);
-        writeChannelMessage(ADD_CHANNEL, 3L, 4L);
+        writeChannelMessage(ADD_CHANNEL, 1L, 2L, 4006);
+        writeChannelMessage(ADD_CHANNEL, 1L, 3L, 4007);
+        writeChannelMessage(ADD_CHANNEL, 3L, 2L, 4008);
+        writeChannelMessage(ADD_CHANNEL, 3L, 4L, 4008);
 
-        writeChannelMessage(REMOVE_CHANNEL, 1L, 2L);
-        writeChannelMessage(REMOVE_CHANNEL, 1L, 3L);
-        writeChannelMessage(REMOVE_CHANNEL, 3L, 2L);
-        writeChannelMessage(REMOVE_CHANNEL, 3L, 4L);
+        writeChannelMessage(REMOVE_CHANNEL, 1L, 2L, 4006);
+        writeChannelMessage(REMOVE_CHANNEL, 1L, 3L, 4007);
+        writeChannelMessage(REMOVE_CHANNEL, 3L, 2L, 4008);
+        writeChannelMessage(REMOVE_CHANNEL, 3L, 4L, 4008);
 
         mediaDriverAdminThread.process();
 
         assertThat(removedChannels, is(addedChannels));
+        assertRemovedChannelsWereClosed();
     }
 
-    private void writeChannelMessage(final int eventTypeId, final long channelId, final long sessionId)
+    private void assertRemovedChannelsWereClosed()
+    {
+        removedChannels.forEach(channel -> assertFalse("Channel wasn't closed", channel.isOpen()));
+    }
+
+    private void assertAddedChannelsWereConnected()
+    {
+        addedChannels.forEach(channel -> assertTrue("Channel isn't open", channel.isOpen()));
+    }
+
+    private void writeChannelMessage(final int eventTypeId, final long channelId, final long sessionId, final int port)
             throws IOException
     {
         final ByteBuffer buffer = new MappingAdminBufferStrategy(adminPath).toMediaDriver();
@@ -166,7 +186,7 @@ public class MediaDriverAdminThreadTest
         channelMessage.reset(writeBuffer, 0);
         channelMessage.channelId(channelId);
         channelMessage.sessionId(sessionId);
-        channelMessage.destination(DESTINATION);
+        channelMessage.destination(DESTINATION + port);
 
         adminCommands.write(eventTypeId, writeBuffer, 0, channelMessage.length());
     }

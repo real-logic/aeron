@@ -74,9 +74,23 @@ public class ChannelMap<T>
             return null;
         }
 
-        // TODO: consider remove empty parent lookup structures to avoid memory leaks
+        T value = channelMap.remove(channelId);
 
-        return channelMap.remove(channelId);
+        if (channelMap.isEmpty())
+        {
+            sessionMap.remove(sessionId);
+            if (sessionMap.isEmpty())
+            {
+                map.remove(destination);
+            }
+        }
+
+        return value;
+    }
+
+    public boolean isEmpty(final UdpDestination destination)
+    {
+        return !map.containsKey(destination);
     }
 
 }

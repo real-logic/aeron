@@ -27,14 +27,10 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescri
  */
 public class ManyToOneRingBuffer implements RingBuffer
 {
-    /**
-     * Event type is padding to prevent fragmentation in the buffer.
-     */
+    /** Event type is padding to prevent fragmentation in the buffer. */
     public static final int PADDING_EVENT_TYPE_ID = -1;
 
-    /**
-     * Buffer has insufficient capacity to record an event.
-     */
+    /** Buffer has insufficient capacity to record an event. */
     public static final int INSUFFICIENT_CAPACITY = -1;
 
     private final AtomicBuffer buffer;
@@ -90,17 +86,17 @@ public class ManyToOneRingBuffer implements RingBuffer
         checkEventLength(length);
 
         final int requiredCapacity = align(length + RECORD_HEADER_SIZE, ALIGNMENT);
-        final int ringBufferIndex = claimCapacity(requiredCapacity);
-        if (INSUFFICIENT_CAPACITY == ringBufferIndex)
+        final int recordIndex = claimCapacity(requiredCapacity);
+        if (INSUFFICIENT_CAPACITY == recordIndex)
         {
             return false;
         }
 
-        writeEventLength(ringBufferIndex, length);
-        writeEventType(ringBufferIndex, eventTypeId);
-        writeEvent(ringBufferIndex, srcBuffer, srcIndex, length);
+        writeEventLength(recordIndex, length);
+        writeEventType(recordIndex, eventTypeId);
+        writeEvent(recordIndex, srcBuffer, srcIndex, length);
 
-        writeRecordLengthOrdered(ringBufferIndex, requiredCapacity);
+        writeRecordLengthOrdered(recordIndex, requiredCapacity);
 
         return true;
     }
@@ -296,7 +292,6 @@ public class ManyToOneRingBuffer implements RingBuffer
     private int waitForRecordLengthOrdered(final int recordIndex)
     {
         int recordLength;
-
         do
         {
             recordLength = buffer.getIntVolatile(lengthOffset(recordIndex));

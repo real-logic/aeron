@@ -23,6 +23,7 @@ import uk.co.real_logic.aeron.util.concurrent.EventHandler;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.util.BitUtil.align;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer.*;
@@ -119,6 +120,7 @@ public class ManyToOneRingBufferTest
 
         verify(atomicBuffer, never()).putInt(anyInt(), anyInt());
         verify(atomicBuffer, never()).compareAndSetLong(anyInt(), anyLong(), anyLong());
+        verify(atomicBuffer, never()).putBytes(anyInt(), eq(srcBuffer), anyInt(), anyInt());
         verify(atomicBuffer, never()).putIntOrdered(anyInt(), anyInt());
     }
 

@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
+import static uk.co.real_logic.aeron.util.FileMappingConvention.termLocation;
 import static uk.co.real_logic.aeron.util.collections.CollectionUtil.getOrDefault;
 
 /**
@@ -84,12 +85,13 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
      * Maps a buffer for a given term, ensuring that a file of the correct size is created.
      */
     public MappedByteBuffer mapTerm(final File rootDir,
+                                    final String destination,
                                     final long sessionId,
                                     final long channelId,
                                     final long termId,
                                     final long requiredSize) throws Exception
     {
-        final File termIdFile = FileMappingConvention.termLocation(rootDir, sessionId, channelId, termId, true);
+        final File termIdFile = termLocation(rootDir, sessionId, channelId, termId, true, destination);
         // must be checked at this point, opening a RandomAccessFile will cause this to be true
         final boolean fileExists = termIdFile.exists();
         try (final RandomAccessFile randomAccessFile = new RandomAccessFile(termIdFile, "rw"))
@@ -133,7 +135,7 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
 
         if (rotator == null)
         {
-            final File file = fileConvention.termLocation(senderDir, sessionId, channelId, termId, true);
+            final File file = termLocation(senderDir, sessionId, channelId, termId, true, destination.toString());
             rotator = new MappedBufferRotator(templateFile, file, MediaDriver.READ_BYTE_BUFFER_SZ);
             channelToTerms.put(channelId, rotator);
         }

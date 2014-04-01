@@ -48,8 +48,8 @@ public class BasicBufferManagementStrategyTest
     @Test
     public void mappedFilesAreCorrectSizeAndZeroed() throws Exception
     {
-        BasicBufferManagementStrategy strategy = new BasicBufferManagementStrategy(DATA_DIR.getAbsolutePath());
-        MappedByteBuffer term = strategy.mapTerm(DATA_DIR, 1, 1, 1, 256);
+        final BasicBufferManagementStrategy strategy = new BasicBufferManagementStrategy(DATA_DIR.getAbsolutePath());
+        final MappedByteBuffer term = strategy.mapTerm(DATA_DIR, "udp://localhost:4321", 1, 1, 1, 256);
 
         assertThat(term.capacity(), is(256));
         assertThat(term.get(0), is((byte) 0));

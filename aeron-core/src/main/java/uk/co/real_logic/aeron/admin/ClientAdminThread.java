@@ -158,7 +158,11 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
     {
     }
 
-    public void onNewBufferNotification(final long sessionId, final long channelId, final long termId, final boolean isSender, final String destination)
+    public void onNewBufferNotification(final long sessionId,
+                                        final long channelId,
+                                        final long termId,
+                                        final boolean isSender,
+                                        final String destination)
     {
         if (!subscribeTo(sessionId, destination))
         {
@@ -167,7 +171,7 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
 
         try
         {
-            final ByteBuffer buffer = bufferUsage.onTermAdded(sessionId, channelId, termId, isSender);
+            final ByteBuffer buffer = bufferUsage.onTermAdded(destination, sessionId, channelId, termId, isSender);
             final Long2ObjectHashMap<TermBufferNotifier> channelNotifiers = getNotifiers(isSender).get(destination);
 
             channelNotifiers.get(channelId)

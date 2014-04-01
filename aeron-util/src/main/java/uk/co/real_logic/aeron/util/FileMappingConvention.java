@@ -73,9 +73,11 @@ public class FileMappingConvention
                                     final long sessionId,
                                     final long channelId,
                                     final long termId,
-                                    final boolean createChannelIfMissing)
+                                    final boolean createChannelIfMissing,
+                                    final String destination)
     {
-        final File sessionDir = new File(rootDir, Long.toString(sessionId));
+        final File destinationDir = new File(rootDir, destinationToDir(destination));
+        final File sessionDir = new File(destinationDir, Long.toString(sessionId));
         final File channelDir = new File(sessionDir, Long.toString(channelId));
         if (createChannelIfMissing)
         {
@@ -84,4 +86,9 @@ public class FileMappingConvention
         return new File(channelDir, Long.toString(termId));
     }
 
+    static String destinationToDir(final String destination)
+    {
+        return destination.replace(':', '_')
+                          .replace('/', '_');
+    }
 }

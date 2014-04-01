@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 
+import static uk.co.real_logic.aeron.util.FileMappingConvention.termLocation;
+
 /**
  * Basic buffer usage where each Term is a file.
  */
@@ -36,21 +38,23 @@ public class BasicBufferUsageStrategy implements BufferUsageStrategy
     }
 
     @Override
-    public ByteBuffer onTermAdded(final long sessionId,
+    public ByteBuffer onTermAdded(final String destination,
+                                  final long sessionId,
                                   final long channelId,
                                   final long termId,
                                   boolean isSender) throws IOException
     {
         final File rootDir = isSender ? fileConventions.senderDir() : fileConventions.receiverDir();
-        return mapTerm(sessionId, channelId, termId, rootDir);
+        return mapTerm(destination, sessionId, channelId, termId, rootDir);
     }
 
-    private MappedByteBuffer mapTerm(final long sessionId,
+    private MappedByteBuffer mapTerm(final String destination,
+                                     final long sessionId,
                                      final long channelId,
                                      final long termId,
                                      final File rootDir) throws IOException
     {
-        final File termIdFile = FileMappingConvention.termLocation(rootDir, sessionId, channelId, termId, false);
+        final File termIdFile = termLocation(rootDir, sessionId, channelId, termId, false, destination);
         return IoUtil.mapExistingFile(termIdFile, "Term Buffer");
     }
 

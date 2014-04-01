@@ -13,16 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.mediadriver;
+package uk.co.real_logic.aeron.mediadriver.buffer;
 
-import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
-import uk.co.real_logic.aeron.util.IoUtil;
+import uk.co.real_logic.aeron.mediadriver.TemplateFileResource;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -31,22 +29,13 @@ import java.util.stream.IntStream;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static uk.co.real_logic.aeron.mediadriver.TemplateFileResource.BUFFER_SIZE;
 
 public class MappedBufferRotatorTest
 {
-    public static final int BUFFER_SIZE = 1000;
 
-    private static FileChannel templateFile;
-    private static File directory;
-
-    @BeforeClass
-    public static void createFiles() throws IOException
-    {
-        directory = new File(System.getProperty("java.io.tmpdir"), "mapped-buffers");
-        IoUtil.ensureDirectoryExists(directory, "mapped-buffers");
-        directory.deleteOnExit();
-        templateFile = IoUtil.createEmptyFile(new File(directory, "template"), BUFFER_SIZE);
-    }
+    @ClassRule
+    public static TemplateFileResource templateResource = new TemplateFileResource();
 
     @Test
     public void returnedBuffersAreAlwaysFresh() throws IOException
@@ -74,7 +63,7 @@ public class MappedBufferRotatorTest
 
     private void withRotatedBuffers(final Consumer<MappedByteBuffer> handler) throws IOException
     {
-        final MappedBufferRotator rotator = new MappedBufferRotator(templateFile, directory, BUFFER_SIZE);
+        final MappedBufferRotator rotator = new MappedBufferRotator(templateResource.templateFile(), templateResource.directory(), BUFFER_SIZE);
         for (int iteration = 0; iteration < 20; iteration++)
         {
             final MappedByteBuffer buffer = rotator.rotate();

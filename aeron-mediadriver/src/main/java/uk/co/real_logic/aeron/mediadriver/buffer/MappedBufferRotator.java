@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.mediadriver;
+package uk.co.real_logic.aeron.mediadriver.buffer;
 
 import uk.co.real_logic.aeron.util.IoUtil;
 
@@ -84,6 +84,11 @@ public class MappedBufferRotator
         currentFile = newFile;
 
         return newBuffer;
+    }
+
+    public MappedByteBuffer dirtyBuffer()
+    {
+        return dirtyBuffer;
     }
 
     private FileChannel openFile(final File directory, final String child) throws FileNotFoundException

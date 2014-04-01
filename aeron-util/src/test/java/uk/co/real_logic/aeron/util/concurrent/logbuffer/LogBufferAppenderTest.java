@@ -35,7 +35,7 @@ public class LogBufferAppenderTest
     private static final int LOG_BUFFER_SIZE = 1024 * 16;
     private static final int STATE_BUFFER_SIZE = 1024 * 4;
     private static final int RECORD_HEADER_LENGTH = 24;
-    private static final int LENGTH_FIELD_OFFSET = 2;
+    private static final int LENGTH_FIELD_OFFSET = 4;
 
     private final AtomicBuffer logBuffer = mock(AtomicBuffer.class);
     private final AtomicBuffer stateBuffer = mock(AtomicBuffer.class);
@@ -98,6 +98,12 @@ public class LogBufferAppenderTest
     public void shouldThrowExceptionOnRecordLengthFieldOffsetNotInHeaderLengthRange()
     {
         appender = new LogBufferAppender(logBuffer, stateBuffer, RECORD_HEADER_LENGTH, RECORD_HEADER_LENGTH);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void shouldThrowExceptionOnRecordLengthFieldOffsetNotOnIntSizeBoundary()
+    {
+        appender = new LogBufferAppender(logBuffer, stateBuffer, RECORD_HEADER_LENGTH, 3);
     }
 
     @Test

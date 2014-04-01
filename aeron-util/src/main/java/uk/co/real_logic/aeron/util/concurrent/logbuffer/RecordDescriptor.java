@@ -85,5 +85,12 @@ public class RecordDescriptor
                                            valueOf(recordHeaderLength), valueOf(lengthFieldOffset));
             throw new IndexOutOfBoundsException(s);
         }
+
+        if (lengthFieldOffset % SIZE_OF_INT != 0)
+        {
+            final String s = String.format("Length field offset must be a multiple of %d, offset=%d",
+                                           valueOf(SIZE_OF_INT), valueOf(lengthFieldOffset));
+            throw new IllegalStateException(s);
+        }
     }
 }

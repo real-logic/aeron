@@ -15,6 +15,8 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy;
+
 import java.nio.ByteBuffer;
 
 /**

@@ -55,6 +55,11 @@ public class Flyweight
         return this;
     }
 
+    protected void copyFlyweight(final Flyweight srcFlyweight, final int index, final int length)
+    {
+        atomicBuffer.putBytes(index, srcFlyweight.atomicBuffer, srcFlyweight.offset, length);
+    }
+
     protected short uint8Get(final int offset)
     {
         return (short)(atomicBuffer.getByte(offset) & 0xFF);

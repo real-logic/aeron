@@ -15,10 +15,12 @@
  */
 package uk.co.real_logic.aeron.util;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.nio.ByteBuffer;
@@ -36,13 +38,15 @@ public class FlyweightTest
     private final DataHeaderFlyweight decodeDataHeader = new DataHeaderFlyweight();
     private final ChannelMessageFlyweight encodeChannel = new ChannelMessageFlyweight();
     private final ChannelMessageFlyweight decodeChannel = new ChannelMessageFlyweight();
+    private final ErrorHeaderFlyweight encodeErrorHeader = new ErrorHeaderFlyweight();
+    private final ErrorHeaderFlyweight decodeErrorHeader = new ErrorHeaderFlyweight();
 
     @Test
     public void shouldWriteCorrectValuesForGenericHeaderFields()
     {
         encodeHeader.reset(aBuff, 0);
 
-        encodeHeader.version((byte)1);
+        encodeHeader.version((byte) 1);
         encodeHeader.headerType(HeaderFlyweight.HDR_TYPE_DATA);
         encodeHeader.frameLength(8);
 
@@ -62,7 +66,7 @@ public class FlyweightTest
     {
         encodeHeader.reset(aBuff, 0);
 
-        encodeHeader.version((byte)1);
+        encodeHeader.version((byte) 1);
         encodeHeader.headerType(HeaderFlyweight.HDR_TYPE_DATA);
         encodeHeader.frameLength(8);
 
@@ -77,12 +81,12 @@ public class FlyweightTest
     {
         encodeHeader.reset(aBuff, 0);
 
-        encodeHeader.version((byte)1);
+        encodeHeader.version((byte) 1);
         encodeHeader.headerType(HeaderFlyweight.HDR_TYPE_DATA);
         encodeHeader.frameLength(8);
 
         encodeHeader.reset(aBuff, 8);
-        encodeHeader.version((byte)2);
+        encodeHeader.version((byte) 2);
         encodeHeader.headerType(HeaderFlyweight.HDR_TYPE_SM);
         encodeHeader.frameLength(8);
 
@@ -132,4 +136,77 @@ public class FlyweightTest
         assertThat(decodeChannel.destination(), is(example));
     }
 
+    @Test
+    public void shouldReadAndWriteErrorHeaderWithoutErrorStringCorrectly()
+    {
+        final ByteBuffer originalBuffer = ByteBuffer.allocateDirect(256);
+        final AtomicBuffer originalAtomicBuffer = new AtomicBuffer(originalBuffer);
+
+        encodeDataHeader.reset(originalAtomicBuffer, 0);
+        encodeDataHeader.version((byte) 1);
+        encodeDataHeader.headerType(HeaderFlyweight.HDR_TYPE_DATA);
+        encodeDataHeader.frameLength(24);
+        encodeDataHeader.sessionId(0xdeadbeefL);
+        encodeDataHeader.channelId(0x44332211L);
+        encodeDataHeader.termId(0x99887766L);
+
+        encodeErrorHeader.reset(aBuff, 0);
+        encodeErrorHeader.version((byte) 1);
+        encodeErrorHeader.headerType(HeaderFlyweight.HDR_TYPE_ERR);
+        encodeErrorHeader.frameLength(encodeDataHeader.frameLength() + 12);
+        encodeErrorHeader.offendingHeader(encodeDataHeader, encodeDataHeader.frameLength());
+
+        decodeErrorHeader.reset(aBuff, 0);
+        assertThat(decodeErrorHeader.version(), is((byte) 1));
+        assertThat(decodeErrorHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_ERR));
+        assertThat(decodeErrorHeader.frameLength(), is(encodeDataHeader.frameLength() + 12));
+
+        decodeDataHeader.reset(aBuff, decodeErrorHeader.offendingHeaderOffset());
+        assertThat(decodeDataHeader.version(), is((byte) 1));
+        assertThat(decodeDataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
+        assertThat(decodeDataHeader.frameLength(), is(encodeDataHeader.frameLength()));
+        assertThat(decodeDataHeader.sessionId(), is(0xdeadbeefL));
+        assertThat(decodeDataHeader.channelId(), is(0x44332211L));
+        assertThat(decodeDataHeader.termId(), is(0x99887766L));
+        assertThat(decodeDataHeader.dataOffset(), is(encodeDataHeader.frameLength() + 12));
+    }
+
+    @Test
+    public void shouldReadAndWriteErrorHeaderWithErrorStringCorrectly()
+    {
+        String errorString = "this is an error";
+        final ByteBuffer originalBuffer = ByteBuffer.allocateDirect(256);
+        final AtomicBuffer originalAtomicBuffer = new AtomicBuffer(originalBuffer);
+
+        encodeDataHeader.reset(originalAtomicBuffer, 0);
+        encodeDataHeader.version((byte) 1);
+        encodeDataHeader.headerType(HeaderFlyweight.HDR_TYPE_DATA);
+        encodeDataHeader.frameLength(24);
+        encodeDataHeader.sessionId(0xdeadbeefL);
+        encodeDataHeader.channelId(0x44332211L);
+        encodeDataHeader.termId(0x99887766L);
+
+        encodeErrorHeader.reset(aBuff, 0);
+        encodeErrorHeader.version((byte) 1);
+        encodeErrorHeader.headerType(HeaderFlyweight.HDR_TYPE_ERR);
+        encodeErrorHeader.frameLength(encodeDataHeader.frameLength() + 12 + errorString.length());
+        encodeErrorHeader.offendingHeader(encodeDataHeader, encodeDataHeader.frameLength());
+        encodeErrorHeader.errorString(errorString.getBytes());
+
+        decodeErrorHeader.reset(aBuff, 0);
+        assertThat(decodeErrorHeader.version(), is((byte) 1));
+        assertThat(decodeErrorHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_ERR));
+        assertThat(decodeErrorHeader.frameLength(), is(encodeDataHeader.frameLength() + 12 + errorString.length()));
+
+        decodeDataHeader.reset(aBuff, decodeErrorHeader.offendingHeaderOffset());
+        assertThat(decodeDataHeader.version(), is((byte) 1));
+        assertThat(decodeDataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
+        assertThat(decodeDataHeader.frameLength(), is(encodeDataHeader.frameLength()));
+        assertThat(decodeDataHeader.sessionId(), is(0xdeadbeefL));
+        assertThat(decodeDataHeader.channelId(), is(0x44332211L));
+        assertThat(decodeDataHeader.termId(), is(0x99887766L));
+        assertThat(decodeDataHeader.dataOffset(), is(encodeDataHeader.frameLength() + 12));
+
+        assertThat(decodeErrorHeader.errorStringOffset(), is(encodeDataHeader.frameLength() + 12));
+    }
 }

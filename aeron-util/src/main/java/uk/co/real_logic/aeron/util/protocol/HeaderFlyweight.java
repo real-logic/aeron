@@ -49,6 +49,8 @@ public class HeaderFlyweight extends Flyweight
     public static final int HDR_TYPE_NAK = 0x01;
     /** header type SM */
     public static final int HDR_TYPE_SM = 0x02;
+    /** header type ERR */
+    public static final int HDR_TYPE_ERR = 0x03;
     /** header type EXT */
     public static final int HDR_TYPE_EXT = 0xFFFF;
 

@@ -71,12 +71,12 @@ public class ReceiverThreadTest
             public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
             {
                 assertThat(Byte.valueOf(header.version()), is(Byte.valueOf(HeaderFlyweight.CURRENT_VERSION)));
-                assertThat(Short.valueOf(header.headerType()), is(Short.valueOf(HeaderFlyweight.HDR_TYPE_DATA)));
-                assertThat(Integer.valueOf(header.frameLength()), is(Integer.valueOf(20)));
+                assertThat(Integer.valueOf(header.headerType()), is(Integer.valueOf(HeaderFlyweight.HDR_TYPE_DATA)));
+                assertThat(Integer.valueOf(header.frameLength()), is(Integer.valueOf(24)));
                 assertThat(Long.valueOf(header.sessionId()), is(Long.valueOf(SESSION_ID)));
                 assertThat(Long.valueOf(header.channelId()), is(Long.valueOf(CHANNEL_ID)));
                 assertThat(Long.valueOf(header.termId()), is(Long.valueOf(TERM_ID)));
-                assertThat(Integer.valueOf(header.dataOffset()), is(Integer.valueOf(20)));
+                assertThat(Integer.valueOf(header.dataOffset()), is(Integer.valueOf(24)));
                 dataHeadersRcved.incrementAndGet();
             }
 
@@ -90,11 +90,11 @@ public class ReceiverThreadTest
         encodeDataHeader.reset(atomicBuffer, 0);
         encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
                         .headerType(HeaderFlyweight.HDR_TYPE_DATA)
-                        .frameLength(20)
-                        .sessionId(SESSION_ID);
-        encodeDataHeader.channelId(CHANNEL_ID)
+                        .frameLength(24);
+        encodeDataHeader.sessionId(SESSION_ID)
+                        .channelId(CHANNEL_ID)
                         .termId(TERM_ID);
-        buffer.position(0).limit(20);
+        buffer.position(0).limit(24);
 
         processLoop(receiverThread, 5);
         src.send(buffer);
@@ -111,7 +111,7 @@ public class ReceiverThreadTest
     }
 
     @Test(timeout = 1000)
-    public void shouldHandleConnFrameFromSourceToReceiver() throws Exception
+    public void shouldHandleSmFrameFromSourceToReceiver() throws Exception
     {
         final AtomicInteger dataHeadersRcved = new AtomicInteger(0);
         final AtomicInteger cntlHeadersRcved = new AtomicInteger(0);
@@ -127,9 +127,8 @@ public class ReceiverThreadTest
             public void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
             {
                 assertThat(Byte.valueOf(header.version()), is(Byte.valueOf(HeaderFlyweight.CURRENT_VERSION)));
-                assertThat(Short.valueOf(header.headerType()), is(Short.valueOf(HeaderFlyweight.HDR_TYPE_SM)));
+                assertThat(Integer.valueOf(header.headerType()), is(Integer.valueOf(HeaderFlyweight.HDR_TYPE_SM)));
                 assertThat(Integer.valueOf(header.frameLength()), is(Integer.valueOf(8)));
-                assertThat(Long.valueOf(header.sessionId()), is(Long.valueOf(SESSION_ID)));
                 cntlHeadersRcved.incrementAndGet();
             }
         }, rcvLocalAddr, receiverThread);
@@ -139,8 +138,7 @@ public class ReceiverThreadTest
         encodeDataHeader.reset(atomicBuffer, 0);
         encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
                         .headerType(HeaderFlyweight.HDR_TYPE_SM)
-                        .frameLength(8)
-                        .sessionId(SESSION_ID);
+                        .frameLength(8);
         buffer.position(0).limit(8);
 
         processLoop(receiverThread, 5);
@@ -170,8 +168,8 @@ public class ReceiverThreadTest
             public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
             {
                 assertThat(Byte.valueOf(header.version()), is(Byte.valueOf(HeaderFlyweight.CURRENT_VERSION)));
-                assertThat(Short.valueOf(header.headerType()), is(Short.valueOf(HeaderFlyweight.HDR_TYPE_DATA)));
-                assertThat(Integer.valueOf(header.frameLength()), is(Integer.valueOf(20)));
+                assertThat(Integer.valueOf(header.headerType()), is(Integer.valueOf(HeaderFlyweight.HDR_TYPE_DATA)));
+                assertThat(Integer.valueOf(header.frameLength()), is(Integer.valueOf(24)));
                 assertThat(Long.valueOf(header.sessionId()), is(Long.valueOf(SESSION_ID)));
                 assertThat(Long.valueOf(header.channelId()), is(Long.valueOf(CHANNEL_ID)));
                 assertThat(Long.valueOf(header.termId()), is(Long.valueOf(TERM_ID)));
@@ -189,18 +187,18 @@ public class ReceiverThreadTest
         encodeDataHeader.reset(atomicBuffer, 0);
         encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
                         .headerType(HeaderFlyweight.HDR_TYPE_DATA)
-                        .frameLength(20)
-                        .sessionId(SESSION_ID);
-        encodeDataHeader.channelId(CHANNEL_ID)
+                        .frameLength(24);
+        encodeDataHeader.sessionId(SESSION_ID)
+                        .channelId(CHANNEL_ID)
                         .termId(TERM_ID);
-        encodeDataHeader.reset(atomicBuffer, 20);
+        encodeDataHeader.reset(atomicBuffer, 24);
         encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
                         .headerType(HeaderFlyweight.HDR_TYPE_DATA)
-                        .frameLength(20)
-                        .sessionId(SESSION_ID);
-        encodeDataHeader.channelId(CHANNEL_ID)
+                        .frameLength(24);
+        encodeDataHeader.sessionId(SESSION_ID)
+                        .channelId(CHANNEL_ID)
                         .termId(TERM_ID);
-        buffer.position(0).limit(40);
+        buffer.position(0).limit(48);
 
         processLoop(receiverThread, 5);
         src.send(buffer);
@@ -218,7 +216,7 @@ public class ReceiverThreadTest
     }
 
     @Test(timeout = 1000)
-    public void shouldHandleConnFrameFromReceiverToSender() throws Exception
+    public void shouldHandleSmFrameFromReceiverToSender() throws Exception
     {
         final AtomicInteger dataHeadersRcved = new AtomicInteger(0);
         final AtomicInteger cntlHeadersRcved = new AtomicInteger(0);
@@ -234,9 +232,8 @@ public class ReceiverThreadTest
             public void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
             {
                 assertThat(Byte.valueOf(header.version()), is(Byte.valueOf(HeaderFlyweight.CURRENT_VERSION)));
-                assertThat(Short.valueOf(header.headerType()), is(Short.valueOf(HeaderFlyweight.HDR_TYPE_SM)));
+                assertThat(Integer.valueOf(header.headerType()), is(Integer.valueOf(HeaderFlyweight.HDR_TYPE_SM)));
                 assertThat(Integer.valueOf(header.frameLength()), is(Integer.valueOf(8)));
-                assertThat(Long.valueOf(header.sessionId()), is(Long.valueOf(SESSION_ID)));
                 cntlHeadersRcved.incrementAndGet();
             }
         }, srcLocalAddr, receiverThread);
@@ -246,8 +243,7 @@ public class ReceiverThreadTest
         encodeDataHeader.reset(atomicBuffer, 0);
         encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
                         .headerType(HeaderFlyweight.HDR_TYPE_SM)
-                        .frameLength(8)
-                        .sessionId(SESSION_ID);
+                        .frameLength(8);
         buffer.position(0).limit(8);
 
         processLoop(receiverThread, 5);

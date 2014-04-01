@@ -43,19 +43,18 @@ public class FlyweightTest
         encodeHeader.reset(aBuff, 0);
 
         encodeHeader.version((byte)1);
-        encodeHeader.headerType((short)HeaderFlyweight.HDR_TYPE_DATA);
+        encodeHeader.headerType(HeaderFlyweight.HDR_TYPE_DATA);
         encodeHeader.frameLength(8);
-        encodeHeader.sessionId(0xdeadbeefL);
 
         // little endian
         assertThat(buffer.get(0), is((byte)(0x1L << 4)));
-        assertThat(buffer.get(1), is((byte)HeaderFlyweight.HDR_TYPE_DATA));
-        assertThat(buffer.get(2), is((byte)0x8));
+        assertThat(buffer.get(1), is((byte)0x00));
+        assertThat(buffer.get(2), is((byte)HeaderFlyweight.HDR_TYPE_DATA));
         assertThat(buffer.get(3), is((byte)0x0));
-        assertThat(buffer.get(4), is((byte)0xef));
-        assertThat(buffer.get(5), is((byte)0xbe));
-        assertThat(buffer.get(6), is((byte)0xad));
-        assertThat(buffer.get(7), is((byte)0xde));
+        assertThat(buffer.get(4), is((byte)0x08));
+        assertThat(buffer.get(5), is((byte)0x00));
+        assertThat(buffer.get(6), is((byte)0x00));
+        assertThat(buffer.get(7), is((byte)0x00));
     }
 
     @Test
@@ -64,15 +63,13 @@ public class FlyweightTest
         encodeHeader.reset(aBuff, 0);
 
         encodeHeader.version((byte)1);
-        encodeHeader.headerType((short)HeaderFlyweight.HDR_TYPE_DATA);
+        encodeHeader.headerType(HeaderFlyweight.HDR_TYPE_DATA);
         encodeHeader.frameLength(8);
-        encodeHeader.sessionId(0xdeadbeefL);
 
         decodeHeader.reset(aBuff, 0);
         assertThat(decodeHeader.version(), is((byte)1));
-        assertThat(decodeHeader.headerType(), is((short)HeaderFlyweight.HDR_TYPE_DATA));
+        assertThat(decodeHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
         assertThat(decodeHeader.frameLength(), is(8));
-        assertThat(decodeHeader.sessionId(), is(0xdeadbeefL));
     }
 
     @Test
@@ -81,27 +78,23 @@ public class FlyweightTest
         encodeHeader.reset(aBuff, 0);
 
         encodeHeader.version((byte)1);
-        encodeHeader.headerType((short)HeaderFlyweight.HDR_TYPE_DATA);
+        encodeHeader.headerType(HeaderFlyweight.HDR_TYPE_DATA);
         encodeHeader.frameLength(8);
-        encodeHeader.sessionId(0xdeadbeefL);
 
         encodeHeader.reset(aBuff, 8);
         encodeHeader.version((byte)2);
-        encodeHeader.headerType((short)HeaderFlyweight.HDR_TYPE_SM);
+        encodeHeader.headerType(HeaderFlyweight.HDR_TYPE_SM);
         encodeHeader.frameLength(8);
-        encodeHeader.sessionId(0x11223344L);
 
         decodeHeader.reset(aBuff, 0);
         assertThat(decodeHeader.version(), is((byte)1));
-        assertThat(decodeHeader.headerType(), is((short)HeaderFlyweight.HDR_TYPE_DATA));
+        assertThat(decodeHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
         assertThat(decodeHeader.frameLength(), is(8));
-        assertThat(decodeHeader.sessionId(), is(0xdeadbeefL));
 
         decodeHeader.reset(aBuff, 8);
         assertThat(decodeHeader.version(), is((byte)2));
-        assertThat(decodeHeader.headerType(), is((short)HeaderFlyweight.HDR_TYPE_SM));
+        assertThat(decodeHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_SM));
         assertThat(decodeHeader.frameLength(), is(8));
-        assertThat(decodeHeader.sessionId(), is(0x11223344L));
     }
 
     @Test
@@ -110,20 +103,20 @@ public class FlyweightTest
         encodeDataHeader.reset(aBuff, 0);
 
         encodeDataHeader.version((byte)1);
-        encodeDataHeader.headerType((short)HeaderFlyweight.HDR_TYPE_DATA);
-        encodeDataHeader.frameLength(8);
+        encodeDataHeader.headerType(HeaderFlyweight.HDR_TYPE_DATA);
+        encodeDataHeader.frameLength(24);
         encodeDataHeader.sessionId(0xdeadbeefL);
         encodeDataHeader.channelId(0x44332211L);
         encodeDataHeader.termId(0x99887766L);
 
         decodeDataHeader.reset(aBuff, 0);
         assertThat(decodeDataHeader.version(), is((byte) 1));
-        assertThat(decodeDataHeader.headerType(), is((short) HeaderFlyweight.HDR_TYPE_DATA));
-        assertThat(decodeDataHeader.frameLength(), is(8));
+        assertThat(decodeDataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
+        assertThat(decodeDataHeader.frameLength(), is(24));
         assertThat(decodeDataHeader.sessionId(), is(0xdeadbeefL));
         assertThat(decodeDataHeader.channelId(), is(0x44332211L));
         assertThat(decodeDataHeader.termId(), is(0x99887766L));
-        assertThat(decodeDataHeader.dataOffset(), is(20));
+        assertThat(decodeDataHeader.dataOffset(), is(24));
     }
 
     @Test

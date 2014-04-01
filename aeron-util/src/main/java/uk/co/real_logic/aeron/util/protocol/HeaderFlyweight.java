@@ -34,31 +34,30 @@ import java.nio.ByteOrder;
  * 0                   1                   2                   3
  * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |  Vers | Flags |    Type       |        Frame Length           |
- * +-------+-+-+-+-+---------------+-------------------------------+
- * |                          Session ID                           |
- * +---------------------------------------------------------------+
+ * |  Vers |         Flags         |             Type              |
+ * +-------+-+-+-+-+-+-+-+-+-+-+-+-+-------------------------------+
+ * |                         Frame Length                          |
+ * +-------------------------------+-------------------------------+
  * |                       Depends on Type                        ...
  *
  */
 public class HeaderFlyweight extends Flyweight
 {
     /** header type DATA */
-    public static final short HDR_TYPE_DATA = 0x00;
+    public static final int HDR_TYPE_DATA = 0x00;
     /** header type NAK */
-    public static final short HDR_TYPE_NAK = 0x01;
+    public static final int HDR_TYPE_NAK = 0x01;
     /** header type SM */
-    public static final short HDR_TYPE_SM = 0x02;
+    public static final int HDR_TYPE_SM = 0x02;
     /** header type EXT */
-    public static final short HDR_TYPE_EXT = 0xFF;
+    public static final int HDR_TYPE_EXT = 0xFFFF;
 
     /** default version */
     public static final byte CURRENT_VERSION = 0x0;
 
     public static final int VERS_FIELD_OFFSET = 0;
-    public static final int TYPE_FIELD_OFFSET = 1;
-    public static final int FRAME_LENGTH_FIELD_OFFSET = 2;
-    public static final int SESSION_ID_FIELD_OFFSET = 4;
+    public static final int TYPE_FIELD_OFFSET = 2;
+    public static final int FRAME_LENGTH_FIELD_OFFSET = 4;
 
     /**
      * return version field value
@@ -86,9 +85,9 @@ public class HeaderFlyweight extends Flyweight
      * return header type field
      * @return type field value
      */
-    public short headerType()
+    public int headerType()
     {
-        return uint8Get(offset + TYPE_FIELD_OFFSET);
+        return uint16Get(offset + TYPE_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
@@ -96,9 +95,9 @@ public class HeaderFlyweight extends Flyweight
      * @param type field value
      * @return flyweight
      */
-    public HeaderFlyweight headerType(final short type)
+    public HeaderFlyweight headerType(final int type)
     {
-        uint8Put(offset + TYPE_FIELD_OFFSET, (byte)type);
+        uint16Put(offset + TYPE_FIELD_OFFSET, (short)type, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
@@ -108,7 +107,7 @@ public class HeaderFlyweight extends Flyweight
      */
     public int frameLength()
     {
-        return uint16Get(offset + FRAME_LENGTH_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return (int)uint32Get(offset + FRAME_LENGTH_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
@@ -118,27 +117,7 @@ public class HeaderFlyweight extends Flyweight
      */
     public HeaderFlyweight frameLength(final int length)
     {
-        uint16Put(offset + FRAME_LENGTH_FIELD_OFFSET, (short)length, ByteOrder.LITTLE_ENDIAN);
-        return this;
-    }
-
-    /**
-     * return session id field
-     * @return session id field
-     */
-    public long sessionId()
-    {
-        return uint32Get(offset + SESSION_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
-    }
-
-    /**
-     * set session id field
-     * @param sessionId field value
-     * @return flyweight
-     */
-    public HeaderFlyweight sessionId(final long sessionId)
-    {
-        uint32Put(offset + SESSION_ID_FIELD_OFFSET, (int)sessionId, ByteOrder.LITTLE_ENDIAN);
+        uint32Put(offset + FRAME_LENGTH_FIELD_OFFSET, (long)length, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 

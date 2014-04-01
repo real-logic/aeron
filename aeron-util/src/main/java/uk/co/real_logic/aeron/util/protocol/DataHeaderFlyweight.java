@@ -23,8 +23,10 @@ import java.nio.ByteOrder;
  * 0                   1                   2                   3
  * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |  Vers |S|E|H|R| Type (=0x00)  |   Frame Length (=data + 20)   |
- * +-------+-+-+-+-+---------------+-------------------------------+
+ * |  Vers |S|E|     Flags         |             Type (=0x00)      |
+ * +-------+-+-+-+-+-+-+-+-+-+-+-+-+-------------------------------+
+ * |                         Frame Length                          |
+ * +-------------------------------+-------------------------------+
  * |                          Session ID                           |
  * +---------------------------------------------------------------+
  * |                          Channel ID                           |
@@ -39,10 +41,31 @@ import java.nio.ByteOrder;
  */
 public class DataHeaderFlyweight extends HeaderFlyweight
 {
-    private static final int CHANNEL_ID_FIELD_OFFSET = 8;
-    private static final int TERM_ID_FIELD_OFFSET = 12;
-    private static final int SEQUENCE_NUMBER_FIELD_OFFSET = 16;
-    private static final int DATA_OFFSET = 20;
+    private static final int SESSION_ID_FIELD_OFFSET = 8;
+    private static final int CHANNEL_ID_FIELD_OFFSET = 12;
+    private static final int TERM_ID_FIELD_OFFSET = 16;
+    private static final int SEQUENCE_NUMBER_FIELD_OFFSET = 20;
+    private static final int DATA_OFFSET = 24;
+
+    /**
+     * return session id field
+     * @return session id field
+     */
+    public long sessionId()
+    {
+        return uint32Get(offset + SESSION_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+    }
+
+    /**
+     * set session id field
+     * @param sessionId field value
+     * @return flyweight
+     */
+    public DataHeaderFlyweight sessionId(final long sessionId)
+    {
+        uint32Put(offset + SESSION_ID_FIELD_OFFSET, sessionId, ByteOrder.LITTLE_ENDIAN);
+        return this;
+    }
 
     /**
      * return channel id field

@@ -604,6 +604,28 @@ public class AtomicBuffer
         UNSAFE.putShort(byteArray, addressOffset + index, value);
     }
 
+    /**
+     * Get the value at a given index with volatile semantics.
+     *
+     * @param index in bytes from which to get.
+     * @return the value for at a given index
+     */
+    public short getShortVolatile(final int index)
+    {
+        return UNSAFE.getShortVolatile(byteArray, addressOffset + index);
+    }
+
+    /**
+     * Put a value to a given index with volatile semantics.
+     *
+     * @param index in bytes for where to put.
+     * @param value for at a given index
+     */
+    public void putShortVolatile(final int index, final short value)
+    {
+        UNSAFE.putShortVolatile(byteArray, addressOffset + index, value);
+    }
+
     ///////////////////////////////////////////////////////////////////////////
 
     /**

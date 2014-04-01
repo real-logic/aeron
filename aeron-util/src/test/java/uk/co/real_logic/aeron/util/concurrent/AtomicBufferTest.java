@@ -346,6 +346,26 @@ public class AtomicBufferTest
     }
 
     @Theory
+    public void shouldGetShortVolatileFromNativeBuffer(final AtomicBuffer buffer)
+    {
+        final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(ByteOrder.nativeOrder());
+
+        duplicateBuffer.putShort(INDEX, SHORT_VALUE);
+
+        assertThat(Short.valueOf(buffer.getShortVolatile(INDEX)), is(Short.valueOf(SHORT_VALUE)));
+    }
+
+    @Theory
+    public void shouldPutShortVolatileToNativeBuffer(final AtomicBuffer buffer)
+    {
+        final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(ByteOrder.nativeOrder());
+
+        buffer.putShortVolatile(INDEX, SHORT_VALUE);
+
+        assertThat(Short.valueOf(duplicateBuffer.getShort(INDEX)), is(Short.valueOf(SHORT_VALUE)));
+    }
+
+    @Theory
     public void shouldGetDoubleFromBuffer(final AtomicBuffer buffer)
     {
         final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(BYTE_ORDER);

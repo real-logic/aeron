@@ -16,7 +16,6 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.ClosableThread;
-import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.ErrorCode;
@@ -29,8 +28,6 @@ import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
-
-import static uk.co.real_logic.aeron.util.collections.CollectionUtil.getOrDefault;
 
 /**
  * Admin thread to take commands from Producers and Consumers as well as handle NAKs and retransmissions
@@ -48,7 +45,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     private final BufferManagementStrategy bufferManagementStrategy;
     private final RingBuffer adminReceiveBuffer;
 
-    private final Map<UdpDestination, Long2ObjectHashMap<Long2ObjectHashMap<SenderChannel>>> sendChannels;
+    private final ChannelMap<SenderChannel> sendChannels;
 
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
 
@@ -62,7 +59,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         this.bufferManagementStrategy = builder.bufferManagementStrategy();
         this.receiverThread = receiverThread;
         this.senderThread = senderThread;
-        this.sendChannels = new HashMap<>();
+        this.sendChannels = new ChannelMap<>();
         try
         {
             final ByteBuffer buffer = builder.adminBufferStrategy().toMediaDriver();
@@ -145,21 +142,16 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         try
         {
             final UdpDestination srcDestination = UdpDestination.parse(destination);
-            final Long2ObjectHashMap<SenderChannel> idToChannel = channels(srcDestination, sessionId);
+            SenderChannel channel = sendChannels.get(srcDestination, sessionId, channelId);
 
-            if (idToChannel.containsKey(channelId))
-            {
-                // TODO: error, already exists
-            }
-
-            SenderChannel channel = new SenderChannel(srcDestination,
-                                                      null,
-                                                      bufferManagementStrategy,
-                                                      sessionId,
-                                                      channelId);
+            channel = new SenderChannel(srcDestination,
+                                        null,
+                                        bufferManagementStrategy,
+                                        sessionId,
+                                        channelId);
 
             channel.initiateTermBuffers();
-            idToChannel.put(channelId, channel);
+            sendChannels.put(srcDestination, sessionId, channelId, channel);
 
             // tell the client admin thread of the new buffer
             sendNewBufferNotification(sessionId, channelId, 0L, true, destination);
@@ -173,34 +165,19 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         }
     }
 
-    private Long2ObjectHashMap<SenderChannel> channels(final UdpDestination srcDestination, final long sessionId)
-    {
-        Long2ObjectHashMap<Long2ObjectHashMap<SenderChannel>> sessionToChannel
-            = getOrDefault(sendChannels, srcDestination, ignore -> new Long2ObjectHashMap<>());
-
-        return sessionToChannel.getOrDefault(sessionId, Long2ObjectHashMap::new);
-    }
-
     @Override
     public void onRemoveChannel(final String destination, final long sessionId, final long channelId)
     {
         try
         {
             final UdpDestination srcDestination = UdpDestination.parse(destination);
-            final Long2ObjectHashMap<SenderChannel> idToChannel = channels(srcDestination, sessionId);
-
-            if (idToChannel == null)
-            {
-                // TODO: error
-            }
-
-            final SenderChannel channel = idToChannel.get(channelId);
+            final SenderChannel channel = sendChannels.get(srcDestination, sessionId, channelId);
             if (channel == null)
             {
                 // TODO: error
             }
 
-            // remove from buffer management, but will be unmapped once SenderThread releases it and it can be GCed
+            // remove from buffer management
             bufferManagementStrategy.removeSenderChannel(srcDestination, sessionId, channelId);
 
             senderThread.removeChannel(channel);

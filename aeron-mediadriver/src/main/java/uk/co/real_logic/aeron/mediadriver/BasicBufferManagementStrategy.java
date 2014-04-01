@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.FileMappingConvention;
 import uk.co.real_logic.aeron.util.IoUtil;
-import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.collections.TripleLevelMap;
 
 import java.io.File;
@@ -26,12 +25,9 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.HashMap;
-import java.util.Map;
 
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.termLocation;
-import static uk.co.real_logic.aeron.util.collections.CollectionUtil.getOrDefault;
 
 /**
  * Basic buffer management where each Term is a file.
@@ -43,7 +39,7 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
     private final FileChannel templateFile;
     private final File senderDir;
     private final File receiverDir;
-    private final Map<UdpDestination, Long2ObjectHashMap<MappedBufferRotator>> srcTermRotators;
+    private final ChannelMap<MappedBufferRotator> srcTermRotators;
     private final TripleLevelMap<ByteBuffer> srcTermMap;
     private final TripleLevelMap<ByteBuffer> rcvTermMap;
     private final FileMappingConvention fileConvention;
@@ -53,7 +49,7 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
         fileConvention = new FileMappingConvention(dataDir);
         senderDir = fileConvention.senderDir();
         receiverDir = fileConvention.receiverDir();
-        srcTermRotators = new HashMap<>();
+        srcTermRotators = new ChannelMap<>();
         srcTermMap = new TripleLevelMap<>();
         rcvTermMap = new TripleLevelMap<>();
         IoUtil.ensureDirectoryExists(senderDir, "sender");
@@ -130,24 +126,18 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
                     sessionId, channelId, termId));
         }
 
-        final Long2ObjectHashMap<MappedBufferRotator> channelToTerms = termsForDestination(destination);
-        MappedBufferRotator rotator = channelToTerms.get(channelId);
+        MappedBufferRotator rotator = srcTermRotators.get(destination, sessionId, channelId);
 
         if (rotator == null)
         {
             final File file = termLocation(senderDir, sessionId, channelId, termId, true, destination.toString());
             rotator = new MappedBufferRotator(templateFile, file, MediaDriver.READ_BYTE_BUFFER_SZ);
-            channelToTerms.put(channelId, rotator);
+            srcTermRotators.put(destination, sessionId, channelId, rotator);
         }
 
         termBuffer = rotator.rotate();
         srcTermMap.put(sessionId, channelId, termId, termBuffer);
         return termBuffer;
-    }
-
-    private Long2ObjectHashMap<MappedBufferRotator> termsForDestination(final UdpDestination destination)
-    {
-        return getOrDefault(srcTermRotators, destination, k -> new Long2ObjectHashMap<>());
     }
 
     @Override
@@ -184,7 +174,7 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
     @Override
     public void removeSenderChannel(final UdpDestination destination, final long sessionId, final long channelId)
     {
-        srcTermRotators.remove(sessionId, channelId);
+        srcTermRotators.remove(destination, sessionId, channelId);
     }
 
     @Override

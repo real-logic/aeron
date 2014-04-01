@@ -31,7 +31,7 @@ public class AtomicArray<T>
      * Return the {@link java.lang.Object} array for this atomic array
      * @return the {@link java.lang.Object} array
      */
-    public Object[] getObjArray()
+    public Object[] array()
     {
         return arrayRef.get();
     }

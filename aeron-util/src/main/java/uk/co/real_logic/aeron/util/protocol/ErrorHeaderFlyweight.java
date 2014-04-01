@@ -21,6 +21,9 @@ import java.nio.ByteOrder;
  */
 public class ErrorHeaderFlyweight extends HeaderFlyweight
 {
+    /** Size of the Error Header */
+    public static final int HEADER_LENGTH = 12;
+
     private static final int ERROR_CODE_FIELD_OFFSET = 1;
     private static final int OFFENDING_HDR_FRAME_LENGTH_FIELD_OFFSET = 8;
     private static final int OFFENDING_HDR_OFFSET = 12;
@@ -121,5 +124,29 @@ public class ErrorHeaderFlyweight extends HeaderFlyweight
     {
         atomicBuffer.putBytes(errorStringOffset(), errorString, 0, errorString.length);
         return this;
+    }
+
+    /**
+     * return the length of the error string in the header in bytes
+     *
+     * @return length of error string in bytes
+     */
+    public int errorStringLength()
+    {
+        return frameLength() - offendingHeaderFrameLength() - ErrorHeaderFlyweight.HEADER_LENGTH;
+    }
+
+    /**
+     * return the error string as a byte array
+     *
+     * @return byte array representation of the error string
+     */
+    public byte[] errorStringAsBytes()
+    {
+        final int len = errorStringLength();
+        final byte[] bytes = new byte[len];
+
+        atomicBuffer.getBytes(errorStringOffset(), bytes, 0, len);
+        return bytes;
     }
 }

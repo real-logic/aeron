@@ -41,6 +41,9 @@ import java.nio.ByteOrder;
  */
 public class DataHeaderFlyweight extends HeaderFlyweight
 {
+    /** Size of the Data Header */
+    public static final int HEADER_LENGTH = 24;
+
     private static final int SESSION_ID_FIELD_OFFSET = 8;
     private static final int CHANNEL_ID_FIELD_OFFSET = 12;
     private static final int TERM_ID_FIELD_OFFSET = 16;

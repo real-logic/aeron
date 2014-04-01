@@ -45,12 +45,10 @@ public class HeaderFlyweight extends Flyweight
 {
     /** header type DATA */
     public static final short HDR_TYPE_DATA = 0x00;
-    /** header type CONN */
-    public static final short HDR_TYPE_CONN = 0x01;
     /** header type NAK */
-    public static final short HDR_TYPE_NAK = 0x02;
+    public static final short HDR_TYPE_NAK = 0x01;
     /** header type SM */
-    public static final short HDR_TYPE_SM = 0x03;
+    public static final short HDR_TYPE_SM = 0x02;
     /** header type EXT */
     public static final short HDR_TYPE_EXT = 0xFF;
 

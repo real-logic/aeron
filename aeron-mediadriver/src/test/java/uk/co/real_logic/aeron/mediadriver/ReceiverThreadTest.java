@@ -127,7 +127,7 @@ public class ReceiverThreadTest
             public void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
             {
                 assertThat(Byte.valueOf(header.version()), is(Byte.valueOf(HeaderFlyweight.CURRENT_VERSION)));
-                assertThat(Short.valueOf(header.headerType()), is(Short.valueOf(HeaderFlyweight.HDR_TYPE_CONN)));
+                assertThat(Short.valueOf(header.headerType()), is(Short.valueOf(HeaderFlyweight.HDR_TYPE_SM)));
                 assertThat(Integer.valueOf(header.frameLength()), is(Integer.valueOf(8)));
                 assertThat(Long.valueOf(header.sessionId()), is(Long.valueOf(SESSION_ID)));
                 cntlHeadersRcved.incrementAndGet();
@@ -138,7 +138,7 @@ public class ReceiverThreadTest
 
         encodeDataHeader.reset(atomicBuffer, 0);
         encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
-                        .headerType(HeaderFlyweight.HDR_TYPE_CONN)
+                        .headerType(HeaderFlyweight.HDR_TYPE_SM)
                         .frameLength(8)
                         .sessionId(SESSION_ID);
         buffer.position(0).limit(8);
@@ -234,7 +234,7 @@ public class ReceiverThreadTest
             public void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
             {
                 assertThat(Byte.valueOf(header.version()), is(Byte.valueOf(HeaderFlyweight.CURRENT_VERSION)));
-                assertThat(Short.valueOf(header.headerType()), is(Short.valueOf(HeaderFlyweight.HDR_TYPE_CONN)));
+                assertThat(Short.valueOf(header.headerType()), is(Short.valueOf(HeaderFlyweight.HDR_TYPE_SM)));
                 assertThat(Integer.valueOf(header.frameLength()), is(Integer.valueOf(8)));
                 assertThat(Long.valueOf(header.sessionId()), is(Long.valueOf(SESSION_ID)));
                 cntlHeadersRcved.incrementAndGet();
@@ -245,7 +245,7 @@ public class ReceiverThreadTest
 
         encodeDataHeader.reset(atomicBuffer, 0);
         encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
-                        .headerType(HeaderFlyweight.HDR_TYPE_CONN)
+                        .headerType(HeaderFlyweight.HDR_TYPE_SM)
                         .frameLength(8)
                         .sessionId(SESSION_ID);
         buffer.position(0).limit(8);

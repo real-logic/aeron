@@ -71,7 +71,6 @@ public class MediaDriverAdminThreadTest
         final MediaDriver.TopologyBuilder builder = new MediaDriver.TopologyBuilder()
                 .adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
-                .senderThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .adminBufferStrategy(new CreatingAdminBufferStrategy(adminPath, COMMAND_BUFFER_SZ + TRAILER_SIZE))
                 .bufferManagementStrategy(new BasicBufferManagementStrategy(adminPath));
 

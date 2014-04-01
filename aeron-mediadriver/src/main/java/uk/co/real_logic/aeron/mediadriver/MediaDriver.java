@@ -77,7 +77,6 @@ public class MediaDriver
     {
         TopologyBuilder builder = new TopologyBuilder().adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
-                .senderThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .adminBufferStrategy(new CreatingAdminBufferStrategy(Directories.ADMIN_DIR, ADMIN_BUFFER_SZ))
                 .bufferManagementStrategy(new BasicBufferManagementStrategy(Directories.DATA_DIR));
 
@@ -111,7 +110,6 @@ public class MediaDriver
         private RingBuffer adminThreadCommandBuffer;
         private RingBuffer receiverThreadCommandBuffer;
         private ReceiverThreadCursor receiverThreadCursor;
-        private RingBuffer senderThreadCommandBuffer;
         private BufferManagementStrategy bufferManagementStrategy;
         private AdminBufferStrategy adminBufferStrategy;
 
@@ -135,12 +133,6 @@ public class MediaDriver
             return this;
         }
 
-        public TopologyBuilder senderThreadCommandBuffer(final int sz)
-        {
-            this.senderThreadCommandBuffer = createNewCommandBuffer(sz);
-            return this;
-        }
-
         public TopologyBuilder bufferManagementStrategy(final BufferManagementStrategy strategy)
         {
             this.bufferManagementStrategy = strategy;
@@ -161,11 +153,6 @@ public class MediaDriver
         public RingBuffer receiverThreadCommandBuffer()
         {
             return receiverThreadCommandBuffer;
-        }
-
-        public RingBuffer senderThreadCommandBuffer()
-        {
-            return senderThreadCommandBuffer;
         }
 
         public BufferManagementStrategy bufferManagementStrategy()

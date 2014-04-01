@@ -25,14 +25,12 @@ import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
  */
 public class SenderThread extends ClosableThread
 {
-    private final RingBuffer commandBuffer;
     private final RingBuffer adminThreadCommandBuffer;
     private final BufferManagementStrategy bufferManagementStrategy;
     private final AtomicArray<SenderChannel> channels;
 
     public SenderThread(final MediaDriver.TopologyBuilder builder)
     {
-        this.commandBuffer = builder.senderThreadCommandBuffer();
         this.adminThreadCommandBuffer = builder.adminThreadCommandBuffer();
         this.bufferManagementStrategy = builder.bufferManagementStrategy();
         this.channels = new AtomicArray<>();

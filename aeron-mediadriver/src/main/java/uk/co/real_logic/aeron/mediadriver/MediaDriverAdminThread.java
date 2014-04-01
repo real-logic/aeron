@@ -40,7 +40,6 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     private final RingBuffer commandBuffer;
     private final ReceiverThreadCursor receiverThreadCursor;
     private final ReceiverThread receiverThread;
-    private final SenderThreadCursor senderThreadCursor;
     private final SenderThread senderThread;
     private final BufferManagementStrategy bufferManagementStrategy;
     private final RingBuffer adminReceiveBuffer;
@@ -54,7 +53,6 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
                                   final SenderThread senderThread)
     {
         this.commandBuffer = builder.adminThreadCommandBuffer();
-        this.senderThreadCursor = new SenderThreadCursor(builder.senderThreadCommandBuffer());
         this.receiverThreadCursor = new ReceiverThreadCursor(builder.receiverThreadCommandBuffer(), receiverThread);
         this.bufferManagementStrategy = builder.bufferManagementStrategy();
         this.receiverThread = receiverThread;
@@ -212,8 +210,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             // remove from buffer management, but will be unmapped once SenderThread releases it and it can be GCed
             bufferManagementStrategy.removeSenderTerm(srcDestination, sessionId, channelId, termId);
 
-            // inform SenderThread
-            senderThreadCursor.addRemoveTermEvent(sessionId, channelId, termId);
+            // TODO: inform SenderThread
 
             // if no more channels, then remove framehandler and close it
             if (0 == bufferManagementStrategy.countChannels(sessionId))

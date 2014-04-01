@@ -30,17 +30,14 @@ public class SrcFrameHandler implements FrameHandler, AutoCloseable
     private final UdpTransport transport;
     private final UdpDestination destination;
     private final RingBuffer adminThreadCommandBuffer;
-    private final SenderThreadCursor senderThreadCursor;
 
     public SrcFrameHandler(final UdpDestination destination,
                            final ReceiverThread receiverThread,
-                           final RingBuffer adminThreadCommandBuffer,
-                           final SenderThreadCursor senderThreadCursor) throws Exception
+                           final RingBuffer adminThreadCommandBuffer) throws Exception
     {
         this.transport = new UdpTransport(this, destination.local(), receiverThread);
         this.destination = destination;
         this.adminThreadCommandBuffer = adminThreadCommandBuffer;
-        this.senderThreadCursor = senderThreadCursor;
     }
 
     public int send(final ByteBuffer buffer) throws Exception
@@ -80,7 +77,7 @@ public class SrcFrameHandler implements FrameHandler, AutoCloseable
         }
         else if (header.headerType() == HeaderFlyweight.HDR_TYPE_SM)
         {
-            senderThreadCursor.addStatusMessageEvent(header);
+            // TODO: inform the admin thread
         }
     }
 }

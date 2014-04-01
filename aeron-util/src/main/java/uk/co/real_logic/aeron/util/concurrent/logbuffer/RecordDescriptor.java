@@ -42,7 +42,7 @@ public class RecordDescriptor
      */
     public static int calculateMaxMessageLength(final int capacity)
     {
-        return capacity / 4;
+        return Math.min(capacity / 4, 1 << 16);
     }
 
     /**

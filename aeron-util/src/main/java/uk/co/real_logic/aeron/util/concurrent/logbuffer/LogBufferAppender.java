@@ -30,7 +30,7 @@ public class LogBufferAppender
     private final AtomicBuffer stateBuffer;
     private final int capacity;
     private final int recordHeaderLength;
-    private final int recordHeaderLengthFieldOffset;
+    private final int recordLengthFieldOffset;
     private final int maxMessageLength;
 
     /**
@@ -39,23 +39,23 @@ public class LogBufferAppender
      * @param logAtomicBuffer for where events are stored.
      * @param stateAtomicBuffer for where the state of writers is stored manage concurrency.
      * @param recordHeaderLength length of the header field to be used on each record.
-     * @param recordHeaderLengthFieldOffset the offset in the header at which the record length field begins.
+     * @param recordLengthFieldOffset the offset in the header at which the record length field begins.
      */
     public LogBufferAppender(final AtomicBuffer logAtomicBuffer,
                              final AtomicBuffer stateAtomicBuffer,
                              final int recordHeaderLength,
-                             final int recordHeaderLengthFieldOffset)
+                             final int recordLengthFieldOffset)
     {
         checkLogBuffer(logAtomicBuffer);
         checkStateBuffer(stateAtomicBuffer);
-        checkRecordHeaderLength(recordHeaderLength);
-        checkRecordHeaderLengthFieldOffset(recordHeaderLength, recordHeaderLengthFieldOffset);
+        checkHeaderLength(recordHeaderLength);
+        checkLengthFieldOffset(recordHeaderLength, recordLengthFieldOffset);
 
         this.logBuffer = logAtomicBuffer;
         this.stateBuffer = stateAtomicBuffer;
         this.capacity = logAtomicBuffer.capacity();
         this.recordHeaderLength = recordHeaderLength;
-        this.recordHeaderLengthFieldOffset = recordHeaderLengthFieldOffset;
+        this.recordLengthFieldOffset = recordLengthFieldOffset;
         this.maxMessageLength = RecordDescriptor.calculateMaxMessageLength(capacity);
     }
 
@@ -140,7 +140,7 @@ public class LogBufferAppender
 
     private void putRecordLengthOrdered(final int recordOffset, final int length)
     {
-        logBuffer.putIntOrdered(recordOffset + recordHeaderLengthFieldOffset, length);
+        logBuffer.putIntOrdered(recordOffset + recordLengthFieldOffset, length);
     }
 
     private int getTailAndAdd(final int delta)

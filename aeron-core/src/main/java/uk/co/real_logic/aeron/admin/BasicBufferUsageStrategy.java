@@ -57,5 +57,4 @@ public class BasicBufferUsageStrategy implements BufferUsageStrategy
         final File termIdFile = termLocation(rootDir, sessionId, channelId, termId, false, destination);
         return IoUtil.mapExistingFile(termIdFile, "Term Buffer");
     }
-
 }

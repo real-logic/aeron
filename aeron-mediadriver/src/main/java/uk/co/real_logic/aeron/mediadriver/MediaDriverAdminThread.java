@@ -48,7 +48,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     private final BufferManagementStrategy bufferManagementStrategy;
     private final RingBuffer adminReceiveBuffer;
 
-    private final Map<UdpDestination, Long2ObjectHashMap<SenderChannel>> sendChannels;
+    private final Map<UdpDestination, Long2ObjectHashMap<Long2ObjectHashMap<SenderChannel>>> sendChannels;
 
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
 
@@ -145,11 +145,11 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         try
         {
             final UdpDestination srcDestination = UdpDestination.parse(destination);
-            final Long2ObjectHashMap<SenderChannel> idToChannel = channelsForDestination(srcDestination);
+            final Long2ObjectHashMap<SenderChannel> idToChannel = channels(srcDestination, sessionId);
 
             if (idToChannel.containsKey(channelId))
             {
-                // TODO: error, only one session can send per channel
+                // TODO: error, already exists
             }
 
             SenderChannel channel = new SenderChannel(srcDestination,
@@ -173,9 +173,12 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         }
     }
 
-    private Long2ObjectHashMap<SenderChannel> channelsForDestination(final UdpDestination srcDestination)
+    private Long2ObjectHashMap<SenderChannel> channels(final UdpDestination srcDestination, final long sessionId)
     {
-        return getOrDefault(sendChannels, srcDestination, dest -> new Long2ObjectHashMap<>());
+        Long2ObjectHashMap<Long2ObjectHashMap<SenderChannel>> sessionToChannel
+            = getOrDefault(sendChannels, srcDestination, ignore -> new Long2ObjectHashMap<>());
+
+        return sessionToChannel.getOrDefault(sessionId, Long2ObjectHashMap::new);
     }
 
     @Override
@@ -184,15 +187,15 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         try
         {
             final UdpDestination srcDestination = UdpDestination.parse(destination);
-            final Long2ObjectHashMap<SenderChannel> idToChannel = channelsForDestination(srcDestination);
-            final SenderChannel channel = idToChannel.get(channelId);
+            final Long2ObjectHashMap<SenderChannel> idToChannel = channels(srcDestination, sessionId);
 
-            if (channel == null)
+            if (idToChannel == null)
             {
                 // TODO: error
             }
 
-            if (channel.sessionId() != sessionId)
+            final SenderChannel channel = idToChannel.get(channelId);
+            if (channel == null)
             {
                 // TODO: error
             }

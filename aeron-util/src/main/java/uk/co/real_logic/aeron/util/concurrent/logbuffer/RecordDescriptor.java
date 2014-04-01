@@ -45,22 +45,22 @@ public class RecordDescriptor
     /**
      * Check the record header is sufficient size and aligned on an 8 byte boundary.
      *
-     * @param recordHeaderLength to be applied to all logged records.
+     * @param headerLength to be applied to all logged records.
      * @throws IllegalStateException if the record header length is invalid
      */
-    public static void checkRecordHeaderLength(final int recordHeaderLength)
+    public static void checkHeaderLength(final int headerLength)
     {
-        if (recordHeaderLength < WORD_ALIGNMENT)
+        if (headerLength < WORD_ALIGNMENT)
         {
             final String s = String.format("Record header is less than min length of %d, length=%d",
-                                           valueOf(WORD_ALIGNMENT), valueOf(recordHeaderLength));
+                                           valueOf(WORD_ALIGNMENT), valueOf(headerLength));
             throw new IllegalStateException(s);
         }
 
-        if (recordHeaderLength % WORD_ALIGNMENT != 0)
+        if (headerLength % WORD_ALIGNMENT != 0)
         {
             final String s = String.format("Record header length must be a multiple of %d, length=%d",
-                                           valueOf(WORD_ALIGNMENT), valueOf(recordHeaderLength));
+                                           valueOf(WORD_ALIGNMENT), valueOf(headerLength));
             throw new IllegalStateException(s);
         }
     }
@@ -69,17 +69,17 @@ public class RecordDescriptor
      * Check the record header field is within header at appropriate boundary.
      *
      * @param recordHeaderLength header length in which field is located.
-     * @param recordHeaderLengthFieldOffset for the beginning of the field.
+     * @param lengthFieldOffset for the beginning of the field.
      * @throws IndexOutOfBoundsException if the offset is out of range within the header.
      */
-    public static void checkRecordHeaderLengthFieldOffset(final int recordHeaderLength,
-                                                          final int recordHeaderLengthFieldOffset)
+    public static void checkLengthFieldOffset(final int recordHeaderLength,
+                                              final int lengthFieldOffset)
     {
         final int upperBound = recordHeaderLength - 1 - SIZE_OF_INT;
-        if (recordHeaderLengthFieldOffset < 0 || recordHeaderLengthFieldOffset > upperBound)
+        if (lengthFieldOffset < 0 || lengthFieldOffset > upperBound)
         {
             final String s = String.format("Invalid offset for header of length %d, beginning offset=%d",
-                                           valueOf(recordHeaderLength), valueOf(recordHeaderLengthFieldOffset));
+                                           valueOf(recordHeaderLength), valueOf(lengthFieldOffset));
             throw new IndexOutOfBoundsException(s);
         }
     }

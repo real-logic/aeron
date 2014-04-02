@@ -56,7 +56,8 @@ public class SenderChannel
         this.producerBuffer = producerBuffer;
         this.ringBuffer = new ManyToOneRingBuffer(new AtomicBuffer(producerBuffer));
         this.activeFlowControlState = new SenderFlowControlState(0, 0);
-        this.sendBuffer = ByteBuffer.allocateDirect(MediaDriver.READ_BYTE_BUFFER_SZ);  // TODO: need to make this cfg
+        this.sendBuffer = producerBuffer.duplicate();
+        this.sendBuffer.clear();
         this.state = STATE_PENDING;
     }
 
@@ -81,11 +82,22 @@ public class SenderChannel
                 // frame will fit in the window, read and send just 1
                 ringBuffer.read((eventTypeId, buffer, index, length) ->
                 {
-                    buffer.getBytes(index, sendBuffer, length); // fill in the buffer to send by copying
-                }, 1);
+                    // at this point sendBuffer wraps the same underlying
+                    // bytebuffer as the buffer parameter
+                    sendBuffer.position(index);
+                    sendBuffer.limit(index + length);
 
-                // send the frame we just copied out.... yes, it would be great to not copy...
-                int bytesSent = frameHandler.send(sendBuffer);
+                    try
+                    {
+                        int bytesSent = frameHandler.send(sendBuffer);
+                    }
+                    catch (Exception e)
+                    {
+                        //TODO: errors
+                        e.printStackTrace();
+                    }
+
+                }, 1);
             }
         }
         catch (final Exception e)

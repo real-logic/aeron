@@ -19,44 +19,42 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import static uk.co.real_logic.aeron.util.BitUtil.align;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.*;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.RecordDescriptor.*;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*;
 
 /**
  * Log buffer appender which supports many producers concurrently writing an append-only log.
+ *
+ * Messages are appending to a log using a framing protocol as described in {@link FrameDescriptor}.
+ * If a message is larger than a single frame it will be fragmented up to {@link #maxMessageLength()}.
  */
 public class LogBufferAppender
 {
     private final AtomicBuffer logBuffer;
     private final AtomicBuffer stateBuffer;
     private final int capacity;
-    private final int recordHeaderLength;
-    private final int recordLengthFieldOffset;
+    private final int headerReserveLength;
     private final int maxMessageLength;
 
     /**
-     * Construct a view over a log buffer and state buffer for appending records.
+     * Construct a view over a log buffer and state buffer for appending frames.
      *
      * @param logAtomicBuffer for where events are stored.
      * @param stateAtomicBuffer for where the state of writers is stored manage concurrency.
-     * @param recordHeaderLength length of the header field to be used on each record.
-     * @param recordLengthFieldOffset the offset in the header at which the record length field begins.
+     * @param headerReserveLength length of the header field to be used on each frame.
      */
     public LogBufferAppender(final AtomicBuffer logAtomicBuffer,
                              final AtomicBuffer stateAtomicBuffer,
-                             final int recordHeaderLength,
-                             final int recordLengthFieldOffset)
+                             final int headerReserveLength)
     {
         checkLogBuffer(logAtomicBuffer);
         checkStateBuffer(stateAtomicBuffer);
-        checkHeaderLength(recordHeaderLength);
-        checkLengthFieldOffset(recordHeaderLength, recordLengthFieldOffset);
+        checkHeaderReserve(headerReserveLength);
 
         this.logBuffer = logAtomicBuffer;
         this.stateBuffer = stateAtomicBuffer;
         this.capacity = logAtomicBuffer.capacity();
-        this.recordHeaderLength = recordHeaderLength;
-        this.recordLengthFieldOffset = recordLengthFieldOffset;
-        this.maxMessageLength = RecordDescriptor.calculateMaxMessageLength(capacity);
+        this.headerReserveLength = headerReserveLength;
+        this.maxMessageLength = FrameDescriptor.calculateMaxMessageLength(capacity);
     }
 
     /**
@@ -67,6 +65,16 @@ public class LogBufferAppender
     public int capacity()
     {
         return capacity;
+    }
+
+    /**
+     * The header reserve length in bytes.
+     *
+     * @return the header reserve length in bytes.
+     */
+    public int headerReserveLength()
+    {
+        return headerReserveLength;
     }
 
     /**
@@ -103,44 +111,44 @@ public class LogBufferAppender
     {
         checkMessageLength(length);
 
-        final int requiredCapacity = align(length + recordHeaderLength, RECORD_ALIGNMENT);
-        final int recordOffset = getTailAndAdd(requiredCapacity);
+        final int requiredCapacity = align(length + headerReserveLength, FRAME_ALIGNMENT);
+        final int frameOffset = getTailAndAdd(requiredCapacity);
 
-        if (recordOffset >= capacity)
+        if (frameOffset >= capacity)
         {
             return false;
         }
 
-        if (recordOffset + requiredCapacity > capacity)
+        if (frameOffset + requiredCapacity > capacity)
         {
-            appendPaddingRecord(recordOffset);
+            appendPaddingFrame(frameOffset);
 
             return false;
         }
 
-        appendRecord(recordOffset, requiredCapacity, srcBuffer, srcOffset, length);
+        appendFrame(frameOffset, requiredCapacity, srcBuffer, srcOffset, length);
 
         return true;
     }
 
-    private void appendRecord(final int recordOffset,
-                              final int requiredCapacity,
-                              final AtomicBuffer srcBuffer,
-                              final int srcOffset,
-                              final int length)
+    private void appendFrame(final int frameOffset,
+                             final int requiredCapacity,
+                             final AtomicBuffer srcBuffer,
+                             final int srcOffset,
+                             final int length)
     {
-        logBuffer.putBytes(recordOffset + recordHeaderLength, srcBuffer, srcOffset, length);
-        putRecordLengthOrdered(recordOffset, requiredCapacity);
+        logBuffer.putBytes(messageOffset(frameOffset, headerReserveLength), srcBuffer, srcOffset, length);
+        putFrameLengthOrdered(frameOffset, requiredCapacity);
     }
 
-    private void appendPaddingRecord(final int recordOffset)
+    private void appendPaddingFrame(final int frameOffset)
     {
-        putRecordLengthOrdered(recordOffset, capacity - recordOffset);
+        putFrameLengthOrdered(frameOffset, capacity - frameOffset);
     }
 
-    private void putRecordLengthOrdered(final int recordOffset, final int length)
+    private void putFrameLengthOrdered(final int frameOffset, final int length)
     {
-        logBuffer.putIntOrdered(recordOffset + recordLengthFieldOffset, length);
+        logBuffer.putIntOrdered(lengthOffset(frameOffset), length);
     }
 
     private int getTailAndAdd(final int delta)

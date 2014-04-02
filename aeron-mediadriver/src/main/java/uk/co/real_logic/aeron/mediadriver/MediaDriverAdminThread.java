@@ -142,6 +142,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     @Override
     public void onAddChannel(final String destination, final long sessionId, final long channelId)
     {
+        // TODO: to accommodate error handling, probably need to pass in Flyweight itself...
         try
         {
             final UdpDestination srcDestination = UdpDestination.parse(destination);
@@ -162,7 +163,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             final long termId = (long)(Math.random() * 0xFFFFFFFFL);  // FIXME: this may not be random enough
             final ByteBuffer buffer = bufferManagementStrategy.addSenderTerm(srcDestination, sessionId, channelId, termId);
 
-            channel = new SenderChannel(frameHandler, buffer, sessionId, channelId, termId);
+            channel = new SenderChannel(frameHandler, buffer, srcDestination, sessionId, channelId, termId);
             sendChannels.put(srcDestination, sessionId, channelId, channel);
 
             // tell the client admin thread of the new buffer

@@ -21,8 +21,6 @@ import java.net.NetworkInterface;
 import java.net.URI;
 import java.security.MessageDigest;
 
-import static uk.co.real_logic.aeron.util.BitUtil.toHex;
-
 /**
  * Encapsulation of UDP destinations
  * <p>
@@ -122,11 +120,19 @@ public class UdpDestination
                              remote.getAddress().getHostAddress(), Integer.valueOf(remote.getPort()));
     }
 
-    public String sha1Hash() throws Exception
+    public static long generateUriHash(final String uri) throws Exception
     {
-        MessageDigest md = MessageDigest.getInstance("SHA-1");
+        final byte[] digest = MessageDigest.getInstance("SHA-1").digest(uri.getBytes());
 
-        return toHex(md.digest(uriStr.getBytes()));
+        // truncate by taking first 8 bytes
+        return ((long)digest[0] << 56) |
+               ((long)digest[1] << 48) |
+               ((long)digest[2] << 40) |
+               ((long)digest[3] << 32) |
+               ((long)digest[4] << 24) |
+               ((long)digest[5] << 16) |
+               ((long)digest[6] << 8)  |
+               ((long)digest[7]);
     }
 
     public static class Builder

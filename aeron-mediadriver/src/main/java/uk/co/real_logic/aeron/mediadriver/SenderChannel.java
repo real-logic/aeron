@@ -24,13 +24,14 @@ import java.nio.ByteBuffer;
 /**
  * Encapsulates the information associated with a channel
  * to send on. Processed in the SenderThread.
- *
- * Stores Flow Control State
  */
 public class SenderChannel
 {
+    public static final int STATE_PENDING = 0;
+    public static final int STATE_READY_FOR_SM = 1;
 
     private final SrcFrameHandler frameHandler;
+    private final UdpDestination destination;
     private final long sessionId;
     private final long channelId;
     private final long termId;
@@ -38,14 +39,17 @@ public class SenderChannel
     private final RingBuffer ringBuffer;
     private final ByteBuffer sendBuffer;
     private final SenderFlowControlState activeFlowControlState;
+    private int state;
 
     public SenderChannel(final SrcFrameHandler frameHandler,
                          final ByteBuffer producerBuffer,
+                         final UdpDestination destination,
                          final long sessionId,
                          final long channelId,
                          final long termId)
     {
         this.frameHandler = frameHandler;
+        this.destination = destination;
         this.sessionId = sessionId;
         this.channelId = channelId;
         this.termId = termId;
@@ -53,6 +57,7 @@ public class SenderChannel
         this.ringBuffer = new ManyToOneRingBuffer(new AtomicBuffer(producerBuffer));
         this.activeFlowControlState = new SenderFlowControlState(0, 0);
         this.sendBuffer = ByteBuffer.allocateDirect(MediaDriver.READ_BYTE_BUFFER_SZ);  // TODO: need to make this cfg
+        this.state = STATE_PENDING;
     }
 
     public void process()
@@ -90,9 +95,24 @@ public class SenderChannel
         }
     }
 
+    public int state()
+    {
+        return state;
+    }
+
+    public void state(final int state)
+    {
+        this.state = state;
+    }
+
     public boolean isOpen()
     {
         return frameHandler.isOpen();
+    }
+
+    public UdpDestination destination()
+    {
+        return destination;
     }
 
     public long sessionId()
@@ -105,8 +125,13 @@ public class SenderChannel
         return channelId;
     }
 
-    // only called by admin thread on SM reception
-    public void updateFlowControlState(final int highestContiguousSequenceNumber, final int receiverWindow)
+    public long termId()
     {
+        return termId;
+    }
+
+    public SenderFlowControlState flowControlState()
+    {
+        return activeFlowControlState;
     }
 }

@@ -82,7 +82,7 @@ public class SrcFrameHandler implements FrameHandler, AutoCloseable
         }
         else if (header.headerType() == HeaderFlyweight.HDR_TYPE_SM)
         {
-            // TODO: inform the admin thread
+            // TODO: inform the sender thread so that it can process the SM
         }
     }
 }

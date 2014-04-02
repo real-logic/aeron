@@ -111,7 +111,7 @@ public class BitUtil
     /**
      * Generate a consistent hash of the bytes that is represented as a long.
      *
-     * Not guaranteed to be unique. But should be reasonably unique and
+     * Not guaranteed to be unique. But should be reasonably unique and consistent.
      *
      * @param bytes bytes to hash over
      * @return long representation of hash

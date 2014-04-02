@@ -27,13 +27,13 @@ import java.nio.ByteOrder;
  * +-------+-+-+-+-+-+-+-+-+-+-+-+-+-------------------------------+
  * |                         Frame Length                          |
  * +-------------------------------+-------------------------------+
+ * |                        Sequence Number                        |
+ * +---------------------------------------------------------------+
  * |                          Session ID                           |
  * +---------------------------------------------------------------+
  * |                          Channel ID                           |
  * +---------------------------------------------------------------+
  * |                            Term ID                            |
- * +---------------------------------------------------------------+
- * |                        Sequence Number                        |
  * +---------------------------------------------------------------+
  * |                             Data                             ...
  * ...                                                              |
@@ -44,10 +44,10 @@ public class DataHeaderFlyweight extends HeaderFlyweight
     /** Size of the Data Header */
     public static final int HEADER_LENGTH = 24;
 
-    private static final int SESSION_ID_FIELD_OFFSET = 8;
-    private static final int CHANNEL_ID_FIELD_OFFSET = 12;
-    private static final int TERM_ID_FIELD_OFFSET = 16;
-    private static final int SEQUENCE_NUMBER_FIELD_OFFSET = 20;
+    private static final int SEQUENCE_NUMBER_FIELD_OFFSET = 8;
+    private static final int SESSION_ID_FIELD_OFFSET = 12;
+    private static final int CHANNEL_ID_FIELD_OFFSET = 16;
+    private static final int TERM_ID_FIELD_OFFSET = 20;
     private static final int DATA_OFFSET = 24;
 
     /**

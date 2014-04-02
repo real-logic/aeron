@@ -15,21 +15,17 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import uk.co.real_logic.aeron.util.ClosableThread;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Receiver Thread for JVM based mediadriver, uses an event loop with command buffer.
- *
- * Contains Selector logic
- *
- * Does not provide timers
+ * Receiver Thread for JVM based mediadriver, uses an event loop with command buffer
  */
-public class ReceiverThread implements AutoCloseable, Runnable
+public class ReceiverThread extends ClosableThread
 {
-    private volatile boolean done;
     private final RingBuffer commandBuffer;
     private final RingBuffer adminThreadCommandBuffer;
     private final NioSelector nioSelector;
@@ -40,7 +36,6 @@ public class ReceiverThread implements AutoCloseable, Runnable
         this.commandBuffer = builder.receiverThreadCommandBuffer();
         this.adminThreadCommandBuffer = builder.adminThreadCommandBuffer();
         this.nioSelector = builder.rcvNioSelector();
-        this.done = false;
     }
 
     public void addRcvCreateTermBufferEvent(final UdpDestination destination,
@@ -53,20 +48,13 @@ public class ReceiverThread implements AutoCloseable, Runnable
                                                               sessionId, channelId, termId);
     }
 
-    /**
-     * Main loop of the ReceiverThread
-     *
-     * Everything is done here and bubbles up via the handlers.
-     */
-    public void run()
+    @Override
+    public void process()
     {
         try
         {
-            while (!done)
-            {
-                nioSelector.processKeys(MediaDriver.SELECT_TIMEOUT);
-                // TODO: check command buffer for commands
-            }
+            nioSelector.processKeys(MediaDriver.SELECT_TIMEOUT);
+            // TODO: check command buffer for commands
         }
         catch (final Exception e)
         {
@@ -79,11 +67,14 @@ public class ReceiverThread implements AutoCloseable, Runnable
      */
     public void close()
     {
-        done = true;
-        nioSelector.wakeup();
+        stop();
+        wakeup();
         // TODO: if needed, use a CountdownLatch to sync...
     }
 
+    /**
+     * Wake up the selector if blocked
+     */
     public void wakeup()
     {
         nioSelector.wakeup();

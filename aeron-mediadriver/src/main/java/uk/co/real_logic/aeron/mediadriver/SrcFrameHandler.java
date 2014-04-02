@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
@@ -29,15 +29,16 @@ public class SrcFrameHandler implements FrameHandler, AutoCloseable
 {
     private final UdpTransport transport;
     private final UdpDestination destination;
-    private final RingBuffer adminThreadCommandBuffer;
+    private final MediaDriverAdminThread mediaDriverAdminThread;
+    private final Long2ObjectHashMap<Long2ObjectHashMap<SenderChannel>> sessionMap;
 
     public SrcFrameHandler(final UdpDestination destination,
-                           final NioSelector nioSelector,
-                           final RingBuffer adminThreadCommandBuffer) throws Exception
+                           final MediaDriverAdminThread mediaDriverAdminThread) throws Exception
     {
-        this.transport = new UdpTransport(this, destination.local(), nioSelector);
+        this.transport = new UdpTransport(this, destination.local(), mediaDriverAdminThread.nioSelector());
         this.destination = destination;
-        this.adminThreadCommandBuffer = adminThreadCommandBuffer;
+        this.mediaDriverAdminThread = mediaDriverAdminThread;
+        this.sessionMap = new Long2ObjectHashMap<>();
     }
 
     public int send(final ByteBuffer buffer) throws Exception
@@ -66,6 +67,51 @@ public class SrcFrameHandler implements FrameHandler, AutoCloseable
         return destination;
     }
 
+    public SenderChannel findChannel(final long sessionId, final long channelId)
+    {
+        final Long2ObjectHashMap<SenderChannel> channelMap = sessionMap.get(sessionId);
+        if (null == channelMap)
+        {
+            return null;
+        }
+
+        return channelMap.get(channelId);
+    }
+
+    public void addChannel(final SenderChannel channel)
+    {
+        Long2ObjectHashMap<SenderChannel> channelMap = sessionMap.get(channel.sessionId());
+        if (null == channelMap)
+        {
+            channelMap = new Long2ObjectHashMap<>();
+            sessionMap.put(channel.sessionId(), channelMap);
+        }
+
+        channelMap.put(channel.channelId(), channel);
+    }
+
+    public SenderChannel removeChannel(final long sessionId, final long channelId)
+    {
+        final Long2ObjectHashMap<SenderChannel> channelMap = sessionMap.get(sessionId);
+        if (null == channelMap)
+        {
+            return null;
+        }
+
+        final SenderChannel channel = channelMap.remove(channelId);
+        if (channelMap.size() == 0)
+        {
+            sessionMap.remove(sessionId);
+        }
+
+        return channel;
+    }
+
+    public int numSessions()
+    {
+        return sessionMap.size();
+    }
+
     @Override
     public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
     {
@@ -75,14 +121,18 @@ public class SrcFrameHandler implements FrameHandler, AutoCloseable
     @Override
     public void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
     {
-        // dispatch frames to Admin or Sender Threads to handle
+        // dispatch frames
         if (header.headerType() == HeaderFlyweight.HDR_TYPE_NAK)
         {
-            MediaDriverAdminThread.addNakEvent(adminThreadCommandBuffer, header);
+            final SenderChannel channel = findChannel(0, 0);  // TODO: grab ids from header
+
+            // TODO: have the sender channel, so look for the term within it
         }
         else if (header.headerType() == HeaderFlyweight.HDR_TYPE_SM)
         {
-            // TODO: inform the sender thread so that it can process the SM
+            final SenderChannel channel = findChannel(0, 0);  // TODO: grab ids from header
+
+            // TODO: update flow control state for channel (atomically)
         }
     }
 }

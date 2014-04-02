@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy;
 import uk.co.real_logic.aeron.util.ClosableThread;
+import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.ErrorCode;
@@ -25,11 +26,8 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
-import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Admin thread to take commands from Producers and Consumers as well as handle NAKs and retransmissions
@@ -44,9 +42,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     private final SenderThread senderThread;
     private final BufferManagementStrategy bufferManagementStrategy;
     private final RingBuffer adminReceiveBuffer;
-
-    private final Map<UdpDestination, SrcFrameHandler> srcDestinationMap;
-    private final ChannelMap<SenderChannel> sendChannels;
+    private final Long2ObjectHashMap<SrcFrameHandler> srcDestinationMap;
 
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
     private final ErrorHeaderFlyweight errorHeaderFlyweight = new ErrorHeaderFlyweight();
@@ -61,8 +57,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         this.nioSelector = builder.adminNioSelector();
         this.receiverThread = receiverThread;
         this.senderThread = senderThread;
-        this.sendChannels = new ChannelMap<>();
-        this.srcDestinationMap = new HashMap<>();
+        this.srcDestinationMap = new Long2ObjectHashMap<>();
 
         try
         {
@@ -73,15 +68,6 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         {
             throw new IllegalStateException("Unable to create the admin media buffers", e);
         }
-    }
-
-    /**
-     * Add NAK frame to command buffer for this thread
-     * @param header for the NAK frame
-     */
-    public static void addNakEvent(final RingBuffer buffer, final HeaderFlyweight header)
-    {
-        // TODO: add NAK frame to this threads command buffer
     }
 
     public static void addRcvCreateNewTermBufferEvent(final RingBuffer buffer,
@@ -121,6 +107,28 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     }
 
     @Override
+    public void close()
+    {
+        stop();
+        wakeup();
+    }
+
+    public void wakeup()
+    {
+        nioSelector.wakeup();
+    }
+
+    /**
+     * Return the {@link uk.co.real_logic.aeron.mediadriver.NioSelector} in use by this admin thread.
+     *
+     * @return the {@link uk.co.real_logic.aeron.mediadriver.NioSelector} in use by this admin thread
+     */
+    public NioSelector nioSelector()
+    {
+        return nioSelector;
+    }
+
+    @Override
     public void sendErrorResponse(final int code, final byte[] message)
     {
         // TODO: construct error response for control buffer and write it in
@@ -149,28 +157,39 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         try
         {
             final UdpDestination srcDestination = UdpDestination.parse(destination);
-            SenderChannel channel = sendChannels.get(srcDestination, sessionId, channelId);
-            if (channel != null)
+            SrcFrameHandler frameHandler = srcDestinationMap.get(srcDestination.consistentHash());
+            if (null == frameHandler)
             {
-                // TODO: error. channel and sessionId already exist
+                frameHandler = new SrcFrameHandler(srcDestination, this);
+                srcDestinationMap.put(srcDestination.consistentHash(), frameHandler);
+            }
+            else
+            {
+                // check for hash collision
+                if (!frameHandler.destination().equals(srcDestination))
+                {
+                    throw new IllegalStateException("destinations hash same, but destinations different");
+                }
             }
 
-            SrcFrameHandler frameHandler = srcDestinationMap.get(srcDestination);
-            if (frameHandler == null)
+            SenderChannel channel = frameHandler.findChannel(sessionId, channelId);
+            if (null != channel)
             {
-                frameHandler = new SrcFrameHandler(srcDestination, nioSelector, commandBuffer);
-                srcDestinationMap.put(srcDestination, frameHandler);
+                throw new IllegalArgumentException("channel and session already exist on destination");
             }
 
             // new channel, so generate "random"-ish termId and create term buffer
-            final long termId = (long)(Math.random() * 0xFFFFFFFFL);  // FIXME: this may not be random enough
-            final ByteBuffer buffer = bufferManagementStrategy.addSenderTerm(srcDestination, sessionId, channelId, termId);
+            final long initialTermId = (long)(Math.random() * 0xFFFFFFFFL);  // FIXME: this may not be random enough
+            final ByteBuffer buffer = bufferManagementStrategy.addSenderTerm(srcDestination, sessionId,
+                    channelId, initialTermId);
 
-            channel = new SenderChannel(frameHandler, buffer, srcDestination, sessionId, channelId, termId);
-            sendChannels.put(srcDestination, sessionId, channelId, channel);
+            channel = new SenderChannel(frameHandler, buffer, srcDestination, sessionId, channelId, initialTermId);
+
+            // add channel to SrcFrameHandler so it can demux NAKs and SMs
+            frameHandler.addChannel(channel);
 
             // tell the client admin thread of the new buffer
-            sendNewBufferNotification(sessionId, channelId, termId, true, destination);
+            sendNewBufferNotification(sessionId, channelId, initialTermId, true, destination);
 
             // add channel to sender thread atomic array so it can be integrated in
             senderThread.addChannel(channel);
@@ -186,13 +205,20 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     @Override
     public void onRemoveChannel(final String destination, final long sessionId, final long channelId)
     {
+        // TODO: to accommodate error handling, probably need to pass in Flyweight itself...
         try
         {
             final UdpDestination srcDestination = UdpDestination.parse(destination);
-            final SenderChannel channel = sendChannels.remove(srcDestination, sessionId, channelId);
-            if (channel == null)
+            final SrcFrameHandler frameHandler = srcDestinationMap.get(srcDestination.consistentHash());
+            if (null == frameHandler)
             {
-                // TODO: error
+                throw new IllegalArgumentException("destination unknown");
+            }
+
+            final SenderChannel channel = frameHandler.removeChannel(sessionId, channelId);
+            if (null == channel)
+            {
+                throw new IllegalArgumentException("session and channel unknown for destination");
             }
 
             // remove from buffer management
@@ -201,9 +227,9 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             senderThread.removeChannel(channel);
 
             // if no more channels, then remove framehandler and close it
-            if (sendChannels.isEmpty(srcDestination))
+            if (frameHandler.numSessions() == 0)
             {
-                SrcFrameHandler frameHandler = srcDestinationMap.remove(srcDestination);
+                srcDestinationMap.remove(srcDestination.consistentHash());
                 frameHandler.close();
             }
         }
@@ -221,23 +247,32 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         try
         {
             final UdpDestination srcDestination = UdpDestination.parse(destination);
-            final SrcFrameHandler src = srcDestinationMap.get(srcDestination);
-
-            if (null == src)
+            final SrcFrameHandler frameHandler = srcDestinationMap.get(srcDestination.consistentHash());
+            if (null == frameHandler)
             {
-                throw new IllegalArgumentException("destination unknown for term remove: " + destination);
+                throw new IllegalArgumentException("destination unknown");
+            }
+
+            final SenderChannel channel = frameHandler.findChannel(sessionId, channelId);
+            if (channel == null)
+            {
+                throw new IllegalArgumentException("session and channel unknown for destination");
             }
 
             // remove from buffer management, but will be unmapped once SenderThread releases it and it can be GCed
             bufferManagementStrategy.removeSenderTerm(srcDestination, sessionId, channelId, termId);
 
-            // TODO: inform SenderThread
+            // TODO: sender thread only uses current term, so if we are removing the current term
+            // TODO: inform SenderChannel to get rid of term
+            // TODO: adding/removing of terms to SenderChannel should be serialized by this thread
+            // TODO: just need to know when to remove from SrcFrameHandler (thus removing NAKs/SMs) and SenderChannel
+            // TODO: inform SenderThread as this could be a term it is using (handle like onRemoveChannel?)
 
             // if no more channels, then remove framehandler and close it
-            if (0 == bufferManagementStrategy.countChannels(sessionId))
+            if (frameHandler.numSessions() == 0)
             {
-                srcDestinationMap.remove(srcDestination);
-                src.close();
+                srcDestinationMap.remove(srcDestination.consistentHash());
+                frameHandler.close();
             }
         }
         catch (Exception e)
@@ -268,11 +303,6 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     public void onRequestTerm(final long sessionId, final long channelId, final long termId)
     {
 
-    }
-
-    private void onNakEvent(final HeaderFlyweight header)
-    {
-        // TODO: handle the NAK.
     }
 
     private void onRcvCreateNewTermBufferEvent(final String destination,

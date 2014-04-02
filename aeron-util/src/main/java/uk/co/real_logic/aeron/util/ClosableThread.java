@@ -40,6 +40,11 @@ public abstract class ClosableThread implements Runnable, AutoCloseable
         running = false;
     }
 
+    public void stop()
+    {
+        running = false;
+    }
+
     public abstract void process();
 
 }

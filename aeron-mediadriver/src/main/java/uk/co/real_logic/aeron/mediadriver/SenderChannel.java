@@ -27,38 +27,33 @@ import java.nio.ByteBuffer;
  */
 public class SenderChannel
 {
-    public static final int STATE_PENDING = 0;
-    public static final int STATE_READY_FOR_SM = 1;
-
     private final SrcFrameHandler frameHandler;
     private final UdpDestination destination;
     private final long sessionId;
     private final long channelId;
-    private final long termId;
+    private final long currentTermId;
     private final ByteBuffer producerBuffer;
     private final RingBuffer ringBuffer;
     private final ByteBuffer sendBuffer;
     private final SenderFlowControlState activeFlowControlState;
-    private int state;
 
     public SenderChannel(final SrcFrameHandler frameHandler,
                          final ByteBuffer producerBuffer,
                          final UdpDestination destination,
                          final long sessionId,
                          final long channelId,
-                         final long termId)
+                         final long initialTermId)
     {
         this.frameHandler = frameHandler;
         this.destination = destination;
         this.sessionId = sessionId;
         this.channelId = channelId;
-        this.termId = termId;
+        this.currentTermId = initialTermId;
         this.producerBuffer = producerBuffer;
         this.ringBuffer = new ManyToOneRingBuffer(new AtomicBuffer(producerBuffer));
         this.activeFlowControlState = new SenderFlowControlState(0, 0);
         this.sendBuffer = producerBuffer.duplicate();
         this.sendBuffer.clear();
-        this.state = STATE_PENDING;
     }
 
     public void process()
@@ -104,16 +99,6 @@ public class SenderChannel
         }
     }
 
-    public int state()
-    {
-        return state;
-    }
-
-    public void state(final int state)
-    {
-        this.state = state;
-    }
-
     public boolean isOpen()
     {
         return frameHandler.isOpen();
@@ -134,9 +119,14 @@ public class SenderChannel
         return channelId;
     }
 
-    public long termId()
+    public long currentTermId()
     {
-        return termId;
+        return currentTermId;
+    }
+
+    public void removeTerm(final long termId)
+    {
+        // TODO: get rid of reference to old term Id. If this is current termId, then stop, etc.
     }
 
     public SenderFlowControlState flowControlState()

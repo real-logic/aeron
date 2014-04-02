@@ -63,14 +63,14 @@ public class FrameDescriptor
     /** Length in bytes for the fixed part of the header before the reserve */
     public static final int FIXED_HEADER_LENGTH = 12;
 
-    /** Start fragment flag of a message. */
-    public static final byte START_FLAG = 0b0000_1000;
+    /** Begin fragment flag of a message. */
+    public static final byte BEGIN_FLAG = 0b0000_1000;
 
     /** End fragment flag of a message. */
     public static final byte END_FLAG = 0b0000_0100;
 
     /** An unfragmented message has both flags set. */
-    public static final byte UNFRAGMENTED = START_FLAG & END_FLAG;
+    public static final byte UNFRAGMENTED = BEGIN_FLAG & END_FLAG;
 
     /**
      * Offset to the byte containing the fragment flags.

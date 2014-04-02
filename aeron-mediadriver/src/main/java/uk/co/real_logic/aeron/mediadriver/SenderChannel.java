@@ -67,38 +67,35 @@ public class SenderChannel
         // read from term buffer
         try
         {
-            while (true)
-            {
-                final int frameSequenceNumber = 0;  // TODO: grab this from peeking at the frame
-                final int frameLength = 1000;       // TODO: grab this from peeking at the frame
-                final int rightEdge = activeFlowControlState.rightEdgeOfWindow();
+            final int frameSequenceNumber = 0;  // TODO: grab this from peeking at the frame
+            final int frameLength = 1000;       // TODO: grab this from peeking at the frame
+            final int rightEdge = activeFlowControlState.rightEdgeOfWindow();
 
-                // if we can't send, then break out of the loop
-                if (frameSequenceNumber + frameLength > rightEdge)
+            // if we can't send, then break out of the loop
+            if (frameSequenceNumber + frameLength > rightEdge)
+            {
+                return;
+            }
+
+            // frame will fit in the window, read and send just 1
+            ringBuffer.read((eventTypeId, buffer, index, length) ->
+            {
+                // at this point sendBuffer wraps the same underlying
+                // bytebuffer as the buffer parameter
+                sendBuffer.position(index);
+                sendBuffer.limit(index + length);
+
+                try
                 {
-                    break;
+                    int bytesSent = frameHandler.send(sendBuffer);
+                }
+                catch (Exception e)
+                {
+                    //TODO: errors
+                    e.printStackTrace();
                 }
 
-                // frame will fit in the window, read and send just 1
-                ringBuffer.read((eventTypeId, buffer, index, length) ->
-                {
-                    // at this point sendBuffer wraps the same underlying
-                    // bytebuffer as the buffer parameter
-                    sendBuffer.position(index);
-                    sendBuffer.limit(index + length);
-
-                    try
-                    {
-                        int bytesSent = frameHandler.send(sendBuffer);
-                    }
-                    catch (Exception e)
-                    {
-                        //TODO: errors
-                        e.printStackTrace();
-                    }
-
-                }, 1);
-            }
+            }, 1);
         }
         catch (final Exception e)
         {

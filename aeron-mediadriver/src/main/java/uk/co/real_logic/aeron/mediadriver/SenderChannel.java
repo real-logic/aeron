@@ -15,7 +15,9 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy;
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
+import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import java.nio.ByteBuffer;
 
@@ -29,30 +31,57 @@ public class SenderChannel
 {
 
     private final SrcFrameHandler frameHandler;
-    private final BufferManagementStrategy bufferManagementStrategy;
     private final long sessionId;
     private final long channelId;
+    private final long termId;
+    private final ByteBuffer producerBuffer;
+    private final RingBuffer ringBuffer;
+    private final ByteBuffer sendBuffer;
+    private final SenderFlowControlState activeFlowControlState;
 
     public SenderChannel(final SrcFrameHandler frameHandler,
-                         final BufferManagementStrategy bufferManagementStrategy,
+                         final ByteBuffer producerBuffer,
                          final long sessionId,
-                         final long channelId)
+                         final long channelId,
+                         final long termId)
     {
         this.frameHandler = frameHandler;
-        this.bufferManagementStrategy = bufferManagementStrategy;
         this.sessionId = sessionId;
         this.channelId = channelId;
+        this.termId = termId;
+        this.producerBuffer = producerBuffer;
+        this.ringBuffer = new ManyToOneRingBuffer(new AtomicBuffer(producerBuffer));
+        this.activeFlowControlState = new SenderFlowControlState(0, 0);
+        this.sendBuffer = ByteBuffer.allocateDirect(MediaDriver.READ_BYTE_BUFFER_SZ);  // TODO: need to make this cfg
     }
 
     public void process()
     {
         // TODO: blocking due to flow control
         // read from term buffer
-        final ByteBuffer buffer = null;
         try
         {
-            int bytesSent = frameHandler.send(buffer);
-            // TODO: error condition
+            while (true)
+            {
+                final int frameSequenceNumber = 0;  // TODO: grab this from peeking at the frame
+                final int frameLength = 1000;       // TODO: grab this from peeking at the frame
+                final int rightEdge = activeFlowControlState.rightEdgeOfWindow();
+
+                // if we can't send, then break out of the loop
+                if (frameSequenceNumber + frameLength > rightEdge)
+                {
+                    break;
+                }
+
+                // frame will fit in the window, read and send just 1
+                ringBuffer.read((eventTypeId, buffer, index, length) ->
+                {
+                    buffer.getBytes(index, sendBuffer, length); // fill in the buffer to send by copying
+                }, 1);
+
+                // send the frame we just copied out.... yes, it would be great to not copy...
+                int bytesSent = frameHandler.send(sendBuffer);
+            }
         }
         catch (final Exception e)
         {
@@ -66,14 +95,6 @@ public class SenderChannel
         return frameHandler.isOpen();
     }
 
-    public void initiateTermBuffers() throws Exception
-    {
-        final long termId = (long)(Math.random() * 0xFFFFFFFFL);  // FIXME: this may not be random enough
-
-        // create the buffer, but hold onto it in the strategy. The senderThread will do a lookup on it
-        bufferManagementStrategy.addSenderTerm(frameHandler.destination(), sessionId, channelId, termId);
-    }
-
     public long sessionId()
     {
         return sessionId;
@@ -84,4 +105,8 @@ public class SenderChannel
         return channelId;
     }
 
+    // only called by admin thread on SM reception
+    public void updateFlowControlState(final int highestContiguousSequenceNumber, final int receiverWindow)
+    {
+    }
 }

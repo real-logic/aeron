@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.util.protocol;
 import java.nio.ByteOrder;
 
 /**
+ * Flyweight for Error Header codec.
  */
 public class ErrorHeaderFlyweight extends HeaderFlyweight
 {

@@ -21,6 +21,7 @@ import uk.co.real_logic.aeron.mediadriver.UdpDestination;
 import uk.co.real_logic.aeron.util.FileMappingConvention;
 import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.collections.TripleLevelMap;
+import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
 
 import java.io.File;
 import java.io.IOException;
@@ -124,28 +125,12 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
         if (channelBuffer == null)
         {
             final File file = termLocation(senderDir, sessionId, channelId, termId, true, destination.toString());
-            channelBuffer = new SenderChannelBuffer(templateFile, file, MediaDriver.READ_BYTE_BUFFER_SZ);
+            channelBuffer = new SenderChannelBuffer(templateFile, file,
+                                                    MediaDriver.COMMAND_BUFFER_SZ + RingBufferDescriptor.TRAILER_SIZE);
             srcTermMap.put(destination, sessionId, channelId, channelBuffer);
         }
 
         return channelBuffer.newTermBuffer(termId);
-    }
-
-    @Override
-    public ByteBuffer lookupSenderTerm(final UdpDestination destination,
-                                       final long sessionId,
-                                       final long channelId,
-                                       final long termId) throws Exception
-    {
-        final SenderChannelBuffer buffer = srcTermMap.get(destination, sessionId, channelId);
-
-        if (null == buffer)
-        {
-            throw new IllegalArgumentException(String.format("buffer does not exist: %1$s/%2$s/%3$s",
-                    sessionId, channelId, termId));
-        }
-
-        return buffer.get(termId);
     }
 
     protected interface TermMapper

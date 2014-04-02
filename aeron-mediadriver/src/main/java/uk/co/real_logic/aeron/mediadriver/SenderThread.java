@@ -15,11 +15,9 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.ClosableThread;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
-import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 /**
  * Thread to take data in sender buffers and demux onto sending sockets
@@ -27,13 +25,11 @@ import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 public class SenderThread extends ClosableThread
 {
     private final RingBuffer adminThreadCommandBuffer;
-    private final BufferManagementStrategy bufferManagementStrategy;
     private final AtomicArray<SenderChannel> channels;
 
     public SenderThread(final MediaDriver.TopologyBuilder builder)
     {
         this.adminThreadCommandBuffer = builder.adminThreadCommandBuffer();
-        this.bufferManagementStrategy = builder.bufferManagementStrategy();
         this.channels = new AtomicArray<>();
     }
 
@@ -51,10 +47,5 @@ public class SenderThread extends ClosableThread
     public void removeChannel(final SenderChannel channel)
     {
         channels.remove(channel);
-    }
-
-    private void onStatusMessageEvent(final HeaderFlyweight header)
-    {
-        // TODO: handle Status Message, perhaps sending more data
     }
 }

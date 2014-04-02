@@ -24,6 +24,7 @@ import uk.co.real_logic.aeron.util.command.LibraryFacade;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.nio.ByteBuffer;
@@ -47,6 +48,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     private final ChannelMap<SenderChannel> sendChannels;
 
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
+    private final ErrorHeaderFlyweight errorHeaderFlyweight = new ErrorHeaderFlyweight();
 
     public MediaDriverAdminThread(final MediaDriver.TopologyBuilder builder,
                                   final ReceiverThread receiverThread,
@@ -59,6 +61,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         this.senderThread = senderThread;
         this.sendChannels = new ChannelMap<>();
         this.srcDestinationMap = new HashMap<>();
+
         try
         {
             final ByteBuffer buffer = builder.adminBufferStrategy().toMediaDriver();
@@ -145,7 +148,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             SenderChannel channel = sendChannels.get(srcDestination, sessionId, channelId);
             if (channel != null)
             {
-                // TODO: error
+                // TODO: error. channel and sessionId already exist
             }
 
             SrcFrameHandler frameHandler = srcDestinationMap.get(srcDestination);
@@ -155,17 +158,17 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
                 srcDestinationMap.put(srcDestination, frameHandler);
             }
 
-            channel = new SenderChannel(frameHandler,
-                                        bufferManagementStrategy,
-                                        sessionId,
-                                        channelId);
+            // new channel, so generate "random"-ish termId and create term buffer
+            final long termId = (long)(Math.random() * 0xFFFFFFFFL);  // FIXME: this may not be random enough
+            final ByteBuffer buffer = bufferManagementStrategy.addSenderTerm(srcDestination, sessionId, channelId, termId);
 
-            channel.initiateTermBuffers();
+            channel = new SenderChannel(frameHandler, buffer, sessionId, channelId, termId);
             sendChannels.put(srcDestination, sessionId, channelId, channel);
 
             // tell the client admin thread of the new buffer
-            sendNewBufferNotification(sessionId, channelId, 0L, true, destination);
+            sendNewBufferNotification(sessionId, channelId, termId, true, destination);
 
+            // add channel to sender thread atomic array so it can be integrated in
             senderThread.addChannel(channel);
         }
         catch (Exception e)

@@ -34,6 +34,7 @@ public class LogBufferAppender
     private final int capacity;
     private final int headerReserveLength;
     private final int maxMessageLength;
+    private final int maxFrameLength;
 
     /**
      * Construct a view over a log buffer and state buffer for appending frames.
@@ -41,20 +42,24 @@ public class LogBufferAppender
      * @param logAtomicBuffer for where events are stored.
      * @param stateAtomicBuffer for where the state of writers is stored manage concurrency.
      * @param headerReserveLength length of the header field to be used on each frame.
+     * @param maxFrameLength maximum frame length, including header, beyond which messages get fragmented.
      */
     public LogBufferAppender(final AtomicBuffer logAtomicBuffer,
                              final AtomicBuffer stateAtomicBuffer,
-                             final int headerReserveLength)
+                             final int headerReserveLength,
+                             final int maxFrameLength)
     {
         checkLogBuffer(logAtomicBuffer);
         checkStateBuffer(stateAtomicBuffer);
         checkHeaderReserve(headerReserveLength);
+        checkMaxFrameLength(maxFrameLength);
 
         this.logBuffer = logAtomicBuffer;
         this.stateBuffer = stateAtomicBuffer;
         this.capacity = logAtomicBuffer.capacity();
         this.headerReserveLength = headerReserveLength;
         this.maxMessageLength = FrameDescriptor.calculateMaxMessageLength(capacity);
+        this.maxFrameLength = maxFrameLength;
     }
 
     /**
@@ -85,6 +90,16 @@ public class LogBufferAppender
     public int maxMessageLength()
     {
         return maxMessageLength;
+    }
+
+    /**
+     * The maximum length of a frame, including header, that can be recorded in the log.
+     *
+     * @return the maximum length of a frame, including header, that can be recorded in the log.
+     */
+    public int maxFrameLength()
+    {
+        return maxFrameLength;
     }
 
     /**
@@ -141,13 +156,20 @@ public class LogBufferAppender
         logBuffer.putBytes(messageOffset(frameOffset, headerReserveLength), srcBuffer, srcOffset, length);
 
         putFragmentFlags(frameOffset, fragmentFlags);
+        putSequenceNumber(frameOffset);
         putFrameLengthOrdered(frameOffset, requiredCapacity);
     }
 
     private void appendPaddingFrame(final int frameOffset)
     {
         putFragmentFlags(frameOffset, UNFRAGMENTED);
+        putSequenceNumber(frameOffset);
         putFrameLengthOrdered(frameOffset, capacity - frameOffset);
+    }
+
+    private void putSequenceNumber(final int frameOffset)
+    {
+        logBuffer.putInt(seqNumberOffset(frameOffset), frameOffset);
     }
 
     private void putFragmentFlags(final int frameOffset, final byte flags)

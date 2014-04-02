@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.util.concurrent.logbuffer;
 import uk.co.real_logic.aeron.util.BitUtil;
 
 import static java.lang.Integer.valueOf;
+import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 
 /**
  * Description of the structure for message framing in a log buffer.
@@ -25,22 +26,24 @@ import static java.lang.Integer.valueOf;
  * the encoded message follows:
  *
  * <pre>
- * 0                   1                   2                   3
- * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |  Vers |S|E|       Flags       |             Type              |
- * +-------+-+-+-+-+-+-+-+-+-+-+-+-+-------------------------------+
- * |R|                       Frame Length                          |
- * +-------------------------------+-------------------------------+
- * |                            Reserve                          ...
- * ...                                                             |
- * +---------------------------------------------------------------+
- * |                        Encoded Message                      ...
- * ...                                                             |
- * +---------------------------------------------------------------+
+ *  0                   1                   2                   3
+ *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *  |  Vers |B|E|       Flags       |             Type              |
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-------------------------------+
+ *  |R|                       Frame Length                          |
+ *  +-+-------------------------------------------------------------+
+ *  |R|                     Sequence Number                         |
+ *  +-+-------------------------------------------------------------+
+ *  |                            Reserve                           ...
+ * ...                                                              |
+ *  +---------------------------------------------------------------+
+ *  |                        Encoded Message                       ...
+ * ...                                                              |
+ *  +---------------------------------------------------------------+
  * </pre>
  *
- * The S (Start) and E (End) flags are used for message fragmentation.
+ * The B (Begin) and E (End) flags are used for message fragmentation.
  * Both are set for a message that does not span frames.
  */
 public class FrameDescriptor
@@ -54,8 +57,11 @@ public class FrameDescriptor
     /** Offset from the beginning of the frame at which the length field begins. */
     public static final int LENGTH_FIELD_OFFSET = 4;
 
+    /** Offset from the beginning of the frame at which the length field begins. */
+    public static final int SEQ_NUMBER_OFFSET = 8;
+
     /** Length in bytes for the fixed part of the header before the reserve */
-    public static final int FIXED_HEADER_LENGTH = 8;
+    public static final int FIXED_HEADER_LENGTH = 12;
 
     /** Start fragment flag of a message. */
     public static final byte START_FLAG = 0b0000_1000;
@@ -89,6 +95,17 @@ public class FrameDescriptor
     }
 
     /**
+     * Offset to the sequence number field from the beginning of the frame.
+     *
+     * @param frameOffset at which the frame begins.
+     * @return the offset to the sequence number field from the beginning of the frame.
+     */
+    public static int seqNumberOffset(final int frameOffset)
+    {
+        return frameOffset + SEQ_NUMBER_OFFSET;
+    }
+
+    /**
      * Offset to the encoded message from the beginning of the frame.
      *
      * @param frameOffset at which the frame begins.
@@ -119,9 +136,25 @@ public class FrameDescriptor
      */
     public static void checkHeaderReserve(final int length)
     {
-        if (length % WORD_ALIGNMENT != 0)
+        if (length % SIZE_OF_INT != 0)
         {
             final String s = String.format("Header reserve must be a multiple of %d, length=%d",
+                                           valueOf(SIZE_OF_INT), valueOf(length));
+            throw new IllegalStateException(s);
+        }
+    }
+
+    /**
+     * Check the frame header reserve is aligned on an word boundary.
+     *
+     * @param length to be applied to all logged frames.
+     * @throws IllegalStateException if the record header length is invalid
+     */
+    public static void checkMaxFrameLength(final int length)
+    {
+        if (length % WORD_ALIGNMENT != 0)
+        {
+            final String s = String.format("Max frame length must be a multiple of %d, length=%d",
                                            valueOf(WORD_ALIGNMENT), valueOf(length));
             throw new IllegalStateException(s);
         }

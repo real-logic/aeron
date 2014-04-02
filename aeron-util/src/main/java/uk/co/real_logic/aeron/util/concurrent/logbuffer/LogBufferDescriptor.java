@@ -19,10 +19,10 @@ import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import static java.lang.Integer.valueOf;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.RecordDescriptor.RECORD_ALIGNMENT;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 
 /**
- * Layout description for the log buffer state.
+ * Layout description for the log and state buffers.
  */
 public class LogBufferDescriptor
 {
@@ -42,7 +42,7 @@ public class LogBufferDescriptor
     }
 
     /** Minimum buffer size for the log */
-    public static final int LOG_MIN_SIZE = RecordDescriptor.RECORD_ALIGNMENT * 256;
+    public static final int LOG_MIN_SIZE = FrameDescriptor.FRAME_ALIGNMENT * 256;
 
     /**
      * Check that log buffer is the correct size and alignment.
@@ -60,10 +60,10 @@ public class LogBufferDescriptor
             throw new IllegalStateException(s);
         }
 
-        if (capacity % RECORD_ALIGNMENT != 0)
+        if (capacity % FRAME_ALIGNMENT != 0)
         {
             final String s = String.format("Log buffer capacity not a multiple of %d, capacity=%d",
-                                           valueOf(RECORD_ALIGNMENT), valueOf(capacity));
+                                           valueOf(FRAME_ALIGNMENT), valueOf(capacity));
             throw new IllegalStateException(s);
         }
     }

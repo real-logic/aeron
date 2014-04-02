@@ -126,7 +126,7 @@ public class LogBufferAppender
             return false;
         }
 
-        appendFrame(frameOffset, requiredCapacity, srcBuffer, srcOffset, length);
+        appendFrame(frameOffset, requiredCapacity, srcBuffer, srcOffset, length, UNFRAGMENTED);
 
         return true;
     }
@@ -135,15 +135,24 @@ public class LogBufferAppender
                              final int requiredCapacity,
                              final AtomicBuffer srcBuffer,
                              final int srcOffset,
-                             final int length)
+                             final int length,
+                             final byte fragmentFlags)
     {
         logBuffer.putBytes(messageOffset(frameOffset, headerReserveLength), srcBuffer, srcOffset, length);
+
+        putFragmentFlags(frameOffset, fragmentFlags);
         putFrameLengthOrdered(frameOffset, requiredCapacity);
     }
 
     private void appendPaddingFrame(final int frameOffset)
     {
+        putFragmentFlags(frameOffset, UNFRAGMENTED);
         putFrameLengthOrdered(frameOffset, capacity - frameOffset);
+    }
+
+    private void putFragmentFlags(final int frameOffset, final byte flags)
+    {
+        logBuffer.putByte(fragmentFlagsOffset(frameOffset), flags);
     }
 
     private void putFrameLengthOrdered(final int frameOffset, final int length)

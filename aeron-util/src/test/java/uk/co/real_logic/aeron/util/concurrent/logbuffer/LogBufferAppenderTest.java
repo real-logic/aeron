@@ -134,6 +134,7 @@ public class LogBufferAppenderTest
         final InOrder inOrder = inOrder(logBuffer, stateBuffer);
         inOrder.verify(stateBuffer, times(1)).getAndAddInt(TAIL_COUNTER_OFFSET, FRAME_ALIGNMENT);
         inOrder.verify(logBuffer, times(1)).putBytes(messageOffset(0, HEADER_RESERVE), buffer, 0, msgLen);
+        inOrder.verify(logBuffer, times(1)).putByte(fragmentFlagsOffset(0), UNFRAGMENTED);
         inOrder.verify(logBuffer, times(1)).putIntOrdered(lengthOffset(0), FRAME_ALIGNMENT);
     }
 
@@ -153,9 +154,12 @@ public class LogBufferAppenderTest
         final InOrder inOrder = inOrder(logBuffer, stateBuffer);
         inOrder.verify(stateBuffer, times(1)).getAndAddInt(TAIL_COUNTER_OFFSET, FRAME_ALIGNMENT);
         inOrder.verify(logBuffer, times(1)).putBytes(messageOffset(0, HEADER_RESERVE), buffer, 0, msgLen);
+        inOrder.verify(logBuffer, times(1)).putByte(fragmentFlagsOffset(0), UNFRAGMENTED);
         inOrder.verify(logBuffer, times(1)).putIntOrdered(lengthOffset(0), FRAME_ALIGNMENT);
+
         inOrder.verify(stateBuffer, times(1)).getAndAddInt(TAIL_COUNTER_OFFSET, FRAME_ALIGNMENT);
         inOrder.verify(logBuffer, times(1)).putBytes(messageOffset(FRAME_ALIGNMENT, HEADER_RESERVE), buffer, 0, msgLen);
+        inOrder.verify(logBuffer, times(1)).putByte(fragmentFlagsOffset(FRAME_ALIGNMENT), UNFRAGMENTED);
         inOrder.verify(logBuffer, times(1)).putIntOrdered(lengthOffset(FRAME_ALIGNMENT), FRAME_ALIGNMENT);
     }
 
@@ -172,6 +176,7 @@ public class LogBufferAppenderTest
 
         verify(stateBuffer, times(1)).getAndAddInt(TAIL_COUNTER_OFFSET, FRAME_ALIGNMENT);
         verify(logBuffer, never()).putBytes(anyInt(), eq(buffer), anyInt(), anyInt());
+        verify(logBuffer, never()).putByte(anyInt(), anyByte());
         verify(logBuffer, never()).putIntOrdered(anyInt(), anyInt());
     }
 
@@ -190,7 +195,8 @@ public class LogBufferAppenderTest
 
         final InOrder inOrder = inOrder(logBuffer, stateBuffer);
         inOrder.verify(stateBuffer, times(1)).getAndAddInt(TAIL_COUNTER_OFFSET, requiredFrameSize);
-        inOrder.verify(logBuffer, times(1)).putIntOrdered(tailValue + LENGTH_FIELD_OFFSET, FRAME_ALIGNMENT);
+        inOrder.verify(logBuffer, times(1)).putByte(fragmentFlagsOffset(tailValue), UNFRAGMENTED);
+        inOrder.verify(logBuffer, times(1)).putIntOrdered(lengthOffset(tailValue), FRAME_ALIGNMENT);
 
         verify(logBuffer, never()).putBytes(anyInt(), eq(buffer), anyInt(), anyInt());
     }

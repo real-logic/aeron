@@ -124,15 +124,22 @@ public class SrcFrameHandler implements FrameHandler, AutoCloseable
         // dispatch frames
         if (header.headerType() == HeaderFlyweight.HDR_TYPE_NAK)
         {
-            final SenderChannel channel = findChannel(0, 0);  // TODO: grab ids from header
+            final long sessionId = 0;  // TODO: grab from header
+            final long channelId = 0;  // TODO: grab from header
+            final SenderChannel channel = findChannel(sessionId, channelId);
 
             // TODO: have the sender channel, so look for the term within it
         }
         else if (header.headerType() == HeaderFlyweight.HDR_TYPE_SM)
         {
-            final SenderChannel channel = findChannel(0, 0);  // TODO: grab ids from header
+            final long sessionId = 0;  // TODO: grab from header
+            final long channelId = 0;  // TODO: grab from header
+            final SenderChannel channel = findChannel(sessionId, channelId);
 
-            // TODO: update flow control state for channel (atomically)
+            // TODO: make determination of highestContiguousSequenceNumber and receiverWindow be a strategy
+            // TODO: the strategy holds the individual pieces of the state and only updates the rightEdge
+
+            channel.flowControlState().updateRightEdgeOfWindow(0);
         }
     }
 }

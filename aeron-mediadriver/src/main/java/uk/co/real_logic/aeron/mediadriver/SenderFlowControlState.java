@@ -15,28 +15,27 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * Encapsulate the flow control status of a sender channel
  */
 public class SenderFlowControlState
 {
-    private int highestContiguousSequenceNumber;
-    private int receiverWindow;
+    private final AtomicInteger rightEdge;
 
-    public SenderFlowControlState(final int initialSeqNum, final int initialWindow)
+    public SenderFlowControlState(final int initialRightEdge)
     {
-        this.highestContiguousSequenceNumber = initialSeqNum;
-        this.receiverWindow = initialWindow;
+        this.rightEdge = new AtomicInteger(initialRightEdge);
     }
 
-    public void reset(final int highSeqNum, final int window)
+    public void updateRightEdgeOfWindow(final int rightEdge)
     {
-        highestContiguousSequenceNumber = highSeqNum;
-        receiverWindow = window;
+        this.rightEdge.lazySet(rightEdge);
     }
 
-    public int rightEdgeOfWindow()
+    public int rightEdgeOfWindowAtomic()
     {
-        return highestContiguousSequenceNumber + receiverWindow;
+        return rightEdge.get();
     }
 }

@@ -51,7 +51,7 @@ public class SenderChannel
         this.currentTermId = initialTermId;
         this.producerBuffer = producerBuffer;
         this.ringBuffer = new ManyToOneRingBuffer(new AtomicBuffer(producerBuffer));
-        this.activeFlowControlState = new SenderFlowControlState(0, 0);
+        this.activeFlowControlState = new SenderFlowControlState(0);
         this.sendBuffer = producerBuffer.duplicate();
         this.sendBuffer.clear();
     }
@@ -64,7 +64,7 @@ public class SenderChannel
         {
             final int frameSequenceNumber = 0;  // TODO: grab this from peeking at the frame
             final int frameLength = 1000;       // TODO: grab this from peeking at the frame
-            final int rightEdge = activeFlowControlState.rightEdgeOfWindow();
+            final int rightEdge = activeFlowControlState.rightEdgeOfWindowAtomic();
 
             // if we can't send, then break out of the loop
             if (frameSequenceNumber + frameLength > rightEdge)

@@ -25,7 +25,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*
  * Log buffer appender which supports many producers concurrently writing an append-only log.
  *
  * Messages are appending to a log using a framing protocol as described in {@link FrameDescriptor}.
- * If a message is larger than a single frame it will be fragmented up to {@link #maxMessageLength()}.
+ * If a message is larger than what will fit in a single frame will be fragmented up to {@link #maxMessageLength()}.
  */
 public class LogBufferAppender
 {

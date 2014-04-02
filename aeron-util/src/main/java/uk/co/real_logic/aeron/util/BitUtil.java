@@ -15,6 +15,8 @@
  */
 package uk.co.real_logic.aeron.util;
 
+import java.security.MessageDigest;
+
 /**
  * Miscellaneous useful functions for dealing with low level bits and bytes.
  */
@@ -104,5 +106,29 @@ public class BitUtil
     public static String toHex(final byte[] buffer) throws Exception
     {
         return new String(toHexByteArray(buffer), "UTF-8");
+    }
+
+    /**
+     * Generate a consistent hash of the bytes that is represented as a long.
+     *
+     * Not guaranteed to be unique. But should be reasonably unique and
+     *
+     * @param bytes bytes to hash over
+     * @return long representation of hash
+     * @throws Exception if no known digest method
+     */
+    public static long generateConsistentHash(final byte[] bytes) throws Exception
+    {
+        final byte[] digest = MessageDigest.getInstance("SHA-1").digest(bytes);
+
+        // truncate by taking first 8 bytes
+        return ((long)digest[0] << 56) |
+                ((long)digest[1] << 48) |
+                ((long)digest[2] << 40) |
+                ((long)digest[3] << 32) |
+                ((long)digest[4] << 24) |
+                ((long)digest[5] << 16) |
+                ((long)digest[6] << 8)  |
+                ((long)digest[7]);
     }
 }

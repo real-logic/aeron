@@ -15,11 +15,12 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import uk.co.real_logic.aeron.util.BitUtil;
+
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.URI;
-import java.security.MessageDigest;
 
 /**
  * Encapsulation of UDP destinations
@@ -120,19 +121,9 @@ public class UdpDestination
                              remote.getAddress().getHostAddress(), Integer.valueOf(remote.getPort()));
     }
 
-    public static long generateUriHash(final String uri) throws Exception
+    public static long generateConsistentUriHash(final String uri) throws Exception
     {
-        final byte[] digest = MessageDigest.getInstance("SHA-1").digest(uri.getBytes());
-
-        // truncate by taking first 8 bytes
-        return ((long)digest[0] << 56) |
-               ((long)digest[1] << 48) |
-               ((long)digest[2] << 40) |
-               ((long)digest[3] << 32) |
-               ((long)digest[4] << 24) |
-               ((long)digest[5] << 16) |
-               ((long)digest[6] << 8)  |
-               ((long)digest[7]);
+        return BitUtil.generateConsistentHash(uri.getBytes());
     }
 
     public static class Builder

@@ -35,6 +35,7 @@ public class UdpDestination
     private final InetSocketAddress remote;
     private final InetSocketAddress local;
     private final String uriStr;
+    private final long consistentHash;
 
     public static UdpDestination parse(final String destinationUri) throws Exception
     {
@@ -48,6 +49,7 @@ public class UdpDestination
 
         final Builder builder = new Builder()
                 .uriStr(destinationUri)
+                .consistentHash(BitUtil.generateConsistentHash(destinationUri.getBytes()))
                 .remotePort(uri.getPort())
                 .remoteAddr(InetAddress.getByName(uri.getHost()));
 
@@ -95,6 +97,12 @@ public class UdpDestination
         this.remote = new InetSocketAddress(builder.remoteAddr, builder.remotePort);
         this.local = new InetSocketAddress(builder.localAddr, builder.localPort);
         this.uriStr = builder.uriStr;
+        this.consistentHash = builder.consistentHash;
+    }
+
+    public long consistentHash()
+    {
+        return consistentHash;
     }
 
     public int hashCode()
@@ -121,11 +129,6 @@ public class UdpDestination
                              remote.getAddress().getHostAddress(), Integer.valueOf(remote.getPort()));
     }
 
-    public static long generateConsistentUriHash(final String uri) throws Exception
-    {
-        return BitUtil.generateConsistentHash(uri.getBytes());
-    }
-
     public static class Builder
     {
         private InetAddress remoteAddr;
@@ -133,6 +136,7 @@ public class UdpDestination
         private int remotePort;
         private int localPort;
         private String uriStr;
+        private long consistentHash;
 
         public Builder()
         {
@@ -169,6 +173,12 @@ public class UdpDestination
         public Builder localPort(final int port)
         {
             localPort = port;
+            return this;
+        }
+
+        public Builder consistentHash(final long hash)
+        {
+            consistentHash = hash;
             return this;
         }
     }

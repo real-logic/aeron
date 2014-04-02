@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class UdpDestinationTest
@@ -84,5 +85,16 @@ public class UdpDestinationTest
     public void shouldThrowExceptionWhenNoDestinationPortSpecified() throws Exception
     {
         final UdpDestination dest = UdpDestination.parse("udp://localhost");
+    }
+
+    @Test
+    public void shouldHandleConsistentHashCorrectly() throws Exception
+    {
+        final UdpDestination dest1 = UdpDestination.parse("udp://localhost:40124");
+        final UdpDestination dest2 = UdpDestination.parse("udp://localhost:40124");
+        final UdpDestination dest3 = UdpDestination.parse("udp://localhost:40123");
+
+        assertThat(dest1.consistentHash(), is(dest2.consistentHash()));
+        assertThat(dest2.consistentHash(), not(dest3.consistentHash()));
     }
 }

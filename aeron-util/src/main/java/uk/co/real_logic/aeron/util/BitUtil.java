@@ -123,12 +123,12 @@ public class BitUtil
 
         // truncate by taking first 8 bytes
         return ((long)digest[0] << 56) |
-                ((long)digest[1] << 48) |
-                ((long)digest[2] << 40) |
-                ((long)digest[3] << 32) |
-                ((long)digest[4] << 24) |
-                ((long)digest[5] << 16) |
-                ((long)digest[6] << 8)  |
-                ((long)digest[7]);
+               ((long)digest[1] << 48) |
+               ((long)digest[2] << 40) |
+               ((long)digest[3] << 32) |
+               ((long)digest[4] << 24) |
+               ((long)digest[5] << 16) |
+               ((long)digest[6] << 8)  |
+               ((long)digest[7]);
     }
 }

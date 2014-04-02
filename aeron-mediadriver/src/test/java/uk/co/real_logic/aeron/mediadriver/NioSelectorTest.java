@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
-public class ReceiverThreadTest
+public class NioSelectorTest
 {
     private static final int RCV_PORT = 40123;
     private static final int SRC_PORT = 40124;
@@ -40,24 +40,36 @@ public class ReceiverThreadTest
     private final ByteBuffer buffer = ByteBuffer.allocateDirect(256);
     private final AtomicBuffer atomicBuffer = new AtomicBuffer(buffer);
     private final DataHeaderFlyweight encodeDataHeader = new DataHeaderFlyweight();
-    //private final InetSocketAddress srcRemoteAddr = new InetSocketAddress("localhost", RCV_PORT);
     private final InetSocketAddress rcvRemoteAddr = new InetSocketAddress("localhost", SRC_PORT);
     private final InetSocketAddress rcvLocalAddr = new InetSocketAddress(RCV_PORT);
     private final InetSocketAddress srcLocalAddr = new InetSocketAddress(SRC_PORT);
-    private final long channelIds[] = {CHANNEL_ID};
+    private final InetSocketAddress srcRemoteAddr = new InetSocketAddress("localhost", RCV_PORT);
+
+    private final FrameHandler nullHandler = new FrameHandler()
+    {
+        @Override
+        public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
+        {
+        }
+
+        @Override
+        public void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
+        {
+        }
+    };
 
     @Test(timeout = 1000)
     public void shouldHandleBasicSetupAndTeardown() throws Exception
     {
-        final ReceiverThread receiverThread = new ReceiverThread(new MediaDriver.TopologyBuilder());
-        final RcvFrameHandler rcv = new RcvFrameHandler(UdpDestination.parse(RCV_UDP_URI), receiverThread);
-        final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), receiverThread, null);
+        final NioSelector nioSelector = new NioSelector();
+        final UdpTransport rcv = new UdpTransport(nullHandler, rcvLocalAddr, nioSelector);
+        final UdpTransport src = new UdpTransport(nullHandler, srcLocalAddr, nioSelector);
 
-        processLoop(receiverThread, 5);
+        processLoop(nioSelector, 5);
         rcv.close();
         src.close();
-        processLoop(receiverThread, 5);
-        receiverThread.close();
+        processLoop(nioSelector, 5);
+        nioSelector.close();
     }
 
     @Test(timeout = 1000)
@@ -65,7 +77,7 @@ public class ReceiverThreadTest
     {
         final AtomicInteger dataHeadersRcved = new AtomicInteger(0);
 
-        final ReceiverThread receiverThread = new ReceiverThread(new MediaDriver.TopologyBuilder());
+        final NioSelector nioSelector = new NioSelector();
         final UdpTransport rcv = new UdpTransport(new FrameHandler()
         {
             public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
@@ -83,9 +95,9 @@ public class ReceiverThreadTest
             public void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
             {
             }
-        }, rcvLocalAddr, receiverThread);
+        }, rcvLocalAddr, nioSelector);
 
-        final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), receiverThread, null);
+        final UdpTransport src = new UdpTransport(nullHandler, srcLocalAddr, nioSelector);
 
         encodeDataHeader.reset(atomicBuffer, 0);
         encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
@@ -96,16 +108,16 @@ public class ReceiverThreadTest
                         .termId(TERM_ID);
         buffer.position(0).limit(24);
 
-        processLoop(receiverThread, 5);
-        src.send(buffer);
+        processLoop(nioSelector, 5);
+        src.sendTo(buffer, srcRemoteAddr);
         while (dataHeadersRcved.get() < 1)
         {
-            processLoop(receiverThread, 1);
+            processLoop(nioSelector, 1);
         }
         rcv.close();
         src.close();
-        processLoop(receiverThread, 5);
-        receiverThread.close();
+        processLoop(nioSelector, 5);
+        nioSelector.close();
 
         assertThat(Integer.valueOf(dataHeadersRcved.get()), is(Integer.valueOf(1)));
     }
@@ -116,7 +128,7 @@ public class ReceiverThreadTest
         final AtomicInteger dataHeadersRcved = new AtomicInteger(0);
         final AtomicInteger cntlHeadersRcved = new AtomicInteger(0);
 
-        final ReceiverThread receiverThread = new ReceiverThread(new MediaDriver.TopologyBuilder());
+        final NioSelector nioSelector = new NioSelector();
         final UdpTransport rcv = new UdpTransport(new FrameHandler()
         {
             public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
@@ -131,9 +143,9 @@ public class ReceiverThreadTest
                 assertThat(Integer.valueOf(header.frameLength()), is(Integer.valueOf(8)));
                 cntlHeadersRcved.incrementAndGet();
             }
-        }, rcvLocalAddr, receiverThread);
+        }, rcvLocalAddr, nioSelector);
 
-        final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), receiverThread, null);
+        final UdpTransport src = new UdpTransport(nullHandler, srcLocalAddr, nioSelector);
 
         encodeDataHeader.reset(atomicBuffer, 0);
         encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
@@ -141,16 +153,16 @@ public class ReceiverThreadTest
                         .frameLength(8);
         buffer.position(0).limit(8);
 
-        processLoop(receiverThread, 5);
-        src.send(buffer);
+        processLoop(nioSelector, 5);
+        src.sendTo(buffer, srcRemoteAddr);
         while (cntlHeadersRcved.get() < 1)
         {
-            processLoop(receiverThread, 1);
+            processLoop(nioSelector, 1);
         }
         rcv.close();
         src.close();
-        processLoop(receiverThread, 5);
-        receiverThread.close();
+        processLoop(nioSelector, 5);
+        nioSelector.close();
 
         assertThat(Integer.valueOf(dataHeadersRcved.get()), is(Integer.valueOf(0)));
         assertThat(Integer.valueOf(cntlHeadersRcved.get()), is(Integer.valueOf(1)));
@@ -162,7 +174,7 @@ public class ReceiverThreadTest
         final AtomicInteger dataHeadersRcved = new AtomicInteger(0);
         final AtomicInteger cntlHeadersRcved = new AtomicInteger(0);
 
-        final ReceiverThread receiverThread = new ReceiverThread(new MediaDriver.TopologyBuilder());
+        final NioSelector nioSelector = new NioSelector();
         final UdpTransport rcv = new UdpTransport(new FrameHandler()
         {
             public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
@@ -180,9 +192,9 @@ public class ReceiverThreadTest
             {
                 cntlHeadersRcved.incrementAndGet();
             }
-        }, rcvLocalAddr, receiverThread);
+        }, rcvLocalAddr, nioSelector);
 
-        final SrcFrameHandler src = new SrcFrameHandler(UdpDestination.parse(SRC_UDP_URI), receiverThread, null);
+        final UdpTransport src = new UdpTransport(nullHandler, srcLocalAddr, nioSelector);
 
         encodeDataHeader.reset(atomicBuffer, 0);
         encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
@@ -200,16 +212,16 @@ public class ReceiverThreadTest
                         .termId(TERM_ID);
         buffer.position(0).limit(48);
 
-        processLoop(receiverThread, 5);
-        src.send(buffer);
+        processLoop(nioSelector, 5);
+        src.sendTo(buffer, srcRemoteAddr);
         while (dataHeadersRcved.get() < 1)
         {
-            processLoop(receiverThread, 1);
+            processLoop(nioSelector, 1);
         }
         rcv.close();
         src.close();
-        processLoop(receiverThread, 5);
-        receiverThread.close();
+        processLoop(nioSelector, 5);
+        nioSelector.close();
 
         assertThat(Integer.valueOf(dataHeadersRcved.get()), is(Integer.valueOf(2)));
         assertThat(Integer.valueOf(cntlHeadersRcved.get()), is(Integer.valueOf(0)));
@@ -221,7 +233,7 @@ public class ReceiverThreadTest
         final AtomicInteger dataHeadersRcved = new AtomicInteger(0);
         final AtomicInteger cntlHeadersRcved = new AtomicInteger(0);
 
-        final ReceiverThread receiverThread = new ReceiverThread(new MediaDriver.TopologyBuilder());
+        final NioSelector nioSelector = new NioSelector();
         final UdpTransport src = new UdpTransport(new FrameHandler()
         {
             public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
@@ -236,9 +248,9 @@ public class ReceiverThreadTest
                 assertThat(Integer.valueOf(header.frameLength()), is(Integer.valueOf(8)));
                 cntlHeadersRcved.incrementAndGet();
             }
-        }, srcLocalAddr, receiverThread);
+        }, srcLocalAddr, nioSelector);
 
-        final RcvFrameHandler rcv = new RcvFrameHandler(UdpDestination.parse(RCV_UDP_URI), receiverThread);
+        final UdpTransport rcv = new UdpTransport(nullHandler, rcvLocalAddr, nioSelector);
 
         encodeDataHeader.reset(atomicBuffer, 0);
         encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
@@ -246,27 +258,27 @@ public class ReceiverThreadTest
                         .frameLength(8);
         buffer.position(0).limit(8);
 
-        processLoop(receiverThread, 5);
+        processLoop(nioSelector, 5);
         rcv.sendTo(buffer, rcvRemoteAddr);
         while (cntlHeadersRcved.get() < 1)
         {
-            processLoop(receiverThread, 1);
+            processLoop(nioSelector, 1);
         }
 
         rcv.close();
         src.close();
-        processLoop(receiverThread, 5);
-        receiverThread.close();
+        processLoop(nioSelector, 5);
+        nioSelector.close();
 
         assertThat(Integer.valueOf(dataHeadersRcved.get()), is(Integer.valueOf(0)));
         assertThat(Integer.valueOf(cntlHeadersRcved.get()), is(Integer.valueOf(1)));
     }
 
-    private void processLoop(final ReceiverThread receiverThread, final int iterations)
+    private void processLoop(final NioSelector nioSelector, final int iterations) throws Exception
     {
         for (int i = 0; i < iterations; i++)
         {
-            receiverThread.process();
+            nioSelector.processKeys();
         }
     }
 }

@@ -39,6 +39,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
 
     private final RingBuffer commandBuffer;
     private final ReceiverThreadCursor receiverThreadCursor;
+    private final NioSelector nioSelector;
     private final ReceiverThread receiverThread;
     private final SenderThread senderThread;
     private final BufferManagementStrategy bufferManagementStrategy;
@@ -57,6 +58,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         this.commandBuffer = builder.adminThreadCommandBuffer();
         this.receiverThreadCursor = new ReceiverThreadCursor(builder.receiverThreadCommandBuffer(), receiverThread);
         this.bufferManagementStrategy = builder.bufferManagementStrategy();
+        this.nioSelector = builder.adminNioSelector();
         this.receiverThread = receiverThread;
         this.senderThread = senderThread;
         this.sendChannels = new ChannelMap<>();
@@ -94,6 +96,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     @Override
     public void process()
     {
+        // TODO: nioSelector.processKeys
         adminReceiveBuffer.read((eventTypeId, buffer, index, length) ->
         {
             // TODO: call onAddChannel, etc.
@@ -155,7 +158,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             SrcFrameHandler frameHandler = srcDestinationMap.get(srcDestination);
             if (frameHandler == null)
             {
-                frameHandler = new SrcFrameHandler(srcDestination, receiverThread, commandBuffer);
+                frameHandler = new SrcFrameHandler(srcDestination, nioSelector, commandBuffer);
                 srcDestinationMap.put(srcDestination, frameHandler);
             }
 

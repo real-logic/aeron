@@ -32,10 +32,10 @@ public class SrcFrameHandler implements FrameHandler, AutoCloseable
     private final RingBuffer adminThreadCommandBuffer;
 
     public SrcFrameHandler(final UdpDestination destination,
-                           final ReceiverThread receiverThread,
+                           final NioSelector nioSelector,
                            final RingBuffer adminThreadCommandBuffer) throws Exception
     {
-        this.transport = new UdpTransport(this, destination.local(), receiverThread);
+        this.transport = new UdpTransport(this, destination.local(), nioSelector);
         this.destination = destination;
         this.adminThreadCommandBuffer = adminThreadCommandBuffer;
     }

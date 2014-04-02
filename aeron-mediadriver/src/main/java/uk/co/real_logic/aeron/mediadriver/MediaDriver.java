@@ -46,6 +46,7 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescri
  *     <li><code>aeron.command.buffer.size</code>: Use int value as size of the command buffers between threads.</li>
  *     <li><code>aeron.admin.buffer.size</code>: Use int value as size of the admin buffers between the media driver
        and the client.</li>
+ *     <li><code>aeron.select.timeout</code>: use int value as default timeout for NIO select calls</li>
  * </ul>
  */
 public class MediaDriver
@@ -59,6 +60,9 @@ public class MediaDriver
     /** Size (in bytes) of the admin buffers between the media driver and the client */
     public static final String ADMIN_BUFFER_SZ_PROPERTY_NAME = "aeron.admin.buffer.size";
 
+    /** Timeout (in msec) for the basic NIO select call */
+    public static final String SELECT_TIMEOUT_PROPERTY_NAME = "aeron.select.timeout";
+
     /** Default byte buffer size for reads */
     public static final int READ_BYTE_BUFFER_SZ_DEFAULT = 4096;
 
@@ -68,17 +72,24 @@ public class MediaDriver
     /** Default buffer size for admin buffers between the media driver and the client */
     public static final int ADMIN_BUFFER_SZ_DEFAULT = 65536;
 
+    /** Default timeout for select */
+    public static final int SELECT_TIMEOUT_DEFAULT = 20;
+
     public static final int READ_BYTE_BUFFER_SZ = Integer.getInteger(READ_BYTE_BUFFER_SZ_PROPERTY_NAME,
             READ_BYTE_BUFFER_SZ_DEFAULT);
     public static final int COMMAND_BUFFER_SZ = Integer.getInteger(COMMAND_BUFFER_SZ_PROPERTY_NAME,
             COMMAND_BUFFER_SZ_DEFAULT);
     public static final int ADMIN_BUFFER_SZ = Integer.getInteger(ADMIN_BUFFER_SZ_PROPERTY_NAME,
             ADMIN_BUFFER_SZ_DEFAULT);
+    public static final int SELECT_TIMEOUT = Integer.getInteger(SELECT_TIMEOUT_PROPERTY_NAME,
+            SELECT_TIMEOUT_DEFAULT);
 
     public static void main(final String[] args)
     {
         TopologyBuilder builder = new TopologyBuilder().adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
+                .rcvNioSelector(new NioSelector())
+                .adminNioSelector(new NioSelector())
                 .adminBufferStrategy(new CreatingAdminBufferStrategy(Directories.ADMIN_DIR, ADMIN_BUFFER_SZ))
                 .bufferManagementStrategy(new BasicBufferManagementStrategy(Directories.DATA_DIR));
 
@@ -114,6 +125,8 @@ public class MediaDriver
         private ReceiverThreadCursor receiverThreadCursor;
         private BufferManagementStrategy bufferManagementStrategy;
         private AdminBufferStrategy adminBufferStrategy;
+        private NioSelector rcvNioSelector;
+        private NioSelector adminNioSelector;
 
         private RingBuffer createNewCommandBuffer(final int sz)
         {
@@ -147,6 +160,18 @@ public class MediaDriver
             return this;
         }
 
+        public TopologyBuilder rcvNioSelector(final NioSelector nioSelector)
+        {
+            this.rcvNioSelector = nioSelector;
+            return this;
+        }
+
+        public TopologyBuilder adminNioSelector(final NioSelector nioSelector)
+        {
+            this.adminNioSelector = nioSelector;
+            return this;
+        }
+
         public RingBuffer adminThreadCommandBuffer()
         {
             return adminThreadCommandBuffer;
@@ -167,5 +192,14 @@ public class MediaDriver
             return adminBufferStrategy;
         }
 
+        public NioSelector rcvNioSelector()
+        {
+            return rcvNioSelector;
+        }
+
+        public NioSelector adminNioSelector()
+        {
+            return adminNioSelector;
+        }
     }
 }

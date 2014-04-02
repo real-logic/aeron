@@ -42,44 +42,44 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
     private final HeaderFlyweight header = new HeaderFlyweight();
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final FrameHandler frameHandler;
-    private final ReceiverThread receiverThread;
+    private final NioSelector nioSelector;
     private final SelectionKey registeredKey;
 
     public UdpTransport(final FrameHandler frameHandler,
                         final InetSocketAddress local,
-                        final ReceiverThread receiverThread) throws Exception
+                        final NioSelector nioSelector) throws Exception
     {
         this.readBuffer = new AtomicBuffer(this.readByteBuffer);
         this.frameHandler = frameHandler;
-        this.receiverThread = receiverThread;
+        this.nioSelector = nioSelector;
 
         channel.bind(local);
         channel.configureBlocking(false);
-        this.registeredKey = receiverThread.registerForRead(channel, this);
+        this.registeredKey = nioSelector.registerForRead(channel, this);
     }
 
     public UdpTransport(final SrcFrameHandler frameHandler,
                         final InetSocketAddress local,
-                        final ReceiverThread receiverThread) throws Exception
+                        final NioSelector nioSelector) throws Exception
     {
         this.readBuffer = new AtomicBuffer(this.readByteBuffer);
         this.frameHandler = frameHandler;
-        this.receiverThread = receiverThread;
+        this.nioSelector = nioSelector;
 
         channel.bind(local);
         channel.configureBlocking(false);
-        this.registeredKey = receiverThread.registerForRead(channel, this);
+        this.registeredKey = nioSelector.registerForRead(channel, this);
     }
 
     public UdpTransport(final RcvFrameHandler frameHandler,
                         final InetSocketAddress local,
                         final InetAddress mcastInterfaceAddr,
                         final int localPort,
-                        final ReceiverThread receiverThread) throws Exception
+                        final NioSelector nioSelector) throws Exception
     {
         this.readBuffer = new AtomicBuffer(this.readByteBuffer);
         this.frameHandler = frameHandler;
-        this.receiverThread = receiverThread;
+        this.nioSelector = nioSelector;
 
         if (local.getAddress().isMulticastAddress())
         {
@@ -96,7 +96,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
         }
 
         channel.configureBlocking(false);
-        this.registeredKey = receiverThread.registerForRead(channel, this);
+        this.registeredKey = nioSelector.registerForRead(channel, this);
     }
 
     public int sendTo(final ByteBuffer buffer, final InetSocketAddress remote) throws Exception
@@ -113,7 +113,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
     {
         try
         {
-            receiverThread.cancelRead(registeredKey);
+            nioSelector.cancelRead(registeredKey);
             channel.close();
         }
         catch (final Exception ex)

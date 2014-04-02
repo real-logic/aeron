@@ -31,20 +31,18 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
     private final UdpTransport transport;
     private final UdpDestination destination;
     private final Long2ObjectHashMap<RcvChannelState> channelInterestMap;
-    private final ReceiverThread receiverThread;
 
     public RcvFrameHandler(final UdpDestination destination,
-                           final ReceiverThread receiverThread)
+                           final NioSelector nioSelector)
         throws Exception
     {
         final InetSocketAddress endpoint = destination.remote();
         final InetAddress mcastInterface = destination.local().getAddress();
         final int localPort = destination.local().getPort();
 
-        this.transport = new UdpTransport(this, endpoint, mcastInterface, localPort, receiverThread);
+        this.transport = new UdpTransport(this, endpoint, mcastInterface, localPort, nioSelector);
         this.destination = destination;
         this.channelInterestMap = new Long2ObjectHashMap<>();
-        this.receiverThread = receiverThread;
     }
 
     public int sendTo(final ByteBuffer buffer, final long sessionId, final long channelId) throws Exception
@@ -148,7 +146,7 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
         }
 
         // ask admin thread to create buffer for destination, sessionId, channelId, and termId
-        receiverThread.addRcvCreateTermBufferEvent(destination, sessionId, channelId, termId);
+        //receiverThread.addRcvCreateTermBufferEvent(destination, sessionId, channelId, termId);
     }
 
     public void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)

@@ -23,10 +23,10 @@ import java.nio.ByteOrder;
  * 0                   1                   2                   3
  * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |  Vers |S|E|     Flags         |             Type (=0x00)      |
- * +-------+-+-+-+-+-+-+-+-+-+-+-+-+-------------------------------+
+ * |  Version    |S|E|   Flags   |             Type (=0x00)        |
+ * +-------------+-+-+-+-+-+-+-+-+---------------------------------+
  * |                         Frame Length                          |
- * +-------------------------------+-------------------------------+
+ * +---------------------------------------------------------------+
  * |                        Sequence Number                        |
  * +---------------------------------------------------------------+
  * |                          Session ID                           |
@@ -43,6 +43,15 @@ public class DataHeaderFlyweight extends HeaderFlyweight
 {
     /** Size of the Data Header */
     public static final int HEADER_LENGTH = 24;
+
+    /** Begin Flag */
+    public static final short BEGIN_FLAG = 0x80;
+
+    /** End Flag */
+    public static final short END_FLAG = 0x40;
+
+    /** Begin and End Flags */
+    public static final short BEGIN_AND_END_FLAGS = (BEGIN_FLAG | END_FLAG);
 
     private static final int SEQUENCE_NUMBER_FIELD_OFFSET = 8;
     private static final int SESSION_ID_FIELD_OFFSET = 12;

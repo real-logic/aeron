@@ -72,7 +72,8 @@ public class NioSelectorTest
         {
             public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
             {
-                assertThat(Byte.valueOf(header.version()), is(Byte.valueOf(HeaderFlyweight.CURRENT_VERSION)));
+                assertThat(Short.valueOf(header.version()), is(Short.valueOf(HeaderFlyweight.CURRENT_VERSION)));
+                assertThat(Short.valueOf(header.flags()), is(Short.valueOf(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)));
                 assertThat(Integer.valueOf(header.headerType()), is(Integer.valueOf(HeaderFlyweight.HDR_TYPE_DATA)));
                 assertThat(Integer.valueOf(header.frameLength()), is(Integer.valueOf(24)));
                 assertThat(Long.valueOf(header.sessionId()), is(Long.valueOf(SESSION_ID)));
@@ -87,6 +88,7 @@ public class NioSelectorTest
 
         encodeDataHeader.reset(atomicBuffer, 0);
         encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
+                        .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
                         .headerType(HeaderFlyweight.HDR_TYPE_DATA)
                         .frameLength(24);
         encodeDataHeader.sessionId(SESSION_ID)
@@ -124,7 +126,7 @@ public class NioSelectorTest
 
             public void onStatusMessageFrame(final StatusMessageFlyweight statusMessage, final InetSocketAddress src)
             {
-                assertThat(Byte.valueOf(statusMessage.version()), is(Byte.valueOf(HeaderFlyweight.CURRENT_VERSION)));
+                assertThat(Short.valueOf(statusMessage.version()), is(Short.valueOf(HeaderFlyweight.CURRENT_VERSION)));
                 assertThat(Integer.valueOf(statusMessage.frameLength()), is(Integer.valueOf(8)));
                 cntlHeadersRcved.incrementAndGet();
             }
@@ -134,6 +136,7 @@ public class NioSelectorTest
 
         encodeDataHeader.reset(atomicBuffer, 0);
         encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
+                        .flags((short) 0)
                         .headerType(HeaderFlyweight.HDR_TYPE_SM)
                         .frameLength(8);
         buffer.position(0).limit(8);
@@ -164,7 +167,8 @@ public class NioSelectorTest
         {
             public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
             {
-                assertThat(Byte.valueOf(header.version()), is(Byte.valueOf(HeaderFlyweight.CURRENT_VERSION)));
+                assertThat(Short.valueOf(header.version()), is(Short.valueOf(HeaderFlyweight.CURRENT_VERSION)));
+                assertThat(Short.valueOf(header.flags()), is(Short.valueOf(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)));
                 assertThat(Integer.valueOf(header.headerType()), is(Integer.valueOf(HeaderFlyweight.HDR_TYPE_DATA)));
                 assertThat(Integer.valueOf(header.frameLength()), is(Integer.valueOf(24)));
                 assertThat(Long.valueOf(header.sessionId()), is(Long.valueOf(SESSION_ID)));
@@ -183,6 +187,7 @@ public class NioSelectorTest
 
         encodeDataHeader.reset(atomicBuffer, 0);
         encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
+                        .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
                         .headerType(HeaderFlyweight.HDR_TYPE_DATA)
                         .frameLength(24);
         encodeDataHeader.sessionId(SESSION_ID)
@@ -190,6 +195,7 @@ public class NioSelectorTest
                         .termId(TERM_ID);
         encodeDataHeader.reset(atomicBuffer, 24);
         encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
+                        .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
                         .headerType(HeaderFlyweight.HDR_TYPE_DATA)
                         .frameLength(24);
         encodeDataHeader.sessionId(SESSION_ID)
@@ -228,7 +234,7 @@ public class NioSelectorTest
 
             public void onStatusMessageFrame(final StatusMessageFlyweight statusMessage, final InetSocketAddress src)
             {
-                assertThat(Byte.valueOf(statusMessage.version()), is(Byte.valueOf(HeaderFlyweight.CURRENT_VERSION)));
+                assertThat(Short.valueOf(statusMessage.version()), is(Short.valueOf(HeaderFlyweight.CURRENT_VERSION)));
                 assertThat(Integer.valueOf(statusMessage.frameLength()), is(Integer.valueOf(8)));
                 cntlHeadersRcved.incrementAndGet();
             }
@@ -238,6 +244,7 @@ public class NioSelectorTest
 
         encodeDataHeader.reset(atomicBuffer, 0);
         encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
+                        .flags((short) 0)
                         .headerType(HeaderFlyweight.HDR_TYPE_SM)
                         .frameLength(8);
         buffer.position(0).limit(8);

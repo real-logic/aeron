@@ -45,15 +45,16 @@ public class FlyweightTest
     {
         encodeHeader.reset(aBuff, 0);
 
-        encodeHeader.version((byte) 1);
+        encodeHeader.version((short) 1);
+        encodeHeader.flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS);
         encodeHeader.headerType(HeaderFlyweight.HDR_TYPE_DATA);
         encodeHeader.frameLength(8);
 
         // little endian
-        assertThat(buffer.get(0), is((byte)(0x1L << 4)));
-        assertThat(buffer.get(1), is((byte)0x00));
+        assertThat(buffer.get(0), is((byte)0x01));
+        assertThat(buffer.get(1), is((byte)0xC0));
         assertThat(buffer.get(2), is((byte)HeaderFlyweight.HDR_TYPE_DATA));
-        assertThat(buffer.get(3), is((byte)0x0));
+        assertThat(buffer.get(3), is((byte)0x00));
         assertThat(buffer.get(4), is((byte)0x08));
         assertThat(buffer.get(5), is((byte)0x00));
         assertThat(buffer.get(6), is((byte)0x00));
@@ -65,12 +66,13 @@ public class FlyweightTest
     {
         encodeHeader.reset(aBuff, 0);
 
-        encodeHeader.version((byte) 1);
+        encodeHeader.version((short) 1);
+        encodeHeader.flags((short)0);
         encodeHeader.headerType(HeaderFlyweight.HDR_TYPE_DATA);
         encodeHeader.frameLength(8);
 
         decodeHeader.reset(aBuff, 0);
-        assertThat(decodeHeader.version(), is((byte)1));
+        assertThat(decodeHeader.version(), is((short)1));
         assertThat(decodeHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
         assertThat(decodeHeader.frameLength(), is(8));
     }
@@ -80,22 +82,26 @@ public class FlyweightTest
     {
         encodeHeader.reset(aBuff, 0);
 
-        encodeHeader.version((byte) 1);
+        encodeHeader.version((short) 1);
+        encodeHeader.flags((short) 0);
         encodeHeader.headerType(HeaderFlyweight.HDR_TYPE_DATA);
         encodeHeader.frameLength(8);
 
         encodeHeader.reset(aBuff, 8);
-        encodeHeader.version((byte) 2);
+        encodeHeader.version((short) 2);
+        encodeHeader.flags((short) 0x01);
         encodeHeader.headerType(HeaderFlyweight.HDR_TYPE_SM);
         encodeHeader.frameLength(8);
 
         decodeHeader.reset(aBuff, 0);
-        assertThat(decodeHeader.version(), is((byte)1));
+        assertThat(decodeHeader.version(), is((short) 1));
+        assertThat(decodeHeader.flags(), is((short) 0));
         assertThat(decodeHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
         assertThat(decodeHeader.frameLength(), is(8));
 
         decodeHeader.reset(aBuff, 8);
-        assertThat(decodeHeader.version(), is((byte)2));
+        assertThat(decodeHeader.version(), is((short) 2));
+        assertThat(decodeHeader.flags(), is((short) 0x01));
         assertThat(decodeHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_SM));
         assertThat(decodeHeader.frameLength(), is(8));
     }
@@ -105,7 +111,8 @@ public class FlyweightTest
     {
         encodeDataHeader.reset(aBuff, 0);
 
-        encodeDataHeader.version((byte)1);
+        encodeDataHeader.version((short) 1);
+        encodeDataHeader.flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS);
         encodeDataHeader.headerType(HeaderFlyweight.HDR_TYPE_DATA);
         encodeDataHeader.frameLength(DataHeaderFlyweight.HEADER_LENGTH);
         encodeDataHeader.sessionId(0xdeadbeefL);
@@ -113,7 +120,8 @@ public class FlyweightTest
         encodeDataHeader.termId(0x99887766L);
 
         decodeDataHeader.reset(aBuff, 0);
-        assertThat(decodeDataHeader.version(), is((byte) 1));
+        assertThat(decodeDataHeader.version(), is((short) 1));
+        assertThat(decodeDataHeader.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
         assertThat(decodeDataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
         assertThat(decodeDataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH));
         assertThat(decodeDataHeader.sessionId(), is(0xdeadbeefL));
@@ -142,7 +150,8 @@ public class FlyweightTest
         final AtomicBuffer originalAtomicBuffer = new AtomicBuffer(originalBuffer);
 
         encodeDataHeader.reset(originalAtomicBuffer, 0);
-        encodeDataHeader.version((byte) 1);
+        encodeDataHeader.version((short) 1);
+        encodeDataHeader.flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS);
         encodeDataHeader.headerType(HeaderFlyweight.HDR_TYPE_DATA);
         encodeDataHeader.frameLength(DataHeaderFlyweight.HEADER_LENGTH);
         encodeDataHeader.sessionId(0xdeadbeefL);
@@ -150,19 +159,22 @@ public class FlyweightTest
         encodeDataHeader.termId(0x99887766L);
 
         encodeErrorHeader.reset(aBuff, 0);
-        encodeErrorHeader.version((byte) 1);
+        encodeErrorHeader.version((short) 1);
+        encodeErrorHeader.flags((short) 0);
         encodeErrorHeader.headerType(HeaderFlyweight.HDR_TYPE_ERR);
         encodeErrorHeader.frameLength(encodeDataHeader.frameLength() + 12);
         encodeErrorHeader.offendingHeader(encodeDataHeader, encodeDataHeader.frameLength());
 
         decodeErrorHeader.reset(aBuff, 0);
-        assertThat(decodeErrorHeader.version(), is((byte) 1));
+        assertThat(decodeErrorHeader.version(), is((short) 1));
+        assertThat(decodeErrorHeader.flags(), is((short) 0));
         assertThat(decodeErrorHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_ERR));
         assertThat(decodeErrorHeader.frameLength(), is(encodeDataHeader.frameLength() +
                                                        ErrorHeaderFlyweight.HEADER_LENGTH));
 
         decodeDataHeader.reset(aBuff, decodeErrorHeader.offendingHeaderOffset());
-        assertThat(decodeDataHeader.version(), is((byte) 1));
+        assertThat(decodeDataHeader.version(), is((short) 1));
+        assertThat(decodeDataHeader.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
         assertThat(decodeDataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
         assertThat(decodeDataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH));
         assertThat(decodeDataHeader.sessionId(), is(0xdeadbeefL));
@@ -180,7 +192,8 @@ public class FlyweightTest
         final AtomicBuffer originalAtomicBuffer = new AtomicBuffer(originalBuffer);
 
         encodeDataHeader.reset(originalAtomicBuffer, 0);
-        encodeDataHeader.version((byte) 1);
+        encodeDataHeader.version((short) 1);
+        encodeDataHeader.flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS);
         encodeDataHeader.headerType(HeaderFlyweight.HDR_TYPE_DATA);
         encodeDataHeader.frameLength(DataHeaderFlyweight.HEADER_LENGTH);
         encodeDataHeader.sessionId(0xdeadbeefL);
@@ -188,7 +201,8 @@ public class FlyweightTest
         encodeDataHeader.termId(0x99887766L);
 
         encodeErrorHeader.reset(aBuff, 0);
-        encodeErrorHeader.version((byte) 1);
+        encodeErrorHeader.version((short) 1);
+        encodeErrorHeader.flags((short) 0);
         encodeErrorHeader.headerType(HeaderFlyweight.HDR_TYPE_ERR);
         encodeErrorHeader.frameLength(encodeDataHeader.frameLength() +
                                       ErrorHeaderFlyweight.HEADER_LENGTH +
@@ -197,14 +211,16 @@ public class FlyweightTest
         encodeErrorHeader.errorString(errorString.getBytes());
 
         decodeErrorHeader.reset(aBuff, 0);
-        assertThat(decodeErrorHeader.version(), is((byte) 1));
+        assertThat(decodeErrorHeader.version(), is((short) 1));
+        assertThat(decodeErrorHeader.flags(), is((short) 0));
         assertThat(decodeErrorHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_ERR));
         assertThat(decodeErrorHeader.frameLength(), is(encodeDataHeader.frameLength() +
                                                        ErrorHeaderFlyweight.HEADER_LENGTH +
                                                        errorString.length()));
 
         decodeDataHeader.reset(aBuff, decodeErrorHeader.offendingHeaderOffset());
-        assertThat(decodeDataHeader.version(), is((byte) 1));
+        assertThat(decodeDataHeader.version(), is((short) 1));
+        assertThat(decodeDataHeader.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
         assertThat(decodeDataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
         assertThat(decodeDataHeader.frameLength(), is(encodeDataHeader.frameLength()));
         assertThat(decodeDataHeader.sessionId(), is(0xdeadbeefL));

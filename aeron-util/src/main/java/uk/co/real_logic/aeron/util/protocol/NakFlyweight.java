@@ -34,15 +34,18 @@ import java.nio.ByteOrder;
  * +---------------------------------------------------------------+
  * |                          Channel ID                           |
  * +---------------------------------------------------------------+
+ * |                            Term ID                            |
+ * +---------------------------------------------------------------+
  */
 public class NakFlyweight extends HeaderFlyweight
 {
     /** Size of the Nak Packet */
-    public static final int LENGTH = 20;
+    public static final int LENGTH = 24;
 
     private static final int SEQUENCE_NUMBER_FIELD_OFFSET = 8;
     private static final int SESSION_ID_FIELD_OFFSET = 12;
     private static final int CHANNEL_ID_FIELD_OFFSET = 16;
+    private static final int TERM_ID_FIELD_OFFSET = 20;
 
     /**
      * return session id field
@@ -105,6 +108,28 @@ public class NakFlyweight extends HeaderFlyweight
     public NakFlyweight sequenceNumber(final long sequenceNumber)
     {
         uint32Put(offset + SEQUENCE_NUMBER_FIELD_OFFSET, sequenceNumber, ByteOrder.LITTLE_ENDIAN);
+        return this;
+    }
+
+    /**
+     * return term id field
+     *
+     * @return term id field
+     */
+    public long termId()
+    {
+        return uint32Get(offset + TERM_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+    }
+
+    /**
+     * set term id field
+     *
+     * @param termId field value
+     * @return flyweight
+     */
+    public NakFlyweight termId(final long termId)
+    {
+        uint32Put(offset + TERM_ID_FIELD_OFFSET, termId, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 

@@ -88,7 +88,16 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     @Override
     public void process()
     {
-        // TODO: nioSelector.processKeys
+        try
+        {
+            nioSelector.processKeys(MediaDriver.SELECT_TIMEOUT);
+        }
+        catch (Exception e)
+        {
+            // TODO: error
+            e.printStackTrace();
+        }
+
         adminReceiveBuffer.read((eventTypeId, buffer, index, length) ->
         {
             // TODO: call onAddChannel, etc.

@@ -26,16 +26,31 @@ public class AtomicArray<T>
 {
     private static final Object[] EMPTY_ARRAY = new Object[0];
     private final AtomicReference<Object[]> arrayRef = new AtomicReference<>(EMPTY_ARRAY);
+    private Object[] lastMark = arrayRef.get();
 
     /**
-     * Return the {@link java.lang.Object} array for this atomic array
-     * @return the {@link java.lang.Object} array
+     * Denotes whether the array has had elements appended or removed since the
+     * last time mark was called.
+     *
+     * @see this#mark()
+     * @return true if you've changed, false otherwise
      */
-    public Object[] array()
+    public boolean changedSinceLastMark()
     {
-        return arrayRef.get();
+        return lastMark != arrayRef.get();
     }
 
+    /**
+     * Marks a point at which to start checking changes from.
+     *
+     * @see this#changedSinceLastMark()
+     */
+    public void mark()
+    {
+        lastMark = arrayRef.get();
+    }
+    git status
+            
     /**
      * Return the length of the {@link java.lang.Object} array
      * @return the length of the {@link java.lang.Object} array
@@ -56,9 +71,15 @@ public class AtomicArray<T>
         return (T)arrayRef.get()[index];
     }
 
+    public void forEach(final Consumer<T> func)
+    {
+        forEach(0, func);
+    }
+
     /**
      * For each valid element, call a function passing the element
-     * @param start
+     *
+     * @param start the index to start iterating at
      * @param func to call and pass each element to
      */
     public void forEach(final int start, final Consumer<T> func)

@@ -25,6 +25,8 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class AtomicArrayTest
 {
@@ -155,6 +157,37 @@ public class AtomicArrayTest
             // then
             assertThat(values, empty());
         }
-
     }
+
+    @Test
+    public void arrayInitiallyUnchanged()
+    {
+        AtomicArray<Integer> array = new AtomicArray<>();
+
+        assertFalse(array.changedSinceLastMark());
+    }
+
+    @Test
+    public void changesIdentified()
+    {
+        AtomicArray<Integer> array = new AtomicArray<>();
+        array.add(1);
+
+        assertTrue(array.changedSinceLastMark());
+    }
+
+    @Test
+    public void changesOnlySinceLastMark()
+    {
+        AtomicArray<Integer> array = new AtomicArray<>();
+        array.add(1);
+        array.mark();
+
+        assertFalse(array.changedSinceLastMark());
+
+        array.add(2);
+
+        assertTrue(array.changedSinceLastMark());
+    }
+
 }

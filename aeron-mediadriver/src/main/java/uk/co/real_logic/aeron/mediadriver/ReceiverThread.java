@@ -22,7 +22,6 @@ import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -38,7 +37,6 @@ public class ReceiverThread extends ClosableThread
     private final ReceiverMessageFlyweight receiverMessage;
     private final CompletelyIdentifiedMessageFlyweight addTermBufferMessage;
     private final AtomicArray<RcvBufferState> buffers;
-    private Object[] lastBufferArray;
 
     public ReceiverThread(final MediaDriver.TopologyBuilder builder) throws Exception
     {
@@ -48,7 +46,6 @@ public class ReceiverThread extends ClosableThread
         this.receiverMessage = new ReceiverMessageFlyweight();
         this.addTermBufferMessage = new CompletelyIdentifiedMessageFlyweight();
         this.buffers = new AtomicArray<>();
-        this.lastBufferArray = buffers.array();
     }
 
     public void addRcvCreateTermBufferEvent(final UdpDestination destination,
@@ -85,12 +82,10 @@ public class ReceiverThread extends ClosableThread
             });
 
             // check AtomicArray for any new buffers created
-            final Object[] array = buffers.array();
-            if (lastBufferArray != array)
+            if (buffers.changedSinceLastMark())
             {
-                Arrays.asList(array).forEach((obj) ->
+                buffers.forEach(buffer ->
                 {
-                    final RcvBufferState buffer = (RcvBufferState)obj;
                     if (buffer.state() == RcvBufferState.STATE_PENDING)
                     {
                         // attach buffer to rcvDestinationMap and then appropriate RcvFrameHandler
@@ -98,7 +93,7 @@ public class ReceiverThread extends ClosableThread
                         buffer.state(RcvBufferState.STATE_READY);
                     }
                 });
-                lastBufferArray = array;
+                buffers.mark();
             }
         }
         catch (final Exception e)

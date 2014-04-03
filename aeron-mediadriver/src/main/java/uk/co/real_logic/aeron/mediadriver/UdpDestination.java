@@ -47,11 +47,17 @@ public class UdpDestination
             throw new IllegalArgumentException("malformed destination URI: " + destinationUri);
         }
 
+        final InetAddress remoteAddress = InetAddress.getByName(uri.getHost());
+        if (remoteAddress.isMulticastAddress() && BitUtil.isEven(remoteAddress.getAddress()[3]))
+        {
+            throw new IllegalArgumentException("Multicast data addresses must be odd");
+        }
+
         final Builder builder = new Builder()
                 .uriStr(destinationUri)
                 .consistentHash(BitUtil.generateConsistentHash(destinationUri.getBytes()))
                 .remotePort(uri.getPort())
-                .remoteAddr(InetAddress.getByName(uri.getHost()));
+                .remoteAddr(remoteAddress);
 
         if (userInfo != null)
         {

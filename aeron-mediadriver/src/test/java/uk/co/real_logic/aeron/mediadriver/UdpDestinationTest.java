@@ -52,6 +52,12 @@ public class UdpDestinationTest
         final UdpDestination dest = UdpDestination.parse("unknwonudp://localhost:40124");
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void evenMulticastAddressIsBanned() throws Exception
+    {
+        UdpDestination.parse("udp://224.10.9.8");
+    }
+
     @Test
     public void shouldHandleImpliedLocalPortFormat() throws Exception
     {

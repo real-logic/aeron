@@ -131,4 +131,9 @@ public class BitUtil
                ((long)digest[6] << 8)  |
                ((long)digest[7]);
     }
+
+    public static boolean isEven(int number)
+    {
+        return (number % 2) != 0;
+    }
 }

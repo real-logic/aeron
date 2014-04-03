@@ -16,8 +16,8 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
-import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.NakFlyweight;
+import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -108,21 +108,12 @@ public class SrcFrameHandler implements FrameHandler, AutoCloseable
     }
 
     @Override
-    public void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
+    public void onStatusMessageFrame(final StatusMessageFlyweight statusMessage, final InetSocketAddress srcAddr)
     {
-        // dispatch frames
-        if (header.headerType() == HeaderFlyweight.HDR_TYPE_SM)
-        {
-            final long sessionId = 0;  // TODO: grab from header
-            final long channelId = 0;  // TODO: grab from header
-            final SenderChannel channel = findChannel(sessionId, channelId);
-
-            // TODO: make determination of highestContiguousSequenceNumber and receiverWindow be a strategy
-            // TODO: the strategy holds the individual pieces of the state and only updates the rightEdge
-
-            // TODO:
-            channel.onStatusMessage(0L, 0, 0);
-        }
+        final SenderChannel channel = findChannel(statusMessage.sessionId(), statusMessage.channelId());
+        channel.onStatusMessage(statusMessage.termId(),
+                                statusMessage.highestContiguousSequenceNumber(),
+                                statusMessage.receiverWindow());
     }
 
     @Override

@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.mediadriver;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.NakFlyweight;
+import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
 
 import java.net.InetSocketAddress;
 
@@ -55,6 +56,17 @@ public interface FrameHandler
     }
 
     /**
+     * Handle a Status Message Frame
+     *
+     * @param statusMessage of the Frame
+     * @param srcAddr of the Frame
+     */
+    default void onStatusMessageFrame(final StatusMessageFlyweight statusMessage, final InetSocketAddress srcAddr)
+    {
+
+    }
+
+    /**
      * Handle a Nak Frame
      *
      * @param nak the nak Frame
@@ -64,5 +76,4 @@ public interface FrameHandler
     {
 
     }
-
 }

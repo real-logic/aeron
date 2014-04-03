@@ -133,8 +133,8 @@ public class SenderChannel
     }
 
     public void onStatusMessage(final long termId,
-                                final int highestContiguousSequenceNumber,
-                                final int receiverWindow)
+                                final long highestContiguousSequenceNumber,
+                                final long receiverWindow)
     {
         final int rightEdge = flowControlStrategy.onStatusMessage(termId,
                                                                   highestContiguousSequenceNumber,

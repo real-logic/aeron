@@ -19,6 +19,7 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -121,11 +122,10 @@ public class NioSelectorTest
                 dataHeadersRcved.incrementAndGet();
             }
 
-            public void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
+            public void onStatusMessageFrame(final StatusMessageFlyweight statusMessage, final InetSocketAddress srcAddr)
             {
-                assertThat(Byte.valueOf(header.version()), is(Byte.valueOf(HeaderFlyweight.CURRENT_VERSION)));
-                assertThat(Integer.valueOf(header.headerType()), is(Integer.valueOf(HeaderFlyweight.HDR_TYPE_SM)));
-                assertThat(Integer.valueOf(header.frameLength()), is(Integer.valueOf(8)));
+                assertThat(Byte.valueOf(statusMessage.version()), is(Byte.valueOf(HeaderFlyweight.CURRENT_VERSION)));
+                assertThat(Integer.valueOf(statusMessage.frameLength()), is(Integer.valueOf(8)));
                 cntlHeadersRcved.incrementAndGet();
             }
         }, rcvLocalAddr, nioSelector);
@@ -226,11 +226,10 @@ public class NioSelectorTest
                 dataHeadersRcved.incrementAndGet();
             }
 
-            public void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
+            public void onStatusMessageFrame(final StatusMessageFlyweight statusMessage, final InetSocketAddress srcAddr)
             {
-                assertThat(Byte.valueOf(header.version()), is(Byte.valueOf(HeaderFlyweight.CURRENT_VERSION)));
-                assertThat(Integer.valueOf(header.headerType()), is(Integer.valueOf(HeaderFlyweight.HDR_TYPE_SM)));
-                assertThat(Integer.valueOf(header.frameLength()), is(Integer.valueOf(8)));
+                assertThat(Byte.valueOf(statusMessage.version()), is(Byte.valueOf(HeaderFlyweight.CURRENT_VERSION)));
+                assertThat(Integer.valueOf(statusMessage.frameLength()), is(Integer.valueOf(8)));
                 cntlHeadersRcved.incrementAndGet();
             }
         }, srcLocalAddr, nioSelector);

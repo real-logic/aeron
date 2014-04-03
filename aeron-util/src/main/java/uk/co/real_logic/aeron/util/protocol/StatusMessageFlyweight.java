@@ -24,28 +24,31 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  * 0                   1                   2                   3
  * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |  Vers |S|E|     Flags         |             Type (=0x01)      |
+ * |  Vers |S|E|     Flags         |             Type (=0x02)      |
  * +-------+-+-+-+-+-+-+-+-+-+-+-+-+-------------------------------+
  * |                         Frame Length                          |
  * +-------------------------------+-------------------------------+
- * |                        Sequence Number                        |
- * +---------------------------------------------------------------+
  * |                          Session ID                           |
  * +---------------------------------------------------------------+
  * |                          Channel ID                           |
  * +---------------------------------------------------------------+
  * |                            Term ID                            |
  * +---------------------------------------------------------------+
+ * |                 High Contiguous Sequence Number               |
+ * +---------------------------------------------------------------+
+ * |                        Receiver Window                        |
+ * +---------------------------------------------------------------+
  */
-public class NakFlyweight extends HeaderFlyweight
+public class StatusMessageFlyweight extends HeaderFlyweight
 {
-    /** Size of the Nak Packet */
-    public static final int LENGTH = 24;
+    /** Size of the Status Message Packet */
+    public static final int LENGTH = 28;
 
-    private static final int SEQUENCE_NUMBER_FIELD_OFFSET = 8;
-    private static final int SESSION_ID_FIELD_OFFSET = 12;
-    private static final int CHANNEL_ID_FIELD_OFFSET = 16;
-    private static final int TERM_ID_FIELD_OFFSET = 20;
+    private static final int SESSION_ID_FIELD_OFFSET = 8;
+    private static final int CHANNEL_ID_FIELD_OFFSET = 12;
+    private static final int TERM_ID_FIELD_OFFSET = 16;
+    private static final int CONTIGUOUS_SEQUENCE_NUMBER_FIELD_OFFSET = 20;
+    private static final int RECEIVER_WINDOW_FIELD_OFFSET = 24;
 
     /**
      * return session id field
@@ -61,7 +64,7 @@ public class NakFlyweight extends HeaderFlyweight
      * @param sessionId field value
      * @return flyweight
      */
-    public NakFlyweight sessionId(final long sessionId)
+    public StatusMessageFlyweight sessionId(final long sessionId)
     {
         uint32Put(offset + SESSION_ID_FIELD_OFFSET, sessionId, LITTLE_ENDIAN);
         return this;
@@ -83,31 +86,31 @@ public class NakFlyweight extends HeaderFlyweight
      * @param channelId field value
      * @return flyweight
      */
-    public NakFlyweight channelId(final long channelId)
+    public StatusMessageFlyweight channelId(final long channelId)
     {
         uint32Put(offset + CHANNEL_ID_FIELD_OFFSET, channelId, LITTLE_ENDIAN);
         return this;
     }
 
     /**
-     * return sequence number field
+     * return highest contiguous sequence number field
      *
-     * @return sequence number field
+     * @return highest contiguous sequence number field
      */
-    public long sequenceNumber()
+    public long highestContiguousSequenceNumber()
     {
-        return uint32Get(offset + SEQUENCE_NUMBER_FIELD_OFFSET, LITTLE_ENDIAN);
+        return uint32Get(offset + CONTIGUOUS_SEQUENCE_NUMBER_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
-     * set sequence number field
+     * set highest contiguous sequence number field
      *
      * @param sequenceNumber field value
      * @return flyweight
      */
-    public NakFlyweight sequenceNumber(final long sequenceNumber)
+    public StatusMessageFlyweight highestContiguousSequenceNumber(final long sequenceNumber)
     {
-        uint32Put(offset + SEQUENCE_NUMBER_FIELD_OFFSET, sequenceNumber, LITTLE_ENDIAN);
+        uint32Put(offset + CONTIGUOUS_SEQUENCE_NUMBER_FIELD_OFFSET, sequenceNumber, LITTLE_ENDIAN);
         return this;
     }
 
@@ -127,9 +130,31 @@ public class NakFlyweight extends HeaderFlyweight
      * @param termId field value
      * @return flyweight
      */
-    public NakFlyweight termId(final long termId)
+    public StatusMessageFlyweight termId(final long termId)
     {
         uint32Put(offset + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
+        return this;
+    }
+
+    /**
+     * return receiver window field
+     *
+     * @return receiver window field
+     */
+    public long receiverWindow()
+    {
+        return uint32Get(offset + RECEIVER_WINDOW_FIELD_OFFSET, LITTLE_ENDIAN);
+    }
+
+    /**
+     * set receiver window field
+     *
+     * @param receiverWindow field value
+     * @return flyweight
+     */
+    public StatusMessageFlyweight receiverWindow(final long receiverWindow)
+    {
+        uint32Put(offset + RECEIVER_WINDOW_FIELD_OFFSET, receiverWindow, LITTLE_ENDIAN);
         return this;
     }
 

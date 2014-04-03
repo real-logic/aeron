@@ -28,6 +28,7 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Admin thread to take commands from Producers and Consumers as well as handle NAKs and retransmissions
@@ -43,6 +44,8 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     private final BufferManagementStrategy bufferManagementStrategy;
     private final RingBuffer adminReceiveBuffer;
     private final Long2ObjectHashMap<SrcFrameHandler> srcDestinationMap;
+
+    private final ThreadLocalRandom rng = ThreadLocalRandom.current();
 
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
     private final ErrorHeaderFlyweight errorHeaderFlyweight = new ErrorHeaderFlyweight();
@@ -179,7 +182,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             }
 
             // new channel, so generate "random"-ish termId and create term buffer
-            final long initialTermId = (long)(Math.random() * 0xFFFFFFFFL);  // FIXME: this may not be random enough
+            final long initialTermId = rng.nextLong();
             final ByteBuffer buffer = bufferManagementStrategy.addSenderTerm(srcDestination, sessionId,
                     channelId, initialTermId);
 

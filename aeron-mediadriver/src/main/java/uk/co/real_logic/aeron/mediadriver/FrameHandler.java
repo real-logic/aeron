@@ -44,7 +44,7 @@ public interface FrameHandler
     }
 
     /**
-     * Handle a Control Frame, such as a NAK, CONN, SM, etc.
+     * Handle a Control Frame, such as a CONN, SM, etc.
      *
      * @param header of the Frame
      * @param srcAddr of the Frame
@@ -55,7 +55,7 @@ public interface FrameHandler
     }
 
     /**
-     * Handle a Control Frame, such as a NAK, CONN, SM, etc.
+     * Handle a Nak Frame
      *
      * @param nak the nak Frame
      * @param srcAddr of the Frame

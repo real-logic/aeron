@@ -15,13 +15,18 @@
  */
 package uk.co.real_logic.aeron;
 
+import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
+
 /**
  * Client code should a
  */
 public interface ErrorHandler
 {
 
-    // TODO: identify how rich an API we're looking for here
-    void onError(final long sessionId, final long channelId, String message);
+    void onError(final String destination,
+                 final long sessionId,
+                 final long channelId,
+                 final String message,
+                 final HeaderFlyweight cause);
 
 }

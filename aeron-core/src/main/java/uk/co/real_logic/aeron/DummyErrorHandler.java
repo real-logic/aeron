@@ -16,6 +16,8 @@
 package uk.co.real_logic.aeron;
 
 
+import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
+
 /**
  * Avoids null checks everywhere you want to use an ErrorHandler.
  *
@@ -25,7 +27,11 @@ public class DummyErrorHandler implements ErrorHandler
 {
 
     @Override
-    public void onError(long sessionId, long channelId, String message)
+    public void onError(final String destination,
+                        final long sessionId,
+                        final long channelId,
+                        final String message,
+                        final HeaderFlyweight cause)
     {
 
     }

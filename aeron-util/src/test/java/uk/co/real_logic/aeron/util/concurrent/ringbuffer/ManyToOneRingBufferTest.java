@@ -26,7 +26,7 @@ import static org.junit.Assert.*;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.util.BitUtil.align;
-import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer.*;
+import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer.PADDING_EVENT_TYPE_ID;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RecordDescriptor.*;
 
 public class ManyToOneRingBufferTest

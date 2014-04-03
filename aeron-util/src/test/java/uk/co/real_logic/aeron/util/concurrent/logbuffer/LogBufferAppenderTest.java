@@ -22,9 +22,7 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import static java.lang.Integer.valueOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.util.BitUtil.align;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*;

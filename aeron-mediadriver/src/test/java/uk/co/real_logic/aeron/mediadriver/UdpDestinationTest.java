@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import org.junit.Test;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
@@ -56,6 +57,14 @@ public class UdpDestinationTest
     public void evenMulticastAddressIsBanned() throws Exception
     {
         UdpDestination.parse("udp://224.10.9.8");
+    }
+
+    public void parsesValidMulticastAddresses() throws Exception
+    {
+        final UdpDestination dest = UdpDestination.parse("udp://224.10.9.9");
+
+        assertThat(dest.local(), is(InetAddress.getByName("224.10.9.10")));
+        assertThat(dest.remote(), is(InetAddress.getByName("224.10.9.9")));
     }
 
     @Test

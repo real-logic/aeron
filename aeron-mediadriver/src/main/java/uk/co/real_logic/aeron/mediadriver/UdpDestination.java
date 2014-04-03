@@ -32,6 +32,8 @@ import java.net.URI;
  */
 public class UdpDestination
 {
+    private static final int LAST_MULTICAST_DIGIT = 3;
+
     private final InetSocketAddress remote;
     private final InetSocketAddress local;
     private final String uriStr;
@@ -48,7 +50,9 @@ public class UdpDestination
         }
 
         final InetAddress remoteAddress = InetAddress.getByName(uri.getHost());
-        if (remoteAddress.isMulticastAddress() && BitUtil.isEven(remoteAddress.getAddress()[3]))
+        final byte[] address = remoteAddress.getAddress();
+        final boolean isMulticast = remoteAddress.isMulticastAddress();
+        if (isMulticast && BitUtil.isEven(address[LAST_MULTICAST_DIGIT]))
         {
             throw new IllegalArgumentException("Multicast data addresses must be odd");
         }
@@ -73,6 +77,11 @@ public class UdpDestination
                 builder.localAddr(InetAddress.getByName(userInfo.substring(0, colonIndex)));
                 builder.localPort(Integer.parseInt(userInfo.substring(colonIndex + 1)));
             }
+        }
+        else if (isMulticast)
+        {
+            address[LAST_MULTICAST_DIGIT]--;
+            builder.localAddr(InetAddress.getByAddress(address));
         }
 
         return new UdpDestination(builder);

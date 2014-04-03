@@ -49,8 +49,7 @@ public class AtomicArray<T>
     {
         lastMark = arrayRef.get();
     }
-    git status
-            
+    
     /**
      * Return the length of the {@link java.lang.Object} array
      * @return the length of the {@link java.lang.Object} array

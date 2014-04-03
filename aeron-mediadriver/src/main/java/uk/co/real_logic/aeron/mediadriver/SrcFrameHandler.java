@@ -80,13 +80,8 @@ public class SrcFrameHandler implements FrameHandler, AutoCloseable
 
     public void addChannel(final SenderChannel channel)
     {
-        Long2ObjectHashMap<SenderChannel> channelMap = sessionMap.get(channel.sessionId());
-        if (null == channelMap)
-        {
-            channelMap = new Long2ObjectHashMap<>();
-            sessionMap.put(channel.sessionId(), channelMap);
-        }
-
+        final long sessionId = channel.sessionId();
+        Long2ObjectHashMap<SenderChannel> channelMap = sessionMap.getOrDefault(sessionId, Long2ObjectHashMap::new);
         channelMap.put(channel.channelId(), channel);
     }
 
@@ -99,7 +94,7 @@ public class SrcFrameHandler implements FrameHandler, AutoCloseable
         }
 
         final SenderChannel channel = channelMap.remove(channelId);
-        if (channelMap.size() == 0)
+        if (channelMap.isEmpty())
         {
             sessionMap.remove(sessionId);
         }

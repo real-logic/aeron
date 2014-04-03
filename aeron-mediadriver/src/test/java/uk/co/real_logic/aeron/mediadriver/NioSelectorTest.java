@@ -45,18 +45,7 @@ public class NioSelectorTest
     private final InetSocketAddress srcLocalAddr = new InetSocketAddress(SRC_PORT);
     private final InetSocketAddress srcRemoteAddr = new InetSocketAddress("localhost", RCV_PORT);
 
-    private final FrameHandler nullHandler = new FrameHandler()
-    {
-        @Override
-        public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
-        {
-        }
-
-        @Override
-        public void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
-        {
-        }
-    };
+    private final FrameHandler nullHandler = new FrameHandler() {};
 
     @Test(timeout = 1000)
     public void shouldHandleBasicSetupAndTeardown() throws Exception
@@ -90,10 +79,6 @@ public class NioSelectorTest
                 assertThat(Long.valueOf(header.termId()), is(Long.valueOf(TERM_ID)));
                 assertThat(Integer.valueOf(header.dataOffset()), is(Integer.valueOf(24)));
                 dataHeadersRcved.incrementAndGet();
-            }
-
-            public void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
-            {
             }
         }, rcvLocalAddr, nioSelector);
 

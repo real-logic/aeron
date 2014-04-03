@@ -16,7 +16,6 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
-import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.NakFlyweight;
 
@@ -106,12 +105,6 @@ public class SrcFrameHandler implements FrameHandler, AutoCloseable
     public int numSessions()
     {
         return sessionMap.size();
-    }
-
-    @Override
-    public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
-    {
-        // we don't care, so just drop it silently.
     }
 
     @Override

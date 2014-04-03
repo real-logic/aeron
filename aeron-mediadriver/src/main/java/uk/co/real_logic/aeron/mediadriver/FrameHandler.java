@@ -26,6 +26,9 @@ import java.net.InetSocketAddress;
  *
  * This interface should expand to handle various addressing models. But InetSocketAddress is exposed
  * at the moment.
+ *
+ * All methods have empty defaults, since not every implementation needs to handle every type of
+ * frame.
  */
 public interface FrameHandler
 {
@@ -35,7 +38,10 @@ public interface FrameHandler
      * @param header of the Frame
      * @param srcAddr of the Frame
      */
-    void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr);
+    default void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
+    {
+
+    }
 
     /**
      * Handle a Control Frame, such as a NAK, CONN, SM, etc.
@@ -43,7 +49,10 @@ public interface FrameHandler
      * @param header of the Frame
      * @param srcAddr of the Frame
      */
-    void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr);
+    default void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
+    {
+
+    }
 
     /**
      * Handle a Control Frame, such as a NAK, CONN, SM, etc.
@@ -53,7 +62,7 @@ public interface FrameHandler
      */
     default void onNakFrame(final NakFlyweight nak, final InetSocketAddress srcAddr)
     {
-        // empty default: not every implementation needs to care
+
     }
 
 }

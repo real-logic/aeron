@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.examples;
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Destination;
 import uk.co.real_logic.aeron.Receiver;
+import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
@@ -90,7 +91,12 @@ public class ExampleReceiver
         }
     }
 
-    public static void onError(final long sessionId, final long channelId, String message) {
+    public static void onError(final String destination,
+                               final long sessionId,
+                               final long channelId,
+                               final String message,
+                               final HeaderFlyweight cause)
+    {
         System.err.println(message);
     }
 

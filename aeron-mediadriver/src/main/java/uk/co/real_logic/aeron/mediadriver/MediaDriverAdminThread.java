@@ -310,10 +310,18 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
                                                final long channelId,
                                                final long termId)
     {
-        // TODO: create new buffer via strategy, then instruct the receiver thread that we are done and it can grab it
+        try
+        {
+            final UdpDestination rcvDestination = UdpDestination.parse(destination);
+            final ByteBuffer buffer = bufferManagementStrategy.addReceiverTerm(rcvDestination, sessionId,
+                                                                               channelId, termId);
 
-        // TODO: replace with adding element to atomicArray that receiver thread tracks
-
-        receiverThreadCursor.addTermBufferCreatedEvent(destination, sessionId, channelId, termId);
+            // inform receiver thread of new buffer, destination, etc.
+            receiverThread.addBuffer(new RcvBufferState(rcvDestination, sessionId, channelId, termId, buffer));
+        }
+        catch (Exception e)
+        {
+            // TODO: handle errors by logging
+        }
     }
 }

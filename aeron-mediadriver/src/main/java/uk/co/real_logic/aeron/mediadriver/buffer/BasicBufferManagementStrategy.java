@@ -154,12 +154,12 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
     }
 
     @Override
-    public void addReceiverTerm(final UdpDestination destination,
-                                final long sessionId,
-                                final long channelId,
-                                final long termId) throws Exception
+    public ByteBuffer addReceiverTerm(final UdpDestination destination,
+                                      final long sessionId,
+                                      final long channelId,
+                                      final long termId) throws Exception
     {
-
+        return null;
     }
 
     @Override

@@ -15,12 +15,14 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.ClosableThread;
 import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,6 +37,8 @@ public class ReceiverThread extends ClosableThread
     private final Map<UdpDestination, RcvFrameHandler> rcvDestinationMap = new HashMap<>();
     private final ReceiverMessageFlyweight receiverMessage;
     private final CompletelyIdentifiedMessageFlyweight addTermBufferMessage;
+    private final AtomicArray<RcvBufferState> buffers;
+    private Object[] lastBufferArray;
 
     public ReceiverThread(final MediaDriver.TopologyBuilder builder) throws Exception
     {
@@ -43,6 +47,8 @@ public class ReceiverThread extends ClosableThread
         this.nioSelector = builder.rcvNioSelector();
         this.receiverMessage = new ReceiverMessageFlyweight();
         this.addTermBufferMessage = new CompletelyIdentifiedMessageFlyweight();
+        this.buffers = new AtomicArray<>();
+        this.lastBufferArray = buffers.array();
     }
 
     public void addRcvCreateTermBufferEvent(final UdpDestination destination,
@@ -61,6 +67,7 @@ public class ReceiverThread extends ClosableThread
         try
         {
             nioSelector.processKeys(MediaDriver.SELECT_TIMEOUT);
+
             // check command buffer for commands
             commandBuffer.read((eventTypeId, buffer, index, length) ->
             {
@@ -76,7 +83,23 @@ public class ReceiverThread extends ClosableThread
                         return;
                 }
             });
-            // TODO: check AtomicArray for any new buffers created
+
+            // check AtomicArray for any new buffers created
+            final Object[] array = buffers.array();
+            if (lastBufferArray != array)
+            {
+                Arrays.asList(array).forEach((obj) ->
+                {
+                    final RcvBufferState buffer = (RcvBufferState)obj;
+                    if (buffer.state() == RcvBufferState.STATE_PENDING)
+                    {
+                        // attach buffer to rcvDestinationMap and then appropriate RcvFrameHandler
+                        attachBufferState(buffer);
+                        buffer.state(RcvBufferState.STATE_READY);
+                    }
+                });
+                lastBufferArray = array;
+            }
         }
         catch (final Exception e)
         {
@@ -100,6 +123,16 @@ public class ReceiverThread extends ClosableThread
     public void wakeup()
     {
         nioSelector.wakeup();
+    }
+
+    public void addBuffer(final RcvBufferState buffer)
+    {
+        buffers.add(buffer);
+    }
+
+    public void removeBuffer(final RcvBufferState buffer)
+    {
+        buffers.remove(buffer);
     }
 
     private void onNewReceiverEvent(final String destination, final long[] channelIdList)
@@ -150,5 +183,19 @@ public class ReceiverThread extends ClosableThread
             // TODO: AdminThread.sendErrorResponse(ErrorCode.GENERIC_ERROR.value(), e.getMessage().getBytes());
             // TODO: log this as well as send the error response
         }
+    }
+
+    private void attachBufferState(final RcvBufferState buffer)
+    {
+        RcvFrameHandler rcv = rcvDestinationMap.get(buffer.destination());
+
+        if (null == rcv)
+        {
+            // should not happen
+            // TODO: log this
+            return;
+        }
+
+        rcv.attachBufferState(buffer);
     }
 }

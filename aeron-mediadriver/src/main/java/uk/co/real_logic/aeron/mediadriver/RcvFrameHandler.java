@@ -157,12 +157,9 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
          */
     }
 
-    // called by the receiver thread when event comes from admin thread that it created a term buffer
-    private void onTermBufferCreatedEvent(final long sessionId,
-                                          final long channelId,
-                                          final long termId)
+    public void attachBufferState(final RcvBufferState buffer)
     {
-        final RcvChannelState channelState = channelInterestMap.get(channelId);
+        final RcvChannelState channelState = channelInterestMap.get(buffer.channelId());
         if (null == channelState)
         {
             // should not happen
@@ -170,7 +167,7 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
             return;
         }
 
-        final RcvSessionState sessionState = channelState.getSessionState(sessionId);
+        final RcvSessionState sessionState = channelState.getSessionState(buffer.sessionId());
         if (null == sessionState)
         {
             // should also not happen as it should have been added when we first saw the sessionId
@@ -178,11 +175,6 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
             return;
         }
 
-        // TODO: change this to: bufferManagementStrategy.lookupReceiverTerm(destination, sessionId, channelId, termId)
-        final ByteBuffer termBuffer = null;
-
-        sessionState.termBuffer(termId, termBuffer);
-
-        // at this point, we are open for business
+        sessionState.termBuffer(buffer.termId(), buffer.buffer());
     }
 }

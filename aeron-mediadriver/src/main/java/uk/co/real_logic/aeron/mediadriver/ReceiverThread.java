@@ -16,6 +16,9 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.ClosableThread;
+import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
+import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import java.util.HashMap;
@@ -30,12 +33,16 @@ public class ReceiverThread extends ClosableThread
     private final RingBuffer adminThreadCommandBuffer;
     private final NioSelector nioSelector;
     private final Map<UdpDestination, RcvFrameHandler> rcvDestinationMap = new HashMap<>();
+    private final ReceiverMessageFlyweight receiverMessage;
+    private final CompletelyIdentifiedMessageFlyweight addTermBufferMessage;
 
     public ReceiverThread(final MediaDriver.TopologyBuilder builder) throws Exception
     {
         this.commandBuffer = builder.receiverThreadCommandBuffer();
         this.adminThreadCommandBuffer = builder.adminThreadCommandBuffer();
         this.nioSelector = builder.rcvNioSelector();
+        this.receiverMessage = new ReceiverMessageFlyweight();
+        this.addTermBufferMessage = new CompletelyIdentifiedMessageFlyweight();
     }
 
     public void addRcvCreateTermBufferEvent(final UdpDestination destination,
@@ -54,7 +61,22 @@ public class ReceiverThread extends ClosableThread
         try
         {
             nioSelector.processKeys(MediaDriver.SELECT_TIMEOUT);
-            // TODO: check command buffer for commands
+            // check command buffer for commands
+            commandBuffer.read((eventTypeId, buffer, index, length) ->
+            {
+                switch (eventTypeId)
+                {
+                    case ControlProtocolEvents.ADD_RECEIVER:
+                        receiverMessage.reset(buffer, index);
+                        onNewReceiverEvent(receiverMessage.destination(), receiverMessage.channelIds());
+                        return;
+                    case ControlProtocolEvents.REMOVE_RECEIVER:
+                        receiverMessage.reset(buffer, index);
+                        onRemoveReceiverEvent(receiverMessage.destination(), receiverMessage.channelIds());
+                        return;
+                }
+            });
+            // TODO: check AtomicArray for any new buffers created
         }
         catch (final Exception e)
         {
@@ -129,5 +151,4 @@ public class ReceiverThread extends ClosableThread
             // TODO: log this as well as send the error response
         }
     }
-
 }

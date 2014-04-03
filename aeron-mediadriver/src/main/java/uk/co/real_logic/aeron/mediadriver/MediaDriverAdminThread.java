@@ -295,7 +295,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     @Override
     public void onRemoveReceiver(final String destination, final long[] channelIdList)
     {
-        // instruct receiver thread to get rid of channels and destination
+        // instruct receiver thread to get rid of channels and possibly destination
         receiverThreadCursor.addRemoveReceiverEvent(destination, channelIdList);
     }
 
@@ -311,6 +311,8 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
                                                final long termId)
     {
         // TODO: create new buffer via strategy, then instruct the receiver thread that we are done and it can grab it
+
+        // TODO: replace with adding element to atomicArray that receiver thread tracks
 
         receiverThreadCursor.addTermBufferCreatedEvent(destination, sessionId, channelId, termId);
     }

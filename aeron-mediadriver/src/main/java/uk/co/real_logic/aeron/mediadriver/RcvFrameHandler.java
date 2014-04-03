@@ -152,7 +152,7 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
     public void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
     {
         /* TODO:
-           NAK - back-off any pending NAK - senderThread
+           NAK - back-off any pending NAK - admin thread. Could retransmit if we have it
            SM - ignore
          */
     }

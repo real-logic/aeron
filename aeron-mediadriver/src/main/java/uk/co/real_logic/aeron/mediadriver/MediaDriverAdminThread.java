@@ -44,7 +44,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     private final SenderThread senderThread;
     private final BufferManagementStrategy bufferManagementStrategy;
     private final RingBuffer adminReceiveBuffer;
-    private final Long2ObjectHashMap<SrcFrameHandler> srcDestinationMap;
+    private final Long2ObjectHashMap<ControlFrameHandler> srcDestinationMap;
     private final Supplier<SenderFlowControlStrategy> senderFlowControl;
 
     private final ThreadLocalRandom rng = ThreadLocalRandom.current();
@@ -172,10 +172,10 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         try
         {
             final UdpDestination srcDestination = UdpDestination.parse(destination);
-            SrcFrameHandler frameHandler = srcDestinationMap.get(srcDestination.consistentHash());
+            ControlFrameHandler frameHandler = srcDestinationMap.get(srcDestination.consistentHash());
             if (null == frameHandler)
             {
-                frameHandler = new SrcFrameHandler(srcDestination, this);
+                frameHandler = new ControlFrameHandler(srcDestination, this);
                 srcDestinationMap.put(srcDestination.consistentHash(), frameHandler);
             }
             else
@@ -230,7 +230,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         try
         {
             final UdpDestination srcDestination = UdpDestination.parse(destination);
-            final SrcFrameHandler frameHandler = srcDestinationMap.get(srcDestination.consistentHash());
+            final ControlFrameHandler frameHandler = srcDestinationMap.get(srcDestination.consistentHash());
             if (null == frameHandler)
             {
                 throw new IllegalArgumentException("destination unknown");
@@ -268,7 +268,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         try
         {
             final UdpDestination srcDestination = UdpDestination.parse(destination);
-            final SrcFrameHandler frameHandler = srcDestinationMap.get(srcDestination.consistentHash());
+            final ControlFrameHandler frameHandler = srcDestinationMap.get(srcDestination.consistentHash());
             if (null == frameHandler)
             {
                 throw new IllegalArgumentException("destination unknown");

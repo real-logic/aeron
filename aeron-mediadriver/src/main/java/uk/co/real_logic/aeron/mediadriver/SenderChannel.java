@@ -27,7 +27,7 @@ import java.nio.ByteBuffer;
  */
 public class SenderChannel
 {
-    private final SrcFrameHandler frameHandler;
+    private final ControlFrameHandler frameHandler;
     private final SenderFlowControlStrategy flowControlStrategy;
     private final UdpDestination destination;
     private final long sessionId;
@@ -38,7 +38,7 @@ public class SenderChannel
     private final ByteBuffer sendBuffer;
     private final SenderFlowControlState activeFlowControlState;
 
-    public SenderChannel(final SrcFrameHandler frameHandler,
+    public SenderChannel(final ControlFrameHandler frameHandler,
                          final SenderFlowControlStrategy flowControlStrategy,
                          final ByteBuffer producerBuffer,
                          final UdpDestination destination,

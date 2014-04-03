@@ -64,7 +64,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
         this.registeredKey = nioSelector.registerForRead(channel, this);
     }
 
-    public UdpTransport(final SrcFrameHandler frameHandler,
+    public UdpTransport(final ControlFrameHandler frameHandler,
                         final InetSocketAddress local,
                         final NioSelector nioSelector) throws Exception
     {

@@ -25,15 +25,15 @@ import java.nio.ByteBuffer;
 /**
  * Frame processing for sources
  */
-public class SrcFrameHandler implements FrameHandler, AutoCloseable
+public class ControlFrameHandler implements FrameHandler, AutoCloseable
 {
     private final UdpTransport transport;
     private final UdpDestination destination;
     private final MediaDriverAdminThread mediaDriverAdminThread;
     private final Long2ObjectHashMap<Long2ObjectHashMap<SenderChannel>> sessionMap;
 
-    public SrcFrameHandler(final UdpDestination destination,
-                           final MediaDriverAdminThread mediaDriverAdminThread) throws Exception
+    public ControlFrameHandler(final UdpDestination destination,
+                               final MediaDriverAdminThread mediaDriverAdminThread) throws Exception
     {
         this.transport = new UdpTransport(this, destination.local(), mediaDriverAdminThread.nioSelector());
         this.destination = destination;

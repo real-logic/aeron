@@ -34,10 +34,10 @@ import java.nio.ByteOrder;
  * 0                   1                   2                   3
  * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |  Vers |         Flags         |             Type              |
- * +-------+-+-+-+-+-+-+-+-+-+-+-+-+-------------------------------+
+ * |  Version    |   Flags       |               Type              |
+ * +-------------+---------------+---------------------------------+
  * |                         Frame Length                          |
- * +-------------------------------+-------------------------------+
+ * +---------------------------------------------------------------+
  * |                       Depends on Type                        ...
  *
  */
@@ -57,34 +57,58 @@ public class HeaderFlyweight extends Flyweight
     /** default version */
     public static final byte CURRENT_VERSION = 0x0;
 
-    public static final int VERS_FIELD_OFFSET = 0;
+    public static final int VERSION_FIELD_OFFSET = 0;
+    public static final int FLAGS_FIELD_OFFSET = 1;
     public static final int TYPE_FIELD_OFFSET = 2;
     public static final int FRAME_LENGTH_FIELD_OFFSET = 4;
 
     /**
      * return version field value
+     *
      * @return ver field value
      */
-    public byte version()
+    public short version()
     {
-        final int versAndFlags = uint8Get(offset + VERS_FIELD_OFFSET);
-
-        return (byte)(versAndFlags >> 4);
+        return uint8Get(offset + VERSION_FIELD_OFFSET);
     }
 
     /**
      * set version field value
+     *
      * @param ver field value
      * @return flyweight
      */
-    public HeaderFlyweight version(final byte ver)
+    public HeaderFlyweight version(final short ver)
     {
-        uint8Put(offset + VERS_FIELD_OFFSET, (byte)(ver << 4));
+        uint8Put(offset + VERSION_FIELD_OFFSET, ver);
+        return this;
+    }
+
+    /**
+     * return flags field value
+     *
+     * @return flags field value
+     */
+    public short flags()
+    {
+        return uint8Get(offset + FLAGS_FIELD_OFFSET);
+    }
+
+    /**
+     * set the flags field value
+     *
+     * @param flags field value
+     * @return flyweight
+     */
+    public HeaderFlyweight flags(final short flags)
+    {
+        uint8Put(offset + FLAGS_FIELD_OFFSET, flags);
         return this;
     }
 
     /**
      * return header type field
+     *
      * @return type field value
      */
     public int headerType()
@@ -94,6 +118,7 @@ public class HeaderFlyweight extends Flyweight
 
     /**
      * set header type field
+     *
      * @param type field value
      * @return flyweight
      */
@@ -105,6 +130,7 @@ public class HeaderFlyweight extends Flyweight
 
     /**
      * return frame length field
+     *
      * @return frame length field
      */
     public int frameLength()
@@ -114,6 +140,7 @@ public class HeaderFlyweight extends Flyweight
 
     /**
      * set frame length field
+     *
      * @param length field value
      * @return flyweight
      */

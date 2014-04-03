@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.mediadriver;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.util.protocol.NakFlyweight;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -117,15 +118,7 @@ public class SrcFrameHandler implements FrameHandler, AutoCloseable
     public void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
     {
         // dispatch frames
-        if (header.headerType() == HeaderFlyweight.HDR_TYPE_NAK)
-        {
-            final long sessionId = 0;  // TODO: grab from header
-            final long channelId = 0;  // TODO: grab from header
-            final SenderChannel channel = findChannel(sessionId, channelId);
-
-            // TODO: have the sender channel, so look for the term within it
-        }
-        else if (header.headerType() == HeaderFlyweight.HDR_TYPE_SM)
+        if (header.headerType() == HeaderFlyweight.HDR_TYPE_SM)
         {
             final long sessionId = 0;  // TODO: grab from header
             final long channelId = 0;  // TODO: grab from header
@@ -136,5 +129,13 @@ public class SrcFrameHandler implements FrameHandler, AutoCloseable
 
             channel.flowControlState().updateRightEdgeOfWindow(0);
         }
+    }
+
+    @Override
+    public void onNakFrame(final NakFlyweight nak, final InetSocketAddress srcAddr)
+    {
+        final SenderChannel channel = findChannel(nak.sessionId(), nak.channelId());
+
+        // TODO: have the sender channel, so look for the term within it
     }
 }

@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.util.protocol.NakFlyweight;
 
 import java.net.InetSocketAddress;
 
@@ -43,4 +44,16 @@ public interface FrameHandler
      * @param srcAddr of the Frame
      */
     void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr);
+
+    /**
+     * Handle a Control Frame, such as a NAK, CONN, SM, etc.
+     *
+     * @param nak the nak Frame
+     * @param srcAddr of the Frame
+     */
+    default void onNakFrame(final NakFlyweight nak, final InetSocketAddress srcAddr)
+    {
+        // empty default: not every implementation needs to care
+    }
+
 }

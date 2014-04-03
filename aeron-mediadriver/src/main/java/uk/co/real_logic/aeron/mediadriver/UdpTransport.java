@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.mediadriver;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.util.protocol.NakFlyweight;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -26,6 +27,9 @@ import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
+
+import static uk.co.real_logic.aeron.util.protocol.HeaderFlyweight.HDR_TYPE_DATA;
+import static uk.co.real_logic.aeron.util.protocol.HeaderFlyweight.HDR_TYPE_NAK;
 
 /**
  * Transport abstraction for UDP sources and receivers.
@@ -41,6 +45,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
     private final DatagramChannel channel = DatagramChannel.open();
     private final HeaderFlyweight header = new HeaderFlyweight();
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
+    private final NakFlyweight nak = new NakFlyweight();
     private final FrameHandler frameHandler;
     private final NioSelector nioSelector;
     private final SelectionKey registeredKey;
@@ -145,14 +150,19 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
                 continue;
             }
 
-            if (header.headerType() == HeaderFlyweight.HDR_TYPE_DATA)
+            switch (header.headerType())
             {
-                dataHeader.reset(readBuffer, offset);
-                frameHandler.onDataFrame(dataHeader, srcAddr);
-            }
-            else
-            {
-                frameHandler.onControlFrame(header, srcAddr);
+                case HDR_TYPE_DATA:
+                    dataHeader.reset(readBuffer, offset);
+                    frameHandler.onDataFrame(dataHeader, srcAddr);
+                    break;
+                case HDR_TYPE_NAK:
+                    nak.reset(readBuffer, offset);
+                    frameHandler.onNakFrame(nak, srcAddr);
+                    break;
+                default:
+                    frameHandler.onControlFrame(header, srcAddr);
+                    break;
             }
 
             offset += header.frameLength();

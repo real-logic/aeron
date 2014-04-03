@@ -127,7 +127,8 @@ public class SrcFrameHandler implements FrameHandler, AutoCloseable
             // TODO: make determination of highestContiguousSequenceNumber and receiverWindow be a strategy
             // TODO: the strategy holds the individual pieces of the state and only updates the rightEdge
 
-            channel.flowControlState().updateRightEdgeOfWindow(0);
+            // TODO:
+            channel.onStatusMessage(0L, 0, 0);
         }
     }
 

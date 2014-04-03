@@ -28,6 +28,7 @@ import java.nio.ByteBuffer;
 public class SenderChannel
 {
     private final SrcFrameHandler frameHandler;
+    private final SenderFlowControlStrategy flowControlStrategy;
     private final UdpDestination destination;
     private final long sessionId;
     private final long channelId;
@@ -38,6 +39,7 @@ public class SenderChannel
     private final SenderFlowControlState activeFlowControlState;
 
     public SenderChannel(final SrcFrameHandler frameHandler,
+                         final SenderFlowControlStrategy flowControlStrategy,
                          final ByteBuffer producerBuffer,
                          final UdpDestination destination,
                          final long sessionId,
@@ -45,6 +47,7 @@ public class SenderChannel
                          final long initialTermId)
     {
         this.frameHandler = frameHandler;
+        this.flowControlStrategy = flowControlStrategy;
         this.destination = destination;
         this.sessionId = sessionId;
         this.channelId = channelId;
@@ -129,8 +132,14 @@ public class SenderChannel
         // TODO: get rid of reference to old term Id. If this is current termId, then stop, etc.
     }
 
-    public SenderFlowControlState flowControlState()
+    public void onStatusMessage(final long termId,
+                                final int highestContiguousSequenceNumber,
+                                final int receiverWindow)
     {
-        return activeFlowControlState;
+        final int rightEdge = flowControlStrategy.onStatusMessage(termId,
+                                                                  highestContiguousSequenceNumber,
+                                                                  receiverWindow);
+        activeFlowControlState.updateRightEdgeOfWindow(rightEdge);
     }
+
 }

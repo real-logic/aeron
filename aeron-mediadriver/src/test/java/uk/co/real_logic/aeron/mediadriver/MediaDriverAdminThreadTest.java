@@ -77,6 +77,7 @@ public class MediaDriverAdminThreadTest
                 .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .rcvNioSelector(new NioSelector())
                 .adminNioSelector(new NioSelector())
+                .senderFlowControl(DefaultSenderFlowControlStrategy::new)
                 .adminBufferStrategy(new CreatingAdminBufferStrategy(adminPath, COMMAND_BUFFER_SZ + TRAILER_SIZE))
                 .bufferManagementStrategy(new BasicBufferManagementStrategy(adminPath));
 

@@ -29,6 +29,7 @@ import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Supplier;
 
 /**
  * Admin thread to take commands from Producers and Consumers as well as handle NAKs and retransmissions
@@ -44,6 +45,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     private final BufferManagementStrategy bufferManagementStrategy;
     private final RingBuffer adminReceiveBuffer;
     private final Long2ObjectHashMap<SrcFrameHandler> srcDestinationMap;
+    private final Supplier<SenderFlowControlStrategy> senderFlowControl;
 
     private final ThreadLocalRandom rng = ThreadLocalRandom.current();
 
@@ -60,6 +62,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         this.nioSelector = builder.adminNioSelector();
         this.receiverThread = receiverThread;
         this.senderThread = senderThread;
+        this.senderFlowControl = builder.senderFlowControl();
         this.srcDestinationMap = new Long2ObjectHashMap<>();
 
         try
@@ -186,7 +189,13 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             final ByteBuffer buffer = bufferManagementStrategy.addSenderTerm(srcDestination, sessionId,
                     channelId, initialTermId);
 
-            channel = new SenderChannel(frameHandler, buffer, srcDestination, sessionId, channelId, initialTermId);
+            channel = new SenderChannel(frameHandler,
+                                        senderFlowControl.get(),
+                                        buffer,
+                                        srcDestination,
+                                        sessionId,
+                                        channelId,
+                                        initialTermId);
 
             // add channel to SrcFrameHandler so it can demux NAKs and SMs
             frameHandler.addChannel(channel);

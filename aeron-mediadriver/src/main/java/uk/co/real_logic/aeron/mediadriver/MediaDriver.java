@@ -26,6 +26,7 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.function.Supplier;
 
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_SIZE;
 
@@ -90,6 +91,7 @@ public class MediaDriver
                 .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .rcvNioSelector(new NioSelector())
                 .adminNioSelector(new NioSelector())
+                .senderFlowControl(DefaultSenderFlowControlStrategy::new)
                 .adminBufferStrategy(new CreatingAdminBufferStrategy(Directories.ADMIN_DIR, ADMIN_BUFFER_SZ))
                 .bufferManagementStrategy(new BasicBufferManagementStrategy(Directories.DATA_DIR));
 
@@ -127,6 +129,7 @@ public class MediaDriver
         private AdminBufferStrategy adminBufferStrategy;
         private NioSelector rcvNioSelector;
         private NioSelector adminNioSelector;
+        private Supplier<SenderFlowControlStrategy> senderFlowControl;
 
         private RingBuffer createNewCommandBuffer(final int sz)
         {
@@ -172,6 +175,12 @@ public class MediaDriver
             return this;
         }
 
+        public TopologyBuilder senderFlowControl(Supplier<SenderFlowControlStrategy> senderFlowControl)
+        {
+            this.senderFlowControl = senderFlowControl;
+            return this;
+        }
+
         public RingBuffer adminThreadCommandBuffer()
         {
             return adminThreadCommandBuffer;
@@ -200,6 +209,11 @@ public class MediaDriver
         public NioSelector adminNioSelector()
         {
             return adminNioSelector;
+        }
+
+        public Supplier<SenderFlowControlStrategy> senderFlowControl()
+        {
+            return senderFlowControl;
         }
     }
 }

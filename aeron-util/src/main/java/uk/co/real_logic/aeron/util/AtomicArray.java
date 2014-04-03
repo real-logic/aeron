@@ -58,20 +58,24 @@ public class AtomicArray<T>
 
     /**
      * For each valid element, call a function passing the element
+     * @param start
      * @param func to call and pass each element to
      */
-    public void forEach(final Consumer<T> func)
+    public void forEach(final int start, final Consumer<T> func)
     {
         @SuppressWarnings("unchecked")
         final T[] array = (T[])arrayRef.get();
 
-        for (final T element : array)
+        int i = start;
+        do
         {
+            T element = array[i];
             if (null != element)
             {
                 func.accept(element);
             }
-        }
+            i = (i + 1) % array.length;
+        } while (i != start);
     }
 
     /**

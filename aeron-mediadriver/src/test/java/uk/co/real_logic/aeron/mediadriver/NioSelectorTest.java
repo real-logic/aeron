@@ -122,7 +122,7 @@ public class NioSelectorTest
                 dataHeadersRcved.incrementAndGet();
             }
 
-            public void onStatusMessageFrame(final StatusMessageFlyweight statusMessage, final InetSocketAddress srcAddr)
+            public void onStatusMessageFrame(final StatusMessageFlyweight statusMessage, final InetSocketAddress src)
             {
                 assertThat(Byte.valueOf(statusMessage.version()), is(Byte.valueOf(HeaderFlyweight.CURRENT_VERSION)));
                 assertThat(Integer.valueOf(statusMessage.frameLength()), is(Integer.valueOf(8)));
@@ -226,7 +226,7 @@ public class NioSelectorTest
                 dataHeadersRcved.incrementAndGet();
             }
 
-            public void onStatusMessageFrame(final StatusMessageFlyweight statusMessage, final InetSocketAddress srcAddr)
+            public void onStatusMessageFrame(final StatusMessageFlyweight statusMessage, final InetSocketAddress src)
             {
                 assertThat(Byte.valueOf(statusMessage.version()), is(Byte.valueOf(HeaderFlyweight.CURRENT_VERSION)));
                 assertThat(Integer.valueOf(statusMessage.frameLength()), is(Integer.valueOf(8)));

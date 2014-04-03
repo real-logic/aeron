@@ -142,15 +142,19 @@ public class AtomicArrayTest
     @Test
     public void forEachShouldIterateOverValuesInTheArray()
     {
-        // given
-        Set<Integer> values = new HashSet<>(asList(10, 20, 30));
-        AtomicArray<Integer> array = new AtomicArray<>();
-        values.forEach(array::add);
+        for (int start : new int[] { 0, 1 })
+        {
+            // given
+            Set<Integer> values = new HashSet<>(asList(10, 20, 30));
+            AtomicArray<Integer> array = new AtomicArray<>();
+            values.forEach(array::add);
 
-        // when
-        array.forEach(values::remove);
+            // when
+            array.forEach(start, values::remove);
 
-        // then
-        assertThat(values, empty());
+            // then
+            assertThat(values, empty());
+        }
+
     }
 }

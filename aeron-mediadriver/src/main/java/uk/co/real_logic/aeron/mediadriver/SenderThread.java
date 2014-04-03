@@ -27,16 +27,20 @@ public class SenderThread extends ClosableThread
     private final RingBuffer adminThreadCommandBuffer;
     private final AtomicArray<SenderChannel> channels;
 
+    private int counter;
+
     public SenderThread(final MediaDriver.TopologyBuilder builder)
     {
         this.adminThreadCommandBuffer = builder.adminThreadCommandBuffer();
         this.channels = new AtomicArray<>();
+        counter = 0;
     }
 
     @Override
     public void process()
     {
-        channels.forEach(SenderChannel::process);
+        counter = (counter + 1) % Integer.MAX_VALUE;
+        channels.forEach(counter, SenderChannel::process);
     }
 
     public void addChannel(final SenderChannel channel)

@@ -29,9 +29,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 
-import static uk.co.real_logic.aeron.util.protocol.HeaderFlyweight.HDR_TYPE_DATA;
-import static uk.co.real_logic.aeron.util.protocol.HeaderFlyweight.HDR_TYPE_NAK;
-import static uk.co.real_logic.aeron.util.protocol.HeaderFlyweight.HDR_TYPE_SM;
+import static uk.co.real_logic.aeron.util.protocol.HeaderFlyweight.*;
 
 /**
  * Transport abstraction for UDP sources and receivers.

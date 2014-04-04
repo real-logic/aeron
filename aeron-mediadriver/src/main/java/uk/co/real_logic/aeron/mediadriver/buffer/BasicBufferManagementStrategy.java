@@ -15,8 +15,8 @@
  */
 package uk.co.real_logic.aeron.mediadriver.buffer;
 
-import uk.co.real_logic.aeron.mediadriver.ChannelMap;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
+import uk.co.real_logic.aeron.mediadriver.UdpChannelMap;
 import uk.co.real_logic.aeron.mediadriver.UdpDestination;
 import uk.co.real_logic.aeron.util.FileMappingConvention;
 import uk.co.real_logic.aeron.util.IoUtil;
@@ -43,7 +43,7 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
     private final FileChannel templateFile;
     private final File senderDir;
     private final File receiverDir;
-    private final ChannelMap<SenderChannelBuffer> srcTermMap;
+    private final UdpChannelMap<SenderChannelBuffer> srcTermMap;
     private final TripleLevelMap<ByteBuffer> rcvTermMap;
     private final FileMappingConvention fileConvention;
 
@@ -52,7 +52,7 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
         fileConvention = new FileMappingConvention(dataDir);
         senderDir = fileConvention.senderDir();
         receiverDir = fileConvention.receiverDir();
-        srcTermMap = new ChannelMap<>();
+        srcTermMap = new UdpChannelMap<>();
         rcvTermMap = new TripleLevelMap<>();
         IoUtil.ensureDirectoryExists(senderDir, "sender");
         IoUtil.ensureDirectoryExists(receiverDir, "receiver");

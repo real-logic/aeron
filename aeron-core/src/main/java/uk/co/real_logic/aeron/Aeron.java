@@ -15,21 +15,21 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.admin.*;
+import uk.co.real_logic.aeron.admin.BasicBufferUsageStrategy;
+import uk.co.real_logic.aeron.admin.BufferUsageStrategy;
+import uk.co.real_logic.aeron.admin.ClientAdminThread;
+import uk.co.real_logic.aeron.admin.ClientAdminThreadCursor;
 import uk.co.real_logic.aeron.util.AdminBufferStrategy;
+import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.Directories;
 import uk.co.real_logic.aeron.util.MappingAdminBufferStrategy;
-import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Consumer;
 
-import static uk.co.real_logic.aeron.util.collections.CollectionUtil.getOrDefault;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_SIZE;
 
 /**
@@ -74,16 +74,13 @@ public final class Aeron
     private final ErrorHandler errorHandler;
     private final ClientAdminThread adminThread;
     private final AdminBufferStrategy adminBuffers;
-
-    private final Map<String, Long2ObjectHashMap<TermBufferNotifier>> sendNotifiers;
-    private final Map<String, Long2ObjectHashMap<TermBufferNotifier>> recvNotifiers;
+    private final AtomicArray<Channel> channels;
 
     private Aeron(final Builder builder)
     {
         errorHandler = builder.errorHandler;
         adminBuffers = builder.adminBuffers;
-        sendNotifiers = new HashMap<>();
-        recvNotifiers = new HashMap<>();
+        channels = new AtomicArray<>();
         adminCommandBuffer = new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocate(ADMIN_BUFFER_SIZE)));
 
         try
@@ -91,8 +88,7 @@ public final class Aeron
             final RingBuffer recvBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toApi()));
             final RingBuffer sendBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toMediaDriver()));
             final BufferUsageStrategy bufferUsage = new BasicBufferUsageStrategy(Directories.DATA_DIR);
-            adminThread = new ClientAdminThread(adminCommandBuffer, recvBuffer, sendBuffer, bufferUsage,
-                                                sendNotifiers, recvNotifiers);
+            adminThread = new ClientAdminThread(adminCommandBuffer, recvBuffer, sendBuffer, bufferUsage, channels);
         }
         catch (Exception e)
         {
@@ -114,7 +110,7 @@ public final class Aeron
         final String destination = builder.destination.destination();
         final long sessionId = builder.sessionId();
         builder.adminThread(new ClientAdminThreadCursor(sessionId, adminCommandBuffer));
-        return new Source(getNotifier(destination, sendNotifiers), builder);
+        return new Source(channels, builder);
     }
 
     /**
@@ -155,7 +151,8 @@ public final class Aeron
     public Receiver newReceiver(final Receiver.Builder builder)
     {
         final String destination = builder.destination.destination();
-        return new Receiver(getNotifier(destination, recvNotifiers), builder);
+        // TODO
+        return new Receiver(null, builder);
     }
 
     /**
@@ -169,13 +166,6 @@ public final class Aeron
         Receiver.Builder builder = new Receiver.Builder();
         block.accept(builder);
         return newReceiver(builder);
-    }
-
-    private Long2ObjectHashMap<TermBufferNotifier> getNotifier(
-            final String destination,
-            final Map<String, Long2ObjectHashMap<TermBufferNotifier>> notifiers)
-    {
-        return getOrDefault(notifiers, destination, dest -> new Long2ObjectHashMap<>());
     }
 
     public ClientAdminThread adminThread()

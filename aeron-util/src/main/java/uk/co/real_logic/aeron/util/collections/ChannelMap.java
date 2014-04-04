@@ -13,9 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.mediadriver;
-
-import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
+package uk.co.real_logic.aeron.util.collections;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,16 +24,16 @@ import static uk.co.real_logic.aeron.util.collections.CollectionUtil.getOrDefaul
  * Map for storing information about channels. These are keyed
  * by a triple of destination/session/channel.
  */
-public class ChannelMap<T>
+public class ChannelMap<D, T>
 {
-    private final Map<UdpDestination, Long2ObjectHashMap<Long2ObjectHashMap<T>>> map;
+    private final Map<D, Long2ObjectHashMap<Long2ObjectHashMap<T>>> map;
 
     public ChannelMap()
     {
         map = new HashMap<>();
     }
 
-    public T get(final UdpDestination destination, final long sessionId, final long channelId)
+    public T get(final D destination, final long sessionId, final long channelId)
     {
         final Long2ObjectHashMap<Long2ObjectHashMap<T>> sessionMap = map.get(destination);
         if (sessionMap == null)
@@ -52,7 +50,7 @@ public class ChannelMap<T>
         return channelMap.get(channelId);
     }
 
-    public T put(final UdpDestination destination, final long sessionId, final long channelId, final T value)
+    public T put(final D destination, final long sessionId, final long channelId, final T value)
     {
         final Long2ObjectHashMap<Long2ObjectHashMap<T>> sessionMap
             = getOrDefault(map, destination, ignore -> new Long2ObjectHashMap<>());
@@ -60,7 +58,7 @@ public class ChannelMap<T>
         return channelMap.put(channelId, value);
     }
 
-    public T remove(final UdpDestination destination, final long sessionId, final long channelId)
+    public T remove(final D destination, final long sessionId, final long channelId)
     {
         final Long2ObjectHashMap<Long2ObjectHashMap<T>> sessionMap = map.get(destination);
         if (sessionMap == null)
@@ -88,7 +86,7 @@ public class ChannelMap<T>
         return value;
     }
 
-    public boolean isEmpty(final UdpDestination destination)
+    public boolean isEmpty(final D destination)
     {
         return !map.containsKey(destination);
     }

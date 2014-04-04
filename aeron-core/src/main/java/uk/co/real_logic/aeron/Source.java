@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.admin.ClientAdminThreadCursor;
 import uk.co.real_logic.aeron.admin.TermBufferNotifier;
-import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
+import uk.co.real_logic.aeron.util.AtomicArray;
 
 /**
  * Aeron source
@@ -28,14 +28,14 @@ import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 public class Source implements AutoCloseable
 {
     private final long sessionId;
-    private final Long2ObjectHashMap<TermBufferNotifier> notifierMap;
     private final Destination destination;
     private final ClientAdminThreadCursor adminThread;
+    private final AtomicArray<Channel> channels;
 
     // called by Aeron to create new sessions
-    public Source(final Long2ObjectHashMap<TermBufferNotifier> notifierMap, final Builder builder)
+    public Source(final AtomicArray<Channel> channels, final Builder builder)
     {
-        this.notifierMap = notifierMap;
+        this.channels = channels;
         this.sessionId = builder.sessionId();
         this.destination = builder.destination;
         this.adminThread = builder.adminThread;
@@ -49,9 +49,10 @@ public class Source implements AutoCloseable
     public Channel newChannel(final long channelId)
     {
         final TermBufferNotifier bufferNotifier = new TermBufferNotifier();
-        notifierMap.put(channelId, bufferNotifier);
+        final Channel channel = new Channel(destination.destination(), adminThread, bufferNotifier, channelId);
+        channels.add(channel);
         adminThread.sendAddChannel(destination.destination(), channelId);
-        return new Channel(destination.destination(), adminThread, bufferNotifier, channelId);
+        return channel;
     }
 
     /**

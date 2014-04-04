@@ -15,14 +15,15 @@
  */
 package uk.co.real_logic.aeron.admin;
 
+import uk.co.real_logic.aeron.Channel;
+import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.ClosableThread;
-import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
+import uk.co.real_logic.aeron.util.collections.ChannelMap;
 import uk.co.real_logic.aeron.util.command.*;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import java.nio.ByteBuffer;
-import java.util.Map;
 
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.NEW_RECEIVE_BUFFER_NOTIFICATION;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.NEW_SEND_BUFFER_NOTIFICATION;
@@ -44,8 +45,9 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
     private final RingBuffer sendBuffer;
 
     private final BufferUsageStrategy bufferUsage;
-    private final Map<String, Long2ObjectHashMap<TermBufferNotifier>> sendNotifiers;
-    private final Map<String, Long2ObjectHashMap<TermBufferNotifier>> recvNotifiers;
+    private final AtomicArray<Channel> channels;
+    private final ChannelMap<String, TermBufferNotifier> sendNotifiers;
+    private final ChannelMap<String, TermBufferNotifier> recvNotifiers;
 
     /** Atomic buffer to write message flyweights into before they get sent */
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
@@ -61,15 +63,15 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
                              final RingBuffer recvBuffer,
                              final RingBuffer sendBuffer,
                              final BufferUsageStrategy bufferUsage,
-                             final Map<String, Long2ObjectHashMap<TermBufferNotifier>> sendNotifiers,
-                             final Map<String, Long2ObjectHashMap<TermBufferNotifier>> recvNotifiers)
+                             final AtomicArray<Channel> channels)
     {
         this.commandBuffer = commandBuffer;
         this.recvBuffer = recvBuffer;
         this.sendBuffer = sendBuffer;
         this.bufferUsage = bufferUsage;
-        this.sendNotifiers = sendNotifiers;
-        this.recvNotifiers = recvNotifiers;
+        this.channels = channels;
+        this.sendNotifiers = new ChannelMap<>();
+        this.recvNotifiers = new ChannelMap<>();
 
         channelMessage.wrap(writeBuffer, 0);
         removeReceiverMessage.wrap(writeBuffer, 0);
@@ -172,10 +174,8 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
         try
         {
             final ByteBuffer buffer = bufferUsage.onTermAdded(destination, sessionId, channelId, termId, isSender);
-            final Long2ObjectHashMap<TermBufferNotifier> channelNotifiers = getNotifiers(isSender).get(destination);
-
-            channelNotifiers.get(channelId)
-                            .newTermBufferMapped(termId, buffer);
+            final TermBufferNotifier notifier = getNotifiers(isSender).get(destination, sessionId, channelId);
+            notifier.newTermBufferMapped(termId, buffer);
         }
         catch (Exception e)
         {
@@ -190,7 +190,7 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
         return false;
     }
 
-    private Map<String, Long2ObjectHashMap<TermBufferNotifier>> getNotifiers(final boolean isSender)
+    private ChannelMap<String, TermBufferNotifier> getNotifiers(final boolean isSender)
     {
         return isSender ? sendNotifiers : recvNotifiers;
     }

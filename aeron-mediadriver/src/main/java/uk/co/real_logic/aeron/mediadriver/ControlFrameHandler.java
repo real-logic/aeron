@@ -35,7 +35,7 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
     public ControlFrameHandler(final UdpDestination destination,
                                final MediaDriverAdminThread mediaDriverAdminThread) throws Exception
     {
-        this.transport = new UdpTransport(this, destination.localData(), mediaDriverAdminThread.nioSelector());
+        this.transport = new UdpTransport(this, destination.localControl(), mediaDriverAdminThread.nioSelector());
         this.destination = destination;
         this.mediaDriverAdminThread = mediaDriverAdminThread;
         this.sessionMap = new Long2ObjectHashMap<>();

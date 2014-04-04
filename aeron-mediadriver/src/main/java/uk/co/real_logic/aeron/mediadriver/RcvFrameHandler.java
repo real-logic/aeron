@@ -36,9 +36,9 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
                            final NioSelector nioSelector)
         throws Exception
     {
-        final InetSocketAddress endpoint = destination.remote();
-        final InetAddress mcastInterface = destination.local().getAddress();
-        final int localPort = destination.local().getPort();
+        final InetSocketAddress endpoint = destination.remoteData();
+        final InetAddress mcastInterface = destination.localData().getAddress();
+        final int localPort = destination.localData().getPort();
 
         this.transport = new UdpTransport(this, endpoint, mcastInterface, localPort, nioSelector);
         this.destination = destination;

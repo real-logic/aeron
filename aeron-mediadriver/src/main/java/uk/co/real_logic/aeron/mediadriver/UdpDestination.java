@@ -19,7 +19,6 @@ import uk.co.real_logic.aeron.util.BitUtil;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
 import java.net.URI;
 
 /**
@@ -34,8 +33,11 @@ public class UdpDestination
 {
     private static final int LAST_MULTICAST_DIGIT = 3;
 
-    private final InetSocketAddress remote;
-    private final InetSocketAddress local;
+    private final InetSocketAddress remoteData;
+    private final InetSocketAddress localData;
+    private final InetSocketAddress remoteControl;
+    private final InetSocketAddress localControl;
+
     private final String uriStr;
     private final long consistentHash;
 
@@ -43,74 +45,90 @@ public class UdpDestination
     {
         final URI uri = new URI(destinationUri);
         final String userInfo = uri.getUserInfo();
+        final int uriPort = uri.getPort();
 
-        if (!"udp".equals(uri.getScheme()) || uri.getPort() == -1)
+        if (!"udp".equals(uri.getScheme()) || uriPort == -1)
         {
             throw new IllegalArgumentException("malformed destination URI: " + destinationUri);
         }
 
-        final InetAddress remoteAddress = InetAddress.getByName(uri.getHost());
-        final byte[] address = remoteAddress.getAddress();
-        final boolean isMulticast = remoteAddress.isMulticastAddress();
-        if (isMulticast && BitUtil.isEven(address[LAST_MULTICAST_DIGIT]))
-        {
-            throw new IllegalArgumentException("Multicast data addresses must be odd");
-        }
-
         final Builder builder = new Builder()
                 .uriStr(destinationUri)
-                .consistentHash(BitUtil.generateConsistentHash(destinationUri.getBytes()))
-                .remotePort(uri.getPort())
-                .remoteAddr(remoteAddress);
+                .consistentHash(BitUtil.generateConsistentHash(destinationUri.getBytes()));
 
-        if (userInfo != null)
+        final InetAddress hostAddress = InetAddress.getByName(uri.getHost());
+        if (hostAddress.isMulticastAddress())
         {
-            final int colonIndex = userInfo.indexOf(":");
+            final byte[] addressAsBytes = hostAddress.getAddress();
+            if (BitUtil.isEven(addressAsBytes[LAST_MULTICAST_DIGIT]))
+            {
+                throw new IllegalArgumentException("Multicast data addresses must be odd");
+            }
 
-            if (-1 == colonIndex)
-            {
-                builder.localAddr(InetAddress.getByName(userInfo));
-                builder.localPort(0);
-            }
-            else
-            {
-                builder.localAddr(InetAddress.getByName(userInfo.substring(0, colonIndex)));
-                builder.localPort(Integer.parseInt(userInfo.substring(colonIndex + 1)));
-            }
+            addressAsBytes[LAST_MULTICAST_DIGIT]--;
+            final InetSocketAddress controlAddress = new InetSocketAddress(InetAddress.getByAddress(addressAsBytes), 0);
+            final InetSocketAddress dataAddress = new InetSocketAddress(hostAddress, 0);
+
+            builder.localControlAddress(controlAddress)
+                   .remoteControlAddress(controlAddress)
+                   .localDataAddress(dataAddress)
+                   .remoteDataAddress(dataAddress);
         }
-        else if (isMulticast)
+        else
         {
-            address[LAST_MULTICAST_DIGIT]--;
-            builder.localAddr(InetAddress.getByAddress(address));
+            final InetSocketAddress remoteAddress = new InetSocketAddress(hostAddress, uriPort);
+            builder.remoteControlAddress(remoteAddress)
+                   .remoteDataAddress(remoteAddress);
+
+            InetSocketAddress localAddress = new InetSocketAddress(0);
+            if (userInfo != null)
+            {
+                final int colonIndex = userInfo.indexOf(":");
+                if (colonIndex == -1)
+                {
+                    localAddress = new InetSocketAddress(InetAddress.getByName(userInfo), 0);
+                }
+                else
+                {
+                    final InetAddress specifiedLocalHost = InetAddress.getByName(userInfo.substring(0, colonIndex));
+                    final int localPort = Integer.parseInt(userInfo.substring(colonIndex + 1));
+                    localAddress = new InetSocketAddress(specifiedLocalHost, localPort);
+                }
+            }
+
+            builder.localControlAddress(localAddress)
+                    .localDataAddress(localAddress);
         }
 
         return new UdpDestination(builder);
     }
 
-    public InetSocketAddress remote()
+    public InetSocketAddress remoteData()
     {
-        return remote;
+        return remoteData;
     }
 
-    public InetSocketAddress local()
+    public InetSocketAddress localData()
     {
-        return local;
+        return localData;
     }
 
-    public NetworkInterface localInterface() throws Exception
+    public InetSocketAddress remoteControl()
     {
-        return NetworkInterface.getByInetAddress(local.getAddress());
+        return remoteControl;
     }
 
-    public int localPort()
+    public InetSocketAddress localControl()
     {
-        return local.getPort();
+        return localControl;
     }
 
     public UdpDestination(final Builder builder)
     {
-        this.remote = new InetSocketAddress(builder.remoteAddr, builder.remotePort);
-        this.local = new InetSocketAddress(builder.localAddr, builder.localPort);
+        this.remoteData = builder.remoteData;
+        this.localData = builder.localData;
+        this.remoteControl = builder.remoteControl;
+        this.localControl = builder.localControl;
         this.uriStr = builder.uriStr;
         this.consistentHash = builder.consistentHash;
     }
@@ -122,7 +140,7 @@ public class UdpDestination
 
     public int hashCode()
     {
-        return remote.hashCode() + local.hashCode(); // this could cause things to clump slightly
+        return remoteData.hashCode() + localData.hashCode(); // this could cause things to clump slightly
     }
 
     public boolean equals(Object obj)
@@ -131,7 +149,7 @@ public class UdpDestination
         {
             final UdpDestination rhs = (UdpDestination)obj;
 
-            return rhs.local.equals(this.local) && rhs.remote.equals(this.remote);
+            return rhs.localData.equals(this.localData) && rhs.remoteData.equals(this.remoteData);
         }
 
         return false;
@@ -140,25 +158,22 @@ public class UdpDestination
     public String toString()
     {
         return String.format("udp://%1$s:$2$d@%3$s:%4$d",
-                             local.getAddress().getHostAddress(), Integer.valueOf(local.getPort()),
-                             remote.getAddress().getHostAddress(), Integer.valueOf(remote.getPort()));
+                localData.getAddress().getHostAddress(), Integer.valueOf(localData.getPort()),
+                remoteData.getAddress().getHostAddress(), Integer.valueOf(remoteData.getPort()));
     }
 
     public static class Builder
     {
-        private InetAddress remoteAddr;
-        private InetAddress localAddr;
-        private int remotePort;
-        private int localPort;
+        private InetSocketAddress remoteData;
+        private InetSocketAddress localData;
+        private InetSocketAddress remoteControl;
+        private InetSocketAddress localControl;
         private String uriStr;
         private long consistentHash;
 
         public Builder()
         {
-            this.remoteAddr = null;
-            this.localAddr = null;
-            this.remotePort = 0;
-            this.localPort = 0;
+
         }
 
         public Builder uriStr(final String uri)
@@ -167,33 +182,33 @@ public class UdpDestination
             return this;
         }
 
-        public Builder remoteAddr(final InetAddress addr)
-        {
-            remoteAddr = addr;
-            return this;
-        }
-
-        public Builder localAddr(final InetAddress addr)
-        {
-            localAddr = addr;
-            return this;
-        }
-
-        public Builder remotePort(final int port)
-        {
-            remotePort = port;
-            return this;
-        }
-
-        public Builder localPort(final int port)
-        {
-            localPort = port;
-            return this;
-        }
-
         public Builder consistentHash(final long hash)
         {
             consistentHash = hash;
+            return this;
+        }
+
+        public Builder remoteDataAddress(final InetSocketAddress remoteData)
+        {
+            this.remoteData = remoteData;
+            return this;
+        }
+
+        public Builder localDataAddress(final InetSocketAddress localData)
+        {
+            this.localData = localData;
+            return this;
+        }
+
+        public Builder remoteControlAddress(final InetSocketAddress remoteControl)
+        {
+            this.remoteControl = remoteControl;
+            return this;
+        }
+
+        public Builder localControlAddress(final InetSocketAddress localControl)
+        {
+            this.localControl = localControl;
             return this;
         }
     }

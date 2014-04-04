@@ -34,8 +34,10 @@ public class UdpDestinationTest
     {
         final UdpDestination dest = UdpDestination.parse("udp://localhost:40123@localhost:40124");
 
-        assertThat(dest.local(), is(new InetSocketAddress("localhost", 40123)));
-        assertThat(dest.remote(), is(new InetSocketAddress("localhost", 40124)));
+        assertThat(dest.localData(), is(new InetSocketAddress("localhost", 40123)));
+        assertThat(dest.localControl(), is(new InetSocketAddress("localhost", 40123)));
+        assertThat(dest.remoteData(), is(new InetSocketAddress("localhost", 40124)));
+        assertThat(dest.remoteControl(), is(new InetSocketAddress("localhost", 40124)));
     }
 
     @Test
@@ -43,14 +45,16 @@ public class UdpDestinationTest
     {
         final UdpDestination dest = UdpDestination.parse("udp://localhost:40124");
 
-        assertThat(dest.local(), is(new InetSocketAddress("0.0.0.0", 0)));
-        assertThat(dest.remote(), is(new InetSocketAddress("localhost", 40124)));
+        assertThat(dest.localData(), is(new InetSocketAddress("0.0.0.0", 0)));
+        assertThat(dest.localControl(), is(new InetSocketAddress("0.0.0.0", 0)));
+        assertThat(dest.remoteData(), is(new InetSocketAddress("localhost", 40124)));
+        assertThat(dest.remoteControl(), is(new InetSocketAddress("localhost", 40124)));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldThrowExceptionForIncorrectScheme() throws Exception
     {
-        final UdpDestination dest = UdpDestination.parse("unknwonudp://localhost:40124");
+        UdpDestination.parse("unknwonudp://localhost:40124");
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -63,8 +67,10 @@ public class UdpDestinationTest
     {
         final UdpDestination dest = UdpDestination.parse("udp://224.10.9.9");
 
-        assertThat(dest.local(), is(InetAddress.getByName("224.10.9.10")));
-        assertThat(dest.remote(), is(InetAddress.getByName("224.10.9.9")));
+        assertThat(dest.localControl(), is(InetAddress.getByName("224.10.9.10")));
+        assertThat(dest.remoteControl(), is(InetAddress.getByName("224.10.9.10")));
+        assertThat(dest.localData(), is(InetAddress.getByName("224.10.9.9")));
+        assertThat(dest.remoteData(), is(InetAddress.getByName("224.10.9.9")));
     }
 
     @Test
@@ -72,8 +78,10 @@ public class UdpDestinationTest
     {
         final UdpDestination dest = UdpDestination.parse("udp://localhost@localhost:40124");
 
-        assertThat(dest.local(), is(new InetSocketAddress("localhost", 0)));
-        assertThat(dest.remote(), is(new InetSocketAddress("localhost", 40124)));
+        assertThat(dest.localData(), is(new InetSocketAddress("localhost", 0)));
+        assertThat(dest.localControl(), is(new InetSocketAddress("localhost", 0)));
+        assertThat(dest.remoteData(), is(new InetSocketAddress("localhost", 40124)));
+        assertThat(dest.remoteControl(), is(new InetSocketAddress("localhost", 40124)));
     }
 
     @Test
@@ -81,7 +89,8 @@ public class UdpDestinationTest
     {
         final UdpDestination dest = UdpDestination.parse("udp://localhost:40124");
 
-        assertThat(dest.remote(), is(new InetSocketAddress("127.0.0.1", 40124)));
+        assertThat(dest.remoteData(), is(new InetSocketAddress("127.0.0.1", 40124)));
+        assertThat(dest.remoteControl(), is(new InetSocketAddress("127.0.0.1", 40124)));
     }
 
     @Test
@@ -99,7 +108,7 @@ public class UdpDestinationTest
     @Test(expected =  IllegalArgumentException.class)
     public void shouldThrowExceptionWhenNoDestinationPortSpecified() throws Exception
     {
-        final UdpDestination dest = UdpDestination.parse("udp://localhost");
+        UdpDestination.parse("udp://localhost");
     }
 
     @Test

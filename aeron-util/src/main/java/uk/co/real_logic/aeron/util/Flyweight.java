@@ -103,27 +103,27 @@ public class Flyweight
     protected long[] uint32ArrayGet(final int offset, final ByteOrder byteOrder)
     {
         final int length = atomicBuffer.getInt(offset);
-        final long[] data = new long[length];
+        final long[] values = new long[length];
         int location = offset + SIZE_OF_INT;
 
         for (int i = 0; i < length; i++)
         {
-            data[i] = uint32Get(location, byteOrder);
+            values[i] = uint32Get(location, byteOrder);
             location += SIZE_OF_LONG;
         }
 
-        return data;
+        return values;
     }
 
-    protected int uint32ArrayPut(final int offset, final long[] value, final ByteOrder byteOrder)
+    protected int uint32ArrayPut(final int offset, final long[] values, final ByteOrder byteOrder)
     {
-        final int length = value.length;
+        final int length = values.length;
         atomicBuffer.putInt(offset, length, byteOrder);
         int location = offset + SIZE_OF_INT;
 
-        for (final long aValue : value)
+        for (final long value : values)
         {
-            uint32Put(location, aValue, byteOrder);
+            uint32Put(location, value, byteOrder);
             location += SIZE_OF_LONG;
         }
 

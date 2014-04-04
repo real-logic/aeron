@@ -43,7 +43,7 @@ public class FrameDescriptor
      */
     public static int calculateMaxMessageLength(final int capacity)
     {
-        return Math.min(capacity / 4, 1 << 16);
+        return Math.min(capacity / 8, 1 << 16);
     }
 
     /**

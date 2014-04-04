@@ -39,6 +39,8 @@ public class LogBufferAppender
     private final int capacity;
     private final int maxMessageLength;
     private final int maxFrameLength;
+    private final int headerLength;
+    private final int maxPayload;
 
     /**
      * Construct a view over a log buffer and state buffer for appending frames.
@@ -67,6 +69,8 @@ public class LogBufferAppender
         this.defaultHeader = defaultHeader;
         this.maxFrameLength = maxFrameLength;
         this.maxMessageLength = FrameDescriptor.calculateMaxMessageLength(capacity);
+        this.headerLength = defaultHeader.length;
+        this.maxPayload = maxFrameLength - headerLength;
     }
 
     /**
@@ -87,6 +91,16 @@ public class LogBufferAppender
     public int maxMessageLength()
     {
         return maxMessageLength;
+    }
+
+    /**
+     * The maximum length of a message payload within a frame before fragmentation takes place.
+     *
+     * @return the maximum length of a message that can be recorded in the log.
+     */
+    public int maxPayloadLength()
+    {
+        return maxPayload;
     }
 
     /**
@@ -123,22 +137,31 @@ public class LogBufferAppender
     {
         checkMessageLength(length);
 
-        final int frameLength = align(length + defaultHeader.length, FRAME_ALIGNMENT);
-        final int frameOffset = getTailAndAdd(frameLength);
-
-        if (frameOffset >= capacity)
+        if (length < maxPayload)
         {
-            return false;
+            return appendUnfragmentedMessage(srcBuffer, srcOffset, length);
         }
+
+        return appendFragmentedMessage(srcBuffer, srcOffset, length);
+    }
+
+    private boolean appendUnfragmentedMessage(final AtomicBuffer srcBuffer, final int srcOffset, final int length)
+    {
+        final int frameLength = align(length + headerLength, FRAME_ALIGNMENT);
+        final int frameOffset = getTailAndAdd(frameLength);
 
         if (frameOffset + frameLength > capacity)
         {
-            appendPaddingFrame(frameOffset);
+            if (frameOffset < capacity)
+            {
+                appendPaddingFrame(frameOffset);
+            }
+
             return false;
         }
 
-        logBuffer.putBytes(frameOffset, defaultHeader, 0, defaultHeader.length);
-        logBuffer.putBytes(frameOffset + defaultHeader.length, srcBuffer, srcOffset, length);
+        logBuffer.putBytes(frameOffset, defaultHeader, 0, headerLength);
+        logBuffer.putBytes(frameOffset + headerLength, srcBuffer, srcOffset, length);
 
         header.wrap(logBuffer, frameOffset)
               .beginFragment(true)
@@ -149,11 +172,58 @@ public class LogBufferAppender
         return true;
     }
 
+    private boolean appendFragmentedMessage(final AtomicBuffer srcBuffer, final int srcOffset, final int length)
+    {
+        final int numMaxPayloads = length / maxPayload;
+        final int remainingPayload = length % maxPayload;
+        final int requiredCapacity =
+            align(remainingPayload + headerLength, FRAME_ALIGNMENT) + (numMaxPayloads * maxFrameLength);
+        int frameOffset = getTailAndAdd(requiredCapacity);
+
+        if (frameOffset + requiredCapacity > capacity)
+        {
+            if (frameOffset < capacity)
+            {
+                appendPaddingFrame(frameOffset);
+            }
+
+            return false;
+        }
+
+        boolean beginFragment = true;
+        int remaining = length;
+        do
+        {
+            final int bytesToWrite = Math.min(remaining, maxPayload);
+            final int frameLength = align(bytesToWrite + headerLength, FRAME_ALIGNMENT);
+
+            logBuffer.putBytes(frameOffset, defaultHeader, 0, headerLength);
+            logBuffer.putBytes(frameOffset + headerLength,
+                               srcBuffer,
+                               srcOffset + (length - remaining),
+                               bytesToWrite);
+
+            header.wrap(logBuffer, frameOffset)
+                  .beginFragment(beginFragment)
+                  .endFragment(remaining <= maxPayload)
+                  .sequenceNumber(frameOffset)
+                  .putLengthOrdered(frameLength);
+
+            beginFragment = false;
+            frameOffset += frameLength;
+            remaining -= bytesToWrite;
+        }
+        while (remaining > 0);
+
+        return true;
+    }
+
     private void appendPaddingFrame(final int frameOffset)
     {
-        logBuffer.putBytes(frameOffset, defaultHeader, 0, defaultHeader.length);
+        logBuffer.putBytes(frameOffset, defaultHeader, 0, headerLength);
 
         header.wrap(logBuffer, frameOffset)
+              .type(PADDING_FRAME_TYPE)
               .beginFragment(true)
               .endFragment(true)
               .sequenceNumber(frameOffset)

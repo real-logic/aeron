@@ -44,6 +44,9 @@ public class LogBufferDescriptor
     /** Minimum buffer size for the log */
     public static final int LOG_MIN_SIZE = FrameDescriptor.FRAME_ALIGNMENT * 256;
 
+    /** Padding frame type to indicate end of the log is not in use. */
+    public static final int PADDING_FRAME_TYPE = 0;
+
     /**
      * Check that log buffer is the correct size and alignment.
      *

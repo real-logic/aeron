@@ -51,9 +51,9 @@ public class ClientAdminThreadCursor
         this.removeReceiverMessage = new ReceiverMessageFlyweight();
         this.requestTermMessage = new CompletelyIdentifiedMessageFlyweight();
 
-        channelMessage.reset(writeBuffer, 0);
-        removeReceiverMessage.reset(writeBuffer, 0);
-        requestTermMessage.reset(writeBuffer, 0);
+        channelMessage.wrap(writeBuffer, 0);
+        removeReceiverMessage.wrap(writeBuffer, 0);
+        requestTermMessage.wrap(writeBuffer, 0);
     }
 
     public void sendAddChannel(final String destination, final long channelId)

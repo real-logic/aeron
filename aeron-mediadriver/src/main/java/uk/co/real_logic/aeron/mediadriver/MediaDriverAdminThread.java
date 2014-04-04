@@ -105,13 +105,13 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             switch (eventTypeId)
             {
                 case ControlProtocolEvents.ADD_CHANNEL:
-                    channelMessage.reset(buffer, index);
+                    channelMessage.wrap(buffer, index);
                     onAddChannel(channelMessage.destination(),
                                  channelMessage.sessionId(),
                                  channelMessage.channelId());
                     return;
                 case ControlProtocolEvents.REMOVE_CHANNEL:
-                    channelMessage.reset(buffer, index);
+                    channelMessage.wrap(buffer, index);
                     onRemoveChannel(channelMessage.destination(),
                                     channelMessage.sessionId(),
                                     channelMessage.channelId());

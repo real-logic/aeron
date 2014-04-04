@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.util.protocol;
 
-import java.nio.ByteOrder;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 /**
  * Flyweight for Error Header codec.
@@ -36,7 +36,7 @@ public class ErrorHeaderFlyweight extends HeaderFlyweight
      */
     public short errorCode()
     {
-        return uint8Get(offset + ERROR_CODE_FIELD_OFFSET);
+        return uint8Get(offset() + ERROR_CODE_FIELD_OFFSET);
     }
 
     /**
@@ -47,7 +47,7 @@ public class ErrorHeaderFlyweight extends HeaderFlyweight
      */
     public ErrorHeaderFlyweight errorCode(final short code)
     {
-        uint8Put(offset + ERROR_CODE_FIELD_OFFSET, code);
+        uint8Put(offset() + ERROR_CODE_FIELD_OFFSET, code);
         return this;
     }
 
@@ -58,7 +58,7 @@ public class ErrorHeaderFlyweight extends HeaderFlyweight
      */
     public int offendingHeaderFrameLength()
     {
-        return (int)uint32Get(offset + OFFENDING_HDR_FRAME_LENGTH_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return (int)uint32Get(offset() + OFFENDING_HDR_FRAME_LENGTH_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -69,7 +69,7 @@ public class ErrorHeaderFlyweight extends HeaderFlyweight
      */
     public ErrorHeaderFlyweight offendingHeaderFrameLength(final int length)
     {
-        uint32Put(offset + OFFENDING_HDR_FRAME_LENGTH_FIELD_OFFSET, length, ByteOrder.LITTLE_ENDIAN);
+        uint32Put(offset() + OFFENDING_HDR_FRAME_LENGTH_FIELD_OFFSET, length, LITTLE_ENDIAN);
         return this;
     }
 
@@ -80,7 +80,7 @@ public class ErrorHeaderFlyweight extends HeaderFlyweight
      */
     public int offendingHeaderOffset()
     {
-        return offset + OFFENDING_HDR_OFFSET;
+        return offset() + OFFENDING_HDR_OFFSET;
     }
 
     /**
@@ -123,7 +123,7 @@ public class ErrorHeaderFlyweight extends HeaderFlyweight
      */
     public ErrorHeaderFlyweight errorString(final byte[] errorString)
     {
-        atomicBuffer.putBytes(errorStringOffset(), errorString, 0, errorString.length);
+        atomicBuffer().putBytes(errorStringOffset(), errorString, 0, errorString.length);
         return this;
     }
 
@@ -147,7 +147,7 @@ public class ErrorHeaderFlyweight extends HeaderFlyweight
         final int len = errorStringLength();
         final byte[] bytes = new byte[len];
 
-        atomicBuffer.getBytes(errorStringOffset(), bytes, 0, len);
+        atomicBuffer().getBytes(errorStringOffset(), bytes, 0, len);
         return bytes;
     }
 }

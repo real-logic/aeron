@@ -74,9 +74,9 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
         this.sendNotifiers = sendNotifiers;
         this.recvNotifiers = recvNotifiers;
 
-        channelMessage.reset(writeBuffer, 0);
-        removeReceiverMessage.reset(writeBuffer, 0);
-        requestTermMessage.reset(writeBuffer, 0);
+        channelMessage.wrap(writeBuffer, 0);
+        removeReceiverMessage.wrap(writeBuffer, 0);
+        requestTermMessage.wrap(writeBuffer, 0);
     }
 
     public void process()
@@ -101,7 +101,7 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
             {
                 case NEW_RECEIVE_BUFFER_NOTIFICATION:
                 case NEW_SEND_BUFFER_NOTIFICATION:
-                    bufferNotificationMessage.reset(buffer, index);
+                    bufferNotificationMessage.wrap(buffer, index);
                     final boolean isSender = eventTypeId == NEW_SEND_BUFFER_NOTIFICATION;
                     onNewBufferNotification(bufferNotificationMessage.sessionId(),
                                             bufferNotificationMessage.channelId(),

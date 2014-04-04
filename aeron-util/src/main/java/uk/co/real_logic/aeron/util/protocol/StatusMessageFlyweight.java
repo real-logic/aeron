@@ -56,7 +56,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
      */
     public long sessionId()
     {
-        return uint32Get(offset + SESSION_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return uint32Get(offset() + SESSION_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -66,7 +66,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
      */
     public StatusMessageFlyweight sessionId(final long sessionId)
     {
-        uint32Put(offset + SESSION_ID_FIELD_OFFSET, sessionId, LITTLE_ENDIAN);
+        uint32Put(offset() + SESSION_ID_FIELD_OFFSET, sessionId, LITTLE_ENDIAN);
         return this;
     }
 
@@ -77,7 +77,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
      */
     public long channelId()
     {
-        return uint32Get(offset + CHANNEL_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return uint32Get(offset() + CHANNEL_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -88,7 +88,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
      */
     public StatusMessageFlyweight channelId(final long channelId)
     {
-        uint32Put(offset + CHANNEL_ID_FIELD_OFFSET, channelId, LITTLE_ENDIAN);
+        uint32Put(offset() + CHANNEL_ID_FIELD_OFFSET, channelId, LITTLE_ENDIAN);
         return this;
     }
 
@@ -99,7 +99,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
      */
     public long highestContiguousSequenceNumber()
     {
-        return uint32Get(offset + CONTIGUOUS_SEQUENCE_NUMBER_FIELD_OFFSET, LITTLE_ENDIAN);
+        return uint32Get(offset() + CONTIGUOUS_SEQUENCE_NUMBER_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -110,7 +110,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
      */
     public StatusMessageFlyweight highestContiguousSequenceNumber(final long sequenceNumber)
     {
-        uint32Put(offset + CONTIGUOUS_SEQUENCE_NUMBER_FIELD_OFFSET, sequenceNumber, LITTLE_ENDIAN);
+        uint32Put(offset() + CONTIGUOUS_SEQUENCE_NUMBER_FIELD_OFFSET, sequenceNumber, LITTLE_ENDIAN);
         return this;
     }
 
@@ -121,7 +121,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
      */
     public long termId()
     {
-        return uint32Get(offset + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return uint32Get(offset() + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -132,7 +132,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
      */
     public StatusMessageFlyweight termId(final long termId)
     {
-        uint32Put(offset + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
+        uint32Put(offset() + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
         return this;
     }
 
@@ -143,7 +143,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
      */
     public long receiverWindow()
     {
-        return uint32Get(offset + RECEIVER_WINDOW_FIELD_OFFSET, LITTLE_ENDIAN);
+        return uint32Get(offset() + RECEIVER_WINDOW_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -154,7 +154,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
      */
     public StatusMessageFlyweight receiverWindow(final long receiverWindow)
     {
-        uint32Put(offset + RECEIVER_WINDOW_FIELD_OFFSET, receiverWindow, LITTLE_ENDIAN);
+        uint32Put(offset() + RECEIVER_WINDOW_FIELD_OFFSET, receiverWindow, LITTLE_ENDIAN);
         return this;
     }
 

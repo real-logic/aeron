@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron.util.concurrent.logbuffer;
 import uk.co.real_logic.aeron.util.BitUtil;
 
 import static java.lang.Integer.valueOf;
-import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BaseMessageHeaderFlyweight.BASE_HEADER_LENGTH;
 
 /**

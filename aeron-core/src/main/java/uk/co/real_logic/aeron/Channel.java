@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.admin.ClientAdminThreadCursor;
 import uk.co.real_logic.aeron.admin.TermBufferNotifier;
+import uk.co.real_logic.aeron.util.AtomicArray;
 
 import java.nio.ByteBuffer;
 
@@ -31,18 +32,24 @@ public class Channel implements AutoCloseable
     private final ClientAdminThreadCursor adminThread;
     private final TermBufferNotifier bufferNotifier;
     private final long channelId;
+    private final long sessionId;
+    private final AtomicArray<Channel> channels;
 
     private long currentTermId;
 
     public Channel(final String destination,
                    final ClientAdminThreadCursor adminCursor,
                    final TermBufferNotifier bufferNotifier,
-                   final long channelId)
+                   final long channelId,
+                   final long sessionId,
+                   final AtomicArray<Channel> channels)
     {
         this.destination = destination;
         this.adminThread = adminCursor;
         this.bufferNotifier = bufferNotifier;
         this.channelId = channelId;
+        this.sessionId = sessionId;
+        this.channels = channels;
         currentTermId = UNKNOWN_TERM_ID;
         // TODO: notify the channel when you get a term id from the media driver.
     }
@@ -110,7 +117,18 @@ public class Channel implements AutoCloseable
 
     public void close() throws Exception
     {
+        channels.remove(this);
         adminThread.sendRemoveChannel(destination, channelId);
+    }
+
+    public boolean matches(final String destination, final long sessionId, final long channelId)
+    {
+        return destination.equals(this.destination) && this.sessionId == sessionId && this.channelId == channelId;
+    }
+
+    public TermBufferNotifier bufferNotifier()
+    {
+        return bufferNotifier;
     }
 
 }

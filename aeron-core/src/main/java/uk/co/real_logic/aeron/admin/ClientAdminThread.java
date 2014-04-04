@@ -19,14 +19,16 @@ import uk.co.real_logic.aeron.Channel;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.ClosableThread;
 import uk.co.real_logic.aeron.util.collections.ChannelMap;
-import uk.co.real_logic.aeron.util.command.*;
+import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
+import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import java.nio.ByteBuffer;
 
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.NEW_RECEIVE_BUFFER_NOTIFICATION;
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.NEW_SEND_BUFFER_NOTIFICATION;
+import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 
 
 /**
@@ -88,8 +90,23 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
     {
         commandBuffer.read((eventTypeId, buffer, index, length) ->
         {
-            if (eventTypeId == ControlProtocolEvents.ADD_CHANNEL)
+            if (eventTypeId == ADD_CHANNEL)
             {
+                channelMessage.wrap(buffer, index);
+                final String destination = channelMessage.destination();
+                final long channelId = channelMessage.channelId();
+                final long sessionId = channelMessage.sessionId();
+
+                // Not efficient but only happens once per channel ever
+                // and is during setup not a latency critical path
+                channels.forEach(channel ->
+                {
+                    if (channel.matches(destination, sessionId, channelId))
+                    {
+                        sendNotifiers.put(destination, sessionId, channelId, channel.bufferNotifier());
+                    }
+                });
+
                 sendBuffer.write(eventTypeId, buffer, index, length);
             }
         });

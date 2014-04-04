@@ -49,7 +49,7 @@ public class Source implements AutoCloseable
     public Channel newChannel(final long channelId)
     {
         final TermBufferNotifier bufferNotifier = new TermBufferNotifier();
-        final Channel channel = new Channel(destination.destination(), adminThread, bufferNotifier, channelId);
+        final Channel channel = new Channel(destination.destination(), adminThread, bufferNotifier, channelId, sessionId, channels);
         channels.add(channel);
         adminThread.sendAddChannel(destination.destination(), channelId);
         return channel;

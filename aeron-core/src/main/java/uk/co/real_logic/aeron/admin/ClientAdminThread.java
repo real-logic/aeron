@@ -17,10 +17,7 @@ package uk.co.real_logic.aeron.admin;
 
 import uk.co.real_logic.aeron.util.ClosableThread;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
-import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
-import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.*;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
@@ -89,7 +86,10 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
     {
         commandBuffer.read((eventTypeId, buffer, index, length) ->
         {
-
+            if (eventTypeId == ControlProtocolEvents.ADD_CHANNEL)
+            {
+                sendBuffer.write(eventTypeId, buffer, index, length);
+            }
         });
     }
 

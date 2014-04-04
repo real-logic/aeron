@@ -25,6 +25,8 @@ import java.nio.ByteBuffer;
  */
 public class Channel implements AutoCloseable
 {
+    private static final long UNKNOWN_TERM_ID = -1L;
+
     private final String destination;
     private final ClientAdminThreadCursor adminThread;
     private final TermBufferNotifier bufferNotifier;
@@ -41,9 +43,8 @@ public class Channel implements AutoCloseable
         this.adminThread = adminCursor;
         this.bufferNotifier = bufferNotifier;
         this.channelId = channelId;
-        currentTermId = -1L;
-        requestTerm(0L);
-        rollTerm();
+        currentTermId = UNKNOWN_TERM_ID;
+        // TODO: notify the channel when you get a term id from the media driver.
     }
 
     public long channelId()

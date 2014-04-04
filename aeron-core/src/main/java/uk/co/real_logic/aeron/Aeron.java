@@ -30,12 +30,15 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import static uk.co.real_logic.aeron.util.collections.CollectionUtil.getOrDefault;
+import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_SIZE;
 
 /**
  * Encapsulation of media driver and API for source and receiver construction
  */
 public final class Aeron
 {
+    private static final int ADMIN_BUFFER_SIZE = 512 + TRAILER_SIZE;
+
     // factory methods
 
     /**
@@ -81,7 +84,7 @@ public final class Aeron
         adminBuffers = builder.adminBuffers;
         sendNotifiers = new HashMap<>();
         recvNotifiers = new HashMap<>();
-        adminCommandBuffer = new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocate(256)));
+        adminCommandBuffer = new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocate(ADMIN_BUFFER_SIZE)));
 
         try
         {
@@ -175,6 +178,10 @@ public final class Aeron
         return getOrDefault(notifiers, destination, dest -> new Long2ObjectHashMap<>());
     }
 
+    public ClientAdminThread adminThread()
+    {
+        return adminThread;
+    }
 
     public static class Builder
     {

@@ -18,26 +18,9 @@ package uk.co.real_logic.aeron.util.protocol;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 /**
- * Flyweight for a Nak Packet
+ * Flyweight for a Status Message Packet
  *
- * <p>
- * 0                   1                   2                   3
- * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |  Vers |S|E|     Flags         |             Type (=0x02)      |
- * +-------+-+-+-+-+-+-+-+-+-+-+-+-+-------------------------------+
- * |                         Frame Length                          |
- * +-------------------------------+-------------------------------+
- * |                          Session ID                           |
- * +---------------------------------------------------------------+
- * |                          Channel ID                           |
- * +---------------------------------------------------------------+
- * |                            Term ID                            |
- * +---------------------------------------------------------------+
- * |                 High Contiguous Sequence Number               |
- * +---------------------------------------------------------------+
- * |                        Receiver Window                        |
- * +---------------------------------------------------------------+
+ * @see <a href="https://github.com/real-logic/Aeron/wiki/Protocol-Specification#status-messages">Status Message</a>
  */
 public class StatusMessageFlyweight extends HeaderFlyweight
 {

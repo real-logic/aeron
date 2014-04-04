@@ -26,6 +26,9 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescript
  *
  * Messages are appending to a log using a framing protocol as described in {@link FrameDescriptor}.
  * If a message is larger than what will fit in a single frame will be fragmented up to {@link #maxMessageLength()}.
+ *
+ * A default message header is applied to each message with the fields filled in for fragment flags, sequence number,
+ * and frame length as appropriate.
  */
 public class LogBufferAppender
 {
@@ -44,6 +47,7 @@ public class LogBufferAppender
      * @param stateAtomicBuffer for where the state of writers is stored manage concurrency.
      * @param header flyweight for manipulating the message header.
      * @param defaultHeader to be applied for each frame logged.
+     * @param maxFrameLength maximum frame length supported by the underlying transport.
      */
     public LogBufferAppender(final AtomicBuffer logAtomicBuffer,
                              final AtomicBuffer stateAtomicBuffer,

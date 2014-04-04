@@ -201,15 +201,18 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
                                         final boolean isSender,
                                         final String destination)
     {
-        if (!subscribeTo(sessionId, destination))
-        {
-            return;
-        }
-
         try
         {
+            final ChannelMap<String, TermBufferNotifier> notifiers = getNotifiers(isSender);
+            final TermBufferNotifier notifier = notifiers.get(destination, sessionId, channelId);
+            if (notifier == null)
+            {
+                // The new buffer refers to another client process,
+                // We can safely ignore it
+                return;
+            }
+
             final ByteBuffer buffer = bufferUsage.onTermAdded(destination, sessionId, channelId, termId, isSender);
-            final TermBufferNotifier notifier = getNotifiers(isSender).get(destination, sessionId, channelId);
             notifier.newTermBufferMapped(termId, buffer);
         }
         catch (Exception e)
@@ -219,16 +222,9 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
         }
     }
 
-    private boolean subscribeTo(final long sessionId, final String destination)
-    {
-        // TODO
-        return false;
-    }
-
     private ChannelMap<String, TermBufferNotifier> getNotifiers(final boolean isSender)
     {
         return isSender ? sendNotifiers : recvNotifiers;
     }
 
 }
-;

@@ -63,7 +63,6 @@ public class FileLockBenchmark
         {
             try
             {
-                String name = Thread.currentThread().getName();
                 for (int i = 1; i < RUN_COUNT + 1; i++)
                 {
                     runIteration(i);
@@ -82,7 +81,6 @@ public class FileLockBenchmark
     {
         private final long[] times = new long[RUN_COUNT + 1];
 
-        @Override
         public void run()
         {
             Thread.currentThread().setName("Ping Thread");
@@ -91,7 +89,6 @@ public class FileLockBenchmark
             printTimes(times);
         }
 
-        @Override
         protected void runIteration(final int i) throws InterruptedException
         {
             times[i] = System.nanoTime();
@@ -114,14 +111,12 @@ public class FileLockBenchmark
 
     private static final class Ponger extends Runner
     {
-        @Override
         public void run()
         {
             Thread.currentThread().setName("Pong Thread");
             runLoop();
         }
 
-        @Override
         protected void runIteration(final int i) throws InterruptedException
         {
             while (DATA.getInt(PING_OFFSET) != i)

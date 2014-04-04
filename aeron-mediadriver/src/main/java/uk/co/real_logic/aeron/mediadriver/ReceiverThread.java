@@ -58,7 +58,6 @@ public class ReceiverThread extends ClosableThread
                                                               sessionId, channelId, termId);
     }
 
-    @Override
     public void process()
     {
         try
@@ -74,6 +73,7 @@ public class ReceiverThread extends ClosableThread
                         receiverMessage.wrap(buffer, index);
                         onNewReceiverEvent(receiverMessage.destination(), receiverMessage.channelIds());
                         return;
+
                     case ControlProtocolEvents.REMOVE_RECEIVER:
                         receiverMessage.wrap(buffer, index);
                         onRemoveReceiverEvent(receiverMessage.destination(), receiverMessage.channelIds());

@@ -36,7 +36,6 @@ public class SenderThread extends ClosableThread
         counter = 0;
     }
 
-    @Override
     public void process()
     {
         counter = (counter + 1) % Integer.MAX_VALUE;

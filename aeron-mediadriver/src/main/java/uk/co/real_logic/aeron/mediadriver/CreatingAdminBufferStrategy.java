@@ -18,13 +18,11 @@ public class CreatingAdminBufferStrategy extends AdminBufferStrategy
         this.bufferSize = bufferSize;
     }
 
-    @Override
     public ByteBuffer toMediaDriver() throws IOException
     {
         return mapNewFile(toMediaDriver, MEDIA_DRIVER_FILE, bufferSize);
     }
 
-    @Override
     public ByteBuffer toApi() throws IOException
     {
         return mapNewFile(toApi, API_FILE, bufferSize);

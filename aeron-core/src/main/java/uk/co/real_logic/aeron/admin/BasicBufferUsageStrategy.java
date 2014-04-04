@@ -37,7 +37,6 @@ public class BasicBufferUsageStrategy implements BufferUsageStrategy
         fileConventions = new FileMappingConvention(dataDir);
     }
 
-    @Override
     public ByteBuffer onTermAdded(final String destination,
                                   final long sessionId,
                                   final long channelId,

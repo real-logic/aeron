@@ -24,7 +24,6 @@ public class DefaultSenderFlowControlStrategy implements SenderFlowControlStrate
         rightEdgeOfWindow = 0;
     }
 
-    @Override
     public int onStatusMessage(final long termId, final long highestContiguousSequenceNumber, final long receiverWindow)
     {
         // TODO: review this logic

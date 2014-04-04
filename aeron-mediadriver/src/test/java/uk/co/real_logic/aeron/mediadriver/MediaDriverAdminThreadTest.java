@@ -82,13 +82,12 @@ public class MediaDriverAdminThreadTest
                 .bufferManagementStrategy(new BasicBufferManagementStrategy(adminPath));
 
         SenderThread senderThread = new SenderThread(builder) {
-            @Override
+
             public void addChannel(final SenderChannel channel)
             {
                 addedChannels.add(channel);
             }
 
-            @Override
             public void removeChannel(final SenderChannel channel)
             {
                 removedChannels.add(channel);

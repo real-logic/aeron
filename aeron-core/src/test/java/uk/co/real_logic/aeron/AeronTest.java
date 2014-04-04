@@ -17,14 +17,15 @@ package uk.co.real_logic.aeron;
 
 import org.junit.ClassRule;
 import org.junit.Test;
+import uk.co.real_logic.aeron.admin.ClientAdminThread;
 import uk.co.real_logic.aeron.util.MappingAdminBufferStrategy;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ADD_CHANNEL;
+import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.REMOVE_CHANNEL;
 
 public class AeronTest
 {
@@ -42,32 +43,68 @@ public class AeronTest
     private final ChannelMessageFlyweight message = new ChannelMessageFlyweight();
 
     @Test
-    public void creatingAChannelNotifiesMediaDriver() throws Exception
+    public void creatingChannelsShouldNotifyMediaDriver() throws Exception
     {
-        final Aeron.Builder builder = new Aeron.Builder()
-             .adminBufferStrategy(new MappingAdminBufferStrategy(adminBuffers.adminDir()));
-        final Aeron aeron = Aeron.newSingleMediaDriver(builder);
+        final Aeron aeron = newAeron();
+        newChannel(aeron);
+        aeron.adminThread().process();
 
+        assertChannelMessage(adminBuffers.toMediaDriver(), ADD_CHANNEL);
+    }
+
+    @Test
+    public void removingChannelsShouldNotifyMediaDriver() throws Exception
+    {
+        final RingBuffer buffer = adminBuffers.toMediaDriver();
+
+        final Aeron aeron = newAeron();
+        final Channel channel = newChannel(aeron);
+        final ClientAdminThread adminThread = aeron.adminThread();
+
+        adminThread.process();
+        skip(buffer, 1);
+
+        channel.close();
+        adminThread.process();
+
+        assertChannelMessage(buffer, REMOVE_CHANNEL);
+    }
+
+    private Channel newChannel(final Aeron aeron)
+    {
         final Source.Builder sourceBuilder = new Source.Builder()
             .sessionId(SESSION_ID)
             .destination(new Destination(DESTINATION));
         final Source source = aeron.newSource(sourceBuilder);
+        return source.newChannel(CHANNEL_ID);
+    }
 
-        final Channel channel = source.newChannel(CHANNEL_ID);
+    private Aeron newAeron()
+    {
+        final Aeron.Builder builder = new Aeron.Builder()
+             .adminBufferStrategy(new MappingAdminBufferStrategy(adminBuffers.adminDir()));
+        return Aeron.newSingleMediaDriver(builder);
+    }
 
-        aeron.adminThread().process();
-
-        final RingBuffer mediaDriverBuffer = new ManyToOneRingBuffer(adminBuffers.toMediaDriver());
+    private void assertChannelMessage(final RingBuffer mediaDriverBuffer, final int expectedEventTypeId)
+    {
         int eventsRead = mediaDriverBuffer.read((eventTypeId, buffer, index, length) ->
         {
-            assertThat(eventTypeId, is(ADD_CHANNEL));
+            assertThat(eventTypeId, is(expectedEventTypeId));
             message.wrap(buffer, index);
             assertThat(message.destination(), is(DESTINATION));
             assertThat(message.channelId(), is(CHANNEL_ID));
             assertThat(message.sessionId(), is(SESSION_ID));
         });
-
         assertThat(eventsRead, is(1));
+    }
+
+    private void skip(final RingBuffer mediaDriverBuffer, int count)
+    {
+        int eventsRead = mediaDriverBuffer.read((eventTypeId, buffer, index, length) ->
+        {
+        }, count);
+        assertThat(eventsRead, is(count));
     }
 
 }

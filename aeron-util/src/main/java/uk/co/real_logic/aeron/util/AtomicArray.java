@@ -86,6 +86,9 @@ public class AtomicArray<T>
         @SuppressWarnings("unchecked")
         final T[] array = (T[])arrayRef.get();
 
+        if (array.length == 0)
+            return;
+
         int i = start;
         do
         {

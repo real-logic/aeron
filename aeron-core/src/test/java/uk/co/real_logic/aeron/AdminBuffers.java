@@ -19,6 +19,8 @@ import org.junit.rules.ExternalResource;
 import uk.co.real_logic.aeron.util.AdminBufferStrategy;
 import uk.co.real_logic.aeron.util.CreatingAdminBufferStrategy;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
+import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import java.io.File;
 import java.nio.ByteBuffer;
@@ -51,9 +53,9 @@ public class AdminBuffers extends ExternalResource
         toApi = creator.toApi();
     }
 
-    public AtomicBuffer toMediaDriver()
+    public RingBuffer toMediaDriver()
     {
-        return new AtomicBuffer(toMediaDriver);
+        return new ManyToOneRingBuffer(new AtomicBuffer(toMediaDriver));
     }
 
     public ByteBuffer toApi()

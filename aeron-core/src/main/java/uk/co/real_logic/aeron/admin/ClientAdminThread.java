@@ -90,24 +90,42 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
     {
         commandBuffer.read((eventTypeId, buffer, index, length) ->
         {
-            if (eventTypeId == ADD_CHANNEL)
+            switch (eventTypeId)
             {
-                channelMessage.wrap(buffer, index);
-                final String destination = channelMessage.destination();
-                final long channelId = channelMessage.channelId();
-                final long sessionId = channelMessage.sessionId();
-
-                // Not efficient but only happens once per channel ever
-                // and is during setup not a latency critical path
-                channels.forEach(channel ->
-                {
-                    if (channel.matches(destination, sessionId, channelId))
+                case ADD_CHANNEL:
+                case REMOVE_CHANNEL:
+                    channelMessage.wrap(buffer, index);
+                    final String destination = channelMessage.destination();
+                    final long channelId = channelMessage.channelId();
+                    final long sessionId = channelMessage.sessionId();
+                    if (eventTypeId == ADD_CHANNEL)
                     {
-                        sendNotifiers.put(destination, sessionId, channelId, channel.bufferNotifier());
+                        addNotifier(destination, channelId, sessionId);
                     }
-                });
+                    else
+                    {
+                        removeNotifier(destination, channelId, sessionId);
+                    }
+                    sendBuffer.write(eventTypeId, buffer, index, length);
+                    return;
+            }
+        });
+    }
 
-                sendBuffer.write(eventTypeId, buffer, index, length);
+    private void removeNotifier(final String destination, final long channelId, final long sessionId)
+    {
+
+    }
+
+    private void addNotifier(final String destination, final long channelId, final long sessionId)
+    {
+        // Not efficient but only happens once per channel ever
+        // and is during setup not a latency critical path
+        channels.forEach(channel ->
+        {
+            if (channel.matches(destination, sessionId, channelId))
+            {
+                sendNotifiers.put(destination, sessionId, channelId, channel.bufferNotifier());
             }
         });
     }
@@ -213,3 +231,4 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
     }
 
 }
+;

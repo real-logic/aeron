@@ -58,7 +58,7 @@ public class CompletelyIdentifiedMessageFlyweight extends Flyweight
      */
     public long sessionId()
     {
-        return uint32Get(offset + SESSION_ID_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return uint32Get(offset() + SESSION_ID_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
@@ -68,7 +68,7 @@ public class CompletelyIdentifiedMessageFlyweight extends Flyweight
      */
     public CompletelyIdentifiedMessageFlyweight sessionId(final long sessionId)
     {
-        uint32Put(offset + SESSION_ID_OFFSET, (int)sessionId, ByteOrder.LITTLE_ENDIAN);
+        uint32Put(offset() + SESSION_ID_OFFSET, (int)sessionId, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
@@ -79,7 +79,7 @@ public class CompletelyIdentifiedMessageFlyweight extends Flyweight
      */
     public long channelId()
     {
-        return uint32Get(offset + CHANNEL_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return uint32Get(offset() + CHANNEL_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
@@ -90,7 +90,7 @@ public class CompletelyIdentifiedMessageFlyweight extends Flyweight
      */
     public CompletelyIdentifiedMessageFlyweight channelId(final long channelId)
     {
-        uint32Put(offset + CHANNEL_ID_FIELD_OFFSET, channelId, ByteOrder.LITTLE_ENDIAN);
+        uint32Put(offset() + CHANNEL_ID_FIELD_OFFSET, channelId, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
@@ -101,7 +101,7 @@ public class CompletelyIdentifiedMessageFlyweight extends Flyweight
      */
     public long termId()
     {
-        return uint32Get(offset + TERM_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return uint32Get(offset() + TERM_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
@@ -112,7 +112,7 @@ public class CompletelyIdentifiedMessageFlyweight extends Flyweight
      */
     public CompletelyIdentifiedMessageFlyweight termId(final long termId)
     {
-        uint32Put(offset + TERM_ID_FIELD_OFFSET, termId, ByteOrder.LITTLE_ENDIAN);
+        uint32Put(offset() + TERM_ID_FIELD_OFFSET, termId, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
@@ -123,7 +123,7 @@ public class CompletelyIdentifiedMessageFlyweight extends Flyweight
      */
     public String destination()
     {
-        return stringGet(offset + DESTINATION_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return stringGet(offset() + DESTINATION_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
@@ -134,7 +134,7 @@ public class CompletelyIdentifiedMessageFlyweight extends Flyweight
      */
     public CompletelyIdentifiedMessageFlyweight destination(final String destination)
     {
-        lengthOfDestination = stringPut(offset + DESTINATION_OFFSET,
+        lengthOfDestination = stringPut(offset() + DESTINATION_OFFSET,
                                         destination,
                                         ByteOrder.LITTLE_ENDIAN);
         return this;

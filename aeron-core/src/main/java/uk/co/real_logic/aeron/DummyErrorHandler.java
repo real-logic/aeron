@@ -26,14 +26,11 @@ import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 public class DummyErrorHandler implements ErrorHandler
 {
 
-    @Override
     public void onError(final String destination,
                         final long sessionId,
                         final long channelId,
                         final String message,
                         final HeaderFlyweight cause)
     {
-
     }
-
 }

@@ -130,7 +130,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
         // parse through buffer for each Frame.
         while (offset < len)
         {
-            header.reset(readBuffer, offset);
+            header.wrap(readBuffer, offset);
 
             // drop a version we don't know
             if (header.version() != HeaderFlyweight.CURRENT_VERSION)
@@ -141,15 +141,15 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
             switch (header.headerType())
             {
                 case HDR_TYPE_DATA:
-                    dataHeader.reset(readBuffer, offset);
+                    dataHeader.wrap(readBuffer, offset);
                     frameHandler.onDataFrame(dataHeader, srcAddr);
                     break;
                 case HDR_TYPE_NAK:
-                    nak.reset(readBuffer, offset);
+                    nak.wrap(readBuffer, offset);
                     frameHandler.onNakFrame(nak, srcAddr);
                     break;
                 case HDR_TYPE_SM:
-                    statusMessage.reset(readBuffer, offset);
+                    statusMessage.wrap(readBuffer, offset);
                     frameHandler.onStatusMessageFrame(statusMessage, srcAddr);
                     break;
                 default:

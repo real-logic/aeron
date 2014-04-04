@@ -82,13 +82,12 @@ public class MediaDriverAdminThreadTest
                 .bufferManagementStrategy(new BasicBufferManagementStrategy(adminPath));
 
         SenderThread senderThread = new SenderThread(builder) {
-            @Override
+
             public void addChannel(final SenderChannel channel)
             {
                 addedChannels.add(channel);
             }
 
-            @Override
             public void removeChannel(final SenderChannel channel)
             {
                 removedChannels.add(channel);
@@ -184,7 +183,7 @@ public class MediaDriverAdminThreadTest
         final RingBuffer adminCommands = new ManyToOneRingBuffer(new AtomicBuffer(buffer));
 
         final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
-        channelMessage.reset(writeBuffer, 0);
+        channelMessage.wrap(writeBuffer, 0);
         channelMessage.channelId(channelId);
         channelMessage.sessionId(sessionId);
         channelMessage.destination(DESTINATION + port);

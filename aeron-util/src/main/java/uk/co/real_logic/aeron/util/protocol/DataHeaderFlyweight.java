@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.util.protocol;
 
-import java.nio.ByteOrder;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 /**
  * HeaderFlyweight for Data Header
@@ -65,7 +65,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      */
     public long sessionId()
     {
-        return uint32Get(offset + SESSION_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return uint32Get(offset() + SESSION_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -75,7 +75,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      */
     public DataHeaderFlyweight sessionId(final long sessionId)
     {
-        uint32Put(offset + SESSION_ID_FIELD_OFFSET, sessionId, ByteOrder.LITTLE_ENDIAN);
+        uint32Put(offset() + SESSION_ID_FIELD_OFFSET, sessionId, LITTLE_ENDIAN);
         return this;
     }
 
@@ -86,7 +86,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      */
     public long channelId()
     {
-        return uint32Get(offset + CHANNEL_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return uint32Get(offset() + CHANNEL_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -97,7 +97,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      */
     public DataHeaderFlyweight channelId(final long channelId)
     {
-        uint32Put(offset + CHANNEL_ID_FIELD_OFFSET, channelId, ByteOrder.LITTLE_ENDIAN);
+        uint32Put(offset() + CHANNEL_ID_FIELD_OFFSET, channelId, LITTLE_ENDIAN);
         return this;
     }
 
@@ -108,7 +108,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      */
     public long termId()
     {
-        return uint32Get(offset + TERM_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return uint32Get(offset() + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -119,7 +119,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      */
     public DataHeaderFlyweight termId(final long termId)
     {
-        uint32Put(offset + TERM_ID_FIELD_OFFSET, termId, ByteOrder.LITTLE_ENDIAN);
+        uint32Put(offset() + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
         return this;
     }
 
@@ -130,7 +130,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      */
     public long sequenceNumber()
     {
-        return uint32Get(offset + SEQUENCE_NUMBER_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return uint32Get(offset() + SEQUENCE_NUMBER_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -141,7 +141,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      */
     public DataHeaderFlyweight sequenceNumber(final long sequenceNumber)
     {
-        uint32Put(offset + SEQUENCE_NUMBER_FIELD_OFFSET, sequenceNumber, ByteOrder.LITTLE_ENDIAN);
+        uint32Put(offset() + SEQUENCE_NUMBER_FIELD_OFFSET, sequenceNumber, LITTLE_ENDIAN);
         return this;
     }
 
@@ -152,7 +152,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      */
     public int dataOffset()
     {
-        return offset + DATA_OFFSET;
+        return offset() + DATA_OFFSET;
     }
 
 }

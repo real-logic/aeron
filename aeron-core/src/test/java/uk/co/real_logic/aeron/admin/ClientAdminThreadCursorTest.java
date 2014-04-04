@@ -58,7 +58,7 @@ public class ClientAdminThreadCursorTest
         assertReadsOneMessage((eventTypeId, buffer, index, length) ->
         {
             ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
-            channelMessage.reset(buffer, index);
+            channelMessage.wrap(buffer, index);
 
             assertThat(eventTypeId, is(expectedEventTypeId));
             assertThat(channelMessage.destination(), is(DESTINATION));
@@ -75,7 +75,7 @@ public class ClientAdminThreadCursorTest
         assertReadsOneMessage((eventTypeId, buffer, index, length) ->
         {
             ReceiverMessageFlyweight removeReceiverMessage = new ReceiverMessageFlyweight();
-            removeReceiverMessage.reset(buffer, index);
+            removeReceiverMessage.wrap(buffer, index);
 
             assertThat(eventTypeId, is(REMOVE_RECEIVER));
             assertThat(removeReceiverMessage.destination(), is(DESTINATION));
@@ -91,7 +91,7 @@ public class ClientAdminThreadCursorTest
         assertReadsOneMessage((eventTypeId, buffer, index, length) ->
         {
             CompletelyIdentifiedMessageFlyweight requestTermBuffer = new CompletelyIdentifiedMessageFlyweight();
-            requestTermBuffer.reset(buffer, index);
+            requestTermBuffer.wrap(buffer, index);
 
             assertThat(eventTypeId, is(REQUEST_TERM));
             assertThat(requestTermBuffer.sessionId(), is(1L));

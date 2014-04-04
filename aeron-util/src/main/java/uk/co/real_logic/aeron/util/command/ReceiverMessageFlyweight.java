@@ -51,7 +51,7 @@ public class ReceiverMessageFlyweight extends Flyweight
      */
     public long[] channelIds()
     {
-        return uint32ArrayGet(offset + CHANNEL_IDS_OFFSET, LITTLE_ENDIAN);
+        return uint32ArrayGet(offset() + CHANNEL_IDS_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -61,7 +61,7 @@ public class ReceiverMessageFlyweight extends Flyweight
      */
     public void channelIds(long[] value)
     {
-        lengthOfChannelIds = uint32ArrayPut(offset + CHANNEL_IDS_OFFSET, value, LITTLE_ENDIAN);
+        lengthOfChannelIds = uint32ArrayPut(offset() + CHANNEL_IDS_OFFSET, value, LITTLE_ENDIAN);
     }
 
     /**
@@ -72,11 +72,11 @@ public class ReceiverMessageFlyweight extends Flyweight
     public String destination()
     {
         // destination comes after channels
-        final int destinationOffset = CHANNEL_IDS_OFFSET +
-                                      SIZE_OF_INT +
-                                      atomicBuffer.getInt(offset + CHANNEL_IDS_OFFSET, LITTLE_ENDIAN) * SIZE_OF_LONG;
+        final int destinationOffset =
+            CHANNEL_IDS_OFFSET + SIZE_OF_INT +
+            atomicBuffer().getInt(offset() + CHANNEL_IDS_OFFSET, LITTLE_ENDIAN) * SIZE_OF_LONG;
 
-        return stringGet(offset + destinationOffset, LITTLE_ENDIAN);
+        return stringGet(offset() + destinationOffset, LITTLE_ENDIAN);
     }
 
     /**
@@ -89,9 +89,7 @@ public class ReceiverMessageFlyweight extends Flyweight
      */
     public ReceiverMessageFlyweight destination(final String destination)
     {
-        lengthOfDestination = stringPut(offset + lengthOfChannelIds,
-                                        destination,
-                                        LITTLE_ENDIAN);
+        lengthOfDestination = stringPut(offset() + lengthOfChannelIds, destination, LITTLE_ENDIAN);
         return this;
     }
 
@@ -99,7 +97,4 @@ public class ReceiverMessageFlyweight extends Flyweight
     {
         return lengthOfChannelIds + lengthOfDestination;
     }
-
-
-
 }

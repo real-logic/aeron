@@ -107,7 +107,6 @@ public class Channel implements AutoCloseable
         startTerm();
     }
 
-    @Override
     public void close() throws Exception
     {
         adminThread.sendRemoveChannel(destination, channelId);

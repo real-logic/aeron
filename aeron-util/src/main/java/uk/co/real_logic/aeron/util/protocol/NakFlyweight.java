@@ -24,10 +24,10 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  * 0                   1                   2                   3
  * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |  Vers |S|E|     Flags         |             Type (=0x01)      |
+ * |  Vers       |B|E| Flags       |             Type (=0x01)      |
  * +-------+-+-+-+-+-+-+-+-+-+-+-+-+-------------------------------+
  * |                         Frame Length                          |
- * +-------------------------------+-------------------------------+
+ * +---------------------------------------------------------------+
  * |                        Sequence Number                        |
  * +---------------------------------------------------------------+
  * |                          Session ID                           |
@@ -53,7 +53,7 @@ public class NakFlyweight extends HeaderFlyweight
      */
     public long sessionId()
     {
-        return uint32Get(offset + SESSION_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return uint32Get(offset() + SESSION_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -63,7 +63,7 @@ public class NakFlyweight extends HeaderFlyweight
      */
     public NakFlyweight sessionId(final long sessionId)
     {
-        uint32Put(offset + SESSION_ID_FIELD_OFFSET, sessionId, LITTLE_ENDIAN);
+        uint32Put(offset() + SESSION_ID_FIELD_OFFSET, sessionId, LITTLE_ENDIAN);
         return this;
     }
 
@@ -74,7 +74,7 @@ public class NakFlyweight extends HeaderFlyweight
      */
     public long channelId()
     {
-        return uint32Get(offset + CHANNEL_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return uint32Get(offset() + CHANNEL_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -85,7 +85,7 @@ public class NakFlyweight extends HeaderFlyweight
      */
     public NakFlyweight channelId(final long channelId)
     {
-        uint32Put(offset + CHANNEL_ID_FIELD_OFFSET, channelId, LITTLE_ENDIAN);
+        uint32Put(offset() + CHANNEL_ID_FIELD_OFFSET, channelId, LITTLE_ENDIAN);
         return this;
     }
 
@@ -96,7 +96,7 @@ public class NakFlyweight extends HeaderFlyweight
      */
     public long sequenceNumber()
     {
-        return uint32Get(offset + SEQUENCE_NUMBER_FIELD_OFFSET, LITTLE_ENDIAN);
+        return uint32Get(offset() + SEQUENCE_NUMBER_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -107,7 +107,7 @@ public class NakFlyweight extends HeaderFlyweight
      */
     public NakFlyweight sequenceNumber(final long sequenceNumber)
     {
-        uint32Put(offset + SEQUENCE_NUMBER_FIELD_OFFSET, sequenceNumber, LITTLE_ENDIAN);
+        uint32Put(offset() + SEQUENCE_NUMBER_FIELD_OFFSET, sequenceNumber, LITTLE_ENDIAN);
         return this;
     }
 
@@ -118,7 +118,7 @@ public class NakFlyweight extends HeaderFlyweight
      */
     public long termId()
     {
-        return uint32Get(offset + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return uint32Get(offset() + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -129,8 +129,7 @@ public class NakFlyweight extends HeaderFlyweight
      */
     public NakFlyweight termId(final long termId)
     {
-        uint32Put(offset + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
+        uint32Put(offset() + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
         return this;
     }
-
 }

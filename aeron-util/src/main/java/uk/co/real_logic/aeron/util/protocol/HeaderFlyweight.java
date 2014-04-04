@@ -17,26 +17,26 @@ package uk.co.real_logic.aeron.util.protocol;
 
 import uk.co.real_logic.aeron.util.Flyweight;
 
-import java.nio.ByteOrder;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 /**
  * Flyweight for general Aeron header
  *
  * Fill Usage: (Fluent)
  *
- * flywt.reset(...).version(0);
+ * flywt.wrap(...).version(0);
  *
  * Parse Usage:
  *
- * flwt.reset(...)
+ * flwt.wrap(...)
  * val = flwt.version();
  *
  * 0                   1                   2                   3
  * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |  Version    |   Flags       |               Type              |
+ * |  Version    |     Flags     |               Type              |
  * +-------------+---------------+---------------------------------+
- * |                         Frame Length                          |
+ * |                        Frame Length                           |
  * +---------------------------------------------------------------+
  * |                       Depends on Type                        ...
  *
@@ -69,7 +69,7 @@ public class HeaderFlyweight extends Flyweight
      */
     public short version()
     {
-        return uint8Get(offset + VERSION_FIELD_OFFSET);
+        return uint8Get(offset() + VERSION_FIELD_OFFSET);
     }
 
     /**
@@ -80,7 +80,7 @@ public class HeaderFlyweight extends Flyweight
      */
     public HeaderFlyweight version(final short ver)
     {
-        uint8Put(offset + VERSION_FIELD_OFFSET, ver);
+        uint8Put(offset() + VERSION_FIELD_OFFSET, ver);
         return this;
     }
 
@@ -91,7 +91,7 @@ public class HeaderFlyweight extends Flyweight
      */
     public short flags()
     {
-        return uint8Get(offset + FLAGS_FIELD_OFFSET);
+        return uint8Get(offset() + FLAGS_FIELD_OFFSET);
     }
 
     /**
@@ -102,7 +102,7 @@ public class HeaderFlyweight extends Flyweight
      */
     public HeaderFlyweight flags(final short flags)
     {
-        uint8Put(offset + FLAGS_FIELD_OFFSET, flags);
+        uint8Put(offset() + FLAGS_FIELD_OFFSET, flags);
         return this;
     }
 
@@ -113,7 +113,7 @@ public class HeaderFlyweight extends Flyweight
      */
     public int headerType()
     {
-        return uint16Get(offset + TYPE_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return uint16Get(offset() + TYPE_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -124,7 +124,7 @@ public class HeaderFlyweight extends Flyweight
      */
     public HeaderFlyweight headerType(final int type)
     {
-        uint16Put(offset + TYPE_FIELD_OFFSET, (short)type, ByteOrder.LITTLE_ENDIAN);
+        uint16Put(offset() + TYPE_FIELD_OFFSET, (short)type, LITTLE_ENDIAN);
         return this;
     }
 
@@ -135,7 +135,7 @@ public class HeaderFlyweight extends Flyweight
      */
     public int frameLength()
     {
-        return (int)uint32Get(offset + FRAME_LENGTH_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return (int)uint32Get(offset() + FRAME_LENGTH_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -146,8 +146,7 @@ public class HeaderFlyweight extends Flyweight
      */
     public HeaderFlyweight frameLength(final int length)
     {
-        uint32Put(offset + FRAME_LENGTH_FIELD_OFFSET, (long)length, ByteOrder.LITTLE_ENDIAN);
+        uint32Put(offset() + FRAME_LENGTH_FIELD_OFFSET, (long)length, LITTLE_ENDIAN);
         return this;
     }
-
 }

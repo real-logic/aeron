@@ -51,7 +51,6 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
         return transport.sendTo(buffer, addr);
     }
 
-    @Override
     public void close()
     {
         transport.close();
@@ -107,7 +106,6 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
         return sessionMap.size();
     }
 
-    @Override
     public void onStatusMessageFrame(final StatusMessageFlyweight statusMessage, final InetSocketAddress srcAddr)
     {
         final SenderChannel channel = findChannel(statusMessage.sessionId(), statusMessage.channelId());
@@ -116,7 +114,6 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
                                 statusMessage.receiverWindow());
     }
 
-    @Override
     public void onNakFrame(final NakFlyweight nak, final InetSocketAddress srcAddr)
     {
         final SenderChannel channel = findChannel(nak.sessionId(), nak.channelId());

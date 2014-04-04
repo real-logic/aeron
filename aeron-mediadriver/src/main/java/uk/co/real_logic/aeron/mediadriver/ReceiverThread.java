@@ -58,7 +58,6 @@ public class ReceiverThread extends ClosableThread
                                                               sessionId, channelId, termId);
     }
 
-    @Override
     public void process()
     {
         try
@@ -71,11 +70,12 @@ public class ReceiverThread extends ClosableThread
                 switch (eventTypeId)
                 {
                     case ControlProtocolEvents.ADD_RECEIVER:
-                        receiverMessage.reset(buffer, index);
+                        receiverMessage.wrap(buffer, index);
                         onNewReceiverEvent(receiverMessage.destination(), receiverMessage.channelIds());
                         return;
+
                     case ControlProtocolEvents.REMOVE_RECEIVER:
-                        receiverMessage.reset(buffer, index);
+                        receiverMessage.wrap(buffer, index);
                         onRemoveReceiverEvent(receiverMessage.destination(), receiverMessage.channelIds());
                         return;
                 }

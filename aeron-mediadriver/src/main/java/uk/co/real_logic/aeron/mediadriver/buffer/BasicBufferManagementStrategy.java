@@ -114,7 +114,6 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
         }
     }
 
-    @Override
     public ByteBuffer addSenderTerm(final UdpDestination destination,
                                     final long sessionId,
                                     final long channelId,
@@ -138,7 +137,6 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
         MappedByteBuffer mapTerm() throws Exception;
     }
 
-    @Override
     public void removeSenderTerm(final UdpDestination destination,
                                  final long sessionId,
                                  final long channelId,
@@ -147,13 +145,11 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
 
     }
 
-    @Override
     public void removeSenderChannel(final UdpDestination destination, final long sessionId, final long channelId)
     {
         srcTermMap.remove(destination, sessionId, channelId);
     }
 
-    @Override
     public ByteBuffer addReceiverTerm(final UdpDestination destination,
                                       final long sessionId,
                                       final long channelId,
@@ -162,7 +158,6 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
         return null;
     }
 
-    @Override
     public ByteBuffer lookupReceiverTerm(final UdpDestination destination,
                                          final long sessionId,
                                          final long channelId,
@@ -172,25 +167,21 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
     }
 
     // TODO: remove this method after cleaning up onRemoveTerm
-    @Override
     public int countChannels(final long sessionId)
     {
         return 1;
     }
 
-    @Override
     public int countSessions(final UdpDestination destination)
     {
         return rcvTermMap.sessionCount();
     }
 
-    @Override
     public int countChannels(final UdpDestination destination, final long sessionId)
     {
         return rcvTermMap.channelCount(sessionId);
     }
 
-    @Override
     public int countTerms(final UdpDestination destination, final long sessionId, final long channelId)
     {
         return rcvTermMap.termCount(sessionId, channelId);

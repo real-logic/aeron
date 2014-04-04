@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron.util;
 
 public abstract class ClosableThread implements Runnable, AutoCloseable
 {
-
     private volatile boolean running;
 
     public ClosableThread()
@@ -25,7 +24,6 @@ public abstract class ClosableThread implements Runnable, AutoCloseable
         running = true;
     }
 
-    @Override
     public void run()
     {
         while (running)
@@ -34,7 +32,6 @@ public abstract class ClosableThread implements Runnable, AutoCloseable
         }
     }
 
-    @Override
     public void close() throws Exception
     {
         running = false;
@@ -46,5 +43,4 @@ public abstract class ClosableThread implements Runnable, AutoCloseable
     }
 
     public abstract void process();
-
 }

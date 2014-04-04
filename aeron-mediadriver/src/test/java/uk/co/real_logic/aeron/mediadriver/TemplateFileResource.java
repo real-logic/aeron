@@ -29,7 +29,6 @@ public class TemplateFileResource extends ExternalResource
     private FileChannel templateFile;
     private File directory;
 
-    @Override
     protected void before() throws Throwable
     {
         directory = new File(System.getProperty("java.io.tmpdir"), "mapped-buffers");

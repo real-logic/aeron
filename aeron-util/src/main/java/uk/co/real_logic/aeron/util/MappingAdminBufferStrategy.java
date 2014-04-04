@@ -13,16 +13,13 @@ public class MappingAdminBufferStrategy extends AdminBufferStrategy
         super(adminDir);
     }
 
-    @Override
     public ByteBuffer toMediaDriver() throws IOException
     {
         return mapExistingFile(toMediaDriver, MEDIA_DRIVER_FILE);
     }
 
-    @Override
     public ByteBuffer toApi() throws IOException
     {
         return mapExistingFile(toApi, API_FILE);
     }
-
 }

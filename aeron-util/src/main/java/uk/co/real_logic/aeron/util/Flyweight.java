@@ -30,29 +30,39 @@ import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_LONG;
  */
 public class Flyweight
 {
-    protected AtomicBuffer atomicBuffer;
-    protected int offset;
+    private AtomicBuffer atomicBuffer;
+    private int offset;
 
     public Flyweight()
     {
     }
 
-    public Flyweight reset(final ByteBuffer buffer)
+    public Flyweight wrap(final ByteBuffer buffer)
     {
-        return reset(buffer, 0);
+        return wrap(buffer, 0);
     }
 
-    public Flyweight reset(final ByteBuffer buffer, final int offset)
+    public Flyweight wrap(final ByteBuffer buffer, final int offset)
     {
-        return reset(new AtomicBuffer(buffer), offset);
+        return wrap(new AtomicBuffer(buffer), offset);
     }
 
-    public Flyweight reset(final AtomicBuffer buffer, final int offset)
+    public Flyweight wrap(final AtomicBuffer buffer, final int offset)
     {
         this.atomicBuffer = buffer;
         this.offset = offset;
 
         return this;
+    }
+
+    public AtomicBuffer atomicBuffer()
+    {
+        return atomicBuffer;
+    }
+
+    public int offset()
+    {
+        return offset;
     }
 
     protected void copyFlyweight(final Flyweight srcFlyweight, final int index, final int length)
@@ -75,21 +85,17 @@ public class Flyweight
         return atomicBuffer.getShort(offset, byteOrder) & 0xFFFF;
     }
 
-    protected void uint16Put(final int offset,
-                             final int value,
-                             final ByteOrder byteOrder)
+    protected void uint16Put(final int offset, final int value, final ByteOrder byteOrder)
     {
         atomicBuffer.putShort(offset, (short)value, byteOrder);
     }
 
     protected long uint32Get(final int offset, final ByteOrder byteOrder)
     {
-        return atomicBuffer.getInt(offset, byteOrder) & 0xFFFFFFFFL;
+        return atomicBuffer.getInt(offset, byteOrder) & 0xFFFF_FFFFL;
     }
 
-    protected void uint32Put(final int offset,
-                             final long value,
-                             final ByteOrder byteOrder)
+    protected void uint32Put(final int offset, final long value, final ByteOrder byteOrder)
     {
         atomicBuffer.putInt(offset, (int)value, byteOrder);
     }
@@ -109,9 +115,7 @@ public class Flyweight
         return data;
     }
 
-    protected int uint32ArrayPut(final int offset,
-                                 final long[] value,
-                                 final ByteOrder byteOrder)
+    protected int uint32ArrayPut(final int offset, final long[] value, final ByteOrder byteOrder)
     {
         final int length = value.length;
         atomicBuffer.putInt(offset, length, byteOrder);

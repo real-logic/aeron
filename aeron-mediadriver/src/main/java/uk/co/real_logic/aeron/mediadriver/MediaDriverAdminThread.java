@@ -85,7 +85,6 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         // TODO: add event to command buffer
     }
 
-    @Override
     public void process()
     {
         try
@@ -105,13 +104,13 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             switch (eventTypeId)
             {
                 case ControlProtocolEvents.ADD_CHANNEL:
-                    channelMessage.reset(buffer, index);
+                    channelMessage.wrap(buffer, index);
                     onAddChannel(channelMessage.destination(),
                                  channelMessage.sessionId(),
                                  channelMessage.channelId());
                     return;
                 case ControlProtocolEvents.REMOVE_CHANNEL:
-                    channelMessage.reset(buffer, index);
+                    channelMessage.wrap(buffer, index);
                     onRemoveChannel(channelMessage.destination(),
                                     channelMessage.sessionId(),
                                     channelMessage.channelId());
@@ -121,7 +120,6 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         // TODO: read from commandBuffer and dispatch to onNakEvent, etc.
     }
 
-    @Override
     public void close()
     {
         stop();
@@ -143,19 +141,16 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         return nioSelector;
     }
 
-    @Override
     public void sendErrorResponse(final int code, final byte[] message)
     {
         // TODO: construct error response for control buffer and write it in
     }
 
-    @Override
     public void sendError(final int code, final byte[] message)
     {
         // TODO: construct error notification for control buffer and write it in
     }
 
-    @Override
     public void sendNewBufferNotification(final long sessionId,
                                           final long channelId,
                                           final long termId,
@@ -165,7 +160,6 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
 
     }
 
-    @Override
     public void onAddChannel(final String destination, final long sessionId, final long channelId)
     {
         // TODO: to accommodate error handling, probably need to pass in Flyweight itself...
@@ -223,7 +217,6 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         }
     }
 
-    @Override
     public void onRemoveChannel(final String destination, final long sessionId, final long channelId)
     {
         // TODO: to accommodate error handling, probably need to pass in Flyweight itself...
@@ -262,7 +255,6 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         }
     }
 
-    @Override
     public void onRemoveTerm(final String destination, final long sessionId, final long channelId, final long termId)
     {
         try
@@ -303,7 +295,6 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         }
     }
 
-    @Override
     public void onAddReceiver(final String destination, final long[] channelIdList)
     {
         // instruct receiver thread of new framehandler and new channelIdlist for such
@@ -313,14 +304,12 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         // to create buffers as needed
     }
 
-    @Override
     public void onRemoveReceiver(final String destination, final long[] channelIdList)
     {
         // instruct receiver thread to get rid of channels and possibly destination
         receiverThreadCursor.addRemoveReceiverEvent(destination, channelIdList);
     }
 
-    @Override
     public void onRequestTerm(final long sessionId, final long channelId, final long termId)
     {
 

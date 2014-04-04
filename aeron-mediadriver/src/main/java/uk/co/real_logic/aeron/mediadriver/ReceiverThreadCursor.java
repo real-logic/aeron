@@ -44,10 +44,10 @@ public class ReceiverThreadCursor
         writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
 
         receiverMessage = new ReceiverMessageFlyweight();
-        receiverMessage.reset(writeBuffer, 0);
+        receiverMessage.wrap(writeBuffer, 0);
 
         addTermBufferMessage = new CompletelyIdentifiedMessageFlyweight();
-        addTermBufferMessage.reset(writeBuffer, 0);
+        addTermBufferMessage.wrap(writeBuffer, 0);
     }
 
     public void addNewReceiverEvent(final String destination, final long[] channelIdList)

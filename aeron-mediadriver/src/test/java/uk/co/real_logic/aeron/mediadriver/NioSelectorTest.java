@@ -86,7 +86,7 @@ public class NioSelectorTest
 
         final UdpTransport src = new UdpTransport(nullHandler, srcLocalAddr, nioSelector);
 
-        encodeDataHeader.reset(atomicBuffer, 0);
+        encodeDataHeader.wrap(atomicBuffer, 0);
         encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
                         .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
                         .headerType(HeaderFlyweight.HDR_TYPE_DATA)
@@ -134,7 +134,7 @@ public class NioSelectorTest
 
         final UdpTransport src = new UdpTransport(nullHandler, srcLocalAddr, nioSelector);
 
-        encodeDataHeader.reset(atomicBuffer, 0);
+        encodeDataHeader.wrap(atomicBuffer, 0);
         encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
                         .flags((short) 0)
                         .headerType(HeaderFlyweight.HDR_TYPE_SM)
@@ -185,7 +185,7 @@ public class NioSelectorTest
 
         final UdpTransport src = new UdpTransport(nullHandler, srcLocalAddr, nioSelector);
 
-        encodeDataHeader.reset(atomicBuffer, 0);
+        encodeDataHeader.wrap(atomicBuffer, 0);
         encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
                         .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
                         .headerType(HeaderFlyweight.HDR_TYPE_DATA)
@@ -193,7 +193,7 @@ public class NioSelectorTest
         encodeDataHeader.sessionId(SESSION_ID)
                         .channelId(CHANNEL_ID)
                         .termId(TERM_ID);
-        encodeDataHeader.reset(atomicBuffer, 24);
+        encodeDataHeader.wrap(atomicBuffer, 24);
         encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
                         .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
                         .headerType(HeaderFlyweight.HDR_TYPE_DATA)
@@ -242,7 +242,7 @@ public class NioSelectorTest
 
         final UdpTransport rcv = new UdpTransport(nullHandler, rcvLocalAddr, nioSelector);
 
-        encodeDataHeader.reset(atomicBuffer, 0);
+        encodeDataHeader.wrap(atomicBuffer, 0);
         encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
                         .flags((short) 0)
                         .headerType(HeaderFlyweight.HDR_TYPE_SM)

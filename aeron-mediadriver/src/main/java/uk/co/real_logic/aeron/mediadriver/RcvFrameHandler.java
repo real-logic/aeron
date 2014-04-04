@@ -19,7 +19,6 @@ import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
@@ -36,11 +35,7 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
                            final NioSelector nioSelector)
         throws Exception
     {
-        final InetSocketAddress endpoint = destination.remoteData();
-        final InetAddress mcastInterface = destination.localData().getAddress();
-        final int localPort = destination.localData().getPort();
-
-        this.transport = new UdpTransport(this, endpoint, mcastInterface, localPort, nioSelector);
+        this.transport = new UdpTransport(this, destination, nioSelector);
         this.destination = destination;
         this.channelInterestMap = new Long2ObjectHashMap<>();
     }

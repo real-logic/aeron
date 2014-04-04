@@ -17,9 +17,7 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.BitUtil;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.URI;
+import java.net.*;
 
 /**
  * Encapsulation of UDP destinations
@@ -160,6 +158,16 @@ public class UdpDestination
         return String.format("udp://%1$s:$2$d@%3$s:%4$d",
                 localData.getAddress().getHostAddress(), Integer.valueOf(localData.getPort()),
                 remoteData.getAddress().getHostAddress(), Integer.valueOf(remoteData.getPort()));
+    }
+
+    public boolean isMulticast()
+    {
+        return remoteData.getAddress().isMulticastAddress();
+    }
+
+    public NetworkInterface localDataInterface() throws SocketException
+    {
+        return NetworkInterface.getByInetAddress(localData.getAddress());
     }
 
     public static class Builder

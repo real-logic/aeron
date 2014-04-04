@@ -23,7 +23,6 @@ import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
@@ -65,27 +64,23 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
     }
 
     public UdpTransport(final RcvFrameHandler frameHandler,
-                        final InetSocketAddress local,
-                        final InetAddress mcastInterfaceAddr,
-                        final int localPort,
+                        final UdpDestination destination,
                         final NioSelector nioSelector) throws Exception
     {
         this.readBuffer = new AtomicBuffer(this.readByteBuffer);
         this.frameHandler = frameHandler;
         this.nioSelector = nioSelector;
 
-        if (local.getAddress().isMulticastAddress())
+        if (destination.isMulticast())
         {
-            final NetworkInterface mcastInterface = NetworkInterface.getByInetAddress(mcastInterfaceAddr);
-
+            final InetAddress endPoint = destination.remoteData().getAddress();
             channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
-            channel.bind(new InetSocketAddress(mcastInterfaceAddr, localPort));
-
-            channel.join(local.getAddress(), mcastInterface);
+            channel.bind(destination.localData());
+            channel.join(endPoint, destination.localDataInterface());
         }
         else
         {
-            channel.bind(local);
+            channel.bind(destination.localData());
         }
 
         channel.configureBlocking(false);

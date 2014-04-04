@@ -77,13 +77,13 @@ public class MediaDriver
     public static final int SELECT_TIMEOUT_DEFAULT = 20;
 
     public static final int READ_BYTE_BUFFER_SZ = Integer.getInteger(READ_BYTE_BUFFER_SZ_PROPERTY_NAME,
-            READ_BYTE_BUFFER_SZ_DEFAULT);
+                                                                     READ_BYTE_BUFFER_SZ_DEFAULT).intValue();
     public static final int COMMAND_BUFFER_SZ = Integer.getInteger(COMMAND_BUFFER_SZ_PROPERTY_NAME,
-            COMMAND_BUFFER_SZ_DEFAULT);
+                                                                   COMMAND_BUFFER_SZ_DEFAULT).intValue();
     public static final int ADMIN_BUFFER_SZ = Integer.getInteger(ADMIN_BUFFER_SZ_PROPERTY_NAME,
-            ADMIN_BUFFER_SZ_DEFAULT);
+                                                                 ADMIN_BUFFER_SZ_DEFAULT).intValue();
     public static final int SELECT_TIMEOUT = Integer.getInteger(SELECT_TIMEOUT_PROPERTY_NAME,
-            SELECT_TIMEOUT_DEFAULT);
+                                                                SELECT_TIMEOUT_DEFAULT).intValue();
 
     public static void main(final String[] args)
     {

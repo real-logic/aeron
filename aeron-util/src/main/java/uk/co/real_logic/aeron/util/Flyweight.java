@@ -33,10 +33,6 @@ public class Flyweight
     private AtomicBuffer atomicBuffer;
     private int offset;
 
-    public Flyweight()
-    {
-    }
-
     public Flyweight wrap(final ByteBuffer buffer)
     {
         return wrap(buffer, 0);
@@ -68,6 +64,18 @@ public class Flyweight
     protected void copyFlyweight(final Flyweight srcFlyweight, final int index, final int length)
     {
         atomicBuffer.putBytes(index, srcFlyweight.atomicBuffer, srcFlyweight.offset, length);
+    }
+
+    protected boolean uint8GetChoice(final int offset, final int bitIndex)
+    {
+        return 0 != (atomicBuffer.getByte(offset) & (1 << bitIndex));
+    }
+
+    protected void uint8PutChoice(final int offset, final int bitIndex, final boolean switchOn)
+    {
+        byte bits = atomicBuffer.getByte(offset);
+        bits = (byte)((switchOn ? bits | (1 << bitIndex) : bits & ~(1 << bitIndex)));
+        atomicBuffer.putByte(offset, bits);
     }
 
     protected short uint8Get(final int offset)

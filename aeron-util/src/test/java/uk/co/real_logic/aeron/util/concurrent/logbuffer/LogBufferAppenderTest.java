@@ -24,19 +24,22 @@ import static java.lang.Integer.valueOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
+import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.BitUtil.align;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BaseMessageHeaderFlyweight.BASE_HEADER_LENGTH;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.TAIL_COUNTER_OFFSET;
 
 public class LogBufferAppenderTest
 {
     private static final int LOG_BUFFER_SIZE = 1024 * 16;
-    private static final int STATE_BUFFER_SIZE = 1024 * 4;
-    private static final int HEADER_RESERVE = 20;
+    private static final int STATE_BUFFER_SIZE = 1024;
     private static final int MAX_FRAME_LENGTH = 1024;
+    private static final byte[] DEFAULT_HEADER = new byte[BASE_HEADER_LENGTH + SIZE_OF_INT];
 
     private final AtomicBuffer logBuffer = mock(AtomicBuffer.class);
     private final AtomicBuffer stateBuffer = mock(AtomicBuffer.class);
+    private final BaseMessageHeaderFlyweight header = mock(BaseMessageHeaderFlyweight.class);
 
     private LogBufferAppender appender;
 
@@ -46,19 +49,19 @@ public class LogBufferAppenderTest
         when(valueOf(logBuffer.capacity())).thenReturn(valueOf(LOG_BUFFER_SIZE));
         when(valueOf(stateBuffer.capacity())).thenReturn(valueOf(STATE_BUFFER_SIZE));
 
-        appender = new LogBufferAppender(logBuffer, stateBuffer, HEADER_RESERVE, MAX_FRAME_LENGTH);
+        when(header.wrap(eq(logBuffer), anyInt())).thenReturn(header);
+        when(header.beginFragment(anyBoolean())).thenReturn(header);
+        when(header.endFragment(anyBoolean())).thenReturn(header);
+        when(header.sequenceNumber(anyInt())).thenReturn(header);
+        when(header.putLengthOrdered(anyInt())).thenReturn(header);
+
+        appender = new LogBufferAppender(logBuffer, stateBuffer, header, DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }
 
     @Test
     public void shouldReportCapacity()
     {
         assertThat(valueOf(appender.capacity()), is(valueOf(LOG_BUFFER_SIZE)));
-    }
-
-    @Test
-    public void shouldReportHeaderReserveLength()
-    {
-        assertThat(valueOf(appender.headerReserveLength()), is(valueOf(HEADER_RESERVE)));
     }
 
     @Test
@@ -72,7 +75,7 @@ public class LogBufferAppenderTest
     {
         when(valueOf(logBuffer.capacity())).thenReturn(valueOf(LogBufferDescriptor.LOG_MIN_SIZE - 1));
 
-        appender = new LogBufferAppender(logBuffer, stateBuffer, HEADER_RESERVE, MAX_FRAME_LENGTH);
+        appender = new LogBufferAppender(logBuffer, stateBuffer, header, DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }
 
     @Test(expected = IllegalStateException.class)
@@ -81,7 +84,7 @@ public class LogBufferAppenderTest
         final int logBufferCapacity = LogBufferDescriptor.LOG_MIN_SIZE + FRAME_ALIGNMENT + 1;
         when(valueOf(logBuffer.capacity())).thenReturn(valueOf(logBufferCapacity));
 
-        appender = new LogBufferAppender(logBuffer, stateBuffer, HEADER_RESERVE, MAX_FRAME_LENGTH);
+        appender = new LogBufferAppender(logBuffer, stateBuffer, header, DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }
 
     @Test(expected = IllegalStateException.class)
@@ -89,19 +92,26 @@ public class LogBufferAppenderTest
     {
         when(valueOf(stateBuffer.capacity())).thenReturn(valueOf(LogBufferDescriptor.STATE_SIZE - 1));
 
-        appender = new LogBufferAppender(logBuffer, stateBuffer, HEADER_RESERVE, MAX_FRAME_LENGTH);
+        appender = new LogBufferAppender(logBuffer, stateBuffer, header, DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }
 
     @Test(expected = IllegalStateException.class)
-    public void shouldThrowExceptionOnHeaderReserveNotOnWordSizeBoundary()
+    public void shouldThrowExceptionOnDefaultHeaderLengthLessThanBaseHeaderLength()
     {
-        appender = new LogBufferAppender(logBuffer, stateBuffer, 3, MAX_FRAME_LENGTH);
+        int length = BaseMessageHeaderFlyweight.BASE_HEADER_LENGTH - 1;
+        appender = new LogBufferAppender(logBuffer, stateBuffer, header, new byte[length], MAX_FRAME_LENGTH);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void shouldThrowExceptionOnDefaultHeaderLengthNotOnWordSizeBoundary()
+    {
+        appender = new LogBufferAppender(logBuffer, stateBuffer, header, new byte[31], MAX_FRAME_LENGTH);
     }
 
     @Test(expected = IllegalStateException.class)
     public void shouldThrowExceptionOnMaxFrameSizeNotOnWordSizeBoundary()
     {
-        appender = new LogBufferAppender(logBuffer, stateBuffer, HEADER_RESERVE, 1001);
+        appender = new LogBufferAppender(logBuffer, stateBuffer, header, DEFAULT_HEADER, 1001);
     }
 
     @Test
@@ -142,12 +152,14 @@ public class LogBufferAppenderTest
 
         assertTrue(appender.append(buffer, 0, msgLen));
 
-        final InOrder inOrder = inOrder(logBuffer, stateBuffer);
+        final InOrder inOrder = inOrder(logBuffer, stateBuffer, header);
         inOrder.verify(stateBuffer, times(1)).getAndAddInt(TAIL_COUNTER_OFFSET, FRAME_ALIGNMENT);
-        inOrder.verify(logBuffer, times(1)).putBytes(messageOffset(0, HEADER_RESERVE), buffer, 0, msgLen);
-        inOrder.verify(logBuffer, times(1)).putByte(fragmentFlagsOffset(0), UNFRAGMENTED);
-        inOrder.verify(logBuffer, times(1)).putInt(seqNumberOffset(0), 0);
-        inOrder.verify(logBuffer, times(1)).putIntOrdered(lengthOffset(0), FRAME_ALIGNMENT);
+        inOrder.verify(logBuffer, times(1)).putBytes(0, DEFAULT_HEADER, 0, DEFAULT_HEADER.length);
+        inOrder.verify(logBuffer, times(1)).putBytes(DEFAULT_HEADER.length, buffer, 0, msgLen);
+        inOrder.verify(header, times(1)).beginFragment(true);
+        inOrder.verify(header, times(1)).endFragment(true);
+        inOrder.verify(header, times(1)).sequenceNumber(0);
+        inOrder.verify(header, times(1)).putLengthOrdered(FRAME_ALIGNMENT);
     }
 
     @Test
@@ -163,18 +175,22 @@ public class LogBufferAppenderTest
         assertTrue(appender.append(buffer, 0, msgLen));
         assertTrue(appender.append(buffer, 0, msgLen));
 
-        final InOrder inOrder = inOrder(logBuffer, stateBuffer);
+        final InOrder inOrder = inOrder(logBuffer, stateBuffer, header);
         inOrder.verify(stateBuffer, times(1)).getAndAddInt(TAIL_COUNTER_OFFSET, FRAME_ALIGNMENT);
-        inOrder.verify(logBuffer, times(1)).putBytes(messageOffset(0, HEADER_RESERVE), buffer, 0, msgLen);
-        inOrder.verify(logBuffer, times(1)).putByte(fragmentFlagsOffset(0), UNFRAGMENTED);
-        inOrder.verify(logBuffer, times(1)).putInt(seqNumberOffset(0), 0);
-        inOrder.verify(logBuffer, times(1)).putIntOrdered(lengthOffset(0), FRAME_ALIGNMENT);
+        inOrder.verify(logBuffer, times(1)).putBytes(0, DEFAULT_HEADER, 0, DEFAULT_HEADER.length);
+        inOrder.verify(logBuffer, times(1)).putBytes(DEFAULT_HEADER.length, buffer, 0, msgLen);
+        inOrder.verify(header, times(1)).beginFragment(true);
+        inOrder.verify(header, times(1)).endFragment(true);
+        inOrder.verify(header, times(1)).sequenceNumber(0);
+        inOrder.verify(header, times(1)).putLengthOrdered(FRAME_ALIGNMENT);
 
         inOrder.verify(stateBuffer, times(1)).getAndAddInt(TAIL_COUNTER_OFFSET, FRAME_ALIGNMENT);
-        inOrder.verify(logBuffer, times(1)).putBytes(messageOffset(FRAME_ALIGNMENT, HEADER_RESERVE), buffer, 0, msgLen);
-        inOrder.verify(logBuffer, times(1)).putByte(fragmentFlagsOffset(FRAME_ALIGNMENT), UNFRAGMENTED);
-        inOrder.verify(logBuffer, times(1)).putInt(seqNumberOffset(FRAME_ALIGNMENT), FRAME_ALIGNMENT);
-        inOrder.verify(logBuffer, times(1)).putIntOrdered(lengthOffset(FRAME_ALIGNMENT), FRAME_ALIGNMENT);
+        inOrder.verify(logBuffer, times(1)).putBytes(FRAME_ALIGNMENT, DEFAULT_HEADER, 0, DEFAULT_HEADER.length);
+        inOrder.verify(logBuffer, times(1)).putBytes(FRAME_ALIGNMENT + DEFAULT_HEADER.length, buffer, 0, msgLen);
+        inOrder.verify(header, times(1)).beginFragment(true);
+        inOrder.verify(header, times(1)).endFragment(true);
+        inOrder.verify(header, times(1)).sequenceNumber(FRAME_ALIGNMENT);
+        inOrder.verify(header, times(1)).putLengthOrdered(FRAME_ALIGNMENT);
     }
 
     @Test
@@ -190,16 +206,15 @@ public class LogBufferAppenderTest
 
         verify(stateBuffer, times(1)).getAndAddInt(TAIL_COUNTER_OFFSET, FRAME_ALIGNMENT);
         verify(logBuffer, never()).putBytes(anyInt(), eq(buffer), anyInt(), anyInt());
-        verify(logBuffer, never()).putByte(anyInt(), anyByte());
-        verify(logBuffer, never()).putInt(anyInt(), anyInt());
-        verify(logBuffer, never()).putIntOrdered(anyInt(), anyInt());
+        verify(header, never()).sequenceNumber(anyInt());
+        verify(header, never()).putLengthOrdered(anyInt());
     }
 
     @Test
     public void shouldPadLogAndFailAppendOnInsufficientRemainingCapacity()
     {
         final int msgLength = 120;
-        final int requiredFrameSize = align(FIXED_HEADER_LENGTH + HEADER_RESERVE + msgLength, FRAME_ALIGNMENT);
+        final int requiredFrameSize = align(DEFAULT_HEADER.length + msgLength, FRAME_ALIGNMENT);
         final int tailValue = appender.capacity() - FRAME_ALIGNMENT;
         when(valueOf(stateBuffer.getAndAddInt(TAIL_COUNTER_OFFSET, requiredFrameSize)))
             .thenReturn(valueOf(tailValue));
@@ -208,12 +223,12 @@ public class LogBufferAppenderTest
 
         assertFalse(appender.append(buffer, 0, msgLength));
 
-        final InOrder inOrder = inOrder(logBuffer, stateBuffer);
+        final InOrder inOrder = inOrder(logBuffer, stateBuffer, header);
         inOrder.verify(stateBuffer, times(1)).getAndAddInt(TAIL_COUNTER_OFFSET, requiredFrameSize);
-        inOrder.verify(logBuffer, times(1)).putByte(fragmentFlagsOffset(tailValue), UNFRAGMENTED);
-        inOrder.verify(logBuffer, times(1)).putInt(seqNumberOffset(tailValue), tailValue);
-        inOrder.verify(logBuffer, times(1)).putIntOrdered(lengthOffset(tailValue), FRAME_ALIGNMENT);
-
-        verify(logBuffer, never()).putBytes(anyInt(), eq(buffer), anyInt(), anyInt());
+        inOrder.verify(logBuffer, times(1)).putBytes(tailValue, DEFAULT_HEADER, 0, DEFAULT_HEADER.length);
+        inOrder.verify(header, times(1)).beginFragment(true);
+        inOrder.verify(header, times(1)).endFragment(true);
+        inOrder.verify(header, times(1)).sequenceNumber(tailValue);
+        inOrder.verify(header, times(1)).putLengthOrdered(FRAME_ALIGNMENT);
     }
 }

@@ -19,32 +19,14 @@ import uk.co.real_logic.aeron.util.BitUtil;
 
 import static java.lang.Integer.valueOf;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BaseMessageHeaderFlyweight.BASE_HEADER_LENGTH;
 
 /**
  * Description of the structure for message framing in a log buffer.
- * All messages are logged in frames that have a minimum header layout as follows plus a reserve then
- * the encoded message follows:
  *
- * <pre>
- *  0                   1                   2                   3
- *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
- *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |  Vers |B|E|       Flags       |             Type              |
- *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-------------------------------+
- *  |R|                       Frame Length                          |
- *  +-+-------------------------------------------------------------+
- *  |R|                     Sequence Number                         |
- *  +-+-------------------------------------------------------------+
- *  |                            Reserve                           ...
- * ...                                                              |
- *  +---------------------------------------------------------------+
- *  |                        Encoded Message                       ...
- * ...                                                              |
- *  +---------------------------------------------------------------+
- * </pre>
+ * All messages frames consist of a header and a body. The header is described by sub-class of
+ * {@link BaseMessageHeaderFlyweight} that is followed by the encoded message in the body.
  *
- * The B (Begin) and E (End) flags are used for message fragmentation.
- * Both are set for a message that does not span frames.
  */
 public class FrameDescriptor
 {
@@ -53,69 +35,6 @@ public class FrameDescriptor
 
     /** Word alignment for fields. */
     public static final int WORD_ALIGNMENT = BitUtil.SIZE_OF_LONG;
-
-    /** Offset from the beginning of the frame at which the length field begins. */
-    public static final int LENGTH_FIELD_OFFSET = 4;
-
-    /** Offset from the beginning of the frame at which the length field begins. */
-    public static final int SEQ_NUMBER_OFFSET = 8;
-
-    /** Length in bytes for the fixed part of the header before the reserve */
-    public static final int FIXED_HEADER_LENGTH = 12;
-
-    /** Begin fragment flag of a message. */
-    public static final byte BEGIN_FLAG = 0b0000_1000;
-
-    /** End fragment flag of a message. */
-    public static final byte END_FLAG = 0b0000_0100;
-
-    /** An unfragmented message has both flags set. */
-    public static final byte UNFRAGMENTED = BEGIN_FLAG & END_FLAG;
-
-    /**
-     * Offset to the byte containing the fragment flags.
-     *
-     * @param frameOffset at which the frame begins.
-     * @return the offset to the byte containing the fragment flags.
-     */
-    public static int fragmentFlagsOffset(final int frameOffset)
-    {
-        return frameOffset;
-    }
-
-    /**
-     * Offset to the length field from the beginning of the frame.
-     *
-     * @param frameOffset at which the frame begins.
-     * @return the offset to the length from the beginning of the frame.
-     */
-    public static int lengthOffset(final int frameOffset)
-    {
-        return frameOffset + LENGTH_FIELD_OFFSET;
-    }
-
-    /**
-     * Offset to the sequence number field from the beginning of the frame.
-     *
-     * @param frameOffset at which the frame begins.
-     * @return the offset to the sequence number field from the beginning of the frame.
-     */
-    public static int seqNumberOffset(final int frameOffset)
-    {
-        return frameOffset + SEQ_NUMBER_OFFSET;
-    }
-
-    /**
-     * Offset to the encoded message from the beginning of the frame.
-     *
-     * @param frameOffset at which the frame begins.
-     * @param headerReserve before the message begins.
-     * @return the offset to the length from the beginning of the frame.
-     */
-    public static int messageOffset(final int frameOffset, final int headerReserve)
-    {
-        return frameOffset + FIXED_HEADER_LENGTH + headerReserve;
-    }
 
     /**
      * Calculate the maximum supported message length for a buffer of given capacity.
@@ -129,33 +48,43 @@ public class FrameDescriptor
     }
 
     /**
-     * Check the frame header reserve is aligned on an word boundary.
+     * Check the the default header is greater than or equal in size to
+     * {@link BaseMessageHeaderFlyweight#BASE_HEADER_LENGTH} and a multiple of {@link #WORD_ALIGNMENT}.
      *
-     * @param length to be applied to all logged frames.
-     * @throws IllegalStateException if the record header length is invalid
+     * @param defaultHeader to check.
+     * @throws IllegalStateException if the default header is invalid.
      */
-    public static void checkHeaderReserve(final int length)
+    public static void checkDefaultHeader(final byte[] defaultHeader)
     {
-        if (length % SIZE_OF_INT != 0)
+        final int length = defaultHeader.length;
+
+        if (length < BASE_HEADER_LENGTH)
         {
-            final String s = String.format("Header reserve must be a multiple of %d, length=%d",
-                                           valueOf(SIZE_OF_INT), valueOf(length));
+            final String s = String.format("Frame frame length must not be less than %d, length=%d",
+                                           valueOf(BASE_HEADER_LENGTH), valueOf(length));
+            throw new IllegalStateException(s);
+        }
+
+        if (length % WORD_ALIGNMENT != 0)
+        {
+            final String s = String.format("Frame frame length must be a multiple of %d, length=%d",
+                                           valueOf(WORD_ALIGNMENT), valueOf(length));
             throw new IllegalStateException(s);
         }
     }
 
     /**
-     * Check the frame header reserve is aligned on an word boundary.
+     * Check the max frame length is a multiple of {@link #FRAME_ALIGNMENT}
      *
      * @param length to be applied to all logged frames.
-     * @throws IllegalStateException if the record header length is invalid
+     * @throws IllegalStateException if not a multiple of {@link #FRAME_ALIGNMENT}
      */
     public static void checkMaxFrameLength(final int length)
     {
-        if (length % WORD_ALIGNMENT != 0)
+        if (length % FRAME_ALIGNMENT != 0)
         {
             final String s = String.format("Max frame length must be a multiple of %d, length=%d",
-                                           valueOf(WORD_ALIGNMENT), valueOf(length));
+                                           valueOf(FRAME_ALIGNMENT), valueOf(length));
             throw new IllegalStateException(s);
         }
     }

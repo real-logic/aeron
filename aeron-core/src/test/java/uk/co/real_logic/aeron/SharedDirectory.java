@@ -47,7 +47,7 @@ public class SharedDirectory extends ExternalResource
                                      final long termId) throws IOException
     {
         final File termLocation = termLocation(mapping.senderDir(), sessionId, channelId, termId, true, destination);
-        IoUtil.delete(termLocation, false);
+        IoUtil.delete(termLocation, true);
         createEmptyFile(termLocation, LogBufferDescriptor.LOG_MIN_SIZE);
     }
 

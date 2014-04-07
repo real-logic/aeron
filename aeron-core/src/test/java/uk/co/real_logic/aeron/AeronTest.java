@@ -87,18 +87,18 @@ public class AeronTest
         final Aeron aeron = newAeron();
         final Channel channel = newChannel(aeron);
         aeron.adminThread().process();
-        createTermBuffer();
+        createTermBuffer(0L);
         aeron.adminThread().process();
         assertTrue(channel.offer(sendBuffer));
     }
 
-    private void createTermBuffer() throws IOException
+    private void createTermBuffer(final long termId) throws IOException
     {
         final RingBuffer apiBuffer = adminBuffers.toApi();
-        directory.createSenderTermFile(DESTINATION, SESSION_ID, CHANNEL_ID, 0L);
+        directory.createSenderTermFile(DESTINATION, SESSION_ID, CHANNEL_ID, termId);
         identifiedMessage.channelId(CHANNEL_ID)
                          .sessionId(SESSION_ID)
-                         .termId(0L)
+                         .termId(termId)
                          .destination(DESTINATION);
         assertTrue(apiBuffer.write(NEW_SEND_BUFFER_NOTIFICATION, atomicSendBuffer, 0, identifiedMessage.length()));
     }
@@ -107,7 +107,6 @@ public class AeronTest
     public void removingChannelsShouldNotifyMediaDriver() throws Exception
     {
         final RingBuffer buffer = adminBuffers.toMediaDriver();
-
         final Aeron aeron = newAeron();
         final Channel channel = newChannel(aeron);
         final ClientAdminThread adminThread = aeron.adminThread();
@@ -119,6 +118,53 @@ public class AeronTest
         adminThread.process();
 
         assertChannelMessage(buffer, REMOVE_CHANNEL);
+    }
+
+    @Test
+    public void closingASourceRemovesItsAssociatedChannels() throws Exception
+    {
+        final RingBuffer buffer = adminBuffers.toMediaDriver();
+        final Aeron aeron = newAeron();
+        final Source.Builder sourceBuilder = new Source.Builder()
+            .sessionId(SESSION_ID)
+            .destination(new Destination(DESTINATION));
+        final Source source = aeron.newSource(sourceBuilder);
+        final Channel channel = source.newChannel(CHANNEL_ID);
+        final ClientAdminThread adminThread = aeron.adminThread();
+
+        adminThread.process();
+        skip(buffer, 1);
+
+        source.close();
+        adminThread.process();
+
+        assertChannelMessage(buffer, REMOVE_CHANNEL);
+    }
+
+    @Test
+    public void closingASourceDoesNotRemoveOtherChannels() throws Exception
+    {
+        final RingBuffer buffer = adminBuffers.toMediaDriver();
+        final Aeron aeron = newAeron();
+        final Source source = aeron.newSource(new Source.Builder()
+                .sessionId(SESSION_ID)
+                .destination(new Destination(DESTINATION)));
+        final Source otherSource = aeron.newSource(new Source.Builder()
+                .sessionId(SESSION_ID + 1)
+                .destination(new Destination(DESTINATION)));
+        final Channel channel = source.newChannel(CHANNEL_ID);
+        final ClientAdminThread adminThread = aeron.adminThread();
+
+        adminThread.process();
+        skip(buffer, 1);
+
+        otherSource.close();
+        adminThread.process();
+
+        final int eventsRead = buffer.read((eventTypeId, atomicBuffer, index, length) ->
+        {
+        });
+        assertThat(eventsRead, is(0));
     }
 
     private Channel newChannel(final Aeron aeron)

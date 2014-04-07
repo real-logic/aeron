@@ -153,4 +153,8 @@ public class Channel implements AutoCloseable
         }
     }
 
+    public boolean hasSessionId(final long sessionId)
+    {
+        return this.sessionId == sessionId;
+    }
 }

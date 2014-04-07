@@ -77,7 +77,21 @@ public class Source implements AutoCloseable
 
     public void close()
     {
-        // TODO: close all child channels
+        channels.forEach(channel ->
+        {
+            if (channel.hasSessionId(sessionId))
+            {
+                try
+                {
+                    channel.close();
+                }
+                catch (Exception e)
+                {
+                    // TODO: errors
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 
     public long sessionId()

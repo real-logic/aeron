@@ -59,6 +59,11 @@ public class Channel implements AutoCloseable
         return channelId;
     }
 
+    private boolean hasTerm()
+    {
+        return currentTermId != UNKNOWN_TERM_ID;
+    }
+
     /**
      * Non blocking message send
      *
@@ -67,32 +72,40 @@ public class Channel implements AutoCloseable
      */
     public boolean offer(final ByteBuffer buffer)
     {
-        // TODO
-        return false;
+        return offer(buffer, buffer.position(), buffer.remaining());
     }
 
-    public boolean offer(final ByteBuffer buffer, final int offset)
+    public boolean offer(final ByteBuffer buffer, final int offset, final int length)
     {
+        if (!hasTerm())
+        {
+            return false;
+        }
+
         // TODO
         return false;
     }
 
     public void send(final ByteBuffer buffer) throws BufferExhaustedException
     {
-        // TODO
+        send(buffer, buffer.position(), buffer.remaining());
     }
 
-    public void send(final ByteBuffer buffer, final int offset) throws BufferExhaustedException
+    public void send(final ByteBuffer buffer, final int offset, final int length) throws BufferExhaustedException
     {
+        if (!hasTerm())
+        {
+            throw new BufferExhaustedException("Unable to send: awaiting buffer creation");
+        }
         // TODO
     }
 
     public void blockingSend(final ByteBuffer buffer)
     {
-        // TODO: Is this necessary?
+        blockingSend(buffer, buffer.position(), buffer.remaining());
     }
 
-    public void blockingSend(final ByteBuffer buffer, final int offset)
+    public void blockingSend(final ByteBuffer buffer, final int offset, final int length)
     {
         // TODO: Is this necessary?
     }

@@ -22,7 +22,10 @@ import uk.co.real_logic.aeron.util.MappingAdminBufferStrategy;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
+import java.nio.ByteBuffer;
+
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ADD_CHANNEL;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.REMOVE_CHANNEL;
@@ -42,6 +45,8 @@ public class AeronTest
 
     private final ChannelMessageFlyweight message = new ChannelMessageFlyweight();
 
+    private final ByteBuffer sendBuffer = ByteBuffer.allocate(256);
+
     @Test
     public void creatingChannelsShouldNotifyMediaDriver() throws Exception
     {
@@ -52,6 +57,23 @@ public class AeronTest
         assertChannelMessage(adminBuffers.toMediaDriver(), ADD_CHANNEL);
     }
 
+    @Test
+    public void cannotOfferOnChannelUntilBuffersMapped() throws Exception
+    {
+        final Aeron aeron = newAeron();
+        final Channel channel = newChannel(aeron);
+        assertFalse(channel.offer(sendBuffer));
+        assertFalse(channel.offer(sendBuffer, 0, 1));
+    }
+
+    @Test(expected=BufferExhaustedException.class)
+    public void cannotSendOnChannelUntilBuffersMapped() throws Exception
+    {
+        final Aeron aeron = newAeron();
+        final Channel channel = newChannel(aeron);
+        channel.send(sendBuffer);
+    }
+    
     @Test
     public void removingChannelsShouldNotifyMediaDriver() throws Exception
     {

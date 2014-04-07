@@ -105,15 +105,11 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             {
                 case ControlProtocolEvents.ADD_CHANNEL:
                     channelMessage.wrap(buffer, index);
-                    onAddChannel(channelMessage.destination(),
-                                 channelMessage.sessionId(),
-                                 channelMessage.channelId());
+                    onAddChannel(channelMessage);
                     return;
                 case ControlProtocolEvents.REMOVE_CHANNEL:
                     channelMessage.wrap(buffer, index);
-                    onRemoveChannel(channelMessage.destination(),
-                                    channelMessage.sessionId(),
-                                    channelMessage.channelId());
+                    onRemoveChannel(channelMessage);
                     return;
             }
         });
@@ -160,9 +156,11 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
 
     }
 
-    public void onAddChannel(final String destination, final long sessionId, final long channelId)
+    public void onAddChannel(final ChannelMessageFlyweight channelMessage)
     {
-        // TODO: to accommodate error handling, probably need to pass in Flyweight itself...
+        final String destination = channelMessage.destination();
+        final long sessionId = channelMessage.sessionId();
+        final long channelId = channelMessage.channelId();
         try
         {
             final UdpDestination srcDestination = UdpDestination.parse(destination);
@@ -217,9 +215,11 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         }
     }
 
-    public void onRemoveChannel(final String destination, final long sessionId, final long channelId)
+    public void onRemoveChannel(final ChannelMessageFlyweight channelMessage)
     {
-        // TODO: to accommodate error handling, probably need to pass in Flyweight itself...
+        final String destination = channelMessage.destination();
+        final long sessionId = channelMessage.sessionId();
+        final long channelId = channelMessage.channelId();
         try
         {
             final UdpDestination srcDestination = UdpDestination.parse(destination);

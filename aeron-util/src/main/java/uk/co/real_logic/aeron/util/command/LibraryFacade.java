@@ -32,11 +32,9 @@ public interface LibraryFacade
      *
      * @see MediaDriverFacade#sendAddChannel(String, long, long)
      *
-     * @param destination for the channel
-     * @param sessionId for the channel
-     * @param channelId for the channel
+     * @param channelMessage the message flyweight
      */
-    void onAddChannel(final String destination, final long sessionId, final long channelId);
+    void onAddChannel(final ChannelMessageFlyweight channelMessage);
 
     /**
      * Handle a removeChannel request from the library
@@ -45,11 +43,9 @@ public interface LibraryFacade
      *
      * @see MediaDriverFacade#sendRemoveChannel(String, long, long)
      *
-     * @param destination for the channel to be removed from
-     * @param sessionId for the channel to be removed from
-     * @param channelId for the channel
+     * @param channelMessage the message flyweight
      */
-    void onRemoveChannel(final String destination, final long sessionId, final long channelId);
+    void onRemoveChannel(final ChannelMessageFlyweight channelMessage);
 
     /**
      * Handle a removeTerm request from the library

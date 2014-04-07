@@ -18,10 +18,7 @@ package uk.co.real_logic.aeron.mediadriver;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy;
 import uk.co.real_logic.aeron.util.ClosableThread;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
-import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
-import uk.co.real_logic.aeron.util.command.ErrorCode;
-import uk.co.real_logic.aeron.util.command.LibraryFacade;
+import uk.co.real_logic.aeron.util.command.*;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
@@ -295,19 +292,19 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         }
     }
 
-    public void onAddReceiver(final String destination, final long[] channelIdList)
+    public void onAddReceiver(final ReceiverMessageFlyweight receiverMessage)
     {
         // instruct receiver thread of new framehandler and new channelIdlist for such
-        receiverThreadCursor.addNewReceiverEvent(destination, channelIdList);
+        receiverThreadCursor.addNewReceiverEvent(receiverMessage.destination(), receiverMessage.channelIds());
 
         // this thread does not add buffers. The RcvFrameHandler handle methods will send an event for this thread
         // to create buffers as needed
     }
 
-    public void onRemoveReceiver(final String destination, final long[] channelIdList)
+    public void onRemoveReceiver(final ReceiverMessageFlyweight receiverMessage)
     {
         // instruct receiver thread to get rid of channels and possibly destination
-        receiverThreadCursor.addRemoveReceiverEvent(destination, channelIdList);
+        receiverThreadCursor.addRemoveReceiverEvent(receiverMessage.destination(), receiverMessage.channelIds());
     }
 
     public void onRequestTerm(final long sessionId, final long channelId, final long termId)

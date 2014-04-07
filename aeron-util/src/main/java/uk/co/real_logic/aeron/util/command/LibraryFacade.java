@@ -67,10 +67,9 @@ public interface LibraryFacade
      * The destination will be created if not in use by another library/application.
      *
      * @see MediaDriverFacade#sendAddReceiver(String, long[])
-     * @param destination to be added
-     * @param channelIdList of interested channels for destination
+     * @param receiverMessage the message
      */
-    void onAddReceiver(final String destination, final long[] channelIdList);
+    void onAddReceiver(final ReceiverMessageFlyweight receiverMessage);
 
     /**
      * Handle a removeReceiver request from the library.
@@ -78,10 +77,9 @@ public interface LibraryFacade
      * The destination will be removed if this library/application is the last one using this destination.
      *
      * @see MediaDriverFacade#sendRemoveReceiver(String, long[])
-     * @param destination to be removed
-     * @param channelIdList the list of channels to remove on
+     * @param receiverMessage the message
      */
-    void onRemoveReceiver(final String destination, final long[] channelIdList);
+    void onRemoveReceiver(final ReceiverMessageFlyweight receiverMessage);
 
     /**
      * Request the media driver should setup state for the next Term Buffer

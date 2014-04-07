@@ -80,7 +80,7 @@ public class BaseMessageHeaderFlyweight extends Flyweight
 
     public short version()
     {
-        return uint8Get(0);
+        return uint8Get(VERSION_OFFSET);
     }
 
     public BaseMessageHeaderFlyweight beginFragment(final boolean value)
@@ -91,7 +91,7 @@ public class BaseMessageHeaderFlyweight extends Flyweight
 
     public boolean beginFragment()
     {
-        return uint8GetChoice(1, 8);
+        return uint8GetChoice(FLAGS_OFFSET, 8);
     }
 
     public BaseMessageHeaderFlyweight endFragment(final boolean value)

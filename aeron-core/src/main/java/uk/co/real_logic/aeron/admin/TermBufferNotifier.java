@@ -56,7 +56,7 @@ public class TermBufferNotifier
      * @param termId the term id
      * @return the buffer
      */
-    public ByteBuffer termBuffer(final long termId)
+    public ByteBuffer termBufferBlocking(final long termId)
     {
         ByteBuffer buffer;
         do
@@ -66,6 +66,12 @@ public class TermBufferNotifier
         }
         while (buffer == null);
         return buffer;
+    }
+
+    public ByteBuffer termBuffer(final long termId)
+    {
+        final int index = hash(termId);
+        return buffers.get(index);
     }
 
     public int hash(final long termId)

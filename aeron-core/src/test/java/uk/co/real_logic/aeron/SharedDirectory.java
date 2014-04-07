@@ -17,15 +17,38 @@ package uk.co.real_logic.aeron;
 
 import org.junit.rules.ExternalResource;
 import uk.co.real_logic.aeron.util.Directories;
+import uk.co.real_logic.aeron.util.FileMappingConvention;
+import uk.co.real_logic.aeron.util.IoUtil;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
 
 import java.io.File;
+import java.io.IOException;
+
+import static uk.co.real_logic.aeron.util.FileMappingConvention.termLocation;
+import static uk.co.real_logic.aeron.util.IoUtil.createEmptyFile;
 
 public class SharedDirectory extends ExternalResource
 {
+
+    private File dataDir;
+    private FileMappingConvention mapping;
+
     protected void before() throws Throwable
     {
-        final File file = new File(Directories.DATA_DIR);
-        file.delete();
-        file.mkdirs();
+        dataDir = new File(Directories.DATA_DIR);
+        dataDir.delete();
+        dataDir.mkdirs();
+        mapping = new FileMappingConvention(dataDir.getAbsolutePath());
     }
+
+    public void createSenderTermFile(final String destination,
+                                     final long sessionId,
+                                     final long channelId,
+                                     final long termId) throws IOException
+    {
+        final File termLocation = termLocation(mapping.senderDir(), sessionId, channelId, termId, true, destination);
+        IoUtil.delete(termLocation, false);
+        createEmptyFile(termLocation, LogBufferDescriptor.LOG_MIN_SIZE);
+    }
+
 }

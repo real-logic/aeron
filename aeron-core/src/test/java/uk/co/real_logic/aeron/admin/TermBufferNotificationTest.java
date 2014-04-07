@@ -84,7 +84,7 @@ public class TermBufferNotificationTest
         final AtomicBoolean returned = new AtomicBoolean(false);
         final Runnable reader = () ->
         {
-            final ByteBuffer buffer = notification.termBuffer(0L);
+            final ByteBuffer buffer = notification.termBufferBlocking(0L);
             returned.set(buffer != null);
         };
         final Runnable writer = () ->
@@ -108,7 +108,7 @@ public class TermBufferNotificationTest
         final AtomicBoolean returned = new AtomicBoolean(false);
         final Runnable reader = () ->
         {
-            final ByteBuffer buffer = notification.termBuffer(0L);
+            final ByteBuffer buffer = notification.termBufferBlocking(0L);
             returned.set(buffer != null);
         };
         withReaderAndWriter(reader, NOTHING, 50);
@@ -119,7 +119,7 @@ public class TermBufferNotificationTest
     private void writeAndAssertTermBufferRead(final long termId, final ByteBuffer termBuffer)
     {
         notification.newTermBufferMapped(termId, termBuffer);
-        assertThat(notification.termBuffer(termId), is(termBuffer));
+        assertThat(notification.termBufferBlocking(termId), is(termBuffer));
     }
 
     private void withReaderAndWriter(final Runnable reader, final Runnable writer, final long timeout) throws InterruptedException

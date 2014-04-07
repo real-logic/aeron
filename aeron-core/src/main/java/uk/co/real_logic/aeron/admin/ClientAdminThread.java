@@ -48,7 +48,7 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
 
     private final BufferUsageStrategy bufferUsage;
     private final AtomicArray<Channel> channels;
-    private final ChannelMap<String, TermBufferNotifier> sendNotifiers;
+    private final ChannelMap<String, Channel> sendNotifiers;
     private final ChannelMap<String, TermBufferNotifier> recvNotifiers;
 
     /** Atomic buffer to write message flyweights into before they get sent */
@@ -125,7 +125,7 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
         {
             if (channel.matches(destination, sessionId, channelId))
             {
-                sendNotifiers.put(destination, sessionId, channelId, channel.bufferNotifier());
+                sendNotifiers.put(destination, sessionId, channelId, channel);
             }
         });
     }
@@ -203,9 +203,9 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
     {
         try
         {
-            final ChannelMap<String, TermBufferNotifier> notifiers = getNotifiers(isSender);
-            final TermBufferNotifier notifier = notifiers.get(destination, sessionId, channelId);
-            if (notifier == null)
+            // TODO: re-add receiver case
+            final Channel channel = sendNotifiers.get(destination, sessionId, channelId);
+            if (channel == null)
             {
                 // The new buffer refers to another client process,
                 // We can safely ignore it
@@ -213,18 +213,13 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
             }
 
             final ByteBuffer buffer = bufferUsage.onTermAdded(destination, sessionId, channelId, termId, isSender);
-            notifier.newTermBufferMapped(termId, buffer);
+            channel.newTermBufferMapped(termId, buffer);
         }
         catch (Exception e)
         {
             // TODO: establish correct client error handling strategy
             e.printStackTrace();
         }
-    }
-
-    private ChannelMap<String, TermBufferNotifier> getNotifiers(final boolean isSender)
-    {
-        return isSender ? sendNotifiers : recvNotifiers;
     }
 
 }

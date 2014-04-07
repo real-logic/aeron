@@ -15,20 +15,21 @@
  */
 package uk.co.real_logic.aeron;
 
-import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import uk.co.real_logic.aeron.admin.ClientAdminThread;
 import uk.co.real_logic.aeron.util.MappingAdminBufferStrategy;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ADD_CHANNEL;
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.REMOVE_CHANNEL;
+import static org.junit.Assert.*;
+import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 
 public class AeronTest
 {
@@ -37,15 +38,21 @@ public class AeronTest
     private static final long CHANNEL_ID = 2L;
     private static final long SESSION_ID = 3L;
 
-    @ClassRule
-    public static SharedDirectory directory = new SharedDirectory();
+    @Rule
+    public SharedDirectory directory = new SharedDirectory();
 
-    @ClassRule
-    public static AdminBuffers adminBuffers = new AdminBuffers();
+    @Rule
+    public AdminBuffers adminBuffers = new AdminBuffers();
 
     private final ChannelMessageFlyweight message = new ChannelMessageFlyweight();
-
+    private final CompletelyIdentifiedMessageFlyweight identifiedMessage = new CompletelyIdentifiedMessageFlyweight();
     private final ByteBuffer sendBuffer = ByteBuffer.allocate(256);
+    private final AtomicBuffer atomicSendBuffer = new AtomicBuffer(sendBuffer);
+
+    public AeronTest()
+    {
+        identifiedMessage.wrap(atomicSendBuffer, 0);
+    }
 
     @Test
     public void creatingChannelsShouldNotifyMediaDriver() throws Exception
@@ -73,7 +80,29 @@ public class AeronTest
         final Channel channel = newChannel(aeron);
         channel.send(sendBuffer);
     }
-    
+
+    @Test
+    public void canOfferAMessageOnceBuffersHaveBeenMapped() throws Exception
+    {
+        final Aeron aeron = newAeron();
+        final Channel channel = newChannel(aeron);
+        aeron.adminThread().process();
+        createTermBuffer();
+        aeron.adminThread().process();
+        assertTrue(channel.offer(sendBuffer));
+    }
+
+    private void createTermBuffer() throws IOException
+    {
+        final RingBuffer apiBuffer = adminBuffers.toApi();
+        directory.createSenderTermFile(DESTINATION, SESSION_ID, CHANNEL_ID, 0L);
+        identifiedMessage.channelId(CHANNEL_ID)
+                         .sessionId(SESSION_ID)
+                         .termId(0L)
+                         .destination(DESTINATION);
+        assertTrue(apiBuffer.write(NEW_SEND_BUFFER_NOTIFICATION, atomicSendBuffer, 0, identifiedMessage.length()));
+    }
+
     @Test
     public void removingChannelsShouldNotifyMediaDriver() throws Exception
     {

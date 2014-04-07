@@ -55,12 +55,17 @@ public class AdminBuffers extends ExternalResource
 
     public RingBuffer toMediaDriver()
     {
-        return new ManyToOneRingBuffer(new AtomicBuffer(toMediaDriver));
+        return ringBuffer(toMediaDriver);
     }
 
-    public ByteBuffer toApi()
+    public RingBuffer toApi()
     {
-        return toApi;
+        return ringBuffer(toApi);
+    }
+
+    private ManyToOneRingBuffer ringBuffer(final ByteBuffer buffer)
+    {
+        return new ManyToOneRingBuffer(new AtomicBuffer(buffer));
     }
 
     public String adminDir()

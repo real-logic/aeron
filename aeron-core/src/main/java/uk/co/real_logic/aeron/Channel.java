@@ -20,6 +20,7 @@ import uk.co.real_logic.aeron.admin.TermBufferNotifier;
 import uk.co.real_logic.aeron.util.AtomicArray;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Aeron Channel
@@ -35,7 +36,7 @@ public class Channel implements AutoCloseable
     private final long sessionId;
     private final AtomicArray<Channel> channels;
 
-    private long currentTermId;
+    private final AtomicLong currentTermId;
 
     public Channel(final String destination,
                    final ClientAdminThreadCursor adminCursor,
@@ -50,8 +51,7 @@ public class Channel implements AutoCloseable
         this.channelId = channelId;
         this.sessionId = sessionId;
         this.channels = channels;
-        currentTermId = UNKNOWN_TERM_ID;
-        // TODO: notify the channel when you get a term id from the media driver.
+        currentTermId = new AtomicLong(UNKNOWN_TERM_ID);
     }
 
     public long channelId()
@@ -61,7 +61,7 @@ public class Channel implements AutoCloseable
 
     private boolean hasTerm()
     {
-        return currentTermId != UNKNOWN_TERM_ID;
+        return currentTermId.get() != UNKNOWN_TERM_ID;
     }
 
     /**
@@ -83,7 +83,7 @@ public class Channel implements AutoCloseable
         }
 
         // TODO
-        return false;
+        return true;
     }
 
     public void send(final ByteBuffer buffer) throws BufferExhaustedException
@@ -117,14 +117,14 @@ public class Channel implements AutoCloseable
 
     private void startTerm()
     {
-        bufferNotifier.termBuffer(currentTermId);
+        bufferNotifier.termBufferBlocking(currentTermId.get());
     }
 
     private void rollTerm()
     {
-        bufferNotifier.endOfTermBuffer(currentTermId);
-        currentTermId++;
-        requestTerm(currentTermId + 1);
+        bufferNotifier.endOfTermBuffer(currentTermId.get());
+        currentTermId.incrementAndGet();
+        requestTerm(currentTermId.get() + 1);
         startTerm();
     }
 
@@ -142,6 +142,15 @@ public class Channel implements AutoCloseable
     public TermBufferNotifier bufferNotifier()
     {
         return bufferNotifier;
+    }
+
+    public void newTermBufferMapped(final long termId, final ByteBuffer buffer)
+    {
+        bufferNotifier.newTermBufferMapped(termId, buffer);
+        if (!hasTerm())
+        {
+            currentTermId.lazySet(termId);
+        }
     }
 
 }

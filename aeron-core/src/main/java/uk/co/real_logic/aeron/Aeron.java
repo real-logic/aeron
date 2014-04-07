@@ -75,12 +75,14 @@ public final class Aeron
     private final ClientAdminThread adminThread;
     private final AdminBufferStrategy adminBuffers;
     private final AtomicArray<Channel> channels;
+    private final AtomicArray<Receiver> receivers;
 
     private Aeron(final Builder builder)
     {
         errorHandler = builder.errorHandler;
         adminBuffers = builder.adminBuffers;
         channels = new AtomicArray<>();
+        receivers = new AtomicArray<>();
         adminCommandBuffer = new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocate(ADMIN_BUFFER_SIZE)));
 
         try
@@ -88,7 +90,10 @@ public final class Aeron
             final RingBuffer recvBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toApi()));
             final RingBuffer sendBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toMediaDriver()));
             final BufferUsageStrategy bufferUsage = new BasicBufferUsageStrategy(Directories.DATA_DIR);
-            adminThread = new ClientAdminThread(adminCommandBuffer, recvBuffer, sendBuffer, bufferUsage, channels);
+            adminThread = new ClientAdminThread(adminCommandBuffer,
+                                                recvBuffer, sendBuffer,
+                                                bufferUsage,
+                                                channels, receivers);
         }
         catch (Exception e)
         {
@@ -150,9 +155,11 @@ public final class Aeron
      */
     public Receiver newReceiver(final Receiver.Builder builder)
     {
-        final String destination = builder.destination.destination();
-        // TODO
-        return new Receiver(null, builder);
+        // TODO: decouple session id from ClientAdminThreadCursor
+        final ClientAdminThreadCursor adminThread = new ClientAdminThreadCursor(0L, adminCommandBuffer);
+        final Receiver receiver = new Receiver(null, adminThread, builder);
+        receivers.add(receiver);
+        return receiver;
     }
 
     /**

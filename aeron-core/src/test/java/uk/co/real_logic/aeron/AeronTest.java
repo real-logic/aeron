@@ -21,7 +21,9 @@ import uk.co.real_logic.aeron.admin.ClientAdminThread;
 import uk.co.real_logic.aeron.util.MappingAdminBufferStrategy;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.EventHandler;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import java.io.IOException;
@@ -29,6 +31,7 @@ import java.nio.ByteBuffer;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 
 public class AeronTest
@@ -36,6 +39,8 @@ public class AeronTest
 
     private static final String DESTINATION = "udp://localhost:40124";
     private static final long CHANNEL_ID = 2L;
+    private static final long CHANNEL_ID_2 = 4L;
+    private static final long[] CHANNEL_IDs = { CHANNEL_ID, CHANNEL_ID_2};
     private static final long SESSION_ID = 3L;
 
     @Rule
@@ -46,6 +51,8 @@ public class AeronTest
 
     private final ChannelMessageFlyweight message = new ChannelMessageFlyweight();
     private final CompletelyIdentifiedMessageFlyweight identifiedMessage = new CompletelyIdentifiedMessageFlyweight();
+    private final ReceiverMessageFlyweight receiverMessage = new ReceiverMessageFlyweight();
+
     private final ByteBuffer sendBuffer = ByteBuffer.allocate(256);
     private final AtomicBuffer atomicSendBuffer = new AtomicBuffer(sendBuffer);
 
@@ -161,10 +168,38 @@ public class AeronTest
         otherSource.close();
         adminThread.process();
 
-        final int eventsRead = buffer.read((eventTypeId, atomicBuffer, index, length) ->
+        skip(buffer, 0);
+    }
+
+    @Test
+    public void registeringReceiverNotifiesMediaDriver()
+    {
+        final RingBuffer toMediaDriver = adminBuffers.toMediaDriver();
+        final Aeron aeron = newAeron();
+        final Receiver.Builder builder = new Receiver.Builder()
+                .destination(new Destination(DESTINATION))
+                .channel(CHANNEL_ID, emptyDataHandler())
+                .channel(CHANNEL_ID_2, emptyDataHandler());
+
+        aeron.newReceiver(builder);
+
+        aeron.adminThread().process();
+
+        assertEventRead(toMediaDriver, (eventTypeId, buffer, index, length) ->
         {
+            assertThat(eventTypeId, is(ADD_RECEIVER));
+            receiverMessage.wrap(buffer, index);
+            assertThat(receiverMessage.channelIds(), is(CHANNEL_IDs));
+            assertThat(receiverMessage.destination(), is(DESTINATION));
         });
-        assertThat(eventsRead, is(0));
+    }
+
+    private Receiver.DataHandler emptyDataHandler()
+    {
+        return (buffer, offset, sessionId, flags) ->
+        {
+
+        };
     }
 
     private Channel newChannel(final Aeron aeron)
@@ -185,7 +220,7 @@ public class AeronTest
 
     private void assertChannelMessage(final RingBuffer mediaDriverBuffer, final int expectedEventTypeId)
     {
-        int eventsRead = mediaDriverBuffer.read((eventTypeId, buffer, index, length) ->
+        assertEventRead(mediaDriverBuffer, (eventTypeId, buffer, index, length) ->
         {
             assertThat(eventTypeId, is(expectedEventTypeId));
             message.wrap(buffer, index);
@@ -193,6 +228,11 @@ public class AeronTest
             assertThat(message.channelId(), is(CHANNEL_ID));
             assertThat(message.sessionId(), is(SESSION_ID));
         });
+    }
+
+    private void assertEventRead(final RingBuffer mediaDriverBuffer, final EventHandler handler)
+    {
+        int eventsRead = mediaDriverBuffer.read(handler);
         assertThat(eventsRead, is(1));
     }
 

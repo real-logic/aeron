@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.admin;
 
 import uk.co.real_logic.aeron.Channel;
+import uk.co.real_logic.aeron.Receiver;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.ClosableThread;
 import uk.co.real_logic.aeron.util.collections.ChannelMap;
@@ -48,15 +49,16 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
 
     private final BufferUsageStrategy bufferUsage;
     private final AtomicArray<Channel> channels;
+    private final AtomicArray<Receiver> receivers;
     private final ChannelMap<String, Channel> sendNotifiers;
-    private final ChannelMap<String, TermBufferNotifier> recvNotifiers;
+    private final ReceiverMap recvNotifiers;
 
     /** Atomic buffer to write message flyweights into before they get sent */
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
 
     // Control protocol Flyweights
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
-    private final ReceiverMessageFlyweight removeReceiverMessage = new ReceiverMessageFlyweight();
+    private final ReceiverMessageFlyweight receiverMessage = new ReceiverMessageFlyweight();
     private final CompletelyIdentifiedMessageFlyweight requestTermMessage = new CompletelyIdentifiedMessageFlyweight();
 
     private final CompletelyIdentifiedMessageFlyweight bufferNotificationMessage = new CompletelyIdentifiedMessageFlyweight();
@@ -65,18 +67,20 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
                              final RingBuffer recvBuffer,
                              final RingBuffer sendBuffer,
                              final BufferUsageStrategy bufferUsage,
-                             final AtomicArray<Channel> channels)
+                             final AtomicArray<Channel> channels,
+                             final AtomicArray<Receiver> receivers)
     {
         this.commandBuffer = commandBuffer;
         this.recvBuffer = recvBuffer;
         this.sendBuffer = sendBuffer;
         this.bufferUsage = bufferUsage;
         this.channels = channels;
+        this.receivers = receivers;
         this.sendNotifiers = new ChannelMap<>();
-        this.recvNotifiers = new ChannelMap<>();
+        this.recvNotifiers = new ReceiverMap();
 
         channelMessage.wrap(writeBuffer, 0);
-        removeReceiverMessage.wrap(writeBuffer, 0);
+        receiverMessage.wrap(writeBuffer, 0);
         requestTermMessage.wrap(writeBuffer, 0);
     }
 
@@ -94,33 +98,56 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
             {
                 case ADD_CHANNEL:
                 case REMOVE_CHANNEL:
+                {
                     channelMessage.wrap(buffer, index);
                     final String destination = channelMessage.destination();
                     final long channelId = channelMessage.channelId();
                     final long sessionId = channelMessage.sessionId();
                     if (eventTypeId == ADD_CHANNEL)
                     {
-                        addNotifier(destination, channelId, sessionId);
+                        addSender(destination, channelId, sessionId);
                     }
                     else
                     {
-                        removeNotifier(destination, channelId, sessionId);
+                        removeSender(destination, channelId, sessionId);
                     }
                     sendBuffer.write(eventTypeId, buffer, index, length);
                     return;
+                }
+                case ADD_RECEIVER:
+                {
+                    receiverMessage.wrap(buffer, index);
+                    final long[] channelIds = receiverMessage.channelIds();
+                    final String destination = receiverMessage.destination();
+                    addReceiver(destination, channelIds);
+                    sendBuffer.write(eventTypeId, buffer, index, length);
+                    return;
+                }
             }
         });
     }
 
-    private void removeNotifier(final String destination, final long channelId, final long sessionId)
-    {
-
-    }
-
-    private void addNotifier(final String destination, final long channelId, final long sessionId)
+    private void addReceiver(final String destination, final long[] channelIds)
     {
         // Not efficient but only happens once per channel ever
         // and is during setup not a latency critical path
+        receivers.forEach(receiver ->
+        {
+            if (receiver.matches(destination, channelIds))
+            {
+                recvNotifiers.put(destination, channelIds, receiver);
+            }
+        });
+    }
+
+    private void removeSender(final String destination, final long channelId, final long sessionId)
+    {
+        // TODO
+    }
+
+    private void addSender(final String destination, final long channelId, final long sessionId)
+    {
+        // see addReceiver re efficiency
         channels.forEach(channel ->
         {
             if (channel.matches(destination, sessionId, channelId))

@@ -15,11 +15,13 @@
  */
 package uk.co.real_logic.aeron;
 
+import uk.co.real_logic.aeron.admin.ClientAdminThreadCursor;
 import uk.co.real_logic.aeron.admin.TermBufferNotifier;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 /**
  * Aeron receiver
@@ -27,25 +29,27 @@ import java.nio.ByteBuffer;
 public class Receiver implements AutoCloseable
 {
     private final Destination destination;
-    private final Aeron aeron;
     private final NewSourceEventHandler newSourceEventHandler;
     private final InactiveSourceEventHandler inactiveSourceEventHandler;
     private final Long2ObjectHashMap<DataHandler> channelMap;
     private final MediaDriverFacade mediaDriver;
     private final long[] channels;
     private final Long2ObjectHashMap<TermBufferNotifier> notifier;
+    private final ClientAdminThreadCursor adminThread;
 
-    public Receiver(final Long2ObjectHashMap<TermBufferNotifier> notifier, final Builder builder)
+    public Receiver(final Long2ObjectHashMap<TermBufferNotifier> notifier,
+                    final ClientAdminThreadCursor adminThread,
+                    final Builder builder)
     {
         this.notifier = notifier;
-        this.aeron = builder.aeron;
+        this.adminThread = adminThread;
         this.destination = builder.destination;
         this.channelMap = builder.channelMap;
         this.newSourceEventHandler = builder.newSourceEventHandler;
         this.inactiveSourceEventHandler = builder.inactiveSourceEventHandler;
         this.mediaDriver = builder.mediaDriver;
         this.channels = channelMap.keySet().stream().mapToLong(x -> x).toArray();
-        this.mediaDriver.sendAddReceiver(destination.destination(), channels);
+        adminThread.sendAddReceiver(destination.destination(), channels);
     }
 
     public void close()
@@ -63,6 +67,11 @@ public class Receiver implements AutoCloseable
     public void process() throws Exception
     {
 
+    }
+
+    public boolean matches(final String destination, final long[] channelIds)
+    {
+        return this.destination.equals(destination) && Arrays.equals(channels, channelIds);
     }
 
     public enum MessageFlags
@@ -113,8 +122,7 @@ public class Receiver implements AutoCloseable
 
     public static class Builder
     {
-        private Aeron aeron;
-        Destination destination;
+        private Destination destination;
         private Long2ObjectHashMap<DataHandler> channelMap = new Long2ObjectHashMap<>();
         private NewSourceEventHandler newSourceEventHandler;
         private InactiveSourceEventHandler inactiveSourceEventHandler;
@@ -122,12 +130,6 @@ public class Receiver implements AutoCloseable
 
         public Builder()
         {
-        }
-
-        public Builder aeron(final Aeron aeron)
-        {
-            this.aeron = aeron;
-            return this;
         }
 
         public Builder destination(final Destination destination)
@@ -151,12 +153,6 @@ public class Receiver implements AutoCloseable
         public Builder inactiveSourceEvent(final InactiveSourceEventHandler handler)
         {
             inactiveSourceEventHandler = handler;
-            return this;
-        }
-
-        public Builder mediaDriverFacade(final MediaDriverFacade mediaDriver)
-        {
-            this.mediaDriver = mediaDriver;
             return this;
         }
     }

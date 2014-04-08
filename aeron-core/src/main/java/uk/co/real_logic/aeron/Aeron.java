@@ -157,7 +157,7 @@ public final class Aeron
     {
         // TODO: decouple session id from ClientAdminThreadCursor
         final ClientAdminThreadCursor adminThread = new ClientAdminThreadCursor(0L, adminCommandBuffer);
-        final Receiver receiver = new Receiver(null, adminThread, builder);
+        final Receiver receiver = new Receiver(null, adminThread, builder, receivers);
         receivers.add(receiver);
         return receiver;
     }

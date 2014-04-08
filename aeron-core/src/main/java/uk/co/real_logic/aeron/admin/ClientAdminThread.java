@@ -115,16 +115,29 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
                     return;
                 }
                 case ADD_RECEIVER:
+                case REMOVE_RECEIVER:
                 {
                     receiverMessage.wrap(buffer, index);
                     final long[] channelIds = receiverMessage.channelIds();
                     final String destination = receiverMessage.destination();
-                    addReceiver(destination, channelIds);
+                    if (eventTypeId == ADD_RECEIVER)
+                    {
+                        addReceiver(destination, channelIds);
+                    }
+                    else
+                    {
+                        removeReceiver(destination, channelIds);
+                    }
                     sendBuffer.write(eventTypeId, buffer, index, length);
                     return;
                 }
             }
         });
+    }
+
+    private void removeReceiver(final String destination, final long[] channelIds)
+    {
+        // TODO
     }
 
     private void addReceiver(final String destination, final long[] channelIds)

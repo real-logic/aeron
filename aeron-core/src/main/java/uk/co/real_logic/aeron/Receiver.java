@@ -17,8 +17,8 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.admin.ClientAdminThreadCursor;
 import uk.co.real_logic.aeron.admin.TermBufferNotifier;
+import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
-import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -32,29 +32,31 @@ public class Receiver implements AutoCloseable
     private final NewSourceEventHandler newSourceEventHandler;
     private final InactiveSourceEventHandler inactiveSourceEventHandler;
     private final Long2ObjectHashMap<DataHandler> channelMap;
-    private final MediaDriverFacade mediaDriver;
     private final long[] channels;
     private final Long2ObjectHashMap<TermBufferNotifier> notifier;
     private final ClientAdminThreadCursor adminThread;
+    private final AtomicArray<Receiver> receivers;
 
     public Receiver(final Long2ObjectHashMap<TermBufferNotifier> notifier,
                     final ClientAdminThreadCursor adminThread,
-                    final Builder builder)
+                    final Builder builder,
+                    final AtomicArray<Receiver> receivers)
     {
         this.notifier = notifier;
         this.adminThread = adminThread;
+        this.receivers = receivers;
         this.destination = builder.destination;
         this.channelMap = builder.channelMap;
         this.newSourceEventHandler = builder.newSourceEventHandler;
         this.inactiveSourceEventHandler = builder.inactiveSourceEventHandler;
-        this.mediaDriver = builder.mediaDriver;
         this.channels = channelMap.keySet().stream().mapToLong(x -> x).toArray();
         adminThread.sendAddReceiver(destination.destination(), channels);
     }
 
     public void close()
     {
-        mediaDriver.sendRemoveReceiver(destination.destination(), channels);
+        receivers.remove(this);
+        adminThread.sendRemoveReceiver(destination.destination(), channels);
     }
 
     /**
@@ -126,7 +128,6 @@ public class Receiver implements AutoCloseable
         private Long2ObjectHashMap<DataHandler> channelMap = new Long2ObjectHashMap<>();
         private NewSourceEventHandler newSourceEventHandler;
         private InactiveSourceEventHandler inactiveSourceEventHandler;
-        private MediaDriverFacade mediaDriver;
 
         public Builder()
         {

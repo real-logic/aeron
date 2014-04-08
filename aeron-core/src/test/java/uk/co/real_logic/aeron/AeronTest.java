@@ -185,13 +185,44 @@ public class AeronTest
 
         aeron.adminThread().process();
 
-        assertEventRead(toMediaDriver, (eventTypeId, buffer, index, length) ->
+        assertEventRead(toMediaDriver, assertReceiverMessageOfType(ADD_RECEIVER));
+    }
+
+    @Test
+    public void removingReceiverNotifiesMediaDriver()
+    {
+        final RingBuffer toMediaDriver = adminBuffers.toMediaDriver();
+        final Aeron aeron = newAeron();
+        final Receiver receiver = newReceiver(aeron);
+
+        aeron.adminThread().process();
+        skip(toMediaDriver, 1);
+
+        receiver.close();
+        aeron.adminThread().process();
+
+        assertEventRead(toMediaDriver, assertReceiverMessageOfType(REMOVE_RECEIVER));
+    }
+
+    private Receiver newReceiver(final Aeron aeron)
+    {
+        final Receiver.Builder builder = new Receiver.Builder()
+                .destination(new Destination(DESTINATION))
+                .channel(CHANNEL_ID, emptyDataHandler())
+                .channel(CHANNEL_ID_2, emptyDataHandler());
+
+        return aeron.newReceiver(builder);
+    }
+
+    private EventHandler assertReceiverMessageOfType(final int expectedEventTypeId)
+    {
+        return (eventTypeId, buffer, index, length) ->
         {
-            assertThat(eventTypeId, is(ADD_RECEIVER));
+            assertThat(eventTypeId, is(expectedEventTypeId));
             receiverMessage.wrap(buffer, index);
             assertThat(receiverMessage.channelIds(), is(CHANNEL_IDs));
             assertThat(receiverMessage.destination(), is(DESTINATION));
-        });
+        };
     }
 
     private Receiver.DataHandler emptyDataHandler()

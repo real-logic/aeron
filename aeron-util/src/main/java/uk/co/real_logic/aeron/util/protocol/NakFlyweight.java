@@ -21,31 +21,40 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  * Flyweight for a Nak Packet
  *
  * <p>
- * 0                   1                   2                   3
- * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |  Vers       |B|E| Flags       |             Type (=0x01)      |
- * +-------+-+-+-+-+-+-+-+-+-+-+-+-+-------------------------------+
- * |                         Frame Length                          |
- * +---------------------------------------------------------------+
- * |                        Sequence Number                        |
- * +---------------------------------------------------------------+
- * |                          Session ID                           |
- * +---------------------------------------------------------------+
- * |                          Channel ID                           |
- * +---------------------------------------------------------------+
- * |                            Term ID                            |
- * +---------------------------------------------------------------+
+ * @see <a href="https://github.com/real-logic/Aeron/wiki/Protocol-Specification#data-recovery-via-retransmit-request">Data Recovery</a>
  */
 public class NakFlyweight extends HeaderFlyweight
 {
-    /** Size of the Nak Packet */
-    public static final int LENGTH = 24;
+    public static final int MAX_SEQUENCE_NUMBER_RANGES = 16;
 
-    private static final int SEQUENCE_NUMBER_FIELD_OFFSET = 8;
-    private static final int SESSION_ID_FIELD_OFFSET = 12;
-    private static final int CHANNEL_ID_FIELD_OFFSET = 16;
-    private static final int TERM_ID_FIELD_OFFSET = 20;
+    private static final int SEQUENCE_NUMBER_RANGE_SIZE = 16;
+    private static final int START_TERM_ID_RELATIVE_OFFSET = 0;
+    private static final int START_SEQUENCE_NUMBER_RELATIVE_OFFSET = 4;
+    private static final int END_TERM_ID_RELATIVE_OFFSET = 8;
+    private static final int END_SEQUENCE_NUMBER_RELATIVE_OFFSET = 12;
+
+    private static final int SESSION_ID_FIELD_OFFSET = 8;
+    private static final int CHANNEL_ID_FIELD_OFFSET = 12;
+    private static final int SEQUENCE_RANGES_FIELDS_OFFSET = 16;
+
+    public NakFlyweight countOfSequenceNumberRanges(int countOfSequenceNumberRanges)
+    {
+        if (countOfSequenceNumberRanges > MAX_SEQUENCE_NUMBER_RANGES)
+        {
+            String message = String.format("You may request up to %d sequence number ranges, not %d",
+                                           MAX_SEQUENCE_NUMBER_RANGES,
+                                           countOfSequenceNumberRanges);
+            throw new IllegalArgumentException(message);
+        }
+
+        frameLength(SEQUENCE_RANGES_FIELDS_OFFSET + countOfSequenceNumberRanges * SEQUENCE_NUMBER_RANGE_SIZE);
+        return this;
+    }
+
+    public int countOfSequenceNumberRanges()
+    {
+        return (frameLength() - SEQUENCE_RANGES_FIELDS_OFFSET) / SEQUENCE_NUMBER_RANGE_SIZE;
+    }
 
     /**
      * return session id field
@@ -90,46 +99,47 @@ public class NakFlyweight extends HeaderFlyweight
     }
 
     /**
-     * return sequence number field
+     * set a sequence range
      *
-     * @return sequence number field
-     */
-    public long sequenceNumber()
-    {
-        return uint32Get(offset() + SEQUENCE_NUMBER_FIELD_OFFSET, LITTLE_ENDIAN);
-    }
-
-    /**
-     * set sequence number field
-     *
-     * @param sequenceNumber field value
      * @return flyweight
      */
-    public NakFlyweight sequenceNumber(final long sequenceNumber)
+    public NakFlyweight sequenceRange(final long startTermId,
+                                      final long startSequenceNumber,
+                                      final long endTermId,
+                                      final long endSequenceNumber,
+                                      final int index)
     {
-        uint32Put(offset() + SEQUENCE_NUMBER_FIELD_OFFSET, sequenceNumber, LITTLE_ENDIAN);
+        final int offset = sequenceRangeOffset(index);
+        uint32Put(offset + START_TERM_ID_RELATIVE_OFFSET, startTermId, LITTLE_ENDIAN);
+        uint32Put(offset + START_SEQUENCE_NUMBER_RELATIVE_OFFSET, startSequenceNumber, LITTLE_ENDIAN);
+        uint32Put(offset + END_TERM_ID_RELATIVE_OFFSET, endTermId, LITTLE_ENDIAN);
+        uint32Put(offset + END_SEQUENCE_NUMBER_RELATIVE_OFFSET, endSequenceNumber, LITTLE_ENDIAN);
         return this;
     }
 
-    /**
-     * return term id field
-     *
-     * @return term id field
-     */
-    public long termId()
+    public long startTermId(final int index)
     {
-        return uint32Get(offset() + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return uint32Get(sequenceRangeOffset(index) + START_TERM_ID_RELATIVE_OFFSET, LITTLE_ENDIAN);
     }
 
-    /**
-     * set term id field
-     *
-     * @param termId field value
-     * @return flyweight
-     */
-    public NakFlyweight termId(final long termId)
+    public long startSequenceNumber(final int index)
     {
-        uint32Put(offset() + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
-        return this;
+        return uint32Get(sequenceRangeOffset(index) + START_SEQUENCE_NUMBER_RELATIVE_OFFSET, LITTLE_ENDIAN);
     }
+
+    public long endTermId(final int index)
+    {
+        return uint32Get(sequenceRangeOffset(index) + END_TERM_ID_RELATIVE_OFFSET, LITTLE_ENDIAN);
+    }
+
+    public long endSequenceNumber(final int index)
+    {
+        return uint32Get(sequenceRangeOffset(index) + END_SEQUENCE_NUMBER_RELATIVE_OFFSET, LITTLE_ENDIAN);
+    }
+
+    private int sequenceRangeOffset(final int index)
+    {
+        return offset() + SEQUENCE_RANGES_FIELDS_OFFSET + (SEQUENCE_NUMBER_RANGE_SIZE * index);
+    }
+
 }

@@ -15,16 +15,16 @@
  */
 package uk.co.real_logic.aeron;
 
-public class ReceiverChannel
+import uk.co.real_logic.aeron.admin.ChannelNotifiable;
+import uk.co.real_logic.aeron.admin.TermBufferNotifier;
+
+public class ReceiverChannel extends ChannelNotifiable
 {
-    private final Destination destination;
-    private final long channelId;
     private final Receiver.DataHandler value;
 
     public ReceiverChannel(final Destination destination, final long channelId, final Receiver.DataHandler value)
     {
-        this.destination = destination;
-        this.channelId = channelId;
+        super(new TermBufferNotifier(), destination.destination(), channelId);
         this.value = value;
     }
 
@@ -35,7 +35,7 @@ public class ReceiverChannel
 
     public void process() throws Exception
     {
-
+        // TODO: read from log buffer
     }
 
 }

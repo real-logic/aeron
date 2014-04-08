@@ -15,28 +15,21 @@
  */
 package uk.co.real_logic.aeron;
 
+import uk.co.real_logic.aeron.admin.ChannelNotifiable;
 import uk.co.real_logic.aeron.admin.ClientAdminThreadCursor;
 import uk.co.real_logic.aeron.admin.TermBufferNotifier;
 import uk.co.real_logic.aeron.util.AtomicArray;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Aeron Channel
  */
-public class Channel implements AutoCloseable
+public class Channel extends ChannelNotifiable implements AutoCloseable
 {
-    private static final long UNKNOWN_TERM_ID = -1L;
-
-    private final String destination;
     private final ClientAdminThreadCursor adminThread;
-    private final TermBufferNotifier bufferNotifier;
-    private final long channelId;
     private final long sessionId;
     private final AtomicArray<Channel> channels;
-
-    private final AtomicLong currentTermId;
 
     public Channel(final String destination,
                    final ClientAdminThreadCursor adminCursor,
@@ -45,23 +38,15 @@ public class Channel implements AutoCloseable
                    final long sessionId,
                    final AtomicArray<Channel> channels)
     {
-        this.destination = destination;
+        super(bufferNotifier, destination, channelId);
         this.adminThread = adminCursor;
-        this.bufferNotifier = bufferNotifier;
-        this.channelId = channelId;
         this.sessionId = sessionId;
         this.channels = channels;
-        currentTermId = new AtomicLong(UNKNOWN_TERM_ID);
     }
 
     public long channelId()
     {
         return channelId;
-    }
-
-    private boolean hasTerm()
-    {
-        return currentTermId.get() != UNKNOWN_TERM_ID;
     }
 
     /**
@@ -110,24 +95,6 @@ public class Channel implements AutoCloseable
         // TODO: Is this necessary?
     }
 
-    private void requestTerm(final long termId)
-    {
-        adminThread.sendRequestTerm(channelId, termId, destination);
-    }
-
-    private void startTerm()
-    {
-        bufferNotifier.termBufferBlocking(currentTermId.get());
-    }
-
-    private void rollTerm()
-    {
-        bufferNotifier.endOfTermBuffer(currentTermId.get());
-        currentTermId.incrementAndGet();
-        requestTerm(currentTermId.get() + 1);
-        startTerm();
-    }
-
     public void close() throws Exception
     {
         channels.remove(this);
@@ -139,18 +106,17 @@ public class Channel implements AutoCloseable
         return destination.equals(this.destination) && this.sessionId == sessionId && this.channelId == channelId;
     }
 
-    public TermBufferNotifier bufferNotifier()
+    private void requestTerm(final long termId)
     {
-        return bufferNotifier;
+        adminThread.sendRequestTerm(channelId, termId, destination);
     }
 
-    public void newTermBufferMapped(final long termId, final ByteBuffer buffer)
+    private void rollTerm()
     {
-        bufferNotifier.newTermBufferMapped(termId, buffer);
-        if (!hasTerm())
-        {
-            currentTermId.lazySet(termId);
-        }
+        bufferNotifier.endOfTermBuffer(currentTermId.get());
+        currentTermId.incrementAndGet();
+        requestTerm(currentTermId.get() + 1);
+        startTerm();
     }
 
     public boolean hasSessionId(final long sessionId)

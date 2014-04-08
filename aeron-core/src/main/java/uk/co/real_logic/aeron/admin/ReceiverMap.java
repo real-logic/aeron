@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.admin;
 
-import uk.co.real_logic.aeron.Receiver;
+import uk.co.real_logic.aeron.ReceiverChannel;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 
 import java.util.HashMap;
@@ -25,16 +25,16 @@ import static uk.co.real_logic.aeron.util.collections.CollectionUtil.getOrDefaul
 
 public class ReceiverMap
 {
-    private final Map<String, Long2ObjectHashMap<Receiver>> map;
+    private final Map<String, Long2ObjectHashMap<ReceiverChannel>> map;
 
     public ReceiverMap()
     {
         map = new HashMap<>();
     }
 
-    public Receiver get(final String destination, final long channelId)
+    public ReceiverChannel get(final String destination, final long channelId)
     {
-        final Long2ObjectHashMap<Receiver> channelMap = map.get(destination);
+        final Long2ObjectHashMap<ReceiverChannel> channelMap = map.get(destination);
         if (channelMap == null)
         {
             return null;
@@ -43,25 +43,22 @@ public class ReceiverMap
         return channelMap.get(channelId);
     }
 
-    public void put(final String destination, final long[] channelIds, final Receiver value)
+    public void put(final String destination, final long channelId, final ReceiverChannel value)
     {
-        for (final long channelId : channelIds)
-        {
-            final Long2ObjectHashMap<Receiver> channelMap
-                    = getOrDefault(map, destination, ignore -> new Long2ObjectHashMap<>());
-            channelMap.put(channelId, value);
-        }
+        final Long2ObjectHashMap<ReceiverChannel> channelMap
+                = getOrDefault(map, destination, ignore -> new Long2ObjectHashMap<>());
+        channelMap.put(channelId, value);
     }
 
-    public Receiver remove(final String destination, final long channelId)
+    public ReceiverChannel remove(final String destination, final long channelId)
     {
-        final Long2ObjectHashMap<Receiver> channelMap = map.get(destination);
+        final Long2ObjectHashMap<ReceiverChannel> channelMap = map.get(destination);
         if (channelMap == null)
         {
             return null;
         }
 
-        Receiver value = channelMap.remove(channelId);
+        ReceiverChannel value = channelMap.remove(channelId);
 
         if (channelMap.isEmpty())
         {

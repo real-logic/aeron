@@ -75,7 +75,7 @@ public final class Aeron
     private final ClientAdminThread adminThread;
     private final AdminBufferStrategy adminBuffers;
     private final AtomicArray<Channel> channels;
-    private final AtomicArray<Receiver> receivers;
+    private final AtomicArray<ReceiverChannel> receivers;
 
     private Aeron(final Builder builder)
     {
@@ -157,9 +157,7 @@ public final class Aeron
     {
         // TODO: decouple session id from ClientAdminThreadCursor
         final ClientAdminThreadCursor adminThread = new ClientAdminThreadCursor(0L, adminCommandBuffer);
-        final Receiver receiver = new Receiver(null, adminThread, builder, receivers);
-        receivers.add(receiver);
-        return receiver;
+        return new Receiver(adminThread, builder, receivers);
     }
 
     /**

@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.util;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -161,4 +162,24 @@ public class AtomicArray<T>
 
         return newArray;
     }
+
+    public void addAll(final List<T> values)
+    {
+        final Object[] oldArray = arrayRef.get();
+        final int index = oldArray.length;
+        final Object[] newArray = new Object[index + values.size()];
+        System.arraycopy(oldArray, 0, newArray, 0, index);
+        for (int i = 0; i < values.size(); i++)
+        {
+            newArray[index + i] = values.get(i);
+        }
+        arrayRef.set(newArray);
+    }
+
+    public void removeAll(final List<T> values)
+    {
+        // TODO: make this less ludicrously inefficient
+        values.forEach(this::remove);
+    }
+
 }

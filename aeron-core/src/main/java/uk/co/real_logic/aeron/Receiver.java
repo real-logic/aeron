@@ -16,12 +16,13 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.admin.ClientAdminThreadCursor;
-import uk.co.real_logic.aeron.admin.TermBufferNotifier;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
+import java.util.List;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * Aeron receiver
@@ -32,31 +33,34 @@ public class Receiver implements AutoCloseable
     private final NewSourceEventHandler newSourceEventHandler;
     private final InactiveSourceEventHandler inactiveSourceEventHandler;
     private final Long2ObjectHashMap<DataHandler> channelMap;
-    private final long[] channels;
-    private final Long2ObjectHashMap<TermBufferNotifier> notifier;
+    private final long[] channelIds;
     private final ClientAdminThreadCursor adminThread;
-    private final AtomicArray<Receiver> receivers;
+    private final AtomicArray<ReceiverChannel> receivers;
+    private final List<ReceiverChannel> channels;
 
-    public Receiver(final Long2ObjectHashMap<TermBufferNotifier> notifier,
-                    final ClientAdminThreadCursor adminThread,
+    public Receiver(final ClientAdminThreadCursor adminThread,
                     final Builder builder,
-                    final AtomicArray<Receiver> receivers)
+                    final AtomicArray<ReceiverChannel> receivers)
     {
-        this.notifier = notifier;
         this.adminThread = adminThread;
         this.receivers = receivers;
         this.destination = builder.destination;
         this.channelMap = builder.channelMap;
         this.newSourceEventHandler = builder.newSourceEventHandler;
         this.inactiveSourceEventHandler = builder.inactiveSourceEventHandler;
-        this.channels = channelMap.keySet().stream().mapToLong(x -> x).toArray();
-        adminThread.sendAddReceiver(destination.destination(), channels);
+        this.channelIds = channelMap.keySet().stream().mapToLong(i -> i).toArray();
+        this.channels = channelMap.entrySet()
+                                  .stream()
+                                  .map(entry -> new ReceiverChannel(destination, entry.getKey(), entry.getValue()))
+                                  .collect(toList());
+        receivers.addAll(channels);
+        adminThread.sendAddReceiver(destination.destination(), channelIds);
     }
 
     public void close()
     {
-        receivers.remove(this);
-        adminThread.sendRemoveReceiver(destination.destination(), channels);
+        receivers.removeAll(channels);
+        adminThread.sendRemoveReceiver(destination.destination(), channelIds);
     }
 
     /**
@@ -68,12 +72,10 @@ public class Receiver implements AutoCloseable
      */
     public void process() throws Exception
     {
-
-    }
-
-    public boolean matches(final String destination, final long[] channelIds)
-    {
-        return this.destination.equals(destination) && Arrays.equals(channels, channelIds);
+        for (ReceiverChannel channel : channels)
+        {
+            channel.process();
+        }
     }
 
     public enum MessageFlags

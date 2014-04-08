@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.admin;
 
 import uk.co.real_logic.aeron.Channel;
-import uk.co.real_logic.aeron.Receiver;
+import uk.co.real_logic.aeron.ReceiverChannel;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.ClosableThread;
 import uk.co.real_logic.aeron.util.collections.ChannelMap;
@@ -49,7 +49,7 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
 
     private final BufferUsageStrategy bufferUsage;
     private final AtomicArray<Channel> channels;
-    private final AtomicArray<Receiver> receivers;
+    private final AtomicArray<ReceiverChannel> receivers;
     private final ChannelMap<String, Channel> sendNotifiers;
     private final ReceiverMap recvNotifiers;
 
@@ -68,7 +68,7 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
                              final RingBuffer sendBuffer,
                              final BufferUsageStrategy bufferUsage,
                              final AtomicArray<Channel> channels,
-                             final AtomicArray<Receiver> receivers)
+                             final AtomicArray<ReceiverChannel> receivers)
     {
         this.commandBuffer = commandBuffer;
         this.recvBuffer = recvBuffer;
@@ -135,25 +135,23 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
         });
     }
 
-    private void removeReceiver(final String destination, final long[] channelIds)
-    {
-        // TODO
-    }
-
     private void addReceiver(final String destination, final long[] channelIds)
     {
         // Not efficient but only happens once per channel ever
         // and is during setup not a latency critical path
-        receivers.forEach(receiver ->
+        for (final long channelId : channelIds)
         {
-            if (receiver.matches(destination, channelIds))
+            receivers.forEach(receiver ->
             {
-                recvNotifiers.put(destination, channelIds, receiver);
-            }
-        });
+                if (receiver.matches(destination, channelId))
+                {
+                    recvNotifiers.put(destination, channelId, receiver);
+                }
+            });
+        }
     }
 
-    private void removeSender(final String destination, final long channelId, final long sessionId)
+    private void removeReceiver(final String destination, final long[] channelIds)
     {
         // TODO
     }
@@ -168,6 +166,11 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
                 sendNotifiers.put(destination, sessionId, channelId, channel);
             }
         });
+    }
+
+    private void removeSender(final String destination, final long channelId, final long sessionId)
+    {
+        // TODO
     }
 
     private void handleReceiveBuffer()

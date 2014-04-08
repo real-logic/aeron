@@ -153,7 +153,10 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
 
     private void removeReceiver(final String destination, final long[] channelIds)
     {
-        // TODO
+        for (final long channelId : channelIds)
+        {
+            recvNotifiers.remove(destination, channelId);
+        }
     }
 
     private void addSender(final String destination, final long channelId, final long sessionId)
@@ -170,7 +173,10 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
 
     private void removeSender(final String destination, final long channelId, final long sessionId)
     {
-        // TODO
+        if (sendNotifiers.remove(destination, channelId, sessionId) == null)
+        {
+            // TODO: log an error
+        }
     }
 
     private void handleReceiveBuffer()
@@ -246,8 +252,8 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
     {
         try
         {
-            // TODO: re-add receiver case
-            final Channel channel = sendNotifiers.get(destination, sessionId, channelId);
+            ChannelNotifiable channel = isSender ? sendNotifiers.get(destination, sessionId, channelId)
+                                                 : recvNotifiers.get(destination, channelId);
             if (channel == null)
             {
                 // The new buffer refers to another client process,

@@ -99,17 +99,6 @@ public class AeronTest
         assertTrue(channel.offer(sendBuffer));
     }
 
-    private void createTermBuffer(final long termId) throws IOException
-    {
-        final RingBuffer apiBuffer = adminBuffers.toApi();
-        directory.createSenderTermFile(DESTINATION, SESSION_ID, CHANNEL_ID, termId);
-        identifiedMessage.channelId(CHANNEL_ID)
-                         .sessionId(SESSION_ID)
-                         .termId(termId)
-                         .destination(DESTINATION);
-        assertTrue(apiBuffer.write(NEW_SEND_BUFFER_NOTIFICATION, atomicSendBuffer, 0, identifiedMessage.length()));
-    }
-
     @Test
     public void removingChannelsShouldNotifyMediaDriver() throws Exception
     {
@@ -202,6 +191,17 @@ public class AeronTest
         aeron.adminThread().process();
 
         assertEventRead(toMediaDriver, assertReceiverMessageOfType(REMOVE_RECEIVER));
+    }
+
+    private void createTermBuffer(final long termId) throws IOException
+    {
+        final RingBuffer apiBuffer = adminBuffers.toApi();
+        directory.createSenderTermFile(DESTINATION, SESSION_ID, CHANNEL_ID, termId);
+        identifiedMessage.channelId(CHANNEL_ID)
+                .sessionId(SESSION_ID)
+                .termId(termId)
+                .destination(DESTINATION);
+        assertTrue(apiBuffer.write(NEW_SEND_BUFFER_NOTIFICATION, atomicSendBuffer, 0, identifiedMessage.length()));
     }
 
     private Receiver newReceiver(final Aeron aeron)

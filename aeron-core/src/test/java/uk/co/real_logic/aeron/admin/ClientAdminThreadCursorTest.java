@@ -35,20 +35,21 @@ public class ClientAdminThreadCursorTest
 {
 
     private static final long[] CHANNEL_IDS = { 1L, 3L, 4L };
+    private static final long SESSION_ID = 1L;
     public static final String DESTINATION = "udp://localhost:40123@localhost:40124";
     private final RingBuffer sendBuffer = new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocateDirect(TRAILER_SIZE + 1024)));
-    private final ClientAdminThreadCursor thread = new ClientAdminThreadCursor(1L, sendBuffer);
+    private final ClientAdminThreadCursor thread = new ClientAdminThreadCursor(sendBuffer);
 
     @Test
     public void threadSendsAddChannelMessage()
     {
-        threadSendsChannelMessage(() -> thread.sendAddChannel(DESTINATION, 2), ADD_CHANNEL);
+        threadSendsChannelMessage(() -> thread.sendAddChannel(DESTINATION, SESSION_ID, 2), ADD_CHANNEL);
     }
 
     @Test
     public void threadSendsRemoveChannelMessage()
     {
-        threadSendsChannelMessage(() -> thread.sendRemoveChannel(DESTINATION, 2), REMOVE_CHANNEL);
+        threadSendsChannelMessage(() -> thread.sendRemoveChannel(DESTINATION, SESSION_ID, 2), REMOVE_CHANNEL);
     }
 
     private void threadSendsChannelMessage(final Runnable sendMessage, final int expectedEventTypeId)
@@ -86,7 +87,7 @@ public class ClientAdminThreadCursorTest
     @Test
     public void threadSendsRequestTermBufferMessage()
     {
-        thread.sendRequestTerm(2L, 3L, DESTINATION);
+        thread.sendRequestTerm(DESTINATION, SESSION_ID, 2L, 3L);
 
         assertReadsOneMessage((eventTypeId, buffer, index, length) ->
         {

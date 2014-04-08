@@ -112,9 +112,7 @@ public final class Aeron
      */
     public Source newSource(final Source.Builder builder)
     {
-        final String destination = builder.destination.destination();
-        final long sessionId = builder.sessionId();
-        builder.adminThread(new ClientAdminThreadCursor(sessionId, adminCommandBuffer));
+        builder.adminThread(new ClientAdminThreadCursor(adminCommandBuffer));
         return new Source(channels, builder);
     }
 
@@ -155,8 +153,7 @@ public final class Aeron
      */
     public Receiver newReceiver(final Receiver.Builder builder)
     {
-        // TODO: decouple session id from ClientAdminThreadCursor
-        final ClientAdminThreadCursor adminThread = new ClientAdminThreadCursor(0L, adminCommandBuffer);
+        final ClientAdminThreadCursor adminThread = new ClientAdminThreadCursor(adminCommandBuffer);
         return new Receiver(adminThread, builder, receivers);
     }
 

@@ -98,7 +98,7 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
     public void close() throws Exception
     {
         channels.remove(this);
-        adminThread.sendRemoveChannel(destination, channelId);
+        adminThread.sendRemoveChannel(destination, sessionId, channelId);
     }
 
     public boolean matches(final String destination, final long sessionId, final long channelId)
@@ -108,7 +108,7 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
 
     private void requestTerm(final long termId)
     {
-        adminThread.sendRequestTerm(channelId, termId, destination);
+        adminThread.sendRequestTerm(destination, sessionId, channelId, termId);
     }
 
     private void rollTerm()

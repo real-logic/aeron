@@ -36,7 +36,7 @@ public class Source implements AutoCloseable
     public Source(final AtomicArray<Channel> channels, final Builder builder)
     {
         this.channels = channels;
-        this.sessionId = builder.sessionId();
+        this.sessionId = builder.sessionId;
         this.destination = builder.destination;
         this.adminThread = builder.adminThread;
     }
@@ -51,7 +51,7 @@ public class Source implements AutoCloseable
         final TermBufferNotifier bufferNotifier = new TermBufferNotifier();
         final Channel channel = new Channel(destination.destination(), adminThread, bufferNotifier, channelId, sessionId, channels);
         channels.add(channel);
-        adminThread.sendAddChannel(destination.destination(), channelId);
+        adminThread.sendAddChannel(destination.destination(), sessionId, channelId);
         return channel;
     }
 
@@ -106,8 +106,7 @@ public class Source implements AutoCloseable
 
     public static class Builder
     {
-        Destination destination;
-
+        private Destination destination;
         private ClientAdminThreadCursor adminThread;
         private long sessionId;
 
@@ -131,11 +130,6 @@ public class Source implements AutoCloseable
         {
             this.adminThread = adminThread;
             return this;
-        }
-
-        public long sessionId()
-        {
-            return sessionId;
         }
     }
 }

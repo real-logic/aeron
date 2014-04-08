@@ -31,7 +31,6 @@ import java.nio.ByteBuffer;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertThat;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 
 public class AeronTest
@@ -229,7 +228,6 @@ public class AeronTest
     {
         return (buffer, offset, sessionId, flags) ->
         {
-
         };
     }
 

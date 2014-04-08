@@ -35,16 +35,14 @@ public class ClientAdminThreadCursor
     /** Maximum size of the write buffer */
     public static final int WRITE_BUFFER_CAPACITY = 256;
 
-    private final long sessionId;
     private final RingBuffer adminThreadCommandBuffer;
     private final AtomicBuffer writeBuffer;
     private final ChannelMessageFlyweight channelMessage;
     private final ReceiverMessageFlyweight removeReceiverMessage;
     private final CompletelyIdentifiedMessageFlyweight requestTermMessage;
 
-    public ClientAdminThreadCursor(final long sessionId, final RingBuffer adminThreadCommandBuffer)
+    public ClientAdminThreadCursor(final RingBuffer adminThreadCommandBuffer)
     {
-        this.sessionId = sessionId;
         this.adminThreadCommandBuffer = adminThreadCommandBuffer;
         this.writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
         this.channelMessage = new ChannelMessageFlyweight();
@@ -56,12 +54,12 @@ public class ClientAdminThreadCursor
         requestTermMessage.wrap(writeBuffer, 0);
     }
 
-    public void sendAddChannel(final String destination, final long channelId)
+    public void sendAddChannel(final String destination, final long sessionId, final long channelId)
     {
         sendChannelMessage(destination, sessionId, channelId, ADD_CHANNEL);
     }
 
-    public void sendRemoveChannel(final String destination, final long channelId)
+    public void sendRemoveChannel(final String destination, final long sessionId, final long channelId)
     {
         sendChannelMessage(destination, sessionId, channelId, REMOVE_CHANNEL);
     }
@@ -94,7 +92,7 @@ public class ClientAdminThreadCursor
         adminThreadCommandBuffer.write(eventTypeId, writeBuffer, 0, removeReceiverMessage.length());
     }
 
-    public void sendRequestTerm(final long channelId, final long termId, final String destination)
+    public void sendRequestTerm(final String destination, final long sessionId, final long channelId, final long termId)
     {
         requestTermMessage.sessionId(sessionId);
         requestTermMessage.channelId(channelId);

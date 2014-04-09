@@ -128,6 +128,11 @@ public class ReceiverThread extends ClosableThread
         buffers.remove(buffer);
     }
 
+    public RcvFrameHandler frameHandler(final UdpDestination destination)
+    {
+        return rcvDestinationMap.get(destination);
+    }
+
     private void onNewReceiverEvent(final String destination, final long[] channelIdList)
     {
         try

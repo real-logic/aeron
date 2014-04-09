@@ -59,9 +59,10 @@ public class ReceiverMessageFlyweight extends Flyweight
      *
      * @param value the channel id list
      */
-    public void channelIds(long[] value)
+    public ReceiverMessageFlyweight channelIds(long[] value)
     {
         lengthOfChannelIds = uint32ArrayPut(offset() + CHANNEL_IDS_OFFSET, value, LITTLE_ENDIAN);
+        return this;
     }
 
     /**

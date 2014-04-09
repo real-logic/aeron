@@ -47,6 +47,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     private final ThreadLocalRandom rng = ThreadLocalRandom.current();
 
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
+    private final ReceiverMessageFlyweight receiverMessageFlyweight = new ReceiverMessageFlyweight();
     private final ErrorHeaderFlyweight errorHeaderFlyweight = new ErrorHeaderFlyweight();
     private final CompletelyIdentifiedMessageFlyweight completelyIdentifiedMessageFlyweight = new CompletelyIdentifiedMessageFlyweight();
 
@@ -98,6 +99,14 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
                 case ControlProtocolEvents.REMOVE_CHANNEL:
                     channelMessage.wrap(buffer, index);
                     onRemoveChannel(channelMessage);
+                    return;
+                case ControlProtocolEvents.ADD_RECEIVER:
+                    receiverMessageFlyweight.wrap(buffer, index);
+                    onAddReceiver(receiverMessageFlyweight);
+                    return;
+                case ControlProtocolEvents.REMOVE_RECEIVER:
+                    receiverMessageFlyweight.wrap(buffer, index);
+                    onRemoveReceiver(receiverMessageFlyweight);
                     return;
             }
         });

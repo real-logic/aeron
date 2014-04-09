@@ -30,14 +30,17 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
     private final UdpTransport transport;
     private final UdpDestination destination;
     private final Long2ObjectHashMap<RcvChannelState> channelInterestMap;
+    private final MediaDriverAdminThreadCursor mediaDriverAdminThreadCursor;
 
     public RcvFrameHandler(final UdpDestination destination,
-                           final NioSelector nioSelector)
+                           final NioSelector nioSelector,
+                           final MediaDriverAdminThreadCursor mediaDriverAdminThreadCursor)
         throws Exception
     {
         this.transport = new UdpTransport(this, destination, nioSelector);
         this.destination = destination;
         this.channelInterestMap = new Long2ObjectHashMap<>();
+        this.mediaDriverAdminThreadCursor = mediaDriverAdminThreadCursor;
     }
 
     public int sendTo(final ByteBuffer buffer, final long sessionId, final long channelId) throws Exception
@@ -132,24 +135,22 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
                 // TODO: loss detection not done in this thread. Done in adminThread
                 return;
             }
+            // if we don't know the term, this will drop down and the term buffer will be created.
         }
         else
         {
             // new session, so make it here and save srcAddr
             channelState.createSessionState(sessionId, srcAddr);
-            // TODO: this is a new source, so go through message exchange, etc.
+            // TODO: this is a new source, so send 1 SM
         }
 
         // ask admin thread to create buffer for destination, sessionId, channelId, and termId
-        //receiverThread.addRcvCreateTermBufferEvent(destination, sessionId, channelId, termId);
+        mediaDriverAdminThreadCursor.addCreateRcvTermBufferEvent(destination(), sessionId, channelId, termId);
     }
 
     public void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
     {
-        /* TODO:
-           NAK - back-off any pending NAK - admin thread. Could retransmit if we have it
-           SM - ignore
-         */
+        // this should be on the data channel and shouldn't include NAKs or SMs, so ignore.
     }
 
     public void attachBufferState(final RcvBufferState buffer)

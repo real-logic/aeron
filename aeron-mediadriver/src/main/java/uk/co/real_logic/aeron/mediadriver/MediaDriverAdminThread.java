@@ -48,13 +48,14 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
 
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
     private final ErrorHeaderFlyweight errorHeaderFlyweight = new ErrorHeaderFlyweight();
+    private final CompletelyIdentifiedMessageFlyweight completelyIdentifiedMessageFlyweight = new CompletelyIdentifiedMessageFlyweight();
 
     public MediaDriverAdminThread(final MediaDriver.TopologyBuilder builder,
                                   final ReceiverThread receiverThread,
                                   final SenderThread senderThread)
     {
         this.commandBuffer = builder.adminThreadCommandBuffer();
-        this.receiverThreadCursor = new ReceiverThreadCursor(builder.receiverThreadCommandBuffer(), receiverThread);
+        this.receiverThreadCursor = new ReceiverThreadCursor(builder.receiverThreadCommandBuffer(), builder.rcvNioSelector());
         this.bufferManagementStrategy = builder.bufferManagementStrategy();
         this.nioSelector = builder.adminNioSelector();
         this.receiverThread = receiverThread;
@@ -73,15 +74,6 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         }
     }
 
-    public static void addRcvCreateNewTermBufferEvent(final RingBuffer buffer,
-                                                      final UdpDestination destination,
-                                                      final long sessionId,
-                                                      final long channelId,
-                                                      final long termId)
-    {
-        // TODO: add event to command buffer
-    }
-
     public void process()
     {
         try
@@ -94,10 +86,9 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             e.printStackTrace();
         }
 
+        // read from admin receiver buffer for media driver and dispatch
         adminReceiveBuffer.read((eventTypeId, buffer, index, length) ->
         {
-            // TODO: call onAddChannel, etc.
-
             switch (eventTypeId)
             {
                 case ControlProtocolEvents.ADD_CHANNEL:
@@ -110,7 +101,17 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
                     return;
             }
         });
-        // TODO: read from commandBuffer and dispatch to onNakEvent, etc.
+        // read from commandBuffer and dispatch
+        commandBuffer.read((eventTypeId, buffer, index, length) ->
+        {
+            switch (eventTypeId)
+            {
+                case ControlProtocolEvents.CREATE_RCV_TERM_BUFFER:
+                    completelyIdentifiedMessageFlyweight.wrap(buffer, index);
+                    onCreateRcvTermBufferEvent(completelyIdentifiedMessageFlyweight);
+                    return;
+            }
+        });
     }
 
     public void close()
@@ -252,6 +253,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         }
     }
 
+    // TODO: remove this as it is no longer needed with in place buffer reuse strategy
     public void onRemoveTerm(final String destination, final long sessionId, final long channelId, final long termId)
     {
         try
@@ -312,11 +314,13 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
 
     }
 
-    private void onRcvCreateNewTermBufferEvent(final String destination,
-                                               final long sessionId,
-                                               final long channelId,
-                                               final long termId)
+    private void onCreateRcvTermBufferEvent(final CompletelyIdentifiedMessageFlyweight completelyIdentifiedMessageFlyweight)
     {
+        final String destination = completelyIdentifiedMessageFlyweight.destination();
+        final long sessionId = completelyIdentifiedMessageFlyweight.sessionId();
+        final long channelId = completelyIdentifiedMessageFlyweight.channelId();
+        final long termId = completelyIdentifiedMessageFlyweight.termId();
+
         try
         {
             final UdpDestination rcvDestination = UdpDestination.parse(destination);

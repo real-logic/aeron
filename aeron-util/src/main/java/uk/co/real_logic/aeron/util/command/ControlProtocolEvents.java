@@ -47,4 +47,8 @@ public class ControlProtocolEvents
     /** New Send Buffer Notification */
     public static final int NEW_SEND_BUFFER_NOTIFICATION = 0x0A;
 
+    // Within Media Driver between threads
+
+    public static final int CREATE_RCV_TERM_BUFFER = 0xF0;
+
 }

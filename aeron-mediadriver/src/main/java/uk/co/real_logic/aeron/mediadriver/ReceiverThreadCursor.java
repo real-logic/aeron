@@ -32,15 +32,15 @@ public class ReceiverThreadCursor
     private static final int WRITE_BUFFER_CAPACITY = 256;
 
     private final RingBuffer commandBuffer;
-    private final ReceiverThread thread;
+    private final NioSelector selector;
     private final AtomicBuffer writeBuffer;
     private final ReceiverMessageFlyweight receiverMessage;
     private final CompletelyIdentifiedMessageFlyweight addTermBufferMessage;
 
-    public ReceiverThreadCursor(final RingBuffer commandBuffer, final ReceiverThread thread)
+    public ReceiverThreadCursor(final RingBuffer commandBuffer, final NioSelector selector)
     {
         this.commandBuffer = commandBuffer;
-        this.thread = thread;
+        this.selector = selector;
         writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
 
         receiverMessage = new ReceiverMessageFlyweight();
@@ -65,7 +65,7 @@ public class ReceiverThreadCursor
         receiverMessage.channelIds(channelIdList);
         receiverMessage.destination(destination);
         commandBuffer.write(eventTypeId, writeBuffer, 0, receiverMessage.length());
-        thread.wakeup();
+        selector.wakeup();
     }
 
     public void addTermBufferCreatedEvent(final String destination,
@@ -78,7 +78,7 @@ public class ReceiverThreadCursor
         addTermBufferMessage.termId(termId);
         addTermBufferMessage.destination(destination);
         commandBuffer.write(NEW_RECEIVE_BUFFER_NOTIFICATION, writeBuffer, 0, addTermBufferMessage.length());
-        thread.wakeup();
+        selector.wakeup();
     }
 
 }

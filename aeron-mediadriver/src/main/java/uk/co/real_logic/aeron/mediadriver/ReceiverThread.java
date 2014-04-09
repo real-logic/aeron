@@ -31,31 +31,20 @@ import java.util.Map;
 public class ReceiverThread extends ClosableThread
 {
     private final RingBuffer commandBuffer;
-    private final RingBuffer adminThreadCommandBuffer;
     private final NioSelector nioSelector;
+    private final MediaDriverAdminThreadCursor mediaDriverAdminThreadCursor;
     private final Map<UdpDestination, RcvFrameHandler> rcvDestinationMap = new HashMap<>();
     private final ReceiverMessageFlyweight receiverMessage;
-    private final CompletelyIdentifiedMessageFlyweight addTermBufferMessage;
     private final AtomicArray<RcvBufferState> buffers;
 
     public ReceiverThread(final MediaDriver.TopologyBuilder builder) throws Exception
     {
         this.commandBuffer = builder.receiverThreadCommandBuffer();
-        this.adminThreadCommandBuffer = builder.adminThreadCommandBuffer();
+        this.mediaDriverAdminThreadCursor = new MediaDriverAdminThreadCursor(builder.adminThreadCommandBuffer(),
+                                                                             builder.adminNioSelector());
         this.nioSelector = builder.rcvNioSelector();
         this.receiverMessage = new ReceiverMessageFlyweight();
-        this.addTermBufferMessage = new CompletelyIdentifiedMessageFlyweight();
         this.buffers = new AtomicArray<>();
-    }
-
-    public void addRcvCreateTermBufferEvent(final UdpDestination destination,
-                                            final long sessionId,
-                                            final long channelId,
-                                            final long termId)
-    {
-        // send on to admin thread
-        MediaDriverAdminThread.addRcvCreateNewTermBufferEvent(adminThreadCommandBuffer, destination,
-                                                              sessionId, channelId, termId);
     }
 
     public void process()
@@ -120,6 +109,15 @@ public class ReceiverThread extends ClosableThread
         nioSelector.wakeup();
     }
 
+    /**
+     * Return the {@link uk.co.real_logic.aeron.mediadriver.NioSelector} in use by the thread
+     * @return the {@link uk.co.real_logic.aeron.mediadriver.NioSelector} in use by the thread
+     */
+    public NioSelector nioSelector()
+    {
+        return nioSelector;
+    }
+
     public void addBuffer(final RcvBufferState buffer)
     {
         buffers.add(buffer);
@@ -139,7 +137,7 @@ public class ReceiverThread extends ClosableThread
 
             if (null == rcv)
             {
-                rcv = new RcvFrameHandler(rcvDestination, nioSelector);
+                rcv = new RcvFrameHandler(rcvDestination, nioSelector, mediaDriverAdminThreadCursor);
                 rcvDestinationMap.put(rcvDestination, rcv);
             }
 

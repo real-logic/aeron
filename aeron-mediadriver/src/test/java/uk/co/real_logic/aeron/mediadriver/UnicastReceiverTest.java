@@ -20,7 +20,6 @@ import uk.co.real_logic.aeron.mediadriver.buffer.BasicBufferManagementStrategy;
 import uk.co.real_logic.aeron.util.CreatingAdminBufferStrategy;
 import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.MappingAdminBufferStrategy;
-import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;

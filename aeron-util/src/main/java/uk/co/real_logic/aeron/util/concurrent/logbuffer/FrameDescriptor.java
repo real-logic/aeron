@@ -18,13 +18,32 @@ package uk.co.real_logic.aeron.util.concurrent.logbuffer;
 import uk.co.real_logic.aeron.util.BitUtil;
 
 import static java.lang.Integer.valueOf;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BaseMessageHeaderFlyweight.BASE_HEADER_LENGTH;
 
 /**
  * Description of the structure for message framing in a log buffer.
+ * All messages are logged in frames that have a minimum header layout as follows plus a reserve then
+ * the encoded message follows:
  *
- * All messages frames consist of a header and a body. The header is described by sub-class of
- * {@link BaseMessageHeaderFlyweight} that is followed by the encoded message in the body.
+ * <pre>
+ *   0                   1                   2                   3
+ *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *  |  Version      |B|E| Flags     |             Type              |
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-------------------------------+
+ *  |R|                       Frame Length                          |
+ *  +-+-------------------------------------------------------------+
+ *  |R|                       Term Offset                           |
+ *  +-+-------------------------------------------------------------+
+ *  |                      Additional Fields                       ...
+ * ...                                                              |
+ *  +---------------------------------------------------------------+
+ *  |                        Encoded Message                       ...
+ * ...                                                              |
+ *  +---------------------------------------------------------------+
+ * </pre>
+ *
+ * The (B)egin and (E)nd flags are used for message fragmentation. R is for reserved bit.
+ * Both are set for a message that does not span frames.
  *
  */
 public class FrameDescriptor
@@ -34,6 +53,33 @@ public class FrameDescriptor
 
     /** Word alignment for fields. */
     public static final int WORD_ALIGNMENT = BitUtil.SIZE_OF_LONG;
+
+    /** Beginning fragment of a frame. */
+    public static final byte BEGIN_FRAG = (byte)0b1000_0000;
+
+    /** End fragment of a frame. */
+    public static final byte END_FRAG = (byte)0b0100_0000;
+
+    /** End fragment of a frame. */
+    public static final byte UNFRAGMENTED = (byte)(BEGIN_FRAG | END_FRAG);
+
+    /** Length in bytes for the base header fields. */
+    public static final int BASE_HEADER_LENGTH = 12;
+
+    /** Offset within a frame at which the version field begins */
+    public static final int VERSION_OFFSET = 0;
+
+    /** Offset within a frame at which the flags field begins */
+    public static final int FLAGS_OFFSET = 1;
+
+    /** Offset within a frame at which the type field begins */
+    public static final int TYPE_OFFSET = 2;
+
+    /** Offset within a frame at which the length field begins */
+    public static final int LENGTH_OFFSET = 4;
+
+    /** Offset within a frame at which the term offset field begins */
+    public static final int TERM_OFFSET = 8;
 
     /**
      * Calculate the maximum supported message length for a buffer of given capacity.
@@ -48,7 +94,7 @@ public class FrameDescriptor
 
     /**
      * Check the the default header is greater than or equal in size to
-     * {@link BaseMessageHeaderFlyweight#BASE_HEADER_LENGTH} and a multiple of {@link #WORD_ALIGNMENT}.
+     * {@link #BASE_HEADER_LENGTH} and a multiple of {@link #WORD_ALIGNMENT}.
      *
      * @param defaultHeader to check.
      * @throws IllegalStateException if the default header is invalid.
@@ -86,5 +132,60 @@ public class FrameDescriptor
                                            valueOf(FRAME_ALIGNMENT), valueOf(length));
             throw new IllegalStateException(s);
         }
+    }
+
+    /**
+     * The buffer offset at which the version field begins.
+     *
+     * @param frameOffset at which the frame begins.
+     * @return the offset at which the version field begins.
+     */
+    public static int versionOffset(final int frameOffset)
+    {
+        return frameOffset + VERSION_OFFSET;
+    }
+
+    /**
+     * The buffer offset at which the flags field begins.
+     *
+     * @param frameOffset at which the frame begins.
+     * @return the offset at which the flags field begins.
+     */
+    public static int flagsOffset(final int frameOffset)
+    {
+        return frameOffset + FLAGS_OFFSET;
+    }
+
+    /**
+     * The buffer offset at which the type field begins.
+     *
+     * @param frameOffset at which the frame begins.
+     * @return the offset at which the type field begins.
+     */
+    public static int typeOffset(final int frameOffset)
+    {
+        return frameOffset + TYPE_OFFSET;
+    }
+
+    /**
+     * The buffer offset at which the length field begins.
+     *
+     * @param frameOffset at which the frame begins.
+     * @return the offset at which the length field begins.
+     */
+    public static int lengthOffset(final int frameOffset)
+    {
+        return frameOffset + LENGTH_OFFSET;
+    }
+
+    /**
+     * The buffer offset at which the term offset field begins.
+     *
+     * @param frameOffset at which the frame begins.
+     * @return the offset at which the term offset field begins.
+     */
+    public static int termOffsetOffset(final int frameOffset)
+    {
+        return frameOffset + TERM_OFFSET;
     }
 }

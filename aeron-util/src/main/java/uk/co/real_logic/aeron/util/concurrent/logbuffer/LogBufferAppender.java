@@ -17,12 +17,17 @@ package uk.co.real_logic.aeron.util.concurrent.logbuffer;
 
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
+import java.nio.ByteOrder;
+
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.aeron.util.BitUtil.align;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.*;
 
 /**
  * Log buffer appender which supports many producers concurrently writing an append-only log.
+ *
+ * <b>Note:</b> This class is threadsafe.
  *
  * Messages are appending to a log using a framing protocol as described in {@link FrameDescriptor}.
  * If a message is larger than what will fit in a single frame will be fragmented up to {@link #maxMessageLength()}.
@@ -34,7 +39,6 @@ public class LogBufferAppender
 {
     private final AtomicBuffer logBuffer;
     private final AtomicBuffer stateBuffer;
-    private final BaseMessageHeaderFlyweight header;
     private final byte[] defaultHeader;
     private final int capacity;
     private final int maxMessageLength;
@@ -47,13 +51,11 @@ public class LogBufferAppender
      *
      * @param logAtomicBuffer for where events are stored.
      * @param stateAtomicBuffer for where the state of writers is stored manage concurrency.
-     * @param header flyweight for manipulating the message header.
      * @param defaultHeader to be applied for each frame logged.
      * @param maxFrameLength maximum frame length supported by the underlying transport.
      */
     public LogBufferAppender(final AtomicBuffer logAtomicBuffer,
                              final AtomicBuffer stateAtomicBuffer,
-                             final BaseMessageHeaderFlyweight header,
                              final byte[] defaultHeader,
                              final int maxFrameLength)
     {
@@ -65,7 +67,6 @@ public class LogBufferAppender
         this.logBuffer = logAtomicBuffer;
         this.stateBuffer = stateAtomicBuffer;
         this.capacity = logAtomicBuffer.capacity();
-        this.header = header;
         this.defaultHeader = defaultHeader;
         this.maxFrameLength = maxFrameLength;
         this.maxMessageLength = FrameDescriptor.calculateMaxMessageLength(capacity);
@@ -163,11 +164,9 @@ public class LogBufferAppender
         logBuffer.putBytes(frameOffset, defaultHeader, 0, headerLength);
         logBuffer.putBytes(frameOffset + headerLength, srcBuffer, srcOffset, length);
 
-        header.wrap(logBuffer, frameOffset)
-              .beginFragment(true)
-              .endFragment(true)
-              .sequenceNumber(frameOffset)
-              .putLengthOrdered(frameLength);
+        putFlags(frameOffset, UNFRAGMENTED);
+        putTermOffset(frameOffset, frameOffset);
+        putLengthOrdered(frameOffset, frameLength);
 
         return true;
     }
@@ -190,7 +189,7 @@ public class LogBufferAppender
             return false;
         }
 
-        boolean beginFragment = true;
+        byte flags = BEGIN_FRAG;
         int remaining = length;
         do
         {
@@ -203,13 +202,16 @@ public class LogBufferAppender
                                srcOffset + (length - remaining),
                                bytesToWrite);
 
-            header.wrap(logBuffer, frameOffset)
-                  .beginFragment(beginFragment)
-                  .endFragment(remaining <= maxPayload)
-                  .sequenceNumber(frameOffset)
-                  .putLengthOrdered(frameLength);
+            if (remaining <= maxPayload)
+            {
+                flags |= END_FRAG;
+            }
 
-            beginFragment = false;
+            putFlags(frameOffset, flags);
+            putTermOffset(frameOffset, frameOffset);
+            putLengthOrdered(frameOffset, frameLength);
+
+            flags = 0;
             frameOffset += frameLength;
             remaining -= bytesToWrite;
         }
@@ -222,12 +224,35 @@ public class LogBufferAppender
     {
         logBuffer.putBytes(frameOffset, defaultHeader, 0, headerLength);
 
-        header.wrap(logBuffer, frameOffset)
-              .type(PADDING_FRAME_TYPE)
-              .beginFragment(true)
-              .endFragment(true)
-              .sequenceNumber(frameOffset)
-              .putLengthOrdered(capacity - frameOffset);
+        putType(frameOffset, PADDING_FRAME_TYPE);
+        putFlags(frameOffset, UNFRAGMENTED);
+        putTermOffset(frameOffset, frameOffset);
+        putLengthOrdered(frameOffset, capacity - frameOffset);
+    }
+
+    private void putType(final int frameOffset, final short type)
+    {
+        logBuffer.putShort(typeOffset(frameOffset), type, LITTLE_ENDIAN);
+    }
+
+    private void putFlags(final int frameOffset, final byte flags)
+    {
+        logBuffer.putByte(flagsOffset(frameOffset), flags);
+    }
+
+    private void putTermOffset(final int frameOffset, final int termOffset)
+    {
+        logBuffer.putInt(termOffsetOffset(frameOffset), termOffset, LITTLE_ENDIAN);
+    }
+
+    private void putLengthOrdered(final int frameOffset, int frameLength)
+    {
+        if (LITTLE_ENDIAN != ByteOrder.nativeOrder())
+        {
+            frameLength = Integer.reverseBytes(frameLength);
+        }
+
+        logBuffer.putIntOrdered(lengthOffset(frameOffset), frameLength);
     }
 
     private int getTailAndAdd(final int delta)

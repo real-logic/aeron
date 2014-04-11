@@ -130,7 +130,7 @@ public class ManyToOneRingBuffer implements RingBuffer
                 while ((bytesRead < contiguousBlockSize) && (recordsRead <= maxEvents))
                 {
                     final int recordIndex = headIndex + bytesRead;
-                    final int recordLength = waitForRecordLengthOrdered(recordIndex);
+                    final int recordLength = waitForRecordLengthVolatile(recordIndex);
 
                     final int eventLength = getEventLength(recordIndex);
                     final int eventTypeId = getEventType(recordIndex);
@@ -289,7 +289,7 @@ public class ManyToOneRingBuffer implements RingBuffer
         return buffer.getInt(eventLengthOffset(recordIndex));
     }
 
-    private int waitForRecordLengthOrdered(final int recordIndex)
+    private int waitForRecordLengthVolatile(final int recordIndex)
     {
         int recordLength;
         do

@@ -49,24 +49,24 @@ public class LogBufferAppender
     /**
      * Construct a view over a log buffer and state buffer for appending frames.
      *
-     * @param logAtomicBuffer for where events are stored.
-     * @param stateAtomicBuffer for where the state of writers is stored manage concurrency.
+     * @param logBuffer for where events are stored.
+     * @param stateBuffer for where the state of writers is stored manage concurrency.
      * @param defaultHeader to be applied for each frame logged.
      * @param maxFrameLength maximum frame length supported by the underlying transport.
      */
-    public LogBufferAppender(final AtomicBuffer logAtomicBuffer,
-                             final AtomicBuffer stateAtomicBuffer,
+    public LogBufferAppender(final AtomicBuffer logBuffer,
+                             final AtomicBuffer stateBuffer,
                              final byte[] defaultHeader,
                              final int maxFrameLength)
     {
-        checkLogBuffer(logAtomicBuffer);
-        checkStateBuffer(stateAtomicBuffer);
+        checkLogBuffer(logBuffer);
+        checkStateBuffer(stateBuffer);
         checkDefaultHeader(defaultHeader);
         checkMaxFrameLength(maxFrameLength);
 
-        this.logBuffer = logAtomicBuffer;
-        this.stateBuffer = stateAtomicBuffer;
-        this.capacity = logAtomicBuffer.capacity();
+        this.logBuffer = logBuffer;
+        this.stateBuffer = stateBuffer;
+        this.capacity = logBuffer.capacity();
         this.defaultHeader = defaultHeader;
         this.maxFrameLength = maxFrameLength;
         this.maxMessageLength = FrameDescriptor.calculateMaxMessageLength(capacity);

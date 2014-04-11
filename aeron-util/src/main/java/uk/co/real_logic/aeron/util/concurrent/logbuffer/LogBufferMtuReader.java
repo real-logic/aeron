@@ -42,7 +42,6 @@ public class LogBufferMtuReader
 
         /** Data is available and length has been set. */
         AVAILABLE,
-
     }
 
     private final AtomicBuffer logBuffer;

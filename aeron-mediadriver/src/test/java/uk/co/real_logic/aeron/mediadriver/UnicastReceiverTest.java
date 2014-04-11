@@ -30,10 +30,13 @@ import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
+import java.util.stream.IntStream;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.COMMAND_BUFFER_SZ;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_SIZE;
@@ -92,6 +95,8 @@ public class UnicastReceiverTest
     public void tearDown() throws Exception
     {
         senderChannel.close();
+        receiverThread.close();
+        mediaDriverAdminThread.close();
     }
 
     @Test(timeout = 1000)
@@ -99,8 +104,7 @@ public class UnicastReceiverTest
     {
         writeReceiverMessage(ControlProtocolEvents.ADD_RECEIVER, URI, ONE_CHANNEL);
 
-        mediaDriverAdminThread.process();
-        receiverThread.process();
+        processThreads(5);
 
         assertNotNull(receiverThread.frameHandler(UdpDestination.parse(URI)));
     }
@@ -122,31 +126,48 @@ public class UnicastReceiverTest
         // TODO: finish
     }
 
-    @Ignore
     @Test(timeout = 1000)
     public void shouldBeAbleToCreateRcvTermOnZeroLengthData() throws Exception
     {
         writeReceiverMessage(ControlProtocolEvents.ADD_RECEIVER, URI, ONE_CHANNEL);
 
-        mediaDriverAdminThread.process();
-        receiverThread.process();
+        processThreads(5);
 
         final UdpDestination dest = UdpDestination.parse(URI);
 
         assertNotNull(receiverThread.frameHandler(dest));
 
         sendDataFrame(dest, ONE_CHANNEL[0], 0x0);
-        receiverThread.process();
-        mediaDriverAdminThread.process();
 
-        //TODO: finish. assert on term buffer existence. Also, loop on admin and recv threads as NioSelectorTest
+        processThreads(5);
+
+        // TODO: finish. assert on term buffer existence.
+
+        processThreads(5);
+
+        // once the buffer is attached, the receiver should send back an SM
+        final ByteBuffer rcvBuffer = ByteBuffer.allocateDirect(256);
+        final InetSocketAddress rcvAddr = (InetSocketAddress)senderChannel.receive(rcvBuffer);
+
+        assertNotNull(rcvAddr);
+
+        // TODO: finish. assert on SM contents
     }
 
-    @Ignore
     @Test(timeout = 1000)
-    public void shouldBeAbleToAddThenRemoveReceiverWithoutTermBuffer()
+    public void shouldBeAbleToAddThenRemoveReceiverWithoutTermBuffer() throws Exception
     {
-        // TODO: finish
+        writeReceiverMessage(ControlProtocolEvents.ADD_RECEIVER, URI, ONE_CHANNEL);
+
+        processThreads(5);
+
+        assertNotNull(receiverThread.frameHandler(UdpDestination.parse(URI)));
+
+        writeReceiverMessage(ControlProtocolEvents.REMOVE_RECEIVER, URI, ONE_CHANNEL);
+
+        processThreads(5);
+
+        assertNull(receiverThread.frameHandler(UdpDestination.parse(URI)));
     }
 
     @Ignore
@@ -188,7 +209,7 @@ public class UnicastReceiverTest
                            .sessionId(SESSION_ID)
                            .channelId(channelId)
                            .termId(TERM_ID)
-                           .version((byte) 1)
+                           .version(HeaderFlyweight.CURRENT_VERSION)
                            .flags((byte) DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
                            .headerType(HeaderFlyweight.HDR_TYPE_DATA)
                            .frameLength(DataHeaderFlyweight.HEADER_LENGTH);
@@ -196,5 +217,14 @@ public class UnicastReceiverTest
         sendBuffer.position(0);
         sendBuffer.limit(DataHeaderFlyweight.HEADER_LENGTH);
         senderChannel.send(sendBuffer, destination.remoteData());
+    }
+
+    private void processThreads(final int iterations)
+    {
+        IntStream.range(0, iterations).forEach((i) ->
+        {
+            mediaDriverAdminThread.process();
+            receiverThread.process();
+        });
     }
 }

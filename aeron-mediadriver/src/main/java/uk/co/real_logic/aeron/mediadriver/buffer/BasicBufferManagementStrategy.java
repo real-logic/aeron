@@ -155,7 +155,16 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
                                       final long channelId,
                                       final long termId) throws Exception
     {
-        return null;
+        ByteBuffer buffer = rcvTermMap.get(sessionId, channelId, termId);
+
+        if (null == buffer)
+        {
+            buffer = mapTerm(receiverDir, destination.toString(), sessionId, channelId, termId,
+                             MediaDriver.COMMAND_BUFFER_SZ + RingBufferDescriptor.TRAILER_SIZE);
+            rcvTermMap.put(sessionId, channelId, termId, buffer);
+        }
+
+        return buffer;
     }
 
     public ByteBuffer lookupReceiverTerm(final UdpDestination destination,

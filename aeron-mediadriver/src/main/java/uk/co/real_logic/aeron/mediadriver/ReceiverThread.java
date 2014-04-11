@@ -98,6 +98,11 @@ public class ReceiverThread extends ClosableThread
     {
         stop();
         wakeup();
+
+        rcvDestinationMap.forEach((destination, frameHandler) ->
+        {
+            frameHandler.close();
+        });
         // TODO: if needed, use a CountdownLatch to sync...
     }
 
@@ -150,6 +155,7 @@ public class ReceiverThread extends ClosableThread
         }
         catch (Exception e)
         {
+            e.printStackTrace();
             // TODO: AdminThread.sendErrorResponse(ErrorCode.GENERIC_ERROR.value(), e.getMessage().getBytes());
             // TODO: log this as well as send the error response
         }
@@ -178,6 +184,7 @@ public class ReceiverThread extends ClosableThread
         }
         catch (Exception e)
         {
+            e.printStackTrace();
             // TODO: AdminThread.sendErrorResponse(ErrorCode.GENERIC_ERROR.value(), e.getMessage().getBytes());
             // TODO: log this as well as send the error response
         }

@@ -16,8 +16,10 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -31,6 +33,9 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
     private final UdpDestination destination;
     private final Long2ObjectHashMap<RcvChannelState> channelInterestMap;
     private final MediaDriverAdminThreadCursor mediaDriverAdminThreadCursor;
+    private final ByteBuffer sendBuffer;
+    private final AtomicBuffer writeBuffer;
+    private final StatusMessageFlyweight statusMessageFlyweight;
 
     public RcvFrameHandler(final UdpDestination destination,
                            final NioSelector nioSelector,
@@ -41,6 +46,9 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
         this.destination = destination;
         this.channelInterestMap = new Long2ObjectHashMap<>();
         this.mediaDriverAdminThreadCursor = mediaDriverAdminThreadCursor;
+        this.sendBuffer = ByteBuffer.allocateDirect(StatusMessageFlyweight.LENGTH);
+        this.writeBuffer = new AtomicBuffer(sendBuffer);
+        this.statusMessageFlyweight = new StatusMessageFlyweight();
     }
 
     public int sendTo(final ByteBuffer buffer, final long sessionId, final long channelId) throws Exception
@@ -172,5 +180,39 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
         }
 
         sessionState.termBuffer(buffer.termId(), buffer.buffer());
+
+        // now we are all setup, so send an SM to allow the source to send if it is waiting
+        sendStatusMessage(0, 0, buffer.termId(), sessionState, channelState);
+    }
+
+    private int sendStatusMessage(final int seqNum,
+                                  final int window,
+                                  final long termId,
+                                  final RcvSessionState sessionState,
+                                  final RcvChannelState channelState)
+    {
+        statusMessageFlyweight.wrap(writeBuffer, 0);
+
+        statusMessageFlyweight.sessionId(sessionState.sessionId())
+                              .channelId(channelState.channelId())
+                              .termId(termId)
+                              .highestContiguousSequenceNumber(seqNum)
+                              .receiverWindow(window)
+                              .headerType(HeaderFlyweight.HDR_TYPE_SM)
+                              .frameLength(StatusMessageFlyweight.LENGTH)
+                              .flags((byte) 0)
+                              .version(HeaderFlyweight.CURRENT_VERSION);
+
+        sendBuffer.position(0);
+        sendBuffer.limit(StatusMessageFlyweight.LENGTH);
+
+        try
+        {
+            return transport.sendTo(sendBuffer, sessionState.sourceAddress());
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 }

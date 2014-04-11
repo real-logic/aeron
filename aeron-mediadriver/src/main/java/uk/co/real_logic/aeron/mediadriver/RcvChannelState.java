@@ -64,4 +64,9 @@ public class RcvChannelState
     {
         return sessionStateMap.put(sessionId, new RcvSessionState(sessionId, srcAddr));
     }
+
+    public long channelId()
+    {
+        return channelId;
+    }
 }

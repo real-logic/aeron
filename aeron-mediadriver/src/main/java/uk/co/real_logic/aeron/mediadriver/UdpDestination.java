@@ -155,7 +155,7 @@ public class UdpDestination
 
     public String toString()
     {
-        return String.format("udp://%1$s:$2$d@%3$s:%4$d",
+        return String.format("udp://%1$s:%2$d@%3$s:%4$d",
                 localData.getAddress().getHostAddress(), Integer.valueOf(localData.getPort()),
                 remoteData.getAddress().getHostAddress(), Integer.valueOf(remoteData.getPort()));
     }

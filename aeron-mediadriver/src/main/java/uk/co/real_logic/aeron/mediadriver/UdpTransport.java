@@ -80,7 +80,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
         }
         else
         {
-            channel.bind(destination.localData());
+            channel.bind(destination.remoteData());
         }
 
         channel.configureBlocking(false);

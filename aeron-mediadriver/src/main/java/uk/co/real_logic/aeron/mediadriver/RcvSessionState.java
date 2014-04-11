@@ -50,4 +50,9 @@ public class RcvSessionState
     {
         return srcAddr;
     }
+
+    public long sessionId()
+    {
+        return sessionId;
+    }
 }

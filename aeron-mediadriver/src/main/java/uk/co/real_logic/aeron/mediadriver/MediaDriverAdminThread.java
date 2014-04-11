@@ -127,6 +127,11 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     {
         stop();
         wakeup();
+
+        srcDestinationMap.forEach((hash, frameHandler) ->
+        {
+            frameHandler.close();
+        });
     }
 
     public void wakeup()
@@ -341,6 +346,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         }
         catch (Exception e)
         {
+            e.printStackTrace();
             // TODO: handle errors by logging
         }
     }

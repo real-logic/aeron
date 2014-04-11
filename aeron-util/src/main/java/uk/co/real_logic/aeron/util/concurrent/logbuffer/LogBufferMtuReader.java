@@ -123,6 +123,8 @@ public class LogBufferMtuReader
                 final int frameLength = waitForFrameLengthVolatile(offset + length);
                 length += frameLength;
 
+                // TODO handle padding frame
+
                 if (length > mtuLength)
                 {
                     length -= frameLength;

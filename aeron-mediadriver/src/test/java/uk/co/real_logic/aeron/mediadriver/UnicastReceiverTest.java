@@ -163,6 +163,7 @@ public class UnicastReceiverTest
         assertThat(statusMessageFlyweight.channelId(), is(ONE_CHANNEL[0]));
         assertThat(statusMessageFlyweight.sessionId(), is(SESSION_ID));
         assertThat(statusMessageFlyweight.termId(), is(TERM_ID));
+        assertThat(statusMessageFlyweight.frameLength(), is(StatusMessageFlyweight.LENGTH));
     }
 
     @Test(timeout = 1000)

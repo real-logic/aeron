@@ -27,6 +27,7 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,10 +36,13 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.util.stream.IntStream;
 
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.COMMAND_BUFFER_SZ;
+import static uk.co.real_logic.aeron.util.FileMappingConvention.termLocation;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_SIZE;
 
 public class UnicastReceiverTest
@@ -71,6 +75,7 @@ public class UnicastReceiverTest
     private DatagramChannel senderChannel;
     private final ByteBuffer sendBuffer = ByteBuffer.allocateDirect(256);
     private final AtomicBuffer writeBuffer = new AtomicBuffer(sendBuffer);
+    private final StatusMessageFlyweight statusMessageFlyweight = new StatusMessageFlyweight();
 
     @Before
     public void setUp() throws Exception
@@ -142,6 +147,8 @@ public class UnicastReceiverTest
         processThreads(5);
 
         // TODO: finish. assert on term buffer existence.
+        final File termFile = termLocation(new File(adminPath), SESSION_ID, ONE_CHANNEL[0], TERM_ID, false, URI);
+        //assertThat(termFile.exists(), is(true));
 
         processThreads(5);
 
@@ -149,9 +156,13 @@ public class UnicastReceiverTest
         final ByteBuffer rcvBuffer = ByteBuffer.allocateDirect(256);
         final InetSocketAddress rcvAddr = (InetSocketAddress)senderChannel.receive(rcvBuffer);
 
+        statusMessageFlyweight.wrap(rcvBuffer);
         assertNotNull(rcvAddr);
-
-        // TODO: finish. assert on SM contents
+        assertThat(rcvAddr.getPort(), is(dest.remoteData().getPort()));
+        assertThat(statusMessageFlyweight.headerType(), is(HeaderFlyweight.HDR_TYPE_SM));
+        assertThat(statusMessageFlyweight.channelId(), is(ONE_CHANNEL[0]));
+        assertThat(statusMessageFlyweight.sessionId(), is(SESSION_ID));
+        assertThat(statusMessageFlyweight.termId(), is(TERM_ID));
     }
 
     @Test(timeout = 1000)

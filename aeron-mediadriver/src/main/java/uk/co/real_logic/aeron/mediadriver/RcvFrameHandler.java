@@ -182,6 +182,8 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
         sessionState.termBuffer(buffer.termId(), buffer.buffer());
 
         // now we are all setup, so send an SM to allow the source to send if it is waiting
+        // TODO: grab initial seqnum from data and store in sessionState somehow (per TermID)
+        // TODO: need a strategy object to track the initial receiver window to send in the SMs.
         sendStatusMessage(0, 0, buffer.termId(), sessionState, channelState);
     }
 

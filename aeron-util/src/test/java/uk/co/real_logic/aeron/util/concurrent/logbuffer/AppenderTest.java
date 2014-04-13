@@ -31,7 +31,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.PADDING_FRAME_TYPE;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.TAIL_COUNTER_OFFSET;
 
-public class LogBufferAppenderTest
+public class AppenderTest
 {
     private static final int LOG_BUFFER_SIZE = 1024 * 16;
     private static final int STATE_BUFFER_SIZE = 1024;
@@ -41,7 +41,7 @@ public class LogBufferAppenderTest
     private final AtomicBuffer logBuffer = mock(AtomicBuffer.class);
     private final AtomicBuffer stateBuffer = mock(AtomicBuffer.class);
 
-    private LogBufferAppender appender;
+    private Appender appender;
 
     @Before
     public void setUp()
@@ -49,7 +49,7 @@ public class LogBufferAppenderTest
         when(valueOf(logBuffer.capacity())).thenReturn(valueOf(LOG_BUFFER_SIZE));
         when(valueOf(stateBuffer.capacity())).thenReturn(valueOf(STATE_BUFFER_SIZE));
 
-        appender = new LogBufferAppender(logBuffer, stateBuffer, DEFAULT_HEADER, MAX_FRAME_LENGTH);
+        appender = new Appender(logBuffer, stateBuffer, DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }
 
     @Test
@@ -69,7 +69,7 @@ public class LogBufferAppenderTest
     {
         when(valueOf(logBuffer.capacity())).thenReturn(valueOf(LogBufferDescriptor.LOG_MIN_SIZE - 1));
 
-        appender = new LogBufferAppender(logBuffer, stateBuffer, DEFAULT_HEADER, MAX_FRAME_LENGTH);
+        appender = new Appender(logBuffer, stateBuffer, DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }
 
     @Test(expected = IllegalStateException.class)
@@ -78,7 +78,7 @@ public class LogBufferAppenderTest
         final int logBufferCapacity = LogBufferDescriptor.LOG_MIN_SIZE + FRAME_ALIGNMENT + 1;
         when(valueOf(logBuffer.capacity())).thenReturn(valueOf(logBufferCapacity));
 
-        appender = new LogBufferAppender(logBuffer, stateBuffer, DEFAULT_HEADER, MAX_FRAME_LENGTH);
+        appender = new Appender(logBuffer, stateBuffer, DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }
 
     @Test(expected = IllegalStateException.class)
@@ -86,26 +86,26 @@ public class LogBufferAppenderTest
     {
         when(valueOf(stateBuffer.capacity())).thenReturn(valueOf(LogBufferDescriptor.STATE_SIZE - 1));
 
-        appender = new LogBufferAppender(logBuffer, stateBuffer, DEFAULT_HEADER, MAX_FRAME_LENGTH);
+        appender = new Appender(logBuffer, stateBuffer, DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }
 
     @Test(expected = IllegalStateException.class)
     public void shouldThrowExceptionOnDefaultHeaderLengthLessThanBaseHeaderLength()
     {
         int length = BASE_HEADER_LENGTH - 1;
-        appender = new LogBufferAppender(logBuffer, stateBuffer, new byte[length], MAX_FRAME_LENGTH);
+        appender = new Appender(logBuffer, stateBuffer, new byte[length], MAX_FRAME_LENGTH);
     }
 
     @Test(expected = IllegalStateException.class)
     public void shouldThrowExceptionOnDefaultHeaderLengthNotOnWordSizeBoundary()
     {
-        appender = new LogBufferAppender(logBuffer, stateBuffer, new byte[31], MAX_FRAME_LENGTH);
+        appender = new Appender(logBuffer, stateBuffer, new byte[31], MAX_FRAME_LENGTH);
     }
 
     @Test(expected = IllegalStateException.class)
     public void shouldThrowExceptionOnMaxFrameSizeNotOnWordSizeBoundary()
     {
-        appender = new LogBufferAppender(logBuffer, stateBuffer, DEFAULT_HEADER, 1001);
+        appender = new Appender(logBuffer, stateBuffer, DEFAULT_HEADER, 1001);
     }
 
     @Test

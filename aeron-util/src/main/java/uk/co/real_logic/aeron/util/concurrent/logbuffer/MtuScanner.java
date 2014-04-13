@@ -30,7 +30,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescript
  *
  * <b>Note:</b> An instance of this class is not threadsafe. Each thread must have its own instance.
  */
-public class LogBufferMtuReader
+public class MtuScanner
 {
     public enum Status
     {
@@ -61,7 +61,7 @@ public class LogBufferMtuReader
      * @param stateBuffer containing the state variables indicating the tail progress.
      * @param mtuLength of the underlying transport.
      */
-    public LogBufferMtuReader(final AtomicBuffer logBuffer, final AtomicBuffer stateBuffer, final int mtuLength)
+    public MtuScanner(final AtomicBuffer logBuffer, final AtomicBuffer stateBuffer, final int mtuLength)
     {
         checkLogBuffer(logBuffer);
         checkStateBuffer(stateBuffer);
@@ -71,6 +71,26 @@ public class LogBufferMtuReader
         this.stateBuffer = stateBuffer;
         this.mtuLength = mtuLength;
         this.capacity = logBuffer.capacity();
+    }
+
+    /**
+     * The capacity of the underlying log buffer.
+     *
+     * @return the capacity of the underlying log buffer.
+     */
+    public int capacity()
+    {
+        return capacity;
+    }
+
+    /**
+     * The length of the Maximum Transmission Unit for the transport.
+     *
+     * @return the length of the MTU for the transport.
+     */
+    public int mtuLength()
+    {
+        return mtuLength;
     }
 
     /**
@@ -94,7 +114,7 @@ public class LogBufferMtuReader
     }
 
     /**
-     * The {@link LogBufferMtuReader.Status} of the latest scan discovery.
+     * The {@link MtuScanner.Status} of the latest scan discovery.
      *
      * @return status of the latest scan discovery.
      */
@@ -106,7 +126,7 @@ public class LogBufferMtuReader
     /**
      * Scan forward in the buffer for available frames limited by what will fit in the MTU.
      *
-     * @return the {@link LogBufferMtuReader.Status} discovered by the scan.
+     * @return the {@link MtuScanner.Status} discovered by the scan.
      */
     public Status scan()
     {

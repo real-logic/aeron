@@ -35,7 +35,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescript
  * A default message header is applied to each message with the fields filled in for fragment flags, sequence number,
  * and frame length as appropriate.
  */
-public class LogBufferAppender
+public class Appender
 {
     private final AtomicBuffer logBuffer;
     private final AtomicBuffer stateBuffer;
@@ -54,10 +54,10 @@ public class LogBufferAppender
      * @param defaultHeader to be applied for each frame logged.
      * @param maxFrameLength maximum frame length supported by the underlying transport.
      */
-    public LogBufferAppender(final AtomicBuffer logBuffer,
-                             final AtomicBuffer stateBuffer,
-                             final byte[] defaultHeader,
-                             final int maxFrameLength)
+    public Appender(final AtomicBuffer logBuffer,
+                    final AtomicBuffer stateBuffer,
+                    final byte[] defaultHeader,
+                    final int maxFrameLength)
     {
         checkLogBuffer(logBuffer);
         checkStateBuffer(stateBuffer);

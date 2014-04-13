@@ -19,8 +19,8 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import java.nio.ByteOrder;
 
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.checkMaxFrameLength;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.lengthOffset;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.PADDING_FRAME_TYPE;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.checkLogBuffer;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.checkStateBuffer;
 
@@ -32,44 +32,38 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescript
  */
 public class MtuScanner
 {
-    public enum Status
-    {
-        /** Reading of the buffer is now complete. */
-        COMPLETE,
-
-        /** No data is available at this time. */
-        NO_DATA,
-
-        /** Data is available and length has been set. */
-        AVAILABLE,
-    }
-
     private final AtomicBuffer logBuffer;
     private final AtomicBuffer stateBuffer;
     private final int mtuLength;
+    private final int headerLength;
     private final int capacity;
 
     private int offset = 0;
     private int length = 0;
-    private Status status = Status.NO_DATA;
+    private boolean isComplete = false;
 
     /**
      * Construct a reader that iterates over a log buffer with associated state buffer. Messages are identified as
      * they become available up to the MTU limit.
-     *
-     * @param logBuffer containing the framed messages.
+     *  @param logBuffer containing the framed messages.
      * @param stateBuffer containing the state variables indicating the tail progress.
      * @param mtuLength of the underlying transport.
+     * @param headerLength of frame before payload begins.
      */
-    public MtuScanner(final AtomicBuffer logBuffer, final AtomicBuffer stateBuffer, final int mtuLength)
+    public MtuScanner(final AtomicBuffer logBuffer,
+                      final AtomicBuffer stateBuffer,
+                      final int mtuLength,
+                      final int headerLength)
     {
         checkLogBuffer(logBuffer);
         checkStateBuffer(stateBuffer);
         checkMaxFrameLength(mtuLength);
+        checkHeaderLength(headerLength);
 
         this.logBuffer = logBuffer;
         this.stateBuffer = stateBuffer;
         this.mtuLength = mtuLength;
+        this.headerLength = headerLength;
         this.capacity = logBuffer.capacity();
     }
 
@@ -114,37 +108,50 @@ public class MtuScanner
     }
 
     /**
-     * The {@link MtuScanner.Status} of the latest scan discovery.
+     * Is the scanning of the log buffer complete?
      *
-     * @return status of the latest scan discovery.
+     * @return is the scanning of the log buffer complete?
      */
-    public Status status()
+    public boolean isComplete()
     {
-        return status;
+        return isComplete;
     }
 
     /**
      * Scan forward in the buffer for available frames limited by what will fit in the MTU.
      *
-     * @return the {@link MtuScanner.Status} discovered by the scan.
+     * @return true if data is available otherwise false.
      */
-    public Status scan()
+    public boolean scan()
     {
+        if (isComplete)
+        {
+            throw new IllegalStateException("Cannot scan beyond of the buffer");
+        }
+
+        boolean available = false;
         offset += length;
         length = 0;
-        status = Status.NO_DATA;
 
         final int tail = getTailVolatile();
         if (tail > offset)
         {
-            status = Status.AVAILABLE;
+            available = true;
+
             do
             {
-                final int frameLength = waitForFrameLengthVolatile(offset + length);
+                final int frameOffset = offset + length;
+                final int frameLength = waitForFrameLengthVolatile(frameOffset);
+                final int frameType = getFrameType(frameOffset);
+
+                if (PADDING_FRAME_TYPE == frameType)
+                {
+                    length += headerLength;
+                    isComplete = true;
+                    break;
+                }
+
                 length += frameLength;
-
-                // TODO handle padding frame
-
                 if (length > mtuLength)
                 {
                     length -= frameLength;
@@ -155,10 +162,10 @@ public class MtuScanner
         }
         else if (tail == capacity)
         {
-            status = Status.COMPLETE;
+            isComplete = true;
         }
 
-        return status;
+        return available;
     }
 
     /**
@@ -169,6 +176,8 @@ public class MtuScanner
      */
     public void seek(final int offset)
     {
+        isComplete = false;
+
         int tail = getTailVolatile();
         if (offset < 0 || offset > tail)
         {
@@ -178,7 +187,6 @@ public class MtuScanner
 
         this.offset = offset;
         length = 0;
-        status = Status.NO_DATA;
     }
 
     private int waitForFrameLengthVolatile(final int frameOffset)
@@ -196,6 +204,11 @@ public class MtuScanner
         }
 
         return frameLength;
+    }
+
+    private int getFrameType(final int frameOffset)
+    {
+        return logBuffer.getShort(typeOffset(frameOffset), ByteOrder.LITTLE_ENDIAN);
     }
 
     private int getTailVolatile()

@@ -61,7 +61,7 @@ public class Appender
     {
         checkLogBuffer(logBuffer);
         checkStateBuffer(stateBuffer);
-        checkDefaultHeader(defaultHeader);
+        checkHeaderLength(defaultHeader.length);
         checkMaxFrameLength(maxFrameLength);
 
         this.logBuffer = logBuffer;

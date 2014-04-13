@@ -96,23 +96,21 @@ public class FrameDescriptor
      * Check the the default header is greater than or equal in size to
      * {@link #BASE_HEADER_LENGTH} and a multiple of {@link #WORD_ALIGNMENT}.
      *
-     * @param defaultHeader to check.
+     * @param length to check.
      * @throws IllegalStateException if the default header is invalid.
      */
-    public static void checkDefaultHeader(final byte[] defaultHeader)
+    public static void checkHeaderLength(final int length)
     {
-        final int length = defaultHeader.length;
-
         if (length < BASE_HEADER_LENGTH)
         {
-            final String s = String.format("Frame frame length must not be less than %d, length=%d",
+            final String s = String.format("Frame header length must not be less than %d, length=%d",
                                            valueOf(BASE_HEADER_LENGTH), valueOf(length));
             throw new IllegalStateException(s);
         }
 
         if (length % WORD_ALIGNMENT != 0)
         {
-            final String s = String.format("Frame frame length must be a multiple of %d, length=%d",
+            final String s = String.format("Frame header length must be a multiple of %d, length=%d",
                                            valueOf(WORD_ALIGNMENT), valueOf(length));
             throw new IllegalStateException(s);
         }

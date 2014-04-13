@@ -31,6 +31,7 @@ public class MtuScannerTest
     private static final int LOG_BUFFER_SIZE = 1024 * 16;
     private static final int STATE_BUFFER_SIZE = 1024;
     private static final int MTU_LENGTH = 1024;
+    private static final int HEADER_LENGTH = 1024;
 
     private final AtomicBuffer logBuffer = mock(AtomicBuffer.class);
     private final AtomicBuffer stateBuffer = mock(AtomicBuffer.class);
@@ -43,7 +44,7 @@ public class MtuScannerTest
         when(valueOf(logBuffer.capacity())).thenReturn(valueOf(LOG_BUFFER_SIZE));
         when(valueOf(stateBuffer.capacity())).thenReturn(valueOf(STATE_BUFFER_SIZE));
 
-        scanner = new MtuScanner(logBuffer, stateBuffer, MTU_LENGTH);
+        scanner = new MtuScanner(logBuffer, stateBuffer, MTU_LENGTH, HEADER_LENGTH);
     }
 
     @Test

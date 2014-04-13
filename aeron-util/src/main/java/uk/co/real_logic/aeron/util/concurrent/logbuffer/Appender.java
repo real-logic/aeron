@@ -224,7 +224,7 @@ public class Appender
     {
         logBuffer.putBytes(frameOffset, defaultHeader, 0, headerLength);
 
-        putType(frameOffset, PADDING_FRAME_TYPE);
+        putType(frameOffset, PADDING_MSG_TYPE);
         putFlags(frameOffset, UNFRAGMENTED);
         putTermOffset(frameOffset, frameOffset);
         putLengthOrdered(frameOffset, capacity - frameOffset);

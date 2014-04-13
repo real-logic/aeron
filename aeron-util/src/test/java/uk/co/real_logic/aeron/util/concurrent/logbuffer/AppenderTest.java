@@ -28,7 +28,7 @@ import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.BitUtil.align;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.PADDING_FRAME_TYPE;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.PADDING_MSG_TYPE;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.TAIL_COUNTER_OFFSET;
 
 public class AppenderTest
@@ -222,7 +222,7 @@ public class AppenderTest
         final InOrder inOrder = inOrder(logBuffer, stateBuffer);
         inOrder.verify(stateBuffer, times(1)).getAndAddInt(TAIL_COUNTER_OFFSET, requiredFrameSize);
         inOrder.verify(logBuffer, times(1)).putBytes(tailValue, DEFAULT_HEADER, 0, headerLength);
-        inOrder.verify(logBuffer, times(1)).putShort(typeOffset(tailValue), PADDING_FRAME_TYPE, LITTLE_ENDIAN);
+        inOrder.verify(logBuffer, times(1)).putShort(typeOffset(tailValue), PADDING_MSG_TYPE, LITTLE_ENDIAN);
         inOrder.verify(logBuffer, times(1)).putByte(flagsOffset(tailValue), UNFRAGMENTED);
         inOrder.verify(logBuffer, times(1)).putInt(termOffsetOffset(tailValue), tailValue, LITTLE_ENDIAN);
         inOrder.verify(logBuffer, times(1)).putIntOrdered(lengthOffset(tailValue), LOG_BUFFER_SIZE - tailValue);

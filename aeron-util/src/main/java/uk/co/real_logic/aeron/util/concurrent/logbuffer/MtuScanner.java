@@ -20,7 +20,7 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import java.nio.ByteOrder;
 
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.PADDING_FRAME_TYPE;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.PADDING_MSG_TYPE;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.checkLogBuffer;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.checkStateBuffer;
 
@@ -126,7 +126,7 @@ public class MtuScanner
     {
         if (isComplete)
         {
-            throw new IllegalStateException("Cannot scan beyond of the buffer");
+            return false;
         }
 
         boolean available = false;
@@ -140,18 +140,17 @@ public class MtuScanner
 
             do
             {
-                final int frameOffset = offset + length;
-                final int frameLength = waitForFrameLengthVolatile(frameOffset);
-                final int frameType = getFrameType(frameOffset);
+                final int frameLength = waitForFrameLengthVolatile(offset + length);
 
-                if (PADDING_FRAME_TYPE == frameType)
+                if (PADDING_MSG_TYPE == getMessageType(offset + length))
                 {
-                    length += headerLength;
                     isComplete = true;
+                    length += headerLength;
                     break;
                 }
 
                 length += frameLength;
+
                 if (length > mtuLength)
                 {
                     length -= frameLength;
@@ -159,10 +158,11 @@ public class MtuScanner
                 }
             }
             while (tail > (offset + length));
-        }
-        else if (tail == capacity)
-        {
-            isComplete = true;
+
+            if ((offset + length) == capacity)
+            {
+                isComplete = true;
+            }
         }
 
         return available;
@@ -176,15 +176,14 @@ public class MtuScanner
      */
     public void seek(final int offset)
     {
-        isComplete = false;
-
-        int tail = getTailVolatile();
+        final int tail = getTailVolatile();
         if (offset < 0 || offset > tail)
         {
             throw new IllegalStateException(String.format("Invalid offset %d: range is 0 - %d",
                                                           Integer.valueOf(offset), Integer.valueOf(tail)));
         }
 
+        isComplete = false;
         this.offset = offset;
         length = 0;
     }
@@ -206,7 +205,7 @@ public class MtuScanner
         return frameLength;
     }
 
-    private int getFrameType(final int frameOffset)
+    private int getMessageType(final int frameOffset)
     {
         return logBuffer.getShort(typeOffset(frameOffset), ByteOrder.LITTLE_ENDIAN);
     }

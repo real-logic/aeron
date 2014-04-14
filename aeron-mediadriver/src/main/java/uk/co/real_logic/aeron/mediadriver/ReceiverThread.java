@@ -24,6 +24,8 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
+import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION;
+
 /**
  * Receiver Thread for JVM based mediadriver, uses an event loop with command buffer
  */
@@ -31,7 +33,7 @@ public class ReceiverThread extends ClosableThread
 {
     private final RingBuffer commandBuffer;
     private final NioSelector nioSelector;
-    private final MediaDriverAdminThreadCursor mediaDriverAdminThreadCursor;
+    private final MediaDriverAdminThreadCursor adminThreadCursor;
     private final Map<UdpDestination, RcvFrameHandler> rcvDestinationMap = new HashMap<>();
     private final ReceiverMessageFlyweight receiverMessage;
     private final AtomicArray<RcvBufferState> buffers;
@@ -39,7 +41,7 @@ public class ReceiverThread extends ClosableThread
     public ReceiverThread(final MediaDriver.TopologyBuilder builder) throws Exception
     {
         this.commandBuffer = builder.receiverThreadCommandBuffer();
-        this.mediaDriverAdminThreadCursor = new MediaDriverAdminThreadCursor(builder.adminThreadCommandBuffer(),
+        this.adminThreadCursor = new MediaDriverAdminThreadCursor(builder.adminThreadCommandBuffer(),
                                                                              builder.adminNioSelector());
         this.nioSelector = builder.rcvNioSelector();
         this.receiverMessage = new ReceiverMessageFlyweight();
@@ -55,17 +57,31 @@ public class ReceiverThread extends ClosableThread
             // check command buffer for commands
             commandBuffer.read((eventTypeId, buffer, index, length) ->
             {
-                switch (eventTypeId)
+                try
                 {
-                    case ControlProtocolEvents.ADD_RECEIVER:
-                        receiverMessage.wrap(buffer, index);
-                        onNewReceiverEvent(receiverMessage.destination(), receiverMessage.channelIds());
-                        return;
+                    switch (eventTypeId)
+                    {
+                        case ControlProtocolEvents.ADD_RECEIVER:
+                            receiverMessage.wrap(buffer, index);
+                            onNewReceiverEvent(receiverMessage.destination(), receiverMessage.channelIds());
+                            return;
 
-                    case ControlProtocolEvents.REMOVE_RECEIVER:
-                        receiverMessage.wrap(buffer, index);
-                        onRemoveReceiverEvent(receiverMessage.destination(), receiverMessage.channelIds());
-                        return;
+                        case ControlProtocolEvents.REMOVE_RECEIVER:
+                            receiverMessage.wrap(buffer, index);
+                            onRemoveReceiverEvent(receiverMessage.destination(), receiverMessage.channelIds());
+                            return;
+                    }
+                }
+                catch (final InvalidDestinationException e)
+                {
+                    // TODO: log this
+                    e.printStackTrace();
+                    adminThreadCursor.addErrorResponse(INVALID_DESTINATION, receiverMessage, length);
+                }
+                catch (final Exception e)
+                {
+                    // TODO: log this as well as send the error response
+                    e.printStackTrace();
                 }
             });
 
@@ -137,55 +153,37 @@ public class ReceiverThread extends ClosableThread
         return rcvDestinationMap.get(destination);
     }
 
-    private void onNewReceiverEvent(final String destination, final long[] channelIdList)
+    private void onNewReceiverEvent(final String destination, final long[] channelIdList) throws Exception
     {
-        try
-        {
-            final UdpDestination rcvDestination = UdpDestination.parse(destination);
-            RcvFrameHandler rcv = rcvDestinationMap.get(rcvDestination);
+        final UdpDestination rcvDestination = UdpDestination.parse(destination);
+        RcvFrameHandler rcv = rcvDestinationMap.get(rcvDestination);
 
-            if (null == rcv)
-            {
-                rcv = new RcvFrameHandler(rcvDestination, nioSelector, mediaDriverAdminThreadCursor);
-                rcvDestinationMap.put(rcvDestination, rcv);
-            }
-
-            rcv.addChannels(channelIdList);
-        }
-        catch (Exception e)
+        if (null == rcv)
         {
-            e.printStackTrace();
-            // TODO: AdminThread.sendErrorResponse(ErrorCode.GENERIC_ERROR.value(), e.getMessage().getBytes());
-            // TODO: log this as well as send the error response
+            rcv = new RcvFrameHandler(rcvDestination, nioSelector, adminThreadCursor);
+            rcvDestinationMap.put(rcvDestination, rcv);
         }
+
+        rcv.addChannels(channelIdList);
     }
 
     private void onRemoveReceiverEvent(final String destination, final long[] channelIdList)
     {
-        try
+        final UdpDestination rcvDestination = UdpDestination.parse(destination);
+        RcvFrameHandler rcv = rcvDestinationMap.get(rcvDestination);
+
+        if (null == rcv)
         {
-            final UdpDestination rcvDestination = UdpDestination.parse(destination);
-            RcvFrameHandler rcv = rcvDestinationMap.get(rcvDestination);
-
-            if (null == rcv)
-            {
-                throw new IllegalArgumentException("destination unknown for receiver remove: " + destination);
-            }
-
-            rcv.removeChannels(channelIdList);
-
-            // if all channels gone, then take care of removing everything and closing the framehandler
-            if (0 == rcv.channelCount())
-            {
-                rcvDestinationMap.remove(rcvDestination);
-                rcv.close();
-            }
+            throw new IllegalArgumentException("destination unknown for receiver remove: " + destination);
         }
-        catch (Exception e)
+
+        rcv.removeChannels(channelIdList);
+
+        // if all channels gone, then take care of removing everything and closing the framehandler
+        if (0 == rcv.channelCount())
         {
-            e.printStackTrace();
-            // TODO: AdminThread.sendErrorResponse(ErrorCode.GENERIC_ERROR.value(), e.getMessage().getBytes());
-            // TODO: log this as well as send the error response
+            rcvDestinationMap.remove(rcvDestination);
+            rcv.close();
         }
     }
 

@@ -53,13 +53,19 @@ public class UdpDestinationTest
         assertThat(dest.remoteControl(), is(new InetSocketAddress("localhost", 40124)));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = InvalidDestinationException.class)
     public void shouldThrowExceptionForIncorrectScheme() throws Exception
     {
         UdpDestination.parse("unknwonudp://localhost:40124");
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = InvalidDestinationException.class)
+    public void shouldThrowExceptionForMissingAddress() throws Exception
+    {
+        UdpDestination.parse("udp://");
+    }
+
+    @Test(expected = InvalidDestinationException.class)
     public void evenMulticastAddressIsBanned() throws Exception
     {
         UdpDestination.parse("udp://224.10.9.8");
@@ -122,7 +128,7 @@ public class UdpDestinationTest
         assertThat(map.get(dest2), is(1));
     }
 
-    @Test(expected =  IllegalArgumentException.class)
+    @Test(expected =  InvalidDestinationException.class)
     public void shouldThrowExceptionWhenNoDestinationPortSpecified() throws Exception
     {
         UdpDestination.parse("udp://localhost");

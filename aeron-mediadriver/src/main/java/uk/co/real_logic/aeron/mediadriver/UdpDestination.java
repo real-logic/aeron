@@ -9,7 +9,7 @@
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either exprUdpess or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
@@ -39,71 +39,78 @@ public class UdpDestination
     private final String uriStr;
     private final long consistentHash;
 
-    public static UdpDestination parse(final String destinationUri) throws Exception
+    public static UdpDestination parse(final String destinationUri)
     {
-        final URI uri = new URI(destinationUri);
-        final String userInfo = uri.getUserInfo();
-        final int uriPort = uri.getPort();
-
-        if (!"udp".equals(uri.getScheme()))
+        try
         {
-            return malformedUri(destinationUri);
-        }
+            final URI uri = new URI(destinationUri);
+            final String userInfo = uri.getUserInfo();
+            final int uriPort = uri.getPort();
 
-        final Builder builder = new Builder()
-                .uriStr(destinationUri)
-                .consistentHash(BitUtil.generateConsistentHash(destinationUri.getBytes()));
-
-        final InetAddress hostAddress = InetAddress.getByName(uri.getHost());
-        if (hostAddress.isMulticastAddress())
-        {
-            final byte[] addressAsBytes = hostAddress.getAddress();
-            if (BitUtil.isEven(addressAsBytes[LAST_MULTICAST_DIGIT]))
-            {
-                throw new IllegalArgumentException("Multicast data addresses must be odd");
-            }
-
-            addressAsBytes[LAST_MULTICAST_DIGIT]++;
-            final InetSocketAddress controlAddress = new InetSocketAddress(InetAddress.getByAddress(addressAsBytes), 0);
-            final InetSocketAddress dataAddress = new InetSocketAddress(hostAddress, 0);
-
-            builder.localControlAddress(controlAddress)
-                   .remoteControlAddress(controlAddress)
-                   .localDataAddress(dataAddress)
-                   .remoteDataAddress(dataAddress);
-        }
-        else
-        {
-            if (uriPort == -1)
+            if (!"udp".equals(uri.getScheme()))
             {
                 return malformedUri(destinationUri);
             }
 
-            final InetSocketAddress remoteAddress = new InetSocketAddress(hostAddress, uriPort);
-            builder.remoteControlAddress(remoteAddress)
-                   .remoteDataAddress(remoteAddress);
+            final Builder builder = new Builder()
+                    .uriStr(destinationUri)
+                    .consistentHash(BitUtil.generateConsistentHash(destinationUri.getBytes()));
 
-            InetSocketAddress localAddress = new InetSocketAddress(0);
-            if (userInfo != null)
+            final InetAddress hostAddress = InetAddress.getByName(uri.getHost());
+            if (hostAddress.isMulticastAddress())
             {
-                final int colonIndex = userInfo.indexOf(":");
-                if (colonIndex == -1)
+                final byte[] addressAsBytes = hostAddress.getAddress();
+                if (BitUtil.isEven(addressAsBytes[LAST_MULTICAST_DIGIT]))
                 {
-                    localAddress = new InetSocketAddress(InetAddress.getByName(userInfo), 0);
+                    throw new IllegalArgumentException("Multicast data addresses must be odd");
                 }
-                else
+
+                addressAsBytes[LAST_MULTICAST_DIGIT]++;
+                final InetSocketAddress controlAddress = new InetSocketAddress(InetAddress.getByAddress(addressAsBytes), 0);
+                final InetSocketAddress dataAddress = new InetSocketAddress(hostAddress, 0);
+
+                builder.localControlAddress(controlAddress)
+                        .remoteControlAddress(controlAddress)
+                        .localDataAddress(dataAddress)
+                        .remoteDataAddress(dataAddress);
+            }
+            else
+            {
+                if (uriPort == -1)
                 {
-                    final InetAddress specifiedLocalHost = InetAddress.getByName(userInfo.substring(0, colonIndex));
-                    final int localPort = Integer.parseInt(userInfo.substring(colonIndex + 1));
-                    localAddress = new InetSocketAddress(specifiedLocalHost, localPort);
+                    return malformedUri(destinationUri);
                 }
+
+                final InetSocketAddress remoteAddress = new InetSocketAddress(hostAddress, uriPort);
+                builder.remoteControlAddress(remoteAddress)
+                        .remoteDataAddress(remoteAddress);
+
+                InetSocketAddress localAddress = new InetSocketAddress(0);
+                if (userInfo != null)
+                {
+                    final int colonIndex = userInfo.indexOf(":");
+                    if (colonIndex == -1)
+                    {
+                        localAddress = new InetSocketAddress(InetAddress.getByName(userInfo), 0);
+                    }
+                    else
+                    {
+                        final InetAddress specifiedLocalHost = InetAddress.getByName(userInfo.substring(0, colonIndex));
+                        final int localPort = Integer.parseInt(userInfo.substring(colonIndex + 1));
+                        localAddress = new InetSocketAddress(specifiedLocalHost, localPort);
+                    }
+                }
+
+                builder.localControlAddress(localAddress)
+                        .localDataAddress(localAddress);
             }
 
-            builder.localControlAddress(localAddress)
-                    .localDataAddress(localAddress);
+            return new UdpDestination(builder);
         }
-
-        return new UdpDestination(builder);
+        catch (Exception e)
+        {
+            throw new InvalidDestinationException(e);
+        }
     }
 
     private static UdpDestination malformedUri(final String destinationUri)

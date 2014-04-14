@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy;
+import uk.co.real_logic.aeron.util.AdminBufferStrategy;
 import uk.co.real_logic.aeron.util.ClosableThread;
 import uk.co.real_logic.aeron.util.ErrorCode;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
@@ -28,6 +29,8 @@ import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
+
+import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 
 /**
  * Admin thread to take commands from Producers and Consumers as well as handle NAKs and retransmissions
@@ -42,11 +45,12 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     private final SenderThread senderThread;
     private final BufferManagementStrategy bufferManagementStrategy;
     private final RingBuffer adminReceiveBuffer;
+    private final RingBuffer adminSendBuffer;
     private final Long2ObjectHashMap<ControlFrameHandler> srcDestinationMap;
+
     private final Supplier<SenderFlowControlStrategy> senderFlowControl;
 
     private final ThreadLocalRandom rng = ThreadLocalRandom.current();
-
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
     private final ReceiverMessageFlyweight receiverMessageFlyweight = new ReceiverMessageFlyweight();
     private final ErrorHeaderFlyweight errorHeaderFlyweight = new ErrorHeaderFlyweight();
@@ -67,8 +71,9 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
 
         try
         {
-            final ByteBuffer buffer = builder.adminBufferStrategy().toMediaDriver();
-            this.adminReceiveBuffer = new ManyToOneRingBuffer(new AtomicBuffer(buffer));
+            final AdminBufferStrategy adminBufferStrategy = builder.adminBufferStrategy();
+            this.adminReceiveBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBufferStrategy.toMediaDriver()));
+            this.adminSendBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBufferStrategy.toApi()));
         }
         catch (Exception e)
         {
@@ -93,19 +98,19 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         {
             switch (eventTypeId)
             {
-                case ControlProtocolEvents.ADD_CHANNEL:
+                case ADD_CHANNEL:
                     channelMessage.wrap(buffer, index);
                     onAddChannel(channelMessage);
                     return;
-                case ControlProtocolEvents.REMOVE_CHANNEL:
+                case REMOVE_CHANNEL:
                     channelMessage.wrap(buffer, index);
                     onRemoveChannel(channelMessage);
                     return;
-                case ControlProtocolEvents.ADD_RECEIVER:
+                case ADD_RECEIVER:
                     receiverMessageFlyweight.wrap(buffer, index);
                     onAddReceiver(receiverMessageFlyweight);
                     return;
-                case ControlProtocolEvents.REMOVE_RECEIVER:
+                case REMOVE_RECEIVER:
                     receiverMessageFlyweight.wrap(buffer, index);
                     onRemoveReceiver(receiverMessageFlyweight);
                     return;
@@ -119,6 +124,10 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
                 case ControlProtocolEvents.CREATE_RCV_TERM_BUFFER:
                     completelyIdentifiedMessageFlyweight.wrap(buffer, index);
                     onCreateRcvTermBufferEvent(completelyIdentifiedMessageFlyweight);
+                    return;
+                case ERROR_RESPONSE:
+                    errorHeaderFlyweight.wrap(buffer, index);
+                    adminSendBuffer.write(eventTypeId, buffer, index, length);
                     return;
             }
         });
@@ -306,6 +315,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         {
             sendErrorResponse(ErrorCode.GENERIC_ERROR.value(), e.getMessage().getBytes());
             // TODO: log this as well as send the error response
+            e.printStackTrace();
         }
     }
 

@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.util.protocol;
 
 import uk.co.real_logic.aeron.util.ErrorCode;
+import uk.co.real_logic.aeron.util.Flyweight;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
@@ -96,10 +97,24 @@ public class ErrorHeaderFlyweight extends HeaderFlyweight
      */
     public ErrorHeaderFlyweight offendingHeader(final HeaderFlyweight header, final int maxLength)
     {
-        final int len = Math.min(header.frameLength(), maxLength);
+        final int length = Math.min(header.frameLength(), maxLength);
+        return offendingFlyweight(header, length);
+    }
 
-        offendingHeaderFrameLength(len);
-        copyFlyweight(header, offendingHeaderOffset(), len);
+    /**
+     * copy the offending flyweight into this error header. If you are using a HeaderFlyweight
+     * then {@see offendingHeader(HeaderFlyweight, int)}, this is for inter-thread messaging
+     *
+     * sets offending flyweight frame length
+     *
+     * @param offendingFlyweight to include as the offending flyweight
+     * @param length of the offending flyweight to include
+     * @return flyweight
+     */
+    public ErrorHeaderFlyweight offendingFlyweight(final Flyweight offendingFlyweight, final int length)
+    {
+        offendingHeaderFrameLength(length);
+        copyFlyweight(offendingFlyweight, offendingHeaderOffset(), length);
         return this;
     }
 

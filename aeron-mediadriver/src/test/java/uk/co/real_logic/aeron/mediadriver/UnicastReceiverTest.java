@@ -24,6 +24,7 @@ import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
 
@@ -37,6 +38,8 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.COMMAND_BUFFER_SZ;
+import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION;
+import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ERROR_RESPONSE;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_SIZE;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertEventRead;
 
@@ -55,13 +58,17 @@ public class UnicastReceiverTest
     @ClassRule
     public static SharedDirectory directory = new SharedDirectory();
 
+    private final ByteBuffer sendBuffer = ByteBuffer.allocateDirect(256);
+    private final AtomicBuffer writeBuffer = new AtomicBuffer(sendBuffer);
+
+    private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
+    private final ErrorHeaderFlyweight error = new ErrorHeaderFlyweight();
+    private final ReceiverMessageFlyweight receiverMessage = new ReceiverMessageFlyweight();
+
     private SenderThread senderThread;
     private ReceiverThread receiverThread;
     private MediaDriverAdminThread mediaDriverAdminThread;
     private DatagramChannel senderChannel;
-    private final ByteBuffer sendBuffer = ByteBuffer.allocateDirect(256);
-    private final AtomicBuffer writeBuffer = new AtomicBuffer(sendBuffer);
-    private final StatusMessageFlyweight statusMessageFlyweight = new StatusMessageFlyweight();
 
     @Before
     public void setUp() throws Exception
@@ -100,19 +107,25 @@ public class UnicastReceiverTest
         assertNotNull(receiverThread.frameHandler(UdpDestination.parse(URI)));
     }
 
-    @Ignore
     @Test(timeout = 1000)
     public void shouldSendErrorForInvalidUri() throws Exception
     {
         writeReceiverMessage(ControlProtocolEvents.ADD_RECEIVER, INVALID_URI, ONE_CHANNEL);
 
-        mediaDriverAdminThread.process();
-        // TODO: check control buffer to consumer to see if error is there.
+        processThreads(5);
 
-        final RingBuffer toApi = buffers.mappedToApi();
+        final RingBuffer toApi = buffers.toApi();
         assertEventRead(toApi, (eventTypeId, buffer, index, length) ->
         {
+            assertThat(eventTypeId, is(ERROR_RESPONSE));
 
+            error.wrap(buffer, index);
+            assertThat(error.errorCode(), is(INVALID_DESTINATION));
+            assertThat(error.errorStringLength(), is(0));
+
+            receiverMessage.wrap(buffer, error.offendingHeaderOffset());
+            assertThat(receiverMessage.channelIds(), is(ONE_CHANNEL));
+            assertThat(receiverMessage.destination(), is(INVALID_URI));
         });
     }
 
@@ -123,7 +136,7 @@ public class UnicastReceiverTest
         // TODO: finish
     }
 
-    @Test(timeout = 1000)
+    @Test(timeout = 2000)
     public void shouldBeAbleToCreateRcvTermOnZeroLengthData() throws Exception
     {
         writeReceiverMessage(ControlProtocolEvents.ADD_RECEIVER, URI, ONE_CHANNEL);
@@ -148,14 +161,14 @@ public class UnicastReceiverTest
         final ByteBuffer rcvBuffer = ByteBuffer.allocateDirect(256);
         final InetSocketAddress rcvAddr = (InetSocketAddress)senderChannel.receive(rcvBuffer);
 
-        statusMessageFlyweight.wrap(rcvBuffer);
+        statusMessage.wrap(rcvBuffer);
         assertNotNull(rcvAddr);
         assertThat(rcvAddr.getPort(), is(dest.remoteData().getPort()));
-        assertThat(statusMessageFlyweight.headerType(), is(HeaderFlyweight.HDR_TYPE_SM));
-        assertThat(statusMessageFlyweight.channelId(), is(ONE_CHANNEL[0]));
-        assertThat(statusMessageFlyweight.sessionId(), is(SESSION_ID));
-        assertThat(statusMessageFlyweight.termId(), is(TERM_ID));
-        assertThat(statusMessageFlyweight.frameLength(), is(StatusMessageFlyweight.LENGTH));
+        assertThat(statusMessage.headerType(), is(HeaderFlyweight.HDR_TYPE_SM));
+        assertThat(statusMessage.channelId(), is(ONE_CHANNEL[0]));
+        assertThat(statusMessage.sessionId(), is(SESSION_ID));
+        assertThat(statusMessage.termId(), is(TERM_ID));
+        assertThat(statusMessage.frameLength(), is(StatusMessageFlyweight.LENGTH));
     }
 
     @Test(timeout = 1000)
@@ -193,16 +206,12 @@ public class UnicastReceiverTest
     {
         final RingBuffer adminCommands = buffers.mappedToMediaDriver();
 
+        receiverMessage.wrap(writeBuffer, 0);
 
-        //final RingBuffer adminCommands = buffers.toMediaDriver();
-
-        final ReceiverMessageFlyweight receiverMessageFlyweight = new ReceiverMessageFlyweight();
-        receiverMessageFlyweight.wrap(writeBuffer, 0);
-
-        receiverMessageFlyweight.channelIds(channelIds)
+        receiverMessage.channelIds(channelIds)
                                 .destination(destination);
 
-        adminCommands.write(eventTypeId, writeBuffer, 0, receiverMessageFlyweight.length());
+        adminCommands.write(eventTypeId, writeBuffer, 0, receiverMessage.length());
     }
 
     private void sendDataFrame(final UdpDestination destination, final long channelId, final int seqNum)

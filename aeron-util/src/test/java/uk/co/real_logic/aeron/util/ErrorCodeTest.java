@@ -29,7 +29,7 @@ public class ErrorCodeTest
         final ErrorCode[] values = ErrorCode.values();
         for (short i = 0; i < values.length; i++)
         {
-            assertThat(ErrorCode.get(i), is(i));
+            assertThat(ErrorCode.get(i).value(), is(i));
         }
     }
 

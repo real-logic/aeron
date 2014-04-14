@@ -54,7 +54,7 @@ public class AdminBuffers extends ExternalResource
         final File dir = new File(adminDir);
         if (dir.exists())
         {
-            IoUtil.delete(dir, false);
+            IoUtil.delete(dir, true);
         }
         IoUtil.ensureDirectoryExists(dir, "admin dir");
         creatingStrategy = new CreatingAdminBufferStrategy(adminDir, bufferSize);

@@ -35,7 +35,7 @@ public class SharedDirectory extends ExternalResource
         dataDir = new File(Directories.DATA_DIR);
         if (dataDir.exists())
         {
-            IoUtil.delete(dataDir, false);
+            IoUtil.delete(dataDir, true);
         }
         IoUtil.ensureDirectoryExists(dataDir, "data dir");
         mapping = new FileMappingConvention(dataDir.getAbsolutePath());

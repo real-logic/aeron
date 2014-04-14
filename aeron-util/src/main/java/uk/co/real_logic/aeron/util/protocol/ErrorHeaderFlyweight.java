@@ -15,6 +15,8 @@
  */
 package uk.co.real_logic.aeron.util.protocol;
 
+import uk.co.real_logic.aeron.util.ErrorCode;
+
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 /**
@@ -34,9 +36,9 @@ public class ErrorHeaderFlyweight extends HeaderFlyweight
      *
      * @return error code field
      */
-    public short errorCode()
+    public ErrorCode errorCode()
     {
-        return uint8Get(offset() + ERROR_CODE_FIELD_OFFSET);
+        return ErrorCode.get(uint8Get(offset() + ERROR_CODE_FIELD_OFFSET));
     }
 
     /**
@@ -45,9 +47,9 @@ public class ErrorHeaderFlyweight extends HeaderFlyweight
      * @param code field value
      * @return flyweight
      */
-    public ErrorHeaderFlyweight errorCode(final short code)
+    public ErrorHeaderFlyweight errorCode(final ErrorCode code)
     {
-        uint8Put(offset() + ERROR_CODE_FIELD_OFFSET, code);
+        uint8Put(offset() + ERROR_CODE_FIELD_OFFSET, code.value());
         return this;
     }
 

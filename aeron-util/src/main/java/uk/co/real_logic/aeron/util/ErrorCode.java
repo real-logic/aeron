@@ -13,38 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.util.command;
+package uk.co.real_logic.aeron.util;
 
 /**
- * Error codes between mediadriver and library
+ * Error codes between mediadriver and library and the on-wire protocol.
  */
 public enum ErrorCode
 {
-    GENERIC_ERROR(0);
+    GENERIC_ERROR(0),
+    INVALID_DESTINATION(1)
+    ;
 
-    private final int value;
+    private final short value;
 
     ErrorCode(final int value)
     {
-        this.value = value;
+        this.value = (short) value;
     }
 
-    public int value()
+    public short value()
     {
         return value;
     }
 
-    public static ErrorCode get(final int value)
+    public static ErrorCode get(final short value)
     {
-        for (final ErrorCode code : Singleton.VALUES)
+        if (value > Singleton.VALUES.length)
         {
-            if (code.value == value)
-            {
-                return code;
-            }
+            throw new IllegalArgumentException("no ErrorCode for value: " + value);
         }
 
-        throw new IllegalArgumentException("no ErrorCode for value: " + value);
+        return Singleton.VALUES[value];
     }
 
     static class Singleton

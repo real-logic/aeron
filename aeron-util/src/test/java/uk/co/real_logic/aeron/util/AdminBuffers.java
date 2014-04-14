@@ -30,25 +30,32 @@ public class AdminBuffers extends ExternalResource
 
     public static final int BUFFER_SIZE = 512 + TRAILER_SIZE;
 
-    private final AdminBufferStrategy creator;
+    private final AdminBufferStrategy creatingStrategy;
     private final String adminDir;
+    private final AdminBufferStrategy mappingStrategy;
 
     private ByteBuffer toMediaDriver;
     private ByteBuffer toApi;
 
     public AdminBuffers()
     {
+        this(BUFFER_SIZE);
+    }
+
+    public AdminBuffers(int bufferSize)
+    {
         adminDir = System.getProperty("java.io.tmpdir") + "/admin";
         final File dir = new File(adminDir);
         dir.delete();
         dir.mkdir();
-        creator = new CreatingAdminBufferStrategy(adminDir, BUFFER_SIZE);
+        creatingStrategy = new CreatingAdminBufferStrategy(adminDir, bufferSize);
+        mappingStrategy = new MappingAdminBufferStrategy(adminDir);
     }
 
     protected void before() throws Exception
     {
-        toMediaDriver = creator.toMediaDriver();
-        toApi = creator.toApi();
+        toMediaDriver = creatingStrategy.toMediaDriver();
+        toApi = creatingStrategy.toApi();
     }
 
     public RingBuffer toMediaDriver()
@@ -66,8 +73,25 @@ public class AdminBuffers extends ExternalResource
         return new ManyToOneRingBuffer(new AtomicBuffer(buffer));
     }
 
+    public AdminBufferStrategy strategy()
+    {
+        return creatingStrategy;
+    }
+
     public String adminDir()
     {
         return adminDir;
+    }
+
+    public RingBuffer mappedToMediaDriver()
+    {
+        try
+        {
+            return ringBuffer(mappingStrategy.toMediaDriver());
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 }

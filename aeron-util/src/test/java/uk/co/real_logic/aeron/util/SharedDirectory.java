@@ -33,7 +33,7 @@ public class SharedDirectory extends ExternalResource
     protected void before() throws Throwable
     {
         dataDir = new File(Directories.DATA_DIR);
-        dataDir.delete();
+        IoUtil.delete(dataDir, true);
         dataDir.mkdirs();
         mapping = new FileMappingConvention(dataDir.getAbsolutePath());
     }
@@ -48,4 +48,8 @@ public class SharedDirectory extends ExternalResource
         createEmptyFile(termLocation, LogBufferDescriptor.LOG_MIN_SIZE);
     }
 
+    public String dataDir()
+    {
+        return dataDir.getAbsolutePath();
+    }
 }

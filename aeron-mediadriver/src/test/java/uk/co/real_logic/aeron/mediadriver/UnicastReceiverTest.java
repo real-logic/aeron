@@ -17,9 +17,9 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import org.junit.*;
 import uk.co.real_logic.aeron.mediadriver.buffer.BasicBufferManagementStrategy;
-import uk.co.real_logic.aeron.util.CreatingAdminBufferStrategy;
-import uk.co.real_logic.aeron.util.IoUtil;
+import uk.co.real_logic.aeron.util.AdminBuffers;
 import uk.co.real_logic.aeron.util.MappingAdminBufferStrategy;
+import uk.co.real_logic.aeron.util.SharedDirectory;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -29,7 +29,6 @@ import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -40,7 +39,6 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.COMMAND_BUFFER_SZ;
-import static uk.co.real_logic.aeron.util.FileMappingConvention.termLocation;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_SIZE;
 
 public class UnicastReceiverTest
@@ -53,19 +51,11 @@ public class UnicastReceiverTest
     private static final long SESSION_ID = 0xdeadbeefL;
     private static final long TERM_ID = 0xec1L;
 
-    private static String adminPath;
+    @ClassRule
+    public static AdminBuffers buffers = new AdminBuffers(COMMAND_BUFFER_SZ + TRAILER_SIZE);
 
-    @BeforeClass
-    public static void setupDirectories() throws IOException
-    {
-        final File adminDir = new File(System.getProperty("java.io.tmpdir"), ADMIN_DIR);
-        if (adminDir.exists())
-        {
-            IoUtil.delete(adminDir, false);
-        }
-        IoUtil.ensureDirectoryExists(adminDir, ADMIN_DIR);
-        adminPath = adminDir.getAbsolutePath();
-    }
+    @ClassRule
+    public static SharedDirectory directory = new SharedDirectory();
 
     private SenderThread senderThread;
     private ReceiverThread receiverThread;
@@ -84,8 +74,8 @@ public class UnicastReceiverTest
                 .rcvNioSelector(new NioSelector())
                 .adminNioSelector(new NioSelector())
                 .senderFlowControl(DefaultSenderFlowControlStrategy::new)
-                .adminBufferStrategy(new CreatingAdminBufferStrategy(adminPath, COMMAND_BUFFER_SZ + TRAILER_SIZE))
-                .bufferManagementStrategy(new BasicBufferManagementStrategy(adminPath));
+                .adminBufferStrategy(buffers.strategy())
+                .bufferManagementStrategy(new BasicBufferManagementStrategy(directory.dataDir()));
 
         senderThread = mock(SenderThread.class);
         receiverThread = new ReceiverThread(builder);
@@ -145,7 +135,7 @@ public class UnicastReceiverTest
         processThreads(5);
 
         // TODO: finish. assert on term buffer existence.
-        final File termFile = termLocation(new File(adminPath), SESSION_ID, ONE_CHANNEL[0], TERM_ID, false, URI);
+        // final File termFile = termLocation(new File(adminPath), SESSION_ID, ONE_CHANNEL[0], TERM_ID, false, URI);
         //assertThat(termFile.exists(), is(true));
 
         processThreads(5);
@@ -197,8 +187,10 @@ public class UnicastReceiverTest
     private void writeReceiverMessage(final int eventTypeId, final String destination, final long[] channelIds)
             throws IOException
     {
-        final ByteBuffer buffer = new MappingAdminBufferStrategy(adminPath).toMediaDriver();
-        final RingBuffer adminCommands = new ManyToOneRingBuffer(new AtomicBuffer(buffer));
+        final RingBuffer adminCommands = buffers.mappedToMediaDriver();
+
+
+        //final RingBuffer adminCommands = buffers.toMediaDriver();
 
         final ReceiverMessageFlyweight receiverMessageFlyweight = new ReceiverMessageFlyweight();
         receiverMessageFlyweight.wrap(writeBuffer, 0);

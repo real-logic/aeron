@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.ClosableThread;
+import uk.co.real_logic.aeron.util.ErrorCode;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
@@ -25,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION;
+import static uk.co.real_logic.aeron.util.ErrorCode.RECEIVER_NOT_REGISTERED;
 
 /**
  * Receiver Thread for JVM based mediadriver, uses an event loop with command buffer
@@ -76,7 +78,13 @@ public class ReceiverThread extends ClosableThread
                 {
                     // TODO: log this
                     e.printStackTrace();
-                    adminThreadCursor.addErrorResponse(INVALID_DESTINATION, receiverMessage, length);
+                    onError(INVALID_DESTINATION, length);
+                }
+                catch (final DestinationUnknownException e)
+                {
+                    // TODO: log this
+                    e.printStackTrace();
+                    onError(RECEIVER_NOT_REGISTERED, length);
                 }
                 catch (final Exception e)
                 {
@@ -104,6 +112,11 @@ public class ReceiverThread extends ClosableThread
         {
             e.printStackTrace();
         }
+    }
+
+    private void onError(final ErrorCode errorCode, final int length)
+    {
+        adminThreadCursor.addErrorResponse(errorCode, receiverMessage, length);
     }
 
     /**
@@ -174,7 +187,7 @@ public class ReceiverThread extends ClosableThread
 
         if (null == rcv)
         {
-            throw new IllegalArgumentException("destination unknown for receiver remove: " + destination);
+            throw new DestinationUnknownException("destination unknown for receiver remove: " + destination);
         }
 
         rcv.removeChannels(channelIdList);

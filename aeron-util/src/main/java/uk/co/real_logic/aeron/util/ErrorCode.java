@@ -21,7 +21,8 @@ package uk.co.real_logic.aeron.util;
 public enum ErrorCode
 {
     GENERIC_ERROR(0),
-    INVALID_DESTINATION(1)
+    INVALID_DESTINATION(1),
+    RECEIVER_NOT_REGISTERED(2)
     ;
 
     private final short value;

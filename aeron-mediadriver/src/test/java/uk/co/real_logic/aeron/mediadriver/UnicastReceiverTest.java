@@ -39,7 +39,8 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.COMMAND_BUFFER_SZ;
 import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION;
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ERROR_RESPONSE;
+import static uk.co.real_logic.aeron.util.ErrorCode.RECEIVER_NOT_REGISTERED;
+import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_SIZE;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertEventRead;
 
@@ -100,7 +101,7 @@ public class UnicastReceiverTest
     @Test(timeout = 1000)
     public void shouldBeAbleToAddReceiver() throws Exception
     {
-        writeReceiverMessage(ControlProtocolEvents.ADD_RECEIVER, URI, ONE_CHANNEL);
+        writeReceiverMessage(ADD_RECEIVER, URI, ONE_CHANNEL);
 
         processThreads(5);
 
@@ -110,12 +111,11 @@ public class UnicastReceiverTest
     @Test(timeout = 1000)
     public void shouldSendErrorForInvalidUri() throws Exception
     {
-        writeReceiverMessage(ControlProtocolEvents.ADD_RECEIVER, INVALID_URI, ONE_CHANNEL);
+        writeReceiverMessage(ADD_RECEIVER, INVALID_URI, ONE_CHANNEL);
 
         processThreads(5);
 
-        final RingBuffer toApi = buffers.toApi();
-        assertEventRead(toApi, (eventTypeId, buffer, index, length) ->
+        assertEventRead(buffers.toApi(), (eventTypeId, buffer, index, length) ->
         {
             assertThat(eventTypeId, is(ERROR_RESPONSE));
 
@@ -129,17 +129,31 @@ public class UnicastReceiverTest
         });
     }
 
-    @Ignore
     @Test(timeout = 1000)
     public void shouldSendErrorForRemovingNonExistentReceiver() throws Exception
     {
-        // TODO: finish
+        writeReceiverMessage(REMOVE_RECEIVER, URI, ONE_CHANNEL);
+
+        processThreads(5);
+
+        assertEventRead(buffers.toApi(), (eventTypeId, buffer, index, length) ->
+        {
+            assertThat(eventTypeId, is(ERROR_RESPONSE));
+
+            error.wrap(buffer, index);
+            assertThat(error.errorCode(), is(RECEIVER_NOT_REGISTERED));
+            assertThat(error.errorStringLength(), is(0));
+
+            receiverMessage.wrap(buffer, error.offendingHeaderOffset());
+            assertThat(receiverMessage.channelIds(), is(ONE_CHANNEL));
+            assertThat(receiverMessage.destination(), is(URI));
+        });
     }
 
     @Test(timeout = 2000)
     public void shouldBeAbleToCreateRcvTermOnZeroLengthData() throws Exception
     {
-        writeReceiverMessage(ControlProtocolEvents.ADD_RECEIVER, URI, ONE_CHANNEL);
+        writeReceiverMessage(ADD_RECEIVER, URI, ONE_CHANNEL);
 
         processThreads(5);
 
@@ -174,7 +188,7 @@ public class UnicastReceiverTest
     @Test(timeout = 1000)
     public void shouldBeAbleToAddThenRemoveReceiverWithoutTermBuffer() throws Exception
     {
-        writeReceiverMessage(ControlProtocolEvents.ADD_RECEIVER, URI, ONE_CHANNEL);
+        writeReceiverMessage(ADD_RECEIVER, URI, ONE_CHANNEL);
 
         processThreads(5);
 

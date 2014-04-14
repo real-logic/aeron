@@ -45,9 +45,9 @@ public class UdpDestination
         final String userInfo = uri.getUserInfo();
         final int uriPort = uri.getPort();
 
-        if (!"udp".equals(uri.getScheme()) || uriPort == -1)
+        if (!"udp".equals(uri.getScheme()))
         {
-            throw new IllegalArgumentException("malformed destination URI: " + destinationUri);
+            return malformedUri(destinationUri);
         }
 
         final Builder builder = new Builder()
@@ -63,7 +63,7 @@ public class UdpDestination
                 throw new IllegalArgumentException("Multicast data addresses must be odd");
             }
 
-            addressAsBytes[LAST_MULTICAST_DIGIT]--;
+            addressAsBytes[LAST_MULTICAST_DIGIT]++;
             final InetSocketAddress controlAddress = new InetSocketAddress(InetAddress.getByAddress(addressAsBytes), 0);
             final InetSocketAddress dataAddress = new InetSocketAddress(hostAddress, 0);
 
@@ -74,6 +74,11 @@ public class UdpDestination
         }
         else
         {
+            if (uriPort == -1)
+            {
+                return malformedUri(destinationUri);
+            }
+
             final InetSocketAddress remoteAddress = new InetSocketAddress(hostAddress, uriPort);
             builder.remoteControlAddress(remoteAddress)
                    .remoteDataAddress(remoteAddress);
@@ -99,6 +104,11 @@ public class UdpDestination
         }
 
         return new UdpDestination(builder);
+    }
+
+    private static UdpDestination malformedUri(final String destinationUri)
+    {
+        throw new IllegalArgumentException("malformed destination URI: " + destinationUri);
     }
 
     public InetSocketAddress remoteData()
@@ -155,6 +165,11 @@ public class UdpDestination
 
     public String toString()
     {
+        if (isMulticast())
+        {
+            return String.format("udp://%1$s@%2$s", localData.getAddress(), localControl.getAddress());
+        }
+
         return String.format("udp://%1$s:%2$d@%3$s:%4$d",
                 localData.getAddress().getHostAddress(), Integer.valueOf(localData.getPort()),
                 remoteData.getAddress().getHostAddress(), Integer.valueOf(remoteData.getPort()));

@@ -15,10 +15,12 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import org.hamcrest.Matcher;
 import org.junit.Test;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -63,14 +65,29 @@ public class UdpDestinationTest
         UdpDestination.parse("udp://224.10.9.8");
     }
 
-    public void parsesValidMulticastAddresses() throws Exception
+    @Test
+    public void shouldParseValidMulticastAddress() throws Exception
     {
         final UdpDestination dest = UdpDestination.parse("udp://224.10.9.9");
 
-        assertThat(dest.localControl(), is(InetAddress.getByName("224.10.9.10")));
-        assertThat(dest.remoteControl(), is(InetAddress.getByName("224.10.9.10")));
-        assertThat(dest.localData(), is(InetAddress.getByName("224.10.9.9")));
-        assertThat(dest.remoteData(), is(InetAddress.getByName("224.10.9.9")));
+        assertThat(dest.localControl(), isMulticastAddress("224.10.9.10"));
+        assertThat(dest.remoteControl(), isMulticastAddress("224.10.9.10"));
+        assertThat(dest.localData(), isMulticastAddress("224.10.9.9"));
+        assertThat(dest.remoteData(), isMulticastAddress("224.10.9.9"));
+    }
+
+    private Matcher<InetSocketAddress> isMulticastAddress(String addressName) throws UnknownHostException
+    {
+        final InetAddress inetAddress = InetAddress.getByName(addressName);
+        return is(new InetSocketAddress(inetAddress, 0));
+    }
+
+    @Test
+    public void shouldToStringMulticastAddresses() throws Exception
+    {
+        final UdpDestination dest = UdpDestination.parse("udp://224.10.9.9");
+
+        assertThat(dest.toString(), is("udp:///224.10.9.9@/224.10.9.10"));
     }
 
     @Test

@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.ClosableThread;
-import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;

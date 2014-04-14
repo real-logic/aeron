@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron;
+package uk.co.real_logic.aeron.util;
 
 import org.junit.rules.ExternalResource;
-import uk.co.real_logic.aeron.util.AdminBufferStrategy;
-import uk.co.real_logic.aeron.util.CreatingAdminBufferStrategy;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;

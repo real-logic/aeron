@@ -79,7 +79,6 @@ subprojects {
                 }
             }
         }
-
     }
 
     javadoc {
@@ -94,25 +93,37 @@ subprojects {
         from sourceSets.main.allSource
     }
 
+    task testJar(type: Jar, dependsOn: testClasses) {
+        baseName = "test-${project.archivesBaseName}"
+        from sourceSets.test.output
+    }
+
     task javadocJar(type: Jar) {
         classifier = 'javadoc'
         from javadoc.destinationDir
     }
 
+    configurations {
+        tests
+    }
+
     artifacts {
         archives sourcesJar, javadocJar
+        tests testJar
     }
 }
 
 project(':aeron-mediadriver') {
     dependencies {
         compile project(':aeron-util')
+        testCompile project(path: ':aeron-util', configuration: 'tests')
     }
 }
 
 project(':aeron-core') {
     dependencies {
         compile project(':aeron-util')
+        testCompile project(path: ':aeron-util', configuration: 'tests')
     }
 }
 

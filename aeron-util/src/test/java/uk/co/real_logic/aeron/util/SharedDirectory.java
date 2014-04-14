@@ -13,12 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron;
+package uk.co.real_logic.aeron.util;
 
 import org.junit.rules.ExternalResource;
-import uk.co.real_logic.aeron.util.Directories;
-import uk.co.real_logic.aeron.util.FileMappingConvention;
-import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
 
 import java.io.File;

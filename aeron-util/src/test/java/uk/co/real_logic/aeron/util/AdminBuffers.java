@@ -30,10 +30,11 @@ public class AdminBuffers extends ExternalResource
 
     public static final int BUFFER_SIZE = 512 + TRAILER_SIZE;
 
-    private final AdminBufferStrategy creatingStrategy;
     private final String adminDir;
-    private final AdminBufferStrategy mappingStrategy;
+    private final int bufferSize;
 
+    private AdminBufferStrategy creatingStrategy;
+    private AdminBufferStrategy mappingStrategy;
     private ByteBuffer toMediaDriver;
     private ByteBuffer toApi;
 
@@ -44,16 +45,20 @@ public class AdminBuffers extends ExternalResource
 
     public AdminBuffers(int bufferSize)
     {
+        this.bufferSize = bufferSize;
         adminDir = System.getProperty("java.io.tmpdir") + "/admin";
-        final File dir = new File(adminDir);
-        dir.delete();
-        dir.mkdir();
-        creatingStrategy = new CreatingAdminBufferStrategy(adminDir, bufferSize);
-        mappingStrategy = new MappingAdminBufferStrategy(adminDir);
     }
 
     protected void before() throws Exception
     {
+        final File dir = new File(adminDir);
+        if (dir.exists())
+        {
+            IoUtil.delete(dir, false);
+        }
+        IoUtil.ensureDirectoryExists(dir, "admin dir");
+        creatingStrategy = new CreatingAdminBufferStrategy(adminDir, bufferSize);
+        mappingStrategy = new MappingAdminBufferStrategy(adminDir);
         toMediaDriver = creatingStrategy.toMediaDriver();
         toApi = creatingStrategy.toApi();
     }

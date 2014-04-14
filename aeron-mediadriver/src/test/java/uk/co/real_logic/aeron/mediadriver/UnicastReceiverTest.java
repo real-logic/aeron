@@ -18,12 +18,10 @@ package uk.co.real_logic.aeron.mediadriver;
 import org.junit.*;
 import uk.co.real_logic.aeron.mediadriver.buffer.BasicBufferManagementStrategy;
 import uk.co.real_logic.aeron.util.AdminBuffers;
-import uk.co.real_logic.aeron.util.MappingAdminBufferStrategy;
 import uk.co.real_logic.aeron.util.SharedDirectory;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
@@ -43,7 +41,6 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescri
 
 public class UnicastReceiverTest
 {
-    private static final String ADMIN_DIR = "adminDir";
     private static final String URI = "udp://localhost:45678";
     private static final String INVALID_URI = "udp://";
     private static final long[] ONE_CHANNEL = { 10 };

@@ -33,8 +33,11 @@ public class SharedDirectory extends ExternalResource
     protected void before() throws Throwable
     {
         dataDir = new File(Directories.DATA_DIR);
-        IoUtil.delete(dataDir, true);
-        dataDir.mkdirs();
+        if (dataDir.exists())
+        {
+            IoUtil.delete(dataDir, false);
+        }
+        IoUtil.ensureDirectoryExists(dataDir, "data dir");
         mapping = new FileMappingConvention(dataDir.getAbsolutePath());
     }
 

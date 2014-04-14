@@ -15,10 +15,10 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-public class DestinationUnknownException extends IllegalArgumentException
+public class ReceiverNotRegisteredException extends IllegalArgumentException
 {
-    public DestinationUnknownException(final String s)
+    public ReceiverNotRegisteredException(final String message)
     {
-        super(s);
+        super(message);
     }
 }

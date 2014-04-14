@@ -49,6 +49,7 @@ public class UnicastReceiverTest
     private static final String URI = "udp://localhost:45678";
     private static final String INVALID_URI = "udp://";
     private static final long[] ONE_CHANNEL = { 10 };
+    private static final long[] ANOTHER_CHANNEL = { 20 };
     private static final long[] THREE_CHANNELS = { 10, 20, 30 };
     private static final long SESSION_ID = 0xdeadbeefL;
     private static final long TERM_ID = 0xec1L;
@@ -146,6 +147,28 @@ public class UnicastReceiverTest
 
             receiverMessage.wrap(buffer, error.offendingHeaderOffset());
             assertThat(receiverMessage.channelIds(), is(ONE_CHANNEL));
+            assertThat(receiverMessage.destination(), is(URI));
+        });
+    }
+
+    @Test(timeout = 1000)
+    public void shouldSendErrorForRemovingReceiverFromWrongChannels() throws Exception
+    {
+        writeReceiverMessage(ADD_RECEIVER, URI, ONE_CHANNEL);
+        writeReceiverMessage(REMOVE_RECEIVER, URI, ANOTHER_CHANNEL);
+
+        processThreads(5);
+
+        assertEventRead(buffers.toApi(), (eventTypeId, buffer, index, length) ->
+        {
+            assertThat(eventTypeId, is(ERROR_RESPONSE));
+
+            error.wrap(buffer, index);
+            assertThat(error.errorCode(), is(RECEIVER_NOT_REGISTERED));
+            assertThat(error.errorStringLength(), is(0));
+
+            receiverMessage.wrap(buffer, error.offendingHeaderOffset());
+            assertThat(receiverMessage.channelIds(), is(ANOTHER_CHANNEL));
             assertThat(receiverMessage.destination(), is(URI));
         });
     }

@@ -106,12 +106,14 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
         {
             final RcvChannelState channel = channelInterestMap.get(channelId);
 
-            if (null != channel)
+            if (channel == null)
             {
-                if (channel.decrementReference() == 0)
-                {
-                    channelInterestMap.remove(channelId);
-                }
+                throw new ReceiverNotRegisteredException("No channel registered on " + channelId);
+            }
+
+            if (channel.decrementReference() == 0)
+            {
+                channelInterestMap.remove(channelId);
             }
         }
     }

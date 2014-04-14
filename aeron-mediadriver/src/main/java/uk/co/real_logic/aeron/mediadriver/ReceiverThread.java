@@ -80,7 +80,7 @@ public class ReceiverThread extends ClosableThread
                     e.printStackTrace();
                     onError(INVALID_DESTINATION, length);
                 }
-                catch (final DestinationUnknownException e)
+                catch (final ReceiverNotRegisteredException e)
                 {
                     // TODO: log this
                     e.printStackTrace();
@@ -187,7 +187,7 @@ public class ReceiverThread extends ClosableThread
 
         if (null == rcv)
         {
-            throw new DestinationUnknownException("destination unknown for receiver remove: " + destination);
+            throw new ReceiverNotRegisteredException("destination unknown for receiver remove: " + destination);
         }
 
         rcv.removeChannels(channelIdList);

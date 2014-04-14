@@ -25,7 +25,8 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescript
 
 /**
  * Cursor that scans a log buffer reading MTU (Maximum Transmission Unit) ranges of messages
- * as they become available due to the tail progressing.
+ * as they become available due to the tail progressing. This scanner makes the assumption that
+ * the buffer is built in an append only fashion with no gaps.
  *
  * <b>Note:</b> An instance of this class is not threadsafe. Each thread must have its own instance.
  */

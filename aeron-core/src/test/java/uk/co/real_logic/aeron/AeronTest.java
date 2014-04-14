@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
 import uk.co.real_logic.aeron.admin.ClientAdminThread;
 import uk.co.real_logic.aeron.util.AdminBuffers;
@@ -31,6 +31,7 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
@@ -44,11 +45,11 @@ public class AeronTest
     private static final long[] CHANNEL_IDs = { CHANNEL_ID, CHANNEL_ID_2};
     private static final long SESSION_ID = 3L;
 
-    @Rule
-    public SharedDirectory directory = new SharedDirectory();
+    @ClassRule
+    public static SharedDirectory directory = new SharedDirectory();
 
-    @Rule
-    public AdminBuffers adminBuffers = new AdminBuffers();
+    @ClassRule
+    public static AdminBuffers adminBuffers = new AdminBuffers();
 
     private final ChannelMessageFlyweight message = new ChannelMessageFlyweight();
     private final CompletelyIdentifiedMessageFlyweight identifiedMessage = new CompletelyIdentifiedMessageFlyweight();
@@ -264,7 +265,7 @@ public class AeronTest
     private void assertEventRead(final RingBuffer mediaDriverBuffer, final EventHandler handler)
     {
         int eventsRead = mediaDriverBuffer.read(handler);
-        assertThat(eventsRead, is(1));
+        assertThat(eventsRead, is(greaterThanOrEqualTo(1)));
     }
 
     private void skip(final RingBuffer mediaDriverBuffer, int count)

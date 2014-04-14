@@ -54,13 +54,20 @@ public class AdminBuffers extends ExternalResource
         final File dir = new File(adminDir);
         if (dir.exists())
         {
-            IoUtil.delete(dir, true);
+            IoUtil.delete(dir, false);
         }
         IoUtil.ensureDirectoryExists(dir, "admin dir");
         creatingStrategy = new CreatingAdminBufferStrategy(adminDir, bufferSize);
         mappingStrategy = new MappingAdminBufferStrategy(adminDir);
         toMediaDriver = creatingStrategy.toMediaDriver();
         toApi = creatingStrategy.toApi();
+    }
+
+    protected void after()
+    {
+        // Force unmapping of byte buffers to allow deletion
+        IoUtil.unmap((java.nio.MappedByteBuffer) toMediaDriver);
+        IoUtil.unmap((java.nio.MappedByteBuffer) toApi);
     }
 
     public RingBuffer toMediaDriver()

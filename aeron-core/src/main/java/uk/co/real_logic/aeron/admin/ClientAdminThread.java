@@ -50,6 +50,7 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
     private final BufferUsageStrategy bufferUsage;
     private final AtomicArray<Channel> channels;
     private final AtomicArray<ReceiverChannel> receivers;
+    private final AdminErrorHandler errorHandler;
     private final ChannelMap<String, Channel> sendNotifiers;
     private final ReceiverMap recvNotifiers;
 
@@ -68,7 +69,8 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
                              final RingBuffer sendBuffer,
                              final BufferUsageStrategy bufferUsage,
                              final AtomicArray<Channel> channels,
-                             final AtomicArray<ReceiverChannel> receivers)
+                             final AtomicArray<ReceiverChannel> receivers,
+                             final AdminErrorHandler errorHandler)
     {
         this.commandBuffer = commandBuffer;
         this.recvBuffer = recvBuffer;
@@ -76,6 +78,7 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
         this.bufferUsage = bufferUsage;
         this.channels = channels;
         this.receivers = receivers;
+        this.errorHandler = errorHandler;
         this.sendNotifiers = new ChannelMap<>();
         this.recvNotifiers = new ReceiverMap();
 
@@ -194,6 +197,9 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
                                             bufferNotificationMessage.termId(),
                                             isSender,
                                             bufferNotificationMessage.destination());
+                    return;
+                case ERROR_RESPONSE:
+                    errorHandler.onErrorResponse(buffer, index, length);
                     return;
             }
         });

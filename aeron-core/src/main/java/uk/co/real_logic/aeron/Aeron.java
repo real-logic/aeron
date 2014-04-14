@@ -15,10 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.admin.BasicBufferUsageStrategy;
-import uk.co.real_logic.aeron.admin.BufferUsageStrategy;
-import uk.co.real_logic.aeron.admin.ClientAdminThread;
-import uk.co.real_logic.aeron.admin.ClientAdminThreadCursor;
+import uk.co.real_logic.aeron.admin.*;
 import uk.co.real_logic.aeron.util.AdminBufferStrategy;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.Directories;
@@ -38,7 +35,6 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescri
 public final class Aeron
 {
     private static final int ADMIN_BUFFER_SIZE = 512 + TRAILER_SIZE;
-
     // factory methods
 
     /**
@@ -51,6 +47,7 @@ public final class Aeron
     {
         return new Aeron(builder);
     }
+
     /**
      * Creates multiple media drivers associated with multiple Aeron instances that can be used to create sources
      * and receivers.
@@ -90,10 +87,12 @@ public final class Aeron
             final RingBuffer recvBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toApi()));
             final RingBuffer sendBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toMediaDriver()));
             final BufferUsageStrategy bufferUsage = new BasicBufferUsageStrategy(Directories.DATA_DIR);
+            final AdminErrorHandler adminErrorHandler = new AdminErrorHandler(builder.invalidDestinationHandler);
             adminThread = new ClientAdminThread(adminCommandBuffer,
                                                 recvBuffer, sendBuffer,
                                                 bufferUsage,
-                                                channels, receivers);
+                                                channels, receivers,
+                                                adminErrorHandler);
         }
         catch (Exception e)
         {
@@ -179,6 +178,7 @@ public final class Aeron
     {
         private ErrorHandler errorHandler;
         private AdminBufferStrategy adminBuffers;
+        private InvalidDestinationHandler invalidDestinationHandler;
 
         public Builder()
         {
@@ -196,6 +196,12 @@ public final class Aeron
         public Builder adminBufferStrategy(AdminBufferStrategy adminBuffers)
         {
             this.adminBuffers = adminBuffers;
+            return this;
+        }
+
+        public Builder invalidDestinationHandler(final InvalidDestinationHandler invalidDestination)
+        {
+            this.invalidDestinationHandler = invalidDestination;
             return this;
         }
     }

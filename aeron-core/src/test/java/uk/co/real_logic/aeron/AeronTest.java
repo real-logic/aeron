@@ -19,6 +19,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import uk.co.real_logic.aeron.admin.ClientAdminThread;
 import uk.co.real_logic.aeron.util.AdminBuffers;
+import uk.co.real_logic.aeron.util.ErrorCode;
 import uk.co.real_logic.aeron.util.MappingAdminBufferStrategy;
 import uk.co.real_logic.aeron.util.SharedDirectory;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
@@ -27,19 +28,24 @@ import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.EventHandler;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil;
+import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
+import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertEventRead;
+import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.skip;
 
 public class AeronTest
 {
 
     private static final String DESTINATION = "udp://localhost:40124";
+    private static final String INVALID_DESTINATION = "udp://lo124";
     private static final long CHANNEL_ID = 2L;
     private static final long CHANNEL_ID_2 = 4L;
     private static final long[] CHANNEL_IDs = { CHANNEL_ID, CHANNEL_ID_2};
@@ -51,9 +57,13 @@ public class AeronTest
     @ClassRule
     public static AdminBuffers adminBuffers = new AdminBuffers();
 
+    private final InvalidDestinationHandler invalidDestination = mock(InvalidDestinationHandler.class);
+
     private final ChannelMessageFlyweight message = new ChannelMessageFlyweight();
     private final CompletelyIdentifiedMessageFlyweight identifiedMessage = new CompletelyIdentifiedMessageFlyweight();
     private final ReceiverMessageFlyweight receiverMessage = new ReceiverMessageFlyweight();
+
+    private final ErrorHeaderFlyweight errorHeader = new ErrorHeaderFlyweight();
 
     private final ByteBuffer sendBuffer = ByteBuffer.allocate(256);
     private final AtomicBuffer atomicSendBuffer = new AtomicBuffer(sendBuffer);
@@ -61,6 +71,7 @@ public class AeronTest
     public AeronTest()
     {
         identifiedMessage.wrap(atomicSendBuffer, 0);
+        errorHeader.wrap(atomicSendBuffer, 0);
     }
 
     @Test
@@ -110,7 +121,7 @@ public class AeronTest
         final ClientAdminThread adminThread = aeron.adminThread();
 
         adminThread.process();
-        RingBufferTestUtil.skip(buffer, 1);
+        skip(buffer, 1);
 
         channel.close();
         adminThread.process();
@@ -131,7 +142,7 @@ public class AeronTest
         final ClientAdminThread adminThread = aeron.adminThread();
 
         adminThread.process();
-        RingBufferTestUtil.skip(buffer, 1);
+        skip(buffer, 1);
 
         source.close();
         adminThread.process();
@@ -154,12 +165,12 @@ public class AeronTest
         final ClientAdminThread adminThread = aeron.adminThread();
 
         adminThread.process();
-        RingBufferTestUtil.skip(buffer, 1);
+        skip(buffer, 1);
 
         otherSource.close();
         adminThread.process();
 
-        RingBufferTestUtil.skip(buffer, 0);
+        skip(buffer, 0);
     }
 
     @Test
@@ -176,7 +187,7 @@ public class AeronTest
 
         aeron.adminThread().process();
 
-        RingBufferTestUtil.assertEventRead(toMediaDriver, assertReceiverMessageOfType(ADD_RECEIVER));
+        assertEventRead(toMediaDriver, assertReceiverMessageOfType(ADD_RECEIVER));
     }
 
     @Test
@@ -187,12 +198,36 @@ public class AeronTest
         final Receiver receiver = newReceiver(aeron);
 
         aeron.adminThread().process();
-        RingBufferTestUtil.skip(toMediaDriver, 1);
+        skip(toMediaDriver, 1);
 
         receiver.close();
         aeron.adminThread().process();
 
-        RingBufferTestUtil.assertEventRead(toMediaDriver, assertReceiverMessageOfType(REMOVE_RECEIVER));
+        assertEventRead(toMediaDriver, assertReceiverMessageOfType(REMOVE_RECEIVER));
+    }
+
+    @Test
+    public void clientCodeNotifiedOfAnInvalidDestination()
+    {
+        final Aeron aeron = newAeron();
+
+        receiverMessage.wrap(atomicSendBuffer, 0);
+        receiverMessage.channelIds(CHANNEL_IDs);
+        receiverMessage.destination(INVALID_DESTINATION);
+
+        errorHeader.wrap(atomicSendBuffer, receiverMessage.length());
+        errorHeader.errorCode(ErrorCode.INVALID_DESTINATION);
+        errorHeader.offendingFlyweight(receiverMessage, receiverMessage.length());
+        errorHeader.frameLength(ErrorHeaderFlyweight.HEADER_LENGTH + receiverMessage.length());
+
+        adminBuffers.toApi().write(ERROR_RESPONSE,
+                                   atomicSendBuffer,
+                                   receiverMessage.length(),
+                                   errorHeader.frameLength());
+
+        aeron.adminThread().process();
+
+        verify(invalidDestination).onInvalidDestination(INVALID_DESTINATION);
     }
 
     private void createTermBuffer(final long termId) throws IOException
@@ -246,13 +281,15 @@ public class AeronTest
     private Aeron newAeron()
     {
         final Aeron.Builder builder = new Aeron.Builder()
-             .adminBufferStrategy(new MappingAdminBufferStrategy(adminBuffers.adminDir()));
+             .adminBufferStrategy(new MappingAdminBufferStrategy(adminBuffers.adminDir()))
+             .invalidDestinationHandler(invalidDestination);
+
         return Aeron.newSingleMediaDriver(builder);
     }
 
     private void assertChannelMessage(final RingBuffer mediaDriverBuffer, final int expectedEventTypeId)
     {
-        RingBufferTestUtil.assertEventRead(mediaDriverBuffer, (eventTypeId, buffer, index, length) ->
+        assertEventRead(mediaDriverBuffer, (eventTypeId, buffer, index, length) ->
         {
             assertThat(eventTypeId, is(expectedEventTypeId));
             message.wrap(buffer, index);

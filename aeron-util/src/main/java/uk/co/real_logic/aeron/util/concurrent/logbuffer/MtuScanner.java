@@ -125,44 +125,43 @@ public class MtuScanner
      */
     public boolean scan()
     {
-        if (isComplete)
-        {
-            return false;
-        }
-
         boolean available = false;
-        offset += length;
-        length = 0;
 
-        final int tail = getTailVolatile();
-        if (tail > offset)
+        if (!isComplete)
         {
-            available = true;
+            offset += length;
+            length = 0;
 
-            do
+            final int tail = getTailVolatile();
+            if (tail > offset)
             {
-                final int frameLength = waitForFrameLengthVolatile(offset + length);
+                available = true;
 
-                if (PADDING_MSG_TYPE == getMessageType(offset + length))
+                do
+                {
+                    final int frameLength = waitForFrameLengthVolatile(offset + length);
+
+                    if (PADDING_MSG_TYPE == getMessageType(offset + length))
+                    {
+                        isComplete = true;
+                        length += alignedHeaderLength;
+                        break;
+                    }
+
+                    length += frameLength;
+
+                    if (length > mtuLength)
+                    {
+                        length -= frameLength;
+                        break;
+                    }
+                }
+                while (tail > (offset + length));
+
+                if ((offset + length) == capacity)
                 {
                     isComplete = true;
-                    length += alignedHeaderLength;
-                    break;
                 }
-
-                length += frameLength;
-
-                if (length > mtuLength)
-                {
-                    length -= frameLength;
-                    break;
-                }
-            }
-            while (tail > (offset + length));
-
-            if ((offset + length) == capacity)
-            {
-                isComplete = true;
             }
         }
 

@@ -19,6 +19,7 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import java.nio.ByteOrder;
 
+import static uk.co.real_logic.aeron.util.BitUtil.align;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.PADDING_MSG_TYPE;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.checkLogBuffer;
@@ -35,7 +36,7 @@ public class MtuScanner
     private final AtomicBuffer logBuffer;
     private final AtomicBuffer stateBuffer;
     private final int mtuLength;
-    private final int headerLength;
+    private final int alignedHeaderLength;
     private final int capacity;
 
     private int offset = 0;
@@ -63,8 +64,8 @@ public class MtuScanner
         this.logBuffer = logBuffer;
         this.stateBuffer = stateBuffer;
         this.mtuLength = mtuLength;
-        this.headerLength = headerLength;
-        this.capacity = logBuffer.capacity();
+        alignedHeaderLength = align(headerLength, FRAME_ALIGNMENT);
+        capacity = logBuffer.capacity();
     }
 
     /**
@@ -145,7 +146,7 @@ public class MtuScanner
                 if (PADDING_MSG_TYPE == getMessageType(offset + length))
                 {
                     isComplete = true;
-                    length += headerLength;
+                    length += alignedHeaderLength;
                     break;
                 }
 

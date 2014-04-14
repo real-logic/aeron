@@ -33,8 +33,8 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescript
 
 public class AppenderTest
 {
-    private static final int LOG_BUFFER_SIZE = 1024 * 16;
-    private static final int STATE_BUFFER_SIZE = 1024;
+    private static final int LOG_BUFFER_CAPACITY = 1024 * 16;
+    private static final int STATE_BUFFER_CAPACITY = 1024;
     private static final int MAX_FRAME_LENGTH = 1024;
     private static final byte[] DEFAULT_HEADER = new byte[BASE_HEADER_LENGTH + SIZE_OF_INT];
 
@@ -46,8 +46,8 @@ public class AppenderTest
     @Before
     public void setUp()
     {
-        when(valueOf(logBuffer.capacity())).thenReturn(valueOf(LOG_BUFFER_SIZE));
-        when(valueOf(stateBuffer.capacity())).thenReturn(valueOf(STATE_BUFFER_SIZE));
+        when(valueOf(logBuffer.capacity())).thenReturn(valueOf(LOG_BUFFER_CAPACITY));
+        when(valueOf(stateBuffer.capacity())).thenReturn(valueOf(STATE_BUFFER_CAPACITY));
 
         appender = new Appender(logBuffer, stateBuffer, DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }
@@ -55,7 +55,7 @@ public class AppenderTest
     @Test
     public void shouldReportCapacity()
     {
-        assertThat(valueOf(appender.capacity()), is(valueOf(LOG_BUFFER_SIZE)));
+        assertThat(valueOf(appender.capacity()), is(valueOf(LOG_BUFFER_CAPACITY)));
     }
 
     @Test
@@ -120,10 +120,10 @@ public class AppenderTest
     @Test
     public void shouldReportCurrentTailAtCapacity()
     {
-        final int tailValue = LOG_BUFFER_SIZE + 64;
+        final int tailValue = LOG_BUFFER_CAPACITY + 64;
         when(valueOf(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))).thenReturn(valueOf(tailValue));
 
-        assertThat(valueOf(appender.tail()), is(valueOf(LOG_BUFFER_SIZE)));
+        assertThat(valueOf(appender.tail()), is(valueOf(LOG_BUFFER_CAPACITY)));
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -225,7 +225,7 @@ public class AppenderTest
         inOrder.verify(logBuffer, times(1)).putShort(typeOffset(tailValue), PADDING_MSG_TYPE, LITTLE_ENDIAN);
         inOrder.verify(logBuffer, times(1)).putByte(flagsOffset(tailValue), UNFRAGMENTED);
         inOrder.verify(logBuffer, times(1)).putInt(termOffsetOffset(tailValue), tailValue, LITTLE_ENDIAN);
-        inOrder.verify(logBuffer, times(1)).putIntOrdered(lengthOffset(tailValue), LOG_BUFFER_SIZE - tailValue);
+        inOrder.verify(logBuffer, times(1)).putIntOrdered(lengthOffset(tailValue), LOG_BUFFER_CAPACITY - tailValue);
     }
 
     @Test

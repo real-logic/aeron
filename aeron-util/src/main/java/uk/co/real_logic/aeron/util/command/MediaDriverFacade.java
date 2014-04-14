@@ -104,7 +104,7 @@ public interface MediaDriverFacade
      * This is an error in response to a command.
      *
      * @see LibraryFacade#sendErrorResponse(int, byte[])
-     * @see ErrorCode
+     * @see uk.co.real_logic.aeron.util.ErrorCode
      *
      * @param code of the error
      * @param message returned by the media driver for the error
@@ -117,7 +117,7 @@ public interface MediaDriverFacade
      * This is an error in operation (not in response to a command).
      *
      * @see LibraryFacade#sendError(int, byte[])
-     * @see ErrorCode
+     * @see uk.co.real_logic.aeron.util.ErrorCode
      *
      * @param code of the error
      * @param message returned by the media driver for the error

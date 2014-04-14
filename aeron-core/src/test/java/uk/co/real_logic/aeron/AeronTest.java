@@ -27,11 +27,11 @@ import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.EventHandler;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
@@ -110,7 +110,7 @@ public class AeronTest
         final ClientAdminThread adminThread = aeron.adminThread();
 
         adminThread.process();
-        skip(buffer, 1);
+        RingBufferTestUtil.skip(buffer, 1);
 
         channel.close();
         adminThread.process();
@@ -131,7 +131,7 @@ public class AeronTest
         final ClientAdminThread adminThread = aeron.adminThread();
 
         adminThread.process();
-        skip(buffer, 1);
+        RingBufferTestUtil.skip(buffer, 1);
 
         source.close();
         adminThread.process();
@@ -154,12 +154,12 @@ public class AeronTest
         final ClientAdminThread adminThread = aeron.adminThread();
 
         adminThread.process();
-        skip(buffer, 1);
+        RingBufferTestUtil.skip(buffer, 1);
 
         otherSource.close();
         adminThread.process();
 
-        skip(buffer, 0);
+        RingBufferTestUtil.skip(buffer, 0);
     }
 
     @Test
@@ -176,7 +176,7 @@ public class AeronTest
 
         aeron.adminThread().process();
 
-        assertEventRead(toMediaDriver, assertReceiverMessageOfType(ADD_RECEIVER));
+        RingBufferTestUtil.assertEventRead(toMediaDriver, assertReceiverMessageOfType(ADD_RECEIVER));
     }
 
     @Test
@@ -187,12 +187,12 @@ public class AeronTest
         final Receiver receiver = newReceiver(aeron);
 
         aeron.adminThread().process();
-        skip(toMediaDriver, 1);
+        RingBufferTestUtil.skip(toMediaDriver, 1);
 
         receiver.close();
         aeron.adminThread().process();
 
-        assertEventRead(toMediaDriver, assertReceiverMessageOfType(REMOVE_RECEIVER));
+        RingBufferTestUtil.assertEventRead(toMediaDriver, assertReceiverMessageOfType(REMOVE_RECEIVER));
     }
 
     private void createTermBuffer(final long termId) throws IOException
@@ -252,7 +252,7 @@ public class AeronTest
 
     private void assertChannelMessage(final RingBuffer mediaDriverBuffer, final int expectedEventTypeId)
     {
-        assertEventRead(mediaDriverBuffer, (eventTypeId, buffer, index, length) ->
+        RingBufferTestUtil.assertEventRead(mediaDriverBuffer, (eventTypeId, buffer, index, length) ->
         {
             assertThat(eventTypeId, is(expectedEventTypeId));
             message.wrap(buffer, index);
@@ -260,20 +260,6 @@ public class AeronTest
             assertThat(message.channelId(), is(CHANNEL_ID));
             assertThat(message.sessionId(), is(SESSION_ID));
         });
-    }
-
-    private void assertEventRead(final RingBuffer mediaDriverBuffer, final EventHandler handler)
-    {
-        int eventsRead = mediaDriverBuffer.read(handler);
-        assertThat(eventsRead, is(greaterThanOrEqualTo(1)));
-    }
-
-    private void skip(final RingBuffer mediaDriverBuffer, int count)
-    {
-        int eventsRead = mediaDriverBuffer.read((eventTypeId, buffer, index, length) ->
-        {
-        }, count);
-        assertThat(eventsRead, is(count));
     }
 
 }

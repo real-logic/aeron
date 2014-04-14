@@ -97,13 +97,29 @@ public class AdminBuffers extends ExternalResource
 
     public RingBuffer mappedToMediaDriver()
     {
+        return suppress(() -> ringBuffer(mappingStrategy.toMediaDriver()));
+    }
+
+    public RingBuffer mappedToApi()
+    {
+        return suppress(() -> ringBuffer(mappingStrategy.toApi()));
+    }
+
+    private static interface ExceptionalSupplier<T>
+    {
+        public T supply() throws Exception;
+    }
+
+    private <T> T suppress(ExceptionalSupplier<T> supplier)
+    {
         try
         {
-            return ringBuffer(mappingStrategy.toMediaDriver());
+            return supplier.supply();
         }
         catch (Exception e)
         {
             throw new RuntimeException(e);
         }
     }
+
 }

@@ -38,6 +38,7 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.COMMAND_BUFFER_SZ;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_SIZE;
+import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertEventRead;
 
 public class UnicastReceiverTest
 {
@@ -107,6 +108,12 @@ public class UnicastReceiverTest
 
         mediaDriverAdminThread.process();
         // TODO: check control buffer to consumer to see if error is there.
+
+        final RingBuffer toApi = buffers.mappedToApi();
+        assertEventRead(toApi, (eventTypeId, buffer, index, length) ->
+        {
+
+        });
     }
 
     @Ignore

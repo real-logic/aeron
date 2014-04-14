@@ -95,7 +95,7 @@ public interface LibraryFacade
      * Notify the library of an error for a request that it sent previously
      *
      * @see MediaDriverFacade#onErrorResponse(int, byte[])
-     * @see ErrorCode
+     * @see uk.co.real_logic.aeron.util.ErrorCode
      *
      * @param code for the error
      * @param message for the error to be included in the notification
@@ -106,7 +106,7 @@ public interface LibraryFacade
      * Notify the library of an error in operation not associated with a request from the application
      *
      * @see MediaDriverFacade#onError(int, byte[])
-     * @see ErrorCode
+     * @see uk.co.real_logic.aeron.util.ErrorCode
      *
      * @param code for the error
      * @param message for the error to be included in the notification

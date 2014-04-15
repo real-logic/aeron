@@ -72,7 +72,7 @@ public class Receiver implements AutoCloseable
      */
     public void process() throws Exception
     {
-        for (ReceiverChannel channel : channels)
+        for (final ReceiverChannel channel : channels)
         {
             channel.process();
         }

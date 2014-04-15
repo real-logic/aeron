@@ -189,19 +189,7 @@ public class MtuScanner
 
     private int waitForFrameLengthVolatile(final int frameOffset)
     {
-        int frameLength;
-        do
-        {
-            frameLength = logBuffer.getIntVolatile(lengthOffset(frameOffset));
-        }
-        while (0 == frameLength);
-
-        if (ByteOrder.nativeOrder() != ByteOrder.LITTLE_ENDIAN)
-        {
-            frameLength = Integer.reverseBytes(frameLength);
-        }
-
-        return frameLength;
+        return waitForFrameLength(frameOffset, logBuffer);
     }
 
     private int getMessageType(final int frameOffset)

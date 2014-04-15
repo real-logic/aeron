@@ -138,7 +138,7 @@ public class Appender
     {
         checkMessageLength(length);
 
-        if (length < maxPayload)
+        if (length <= maxPayload)
         {
             return appendUnfragmentedMessage(srcBuffer, srcOffset, length);
         }

@@ -16,6 +16,9 @@
 package uk.co.real_logic.aeron.util.concurrent.logbuffer;
 
 import uk.co.real_logic.aeron.util.BitUtil;
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+
+import java.nio.ByteOrder;
 
 import static java.lang.Integer.valueOf;
 
@@ -185,5 +188,22 @@ public class FrameDescriptor
     public static int termOffsetOffset(final int frameOffset)
     {
         return frameOffset + TERM_OFFSET;
+    }
+
+    public static int waitForFrameLength(final int frameOffset, final AtomicBuffer logBuffer)
+    {
+        int frameLength;
+        do
+        {
+            frameLength = logBuffer.getIntVolatile(lengthOffset(frameOffset));
+        }
+        while (0 == frameLength);
+
+        if (ByteOrder.nativeOrder() != ByteOrder.LITTLE_ENDIAN)
+        {
+            frameLength = Integer.reverseBytes(frameLength);
+        }
+
+        return frameLength;
     }
 }

@@ -19,6 +19,8 @@ import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import static java.lang.Integer.valueOf;
+import static uk.co.real_logic.aeron.util.BitUtil.CACHE_LINE_SIZE;
+import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 
 /**
@@ -29,16 +31,17 @@ public class LogBufferDescriptor
     /** Offset within the trailer where the tail value is stored. */
     public static final int TAIL_COUNTER_OFFSET;
 
+    /** Offset within the trailer where the high water mark is stored. */
+    public static final int HIGH_WATER_MARK_OFFSET;
+
     /** Total size of the state buffer */
     public static final int STATE_SIZE;
 
     static
     {
-        int offset = 0;
-        TAIL_COUNTER_OFFSET = offset;
-
-        offset += BitUtil.CACHE_LINE_SIZE;
-        STATE_SIZE = offset;
+        TAIL_COUNTER_OFFSET = 0;
+        HIGH_WATER_MARK_OFFSET = SIZE_OF_INT;
+        STATE_SIZE = CACHE_LINE_SIZE;
     }
 
     /** Minimum buffer size for the log */

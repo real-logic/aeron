@@ -39,11 +39,12 @@ public class MappedBufferRotator
     private final long bufferSize;
 
     private FileChannel currentFile;
-    private FileChannel spareFile;
+    private FileChannel cleanFile;
     private FileChannel dirtyFile;
 
+    // TODO: add state buffers as well
     private MappedByteBuffer currentBuffer;
-    private MappedByteBuffer spareBuffer;
+    private MappedByteBuffer cleanBuffer;
     private MappedByteBuffer dirtyBuffer;
 
     public MappedBufferRotator(final FileChannel templateFile, final File directory, final long bufferSize)
@@ -56,8 +57,8 @@ public class MappedBufferRotator
             currentFile = openFile(directory, "1");
             currentBuffer = map(bufferSize, currentFile);
 
-            spareFile = openFile(directory, "2");
-            spareBuffer = map(bufferSize, spareFile);
+            cleanFile = openFile(directory, "2");
+            cleanBuffer = map(bufferSize, cleanFile);
 
             dirtyFile = openFile(directory, "3");
             dirtyBuffer = map(bufferSize, dirtyFile);
@@ -70,11 +71,11 @@ public class MappedBufferRotator
 
     public MappedByteBuffer rotate() throws IOException
     {
-        final MappedByteBuffer newBuffer = spareBuffer;
-        final FileChannel newFile = spareFile;
+        final MappedByteBuffer newBuffer = cleanBuffer;
+        final FileChannel newFile = cleanFile;
 
-        spareBuffer = dirtyBuffer;
-        spareFile = dirtyFile;
+        cleanBuffer = dirtyBuffer;
+        cleanFile = dirtyFile;
 
         dirtyBuffer = currentBuffer;
         dirtyFile = currentFile;

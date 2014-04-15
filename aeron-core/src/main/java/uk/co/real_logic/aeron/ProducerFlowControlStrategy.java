@@ -19,6 +19,7 @@ import uk.co.real_logic.aeron.util.concurrent.logbuffer.Appender;
 
 public interface ProducerFlowControlStrategy
 {
+    // TODO: pull out counters from the appender
     public void onRotate(final Appender currentAppender);
 
     public boolean isRateLimited();

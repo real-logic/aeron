@@ -19,6 +19,7 @@ import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Channel;
 import uk.co.real_logic.aeron.Destination;
 import uk.co.real_logic.aeron.Source;
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.nio.ByteBuffer;
@@ -39,7 +40,7 @@ public class ExampleSender
             final Aeron aeron = Aeron.newSingleMediaDriver(builder);
             final Source source = aeron.newSource(DESTINATION);
             final Channel aChannel = source.newChannel(CHANNEL_ID);
-            final ByteBuffer buffer = ByteBuffer.allocateDirect(256);
+            final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocateDirect(256));
 
             // TODO: add data to buffer and get it ready to send
             aChannel.send(buffer);

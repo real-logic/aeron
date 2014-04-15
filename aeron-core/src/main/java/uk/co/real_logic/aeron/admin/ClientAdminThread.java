@@ -25,6 +25,7 @@ import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
 import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.Appender;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import java.nio.ByteBuffer;
@@ -267,6 +268,8 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
                 return;
             }
 
+            // TODO: fix the appender adding
+
             final ByteBuffer buffer = bufferUsage.onTermAdded(destination, sessionId, channelId, termId, isSender);
             channel.newTermBufferMapped(termId, buffer);
         }
@@ -276,5 +279,4 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
             e.printStackTrace();
         }
     }
-
 }

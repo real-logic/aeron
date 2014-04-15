@@ -19,8 +19,11 @@ import uk.co.real_logic.aeron.admin.ChannelNotifiable;
 import uk.co.real_logic.aeron.admin.ClientAdminThreadCursor;
 import uk.co.real_logic.aeron.admin.TermBufferNotifier;
 import uk.co.real_logic.aeron.util.AtomicArray;
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.Appender;
 
-import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 /**
  * Aeron Channel
@@ -30,6 +33,10 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
     private final ClientAdminThreadCursor adminThread;
     private final long sessionId;
     private final AtomicArray<Channel> channels;
+
+    private Appender[] appenders;
+    private int currentAppender;
+    private ProducerFlowControlStrategy flowControl;
 
     public Channel(final String destination,
                    final ClientAdminThreadCursor adminCursor,
@@ -42,11 +49,24 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
         this.adminThread = adminCursor;
         this.sessionId = sessionId;
         this.channels = channels;
+        currentAppender = 0;
+        // TODO: DI
+        flowControl = new DefaultProducerFlowControlStrategy();
     }
 
     public long channelId()
     {
         return channelId;
+    }
+
+    private boolean canAppend()
+    {
+        return appenders != null && !flowControl.isRateLimited();
+    }
+
+    public void onBuffersMapped(final Appender[] appenders)
+    {
+        this.appenders = appenders;
     }
 
     /**
@@ -55,44 +75,71 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
      * @param buffer
      * @return
      */
-    public boolean offer(final ByteBuffer buffer)
+    public boolean offer(final AtomicBuffer buffer)
     {
-        return offer(buffer, buffer.position(), buffer.remaining());
+        return offer(buffer, 0, buffer.capacity());
     }
 
-    public boolean offer(final ByteBuffer buffer, final int offset, final int length)
+    public boolean offer(final AtomicBuffer buffer, final int offset, final int length)
     {
-        if (!hasTerm())
+        if (!canAppend())
         {
             return false;
         }
 
-        // TODO
-        return true;
-    }
-
-    public void send(final ByteBuffer buffer) throws BufferExhaustedException
-    {
-        send(buffer, buffer.position(), buffer.remaining());
-    }
-
-    public void send(final ByteBuffer buffer, final int offset, final int length) throws BufferExhaustedException
-    {
-        if (!hasTerm())
+        final Appender appender = appenders[currentAppender];
+        boolean hasAppended = appender.append(buffer, offset, length);
+        if (!hasAppended)
         {
-            throw new BufferExhaustedException("Unable to send: awaiting buffer creation");
+            next();
+            flowControl.onRotate(appenders[currentAppender]);
         }
-        // TODO
+
+        return hasAppended;
     }
 
-    public void blockingSend(final ByteBuffer buffer)
+    public void send(final AtomicBuffer buffer) throws BufferExhaustedException
     {
-        blockingSend(buffer, buffer.position(), buffer.remaining());
+        send(buffer, 0, buffer.capacity());
     }
 
-    public void blockingSend(final ByteBuffer buffer, final int offset, final int length)
+    public void send(final AtomicBuffer buffer, final int offset, final int length) throws BufferExhaustedException
     {
-        // TODO: Is this necessary?
+        if (!offer(buffer, offset, length))
+        {
+            bufferExhausted();
+        }
+    }
+
+    private void bufferExhausted() throws BufferExhaustedException
+    {
+        throw new BufferExhaustedException("Unable to send: no space in buffer");
+    }
+
+    public void blockingSend(final AtomicBuffer buffer) throws BufferExhaustedException
+    {
+        blockingSend(buffer, 0, buffer.capacity());
+    }
+
+    public void blockingSend(final AtomicBuffer buffer, final int offset, final int length) throws BufferExhaustedException
+    {
+        if (!canAppend())
+        {
+            bufferExhausted();
+        }
+
+        Appender appender = appenders[currentAppender];
+        while (!appender.append(buffer, offset, length))
+        {
+            next();
+            appender = appenders[currentAppender];
+            flowControl.onRotate(appender);
+        }
+    }
+
+    private void next()
+    {
+        currentAppender = (currentAppender + 1) % appenders.length;
     }
 
     public void close() throws Exception

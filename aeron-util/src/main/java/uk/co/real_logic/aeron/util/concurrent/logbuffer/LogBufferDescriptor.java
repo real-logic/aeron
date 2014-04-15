@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.util.concurrent.logbuffer;
 
-import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import static java.lang.Integer.valueOf;
@@ -34,14 +33,14 @@ public class LogBufferDescriptor
     /** Offset within the trailer where the high water mark is stored. */
     public static final int HIGH_WATER_MARK_OFFSET;
 
-    /** Total size of the state buffer */
-    public static final int STATE_SIZE;
+    /** Total length of the state buffer in bytes. */
+    public static final int STATE_BUFFER_LENGTH;
 
     static
     {
         TAIL_COUNTER_OFFSET = 0;
         HIGH_WATER_MARK_OFFSET = SIZE_OF_INT;
-        STATE_SIZE = CACHE_LINE_SIZE;
+        STATE_BUFFER_LENGTH = CACHE_LINE_SIZE;
     }
 
     /** Minimum buffer size for the log */
@@ -83,10 +82,10 @@ public class LogBufferDescriptor
     public static void checkStateBuffer(final AtomicBuffer buffer)
     {
         final int capacity = buffer.capacity();
-        if (capacity < STATE_SIZE)
+        if (capacity < STATE_BUFFER_LENGTH)
         {
             final String s = String.format("State buffer capacity less than min size of %d, capacity=%d",
-                                           valueOf(STATE_SIZE), valueOf(capacity));
+                                           valueOf(STATE_BUFFER_LENGTH), valueOf(capacity));
             throw new IllegalStateException(s);
         }
     }

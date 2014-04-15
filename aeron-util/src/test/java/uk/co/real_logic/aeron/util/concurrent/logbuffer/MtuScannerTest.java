@@ -28,12 +28,13 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.PADDING_MSG_TYPE;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.TAIL_COUNTER_OFFSET;
 
 public class MtuScannerTest
 {
     private static final int LOG_BUFFER_CAPACITY = 1024 * 16;
-    private static final int STATE_BUFFER_CAPACITY = 1024;
+    private static final int STATE_BUFFER_CAPACITY = STATE_BUFFER_LENGTH;
     private static final int MTU_LENGTH = 1024;
     private static final int HEADER_LENGTH = 32;
     private static final short MSG_TYPE = 7;

@@ -98,7 +98,7 @@ public class RebuilderTest
         when(stateBuffer.getInt(TAIL_COUNTER_OFFSET)).thenReturn(LOG_BUFFER_CAPACITY - FRAME_ALIGNMENT);
         when(stateBuffer.getInt(HIGH_WATER_MARK_OFFSET)).thenReturn(LOG_BUFFER_CAPACITY - FRAME_ALIGNMENT);
 
-        rebuilder.insert();
+        //rebuilder.insert();
 
     }
 }

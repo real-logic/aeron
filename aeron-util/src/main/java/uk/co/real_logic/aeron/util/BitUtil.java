@@ -48,6 +48,8 @@ public class BitUtil
     private static final byte[] HEX_DIGIT_TABLE = { '0', '1', '2', '3', '4', '5', '6', '7',
                                                     '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
 
+    private static final int LAST_DIGIT_MASK = 0b1;
+
     /**
      * Fast method of finding the next power of 2 greater than or equal to the supplied value.
      *
@@ -134,6 +136,7 @@ public class BitUtil
 
     public static boolean isEven(int number)
     {
-        return (number % 2) == 0;
+        return (number & LAST_DIGIT_MASK) == 0;
     }
+
 }

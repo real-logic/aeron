@@ -38,7 +38,11 @@ public class SenderThread extends ClosableThread
 
     public void process()
     {
-        counter = (counter + 1) % Integer.MAX_VALUE;
+        counter++;
+        if (counter == Integer.MAX_VALUE)
+        {
+            counter = 0;
+        }
         channels.forEach(counter, SenderChannel::process);
     }
 

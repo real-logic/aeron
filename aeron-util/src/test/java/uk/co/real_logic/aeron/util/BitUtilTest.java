@@ -19,7 +19,9 @@ import org.junit.Test;
 
 import static java.lang.Integer.valueOf;
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static uk.co.real_logic.aeron.util.BitUtil.*;
 
 public class BitUtilTest
@@ -71,4 +73,17 @@ public class BitUtilTest
         assertThat(valueOf(converted[3]), is(valueOf('3')));
         assertThat(hexStr, is("0123456978bcdaef5f"));
     }
+
+    @Test
+    public void shouldDetectEvenAndOddNumbers()
+    {
+        assertTrue(BitUtil.isEven(0));
+        assertTrue(BitUtil.isEven(2));
+        assertTrue(BitUtil.isEven(Integer.MIN_VALUE));
+
+        assertFalse(BitUtil.isEven(1));
+        assertFalse(BitUtil.isEven(-1));
+        assertFalse(BitUtil.isEven(Integer.MAX_VALUE));
+    }
+
 }

@@ -138,7 +138,11 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
 
     private void next()
     {
-        currentAppender = (currentAppender + 1) % appenders.length;
+        currentAppender++;
+        if (currentAppender == appenders.length)
+        {
+            currentAppender = 0;
+        }
         rollTerm();
     }
 

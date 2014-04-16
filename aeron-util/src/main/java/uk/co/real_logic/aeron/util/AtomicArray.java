@@ -98,7 +98,11 @@ public class AtomicArray<T>
             {
                 func.accept(element);
             }
-            i = (i + 1) % array.length;
+            i++;
+            if (i == array.length)
+            {
+                i = 0;
+            }
         } while (i != start);
     }
 

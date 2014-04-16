@@ -36,7 +36,6 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
 
     private Appender[] appenders;
     private int currentAppender;
-    private long currentTerm;
 
     public Channel(final String destination,
                    final ClientAdminThreadCursor adminCursor,

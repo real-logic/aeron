@@ -89,4 +89,18 @@ public class LogBufferDescriptor
             throw new IllegalStateException(s);
         }
     }
+
+    /**
+     * Check that the offset is is not greater than the tail.
+     *
+     * @param offset to check.
+     * @param tail current value fo the tail.
+     */
+    public static void checkOffset(final int offset, final int tail)
+    {
+        if (offset > tail)
+        {
+            throw new IllegalStateException("Cannot seek to " + offset + ", the tail is only " + tail);
+        }
+    }
 }

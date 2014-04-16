@@ -45,7 +45,8 @@ public class MtuScanner
     /**
      * Construct a reader that iterates over a log buffer with associated state buffer. Messages are identified as
      * they become available up to the MTU limit.
-     *  @param logBuffer containing the framed messages.
+     *
+     * @param logBuffer containing the framed messages.
      * @param stateBuffer containing the state variables indicating the tail progress.
      * @param mtuLength of the underlying transport.
      * @param headerLength of frame before payload begins.

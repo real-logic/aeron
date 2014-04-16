@@ -53,7 +53,7 @@ public class RebuilderTest
     public void shouldThrowExceptionWhenCapacityNotMultipleOfAlignment()
     {
         final int logBufferCapacity = LogBufferDescriptor.LOG_MIN_SIZE + FRAME_ALIGNMENT + 1;
-        when(valueOf(logBuffer.capacity())).thenReturn(valueOf(logBufferCapacity));
+        when(logBuffer.capacity()).thenReturn(logBufferCapacity);
 
         rebuilder = new Rebuilder(logBuffer, stateBuffer);
     }
@@ -61,7 +61,7 @@ public class RebuilderTest
     @Test(expected = IllegalStateException.class)
     public void shouldThrowExceptionOnInsufficientStateBufferCapacity()
     {
-        when(valueOf(stateBuffer.capacity())).thenReturn(valueOf(LogBufferDescriptor.STATE_BUFFER_LENGTH - 1));
+        when(stateBuffer.capacity()).thenReturn(LogBufferDescriptor.STATE_BUFFER_LENGTH - 1);
 
         rebuilder = new Rebuilder(logBuffer, stateBuffer);
     }

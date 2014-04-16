@@ -20,7 +20,6 @@ import org.junit.Test;
 import org.mockito.InOrder;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
-import static java.lang.Integer.valueOf;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
@@ -45,8 +44,8 @@ public class AppenderTest
     @Before
     public void setUp()
     {
-        when(valueOf(logBuffer.capacity())).thenReturn(valueOf(LOG_BUFFER_CAPACITY));
-        when(valueOf(stateBuffer.capacity())).thenReturn(valueOf(STATE_BUFFER_CAPACITY));
+        when(logBuffer.capacity()).thenReturn(LOG_BUFFER_CAPACITY);
+        when(stateBuffer.capacity()).thenReturn(STATE_BUFFER_CAPACITY);
 
         appender = new Appender(logBuffer, stateBuffer, DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }
@@ -54,19 +53,19 @@ public class AppenderTest
     @Test
     public void shouldReportCapacity()
     {
-        assertThat(valueOf(appender.capacity()), is(valueOf(LOG_BUFFER_CAPACITY)));
+        assertThat(appender.capacity(), is(LOG_BUFFER_CAPACITY));
     }
 
     @Test
     public void shouldReportMaxFrameLength()
     {
-        assertThat(valueOf(appender.maxFrameLength()), is(valueOf(MAX_FRAME_LENGTH)));
+        assertThat(appender.maxFrameLength(), is(MAX_FRAME_LENGTH));
     }
 
     @Test(expected = IllegalStateException.class)
     public void shouldThrowExceptionOnInsufficientCapacityForLog()
     {
-        when(valueOf(logBuffer.capacity())).thenReturn(valueOf(LogBufferDescriptor.LOG_MIN_SIZE - 1));
+        when(logBuffer.capacity()).thenReturn(LogBufferDescriptor.LOG_MIN_SIZE - 1);
 
         appender = new Appender(logBuffer, stateBuffer, DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }
@@ -75,7 +74,7 @@ public class AppenderTest
     public void shouldThrowExceptionWhenCapacityNotMultipleOfAlignment()
     {
         final int logBufferCapacity = LogBufferDescriptor.LOG_MIN_SIZE + FRAME_ALIGNMENT + 1;
-        when(valueOf(logBuffer.capacity())).thenReturn(valueOf(logBufferCapacity));
+        when(logBuffer.capacity()).thenReturn(logBufferCapacity);
 
         appender = new Appender(logBuffer, stateBuffer, DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }
@@ -83,7 +82,7 @@ public class AppenderTest
     @Test(expected = IllegalStateException.class)
     public void shouldThrowExceptionOnInsufficientStateBufferCapacity()
     {
-        when(valueOf(stateBuffer.capacity())).thenReturn(valueOf(LogBufferDescriptor.STATE_BUFFER_LENGTH - 1));
+        when(stateBuffer.capacity()).thenReturn(LogBufferDescriptor.STATE_BUFFER_LENGTH - 1);
 
         appender = new Appender(logBuffer, stateBuffer, DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }
@@ -111,18 +110,18 @@ public class AppenderTest
     public void shouldReportCurrentTail()
     {
         final int tailValue = 64;
-        when(valueOf(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))).thenReturn(valueOf(tailValue));
+        when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(tailValue);
 
-        assertThat(valueOf(appender.tail()), is(valueOf(tailValue)));
+        assertThat(appender.tail(), is(tailValue));
     }
 
     @Test
     public void shouldReportCurrentTailAtCapacity()
     {
         final int tailValue = LOG_BUFFER_CAPACITY + 64;
-        when(valueOf(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))).thenReturn(valueOf(tailValue));
+        when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(tailValue);
 
-        assertThat(valueOf(appender.tail()), is(valueOf(LOG_BUFFER_CAPACITY)));
+        assertThat(appender.tail(), is(LOG_BUFFER_CAPACITY));
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -137,8 +136,7 @@ public class AppenderTest
     @Test
     public void shouldAppendFrameToEmptyLog()
     {
-        when(valueOf(stateBuffer.getAndAddInt(TAIL_COUNTER_OFFSET, FRAME_ALIGNMENT)))
-            .thenReturn(valueOf(0));
+        when(stateBuffer.getAndAddInt(TAIL_COUNTER_OFFSET, FRAME_ALIGNMENT)).thenReturn(0);
 
         final int headerLength = DEFAULT_HEADER.length;
         final AtomicBuffer buffer = new AtomicBuffer(new byte[128]);
@@ -159,9 +157,9 @@ public class AppenderTest
     @Test
     public void shouldAppendFrameTwiceToLog()
     {
-        when(valueOf(stateBuffer.getAndAddInt(TAIL_COUNTER_OFFSET, FRAME_ALIGNMENT)))
-            .thenReturn(valueOf(0))
-            .thenReturn(valueOf(FRAME_ALIGNMENT));
+        when(stateBuffer.getAndAddInt(TAIL_COUNTER_OFFSET, FRAME_ALIGNMENT))
+            .thenReturn(0)
+            .thenReturn(FRAME_ALIGNMENT);
 
         final int headerLength = DEFAULT_HEADER.length;
         final AtomicBuffer buffer = new AtomicBuffer(new byte[128]);
@@ -191,8 +189,8 @@ public class AppenderTest
     @Test
     public void shouldFailToAppendToLogAtCapacity()
     {
-        when(valueOf(stateBuffer.getAndAddInt(TAIL_COUNTER_OFFSET, FRAME_ALIGNMENT)))
-            .thenReturn(valueOf(appender.capacity()));
+        when(stateBuffer.getAndAddInt(TAIL_COUNTER_OFFSET, FRAME_ALIGNMENT))
+            .thenReturn(appender.capacity());
 
         final AtomicBuffer buffer = new AtomicBuffer(new byte[128]);
         final int msgLength = 20;
@@ -211,8 +209,8 @@ public class AppenderTest
         final int headerLength = DEFAULT_HEADER.length;
         final int requiredFrameSize = align(headerLength + msgLength, FRAME_ALIGNMENT);
         final int tailValue = appender.capacity() - FRAME_ALIGNMENT;
-        when(valueOf(stateBuffer.getAndAddInt(TAIL_COUNTER_OFFSET, requiredFrameSize)))
-            .thenReturn(valueOf(tailValue));
+        when(stateBuffer.getAndAddInt(TAIL_COUNTER_OFFSET, requiredFrameSize))
+            .thenReturn(tailValue);
 
         final AtomicBuffer buffer = new AtomicBuffer(new byte[128]);
 
@@ -233,8 +231,8 @@ public class AppenderTest
         final int msgLen = appender.maxPayloadLength() + 1;
         final int headerLength = DEFAULT_HEADER.length;
         final int requiredCapacity = align(headerLength + 1, FRAME_ALIGNMENT) + appender.maxFrameLength();
-        when(valueOf(stateBuffer.getAndAddInt(TAIL_COUNTER_OFFSET, requiredCapacity)))
-            .thenReturn(valueOf(0));
+        when(stateBuffer.getAndAddInt(TAIL_COUNTER_OFFSET, requiredCapacity))
+            .thenReturn(0);
 
         final AtomicBuffer buffer = new AtomicBuffer(new byte[msgLen]);
 

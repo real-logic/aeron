@@ -190,6 +190,13 @@ public class FrameDescriptor
         return frameOffset + TERM_OFFSET;
     }
 
+    /**
+     * Busy spin on a frame length header until it is non zero and return value.
+     *
+     * @param frameOffset at which a frame begins.
+     * @param logBuffer containing the frame.
+     * @return the value of the frame length header.
+     */
     public static int waitForFrameLength(final int frameOffset, final AtomicBuffer logBuffer)
     {
         int frameLength;
@@ -205,5 +212,19 @@ public class FrameDescriptor
         }
 
         return frameLength;
+    }
+
+    /**
+     * Check that a given offset is at the correct {@link uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor#FRAME_ALIGNMENT} for a frame to begin.
+     *
+     * @param offset to be checked.
+     * @throws IllegalArgumentException if the offset is not on a frame alignment boundary.
+     */
+    public static void checkOffsetAlignment(final int offset)
+    {
+        if ((offset & (FRAME_ALIGNMENT - 1)) != 0)
+        {
+            throw new IllegalArgumentException("Cannot seek to an offset that isn't a multiple of " + FRAME_ALIGNMENT);
+        }
     }
 }

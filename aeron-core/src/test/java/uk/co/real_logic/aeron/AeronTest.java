@@ -22,7 +22,7 @@ import uk.co.real_logic.aeron.admin.ClientAdminThread;
 import uk.co.real_logic.aeron.util.AdminBuffers;
 import uk.co.real_logic.aeron.util.ErrorCode;
 import uk.co.real_logic.aeron.util.MappingAdminBufferStrategy;
-import uk.co.real_logic.aeron.util.SharedDirectory;
+import uk.co.real_logic.aeron.util.SharedDirectories;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
@@ -53,7 +53,7 @@ public class AeronTest
     private static final long SESSION_ID = 3L;
 
     @ClassRule
-    public static SharedDirectory directory = new SharedDirectory();
+    public static SharedDirectories directory = new SharedDirectories();
 
     @ClassRule
     public static AdminBuffers adminBuffers = new AdminBuffers();

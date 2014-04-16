@@ -24,21 +24,29 @@ import java.io.IOException;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.termLocation;
 import static uk.co.real_logic.aeron.util.IoUtil.createEmptyFile;
 
-public class SharedDirectory extends ExternalResource
+public class SharedDirectories extends ExternalResource
 {
 
+    private File adminDir;
     private File dataDir;
     private FileMappingConvention mapping;
 
     protected void before() throws Throwable
     {
-        dataDir = new File(Directories.DATA_DIR);
-        if (dataDir.exists())
-        {
-            IoUtil.delete(dataDir, false);
-        }
-        IoUtil.ensureDirectoryExists(dataDir, "data dir");
+        dataDir = ensureDirectory(Directories.DATA_DIR);
+        adminDir = ensureDirectory(Directories.ADMIN_DIR);
         mapping = new FileMappingConvention(dataDir.getAbsolutePath());
+    }
+
+    private File ensureDirectory(final String path) throws IOException
+    {
+        File dir = new File(path);
+        if (dir.exists())
+        {
+            IoUtil.delete(dir, false);
+        }
+        IoUtil.ensureDirectoryExists(dir, "data dir");
+        return dir;
     }
 
     public void createSenderTermFile(final String destination,

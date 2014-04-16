@@ -21,8 +21,10 @@ import uk.co.real_logic.aeron.util.AdminBufferStrategy;
 import uk.co.real_logic.aeron.util.CreatingAdminBufferStrategy;
 import uk.co.real_logic.aeron.util.Directories;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
@@ -51,7 +53,7 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescri
  *     <li><code>aeron.select.timeout</code>: use int value as default timeout for NIO select calls</li>
  * </ul>
  */
-public class MediaDriver
+public class MediaDriver implements AutoCloseable
 {
     /** Byte buffer size (in bytes) for reads */
     public static final String READ_BYTE_BUFFER_SZ_PROPERTY_NAME = "aeron.recv.bytebuffer.size";
@@ -72,7 +74,7 @@ public class MediaDriver
     public static final int COMMAND_BUFFER_SZ_DEFAULT = 65536;
 
     /** Default buffer size for admin buffers between the media driver and the client */
-    public static final int ADMIN_BUFFER_SZ_DEFAULT = 65536;
+    public static final int ADMIN_BUFFER_SZ_DEFAULT = 65536 + TRAILER_SIZE;
 
     /** Default timeout for select */
     public static final int SELECT_TIMEOUT_DEFAULT = 20;
@@ -88,28 +90,16 @@ public class MediaDriver
 
     public static void main(final String[] args)
     {
-        TopologyBuilder builder = new TopologyBuilder().adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
-                .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
-                .rcvNioSelector(new NioSelector())
-                .adminNioSelector(new NioSelector())
-                .senderFlowControl(DefaultSenderFlowControlStrategy::new)
-                .adminBufferStrategy(new CreatingAdminBufferStrategy(Directories.ADMIN_DIR, ADMIN_BUFFER_SZ))
-                .bufferManagementStrategy(new BasicBufferManagementStrategy(Directories.DATA_DIR));
-
-        try (final ReceiverThread receiverThread = new ReceiverThread(builder);
-             final SenderThread senderThread = new SenderThread(builder);
-             final MediaDriverAdminThread adminThread = new MediaDriverAdminThread(builder,
-                                                                                   receiverThread,
-                                                                                   senderThread))
+        try (final MediaDriver mediaDriver = new MediaDriver())
         {
             // 1 for Receive Thread (Sockets to Buffers)
             // 1 for Send Thread (Buffers to Sockets)
             // 1 for Admin Thread (Buffer Management, NAK, Retransmit, etc.)
             Executor executor = Executors.newFixedThreadPool(3);
 
-            executor.execute(receiverThread);
-            executor.execute(senderThread);
-            executor.execute(adminThread);
+            executor.execute(mediaDriver.receiverThread());
+            executor.execute(mediaDriver.senderThread());
+            executor.execute(mediaDriver.adminThread());
         }
         catch (final InterruptedException ie)
         {
@@ -119,6 +109,48 @@ public class MediaDriver
         {
             e.printStackTrace();
         }
+    }
+
+    private final ReceiverThread receiverThread;
+    private final SenderThread senderThread;
+    private final MediaDriverAdminThread adminThread;
+
+    public MediaDriver() throws Exception
+    {
+        TopologyBuilder builder = new TopologyBuilder().adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
+                .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
+                .rcvNioSelector(new NioSelector())
+                .adminNioSelector(new NioSelector())
+                .senderFlowControl(DefaultSenderFlowControlStrategy::new)
+                .adminBufferStrategy(new CreatingAdminBufferStrategy(Directories.ADMIN_DIR, ADMIN_BUFFER_SZ))
+                .bufferManagementStrategy(new BasicBufferManagementStrategy(Directories.DATA_DIR));
+
+        receiverThread = new ReceiverThread(builder);
+        senderThread = new SenderThread(builder);
+        adminThread = new MediaDriverAdminThread(builder, receiverThread, senderThread);
+
+    }
+
+    public ReceiverThread receiverThread()
+    {
+        return receiverThread;
+    }
+
+    public SenderThread senderThread()
+    {
+        return senderThread;
+    }
+
+    public MediaDriverAdminThread adminThread()
+    {
+        return adminThread;
+    }
+
+    public void close() throws Exception
+    {
+        receiverThread.close();
+        senderThread.close();
+        adminThread.close();
     }
 
     public static class TopologyBuilder

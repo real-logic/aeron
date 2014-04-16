@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.mediadriver;
 import org.junit.*;
 import uk.co.real_logic.aeron.mediadriver.buffer.BasicBufferManagementStrategy;
 import uk.co.real_logic.aeron.util.AdminBuffers;
-import uk.co.real_logic.aeron.util.SharedDirectory;
+import uk.co.real_logic.aeron.util.SharedDirectories;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -58,7 +58,7 @@ public class UnicastReceiverTest
     public static AdminBuffers buffers = new AdminBuffers(COMMAND_BUFFER_SZ + TRAILER_SIZE);
 
     @ClassRule
-    public static SharedDirectory directory = new SharedDirectory();
+    public static SharedDirectories directory = new SharedDirectories();
 
     private final ByteBuffer sendBuffer = ByteBuffer.allocateDirect(256);
     private final AtomicBuffer writeBuffer = new AtomicBuffer(sendBuffer);

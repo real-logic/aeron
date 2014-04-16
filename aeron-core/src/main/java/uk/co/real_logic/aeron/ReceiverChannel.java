@@ -42,12 +42,15 @@ public class ReceiverChannel extends ChannelNotifiable
 
     public void process() throws Exception
     {
-        final Reader reader = readers[currentBuffer];
-        reader.read((buffer, offset, length) ->
+        if (readers != null)
         {
-            dataHeader.wrap(buffer, offset);
-            dataHandler.onData(buffer, dataHeader.dataOffset(), dataHeader.sessionId(), NONE);
-        });
+            final Reader reader = readers[currentBuffer];
+            reader.read((buffer, offset, length) ->
+            {
+                dataHeader.wrap(buffer, offset);
+                dataHandler.onData(buffer, dataHeader.dataOffset(), dataHeader.sessionId(), NONE);
+            });
+        }
     }
 
     protected void rollTerm()

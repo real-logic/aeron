@@ -108,7 +108,7 @@ public class Receiver implements AutoCloseable
          * @param channelId for the event
          * @param sessionId of the new source
          */
-        void handleNewSource(final int channelId, final long sessionId);
+        void handleNewSource(final long channelId, final long sessionId);
     }
 
     /**
@@ -121,7 +121,7 @@ public class Receiver implements AutoCloseable
          * @param channelId for the event
          * @param sessionId of the inactive source
          */
-        void handleInactiveSource(final int channelId, final long sessionId);
+        void handleInactiveSource(final long channelId, final long sessionId);
     }
 
     public static class Builder

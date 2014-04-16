@@ -152,6 +152,14 @@ project(':aeron-benchmark') {
     }
 }
 
+project(':aeron-system-tests') {
+    apply plugin: 'shadow'
+    dependencies {
+        compile project(':aeron-core'), project(':aeron-mediadriver')
+        testCompile project(path: ':aeron-util', configuration: 'tests')
+    }
+}
+
 task wrapper(type: Wrapper) {
     gradleVersion = '1.11'
 }

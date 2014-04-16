@@ -15,20 +15,24 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.Appender;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.StateViewer;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class DefaultProducerFlowControlStrategy implements ProducerFlowControlStrategy
 {
-    private Appender currentAppender;
+    private final AtomicBoolean pauseButton;
 
-    public void onRotate(final Appender currentAppender)
+    private StateViewer currentBuffer;
+
+    public DefaultProducerFlowControlStrategy(AtomicBoolean pauseButton)
     {
-        this.currentAppender = currentAppender;
+        this.pauseButton = pauseButton;
     }
 
-    public boolean isRateLimited()
+    public void onRotate(final StateViewer currentBuffer)
     {
-        // TODO: check head
-        return false;
+        this.currentBuffer = currentBuffer;
     }
+
 }

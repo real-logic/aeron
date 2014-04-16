@@ -16,11 +16,9 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.Appender;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.StateViewer;
 
 public interface ProducerFlowControlStrategy
 {
-    // TODO: pull out counters from the appender
-    public void onRotate(final Appender currentAppender);
-
-    public boolean isRateLimited();
+    public void onRotate(final StateViewer currentBuffer);
 }

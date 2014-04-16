@@ -19,6 +19,8 @@ import uk.co.real_logic.aeron.admin.ClientAdminThreadCursor;
 import uk.co.real_logic.aeron.admin.TermBufferNotifier;
 import uk.co.real_logic.aeron.util.AtomicArray;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 /**
  * Aeron source
  *
@@ -49,7 +51,14 @@ public class Source implements AutoCloseable
     public Channel newChannel(final long channelId)
     {
         final TermBufferNotifier bufferNotifier = new TermBufferNotifier();
-        final Channel channel = new Channel(destination.destination(), adminThread, bufferNotifier, channelId, sessionId, channels);
+        final AtomicBoolean pauseButton = new AtomicBoolean(false);
+        final Channel channel = new Channel(destination.destination(),
+                                            adminThread,
+                                            bufferNotifier,
+                                            channelId,
+                                            sessionId,
+                                            channels,
+                                            pauseButton);
         channels.add(channel);
         adminThread.sendAddChannel(destination.destination(), sessionId, channelId);
         return channel;

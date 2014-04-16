@@ -22,6 +22,8 @@ import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.Appender;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 /**
  * Aeron Channel
  */
@@ -30,25 +32,25 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
     private final ClientAdminThreadCursor adminThread;
     private final long sessionId;
     private final AtomicArray<Channel> channels;
+    private final AtomicBoolean paused;
 
     private Appender[] appenders;
     private int currentAppender;
-    private ProducerFlowControlStrategy flowControl;
 
     public Channel(final String destination,
                    final ClientAdminThreadCursor adminCursor,
                    final TermBufferNotifier bufferNotifier,
                    final long channelId,
                    final long sessionId,
-                   final AtomicArray<Channel> channels)
+                   final AtomicArray<Channel> channels,
+                   final AtomicBoolean paused)
     {
         super(bufferNotifier, destination, channelId);
         this.adminThread = adminCursor;
         this.sessionId = sessionId;
         this.channels = channels;
+        this.paused = paused;
         currentAppender = 0;
-        // TODO: DI
-        flowControl = new DefaultProducerFlowControlStrategy();
     }
 
     public long channelId()
@@ -58,7 +60,7 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
 
     private boolean canAppend()
     {
-        return appenders != null && !flowControl.isRateLimited();
+        return appenders != null && !paused.get();
     }
 
     public void onBuffersMapped(final Appender[] appenders)
@@ -89,7 +91,7 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
         if (!hasAppended)
         {
             next();
-            flowControl.onRotate(appenders[currentAppender]);
+            // TODO: notify rotation
         }
 
         return hasAppended;
@@ -131,7 +133,7 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
         {
             next();
             appender = appenders[currentAppender];
-            flowControl.onRotate(appender);
+            // TODO: notify rotation
         }
     }
 
@@ -168,4 +170,5 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
     {
         return this.sessionId == sessionId;
     }
+
 }

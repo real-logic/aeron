@@ -54,7 +54,7 @@ public class UnicastTest
 
         receiver = receivingClient.newReceiver(new Receiver.Builder()
                 .destination(DESTINATION)
-                .channel(1L, dataHandler)
+                .channel(CHANNEL_ID, dataHandler)
                 .newSourceEvent(sourceHandler));
 
         source = producingClient.newSource(new Source.Builder().destination(DESTINATION)

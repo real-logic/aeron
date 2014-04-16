@@ -106,6 +106,16 @@ public class NioSelector implements AutoCloseable
         handleSelectedKeys();
     }
 
+    /**
+     * Explicit call to selectNow but with no processing of selected keys.
+     *
+     * @throws Exception
+     */
+    public void selectNowWithNoProcessing() throws Exception
+    {
+        selector.selectNow();
+    }
+
     private void handleReadable(final SelectionKey key)
     {
         try

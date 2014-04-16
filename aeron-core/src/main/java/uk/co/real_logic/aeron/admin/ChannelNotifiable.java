@@ -40,7 +40,6 @@ public class ChannelNotifiable
         return currentTermId.get() != UNKNOWN_TERM_ID;
     }
 
-
     public void newTermBufferMapped(final long termId, final ByteBuffer buffer)
     {
         bufferNotifier.newTermBufferMapped(termId, buffer);

@@ -36,6 +36,7 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
 
     private Appender[] appenders;
     private int currentAppender;
+    private long currentTerm;
 
     public Channel(final String destination,
                    final ClientAdminThreadCursor adminCursor,
@@ -133,13 +134,13 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
         {
             next();
             appender = appenders[currentAppender];
-            // TODO: notify rotation
         }
     }
 
     private void next()
     {
         currentAppender = (currentAppender + 1) % appenders.length;
+        rollTerm();
     }
 
     public void close() throws Exception
@@ -160,9 +161,7 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
 
     private void rollTerm()
     {
-        bufferNotifier.endOfTermBuffer(currentTermId.get());
-        currentTermId.incrementAndGet();
-        requestTerm(currentTermId.get() + 1);
+        requestTerm(currentTermId.incrementAndGet() + 1);
         startTerm();
     }
 

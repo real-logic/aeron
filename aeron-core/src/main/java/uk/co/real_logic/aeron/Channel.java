@@ -22,9 +22,6 @@ import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.Appender;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Stream;
-
 /**
  * Aeron Channel
  */

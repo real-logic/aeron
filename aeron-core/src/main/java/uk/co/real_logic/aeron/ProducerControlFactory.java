@@ -15,24 +15,13 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.StateViewer;
-
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class DefaultProducerFlowControlStrategy implements ProducerFlowControlStrategy
+/**
+ * Factory for custom control flow strategies, can just be a method reference to
+ * a constructor,
+ */
+public interface ProducerControlFactory
 {
-    private final AtomicBoolean pauseButton;
-
-    private StateViewer currentBuffer;
-
-    public DefaultProducerFlowControlStrategy(AtomicBoolean pauseButton)
-    {
-        this.pauseButton = pauseButton;
-    }
-
-    public void onRotate(final StateViewer currentBuffer)
-    {
-        this.currentBuffer = currentBuffer;
-    }
-
+    public ProducerControlStrategy make(final AtomicBoolean pauseButton);
 }

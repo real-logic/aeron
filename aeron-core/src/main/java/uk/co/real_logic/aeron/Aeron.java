@@ -35,7 +35,6 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescri
 public final class Aeron
 {
     private static final int ADMIN_BUFFER_SIZE = 512 + TRAILER_SIZE;
-    // factory methods
 
     /**
      * Creates an media driver associated with this Aeron instance that can be used to create sources and receivers on.
@@ -67,6 +66,7 @@ public final class Aeron
         return aerons;
     }
 
+    private final ProducerControlFactory producerControl;
     private final ManyToOneRingBuffer adminCommandBuffer;
     private final ErrorHandler errorHandler;
     private final ClientAdminThread adminThread;
@@ -78,6 +78,7 @@ public final class Aeron
     {
         errorHandler = builder.errorHandler;
         adminBuffers = builder.adminBuffers;
+        producerControl = builder.producerControl;
         channels = new AtomicArray<>();
         receivers = new AtomicArray<>();
         adminCommandBuffer = new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocate(ADMIN_BUFFER_SIZE)));
@@ -92,7 +93,8 @@ public final class Aeron
                                                 recvBuffer, sendBuffer,
                                                 bufferUsage,
                                                 channels, receivers,
-                                                adminErrorHandler);
+                                                adminErrorHandler,
+                                                producerControl);
         }
         catch (Exception e)
         {
@@ -179,12 +181,14 @@ public final class Aeron
         private ErrorHandler errorHandler;
         private AdminBufferStrategy adminBuffers;
         private InvalidDestinationHandler invalidDestinationHandler;
+        private ProducerControlFactory producerControl;
 
         public Builder()
         {
             errorHandler = new DummyErrorHandler();
             // TODO: decide on where admin buffers get located and remove buffer size if needed
             adminBuffers = new MappingAdminBufferStrategy(Directories.ADMIN_DIR);
+            producerControl = DefaultProducerControlStrategy::new;
         }
 
         public Builder errorHandler(ErrorHandler errorHandler)
@@ -202,6 +206,12 @@ public final class Aeron
         public Builder invalidDestinationHandler(final InvalidDestinationHandler invalidDestination)
         {
             this.invalidDestinationHandler = invalidDestination;
+            return this;
+        }
+
+        public Builder producerControl(final ProducerControlFactory producerControl)
+        {
+            this.producerControl = producerControl;
             return this;
         }
     }

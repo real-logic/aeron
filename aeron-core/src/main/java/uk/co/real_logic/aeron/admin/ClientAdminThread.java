@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.admin;
 
 import uk.co.real_logic.aeron.Channel;
+import uk.co.real_logic.aeron.ProducerControlFactory;
 import uk.co.real_logic.aeron.ReceiverChannel;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.ClosableThread;
@@ -51,6 +52,7 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
     private final AtomicArray<Channel> channels;
     private final AtomicArray<ReceiverChannel> receivers;
     private final AdminErrorHandler errorHandler;
+    private final ProducerControlFactory producerControl;
     private final ChannelMap<String, Channel> sendNotifiers;
     private final ReceiverMap recvNotifiers;
 
@@ -70,7 +72,8 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
                              final BufferUsageStrategy bufferUsage,
                              final AtomicArray<Channel> channels,
                              final AtomicArray<ReceiverChannel> receivers,
-                             final AdminErrorHandler errorHandler)
+                             final AdminErrorHandler errorHandler,
+                             final ProducerControlFactory producerControl)
     {
         this.commandBuffer = commandBuffer;
         this.recvBuffer = recvBuffer;
@@ -79,6 +82,7 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
         this.channels = channels;
         this.receivers = receivers;
         this.errorHandler = errorHandler;
+        this.producerControl = producerControl;
         this.sendNotifiers = new ChannelMap<>();
         this.recvNotifiers = new ReceiverMap();
 

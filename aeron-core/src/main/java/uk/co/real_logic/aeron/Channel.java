@@ -35,7 +35,6 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
     private final AtomicBoolean paused;
 
     private Appender[] appenders;
-    private int currentAppender;
 
     public Channel(final String destination,
                    final ClientAdminThreadCursor adminCursor,
@@ -50,7 +49,6 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
         this.sessionId = sessionId;
         this.channels = channels;
         this.paused = paused;
-        currentAppender = 0;
     }
 
     public long channelId()
@@ -86,12 +84,11 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
             return false;
         }
 
-        final Appender appender = appenders[currentAppender];
+        final Appender appender = appenders[currentBuffer];
         boolean hasAppended = appender.append(buffer, offset, length);
         if (!hasAppended)
         {
             next();
-            // TODO: notify rotation
         }
 
         return hasAppended;
@@ -128,22 +125,12 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
             bufferExhausted();
         }
 
-        Appender appender = appenders[currentAppender];
+        Appender appender = appenders[currentBuffer];
         while (!appender.append(buffer, offset, length))
         {
             next();
-            appender = appenders[currentAppender];
+            appender = appenders[currentBuffer];
         }
-    }
-
-    private void next()
-    {
-        currentAppender++;
-        if (currentAppender == appenders.length)
-        {
-            currentAppender = 0;
-        }
-        rollTerm();
     }
 
     public void close() throws Exception
@@ -162,7 +149,7 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
         adminThread.sendRequestTerm(destination, sessionId, channelId, termId);
     }
 
-    private void rollTerm()
+    protected void rollTerm()
     {
         requestTerm(currentTermId.incrementAndGet() + 1);
         startTerm();

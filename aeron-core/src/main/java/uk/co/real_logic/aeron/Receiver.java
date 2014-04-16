@@ -18,8 +18,8 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.aeron.admin.ClientAdminThreadCursor;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
@@ -95,7 +95,7 @@ public class Receiver implements AutoCloseable
          * @param sessionId for the data source
          * @param flags for the data
          */
-        void onData(final ByteBuffer buffer, final int offset, final long sessionId, final MessageFlags flags);
+        void onData(final AtomicBuffer buffer, final int offset, final long sessionId, final MessageFlags flags);
     }
 
     /**

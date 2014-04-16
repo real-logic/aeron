@@ -18,14 +18,18 @@ package uk.co.real_logic.aeron.admin;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class ChannelNotifiable
+public abstract class ChannelNotifiable
 {
+
+    public static final int BUFFER_COUNT = 3;
+
     private static final long UNKNOWN_TERM_ID = -1L;
 
     protected final TermBufferNotifier bufferNotifier;
     protected final String destination;
     protected final long channelId;
     protected final AtomicLong currentTermId;
+    protected int currentBuffer;
 
     public ChannelNotifiable(final TermBufferNotifier bufferNotifier, final String destination, final long channelId)
     {
@@ -33,6 +37,7 @@ public class ChannelNotifiable
         this.destination = destination;
         this.channelId = channelId;
         currentTermId = new AtomicLong(UNKNOWN_TERM_ID);
+        currentBuffer = 0;
     }
 
     protected boolean hasTerm()
@@ -53,5 +58,17 @@ public class ChannelNotifiable
     {
         bufferNotifier.termBufferBlocking(currentTermId.get());
     }
+
+    protected void next()
+    {
+        currentBuffer++;
+        if (currentBuffer == BUFFER_COUNT)
+        {
+            currentBuffer = 0;
+        }
+        rollTerm();
+    }
+
+    protected abstract void rollTerm();
 
 }

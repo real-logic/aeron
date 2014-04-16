@@ -17,15 +17,22 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.admin.ChannelNotifiable;
 import uk.co.real_logic.aeron.admin.TermBufferNotifier;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.Reader;
+import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
+
+import static uk.co.real_logic.aeron.Receiver.MessageFlags.NONE;
 
 public class ReceiverChannel extends ChannelNotifiable
 {
-    private final Receiver.DataHandler value;
+    private Reader[] readers;
+    private final Receiver.DataHandler dataHandler;
+    private final DataHeaderFlyweight dataHeader;
 
-    public ReceiverChannel(final Destination destination, final long channelId, final Receiver.DataHandler value)
+    public ReceiverChannel(final Destination destination, final long channelId, final Receiver.DataHandler dataHandler)
     {
         super(new TermBufferNotifier(), destination.destination(), channelId);
-        this.value = value;
+        this.dataHandler = dataHandler;
+        dataHeader = new DataHeaderFlyweight();
     }
 
     public boolean matches(final String destination, final long channelId)
@@ -35,7 +42,22 @@ public class ReceiverChannel extends ChannelNotifiable
 
     public void process() throws Exception
     {
-        // TODO: read from log buffer
+        final Reader reader = readers[currentBuffer];
+        reader.read((buffer, offset, length) ->
+        {
+            dataHeader.wrap(buffer, offset);
+            dataHandler.onData(buffer, dataHeader.dataOffset(), dataHeader.sessionId(), NONE);
+        });
+    }
+
+    protected void rollTerm()
+    {
+
+    }
+
+    public void onBuffersMapped(final Reader[] readers)
+    {
+        this.readers = readers;
     }
 
 }

@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.examples;
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Destination;
 import uk.co.real_logic.aeron.Receiver;
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.nio.ByteBuffer;
@@ -114,7 +115,7 @@ public class ExampleReceiver
             return channelId;
         }
 
-        public void onData(final ByteBuffer buffer, final int offset, final long sessionId, final Receiver.MessageFlags flags)
+        public void onData(final AtomicBuffer buffer, final int offset, final long sessionId, final Receiver.MessageFlags flags)
         {
         }
     }

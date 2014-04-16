@@ -37,7 +37,7 @@ public class TemplateFileResource extends ExternalResource
         templateFile = IoUtil.createEmptyFile(new File(directory, "template"), BUFFER_SIZE);
     }
 
-    public FileChannel templateFile()
+    public FileChannel file()
     {
         return templateFile;
     }

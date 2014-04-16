@@ -35,33 +35,37 @@ import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 public class MappedBufferRotator
 {
 
-    private final FileChannel templateFile;
-    private final long bufferSize;
+    private static final String LOG_SUFFIX = "-log";
+    private static final String STATE_SUFFIX = "-state";
 
-    private FileChannel currentFile;
-    private FileChannel cleanFile;
-    private FileChannel dirtyFile;
+    private final FileChannel logTemplate;
+    private final long logBufferSize;
 
-    // TODO: add state buffers as well
-    private MappedByteBuffer currentBuffer;
-    private MappedByteBuffer cleanBuffer;
-    private MappedByteBuffer dirtyBuffer;
+    private final FileChannel stateTemplate;
+    private final long stateBufferSize;
 
-    public MappedBufferRotator(final FileChannel templateFile, final File directory, final long bufferSize)
+    private TermBuffer current;
+    private TermBuffer clean;
+    private TermBuffer dirty;
+
+    public MappedBufferRotator(final File directory,
+                               final FileChannel logTemplate,
+                               final long logBufferSize,
+                               final FileChannel stateTemplate,
+                               final long stateBufferSize)
     {
-        this.templateFile = templateFile;
-        this.bufferSize = bufferSize;
         IoUtil.ensureDirectoryExists(directory, "buffer directory");
+
+        this.logTemplate = logTemplate;
+        this.logBufferSize = logBufferSize;
+        this.stateTemplate = stateTemplate;
+        this.stateBufferSize = stateBufferSize;
+
         try
         {
-            currentFile = openFile(directory, "1");
-            currentBuffer = map(bufferSize, currentFile);
-
-            cleanFile = openFile(directory, "2");
-            cleanBuffer = map(bufferSize, cleanFile);
-
-            dirtyFile = openFile(directory, "3");
-            dirtyBuffer = map(bufferSize, dirtyFile);
+            current = newTerm("1", directory);
+            clean = newTerm("2", directory);
+            dirty = newTerm("3", directory);
         }
         catch (IOException e)
         {
@@ -69,27 +73,24 @@ public class MappedBufferRotator
         }
     }
 
-    public MappedByteBuffer rotate() throws IOException
+    private TermBuffer newTerm(final String prefix, final File directory) throws IOException
     {
-        final MappedByteBuffer newBuffer = cleanBuffer;
-        final FileChannel newFile = cleanFile;
-
-        cleanBuffer = dirtyBuffer;
-        cleanFile = dirtyFile;
-
-        dirtyBuffer = currentBuffer;
-        dirtyFile = currentFile;
-        reset(dirtyFile);
-
-        currentBuffer = newBuffer;
-        currentFile = newFile;
-
-        return newBuffer;
+        final FileChannel logFile = openFile(directory, prefix + LOG_SUFFIX);
+        final FileChannel stateFile = openFile(directory, prefix + STATE_SUFFIX);
+        return new TermBuffer(logFile, stateFile, map(logBufferSize, logFile), map(stateBufferSize, stateFile));
     }
 
-    public MappedByteBuffer dirtyBuffer()
+    public TermBuffer rotate() throws IOException
     {
-        return dirtyBuffer;
+        final TermBuffer newBuffer = clean;
+
+        clean = dirty;
+        dirty = current;
+        dirty.reset(logTemplate, stateTemplate);
+
+        current = newBuffer;
+
+        return newBuffer;
     }
 
     private FileChannel openFile(final File directory, final String child) throws FileNotFoundException
@@ -99,16 +100,16 @@ public class MappedBufferRotator
         return file.getChannel();
     }
 
-    private void reset(final FileChannel channel) throws IOException
-    {
-        channel.position(0);
-        templateFile.transferTo(0, bufferSize, channel);
-    }
-
     private MappedByteBuffer map(final long bufferSize, final FileChannel channel) throws IOException
     {
-        reset(channel);
+        reset(channel, logTemplate, logBufferSize);
         return channel.map(READ_WRITE, 0, bufferSize);
+    }
+
+    public static void reset(final FileChannel channel, final FileChannel template, final long bufferSize) throws IOException
+    {
+        channel.position(0);
+        template.transferTo(0, bufferSize, channel);
     }
 
 }

@@ -18,9 +18,9 @@ package uk.co.real_logic.aeron.mediadriver.buffer;
 import org.junit.ClassRule;
 import org.junit.Test;
 import uk.co.real_logic.aeron.mediadriver.TemplateFileResource;
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import java.io.IOException;
-import java.nio.MappedByteBuffer;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -35,7 +35,7 @@ public class MappedBufferRotatorTest
 {
 
     @ClassRule
-    public static TemplateFileResource templateResource = new TemplateFileResource();
+    public static TemplateFileResource template = new TemplateFileResource();
 
     @Test
     public void returnedBuffersAreAlwaysFresh() throws IOException
@@ -44,7 +44,7 @@ public class MappedBufferRotatorTest
         {
            // check you get a clean buffer
            IntStream.range(0, BUFFER_SIZE)
-                    .forEach(i -> assertThat(Byte.valueOf(buffer.get(i)), is(Byte.valueOf((byte)0))));
+                    .forEach(i -> assertThat(Byte.valueOf(buffer.getByte(i)), is(Byte.valueOf((byte) 0))));
 
            // dirty up the buffer
            buffer.putInt(1, 4);
@@ -56,18 +56,19 @@ public class MappedBufferRotatorTest
     @Test
     public void buffersAreReused() throws IOException
     {
-        final Map<MappedByteBuffer, Boolean> buffers = new IdentityHashMap<>();
+        final Map<AtomicBuffer, Boolean> buffers = new IdentityHashMap<>();
         withRotatedBuffers(buffer -> buffers.put(buffer, Boolean.TRUE));
-        assertThat(buffers.entrySet(), hasSize(3));
+        assertThat(buffers.entrySet(), hasSize(6));
     }
 
-    private void withRotatedBuffers(final Consumer<MappedByteBuffer> handler) throws IOException
+    private void withRotatedBuffers(final Consumer<AtomicBuffer> handler) throws IOException
     {
-        final MappedBufferRotator rotator = new MappedBufferRotator(templateResource.templateFile(), templateResource.directory(), BUFFER_SIZE);
+        final MappedBufferRotator rotator = new MappedBufferRotator(template.directory(), template.file(), BUFFER_SIZE, template.file(), BUFFER_SIZE);
         for (int iteration = 0; iteration < 20; iteration++)
         {
-            final MappedByteBuffer buffer = rotator.rotate();
-            handler.accept(buffer);
+            final TermBuffer buffer = rotator.rotate();
+            handler.accept(buffer.logBuffer());
+            handler.accept(buffer.stateBuffer());
         }
     }
 }

@@ -19,6 +19,7 @@ import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.stream.LongStream;
@@ -35,22 +36,24 @@ public class SenderChannelBuffer
     private static final long NO_TERM = -1;
 
     private final MappedBufferRotator rotator;
-    private final Long2ObjectHashMap<MappedByteBuffer> termToBuffer;
+    private final Long2ObjectHashMap<ByteBuffer> termToBuffer;
     private final long[] termIdQueue;
 
     private int index;
 
     public SenderChannelBuffer(final FileChannel templateFile, final File directory, final long bufferSize)
     {
-        rotator = new MappedBufferRotator(templateFile, directory, bufferSize);
+        // fixme
+        rotator = new MappedBufferRotator(directory, templateFile, bufferSize, templateFile, bufferSize);
         termToBuffer = new Long2ObjectHashMap<>();
         termIdQueue = LongStream.range(0, RING_SIZE).map(i -> NO_TERM).toArray();
         index = 0;
     }
 
-    public MappedByteBuffer newTermBuffer(final long termId) throws IOException
+    public ByteBuffer newTermBuffer(final long termId) throws IOException
     {
-        final MappedByteBuffer newBuffer = rotator.rotate();
+        // FIXME:
+        final ByteBuffer newBuffer = rotator.rotate().logBuffer().duplicateByteBuffer();
 
         index = (index + 1) % RING_SIZE;
         long discardedTermId = termIdQueue[index];
@@ -64,7 +67,7 @@ public class SenderChannelBuffer
         return newBuffer;
     }
 
-    public MappedByteBuffer get(final long termId)
+    public ByteBuffer get(final long termId)
     {
         return termToBuffer.get(termId);
     }

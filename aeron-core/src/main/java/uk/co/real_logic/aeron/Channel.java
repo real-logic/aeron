@@ -112,27 +112,6 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
         throw new BufferExhaustedException("Unable to send: no space in buffer");
     }
 
-    // TODO: pull out blocking methods
-    public void blockingSend(final AtomicBuffer buffer) throws BufferExhaustedException
-    {
-        blockingSend(buffer, 0, buffer.capacity());
-    }
-
-    public void blockingSend(final AtomicBuffer buffer, final int offset, final int length) throws BufferExhaustedException
-    {
-        if (!canAppend())
-        {
-            bufferExhausted();
-        }
-
-        Appender appender = appenders[currentBuffer];
-        while (!appender.append(buffer, offset, length))
-        {
-            next();
-            appender = appenders[currentBuffer];
-        }
-    }
-
     public void close() throws Exception
     {
         channels.remove(this);

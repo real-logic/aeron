@@ -25,7 +25,6 @@ import uk.co.real_logic.aeron.util.BitUtil;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-import static java.lang.Integer.valueOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -60,7 +59,7 @@ public class AtomicBufferTest
     @Theory
     public void shouldGetCapacity(final AtomicBuffer buffer)
     {
-        assertThat(valueOf(buffer.capacity()), is(valueOf(BUFFER_CAPACITY)));
+        assertThat(buffer.capacity(), is(BUFFER_CAPACITY));
     }
 
     @Theory
@@ -92,7 +91,7 @@ public class AtomicBufferTest
 
         duplicateBuffer.putLong(INDEX, LONG_VALUE);
 
-        assertThat(Long.valueOf(buffer.getLong(INDEX, BYTE_ORDER)), is(Long.valueOf(LONG_VALUE)));
+        assertThat(buffer.getLong(INDEX, BYTE_ORDER), is(LONG_VALUE));
     }
 
     @Theory
@@ -102,7 +101,7 @@ public class AtomicBufferTest
 
         buffer.putLong(INDEX, LONG_VALUE, BYTE_ORDER);
 
-        assertThat(Long.valueOf(duplicateBuffer.getLong(INDEX)), is(Long.valueOf(LONG_VALUE)));
+        assertThat(duplicateBuffer.getLong(INDEX), is(LONG_VALUE));
     }
 
     @Theory
@@ -112,7 +111,7 @@ public class AtomicBufferTest
 
         duplicateBuffer.putLong(INDEX, LONG_VALUE);
 
-        assertThat(Long.valueOf(buffer.getLong(INDEX)), is(Long.valueOf(LONG_VALUE)));
+        assertThat(buffer.getLong(INDEX), is(LONG_VALUE));
     }
 
     @Theory
@@ -122,7 +121,7 @@ public class AtomicBufferTest
 
         buffer.putLong(INDEX, LONG_VALUE);
 
-        assertThat(Long.valueOf(duplicateBuffer.getLong(INDEX)), is(Long.valueOf(LONG_VALUE)));
+        assertThat(duplicateBuffer.getLong(INDEX), is(LONG_VALUE));
     }
 
     @Theory
@@ -132,7 +131,7 @@ public class AtomicBufferTest
 
         duplicateBuffer.putLong(INDEX, LONG_VALUE);
 
-        assertThat(Long.valueOf(buffer.getLongVolatile(INDEX)), is(Long.valueOf(LONG_VALUE)));
+        assertThat(buffer.getLongVolatile(INDEX), is(LONG_VALUE));
     }
 
     @Theory
@@ -142,7 +141,7 @@ public class AtomicBufferTest
 
         buffer.putLongVolatile(INDEX, LONG_VALUE);
 
-        assertThat(Long.valueOf(duplicateBuffer.getLong(INDEX)), is(Long.valueOf(LONG_VALUE)));
+        assertThat(duplicateBuffer.getLong(INDEX), is(LONG_VALUE));
     }
 
     @Theory
@@ -152,7 +151,7 @@ public class AtomicBufferTest
 
         buffer.putLongOrdered(INDEX, LONG_VALUE);
 
-        assertThat(Long.valueOf(duplicateBuffer.getLong(INDEX)), is(Long.valueOf(LONG_VALUE)));
+        assertThat(duplicateBuffer.getLong(INDEX), is(LONG_VALUE));
     }
 
     @Theory
@@ -164,7 +163,7 @@ public class AtomicBufferTest
 
         assertTrue(buffer.compareAndSetLong(INDEX, LONG_VALUE, LONG_VALUE + 1));
 
-        assertThat(Long.valueOf(duplicateBuffer.getLong(INDEX)), is(Long.valueOf(LONG_VALUE + 1)));
+        assertThat(duplicateBuffer.getLong(INDEX), is(LONG_VALUE + 1));
     }
 
     @Theory
@@ -177,8 +176,8 @@ public class AtomicBufferTest
         final long afterValue = 1;
         final long beforeValue = buffer.getAndSetLong(INDEX, afterValue);
 
-        assertThat(Long.valueOf(beforeValue), is(Long.valueOf(LONG_VALUE)));
-        assertThat(Long.valueOf(duplicateBuffer.getLong(INDEX)), is(Long.valueOf(afterValue)));
+        assertThat(beforeValue, is(LONG_VALUE));
+        assertThat(duplicateBuffer.getLong(INDEX), is(afterValue));
     }
 
     @Theory
@@ -191,8 +190,8 @@ public class AtomicBufferTest
         final long delta = 1;
         final long beforeValue = buffer.getAndAddLong(INDEX, delta);
 
-        assertThat(Long.valueOf(beforeValue), is(Long.valueOf(LONG_VALUE)));
-        assertThat(Long.valueOf(duplicateBuffer.getLong(INDEX)), is(Long.valueOf(LONG_VALUE + delta)));
+        assertThat(beforeValue, is(LONG_VALUE));
+        assertThat(duplicateBuffer.getLong(INDEX), is(LONG_VALUE + delta));
     }
 
     @Theory
@@ -202,7 +201,7 @@ public class AtomicBufferTest
 
         duplicateBuffer.putInt(INDEX, INT_VALUE);
 
-        assertThat(valueOf(buffer.getInt(INDEX, BYTE_ORDER)), is(valueOf(INT_VALUE)));
+        assertThat(buffer.getInt(INDEX, BYTE_ORDER), is(INT_VALUE));
     }
 
     @Theory
@@ -212,7 +211,7 @@ public class AtomicBufferTest
 
         buffer.putInt(INDEX, INT_VALUE);
 
-        assertThat(valueOf(duplicateBuffer.getInt(INDEX)), is(valueOf(INT_VALUE)));
+        assertThat(duplicateBuffer.getInt(INDEX), is(INT_VALUE));
     }
 
     @Theory
@@ -222,7 +221,7 @@ public class AtomicBufferTest
 
         duplicateBuffer.putInt(INDEX, INT_VALUE);
 
-        assertThat(valueOf(buffer.getInt(INDEX)), is(valueOf(INT_VALUE)));
+        assertThat(buffer.getInt(INDEX), is(INT_VALUE));
     }
 
     @Theory
@@ -232,7 +231,7 @@ public class AtomicBufferTest
 
         buffer.putInt(INDEX, INT_VALUE, BYTE_ORDER);
 
-        assertThat(valueOf(duplicateBuffer.getInt(INDEX)), is(valueOf(INT_VALUE)));
+        assertThat(duplicateBuffer.getInt(INDEX), is(INT_VALUE));
     }
 
     @Theory
@@ -242,7 +241,7 @@ public class AtomicBufferTest
 
         duplicateBuffer.putInt(INDEX, INT_VALUE);
 
-        assertThat(valueOf(buffer.getIntVolatile(INDEX)), is(valueOf(INT_VALUE)));
+        assertThat(buffer.getIntVolatile(INDEX), is(INT_VALUE));
     }
 
     @Theory
@@ -252,7 +251,7 @@ public class AtomicBufferTest
 
         buffer.putIntVolatile(INDEX, INT_VALUE);
 
-        assertThat(valueOf(duplicateBuffer.getInt(INDEX)), is(valueOf(INT_VALUE)));
+        assertThat(duplicateBuffer.getInt(INDEX), is(INT_VALUE));
     }
 
     @Theory
@@ -262,7 +261,7 @@ public class AtomicBufferTest
 
         buffer.putIntOrdered(INDEX, INT_VALUE);
 
-        assertThat(valueOf(duplicateBuffer.getInt(INDEX)), is(valueOf(INT_VALUE)));
+        assertThat(duplicateBuffer.getInt(INDEX), is(INT_VALUE));
     }
 
     @Theory
@@ -274,7 +273,7 @@ public class AtomicBufferTest
 
         assertTrue(buffer.compareAndSetInt(INDEX, INT_VALUE, INT_VALUE + 1));
 
-        assertThat(valueOf(duplicateBuffer.getInt(INDEX)), is(valueOf(INT_VALUE + 1)));
+        assertThat(duplicateBuffer.getInt(INDEX), is(INT_VALUE + 1));
     }
 
     @Theory
@@ -287,8 +286,8 @@ public class AtomicBufferTest
         final int afterValue = 1;
         final int beforeValue = buffer.getAndSetInt(INDEX, afterValue);
 
-        assertThat(valueOf(beforeValue), is(valueOf(INT_VALUE)));
-        assertThat(valueOf(duplicateBuffer.getInt(INDEX)), is(valueOf(afterValue)));
+        assertThat(beforeValue, is(INT_VALUE));
+        assertThat(duplicateBuffer.getInt(INDEX), is(afterValue));
     }
 
     @Theory
@@ -301,8 +300,8 @@ public class AtomicBufferTest
         final int delta = 1;
         final int beforeValue = buffer.getAndAddInt(INDEX, delta);
 
-        assertThat(valueOf(beforeValue), is(valueOf(INT_VALUE)));
-        assertThat(valueOf(duplicateBuffer.getInt(INDEX)), is(valueOf(INT_VALUE + delta)));
+        assertThat(beforeValue, is(INT_VALUE));
+        assertThat(duplicateBuffer.getInt(INDEX), is(INT_VALUE + delta));
     }
 
     @Theory
@@ -312,7 +311,7 @@ public class AtomicBufferTest
 
         duplicateBuffer.putShort(INDEX, SHORT_VALUE);
 
-        assertThat(Short.valueOf(buffer.getShort(INDEX, BYTE_ORDER)), is(Short.valueOf(SHORT_VALUE)));
+        assertThat(buffer.getShort(INDEX, BYTE_ORDER), is(SHORT_VALUE));
     }
 
     @Theory
@@ -322,7 +321,7 @@ public class AtomicBufferTest
 
         buffer.putShort(INDEX, SHORT_VALUE, BYTE_ORDER);
 
-        assertThat(Short.valueOf(duplicateBuffer.getShort(INDEX)), is(Short.valueOf(SHORT_VALUE)));
+        assertThat(duplicateBuffer.getShort(INDEX), is(SHORT_VALUE));
     }
 
     @Theory
@@ -332,7 +331,7 @@ public class AtomicBufferTest
 
         duplicateBuffer.putShort(INDEX, SHORT_VALUE);
 
-        assertThat(Short.valueOf(buffer.getShort(INDEX)), is(Short.valueOf(SHORT_VALUE)));
+        assertThat(buffer.getShort(INDEX), is(SHORT_VALUE));
     }
 
     @Theory
@@ -342,7 +341,7 @@ public class AtomicBufferTest
 
         buffer.putShort(INDEX, SHORT_VALUE);
 
-        assertThat(Short.valueOf(duplicateBuffer.getShort(INDEX)), is(Short.valueOf(SHORT_VALUE)));
+        assertThat(duplicateBuffer.getShort(INDEX), is(SHORT_VALUE));
     }
 
     @Theory
@@ -352,7 +351,7 @@ public class AtomicBufferTest
 
         duplicateBuffer.putShort(INDEX, SHORT_VALUE);
 
-        assertThat(Short.valueOf(buffer.getShortVolatile(INDEX)), is(Short.valueOf(SHORT_VALUE)));
+        assertThat(buffer.getShortVolatile(INDEX), is(SHORT_VALUE));
     }
 
     @Theory
@@ -362,7 +361,7 @@ public class AtomicBufferTest
 
         buffer.putShortVolatile(INDEX, SHORT_VALUE);
 
-        assertThat(Short.valueOf(duplicateBuffer.getShort(INDEX)), is(Short.valueOf(SHORT_VALUE)));
+        assertThat(duplicateBuffer.getShort(INDEX), is(SHORT_VALUE));
     }
 
     @Theory
@@ -372,7 +371,7 @@ public class AtomicBufferTest
 
         duplicateBuffer.putDouble(INDEX, DOUBLE_VALUE);
 
-        assertThat(Double.valueOf(buffer.getDouble(INDEX, BYTE_ORDER)), is(Double.valueOf(DOUBLE_VALUE)));
+        assertThat(buffer.getDouble(INDEX, BYTE_ORDER), is(DOUBLE_VALUE));
     }
 
     @Theory
@@ -382,7 +381,7 @@ public class AtomicBufferTest
 
         buffer.putDouble(INDEX, DOUBLE_VALUE, BYTE_ORDER);
 
-        assertThat(Double.valueOf(duplicateBuffer.getDouble(INDEX)), is(Double.valueOf(DOUBLE_VALUE)));
+        assertThat(duplicateBuffer.getDouble(INDEX), is(DOUBLE_VALUE));
     }
 
     @Theory
@@ -392,7 +391,7 @@ public class AtomicBufferTest
 
         duplicateBuffer.putDouble(INDEX, DOUBLE_VALUE);
 
-        assertThat(Double.valueOf(buffer.getDouble(INDEX)), is(Double.valueOf(DOUBLE_VALUE)));
+        assertThat(buffer.getDouble(INDEX), is(DOUBLE_VALUE));
     }
 
     @Theory
@@ -402,7 +401,7 @@ public class AtomicBufferTest
 
         buffer.putDouble(INDEX, DOUBLE_VALUE);
 
-        assertThat(Double.valueOf(duplicateBuffer.getDouble(INDEX)), is(Double.valueOf(DOUBLE_VALUE)));
+        assertThat(duplicateBuffer.getDouble(INDEX), is(DOUBLE_VALUE));
     }
 
     @Theory
@@ -412,7 +411,7 @@ public class AtomicBufferTest
 
         duplicateBuffer.putFloat(INDEX, FLOAT_VALUE);
 
-        assertThat(Float.valueOf(buffer.getFloat(INDEX, BYTE_ORDER)), is(Float.valueOf(FLOAT_VALUE)));
+        assertThat(buffer.getFloat(INDEX, BYTE_ORDER), is(FLOAT_VALUE));
     }
 
     @Theory
@@ -422,7 +421,7 @@ public class AtomicBufferTest
 
         buffer.putFloat(INDEX, FLOAT_VALUE, BYTE_ORDER);
 
-        assertThat(Float.valueOf(duplicateBuffer.getFloat(INDEX)), is(Float.valueOf(FLOAT_VALUE)));
+        assertThat(duplicateBuffer.getFloat(INDEX), is(FLOAT_VALUE));
     }
 
     @Theory
@@ -432,7 +431,7 @@ public class AtomicBufferTest
 
         duplicateBuffer.putFloat(INDEX, FLOAT_VALUE);
 
-        assertThat(Float.valueOf(buffer.getFloat(INDEX)), is(Float.valueOf(FLOAT_VALUE)));
+        assertThat(buffer.getFloat(INDEX), is(FLOAT_VALUE));
     }
 
     @Theory
@@ -442,7 +441,7 @@ public class AtomicBufferTest
 
         buffer.putFloat(INDEX, FLOAT_VALUE);
 
-        assertThat(Float.valueOf(duplicateBuffer.getFloat(INDEX)), is(Float.valueOf(FLOAT_VALUE)));
+        assertThat(duplicateBuffer.getFloat(INDEX), is(FLOAT_VALUE));
     }
 
     @Theory
@@ -452,7 +451,7 @@ public class AtomicBufferTest
 
         duplicateBuffer.put(INDEX, BYTE_VALUE);
 
-        assertThat(Byte.valueOf(buffer.getByte(INDEX)), is(Byte.valueOf(BYTE_VALUE)));
+        assertThat(buffer.getByte(INDEX), is(BYTE_VALUE));
     }
 
     @Theory
@@ -462,7 +461,7 @@ public class AtomicBufferTest
 
         buffer.putByte(INDEX, BYTE_VALUE);
 
-        assertThat(Byte.valueOf(duplicateBuffer.get(INDEX)), is(Byte.valueOf(BYTE_VALUE)));
+        assertThat(duplicateBuffer.get(INDEX), is(BYTE_VALUE));
     }
 
     @Theory

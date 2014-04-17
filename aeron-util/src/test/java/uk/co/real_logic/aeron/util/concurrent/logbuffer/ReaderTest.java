@@ -22,11 +22,13 @@ import org.mockito.Mockito;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
-import static java.lang.Integer.valueOf;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.lengthOffset;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.typeOffset;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.TAIL_COUNTER_OFFSET;
 
@@ -37,7 +39,6 @@ public class ReaderTest
 
     private final AtomicBuffer logBuffer = mock(AtomicBuffer.class);
     private final AtomicBuffer stateBuffer = spy(new AtomicBuffer(new byte[STATE_BUFFER_CAPACITY]));
-    private final StateViewer stateViewer = new StateViewer(stateBuffer);
     private final Reader.FrameHandler handler = Mockito.mock(Reader.FrameHandler.class);
 
     private Reader reader;
@@ -45,7 +46,7 @@ public class ReaderTest
     @Before
     public void setUp()
     {
-        when(valueOf(logBuffer.capacity())).thenReturn(valueOf(LOG_BUFFER_CAPACITY));
+        when(logBuffer.capacity()).thenReturn(LOG_BUFFER_CAPACITY);
 
         reader = new Reader(logBuffer, stateBuffer);
     }
@@ -54,23 +55,23 @@ public class ReaderTest
     public void shouldThrowExceptionWhenCapacityNotMultipleOfAlignment()
     {
         final int logBufferCapacity = LogBufferDescriptor.LOG_MIN_SIZE + FRAME_ALIGNMENT + 1;
-        when(valueOf(logBuffer.capacity())).thenReturn(valueOf(logBufferCapacity));
+        when(logBuffer.capacity()).thenReturn(logBufferCapacity);
 
         reader = new Reader(logBuffer, stateBuffer);
     }
 
     @Test
-    public void readFirstMessage()
+    public void shouldReadFirstMessage()
     {
-        when(logBuffer.getIntVolatile(FrameDescriptor.lengthOffset(0))).thenReturn(FRAME_ALIGNMENT);
+        when(logBuffer.getIntVolatile(lengthOffset(0))).thenReturn(FRAME_ALIGNMENT);
         when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(FRAME_ALIGNMENT);
-        when(logBuffer.getInt(FrameDescriptor.typeOffset(0))).thenReturn(HeaderFlyweight.HDR_TYPE_NAK);
+        when(logBuffer.getInt(typeOffset(0), LITTLE_ENDIAN)).thenReturn(HeaderFlyweight.HDR_TYPE_NAK);
 
         assertThat(reader.read(handler), is(1));
 
         final InOrder inOrder = inOrder(logBuffer, stateBuffer);
         inOrder.verify(stateBuffer).getIntVolatile(TAIL_COUNTER_OFFSET);
-        inOrder.verify(logBuffer).getIntVolatile(FrameDescriptor.lengthOffset(0));
+        inOrder.verify(logBuffer).getIntVolatile(lengthOffset(0));
         verify(handler).onFrame(logBuffer, 0, FRAME_ALIGNMENT);
     }
 
@@ -86,37 +87,37 @@ public class ReaderTest
     }
 
     @Test
-    public void readsMultipleMessages()
+    public void shouldReadMultipleMessages()
     {
         when(logBuffer.getIntVolatile(anyInt())).thenReturn(FRAME_ALIGNMENT);
         when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(FRAME_ALIGNMENT * 2);
-        when(logBuffer.getInt(anyInt())).thenReturn(HeaderFlyweight.HDR_TYPE_NAK);
+        when(logBuffer.getInt(anyInt(), any())).thenReturn(HeaderFlyweight.HDR_TYPE_NAK);
 
         assertThat(reader.read(handler), is(2));
 
         final InOrder inOrder = inOrder(logBuffer, stateBuffer, handler);
         inOrder.verify(stateBuffer, times(1)).getIntVolatile(TAIL_COUNTER_OFFSET);
-        inOrder.verify(logBuffer).getIntVolatile(FrameDescriptor.lengthOffset(0));
+        inOrder.verify(logBuffer).getIntVolatile(lengthOffset(0));
         inOrder.verify(handler).onFrame(logBuffer, 0, FRAME_ALIGNMENT);
-        inOrder.verify(logBuffer).getIntVolatile(FrameDescriptor.lengthOffset(FRAME_ALIGNMENT));
+        inOrder.verify(logBuffer).getIntVolatile(lengthOffset(FRAME_ALIGNMENT));
         inOrder.verify(handler).onFrame(logBuffer, FRAME_ALIGNMENT, FRAME_ALIGNMENT);
     }
 
     @Test
-    public void readsLastMessage()
+    public void shouldReadLastMessage()
     {
         final int startOfMessage = LOG_BUFFER_CAPACITY - FRAME_ALIGNMENT;
-        when(logBuffer.getIntVolatile(FrameDescriptor.lengthOffset(startOfMessage))).thenReturn(FRAME_ALIGNMENT);
+        when(logBuffer.getIntVolatile(lengthOffset(startOfMessage))).thenReturn(FRAME_ALIGNMENT);
         when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(LOG_BUFFER_CAPACITY);
-        when(logBuffer.getInt(FrameDescriptor.typeOffset(startOfMessage))).thenReturn(HeaderFlyweight.HDR_TYPE_NAK);
+        when(logBuffer.getInt(typeOffset(startOfMessage), LITTLE_ENDIAN))
+            .thenReturn(HeaderFlyweight.HDR_TYPE_NAK);
 
         reader.seek(startOfMessage);
         assertThat(reader.read(handler), is(1));
 
         final InOrder inOrder = inOrder(logBuffer, stateBuffer);
         inOrder.verify(stateBuffer, atLeastOnce()).getIntVolatile(TAIL_COUNTER_OFFSET);
-        inOrder.verify(logBuffer).getIntVolatile(FrameDescriptor.lengthOffset(startOfMessage));
+        inOrder.verify(logBuffer).getIntVolatile(lengthOffset(startOfMessage));
         verify(handler).onFrame(logBuffer, startOfMessage, FRAME_ALIGNMENT);
     }
-
 }

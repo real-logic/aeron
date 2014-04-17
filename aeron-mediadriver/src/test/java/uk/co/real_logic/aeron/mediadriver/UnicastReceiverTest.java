@@ -96,7 +96,9 @@ public class UnicastReceiverTest
     {
         senderChannel.close();
         receiverThread.close();
+        receiverThread.nioSelector().selectNowWithNoProcessing();
         mediaDriverAdminThread.close();
+        mediaDriverAdminThread.nioSelector().selectNowWithNoProcessing();
     }
 
     @Test(timeout = 1000)

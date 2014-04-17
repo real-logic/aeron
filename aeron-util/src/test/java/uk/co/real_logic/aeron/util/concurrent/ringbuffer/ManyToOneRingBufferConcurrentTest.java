@@ -71,7 +71,7 @@ public class ManyToOneRingBufferConcurrentTest
             t.join();
         }
 
-        assertThat(Long.valueOf(ringBuffer.nextCorrelationId()), is(Long.valueOf(reps * numThreads)));
+        assertThat(ringBuffer.nextCorrelationId(), is((long)(reps * numThreads)));
     }
 
     @Test
@@ -95,7 +95,7 @@ public class ManyToOneRingBufferConcurrentTest
                 final int iteration = buffer.getInt(index + BitUtil.SIZE_OF_INT);
 
                 final int count = counts[producerId];
-                assertThat(Integer.valueOf(iteration), is(Integer.valueOf(count)));
+                assertThat(iteration, is(count));
 
                 counts[producerId]++;
             };
@@ -112,7 +112,7 @@ public class ManyToOneRingBufferConcurrentTest
             eventCount += readCount;
         }
 
-        assertThat(Integer.valueOf(eventCount), is(Integer.valueOf(reps * numProducers)));
+        assertThat(eventCount, is(reps * numProducers));
     }
 
     private class Producer implements Runnable

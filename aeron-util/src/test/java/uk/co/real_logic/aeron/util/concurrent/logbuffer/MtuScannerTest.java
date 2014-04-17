@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.util.concurrent.logbuffer;
 
-
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -45,8 +44,8 @@ public class MtuScannerTest
     @Before
     public void setUp()
     {
-        when(valueOf(logBuffer.capacity())).thenReturn(valueOf(LOG_BUFFER_CAPACITY));
-        when(valueOf(stateBuffer.capacity())).thenReturn(valueOf(STATE_BUFFER_CAPACITY));
+        when(logBuffer.capacity()).thenReturn(LOG_BUFFER_CAPACITY);
+        when(stateBuffer.capacity()).thenReturn(STATE_BUFFER_CAPACITY);
 
         scanner = new MtuScanner(logBuffer, stateBuffer, MTU_LENGTH, HEADER_LENGTH);
     }
@@ -54,13 +53,13 @@ public class MtuScannerTest
     @Test
     public void shouldReportUnderlyingCapacity()
     {
-        assertThat(valueOf(scanner.capacity()), is(valueOf(LOG_BUFFER_CAPACITY)));
+        assertThat(scanner.capacity(), is(LOG_BUFFER_CAPACITY));
     }
 
     @Test
     public void shouldReportMtu()
     {
-        assertThat(valueOf(scanner.mtuLength()), is(valueOf(MTU_LENGTH)));
+        assertThat(scanner.mtuLength(), is(MTU_LENGTH));
     }
 
     @Test
@@ -74,16 +73,16 @@ public class MtuScannerTest
     {
         final int frameOffset = 0;
 
-        when(valueOf(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)))
-            .thenReturn(valueOf(FRAME_ALIGNMENT));
-        when(valueOf(logBuffer.getIntVolatile(lengthOffset(frameOffset))))
-            .thenReturn(valueOf(FRAME_ALIGNMENT));
-        when(Short.valueOf(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN)))
-            .thenReturn(Short.valueOf(MSG_TYPE));
+        when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))
+            .thenReturn(FRAME_ALIGNMENT);
+        when(logBuffer.getIntVolatile(lengthOffset(frameOffset)))
+            .thenReturn(FRAME_ALIGNMENT);
+        when(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN))
+            .thenReturn(MSG_TYPE);
 
         assertTrue(scanner.scan());
-        assertThat(valueOf(scanner.offset()), is(valueOf(frameOffset)));
-        assertThat(valueOf(scanner.length()), is(valueOf(FRAME_ALIGNMENT)));
+        assertThat(scanner.offset(), is(frameOffset));
+        assertThat(scanner.length(), is(FRAME_ALIGNMENT));
         assertFalse(scanner.isComplete());
 
         final InOrder inOrder = inOrder(stateBuffer, logBuffer);
@@ -97,20 +96,20 @@ public class MtuScannerTest
     {
         int frameOffset = 0;
 
-        when(valueOf(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)))
-            .thenReturn(valueOf(FRAME_ALIGNMENT * 2));
-        when(valueOf(logBuffer.getIntVolatile(lengthOffset(frameOffset))))
-            .thenReturn(valueOf(FRAME_ALIGNMENT));
-        when(Short.valueOf(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN)))
-            .thenReturn(Short.valueOf(MSG_TYPE));
-        when(valueOf(logBuffer.getIntVolatile(lengthOffset(frameOffset + FRAME_ALIGNMENT))))
-            .thenReturn(valueOf(FRAME_ALIGNMENT));
-        when(Short.valueOf(logBuffer.getShort(typeOffset(frameOffset + FRAME_ALIGNMENT), LITTLE_ENDIAN)))
-            .thenReturn(Short.valueOf(MSG_TYPE));
+        when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))
+            .thenReturn(FRAME_ALIGNMENT * 2);
+        when(logBuffer.getIntVolatile(lengthOffset(frameOffset)))
+            .thenReturn(FRAME_ALIGNMENT);
+        when(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN))
+            .thenReturn(MSG_TYPE);
+        when(logBuffer.getIntVolatile(lengthOffset(frameOffset + FRAME_ALIGNMENT)))
+            .thenReturn(FRAME_ALIGNMENT);
+        when(logBuffer.getShort(typeOffset(frameOffset + FRAME_ALIGNMENT), LITTLE_ENDIAN))
+            .thenReturn(MSG_TYPE);
 
         assertTrue(scanner.scan());
-        assertThat(valueOf(scanner.offset()), is(valueOf(frameOffset)));
-        assertThat(valueOf(scanner.length()), is(valueOf(FRAME_ALIGNMENT * 2)));
+        assertThat(scanner.offset(), is(frameOffset));
+        assertThat(scanner.length(), is(FRAME_ALIGNMENT * 2));
         assertFalse(scanner.isComplete());
 
         final InOrder inOrder = inOrder(stateBuffer, logBuffer);
@@ -130,20 +129,20 @@ public class MtuScannerTest
         final int frameTwoLength = FRAME_ALIGNMENT;
         int frameOffset = 0;
 
-        when(valueOf(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)))
-            .thenReturn(valueOf(frameOneLength + frameTwoLength));
-        when(valueOf(logBuffer.getIntVolatile(lengthOffset(frameOffset))))
-            .thenReturn(valueOf(frameOneLength));
-        when(Short.valueOf(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN)))
-            .thenReturn(Short.valueOf(MSG_TYPE));
-        when(valueOf(logBuffer.getIntVolatile(lengthOffset(frameOffset + frameOneLength))))
-            .thenReturn(valueOf(frameTwoLength));
-        when(Short.valueOf(logBuffer.getShort(typeOffset(frameOffset + frameOneLength), LITTLE_ENDIAN)))
-            .thenReturn(Short.valueOf(MSG_TYPE));
+        when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))
+            .thenReturn(frameOneLength + frameTwoLength);
+        when(logBuffer.getIntVolatile(lengthOffset(frameOffset)))
+            .thenReturn(frameOneLength);
+        when(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN))
+            .thenReturn(MSG_TYPE);
+        when(logBuffer.getIntVolatile(lengthOffset(frameOffset + frameOneLength)))
+            .thenReturn(frameTwoLength);
+        when(logBuffer.getShort(typeOffset(frameOffset + frameOneLength), LITTLE_ENDIAN))
+            .thenReturn(MSG_TYPE);
 
         assertTrue(scanner.scan());
-        assertThat(valueOf(scanner.offset()), is(valueOf(frameOffset)));
-        assertThat(valueOf(scanner.length()), is(valueOf(frameOneLength + frameTwoLength)));
+        assertThat(scanner.offset(), is(frameOffset));
+        assertThat(scanner.length(), is(frameOneLength + frameTwoLength));
         assertFalse(scanner.isComplete());
 
         final InOrder inOrder = inOrder(stateBuffer, logBuffer);
@@ -163,20 +162,20 @@ public class MtuScannerTest
         final int frameTwoLength = FRAME_ALIGNMENT * 2;
         int frameOffset = 0;
 
-        when(valueOf(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)))
-            .thenReturn(valueOf(frameOneLength + frameTwoLength));
-        when(valueOf(logBuffer.getIntVolatile(lengthOffset(frameOffset))))
-            .thenReturn(valueOf(frameOneLength));
-        when(Short.valueOf(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN)))
-            .thenReturn(Short.valueOf(MSG_TYPE));
-        when(valueOf(logBuffer.getIntVolatile(lengthOffset(frameOffset + frameOneLength))))
-            .thenReturn(valueOf(frameTwoLength));
-        when(Short.valueOf(logBuffer.getShort(typeOffset(frameOffset + frameOneLength), LITTLE_ENDIAN)))
-            .thenReturn(Short.valueOf(MSG_TYPE));
+        when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))
+            .thenReturn(frameOneLength + frameTwoLength);
+        when(logBuffer.getIntVolatile(lengthOffset(frameOffset)))
+            .thenReturn(frameOneLength);
+        when(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN))
+            .thenReturn(MSG_TYPE);
+        when(logBuffer.getIntVolatile(lengthOffset(frameOffset + frameOneLength)))
+            .thenReturn(frameTwoLength);
+        when(logBuffer.getShort(typeOffset(frameOffset + frameOneLength), LITTLE_ENDIAN))
+            .thenReturn(MSG_TYPE);
 
         assertTrue(scanner.scan());
-        assertThat(valueOf(scanner.offset()), is(valueOf(frameOffset)));
-        assertThat(valueOf(scanner.length()), is(valueOf(frameOneLength)));
+        assertThat(scanner.offset(), is(frameOffset));
+        assertThat(scanner.length(), is(frameOneLength));
         assertFalse(scanner.isComplete());
 
         final InOrder inOrder = inOrder(stateBuffer, logBuffer);
@@ -194,17 +193,18 @@ public class MtuScannerTest
     {
         final int frameOffset = LOG_BUFFER_CAPACITY - FRAME_ALIGNMENT;
 
-        when(valueOf(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)))
-            .thenReturn(valueOf(LOG_BUFFER_CAPACITY));
-        when(valueOf(logBuffer.getIntVolatile(lengthOffset(frameOffset))))
-            .thenReturn(valueOf(FRAME_ALIGNMENT));
-        when(Short.valueOf(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN)))
-            .thenReturn(Short.valueOf(MSG_TYPE));
+        when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))
+            .thenReturn(LOG_BUFFER_CAPACITY);
+        when(logBuffer.getIntVolatile(lengthOffset(frameOffset)))
+            .thenReturn(FRAME_ALIGNMENT);
+        when(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN))
+            .thenReturn(MSG_TYPE);
 
         scanner.seek(frameOffset);
+
         assertTrue(scanner.scan());
-        assertThat(valueOf(scanner.offset()), is(valueOf(frameOffset)));
-        assertThat(valueOf(scanner.length()), is(valueOf(FRAME_ALIGNMENT)));
+        assertThat(scanner.offset(), is(frameOffset));
+        assertThat(scanner.length(), is(FRAME_ALIGNMENT));
         assertTrue(scanner.isComplete());
         assertFalse(scanner.scan());
     }
@@ -214,21 +214,22 @@ public class MtuScannerTest
     {
         final int frameOffset = LOG_BUFFER_CAPACITY - (FRAME_ALIGNMENT * 3);
 
-        when(valueOf(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)))
-            .thenReturn(valueOf(LOG_BUFFER_CAPACITY - FRAME_ALIGNMENT));
+        when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))
+            .thenReturn(LOG_BUFFER_CAPACITY - FRAME_ALIGNMENT);
         when(valueOf(logBuffer.getIntVolatile(lengthOffset(frameOffset))))
-            .thenReturn(valueOf(FRAME_ALIGNMENT));
-        when(Short.valueOf(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN)))
-            .thenReturn(Short.valueOf(MSG_TYPE));
-        when(valueOf(logBuffer.getIntVolatile(lengthOffset(frameOffset + FRAME_ALIGNMENT))))
-            .thenReturn(valueOf(FRAME_ALIGNMENT * 2));
-        when(Short.valueOf(logBuffer.getShort(typeOffset(frameOffset + FRAME_ALIGNMENT), LITTLE_ENDIAN)))
-            .thenReturn(Short.valueOf(PADDING_MSG_TYPE));
+            .thenReturn(FRAME_ALIGNMENT);
+        when(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN))
+            .thenReturn(MSG_TYPE);
+        when(logBuffer.getIntVolatile(lengthOffset(frameOffset + FRAME_ALIGNMENT)))
+            .thenReturn(FRAME_ALIGNMENT * 2);
+        when(logBuffer.getShort(typeOffset(frameOffset + FRAME_ALIGNMENT), LITTLE_ENDIAN))
+            .thenReturn(PADDING_MSG_TYPE);
 
         scanner.seek(frameOffset);
+
         assertTrue(scanner.scan());
-        assertThat(valueOf(scanner.offset()), is(valueOf(frameOffset)));
-        assertThat(valueOf(scanner.length()), is(valueOf(FRAME_ALIGNMENT * 2)));
+        assertThat(scanner.offset(), is(frameOffset));
+        assertThat(scanner.length(), is(FRAME_ALIGNMENT * 2));
         assertTrue(scanner.isComplete());
         assertFalse(scanner.scan());
     }

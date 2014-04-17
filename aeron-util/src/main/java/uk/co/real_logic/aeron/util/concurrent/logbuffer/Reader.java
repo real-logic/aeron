@@ -17,8 +17,12 @@ package uk.co.real_logic.aeron.util.concurrent.logbuffer;
 
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.checkOffsetAlignment;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.typeOffset;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.waitForFrameLength;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.checkLogBuffer;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.checkOffset;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.checkStateBuffer;
 
 /**
@@ -28,9 +32,18 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescript
  */
 public class Reader
 {
+    /**
+     * Handler for reading data that is coming off the log.
+     */
+    @FunctionalInterface
+    public interface FrameHandler
+    {
+        void onFrame(final AtomicBuffer buffer, final int offset, final int length);
+    }
+
     private final AtomicBuffer logBuffer;
     private final StateViewer stateViewer;
-    private int cursor;
+    private int cursor = 0;
 
     public Reader(final AtomicBuffer logBuffer, final AtomicBuffer stateBuffer)
     {
@@ -39,16 +52,6 @@ public class Reader
 
         this.logBuffer = logBuffer;
         this.stateViewer = new StateViewer(stateBuffer);
-        cursor = 0;
-    }
-
-    /**
-     * Handler for reading data that is coming off the log.
-     */
-    @FunctionalInterface
-    public interface FrameHandler
-    {
-        void onFrame(final AtomicBuffer buffer, final int offset, final int length);
     }
 
     /**
@@ -59,15 +62,8 @@ public class Reader
     public void seek(final int offset)
     {
         final int tail = stateViewer.tailVolatile();
-        if (offset > tail)
-        {
-            throw new IllegalStateException("Cannot seek to " + offset + ", the tail is only " + tail);
-        }
-
-        if ((offset & (FRAME_ALIGNMENT - 1)) != 0)
-        {
-            throw new IllegalArgumentException("Cannot seek to an offset that isn't a multiple of " + FRAME_ALIGNMENT);
-        }
+        checkOffset(offset, tail);
+        checkOffsetAlignment(offset);
 
         cursor = offset;
     }
@@ -80,12 +76,13 @@ public class Reader
      */
     public int read(final FrameHandler handler)
     {
-        final int tail = stateViewer.tailVolatile();
         int counter = 0;
+        final int tail = stateViewer.tailVolatile();
+
         while (tail > cursor)
         {
-            final int frameLength = FrameDescriptor.waitForFrameLength(cursor, logBuffer);
-            final int type = logBuffer.getInt(FrameDescriptor.typeOffset(cursor));
+            final int frameLength = waitForFrameLength(cursor, logBuffer);
+            final int type = type(cursor);
 
             try
             {
@@ -100,7 +97,12 @@ public class Reader
                 counter++;
             }
         }
+
         return counter;
     }
 
+    private int type(final int frameOffset)
+    {
+        return logBuffer.getInt(typeOffset(frameOffset), LITTLE_ENDIAN);
+    }
 }

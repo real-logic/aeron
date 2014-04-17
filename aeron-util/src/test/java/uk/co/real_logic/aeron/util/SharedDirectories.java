@@ -16,10 +16,14 @@
 package uk.co.real_logic.aeron.util;
 
 import org.junit.rules.ExternalResource;
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.util.ArrayList;
+import java.util.List;
 
 import static uk.co.real_logic.aeron.util.FileMappingConvention.BUFFER_COUNT;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.Type;
@@ -27,6 +31,7 @@ import static uk.co.real_logic.aeron.util.FileMappingConvention.Type.LOG;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.Type.STATE;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.termLocation;
 import static uk.co.real_logic.aeron.util.IoUtil.createEmptyFile;
+import static uk.co.real_logic.aeron.util.IoUtil.map;
 
 public class SharedDirectories extends ExternalResource
 {
@@ -53,28 +58,66 @@ public class SharedDirectories extends ExternalResource
         return dir;
     }
 
-    public void createSenderTermFile(final String destination,
-                                     final long sessionId,
-                                     final long channelId,
-                                     final long termId) throws IOException
+    public static class Buffers
     {
-        for (int i = 0; i < BUFFER_COUNT; i++)
+        private final AtomicBuffer stateBuffer;
+        private final AtomicBuffer logBuffer;
+
+        public Buffers(final AtomicBuffer stateBuffer, final AtomicBuffer logBuffer)
         {
-            createTermFile(destination, sessionId, channelId, i, STATE);
-            createTermFile(destination, sessionId, channelId, i, LOG);
+            this.stateBuffer = stateBuffer;
+            this.logBuffer = logBuffer;
+        }
+
+
+        public AtomicBuffer logBuffer()
+        {
+            return logBuffer;
+        }
+
+        public AtomicBuffer stateBuffer()
+        {
+            return stateBuffer;
         }
     }
 
-    private void createTermFile(final String destination,
-                                final long sessionId,
-                                final long channelId,
-                                final long termId,
-                                final Type type) throws IOException
+    public File senderDir()
     {
-        final File rootDir = mapping.senderDir();
+        return mapping.senderDir();
+    }
+
+    public File receiverDir()
+    {
+        return mapping.receiverDir();
+    }
+
+    public List<Buffers> createTermFile(final File rootDir,
+                                        final String destination,
+                                        final long sessionId,
+                                        final long channelId,
+                                        final long termId) throws IOException
+    {
+        final List<Buffers> buffers = new ArrayList<>();
+        for (int i = 0; i < BUFFER_COUNT; i++)
+        {
+            final AtomicBuffer logBuffer = createTermFile(rootDir, destination, sessionId, channelId, i, LOG);
+            final AtomicBuffer stateBuffer = createTermFile(rootDir, destination, sessionId, channelId, i, STATE);
+            buffers.add(new Buffers(stateBuffer, logBuffer));
+        }
+        return buffers;
+    }
+
+    private AtomicBuffer createTermFile(final File rootDir,
+                                        final String destination,
+                                        final long sessionId,
+                                        final long channelId,
+                                        final long termId,
+                                        final Type type) throws IOException
+    {
         final File termLocation = termLocation(rootDir, sessionId, channelId, termId, true, destination, type);
         IoUtil.delete(termLocation, true);
-        createEmptyFile(termLocation, LogBufferDescriptor.LOG_MIN_SIZE);
+        final FileChannel file = createEmptyFile(termLocation, LogBufferDescriptor.LOG_MIN_SIZE);
+        return new AtomicBuffer(IoUtil.map(file));
     }
 
     public String dataDir()

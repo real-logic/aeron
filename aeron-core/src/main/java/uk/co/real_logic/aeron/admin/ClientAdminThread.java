@@ -105,8 +105,8 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
 
     public void process()
     {
-        handleReceiveBuffer();
         handleCommandBuffer();
+        handleReceiveBuffer();
     }
 
     private void handleCommandBuffer()
@@ -233,10 +233,10 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
                                                  final String destination)
     {
         onNewBufferNotification(termId,
-                recvNotifiers.get(destination, channelId),
-                i -> newReader(destination, channelId, i),
-                Reader[]::new,
-                ReceiverChannel::onBuffersMapped);
+            recvNotifiers.get(destination, channelId),
+            i -> newReader(destination, channelId, i),
+            Reader[]::new,
+            ReceiverChannel::onBuffersMapped);
     }
 
     private void onNewSenderBufferNotification(final long sessionId,
@@ -300,7 +300,6 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
     {
         final AtomicBuffer logBuffer = bufferUsage.newSenderLogBuffer(destination, sessionId, channelId, index);
         final AtomicBuffer stateBuffer = bufferUsage.newSenderStateBuffer(destination, sessionId, channelId, index);
-        // TODO: weave header and frame length
         return new Appender(logBuffer, stateBuffer, DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }
 

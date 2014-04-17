@@ -140,11 +140,15 @@ public class IoUtil
         checkFileExists(location, name);
         try (final RandomAccessFile file = new RandomAccessFile(location, "rw"))
         {
-            long size = file.length();
             final FileChannel channel = file.getChannel();
-
-            return channel.map(READ_WRITE, 0, size);
+            return map(channel);
         }
+    }
+
+    public static MappedByteBuffer map(final FileChannel channel) throws IOException
+    {
+        long size = channel.size();
+        return channel.map(READ_WRITE, 0, size);
     }
 
     /**

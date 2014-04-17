@@ -50,12 +50,14 @@ public class BasicBufferUsageStrategy implements BufferUsageStrategy
 
     public AtomicBuffer newReceiverLogBuffer(final String destination, final long channelId, final int index) throws IOException
     {
-        return mapTerm(destination, 0L, channelId, index, fileConventions.receiverDir(), LOG);
+        // TODO: parameterise session
+        return mapTerm(destination, 3L, channelId, index, fileConventions.receiverDir(), LOG);
     }
 
     public AtomicBuffer newReceiverStateBuffer(final String destination, final long channelId, final int index) throws IOException
     {
-        return mapTerm(destination, 0L, channelId, index, fileConventions.receiverDir(), STATE);
+        // TODO: parameterise session
+        return mapTerm(destination, 3L, channelId, index, fileConventions.receiverDir(), STATE);
     }
 
     private AtomicBuffer mapTerm(final String destination,

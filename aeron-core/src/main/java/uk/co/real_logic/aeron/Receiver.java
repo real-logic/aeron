@@ -69,13 +69,16 @@ public class Receiver implements AutoCloseable
      * Returns after handling a single data and/or event.
      *
      * @throws java.lang.Exception
+     * @return the number of messages read
      */
-    public void process() throws Exception
+    public int process() throws Exception
     {
+        int read = 0;
         for (final ReceiverChannel channel : channels)
         {
-            channel.process();
+            read += channel.process();
         }
+        return read;
     }
 
     public enum MessageFlags

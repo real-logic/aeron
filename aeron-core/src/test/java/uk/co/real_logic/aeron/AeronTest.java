@@ -19,31 +19,40 @@ import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 import uk.co.real_logic.aeron.admin.ClientAdminThread;
-import uk.co.real_logic.aeron.util.AdminBuffers;
-import uk.co.real_logic.aeron.util.ErrorCode;
-import uk.co.real_logic.aeron.util.MappingAdminBufferStrategy;
-import uk.co.real_logic.aeron.util.SharedDirectories;
+import uk.co.real_logic.aeron.util.*;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.EventHandler;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.Appender;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.List;
 
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static uk.co.real_logic.aeron.Receiver.DataHandler;
+import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
+import static uk.co.real_logic.aeron.util.SharedDirectories.Buffers;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.BASE_HEADER_LENGTH;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertEventRead;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.skip;
 
 public class AeronTest
 {
+
+    private static final byte[] DEFAULT_HEADER = new byte[BASE_HEADER_LENGTH + SIZE_OF_INT];
+    private static final int MAX_FRAME_LENGTH = 1024;
 
     private static final String DESTINATION = "udp://localhost:40124";
     private static final String INVALID_DESTINATION = "udp://lo124";
@@ -59,6 +68,8 @@ public class AeronTest
     public static AdminBuffers adminBuffers = new AdminBuffers();
 
     private final InvalidDestinationHandler invalidDestination = mock(InvalidDestinationHandler.class);
+
+    private DataHandler channel2Handler = emptyDataHandler();
 
     private final ChannelMessageFlyweight message = new ChannelMessageFlyweight();
     private final CompletelyIdentifiedMessageFlyweight identifiedMessage = new CompletelyIdentifiedMessageFlyweight();
@@ -108,7 +119,7 @@ public class AeronTest
         final Aeron aeron = newAeron();
         final Channel channel = newChannel(aeron);
         aeron.adminThread().process();
-        createTermBuffer(0L);
+        createTermBuffer(0L, NEW_SEND_BUFFER_NOTIFICATION, directory.senderDir());
         aeron.adminThread().process();
         assertTrue(channel.offer(atomicSendBuffer));
     }
@@ -231,22 +242,57 @@ public class AeronTest
         verify(invalidDestination).onInvalidDestination(INVALID_DESTINATION);
     }
 
-    private void createTermBuffer(final long termId) throws IOException
+    @Ignore
+    @Test
+    public void canReceiveAMessage() throws Exception
+    {
+        channel2Handler = (buffer, offset, sessionId, flags) ->
+        {
+            assertThat(buffer.getInt(offset), is(1));
+            assertThat(sessionId, is(SESSION_ID));
+        };
+
+        List<Appender> appenders = createTermBuffer(0L, NEW_RECEIVE_BUFFER_NOTIFICATION, directory.receiverDir())
+            .stream()
+            .map(buffer -> new Appender(buffer.logBuffer(),
+                    buffer.stateBuffer(),
+                    DEFAULT_HEADER,
+                    MAX_FRAME_LENGTH))
+            .collect(toList());
+
+        final RingBuffer toMediaDriver = adminBuffers.toMediaDriver();
+        final Aeron aeron = newAeron();
+        final Receiver receiver = newReceiver(aeron);
+
+        aeron.adminThread().process();
+        skip(toMediaDriver, 1);
+
+        atomicSendBuffer.putInt(0, 1);
+        Appender firstBuffer = appenders.get(0);
+        assertTrue(firstBuffer.append(atomicSendBuffer, 0, SIZE_OF_INT));
+
+        assertThat(receiver.process(), is(1));
+    }
+
+    private List<Buffers> createTermBuffer(final long termId,
+                                           final int eventTypeId,
+                                           final File rootDir) throws IOException
     {
         final RingBuffer apiBuffer = adminBuffers.toApi();
-        directory.createSenderTermFile(DESTINATION, SESSION_ID, CHANNEL_ID, termId);
+        List<Buffers> buffers = directory.createTermFile(rootDir, DESTINATION, SESSION_ID, CHANNEL_ID, termId);
         identifiedMessage.channelId(CHANNEL_ID)
                 .sessionId(SESSION_ID)
                 .termId(termId)
                 .destination(DESTINATION);
-        assertTrue(apiBuffer.write(NEW_SEND_BUFFER_NOTIFICATION, atomicSendBuffer, 0, identifiedMessage.length()));
+        assertTrue(apiBuffer.write(eventTypeId, atomicSendBuffer, 0, identifiedMessage.length()));
+        return buffers;
     }
 
     private Receiver newReceiver(final Aeron aeron)
     {
         final Receiver.Builder builder = new Receiver.Builder()
                 .destination(new Destination(DESTINATION))
-                .channel(CHANNEL_ID, emptyDataHandler())
+                .channel(CHANNEL_ID, channel2Handler)
                 .channel(CHANNEL_ID_2, emptyDataHandler());
 
         return aeron.newReceiver(builder);
@@ -263,7 +309,7 @@ public class AeronTest
         };
     }
 
-    private Receiver.DataHandler emptyDataHandler()
+    private DataHandler emptyDataHandler()
     {
         return (buffer, offset, sessionId, flags) ->
         {

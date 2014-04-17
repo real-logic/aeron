@@ -40,17 +40,18 @@ public class ReceiverChannel extends ChannelNotifiable
         return this.destination.equals(destination) && this.channelId == channelId;
     }
 
-    public void process() throws Exception
+    public int process() throws Exception
     {
         if (readers != null)
         {
             final Reader reader = readers[currentBuffer];
-            reader.read((buffer, offset, length) ->
+            return reader.read((buffer, offset, length) ->
             {
                 dataHeader.wrap(buffer, offset);
                 dataHandler.onData(buffer, dataHeader.dataOffset(), dataHeader.sessionId(), NONE);
             });
         }
+        return 0;
     }
 
     protected void rollTerm()

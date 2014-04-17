@@ -91,4 +91,78 @@ public class GapScannerTest
         inOrder.verify(stateBuffer).getIntVolatile(TAIL_COUNTER_OFFSET);
         verify(gapHandler).onGap(logBuffer, 0, frameOffset);
     }
+
+    @Test
+    public void shouldReportSingleGapWhenBufferNotFull()
+    {
+        final int tail = FRAME_ALIGNMENT;
+        final int highWaterMark = FRAME_ALIGNMENT * 3;
+        when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(tail);
+        when(stateBuffer.getIntVolatile(HIGH_WATER_MARK_OFFSET)).thenReturn(highWaterMark);
+
+        when(logBuffer.getInt(lengthOffset(tail - FRAME_ALIGNMENT), LITTLE_ENDIAN))
+            .thenReturn(FRAME_ALIGNMENT);
+        when(logBuffer.getInt(lengthOffset(tail), LITTLE_ENDIAN))
+            .thenReturn(0);
+        when(logBuffer.getInt(lengthOffset(highWaterMark - FRAME_ALIGNMENT), LITTLE_ENDIAN))
+            .thenReturn(FRAME_ALIGNMENT);
+
+        assertThat(scanner.scan(gapHandler), is(1));
+
+        final InOrder inOrder = inOrder(stateBuffer);
+        inOrder.verify(stateBuffer).getIntVolatile(HIGH_WATER_MARK_OFFSET);
+        inOrder.verify(stateBuffer).getIntVolatile(TAIL_COUNTER_OFFSET);
+        verify(gapHandler).onGap(logBuffer, tail, FRAME_ALIGNMENT);
+    }
+
+    @Test
+    public void shouldReportSingleGapWhenBufferIsFull()
+    {
+        final int tail = LOG_BUFFER_CAPACITY - (FRAME_ALIGNMENT * 2);
+        final int highWaterMark = LOG_BUFFER_CAPACITY;
+        when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(tail);
+        when(stateBuffer.getIntVolatile(HIGH_WATER_MARK_OFFSET)).thenReturn(highWaterMark);
+
+        when(logBuffer.getInt(lengthOffset(tail - FRAME_ALIGNMENT), LITTLE_ENDIAN))
+            .thenReturn(FRAME_ALIGNMENT);
+        when(logBuffer.getInt(lengthOffset(tail), LITTLE_ENDIAN))
+            .thenReturn(0);
+        when(logBuffer.getInt(lengthOffset(highWaterMark - FRAME_ALIGNMENT), LITTLE_ENDIAN))
+            .thenReturn(FRAME_ALIGNMENT);
+
+        assertThat(scanner.scan(gapHandler), is(1));
+
+        final InOrder inOrder = inOrder(stateBuffer);
+        inOrder.verify(stateBuffer).getIntVolatile(HIGH_WATER_MARK_OFFSET);
+        inOrder.verify(stateBuffer).getIntVolatile(TAIL_COUNTER_OFFSET);
+        verify(gapHandler).onGap(logBuffer, tail, FRAME_ALIGNMENT);
+    }
+
+    @Test
+    public void shouldReportMultipleGaps()
+    {
+        final int tail = FRAME_ALIGNMENT;
+        final int highWaterMark = FRAME_ALIGNMENT * 6;
+        when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(tail);
+        when(stateBuffer.getIntVolatile(HIGH_WATER_MARK_OFFSET)).thenReturn(highWaterMark);
+
+        when(logBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN))
+            .thenReturn(FRAME_ALIGNMENT);
+        when(logBuffer.getInt(lengthOffset(FRAME_ALIGNMENT), LITTLE_ENDIAN))
+            .thenReturn(0);
+        when(logBuffer.getInt(lengthOffset(FRAME_ALIGNMENT * 2), LITTLE_ENDIAN))
+            .thenReturn(FRAME_ALIGNMENT);
+        when(logBuffer.getInt(lengthOffset(FRAME_ALIGNMENT * 3), LITTLE_ENDIAN))
+            .thenReturn(0);
+        when(logBuffer.getInt(lengthOffset(FRAME_ALIGNMENT * 5), LITTLE_ENDIAN))
+            .thenReturn(FRAME_ALIGNMENT);
+
+        assertThat(scanner.scan(gapHandler), is(2));
+
+        final InOrder inOrder = inOrder(stateBuffer);
+        inOrder.verify(stateBuffer).getIntVolatile(HIGH_WATER_MARK_OFFSET);
+        inOrder.verify(stateBuffer).getIntVolatile(TAIL_COUNTER_OFFSET);
+        verify(gapHandler).onGap(logBuffer, FRAME_ALIGNMENT, FRAME_ALIGNMENT);
+        verify(gapHandler).onGap(logBuffer, FRAME_ALIGNMENT * 3, FRAME_ALIGNMENT * 2);
+    }
 }

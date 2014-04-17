@@ -29,6 +29,8 @@ public abstract class ChannelNotifiable
     protected final String destination;
     protected final long channelId;
     protected final AtomicLong currentTermId;
+    protected final AtomicLong cleanedTermId;
+
     protected int currentBuffer;
 
     public ChannelNotifiable(final TermBufferNotifier bufferNotifier, final String destination, final long channelId)
@@ -37,6 +39,7 @@ public abstract class ChannelNotifiable
         this.destination = destination;
         this.channelId = channelId;
         currentTermId = new AtomicLong(UNKNOWN_TERM_ID);
+        cleanedTermId = new AtomicLong(UNKNOWN_TERM_ID);
         currentBuffer = 0;
     }
 
@@ -45,20 +48,12 @@ public abstract class ChannelNotifiable
         return currentTermId.get() != UNKNOWN_TERM_ID;
     }
 
-    public void newTermBufferMapped(final long termId, final ByteBuffer buffer)
-    {
-        bufferNotifier.newTermBufferMapped(termId, buffer);
-        if (!hasTerm())
-        {
-            currentTermId.lazySet(termId);
-        }
-    }
-
     protected void startTerm()
     {
         bufferNotifier.termBufferBlocking(currentTermId.get());
     }
 
+    // TODO: stop if its not clean
     protected void next()
     {
         currentBuffer++;
@@ -70,5 +65,15 @@ public abstract class ChannelNotifiable
     }
 
     protected abstract void rollTerm();
+
+    public void initialTerm(final long termId)
+    {
+        currentTermId.set(termId);
+    }
+
+    public void cleanedTermBuffer(final long termId)
+    {
+        cleanedTermId.set(termId);
+    }
 
 }

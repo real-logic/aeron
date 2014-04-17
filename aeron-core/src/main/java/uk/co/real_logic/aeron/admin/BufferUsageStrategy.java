@@ -15,6 +15,9 @@
  */
 package uk.co.real_logic.aeron.admin;
 
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
@@ -25,9 +28,23 @@ import java.nio.ByteBuffer;
  */
 public interface BufferUsageStrategy
 {
-    ByteBuffer onTermAdded(final String destination,
-                           final long sessionId,
-                           final long channelId,
-                           final long termId,
-                           boolean isSender) throws Exception;
+
+    AtomicBuffer newSenderLogBuffer(final String destination,
+                                    final long sessionId,
+                                    final long channelId,
+                                    final int index) throws IOException;
+
+    AtomicBuffer newSenderStateBuffer(final String destination,
+                                      final long sessionId,
+                                      final long channelId,
+                                      final int index) throws IOException;
+
+    AtomicBuffer newReceiverLogBuffer(final String destination,
+                                      final long channelId,
+                                      final int index) throws IOException;
+
+    AtomicBuffer newReceiverStateBuffer(final String destination,
+                                        final long channelId,
+                                        final int index) throws IOException;
+
 }

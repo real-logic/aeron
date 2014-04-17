@@ -17,12 +17,13 @@ package uk.co.real_logic.aeron.admin;
 
 import uk.co.real_logic.aeron.util.FileMappingConvention;
 import uk.co.real_logic.aeron.util.IoUtil;
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
 
+import static uk.co.real_logic.aeron.util.FileMappingConvention.Type.LOG;
+import static uk.co.real_logic.aeron.util.FileMappingConvention.Type.STATE;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.termLocation;
 
 /**
@@ -37,23 +38,34 @@ public class BasicBufferUsageStrategy implements BufferUsageStrategy
         fileConventions = new FileMappingConvention(dataDir);
     }
 
-    public ByteBuffer onTermAdded(final String destination,
-                                  final long sessionId,
-                                  final long channelId,
-                                  final long termId,
-                                  boolean isSender) throws IOException
+    public AtomicBuffer newSenderLogBuffer(final String destination, final long sessionId, final long channelId, final int index) throws IOException
     {
-        final File rootDir = isSender ? fileConventions.senderDir() : fileConventions.receiverDir();
-        return mapTerm(destination, sessionId, channelId, termId, rootDir);
+        return mapTerm(destination, sessionId, channelId, index, fileConventions.senderDir(), LOG);
     }
 
-    private MappedByteBuffer mapTerm(final String destination,
-                                     final long sessionId,
-                                     final long channelId,
-                                     final long termId,
-                                     final File rootDir) throws IOException
+    public AtomicBuffer newSenderStateBuffer(final String destination, final long sessionId, final long channelId, final int index) throws IOException
     {
-        final File termIdFile = termLocation(rootDir, sessionId, channelId, termId, false, destination);
-        return IoUtil.mapExistingFile(termIdFile, "Term Buffer");
+        return mapTerm(destination, sessionId, channelId, index, fileConventions.senderDir(), STATE);
+    }
+
+    public AtomicBuffer newReceiverLogBuffer(final String destination, final long channelId, final int index) throws IOException
+    {
+        return mapTerm(destination, 0L, channelId, index, fileConventions.receiverDir(), LOG);
+    }
+
+    public AtomicBuffer newReceiverStateBuffer(final String destination, final long channelId, final int index) throws IOException
+    {
+        return mapTerm(destination, 0L, channelId, index, fileConventions.receiverDir(), STATE);
+    }
+
+    private AtomicBuffer mapTerm(final String destination,
+                                 final long sessionId,
+                                 final long channelId,
+                                 final long termId,
+                                 final File rootDir,
+                                 final FileMappingConvention.Type type) throws IOException
+    {
+        final File termIdFile = termLocation(rootDir, sessionId, channelId, termId, false, destination, type);
+        return new AtomicBuffer(IoUtil.mapExistingFile(termIdFile, "Term Buffer"));
     }
 }

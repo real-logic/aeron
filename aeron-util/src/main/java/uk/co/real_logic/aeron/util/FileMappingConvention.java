@@ -29,6 +29,8 @@ import java.io.File;
 public class FileMappingConvention
 {
 
+    public static enum Type { LOG, STATE };
+
     private final File receiverDir;
     private final File senderDir;
     private final File dataDirFile;
@@ -72,9 +74,10 @@ public class FileMappingConvention
     public static File termLocation(final File rootDir,
                                     final long sessionId,
                                     final long channelId,
-                                    final long termId,
+                                    final long index,
                                     final boolean createChannelIfMissing,
-                                    final String destination)
+                                    final String destination,
+                                    final Type type)
     {
         final File destinationDir = new File(rootDir, destinationToDir(destination));
         final File sessionDir = new File(destinationDir, Long.toString(sessionId));
@@ -83,7 +86,8 @@ public class FileMappingConvention
         {
             IoUtil.ensureDirectoryExists(channelDir, "channel");
         }
-        return new File(channelDir, Long.toString(termId));
+        final String suffix = Long.toString(index) + "-" + type.name().toLowerCase();
+        return new File(channelDir, suffix);
     }
 
     static String destinationToDir(final String destination)

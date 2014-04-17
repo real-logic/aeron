@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.admin;
 
 import uk.co.real_logic.aeron.Channel;
 import uk.co.real_logic.aeron.ProducerControlFactory;
+import uk.co.real_logic.aeron.Receiver;
 import uk.co.real_logic.aeron.ReceiverChannel;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.ClosableThread;
@@ -26,10 +27,16 @@ import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
 import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.Appender;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.Reader;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.function.BiConsumer;
+import java.util.function.IntFunction;
 
+import static uk.co.real_logic.aeron.admin.ChannelNotifiable.BUFFER_COUNT;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 
 
@@ -195,18 +202,108 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
                 case NEW_RECEIVE_BUFFER_NOTIFICATION:
                 case NEW_SEND_BUFFER_NOTIFICATION:
                     bufferNotificationMessage.wrap(buffer, index);
-                    final boolean isSender = eventTypeId == NEW_SEND_BUFFER_NOTIFICATION;
-                    onNewBufferNotification(bufferNotificationMessage.sessionId(),
-                                            bufferNotificationMessage.channelId(),
-                                            bufferNotificationMessage.termId(),
-                                            isSender,
-                                            bufferNotificationMessage.destination());
+                    final long sessionId = bufferNotificationMessage.sessionId();
+                    final long channelId = bufferNotificationMessage.channelId();
+                    final long termId = bufferNotificationMessage.termId();
+                    final String destination = bufferNotificationMessage.destination();
+                    if (eventTypeId == NEW_SEND_BUFFER_NOTIFICATION)
+                    {
+                        onNewSenderBufferNotification(sessionId, channelId, termId, destination);
+                    }
+                    else
+                    {
+                        onNewReceiverBufferNotification(sessionId, channelId, termId, destination);
+                    }
                     return;
                 case ERROR_RESPONSE:
                     errorHandler.onErrorResponse(buffer, index, length);
                     return;
             }
         });
+    }
+
+    private void onNewReceiverBufferNotification(final long sessionId,
+                                                 final long channelId,
+                                                 final long termId,
+                                                 final String destination)
+    {
+        onNewBufferNotification(termId,
+                recvNotifiers.get(destination, channelId),
+                i -> newReader(destination, channelId, i),
+                Reader[]::new,
+                ReceiverChannel::onBuffersMapped);
+    }
+
+    private void onNewSenderBufferNotification(final long sessionId,
+                                               final long channelId,
+                                               final long termId,
+                                               final String destination)
+    {
+        onNewBufferNotification(termId,
+                                sendNotifiers.get(destination, sessionId, channelId),
+                                i -> newAppender(destination, sessionId, channelId, i),
+                                Appender[]::new,
+                                Channel::onBuffersMapped);
+    }
+
+    private interface LogFactory<L>
+    {
+        public L make(int index) throws IOException;
+    }
+
+    private <C extends ChannelNotifiable, L>
+    void onNewBufferNotification(final long termId,
+                                 final C channel,
+                                 final LogFactory<L> logFactory,
+                                 final IntFunction<L[]> logArray,
+                                 final BiConsumer<C, L[]> notifier)
+    {
+        try
+        {
+            if (channel == null)
+            {
+                // The new buffer refers to another client process,
+                // We can safely ignore it
+                return;
+            }
+
+            if (!channel.hasTerm())
+            {
+                channel.initialTerm(termId);
+                // You know that you can map all 3 appenders at this point since its the first term
+                L[] logs = logArray.apply(BUFFER_COUNT);
+                for (int i = 0; i < BUFFER_COUNT; i++)
+                {
+                    logs[i] = logFactory.make(i);
+                }
+                notifier.accept(channel, logs);
+            }
+
+            channel.cleanedTermBuffer(termId);
+        }
+        catch (final Exception e)
+        {
+            // TODO: establish correct client error handling strategy
+            e.printStackTrace();
+        }
+    }
+
+    public Appender newAppender(final String destination,
+                                final long sessionId,
+                                final long channelId,
+                                final int index) throws IOException
+    {
+        final AtomicBuffer logBuffer = bufferUsage.newSenderLogBuffer(destination, sessionId, channelId, index);
+        final AtomicBuffer stateBuffer = bufferUsage.newSenderStateBuffer(destination, sessionId, channelId, index);
+        // TODO: weave header and frame length
+        return new Appender(logBuffer, stateBuffer, new byte[0], 0);
+    }
+
+    private Reader newReader(final String destination, final long channelId, final int index) throws IOException
+    {
+        final AtomicBuffer logBuffer = bufferUsage.newReceiverLogBuffer(destination, channelId, index);
+        final AtomicBuffer stateBuffer = bufferUsage.newReceiverStateBuffer(destination, channelId, index);
+        return new Reader(logBuffer, stateBuffer);
     }
 
     /* commands to MediaDriver */
@@ -260,26 +357,6 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
                                         final boolean isSender,
                                         final String destination)
     {
-        try
-        {
-            ChannelNotifiable channel = isSender ? sendNotifiers.get(destination, sessionId, channelId)
-                                                 : recvNotifiers.get(destination, channelId);
-            if (channel == null)
-            {
-                // The new buffer refers to another client process,
-                // We can safely ignore it
-                return;
-            }
 
-            // TODO: fix the appender adding
-
-            final ByteBuffer buffer = bufferUsage.onTermAdded(destination, sessionId, channelId, termId, isSender);
-            channel.newTermBufferMapped(termId, buffer);
-        }
-        catch (Exception e)
-        {
-            // TODO: establish correct client error handling strategy
-            e.printStackTrace();
-        }
     }
 }

@@ -31,6 +31,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
+import static uk.co.real_logic.aeron.util.FileMappingConvention.Type.STATE;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.termLocation;
 
 /**
@@ -89,7 +90,7 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
                                     final long termId,
                                     final long requiredSize) throws Exception
     {
-        final File termIdFile = termLocation(rootDir, sessionId, channelId, termId, true, destination);
+        final File termIdFile = termLocation(rootDir, sessionId, channelId, termId, true, destination, STATE);
         // must be checked at this point, opening a RandomAccessFile will cause this to be true
         final boolean fileExists = termIdFile.exists();
         try (final RandomAccessFile randomAccessFile = new RandomAccessFile(termIdFile, "rw"))
@@ -123,7 +124,7 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
 
         if (channelBuffer == null)
         {
-            final File file = termLocation(senderDir, sessionId, channelId, termId, true, destination.toString());
+            final File file = termLocation(senderDir, sessionId, channelId, termId, true, destination.toString(), STATE);
             channelBuffer = new SenderChannelBuffer(templateFile, file,
                                                     MediaDriver.COMMAND_BUFFER_SZ + RingBufferDescriptor.TRAILER_SIZE);
             srcTermMap.put(destination, sessionId, channelId, channelBuffer);

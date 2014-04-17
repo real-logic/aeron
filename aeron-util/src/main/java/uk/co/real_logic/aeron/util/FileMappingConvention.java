@@ -29,6 +29,8 @@ import java.io.File;
 public class FileMappingConvention
 {
 
+    public static final int BUFFER_COUNT = 3;
+
     public static enum Type { LOG, STATE };
 
     private final File receiverDir;

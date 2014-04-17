@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron.admin;
 
 import uk.co.real_logic.aeron.Channel;
 import uk.co.real_logic.aeron.ProducerControlFactory;
-import uk.co.real_logic.aeron.Receiver;
 import uk.co.real_logic.aeron.ReceiverChannel;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.ClosableThread;
@@ -36,8 +35,10 @@ import java.nio.ByteBuffer;
 import java.util.function.BiConsumer;
 import java.util.function.IntFunction;
 
-import static uk.co.real_logic.aeron.admin.ChannelNotifiable.BUFFER_COUNT;
+import static uk.co.real_logic.aeron.util.FileMappingConvention.BUFFER_COUNT;
+import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.BASE_HEADER_LENGTH;
 
 
 /**
@@ -46,6 +47,10 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
  */
 public final class ClientAdminThread extends ClosableThread implements MediaDriverFacade
 {
+    // TODO: DI this
+    private static final byte[] DEFAULT_HEADER = new byte[BASE_HEADER_LENGTH + SIZE_OF_INT];
+    private static final int MAX_FRAME_LENGTH = 1024;
+
     /** Maximum size of the write buffer */
     public static final int WRITE_BUFFER_CAPACITY = 256;
     /** Incoming message buffer from media driver */
@@ -296,7 +301,7 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
         final AtomicBuffer logBuffer = bufferUsage.newSenderLogBuffer(destination, sessionId, channelId, index);
         final AtomicBuffer stateBuffer = bufferUsage.newSenderStateBuffer(destination, sessionId, channelId, index);
         // TODO: weave header and frame length
-        return new Appender(logBuffer, stateBuffer, new byte[0], 0);
+        return new Appender(logBuffer, stateBuffer, DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }
 
     private Reader newReader(final String destination, final long channelId, final int index) throws IOException

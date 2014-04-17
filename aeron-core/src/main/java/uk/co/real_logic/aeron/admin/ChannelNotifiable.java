@@ -15,13 +15,12 @@
  */
 package uk.co.real_logic.aeron.admin;
 
-import java.nio.ByteBuffer;
+import uk.co.real_logic.aeron.util.FileMappingConvention;
+
 import java.util.concurrent.atomic.AtomicLong;
 
 public abstract class ChannelNotifiable
 {
-
-    public static final int BUFFER_COUNT = 3;
 
     private static final long UNKNOWN_TERM_ID = -1L;
 
@@ -57,7 +56,7 @@ public abstract class ChannelNotifiable
     protected void next()
     {
         currentBuffer++;
-        if (currentBuffer == BUFFER_COUNT)
+        if (currentBuffer == FileMappingConvention.BUFFER_COUNT)
         {
             currentBuffer = 0;
         }

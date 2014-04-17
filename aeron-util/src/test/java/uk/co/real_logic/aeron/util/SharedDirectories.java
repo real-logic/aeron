@@ -21,6 +21,7 @@ import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
 import java.io.File;
 import java.io.IOException;
 
+import static uk.co.real_logic.aeron.util.FileMappingConvention.BUFFER_COUNT;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.Type;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.Type.LOG;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.Type.STATE;
@@ -57,8 +58,11 @@ public class SharedDirectories extends ExternalResource
                                      final long channelId,
                                      final long termId) throws IOException
     {
-        createTermFile(destination, sessionId, channelId, termId, STATE);
-        createTermFile(destination, sessionId, channelId, termId, LOG);
+        for (int i = 0; i < BUFFER_COUNT; i++)
+        {
+            createTermFile(destination, sessionId, channelId, i, STATE);
+            createTermFile(destination, sessionId, channelId, i, LOG);
+        }
     }
 
     private void createTermFile(final String destination,

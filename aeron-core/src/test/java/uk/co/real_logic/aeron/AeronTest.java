@@ -102,8 +102,6 @@ public class AeronTest
         channel.send(atomicSendBuffer);
     }
 
-    // TODO
-    @Ignore
     @Test
     public void canOfferAMessageOnceBuffersHaveBeenMapped() throws Exception
     {

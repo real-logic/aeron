@@ -17,14 +17,14 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.admin.ChannelNotifiable;
 import uk.co.real_logic.aeron.admin.TermBufferNotifier;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.Reader;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 
 import static uk.co.real_logic.aeron.Receiver.MessageFlags.NONE;
 
 public class ReceiverChannel extends ChannelNotifiable
 {
-    private Reader[] readers;
+    private LogReader[] logReaders;
     private final Receiver.DataHandler dataHandler;
     private final DataHeaderFlyweight dataHeader;
 
@@ -42,10 +42,10 @@ public class ReceiverChannel extends ChannelNotifiable
 
     public int process() throws Exception
     {
-        if (readers != null)
+        if (logReaders != null)
         {
-            final Reader reader = readers[currentBuffer];
-            return reader.read((buffer, offset, length) ->
+            final LogReader logReader = logReaders[currentBuffer];
+            return logReader.read((buffer, offset, length) ->
             {
                 dataHeader.wrap(buffer, offset);
                 dataHandler.onData(buffer, dataHeader.dataOffset(), dataHeader.sessionId(), NONE);
@@ -59,9 +59,9 @@ public class ReceiverChannel extends ChannelNotifiable
 
     }
 
-    public void onBuffersMapped(final Reader[] readers)
+    public void onBuffersMapped(final LogReader[] logReaders)
     {
-        this.readers = readers;
+        this.logReaders = logReaders;
     }
 
 }

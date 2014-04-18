@@ -31,11 +31,9 @@ import static uk.co.real_logic.aeron.util.FileMappingConvention.Type.LOG;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.Type.STATE;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.termLocation;
 import static uk.co.real_logic.aeron.util.IoUtil.createEmptyFile;
-import static uk.co.real_logic.aeron.util.IoUtil.map;
 
 public class SharedDirectories extends ExternalResource
 {
-
     private File adminDir;
     private File dataDir;
     private FileMappingConvention mapping;
@@ -104,6 +102,7 @@ public class SharedDirectories extends ExternalResource
             final AtomicBuffer stateBuffer = createTermFile(rootDir, destination, sessionId, channelId, i, STATE);
             buffers.add(new Buffers(stateBuffer, logBuffer));
         }
+
         return buffers;
     }
 

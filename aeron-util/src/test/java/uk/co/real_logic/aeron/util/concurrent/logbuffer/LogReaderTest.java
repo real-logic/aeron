@@ -32,23 +32,23 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.t
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.TAIL_COUNTER_OFFSET;
 
-public class ReaderTest
+public class LogReaderTest
 {
     private static final int LOG_BUFFER_CAPACITY = 1024 * 16;
     private static final int STATE_BUFFER_CAPACITY = STATE_BUFFER_LENGTH;
 
     private final AtomicBuffer logBuffer = mock(AtomicBuffer.class);
     private final AtomicBuffer stateBuffer = spy(new AtomicBuffer(new byte[STATE_BUFFER_CAPACITY]));
-    private final Reader.FrameHandler handler = Mockito.mock(Reader.FrameHandler.class);
+    private final LogReader.FrameHandler handler = Mockito.mock(LogReader.FrameHandler.class);
 
-    private Reader reader;
+    private LogReader logReader;
 
     @Before
     public void setUp()
     {
         when(logBuffer.capacity()).thenReturn(LOG_BUFFER_CAPACITY);
 
-        reader = new Reader(logBuffer, stateBuffer);
+        logReader = new LogReader(logBuffer, stateBuffer);
     }
 
     @Test(expected = IllegalStateException.class)
@@ -57,7 +57,7 @@ public class ReaderTest
         final int logBufferCapacity = LogBufferDescriptor.LOG_MIN_SIZE + FRAME_ALIGNMENT + 1;
         when(logBuffer.capacity()).thenReturn(logBufferCapacity);
 
-        reader = new Reader(logBuffer, stateBuffer);
+        logReader = new LogReader(logBuffer, stateBuffer);
     }
 
     @Test
@@ -67,7 +67,7 @@ public class ReaderTest
         when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(FRAME_ALIGNMENT);
         when(logBuffer.getInt(typeOffset(0), LITTLE_ENDIAN)).thenReturn(HeaderFlyweight.HDR_TYPE_NAK);
 
-        assertThat(reader.read(handler), is(1));
+        assertThat(logReader.read(handler), is(1));
 
         final InOrder inOrder = inOrder(logBuffer, stateBuffer);
         inOrder.verify(stateBuffer).getIntVolatile(TAIL_COUNTER_OFFSET);
@@ -80,7 +80,7 @@ public class ReaderTest
     {
         when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(0);
 
-        assertThat(reader.read(handler), is(0));
+        assertThat(logReader.read(handler), is(0));
 
         verify(stateBuffer).getIntVolatile(TAIL_COUNTER_OFFSET);
         verify(handler, never()).onFrame(any(), anyInt(), anyInt());
@@ -93,7 +93,7 @@ public class ReaderTest
         when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(FRAME_ALIGNMENT * 2);
         when(logBuffer.getInt(anyInt(), any())).thenReturn(HeaderFlyweight.HDR_TYPE_NAK);
 
-        assertThat(reader.read(handler), is(2));
+        assertThat(logReader.read(handler), is(2));
 
         final InOrder inOrder = inOrder(logBuffer, stateBuffer, handler);
         inOrder.verify(stateBuffer, times(1)).getIntVolatile(TAIL_COUNTER_OFFSET);
@@ -112,8 +112,8 @@ public class ReaderTest
         when(logBuffer.getInt(typeOffset(startOfMessage), LITTLE_ENDIAN))
             .thenReturn(HeaderFlyweight.HDR_TYPE_NAK);
 
-        reader.seek(startOfMessage);
-        assertThat(reader.read(handler), is(1));
+        logReader.seek(startOfMessage);
+        assertThat(logReader.read(handler), is(1));
 
         final InOrder inOrder = inOrder(logBuffer, stateBuffer);
         inOrder.verify(stateBuffer, atLeastOnce()).getIntVolatile(TAIL_COUNTER_OFFSET);

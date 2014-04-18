@@ -20,7 +20,7 @@ import uk.co.real_logic.aeron.admin.ClientAdminThreadCursor;
 import uk.co.real_logic.aeron.admin.TermBufferNotifier;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.Appender;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -34,7 +34,7 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
     private final AtomicArray<Channel> channels;
     private final AtomicBoolean paused;
 
-    private Appender[] appenders;
+    private LogAppender[] logAppenders;
 
     public Channel(final String destination,
                    final ClientAdminThreadCursor adminCursor,
@@ -58,12 +58,12 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
 
     private boolean canAppend()
     {
-        return appenders != null && !paused.get();
+        return logAppenders != null && !paused.get();
     }
 
-    public void onBuffersMapped(final Appender[] appenders)
+    public void onBuffersMapped(final LogAppender[] logAppenders)
     {
-        this.appenders = appenders;
+        this.logAppenders = logAppenders;
     }
 
     /**
@@ -84,8 +84,8 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
             return false;
         }
 
-        final Appender appender = appenders[currentBuffer];
-        boolean hasAppended = appender.append(buffer, offset, length);
+        final LogAppender logAppender = logAppenders[currentBuffer];
+        boolean hasAppended = logAppender.append(buffer, offset, length);
         if (!hasAppended)
         {
             next();

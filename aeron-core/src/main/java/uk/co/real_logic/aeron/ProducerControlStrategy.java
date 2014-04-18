@@ -15,10 +15,9 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.Appender;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.StateViewer;
 
 public interface ProducerControlStrategy
 {
-    public void onRotate(final StateViewer currentBuffer);
+    void onRotate(final StateViewer currentBuffer);
 }

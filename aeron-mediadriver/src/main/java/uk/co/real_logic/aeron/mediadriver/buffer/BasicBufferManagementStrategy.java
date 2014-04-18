@@ -61,10 +61,10 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
     }
 
     /**
-     * Create a blank, zero'd out file of the correct size.
+     * Create a blank, zeroed out file of the correct size.
      * This lets us just use transferTo to initialize the buffers.
      *
-     * @param dataDir
+     * @param dataDir in which template file will be created.
      */
     private FileChannel createTemplateFile(final String dataDir)
     {
@@ -124,7 +124,8 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
 
         if (channelBuffer == null)
         {
-            final File file = termLocation(senderDir, sessionId, channelId, termId, true, destination.toString(), STATE);
+            final File file =
+                termLocation(senderDir, sessionId, channelId, termId, true, destination.toString(), STATE);
             channelBuffer = new SenderChannelBuffer(templateFile, file,
                                                     MediaDriver.COMMAND_BUFFER_SZ + RingBufferDescriptor.TRAILER_SIZE);
             srcTermMap.put(destination, sessionId, channelId, channelBuffer);

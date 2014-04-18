@@ -17,5 +17,5 @@ package uk.co.real_logic.aeron;
 
 public interface InvalidDestinationHandler
 {
-    public void onInvalidDestination(final String destination);
+    void onInvalidDestination(final String destination);
 }

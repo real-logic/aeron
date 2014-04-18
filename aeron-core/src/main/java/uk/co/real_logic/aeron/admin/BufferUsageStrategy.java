@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron.admin;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 /**
  * Interface for encapsulating the strategy of mapping ByteBuffers for Session, Channel, and Term.

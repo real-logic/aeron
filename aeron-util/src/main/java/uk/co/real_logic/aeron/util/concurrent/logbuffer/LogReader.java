@@ -30,7 +30,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescript
  *
  * <b>Note:</b> Reading from the log is thread safe, but each thread needs its own instance of this class.
  */
-public class Reader
+public class LogReader
 {
     /**
      * Handler for reading data that is coming off the log.
@@ -45,7 +45,7 @@ public class Reader
     private final StateViewer stateViewer;
     private int cursor = 0;
 
-    public Reader(final AtomicBuffer logBuffer, final AtomicBuffer stateBuffer)
+    public LogReader(final AtomicBuffer logBuffer, final AtomicBuffer stateBuffer)
     {
         checkLogBuffer(logBuffer);
         checkStateBuffer(stateBuffer);

@@ -38,23 +38,33 @@ public class BasicBufferUsageStrategy implements BufferUsageStrategy
         fileConventions = new FileMappingConvention(dataDir);
     }
 
-    public AtomicBuffer newSenderLogBuffer(final String destination, final long sessionId, final long channelId, final int index) throws IOException
+    public AtomicBuffer newSenderLogBuffer(final String destination,
+                                           final long sessionId,
+                                           final long channelId,
+                                           final int index) throws IOException
     {
         return mapTerm(destination, sessionId, channelId, index, fileConventions.senderDir(), LOG);
     }
 
-    public AtomicBuffer newSenderStateBuffer(final String destination, final long sessionId, final long channelId, final int index) throws IOException
+    public AtomicBuffer newSenderStateBuffer(final String destination,
+                                             final long sessionId,
+                                             final long channelId,
+                                             final int index) throws IOException
     {
         return mapTerm(destination, sessionId, channelId, index, fileConventions.senderDir(), STATE);
     }
 
-    public AtomicBuffer newReceiverLogBuffer(final String destination, final long channelId, final int index) throws IOException
+    public AtomicBuffer newReceiverLogBuffer(final String destination,
+                                             final long channelId,
+                                             final int index) throws IOException
     {
         // TODO: parameterise session
         return mapTerm(destination, 3L, channelId, index, fileConventions.receiverDir(), LOG);
     }
 
-    public AtomicBuffer newReceiverStateBuffer(final String destination, final long channelId, final int index) throws IOException
+    public AtomicBuffer newReceiverStateBuffer(final String destination,
+                                               final long channelId,
+                                               final int index) throws IOException
     {
         // TODO: parameterise session
         return mapTerm(destination, 3L, channelId, index, fileConventions.receiverDir(), STATE);

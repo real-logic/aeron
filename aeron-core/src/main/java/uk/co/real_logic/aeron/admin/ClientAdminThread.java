@@ -26,8 +26,8 @@ import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
 import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.Appender;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.Reader;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import java.io.IOException;
@@ -235,7 +235,7 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
         onNewBufferNotification(termId,
             recvNotifiers.get(destination, channelId),
             i -> newReader(destination, channelId, i),
-            Reader[]::new,
+            LogReader[]::new,
             ReceiverChannel::onBuffersMapped);
     }
 
@@ -247,7 +247,7 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
         onNewBufferNotification(termId,
                                 sendNotifiers.get(destination, sessionId, channelId),
                                 i -> newAppender(destination, sessionId, channelId, i),
-                                Appender[]::new,
+                                LogAppender[]::new,
                                 Channel::onBuffersMapped);
     }
 
@@ -293,21 +293,21 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
         }
     }
 
-    public Appender newAppender(final String destination,
+    public LogAppender newAppender(final String destination,
                                 final long sessionId,
                                 final long channelId,
                                 final int index) throws IOException
     {
         final AtomicBuffer logBuffer = bufferUsage.newSenderLogBuffer(destination, sessionId, channelId, index);
         final AtomicBuffer stateBuffer = bufferUsage.newSenderStateBuffer(destination, sessionId, channelId, index);
-        return new Appender(logBuffer, stateBuffer, DEFAULT_HEADER, MAX_FRAME_LENGTH);
+        return new LogAppender(logBuffer, stateBuffer, DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }
 
-    private Reader newReader(final String destination, final long channelId, final int index) throws IOException
+    private LogReader newReader(final String destination, final long channelId, final int index) throws IOException
     {
         final AtomicBuffer logBuffer = bufferUsage.newReceiverLogBuffer(destination, channelId, index);
         final AtomicBuffer stateBuffer = bufferUsage.newReceiverStateBuffer(destination, channelId, index);
-        return new Reader(logBuffer, stateBuffer);
+        return new LogReader(logBuffer, stateBuffer);
     }
 
     /* commands to MediaDriver */

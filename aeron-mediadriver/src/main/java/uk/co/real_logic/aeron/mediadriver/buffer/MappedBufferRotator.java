@@ -34,7 +34,6 @@ import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
  */
 public class MappedBufferRotator
 {
-
     private static final String LOG_SUFFIX = "-log";
     private static final String STATE_SUFFIX = "-state";
 
@@ -67,7 +66,7 @@ public class MappedBufferRotator
             clean = newTerm("2", directory);
             dirty = newTerm("3", directory);
         }
-        catch (IOException e)
+        catch (final IOException e)
         {
             throw new IllegalStateException(e);
         }
@@ -77,6 +76,7 @@ public class MappedBufferRotator
     {
         final FileChannel logFile = openFile(directory, prefix + LOG_SUFFIX);
         final FileChannel stateFile = openFile(directory, prefix + STATE_SUFFIX);
+
         return new TermBuffer(logFile, stateFile, map(logBufferSize, logFile), map(stateBufferSize, stateFile));
     }
 
@@ -97,19 +97,21 @@ public class MappedBufferRotator
     {
         final File fileToMap = new File(directory, child);
         final RandomAccessFile file = new RandomAccessFile(fileToMap, "rw");
+
         return file.getChannel();
     }
 
     private MappedByteBuffer map(final long bufferSize, final FileChannel channel) throws IOException
     {
         reset(channel, logTemplate, logBufferSize);
+
         return channel.map(READ_WRITE, 0, bufferSize);
     }
 
-    public static void reset(final FileChannel channel, final FileChannel template, final long bufferSize) throws IOException
+    public static void reset(final FileChannel channel, final FileChannel template, final long bufferSize)
+        throws IOException
     {
         channel.position(0);
         template.transferTo(0, bufferSize, channel);
     }
-
 }

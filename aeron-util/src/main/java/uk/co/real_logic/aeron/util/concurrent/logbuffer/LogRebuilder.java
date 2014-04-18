@@ -28,7 +28,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescript
  * <b>Note:</b> Only one rebuilder should rebuild a log at any given time. This is not thread safe
  * by rebuilder instance or across rebuilder instances.
  */
-public class Rebuilder
+public class LogRebuilder
 {
     private final AtomicBuffer stateBuffer;
     private final AtomicBuffer logBuffer;
@@ -39,7 +39,7 @@ public class Rebuilder
      * @param logBuffer containing the sequence of frames.
      * @param stateBuffer containing the state of the rebuild process.
      */
-    public Rebuilder(final AtomicBuffer logBuffer, final AtomicBuffer stateBuffer)
+    public LogRebuilder(final AtomicBuffer logBuffer, final AtomicBuffer stateBuffer)
     {
         checkLogBuffer(logBuffer);
         checkStateBuffer(stateBuffer);

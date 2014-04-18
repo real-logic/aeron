@@ -19,6 +19,8 @@ import uk.co.real_logic.aeron.util.BitUtil;
 
 import java.net.*;
 
+import static java.net.InetAddress.getByAddress;
+
 /**
  * Encapsulation of UDP destinations
  * <p>
@@ -53,8 +55,8 @@ public class UdpDestination
             }
 
             final Builder builder = new Builder()
-                    .uriStr(destinationUri)
-                    .consistentHash(BitUtil.generateConsistentHash(destinationUri.getBytes()));
+                .uriStr(destinationUri)
+                .consistentHash(BitUtil.generateConsistentHash(destinationUri.getBytes()));
 
             final InetAddress hostAddress = InetAddress.getByName(uri.getHost());
             if (hostAddress.isMulticastAddress())
@@ -66,13 +68,13 @@ public class UdpDestination
                 }
 
                 addressAsBytes[LAST_MULTICAST_DIGIT]++;
-                final InetSocketAddress controlAddress = new InetSocketAddress(InetAddress.getByAddress(addressAsBytes), 0);
+                final InetSocketAddress controlAddress = new InetSocketAddress(getByAddress(addressAsBytes), 0);
                 final InetSocketAddress dataAddress = new InetSocketAddress(hostAddress, 0);
 
                 builder.localControlAddress(controlAddress)
-                        .remoteControlAddress(controlAddress)
-                        .localDataAddress(dataAddress)
-                        .remoteDataAddress(dataAddress);
+                       .remoteControlAddress(controlAddress)
+                       .localDataAddress(dataAddress)
+                       .remoteDataAddress(dataAddress);
             }
             else
             {
@@ -83,7 +85,7 @@ public class UdpDestination
 
                 final InetSocketAddress remoteAddress = new InetSocketAddress(hostAddress, uriPort);
                 builder.remoteControlAddress(remoteAddress)
-                        .remoteDataAddress(remoteAddress);
+                       .remoteDataAddress(remoteAddress);
 
                 InetSocketAddress localAddress = new InetSocketAddress(0);
                 if (userInfo != null)
@@ -102,7 +104,7 @@ public class UdpDestination
                 }
 
                 builder.localControlAddress(localAddress)
-                        .localDataAddress(localAddress);
+                       .localDataAddress(localAddress);
             }
 
             return new UdpDestination(builder);
@@ -178,8 +180,8 @@ public class UdpDestination
         }
 
         return String.format("udp://%1$s:%2$d@%3$s:%4$d",
-                localData.getAddress().getHostAddress(), Integer.valueOf(localData.getPort()),
-                remoteData.getAddress().getHostAddress(), Integer.valueOf(remoteData.getPort()));
+                             localData.getAddress().getHostAddress(), Integer.valueOf(localData.getPort()),
+                             remoteData.getAddress().getHostAddress(), Integer.valueOf(remoteData.getPort()));
     }
 
     public boolean isMulticast()
@@ -200,11 +202,6 @@ public class UdpDestination
         private InetSocketAddress localControl;
         private String uriStr;
         private long consistentHash;
-
-        public Builder()
-        {
-
-        }
 
         public Builder uriStr(final String uri)
         {

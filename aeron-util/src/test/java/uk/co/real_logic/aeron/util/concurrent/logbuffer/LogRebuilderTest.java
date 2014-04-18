@@ -30,7 +30,7 @@ import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.*;
 
-public class RebuilderTest
+public class LogRebuilderTest
 {
     private static final int LOG_BUFFER_CAPACITY = 1024 * 16;
     private static final int STATE_BUFFER_CAPACITY = STATE_BUFFER_LENGTH;
@@ -39,14 +39,14 @@ public class RebuilderTest
     private final AtomicBuffer stateBuffer = spy(new AtomicBuffer(new byte[STATE_BUFFER_CAPACITY]));
     private final StateViewer stateViewer = new StateViewer(stateBuffer);
 
-    private Rebuilder rebuilder;
+    private LogRebuilder logRebuilder;
 
     @Before
     public void setUp()
     {
         when(valueOf(logBuffer.capacity())).thenReturn(valueOf(LOG_BUFFER_CAPACITY));
 
-        rebuilder = new Rebuilder(logBuffer, stateBuffer);
+        logRebuilder = new LogRebuilder(logBuffer, stateBuffer);
     }
 
     @Test(expected = IllegalStateException.class)
@@ -55,7 +55,7 @@ public class RebuilderTest
         final int logBufferCapacity = LogBufferDescriptor.LOG_MIN_SIZE + FRAME_ALIGNMENT + 1;
         when(logBuffer.capacity()).thenReturn(logBufferCapacity);
 
-        rebuilder = new Rebuilder(logBuffer, stateBuffer);
+        logRebuilder = new LogRebuilder(logBuffer, stateBuffer);
     }
 
     @Test(expected = IllegalStateException.class)
@@ -63,7 +63,7 @@ public class RebuilderTest
     {
         when(stateBuffer.capacity()).thenReturn(LogBufferDescriptor.STATE_BUFFER_LENGTH - 1);
 
-        rebuilder = new Rebuilder(logBuffer, stateBuffer);
+        logRebuilder = new LogRebuilder(logBuffer, stateBuffer);
     }
 
     @Test
@@ -75,7 +75,7 @@ public class RebuilderTest
 
         when(logBuffer.getInt(lengthOffset(0))).thenReturn(length);
 
-        rebuilder.insert(packet, srcOffset, length);
+        logRebuilder.insert(packet, srcOffset, length);
 
         final InOrder inOrder = inOrder(logBuffer, stateBuffer);
         inOrder.verify(logBuffer).putBytes(0, packet, srcOffset, length);
@@ -97,7 +97,7 @@ public class RebuilderTest
         when(logBuffer.getInt(lengthOffset(tail))).thenReturn(length);
         when(logBuffer.getShort(typeOffset(tail))).thenReturn(PADDING_MSG_TYPE);
 
-        rebuilder.insert(packet, srcOffset, length);
+        logRebuilder.insert(packet, srcOffset, length);
 
         final InOrder inOrder = inOrder(logBuffer, stateBuffer);
         inOrder.verify(logBuffer).putBytes(tail, packet, srcOffset, length);
@@ -120,7 +120,7 @@ public class RebuilderTest
         when(logBuffer.getInt(lengthOffset(FRAME_ALIGNMENT))).thenReturn(length);
         when(logBuffer.getInt(lengthOffset(FRAME_ALIGNMENT * 2))).thenReturn(length);
 
-        rebuilder.insert(packet, srcOffset, length);
+        logRebuilder.insert(packet, srcOffset, length);
 
         assertThat(stateViewer.tailVolatile(), is(FRAME_ALIGNMENT * 3));
         assertThat(stateViewer.highWaterMarkVolatile(), is(FRAME_ALIGNMENT * 3));
@@ -143,7 +143,7 @@ public class RebuilderTest
         when(logBuffer.getInt(lengthOffset(0))).thenReturn(0);
         when(logBuffer.getInt(lengthOffset(FRAME_ALIGNMENT))).thenReturn(length);
 
-        rebuilder.insert(packet, srcOffset, length);
+        logRebuilder.insert(packet, srcOffset, length);
 
         assertThat(stateViewer.tailVolatile(), is(0));
         assertThat(stateViewer.highWaterMarkVolatile(), is(FRAME_ALIGNMENT * 3));
@@ -166,7 +166,7 @@ public class RebuilderTest
         when(logBuffer.getInt(lengthOffset(0))).thenReturn(FRAME_ALIGNMENT);
         when(logBuffer.getInt(lengthOffset(FRAME_ALIGNMENT))).thenReturn(0);
 
-        rebuilder.insert(packet, srcOffset, length);
+        logRebuilder.insert(packet, srcOffset, length);
 
         assertThat(stateViewer.tailVolatile(), is(FRAME_ALIGNMENT));
         assertThat(stateViewer.highWaterMarkVolatile(), is(FRAME_ALIGNMENT * 4));

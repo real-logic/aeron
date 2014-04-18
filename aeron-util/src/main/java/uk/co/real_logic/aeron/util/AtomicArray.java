@@ -88,22 +88,27 @@ public class AtomicArray<T>
         final T[] array = (T[])arrayRef.get();
 
         if (array.length == 0)
+        {
             return;
+        }
 
         int i = start;
         do
         {
-            T element = array[i];
+            final T element = array[i];
             if (null != element)
             {
                 func.accept(element);
             }
+
             i++;
+
             if (i == array.length)
             {
                 i = 0;
             }
-        } while (i != start);
+        }
+        while (i != start);
     }
 
     /**
@@ -171,12 +176,15 @@ public class AtomicArray<T>
     {
         final Object[] oldArray = arrayRef.get();
         final int index = oldArray.length;
+
         final Object[] newArray = new Object[index + values.size()];
         System.arraycopy(oldArray, 0, newArray, 0, index);
+
         for (int i = 0; i < values.size(); i++)
         {
             newArray[index + i] = values.get(i);
         }
+
         arrayRef.set(newArray);
     }
 
@@ -185,5 +193,4 @@ public class AtomicArray<T>
         // TODO: make this less ludicrously inefficient
         values.forEach(this::remove);
     }
-
 }

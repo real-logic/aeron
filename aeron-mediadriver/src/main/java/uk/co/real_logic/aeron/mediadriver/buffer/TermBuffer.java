@@ -32,7 +32,10 @@ public class TermBuffer
     private final AtomicBuffer logBuffer;
     private final AtomicBuffer stateBuffer;
 
-    public TermBuffer(final FileChannel logFile, final FileChannel stateFile, final MappedByteBuffer logBuffer, final MappedByteBuffer stateBuffer)
+    public TermBuffer(final FileChannel logFile,
+                      final FileChannel stateFile,
+                      final MappedByteBuffer logBuffer,
+                      final MappedByteBuffer stateBuffer)
     {
         this.logFile = logFile;
         this.stateFile = stateFile;

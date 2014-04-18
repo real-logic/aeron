@@ -25,7 +25,7 @@ import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.EventHandler;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.Appender;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 
@@ -34,7 +34,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
@@ -252,9 +251,9 @@ public class AeronTest
             assertThat(sessionId, is(SESSION_ID));
         };
 
-        List<Appender> appenders = createTermBuffer(0L, NEW_RECEIVE_BUFFER_NOTIFICATION, directory.receiverDir())
+        List<LogAppender> logAppenders = createTermBuffer(0L, NEW_RECEIVE_BUFFER_NOTIFICATION, directory.receiverDir())
             .stream()
-            .map(buffer -> new Appender(buffer.logBuffer(),
+            .map(buffer -> new LogAppender(buffer.logBuffer(),
                     buffer.stateBuffer(),
                     DEFAULT_HEADER,
                     MAX_FRAME_LENGTH))
@@ -268,7 +267,7 @@ public class AeronTest
         skip(toMediaDriver, 1);
 
         atomicSendBuffer.putInt(0, 1);
-        Appender firstBuffer = appenders.get(0);
+        LogAppender firstBuffer = logAppenders.get(0);
         assertTrue(firstBuffer.append(atomicSendBuffer, 0, SIZE_OF_INT));
 
         assertThat(receiver.process(), is(1));

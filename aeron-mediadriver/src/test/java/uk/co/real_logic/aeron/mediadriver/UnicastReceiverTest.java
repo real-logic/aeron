@@ -51,6 +51,7 @@ public class UnicastReceiverTest
     private static final String INVALID_URI = "udp://";
     private static final long[] ONE_CHANNEL = { 10 };
     private static final long[] ANOTHER_CHANNEL = { 20 };
+    private static final long[] TWO_CHANNELS = { 20, 30 };
     private static final long[] THREE_CHANNELS = { 10, 20, 30 };
     private static final long SESSION_ID = 0xdeadbeefL;
     private static final long TERM_ID = 0xec1L;
@@ -174,6 +175,55 @@ public class UnicastReceiverTest
             assertThat(receiverMessage.channelIds(), is(ANOTHER_CHANNEL));
             assertThat(receiverMessage.destination(), is(URI));
         });
+    }
+
+    @Test(timeout = 1000)
+    public void shouldKeepFrameHandlerUponRemoveOfAllButOneChannel() throws Exception
+    {
+        final UdpDestination dest = UdpDestination.parse(URI);
+
+        writeReceiverMessage(ADD_RECEIVER, URI, THREE_CHANNELS);
+
+        processThreads(5);
+
+        final RcvFrameHandler frameHandler = receiverThread.frameHandler(dest);
+
+        assertNotNull(frameHandler);
+        assertThat(frameHandler.channelInterestMap().size(), is(3));
+
+        writeReceiverMessage(REMOVE_RECEIVER, URI, TWO_CHANNELS);
+
+        processThreads(5);
+
+        assertNotNull(receiverThread.frameHandler(dest));
+        assertThat(frameHandler.channelInterestMap().size(), is(1));
+    }
+
+    @Test(timeout = 1000)
+    public void shouldOnlyRemoveFrameHandlerUponRemovalOfAllChannels() throws Exception
+    {
+        final UdpDestination dest = UdpDestination.parse(URI);
+
+        writeReceiverMessage(ADD_RECEIVER, URI, THREE_CHANNELS);
+
+        processThreads(5);
+
+        final RcvFrameHandler frameHandler = receiverThread.frameHandler(dest);
+
+        assertNotNull(frameHandler);
+        assertThat(frameHandler.channelInterestMap().size(), is(3));
+
+        writeReceiverMessage(REMOVE_RECEIVER, URI, TWO_CHANNELS);
+
+        processThreads(5);
+
+        assertNotNull(receiverThread.frameHandler(dest));
+        assertThat(frameHandler.channelInterestMap().size(), is(1));
+
+        writeReceiverMessage(REMOVE_RECEIVER, URI, ONE_CHANNEL);
+        processThreads(5);
+
+        assertNull(receiverThread.frameHandler(dest));
     }
 
     @Test(timeout = 2000)

@@ -33,13 +33,13 @@ public class SenderThread extends ClosableThread
     {
         this.adminThreadCommandBuffer = builder.adminThreadCommandBuffer();
         this.channels = new AtomicArray<>();
-        counter = 0;
+        this.counter = 0;
     }
 
     public void process()
     {
         counter++;
-        if (counter == Integer.MAX_VALUE)
+        if (counter == channels.length())
         {
             counter = 0;
         }

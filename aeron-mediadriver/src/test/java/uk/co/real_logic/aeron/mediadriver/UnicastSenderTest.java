@@ -1,0 +1,145 @@
+/*
+ * Copyright 2014 Real Logic Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package uk.co.real_logic.aeron.mediadriver;
+
+import org.junit.*;
+import uk.co.real_logic.aeron.mediadriver.buffer.BasicBufferManagementStrategy;
+import uk.co.real_logic.aeron.util.AdminBuffers;
+import uk.co.real_logic.aeron.util.SharedDirectories;
+import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
+import java.util.stream.IntStream;
+
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.mockito.Mockito.mock;
+import static uk.co.real_logic.aeron.mediadriver.MediaDriver.COMMAND_BUFFER_SZ;
+import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ADD_CHANNEL;
+import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.REMOVE_CHANNEL;
+import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_SIZE;
+
+public class UnicastSenderTest
+{
+    private static final String URI = "udp://localhost:45678";
+    private static final long CHANNEL_ID = 0xA;
+    private static final long SESSION_ID = 0xdeadbeefL;
+    private static final long TERM_ID = 0xec1L;
+
+    @ClassRule
+    public static AdminBuffers buffers = new AdminBuffers(COMMAND_BUFFER_SZ + TRAILER_SIZE);
+
+    @ClassRule
+    public static SharedDirectories directory = new SharedDirectories();
+
+    private final ByteBuffer sendBuffer = ByteBuffer.allocateDirect(256);
+    private final AtomicBuffer writeBuffer = new AtomicBuffer(sendBuffer);
+
+    private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
+    private final ErrorHeaderFlyweight error = new ErrorHeaderFlyweight();
+
+    private BasicBufferManagementStrategy bufferManagementStrategy;
+    private SenderThread senderThread;
+    private ReceiverThread receiverThread;
+    private MediaDriverAdminThread mediaDriverAdminThread;
+    private DatagramChannel receiverChannel;
+
+    @Before
+    public void setUp() throws Exception
+    {
+        bufferManagementStrategy = new BasicBufferManagementStrategy(directory.dataDir());
+
+        final MediaDriver.TopologyBuilder builder = new MediaDriver.TopologyBuilder()
+                .adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
+                .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
+                .rcvNioSelector(new NioSelector())
+                .adminNioSelector(new NioSelector())
+                .senderFlowControl(DefaultSenderFlowControlStrategy::new)
+                .adminBufferStrategy(buffers.strategy())
+                .bufferManagementStrategy(bufferManagementStrategy);
+
+        senderThread = new SenderThread(builder);
+        receiverThread = mock(ReceiverThread.class);
+        mediaDriverAdminThread = new MediaDriverAdminThread(builder, receiverThread, senderThread);
+        receiverChannel = DatagramChannel.open();
+        sendBuffer.clear();
+    }
+
+    @After
+    public void tearDown() throws Exception
+    {
+        receiverChannel.close();
+        senderThread.close();
+        mediaDriverAdminThread.close();
+        mediaDriverAdminThread.nioSelector().selectNowWithNoProcessing();
+        bufferManagementStrategy.close();
+    }
+
+    @Test(timeout = 1000)
+    public void shouldBeAbleToAddChannel() throws Exception
+    {
+        writeChannelMessage(ADD_CHANNEL, URI, SESSION_ID, CHANNEL_ID);
+
+        processThreads(5);
+
+        assertNotNull(mediaDriverAdminThread.frameHandler(UdpDestination.parse(URI)));
+    }
+
+    @Test(timeout = 1000)
+    public void shouldBeAbleToRemoveChannel() throws Exception
+    {
+        writeChannelMessage(ADD_CHANNEL, URI, SESSION_ID, CHANNEL_ID);
+
+        processThreads(5);
+
+        assertNotNull(mediaDriverAdminThread.frameHandler(UdpDestination.parse(URI)));
+
+        writeChannelMessage(REMOVE_CHANNEL, URI, SESSION_ID, CHANNEL_ID);
+
+        processThreads(5);
+
+        assertNull(mediaDriverAdminThread.frameHandler(UdpDestination.parse(URI)));
+    }
+
+    private void writeChannelMessage(final int eventTypeId, final String destination,
+                                     final long sessionId, final long channelId)
+            throws IOException
+    {
+        final RingBuffer adminCommands = buffers.mappedToMediaDriver();
+
+        channelMessage.wrap(writeBuffer, 0);
+
+        channelMessage.channelId(channelId)
+                      .sessionId(sessionId)
+                      .destination(destination);
+
+        adminCommands.write(eventTypeId, writeBuffer, 0, channelMessage.length());
+    }
+
+    private void processThreads(final int iterations)
+    {
+        IntStream.range(0, iterations).forEach((i) ->
+        {
+            mediaDriverAdminThread.process();
+            senderThread.process();
+        });
+    }
+}

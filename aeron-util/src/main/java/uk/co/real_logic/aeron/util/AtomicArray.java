@@ -82,7 +82,7 @@ public class AtomicArray<T>
      * @param start the index to start iterating at
      * @param func to call and pass each element to
      */
-    public void forEach(final int start, final Consumer<T> func)
+    public void forEach(int start, final Consumer<T> func)
     {
         @SuppressWarnings("unchecked")
         final T[] array = (T[])arrayRef.get();
@@ -90,6 +90,11 @@ public class AtomicArray<T>
         if (array.length == 0)
         {
             return;
+        }
+
+        if (array.length <= start)
+        {
+            start = array.length - 1;
         }
 
         int i = start;

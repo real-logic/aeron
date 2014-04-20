@@ -160,6 +160,21 @@ public class AtomicArrayTest
     }
 
     @Test
+    public void shouldHandleStartTooLargeTransparently()
+    {
+        // given
+        Set<Integer> values = new HashSet<>(asList(10, 20, 30));
+        AtomicArray<Integer> array = new AtomicArray<>();
+        values.forEach(array::add);
+
+        // when
+        array.forEach(4, values::remove);
+
+        // then
+        assertThat(values, empty());
+    }
+
+    @Test
     public void arrayInitiallyUnchanged()
     {
         AtomicArray<Integer> array = new AtomicArray<>();

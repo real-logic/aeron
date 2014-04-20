@@ -15,10 +15,12 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 
 /**
  * State maintained for active sessionIds within a channel for receiver processing
@@ -54,5 +56,13 @@ public class RcvSessionState
     public long sessionId()
     {
         return sessionId;
+    }
+
+    public void unmapAllBuffers()
+    {
+        termStateMap.forEach((index, buffer) ->
+        {
+            IoUtil.unmap((MappedByteBuffer)buffer);
+        });
     }
 }

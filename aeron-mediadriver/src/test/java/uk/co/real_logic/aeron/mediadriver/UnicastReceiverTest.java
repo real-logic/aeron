@@ -69,6 +69,7 @@ public class UnicastReceiverTest
     private final ErrorHeaderFlyweight error = new ErrorHeaderFlyweight();
     private final ReceiverMessageFlyweight receiverMessage = new ReceiverMessageFlyweight();
 
+    private BasicBufferManagementStrategy bufferManagementStrategy;
     private SenderThread senderThread;
     private ReceiverThread receiverThread;
     private MediaDriverAdminThread mediaDriverAdminThread;
@@ -77,6 +78,8 @@ public class UnicastReceiverTest
     @Before
     public void setUp() throws Exception
     {
+        bufferManagementStrategy = new BasicBufferManagementStrategy(directory.dataDir());
+
         final MediaDriver.TopologyBuilder builder = new MediaDriver.TopologyBuilder()
                 .adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
@@ -84,7 +87,7 @@ public class UnicastReceiverTest
                 .adminNioSelector(new NioSelector())
                 .senderFlowControl(DefaultSenderFlowControlStrategy::new)
                 .adminBufferStrategy(buffers.strategy())
-                .bufferManagementStrategy(new BasicBufferManagementStrategy(directory.dataDir()));
+                .bufferManagementStrategy(bufferManagementStrategy);
 
         senderThread = mock(SenderThread.class);
         receiverThread = new ReceiverThread(builder);
@@ -101,6 +104,7 @@ public class UnicastReceiverTest
         receiverThread.nioSelector().selectNowWithNoProcessing();
         mediaDriverAdminThread.close();
         mediaDriverAdminThread.nioSelector().selectNowWithNoProcessing();
+        bufferManagementStrategy.close();
     }
 
     @Test(timeout = 1000)

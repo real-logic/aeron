@@ -60,6 +60,18 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
         templateFile = createTemplateFile(dataDir);
     }
 
+    public void close()
+    {
+        try
+        {
+            templateFile.close();
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * Create a blank, zeroed out file of the correct size.
      * This lets us just use transferTo to initialize the buffers.

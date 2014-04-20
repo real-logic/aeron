@@ -81,6 +81,11 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         }
     }
 
+    public ControlFrameHandler frameHandler(final UdpDestination destination)
+    {
+        return srcDestinationMap.get(destination.consistentHash());
+    }
+
     public void process()
     {
         try

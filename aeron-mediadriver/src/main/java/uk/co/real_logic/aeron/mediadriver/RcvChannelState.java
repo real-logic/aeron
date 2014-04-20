@@ -69,4 +69,12 @@ public class RcvChannelState
     {
         return channelId;
     }
+
+    public void unmapAllBuffers()
+    {
+        sessionStateMap.forEach((index, sessionState) ->
+        {
+            sessionState.unmapAllBuffers();
+        });
+    }
 }

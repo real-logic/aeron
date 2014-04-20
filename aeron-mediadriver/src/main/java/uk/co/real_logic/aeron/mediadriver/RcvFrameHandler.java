@@ -76,6 +76,10 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
     public void close()
     {
         transport.close();
+        channelInterestMap.forEach((index, channel) ->
+        {
+            channel.unmapAllBuffers();
+        });
     }
 
     public UdpDestination destination()
@@ -118,6 +122,7 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
 
             if (channel.decrementReference() == 0)
             {
+                channel.unmapAllBuffers();
                 channelInterestMap.remove(channelId);
             }
         }

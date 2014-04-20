@@ -25,6 +25,8 @@ import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
@@ -94,7 +96,8 @@ public class IoUtil
 
         if (!file.delete() && !ignoreFailures)
         {
-            throw new FileNotFoundException("Failed to delete file: " + file);
+            Files.delete(file.toPath());
+            // throw new FileNotFoundException("Failed to delete file: " + file);
         }
     }
 

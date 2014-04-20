@@ -83,6 +83,11 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
         return destination;
     }
 
+    public Long2ObjectHashMap<RcvChannelState> channelInterestMap()
+    {
+        return channelInterestMap;
+    }
+
     public void addChannels(final long[] channelIdList)
     {
         for (final long channelId : channelIdList)
@@ -168,17 +173,13 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
         final RcvChannelState channelState = channelInterestMap.get(buffer.channelId());
         if (null == channelState)
         {
-            // should not happen
-            // TODO: log this and return
-            return;
+            throw new IllegalStateException("channel not found");
         }
 
         final RcvSessionState sessionState = channelState.getSessionState(buffer.sessionId());
         if (null == sessionState)
         {
-            // should also not happen as it should have been added when we first saw the sessionId
-            // TODO: log this and return
-            return;
+            throw new IllegalStateException("session not found");
         }
 
         sessionState.termBuffer(buffer.termId(), buffer.buffer());

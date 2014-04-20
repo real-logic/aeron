@@ -19,6 +19,7 @@ import org.junit.*;
 import uk.co.real_logic.aeron.mediadriver.buffer.BasicBufferManagementStrategy;
 import uk.co.real_logic.aeron.util.AdminBuffers;
 import uk.co.real_logic.aeron.util.SharedDirectories;
+import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -190,9 +191,15 @@ public class UnicastReceiverTest
 
         processThreads(5);
 
-        // TODO: finish. assert on term buffer existence.
-        // final File termFile = termLocation(new File(adminPath), SESSION_ID, ONE_CHANNEL[0], TERM_ID, false, URI);
-        //assertThat(termFile.exists(), is(true));
+        final RcvFrameHandler frameHandler = receiverThread.frameHandler(dest);
+        assertNotNull(frameHandler);
+        final RcvChannelState channelState = frameHandler.channelInterestMap().get(ONE_CHANNEL[0]);
+        assertNotNull(channelState);
+        final RcvSessionState sessionState = channelState.getSessionState(SESSION_ID);
+        assertNotNull(sessionState);
+        assertNotNull(sessionState.termBuffer(TERM_ID));
+        final InetSocketAddress srcAddr = (InetSocketAddress)senderChannel.getLocalAddress();
+        assertThat(sessionState.sourceAddress().getPort(), is(srcAddr.getPort()));
 
         processThreads(5);
 

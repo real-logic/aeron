@@ -102,4 +102,87 @@ public class TransmitterTest
         inOrder.verify(buffer).putBytes(msgOffset(recordOffset), srcBuffer, srcIndex, length);
         inOrder.verify(buffer).putLongOrdered(TAIL_COUNTER_INDEX, tail + recordLength);
     }
+
+    @Test
+    public void shouldTransmitIntoUsedBuffer()
+    {
+        final long tail = RECORD_ALIGNMENT * 3;
+        final int recordOffset = (int)tail;
+        final int length = 8;
+        final int recordLength = align(length + HEADER_LENGTH, RECORD_ALIGNMENT);
+
+        when(buffer.getLong(TAIL_COUNTER_INDEX)).thenReturn(tail);
+
+        final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[1024]);
+        final int srcIndex = 0;
+
+        transmitter.transmit(MSG_TYPE_ID, srcBuffer, srcIndex, length);
+
+        final InOrder inOrder = inOrder(buffer);
+        inOrder.verify(buffer).getLong(TAIL_COUNTER_INDEX);
+        inOrder.verify(buffer).putLongOrdered(tailSequenceOffset(recordOffset), tail);
+        inOrder.verify(buffer).putInt(recLengthOffset(recordOffset), recordLength);
+        inOrder.verify(buffer).putInt(msgLengthOffset(recordOffset), length);
+        inOrder.verify(buffer).putInt(msgTypeOffset(recordOffset), MSG_TYPE_ID);
+        inOrder.verify(buffer).putBytes(msgOffset(recordOffset), srcBuffer, srcIndex, length);
+        inOrder.verify(buffer).putLongOrdered(TAIL_COUNTER_INDEX, tail + recordLength);
+    }
+
+    @Test
+    public void shouldTransmitIntoEndOfBuffer()
+    {
+        final long tail = CAPACITY - RECORD_ALIGNMENT;
+        final int recordOffset = (int)tail;
+        final int length = 8;
+        final int recordLength = align(length + HEADER_LENGTH, RECORD_ALIGNMENT);
+
+        when(buffer.getLong(TAIL_COUNTER_INDEX)).thenReturn(tail);
+
+        final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[1024]);
+        final int srcIndex = 0;
+
+        transmitter.transmit(MSG_TYPE_ID, srcBuffer, srcIndex, length);
+
+        final InOrder inOrder = inOrder(buffer);
+        inOrder.verify(buffer).getLong(TAIL_COUNTER_INDEX);
+        inOrder.verify(buffer).putLongOrdered(tailSequenceOffset(recordOffset), tail);
+        inOrder.verify(buffer).putInt(recLengthOffset(recordOffset), recordLength);
+        inOrder.verify(buffer).putInt(msgLengthOffset(recordOffset), length);
+        inOrder.verify(buffer).putInt(msgTypeOffset(recordOffset), MSG_TYPE_ID);
+        inOrder.verify(buffer).putBytes(msgOffset(recordOffset), srcBuffer, srcIndex, length);
+        inOrder.verify(buffer).putLongOrdered(TAIL_COUNTER_INDEX, tail + recordLength);
+    }
+
+    @Test
+    public void shouldApplyPaddingWhenInsufficientSpaceAtEndOfBuffer()
+    {
+        long tail = CAPACITY - RECORD_ALIGNMENT;
+        int recordOffset = (int)tail;
+        final int length = RECORD_ALIGNMENT + 8;
+        final int recordLength = align(length + HEADER_LENGTH, RECORD_ALIGNMENT);
+
+        when(buffer.getLong(TAIL_COUNTER_INDEX)).thenReturn(tail);
+
+        final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[1024]);
+        final int srcIndex = 0;
+
+        transmitter.transmit(MSG_TYPE_ID, srcBuffer, srcIndex, length);
+
+        final InOrder inOrder = inOrder(buffer);
+        inOrder.verify(buffer).getLong(TAIL_COUNTER_INDEX);
+
+        inOrder.verify(buffer).putLongOrdered(tailSequenceOffset(recordOffset), tail);
+        inOrder.verify(buffer).putInt(recLengthOffset(recordOffset), CAPACITY - recordOffset);
+        inOrder.verify(buffer).putInt(msgLengthOffset(recordOffset), 0);
+        inOrder.verify(buffer).putInt(msgTypeOffset(recordOffset), PADDING_MSG_TYPE_ID);
+
+        tail += (CAPACITY - recordOffset);
+        recordOffset = 0;
+        inOrder.verify(buffer).putLongOrdered(tailSequenceOffset(recordOffset), tail);
+        inOrder.verify(buffer).putInt(recLengthOffset(recordOffset), recordLength);
+        inOrder.verify(buffer).putInt(msgLengthOffset(recordOffset), length);
+        inOrder.verify(buffer).putInt(msgTypeOffset(recordOffset), MSG_TYPE_ID);
+        inOrder.verify(buffer).putBytes(msgOffset(recordOffset), srcBuffer, srcIndex, length);
+        inOrder.verify(buffer).putLongOrdered(TAIL_COUNTER_INDEX, tail + recordLength);
+    }
 }

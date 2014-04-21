@@ -83,16 +83,25 @@ public class Transmitter
      * @param index index in the source buffer at which the encoded message begins.
      * @param length in bytes of the encoded message.
      * @throws IllegalArgumentException of the msgTypeId is not valid,
-     *                                  or if the message is greater than {@link #maxMsgLength()}.
+     *                                  or if the message length is greater than {@link #maxMsgLength()}.
      */
     public void transmit(final int msgTypeId, final AtomicBuffer srcBuffer, final int index, final int length)
     {
         checkMsgTypeId(msgTypeId);
         checkMessageLength(length);
 
-        final long tail = buffer.getLong(tailCounterIndex);
-        final int recordOffset = (int)tail & mask;
+        long tail = buffer.getLong(tailCounterIndex);
+        int recordOffset = (int)tail & mask;
         final int recordLength = BitUtil.align(length, RECORD_ALIGNMENT);
+
+        final int remainingBuffer = capacity - recordOffset;
+        if (remainingBuffer < recordLength)
+        {
+            insertPaddingRecord(tail, recordOffset, remainingBuffer);
+
+            tail += remainingBuffer;
+            recordOffset = 0;
+        }
 
         buffer.putLongOrdered(tailSequenceOffset(recordOffset), tail);
         buffer.putInt(recLengthOffset(recordOffset), recordLength);
@@ -102,6 +111,16 @@ public class Transmitter
         buffer.putBytes(msgOffset(recordOffset), srcBuffer, index, length);
 
         buffer.putLongOrdered(tailCounterIndex, tail + recordLength);
+    }
+
+    private void insertPaddingRecord(final long tail,
+                                     final int recordOffset,
+                                     final int remainingBuffer)
+    {
+        buffer.putLongOrdered(tailSequenceOffset(recordOffset), tail);
+        buffer.putInt(recLengthOffset(recordOffset), remainingBuffer);
+        buffer.putInt(msgLengthOffset(recordOffset), 0);
+        buffer.putInt(msgTypeOffset(recordOffset), PADDING_MSG_TYPE_ID);
     }
 
     private void checkMessageLength(final int length)

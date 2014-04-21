@@ -48,7 +48,7 @@ import static uk.co.real_logic.aeron.util.ErrorCode.CHANNEL_UNKNOWN;
 import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.BASE_HEADER_LENGTH;
-import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_SIZE;
+import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_LENGTH;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertEventRead;
 
 public class UnicastSenderTest
@@ -61,7 +61,7 @@ public class UnicastSenderTest
     private static final long SESSION_ID = 0xdeadbeefL;
 
     @ClassRule
-    public static AdminBuffers buffers = new AdminBuffers(COMMAND_BUFFER_SZ + TRAILER_SIZE);
+    public static AdminBuffers buffers = new AdminBuffers(COMMAND_BUFFER_SZ + TRAILER_LENGTH);
 
     @ClassRule
     public static SharedDirectories directory = new SharedDirectories();

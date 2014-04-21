@@ -29,7 +29,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 
-import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_SIZE;
+import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_LENGTH;
 
 /**
  * Main class for JVM-based mediadriver
@@ -72,7 +72,7 @@ public class MediaDriver implements AutoCloseable
     public static final int COMMAND_BUFFER_SZ_DEFAULT = 65536;
 
     /** Default buffer size for admin buffers between the media driver and the client */
-    public static final int ADMIN_BUFFER_SZ_DEFAULT = 65536 + TRAILER_SIZE;
+    public static final int ADMIN_BUFFER_SZ_DEFAULT = 65536 + TRAILER_LENGTH;
 
     /** Default timeout for select */
     public static final int SELECT_TIMEOUT_DEFAULT = 20;
@@ -164,7 +164,7 @@ public class MediaDriver implements AutoCloseable
 
         private RingBuffer createNewCommandBuffer(final int sz)
         {
-            final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(sz + TRAILER_SIZE);
+            final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(sz + TRAILER_LENGTH);
             final AtomicBuffer atomicBuffer = new AtomicBuffer(byteBuffer);
 
             return new ManyToOneRingBuffer(atomicBuffer);

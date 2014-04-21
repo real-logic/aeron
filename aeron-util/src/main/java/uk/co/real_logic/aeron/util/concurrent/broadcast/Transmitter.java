@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.util.concurrent.broadcast;
 
+import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import static uk.co.real_logic.aeron.util.concurrent.broadcast.BufferDescriptor.*;
@@ -88,6 +89,19 @@ public class Transmitter
     {
         checkMsgTypeId(msgTypeId);
         checkMessageLength(length);
+
+        final long tail = buffer.getLong(tailCounterIndex);
+        final int recordOffset = (int)tail & mask;
+        final int recordLength = BitUtil.align(length, RECORD_ALIGNMENT);
+
+        buffer.putLongOrdered(tailSequenceOffset(recordOffset), tail);
+        buffer.putInt(recLengthOffset(recordOffset), recordLength);
+        buffer.putInt(msgLengthOffset(recordOffset), length);
+        buffer.putInt(msgTypeOffset(recordOffset), msgTypeId);
+
+        buffer.putBytes(msgOffset(recordOffset), srcBuffer, index, length);
+
+        buffer.putLongOrdered(tailCounterIndex, tail + recordLength);
     }
 
     private void checkMessageLength(final int length)

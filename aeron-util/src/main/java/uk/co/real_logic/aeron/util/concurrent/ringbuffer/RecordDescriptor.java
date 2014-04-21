@@ -23,7 +23,8 @@ import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 public class RecordDescriptor
 {
     /**
-     * Header size made up of fields for record length, event length, event type, and reserved, then the encoded event.
+     * Header length made up of fields for record length, event length, event type, and reserved,
+     * and then the encoded event.
      * <p>
      * Writing of the record length signals the event recording is complete.
      * <p>
@@ -34,7 +35,7 @@ public class RecordDescriptor
      *   +--------+--------+--------+--------+------------------------+
      * </pre>
      */
-    public static final int RECORD_HEADER_SIZE = SIZE_OF_INT * 4;
+    public static final int HEADER_LENGTH = SIZE_OF_INT * 4;
 
     /**
      * Alignment as a multiple of bytes for each record.
@@ -82,7 +83,7 @@ public class RecordDescriptor
      */
     public static int encodedEventOffset(final int recordOffset)
     {
-        return recordOffset + RECORD_HEADER_SIZE;
+        return recordOffset + HEADER_LENGTH;
     }
 
     /**

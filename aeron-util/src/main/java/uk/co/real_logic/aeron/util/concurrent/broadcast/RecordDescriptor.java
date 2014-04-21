@@ -23,13 +23,18 @@ package uk.co.real_logic.aeron.util.concurrent.broadcast;
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |R|        Record Length        |R|      Message Length         |
- *  +-+-----------------------------+-+-----------------------------+
- *  |          Message Type         |R|         Reserved            |
- *  +-+-----------------------------+-+-----------------------------+
+ *  |R|                        Record Length                        |
+ *  +-+-------------------------------------------------------------+
+ *  |R|                       Message Length                        |
+ *  +-+-------------------------------------------------------------+
+ *  |R|                        Message Type                         |
+ *  +-+-------------------------------------------------------------+
+ *  |                           Reserved                            |
+ *  +-+-------------------------------------------------------------+
  *  |R|                       Tail Sequence                         |
+ *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |                        Encoded Message                       ...
+ *  |                       Encoded Message                       ...
  * ...                                                              |
  *  +---------------------------------------------------------------+
  * </pre>
@@ -45,19 +50,19 @@ public class RecordDescriptor
     public static final int REC_LENGTH_OFFSET = 0;
 
     /** Offset within the record at which the message length field begins. */
-    public static final int MSG_LENGTH_OFFSET = 2;
+    public static final int MSG_LENGTH_OFFSET = 4;
 
     /** Offset within the record at which the message type field begins. */
-    public static final int MSG_TYPE_OFFSET = 4;
+    public static final int MSG_TYPE_OFFSET = 8;
 
     /** Offset within the record at which the message type field begins. */
-    public static final int TAIL_SEQUENCE_OFFSET = 8;
+    public static final int TAIL_SEQUENCE_OFFSET = 16;
 
     /** Length of the record header in bytes. */
     public static final int HEADER_LENGTH = 24;
 
-    /** Alignment as a multiple of bytes for each frame. */
-    public static final int FRAME_ALIGNMENT = 32;
+    /** Alignment as a multiple of bytes for each record. */
+    public static final int RECORD_ALIGNMENT = 32;
 
     /**
      * Calculate the maximum supported message length for a buffer of given capacity.

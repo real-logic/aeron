@@ -27,14 +27,14 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
-import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_SIZE;
+import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_LENGTH;
 
 /**
  * Encapsulation of media driver and API for source and receiver construction
  */
 public final class Aeron
 {
-    private static final int ADMIN_BUFFER_SIZE = 512 + TRAILER_SIZE;
+    private static final int ADMIN_BUFFER_SIZE = 512 + TRAILER_LENGTH;
 
     /**
      * Creates an media driver associated with this Aeron instance that can be used to create sources and receivers on.

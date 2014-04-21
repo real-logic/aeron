@@ -23,12 +23,12 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import java.io.File;
 import java.nio.ByteBuffer;
 
-import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_SIZE;
+import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_LENGTH;
 
 public class AdminBuffers extends ExternalResource
 {
 
-    public static final int BUFFER_SIZE = 512 + TRAILER_SIZE;
+    public static final int BUFFER_SIZE = 512 + TRAILER_LENGTH;
 
     private final String adminDir;
     private final int bufferSize;

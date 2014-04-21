@@ -44,16 +44,16 @@ public class ManyToOneRingBuffer implements RingBuffer
     /**
      * Construct a new {@link RingBuffer} based on an underlying {@link AtomicBuffer}.
      * The underlying buffer must a power of 2 in size plus sufficient space
-     * for the {@link BufferDescriptor#TRAILER_SIZE}.
+     * for the {@link BufferDescriptor#TRAILER_LENGTH}.
      *
      * @param buffer via which events will be exchanged.
      * @throws IllegalStateException if the buffer capacity is not a power of 2
-     *                               plus {@link BufferDescriptor#TRAILER_SIZE} in capacity.
+     *                               plus {@link BufferDescriptor#TRAILER_LENGTH} in capacity.
      */
     public ManyToOneRingBuffer(final AtomicBuffer buffer)
     {
         this.buffer = buffer;
-        capacity = buffer.capacity() - BufferDescriptor.TRAILER_SIZE;
+        capacity = buffer.capacity() - BufferDescriptor.TRAILER_LENGTH;
 
         checkCapacity(capacity);
 
@@ -80,7 +80,7 @@ public class ManyToOneRingBuffer implements RingBuffer
         checkEventTypeId(eventTypeId);
         checkEventLength(length);
 
-        final int requiredCapacity = align(length + RECORD_HEADER_SIZE, ALIGNMENT);
+        final int requiredCapacity = align(length + HEADER_LENGTH, ALIGNMENT);
         final int recordIndex = claimCapacity(requiredCapacity);
         if (INSUFFICIENT_CAPACITY == recordIndex)
         {

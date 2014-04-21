@@ -25,13 +25,13 @@ import java.util.concurrent.CyclicBarrier;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
-import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_SIZE;
+import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_LENGTH;
 
 public class ManyToOneRingBufferConcurrentTest
 {
     public static final int EVENT_TYPE_ID = 7;
 
-    private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect((16 * 1024) + TRAILER_SIZE);
+    private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect((16 * 1024) + TRAILER_LENGTH);
     private final AtomicBuffer atomicBuffer = new AtomicBuffer(byteBuffer);
     private final RingBuffer ringBuffer = new ManyToOneRingBuffer(atomicBuffer);
 

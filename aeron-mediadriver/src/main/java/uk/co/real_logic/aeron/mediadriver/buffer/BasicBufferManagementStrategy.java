@@ -139,7 +139,7 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
             final File file =
                 termLocation(senderDir, sessionId, channelId, termId, true, destination.toString(), STATE);
             channelBuffer = new SenderChannelBuffer(templateFile, file,
-                                                    MediaDriver.COMMAND_BUFFER_SZ + BufferDescriptor.TRAILER_SIZE);
+                                                    MediaDriver.COMMAND_BUFFER_SZ + BufferDescriptor.TRAILER_LENGTH);
             srcTermMap.put(destination, sessionId, channelId, channelBuffer);
         }
 
@@ -174,7 +174,7 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
         if (null == buffer)
         {
             buffer = mapTerm(receiverDir, destination.toString(), sessionId, channelId, termId,
-                             MediaDriver.COMMAND_BUFFER_SZ + BufferDescriptor.TRAILER_SIZE);
+                             MediaDriver.COMMAND_BUFFER_SZ + BufferDescriptor.TRAILER_LENGTH);
             rcvTermMap.put(sessionId, channelId, termId, buffer);
         }
 

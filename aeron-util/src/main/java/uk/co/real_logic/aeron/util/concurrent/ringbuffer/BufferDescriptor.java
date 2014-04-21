@@ -33,8 +33,8 @@ public class BufferDescriptor
     /** Offset within the trailer for where the head value is stored. */
     public static final int CORRELATION_COUNTER_OFFSET;
 
-    /** Total size of the trailer */
-    public static final int TRAILER_SIZE;
+    /** Total length of the trailer in bytes. */
+    public static final int TRAILER_LENGTH;
 
     static
     {
@@ -48,7 +48,7 @@ public class BufferDescriptor
         CORRELATION_COUNTER_OFFSET = offset;
 
         offset += BitUtil.CACHE_LINE_SIZE;
-        TRAILER_SIZE = offset;
+        TRAILER_LENGTH = offset;
     }
 
     /**
@@ -62,7 +62,7 @@ public class BufferDescriptor
         if (capacity < 2 || 1 != Integer.bitCount(capacity))
         {
             final String msg =
-                "Capacity must be a positive power of 2 + TRAILER_SIZE: capacity=" + capacity;
+                "Capacity must be a positive power of 2 + TRAILER_LENGTH: capacity=" + capacity;
             throw new IllegalStateException(msg);
         }
     }

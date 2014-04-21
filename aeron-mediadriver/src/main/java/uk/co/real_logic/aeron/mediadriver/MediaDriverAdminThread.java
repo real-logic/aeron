@@ -104,26 +104,35 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         // read from admin receiver buffer for media driver and dispatch
         adminReceiveBuffer.read((eventTypeId, buffer, index, length) ->
         {
-            switch (eventTypeId)
+            try
             {
-                case ADD_CHANNEL:
-                    channelMessage.wrap(buffer, index);
-                    onAddChannel(channelMessage);
-                    return;
-                case REMOVE_CHANNEL:
-                    channelMessage.wrap(buffer, index);
-                    onRemoveChannel(channelMessage);
-                    return;
-                case ADD_RECEIVER:
-                    receiverMessageFlyweight.wrap(buffer, index);
-                    onAddReceiver(receiverMessageFlyweight);
-                    return;
-                case REMOVE_RECEIVER:
-                    receiverMessageFlyweight.wrap(buffer, index);
-                    onRemoveReceiver(receiverMessageFlyweight);
-                    return;
+                switch (eventTypeId)
+                {
+                    case ADD_CHANNEL:
+                        channelMessage.wrap(buffer, index);
+                        onAddChannel(channelMessage);
+                        return;
+                    case REMOVE_CHANNEL:
+                        channelMessage.wrap(buffer, index);
+                        onRemoveChannel(channelMessage);
+                        return;
+                    case ADD_RECEIVER:
+                        receiverMessageFlyweight.wrap(buffer, index);
+                        onAddReceiver(receiverMessageFlyweight);
+                        return;
+                    case REMOVE_RECEIVER:
+                        receiverMessageFlyweight.wrap(buffer, index);
+                        onRemoveReceiver(receiverMessageFlyweight);
+                        return;
+                }
+            }
+            catch (Exception e)
+            {
+                // TODO: log this instead
+                e.printStackTrace();
             }
         });
+
         // read from commandBuffer and dispatch
         commandBuffer.read((eventTypeId, buffer, index, length) ->
         {
@@ -206,6 +215,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         final String destination = channelMessage.destination();
         final long sessionId = channelMessage.sessionId();
         final long channelId = channelMessage.channelId();
+
         try
         {
             final UdpDestination srcDestination = UdpDestination.parse(destination);
@@ -220,17 +230,20 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
                 // check for hash collision
                 if (!frameHandler.destination().equals(srcDestination))
                 {
-                    throw new IllegalStateException("destinations hash same, but destinations different");
+                    throw new ChannelMessageException(ErrorCode.CHANNEL_ALREADY_EXISTS,
+                                                      "destinations hash same, but destinations different");
                 }
             }
 
             SenderChannel channel = frameHandler.findChannel(sessionId, channelId);
             if (null != channel)
             {
-                throw new IllegalArgumentException("channel and session already exist on destination");
+                throw new ChannelMessageException(ErrorCode.CHANNEL_ALREADY_EXISTS,
+                                                  "channel and session already exist on destination");
             }
 
             // new channel, so generate "random"-ish termId and create term buffer
+            // TODO: change this to 0/1/2 buffer strategy
             final long initialTermId = rng.nextLong();
             final ByteBuffer buffer = bufferManagementStrategy.addSenderTerm(srcDestination, sessionId,
                     channelId, initialTermId);
@@ -251,6 +264,19 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
 
             // add channel to sender thread atomic array so it can be integrated in
             senderThread.addChannel(channel);
+        }
+        catch (final ChannelMessageException e)
+        {
+            final byte[] err = e.getMessage().getBytes();
+            final int len = ErrorHeaderFlyweight.HEADER_LENGTH + channelMessage.length() + err.length;
+
+            errorHeaderFlyweight.wrap(writeBuffer, 0);
+            errorHeaderFlyweight.errorCode(e.errorCode())
+                                .offendingFlyweight(channelMessage, channelMessage.length())
+                                .errorString(err)
+                                .frameLength(len);
+
+            adminSendBuffer.write(ERROR_RESPONSE, writeBuffer, 0, errorHeaderFlyweight.frameLength());
         }
         catch (Exception e)
         {

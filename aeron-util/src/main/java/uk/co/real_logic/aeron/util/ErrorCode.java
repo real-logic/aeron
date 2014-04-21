@@ -23,6 +23,7 @@ public enum ErrorCode
     GENERIC_ERROR(0),
     INVALID_DESTINATION(1),
     RECEIVER_NOT_REGISTERED(2),
+    CHANNEL_ALREADY_EXISTS(3)
     ;
 
     private final short value;

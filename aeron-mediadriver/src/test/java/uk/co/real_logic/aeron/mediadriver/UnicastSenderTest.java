@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -43,6 +44,7 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.COMMAND_BUFFER_SZ;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
+import static uk.co.real_logic.aeron.util.ErrorCode.CHANNEL_ALREADY_EXISTS;
 import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.BASE_HEADER_LENGTH;
@@ -142,6 +144,45 @@ public class UnicastSenderTest
         processThreads(5);
 
         assertNull(mediaDriverAdminThread.frameHandler(UdpDestination.parse(URI)));
+    }
+
+    @Ignore
+    @Test
+    public void shouldErrorOnAddChannelOnExistingSession() throws Exception
+    {
+        writeChannelMessage(ADD_CHANNEL, URI, SESSION_ID, CHANNEL_ID);
+
+        processThreads(5);
+
+        assertNotNull(mediaDriverAdminThread.frameHandler(UdpDestination.parse(URI)));
+
+        assertEventRead(buffers.toApi(), (eventTypeId, buffer, index, length) ->
+        {
+            assertThat(eventTypeId, is(NEW_SEND_BUFFER_NOTIFICATION));
+
+            bufferMessage.wrap(buffer, index);
+            assertThat(bufferMessage.sessionId(), is(SESSION_ID));
+            assertThat(bufferMessage.channelId(), is(CHANNEL_ID));
+            assertThat(bufferMessage.destination(), is(URI));
+        });
+
+        writeChannelMessage(ADD_CHANNEL, URI, SESSION_ID, CHANNEL_ID);
+
+        processThreads(5);
+
+        assertEventRead(buffers.toApi(), (eventTypeId, buffer, index, length) ->
+        {
+            assertThat(eventTypeId, is(ERROR_RESPONSE));
+
+            error.wrap(buffer, index);
+            assertThat(error.errorCode(), is(CHANNEL_ALREADY_EXISTS));
+            assertThat(error.errorStringLength(), greaterThan(0));
+
+            channelMessage.wrap(buffer, error.offendingHeaderOffset());
+            assertThat(channelMessage.sessionId(), is(SESSION_ID));
+            assertThat(channelMessage.channelId(), is(CHANNEL_ID));
+            assertThat(channelMessage.destination(), is(URI));
+        });
     }
 
     @Ignore

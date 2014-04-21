@@ -84,4 +84,21 @@ public class RecordDescriptor
     {
         return recordOffset + RECORD_HEADER_SIZE;
     }
+
+    /**
+     * Check that and event id is in the valid range.
+     *
+     * @param eventTypeId to be checked.
+     * @throws IllegalArgumentException if the id is not in the valid range.
+     */
+    public static void checkEventTypeId(final int eventTypeId)
+    {
+        if (eventTypeId < 1)
+        {
+            final String msg = String.format("event type id must be greater than zero, eventTypeId=%d",
+                                             Integer.valueOf(eventTypeId));
+
+            throw new IllegalArgumentException(msg);
+        }
+    }
 }

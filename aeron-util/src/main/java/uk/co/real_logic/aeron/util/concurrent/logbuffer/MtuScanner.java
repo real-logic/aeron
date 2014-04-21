@@ -21,7 +21,7 @@ import java.nio.ByteOrder;
 
 import static uk.co.real_logic.aeron.util.BitUtil.align;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.*;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.*;
 
 /**
  * Cursor that scans a log buffer reading MTU (Maximum Transmission Unit) ranges of messages
@@ -190,7 +190,7 @@ public class MtuScanner
 
     private int waitForFrameLengthVolatile(final int frameOffset)
     {
-        return waitForFrameLength(frameOffset, logBuffer);
+        return waitForFrameLength(logBuffer, frameOffset);
     }
 
     private int getMessageType(final int frameOffset)
@@ -200,6 +200,6 @@ public class MtuScanner
 
     private int getTailVolatile()
     {
-        return stateBuffer.getIntVolatile(LogBufferDescriptor.TAIL_COUNTER_OFFSET);
+        return stateBuffer.getIntVolatile(BufferDescriptor.TAIL_COUNTER_OFFSET);
     }
 }

@@ -193,11 +193,11 @@ public class FrameDescriptor
     /**
      * Busy spin on a frame length header until it is non zero and return value.
      *
-     * @param frameOffset at which a frame begins.
      * @param logBuffer containing the frame.
+     * @param frameOffset at which a frame begins.
      * @return the value of the frame length header.
      */
-    public static int waitForFrameLength(final int frameOffset, final AtomicBuffer logBuffer)
+    public static int waitForFrameLength(final AtomicBuffer logBuffer, final int frameOffset)
     {
         int frameLength;
         do

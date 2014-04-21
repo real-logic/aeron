@@ -19,7 +19,6 @@ import org.junit.*;
 import uk.co.real_logic.aeron.mediadriver.buffer.BasicBufferManagementStrategy;
 import uk.co.real_logic.aeron.util.AdminBuffers;
 import uk.co.real_logic.aeron.util.SharedDirectories;
-import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -42,7 +41,7 @@ import static uk.co.real_logic.aeron.mediadriver.MediaDriver.COMMAND_BUFFER_SZ;
 import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION;
 import static uk.co.real_logic.aeron.util.ErrorCode.RECEIVER_NOT_REGISTERED;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
-import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_SIZE;
+import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_SIZE;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertEventRead;
 
 public class UnicastReceiverTest

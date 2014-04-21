@@ -28,7 +28,6 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 
 import java.io.File;
-import java.io.FileDescriptor;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
@@ -45,10 +44,9 @@ import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.COMMAND_BUFFER_SZ;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.ErrorCode.CHANNEL_ALREADY_EXISTS;
-import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.BASE_HEADER_LENGTH;
-import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_SIZE;
+import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_SIZE;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertEventRead;
 
 public class UnicastSenderTest

@@ -303,19 +303,21 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         final String destination = channelMessage.destination();
         final long sessionId = channelMessage.sessionId();
         final long channelId = channelMessage.channelId();
+
         try
         {
             final UdpDestination srcDestination = UdpDestination.parse(destination);
             final ControlFrameHandler frameHandler = srcDestinationMap.get(srcDestination.consistentHash());
             if (null == frameHandler)
             {
-                throw new IllegalArgumentException("destination unknown");
+                throw new ControlProtocolException(ErrorCode.INVALID_DESTINATION, "destination unknown");
             }
 
             final SenderChannel channel = frameHandler.removeChannel(sessionId, channelId);
             if (null == channel)
             {
-                throw new IllegalArgumentException("session and channel unknown for destination");
+                throw new ControlProtocolException(ErrorCode.CHANNEL_UNKNOWN,
+                                                   "session and channel unknown for destination");
             }
 
             // remove from buffer management
@@ -330,11 +332,16 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
                 frameHandler.close();
             }
         }
+        catch (ControlProtocolException e)
+        {
+            throw e; // rethrow up for handling as normal
+        }
         catch (Exception e)
         {
-            // TODO: log this as well as send the error response
+            // convert into generic error
+            // TODO: log this
             e.printStackTrace();
-            sendErrorResponse(ErrorCode.GENERIC_ERROR.value(), e.getMessage().getBytes());
+            throw new ControlProtocolException(ErrorCode.GENERIC_ERROR_CHANNEL_MESSAGE, e.getMessage());
         }
     }
 

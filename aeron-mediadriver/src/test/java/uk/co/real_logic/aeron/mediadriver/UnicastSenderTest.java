@@ -44,6 +44,8 @@ import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.COMMAND_BUFFER_SZ;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.ErrorCode.CHANNEL_ALREADY_EXISTS;
+import static uk.co.real_logic.aeron.util.ErrorCode.CHANNEL_UNKNOWN;
+import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.BASE_HEADER_LENGTH;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_SIZE;
@@ -177,6 +179,66 @@ public class UnicastSenderTest
 
             channelMessage.wrap(buffer, error.offendingHeaderOffset());
             assertThat(channelMessage.sessionId(), is(SESSION_ID));
+            assertThat(channelMessage.channelId(), is(CHANNEL_ID));
+            assertThat(channelMessage.destination(), is(URI));
+        });
+    }
+
+    @Test
+    public void shouldErrorOnRemoveChannelOnUnknownDestination() throws Exception
+    {
+        writeChannelMessage(REMOVE_CHANNEL, URI, SESSION_ID, CHANNEL_ID);
+
+        processThreads(5);
+
+        assertEventRead(buffers.toApi(), (eventTypeId, buffer, index, length) ->
+        {
+            assertThat(eventTypeId, is(ERROR_RESPONSE));
+
+            error.wrap(buffer, index);
+            assertThat(error.errorCode(), is(INVALID_DESTINATION));
+            assertThat(error.errorStringLength(), greaterThan(0));
+
+            channelMessage.wrap(buffer, error.offendingHeaderOffset());
+            assertThat(channelMessage.sessionId(), is(SESSION_ID));
+            assertThat(channelMessage.channelId(), is(CHANNEL_ID));
+            assertThat(channelMessage.destination(), is(URI));
+        });
+    }
+
+    @Test
+    public void shouldErrorOnRemoveChannelOnUnknownSession() throws Exception
+    {
+        writeChannelMessage(ADD_CHANNEL, URI, SESSION_ID, CHANNEL_ID);
+
+        processThreads(5);
+
+        assertNotNull(mediaDriverAdminThread.frameHandler(UdpDestination.parse(URI)));
+
+        assertEventRead(buffers.toApi(), (eventTypeId, buffer, index, length) ->
+        {
+            assertThat(eventTypeId, is(NEW_SEND_BUFFER_NOTIFICATION));
+
+            bufferMessage.wrap(buffer, index);
+            assertThat(bufferMessage.sessionId(), is(SESSION_ID));
+            assertThat(bufferMessage.channelId(), is(CHANNEL_ID));
+            assertThat(bufferMessage.destination(), is(URI));
+        });
+
+        writeChannelMessage(REMOVE_CHANNEL, URI, SESSION_ID + 1, CHANNEL_ID);
+
+        processThreads(5);
+
+        assertEventRead(buffers.toApi(), (eventTypeId, buffer, index, length) ->
+        {
+            assertThat(eventTypeId, is(ERROR_RESPONSE));
+
+            error.wrap(buffer, index);
+            assertThat(error.errorCode(), is(CHANNEL_UNKNOWN));
+            assertThat(error.errorStringLength(), greaterThan(0));
+
+            channelMessage.wrap(buffer, error.offendingHeaderOffset());
+            assertThat(channelMessage.sessionId(), is(SESSION_ID + 1));
             assertThat(channelMessage.channelId(), is(CHANNEL_ID));
             assertThat(channelMessage.destination(), is(URI));
         });

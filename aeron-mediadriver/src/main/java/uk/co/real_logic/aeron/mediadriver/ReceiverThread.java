@@ -77,13 +77,11 @@ public class ReceiverThread extends ClosableThread
                 catch (final InvalidDestinationException e)
                 {
                     // TODO: log this
-                    e.printStackTrace();
                     onError(INVALID_DESTINATION, length);
                 }
                 catch (final ReceiverNotRegisteredException e)
                 {
                     // TODO: log this
-                    e.printStackTrace();
                     onError(RECEIVER_NOT_REGISTERED, length);
                 }
                 catch (final Exception e)

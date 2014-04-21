@@ -17,11 +17,11 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.ErrorCode;
 
-public class ChannelMessageException extends IllegalArgumentException
+public class ControlProtocolException extends IllegalArgumentException
 {
     private final ErrorCode code;
 
-    public ChannelMessageException(final ErrorCode code, final String msg)
+    public ControlProtocolException(final ErrorCode code, final String msg)
     {
         super(msg);
         this.code = code;

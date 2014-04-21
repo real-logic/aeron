@@ -146,7 +146,6 @@ public class UnicastSenderTest
         assertNull(mediaDriverAdminThread.frameHandler(UdpDestination.parse(URI)));
     }
 
-    @Ignore
     @Test
     public void shouldErrorOnAddChannelOnExistingSession() throws Exception
     {

@@ -19,6 +19,7 @@ import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy;
 import uk.co.real_logic.aeron.util.AdminBufferStrategy;
 import uk.co.real_logic.aeron.util.ClosableThread;
 import uk.co.real_logic.aeron.util.ErrorCode;
+import uk.co.real_logic.aeron.util.Flyweight;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.command.*;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -104,27 +105,46 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         // read from admin receiver buffer for media driver and dispatch
         adminReceiveBuffer.read((eventTypeId, buffer, index, length) ->
         {
+            Flyweight flyweight = channelMessage;
+
             try
             {
                 switch (eventTypeId)
                 {
                     case ADD_CHANNEL:
                         channelMessage.wrap(buffer, index);
+                        flyweight = channelMessage;
                         onAddChannel(channelMessage);
                         return;
                     case REMOVE_CHANNEL:
                         channelMessage.wrap(buffer, index);
+                        flyweight = channelMessage;
                         onRemoveChannel(channelMessage);
                         return;
                     case ADD_RECEIVER:
                         receiverMessageFlyweight.wrap(buffer, index);
+                        flyweight = receiverMessageFlyweight;
                         onAddReceiver(receiverMessageFlyweight);
                         return;
                     case REMOVE_RECEIVER:
                         receiverMessageFlyweight.wrap(buffer, index);
+                        flyweight = receiverMessageFlyweight;
                         onRemoveReceiver(receiverMessageFlyweight);
                         return;
                 }
+            }
+            catch (final ControlProtocolException e)
+            {
+                final byte[] err = e.getMessage().getBytes();
+                final int len = ErrorHeaderFlyweight.HEADER_LENGTH + length + err.length;
+
+                errorHeaderFlyweight.wrap(writeBuffer, 0);
+                errorHeaderFlyweight.errorCode(e.errorCode())
+                                    .offendingFlyweight(flyweight, length)
+                                    .errorString(err)
+                                    .frameLength(len);
+
+                adminSendBuffer.write(ERROR_RESPONSE, writeBuffer, 0, errorHeaderFlyweight.frameLength());
             }
             catch (Exception e)
             {
@@ -230,7 +250,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
                 // check for hash collision
                 if (!frameHandler.destination().equals(srcDestination))
                 {
-                    throw new ChannelMessageException(ErrorCode.CHANNEL_ALREADY_EXISTS,
+                    throw new ControlProtocolException(ErrorCode.CHANNEL_ALREADY_EXISTS,
                                                       "destinations hash same, but destinations different");
                 }
             }
@@ -238,7 +258,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             SenderChannel channel = frameHandler.findChannel(sessionId, channelId);
             if (null != channel)
             {
-                throw new ChannelMessageException(ErrorCode.CHANNEL_ALREADY_EXISTS,
+                throw new ControlProtocolException(ErrorCode.CHANNEL_ALREADY_EXISTS,
                                                   "channel and session already exist on destination");
             }
 
@@ -265,24 +285,16 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             // add channel to sender thread atomic array so it can be integrated in
             senderThread.addChannel(channel);
         }
-        catch (final ChannelMessageException e)
+        catch (final ControlProtocolException e)
         {
-            final byte[] err = e.getMessage().getBytes();
-            final int len = ErrorHeaderFlyweight.HEADER_LENGTH + channelMessage.length() + err.length;
-
-            errorHeaderFlyweight.wrap(writeBuffer, 0);
-            errorHeaderFlyweight.errorCode(e.errorCode())
-                                .offendingFlyweight(channelMessage, channelMessage.length())
-                                .errorString(err)
-                                .frameLength(len);
-
-            adminSendBuffer.write(ERROR_RESPONSE, writeBuffer, 0, errorHeaderFlyweight.frameLength());
+            throw e; // rethrow up for handling as normal
         }
         catch (Exception e)
         {
+            // convert into generic error
+            // TODO: log this
             e.printStackTrace();
-            sendErrorResponse(ErrorCode.GENERIC_ERROR.value(), e.getMessage().getBytes());
-            // TODO: log this as well as send the error response
+            throw new ControlProtocolException(ErrorCode.GENERIC_ERROR_CHANNEL_MESSAGE, e.getMessage());
         }
     }
 

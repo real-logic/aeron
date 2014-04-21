@@ -28,7 +28,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.*;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.*;
 
 public class LogRebuilderTest
 {
@@ -52,7 +52,7 @@ public class LogRebuilderTest
     @Test(expected = IllegalStateException.class)
     public void shouldThrowExceptionWhenCapacityNotMultipleOfAlignment()
     {
-        final int logBufferCapacity = LogBufferDescriptor.LOG_MIN_SIZE + FRAME_ALIGNMENT + 1;
+        final int logBufferCapacity = BufferDescriptor.LOG_MIN_SIZE + FRAME_ALIGNMENT + 1;
         when(logBuffer.capacity()).thenReturn(logBufferCapacity);
 
         logRebuilder = new LogRebuilder(logBuffer, stateBuffer);
@@ -61,7 +61,7 @@ public class LogRebuilderTest
     @Test(expected = IllegalStateException.class)
     public void shouldThrowExceptionOnInsufficientStateBufferCapacity()
     {
-        when(stateBuffer.capacity()).thenReturn(LogBufferDescriptor.STATE_BUFFER_LENGTH - 1);
+        when(stateBuffer.capacity()).thenReturn(BufferDescriptor.STATE_BUFFER_LENGTH - 1);
 
         logRebuilder = new LogRebuilder(logBuffer, stateBuffer);
     }

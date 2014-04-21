@@ -21,9 +21,9 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.checkOffsetAlignment;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.typeOffset;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.waitForFrameLength;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.checkLogBuffer;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.checkOffset;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.checkStateBuffer;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.checkLogBuffer;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.checkOffset;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.checkStateBuffer;
 
 /**
  * A log buffer reader.
@@ -81,12 +81,12 @@ public class LogReader
 
         while (tail > cursor)
         {
-            final int frameLength = waitForFrameLength(cursor, logBuffer);
+            final int frameLength = waitForFrameLength(logBuffer, cursor);
             final int type = type(cursor);
 
             try
             {
-                if (type != LogBufferDescriptor.PADDING_MSG_TYPE)
+                if (type != BufferDescriptor.PADDING_MSG_TYPE)
                 {
                     handler.onFrame(logBuffer, cursor, frameLength);
                 }

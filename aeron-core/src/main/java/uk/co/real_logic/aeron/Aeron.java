@@ -27,7 +27,7 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
-import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_SIZE;
+import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_SIZE;
 
 /**
  * Encapsulation of media driver and API for source and receiver construction

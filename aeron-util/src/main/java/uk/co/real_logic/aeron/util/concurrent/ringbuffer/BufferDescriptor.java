@@ -18,9 +18,11 @@ package uk.co.real_logic.aeron.util.concurrent.ringbuffer;
 import uk.co.real_logic.aeron.util.BitUtil;
 
 /**
- * Layout description for the underlying buffer used by a {@link RingBuffer}
+ * Layout description for the underlying buffer used by a {@link RingBuffer}. The buffer consists
+ * of a ring of messages which is a power of 2 in size, followed by a trailer section containing state
+ * information for the producers and consumers of the ring.
  */
-public class RingBufferDescriptor
+public class BufferDescriptor
 {
     /** Offset within the trailer for where the tail value is stored. */
     public static final int TAIL_COUNTER_OFFSET;
@@ -47,5 +49,21 @@ public class RingBufferDescriptor
 
         offset += BitUtil.CACHE_LINE_SIZE;
         TRAILER_SIZE = offset;
+    }
+
+    /**
+     * Check the the buffer capacity is the correct size.
+     *
+     * @param capacity to be checked.
+     * @throws IllegalStateException if the buffer capacity is not a power of 2.
+     */
+    public static void checkCapacity(final int capacity)
+    {
+        if (capacity < 2 || 1 != Integer.bitCount(capacity))
+        {
+            final String msg =
+                "Capacity must be a positive power of 2 + TRAILER_SIZE: capacity=" + capacity;
+            throw new IllegalStateException(msg);
+        }
     }
 }

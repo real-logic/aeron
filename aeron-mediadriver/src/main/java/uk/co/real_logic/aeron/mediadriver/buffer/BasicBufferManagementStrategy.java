@@ -21,7 +21,7 @@ import uk.co.real_logic.aeron.mediadriver.UdpDestination;
 import uk.co.real_logic.aeron.util.FileMappingConvention;
 import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.collections.TripleLevelMap;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
+import uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor;
 
 import java.io.File;
 import java.io.IOException;
@@ -139,7 +139,7 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
             final File file =
                 termLocation(senderDir, sessionId, channelId, termId, true, destination.toString(), STATE);
             channelBuffer = new SenderChannelBuffer(templateFile, file,
-                                                    MediaDriver.COMMAND_BUFFER_SZ + RingBufferDescriptor.TRAILER_SIZE);
+                                                    MediaDriver.COMMAND_BUFFER_SZ + BufferDescriptor.TRAILER_SIZE);
             srcTermMap.put(destination, sessionId, channelId, channelBuffer);
         }
 
@@ -174,7 +174,7 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
         if (null == buffer)
         {
             buffer = mapTerm(receiverDir, destination.toString(), sessionId, channelId, termId,
-                             MediaDriver.COMMAND_BUFFER_SZ + RingBufferDescriptor.TRAILER_SIZE);
+                             MediaDriver.COMMAND_BUFFER_SZ + BufferDescriptor.TRAILER_SIZE);
             rcvTermMap.put(sessionId, channelId, termId, buffer);
         }
 

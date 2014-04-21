@@ -20,7 +20,7 @@ import uk.co.real_logic.aeron.util.concurrent.EventHandler;
 
 import static uk.co.real_logic.aeron.util.BitUtil.align;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RecordDescriptor.*;
-import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.*;
+import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.*;
 
 /**
  * A ring-buffer that supports the exchange of events from many producers to a single consumer.
@@ -44,23 +44,18 @@ public class ManyToOneRingBuffer implements RingBuffer
     /**
      * Construct a new {@link RingBuffer} based on an underlying {@link AtomicBuffer}.
      * The underlying buffer must a power of 2 in size plus sufficient space
-     * for the {@link RingBufferDescriptor#TRAILER_SIZE}.
+     * for the {@link BufferDescriptor#TRAILER_SIZE}.
      *
      * @param buffer via which events will be exchanged.
      * @throws IllegalStateException if the buffer capacity is not a power of 2
-     *                               plus {@link RingBufferDescriptor#TRAILER_SIZE} in capacity.
+     *                               plus {@link BufferDescriptor#TRAILER_SIZE} in capacity.
      */
     public ManyToOneRingBuffer(final AtomicBuffer buffer)
     {
         this.buffer = buffer;
-        capacity = buffer.capacity() - RingBufferDescriptor.TRAILER_SIZE;
+        capacity = buffer.capacity() - BufferDescriptor.TRAILER_SIZE;
 
-        if (capacity < 1 || 1 != Integer.bitCount(capacity))
-        {
-            final String msg =
-                "Capacity must be a positive power of 2 + TRAILER_SIZE: AtomicBuffer.capacity=" + capacity;
-            throw new IllegalStateException(msg);
-        }
+        checkCapacity(capacity);
 
         mask = capacity - 1;
         maxEventLength = capacity / 4;
@@ -168,17 +163,6 @@ public class ManyToOneRingBuffer implements RingBuffer
     public long nextCorrelationId()
     {
         return buffer.getAndAddLong(correlationIdCounterIndex, 1);
-    }
-
-    private void checkEventTypeId(final int eventTypeId)
-    {
-        if (eventTypeId < 1)
-        {
-            final String msg = String.format("event type id must be greater than zero, eventTypeId=%d",
-                                             Integer.valueOf(eventTypeId));
-
-            throw new IllegalArgumentException(msg);
-        }
     }
 
     private void checkEventLength(final int length)

@@ -29,8 +29,8 @@ import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.lengthOffset;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.typeOffset;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.TAIL_COUNTER_OFFSET;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.STATE_BUFFER_LENGTH;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.TAIL_COUNTER_OFFSET;
 
 public class LogReaderTest
 {
@@ -54,7 +54,7 @@ public class LogReaderTest
     @Test(expected = IllegalStateException.class)
     public void shouldThrowExceptionWhenCapacityNotMultipleOfAlignment()
     {
-        final int logBufferCapacity = LogBufferDescriptor.LOG_MIN_SIZE + FRAME_ALIGNMENT + 1;
+        final int logBufferCapacity = BufferDescriptor.LOG_MIN_SIZE + FRAME_ALIGNMENT + 1;
         when(logBuffer.capacity()).thenReturn(logBufferCapacity);
 
         logReader = new LogReader(logBuffer, stateBuffer);

@@ -37,6 +37,7 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
  */
 public class MediaDriverAdminThread extends ClosableThread implements LibraryFacade
 {
+    public static final int WRITE_BUFFER_CAPACITY = 256;
 
     private final RingBuffer commandBuffer;
     private final ReceiverThreadCursor receiverThreadCursor;
@@ -47,6 +48,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     private final RingBuffer adminReceiveBuffer;
     private final RingBuffer adminSendBuffer;
     private final Long2ObjectHashMap<ControlFrameHandler> srcDestinationMap;
+    private final AtomicBuffer writeBuffer;
 
     private final Supplier<SenderFlowControlStrategy> senderFlowControl;
 
@@ -68,6 +70,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         this.senderThread = senderThread;
         this.senderFlowControl = builder.senderFlowControl();
         this.srcDestinationMap = new Long2ObjectHashMap<>();
+        this.writeBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(WRITE_BUFFER_CAPACITY));
 
         try
         {
@@ -180,7 +183,22 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
                                           final boolean isSender,
                                           final String destination)
     {
+        completelyIdentifiedMessageFlyweight.wrap(writeBuffer, 0);
+        completelyIdentifiedMessageFlyweight.sessionId(sessionId)
+                .channelId(channelId)
+                .termId(termId)
+                .destination(destination);
 
+        if (isSender)
+        {
+            adminSendBuffer.write(NEW_SEND_BUFFER_NOTIFICATION, writeBuffer,
+                    0, completelyIdentifiedMessageFlyweight.length());
+        }
+        else
+        {
+            adminSendBuffer.write(NEW_RECEIVE_BUFFER_NOTIFICATION, writeBuffer,
+                    0, completelyIdentifiedMessageFlyweight.length());
+        }
     }
 
     public void onAddChannel(final ChannelMessageFlyweight channelMessage)

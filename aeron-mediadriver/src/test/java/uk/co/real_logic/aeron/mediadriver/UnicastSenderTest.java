@@ -20,6 +20,7 @@ import uk.co.real_logic.aeron.mediadriver.buffer.BasicBufferManagementStrategy;
 import uk.co.real_logic.aeron.util.AdminBuffers;
 import uk.co.real_logic.aeron.util.SharedDirectories;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
@@ -29,20 +30,22 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.util.stream.IntStream;
 
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.COMMAND_BUFFER_SZ;
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ADD_CHANNEL;
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.REMOVE_CHANNEL;
+import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION;
+import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_SIZE;
+import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertEventRead;
 
 public class UnicastSenderTest
 {
     private static final String URI = "udp://localhost:45678";
     private static final long CHANNEL_ID = 0xA;
     private static final long SESSION_ID = 0xdeadbeefL;
-    private static final long TERM_ID = 0xec1L;
 
     @ClassRule
     public static AdminBuffers buffers = new AdminBuffers(COMMAND_BUFFER_SZ + TRAILER_SIZE);
@@ -55,6 +58,7 @@ public class UnicastSenderTest
 
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
     private final ErrorHeaderFlyweight error = new ErrorHeaderFlyweight();
+    private final CompletelyIdentifiedMessageFlyweight bufferMessage = new CompletelyIdentifiedMessageFlyweight();
 
     private BasicBufferManagementStrategy bufferManagementStrategy;
     private SenderThread senderThread;
@@ -101,6 +105,16 @@ public class UnicastSenderTest
         processThreads(5);
 
         assertNotNull(mediaDriverAdminThread.frameHandler(UdpDestination.parse(URI)));
+
+        assertEventRead(buffers.toApi(), (eventTypeId, buffer, index, length) ->
+        {
+            assertThat(eventTypeId, is(NEW_SEND_BUFFER_NOTIFICATION));
+
+            bufferMessage.wrap(buffer, index);
+            assertThat(bufferMessage.sessionId(), is(SESSION_ID));
+            assertThat(bufferMessage.channelId(), is(CHANNEL_ID));
+            assertThat(bufferMessage.destination(), is(URI));
+        });
     }
 
     @Test(timeout = 1000)

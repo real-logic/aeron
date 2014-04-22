@@ -190,7 +190,7 @@ public class AeronTest
     }
 
     @Test
-    public void registeringReceiverNotifiesMediaDriver()
+    public void registeringReceiverNotifiesMediaDriver() throws Exception
     {
         final RingBuffer toMediaDriver = adminBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
@@ -199,11 +199,13 @@ public class AeronTest
                 .channel(CHANNEL_ID, emptyDataHandler())
                 .channel(CHANNEL_ID_2, emptyDataHandler());
 
-        aeron.newReceiver(builder);
+        final Receiver receiver = aeron.newReceiver(builder);
 
         aeron.adminThread().process();
 
         assertEventRead(toMediaDriver, assertReceiverMessageOfType(ADD_RECEIVER));
+
+        assertThat(receiver.process(), is(0));
     }
 
     @Test

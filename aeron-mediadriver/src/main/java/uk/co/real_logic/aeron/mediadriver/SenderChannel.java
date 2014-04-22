@@ -17,6 +17,8 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
 import uk.co.real_logic.aeron.mediadriver.buffer.LogBuffers;
+import uk.co.real_logic.aeron.mediadriver.buffer.MappedBufferRotator;
+import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.MtuScanner;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
@@ -25,12 +27,15 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import java.nio.ByteBuffer;
 import java.util.stream.Stream;
 
+import static uk.co.real_logic.aeron.util.BitUtil.next;
+
 /**
  * Encapsulates the information associated with a channel
  * to send on. Processed in the SenderThread.
  */
 public class SenderChannel
 {
+    public static final int BUFFER_COUNT = 3;
     private final ControlFrameHandler frameHandler;
     private final SenderFlowControlStrategy flowControlStrategy;
     private final UdpDestination destination;
@@ -106,15 +111,13 @@ public class SenderChannel
                 return;
             }
 
-            // TODO: index rotation
             final MtuScanner scanner = scanners[currentIndex];
-            // frame will fit in the window, read and send just 1
-
             if (scanner.scanNext())
             {
                 // at this point sendBuffer wraps the same underlying
                 // bytebuffer as the buffer parameter
                 final ByteBuffer sendBuffer = sendBuffers[currentIndex];
+
                 final int offset = scanner.offset();
                 final int expectedBytesSent = scanner.length();
                 sendBuffer.position(offset);
@@ -133,6 +136,11 @@ public class SenderChannel
                     //TODO: errors
                     e.printStackTrace();
                 }
+            }
+
+            if (scanner.isComplete())
+            {
+                currentIndex = next(currentIndex, BUFFER_COUNT);
             }
         }
         catch (final Exception e)

@@ -139,4 +139,20 @@ public class BitUtil
         return (number & LAST_DIGIT_MASK) == 0;
     }
 
+    /**
+     * Increment indexes of an array in a cycle
+     *
+     * @param current
+     * @return
+     */
+    public static int next(final int current, final int max)
+    {
+        int next = current + 1;
+        if (next == max)
+        {
+            next = 0;
+        }
+        return next;
+    }
+
 }

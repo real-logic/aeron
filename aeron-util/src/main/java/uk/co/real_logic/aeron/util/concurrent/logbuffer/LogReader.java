@@ -97,6 +97,16 @@ public class LogReader
         return counter;
     }
 
+    /**
+     * Has the buffer been read right to the end?
+     *
+     * @return true if the whole buffer has been read otherwise false if read cursor has not yet reached capacity.
+     */
+    public boolean isComplete()
+    {
+        return cursor >= logBuffer.capacity();
+    }
+
     private int type(final int frameOffset)
     {
         return logBuffer.getInt(typeOffset(frameOffset), LITTLE_ENDIAN);

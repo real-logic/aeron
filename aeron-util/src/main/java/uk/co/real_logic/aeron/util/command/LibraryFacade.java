@@ -48,20 +48,6 @@ public interface LibraryFacade
     void onRemoveChannel(final ChannelMessageFlyweight channelMessage);
 
     /**
-     * Handle a removeTerm request from the library
-     *
-     * Remove and delete a given Term. Terms must be explicitly removed by a library (or admin process/thread)
-     *
-     * @see MediaDriverFacade#sendRemoveTerm(String, long, long, long)
-     *
-     * @param destination for the term to be removed from
-     * @param sessionId for the term to be removed from
-     * @param channelId to remove the term from
-     * @param termId for the term
-     */
-    void onRemoveTerm(final String destination, final long sessionId, final long channelId, final long termId);
-
-    /**
      * Handle a addReceiver request from the library.
      *
      * The destination will be created if not in use by another library/application.

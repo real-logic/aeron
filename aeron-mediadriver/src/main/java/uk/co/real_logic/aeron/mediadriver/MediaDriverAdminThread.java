@@ -350,48 +350,6 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         }
     }
 
-    // TODO: remove this as it is no longer needed with in place buffer reuse strategy
-    public void onRemoveTerm(final String destination, final long sessionId, final long channelId, final long termId)
-    {
-        try
-        {
-            final UdpDestination srcDestination = UdpDestination.parse(destination);
-            final ControlFrameHandler frameHandler = srcDestinationMap.get(srcDestination.consistentHash());
-            if (null == frameHandler)
-            {
-                throw new IllegalArgumentException("destination unknown");
-            }
-
-            final SenderChannel channel = frameHandler.findChannel(sessionId, channelId);
-            if (channel == null)
-            {
-                throw new IllegalArgumentException("session and channel unknown for destination");
-            }
-
-            // remove from buffer management, but will be unmapped once SenderThread releases it and it can be GCed
-            //bufferManagementStrategy.removeSenderTerm(srcDestination, sessionId, channelId, termId);
-
-            // TODO: sender thread only uses current term, so if we are removing the current term
-            // TODO: inform SenderChannel to get rid of term
-            // TODO: adding/removing of terms to SenderChannel should be serialized by this thread
-            // TODO: just need to know when to remove from SrcFrameHandler (thus removing NAKs/SMs) and SenderChannel
-            // TODO: inform SenderThread as this could be a term it is using (handle like onRemoveChannel?)
-
-            // if no more channels, then remove framehandler and close it
-            if (frameHandler.numSessions() == 0)
-            {
-                srcDestinationMap.remove(srcDestination.consistentHash());
-                frameHandler.close();
-            }
-        }
-        catch (Exception e)
-        {
-            sendErrorResponse(ErrorCode.GENERIC_ERROR.value(), e.getMessage().getBytes());
-            // TODO: log this as well as send the error response
-            e.printStackTrace();
-        }
-    }
-
     public void onAddReceiver(final ReceiverMessageFlyweight receiverMessage)
     {
         // instruct receiver thread of new framehandler and new channelIdlist for such

@@ -327,14 +327,6 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
 
     }
 
-    public void sendRemoveTerm(final String destination,
-                               final long sessionId,
-                               final long channelId,
-                               final long termId)
-    {
-
-    }
-
     public void sendAddReceiver(final String destination, final long[] channelIdList)
     {
 

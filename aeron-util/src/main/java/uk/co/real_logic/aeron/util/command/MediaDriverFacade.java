@@ -30,7 +30,7 @@ public interface MediaDriverFacade
      *
      * The media driver will create sessions and underlying destination components as necessary
      *
-     * @see LibraryFacade#onAddChannel(String, long, long)
+     * @see LibraryFacade#onAddChannel(ChannelMessageFlyweight)
      *
      * @param destination to add the channel on
      * @param sessionId to add the channel on
@@ -43,7 +43,7 @@ public interface MediaDriverFacade
      *
      * If this is the last channel on this session, it will NOT be removed. It must be removed explicitly later.
      *
-     * @see LibraryFacade#onRemoveChannel(String, long, long)
+     * @see LibraryFacade#onRemoveChannel(ChannelMessageFlyweight)
      *
      * @param destination to remove the channel from
      * @param sessionId to remove the channel from
@@ -52,27 +52,12 @@ public interface MediaDriverFacade
     void sendRemoveChannel(final String destination, final long sessionId, final long channelId);
 
     /**
-     * Request the media driver to remove a Term from a channel for a source.
-     *
-     * Terms are not removed unless this is done. It could be the app, but it could also be a separate admin
-     * process/thread to send this command to the media driver.
-     *
-     * @see LibraryFacade#onRemoveTerm(String, long, long, long)
-     *
-     * @param destination to remove the term from
-     * @param sessionId to remove the term from
-     * @param channelId to remove the term from
-     * @param termId to remove
-     */
-    void sendRemoveTerm(final String destination, final long sessionId, final long channelId, final long termId);
-
-    /**
      * Request the media driver to add a receiver for a given list of channels on a destination on behalf
      * of an application.
      *
      * The destination will be created if not already in use by another application.
      *
-     * @see LibraryFacade#onAddReceiver(String, long[])
+     * @see LibraryFacade#onAddReceiver(ReceiverMessageFlyweight)
      * @param destination to add the channels to
      * @param channelIdList of interested channels
      */
@@ -83,7 +68,7 @@ public interface MediaDriverFacade
      *
      * The destination will be removed if this application is the last application using the destination.
      *
-     * @see LibraryFacade#onRemoveReceiver(String, long[])
+     * @see LibraryFacade#onRemoveReceiver(ReceiverMessageFlyweight)
      * @param destination to remove
      * @param channelIdList the list of channels to remove on
      */

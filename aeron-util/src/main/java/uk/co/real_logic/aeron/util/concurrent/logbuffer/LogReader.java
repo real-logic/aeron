@@ -18,12 +18,8 @@ package uk.co.real_logic.aeron.util.concurrent.logbuffer;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.checkOffsetAlignment;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.typeOffset;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.waitForFrameLength;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.checkLogBuffer;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.checkOffset;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.checkStateBuffer;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.*;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*;
 
 /**
  * A log buffer reader.

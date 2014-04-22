@@ -25,11 +25,9 @@ import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 
-import static uk.co.real_logic.aeron.util.FileMappingConvention.BUFFER_COUNT;
-import static uk.co.real_logic.aeron.util.FileMappingConvention.Type;
+import static uk.co.real_logic.aeron.util.FileMappingConvention.*;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.Type.LOG;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.Type.STATE;
-import static uk.co.real_logic.aeron.util.FileMappingConvention.termLocation;
 import static uk.co.real_logic.aeron.util.IoUtil.createEmptyFile;
 
 public class SharedDirectories extends ExternalResource

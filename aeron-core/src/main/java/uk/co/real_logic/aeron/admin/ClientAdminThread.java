@@ -35,8 +35,8 @@ import java.nio.ByteBuffer;
 import java.util.function.BiConsumer;
 import java.util.function.IntFunction;
 
-import static uk.co.real_logic.aeron.util.FileMappingConvention.BUFFER_COUNT;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
+import static uk.co.real_logic.aeron.util.FileMappingConvention.BUFFER_COUNT;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.BASE_HEADER_LENGTH;
 

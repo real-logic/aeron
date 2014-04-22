@@ -18,9 +18,9 @@ package uk.co.real_logic.aeron.util.concurrent.logbuffer;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.lengthOffset;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.termOffsetOffset;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.*;
 
 /**
  * Rebuild a log buffer based on incoming frames that can be out-of-order.

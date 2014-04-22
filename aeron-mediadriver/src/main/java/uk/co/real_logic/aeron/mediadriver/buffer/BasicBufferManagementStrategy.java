@@ -20,8 +20,6 @@ import uk.co.real_logic.aeron.mediadriver.UdpDestination;
 import uk.co.real_logic.aeron.util.FileMappingConvention;
 import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.collections.TripleLevelMap;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor;
-
 
 import java.io.File;
 import java.io.IOException;

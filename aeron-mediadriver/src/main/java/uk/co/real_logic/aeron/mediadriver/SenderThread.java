@@ -19,8 +19,6 @@ import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.ClosableThread;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
-import java.util.function.Consumer;
-
 /**
  * Thread to take data in sender buffers and demux onto sending sockets
  */

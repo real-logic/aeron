@@ -5,7 +5,8 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 

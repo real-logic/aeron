@@ -102,14 +102,9 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             // TODO: error
             e.printStackTrace();
         }
-        processSenderChannels();
+        senderThread.processBufferRotation();
         processReceiveBuffer();
         processCommandBuffer();
-    }
-
-    private void processSenderChannels()
-    {
-        senderThread.processBufferRotation();
     }
 
     private void processCommandBuffer()

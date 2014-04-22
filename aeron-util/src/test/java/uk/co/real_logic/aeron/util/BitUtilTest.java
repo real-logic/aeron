@@ -19,9 +19,7 @@ import org.junit.Test;
 
 import static java.lang.Integer.valueOf;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static uk.co.real_logic.aeron.util.BitUtil.*;
 
 public class BitUtilTest

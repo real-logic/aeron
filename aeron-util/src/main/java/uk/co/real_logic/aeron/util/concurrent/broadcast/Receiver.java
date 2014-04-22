@@ -19,9 +19,7 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import static uk.co.real_logic.aeron.util.concurrent.broadcast.BufferDescriptor.TAIL_COUNTER_OFFSET;
-import static uk.co.real_logic.aeron.util.concurrent.broadcast.BufferDescriptor.TRAILER_SIZE;
-import static uk.co.real_logic.aeron.util.concurrent.broadcast.BufferDescriptor.checkCapacity;
+import static uk.co.real_logic.aeron.util.concurrent.broadcast.BufferDescriptor.*;
 
 /**
  * Receive messages broadcast from a {@link Transmitter} via an underlying buffer. Receivers can join

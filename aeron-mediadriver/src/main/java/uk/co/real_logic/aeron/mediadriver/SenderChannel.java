@@ -17,15 +17,11 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
 import uk.co.real_logic.aeron.mediadriver.buffer.LogBuffers;
-import uk.co.real_logic.aeron.mediadriver.buffer.MappedBufferRotator;
-import uk.co.real_logic.aeron.util.BitUtil;
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.MtuScanner;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.stream.Stream;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static uk.co.real_logic.aeron.util.BitUtil.next;
 
@@ -38,6 +34,7 @@ public class SenderChannel
     public static final int BUFFER_COUNT = 3;
     private final ControlFrameHandler frameHandler;
     private final SenderFlowControlStrategy flowControlStrategy;
+    private final BufferRotator buffers;
     private final UdpDestination destination;
     private final long sessionId;
     private final long channelId;
@@ -49,6 +46,7 @@ public class SenderChannel
 
     /** duplicate log buffers to work around the lack of a (buffer, start, length) send method */
     private final ByteBuffer[] sendBuffers;
+    private final AtomicBoolean requiresRotation;
 
     private final SenderFlowControlState activeFlowControlState;
 
@@ -62,6 +60,7 @@ public class SenderChannel
     {
         this.frameHandler = frameHandler;
         this.flowControlStrategy = flowControlStrategy;
+        this.buffers = buffers;
         this.destination = destination;
         this.sessionId = sessionId;
         this.channelId = channelId;
@@ -77,6 +76,7 @@ public class SenderChannel
                              .map(this::duplicateLogBuffer)
                              .toArray(ByteBuffer[]::new);
         currentIndex = 0;
+        requiresRotation = new AtomicBoolean(false);
     }
 
     private ByteBuffer duplicateLogBuffer(final LogBuffers log)
@@ -141,6 +141,7 @@ public class SenderChannel
             if (scanner.isComplete())
             {
                 currentIndex = next(currentIndex, BUFFER_COUNT);
+                requestRotation();
             }
         }
         catch (final Exception e)
@@ -148,6 +149,11 @@ public class SenderChannel
             // TODO: error logging
             e.printStackTrace();
         }
+    }
+
+    private void requestRotation()
+    {
+        requiresRotation.lazySet(true);
     }
 
     public boolean isOpen()
@@ -175,6 +181,7 @@ public class SenderChannel
         return currentTermId;
     }
 
+    // TODO: figure out if we need remove term at all?
     public void removeTerm(final long termId)
     {
         // TODO: get rid of reference to old term Id. If this is current termId, then stop, etc.
@@ -188,6 +195,29 @@ public class SenderChannel
                                                                   highestContiguousSequenceNumber,
                                                                   receiverWindow);
         activeFlowControlState.updateRightEdgeOfWindow(rightEdge);
+    }
+
+    public void processBufferRotation()
+    {
+        if (requiresRotation.get())
+        {
+            try
+            {
+                buffers.rotate();
+                notifyBuffersRotated();
+            }
+            catch (IOException e)
+            {
+                // TODO: log exception
+                // TODO: probably should deal with stopping this all together
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void notifyBuffersRotated()
+    {
+        requiresRotation.lazySet(false);
     }
 
 }

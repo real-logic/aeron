@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
-import uk.co.real_logic.aeron.mediadriver.buffer.LogBuffers;
 import uk.co.real_logic.aeron.util.AdminBufferStrategy;
 import uk.co.real_logic.aeron.util.ClosableThread;
 import uk.co.real_logic.aeron.util.ErrorCode;
@@ -25,7 +24,6 @@ import uk.co.real_logic.aeron.util.Flyweight;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.command.*;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.MtuScanner;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
@@ -33,7 +31,6 @@ import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 
@@ -105,8 +102,36 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             // TODO: error
             e.printStackTrace();
         }
+        processSenderChannels();
+        processReceiveBuffer();
+        processCommandBuffer();
+    }
 
-        // read from admin receiver buffer for media driver and dispatch
+    private void processSenderChannels()
+    {
+        senderThread.processBufferRotation();
+    }
+
+    private void processCommandBuffer()
+    {
+        commandBuffer.read((eventTypeId, buffer, index, length) ->
+        {
+            switch (eventTypeId)
+            {
+                case ControlProtocolEvents.CREATE_RCV_TERM_BUFFER:
+                    completelyIdentifiedMessageFlyweight.wrap(buffer, index);
+                    onCreateRcvTermBufferEvent(completelyIdentifiedMessageFlyweight);
+                    return;
+                case ERROR_RESPONSE:
+                    errorHeaderFlyweight.wrap(buffer, index);
+                    adminSendBuffer.write(eventTypeId, buffer, index, length);
+                    return;
+            }
+        });
+    }
+
+    private void processReceiveBuffer()
+    {
         adminReceiveBuffer.read((eventTypeId, buffer, index, length) ->
         {
             Flyweight flyweight = channelMessage;
@@ -154,22 +179,6 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             {
                 // TODO: log this instead
                 e.printStackTrace();
-            }
-        });
-
-        // read from commandBuffer and dispatch
-        commandBuffer.read((eventTypeId, buffer, index, length) ->
-        {
-            switch (eventTypeId)
-            {
-                case ControlProtocolEvents.CREATE_RCV_TERM_BUFFER:
-                    completelyIdentifiedMessageFlyweight.wrap(buffer, index);
-                    onCreateRcvTermBufferEvent(completelyIdentifiedMessageFlyweight);
-                    return;
-                case ERROR_RESPONSE:
-                    errorHeaderFlyweight.wrap(buffer, index);
-                    adminSendBuffer.write(eventTypeId, buffer, index, length);
-                    return;
             }
         });
     }

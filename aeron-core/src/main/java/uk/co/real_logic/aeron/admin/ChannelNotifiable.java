@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public abstract class ChannelNotifiable
 {
 
-    private static final long UNKNOWN_TERM_ID = -1L;
+    protected static final long UNKNOWN_TERM_ID = -1L;
 
     protected final TermBufferNotifier bufferNotifier;
     protected final String destination;
@@ -52,6 +52,7 @@ public abstract class ChannelNotifiable
         bufferNotifier.termBufferBlocking(currentTermId.get());
     }
 
+    // TODO: push up
     // TODO: stop if its not clean
     protected void next()
     {
@@ -65,14 +66,8 @@ public abstract class ChannelNotifiable
 
     protected abstract void rollTerm();
 
-    public void initialTerm(final long termId)
-    {
-        currentTermId.set(termId);
-    }
+    public abstract void initialTerm(final long sessionId, final long termId);
 
-    public void cleanedTermBuffer(final long termId)
-    {
-        cleanedTermId.set(termId);
-    }
+    public abstract void cleanedTermBuffer(long sessionId, long termId);
 
 }

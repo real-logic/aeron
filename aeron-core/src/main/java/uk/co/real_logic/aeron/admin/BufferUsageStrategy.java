@@ -40,10 +40,12 @@ public interface BufferUsageStrategy
 
     AtomicBuffer newReceiverLogBuffer(final String destination,
                                       final long channelId,
+                                      final long sessionId,
                                       final int index) throws IOException;
 
     AtomicBuffer newReceiverStateBuffer(final String destination,
                                         final long channelId,
+                                        final long sessionId,
                                         final int index) throws IOException;
 
 }

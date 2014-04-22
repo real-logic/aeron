@@ -139,4 +139,13 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
         return this.sessionId == sessionId;
     }
 
+    public void initialTerm(final long sessionId, final long termId)
+    {
+        currentTermId.set(termId);
+    }
+
+    public void cleanedTermBuffer(final long sessionId, final long termId)
+    {
+        cleanedTermId.set(termId);
+    }
 }

@@ -16,7 +16,6 @@
 package uk.co.real_logic.aeron;
 
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import uk.co.real_logic.aeron.admin.ClientAdminThread;
 import uk.co.real_logic.aeron.util.AdminBuffers;
@@ -253,7 +252,7 @@ public class AeronTest
         channel2Handler = (buffer, offset, sessionId, flags) ->
         {
             assertThat(buffer.getInt(offset), is(37));
-            //assertThat(sessionId, is(SESSION_ID));
+            assertThat(sessionId, is(SESSION_ID));
         };
 
         List<LogAppender> logAppenders = createTermBuffer(0L, NEW_RECEIVE_BUFFER_NOTIFICATION, directory.receiverDir())

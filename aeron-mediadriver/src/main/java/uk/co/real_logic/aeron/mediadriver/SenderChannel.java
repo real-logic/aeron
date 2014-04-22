@@ -181,12 +181,6 @@ public class SenderChannel
         return currentTermId;
     }
 
-    // TODO: figure out if we need remove term at all?
-    public void removeTerm(final long termId)
-    {
-        // TODO: get rid of reference to old term Id. If this is current termId, then stop, etc.
-    }
-
     public void onStatusMessage(final long termId,
                                 final long highestContiguousSequenceNumber,
                                 final long receiverWindow)

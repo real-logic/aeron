@@ -33,6 +33,7 @@ public class Transmitter
     private final int mask;
     private final int maxMsgLength;
     private final int tailCounterIndex;
+    private final int latestCounterIndex;
 
     /**
      * Construct a new broadcast transmitter based on an underlying {@link AtomicBuffer}.
@@ -53,6 +54,7 @@ public class Transmitter
         this.mask = capacity - 1;
         this.maxMsgLength = calculateMaxMessageLength(capacity);
         this.tailCounterIndex = capacity + TAIL_COUNTER_OFFSET;
+        this.latestCounterIndex = capacity + LATEST_COUNTER_OFFSET;
     }
 
     /**
@@ -110,6 +112,7 @@ public class Transmitter
 
         buffer.putBytes(msgOffset(recordOffset), srcBuffer, index, length);
 
+        buffer.putLong(latestCounterIndex, tail);
         buffer.putLongOrdered(tailCounterIndex, tail + recordLength);
     }
 

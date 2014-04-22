@@ -32,6 +32,7 @@ public class TransmitterTest
     public static final int CAPACITY = 1024;
     public static final int TOTAL_BUFFER_SIZE = CAPACITY + BufferDescriptor.TRAILER_SIZE;
     public static final int TAIL_COUNTER_INDEX = CAPACITY + BufferDescriptor.TAIL_COUNTER_OFFSET;
+    public static final int LATEST_COUNTER_INDEX = CAPACITY + BufferDescriptor.LATEST_COUNTER_OFFSET;
 
     private final AtomicBuffer buffer = mock(AtomicBuffer.class);
     private Transmitter transmitter;
@@ -98,6 +99,8 @@ public class TransmitterTest
         inOrder.verify(buffer).putInt(msgLengthOffset(recordOffset), length);
         inOrder.verify(buffer).putInt(msgTypeOffset(recordOffset), MSG_TYPE_ID);
         inOrder.verify(buffer).putBytes(msgOffset(recordOffset), srcBuffer, srcIndex, length);
+
+        inOrder.verify(buffer).putLong(LATEST_COUNTER_INDEX, tail);
         inOrder.verify(buffer).putLongOrdered(TAIL_COUNTER_INDEX, tail + recordLength);
     }
 
@@ -118,11 +121,14 @@ public class TransmitterTest
 
         final InOrder inOrder = inOrder(buffer);
         inOrder.verify(buffer).getLong(TAIL_COUNTER_INDEX);
+
         inOrder.verify(buffer).putLongOrdered(tailSequenceOffset(recordOffset), tail);
         inOrder.verify(buffer).putInt(recLengthOffset(recordOffset), recordLength);
         inOrder.verify(buffer).putInt(msgLengthOffset(recordOffset), length);
         inOrder.verify(buffer).putInt(msgTypeOffset(recordOffset), MSG_TYPE_ID);
         inOrder.verify(buffer).putBytes(msgOffset(recordOffset), srcBuffer, srcIndex, length);
+
+        inOrder.verify(buffer).putLong(LATEST_COUNTER_INDEX, tail);
         inOrder.verify(buffer).putLongOrdered(TAIL_COUNTER_INDEX, tail + recordLength);
     }
 
@@ -143,11 +149,14 @@ public class TransmitterTest
 
         final InOrder inOrder = inOrder(buffer);
         inOrder.verify(buffer).getLong(TAIL_COUNTER_INDEX);
+
         inOrder.verify(buffer).putLongOrdered(tailSequenceOffset(recordOffset), tail);
         inOrder.verify(buffer).putInt(recLengthOffset(recordOffset), recordLength);
         inOrder.verify(buffer).putInt(msgLengthOffset(recordOffset), length);
         inOrder.verify(buffer).putInt(msgTypeOffset(recordOffset), MSG_TYPE_ID);
         inOrder.verify(buffer).putBytes(msgOffset(recordOffset), srcBuffer, srcIndex, length);
+
+        inOrder.verify(buffer).putLong(LATEST_COUNTER_INDEX, tail);
         inOrder.verify(buffer).putLongOrdered(TAIL_COUNTER_INDEX, tail + recordLength);
     }
 
@@ -181,6 +190,8 @@ public class TransmitterTest
         inOrder.verify(buffer).putInt(msgLengthOffset(recordOffset), length);
         inOrder.verify(buffer).putInt(msgTypeOffset(recordOffset), MSG_TYPE_ID);
         inOrder.verify(buffer).putBytes(msgOffset(recordOffset), srcBuffer, srcIndex, length);
+
+        inOrder.verify(buffer).putLong(LATEST_COUNTER_INDEX, tail);
         inOrder.verify(buffer).putLongOrdered(TAIL_COUNTER_INDEX, tail + recordLength);
     }
 }

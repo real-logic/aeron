@@ -272,7 +272,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
 
             // new channel, so generate "random"-ish termId and create term buffer
             final long initialTermId = rng.nextLong();
-            final BufferRotator buffers = bufferManagementStrategy.addSenderTerm(srcDestination, sessionId, channelId);
+            final BufferRotator buffers = bufferManagementStrategy.addSenderChannel(srcDestination, sessionId, channelId);
             channel = new SenderChannel(frameHandler,
                                         senderFlowControl.get(),
                                         buffers,

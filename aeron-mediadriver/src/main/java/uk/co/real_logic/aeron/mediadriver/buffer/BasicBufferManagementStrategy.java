@@ -135,9 +135,9 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
         }
     }
 
-    public MappedBufferRotator addSenderTerm(final UdpDestination destination,
-                                             final long sessionId,
-                                             final long channelId) throws Exception
+    public MappedBufferRotator addSenderChannel(final UdpDestination destination,
+                                                final long sessionId,
+                                                final long channelId) throws Exception
     {
         MappedBufferRotator channelBuffer = srcTermMap.get(destination, sessionId, channelId);
         if (channelBuffer == null)

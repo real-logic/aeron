@@ -31,7 +31,7 @@ import static org.junit.Assert.assertThat;
 public class BasicBufferManagementStrategyTest
 {
 
-    private static final File DATA_DIR = new File(System.getProperty("java.io.tmpdir"), "DATA_DIR");
+    private static final File DATA_DIR = new File(IoUtil.tmpDir(), "DATA_DIR");
 
     @After
     public void cleanupFiles() throws IOException

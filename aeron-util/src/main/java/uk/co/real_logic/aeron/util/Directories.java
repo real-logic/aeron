@@ -23,12 +23,12 @@ public class Directories
     /** Directory of the data buffers */
     public static final String DATA_DIR_PROPERTY_NAME = "aeron.data.dir";
     /** Default directory for data buffers */
-    public static final String DATA_DIR_PROPERTY_NAME_DEFAULT = System.getProperty("java.io.tmpdir") + "/aeron/data";
+    public static final String DATA_DIR_PROPERTY_NAME_DEFAULT = IoUtil.tmpDir() + "/aeron/data";
 
     /** Directory of the admin buffers */
     public static final String ADMIN_DIR_PROPERTY_NAME = "aeron.admin.dir";
     /** Default directory for admin buffers */
-    public static final String ADMIN_DIR_PROPERTY_NAME_DEFAULT = System.getProperty("java.io.tmpdir") + "/aeron/admin";
+    public static final String ADMIN_DIR_PROPERTY_NAME_DEFAULT = IoUtil.tmpDir() + "/aeron/admin";
 
     public static final String DATA_DIR = System.getProperty(DATA_DIR_PROPERTY_NAME, DATA_DIR_PROPERTY_NAME_DEFAULT);
     public static final String ADMIN_DIR = System.getProperty(ADMIN_DIR_PROPERTY_NAME, ADMIN_DIR_PROPERTY_NAME_DEFAULT);

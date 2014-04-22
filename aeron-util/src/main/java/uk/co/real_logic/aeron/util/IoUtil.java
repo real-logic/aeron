@@ -194,4 +194,9 @@ public class IoUtil
         }
     }
 
+    public static String tmpDir()
+    {
+        return System.getProperty("java.io.tmpdir");
+    }
+
 }

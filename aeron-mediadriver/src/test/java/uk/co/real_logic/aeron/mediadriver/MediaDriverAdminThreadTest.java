@@ -52,7 +52,7 @@ public class MediaDriverAdminThreadTest
     @BeforeClass
     public static void setupDirectories() throws IOException
     {
-        final File adminDir = new File(System.getProperty("java.io.tmpdir"), ADMIN_DIR);
+        final File adminDir = new File(IoUtil.tmpDir(), ADMIN_DIR);
         if (adminDir.exists())
         {
             IoUtil.delete(adminDir, false);

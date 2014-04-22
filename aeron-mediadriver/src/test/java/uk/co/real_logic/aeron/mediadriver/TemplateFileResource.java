@@ -31,7 +31,7 @@ public class TemplateFileResource extends ExternalResource
 
     protected void before() throws Throwable
     {
-        directory = new File(System.getProperty("java.io.tmpdir"), "mapped-buffers");
+        directory = new File(IoUtil.tmpDir(), "mapped-buffers");
         IoUtil.ensureDirectoryExists(directory, "mapped-buffers");
         directory.deleteOnExit();
         templateFile = IoUtil.createEmptyFile(new File(directory, "template"), BUFFER_SIZE);

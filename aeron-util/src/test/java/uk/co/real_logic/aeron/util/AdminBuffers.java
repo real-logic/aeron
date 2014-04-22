@@ -46,7 +46,7 @@ public class AdminBuffers extends ExternalResource
     public AdminBuffers(int bufferSize)
     {
         this.bufferSize = bufferSize;
-        adminDir = System.getProperty("java.io.tmpdir") + "/admin";
+        adminDir = IoUtil.tmpDir() + "/admin";
     }
 
     protected void before() throws Exception

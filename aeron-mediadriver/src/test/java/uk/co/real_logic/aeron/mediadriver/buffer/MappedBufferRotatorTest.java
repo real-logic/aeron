@@ -22,10 +22,12 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import java.io.IOException;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -64,9 +66,12 @@ public class MappedBufferRotatorTest
     private void withRotatedBuffers(final Consumer<AtomicBuffer> handler) throws IOException
     {
         final MappedBufferRotator rotator = new MappedBufferRotator(template.directory(), template.file(), BUFFER_SIZE, template.file(), BUFFER_SIZE);
+        List<LogBuffers> buffers = rotator.buffers().collect(toList());
         for (int iteration = 0; iteration < 20; iteration++)
         {
-            final TermBuffer buffer = rotator.rotate();
+            rotator.rotate();
+
+            final LogBuffers buffer = buffers.get(iteration % buffers.size());
             handler.accept(buffer.logBuffer());
             handler.accept(buffer.stateBuffer());
         }

@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.stream.Stream;
 
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 
@@ -32,7 +33,7 @@ import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
  *
  * Keeps 3 buffers on hold at any one time.
  */
-public class MappedBufferRotator
+public class MappedBufferRotator implements BufferRotator
 {
     private static final String LOG_SUFFIX = "-log";
     private static final String STATE_SUFFIX = "-state";
@@ -42,10 +43,11 @@ public class MappedBufferRotator
 
     private final FileChannel stateTemplate;
     private final long stateBufferSize;
+    private final BasicLogBuffers[] buffers;
 
-    private TermBuffer current;
-    private TermBuffer clean;
-    private TermBuffer dirty;
+    private BasicLogBuffers current;
+    private BasicLogBuffers clean;
+    private BasicLogBuffers dirty;
 
     public MappedBufferRotator(final File directory,
                                final FileChannel logTemplate,
@@ -70,27 +72,31 @@ public class MappedBufferRotator
         {
             throw new IllegalStateException(e);
         }
+
+        buffers = new BasicLogBuffers[]{ current, clean, dirty };
     }
 
-    private TermBuffer newTerm(final String prefix, final File directory) throws IOException
+    private BasicLogBuffers newTerm(final String prefix, final File directory) throws IOException
     {
         final FileChannel logFile = openFile(directory, prefix + LOG_SUFFIX);
         final FileChannel stateFile = openFile(directory, prefix + STATE_SUFFIX);
 
-        return new TermBuffer(logFile, stateFile, map(logBufferSize, logFile), map(stateBufferSize, stateFile));
+        return new BasicLogBuffers(logFile, stateFile, map(logBufferSize, logFile), map(stateBufferSize, stateFile));
     }
 
-    public TermBuffer rotate() throws IOException
+    public Stream<LogBuffers> buffers()
     {
-        final TermBuffer newBuffer = clean;
+        return Stream.of(buffers);
+    }
+
+    public void rotate() throws IOException
+    {
+        final BasicLogBuffers newBuffer = clean;
 
         clean = dirty;
         dirty = current;
         dirty.reset(logTemplate, stateTemplate);
-
         current = newBuffer;
-
-        return newBuffer;
     }
 
     private FileChannel openFile(final File directory, final String child) throws FileNotFoundException

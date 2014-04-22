@@ -24,15 +24,15 @@ import java.nio.ByteBuffer;
  */
 public interface BufferManagementStrategy
 {
-    ByteBuffer addSenderTerm(final UdpDestination destination,
-                             final long sessionId,
-                             final long channelId,
-                             final long termId) throws Exception;
+    BufferRotator addSenderTerm(final UdpDestination destination,
+                                final long sessionId,
+                                final long channelId) throws Exception;
 
-    void removeSenderTerm(final UdpDestination destination,
+    // TODO: figure out if we need to actually remove an individual term
+    /*void removeSenderTerm(final UdpDestination destination,
                           final long sessionId,
                           final long channelId,
-                          final long termId);
+                          final long termId);*/
 
     void removeSenderChannel(final UdpDestination destination, final long sessionId, final long channelId);
 

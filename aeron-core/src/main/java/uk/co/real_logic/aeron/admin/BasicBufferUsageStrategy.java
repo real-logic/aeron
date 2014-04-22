@@ -73,11 +73,11 @@ public class BasicBufferUsageStrategy implements BufferUsageStrategy
     private AtomicBuffer mapTerm(final String destination,
                                  final long sessionId,
                                  final long channelId,
-                                 final long termId,
+                                 final int index,
                                  final File rootDir,
                                  final FileMappingConvention.Type type) throws IOException
     {
-        final File termIdFile = termLocation(rootDir, sessionId, channelId, termId, false, destination, type);
+        final File termIdFile = termLocation(rootDir, sessionId, channelId, index, false, destination, type);
         return new AtomicBuffer(IoUtil.mapExistingFile(termIdFile, "Term Buffer"));
     }
 }

@@ -77,19 +77,29 @@ public class FileMappingConvention
                                     final long sessionId,
                                     final long channelId,
                                     final long index,
-                                    final boolean createChannelIfMissing,
+                                    final boolean createIfMissing,
                                     final String destination,
                                     final Type type)
+    {
+        final File channelDir = channelLocation(rootDir, sessionId, channelId, createIfMissing, destination);
+        final String suffix = Long.toString(index) + "-" + type.name().toLowerCase();
+        return new File(channelDir, suffix);
+    }
+
+    public static File channelLocation(final File rootDir,
+                                       final long sessionId,
+                                       final long channelId,
+                                       final boolean createIfMissing,
+                                       final String destination)
     {
         final File destinationDir = new File(rootDir, destinationToDir(destination));
         final File sessionDir = new File(destinationDir, Long.toString(sessionId));
         final File channelDir = new File(sessionDir, Long.toString(channelId));
-        if (createChannelIfMissing)
+        if (createIfMissing)
         {
             IoUtil.ensureDirectoryExists(channelDir, "channel");
         }
-        final String suffix = Long.toString(index) + "-" + type.name().toLowerCase();
-        return new File(channelDir, suffix);
+        return channelDir;
     }
 
     static String destinationToDir(final String destination)

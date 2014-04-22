@@ -15,13 +15,13 @@
  */
 package uk.co.real_logic.aeron.mediadriver.buffer;
 
-import uk.co.real_logic.aeron.mediadriver.MediaDriver;
 import uk.co.real_logic.aeron.mediadriver.UdpChannelMap;
 import uk.co.real_logic.aeron.mediadriver.UdpDestination;
 import uk.co.real_logic.aeron.util.FileMappingConvention;
 import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.collections.TripleLevelMap;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor;
+
 
 import java.io.File;
 import java.io.IOException;
@@ -31,20 +31,27 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
+import static uk.co.real_logic.aeron.mediadriver.MediaDriver.COMMAND_BUFFER_SZ;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.Type.STATE;
+import static uk.co.real_logic.aeron.util.FileMappingConvention.channelLocation;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.termLocation;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.STATE_BUFFER_LENGTH;
+import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_LENGTH;
 
 /**
  * Basic buffer management where each Term is a file.
  */
 public class BasicBufferManagementStrategy implements BufferManagementStrategy
 {
-    private static final long BUFFER_SIZE = 256 * 1024;
+    private static final long LOG_BUFFER_SIZE = COMMAND_BUFFER_SZ + TRAILER_LENGTH;
 
-    private final FileChannel templateFile;
+    private final FileChannel logTemplate;
+    private final FileChannel stateTemplate;
+
     private final File senderDir;
     private final File receiverDir;
-    private final UdpChannelMap<SenderChannelBuffer> srcTermMap;
+
+    private final UdpChannelMap<MappedBufferRotator> srcTermMap;
     private final TripleLevelMap<ByteBuffer> rcvTermMap;
     private final FileMappingConvention fileConvention;
 
@@ -57,14 +64,15 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
         rcvTermMap = new TripleLevelMap<>();
         IoUtil.ensureDirectoryExists(senderDir, "sender");
         IoUtil.ensureDirectoryExists(receiverDir, "receiver");
-        templateFile = createTemplateFile(dataDir);
+        logTemplate = createTemplateFile(dataDir, "logTemplate", LOG_BUFFER_SIZE);
+        stateTemplate = createTemplateFile(dataDir, "StateTemplate", STATE_BUFFER_LENGTH);
     }
 
     public void close()
     {
         try
         {
-            templateFile.close();
+            logTemplate.close();
         }
         catch (Exception e)
         {
@@ -77,14 +85,16 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
      * This lets us just use transferTo to initialize the buffers.
      *
      * @param dataDir in which template file will be created.
+     * @param name
+     * @param size
      */
-    private FileChannel createTemplateFile(final String dataDir)
+    private FileChannel createTemplateFile(final String dataDir, final String name, final long size)
     {
-        final File templateFile = new File(dataDir, "templateFile");
+        final File templateFile = new File(dataDir, name);
         templateFile.deleteOnExit();
         try
         {
-            return IoUtil.createEmptyFile(templateFile, BUFFER_SIZE);
+            return IoUtil.createEmptyFile(templateFile, size);
         }
         catch (IOException e)
         {
@@ -116,7 +126,7 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
             }
             else
             {
-                long transferred = templateFile.transferTo(0, requiredSize, channel);
+                long transferred = logTemplate.transferTo(0, requiredSize, channel);
                 if (transferred != requiredSize)
                 {
                     throw new IllegalStateException("Unable to initialize the required size of " + requiredSize);
@@ -127,23 +137,22 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
         }
     }
 
-    public ByteBuffer addSenderTerm(final UdpDestination destination,
-                                    final long sessionId,
-                                    final long channelId,
-                                    final long termId) throws Exception
+    public MappedBufferRotator addSenderTerm(final UdpDestination destination,
+                                             final long sessionId,
+                                             final long channelId) throws Exception
     {
-        SenderChannelBuffer channelBuffer = srcTermMap.get(destination, sessionId, channelId);
-
+        MappedBufferRotator channelBuffer = srcTermMap.get(destination, sessionId, channelId);
         if (channelBuffer == null)
         {
-            final File file =
-                termLocation(senderDir, sessionId, channelId, termId, true, destination.toString(), STATE);
-            channelBuffer = new SenderChannelBuffer(templateFile, file,
-                                                    MediaDriver.COMMAND_BUFFER_SZ + BufferDescriptor.TRAILER_LENGTH);
+            final File dir = channelLocation(senderDir, sessionId, channelId, true, destination.toString());
+            channelBuffer = new MappedBufferRotator(dir,
+                                                    logTemplate,
+                                                    LOG_BUFFER_SIZE,
+                                                    stateTemplate,
+                                                    STATE_BUFFER_LENGTH);
             srcTermMap.put(destination, sessionId, channelId, channelBuffer);
         }
-
-        return channelBuffer.newTermBuffer(termId);
+        return channelBuffer;
     }
 
     protected interface TermMapper
@@ -151,16 +160,17 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
         MappedByteBuffer mapTerm() throws Exception;
     }
 
-    public void removeSenderTerm(final UdpDestination destination,
+    /*public void removeSenderTerm(final UdpDestination destination,
                                  final long sessionId,
                                  final long channelId,
                                  final long termId)
     {
 
-    }
+    }*/
 
     public void removeSenderChannel(final UdpDestination destination, final long sessionId, final long channelId)
     {
+        // TODO: force unmap
         srcTermMap.remove(destination, sessionId, channelId);
     }
 
@@ -174,7 +184,7 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
         if (null == buffer)
         {
             buffer = mapTerm(receiverDir, destination.toString(), sessionId, channelId, termId,
-                             MediaDriver.COMMAND_BUFFER_SZ + BufferDescriptor.TRAILER_LENGTH);
+                             COMMAND_BUFFER_SZ + TRAILER_LENGTH);
             rcvTermMap.put(sessionId, channelId, termId, buffer);
         }
 

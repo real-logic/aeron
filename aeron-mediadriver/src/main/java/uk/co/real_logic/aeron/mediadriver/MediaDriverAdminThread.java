@@ -16,6 +16,8 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy;
+import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
+import uk.co.real_logic.aeron.mediadriver.buffer.LogBuffers;
 import uk.co.real_logic.aeron.util.AdminBufferStrategy;
 import uk.co.real_logic.aeron.util.ClosableThread;
 import uk.co.real_logic.aeron.util.ErrorCode;
@@ -23,6 +25,7 @@ import uk.co.real_logic.aeron.util.Flyweight;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.command.*;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.MtuScanner;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
@@ -30,6 +33,7 @@ import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 
@@ -263,14 +267,11 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             }
 
             // new channel, so generate "random"-ish termId and create term buffer
-            // TODO: change this to 0/1/2 buffer strategy
             final long initialTermId = rng.nextLong();
-            final ByteBuffer buffer = bufferManagementStrategy.addSenderTerm(srcDestination, sessionId,
-                    channelId, initialTermId);
-
+            final BufferRotator buffers = bufferManagementStrategy.addSenderTerm(srcDestination, sessionId, channelId);
             channel = new SenderChannel(frameHandler,
                                         senderFlowControl.get(),
-                                        buffer,
+                                        buffers,
                                         srcDestination,
                                         sessionId,
                                         channelId,
@@ -364,7 +365,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             }
 
             // remove from buffer management, but will be unmapped once SenderThread releases it and it can be GCed
-            bufferManagementStrategy.removeSenderTerm(srcDestination, sessionId, channelId, termId);
+            //bufferManagementStrategy.removeSenderTerm(srcDestination, sessionId, channelId, termId);
 
             // TODO: sender thread only uses current term, so if we are removing the current term
             // TODO: inform SenderChannel to get rid of term

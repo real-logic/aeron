@@ -24,7 +24,7 @@ import java.nio.channels.FileChannel;
 /**
  * .
  */
-public class TermBuffer
+public class BasicLogBuffers implements LogBuffers
 {
     private final FileChannel logFile;
     private final FileChannel stateFile;
@@ -32,10 +32,10 @@ public class TermBuffer
     private final AtomicBuffer logBuffer;
     private final AtomicBuffer stateBuffer;
 
-    public TermBuffer(final FileChannel logFile,
-                      final FileChannel stateFile,
-                      final MappedByteBuffer logBuffer,
-                      final MappedByteBuffer stateBuffer)
+    public BasicLogBuffers(final FileChannel logFile,
+                           final FileChannel stateFile,
+                           final MappedByteBuffer logBuffer,
+                           final MappedByteBuffer stateBuffer)
     {
         this.logFile = logFile;
         this.stateFile = stateFile;

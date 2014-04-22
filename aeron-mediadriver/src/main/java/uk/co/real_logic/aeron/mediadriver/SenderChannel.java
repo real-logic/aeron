@@ -15,11 +15,15 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
+import uk.co.real_logic.aeron.mediadriver.buffer.LogBuffers;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.MtuScanner;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import java.nio.ByteBuffer;
+import java.util.stream.Stream;
 
 /**
  * Encapsulates the information associated with a channel
@@ -33,14 +37,19 @@ public class SenderChannel
     private final long sessionId;
     private final long channelId;
     private final long currentTermId;
-    private final ByteBuffer producerBuffer;
-    private final RingBuffer ringBuffer;
-    private final ByteBuffer sendBuffer;
+
+    private int currentIndex;
+
+    private final MtuScanner[] scanners;
+
+    /** duplicate log buffers to work around the lack of a (buffer, start, length) send method */
+    private final ByteBuffer[] sendBuffers;
+
     private final SenderFlowControlState activeFlowControlState;
 
     public SenderChannel(final ControlFrameHandler frameHandler,
                          final SenderFlowControlStrategy flowControlStrategy,
-                         final ByteBuffer producerBuffer,
+                         final BufferRotator buffers,
                          final UdpDestination destination,
                          final long sessionId,
                          final long channelId,
@@ -52,11 +61,33 @@ public class SenderChannel
         this.sessionId = sessionId;
         this.channelId = channelId;
         this.currentTermId = initialTermId;
-        this.producerBuffer = producerBuffer;
-        this.ringBuffer = new ManyToOneRingBuffer(new AtomicBuffer(producerBuffer));
-        this.activeFlowControlState = new SenderFlowControlState(0);
-        this.sendBuffer = producerBuffer.duplicate();
-        this.sendBuffer.clear();
+
+        scanners =  buffers.buffers()
+                           .map(this::newScanner)
+                           .toArray(MtuScanner[]::new);
+
+        activeFlowControlState = new SenderFlowControlState(0);
+
+        sendBuffers = buffers.buffers()
+                             .map(this::duplicateLogBuffer)
+                             .toArray(ByteBuffer[]::new);
+        currentIndex = 0;
+    }
+
+    private ByteBuffer duplicateLogBuffer(final LogBuffers log)
+    {
+        final ByteBuffer buffer = log.logBuffer().duplicateByteBuffer();
+        buffer.clear();
+        return buffer;
+    }
+
+    public MtuScanner newScanner(final LogBuffers log)
+    {
+        // TODO
+        final int headerLength = 16;
+        final int mtuLength = 640;
+
+        return new MtuScanner(log.logBuffer(), log.stateBuffer(), mtuLength, headerLength);
     }
 
     public void process()
@@ -75,25 +106,34 @@ public class SenderChannel
                 return;
             }
 
+            // TODO: index rotation
+            final MtuScanner scanner = scanners[currentIndex];
             // frame will fit in the window, read and send just 1
-            ringBuffer.read((eventTypeId, buffer, index, length) ->
+
+            if (scanner.scanNext())
             {
                 // at this point sendBuffer wraps the same underlying
                 // bytebuffer as the buffer parameter
-                sendBuffer.position(index);
-                sendBuffer.limit(index + length);
+                final ByteBuffer sendBuffer = sendBuffers[currentIndex];
+                final int offset = scanner.offset();
+                final int expectedBytesSent = scanner.length();
+                sendBuffer.position(offset);
+                sendBuffer.limit(offset + expectedBytesSent);
 
                 try
                 {
                     int bytesSent = frameHandler.send(sendBuffer);
+                    if (expectedBytesSent != bytesSent)
+                    {
+                        // TODO: error
+                    }
                 }
                 catch (Exception e)
                 {
                     //TODO: errors
                     e.printStackTrace();
                 }
-
-            }, 1);
+            }
         }
         catch (final Exception e)
         {

@@ -38,6 +38,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
@@ -62,6 +63,8 @@ public class AeronTest
     private static final long CHANNEL_ID_2 = 4L;
     private static final long[] CHANNEL_IDs = { CHANNEL_ID, CHANNEL_ID_2};
     private static final long SESSION_ID = 3L;
+    private static final long SESSION_ID_2 = 5L;
+    public static final int PACKET_VALUE = 37;
 
     @ClassRule
     public static SharedDirectories directory = new SharedDirectories();
@@ -123,7 +126,7 @@ public class AeronTest
         final Aeron aeron = newAeron();
         final Channel channel = newChannel(aeron);
         aeron.adminThread().process();
-        createTermBuffer(0L, NEW_SEND_BUFFER_NOTIFICATION, directory.senderDir());
+        createTermBuffer(0L, NEW_SEND_BUFFER_NOTIFICATION, directory.senderDir(), SESSION_ID);
         aeron.adminThread().process();
         assertTrue(channel.offer(atomicSendBuffer));
     }
@@ -253,41 +256,87 @@ public class AeronTest
     {
         channel2Handler = (buffer, offset, sessionId, flags) ->
         {
-            assertThat(buffer.getInt(offset), is(37));
+            assertThat(buffer.getInt(offset), is(PACKET_VALUE));
             assertThat(sessionId, is(SESSION_ID));
         };
-
-        List<LogAppender> logAppenders = createTermBuffer(0L, NEW_RECEIVE_BUFFER_NOTIFICATION, directory.receiverDir())
-            .stream()
-            .map(buffer -> new LogAppender(buffer.logBuffer(),
-                    buffer.stateBuffer(),
-                    DEFAULT_HEADER,
-                    MAX_FRAME_LENGTH))
-            .collect(toList());
 
         final RingBuffer toMediaDriver = adminBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
         final Receiver receiver = newReceiver(aeron);
 
+        List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
+
         aeron.adminThread().process();
         skip(toMediaDriver, 1);
 
-        LogAppender firstBuffer = logAppenders.get(0);
-        atomicSendBuffer.putInt(0, 37);
-
-        assertTrue(firstBuffer.append(atomicSendBuffer, 0, SIZE_OF_INT));
+        writePacket(logAppenders);
 
         assertThat(receiver.process(), is(1));
     }
 
+    @Test
+    public void canReceivePacketsFromMultipleSessions() throws Exception
+    {
+        channel2Handler = (buffer, offset, sessionId, flags) ->
+        {
+            assertThat(buffer.getInt(offset), is(PACKET_VALUE));
+            assertThat(sessionId, anyOf(is(SESSION_ID), is(SESSION_ID_2)));
+        };
+
+        final RingBuffer toMediaDriver = adminBuffers.toMediaDriver();
+        final Aeron aeron = newAeron();
+        final Receiver receiver = newReceiver(aeron);
+
+        List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
+        List<LogAppender> otherLogAppenders = createLogAppenders(SESSION_ID_2);
+
+        aeron.adminThread().process();
+        skip(toMediaDriver, 1);
+
+        writePacket(logAppenders);
+        writePacket(otherLogAppenders);
+        assertThat(receiver.process(), is(2));
+    }
+
+    @Test
+    public void receivingEnoughPacketsCausesABufferRoll()
+    {
+        // TODO
+    }
+
+    @Test
+    public void bufferRollsDontAffectOther()
+    {
+        // TODO
+    }
+
+    private void writePacket(final List<LogAppender> logAppenders)
+    {
+        LogAppender firstBuffer = logAppenders.get(0);
+        atomicSendBuffer.putInt(0, PACKET_VALUE);
+        assertTrue(firstBuffer.append(atomicSendBuffer, 0, atomicSendBuffer.capacity()));
+    }
+
+    private List<LogAppender> createLogAppenders(final long sessionId) throws IOException
+    {
+        return createTermBuffer(0L, NEW_RECEIVE_BUFFER_NOTIFICATION, directory.receiverDir(), sessionId)
+                .stream()
+                .map(buffer -> new LogAppender(buffer.logBuffer(),
+                        buffer.stateBuffer(),
+                        DEFAULT_HEADER,
+                        MAX_FRAME_LENGTH))
+                .collect(toList());
+    }
+
     private List<Buffers> createTermBuffer(final long termId,
                                            final int eventTypeId,
-                                           final File rootDir) throws IOException
+                                           final File rootDir,
+                                           final long sessionId) throws IOException
     {
         final RingBuffer apiBuffer = adminBuffers.toApi();
-        List<Buffers> buffers = directory.createTermFile(rootDir, DESTINATION, SESSION_ID, CHANNEL_ID, termId);
+        List<Buffers> buffers = directory.createTermFile(rootDir, DESTINATION, sessionId, CHANNEL_ID, termId);
         identifiedMessage.channelId(CHANNEL_ID)
-                .sessionId(SESSION_ID)
+                .sessionId(sessionId)
                 .termId(termId)
                 .destination(DESTINATION);
         assertTrue(apiBuffer.write(eventTypeId, atomicSendBuffer, 0, identifiedMessage.length()));

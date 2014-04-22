@@ -294,9 +294,9 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
     }
 
     public LogAppender newAppender(final String destination,
-                                final long sessionId,
-                                final long channelId,
-                                final int index) throws IOException
+                                   final long sessionId,
+                                   final long channelId,
+                                   final int index) throws IOException
     {
         final AtomicBuffer logBuffer = bufferUsage.newSenderLogBuffer(destination, sessionId, channelId, index);
         final AtomicBuffer stateBuffer = bufferUsage.newSenderStateBuffer(destination, sessionId, channelId, index);

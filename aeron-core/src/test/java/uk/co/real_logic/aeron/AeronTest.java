@@ -30,6 +30,7 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.EventHandler;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 
 import java.io.File;
@@ -81,11 +82,13 @@ public class AeronTest
 
     private final ByteBuffer sendBuffer = ByteBuffer.allocate(256);
     private final AtomicBuffer atomicSendBuffer = new AtomicBuffer(sendBuffer);
+    private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
     public AeronTest()
     {
         identifiedMessage.wrap(atomicSendBuffer, 0);
         errorHeader.wrap(atomicSendBuffer, 0);
+        dataHeader.wrap(atomicSendBuffer, 0);
     }
 
     @Test
@@ -244,14 +247,13 @@ public class AeronTest
         verify(invalidDestination).onInvalidDestination(INVALID_DESTINATION);
     }
 
-    @Ignore
     @Test
     public void canReceiveAMessage() throws Exception
     {
         channel2Handler = (buffer, offset, sessionId, flags) ->
         {
-            assertThat(buffer.getInt(offset), is(1));
-            assertThat(sessionId, is(SESSION_ID));
+            assertThat(buffer.getInt(offset), is(37));
+            //assertThat(sessionId, is(SESSION_ID));
         };
 
         List<LogAppender> logAppenders = createTermBuffer(0L, NEW_RECEIVE_BUFFER_NOTIFICATION, directory.receiverDir())
@@ -269,8 +271,9 @@ public class AeronTest
         aeron.adminThread().process();
         skip(toMediaDriver, 1);
 
-        atomicSendBuffer.putInt(0, 1);
         LogAppender firstBuffer = logAppenders.get(0);
+        atomicSendBuffer.putInt(0, 37);
+
         assertTrue(firstBuffer.append(atomicSendBuffer, 0, SIZE_OF_INT));
 
         assertThat(receiver.process(), is(1));

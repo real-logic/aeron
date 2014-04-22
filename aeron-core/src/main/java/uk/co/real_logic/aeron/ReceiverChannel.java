@@ -17,22 +17,26 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.admin.ChannelNotifiable;
 import uk.co.real_logic.aeron.admin.TermBufferNotifier;
+import uk.co.real_logic.aeron.util.BitUtil;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 
 import static uk.co.real_logic.aeron.Receiver.MessageFlags.NONE;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.BASE_HEADER_LENGTH;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.WORD_ALIGNMENT;
 
 public class ReceiverChannel extends ChannelNotifiable
 {
+    private static final int HEADER_LENGTH = BitUtil.align(BASE_HEADER_LENGTH, WORD_ALIGNMENT);
+
     private LogReader[] logReaders;
     private final Receiver.DataHandler dataHandler;
-    private final DataHeaderFlyweight dataHeader;
 
     public ReceiverChannel(final Destination destination, final long channelId, final Receiver.DataHandler dataHandler)
     {
         super(new TermBufferNotifier(), destination.destination(), channelId);
         this.dataHandler = dataHandler;
-        dataHeader = new DataHeaderFlyweight();
     }
 
     public boolean matches(final String destination, final long channelId)
@@ -47,8 +51,8 @@ public class ReceiverChannel extends ChannelNotifiable
             final LogReader logReader = logReaders[currentBuffer];
             return logReader.read((buffer, offset, length) ->
             {
-                dataHeader.wrap(buffer, offset);
-                dataHandler.onData(buffer, dataHeader.dataOffset(), dataHeader.sessionId(), NONE);
+                // TODO: session id
+                dataHandler.onData(buffer, offset + HEADER_LENGTH, 0L, NONE);
             });
         }
         return 0;

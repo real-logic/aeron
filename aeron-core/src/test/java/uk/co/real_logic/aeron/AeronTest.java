@@ -36,6 +36,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.anyOf;
@@ -269,7 +270,7 @@ public class AeronTest
         aeron.adminThread().process();
         skip(toMediaDriver, 1);
 
-        writePacket(logAppenders);
+        writePacket(logAppenders.get(0));
 
         assertThat(receiver.process(), is(1));
     }
@@ -293,15 +294,36 @@ public class AeronTest
         aeron.adminThread().process();
         skip(toMediaDriver, 1);
 
-        writePacket(logAppenders);
-        writePacket(otherLogAppenders);
+        writePacket(logAppenders.get(0));
+        writePacket(otherLogAppenders.get(0));
         assertThat(receiver.process(), is(2));
     }
 
     @Test
-    public void receivingEnoughPacketsCausesABufferRoll()
+    public void receivingEnoughPacketsCausesABufferRoll() throws Exception
     {
-        // TODO
+        channel2Handler = (buffer, offset, sessionId, flags) ->
+        {
+            assertThat(buffer.getInt(offset), is(PACKET_VALUE));
+            assertThat(sessionId, is(SESSION_ID));
+        };
+
+        final RingBuffer toMediaDriver = adminBuffers.toMediaDriver();
+        final Aeron aeron = newAeron();
+        final Receiver receiver = newReceiver(aeron);
+
+        List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
+
+        aeron.adminThread().process();
+        skip(toMediaDriver, 1);
+
+        LogAppender logAppender = logAppenders.get(0);
+        int eventCount = logAppender.capacity() / sendBuffer.capacity();
+        writePackets(logAppender, eventCount);
+        assertThat(receiver.process(), is(eventCount));
+
+        writePackets(logAppenders.get(1), eventCount);
+        assertThat(receiver.process(), is(eventCount));
     }
 
     @Test
@@ -310,11 +332,19 @@ public class AeronTest
         // TODO
     }
 
-    private void writePacket(final List<LogAppender> logAppenders)
+    private void writePacket(final LogAppender logAppender)
     {
-        LogAppender firstBuffer = logAppenders.get(0);
-        atomicSendBuffer.putInt(0, PACKET_VALUE);
-        assertTrue(firstBuffer.append(atomicSendBuffer, 0, atomicSendBuffer.capacity()));
+        writePackets(logAppender, 1);
+    }
+
+    private void writePackets(final LogAppender logAppender, final int events)
+    {
+        final int bytesToSend = atomicSendBuffer.capacity() - DEFAULT_HEADER.length;
+        IntStream.range(0, events)
+                 .forEach(i -> {
+                     atomicSendBuffer.putInt(0, PACKET_VALUE);
+                     assertTrue(logAppender.append(atomicSendBuffer, 0, bytesToSend));
+                 });
     }
 
     private List<LogAppender> createLogAppenders(final long sessionId) throws IOException

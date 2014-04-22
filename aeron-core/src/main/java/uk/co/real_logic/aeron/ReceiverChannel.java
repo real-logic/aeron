@@ -73,7 +73,13 @@ public class ReceiverChannel extends ChannelNotifiable
 
         public int process()
         {
-            final LogReader logReader = logReaders[currentBuffer];
+            LogReader logReader = logReaders[currentBuffer];
+            if (logReader.isComplete())
+            {
+                currentBuffer = BitUtil.next(currentBuffer, logReaders.length);
+                logReader = logReaders[currentBuffer];
+            }
+
             return logReader.read((buffer, offset, length) ->
             {
                 dataHandler.onData(buffer, offset + HEADER_LENGTH, sessionId, NONE);

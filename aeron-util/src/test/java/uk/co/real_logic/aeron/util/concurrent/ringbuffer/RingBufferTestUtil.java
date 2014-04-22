@@ -32,9 +32,8 @@ public class RingBufferTestUtil
 
     public static void skip(final RingBuffer ringBuffer, int count)
     {
-        int eventsRead = ringBuffer.read((eventTypeId, buffer, index, length) ->
+        ringBuffer.read((eventTypeId, buffer, index, length) ->
         {
         }, count);
-        assertThat(eventsRead, is(count));
     }
 }

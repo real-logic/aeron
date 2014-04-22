@@ -5,6 +5,7 @@ import org.junit.Test;
 import org.mockito.InOrder;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -130,5 +131,32 @@ public class ReceiverTest
         assertThat(receiver.length(), is(length));
 
         assertTrue(receiver.validate());
+    }
+
+    @Test
+    public void shouldLateJoinTransmission()
+    {
+        final int length = 8;
+        final int recordLength = align(length + HEADER_LENGTH, RECORD_ALIGNMENT);
+        final long tail = (CAPACITY * 3) + RECORD_ALIGNMENT + recordLength;
+        final long latestRecord = tail - recordLength;
+        final int recordOffset = (int)latestRecord & (CAPACITY - 1);
+
+        when(buffer.getLongVolatile(TAIL_COUNTER_INDEX)).thenReturn(tail);
+        when(buffer.getLongVolatile(LATEST_COUNTER_INDEX)).thenReturn(latestRecord);
+        when(buffer.getLongVolatile(tailSequenceOffset(0))).thenReturn(CAPACITY * 3L);
+        when(buffer.getLongVolatile(tailSequenceOffset(recordOffset))).thenReturn(latestRecord);
+        when(buffer.getInt(recLengthOffset(recordOffset))).thenReturn(recordLength);
+        when(buffer.getInt(msgLengthOffset(recordOffset))).thenReturn(length);
+        when(buffer.getInt(msgTypeOffset(recordOffset))).thenReturn(MSG_TYPE_ID);
+
+        assertTrue(receiver.receiveNext());
+        assertThat(receiver.messageType(), is(MSG_TYPE_ID));
+        assertThat(receiver.buffer(), is(buffer));
+        assertThat(receiver.offset(), is(msgOffset(recordOffset)));
+        assertThat(receiver.length(), is(length));
+
+        assertTrue(receiver.validate());
+        assertThat(receiver.lappedCount(), is(greaterThan(0L)));
     }
 }

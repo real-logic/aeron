@@ -20,6 +20,7 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static uk.co.real_logic.aeron.util.concurrent.broadcast.BufferDescriptor.*;
+import static uk.co.real_logic.aeron.util.concurrent.broadcast.RecordDescriptor.*;
 
 /**
  * Receive messages broadcast from a {@link Transmitter} via an underlying buffer. Receivers can join
@@ -36,10 +37,11 @@ public class Receiver
     private final int capacity;
     private final int mask;
     private final int tailCounterIndex;
+    private final int latestCounterIndex;
 
-    private int offset = 0;
-    private int length = 0;
+    private int recordOffset = 0;
     private long cursor = 0;
+    private long nextRecord = 0;
     private final AtomicLong lappedCount = new AtomicLong(0);
 
     /**
@@ -60,6 +62,7 @@ public class Receiver
 
         this.mask = capacity - 1;
         this.tailCounterIndex = capacity + TAIL_COUNTER_OFFSET;
+        this.latestCounterIndex = capacity + LATEST_COUNTER_OFFSET;
     }
 
     /**
@@ -86,13 +89,23 @@ public class Receiver
     }
 
     /**
+     * Type of the message received.
+     *
+     * @return type of the message received.
+     */
+    public int messageType()
+    {
+        return buffer.getInt(msgTypeOffset(recordOffset));
+    }
+
+    /**
      * The offset for the beginning of the next message in the transmission stream.
      *
      * @return offset for the beginning of the next message in the transmission stream.
      */
     public int offset()
     {
-        return offset;
+        return msgOffset(recordOffset);
     }
 
     /**
@@ -102,7 +115,17 @@ public class Receiver
      */
     public int length()
     {
-        return length;
+        return buffer.getInt(msgLengthOffset(recordOffset));
+    }
+
+    /**
+     * The underlying buffer containing the broadcast message stream.
+     *
+     * @return the underlying buffer containing the broadcast message stream.
+     */
+    public AtomicBuffer buffer()
+    {
+        return buffer;
     }
 
     /**
@@ -115,11 +138,40 @@ public class Receiver
      */
     public boolean receiveNext()
     {
+        final long tail = buffer.getLongVolatile(tailCounterIndex);
+        long cursor = this.nextRecord;
+
+        if (tail > cursor)
+        {
+            recordOffset = (int)cursor & mask;
+
+            if (cursor != buffer.getLongVolatile(tailSequenceOffset(recordOffset)))
+            {
+                lappedCount.lazySet(lappedCount.get() + 1);
+
+                cursor = buffer.getLongVolatile(latestCounterIndex);
+                recordOffset = (int)cursor & mask;
+            }
+
+            this.cursor = cursor;
+            this.nextRecord = cursor + buffer.getInt(recLengthOffset(recordOffset));
+
+            return true;
+        }
+
         return false;
     }
 
-    private long getTailVolatile()
+    /**
+     * Validate that the current received record is still valid and has not been overwritten.
+     *
+     * If the receiver is not consuming messages fast enough to keep up with the transmitter then loss
+     * can be experienced resulting in messages being overwritten thus making them no longer valid.
+     *
+     * @return true if still valid otherwise false.
+     */
+    public boolean validate()
     {
-        return buffer.getLongVolatile(TAIL_COUNTER_OFFSET);
+        return cursor == buffer.getLongVolatile(tailSequenceOffset(recordOffset));
     }
 }

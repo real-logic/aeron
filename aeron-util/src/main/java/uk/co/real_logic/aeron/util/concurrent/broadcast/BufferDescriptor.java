@@ -26,6 +26,9 @@ public class BufferDescriptor
     /** Offset within the trailer for where the tail value is stored. */
     public static final int TAIL_COUNTER_OFFSET = BitUtil.CACHE_LINE_SIZE;
 
+    /** Offset within the trailer for where the latest sequence value is stored. */
+    public static final int LATEST_COUNTER_OFFSET = TAIL_COUNTER_OFFSET + BitUtil.SIZE_OF_LONG;
+
     /** Total size of the trailer */
     public static final int TRAILER_SIZE = BitUtil.CACHE_LINE_SIZE * 2;
 

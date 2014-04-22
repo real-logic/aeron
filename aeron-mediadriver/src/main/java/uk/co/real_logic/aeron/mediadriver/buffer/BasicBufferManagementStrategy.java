@@ -158,14 +158,6 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
         MappedByteBuffer mapTerm() throws Exception;
     }
 
-    /*public void removeSenderTerm(final UdpDestination destination,
-                                 final long sessionId,
-                                 final long channelId,
-                                 final long termId)
-    {
-
-    }*/
-
     public void removeSenderChannel(final UdpDestination destination, final long sessionId, final long channelId)
     {
         // TODO: force unmap

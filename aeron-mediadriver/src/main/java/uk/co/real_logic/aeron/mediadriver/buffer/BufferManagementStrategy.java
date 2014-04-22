@@ -28,12 +28,6 @@ public interface BufferManagementStrategy
                                    final long sessionId,
                                    final long channelId) throws Exception;
 
-    // TODO: figure out if we need to actually remove an individual term
-    /*void removeSenderTerm(final UdpDestination destination,
-                          final long sessionId,
-                          final long channelId,
-                          final long termId);*/
-
     void removeSenderChannel(final UdpDestination destination, final long sessionId, final long channelId);
 
     ByteBuffer addReceiverTerm(final UdpDestination destination,

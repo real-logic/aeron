@@ -123,7 +123,7 @@ public class MtuScanner
      *
      * @return true if data is available otherwise false.
      */
-    public boolean scan()
+    public boolean scanNext()
     {
         boolean available = false;
 

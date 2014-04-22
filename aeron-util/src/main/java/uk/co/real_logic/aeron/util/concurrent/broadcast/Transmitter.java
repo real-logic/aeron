@@ -46,7 +46,7 @@ public class Transmitter
     public Transmitter(final AtomicBuffer buffer)
     {
         this.buffer = buffer;
-        capacity = buffer.capacity() - TRAILER_SIZE;
+        this.capacity = buffer.capacity() - TRAILER_SIZE;
 
         checkCapacity(capacity);
 

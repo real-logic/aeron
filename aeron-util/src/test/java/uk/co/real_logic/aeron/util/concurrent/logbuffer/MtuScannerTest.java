@@ -65,7 +65,7 @@ public class MtuScannerTest
     @Test
     public void shouldReturnFalseOnEmptyLog()
     {
-        assertFalse(scanner.scan());
+        assertFalse(scanner.scanNext());
     }
 
     @Test
@@ -80,7 +80,7 @@ public class MtuScannerTest
         when(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN))
             .thenReturn(MSG_TYPE);
 
-        assertTrue(scanner.scan());
+        assertTrue(scanner.scanNext());
         assertThat(scanner.offset(), is(frameOffset));
         assertThat(scanner.length(), is(FRAME_ALIGNMENT));
         assertFalse(scanner.isComplete());
@@ -107,7 +107,7 @@ public class MtuScannerTest
         when(logBuffer.getShort(typeOffset(frameOffset + FRAME_ALIGNMENT), LITTLE_ENDIAN))
             .thenReturn(MSG_TYPE);
 
-        assertTrue(scanner.scan());
+        assertTrue(scanner.scanNext());
         assertThat(scanner.offset(), is(frameOffset));
         assertThat(scanner.length(), is(FRAME_ALIGNMENT * 2));
         assertFalse(scanner.isComplete());
@@ -140,7 +140,7 @@ public class MtuScannerTest
         when(logBuffer.getShort(typeOffset(frameOffset + frameOneLength), LITTLE_ENDIAN))
             .thenReturn(MSG_TYPE);
 
-        assertTrue(scanner.scan());
+        assertTrue(scanner.scanNext());
         assertThat(scanner.offset(), is(frameOffset));
         assertThat(scanner.length(), is(frameOneLength + frameTwoLength));
         assertFalse(scanner.isComplete());
@@ -173,7 +173,7 @@ public class MtuScannerTest
         when(logBuffer.getShort(typeOffset(frameOffset + frameOneLength), LITTLE_ENDIAN))
             .thenReturn(MSG_TYPE);
 
-        assertTrue(scanner.scan());
+        assertTrue(scanner.scanNext());
         assertThat(scanner.offset(), is(frameOffset));
         assertThat(scanner.length(), is(frameOneLength));
         assertFalse(scanner.isComplete());
@@ -202,11 +202,11 @@ public class MtuScannerTest
 
         scanner.seek(frameOffset);
 
-        assertTrue(scanner.scan());
+        assertTrue(scanner.scanNext());
         assertThat(scanner.offset(), is(frameOffset));
         assertThat(scanner.length(), is(FRAME_ALIGNMENT));
         assertTrue(scanner.isComplete());
-        assertFalse(scanner.scan());
+        assertFalse(scanner.scanNext());
     }
 
     @Test
@@ -227,10 +227,10 @@ public class MtuScannerTest
 
         scanner.seek(frameOffset);
 
-        assertTrue(scanner.scan());
+        assertTrue(scanner.scanNext());
         assertThat(scanner.offset(), is(frameOffset));
         assertThat(scanner.length(), is(FRAME_ALIGNMENT * 2));
         assertTrue(scanner.isComplete());
-        assertFalse(scanner.scan());
+        assertFalse(scanner.scanNext());
     }
 }

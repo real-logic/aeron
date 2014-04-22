@@ -56,18 +56,18 @@ public class BasicBufferUsageStrategy implements BufferUsageStrategy
 
     public AtomicBuffer newReceiverLogBuffer(final String destination,
                                              final long channelId,
+                                             final long sessionId,
                                              final int index) throws IOException
     {
-        // TODO: parameterise session
-        return mapTerm(destination, 3L, channelId, index, fileConventions.receiverDir(), LOG);
+        return mapTerm(destination, sessionId, channelId, index, fileConventions.receiverDir(), LOG);
     }
 
     public AtomicBuffer newReceiverStateBuffer(final String destination,
                                                final long channelId,
+                                               final long sessionId,
                                                final int index) throws IOException
     {
-        // TODO: parameterise session
-        return mapTerm(destination, 3L, channelId, index, fileConventions.receiverDir(), STATE);
+        return mapTerm(destination, sessionId, channelId, index, fileConventions.receiverDir(), STATE);
     }
 
     private AtomicBuffer mapTerm(final String destination,
@@ -80,4 +80,5 @@ public class BasicBufferUsageStrategy implements BufferUsageStrategy
         final File termIdFile = termLocation(rootDir, sessionId, channelId, index, false, destination, type);
         return new AtomicBuffer(IoUtil.mapExistingFile(termIdFile, "Term Buffer"));
     }
+
 }

@@ -145,7 +145,7 @@ public class Receiver
         {
             recordOffset = (int)cursor & mask;
 
-            if (cursor != buffer.getLongVolatile(tailSequenceOffset(recordOffset)))
+            if (!validate(cursor))
             {
                 lappedCount.lazySet(lappedCount.get() + 1);
 
@@ -158,8 +158,8 @@ public class Receiver
 
             if (PADDING_MSG_TYPE_ID == buffer.getInt(msgTypeOffset(recordOffset)))
             {
-                this.cursor = nextRecord;
                 recordOffset = 0;
+                this.cursor = nextRecord;
                 nextRecord += buffer.getInt(recLengthOffset(recordOffset));
             }
 
@@ -178,6 +178,11 @@ public class Receiver
      * @return true if still valid otherwise false.
      */
     public boolean validate()
+    {
+        return validate(cursor);
+    }
+
+    private boolean validate(final long cursor)
     {
         return cursor == buffer.getLongVolatile(tailSequenceOffset(recordOffset));
     }

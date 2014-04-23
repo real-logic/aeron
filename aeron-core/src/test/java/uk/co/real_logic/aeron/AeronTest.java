@@ -255,11 +255,7 @@ public class AeronTest
     @Test
     public void canReceiveAMessage() throws Exception
     {
-        channel2Handler = (buffer, offset, sessionId, flags) ->
-        {
-            assertThat(buffer.getInt(offset), is(PACKET_VALUE));
-            assertThat(sessionId, is(SESSION_ID));
-        };
+        channel2Handler = assertingHandler();
 
         final RingBuffer toMediaDriver = adminBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
@@ -302,27 +298,25 @@ public class AeronTest
     @Test
     public void receivingEnoughPacketsCausesABufferRoll() throws Exception
     {
-        channel2Handler = (buffer, offset, sessionId, flags) ->
-        {
-            assertThat(buffer.getInt(offset), is(PACKET_VALUE));
-            assertThat(sessionId, is(SESSION_ID));
-        };
+        channel2Handler = assertingHandler();
 
         final RingBuffer toMediaDriver = adminBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
         final Receiver receiver = newReceiver(aeron);
-
-        List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
+        final List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
 
         aeron.adminThread().process();
         skip(toMediaDriver, 1);
 
-        LogAppender logAppender = logAppenders.get(0);
+        final LogAppender logAppender = logAppenders.get(0);
         int eventCount = logAppender.capacity() / sendBuffer.capacity();
         writePackets(logAppender, eventCount);
         assertThat(receiver.process(), is(eventCount));
 
         writePackets(logAppenders.get(1), eventCount);
+        assertThat(receiver.process(), is(eventCount));
+
+        writePackets(logAppenders.get(2), eventCount);
         assertThat(receiver.process(), is(eventCount));
     }
 
@@ -330,6 +324,15 @@ public class AeronTest
     public void bufferRollsDontAffectOther()
     {
         // TODO
+    }
+
+    private DataHandler assertingHandler()
+    {
+        return (buffer, offset, sessionId, flags) ->
+        {
+            assertThat(buffer.getInt(offset), is(PACKET_VALUE));
+            assertThat(sessionId, is(SESSION_ID));
+        };
     }
 
     private void writePacket(final LogAppender logAppender)

@@ -253,11 +253,9 @@ public class UnicastSenderTest
     {
         writeChannelMessage(ADD_CHANNEL, URI, SESSION_ID, CHANNEL_ID);
 
-        processThreads(5);
+        processThreads(1);
 
         assertNotNull(mediaDriverAdminThread.frameHandler(UdpDestination.parse(URI)));
-
-        final AtomicLong termId = new AtomicLong();
 
         assertEventRead(buffers.toApi(), (eventTypeId, buffer, index, length) ->
         {
@@ -267,7 +265,6 @@ public class UnicastSenderTest
             assertThat(bufferMessage.sessionId(), is(SESSION_ID));
             assertThat(bufferMessage.channelId(), is(CHANNEL_ID));
             assertThat(bufferMessage.destination(), is(URI));
-            termId.set(bufferMessage.termId());
         });
 
         final LogAppender logAppender = mapLogAppenders(URI, SESSION_ID, CHANNEL_ID).get(0);

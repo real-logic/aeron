@@ -154,7 +154,14 @@ public class Receiver
             }
 
             this.cursor = cursor;
-            this.nextRecord = cursor + buffer.getInt(recLengthOffset(recordOffset));
+            nextRecord = cursor + buffer.getInt(recLengthOffset(recordOffset));
+
+            if (PADDING_MSG_TYPE_ID == buffer.getInt(msgTypeOffset(recordOffset)))
+            {
+                this.cursor = nextRecord;
+                recordOffset = 0;
+                nextRecord += buffer.getInt(recLengthOffset(recordOffset));
+            }
 
             return true;
         }

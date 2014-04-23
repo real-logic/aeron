@@ -17,10 +17,7 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
-import uk.co.real_logic.aeron.util.AdminBufferStrategy;
-import uk.co.real_logic.aeron.util.ClosableThread;
-import uk.co.real_logic.aeron.util.ErrorCode;
-import uk.co.real_logic.aeron.util.Flyweight;
+import uk.co.real_logic.aeron.util.*;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.command.*;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -52,6 +49,8 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     private final Long2ObjectHashMap<ControlFrameHandler> srcDestinationMap;
     private final AtomicBuffer writeBuffer;
 
+    private final ByteBuffer toMediaDriver;
+    private final ByteBuffer toApi;
     private final Supplier<SenderFlowControlStrategy> senderFlowControl;
 
     private final ThreadLocalRandom rng = ThreadLocalRandom.current();
@@ -77,8 +76,10 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         try
         {
             final AdminBufferStrategy adminBufferStrategy = builder.adminBufferStrategy();
-            this.adminReceiveBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBufferStrategy.toMediaDriver()));
-            this.adminSendBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBufferStrategy.toApi()));
+            this.toMediaDriver = adminBufferStrategy.toMediaDriver();
+            this.toApi = adminBufferStrategy.toApi();
+            this.adminReceiveBuffer = new ManyToOneRingBuffer(new AtomicBuffer(toMediaDriver));
+            this.adminSendBuffer = new ManyToOneRingBuffer(new AtomicBuffer(toApi));
         }
         catch (Exception e)
         {
@@ -187,6 +188,9 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         {
             frameHandler.close();
         });
+
+        IoUtil.unmap((java.nio.MappedByteBuffer) toMediaDriver);
+        IoUtil.unmap((java.nio.MappedByteBuffer) toApi);
     }
 
     public void wakeup()

@@ -65,6 +65,7 @@ public class AdminBuffers extends ExternalResource
 
     protected void after()
     {
+        System.out.println(this.getClass().getName() + " after");
         // Force unmapping of byte buffers to allow deletion
         IoUtil.unmap((java.nio.MappedByteBuffer) toMediaDriver);
         IoUtil.unmap((java.nio.MappedByteBuffer) toApi);
@@ -97,12 +98,12 @@ public class AdminBuffers extends ExternalResource
 
     public RingBuffer mappedToMediaDriver()
     {
-        return suppress(() -> ringBuffer(mappingStrategy.toMediaDriver()));
+        return suppress(() -> ringBuffer(toMediaDriver));
     }
 
     public RingBuffer mappedToApi()
     {
-        return suppress(() -> ringBuffer(mappingStrategy.toApi()));
+        return suppress(() -> ringBuffer(toApi));
     }
 
     private static interface ExceptionalSupplier<T>

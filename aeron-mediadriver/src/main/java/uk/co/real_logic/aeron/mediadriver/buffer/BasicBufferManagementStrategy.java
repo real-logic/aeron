@@ -71,6 +71,7 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
         try
         {
             logTemplate.close();
+            stateTemplate.close();
         }
         catch (Exception e)
         {

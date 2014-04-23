@@ -15,10 +15,12 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Test;
 import uk.co.real_logic.aeron.mediadriver.buffer.BasicBufferManagementStrategy;
 import uk.co.real_logic.aeron.util.AdminBuffers;
-import uk.co.real_logic.aeron.util.FileMappingConvention;
 import uk.co.real_logic.aeron.util.SharedDirectories;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
@@ -27,12 +29,13 @@ import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 
-import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.DatagramChannel;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 
 import static org.hamcrest.Matchers.greaterThan;
@@ -40,6 +43,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.COMMAND_BUFFER_SZ;
+import static uk.co.real_logic.aeron.mediadriver.MediaDriverAdminThread.HEADER_LENGTH;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.ErrorCode.*;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
@@ -52,9 +56,14 @@ public class UnicastSenderTest
     private static final byte[] DEFAULT_HEADER = new byte[BASE_HEADER_LENGTH + SIZE_OF_INT];
     private static final int MAX_FRAME_LENGTH = 1024;
 
-    private static final String URI = "udp://localhost:45678";
+
+    private static final String HOST = "localhost";
+    private static final int PORT = 45678;
+    private static final String URI = "udp://" + HOST + ":" + PORT;
     private static final long CHANNEL_ID = 0xA;
     private static final long SESSION_ID = 0xdeadbeefL;
+    public static final int BUFFER_SIZE = 256;
+    public static final int VALUE = 37;
 
     @ClassRule
     public static AdminBuffers buffers = new AdminBuffers(COMMAND_BUFFER_SZ + TRAILER_LENGTH);
@@ -62,8 +71,10 @@ public class UnicastSenderTest
     @ClassRule
     public static SharedDirectories directory = new SharedDirectories();
 
-    private final ByteBuffer sendBuffer = ByteBuffer.allocateDirect(256);
+    private final ByteBuffer sendBuffer = ByteBuffer.allocateDirect(BUFFER_SIZE);
     private final AtomicBuffer writeBuffer = new AtomicBuffer(sendBuffer);
+
+    private final ByteBuffer readBuffer = ByteBuffer.allocate(256);
 
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
     private final ErrorHeaderFlyweight error = new ErrorHeaderFlyweight();
@@ -92,7 +103,8 @@ public class UnicastSenderTest
         senderThread = new SenderThread(builder);
         receiverThread = mock(ReceiverThread.class);
         mediaDriverAdminThread = new MediaDriverAdminThread(builder, receiverThread, senderThread);
-        receiverChannel = DatagramChannel.open();
+        receiverChannel = DatagramChannel.open()
+                                         .bind(new InetSocketAddress(HOST, PORT));
         sendBuffer.clear();
     }
 
@@ -240,17 +252,14 @@ public class UnicastSenderTest
         });
     }
 
-    @Ignore
     @Test(timeout = 1000)
     public void shouldBeAbleToSendOnChannel() throws Exception
     {
         writeChannelMessage(ADD_CHANNEL, URI, SESSION_ID, CHANNEL_ID);
 
-        processThreads(5);
+        processThreads(1);
 
         assertNotNull(mediaDriverAdminThread.frameHandler(UdpDestination.parse(URI)));
-
-        final AtomicLong termId = new AtomicLong();
 
         assertEventRead(buffers.toApi(), (eventTypeId, buffer, index, length) ->
         {
@@ -260,14 +269,19 @@ public class UnicastSenderTest
             assertThat(bufferMessage.sessionId(), is(SESSION_ID));
             assertThat(bufferMessage.channelId(), is(CHANNEL_ID));
             assertThat(bufferMessage.destination(), is(URI));
-            termId.set(bufferMessage.termId());
         });
 
-        final LogAppender[] appenders = mapLogAppenders(directory.senderDir(), URI, SESSION_ID, CHANNEL_ID);
+        final LogAppender logAppender = mapLogAppenders(URI, SESSION_ID, CHANNEL_ID).get(0);
 
-        // TODO: append onto appenders[0]
+        writeBuffer.putInt(0, VALUE, ByteOrder.BIG_ENDIAN);
+        assertTrue(logAppender.append(writeBuffer, 0, 64));
+
+        processThreads(1);
+
+        final SocketAddress address = receiverChannel.receive(readBuffer);
+        assertNotNull(address);
+        assertThat(readBuffer.getInt(HEADER_LENGTH), is(VALUE));
     }
-
 
     private void writeChannelMessage(final int eventTypeId, final String destination,
                                      final long sessionId, final long channelId)
@@ -293,21 +307,16 @@ public class UnicastSenderTest
         });
     }
 
-    private static LogAppender[] mapLogAppenders(final File rootDir, final String destination,
-                                                 final long sessionId, final long channelId)
+    private static List<LogAppender> mapLogAppenders(final String destination,
+                                                     final long sessionId,
+                                                     final long channelId)
         throws IOException
     {
-        final LogAppender[] appenders = new LogAppender[FileMappingConvention.BUFFER_COUNT];
+        final List<SharedDirectories.Buffers> buffers = directory.mapTermFile(directory.senderDir(),
+                destination,
+                sessionId,
+                channelId);
 
-        final List<SharedDirectories.Buffers> buffers = directory.mapTermFile(directory.senderDir(), destination,
-                                                                              sessionId, sessionId);
-
-        for (int i = 0; i < FileMappingConvention.BUFFER_COUNT; i++)
-        {
-            appenders[i] = new LogAppender(buffers.get(i).logBuffer(), buffers.get(i).stateBuffer(),
-                                           DEFAULT_HEADER, MAX_FRAME_LENGTH);
-        }
-
-        return appenders;
+        return SharedDirectories.mapLoggers(buffers, DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }
 }

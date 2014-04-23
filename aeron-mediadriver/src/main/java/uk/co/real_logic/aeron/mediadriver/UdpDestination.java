@@ -194,6 +194,17 @@ public class UdpDestination
         return NetworkInterface.getByInetAddress(localData.getAddress());
     }
 
+    /**
+     * Clients use the destination as part of the path for the buffer, and they are only aware
+     * of the destination uri they used.
+     *
+     * @return the client aware uri
+     */
+    public String clientAwareUri()
+    {
+        return uriStr;
+    }
+
     public static class Builder
     {
         private InetSocketAddress remoteData;

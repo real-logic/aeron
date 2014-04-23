@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.util;
 import org.junit.rules.ExternalResource;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,6 +26,7 @@ import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 
+import static java.util.stream.Collectors.toList;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.*;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.Type.LOG;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.Type.STATE;
@@ -35,6 +37,18 @@ public class SharedDirectories extends ExternalResource
     private File adminDir;
     private File dataDir;
     private FileMappingConvention mapping;
+
+    public static List<LogAppender> mapLoggers(final List<Buffers> termBuffers,
+                                               final byte[] defaultHeader,
+                                               final int maxFrameLength)
+    {
+        return termBuffers.stream()
+                          .map(buffer -> new LogAppender(buffer.logBuffer(),
+                                  buffer.stateBuffer(),
+                                  defaultHeader,
+                                  maxFrameLength))
+                          .collect(toList());
+    }
 
     protected void before() throws Throwable
     {
@@ -90,8 +104,7 @@ public class SharedDirectories extends ExternalResource
     public List<Buffers> createTermFile(final File rootDir,
                                         final String destination,
                                         final long sessionId,
-                                        final long channelId,
-                                        final long termId) throws IOException
+                                        final long channelId) throws IOException
     {
         final List<Buffers> buffers = new ArrayList<>();
         for (int i = 0; i < BUFFER_COUNT; i++)

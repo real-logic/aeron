@@ -134,13 +134,15 @@ public class ReceiverTest
     {
         final int length = 8;
         final int recordLength = align(length + HEADER_LENGTH, RECORD_ALIGNMENT);
-        final long tail = (CAPACITY * 3) + RECORD_ALIGNMENT + recordLength;
+        final long tail = (CAPACITY * 3L) + RECORD_ALIGNMENT + recordLength;
         final long latestRecord = tail - recordLength;
         final int recordOffset = (int)latestRecord & (CAPACITY - 1);
 
         when(buffer.getLongVolatile(TAIL_COUNTER_INDEX)).thenReturn(tail);
         when(buffer.getLongVolatile(LATEST_COUNTER_INDEX)).thenReturn(latestRecord);
+
         when(buffer.getLongVolatile(tailSequenceOffset(0))).thenReturn(CAPACITY * 3L);
+
         when(buffer.getLongVolatile(tailSequenceOffset(recordOffset))).thenReturn(latestRecord);
         when(buffer.getInt(recLengthOffset(recordOffset))).thenReturn(recordLength);
         when(buffer.getInt(msgLengthOffset(recordOffset))).thenReturn(length);
@@ -154,5 +156,79 @@ public class ReceiverTest
 
         assertTrue(receiver.validate());
         assertThat(receiver.lappedCount(), is(greaterThan(0L)));
+    }
+
+    @Test
+    public void shouldCopeWithPaddingRecordAndWrapOfBufferToNextRecord()
+    {
+        final int length = 120;
+        final int recordLength = align(length + HEADER_LENGTH, RECORD_ALIGNMENT);
+        final long catchupTail = (CAPACITY * 2L) - RECORD_ALIGNMENT;
+        final long postPaddingTail = catchupTail + RECORD_ALIGNMENT + recordLength;
+        final long latestRecord = catchupTail - recordLength;
+        final int catchupOffset = (int)latestRecord & (CAPACITY - 1);
+
+        when(buffer.getLongVolatile(TAIL_COUNTER_INDEX)).thenReturn(catchupTail)
+                                                        .thenReturn(postPaddingTail);
+        when(buffer.getLongVolatile(LATEST_COUNTER_INDEX)).thenReturn(latestRecord);
+
+        when(buffer.getLongVolatile(tailSequenceOffset(0))).thenReturn(CAPACITY * 2L);
+
+        when(buffer.getLongVolatile(tailSequenceOffset(catchupOffset))).thenReturn(latestRecord);
+        when(buffer.getInt(recLengthOffset(catchupOffset))).thenReturn(recordLength);
+        when(buffer.getInt(msgLengthOffset(catchupOffset))).thenReturn(length);
+        when(buffer.getInt(msgTypeOffset(catchupOffset))).thenReturn(MSG_TYPE_ID);
+
+        final int paddingOffset = (int)catchupTail & (CAPACITY - 1);
+        final int recordOffset = (int)(postPaddingTail - recordLength) & (CAPACITY - 1);
+        when(buffer.getLongVolatile(tailSequenceOffset(paddingOffset))).thenReturn(catchupTail);
+        when(buffer.getInt(recLengthOffset(paddingOffset))).thenReturn(RECORD_ALIGNMENT);
+        when(buffer.getInt(msgTypeOffset(paddingOffset))).thenReturn(PADDING_MSG_TYPE_ID);
+
+        when(buffer.getLongVolatile(tailSequenceOffset(recordOffset))).thenReturn(postPaddingTail - recordLength);
+        when(buffer.getInt(recLengthOffset(recordOffset))).thenReturn(recordLength);
+        when(buffer.getInt(msgLengthOffset(recordOffset))).thenReturn(length);
+        when(buffer.getInt(msgTypeOffset(recordOffset))).thenReturn(MSG_TYPE_ID);
+
+        assertTrue(receiver.receiveNext()); // To catch up to record before padding.
+
+        assertTrue(receiver.receiveNext()); // no skip over the padding and read next record.
+        assertThat(receiver.messageType(), is(MSG_TYPE_ID));
+        assertThat(receiver.buffer(), is(buffer));
+        assertThat(receiver.offset(), is(msgOffset(recordOffset)));
+        assertThat(receiver.length(), is(length));
+
+        assertTrue(receiver.validate());
+    }
+
+    @Test
+    public void shouldDealWithRecordBecomingInvalidDueToOverwrite()
+    {
+        final int length = 8;
+        final int recordLength = align(length + HEADER_LENGTH, RECORD_ALIGNMENT);
+        final long tail = recordLength;
+        final long latestRecord = tail - recordLength;
+        final int recordOffset = (int)latestRecord;
+
+        when(buffer.getLongVolatile(TAIL_COUNTER_INDEX)).thenReturn(tail);
+        when(buffer.getLongVolatile(LATEST_COUNTER_INDEX)).thenReturn(latestRecord);
+        when(buffer.getLongVolatile(tailSequenceOffset(recordOffset))).thenReturn(latestRecord)
+                                                                      .thenReturn(latestRecord + CAPACITY);
+        when(buffer.getInt(recLengthOffset(recordOffset))).thenReturn(recordLength);
+        when(buffer.getInt(msgLengthOffset(recordOffset))).thenReturn(length);
+        when(buffer.getInt(msgTypeOffset(recordOffset))).thenReturn(MSG_TYPE_ID);
+
+        assertTrue(receiver.receiveNext());
+        assertThat(receiver.messageType(), is(MSG_TYPE_ID));
+        assertThat(receiver.buffer(), is(buffer));
+        assertThat(receiver.offset(), is(msgOffset(recordOffset)));
+        assertThat(receiver.length(), is(length));
+
+        assertFalse(receiver.validate()); // Need to receiveNext() to catch up with transmission again.
+
+        final InOrder inOrder = inOrder(buffer);
+        inOrder.verify(buffer).getLongVolatile(TAIL_COUNTER_INDEX);
+        inOrder.verify(buffer).getLongVolatile(tailSequenceOffset(recordOffset));
+        inOrder.verify(buffer).getLongVolatile(tailSequenceOffset(recordOffset));
     }
 }

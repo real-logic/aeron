@@ -40,6 +40,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.B
 public class MediaDriverAdminThread extends ClosableThread implements LibraryFacade
 {
     public static final int WRITE_BUFFER_CAPACITY = 256;
+    public static final int HEADER_LENGTH = BASE_HEADER_LENGTH + SIZE_OF_INT;
 
     private final RingBuffer commandBuffer;
     private final ReceiverThreadCursor receiverThreadCursor;
@@ -61,7 +62,6 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     private final ReceiverMessageFlyweight receiverMessageFlyweight = new ReceiverMessageFlyweight();
     private final ErrorHeaderFlyweight errorHeaderFlyweight = new ErrorHeaderFlyweight();
     private final CompletelyIdentifiedMessageFlyweight completelyIdentifiedMessageFlyweight = new CompletelyIdentifiedMessageFlyweight();
-    private final int headerLength;
     private final int mtuLength;
 
     public MediaDriverAdminThread(final MediaDriver.TopologyBuilder builder,
@@ -79,7 +79,6 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         this.senderFlowControl = builder.senderFlowControl();
         this.srcDestinationMap = new Long2ObjectHashMap<>();
         this.writeBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(WRITE_BUFFER_CAPACITY));
-        this.headerLength = BASE_HEADER_LENGTH + SIZE_OF_INT;
 
         try
         {
@@ -292,7 +291,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
                                         sessionId,
                                         channelId,
                                         initialTermId,
-                                        headerLength,
+                    HEADER_LENGTH,
                                         mtuLength);
 
             // add channel to SrcFrameHandler so it can demux NAKs and SMs

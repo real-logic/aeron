@@ -25,6 +25,7 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
+import static uk.co.real_logic.aeron.mediadriver.MediaDriver.SELECT_TIMEOUT;
 import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION;
 import static uk.co.real_logic.aeron.util.ErrorCode.RECEIVER_NOT_REGISTERED;
 
@@ -42,6 +43,7 @@ public class ReceiverThread extends ClosableThread
 
     public ReceiverThread(final MediaDriver.TopologyBuilder builder) throws Exception
     {
+        super(SELECT_TIMEOUT);
         this.commandBuffer = builder.receiverThreadCommandBuffer();
         this.adminThreadCursor = new MediaDriverAdminThreadCursor(builder.adminThreadCommandBuffer(),
                                                                              builder.adminNioSelector());
@@ -54,7 +56,7 @@ public class ReceiverThread extends ClosableThread
     {
         try
         {
-            nioSelector.processKeys(MediaDriver.SELECT_TIMEOUT);
+            nioSelector.processKeys();
 
             // check command buffer for commands
             commandBuffer.read((eventTypeId, buffer, index, length) ->
@@ -137,7 +139,7 @@ public class ReceiverThread extends ClosableThread
      */
     public void wakeup()
     {
-        nioSelector.wakeup();
+        // TODO
     }
 
     /**

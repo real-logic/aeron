@@ -19,8 +19,11 @@ public abstract class ClosableThread implements Runnable, AutoCloseable
 {
     private volatile boolean running;
 
-    public ClosableThread()
+    private final long sleepPeriod;
+
+    public ClosableThread(final long sleepPeriod)
     {
+        this.sleepPeriod = sleepPeriod;
         running = true;
     }
 
@@ -29,6 +32,16 @@ public abstract class ClosableThread implements Runnable, AutoCloseable
         while (running)
         {
             process();
+
+            try
+            {
+                Thread.sleep(sleepPeriod);
+            }
+            catch (InterruptedException e)
+            {
+                // TODO: logging
+                e.printStackTrace();
+            }
         }
     }
 

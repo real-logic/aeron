@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import java.io.IOException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -50,11 +51,7 @@ public class NioSelector implements AutoCloseable
      */
     public SelectionKey registerForRead(final SelectableChannel channel, final ReadHandler obj) throws Exception
     {
-        final SelectionKey key = channel.register(selector, SelectionKey.OP_READ, obj);
-        // now wake up if blocked
-        wakeup();
-
-        return key;
+        return channel.register(selector, SelectionKey.OP_READ, obj);
     }
 
     /**
@@ -68,21 +65,11 @@ public class NioSelector implements AutoCloseable
     }
 
     /**
-     * Close ReceiverThread down. Returns immediately.
+     * Close NioSelector down. Returns immediately.
      */
-    public void close()
+    public void close() throws IOException
     {
-        wakeup();
-        // TODO: if needed, use a CountdownLatch to sync...
-    }
-
-    /**
-     * Wake up ReceiverThread if blocked.
-     */
-    public void wakeup()
-    {
-        // TODO: add in control for state here. Only wakeup if actually blocked as it is usually expensive.
-        selector.wakeup();
+        selector.close();
     }
 
     /**
@@ -94,16 +81,9 @@ public class NioSelector implements AutoCloseable
         handleSelectedKeys();
     }
 
-    /**
-     * Explicit event loop process block for timeout
-     *
-     * @param timeout for select
-     * @throws Exception if an error occurs
-     */
-    public void processKeys(final long timeout) throws Exception
+    public void wakeup()
     {
-        selector.select(timeout);
-        handleSelectedKeys();
+        // TODO: remove
     }
 
     /**

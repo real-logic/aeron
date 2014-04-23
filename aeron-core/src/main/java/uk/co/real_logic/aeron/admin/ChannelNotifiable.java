@@ -15,10 +15,6 @@
  */
 package uk.co.real_logic.aeron.admin;
 
-import uk.co.real_logic.aeron.util.FileMappingConvention;
-
-import java.util.concurrent.atomic.AtomicLong;
-
 public abstract class ChannelNotifiable
 {
     protected static final long UNKNOWN_TERM_ID = -1L;

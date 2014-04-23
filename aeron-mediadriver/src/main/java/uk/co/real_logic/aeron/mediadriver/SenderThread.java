@@ -19,6 +19,8 @@ import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.ClosableThread;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
+import static uk.co.real_logic.aeron.mediadriver.MediaDriver.SELECT_TIMEOUT;
+
 /**
  * Thread to take data in sender buffers and demux onto sending sockets
  */
@@ -31,6 +33,7 @@ public class SenderThread extends ClosableThread
 
     public SenderThread(final MediaDriver.TopologyBuilder builder)
     {
+        super(SELECT_TIMEOUT);
         this.adminThreadCommandBuffer = builder.adminThreadCommandBuffer();
         this.channels = new AtomicArray<>();
         this.counter = 0;

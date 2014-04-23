@@ -53,6 +53,7 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
 
     /** Maximum size of the write buffer */
     public static final int WRITE_BUFFER_CAPACITY = 256;
+    private static final int SLEEP_PERIOD = 1;
     /** Incoming message buffer from media driver */
     private final RingBuffer recvBuffer;
     /** Incoming message buffer from other Core threads */
@@ -88,6 +89,7 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
                              final AdminErrorHandler errorHandler,
                              final ProducerControlFactory producerControl)
     {
+        super(SLEEP_PERIOD);
         this.commandBuffer = commandBuffer;
         this.recvBuffer = recvBuffer;
         this.sendBuffer = sendBuffer;

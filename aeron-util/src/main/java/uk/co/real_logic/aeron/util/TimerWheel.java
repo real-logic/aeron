@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron.util;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongSupplier;
-import java.util.function.Supplier;
 
 /**
  * Timer Wheel (NOT thread safe)

@@ -29,6 +29,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 
+import static uk.co.real_logic.aeron.mediadriver.MediaDriver.SELECT_TIMEOUT;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.BASE_HEADER_LENGTH;
@@ -67,6 +68,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
                                   final ReceiverThread receiverThread,
                                   final SenderThread senderThread)
     {
+        super(SELECT_TIMEOUT);
         this.commandBuffer = builder.adminThreadCommandBuffer();
         this.receiverThreadCursor = new ReceiverThreadCursor(builder.receiverThreadCommandBuffer(), builder.rcvNioSelector());
         this.bufferManagementStrategy = builder.bufferManagementStrategy();
@@ -102,7 +104,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     {
         try
         {
-            nioSelector.processKeys(MediaDriver.SELECT_TIMEOUT);
+            nioSelector.processKeys();
         }
         catch (Exception e)
         {
@@ -201,7 +203,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
 
     public void wakeup()
     {
-        nioSelector.wakeup();
+        // TODO
     }
 
     /**

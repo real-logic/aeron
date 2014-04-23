@@ -19,10 +19,12 @@ import uk.co.real_logic.aeron.admin.ChannelNotifiable;
 import uk.co.real_logic.aeron.admin.ClientAdminThreadCursor;
 import uk.co.real_logic.aeron.admin.TermBufferNotifier;
 import uk.co.real_logic.aeron.util.AtomicArray;
+import uk.co.real_logic.aeron.util.FileMappingConvention;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Aeron Channel
@@ -36,6 +38,10 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
 
     private LogAppender[] logAppenders;
 
+    private final AtomicLong currentTermId;
+    private final AtomicLong cleanedTermId;
+    private int currentBuffer;
+
     public Channel(final String destination,
                    final ClientAdminThreadCursor adminCursor,
                    final TermBufferNotifier bufferNotifier,
@@ -45,6 +51,11 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
                    final AtomicBoolean paused)
     {
         super(bufferNotifier, destination, channelId);
+
+        currentTermId = new AtomicLong(UNKNOWN_TERM_ID);
+        cleanedTermId = new AtomicLong(UNKNOWN_TERM_ID);
+        currentBuffer = 0;
+
         this.adminThread = adminCursor;
         this.sessionId = sessionId;
         this.channels = channels;
@@ -88,7 +99,12 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
         boolean hasAppended = logAppender.append(buffer, offset, length);
         if (!hasAppended)
         {
-            next();
+            currentBuffer++;
+            if (currentBuffer == FileMappingConvention.BUFFER_COUNT)
+            {
+                currentBuffer = 0;
+            }
+            rollTerm();
         }
 
         return hasAppended;
@@ -128,10 +144,15 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
         adminThread.sendRequestTerm(destination, sessionId, channelId, termId);
     }
 
+    protected boolean hasTerm(final long sessionId)
+    {
+        return currentTermId.get() != UNKNOWN_TERM_ID;
+    }
+
     protected void rollTerm()
     {
         requestTerm(currentTermId.incrementAndGet() + 1);
-        startTerm();
+        bufferNotifier.termBufferBlocking(currentTermId.get());
     }
 
     public boolean hasSessionId(final long sessionId)

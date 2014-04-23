@@ -274,7 +274,7 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
                 return;
             }
 
-            if (!channel.hasTerm())
+            if (!channel.hasTerm(sessionId))
             {
                 // You know that you can map all 3 appenders at this point since its the first term
                 L[] logs = logArray.apply(BUFFER_COUNT);

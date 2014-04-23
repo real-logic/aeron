@@ -31,7 +31,7 @@ public class ReceiverChannel extends ChannelNotifiable
 {
     private static final int HEADER_LENGTH = BitUtil.align(BASE_HEADER_LENGTH, WORD_ALIGNMENT);
 
-    private Long2ObjectHashMap<Readers> logReaders;
+    private Long2ObjectHashMap<ReceiverSession> logReaders;
     private final Receiver.DataHandler dataHandler;
 
     public ReceiverChannel(final Destination destination, final long channelId, final Receiver.DataHandler dataHandler)
@@ -49,26 +49,29 @@ public class ReceiverChannel extends ChannelNotifiable
     public int process() throws Exception
     {
         int count = 0;
-        for (final Readers readers : logReaders.values())
+        for (final ReceiverSession receiverSession : logReaders.values())
         {
-            count += readers.process();
+            count += receiverSession.process();
         }
         return count;
     }
 
-    private class Readers
+    private class ReceiverSession
     {
         private final LogReader[] logReaders;
         private final long sessionId;
         private final AtomicLong currentTermId;
         private final AtomicLong cleanedTermId;
 
-        private Readers(final LogReader[] readers, final long sessionId)
+        private int currentBuffer;
+
+        private ReceiverSession(final LogReader[] readers, final long sessionId)
         {
             this.logReaders = readers;
             this.sessionId = sessionId;
             currentTermId = new AtomicLong(UNKNOWN_TERM_ID);
             cleanedTermId = new AtomicLong(UNKNOWN_TERM_ID);
+            currentBuffer = 0;
         }
 
         public int process()
@@ -76,8 +79,18 @@ public class ReceiverChannel extends ChannelNotifiable
             LogReader logReader = logReaders[currentBuffer];
             if (logReader.isComplete())
             {
-                currentBuffer = BitUtil.next(currentBuffer, logReaders.length);
-                logReader = logReaders[currentBuffer];
+                long candidateTermId = currentTermId.get() + 1;
+                if (candidateTermId <= cleanedTermId.get())
+                {
+                    currentBuffer = BitUtil.next(currentBuffer, logReaders.length);
+                    logReader = logReaders[currentBuffer];
+                    currentTermId.lazySet(candidateTermId);
+                }
+                else
+                {
+                    // Need to wait for the next buffer to be cleaned
+                    return 0;
+                }
             }
 
             return logReader.read((buffer, offset, length) ->
@@ -95,6 +108,17 @@ public class ReceiverChannel extends ChannelNotifiable
         {
             cleanedTermId.lazySet(termId);
         }
+
+        public boolean hasTerm()
+        {
+            return currentTermId.get() != UNKNOWN_TERM_ID;
+        }
+    }
+
+    protected boolean hasTerm(final long sessionId)
+    {
+        final ReceiverSession receiverSession = logReaders.get(sessionId);
+        return receiverSession != null && receiverSession.hasTerm();
     }
 
     public void initialTerm(final long sessionId, final long termId)
@@ -107,14 +131,9 @@ public class ReceiverChannel extends ChannelNotifiable
         logReaders.get(sessionId).cleanedTermBuffer(termId);
     }
 
-    protected void rollTerm()
-    {
-
-    }
-
     public void onBuffersMapped(final long sessionId, final LogReader[] logReaders)
     {
-        this.logReaders.put(sessionId, new Readers(logReaders, sessionId));
+        this.logReaders.put(sessionId, new ReceiverSession(logReaders, sessionId));
     }
 
 }

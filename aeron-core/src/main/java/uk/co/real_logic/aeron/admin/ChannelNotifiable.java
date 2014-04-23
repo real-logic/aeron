@@ -21,50 +21,20 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public abstract class ChannelNotifiable
 {
-
     protected static final long UNKNOWN_TERM_ID = -1L;
 
     protected final TermBufferNotifier bufferNotifier;
     protected final String destination;
     protected final long channelId;
-    protected final AtomicLong currentTermId;
-    protected final AtomicLong cleanedTermId;
-
-    protected int currentBuffer;
 
     public ChannelNotifiable(final TermBufferNotifier bufferNotifier, final String destination, final long channelId)
     {
         this.bufferNotifier = bufferNotifier;
         this.destination = destination;
         this.channelId = channelId;
-        currentTermId = new AtomicLong(UNKNOWN_TERM_ID);
-        cleanedTermId = new AtomicLong(UNKNOWN_TERM_ID);
-        currentBuffer = 0;
     }
 
-    protected boolean hasTerm()
-    {
-        return currentTermId.get() != UNKNOWN_TERM_ID;
-    }
-
-    protected void startTerm()
-    {
-        bufferNotifier.termBufferBlocking(currentTermId.get());
-    }
-
-    // TODO: push up
-    // TODO: stop if its not clean
-    protected void next()
-    {
-        currentBuffer++;
-        if (currentBuffer == FileMappingConvention.BUFFER_COUNT)
-        {
-            currentBuffer = 0;
-        }
-        rollTerm();
-    }
-
-    protected abstract void rollTerm();
+    protected abstract boolean hasTerm(final long sessionId);
 
     public abstract void initialTerm(final long sessionId, final long termId);
 

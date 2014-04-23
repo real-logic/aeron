@@ -310,14 +310,42 @@ public class AeronTest
 
         final LogAppender logAppender = logAppenders.get(0);
         int eventCount = logAppender.capacity() / sendBuffer.capacity();
+
         writePackets(logAppender, eventCount);
         assertThat(receiver.process(), is(eventCount));
+
+        sendNewBufferNotification(NEW_RECEIVE_BUFFER_NOTIFICATION, 1L, SESSION_ID);
+        sendNewBufferNotification(NEW_RECEIVE_BUFFER_NOTIFICATION, 2L, SESSION_ID);
+        aeron.adminThread().process();
 
         writePackets(logAppenders.get(1), eventCount);
         assertThat(receiver.process(), is(eventCount));
 
         writePackets(logAppenders.get(2), eventCount);
         assertThat(receiver.process(), is(eventCount));
+    }
+
+    @Test
+    public void rollsDoNotOverflowTheCleanedBufferPosition() throws Exception
+    {
+        channel2Handler = assertingHandler();
+
+        final RingBuffer toMediaDriver = adminBuffers.toMediaDriver();
+        final Aeron aeron = newAeron();
+        final Receiver receiver = newReceiver(aeron);
+        final List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
+
+        aeron.adminThread().process();
+        skip(toMediaDriver, 1);
+
+        final LogAppender logAppender = logAppenders.get(0);
+        int eventCount = logAppender.capacity() / sendBuffer.capacity();
+
+        writePackets(logAppender, eventCount);
+        assertThat(receiver.process(), is(eventCount));
+
+        writePackets(logAppenders.get(1), eventCount);
+        assertThat(receiver.process(), is(0));
     }
 
     @Test
@@ -366,14 +394,19 @@ public class AeronTest
                                            final File rootDir,
                                            final long sessionId) throws IOException
     {
-        final RingBuffer apiBuffer = adminBuffers.toApi();
         List<Buffers> buffers = directory.createTermFile(rootDir, DESTINATION, sessionId, CHANNEL_ID, termId);
-        identifiedMessage.channelId(CHANNEL_ID)
-                .sessionId(sessionId)
-                .termId(termId)
-                .destination(DESTINATION);
-        assertTrue(apiBuffer.write(eventTypeId, atomicSendBuffer, 0, identifiedMessage.length()));
+        sendNewBufferNotification(eventTypeId, termId, sessionId);
         return buffers;
+    }
+
+    private void sendNewBufferNotification(final int eventTypeId, final long termId, final long sessionId)
+    {
+        final RingBuffer apiBuffer = adminBuffers.toApi();
+        identifiedMessage.channelId(CHANNEL_ID)
+                         .sessionId(sessionId)
+                         .termId(termId)
+                         .destination(DESTINATION);
+        assertTrue(apiBuffer.write(eventTypeId, atomicSendBuffer, 0, identifiedMessage.length()));
     }
 
     private Receiver newReceiver(final Aeron aeron)

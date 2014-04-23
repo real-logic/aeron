@@ -64,9 +64,9 @@ public class MappedBufferRotator implements BufferRotator
 
         try
         {
-            current = newTerm("1", directory);
-            clean = newTerm("2", directory);
-            dirty = newTerm("3", directory);
+            current = newTerm("0", directory);
+            clean = newTerm("1", directory);
+            dirty = newTerm("2", directory);
         }
         catch (final IOException e)
         {
@@ -80,7 +80,6 @@ public class MappedBufferRotator implements BufferRotator
     {
         final FileChannel logFile = openFile(directory, prefix + LOG_SUFFIX);
         final FileChannel stateFile = openFile(directory, prefix + STATE_SUFFIX);
-
         return new BasicLogBuffers(logFile, stateFile, map(logBufferSize, logFile), map(stateBufferSize, stateFile));
     }
 

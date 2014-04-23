@@ -143,7 +143,7 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
         MappedBufferRotator channelBuffer = srcTermMap.get(destination, sessionId, channelId);
         if (channelBuffer == null)
         {
-            final File dir = channelLocation(senderDir, sessionId, channelId, true, destination.toString());
+            final File dir = channelLocation(senderDir, sessionId, channelId, true, destination.clientAwareUri());
             channelBuffer = new MappedBufferRotator(dir,
                                                     logTemplate,
                                                     LOG_BUFFER_SIZE,

@@ -69,6 +69,7 @@ public class NioSelector implements AutoCloseable
      */
     public void close() throws IOException
     {
+        selector.wakeup();
         selector.close();
     }
 

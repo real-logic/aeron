@@ -110,7 +110,8 @@ public class SenderChannel
             // if we can't send, then break out of the loop
             if (frameSequenceNumber + frameLength > rightEdge)
             {
-                return;
+                // TODO: re-add flow control in a less coupled way.
+                //return;
             }
 
             final MtuScanner scanner = scanners[currentIndex];

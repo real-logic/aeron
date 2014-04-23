@@ -107,4 +107,5 @@ public class FileMappingConvention
         return destination.replace(':', '_')
                           .replace('/', '_');
     }
+
 }

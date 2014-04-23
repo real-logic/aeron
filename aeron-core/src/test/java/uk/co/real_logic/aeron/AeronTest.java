@@ -38,7 +38,6 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.stream.IntStream;
 
-import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
@@ -47,6 +46,7 @@ import static org.mockito.Mockito.verify;
 import static uk.co.real_logic.aeron.Receiver.DataHandler;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.SharedDirectories.Buffers;
+import static uk.co.real_logic.aeron.util.SharedDirectories.mapLoggers;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.BASE_HEADER_LENGTH;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertEventRead;
@@ -407,13 +407,8 @@ public class AeronTest
 
     private List<LogAppender> createLogAppenders(final long sessionId) throws IOException
     {
-        return createTermBuffer(0L, NEW_RECEIVE_BUFFER_NOTIFICATION, directory.receiverDir(), sessionId)
-                .stream()
-                .map(buffer -> new LogAppender(buffer.logBuffer(),
-                        buffer.stateBuffer(),
-                        DEFAULT_HEADER,
-                        MAX_FRAME_LENGTH))
-                .collect(toList());
+        List<Buffers> termBuffers = createTermBuffer(0L, NEW_RECEIVE_BUFFER_NOTIFICATION, directory.receiverDir(), sessionId);
+        return mapLoggers(termBuffers, DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }
 
     private List<Buffers> createTermBuffer(final long termId,
@@ -421,7 +416,7 @@ public class AeronTest
                                            final File rootDir,
                                            final long sessionId) throws IOException
     {
-        List<Buffers> buffers = directory.createTermFile(rootDir, DESTINATION, sessionId, CHANNEL_ID, termId);
+        List<Buffers> buffers = directory.createTermFile(rootDir, DESTINATION, sessionId, CHANNEL_ID);
         sendNewBufferNotification(eventTypeId, termId, sessionId);
         return buffers;
     }

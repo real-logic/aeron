@@ -1,7 +1,23 @@
+/*
+ * Copyright 2014 Real Logic Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package uk.co.real_logic.aeron.util;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 /**
@@ -26,7 +42,7 @@ public class TimerWheel
     private final long mask;
     private final long startTime;
     private final long tickDurationInNanos;
-    private final Supplier<Long> timeFunc;
+    private final LongSupplier timeFunc;
     private final Object[] wheel;
 
     private long currentTick;
@@ -38,7 +54,7 @@ public class TimerWheel
         this(System::nanoTime, tickDuration, timeUnit, ticksPerWheel);
     }
 
-    public TimerWheel(final Supplier<Long> timeFunc,
+    public TimerWheel(final LongSupplier timeFunc,
                       final long tickDuration,
                       final TimeUnit timeUnit,
                       final int ticksPerWheel)
@@ -47,7 +63,7 @@ public class TimerWheel
 
         this.mask = ticksPerWheel - 1;
         this.timeFunc = timeFunc;
-        this.startTime = timeFunc.get();
+        this.startTime = timeFunc.getAsLong();
         this.tickDurationInNanos = timeUnit.toNanos(tickDuration);
 
         if (tickDurationInNanos >= Long.MAX_VALUE / ticksPerWheel)
@@ -69,7 +85,7 @@ public class TimerWheel
                             final long delay,
                             final TimeUnit unit)
     {
-        final long deadline = timeFunc.get() + unit.toNanos(delay) - this.startTime;
+        final long deadline = timeFunc.getAsLong() + unit.toNanos(delay) - this.startTime;
         final Timer timeout = new Timer(deadline, task);
 
         wheel[timeout.wheelIndex] = addTimeoutToArray((Timer[]) wheel[timeout.wheelIndex], timeout);
@@ -144,7 +160,7 @@ public class TimerWheel
 
     private long currentTime()
     {
-        return (timeFunc.get() - startTime);
+        return timeFunc.getAsLong() - startTime;
     }
 
     public final class Timer

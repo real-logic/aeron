@@ -30,11 +30,12 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.DatagramChannel;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 
 import static org.hamcrest.Matchers.greaterThan;
@@ -73,6 +74,8 @@ public class UnicastSenderTest
     private final ByteBuffer sendBuffer = ByteBuffer.allocateDirect(BUFFER_SIZE);
     private final AtomicBuffer writeBuffer = new AtomicBuffer(sendBuffer);
 
+    private final ByteBuffer readBuffer = ByteBuffer.allocate(256);
+
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
     private final ErrorHeaderFlyweight error = new ErrorHeaderFlyweight();
     private final CompletelyIdentifiedMessageFlyweight bufferMessage = new CompletelyIdentifiedMessageFlyweight();
@@ -100,7 +103,8 @@ public class UnicastSenderTest
         senderThread = new SenderThread(builder);
         receiverThread = mock(ReceiverThread.class);
         mediaDriverAdminThread = new MediaDriverAdminThread(builder, receiverThread, senderThread);
-        receiverChannel = DatagramChannel.open();
+        receiverChannel = DatagramChannel.open()
+                                         .bind(new InetSocketAddress(HOST, PORT));
         sendBuffer.clear();
     }
 
@@ -268,15 +272,15 @@ public class UnicastSenderTest
         });
 
         final LogAppender logAppender = mapLogAppenders(URI, SESSION_ID, CHANNEL_ID).get(0);
-        final UdpReader reader = new UdpReader(HOST, PORT);
 
         writeBuffer.putInt(0, VALUE, ByteOrder.BIG_ENDIAN);
         assertTrue(logAppender.append(writeBuffer, 0, 64));
 
         processThreads(1);
 
-        final ByteBuffer buffer = reader.awaitResult();
-        assertThat(buffer.getInt(HEADER_LENGTH), is(VALUE));
+        final SocketAddress address = receiverChannel.receive(readBuffer);
+        assertNotNull(address);
+        assertThat(readBuffer.getInt(HEADER_LENGTH), is(VALUE));
     }
 
     private void writeChannelMessage(final int eventTypeId, final String destination,

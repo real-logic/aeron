@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.aeron.admin.*;
 import uk.co.real_logic.aeron.util.AdminBufferStrategy;
 import uk.co.real_logic.aeron.util.AtomicArray;
-import uk.co.real_logic.aeron.util.Directories;
+import uk.co.real_logic.aeron.util.CommonConfiguration;
 import uk.co.real_logic.aeron.util.MappingAdminBufferStrategy;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
@@ -87,7 +87,7 @@ public final class Aeron
         {
             final RingBuffer recvBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toApi()));
             final RingBuffer sendBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toMediaDriver()));
-            final BufferUsageStrategy bufferUsage = new BasicBufferUsageStrategy(Directories.DATA_DIR);
+            final BufferUsageStrategy bufferUsage = new BasicBufferUsageStrategy(CommonConfiguration.DATA_DIR);
             final AdminErrorHandler adminErrorHandler = new AdminErrorHandler(builder.invalidDestinationHandler);
             adminThread = new ClientAdminThread(adminCommandBuffer,
                                                 recvBuffer, sendBuffer,
@@ -187,7 +187,7 @@ public final class Aeron
         {
             errorHandler = new DummyErrorHandler();
             // TODO: decide on where admin buffers get located and remove buffer size if needed
-            adminBuffers = new MappingAdminBufferStrategy(Directories.ADMIN_DIR);
+            adminBuffers = new MappingAdminBufferStrategy(CommonConfiguration.ADMIN_DIR);
             producerControl = DefaultProducerControlStrategy::new;
         }
 

@@ -38,8 +38,8 @@ public class SharedDirectories extends ExternalResource
 
     protected void before() throws Throwable
     {
-        dataDir = ensureDirectory(Directories.DATA_DIR);
-        adminDir = ensureDirectory(Directories.ADMIN_DIR);
+        dataDir = ensureDirectory(CommonConfiguration.DATA_DIR);
+        adminDir = ensureDirectory(CommonConfiguration.ADMIN_DIR);
         mapping = new FileMappingConvention(dataDir.getAbsolutePath());
     }
 

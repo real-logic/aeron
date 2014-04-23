@@ -16,9 +16,9 @@
 package uk.co.real_logic.aeron.util;
 
 /**
- * Location of directory configuration that is common between the client and the media driver.
+ * Location of configuration that is common between the client and the media driver.
  */
-public class Directories
+public class CommonConfiguration
 {
     /** Directory of the data buffers */
     public static final String DATA_DIR_PROPERTY_NAME = "aeron.data.dir";
@@ -30,6 +30,11 @@ public class Directories
     /** Default directory for admin buffers */
     public static final String ADMIN_DIR_PROPERTY_NAME_DEFAULT = IoUtil.tmpDir() + "/aeron/admin";
 
+    /** Length of the maximum transport unit of the media driver's protocol */
+    private static final java.lang.String MTU_LENGTH_NAME = "aeron.mtu.length";
+    private static final int MTU_LENGTH_DEFAULT = 1280;
+
     public static final String DATA_DIR = System.getProperty(DATA_DIR_PROPERTY_NAME, DATA_DIR_PROPERTY_NAME_DEFAULT);
     public static final String ADMIN_DIR = System.getProperty(ADMIN_DIR_PROPERTY_NAME, ADMIN_DIR_PROPERTY_NAME_DEFAULT);
+    public static final int MTU_LENGTH = Integer.getInteger(MTU_LENGTH_NAME, MTU_LENGTH_DEFAULT);
 }

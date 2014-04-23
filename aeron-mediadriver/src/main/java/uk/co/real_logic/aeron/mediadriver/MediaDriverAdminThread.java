@@ -29,7 +29,9 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 
+import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.BASE_HEADER_LENGTH;
 
 /**
  * Admin thread to take commands from Producers and Consumers as well as handle NAKs and retransmissions
@@ -58,6 +60,8 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     private final ReceiverMessageFlyweight receiverMessageFlyweight = new ReceiverMessageFlyweight();
     private final ErrorHeaderFlyweight errorHeaderFlyweight = new ErrorHeaderFlyweight();
     private final CompletelyIdentifiedMessageFlyweight completelyIdentifiedMessageFlyweight = new CompletelyIdentifiedMessageFlyweight();
+    private final int headerLength;
+    private final int mtuLength;
 
     public MediaDriverAdminThread(final MediaDriver.TopologyBuilder builder,
                                   final ReceiverThread receiverThread,
@@ -67,11 +71,13 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         this.receiverThreadCursor = new ReceiverThreadCursor(builder.receiverThreadCommandBuffer(), builder.rcvNioSelector());
         this.bufferManagementStrategy = builder.bufferManagementStrategy();
         this.nioSelector = builder.adminNioSelector();
+        this.mtuLength = builder.mtuLength();
         this.receiverThread = receiverThread;
         this.senderThread = senderThread;
         this.senderFlowControl = builder.senderFlowControl();
         this.srcDestinationMap = new Long2ObjectHashMap<>();
         this.writeBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(WRITE_BUFFER_CAPACITY));
+        this.headerLength = BASE_HEADER_LENGTH + SIZE_OF_INT;
 
         try
         {
@@ -283,7 +289,9 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
                                         srcDestination,
                                         sessionId,
                                         channelId,
-                                        initialTermId);
+                                        initialTermId,
+                                        headerLength,
+                                        mtuLength);
 
             // add channel to SrcFrameHandler so it can demux NAKs and SMs
             frameHandler.addChannel(channel);

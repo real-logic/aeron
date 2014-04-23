@@ -19,7 +19,7 @@ import uk.co.real_logic.aeron.mediadriver.buffer.BasicBufferManagementStrategy;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy;
 import uk.co.real_logic.aeron.util.AdminBufferStrategy;
 import uk.co.real_logic.aeron.util.CreatingAdminBufferStrategy;
-import uk.co.real_logic.aeron.util.Directories;
+import uk.co.real_logic.aeron.util.CommonConfiguration;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
@@ -120,8 +120,9 @@ public class MediaDriver implements AutoCloseable
                 .rcvNioSelector(new NioSelector())
                 .adminNioSelector(new NioSelector())
                 .senderFlowControl(DefaultSenderFlowControlStrategy::new)
-                .adminBufferStrategy(new CreatingAdminBufferStrategy(Directories.ADMIN_DIR, ADMIN_BUFFER_SZ))
-                .bufferManagementStrategy(new BasicBufferManagementStrategy(Directories.DATA_DIR));
+                .adminBufferStrategy(new CreatingAdminBufferStrategy(CommonConfiguration.ADMIN_DIR, ADMIN_BUFFER_SZ))
+                .bufferManagementStrategy(new BasicBufferManagementStrategy(CommonConfiguration.DATA_DIR))
+                .mtuLength(CommonConfiguration.MTU_LENGTH);
 
         receiverThread = new ReceiverThread(builder);
         senderThread = new SenderThread(builder);
@@ -161,6 +162,7 @@ public class MediaDriver implements AutoCloseable
         private NioSelector rcvNioSelector;
         private NioSelector adminNioSelector;
         private Supplier<SenderFlowControlStrategy> senderFlowControl;
+        private int mtuLength;
 
         private RingBuffer createNewCommandBuffer(final int sz)
         {
@@ -212,6 +214,12 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
+        public TopologyBuilder mtuLength(final int mtuLength)
+        {
+            this.mtuLength = mtuLength;
+            return this;
+        }
+
         public RingBuffer adminThreadCommandBuffer()
         {
             return adminThreadCommandBuffer;
@@ -245,6 +253,11 @@ public class MediaDriver implements AutoCloseable
         public Supplier<SenderFlowControlStrategy> senderFlowControl()
         {
             return senderFlowControl;
+        }
+
+        public int mtuLength()
+        {
+            return mtuLength;
         }
     }
 }

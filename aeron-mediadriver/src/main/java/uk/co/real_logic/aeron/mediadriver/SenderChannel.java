@@ -39,6 +39,8 @@ public class SenderChannel
     private final long sessionId;
     private final long channelId;
     private final long currentTermId;
+    private final int headerLength;
+    private final int mtuLength;
 
     private int currentIndex;
 
@@ -56,7 +58,9 @@ public class SenderChannel
                          final UdpDestination destination,
                          final long sessionId,
                          final long channelId,
-                         final long initialTermId)
+                         final long initialTermId,
+                         final int headerLength,
+                         final int mtuLength)
     {
         this.frameHandler = frameHandler;
         this.flowControlStrategy = flowControlStrategy;
@@ -65,6 +69,8 @@ public class SenderChannel
         this.sessionId = sessionId;
         this.channelId = channelId;
         this.currentTermId = initialTermId;
+        this.headerLength = headerLength;
+        this.mtuLength = mtuLength;
 
         scanners =  buffers.buffers()
                            .map(this::newScanner)
@@ -88,10 +94,6 @@ public class SenderChannel
 
     public MtuScanner newScanner(final LogBuffers log)
     {
-        // TODO
-        final int headerLength = 16;
-        final int mtuLength = 640;
-
         return new MtuScanner(log.logBuffer(), log.stateBuffer(), mtuLength, headerLength);
     }
 

@@ -274,11 +274,7 @@ public class AeronTest
     @Test
     public void canReceivePacketsFromMultipleSessions() throws Exception
     {
-        channel2Handler = (buffer, offset, sessionId, flags) ->
-        {
-            assertThat(buffer.getInt(offset), is(PACKET_VALUE));
-            assertThat(sessionId, anyOf(is(SESSION_ID), is(SESSION_ID_2)));
-        };
+        channel2Handler = eitherSessionHandler();
 
         final RingBuffer toMediaDriver = adminBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
@@ -349,9 +345,40 @@ public class AeronTest
     }
 
     @Test
-    public void bufferRollsDontAffectOther()
+    public void bufferRollsShouldNotAffectOtherSessions() throws Exception
     {
-        // TODO
+        channel2Handler = eitherSessionHandler();
+
+        final RingBuffer toMediaDriver = adminBuffers.toMediaDriver();
+        final Aeron aeron = newAeron();
+        final Receiver receiver = newReceiver(aeron);
+        final List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
+        final List<LogAppender> otherLogAppenders = createLogAppenders(SESSION_ID_2);
+        sendNewBufferNotification(NEW_RECEIVE_BUFFER_NOTIFICATION, 1L, SESSION_ID);
+
+        aeron.adminThread().process();
+        skip(toMediaDriver, 1);
+
+        final LogAppender logAppender = logAppenders.get(0);
+        final int eventCount = logAppender.capacity() / sendBuffer.capacity();
+
+        writePackets(logAppender, eventCount);
+        assertThat(receiver.process(), is(eventCount));
+
+        writePackets(logAppenders.get(1), eventCount);
+        assertThat(receiver.process(), is(eventCount));
+
+        writePackets(otherLogAppenders.get(0), 5);
+        assertThat(receiver.process(), is(5));
+    }
+
+    private DataHandler eitherSessionHandler()
+    {
+        return (buffer, offset, sessionId, flags) ->
+        {
+            assertThat(buffer.getInt(offset), is(PACKET_VALUE));
+            assertThat(sessionId, anyOf(is(SESSION_ID), is(SESSION_ID_2)));
+        };
     }
 
     private DataHandler assertingHandler()

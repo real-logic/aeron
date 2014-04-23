@@ -65,7 +65,6 @@ public class AdminBuffers extends ExternalResource
 
     protected void after()
     {
-        System.out.println(this.getClass().getName() + " after");
         // Force unmapping of byte buffers to allow deletion
         IoUtil.unmap((java.nio.MappedByteBuffer) toMediaDriver);
         IoUtil.unmap((java.nio.MappedByteBuffer) toApi);

@@ -20,14 +20,18 @@ import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BooleanSupplier;
+import java.util.function.Predicate;
 import java.util.stream.IntStream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.*;
 
 public class TimerWheelTest
 {
+    private static final long ONE_MSEC_OF_NANOS = TimeUnit.MILLISECONDS.toNanos(1);
+
     private long controlTimestamp;
 
     public long getControlTimestamp()
@@ -52,54 +56,182 @@ public class TimerWheelTest
     @Test
     public void shouldBeAbleToCalculateDelay()
     {
-        controlTimestamp = 100;
+        controlTimestamp = 0;
         final TimerWheel wheel = new TimerWheel(this::getControlTimestamp, 1, TimeUnit.MILLISECONDS, 512);
 
         assertThat(wheel.calculateDelayInMsec(), is(1L));
     }
 
-    @Ignore
-    @Test
-    public void shouldBeAbleToScheduleTimer()
+    @Test(timeout = 1000)
+    public void shouldBeAbleToScheduleTimerOnEdgeOfTick()
     {
-        controlTimestamp = 100;
-        final AtomicBoolean fired = new AtomicBoolean(false);
+        controlTimestamp = 0;
+        final AtomicLong firedTimestamp = new AtomicLong(-1);
         final TimerWheel wheel = new TimerWheel(this::getControlTimestamp, 1, TimeUnit.MILLISECONDS, 1024);
+        final Runnable task = () -> firedTimestamp.set(wheel.currentTime());
 
-        final TimerWheel.Timer timeout = wheel.newTimeout(() -> { fired.set(true); }, 10, TimeUnit.MILLISECONDS);
+        final TimerWheel.Timer timeout = wheel.newTimeout(5000, TimeUnit.MICROSECONDS, task);
 
-        IntStream.range(0, 9).forEach((i) ->
-        {
-            controlTimestamp++;
-            wheel.expireTimers();
-            assertThat(controlTimestamp, lessThanOrEqualTo(110L));
-            assertThat(fired.get(), is(false));
-        });
-        controlTimestamp++;
-        wheel.expireTimers();
-        assertThat(controlTimestamp, is(110L));
-        assertThat(fired.get(), is(true));
-        // TODO: fixme
+        final long timeSpan = processTimersUntil(wheel, ONE_MSEC_OF_NANOS, () -> firedTimestamp.get() != -1);
+
+        // this is the first tick after the timer, so it should be on this edge
+        assertThat(firedTimestamp.get(), is(TimeUnit.MILLISECONDS.toNanos(6)));
     }
 
-    @Ignore
-    @Test
-    public void shouldHandleTimeUnitCorrectly()
+    @Test(timeout = 1000)
+    public void shouldHandleNon0StartTime()
     {
-        // TODO: finish
+        controlTimestamp = TimeUnit.MILLISECONDS.toNanos(100);
+        final AtomicLong firedTimestamp = new AtomicLong(-1);
+        final TimerWheel wheel = new TimerWheel(this::getControlTimestamp, 1, TimeUnit.MILLISECONDS, 1024);
+        final Runnable task = () -> firedTimestamp.set(wheel.currentTime());
+
+        final TimerWheel.Timer timeout = wheel.newTimeout(5000, TimeUnit.MICROSECONDS, task);
+
+        final long timeSpan = processTimersUntil(wheel, ONE_MSEC_OF_NANOS, () -> firedTimestamp.get() != -1);
+
+        // this is the first tick after the timer, so it should be on this edge
+        assertThat(firedTimestamp.get(), is(TimeUnit.MILLISECONDS.toNanos(6)));  // relative to start time
     }
 
-    @Ignore
+    @Test
+    public void shouldHandleNanoTimeUnitTimers()
+    {
+        controlTimestamp = 0;
+        final AtomicLong firedTimestamp = new AtomicLong(-1);
+        final TimerWheel wheel = new TimerWheel(this::getControlTimestamp, 1, TimeUnit.MILLISECONDS, 1024);
+        final Runnable task = () -> firedTimestamp.set(wheel.currentTime());
+
+        final TimerWheel.Timer timeout = wheel.newTimeout(5000001, TimeUnit.NANOSECONDS, task);
+
+        final long timeSpan = processTimersUntil(wheel, ONE_MSEC_OF_NANOS, () -> firedTimestamp.get() != -1);
+
+        // this is the first tick after the timer, so it should be on this edge
+        assertThat(firedTimestamp.get(), is(TimeUnit.MILLISECONDS.toNanos(6)));
+    }
+
     @Test
     public void shouldHandleMultipleRounds()
     {
-        // TODO: finish
+        controlTimestamp = 0;
+        final AtomicLong firedTimestamp = new AtomicLong(-1);
+        final TimerWheel wheel = new TimerWheel(this::getControlTimestamp, 1, TimeUnit.MILLISECONDS, 16);
+        final Runnable task = () -> firedTimestamp.set(wheel.currentTime());
+
+        final TimerWheel.Timer timeout = wheel.newTimeout(63, TimeUnit.MILLISECONDS, task);
+
+        final long timeSpan = processTimersUntil(wheel, ONE_MSEC_OF_NANOS, () -> firedTimestamp.get() != -1);
+
+        // this is the first tick after the timer, so it should be on this edge
+        assertThat(firedTimestamp.get(), is(TimeUnit.MILLISECONDS.toNanos(64)));  // relative to start time
     }
 
-    @Ignore
     @Test
     public void shouldBeAbleToCancelTimer()
     {
-        // TODO: finish
+        controlTimestamp = 0;
+        final AtomicLong firedTimestamp = new AtomicLong(-1);
+        final TimerWheel wheel = new TimerWheel(this::getControlTimestamp, 1, TimeUnit.MILLISECONDS, 256);
+        final Runnable task = () -> firedTimestamp.set(wheel.currentTime());
+
+        final TimerWheel.Timer timeout = wheel.newTimeout(63, TimeUnit.MILLISECONDS, task);
+
+        processTimersUntil(wheel, ONE_MSEC_OF_NANOS, () -> wheel.currentTime() > TimeUnit.MILLISECONDS.toNanos(16));
+
+        timeout.cancel();
+
+        processTimersUntil(wheel, ONE_MSEC_OF_NANOS, () -> wheel.currentTime() > TimeUnit.MILLISECONDS.toNanos(128));
+
+        assertThat(firedTimestamp.get(), is(-1L));
+    }
+
+    @Test
+    public void shouldHandleExpiringTimersInPreviousTicks()
+    {
+        controlTimestamp = 0;
+        final AtomicLong firedTimestamp = new AtomicLong(-1);
+        final TimerWheel wheel = new TimerWheel(this::getControlTimestamp, 1, TimeUnit.MILLISECONDS, 256);
+        final Runnable task = () -> firedTimestamp.set(wheel.currentTime());
+
+        final TimerWheel.Timer timeout = wheel.newTimeout(15, TimeUnit.MILLISECONDS, task);
+
+        controlTimestamp += TimeUnit.MILLISECONDS.toNanos(32);
+
+        processTimersUntil(wheel, ONE_MSEC_OF_NANOS, () -> wheel.currentTime() > TimeUnit.MILLISECONDS.toNanos(128));
+
+        assertThat(firedTimestamp.get(), is(TimeUnit.MILLISECONDS.toNanos(32))); // time of first expireTimers call
+    }
+
+    @Test
+    public void shouldHandleMultipleTimersInDifferentTicks()
+    {
+        controlTimestamp = 0;
+        final AtomicLong firedTimestamp1 = new AtomicLong(-1);
+        final AtomicLong firedTimestamp2 = new AtomicLong(-1);
+        final TimerWheel wheel = new TimerWheel(this::getControlTimestamp, 1, TimeUnit.MILLISECONDS, 256);
+        final Runnable task1 = () -> firedTimestamp1.set(wheel.currentTime());
+        final Runnable task2 = () -> firedTimestamp2.set(wheel.currentTime());
+
+        final TimerWheel.Timer timeout1 = wheel.newTimeout(15, TimeUnit.MILLISECONDS, task1);
+        final TimerWheel.Timer timeout2 = wheel.newTimeout(23, TimeUnit.MILLISECONDS, task2);
+
+        processTimersUntil(wheel, ONE_MSEC_OF_NANOS, () -> wheel.currentTime() > TimeUnit.MILLISECONDS.toNanos(128));
+
+        assertThat(firedTimestamp1.get(), is(TimeUnit.MILLISECONDS.toNanos(16)));
+        assertThat(firedTimestamp2.get(), is(TimeUnit.MILLISECONDS.toNanos(24)));
+    }
+
+    @Test
+    public void shouldHandleMultipleTimersInSameTickSameRound()
+    {
+        controlTimestamp = 0;
+        final AtomicLong firedTimestamp1 = new AtomicLong(-1);
+        final AtomicLong firedTimestamp2 = new AtomicLong(-1);
+        final TimerWheel wheel = new TimerWheel(this::getControlTimestamp, 1, TimeUnit.MILLISECONDS, 8);
+        final Runnable task1 = () -> firedTimestamp1.set(wheel.currentTime());
+        final Runnable task2 = () -> firedTimestamp2.set(wheel.currentTime());
+
+        final TimerWheel.Timer timeout1 = wheel.newTimeout(15, TimeUnit.MILLISECONDS, task1);
+        final TimerWheel.Timer timeout2 = wheel.newTimeout(15, TimeUnit.MILLISECONDS, task2);
+
+        processTimersUntil(wheel, ONE_MSEC_OF_NANOS, () -> wheel.currentTime() > TimeUnit.MILLISECONDS.toNanos(128));
+
+        assertThat(firedTimestamp1.get(), is(TimeUnit.MILLISECONDS.toNanos(16)));
+        assertThat(firedTimestamp2.get(), is(TimeUnit.MILLISECONDS.toNanos(16)));
+    }
+
+    @Test
+    public void shouldHandleMultipleTimersInSameTickDifferentRound()
+    {
+        controlTimestamp = 0;
+        final AtomicLong firedTimestamp1 = new AtomicLong(-1);
+        final AtomicLong firedTimestamp2 = new AtomicLong(-1);
+        final TimerWheel wheel = new TimerWheel(this::getControlTimestamp, 1, TimeUnit.MILLISECONDS, 8);
+        final Runnable task1 = () -> firedTimestamp1.set(wheel.currentTime());
+        final Runnable task2 = () -> firedTimestamp2.set(wheel.currentTime());
+
+        final TimerWheel.Timer timeout1 = wheel.newTimeout(15, TimeUnit.MILLISECONDS, task1);
+        final TimerWheel.Timer timeout2 = wheel.newTimeout(23, TimeUnit.MILLISECONDS, task2);
+
+        processTimersUntil(wheel, ONE_MSEC_OF_NANOS, () -> wheel.currentTime() > TimeUnit.MILLISECONDS.toNanos(128));
+
+        assertThat(firedTimestamp1.get(), is(TimeUnit.MILLISECONDS.toNanos(16)));
+        assertThat(firedTimestamp2.get(), is(TimeUnit.MILLISECONDS.toNanos(24)));
+    }
+
+    private long processTimersUntil(final TimerWheel wheel, final long increment, final BooleanSupplier condition)
+    {
+        final long startTime = wheel.currentTime();
+
+        while (!condition.getAsBoolean())
+        {
+            if (wheel.calculateDelayInMsec() > 0)
+            {
+                controlTimestamp += increment;
+            }
+            wheel.expireTimers();
+        }
+
+        return (wheel.currentTime() - startTime);
     }
 }

@@ -22,17 +22,31 @@ import java.util.function.LongSupplier;
 /**
  * Timer Wheel (NOT thread safe)
  *
- * assumes single-writer principle and timers firing on processing thread
+ * Assumes single-writer principle and timers firing on processing thread.
+ * Low (or NO) garbage.
  *
  *  <h3>Implementation Details</h3>
  *
- * is based on netty's HashedTimerWheel, which is based on
+ * Based on netty's HashedTimerWheel, which is based on
  * <a href="http://cseweb.ucsd.edu/users/varghese/">George Varghese</a> and
  * Tony Lauck's paper,
  * <a href="http://cseweb.ucsd.edu/users/varghese/PAPERS/twheel.ps.Z">'Hashed
  * and Hierarchical Timing Wheels: data structures to efficiently implement a
  * timer facility'</a>.  More comprehensive slides are located
  * <a href="http://www.cse.wustl.edu/~cdgill/courses/cs6874/TimingWheels.ppt">here</a>.
+ *
+ * Wheel is backed by arrays. Timer cancellation is O(1). Timer scheduling might be slightly
+ * longer if a lot of timers are in the same tick. The underlying tick contains an array. That
+ * array grows when needed, but does not currently shrink.
+ *
+ * Timer objects may be reused if desired, but all reuse must be done with timer cancellation, expiration,
+ * and timeouts in consideration.
+ *
+ * Caveats
+ *
+ * Timers that expire in the same tick will not be ordered with one another. As ticks are
+ * fairly large normally, this means that some timers may expire out of order.
+ *
  */
 public class TimerWheel
 {
@@ -46,6 +60,14 @@ public class TimerWheel
 
     private long currentTick;
 
+    /**
+     * Construct a timer wheel for use in scheduling timers.
+     *
+     * @param tickDuration of each tick of the wheel
+     * @param timeUnit for the tick duration
+     * @param ticksPerWheel of the wheel. Must be a power of 2.
+     * @throws java.lang.IllegalArgumentException if {@code ticksPerWheel} is not a power of 2.
+     */
     public TimerWheel(final long tickDuration,
                       final TimeUnit timeUnit,
                       final int ticksPerWheel)
@@ -53,6 +75,17 @@ public class TimerWheel
         this(System::nanoTime, tickDuration, timeUnit, ticksPerWheel);
     }
 
+    /**
+     * Construct a timer wheel for use in scheduling timers.
+     *
+     * This constructor allows a custom function to return the current time instead of {@link System#nanoTime()}.
+     *
+     * @param timeFunc to use for system time
+     * @param tickDuration of each tick of the wheel
+     * @param timeUnit for the tick duration
+     * @param ticksPerWheel of the wheel. Must be a power of 2.
+     * @throws java.lang.IllegalArgumentException if {@code ticksPerWheel} is not a power of 2.
+     */
     public TimerWheel(final LongSupplier timeFunc,
                       final long tickDuration,
                       final TimeUnit timeUnit,
@@ -80,11 +113,29 @@ public class TimerWheel
         }
     }
 
-    public Timer newTimeout(final Runnable task,
-                            final long delay,
-                            final TimeUnit unit)
+    /**
+     * Return the current time as number of nanoseconds since start of the wheel.
+     *
+     * @return number of nanoseconds since start of the wheel
+     */
+    public long currentTime()
     {
-        final long deadline = timeFunc.getAsLong() + unit.toNanos(delay) - this.startTime;
+        return timeFunc.getAsLong() - startTime;
+    }
+
+    /**
+     * Schedule a new timer that runs {@code task} when it expires.
+     *
+     * @param delay until timer should expire
+     * @param unit of time for {@code delay}
+     * @param task to execute when timer expires
+     * @return {@link Timer} for timer
+     */
+    public Timer newTimeout(final long delay,
+                            final TimeUnit unit,
+                            final Runnable task)
+    {
+        final long deadline = currentTime() + unit.toNanos(delay);
         final Timer timeout = new Timer(deadline, task);
 
         wheel[timeout.wheelIndex] = addTimeoutToArray((Timer[]) wheel[timeout.wheelIndex], timeout);
@@ -92,6 +143,11 @@ public class TimerWheel
         return timeout;
     }
 
+    /**
+     * Calculate delay in milliseconds until next tick.
+     *
+     * @return number of milliseconds to next tick of the wheel.
+     */
     public long calculateDelayInMsec()
     {
         final long deadline = tickDurationInNanos * (currentTick + 1);
@@ -99,6 +155,9 @@ public class TimerWheel
         return (deadline - currentTime() + 999999) / 1000000;
     }
 
+    /**
+     * Process timers and execute any expired timers.
+     */
     public void expireTimers()
     {
         final Timer[] array = (Timer[])wheel[(int)(currentTick & mask)];
@@ -125,6 +184,7 @@ public class TimerWheel
                 timer.remainingRounds--;
             }
         }
+
         currentTick++;
     }
 
@@ -157,11 +217,6 @@ public class TimerWheel
         return newArray;
     }
 
-    private long currentTime()
-    {
-        return timeFunc.getAsLong() - startTime;
-    }
-
     public final class Timer
     {
         private final int wheelIndex;
@@ -182,6 +237,11 @@ public class TimerWheel
 
         }
 
+        /**
+         * Cancel pending timer.
+         *
+         * @return
+         */
         public boolean cancel()
         {
             remove();
@@ -193,6 +253,16 @@ public class TimerWheel
             Timer[] array = (Timer[])(wheel[this.wheelIndex]);
 
             array[this.tickIndex] = null;
+        }
+
+        public String toString()
+        {
+            return "Timer{" +
+                    "wheelIndex=\'" + wheelIndex + "\'" +
+                    ", tickIndex=\'" + tickIndex + "\'" +
+                    ", deadline=\'" + deadline + "\'" +
+                    ", remainingRounds=\'" + remainingRounds + "\'" +
+                    "}";
         }
     }
 }

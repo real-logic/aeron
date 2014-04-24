@@ -17,14 +17,14 @@ package uk.co.real_logic.aeron.admin;
 
 import uk.co.real_logic.aeron.Channel;
 import uk.co.real_logic.aeron.ProducerControlFactory;
-import uk.co.real_logic.aeron.ReceiverChannel;
+import uk.co.real_logic.aeron.ConsumerChannel;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.ClosableThread;
 import uk.co.real_logic.aeron.util.collections.ChannelMap;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
-import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.ConsumerMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
@@ -63,10 +63,10 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
 
     private final BufferUsageStrategy bufferUsage;
     private final AtomicArray<Channel> senders;
-    private final AtomicArray<ReceiverChannel> receivers;
+    private final AtomicArray<ConsumerChannel> receivers;
 
     private final ChannelMap<String, Channel> sendNotifiers;
-    private final ReceiverMap recvNotifiers;
+    private final ConsumerMap recvNotifiers;
 
     private final AdminErrorHandler errorHandler;
     private final ProducerControlFactory producerControl;
@@ -76,7 +76,7 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
 
     // Control protocol Flyweights
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
-    private final ReceiverMessageFlyweight receiverMessage = new ReceiverMessageFlyweight();
+    private final ConsumerMessageFlyweight receiverMessage = new ConsumerMessageFlyweight();
     private final CompletelyIdentifiedMessageFlyweight requestTermMessage = new CompletelyIdentifiedMessageFlyweight();
     private final CompletelyIdentifiedMessageFlyweight bufferNotificationMessage = new CompletelyIdentifiedMessageFlyweight();
 
@@ -85,7 +85,7 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
                              final RingBuffer sendBuffer,
                              final BufferUsageStrategy bufferUsage,
                              final AtomicArray<Channel> senders,
-                             final AtomicArray<ReceiverChannel> receivers,
+                             final AtomicArray<ConsumerChannel> receivers,
                              final AdminErrorHandler errorHandler,
                              final ProducerControlFactory producerControl)
     {
@@ -99,7 +99,7 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
         this.errorHandler = errorHandler;
         this.producerControl = producerControl;
         this.sendNotifiers = new ChannelMap<>();
-        this.recvNotifiers = new ReceiverMap();
+        this.recvNotifiers = new ConsumerMap();
 
         channelMessage.wrap(writeBuffer, 0);
         receiverMessage.wrap(writeBuffer, 0);
@@ -136,13 +136,13 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
                     sendBuffer.write(eventTypeId, buffer, index, length);
                     return;
                 }
-                case ADD_RECEIVER:
-                case REMOVE_RECEIVER:
+                case ADD_CONSUMER:
+                case REMOVE_CONSUMER:
                 {
                     receiverMessage.wrap(buffer, index);
                     final long[] channelIds = receiverMessage.channelIds();
                     final String destination = receiverMessage.destination();
-                    if (eventTypeId == ADD_RECEIVER)
+                    if (eventTypeId == ADD_CONSUMER)
                     {
                         addReceiver(destination, channelIds);
                     }
@@ -329,12 +329,12 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
 
     }
 
-    public void sendAddReceiver(final String destination, final long[] channelIdList)
+    public void sendAddConsumer(final String destination, final long[] channelIdList)
     {
 
     }
 
-    public void sendRemoveReceiver(final String destination, final long[] channelIdList)
+    public void sendRemoveConsumer(final String destination, final long[] channelIdList)
     {
 
     }

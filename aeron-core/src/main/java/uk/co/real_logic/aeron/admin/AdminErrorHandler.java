@@ -16,20 +16,20 @@
 package uk.co.real_logic.aeron.admin;
 
 import uk.co.real_logic.aeron.InvalidDestinationHandler;
-import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.ConsumerMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 
 public class AdminErrorHandler
 {
     private final ErrorHeaderFlyweight errorHeader;
-    private final ReceiverMessageFlyweight receiverMessage;
+    private final ConsumerMessageFlyweight receiverMessage;
     private final InvalidDestinationHandler invalidDestination;
 
     public AdminErrorHandler(final InvalidDestinationHandler invalidDestination)
     {
         errorHeader = new ErrorHeaderFlyweight();
-        receiverMessage = new ReceiverMessageFlyweight();
+        receiverMessage = new ConsumerMessageFlyweight();
         this.invalidDestination = invalidDestination;
     }
 

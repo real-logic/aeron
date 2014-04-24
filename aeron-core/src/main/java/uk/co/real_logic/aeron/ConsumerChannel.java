@@ -23,18 +23,18 @@ import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import static uk.co.real_logic.aeron.Receiver.MessageFlags.NONE;
+import static uk.co.real_logic.aeron.Consumer.MessageFlags.NONE;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.BASE_HEADER_LENGTH;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.WORD_ALIGNMENT;
 
-public class ReceiverChannel extends ChannelNotifiable
+public class ConsumerChannel extends ChannelNotifiable
 {
     private static final int HEADER_LENGTH = BitUtil.align(BASE_HEADER_LENGTH, WORD_ALIGNMENT);
 
-    private Long2ObjectHashMap<ReceiverSession> logReaders;
-    private final Receiver.DataHandler dataHandler;
+    private Long2ObjectHashMap<ConsumerSession> logReaders;
+    private final Consumer.DataHandler dataHandler;
 
-    public ReceiverChannel(final Destination destination, final long channelId, final Receiver.DataHandler dataHandler)
+    public ConsumerChannel(final Destination destination, final long channelId, final Consumer.DataHandler dataHandler)
     {
         super(new TermBufferNotifier(), destination.destination(), channelId);
         this.dataHandler = dataHandler;
@@ -49,14 +49,14 @@ public class ReceiverChannel extends ChannelNotifiable
     public int process() throws Exception
     {
         int count = 0;
-        for (final ReceiverSession receiverSession : logReaders.values())
+        for (final ConsumerSession consumerSession : logReaders.values())
         {
-            count += receiverSession.process();
+            count += consumerSession.process();
         }
         return count;
     }
 
-    private class ReceiverSession
+    private class ConsumerSession
     {
         private final LogReader[] logReaders;
         private final long sessionId;
@@ -65,7 +65,7 @@ public class ReceiverChannel extends ChannelNotifiable
 
         private int currentBuffer;
 
-        private ReceiverSession(final LogReader[] readers, final long sessionId)
+        private ConsumerSession(final LogReader[] readers, final long sessionId)
         {
             this.logReaders = readers;
             this.sessionId = sessionId;
@@ -117,8 +117,8 @@ public class ReceiverChannel extends ChannelNotifiable
 
     protected boolean hasTerm(final long sessionId)
     {
-        final ReceiverSession receiverSession = logReaders.get(sessionId);
-        return receiverSession != null && receiverSession.hasTerm();
+        final ConsumerSession consumerSession = logReaders.get(sessionId);
+        return consumerSession != null && consumerSession.hasTerm();
     }
 
     public void initialTerm(final long sessionId, final long termId)
@@ -133,7 +133,7 @@ public class ReceiverChannel extends ChannelNotifiable
 
     public void onBuffersMapped(final long sessionId, final LogReader[] logReaders)
     {
-        this.logReaders.put(sessionId, new ReceiverSession(logReaders, sessionId));
+        this.logReaders.put(sessionId, new ConsumerSession(logReaders, sessionId));
     }
 
 }

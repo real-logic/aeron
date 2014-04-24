@@ -27,7 +27,7 @@ import java.nio.ByteBuffer;
 /**
  * Example Aeron sender application
  */
-public class ExampleSender
+public class ExampleProducer
 {
     public static final int CHANNEL_ID = 10;
     public static final Destination DESTINATION = new Destination("udp://172.16.29.29:40123");
@@ -36,7 +36,7 @@ public class ExampleSender
     {
         try
         {
-            final Aeron.Builder builder = new Aeron.Builder().errorHandler(ExampleSender::onError);
+            final Aeron.Builder builder = new Aeron.Builder().errorHandler(ExampleProducer::onError);
             final Aeron aeron = Aeron.newSingleMediaDriver(builder);
             final Source source = aeron.newSource(DESTINATION);
             final Channel aChannel = source.newChannel(CHANNEL_ID);

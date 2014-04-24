@@ -25,9 +25,9 @@ import java.util.List;
 import static java.util.stream.Collectors.toList;
 
 /**
- * Aeron receiver
+ * Aeron Consumer API
  */
-public class Receiver implements AutoCloseable
+public class Consumer implements AutoCloseable
 {
     private final Destination destination;
     private final NewSourceEventHandler newSourceEventHandler;
@@ -35,12 +35,12 @@ public class Receiver implements AutoCloseable
     private final Long2ObjectHashMap<DataHandler> channelMap;
     private final long[] channelIds;
     private final ClientAdminThreadCursor adminThread;
-    private final AtomicArray<ReceiverChannel> receivers;
-    private final List<ReceiverChannel> channels;
+    private final AtomicArray<ConsumerChannel> receivers;
+    private final List<ConsumerChannel> channels;
 
-    public Receiver(final ClientAdminThreadCursor adminThread,
+    public Consumer(final ClientAdminThreadCursor adminThread,
                     final Builder builder,
-                    final AtomicArray<ReceiverChannel> receivers)
+                    final AtomicArray<ConsumerChannel> receivers)
     {
         this.adminThread = adminThread;
         this.receivers = receivers;
@@ -51,7 +51,7 @@ public class Receiver implements AutoCloseable
         this.channelIds = channelMap.keySet().stream().mapToLong(i -> i).toArray();
         this.channels = channelMap.entrySet()
                                   .stream()
-                                  .map(entry -> new ReceiverChannel(destination, entry.getKey(), entry.getValue()))
+                                  .map(entry -> new ConsumerChannel(destination, entry.getKey(), entry.getValue()))
                                   .collect(toList());
         receivers.addAll(channels);
         adminThread.sendAddReceiver(destination.destination(), channelIds);
@@ -64,7 +64,7 @@ public class Receiver implements AutoCloseable
     }
 
     /**
-     * Process a waiting data or event and deliver to {@link Receiver.DataHandler}s and/or event handlers.
+     * Process a waiting data or event and deliver to {@link Consumer.DataHandler}s and/or event handlers.
      *
      * Returns after handling a single data and/or event.
      *
@@ -74,7 +74,7 @@ public class Receiver implements AutoCloseable
     public int process() throws Exception
     {
         int read = 0;
-        for (final ReceiverChannel channel : channels)
+        for (final ConsumerChannel channel : channels)
         {
             read += channel.process();
         }
@@ -87,12 +87,12 @@ public class Receiver implements AutoCloseable
     }
 
     /**
-     * Interface for delivery of data to a {@link Receiver}
+     * Interface for delivery of data to a {@link Consumer}
      */
     public interface DataHandler
     {
         /**
-         * Method called by Aeron to deliver data to a {@link Receiver}
+         * Method called by Aeron to deliver data to a {@link Consumer}
          * @param buffer to be delivered
          * @param offset within buffer that data starts
          * @param sessionId for the data source
@@ -102,7 +102,7 @@ public class Receiver implements AutoCloseable
     }
 
     /**
-     * Interface for delivery of new source events to a {@link Receiver}
+     * Interface for delivery of new source events to a {@link Consumer}
      */
     public interface NewSourceEventHandler
     {
@@ -115,7 +115,7 @@ public class Receiver implements AutoCloseable
     }
 
     /**
-     * Interface for delivery of inactive source events to a {@link Receiver}
+     * Interface for delivery of inactive source events to a {@link Consumer}
      */
     public interface InactiveSourceEventHandler
     {

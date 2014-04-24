@@ -57,22 +57,22 @@ public interface MediaDriverFacade
      *
      * The destination will be created if not already in use by another application.
      *
-     * @see LibraryFacade#onAddReceiver(ReceiverMessageFlyweight)
+     * @see LibraryFacade#onAddConsumer(ConsumerMessageFlyweight)
      * @param destination to add the channels to
      * @param channelIdList of interested channels
      */
-    void sendAddReceiver(final String destination, final long[] channelIdList);
+    void sendAddConsumer(final String destination, final long[] channelIdList);
 
     /**
      * Request the media driver to remove a receiver destination on behalf of the application.
      *
      * The destination will be removed if this application is the last application using the destination.
      *
-     * @see LibraryFacade#onRemoveReceiver(ReceiverMessageFlyweight)
+     * @see LibraryFacade#onRemoveConsumer(ConsumerMessageFlyweight)
      * @param destination to remove
      * @param channelIdList the list of channels to remove on
      */
-    void sendRemoveReceiver(final String destination, final long[] channelIdList);
+    void sendRemoveConsumer(final String destination, final long[] channelIdList);
 
     /**
      * Request the media driver should setup state for the next Term Buffer

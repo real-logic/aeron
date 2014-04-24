@@ -20,7 +20,7 @@ import uk.co.real_logic.aeron.mediadriver.buffer.BasicBufferManagementStrategy;
 import uk.co.real_logic.aeron.util.AdminBuffers;
 import uk.co.real_logic.aeron.util.SharedDirectories;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
-import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.ConsumerMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
@@ -39,7 +39,7 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.COMMAND_BUFFER_SZ;
 import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION;
-import static uk.co.real_logic.aeron.util.ErrorCode.RECEIVER_NOT_REGISTERED;
+import static uk.co.real_logic.aeron.util.ErrorCode.CONSUMER_NOT_REGISTERED;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_LENGTH;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertEventRead;
@@ -66,7 +66,7 @@ public class UnicastReceiverTest
 
     private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
     private final ErrorHeaderFlyweight error = new ErrorHeaderFlyweight();
-    private final ReceiverMessageFlyweight receiverMessage = new ReceiverMessageFlyweight();
+    private final ConsumerMessageFlyweight receiverMessage = new ConsumerMessageFlyweight();
 
     private BasicBufferManagementStrategy bufferManagementStrategy;
     private SenderThread senderThread;
@@ -109,7 +109,7 @@ public class UnicastReceiverTest
     @Test(timeout = 1000)
     public void shouldBeAbleToAddReceiver() throws Exception
     {
-        writeReceiverMessage(ADD_RECEIVER, URI, ONE_CHANNEL);
+        writeReceiverMessage(ADD_CONSUMER, URI, ONE_CHANNEL);
 
         processThreads(5);
 
@@ -119,7 +119,7 @@ public class UnicastReceiverTest
     @Test(timeout = 1000)
     public void shouldSendErrorForInvalidUri() throws Exception
     {
-        writeReceiverMessage(ADD_RECEIVER, INVALID_URI, ONE_CHANNEL);
+        writeReceiverMessage(ADD_CONSUMER, INVALID_URI, ONE_CHANNEL);
 
         processThreads(5);
 
@@ -140,7 +140,7 @@ public class UnicastReceiverTest
     @Test(timeout = 1000)
     public void shouldSendErrorForRemovingNonExistentReceiver() throws Exception
     {
-        writeReceiverMessage(REMOVE_RECEIVER, URI, ONE_CHANNEL);
+        writeReceiverMessage(REMOVE_CONSUMER, URI, ONE_CHANNEL);
 
         processThreads(5);
 
@@ -149,7 +149,7 @@ public class UnicastReceiverTest
             assertThat(eventTypeId, is(ERROR_RESPONSE));
 
             error.wrap(buffer, index);
-            assertThat(error.errorCode(), is(RECEIVER_NOT_REGISTERED));
+            assertThat(error.errorCode(), is(CONSUMER_NOT_REGISTERED));
             assertThat(error.errorStringLength(), is(0));
 
             receiverMessage.wrap(buffer, error.offendingHeaderOffset());
@@ -161,8 +161,8 @@ public class UnicastReceiverTest
     @Test(timeout = 1000)
     public void shouldSendErrorForRemovingReceiverFromWrongChannels() throws Exception
     {
-        writeReceiverMessage(ADD_RECEIVER, URI, ONE_CHANNEL);
-        writeReceiverMessage(REMOVE_RECEIVER, URI, ANOTHER_CHANNEL);
+        writeReceiverMessage(ADD_CONSUMER, URI, ONE_CHANNEL);
+        writeReceiverMessage(REMOVE_CONSUMER, URI, ANOTHER_CHANNEL);
 
         processThreads(5);
 
@@ -171,7 +171,7 @@ public class UnicastReceiverTest
             assertThat(eventTypeId, is(ERROR_RESPONSE));
 
             error.wrap(buffer, index);
-            assertThat(error.errorCode(), is(RECEIVER_NOT_REGISTERED));
+            assertThat(error.errorCode(), is(CONSUMER_NOT_REGISTERED));
             assertThat(error.errorStringLength(), is(0));
 
             receiverMessage.wrap(buffer, error.offendingHeaderOffset());
@@ -185,7 +185,7 @@ public class UnicastReceiverTest
     {
         final UdpDestination dest = UdpDestination.parse(URI);
 
-        writeReceiverMessage(ADD_RECEIVER, URI, THREE_CHANNELS);
+        writeReceiverMessage(ADD_CONSUMER, URI, THREE_CHANNELS);
 
         processThreads(5);
 
@@ -194,7 +194,7 @@ public class UnicastReceiverTest
         assertNotNull(frameHandler);
         assertThat(frameHandler.channelInterestMap().size(), is(3));
 
-        writeReceiverMessage(REMOVE_RECEIVER, URI, TWO_CHANNELS);
+        writeReceiverMessage(REMOVE_CONSUMER, URI, TWO_CHANNELS);
 
         processThreads(5);
 
@@ -207,7 +207,7 @@ public class UnicastReceiverTest
     {
         final UdpDestination dest = UdpDestination.parse(URI);
 
-        writeReceiverMessage(ADD_RECEIVER, URI, THREE_CHANNELS);
+        writeReceiverMessage(ADD_CONSUMER, URI, THREE_CHANNELS);
 
         processThreads(5);
 
@@ -216,14 +216,14 @@ public class UnicastReceiverTest
         assertNotNull(frameHandler);
         assertThat(frameHandler.channelInterestMap().size(), is(3));
 
-        writeReceiverMessage(REMOVE_RECEIVER, URI, TWO_CHANNELS);
+        writeReceiverMessage(REMOVE_CONSUMER, URI, TWO_CHANNELS);
 
         processThreads(5);
 
         assertNotNull(receiverThread.frameHandler(dest));
         assertThat(frameHandler.channelInterestMap().size(), is(1));
 
-        writeReceiverMessage(REMOVE_RECEIVER, URI, ONE_CHANNEL);
+        writeReceiverMessage(REMOVE_CONSUMER, URI, ONE_CHANNEL);
         processThreads(5);
 
         assertNull(receiverThread.frameHandler(dest));
@@ -232,7 +232,7 @@ public class UnicastReceiverTest
     @Test(timeout = 2000)
     public void shouldBeAbleToCreateRcvTermOnZeroLengthData() throws Exception
     {
-        writeReceiverMessage(ADD_RECEIVER, URI, ONE_CHANNEL);
+        writeReceiverMessage(ADD_CONSUMER, URI, ONE_CHANNEL);
 
         processThreads(5);
 
@@ -271,26 +271,19 @@ public class UnicastReceiverTest
     }
 
     @Test(timeout = 1000)
-    public void shouldBeAbleToAddThenRemoveReceiverWithoutTermBuffer() throws Exception
+    public void shouldBeAbleToAddThenRemoveReceiver() throws Exception
     {
-        writeReceiverMessage(ADD_RECEIVER, URI, ONE_CHANNEL);
+        writeReceiverMessage(ADD_CONSUMER, URI, ONE_CHANNEL);
 
         processThreads(5);
 
         assertNotNull(receiverThread.frameHandler(UdpDestination.parse(URI)));
 
-        writeReceiverMessage(ControlProtocolEvents.REMOVE_RECEIVER, URI, ONE_CHANNEL);
+        writeReceiverMessage(ControlProtocolEvents.REMOVE_CONSUMER, URI, ONE_CHANNEL);
 
         processThreads(5);
 
         assertNull(receiverThread.frameHandler(UdpDestination.parse(URI)));
-    }
-
-    @Ignore
-    @Test(timeout = 1000)
-    public void shouldBeAbleToRemoveReceiverWithSingleTermBuffer()
-    {
-        // TODO: finish
     }
 
     @Ignore

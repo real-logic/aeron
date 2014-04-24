@@ -25,7 +25,6 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import java.nio.ByteBuffer;
-import java.util.function.Consumer;
 
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_LENGTH;
 
@@ -72,7 +71,7 @@ public final class Aeron
     private final ClientAdminThread adminThread;
     private final AdminBufferStrategy adminBuffers;
     private final AtomicArray<Channel> channels;
-    private final AtomicArray<ReceiverChannel> receivers;
+    private final AtomicArray<ConsumerChannel> receivers;
 
     private Aeron(final Builder builder)
     {
@@ -152,10 +151,10 @@ public final class Aeron
      * @param builder builder for receiver options.
      * @return new receiver
      */
-    public Receiver newReceiver(final Receiver.Builder builder)
+    public Consumer newReceiver(final Consumer.Builder builder)
     {
         final ClientAdminThreadCursor adminThread = new ClientAdminThreadCursor(adminCommandBuffer);
-        return new Receiver(adminThread, builder, receivers);
+        return new Consumer(adminThread, builder, receivers);
     }
 
     /**
@@ -164,9 +163,9 @@ public final class Aeron
      * @param block to fill in receiver builder
      * @return new receiver
      */
-    public Receiver newReceiver(final Consumer<Receiver.Builder> block)
+    public Consumer newConsumer(final java.util.function.Consumer<Consumer.Builder> block)
     {
-        Receiver.Builder builder = new Receiver.Builder();
+        Consumer.Builder builder = new Consumer.Builder();
         block.accept(builder);
         return newReceiver(builder);
     }

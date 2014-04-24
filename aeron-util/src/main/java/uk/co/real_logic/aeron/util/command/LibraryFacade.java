@@ -52,20 +52,20 @@ public interface LibraryFacade
      *
      * The destination will be created if not in use by another library/application.
      *
-     * @see MediaDriverFacade#sendAddReceiver(String, long[])
-     * @param receiverMessage the message
+     * @see MediaDriverFacade#sendAddConsumer(String, long[])
+     * @param consumerMessage the message
      */
-    void onAddReceiver(final ReceiverMessageFlyweight receiverMessage);
+    void onAddConsumer(final ConsumerMessageFlyweight consumerMessage);
 
     /**
      * Handle a removeReceiver request from the library.
      *
      * The destination will be removed if this library/application is the last one using this destination.
      *
-     * @see MediaDriverFacade#sendRemoveReceiver(String, long[])
-     * @param receiverMessage the message
+     * @see MediaDriverFacade#sendRemoveConsumer(String, long[])
+     * @param consumerMessage the message
      */
-    void onRemoveReceiver(final ReceiverMessageFlyweight receiverMessage);
+    void onRemoveConsumer(final ConsumerMessageFlyweight consumerMessage);
 
     /**
      * Request the media driver should setup state for the next Term Buffer

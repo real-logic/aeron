@@ -59,7 +59,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
 
     private final ThreadLocalRandom rng = ThreadLocalRandom.current();
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
-    private final ReceiverMessageFlyweight receiverMessageFlyweight = new ReceiverMessageFlyweight();
+    private final ConsumerMessageFlyweight receiverMessageFlyweight = new ConsumerMessageFlyweight();
     private final ErrorHeaderFlyweight errorHeaderFlyweight = new ErrorHeaderFlyweight();
     private final CompletelyIdentifiedMessageFlyweight completelyIdentifiedMessageFlyweight = new CompletelyIdentifiedMessageFlyweight();
     private final int mtuLength;
@@ -153,15 +153,15 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
                         flyweight = channelMessage;
                         onRemoveChannel(channelMessage);
                         return;
-                    case ADD_RECEIVER:
+                    case ADD_CONSUMER:
                         receiverMessageFlyweight.wrap(buffer, index);
                         flyweight = receiverMessageFlyweight;
-                        onAddReceiver(receiverMessageFlyweight);
+                        onAddConsumer(receiverMessageFlyweight);
                         return;
-                    case REMOVE_RECEIVER:
+                    case REMOVE_CONSUMER:
                         receiverMessageFlyweight.wrap(buffer, index);
                         flyweight = receiverMessageFlyweight;
-                        onRemoveReceiver(receiverMessageFlyweight);
+                        onRemoveConsumer(receiverMessageFlyweight);
                         return;
                 }
             }
@@ -363,19 +363,19 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         }
     }
 
-    public void onAddReceiver(final ReceiverMessageFlyweight receiverMessage)
+    public void onAddConsumer(final ConsumerMessageFlyweight consumerMessage)
     {
         // instruct receiver thread of new framehandler and new channelIdlist for such
-        receiverThreadCursor.addNewReceiverEvent(receiverMessage.destination(), receiverMessage.channelIds());
+        receiverThreadCursor.addNewReceiverEvent(consumerMessage.destination(), consumerMessage.channelIds());
 
         // this thread does not add buffers. The RcvFrameHandler handle methods will send an event for this thread
         // to create buffers as needed
     }
 
-    public void onRemoveReceiver(final ReceiverMessageFlyweight receiverMessage)
+    public void onRemoveConsumer(final ConsumerMessageFlyweight consumerMessage)
     {
         // instruct receiver thread to get rid of channels and possibly destination
-        receiverThreadCursor.addRemoveReceiverEvent(receiverMessage.destination(), receiverMessage.channelIds());
+        receiverThreadCursor.addRemoveReceiverEvent(consumerMessage.destination(), consumerMessage.channelIds());
     }
 
     public void onRequestTerm(final long sessionId, final long channelId, final long termId)

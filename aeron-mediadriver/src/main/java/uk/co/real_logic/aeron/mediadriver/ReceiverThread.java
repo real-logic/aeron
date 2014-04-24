@@ -19,7 +19,7 @@ import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.ClosableThread;
 import uk.co.real_logic.aeron.util.ErrorCode;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
-import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.ConsumerMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import java.util.HashMap;
@@ -27,7 +27,7 @@ import java.util.Map;
 
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.SELECT_TIMEOUT;
 import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION;
-import static uk.co.real_logic.aeron.util.ErrorCode.RECEIVER_NOT_REGISTERED;
+import static uk.co.real_logic.aeron.util.ErrorCode.CONSUMER_NOT_REGISTERED;
 
 /**
  * Receiver Thread for JVM based mediadriver, uses an event loop with command buffer
@@ -38,7 +38,7 @@ public class ReceiverThread extends ClosableThread
     private final NioSelector nioSelector;
     private final MediaDriverAdminThreadCursor adminThreadCursor;
     private final Map<UdpDestination, RcvFrameHandler> rcvDestinationMap = new HashMap<>();
-    private final ReceiverMessageFlyweight receiverMessage;
+    private final ConsumerMessageFlyweight receiverMessage;
     private final AtomicArray<RcvBufferState> buffers;
 
     public ReceiverThread(final MediaDriver.TopologyBuilder builder) throws Exception
@@ -48,7 +48,7 @@ public class ReceiverThread extends ClosableThread
         this.adminThreadCursor = new MediaDriverAdminThreadCursor(builder.adminThreadCommandBuffer(),
                                                                              builder.adminNioSelector());
         this.nioSelector = builder.rcvNioSelector();
-        this.receiverMessage = new ReceiverMessageFlyweight();
+        this.receiverMessage = new ConsumerMessageFlyweight();
         this.buffers = new AtomicArray<>();
     }
 
@@ -65,12 +65,12 @@ public class ReceiverThread extends ClosableThread
                 {
                     switch (eventTypeId)
                     {
-                        case ControlProtocolEvents.ADD_RECEIVER:
+                        case ControlProtocolEvents.ADD_CONSUMER:
                             receiverMessage.wrap(buffer, index);
                             onNewReceiverEvent(receiverMessage.destination(), receiverMessage.channelIds());
                             return;
 
-                        case ControlProtocolEvents.REMOVE_RECEIVER:
+                        case ControlProtocolEvents.REMOVE_CONSUMER:
                             receiverMessage.wrap(buffer, index);
                             onRemoveReceiverEvent(receiverMessage.destination(), receiverMessage.channelIds());
                             return;
@@ -84,7 +84,7 @@ public class ReceiverThread extends ClosableThread
                 catch (final ReceiverNotRegisteredException e)
                 {
                     // TODO: log this
-                    onError(RECEIVER_NOT_REGISTERED, length);
+                    onError(CONSUMER_NOT_REGISTERED, length);
                 }
                 catch (final Exception e)
                 {

@@ -16,20 +16,19 @@
 package uk.co.real_logic.aeron.examples;
 
 import uk.co.real_logic.aeron.Aeron;
+import uk.co.real_logic.aeron.Consumer;
 import uk.co.real_logic.aeron.Destination;
-import uk.co.real_logic.aeron.Receiver;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
 /**
- * Example Aeron receiver application
+ * Example Aeron consumer application
  */
-public class ExampleReceiver
+public class ExampleConsumer
 {
     public static final Destination DESTINATION = new Destination("udp://172.16.29.29:40123");
     private static final ExampleDataHandler[] CHANNELS = {new ExampleDataHandler(10), new ExampleDataHandler(20)};
@@ -40,9 +39,9 @@ public class ExampleReceiver
 
         try
         {
-            final Aeron.Builder aeronBuilder = new Aeron.Builder().errorHandler(ExampleReceiver::onError);
+            final Aeron.Builder aeronBuilder = new Aeron.Builder().errorHandler(ExampleConsumer::onError);
             final Aeron aeron = Aeron.newSingleMediaDriver(aeronBuilder);
-            final Receiver.Builder builder = new Receiver.Builder().destination(DESTINATION);
+            final Consumer.Builder builder = new Consumer.Builder().destination(DESTINATION);
 
             // register some channels that use stateful objects
             IntStream.range(0, CHANNELS.length).forEach(i -> builder.channel(CHANNELS[i].channelId(), CHANNELS[i]));
@@ -54,19 +53,19 @@ public class ExampleReceiver
             builder.newSourceEvent((channelId, sessionId) -> System.out.println("new source for channel"))
                    .inactiveSourceEvent((channelId, sessionId) -> System.out.println("inactive source for channel"));
 
-            final Receiver rcv1 = aeron.newReceiver(builder);
+            final Consumer rcv1 = aeron.newReceiver(builder);
 
             // create a receiver using the fluent style lambda
-            final Receiver rcv2 =
-                    aeron.newReceiver((bld) ->
-                                      {
-                                          bld.destination(DESTINATION)
-                                             .channel(100, (buffer, offset, sessionId, flags) -> { /* do something */ })
-                                             .newSourceEvent((channelId, sessionId) -> System.out.println("new source for channel"));
-                                      });
+            final Consumer rcv2 =
+                    aeron.newConsumer((bld) ->
+                    {
+                        bld.destination(DESTINATION)
+                                .channel(100, (buffer, offset, sessionId, flags) -> { /* do something */ })
+                                .newSourceEvent((channelId, sessionId) -> System.out.println("new source for channel"));
+                    });
 
             // make a reusable, parameterized event loop function
-            final Consumer<Receiver> loop = (rcv) ->
+            final java.util.function.Consumer<Consumer> loop = (rcv) ->
             {
                 try
                 {
@@ -100,7 +99,7 @@ public class ExampleReceiver
         System.err.println(message);
     }
 
-    public static class ExampleDataHandler implements Receiver.DataHandler
+    public static class ExampleDataHandler implements Consumer.DataHandler
     {
         private final long channelId;
 
@@ -114,7 +113,7 @@ public class ExampleReceiver
             return channelId;
         }
 
-        public void onData(final AtomicBuffer buffer, final int offset, final long sessionId, final Receiver.MessageFlags flags)
+        public void onData(final AtomicBuffer buffer, final int offset, final long sessionId, final Consumer.MessageFlags flags)
         {
         }
     }

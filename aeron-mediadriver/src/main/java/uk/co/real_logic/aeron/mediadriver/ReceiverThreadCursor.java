@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.ConsumerMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
@@ -34,7 +34,7 @@ public class ReceiverThreadCursor
     private final RingBuffer commandBuffer;
     private final NioSelector selector;
     private final AtomicBuffer writeBuffer;
-    private final ReceiverMessageFlyweight receiverMessage;
+    private final ConsumerMessageFlyweight receiverMessage;
     private final CompletelyIdentifiedMessageFlyweight addTermBufferMessage;
 
     public ReceiverThreadCursor(final RingBuffer commandBuffer, final NioSelector selector)
@@ -43,7 +43,7 @@ public class ReceiverThreadCursor
         this.selector = selector;
         writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
 
-        receiverMessage = new ReceiverMessageFlyweight();
+        receiverMessage = new ConsumerMessageFlyweight();
         receiverMessage.wrap(writeBuffer, 0);
 
         addTermBufferMessage = new CompletelyIdentifiedMessageFlyweight();
@@ -52,12 +52,12 @@ public class ReceiverThreadCursor
 
     public void addNewReceiverEvent(final String destination, final long[] channelIdList)
     {
-        addReceiverEvent(ADD_RECEIVER, destination, channelIdList);
+        addReceiverEvent(ADD_CONSUMER, destination, channelIdList);
     }
 
     public void addRemoveReceiverEvent(final String destination, final long[] channelIdList)
     {
-        addReceiverEvent(REMOVE_RECEIVER, destination, channelIdList);
+        addReceiverEvent(REMOVE_CONSUMER, destination, channelIdList);
     }
 
     private void addReceiverEvent(final int eventTypeId, final String destination, final long[] channelIdList)

@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.admin;
 
-import uk.co.real_logic.aeron.ReceiverChannel;
+import uk.co.real_logic.aeron.ConsumerChannel;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 
 import java.util.HashMap;
@@ -23,18 +23,18 @@ import java.util.Map;
 
 import static uk.co.real_logic.aeron.util.collections.CollectionUtil.getOrDefault;
 
-public class ReceiverMap
+public class ConsumerMap
 {
-    private final Map<String, Long2ObjectHashMap<ReceiverChannel>> map;
+    private final Map<String, Long2ObjectHashMap<ConsumerChannel>> map;
 
-    public ReceiverMap()
+    public ConsumerMap()
     {
         map = new HashMap<>();
     }
 
-    public ReceiverChannel get(final String destination, final long channelId)
+    public ConsumerChannel get(final String destination, final long channelId)
     {
-        final Long2ObjectHashMap<ReceiverChannel> channelMap = map.get(destination);
+        final Long2ObjectHashMap<ConsumerChannel> channelMap = map.get(destination);
         if (channelMap == null)
         {
             return null;
@@ -43,22 +43,22 @@ public class ReceiverMap
         return channelMap.get(channelId);
     }
 
-    public void put(final String destination, final long channelId, final ReceiverChannel value)
+    public void put(final String destination, final long channelId, final ConsumerChannel value)
     {
-        final Long2ObjectHashMap<ReceiverChannel> channelMap
+        final Long2ObjectHashMap<ConsumerChannel> channelMap
                 = getOrDefault(map, destination, ignore -> new Long2ObjectHashMap<>());
         channelMap.put(channelId, value);
     }
 
-    public ReceiverChannel remove(final String destination, final long channelId)
+    public ConsumerChannel remove(final String destination, final long channelId)
     {
-        final Long2ObjectHashMap<ReceiverChannel> channelMap = map.get(destination);
+        final Long2ObjectHashMap<ConsumerChannel> channelMap = map.get(destination);
         if (channelMap == null)
         {
             return null;
         }
 
-        ReceiverChannel value = channelMap.remove(channelId);
+        ConsumerChannel value = channelMap.remove(channelId);
 
         if (channelMap.isEmpty())
         {

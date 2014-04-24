@@ -24,7 +24,7 @@ import uk.co.real_logic.aeron.util.MappingAdminBufferStrategy;
 import uk.co.real_logic.aeron.util.SharedDirectories;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.ConsumerMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.EventHandler;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
@@ -43,7 +43,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static uk.co.real_logic.aeron.Receiver.DataHandler;
+import static uk.co.real_logic.aeron.Consumer.DataHandler;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.SharedDirectories.Buffers;
 import static uk.co.real_logic.aeron.util.SharedDirectories.mapLoggers;
@@ -79,7 +79,7 @@ public class AeronTest
 
     private final ChannelMessageFlyweight message = new ChannelMessageFlyweight();
     private final CompletelyIdentifiedMessageFlyweight identifiedMessage = new CompletelyIdentifiedMessageFlyweight();
-    private final ReceiverMessageFlyweight receiverMessage = new ReceiverMessageFlyweight();
+    private final ConsumerMessageFlyweight receiverMessage = new ConsumerMessageFlyweight();
 
     private final ErrorHeaderFlyweight errorHeader = new ErrorHeaderFlyweight();
 
@@ -198,18 +198,18 @@ public class AeronTest
     {
         final RingBuffer toMediaDriver = adminBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
-        final Receiver.Builder builder = new Receiver.Builder()
+        final Consumer.Builder builder = new Consumer.Builder()
                 .destination(new Destination(DESTINATION))
                 .channel(CHANNEL_ID, emptyDataHandler())
                 .channel(CHANNEL_ID_2, emptyDataHandler());
 
-        final Receiver receiver = aeron.newReceiver(builder);
+        final Consumer consumer = aeron.newReceiver(builder);
 
         aeron.adminThread().process();
 
-        assertEventRead(toMediaDriver, assertReceiverMessageOfType(ADD_RECEIVER));
+        assertEventRead(toMediaDriver, assertReceiverMessageOfType(ADD_CONSUMER));
 
-        assertThat(receiver.process(), is(0));
+        assertThat(consumer.process(), is(0));
     }
 
     @Test
@@ -217,15 +217,15 @@ public class AeronTest
     {
         final RingBuffer toMediaDriver = adminBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
-        final Receiver receiver = newReceiver(aeron);
+        final Consumer consumer = newReceiver(aeron);
 
         aeron.adminThread().process();
         skip(toMediaDriver, 1);
 
-        receiver.close();
+        consumer.close();
         aeron.adminThread().process();
 
-        assertEventRead(toMediaDriver, assertReceiverMessageOfType(REMOVE_RECEIVER));
+        assertEventRead(toMediaDriver, assertReceiverMessageOfType(REMOVE_CONSUMER));
     }
 
     @Test
@@ -259,7 +259,7 @@ public class AeronTest
 
         final RingBuffer toMediaDriver = adminBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
-        final Receiver receiver = newReceiver(aeron);
+        final Consumer consumer = newReceiver(aeron);
 
         List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
 
@@ -268,7 +268,7 @@ public class AeronTest
 
         writePacket(logAppenders.get(0));
 
-        assertThat(receiver.process(), is(1));
+        assertThat(consumer.process(), is(1));
     }
 
     @Test
@@ -278,7 +278,7 @@ public class AeronTest
 
         final RingBuffer toMediaDriver = adminBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
-        final Receiver receiver = newReceiver(aeron);
+        final Consumer consumer = newReceiver(aeron);
 
         List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
         List<LogAppender> otherLogAppenders = createLogAppenders(SESSION_ID_2);
@@ -288,7 +288,7 @@ public class AeronTest
 
         writePacket(logAppenders.get(0));
         writePacket(otherLogAppenders.get(0));
-        assertThat(receiver.process(), is(2));
+        assertThat(consumer.process(), is(2));
     }
 
     @Test
@@ -298,7 +298,7 @@ public class AeronTest
 
         final RingBuffer toMediaDriver = adminBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
-        final Receiver receiver = newReceiver(aeron);
+        final Consumer consumer = newReceiver(aeron);
         final List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
 
         aeron.adminThread().process();
@@ -308,17 +308,17 @@ public class AeronTest
         int eventCount = logAppender.capacity() / sendBuffer.capacity();
 
         writePackets(logAppender, eventCount);
-        assertThat(receiver.process(), is(eventCount));
+        assertThat(consumer.process(), is(eventCount));
 
         sendNewBufferNotification(NEW_RECEIVE_BUFFER_NOTIFICATION, 1L, SESSION_ID);
         sendNewBufferNotification(NEW_RECEIVE_BUFFER_NOTIFICATION, 2L, SESSION_ID);
         aeron.adminThread().process();
 
         writePackets(logAppenders.get(1), eventCount);
-        assertThat(receiver.process(), is(eventCount));
+        assertThat(consumer.process(), is(eventCount));
 
         writePackets(logAppenders.get(2), eventCount);
-        assertThat(receiver.process(), is(eventCount));
+        assertThat(consumer.process(), is(eventCount));
     }
 
     @Test
@@ -328,7 +328,7 @@ public class AeronTest
 
         final RingBuffer toMediaDriver = adminBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
-        final Receiver receiver = newReceiver(aeron);
+        final Consumer consumer = newReceiver(aeron);
         final List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
 
         aeron.adminThread().process();
@@ -338,10 +338,10 @@ public class AeronTest
         int eventCount = logAppender.capacity() / sendBuffer.capacity();
 
         writePackets(logAppender, eventCount);
-        assertThat(receiver.process(), is(eventCount));
+        assertThat(consumer.process(), is(eventCount));
 
         writePackets(logAppenders.get(1), eventCount);
-        assertThat(receiver.process(), is(0));
+        assertThat(consumer.process(), is(0));
     }
 
     @Test
@@ -351,7 +351,7 @@ public class AeronTest
 
         final RingBuffer toMediaDriver = adminBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
-        final Receiver receiver = newReceiver(aeron);
+        final Consumer consumer = newReceiver(aeron);
         final List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
         final List<LogAppender> otherLogAppenders = createLogAppenders(SESSION_ID_2);
         sendNewBufferNotification(NEW_RECEIVE_BUFFER_NOTIFICATION, 1L, SESSION_ID);
@@ -363,13 +363,13 @@ public class AeronTest
         final int eventCount = logAppender.capacity() / sendBuffer.capacity();
 
         writePackets(logAppender, eventCount);
-        assertThat(receiver.process(), is(eventCount));
+        assertThat(consumer.process(), is(eventCount));
 
         writePackets(logAppenders.get(1), eventCount);
-        assertThat(receiver.process(), is(eventCount));
+        assertThat(consumer.process(), is(eventCount));
 
         writePackets(otherLogAppenders.get(0), 5);
-        assertThat(receiver.process(), is(5));
+        assertThat(consumer.process(), is(5));
     }
 
     private DataHandler eitherSessionHandler()
@@ -431,9 +431,9 @@ public class AeronTest
         assertTrue(apiBuffer.write(eventTypeId, atomicSendBuffer, 0, identifiedMessage.length()));
     }
 
-    private Receiver newReceiver(final Aeron aeron)
+    private Consumer newReceiver(final Aeron aeron)
     {
-        final Receiver.Builder builder = new Receiver.Builder()
+        final Consumer.Builder builder = new Consumer.Builder()
                 .destination(new Destination(DESTINATION))
                 .channel(CHANNEL_ID, channel2Handler)
                 .channel(CHANNEL_ID_2, emptyDataHandler());

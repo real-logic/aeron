@@ -37,7 +37,7 @@ import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_LONG;
  * |                                                             ...
  * +---------------------------------------------------------------+
  */
-public class ReceiverMessageFlyweight extends Flyweight
+public class ConsumerMessageFlyweight extends Flyweight
 {
     private static final int CHANNEL_IDS_OFFSET = 0;
 
@@ -59,7 +59,7 @@ public class ReceiverMessageFlyweight extends Flyweight
      *
      * @param value the channel id list
      */
-    public ReceiverMessageFlyweight channelIds(long[] value)
+    public ConsumerMessageFlyweight channelIds(long[] value)
     {
         lengthOfChannelIds = uint32ArrayPut(offset() + CHANNEL_IDS_OFFSET, value, LITTLE_ENDIAN);
         return this;
@@ -88,7 +88,7 @@ public class ReceiverMessageFlyweight extends Flyweight
      * @param destination field value
      * @return flyweight
      */
-    public ReceiverMessageFlyweight destination(final String destination)
+    public ConsumerMessageFlyweight destination(final String destination)
     {
         lengthOfDestination = stringPut(offset() + lengthOfChannelIds, destination, LITTLE_ENDIAN);
         return this;

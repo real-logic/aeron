@@ -29,10 +29,10 @@ public class ControlProtocolEvents
     public static final int REMOVE_CHANNEL = 0x02;
     /** Remove Term */
     public static final int REMOVE_TERM = 0x03;
-    /** Add Receiver */
-    public static final int ADD_RECEIVER = 0x04;
-    /** Remove Receiver */
-    public static final int REMOVE_RECEIVER = 0x05;
+    /** Add Consumer */
+    public static final int ADD_CONSUMER = 0x04;
+    /** Remove Consume */
+    public static final int REMOVE_CONSUMER = 0x05;
     /** Request Term */
     public static final int REQUEST_TERM = 0x06;
 

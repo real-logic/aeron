@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.admin;
 
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.ConsumerMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
@@ -38,7 +38,7 @@ public class ClientAdminThreadCursor
     private final RingBuffer adminThreadCommandBuffer;
     private final AtomicBuffer writeBuffer;
     private final ChannelMessageFlyweight channelMessage;
-    private final ReceiverMessageFlyweight removeReceiverMessage;
+    private final ConsumerMessageFlyweight removeReceiverMessage;
     private final CompletelyIdentifiedMessageFlyweight requestTermMessage;
 
     public ClientAdminThreadCursor(final RingBuffer adminThreadCommandBuffer)
@@ -46,7 +46,7 @@ public class ClientAdminThreadCursor
         this.adminThreadCommandBuffer = adminThreadCommandBuffer;
         this.writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
         this.channelMessage = new ChannelMessageFlyweight();
-        this.removeReceiverMessage = new ReceiverMessageFlyweight();
+        this.removeReceiverMessage = new ConsumerMessageFlyweight();
         this.requestTermMessage = new CompletelyIdentifiedMessageFlyweight();
 
         channelMessage.wrap(writeBuffer, 0);
@@ -77,12 +77,12 @@ public class ClientAdminThreadCursor
 
     public void sendAddReceiver(final String destination, final long[] channelIdList)
     {
-        sendReceiverMessage(ADD_RECEIVER, destination, channelIdList);
+        sendReceiverMessage(ADD_CONSUMER, destination, channelIdList);
     }
 
     public void sendRemoveReceiver(final String destination, final long[] channelIdList)
     {
-        sendReceiverMessage(REMOVE_RECEIVER, destination, channelIdList);
+        sendReceiverMessage(REMOVE_CONSUMER, destination, channelIdList);
     }
 
     private void sendReceiverMessage(final int eventTypeId, final String destination, final long[] channelIdList)

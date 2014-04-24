@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.admin;
 import org.junit.Test;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.ReceiverMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.ConsumerMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.EventHandler;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
@@ -75,10 +75,10 @@ public class ClientAdminThreadCursorTest
 
         assertReadsOneMessage((eventTypeId, buffer, index, length) ->
         {
-            ReceiverMessageFlyweight removeReceiverMessage = new ReceiverMessageFlyweight();
+            ConsumerMessageFlyweight removeReceiverMessage = new ConsumerMessageFlyweight();
             removeReceiverMessage.wrap(buffer, index);
 
-            assertThat(eventTypeId, is(REMOVE_RECEIVER));
+            assertThat(eventTypeId, is(REMOVE_CONSUMER));
             assertThat(removeReceiverMessage.destination(), is(DESTINATION));
             assertThat(removeReceiverMessage.channelIds(), is(CHANNEL_IDS));
         });

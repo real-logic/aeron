@@ -20,8 +20,8 @@ import uk.co.real_logic.aeron.mediadriver.MediaDriver;
 import uk.co.real_logic.aeron.util.SharedDirectories;
 
 import static org.mockito.Mockito.mock;
-import static uk.co.real_logic.aeron.Receiver.DataHandler;
-import static uk.co.real_logic.aeron.Receiver.NewSourceEventHandler;
+import static uk.co.real_logic.aeron.Consumer.DataHandler;
+import static uk.co.real_logic.aeron.Consumer.NewSourceEventHandler;
 
 public class UnicastTest
 {
@@ -38,7 +38,7 @@ public class UnicastTest
     private Aeron producingClient;
     private Aeron receivingClient;
     private MediaDriver driver;
-    private Receiver receiver;
+    private Consumer consumer;
     private Source source;
 
     @Before
@@ -52,7 +52,7 @@ public class UnicastTest
         producingClient = Aeron.newSingleMediaDriver(new Aeron.Builder());
         receivingClient = Aeron.newSingleMediaDriver(new Aeron.Builder());
 
-        receiver = receivingClient.newReceiver(new Receiver.Builder()
+        consumer = receivingClient.newReceiver(new Consumer.Builder()
                 .destination(DESTINATION)
                 .channel(CHANNEL_ID, dataHandler)
                 .newSourceEvent(sourceHandler));
@@ -64,7 +64,7 @@ public class UnicastTest
     @After
     public void closeEverything() throws Exception
     {
-        receiver.close();
+        consumer.close();
         source.close();
         driver.close();
     }
@@ -84,7 +84,7 @@ public class UnicastTest
         driver.senderThread().process();
         driver.receiverThread().process();
         receivingClient.adminThread().process();
-        receiver.process();
+        consumer.process();
     }
 
     @Test

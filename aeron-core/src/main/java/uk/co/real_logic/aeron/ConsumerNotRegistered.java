@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
-public interface ReceiverNotRegistered
+public interface ConsumerNotRegistered
 {
-    void onReceiverNotRegistered(final String destination, final long[] channelIds);
+    void onConsumerNotRegistered(final String destination, final long[] channelIds);
 }

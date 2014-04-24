@@ -145,9 +145,9 @@ public class ReceiverThread extends ClosableThread
         return nioSelector;
     }
 
-    public void addBuffer(final RcvBufferState buffer)
+    public boolean sendBuffer(final RcvBufferState buffer)
     {
-        buffers.add(buffer);
+        return buffers.offer(buffer);
     }
 
     public RcvFrameHandler frameHandler(final UdpDestination destination)

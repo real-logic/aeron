@@ -396,7 +396,11 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             final BufferRotator buffer = bufferManagementStrategy.addReceiverTerm(rcvDestination, sessionId, channelId);
 
             // inform receiver thread of new buffer, destination, etc.
-            receiverThread.addBuffer(new RcvBufferState(rcvDestination, sessionId, channelId, termId, buffer));
+            RcvBufferState bufferState = new RcvBufferState(rcvDestination, sessionId, channelId, termId, buffer);
+            while (!receiverThread.sendBuffer(bufferState))
+            {
+                // TODO: count errors
+            }
         }
         catch (Exception e)
         {

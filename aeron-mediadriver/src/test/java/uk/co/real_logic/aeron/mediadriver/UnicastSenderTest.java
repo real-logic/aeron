@@ -323,10 +323,16 @@ public class UnicastSenderTest
             assertThat(eventTypeId, is(NEW_SEND_BUFFER_NOTIFICATION));
         });
 
-        advanceTimeMilliseconds(300);  // should send 0 length data after 100 msec, so give a bit more time
+        advanceTimeMilliseconds(90);   // should not send yet....
 
-        final SocketAddress address = receiverChannel.receive(recvBuffer);
+        SocketAddress address = receiverChannel.receive(recvBuffer);
+        assertNull(address);
+
+        advanceTimeMilliseconds(110);  // should send 0 length data after 100 msec, so give a bit more time
+
+        address = receiverChannel.receive(recvBuffer);
         assertNotNull(address);
+
         dataHeader.wrap(readBuffer, 0);
         assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
         assertThat(dataHeader.sessionId(), is(SESSION_ID));

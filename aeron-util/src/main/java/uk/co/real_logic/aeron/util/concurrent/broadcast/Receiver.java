@@ -19,6 +19,7 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import static uk.co.real_logic.aeron.util.UnsafeAccess.UNSAFE;
 import static uk.co.real_logic.aeron.util.concurrent.broadcast.BufferDescriptor.*;
 import static uk.co.real_logic.aeron.util.concurrent.broadcast.RecordDescriptor.*;
 
@@ -184,6 +185,8 @@ public class Receiver
 
     private boolean validate(final long cursor)
     {
+        UNSAFE.loadFence(); // Needed to prevent older loads being moved ahead of the validate, see StampedLock.
+
         return cursor == buffer.getLongVolatile(tailSequenceOffset(recordOffset));
     }
 }

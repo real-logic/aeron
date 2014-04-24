@@ -15,12 +15,14 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.protocol.NakFlyweight;
 import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Frame processing for sources
@@ -119,5 +121,10 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
         final SenderChannel channel = findChannel(nak.sessionId(), nak.channelId());
 
         // TODO: have the sender channel, so look for the term within it
+    }
+
+    public TimerWheel.Timer newTimeout(final long delay, final TimeUnit timeUnit, final Runnable task)
+    {
+        return mediaDriverAdminThread.newTimeout(delay, timeUnit, task);
     }
 }

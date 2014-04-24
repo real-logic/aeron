@@ -217,13 +217,21 @@ public class TimerWheel
         return newArray;
     }
 
+    public static enum TimerState
+    {
+        ACTIVE,
+        CANCELLED
+    }
+
     public final class Timer
     {
+
         private final int wheelIndex;
-        private int tickIndex;
         private final long deadline;
         private final Runnable task;
+        private int tickIndex;
         private long remainingRounds;
+        private TimerState state;
 
         public Timer(final long deadline, final Runnable task)
         {
@@ -234,18 +242,39 @@ public class TimerWheel
             final long ticks = Math.max(calculatedIndex, currentTick);
             this.wheelIndex = (int)(ticks & mask);
             this.remainingRounds = (calculatedIndex - currentTick) / wheel.length;
-
+            this.state = TimerState.ACTIVE;
         }
 
         /**
          * Cancel pending timer.
          *
-         * @return
+         * @return indication of success or failure
          */
         public boolean cancel()
         {
             remove();
+            state = TimerState.CANCELLED;
             return true;
+        }
+
+        /**
+         * Is timer active or not
+         *
+         * @return boolean indicating if timer is active or not
+         */
+        public boolean isActive()
+        {
+            return TimerState.ACTIVE == state;
+        }
+
+        /**
+         * Was timer cancelled or not
+         *
+         * @return boolean indicating if timer was cancelled or not
+         */
+        public boolean isCancelled()
+        {
+            return TimerState.CANCELLED == state;
         }
 
         public void remove()

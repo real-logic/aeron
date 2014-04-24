@@ -17,10 +17,15 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
 import uk.co.real_logic.aeron.mediadriver.buffer.LogBuffers;
+import uk.co.real_logic.aeron.util.TimerWheel;
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.MtuScanner;
+import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static uk.co.real_logic.aeron.util.BitUtil.next;
@@ -32,6 +37,8 @@ import static uk.co.real_logic.aeron.util.BitUtil.next;
 public class SenderChannel
 {
     public static final int BUFFER_COUNT = 3;
+    public static final int FLOW_CONTROL_TIMEOUT_MILLISECONDS = 100;
+
     private final ControlFrameHandler frameHandler;
     private final SenderFlowControlStrategy flowControlStrategy;
     private final BufferRotator buffers;
@@ -41,6 +48,9 @@ public class SenderChannel
     private final long currentTermId;
     private final int headerLength;
     private final int mtuLength;
+    private TimerWheel.Timer flowControlTimer;
+    private final ByteBuffer scratchSendBuffer;
+    private final AtomicBuffer scratchAtomicBuffer;
 
     private int currentIndex;
 
@@ -51,6 +61,8 @@ public class SenderChannel
     private final AtomicBoolean requiresRotation;
 
     private final SenderFlowControlState activeFlowControlState;
+
+    private final DataHeaderFlyweight dataHeader;
 
     public SenderChannel(final ControlFrameHandler frameHandler,
                          final SenderFlowControlStrategy flowControlStrategy,
@@ -71,6 +83,9 @@ public class SenderChannel
         this.currentTermId = initialTermId;
         this.headerLength = headerLength;
         this.mtuLength = mtuLength;
+        this.scratchSendBuffer = ByteBuffer.allocateDirect(DataHeaderFlyweight.HEADER_LENGTH);
+        this.scratchAtomicBuffer = new AtomicBuffer(scratchSendBuffer);
+        this.dataHeader = new DataHeaderFlyweight();
 
         scanners =  buffers.buffers()
                            .map(this::newScanner)
@@ -83,6 +98,10 @@ public class SenderChannel
                              .toArray(ByteBuffer[]::new);
         currentIndex = 0;
         requiresRotation = new AtomicBoolean(false);
+
+        this.flowControlTimer = frameHandler.newTimeout(FLOW_CONTROL_TIMEOUT_MILLISECONDS,
+                                                        TimeUnit.MILLISECONDS,
+                                                        this::onFlowControlTimer);
     }
 
     private ByteBuffer duplicateLogBuffer(final LogBuffers log)
@@ -192,6 +211,47 @@ public class SenderChannel
                                                                   highestContiguousSequenceNumber,
                                                                   receiverWindow);
         activeFlowControlState.updateRightEdgeOfWindow(rightEdge);
+
+        if (flowControlTimer.isActive())
+        {
+            flowControlTimer.cancel();
+        }
+    }
+
+    public void onFlowControlTimer()
+    {
+        // called from admin thread on timeout
+
+        // used for both initial setup 0 length data as well as heartbeats
+
+        // send 0 length data frame with current sequenceNumber
+        dataHeader.wrap(scratchAtomicBuffer, 0);
+
+        dataHeader.sessionId(sessionId)
+                  .channelId(channelId)
+                  .termId(currentTermId)
+                  .sequenceNumber(0)
+                  .frameLength(DataHeaderFlyweight.HEADER_LENGTH)
+                  .headerType(HeaderFlyweight.HDR_TYPE_DATA)
+                  .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
+                  .version(HeaderFlyweight.CURRENT_VERSION);
+
+        scratchSendBuffer.position(0);
+        scratchSendBuffer.limit(DataHeaderFlyweight.HEADER_LENGTH);
+
+        try
+        {
+            int bytesSent = frameHandler.send(scratchSendBuffer);
+            if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
+            {
+                // TODO: error
+            }
+        }
+        catch (Exception e)
+        {
+            //TODO: errors
+            e.printStackTrace();
+        }
     }
 
     public void processBufferRotation()

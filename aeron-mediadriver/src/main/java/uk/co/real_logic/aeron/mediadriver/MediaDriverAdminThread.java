@@ -27,8 +27,11 @@ import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import static uk.co.real_logic.aeron.mediadriver.MediaDriver.ADMIN_THREAD_TICKS_PER_WHEEL;
+import static uk.co.real_logic.aeron.mediadriver.MediaDriver.ADMIN_THREAD_TICK_DURATION_MICROSECONDS;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.SELECT_TIMEOUT;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
@@ -52,6 +55,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     private final RingBuffer adminSendBuffer;
     private final Long2ObjectHashMap<ControlFrameHandler> srcDestinationMap;
     private final AtomicBuffer writeBuffer;
+    private final TimerWheel timerWheel;
 
     private final ByteBuffer toMediaDriver;
     private final ByteBuffer toApi;
@@ -79,6 +83,11 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         this.senderFlowControl = builder.senderFlowControl();
         this.srcDestinationMap = new Long2ObjectHashMap<>();
         this.writeBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(WRITE_BUFFER_CAPACITY));
+        this.timerWheel = (builder.adminTimerWheel() != null) ?
+                            builder.adminTimerWheel() :
+                            new TimerWheel(ADMIN_THREAD_TICK_DURATION_MICROSECONDS,
+                                           TimeUnit.MICROSECONDS,
+                                           ADMIN_THREAD_TICKS_PER_WHEEL);
 
         try
         {
@@ -113,6 +122,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         senderThread.processBufferRotation();
         processReceiveBuffer();
         processCommandBuffer();
+        processTimers();
     }
 
     private void processCommandBuffer()
@@ -164,26 +174,32 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
                         onRemoveConsumer(receiverMessageFlyweight);
                         return;
                 }
-            }
-            catch (final ControlProtocolException e)
+            } catch (final ControlProtocolException e)
             {
                 final byte[] err = e.getMessage().getBytes();
                 final int len = ErrorHeaderFlyweight.HEADER_LENGTH + length + err.length;
 
                 errorHeaderFlyweight.wrap(writeBuffer, 0);
                 errorHeaderFlyweight.errorCode(e.errorCode())
-                                    .offendingFlyweight(flyweight, length)
-                                    .errorString(err)
-                                    .frameLength(len);
+                        .offendingFlyweight(flyweight, length)
+                        .errorString(err)
+                        .frameLength(len);
 
                 adminSendBuffer.write(ERROR_RESPONSE, writeBuffer, 0, errorHeaderFlyweight.frameLength());
-            }
-            catch (Exception e)
+            } catch (Exception e)
             {
                 // TODO: log this instead
                 e.printStackTrace();
             }
         });
+    }
+
+    public void processTimers()
+    {
+        if (timerWheel.calculateDelayInMsec() <= 0)
+        {
+            timerWheel.expireTimers();
+        }
     }
 
     public void close()
@@ -213,6 +229,11 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     public NioSelector nioSelector()
     {
         return nioSelector;
+    }
+
+    public TimerWheel.Timer newTimeout(final long delay, final TimeUnit timeUnit, final Runnable task)
+    {
+        return timerWheel.newTimeout(delay, timeUnit, task);
     }
 
     public void sendErrorResponse(final int code, final byte[] message)
@@ -291,10 +312,10 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
                                         sessionId,
                                         channelId,
                                         initialTermId,
-                    HEADER_LENGTH,
+                                        HEADER_LENGTH,
                                         mtuLength);
 
-            // add channel to SrcFrameHandler so it can demux NAKs and SMs
+            // add channel to frameHandler so it can demux NAKs and SMs
             frameHandler.addChannel(channel);
 
             // tell the client admin thread of the new buffer

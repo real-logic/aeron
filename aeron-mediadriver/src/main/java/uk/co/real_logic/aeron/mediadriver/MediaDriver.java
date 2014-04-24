@@ -20,6 +20,7 @@ import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy;
 import uk.co.real_logic.aeron.util.AdminBufferStrategy;
 import uk.co.real_logic.aeron.util.CommonConfiguration;
 import uk.co.real_logic.aeron.util.CreatingAdminBufferStrategy;
+import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
@@ -85,6 +86,11 @@ public class MediaDriver implements AutoCloseable
                                                                  ADMIN_BUFFER_SZ_DEFAULT).intValue();
     public static final int SELECT_TIMEOUT = Integer.getInteger(SELECT_TIMEOUT_PROPERTY_NAME,
                                                                 SELECT_TIMEOUT_DEFAULT).intValue();
+
+    /** ticksPerWheel for TimerWheel in admin thread */
+    public static final int ADMIN_THREAD_TICKS_PER_WHEEL = 1024;
+    /** tickDuration (in MICROSECONDS) for TimerWheel in admin thread */
+    public static final int ADMIN_THREAD_TICK_DURATION_MICROSECONDS = 10 * 1000;
 
     public static void main(final String[] args)
     {
@@ -165,6 +171,7 @@ public class MediaDriver implements AutoCloseable
         private NioSelector rcvNioSelector;
         private NioSelector adminNioSelector;
         private Supplier<SenderFlowControlStrategy> senderFlowControl;
+        private TimerWheel adminTimerWheel;
         private int mtuLength;
         private RcvFrameHandlerFactory rcvFrameHandlerFactory;
 
@@ -224,6 +231,12 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
+        public MediaDriverContext adminTimerWheel(final TimerWheel wheel)
+        {
+            this.adminTimerWheel = wheel;
+            return this;
+        }
+
         public RingBuffer adminThreadCommandBuffer()
         {
             return adminThreadCommandBuffer;
@@ -273,6 +286,11 @@ public class MediaDriver implements AutoCloseable
         {
             this.rcvFrameHandlerFactory = rcvFrameHandlerFactory;
             return this;
+        }
+
+        public TimerWheel adminTimerWheel()
+        {
+            return adminTimerWheel;
         }
     }
 }

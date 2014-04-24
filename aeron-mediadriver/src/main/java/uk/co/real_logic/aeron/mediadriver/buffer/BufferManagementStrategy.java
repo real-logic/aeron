@@ -30,10 +30,9 @@ public interface BufferManagementStrategy
 
     void removeSenderChannel(final UdpDestination destination, final long sessionId, final long channelId);
 
-    ByteBuffer addReceiverTerm(final UdpDestination destination,
-                               final long sessionId,
-                               final long channelId,
-                               final long termId) throws Exception;
+    BufferRotator addReceiverTerm(final UdpDestination destination,
+                                  final long sessionId,
+                                  final long channelId) throws Exception;
 
     ByteBuffer lookupReceiverTerm(final UdpDestination destination,
                                   final long sessionId,

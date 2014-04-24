@@ -50,7 +50,7 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
     private final File receiverDir;
 
     private final UdpChannelMap<MappedBufferRotator> srcTermMap;
-    private final TripleLevelMap<ByteBuffer> rcvTermMap;
+    private final UdpChannelMap<MappedBufferRotator> rcvTermMap;
     private final FileMappingConvention fileConvention;
 
     public BasicBufferManagementStrategy(final String dataDir)
@@ -59,7 +59,7 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
         senderDir = fileConvention.senderDir();
         receiverDir = fileConvention.receiverDir();
         srcTermMap = new UdpChannelMap<>();
-        rcvTermMap = new TripleLevelMap<>();
+        rcvTermMap = new UdpChannelMap<>();
         IoUtil.ensureDirectoryExists(senderDir, "sender");
         IoUtil.ensureDirectoryExists(receiverDir, "receiver");
         logTemplate = createTemplateFile(dataDir, "logTemplate", LOG_BUFFER_SIZE);
@@ -140,18 +140,7 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
                                                 final long sessionId,
                                                 final long channelId) throws Exception
     {
-        MappedBufferRotator channelBuffer = srcTermMap.get(destination, sessionId, channelId);
-        if (channelBuffer == null)
-        {
-            final File dir = channelLocation(senderDir, sessionId, channelId, true, destination.clientAwareUri());
-            channelBuffer = new MappedBufferRotator(dir,
-                                                    logTemplate,
-                                                    LOG_BUFFER_SIZE,
-                                                    stateTemplate,
-                                                    STATE_BUFFER_LENGTH);
-            srcTermMap.put(destination, sessionId, channelId, channelBuffer);
-        }
-        return channelBuffer;
+        return addRotator(destination, sessionId, channelId, senderDir);
     }
 
     protected interface TermMapper
@@ -165,29 +154,39 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
         srcTermMap.remove(destination, sessionId, channelId);
     }
 
-    public ByteBuffer addReceiverTerm(final UdpDestination destination,
-                                      final long sessionId,
-                                      final long channelId,
-                                      final long termId) throws Exception
+    public MappedBufferRotator addReceiverTerm(final UdpDestination destination,
+                                               final long sessionId,
+                                               final long channelId) throws Exception
     {
-        ByteBuffer buffer = rcvTermMap.get(sessionId, channelId, termId);
-
-        if (null == buffer)
-        {
-            buffer = mapTerm(receiverDir, destination.toString(), sessionId, channelId, termId,
-                             COMMAND_BUFFER_SZ + TRAILER_LENGTH);
-            rcvTermMap.put(sessionId, channelId, termId, buffer);
-        }
-
-        return buffer;
+        return addRotator(destination, sessionId, channelId, receiverDir);
     }
 
+    // TODO: maybe remove this
     public ByteBuffer lookupReceiverTerm(final UdpDestination destination,
                                          final long sessionId,
                                          final long channelId,
                                          final long termId)
     {
         return null;
+    }
+
+    private MappedBufferRotator addRotator(final UdpDestination destination,
+                                           final long sessionId,
+                                           final long channelId,
+                                           final File rootDir)
+    {
+        MappedBufferRotator channelBuffer = srcTermMap.get(destination, sessionId, channelId);
+        if (channelBuffer == null)
+        {
+            final File dir = channelLocation(rootDir, sessionId, channelId, true, destination.clientAwareUri());
+            channelBuffer = new MappedBufferRotator(dir,
+                    logTemplate,
+                    LOG_BUFFER_SIZE,
+                    stateTemplate,
+                    STATE_BUFFER_LENGTH);
+            srcTermMap.put(destination, sessionId, channelId, channelBuffer);
+        }
+        return channelBuffer;
     }
 
     // TODO: remove this method after cleaning up onRemoveTerm
@@ -198,16 +197,19 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
 
     public int countSessions(final UdpDestination destination)
     {
-        return rcvTermMap.sessionCount();
+        //return rcvTermMap.sessionCount();
+        return 0;
     }
 
     public int countChannels(final UdpDestination destination, final long sessionId)
     {
-        return rcvTermMap.channelCount(sessionId);
+        //return rcvTermMap.channelCount(sessionId);
+        return 0;
     }
 
     public int countTerms(final UdpDestination destination, final long sessionId, final long channelId)
     {
-        return rcvTermMap.termCount(sessionId, channelId);
+        //return rcvTermMap.termCount(sessionId, channelId);
+        return 0;
     }
 }

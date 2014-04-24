@@ -50,7 +50,7 @@ public class ReceiverThreadCursor
         addTermBufferMessage.wrap(writeBuffer, 0);
     }
 
-    public void addNewReceiverEvent(final String destination, final long[] channelIdList)
+    public void addNewConsumerEvent(final String destination, final long[] channelIdList)
     {
         addReceiverEvent(ADD_CONSUMER, destination, channelIdList);
     }

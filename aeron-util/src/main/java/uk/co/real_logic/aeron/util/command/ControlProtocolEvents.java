@@ -34,7 +34,7 @@ public class ControlProtocolEvents
     /** Remove Consume */
     public static final int REMOVE_CONSUMER = 0x05;
     /** Request Term */
-    public static final int REQUEST_TERM = 0x06;
+    public static final int REQUEST_CLEANED_TERM = 0x06;
 
     // Media Driver to Library
 

@@ -121,7 +121,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         {
             switch (eventTypeId)
             {
-                case ControlProtocolEvents.CREATE_RCV_TERM_BUFFER:
+                case CREATE_RCV_TERM_BUFFER:
                     completelyIdentifiedMessageFlyweight.wrap(buffer, index);
                     onCreateRcvTermBufferEvent(completelyIdentifiedMessageFlyweight);
                     return;
@@ -366,7 +366,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     public void onAddConsumer(final ConsumerMessageFlyweight consumerMessage)
     {
         // instruct receiver thread of new framehandler and new channelIdlist for such
-        receiverThreadCursor.addNewReceiverEvent(consumerMessage.destination(), consumerMessage.channelIds());
+        receiverThreadCursor.addNewConsumerEvent(consumerMessage.destination(), consumerMessage.channelIds());
 
         // this thread does not add buffers. The RcvFrameHandler handle methods will send an event for this thread
         // to create buffers as needed
@@ -393,8 +393,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         try
         {
             final UdpDestination rcvDestination = UdpDestination.parse(destination);
-            final ByteBuffer buffer = bufferManagementStrategy.addReceiverTerm(rcvDestination, sessionId,
-                                                                               channelId, termId);
+            final BufferRotator buffer = bufferManagementStrategy.addReceiverTerm(rcvDestination, sessionId, channelId);
 
             // inform receiver thread of new buffer, destination, etc.
             receiverThread.addBuffer(new RcvBufferState(rcvDestination, sessionId, channelId, termId, buffer));

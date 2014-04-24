@@ -15,37 +15,50 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.util.IoUtil;
-import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
+import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
+import uk.co.real_logic.aeron.mediadriver.buffer.LogBuffers;
+import uk.co.real_logic.aeron.mediadriver.buffer.MappedBufferRotator;
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogRebuilder;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.StateViewer;
+import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * State maintained for active sessionIds within a channel for receiver processing
  */
 public class RcvSessionState
 {
+    private static final long UNKNOWN_TERM_ID = -1;
+
     private final InetSocketAddress srcAddr;
     private final long sessionId;
-    private final Long2ObjectHashMap<ByteBuffer> termStateMap;
+
+    private final AtomicLong cleanedTermId;
+    private long currentTermId;
+    private int currentBufferId;
+
+    private BufferRotator rotator;
+    private TermRebuilder[] rebuilders;
 
     public RcvSessionState(final long sessionId, final InetSocketAddress srcAddr)
     {
         this.srcAddr = srcAddr;
         this.sessionId = sessionId;
-        this.termStateMap = new Long2ObjectHashMap<>();
+        cleanedTermId = new AtomicLong(UNKNOWN_TERM_ID);
+        currentBufferId = 0;
     }
 
-    public void termBuffer(final long termId, final ByteBuffer termBuffer)
+    public void termBuffer(final long initialTermId, final BufferRotator rotator)
     {
-        termStateMap.put(termId, termBuffer);
-    }
-
-    public ByteBuffer termBuffer(final long termId)
-    {
-        return termStateMap.get(termId);
+        currentTermId = initialTermId;
+        this.rotator = rotator;
+        rebuilders = rotator.buffers()
+                            .map(buffer -> new TermRebuilder(buffer))
+                            .toArray(TermRebuilder[]::new);
+        cleanedTermId.lazySet(initialTermId + 2);
     }
 
     public InetSocketAddress sourceAddress()
@@ -60,9 +73,59 @@ public class RcvSessionState
 
     public void unmapAllBuffers()
     {
-        termStateMap.forEach((index, buffer) ->
+        /*termStateMap.forEach((index, buffer) ->
         {
             IoUtil.unmap((MappedByteBuffer)buffer);
-        });
+        });*/
+        // TODO: re-evaluate
+    }
+
+    public void rebuildBuffer(final long termId, final DataHeaderFlyweight header)
+    {
+        if (termId == currentTermId)
+        {
+            final TermRebuilder rebuilder = rebuilders[currentBufferId];
+            rebuilder.insert(header);
+        }
+        else if (termId == (currentTermId + 1))
+        {
+            currentTermId++;
+            currentBufferId = MappedBufferRotator.rotateId(currentBufferId);
+            // TODO: signal cleaning.
+            TermRebuilder rebuilder = rebuilders[currentBufferId];
+            while (rebuilder.tailVolatile() != 0)
+            {
+                // TODO:
+                Thread.yield();
+            }
+            rebuilder.insert(header);
+        }
+        else
+        {
+            // TODO: log or monitor this case
+        }
+    }
+
+    private class TermRebuilder
+    {
+        private final LogRebuilder logRebuilder;
+        private final StateViewer stateViewer;
+
+        public TermRebuilder(final LogBuffers buffer)
+        {
+            AtomicBuffer stateBuffer = buffer.stateBuffer();
+            stateViewer = new StateViewer(stateBuffer);
+            logRebuilder = new LogRebuilder(buffer.logBuffer(), stateBuffer);
+        }
+
+        public int tailVolatile()
+        {
+            return stateViewer.tailVolatile();
+        }
+
+        public void insert(final DataHeaderFlyweight header)
+        {
+            logRebuilder.insert(header.atomicBuffer(), header.offset(), header.frameLength());
+        }
     }
 }

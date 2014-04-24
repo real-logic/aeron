@@ -16,9 +16,13 @@
 package uk.co.real_logic.aeron.util;
 
 import org.junit.Test;
+import org.mockito.InOrder;
+import org.mockito.Mock;
+import org.mockito.Mockito;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import static java.lang.Integer.valueOf;
 import static java.util.Arrays.asList;
@@ -27,6 +31,7 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.*;
 
 public class AtomicArrayTest
 {
@@ -179,7 +184,11 @@ public class AtomicArrayTest
     {
         AtomicArray<Integer> array = new AtomicArray<>();
 
-        assertFalse(array.changedSinceLastMark());
+        Runnable init = mock(Runnable.class);
+        Consumer<Integer> handler = mock(Consumer.class);
+        array.forEachIfChanged(init, handler);
+
+        verifyNoMoreInteractions(init, handler);
     }
 
     @Test
@@ -187,22 +196,17 @@ public class AtomicArrayTest
     {
         AtomicArray<Integer> array = new AtomicArray<>();
         array.add(1);
-
-        assertTrue(array.changedSinceLastMark());
-    }
-
-    @Test
-    public void changesOnlySinceLastMark()
-    {
-        AtomicArray<Integer> array = new AtomicArray<>();
-        array.add(1);
-        array.mark();
-
-        assertFalse(array.changedSinceLastMark());
-
         array.add(2);
 
-        assertTrue(array.changedSinceLastMark());
+        Runnable init = mock(Runnable.class);
+        Consumer<Integer> handler = mock(Consumer.class);
+        array.forEachIfChanged(init, handler);
+
+        InOrder inOrder = inOrder(init, handler);
+        inOrder.verify(init).run();
+        inOrder.verify(handler).accept(1);
+        inOrder.verify(handler).accept(2);
+        inOrder.verifyNoMoreInteractions();
     }
 
 }

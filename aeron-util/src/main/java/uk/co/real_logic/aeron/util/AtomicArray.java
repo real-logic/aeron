@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.util;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -30,25 +31,19 @@ public class AtomicArray<T>
     private Object[] lastMark = arrayRef.get();
 
     /**
-     * Denotes whether the array has had elements appended or removed since the
-     * last time mark was called.
-     *
-     * @see this#mark()
-     * @return true if you've changed, false otherwise
-     */
-    public boolean changedSinceLastMark()
-    {
-        return lastMark != arrayRef.get();
-    }
-
-    /**
      * Marks a point at which to start checking changes from.
      *
-     * @see this#changedSinceLastMark()
+     * @param consumer
      */
-    public void mark()
+    public void forEachIfChanged(final Runnable init, final Consumer<T> consumer)
     {
-        lastMark = arrayRef.get();
+        Object[] newMark = arrayRef.get();
+        if (lastMark != newMark)
+        {
+            lastMark = newMark;
+            init.run();
+            forEach(0, consumer, (T[])newMark);
+        }
     }
 
     /**
@@ -87,6 +82,11 @@ public class AtomicArray<T>
         @SuppressWarnings("unchecked")
         final T[] array = (T[])arrayRef.get();
 
+        forEach(start, func, array);
+    }
+
+    private void forEach(int start, final Consumer<T> func, final T[] array)
+    {
         if (array.length == 0)
         {
             return;

@@ -148,13 +148,7 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
         final RcvSessionState sessionState = channelState.getSessionState(sessionId);
         if (null != sessionState)
         {
-            final ByteBuffer termBuffer = sessionState.termBuffer(termId);
-            if (null != termBuffer)
-            {
-                // TODO: process the Data by placing it in the Term Buffer (hot path!)
-                // TODO: loss detection not done in this thread. Done in adminThread
-                return;
-            }
+            sessionState.rebuildBuffer(termId, header);
             // if we don't know the term, this will drop down and the term buffer will be created.
         }
         else
@@ -225,4 +219,5 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
             throw new RuntimeException(e);
         }
     }
+
 }

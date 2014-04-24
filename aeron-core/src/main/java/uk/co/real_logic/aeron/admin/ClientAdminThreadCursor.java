@@ -98,7 +98,7 @@ public class ClientAdminThreadCursor
         requestTermMessage.channelId(channelId);
         requestTermMessage.termId(termId);
         requestTermMessage.destination(destination);
-        adminThreadCommandBuffer.write(REQUEST_TERM, writeBuffer, 0, requestTermMessage.length());
+        adminThreadCommandBuffer.write(REQUEST_CLEANED_TERM, writeBuffer, 0, requestTermMessage.length());
     }
 
 }

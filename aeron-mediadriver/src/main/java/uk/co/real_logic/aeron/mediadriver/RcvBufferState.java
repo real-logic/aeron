@@ -15,6 +15,8 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
+
 import java.nio.ByteBuffer;
 
 public class RcvBufferState
@@ -25,12 +27,12 @@ public class RcvBufferState
     private final long sessionId;
     private final long channelId;
     private final long termId;
-    private final ByteBuffer buffer;
+    private final BufferRotator buffer;
     private final UdpDestination destination;
     private int state;
 
     public RcvBufferState(final UdpDestination destination, final long sessionId,
-                          final long channelId, final long termId, final ByteBuffer buffer)
+                          final long channelId, final long termId, final BufferRotator buffer)
     {
         this.sessionId = sessionId;
         this.channelId = channelId;
@@ -70,7 +72,7 @@ public class RcvBufferState
         this.state = state;
     }
 
-    public ByteBuffer buffer()
+    public BufferRotator buffer()
     {
         return buffer;
     }

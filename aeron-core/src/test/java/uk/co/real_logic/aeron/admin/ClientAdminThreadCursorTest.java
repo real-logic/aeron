@@ -94,7 +94,7 @@ public class ClientAdminThreadCursorTest
             CompletelyIdentifiedMessageFlyweight requestTermBuffer = new CompletelyIdentifiedMessageFlyweight();
             requestTermBuffer.wrap(buffer, index);
 
-            assertThat(eventTypeId, is(REQUEST_TERM));
+            assertThat(eventTypeId, is(REQUEST_CLEANED_TERM));
             assertThat(requestTermBuffer.sessionId(), is(1L));
             assertThat(requestTermBuffer.channelId(), is(2L));
             assertThat(requestTermBuffer.destination(), is(DESTINATION));

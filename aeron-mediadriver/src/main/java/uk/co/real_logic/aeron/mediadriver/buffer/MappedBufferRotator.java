@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver.buffer;
 
+import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.IoUtil;
 
 import java.io.File;
@@ -35,6 +36,13 @@ import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
  */
 public class MappedBufferRotator implements BufferRotator
 {
+    private static final int BUFFER_COUNT = 3;
+
+    public static int rotateId(int previous)
+    {
+        return BitUtil.next(previous, BUFFER_COUNT);
+    }
+
     private static final String LOG_SUFFIX = "-log";
     private static final String STATE_SUFFIX = "-state";
 
@@ -92,9 +100,9 @@ public class MappedBufferRotator implements BufferRotator
     {
         final BasicLogBuffers newBuffer = clean;
 
+        dirty.reset(logTemplate, stateTemplate);
         clean = dirty;
         dirty = current;
-        dirty.reset(logTemplate, stateTemplate);
         current = newBuffer;
     }
 

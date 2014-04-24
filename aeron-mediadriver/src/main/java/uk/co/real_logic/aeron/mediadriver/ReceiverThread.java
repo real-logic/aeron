@@ -24,6 +24,8 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.SELECT_TIMEOUT;
 import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION;
@@ -39,7 +41,7 @@ public class ReceiverThread extends ClosableThread
     private final MediaDriverAdminThreadCursor adminThreadCursor;
     private final Map<UdpDestination, RcvFrameHandler> rcvDestinationMap = new HashMap<>();
     private final ConsumerMessageFlyweight receiverMessage;
-    private final AtomicArray<RcvBufferState> buffers;
+    private final Queue<RcvBufferState> buffers;
 
     public ReceiverThread(final MediaDriver.TopologyBuilder builder) throws Exception
     {
@@ -49,7 +51,7 @@ public class ReceiverThread extends ClosableThread
                                                                              builder.adminNioSelector());
         this.nioSelector = builder.rcvNioSelector();
         this.receiverMessage = new ConsumerMessageFlyweight();
-        this.buffers = new AtomicArray<>();
+        this.buffers = new ConcurrentLinkedQueue<>();
     }
 
     public void process()
@@ -94,18 +96,10 @@ public class ReceiverThread extends ClosableThread
             });
 
             // check AtomicArray for any new buffers created
-            if (buffers.changedSinceLastMark())
+            RcvBufferState state;
+            while ((state = buffers.poll()) != null)
             {
-                buffers.forEach(buffer ->
-                {
-                    if (buffer.state() == RcvBufferState.STATE_PENDING)
-                    {
-                        // attach buffer to rcvDestinationMap and then appropriate RcvFrameHandler
-                        attachBufferState(buffer);
-                        buffer.state(RcvBufferState.STATE_READY);
-                    }
-                });
-                buffers.mark();
+                attachBufferState(state);
             }
         }
         catch (final Exception e)
@@ -154,11 +148,6 @@ public class ReceiverThread extends ClosableThread
     public void addBuffer(final RcvBufferState buffer)
     {
         buffers.add(buffer);
-    }
-
-    public void removeBuffer(final RcvBufferState buffer)
-    {
-        buffers.remove(buffer);
     }
 
     public RcvFrameHandler frameHandler(final UdpDestination destination)

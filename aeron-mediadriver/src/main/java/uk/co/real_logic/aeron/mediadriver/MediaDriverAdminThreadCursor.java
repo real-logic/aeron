@@ -63,7 +63,7 @@ public class MediaDriverAdminThreadCursor
         completelyIdentifiedMessage.sessionId(sessionId)
                                             .channelId(channelId)
                                             .termId(termId)
-                                            .destination(destination.toString());
+                                            .destination(destination.clientAwareUri());
         write(CREATE_RCV_TERM_BUFFER, completelyIdentifiedMessage.length());
     }
 

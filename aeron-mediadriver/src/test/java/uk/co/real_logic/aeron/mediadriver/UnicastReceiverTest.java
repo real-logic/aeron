@@ -15,13 +15,18 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import org.hamcrest.Matchers;
 import org.junit.*;
 import uk.co.real_logic.aeron.mediadriver.buffer.BasicBufferManagementStrategy;
 import uk.co.real_logic.aeron.util.AdminBuffers;
+import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.SharedDirectories;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.ConsumerMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.StateViewer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
@@ -32,17 +37,23 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
+import java.util.List;
 import java.util.stream.IntStream;
 
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.COMMAND_BUFFER_SZ;
+import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION;
 import static uk.co.real_logic.aeron.util.ErrorCode.CONSUMER_NOT_REGISTERED;
+import static uk.co.real_logic.aeron.util.SharedDirectories.Buffers;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_LENGTH;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertEventRead;
+import static uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 
 public class UnicastReceiverTest
 {
@@ -302,7 +313,12 @@ public class UnicastReceiverTest
         sendDataFrame(destination, CHANNEL_ID, 0);
         processThreads(5);
 
-        // TODO
+        sendDataFrame(destination, CHANNEL_ID, 1);
+        processThreads(5);
+
+        List<Buffers> buffers = directory.mapTermFile(directory.receiverDir(), URI, SESSION_ID, CHANNEL_ID);
+        StateViewer stateViewer = new StateViewer(buffers.get(0).stateBuffer());
+        assertThat(stateViewer.tailVolatile(), is(greaterThan(0)));
     }
 
     @Ignore
@@ -345,10 +361,11 @@ public class UnicastReceiverTest
                            .version(HeaderFlyweight.CURRENT_VERSION)
                            .flags((byte) DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
                            .headerType(HeaderFlyweight.HDR_TYPE_DATA)
-                           .frameLength(DataHeaderFlyweight.HEADER_LENGTH);
+                           .frameLength(HEADER_LENGTH);
 
         sendBuffer.position(0);
-        sendBuffer.limit(DataHeaderFlyweight.HEADER_LENGTH);
+        sendBuffer.putInt(dataHeaderFlyweight.dataOffset(), VALUE);
+        sendBuffer.limit(BitUtil.align(HEADER_LENGTH + SIZE_OF_INT, FRAME_ALIGNMENT));
         senderChannel.send(sendBuffer, destination.remoteData());
     }
 

@@ -82,14 +82,18 @@ public class UnicastReceiverTest
     {
         bufferManagementStrategy = new BasicBufferManagementStrategy(directory.dataDir());
 
+        NioSelector nioSelector = new NioSelector();
         final MediaDriver.MediaDriverContext builder = new MediaDriver.MediaDriverContext()
                 .adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
-                .rcvNioSelector(new NioSelector())
+                .rcvNioSelector(nioSelector)
                 .adminNioSelector(new NioSelector())
                 .senderFlowControl(DefaultSenderFlowControlStrategy::new)
                 .adminBufferStrategy(buffers.strategy())
                 .bufferManagementStrategy(bufferManagementStrategy);
+
+        builder.rcvFrameHandlerFactory(new RcvFrameHandlerFactory(nioSelector,
+                new MediaDriverAdminThreadCursor(builder.adminThreadCommandBuffer(), nioSelector)));
 
         senderThread = mock(SenderThread.class);
         receiverThread = new ReceiverThread(builder);

@@ -48,12 +48,14 @@ public class UnicastReceiverTest
 {
     private static final String URI = "udp://localhost:45678";
     private static final String INVALID_URI = "udp://";
-    private static final long[] ONE_CHANNEL = { 10 };
+    private static final long CHANNEL_ID = 10;
+    private static final long[] ONE_CHANNEL = { CHANNEL_ID };
     private static final long[] ANOTHER_CHANNEL = { 20 };
     private static final long[] TWO_CHANNELS = { 20, 30 };
     private static final long[] THREE_CHANNELS = { 10, 20, 30 };
     private static final long SESSION_ID = 0xdeadbeefL;
     private static final long TERM_ID = 0xec1L;
+    private static final int VALUE = 37;
 
     @ClassRule
     public static AdminBuffers buffers = new AdminBuffers(COMMAND_BUFFER_SZ + TRAILER_LENGTH);
@@ -67,6 +69,7 @@ public class UnicastReceiverTest
     private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
     private final ErrorHeaderFlyweight error = new ErrorHeaderFlyweight();
     private final ConsumerMessageFlyweight receiverMessage = new ConsumerMessageFlyweight();
+    private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
     private BasicBufferManagementStrategy bufferManagementStrategy;
     private SenderThread senderThread;
@@ -79,7 +82,7 @@ public class UnicastReceiverTest
     {
         bufferManagementStrategy = new BasicBufferManagementStrategy(directory.dataDir());
 
-        final MediaDriver.TopologyBuilder builder = new MediaDriver.TopologyBuilder()
+        final MediaDriver.MediaDriverContext builder = new MediaDriver.MediaDriverContext()
                 .adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .rcvNioSelector(new NioSelector())
@@ -270,7 +273,7 @@ public class UnicastReceiverTest
     }
 
     @Test(timeout = 1000)
-    public void shouldBeAbleToAddThenRemoveReceiver() throws Exception
+    public void shouldBeAbleToAddThenRemoveReceiverWithoutBuffers() throws Exception
     {
         writeReceiverMessage(ADD_CONSUMER, URI, ONE_CHANNEL);
 
@@ -283,6 +286,26 @@ public class UnicastReceiverTest
         processThreads(5);
 
         assertNull(receiverThread.frameHandler(UdpDestination.parse(URI)));
+    }
+
+    @Test(timeout = 1000)
+    public void shouldBeAbleToReceiveDataFromNetwork() throws Exception
+    {
+        writeReceiverMessage(ADD_CONSUMER, URI, ONE_CHANNEL);
+        processThreads(5);
+
+        UdpDestination destination = UdpDestination.parse(URI);
+        sendDataFrame(destination, CHANNEL_ID, 0);
+        processThreads(5);
+
+        // TODO
+    }
+
+    @Ignore
+    @Test(timeout = 1000)
+    public void shouldBeAbleToAddThenRemoveReceiverWithBuffers() throws Exception
+    {
+        // TODO
     }
 
     @Ignore

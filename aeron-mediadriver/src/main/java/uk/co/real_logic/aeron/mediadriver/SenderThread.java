@@ -31,7 +31,7 @@ public class SenderThread extends ClosableThread
 
     private int counter;
 
-    public SenderThread(final MediaDriver.TopologyBuilder builder)
+    public SenderThread(final MediaDriver.MediaDriverContext builder)
     {
         super(SELECT_TIMEOUT);
         this.adminThreadCommandBuffer = builder.adminThreadCommandBuffer();

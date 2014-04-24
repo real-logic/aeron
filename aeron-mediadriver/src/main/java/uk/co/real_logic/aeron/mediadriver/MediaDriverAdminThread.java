@@ -64,7 +64,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     private final CompletelyIdentifiedMessageFlyweight completelyIdentifiedMessageFlyweight = new CompletelyIdentifiedMessageFlyweight();
     private final int mtuLength;
 
-    public MediaDriverAdminThread(final MediaDriver.TopologyBuilder builder,
+    public MediaDriverAdminThread(final MediaDriver.MediaDriverContext builder,
                                   final ReceiverThread receiverThread,
                                   final SenderThread senderThread)
     {

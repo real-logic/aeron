@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.ClosableThread;
 import uk.co.real_logic.aeron.util.ErrorCode;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
@@ -42,14 +41,16 @@ public class ReceiverThread extends ClosableThread
     private final Map<UdpDestination, RcvFrameHandler> rcvDestinationMap = new HashMap<>();
     private final ConsumerMessageFlyweight receiverMessage;
     private final Queue<RcvBufferState> buffers;
+    private final RcvFrameHandlerFactory frameHandlerFactory;
 
-    public ReceiverThread(final MediaDriver.TopologyBuilder builder) throws Exception
+    public ReceiverThread(final MediaDriver.MediaDriverContext context) throws Exception
     {
         super(SELECT_TIMEOUT);
-        this.commandBuffer = builder.receiverThreadCommandBuffer();
-        this.adminThreadCursor = new MediaDriverAdminThreadCursor(builder.adminThreadCommandBuffer(),
-                                                                             builder.adminNioSelector());
-        this.nioSelector = builder.rcvNioSelector();
+        this.commandBuffer = context.receiverThreadCommandBuffer();
+        this.adminThreadCursor = new MediaDriverAdminThreadCursor(context.adminThreadCommandBuffer(),
+                                                                             context.adminNioSelector());
+        this.nioSelector = context.rcvNioSelector();
+        this.frameHandlerFactory = context.rcvFrameHandlerFactory();
         this.receiverMessage = new ConsumerMessageFlyweight();
         this.buffers = new ConcurrentLinkedQueue<>();
     }
@@ -162,7 +163,7 @@ public class ReceiverThread extends ClosableThread
 
         if (null == rcv)
         {
-            rcv = new RcvFrameHandler(rcvDestination, nioSelector, adminThreadCursor);
+            rcv = frameHandlerFactory.newInstance(rcvDestination);
             rcvDestinationMap.put(rcvDestination, rcv);
         }
 

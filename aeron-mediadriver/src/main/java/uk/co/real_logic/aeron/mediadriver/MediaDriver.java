@@ -115,19 +115,22 @@ public class MediaDriver implements AutoCloseable
 
     public MediaDriver() throws Exception
     {
-        TopologyBuilder builder = new TopologyBuilder().adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
+        NioSelector nioSelector = new NioSelector();
+        MediaDriverContext context = new MediaDriverContext().adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
-                .rcvNioSelector(new NioSelector())
+                .rcvNioSelector(nioSelector)
                 .adminNioSelector(new NioSelector())
                 .senderFlowControl(DefaultSenderFlowControlStrategy::new)
                 .adminBufferStrategy(new CreatingAdminBufferStrategy(CommonConfiguration.ADMIN_DIR, ADMIN_BUFFER_SZ))
                 .bufferManagementStrategy(new BasicBufferManagementStrategy(CommonConfiguration.DATA_DIR))
                 .mtuLength(CommonConfiguration.MTU_LENGTH);
 
-        receiverThread = new ReceiverThread(builder);
-        senderThread = new SenderThread(builder);
-        adminThread = new MediaDriverAdminThread(builder, receiverThread, senderThread);
+        context.rcvFrameHandlerFactory(new RcvFrameHandlerFactory(nioSelector,
+                new MediaDriverAdminThreadCursor(context.adminThreadCommandBuffer(), nioSelector)));
 
+        receiverThread = new ReceiverThread(context);
+        senderThread = new SenderThread(context);
+        adminThread = new MediaDriverAdminThread(context, receiverThread, senderThread);
     }
 
     public ReceiverThread receiverThread()
@@ -152,7 +155,7 @@ public class MediaDriver implements AutoCloseable
         adminThread.close();
     }
 
-    public static class TopologyBuilder
+    public static class MediaDriverContext
     {
         private RingBuffer adminThreadCommandBuffer;
         private RingBuffer receiverThreadCommandBuffer;
@@ -163,6 +166,7 @@ public class MediaDriver implements AutoCloseable
         private NioSelector adminNioSelector;
         private Supplier<SenderFlowControlStrategy> senderFlowControl;
         private int mtuLength;
+        private RcvFrameHandlerFactory rcvFrameHandlerFactory;
 
         private RingBuffer createNewCommandBuffer(final int sz)
         {
@@ -172,49 +176,49 @@ public class MediaDriver implements AutoCloseable
             return new ManyToOneRingBuffer(atomicBuffer);
         }
 
-        public TopologyBuilder adminThreadCommandBuffer(final int sz)
+        public MediaDriverContext adminThreadCommandBuffer(final int sz)
         {
             this.adminThreadCommandBuffer = createNewCommandBuffer(sz);
             return this;
         }
 
-        public TopologyBuilder receiverThreadCommandBuffer(final int sz)
+        public MediaDriverContext receiverThreadCommandBuffer(final int sz)
         {
             this.receiverThreadCommandBuffer = createNewCommandBuffer(sz);
             return this;
         }
 
-        public TopologyBuilder bufferManagementStrategy(final BufferManagementStrategy strategy)
+        public MediaDriverContext bufferManagementStrategy(final BufferManagementStrategy strategy)
         {
             this.bufferManagementStrategy = strategy;
             return this;
         }
 
-        public TopologyBuilder adminBufferStrategy(final AdminBufferStrategy adminBufferStrategy)
+        public MediaDriverContext adminBufferStrategy(final AdminBufferStrategy adminBufferStrategy)
         {
             this.adminBufferStrategy = adminBufferStrategy;
             return this;
         }
 
-        public TopologyBuilder rcvNioSelector(final NioSelector nioSelector)
+        public MediaDriverContext rcvNioSelector(final NioSelector nioSelector)
         {
             this.rcvNioSelector = nioSelector;
             return this;
         }
 
-        public TopologyBuilder adminNioSelector(final NioSelector nioSelector)
+        public MediaDriverContext adminNioSelector(final NioSelector nioSelector)
         {
             this.adminNioSelector = nioSelector;
             return this;
         }
 
-        public TopologyBuilder senderFlowControl(Supplier<SenderFlowControlStrategy> senderFlowControl)
+        public MediaDriverContext senderFlowControl(Supplier<SenderFlowControlStrategy> senderFlowControl)
         {
             this.senderFlowControl = senderFlowControl;
             return this;
         }
 
-        public TopologyBuilder mtuLength(final int mtuLength)
+        public MediaDriverContext mtuLength(final int mtuLength)
         {
             this.mtuLength = mtuLength;
             return this;
@@ -258,6 +262,17 @@ public class MediaDriver implements AutoCloseable
         public int mtuLength()
         {
             return mtuLength;
+        }
+
+        public RcvFrameHandlerFactory rcvFrameHandlerFactory()
+        {
+            return rcvFrameHandlerFactory;
+        }
+
+        public MediaDriverContext rcvFrameHandlerFactory(final RcvFrameHandlerFactory rcvFrameHandlerFactory)
+        {
+            this.rcvFrameHandlerFactory = rcvFrameHandlerFactory;
+            return this;
         }
     }
 }

@@ -73,7 +73,7 @@ public class MediaDriverAdminThreadTest
         addedChannels = new ArrayList<>();
         removedChannels = new ArrayList<>();
 
-        final MediaDriver.TopologyBuilder builder = new MediaDriver.TopologyBuilder()
+        final MediaDriver.MediaDriverContext builder = new MediaDriver.MediaDriverContext()
                 .adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .rcvNioSelector(new NioSelector())

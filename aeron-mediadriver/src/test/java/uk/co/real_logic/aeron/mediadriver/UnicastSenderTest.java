@@ -347,12 +347,10 @@ public class UnicastSenderTest
 
         processThreads(5);
 
-        final UdpDestination dest = UdpDestination.parse(URI);
-        final ControlFrameHandler frameHandler = mediaDriverAdminThread.frameHandler(dest);
-        final AtomicLong termId = new AtomicLong(0);
-        InetSocketAddress srcAddr = (InetSocketAddress)frameHandler.transport().channel().getLocalAddress();
+        assertNotNull(mediaDriverAdminThread.frameHandler(UdpDestination.parse(URI)));
 
-        assertNotNull(frameHandler);
+        final AtomicLong termId = new AtomicLong(0);
+        final InetSocketAddress controlAddr = determineControlAddressToSendTo();
 
         assertEventRead(buffers.toApi(), (eventTypeId, buffer, index, length) ->
         {
@@ -361,7 +359,7 @@ public class UnicastSenderTest
             termId.set(bufferMessage.termId());
         });
 
-        sendStatusMessage(new InetSocketAddress(HOST, srcAddr.getPort()), termId.get(), 0, 0);
+        sendStatusMessage(controlAddr, termId.get(), 0, 0);
 
         advanceTimeMilliseconds(300);  // should send 0 length data after 100 msec, so give a bit more time
 
@@ -447,5 +445,13 @@ public class UnicastSenderTest
                 channelId);
 
         return SharedDirectories.mapLoggers(buffers, DEFAULT_HEADER, MAX_FRAME_LENGTH);
+    }
+
+    private InetSocketAddress determineControlAddressToSendTo() throws Exception
+    {
+        final ControlFrameHandler frameHandler = mediaDriverAdminThread.frameHandler(UdpDestination.parse(URI));
+        final InetSocketAddress srcAddr = (InetSocketAddress)frameHandler.transport().channel().getLocalAddress();
+
+        return new InetSocketAddress(HOST, srcAddr.getPort());
     }
 }

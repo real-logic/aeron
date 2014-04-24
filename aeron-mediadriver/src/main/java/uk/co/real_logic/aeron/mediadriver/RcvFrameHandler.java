@@ -46,7 +46,7 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
         this.destination = destination;
         this.channelInterestMap = new Long2ObjectHashMap<>();
         this.mediaDriverAdminThreadCursor = mediaDriverAdminThreadCursor;
-        this.sendBuffer = ByteBuffer.allocateDirect(StatusMessageFlyweight.LENGTH);
+        this.sendBuffer = ByteBuffer.allocateDirect(StatusMessageFlyweight.HEADER_LENGTH);
         this.writeBuffer = new AtomicBuffer(sendBuffer);
         this.statusMessageFlyweight = new StatusMessageFlyweight();
     }
@@ -203,12 +203,12 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
                               .highestContiguousSequenceNumber(seqNum)
                               .receiverWindow(window)
                               .headerType(HeaderFlyweight.HDR_TYPE_SM)
-                              .frameLength(StatusMessageFlyweight.LENGTH)
+                              .frameLength(StatusMessageFlyweight.HEADER_LENGTH)
                               .flags((byte) 0)
                               .version(HeaderFlyweight.CURRENT_VERSION);
 
         sendBuffer.position(0);
-        sendBuffer.limit(StatusMessageFlyweight.LENGTH);
+        sendBuffer.limit(StatusMessageFlyweight.HEADER_LENGTH);
 
         try
         {

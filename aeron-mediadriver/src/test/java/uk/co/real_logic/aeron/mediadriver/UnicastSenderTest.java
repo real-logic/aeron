@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.mediadriver;
 import org.junit.*;
 import uk.co.real_logic.aeron.mediadriver.buffer.BasicBufferManagementStrategy;
 import uk.co.real_logic.aeron.util.AdminBuffers;
+import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.SharedDirectories;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
@@ -28,6 +29,7 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -37,6 +39,7 @@ import java.nio.ByteOrder;
 import java.nio.channels.DatagramChannel;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 
 import static org.hamcrest.Matchers.greaterThan;
@@ -51,6 +54,7 @@ import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.ErrorCode.*;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.BASE_HEADER_LENGTH;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_LENGTH;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertEventRead;
 
@@ -84,6 +88,7 @@ public class UnicastSenderTest
     private final ErrorHeaderFlyweight error = new ErrorHeaderFlyweight();
     private final CompletelyIdentifiedMessageFlyweight bufferMessage = new CompletelyIdentifiedMessageFlyweight();
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
+    private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
 
     private TimerWheel timerWheel;
 
@@ -329,16 +334,38 @@ public class UnicastSenderTest
         assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH)); // 0 length data
     }
 
-    @Ignore
-    @Test
-    public void shouldNotSendUntilStatusMessageReceived()
+    @Test(timeout = 1000)
+    public void shouldNotSend0LengthDataFrameAfterReceivingStatusMessage() throws Exception
     {
-        // TODO: finish
+        writeChannelMessage(ADD_CHANNEL, URI, SESSION_ID, CHANNEL_ID);
+
+        processThreads(5);
+
+        final UdpDestination dest = UdpDestination.parse(URI);
+        final ControlFrameHandler frameHandler = mediaDriverAdminThread.frameHandler(dest);
+        final AtomicLong termId = new AtomicLong(0);
+        InetSocketAddress srcAddr = (InetSocketAddress)frameHandler.transport().channel().getLocalAddress();
+
+        assertNotNull(frameHandler);
+
+        assertEventRead(buffers.toApi(), (eventTypeId, buffer, index, length) ->
+        {
+            assertThat(eventTypeId, is(NEW_SEND_BUFFER_NOTIFICATION));
+            bufferMessage.wrap(buffer, index);
+            termId.set(bufferMessage.termId());
+        });
+
+        sendStatusMessage(new InetSocketAddress(HOST, srcAddr.getPort()), termId.get(), 0, 0);
+
+        advanceTimeMilliseconds(300);  // should send 0 length data after 100 msec, so give a bit more time
+
+        final SocketAddress address = receiverChannel.receive(recvBuffer);
+        assertNull(address);           // nothing there
     }
 
     @Ignore
-    @Test
-    public void shouldNotSend0LengthDataFrameAfterReceivingStatusMessage()
+    @Test(timeout = 1000)
+    public void shouldNotSendUntilStatusMessageReceived()
     {
         // TODO: finish
     }
@@ -356,6 +383,29 @@ public class UnicastSenderTest
                       .destination(destination);
 
         adminCommands.write(eventTypeId, writeBuffer, 0, channelMessage.length());
+    }
+
+    private void sendStatusMessage(final InetSocketAddress destAddr,
+                                   final long termId,
+                                   final int seqNum,
+                                   final long window)
+            throws Exception
+    {
+        statusMessage.wrap(writeBuffer, 0);
+
+        statusMessage.highestContiguousSequenceNumber(seqNum)
+                     .receiverWindow(window)
+                     .termId(termId)
+                     .channelId(CHANNEL_ID)
+                     .sessionId(SESSION_ID)
+                     .version(HeaderFlyweight.CURRENT_VERSION)
+                     .flags((byte) 0)
+                     .headerType(HeaderFlyweight.HDR_TYPE_SM)
+                     .frameLength(StatusMessageFlyweight.HEADER_LENGTH);
+
+        sendBuffer.position(0);
+        sendBuffer.limit(StatusMessageFlyweight.HEADER_LENGTH);
+        receiverChannel.send(sendBuffer, destAddr);
     }
 
     private void processThreads(final int iterations)

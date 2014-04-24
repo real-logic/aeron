@@ -68,6 +68,11 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
         return destination;
     }
 
+    public UdpTransport transport()
+    {
+        return transport;
+    }
+
     public SenderChannel findChannel(final long sessionId, final long channelId)
     {
         final Long2ObjectHashMap<SenderChannel> channelMap = sessionMap.get(sessionId);

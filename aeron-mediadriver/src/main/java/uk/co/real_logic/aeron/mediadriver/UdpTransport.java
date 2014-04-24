@@ -110,6 +110,11 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
         }
     }
 
+    public DatagramChannel channel()
+    {
+        return channel;
+    }
+
     public void onRead() throws Exception
     {
         readByteBuffer.clear();

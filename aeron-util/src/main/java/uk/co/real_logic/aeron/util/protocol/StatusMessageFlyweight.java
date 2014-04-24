@@ -25,7 +25,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 public class StatusMessageFlyweight extends HeaderFlyweight
 {
     /** Size of the Status Message Packet */
-    public static final int LENGTH = 28;
+    public static final int HEADER_LENGTH = 28;
 
     private static final int SESSION_ID_FIELD_OFFSET = 8;
     private static final int CHANNEL_ID_FIELD_OFFSET = 12;

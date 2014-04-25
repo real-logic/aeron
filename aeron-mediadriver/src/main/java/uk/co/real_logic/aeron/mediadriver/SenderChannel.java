@@ -41,6 +41,7 @@ public class SenderChannel
 
     private final ControlFrameHandler frameHandler;
     private final SenderFlowControlStrategy flowControlStrategy;
+
     private final BufferRotator buffers;
     private final UdpDestination destination;
     private final long sessionId;
@@ -131,8 +132,7 @@ public class SenderChannel
             // if we can't send, then break out of the loop
             if (frameSequenceNumber + frameLength > rightEdge)
             {
-                // TODO: re-add flow control in a less coupled way.
-                //return;
+                return;
             }
 
             final MtuScanner scanner = scanners[currentIndex];

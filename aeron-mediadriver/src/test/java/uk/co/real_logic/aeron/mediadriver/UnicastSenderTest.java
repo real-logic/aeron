@@ -207,9 +207,7 @@ public class UnicastSenderTest
             assertThat(error.errorStringLength(), greaterThan(0));
 
             channelMessage.wrap(buffer, error.offendingHeaderOffset());
-            assertThat(channelMessage.sessionId(), is(SESSION_ID));
-            assertThat(channelMessage.channelId(), is(CHANNEL_ID));
-            assertThat(channelMessage.destination(), is(URI));
+            assertMessageRefersToSession(channelMessage, SESSION_ID);
         });
     }
 
@@ -229,9 +227,7 @@ public class UnicastSenderTest
             assertThat(error.errorStringLength(), greaterThan(0));
 
             channelMessage.wrap(buffer, error.offendingHeaderOffset());
-            assertThat(channelMessage.sessionId(), is(SESSION_ID));
-            assertThat(channelMessage.channelId(), is(CHANNEL_ID));
-            assertThat(channelMessage.destination(), is(URI));
+            assertMessageRefersToSession(channelMessage, SESSION_ID);
         });
     }
 
@@ -267,40 +263,28 @@ public class UnicastSenderTest
             assertThat(error.errorStringLength(), greaterThan(0));
 
             channelMessage.wrap(buffer, error.offendingHeaderOffset());
-            assertThat(channelMessage.sessionId(), is(SESSION_ID + 1));
-            assertThat(channelMessage.channelId(), is(CHANNEL_ID));
-            assertThat(channelMessage.destination(), is(URI));
+            assertMessageRefersToSession(channelMessage, SESSION_ID + 1);
         });
     }
 
-    @Test(timeout = 1000)
+    @Test(timeout = 100000)
     public void shouldBeAbleToSendOnChannel() throws Exception
     {
         writeChannelMessage(ADD_CHANNEL, URI, SESSION_ID, CHANNEL_ID);
-
         processThreads(5);
-
         assertRegisteredFrameHandler();
 
-        assertEventRead(buffers.toApi(), (eventTypeId, buffer, index, length) ->
-        {
-            assertThat(eventTypeId, is(NEW_SEND_BUFFER_NOTIFICATION));
+        final AtomicLong termId = new AtomicLong(0);
+        final InetSocketAddress controlAddr = determineControlAddressToSendTo();
+        assertEventRead(buffers.toApi(), assertNotifiesNewBuffer(termId));
 
-            bufferMessage.wrap(buffer, index);
-            assertThat(bufferMessage.sessionId(), is(SESSION_ID));
-            assertThat(bufferMessage.channelId(), is(CHANNEL_ID));
-            assertThat(bufferMessage.destination(), is(URI));
-        });
-
-        // TODO: should only be able to send once an SM is sent
-
+        // give it enough window to send
+        sendStatusMessage(controlAddr, termId.get(), 0, 1000);
         appendValue();
+        processThreads(5);
 
-        processThreads(1);
-
-        final SocketAddress address = receiverChannel.receive(recvBuffer);
-        assertNotNull(address);
-        assertThat(recvBuffer.getInt(HEADER_LENGTH), is(VALUE));
+        assertReceivedPacket();
+        assertPacketContainsValue();
     }
 
     @Test(timeout = 1000)
@@ -319,13 +303,11 @@ public class UnicastSenderTest
 
         advanceTimeMilliseconds(90);   // should not send yet....
 
-        SocketAddress address = receiverChannel.receive(recvBuffer);
-        assertNull(address);
+        assertNotReceivedPacket();
 
         advanceTimeMilliseconds(110);  // should send 0 length data after 100 msec, so give a bit more time
 
-        address = receiverChannel.receive(recvBuffer);
-        assertNotNull(address);
+        assertReceivedPacket();
 
         dataHeader.wrap(readBuffer, 0);
         assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
@@ -352,29 +334,30 @@ public class UnicastSenderTest
 
         advanceTimeMilliseconds(300);  // should send 0 length data after 100 msec, so give a bit more time
 
-        final SocketAddress address = receiverChannel.receive(recvBuffer);
-        assertNull(address);           // nothing there
+        assertNotReceivedPacket();
     }
 
-    @Ignore
     @Test(timeout = 1000)
-    public void shouldNotSendUntilStatusMessageReceived() throws IOException
+    public void shouldNotSendUntilStatusMessageReceived() throws Exception
     {
         writeChannelMessage(ADD_CHANNEL, URI, SESSION_ID, CHANNEL_ID);
         processThreads(5);
         assertRegisteredFrameHandler();
+
+        final AtomicLong termId = new AtomicLong(0);
+        final InetSocketAddress controlAddr = determineControlAddressToSendTo();
+        assertEventRead(buffers.toApi(), assertNotifiesNewBuffer(termId));
+
         appendValue();
 
-        processThreads(1);
-        assertNotReceivedValue();
+        processThreads(5);
+        assertNotReceivedPacket();
 
-        // TODO: finish. check make sure it doesn't send. send SM. check.
-    }
+        sendStatusMessage(controlAddr, termId.get(), 0, 1000);
+        processThreads(5);
 
-    private void assertNotReceivedValue() throws IOException
-    {
-        final SocketAddress address = receiverChannel.receive(recvBuffer);
-        assertNull(address);
+        assertReceivedPacket();
+        assertPacketContainsValue();
     }
 
     @Ignore
@@ -384,12 +367,41 @@ public class UnicastSenderTest
         // TODO: finish. add_channel, send SM, append data, send data, then idle for time. Make sure sends heartbeat.
     }
 
+    private void assertReceivedPacket() throws IOException
+    {
+        SocketAddress address = receiverChannel.receive(recvBuffer);
+        assertNotNull(address);
+    }
+
+    private void assertMessageRefersToSession(final ChannelMessageFlyweight message, final long sessionId)
+    {
+        assertThat(message.sessionId(), is(sessionId));
+        assertThat(channelMessage.channelId(), is(CHANNEL_ID));
+        assertThat(channelMessage.destination(), is(URI));
+    }
+
+    private void assertPacketContainsValue()
+    {
+        assertThat(recvBuffer.getInt(HEADER_LENGTH), is(VALUE));
+    }
+
+    private void assertNotReceivedPacket() throws IOException
+    {
+        final SocketAddress address = receiverChannel.receive(recvBuffer);
+        assertNull(address);
+    }
+
     private EventHandler assertNotifiesNewBuffer(final AtomicLong termId)
     {
         return (eventTypeId, buffer, index, length) ->
         {
             assertThat(eventTypeId, is(NEW_SEND_BUFFER_NOTIFICATION));
             bufferMessage.wrap(buffer, index);
+
+            assertThat(bufferMessage.sessionId(), is(SESSION_ID));
+            assertThat(bufferMessage.channelId(), is(CHANNEL_ID));
+            assertThat(bufferMessage.destination(), is(URI));
+
             termId.set(bufferMessage.termId());
         };
     }
@@ -488,7 +500,6 @@ public class UnicastSenderTest
     {
         final ControlFrameHandler frameHandler = mediaDriverAdminThread.frameHandler(udpDestination());
         final InetSocketAddress srcAddr = (InetSocketAddress)frameHandler.transport().channel().getLocalAddress();
-
         return new InetSocketAddress(HOST, srcAddr.getPort());
     }
 }

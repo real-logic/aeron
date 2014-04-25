@@ -248,7 +248,7 @@ public class SenderChannel
 
     public void processBufferRotation()
     {
-        long requiredCleanTermid = currentTermId.get() + CLEAN_WINDOW;
+        long requiredCleanTermid = currentTermId.get() + 2;
         if (requiredCleanTermid > cleanedTermId.get())
         {
             try

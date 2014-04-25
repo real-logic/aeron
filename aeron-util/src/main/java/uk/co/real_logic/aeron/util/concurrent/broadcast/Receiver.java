@@ -180,13 +180,13 @@ public class Receiver
      */
     public boolean validate()
     {
+        UNSAFE.loadFence(); // Needed to prevent older loads being moved ahead of the validate, see StampedLock.
+
         return validate(cursor);
     }
 
     private boolean validate(final long cursor)
     {
-        UNSAFE.loadFence(); // Needed to prevent older loads being moved ahead of the validate, see StampedLock.
-
         return cursor == buffer.getLongVolatile(tailSequenceOffset(recordOffset));
     }
 }

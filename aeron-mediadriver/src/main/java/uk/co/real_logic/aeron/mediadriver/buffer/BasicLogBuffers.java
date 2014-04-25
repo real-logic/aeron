@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver.buffer;
 
+import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import java.io.IOException;
@@ -24,10 +25,13 @@ import java.nio.channels.FileChannel;
 /**
  * .
  */
-public class BasicLogBuffers implements LogBuffers
+public class BasicLogBuffers implements LogBuffers, AutoCloseable
 {
     private final FileChannel logFile;
     private final FileChannel stateFile;
+
+    private final MappedByteBuffer mappedLogBuffer;
+    private final MappedByteBuffer mappedStateBuffer;
 
     private final AtomicBuffer logBuffer;
     private final AtomicBuffer stateBuffer;
@@ -39,6 +43,10 @@ public class BasicLogBuffers implements LogBuffers
     {
         this.logFile = logFile;
         this.stateFile = stateFile;
+
+        this.mappedLogBuffer = logBuffer;
+        this.mappedStateBuffer = stateBuffer;
+
         this.stateBuffer = new AtomicBuffer(stateBuffer);
         this.logBuffer = new AtomicBuffer(logBuffer);
     }
@@ -57,6 +65,21 @@ public class BasicLogBuffers implements LogBuffers
     {
         MappedBufferRotator.reset(logFile, logTemplate, logBuffer.capacity());
         MappedBufferRotator.reset(stateFile, stateTemplate, stateBuffer.capacity());
+    }
+
+    public void close()
+    {
+        try
+        {
+            logFile.close();
+            stateFile.close();
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+        IoUtil.unmap(mappedLogBuffer);
+        IoUtil.unmap(mappedStateBuffer);
     }
 
 }

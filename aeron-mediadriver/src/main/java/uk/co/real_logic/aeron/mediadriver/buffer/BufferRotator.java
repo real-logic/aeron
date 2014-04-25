@@ -23,7 +23,7 @@ import java.util.stream.Stream;
  */
 public interface BufferRotator
 {
-    Stream<LogBuffers> buffers();
+    Stream<? extends LogBuffers> buffers();
 
     void rotate() throws IOException;
 }

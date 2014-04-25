@@ -24,27 +24,18 @@ import java.nio.ByteBuffer;
  */
 public interface BufferManagementStrategy
 {
-    BufferRotator addSenderChannel(final UdpDestination destination,
-                                   final long sessionId,
-                                   final long channelId) throws Exception;
+    BufferRotator addProducerChannel(final UdpDestination destination,
+                                     final long sessionId,
+                                     final long channelId) throws Exception;
 
-    void removeSenderChannel(final UdpDestination destination, final long sessionId, final long channelId);
+    void removeProducerChannel(final UdpDestination destination, final long sessionId, final long channelId)
+        throws IllegalArgumentException;
 
-    BufferRotator addReceiverTerm(final UdpDestination destination,
-                                  final long sessionId,
-                                  final long channelId) throws Exception;
+    BufferRotator addConsumerChannel(final UdpDestination destination,
+                                     final long sessionId,
+                                     final long channelId) throws Exception;
 
-    ByteBuffer lookupReceiverTerm(final UdpDestination destination,
-                                  final long sessionId,
-                                  final long channelId,
-                                  final long termId);
-
-    int countChannels(final long sessionId);
-
-    int countSessions(final UdpDestination destination);
-
-    int countChannels(final UdpDestination destination, final long sessionId);
-
-    int countTerms(final UdpDestination destination, final long sessionId, final long channelId);
+    void removeConsumerChannel(final UdpDestination destination, final long sessionId, final long channelId)
+        throws IllegalArgumentException;
 
 }

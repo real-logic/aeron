@@ -43,7 +43,8 @@ public class RcvSessionState
     private BufferRotator rotator;
     private TermRebuilder[] rebuilders;
 
-    public RcvSessionState(final long sessionId, final InetSocketAddress srcAddr)
+    public RcvSessionState(final long sessionId,
+                           final InetSocketAddress srcAddr)
     {
         this.srcAddr = srcAddr;
         this.sessionId = sessionId;
@@ -69,15 +70,6 @@ public class RcvSessionState
     public long sessionId()
     {
         return sessionId;
-    }
-
-    public void unmapAllBuffers()
-    {
-        /*termStateMap.forEach((index, buffer) ->
-        {
-            IoUtil.unmap((MappedByteBuffer)buffer);
-        });*/
-        // TODO: re-evaluate
     }
 
     public void rebuildBuffer(final long termId, final DataHeaderFlyweight header)

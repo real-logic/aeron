@@ -26,6 +26,7 @@ import java.nio.ByteBuffer;
 
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.CREATE_RCV_TERM_BUFFER;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ERROR_RESPONSE;
+import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.REMOVE_RCV_TERM_BUFFER;
 import static uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight.HEADER_LENGTH;
 
 /**
@@ -60,11 +61,27 @@ public class MediaDriverAdminThreadCursor
                                             final long channelId,
                                             final long termId)
     {
+        writeProducerTermBufferEvent(destination, sessionId, channelId, termId, CREATE_RCV_TERM_BUFFER);
+    }
+
+    public void addRemoveRcvTermBufferEvent(final UdpDestination destination,
+                                            final long sessionId,
+                                            final long channelId)
+    {
+        writeProducerTermBufferEvent(destination, sessionId, channelId, 0L, REMOVE_RCV_TERM_BUFFER);
+    }
+
+    private void writeProducerTermBufferEvent(final UdpDestination destination,
+                                              final long sessionId,
+                                              final long channelId,
+                                              final long termId,
+                                              final int typeId)
+    {
         completelyIdentifiedMessage.sessionId(sessionId)
-                                            .channelId(channelId)
-                                            .termId(termId)
-                                            .destination(destination.clientAwareUri());
-        write(CREATE_RCV_TERM_BUFFER, completelyIdentifiedMessage.length());
+                                   .channelId(channelId)
+                                   .termId(termId)
+                                   .destination(destination.clientAwareUri());
+        write(typeId, completelyIdentifiedMessage.length());
     }
 
     public void addErrorResponse(final ErrorCode code, final Flyweight flyweight, final int length)

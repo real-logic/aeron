@@ -19,15 +19,14 @@ import uk.co.real_logic.aeron.mediadriver.UdpChannelMap;
 import uk.co.real_logic.aeron.mediadriver.UdpDestination;
 import uk.co.real_logic.aeron.util.FileMappingConvention;
 import uk.co.real_logic.aeron.util.IoUtil;
-import uk.co.real_logic.aeron.util.collections.TripleLevelMap;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
+import static java.lang.String.format;
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.COMMAND_BUFFER_SZ;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.Type.STATE;
@@ -136,46 +135,51 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
         }
     }
 
-    public MappedBufferRotator addSenderChannel(final UdpDestination destination,
-                                                final long sessionId,
-                                                final long channelId) throws Exception
+    public BufferRotator addProducerChannel(final UdpDestination destination, final long sessionId, final long channelId) throws Exception
     {
-        return addRotator(destination, sessionId, channelId, senderDir);
+        return addChannel(destination, sessionId, channelId, senderDir, srcTermMap);
     }
 
-    protected interface TermMapper
+    public void removeProducerChannel(final UdpDestination destination, final long sessionId, final long channelId)
+            throws IllegalArgumentException
     {
-        MappedByteBuffer mapTerm() throws Exception;
+        removeChannel(destination, sessionId, channelId, srcTermMap);
     }
 
-    public void removeSenderChannel(final UdpDestination destination, final long sessionId, final long channelId)
+    public void removeConsumerChannel(final UdpDestination destination, final long sessionId, final long channelId)
     {
-        // TODO: force unmap
-        srcTermMap.remove(destination, sessionId, channelId);
+        removeChannel(destination, sessionId, channelId, rcvTermMap);
     }
 
-    public MappedBufferRotator addReceiverTerm(final UdpDestination destination,
-                                               final long sessionId,
-                                               final long channelId) throws Exception
+    public MappedBufferRotator addConsumerChannel(final UdpDestination destination,
+                                                  final long sessionId,
+                                                  final long channelId) throws Exception
     {
-        return addRotator(destination, sessionId, channelId, receiverDir);
+        return addChannel(destination, sessionId, channelId, receiverDir, rcvTermMap);
     }
 
-    // TODO: maybe remove this
-    public ByteBuffer lookupReceiverTerm(final UdpDestination destination,
-                                         final long sessionId,
-                                         final long channelId,
-                                         final long termId)
+    private void removeChannel(final UdpDestination destination,
+                               final long sessionId,
+                               final long channelId,
+                               final UdpChannelMap<MappedBufferRotator> termMap)
     {
-        return null;
+        final MappedBufferRotator rotator = termMap.remove(destination, sessionId, channelId);
+        if (rotator == null)
+        {
+            String msg = format("No buffers for %s, session = %d, channel = %d", destination, sessionId, channelId);
+            throw new IllegalArgumentException(msg);
+        }
+
+        rotator.close();
     }
 
-    private MappedBufferRotator addRotator(final UdpDestination destination,
+    private MappedBufferRotator addChannel(final UdpDestination destination,
                                            final long sessionId,
                                            final long channelId,
-                                           final File rootDir)
+                                           final File rootDir,
+                                           final UdpChannelMap<MappedBufferRotator> termMap)
     {
-        MappedBufferRotator channelBuffer = srcTermMap.get(destination, sessionId, channelId);
+        MappedBufferRotator channelBuffer = termMap.get(destination, sessionId, channelId);
         if (channelBuffer == null)
         {
             final File dir = channelLocation(rootDir, sessionId, channelId, true, destination.clientAwareUri());
@@ -184,32 +188,8 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
                     LOG_BUFFER_SIZE,
                     stateTemplate,
                     STATE_BUFFER_LENGTH);
-            srcTermMap.put(destination, sessionId, channelId, channelBuffer);
+            termMap.put(destination, sessionId, channelId, channelBuffer);
         }
         return channelBuffer;
-    }
-
-    // TODO: remove this method after cleaning up onRemoveTerm
-    public int countChannels(final long sessionId)
-    {
-        return 1;
-    }
-
-    public int countSessions(final UdpDestination destination)
-    {
-        //return rcvTermMap.sessionCount();
-        return 0;
-    }
-
-    public int countChannels(final UdpDestination destination, final long sessionId)
-    {
-        //return rcvTermMap.channelCount(sessionId);
-        return 0;
-    }
-
-    public int countTerms(final UdpDestination destination, final long sessionId, final long channelId)
-    {
-        //return rcvTermMap.termCount(sessionId, channelId);
-        return 0;
     }
 }

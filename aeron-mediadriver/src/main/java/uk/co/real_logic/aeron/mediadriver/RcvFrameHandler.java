@@ -32,20 +32,20 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
     private final UdpTransport transport;
     private final UdpDestination destination;
     private final Long2ObjectHashMap<RcvChannelState> channelInterestMap;
-    private final MediaDriverAdminThreadCursor mediaDriverAdminThreadCursor;
+    private final MediaDriverAdminThreadCursor adminThreadCursor;
     private final ByteBuffer sendBuffer;
     private final AtomicBuffer writeBuffer;
     private final StatusMessageFlyweight statusMessageFlyweight;
 
     public RcvFrameHandler(final UdpDestination destination,
                            final NioSelector nioSelector,
-                           final MediaDriverAdminThreadCursor mediaDriverAdminThreadCursor)
+                           final MediaDriverAdminThreadCursor AdminThreadCursor)
         throws Exception
     {
         this.transport = new UdpTransport(this, destination, nioSelector);
         this.destination = destination;
         this.channelInterestMap = new Long2ObjectHashMap<>();
-        this.mediaDriverAdminThreadCursor = mediaDriverAdminThreadCursor;
+        this.adminThreadCursor = AdminThreadCursor;
         this.sendBuffer = ByteBuffer.allocateDirect(StatusMessageFlyweight.HEADER_LENGTH);
         this.writeBuffer = new AtomicBuffer(sendBuffer);
         this.statusMessageFlyweight = new StatusMessageFlyweight();
@@ -76,10 +76,6 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
     public void close()
     {
         transport.close();
-        channelInterestMap.forEach((index, channel) ->
-        {
-            channel.unmapAllBuffers();
-        });
     }
 
     public UdpDestination destination()
@@ -104,7 +100,7 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
             }
             else
             {
-                channelInterestMap.put(channelId, new RcvChannelState(channelId));
+                channelInterestMap.put(channelId, new RcvChannelState(destination, channelId, adminThreadCursor));
             }
         }
     }
@@ -122,8 +118,8 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
 
             if (channel.decrementReference() == 0)
             {
-                channel.unmapAllBuffers();
                 channelInterestMap.remove(channelId);
+                channel.close();
             }
         }
     }
@@ -159,7 +155,7 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
         }
 
         // ask admin thread to create buffer for destination, sessionId, channelId, and termId
-        mediaDriverAdminThreadCursor.addCreateRcvTermBufferEvent(destination(), sessionId, channelId, termId);
+        adminThreadCursor.addCreateRcvTermBufferEvent(destination(), sessionId, channelId, termId);
     }
 
     public void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)

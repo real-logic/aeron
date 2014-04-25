@@ -24,13 +24,19 @@ import java.net.InetSocketAddress;
  */
 public class RcvChannelState
 {
+    private final UdpDestination destination;
     private final long channelId;
+    private final MediaDriverAdminThreadCursor adminThreadCursor;
     private int referenceCount;
     private final Long2ObjectHashMap<RcvSessionState> sessionStateMap;
 
-    public RcvChannelState(final long channelId)
+    public RcvChannelState(final UdpDestination destination,
+                           final long channelId,
+                           final MediaDriverAdminThreadCursor adminThreadCursor)
     {
+        this.destination = destination;
         this.channelId = channelId;
+        this.adminThreadCursor = adminThreadCursor;
         this.referenceCount = 1;
         this.sessionStateMap = new Long2ObjectHashMap<>();
     }
@@ -70,11 +76,11 @@ public class RcvChannelState
         return channelId;
     }
 
-    public void unmapAllBuffers()
+    public void close()
     {
-        sessionStateMap.forEach((index, sessionState) ->
+        sessionStateMap.forEach((sessionId, session) ->
         {
-            sessionState.unmapAllBuffers();
+            adminThreadCursor.addRemoveRcvTermBufferEvent(destination, sessionId, channelId);
         });
     }
 }

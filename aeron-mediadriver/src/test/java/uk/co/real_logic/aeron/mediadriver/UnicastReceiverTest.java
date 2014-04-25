@@ -15,8 +15,8 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import org.hamcrest.Matchers;
 import org.junit.*;
+import org.junit.rules.ExpectedException;
 import uk.co.real_logic.aeron.mediadriver.buffer.BasicBufferManagementStrategy;
 import uk.co.real_logic.aeron.util.AdminBuffers;
 import uk.co.real_logic.aeron.util.BitUtil;
@@ -24,8 +24,6 @@ import uk.co.real_logic.aeron.util.SharedDirectories;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.ConsumerMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.StateViewer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
@@ -73,6 +71,9 @@ public class UnicastReceiverTest
 
     @ClassRule
     public static SharedDirectories directory = new SharedDirectories();
+
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     private final ByteBuffer sendBuffer = ByteBuffer.allocateDirect(256);
     private final AtomicBuffer writeBuffer = new AtomicBuffer(sendBuffer);
@@ -127,17 +128,17 @@ public class UnicastReceiverTest
     @Test(timeout = 1000)
     public void shouldBeAbleToAddReceiver() throws Exception
     {
-        writeReceiverMessage(ADD_CONSUMER, URI, ONE_CHANNEL);
+        writeConsumerMessage(ADD_CONSUMER, URI, ONE_CHANNEL);
 
         processThreads(5);
 
-        assertNotNull(receiverThread.frameHandler(UdpDestination.parse(URI)));
+        assertReceiverRegistered();
     }
 
     @Test(timeout = 1000)
     public void shouldSendErrorForInvalidUri() throws Exception
     {
-        writeReceiverMessage(ADD_CONSUMER, INVALID_URI, ONE_CHANNEL);
+        writeConsumerMessage(ADD_CONSUMER, INVALID_URI, ONE_CHANNEL);
 
         processThreads(5);
 
@@ -158,7 +159,7 @@ public class UnicastReceiverTest
     @Test(timeout = 1000)
     public void shouldSendErrorForRemovingNonExistentReceiver() throws Exception
     {
-        writeReceiverMessage(REMOVE_CONSUMER, URI, ONE_CHANNEL);
+        writeConsumerMessage(REMOVE_CONSUMER, URI, ONE_CHANNEL);
 
         processThreads(5);
 
@@ -179,8 +180,8 @@ public class UnicastReceiverTest
     @Test(timeout = 1000)
     public void shouldSendErrorForRemovingReceiverFromWrongChannels() throws Exception
     {
-        writeReceiverMessage(ADD_CONSUMER, URI, ONE_CHANNEL);
-        writeReceiverMessage(REMOVE_CONSUMER, URI, ANOTHER_CHANNEL);
+        writeConsumerMessage(ADD_CONSUMER, URI, ONE_CHANNEL);
+        writeConsumerMessage(REMOVE_CONSUMER, URI, ANOTHER_CHANNEL);
 
         processThreads(5);
 
@@ -201,9 +202,9 @@ public class UnicastReceiverTest
     @Test(timeout = 1000)
     public void shouldKeepFrameHandlerUponRemoveOfAllButOneChannel() throws Exception
     {
-        final UdpDestination dest = UdpDestination.parse(URI);
+        final UdpDestination dest = udpDestination();
 
-        writeReceiverMessage(ADD_CONSUMER, URI, THREE_CHANNELS);
+        writeConsumerMessage(ADD_CONSUMER, URI, THREE_CHANNELS);
 
         processThreads(5);
 
@@ -212,7 +213,7 @@ public class UnicastReceiverTest
         assertNotNull(frameHandler);
         assertThat(frameHandler.channelInterestMap().size(), is(3));
 
-        writeReceiverMessage(REMOVE_CONSUMER, URI, TWO_CHANNELS);
+        writeConsumerMessage(REMOVE_CONSUMER, URI, TWO_CHANNELS);
 
         processThreads(5);
 
@@ -223,9 +224,9 @@ public class UnicastReceiverTest
     @Test(timeout = 1000)
     public void shouldOnlyRemoveFrameHandlerUponRemovalOfAllChannels() throws Exception
     {
-        final UdpDestination dest = UdpDestination.parse(URI);
+        final UdpDestination dest = udpDestination();
 
-        writeReceiverMessage(ADD_CONSUMER, URI, THREE_CHANNELS);
+        writeConsumerMessage(ADD_CONSUMER, URI, THREE_CHANNELS);
 
         processThreads(5);
 
@@ -234,14 +235,14 @@ public class UnicastReceiverTest
         assertNotNull(frameHandler);
         assertThat(frameHandler.channelInterestMap().size(), is(3));
 
-        writeReceiverMessage(REMOVE_CONSUMER, URI, TWO_CHANNELS);
+        writeConsumerMessage(REMOVE_CONSUMER, URI, TWO_CHANNELS);
 
         processThreads(5);
 
         assertNotNull(receiverThread.frameHandler(dest));
         assertThat(frameHandler.channelInterestMap().size(), is(1));
 
-        writeReceiverMessage(REMOVE_CONSUMER, URI, ONE_CHANNEL);
+        writeConsumerMessage(REMOVE_CONSUMER, URI, ONE_CHANNEL);
         processThreads(5);
 
         assertNull(receiverThread.frameHandler(dest));
@@ -250,11 +251,11 @@ public class UnicastReceiverTest
     @Test(timeout = 200000)
     public void shouldBeAbleToCreateRcvTermOnZeroLengthData() throws Exception
     {
-        writeReceiverMessage(ADD_CONSUMER, URI, ONE_CHANNEL);
+        writeConsumerMessage(ADD_CONSUMER, URI, ONE_CHANNEL);
 
         processThreads(10);
 
-        final UdpDestination dest = UdpDestination.parse(URI);
+        final UdpDestination dest = udpDestination();
 
         assertNotNull(receiverThread.frameHandler(dest));
 
@@ -290,30 +291,29 @@ public class UnicastReceiverTest
     @Test(timeout = 1000)
     public void shouldBeAbleToAddThenRemoveReceiverWithoutBuffers() throws Exception
     {
-        writeReceiverMessage(ADD_CONSUMER, URI, ONE_CHANNEL);
+        writeConsumerMessage(ADD_CONSUMER, URI, ONE_CHANNEL);
 
         processThreads(5);
 
-        assertNotNull(receiverThread.frameHandler(UdpDestination.parse(URI)));
+        assertReceiverRegistered();
 
-        writeReceiverMessage(ControlProtocolEvents.REMOVE_CONSUMER, URI, ONE_CHANNEL);
+        writeConsumerMessage(ControlProtocolEvents.REMOVE_CONSUMER, URI, ONE_CHANNEL);
 
         processThreads(5);
 
-        assertNull(receiverThread.frameHandler(UdpDestination.parse(URI)));
+        assertReceiverNotRegistered();
     }
 
     @Test(timeout = 1000)
     public void shouldBeAbleToReceiveDataFromNetwork() throws Exception
     {
-        writeReceiverMessage(ADD_CONSUMER, URI, ONE_CHANNEL);
+        writeConsumerMessage(ADD_CONSUMER, URI, ONE_CHANNEL);
         processThreads(5);
 
-        UdpDestination destination = UdpDestination.parse(URI);
-        sendDataFrame(destination, CHANNEL_ID, 0);
+        sendDataFrame(udpDestination(), CHANNEL_ID, 0);
         processThreads(5);
 
-        sendDataFrame(destination, CHANNEL_ID, 1);
+        sendDataFrame(udpDestination(), CHANNEL_ID, 1);
         processThreads(5);
 
         List<Buffers> buffers = directory.mapTermFile(directory.receiverDir(), URI, SESSION_ID, CHANNEL_ID);
@@ -321,11 +321,25 @@ public class UnicastReceiverTest
         assertThat(stateViewer.tailVolatile(), is(greaterThan(0)));
     }
 
-    @Ignore
-    @Test(timeout = 1000)
+    @Test(timeout = 100000)
     public void shouldBeAbleToAddThenRemoveReceiverWithBuffers() throws Exception
     {
-        // TODO
+        writeConsumerMessage(ADD_CONSUMER, URI, ONE_CHANNEL);
+        processThreads(5);
+
+        UdpDestination destination = udpDestination();
+        sendDataFrame(destination, CHANNEL_ID, 0);
+        processThreads(5);
+
+        sendDataFrame(destination, CHANNEL_ID, 1);
+        processThreads(5);
+
+        writeConsumerMessage(REMOVE_CONSUMER, URI, ONE_CHANNEL);
+        processThreads(5);
+        assertReceiverNotRegistered();
+
+        exception.expect(IllegalArgumentException.class);
+        bufferManagementStrategy.removeConsumerChannel(udpDestination(), SESSION_ID, CHANNEL_ID);
     }
 
     @Ignore
@@ -335,7 +349,22 @@ public class UnicastReceiverTest
         // TODO: finish
     }
 
-    private void writeReceiverMessage(final int eventTypeId, final String destination, final long[] channelIds)
+    private void assertReceiverNotRegistered()
+    {
+        assertNull(receiverThread.frameHandler(udpDestination()));
+    }
+
+    private void assertReceiverRegistered()
+    {
+        assertNotNull(receiverThread.frameHandler(udpDestination()));
+    }
+
+    private UdpDestination udpDestination()
+    {
+        return UdpDestination.parse(URI);
+    }
+
+    private void writeConsumerMessage(final int eventTypeId, final String destination, final long[] channelIds)
             throws IOException
     {
         final RingBuffer adminCommands = buffers.mappedToMediaDriver();

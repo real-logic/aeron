@@ -135,6 +135,10 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
                     completelyIdentifiedMessageFlyweight.wrap(buffer, index);
                     onCreateRcvTermBufferEvent(completelyIdentifiedMessageFlyweight);
                     return;
+                case REMOVE_RCV_TERM_BUFFER:
+                    completelyIdentifiedMessageFlyweight.wrap(buffer, index);
+                    onRemoveRcvTermBufferEvent(completelyIdentifiedMessageFlyweight);
+                    return;
                 case ERROR_RESPONSE:
                     errorHeaderFlyweight.wrap(buffer, index);
                     adminSendBuffer.write(eventTypeId, buffer, index, length);
@@ -304,7 +308,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
 
             // new channel, so generate "random"-ish termId and create term buffer
             final long initialTermId = rng.nextLong();
-            final BufferRotator buffers = bufferManagementStrategy.addSenderChannel(srcDestination, sessionId, channelId);
+            final BufferRotator buffers = bufferManagementStrategy.addProducerChannel(srcDestination, sessionId, channelId);
             channel = new SenderChannel(frameHandler,
                                         senderFlowControl.get(),
                                         buffers,
@@ -360,7 +364,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             }
 
             // remove from buffer management
-            bufferManagementStrategy.removeSenderChannel(srcDestination, sessionId, channelId);
+            bufferManagementStrategy.removeProducerChannel(srcDestination, sessionId, channelId);
 
             senderThread.removeChannel(channel);
 
@@ -414,7 +418,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         try
         {
             final UdpDestination rcvDestination = UdpDestination.parse(destination);
-            final BufferRotator buffer = bufferManagementStrategy.addReceiverTerm(rcvDestination, sessionId, channelId);
+            final BufferRotator buffer = bufferManagementStrategy.addConsumerChannel(rcvDestination, sessionId, channelId);
 
             // inform receiver thread of new buffer, destination, etc.
             RcvBufferState bufferState = new RcvBufferState(rcvDestination, sessionId, channelId, termId, buffer);
@@ -422,6 +426,24 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             {
                 // TODO: count errors
             }
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            // TODO: handle errors by logging
+        }
+    }
+
+    private void onRemoveRcvTermBufferEvent(final CompletelyIdentifiedMessageFlyweight message)
+    {
+        final String destination = completelyIdentifiedMessageFlyweight.destination();
+        final long sessionId = completelyIdentifiedMessageFlyweight.sessionId();
+        final long channelId = completelyIdentifiedMessageFlyweight.channelId();
+        try
+        {
+            final UdpDestination rcvDestination = UdpDestination.parse(destination);
+
+            bufferManagementStrategy.removeConsumerChannel(rcvDestination, sessionId, channelId);
         }
         catch (Exception e)
         {

@@ -34,7 +34,7 @@ import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
  *
  * Keeps 3 buffers on hold at any one time.
  */
-public class MappedBufferRotator implements BufferRotator
+public class MappedBufferRotator implements BufferRotator, AutoCloseable
 {
     private static final int BUFFER_COUNT = 3;
 
@@ -91,7 +91,7 @@ public class MappedBufferRotator implements BufferRotator
         return new BasicLogBuffers(logFile, stateFile, map(logBufferSize, logFile), map(stateBufferSize, stateFile));
     }
 
-    public Stream<LogBuffers> buffers()
+    public Stream<BasicLogBuffers> buffers()
     {
         return Stream.of(buffers);
     }
@@ -127,4 +127,10 @@ public class MappedBufferRotator implements BufferRotator
         channel.position(0);
         template.transferTo(0, bufferSize, channel);
     }
+
+    public void close()
+    {
+        buffers().forEach(BasicLogBuffers::close);
+    }
+
 }

@@ -130,7 +130,7 @@ public class SenderChannel
             final int rightEdge = activeFlowControlState.rightEdgeOfWindowAtomic();
 
             // if we can't send, then break out of the loop
-            if (frameSequenceNumber + frameLength > rightEdge)
+            if ((frameSequenceNumber + frameLength) > rightEdge)
             {
                 return;
             }

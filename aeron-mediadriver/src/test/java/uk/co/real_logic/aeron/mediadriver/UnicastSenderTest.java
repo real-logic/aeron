@@ -267,7 +267,7 @@ public class UnicastSenderTest
         });
     }
 
-    @Test(timeout = 100000)
+    @Test(timeout = 1000)
     public void shouldBeAbleToSendOnChannel() throws Exception
     {
         writeChannelMessage(ADD_CHANNEL, URI, SESSION_ID, CHANNEL_ID);
@@ -358,6 +358,65 @@ public class UnicastSenderTest
 
         assertReceivedPacket();
         assertPacketContainsValue();
+    }
+
+    @Test(timeout = 1000)
+    public void shouldntBeAbleToSendAfterUsingUpYourWindow() throws Exception
+    {
+        writeChannelMessage(ADD_CHANNEL, URI, SESSION_ID, CHANNEL_ID);
+        processThreads(5);
+        assertRegisteredFrameHandler();
+
+        final AtomicLong termId = new AtomicLong(0);
+        final InetSocketAddress controlAddr = determineControlAddressToSendTo();
+        assertEventRead(buffers.toApi(), assertNotifiesNewBuffer(termId));
+
+        // give it enough window to send
+        sendStatusMessage(controlAddr, termId.get(), 0, 1000);
+
+        final LogAppender logAppender = mapLogAppenders(URI, SESSION_ID, CHANNEL_ID).get(0);
+        writeBuffer.putInt(0, VALUE, ByteOrder.BIG_ENDIAN);
+        assertTrue(logAppender.append(writeBuffer, 0, 64));
+        processThreads(5);
+
+        assertReceivedPacket();
+
+        assertTrue(logAppender.append(writeBuffer, 0, 64));
+        processThreads(5);
+        assertNotReceivedPacket();
+    }
+
+    // TODO
+    @Ignore
+    @Test(timeout = 100000)
+    public void shouldBeAbleToSendWithMoreWindowAdded() throws Exception
+    {
+        writeChannelMessage(ADD_CHANNEL, URI, SESSION_ID, CHANNEL_ID);
+        processThreads(5);
+        assertRegisteredFrameHandler();
+
+        final AtomicLong termId = new AtomicLong(0);
+        final InetSocketAddress controlAddr = determineControlAddressToSendTo();
+        assertEventRead(buffers.toApi(), assertNotifiesNewBuffer(termId));
+
+        // give it enough window to send
+        sendStatusMessage(controlAddr, termId.get(), 0, 1000);
+
+        final LogAppender logAppender = mapLogAppenders(URI, SESSION_ID, CHANNEL_ID).get(0);
+        writeBuffer.putInt(0, VALUE, ByteOrder.BIG_ENDIAN);
+        assertTrue(logAppender.append(writeBuffer, 0, 64));
+        processThreads(5);
+
+        assertReceivedPacket();
+
+        assertTrue(logAppender.append(writeBuffer, 0, 64));
+        processThreads(5);
+        assertNotReceivedPacket();
+
+        sendStatusMessage(controlAddr, termId.get(), 0, 2000);
+        processThreads(5);
+
+        assertReceivedPacket();
     }
 
     @Ignore

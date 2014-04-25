@@ -19,12 +19,15 @@ import uk.co.real_logic.aeron.admin.ChannelNotifiable;
 import uk.co.real_logic.aeron.admin.ClientAdminThreadCursor;
 import uk.co.real_logic.aeron.admin.TermBufferNotifier;
 import uk.co.real_logic.aeron.util.AtomicArray;
-import uk.co.real_logic.aeron.util.FileMappingConvention;
+import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+
+import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.rotateId;
+import static uk.co.real_logic.aeron.util.ChannelCounters.UNKNOWN_TERM_ID;
 
 /**
  * Aeron Channel
@@ -99,11 +102,7 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
         boolean hasAppended = logAppender.append(buffer, offset, length);
         if (!hasAppended)
         {
-            currentBuffer++;
-            if (currentBuffer == FileMappingConvention.BUFFER_COUNT)
-            {
-                currentBuffer = 0;
-            }
+            currentBuffer = rotateId(currentBuffer);
             rollTerm();
         }
 

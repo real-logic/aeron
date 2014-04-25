@@ -19,6 +19,7 @@ import uk.co.real_logic.aeron.Channel;
 import uk.co.real_logic.aeron.ProducerControlFactory;
 import uk.co.real_logic.aeron.ConsumerChannel;
 import uk.co.real_logic.aeron.util.AtomicArray;
+import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.ClosableThread;
 import uk.co.real_logic.aeron.util.collections.ChannelMap;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
@@ -36,7 +37,7 @@ import java.util.function.BiConsumer;
 import java.util.function.IntFunction;
 
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
-import static uk.co.real_logic.aeron.util.FileMappingConvention.BUFFER_COUNT;
+import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.BASE_HEADER_LENGTH;
 

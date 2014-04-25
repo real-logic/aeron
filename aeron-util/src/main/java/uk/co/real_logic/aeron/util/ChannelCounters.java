@@ -13,19 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.mediadriver.buffer;
-
-import uk.co.real_logic.aeron.util.BitUtil;
-
-import java.io.IOException;
-import java.util.stream.Stream;
+package uk.co.real_logic.aeron.util;
 
 /**
- * Handles rotating buffers within a channel
+ * .
  */
-public interface BufferRotator
+public class ChannelCounters
 {
-    Stream<? extends LogBuffers> buffers();
-
-    void rotate() throws IOException;
+    public static final long UNKNOWN_TERM_ID = -1L;
 }

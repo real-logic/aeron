@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
 import uk.co.real_logic.aeron.mediadriver.buffer.LogBuffers;
-import uk.co.real_logic.aeron.mediadriver.buffer.MappedBufferRotator;
+import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogRebuilder;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.StateViewer;
@@ -82,7 +82,7 @@ public class RcvSessionState
         else if (termId == (currentTermId + 1))
         {
             currentTermId++;
-            currentBufferId = MappedBufferRotator.rotateId(currentBufferId);
+            currentBufferId = BufferRotationDescriptor.rotateId(currentBufferId);
             // TODO: signal cleaning.
             TermRebuilder rebuilder = rebuilders[currentBufferId];
             while (rebuilder.tailVolatile() != 0)

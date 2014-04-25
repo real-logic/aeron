@@ -36,12 +36,6 @@ import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
  */
 public class MappedBufferRotator implements BufferRotator, AutoCloseable
 {
-    private static final int BUFFER_COUNT = 3;
-
-    public static int rotateId(int previous)
-    {
-        return BitUtil.next(previous, BUFFER_COUNT);
-    }
 
     private static final String LOG_SUFFIX = "-log";
     private static final String STATE_SUFFIX = "-state";

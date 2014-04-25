@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
 import uk.co.real_logic.aeron.mediadriver.buffer.LogBuffers;
+import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.MtuScanner;
@@ -26,9 +27,9 @@ import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
-import static uk.co.real_logic.aeron.util.BitUtil.next;
+import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.CLEAN_WINDOW;
 
 /**
  * Encapsulates the information associated with a channel
@@ -36,7 +37,6 @@ import static uk.co.real_logic.aeron.util.BitUtil.next;
  */
 public class SenderChannel
 {
-    public static final int BUFFER_COUNT = 3;
     public static final int FLOW_CONTROL_TIMEOUT_MILLISECONDS = 100;
 
     private final ControlFrameHandler frameHandler;
@@ -45,7 +45,10 @@ public class SenderChannel
     private final UdpDestination destination;
     private final long sessionId;
     private final long channelId;
-    private final long currentTermId;
+
+    private final AtomicLong currentTermId;
+    private final AtomicLong cleanedTermId;
+
     private final int headerLength;
     private final int mtuLength;
     private TimerWheel.Timer flowControlTimer;
@@ -58,7 +61,6 @@ public class SenderChannel
 
     /** duplicate log buffers to work around the lack of a (buffer, start, length) send method */
     private final ByteBuffer[] sendBuffers;
-    private final AtomicBoolean requiresRotation;
 
     private final SenderFlowControlState activeFlowControlState;
 
@@ -80,7 +82,6 @@ public class SenderChannel
         this.destination = destination;
         this.sessionId = sessionId;
         this.channelId = channelId;
-        this.currentTermId = initialTermId;
         this.headerLength = headerLength;
         this.mtuLength = mtuLength;
         this.scratchSendBuffer = ByteBuffer.allocateDirect(DataHeaderFlyweight.HEADER_LENGTH);
@@ -97,7 +98,8 @@ public class SenderChannel
                              .map(this::duplicateLogBuffer)
                              .toArray(ByteBuffer[]::new);
         currentIndex = 0;
-        requiresRotation = new AtomicBoolean(false);
+        currentTermId = new AtomicLong(initialTermId);
+        cleanedTermId = new AtomicLong(initialTermId + 2);
 
         this.flowControlTimer = frameHandler.newTimeout(FLOW_CONTROL_TIMEOUT_MILLISECONDS,
                                                         TimeUnit.MILLISECONDS,
@@ -162,8 +164,8 @@ public class SenderChannel
 
             if (scanner.isComplete())
             {
-                currentIndex = next(currentIndex, BUFFER_COUNT);
-                requestRotation();
+                currentIndex = BufferRotationDescriptor.rotateId(currentIndex);
+                currentTermId.incrementAndGet();
             }
         }
         catch (final Exception e)
@@ -171,11 +173,6 @@ public class SenderChannel
             // TODO: error logging
             e.printStackTrace();
         }
-    }
-
-    private void requestRotation()
-    {
-        requiresRotation.lazySet(true);
     }
 
     public boolean isOpen()
@@ -196,11 +193,6 @@ public class SenderChannel
     public long channelId()
     {
         return channelId;
-    }
-
-    public long currentTermId()
-    {
-        return currentTermId;
     }
 
     public void onStatusMessage(final long termId,
@@ -229,7 +221,7 @@ public class SenderChannel
 
         dataHeader.sessionId(sessionId)
                   .channelId(channelId)
-                  .termId(currentTermId)
+                  .termId(currentTermId.get())
                   .sequenceNumber(0)
                   .frameLength(DataHeaderFlyweight.HEADER_LENGTH)
                   .headerType(HeaderFlyweight.HDR_TYPE_DATA)
@@ -256,12 +248,13 @@ public class SenderChannel
 
     public void processBufferRotation()
     {
-        if (requiresRotation.get())
+        long requiredCleanTermid = currentTermId.get() + CLEAN_WINDOW;
+        if (requiredCleanTermid > cleanedTermId.get())
         {
             try
             {
                 buffers.rotate();
-                notifyBuffersRotated();
+                cleanedTermId.incrementAndGet();
             }
             catch (IOException e)
             {
@@ -270,11 +263,6 @@ public class SenderChannel
                 e.printStackTrace();
             }
         }
-    }
-
-    private void notifyBuffersRotated()
-    {
-        requiresRotation.lazySet(false);
     }
 
 }

@@ -17,8 +17,6 @@ package uk.co.real_logic.aeron.admin;
 
 public abstract class ChannelNotifiable
 {
-    protected static final long UNKNOWN_TERM_ID = -1L;
-
     protected final TermBufferNotifier bufferNotifier;
     protected final String destination;
     protected final long channelId;

@@ -62,53 +62,60 @@ public class ReceiverThread extends ClosableThread
         try
         {
             nioSelector.processKeys();
-
-            // check command buffer for commands
-            commandBuffer.read((eventTypeId, buffer, index, length) ->
-            {
-                try
-                {
-                    switch (eventTypeId)
-                    {
-                        case ADD_CONSUMER:
-                            consumerMessage.wrap(buffer, index);
-                            onNewConsumer(consumerMessage.destination(), consumerMessage.channelIds());
-                            return;
-
-                        case REMOVE_CONSUMER:
-                            consumerMessage.wrap(buffer, index);
-                            onRemoveConsumer(consumerMessage.destination(), consumerMessage.channelIds());
-                            return;
-                    }
-                }
-                catch (final InvalidDestinationException e)
-                {
-                    // TODO: log this
-                    onError(INVALID_DESTINATION, length);
-                }
-                catch (final ReceiverNotRegisteredException e)
-                {
-                    // TODO: log this
-                    onError(CONSUMER_NOT_REGISTERED, length);
-                }
-                catch (final Exception e)
-                {
-                    // TODO: log this as well as send the error response
-                    e.printStackTrace();
-                }
-            });
-
-            // check AtomicArray for any new buffers created
-            RcvBufferState state;
-            while ((state = buffers.poll()) != null)
-            {
-                attachBufferState(state);
-            }
+            processCommandBuffer();
+            processBufferQueue();
         }
         catch (final Exception e)
         {
             e.printStackTrace();
+            // TODO: log
         }
+    }
+
+    private void processBufferQueue()
+    {
+        RcvBufferState state;
+        while ((state = buffers.poll()) != null)
+        {
+            attachBufferState(state);
+        }
+    }
+
+    private void processCommandBuffer()
+    {
+        commandBuffer.read((eventTypeId, buffer, index, length) ->
+        {
+            try
+            {
+                switch (eventTypeId)
+                {
+                    case ADD_CONSUMER:
+                        consumerMessage.wrap(buffer, index);
+                        onNewConsumer(consumerMessage.destination(), consumerMessage.channelIds());
+                        return;
+
+                    case REMOVE_CONSUMER:
+                        consumerMessage.wrap(buffer, index);
+                        onRemoveConsumer(consumerMessage.destination(), consumerMessage.channelIds());
+                        return;
+                }
+            }
+            catch (final InvalidDestinationException e)
+            {
+                // TODO: log this
+                onError(INVALID_DESTINATION, length);
+            }
+            catch (final ReceiverNotRegisteredException e)
+            {
+                // TODO: log this
+                onError(CONSUMER_NOT_REGISTERED, length);
+            }
+            catch (final Exception e)
+            {
+                // TODO: log this as well as send the error response
+                e.printStackTrace();
+            }
+        });
     }
 
     private void onError(final ErrorCode errorCode, final int length)

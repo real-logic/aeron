@@ -18,12 +18,14 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.aeron.admin.ChannelNotifiable;
 import uk.co.real_logic.aeron.admin.TermBufferNotifier;
 import uk.co.real_logic.aeron.util.BitUtil;
+import uk.co.real_logic.aeron.util.ChannelCounters;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 
 import java.util.concurrent.atomic.AtomicLong;
 
 import static uk.co.real_logic.aeron.Consumer.MessageFlags.NONE;
+import static uk.co.real_logic.aeron.util.ChannelCounters.UNKNOWN_TERM_ID;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.BASE_HEADER_LENGTH;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.WORD_ALIGNMENT;
 

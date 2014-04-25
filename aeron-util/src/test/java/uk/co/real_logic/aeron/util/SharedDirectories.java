@@ -28,9 +28,10 @@ import java.util.List;
 
 import static java.util.stream.Collectors.toList;
 import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
-import static uk.co.real_logic.aeron.util.FileMappingConvention.*;
+import static uk.co.real_logic.aeron.util.FileMappingConvention.Type;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.Type.LOG;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.Type.STATE;
+import static uk.co.real_logic.aeron.util.FileMappingConvention.termLocation;
 import static uk.co.real_logic.aeron.util.IoUtil.createEmptyFile;
 
 public class SharedDirectories extends ExternalResource

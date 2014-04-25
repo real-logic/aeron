@@ -17,9 +17,6 @@ package uk.co.real_logic.aeron.mediadriver.buffer;
 
 import uk.co.real_logic.aeron.mediadriver.UdpDestination;
 
-import java.nio.ByteBuffer;
-import java.util.function.Function;
-
 /**
  * Interface for encapsulating the strategy of allocating ByteBuffers for Session, Channel, and Term
  */

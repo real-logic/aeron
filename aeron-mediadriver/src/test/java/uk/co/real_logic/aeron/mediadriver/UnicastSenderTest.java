@@ -23,6 +23,7 @@ import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.EventHandler;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
@@ -59,7 +60,6 @@ public class UnicastSenderTest
 {
     private static final byte[] DEFAULT_HEADER = new byte[BASE_HEADER_LENGTH + SIZE_OF_INT];
     private static final int MAX_FRAME_LENGTH = 1024;
-
 
     private static final String HOST = "localhost";
     private static final int PORT = 45678;
@@ -146,7 +146,7 @@ public class UnicastSenderTest
 
         processThreads(5);
 
-        assertNotNull(mediaDriverAdminThread.frameHandler(UdpDestination.parse(URI)));
+        assertRegisteredFrameHandler();
 
         assertEventRead(buffers.toApi(), (eventTypeId, buffer, index, length) ->
         {
@@ -166,13 +166,13 @@ public class UnicastSenderTest
 
         processThreads(5);
 
-        assertNotNull(mediaDriverAdminThread.frameHandler(UdpDestination.parse(URI)));
+        assertRegisteredFrameHandler();
 
         writeChannelMessage(REMOVE_CHANNEL, URI, SESSION_ID, CHANNEL_ID);
 
         processThreads(5);
 
-        assertNull(mediaDriverAdminThread.frameHandler(UdpDestination.parse(URI)));
+        assertNull(mediaDriverAdminThread.frameHandler(udpDestination()));
     }
 
     @Test
@@ -182,7 +182,7 @@ public class UnicastSenderTest
 
         processThreads(5);
 
-        assertNotNull(mediaDriverAdminThread.frameHandler(UdpDestination.parse(URI)));
+        assertRegisteredFrameHandler();
 
         assertEventRead(buffers.toApi(), (eventTypeId, buffer, index, length) ->
         {
@@ -242,7 +242,7 @@ public class UnicastSenderTest
 
         processThreads(5);
 
-        assertNotNull(mediaDriverAdminThread.frameHandler(UdpDestination.parse(URI)));
+        assertRegisteredFrameHandler();
 
         assertEventRead(buffers.toApi(), (eventTypeId, buffer, index, length) ->
         {
@@ -280,7 +280,7 @@ public class UnicastSenderTest
 
         processThreads(5);
 
-        assertNotNull(mediaDriverAdminThread.frameHandler(UdpDestination.parse(URI)));
+        assertRegisteredFrameHandler();
 
         assertEventRead(buffers.toApi(), (eventTypeId, buffer, index, length) ->
         {
@@ -294,10 +294,7 @@ public class UnicastSenderTest
 
         // TODO: should only be able to send once an SM is sent
 
-        final LogAppender logAppender = mapLogAppenders(URI, SESSION_ID, CHANNEL_ID).get(0);
-
-        writeBuffer.putInt(0, VALUE, ByteOrder.BIG_ENDIAN);
-        assertTrue(logAppender.append(writeBuffer, 0, 64));
+        appendValue();
 
         processThreads(1);
 
@@ -313,7 +310,7 @@ public class UnicastSenderTest
 
         processThreads(5);
 
-        assertNotNull(mediaDriverAdminThread.frameHandler(UdpDestination.parse(URI)));
+        assertRegisteredFrameHandler();
 
         assertEventRead(buffers.toApi(), (eventTypeId, buffer, index, length) ->
         {
@@ -344,17 +341,12 @@ public class UnicastSenderTest
 
         processThreads(5);
 
-        assertNotNull(mediaDriverAdminThread.frameHandler(UdpDestination.parse(URI)));
+        assertRegisteredFrameHandler();
 
         final AtomicLong termId = new AtomicLong(0);
         final InetSocketAddress controlAddr = determineControlAddressToSendTo();
 
-        assertEventRead(buffers.toApi(), (eventTypeId, buffer, index, length) ->
-        {
-            assertThat(eventTypeId, is(NEW_SEND_BUFFER_NOTIFICATION));
-            bufferMessage.wrap(buffer, index);
-            termId.set(bufferMessage.termId());
-        });
+        assertEventRead(buffers.toApi(), assertNotifiesNewBuffer(termId));
 
         sendStatusMessage(controlAddr, termId.get(), 0, 0);
 
@@ -366,9 +358,23 @@ public class UnicastSenderTest
 
     @Ignore
     @Test(timeout = 1000)
-    public void shouldNotSendUntilStatusMessageReceived()
+    public void shouldNotSendUntilStatusMessageReceived() throws IOException
     {
-        // TODO: finish. add_channel, do not send SM, append data. check make sure it doesn't send. send SM. check.
+        writeChannelMessage(ADD_CHANNEL, URI, SESSION_ID, CHANNEL_ID);
+        processThreads(5);
+        assertRegisteredFrameHandler();
+        appendValue();
+
+        processThreads(1);
+        assertNotReceivedValue();
+
+        // TODO: finish. check make sure it doesn't send. send SM. check.
+    }
+
+    private void assertNotReceivedValue() throws IOException
+    {
+        final SocketAddress address = receiverChannel.receive(recvBuffer);
+        assertNull(address);
     }
 
     @Ignore
@@ -376,6 +382,33 @@ public class UnicastSenderTest
     public void shouldSendHeartbeatWhenIdle()
     {
         // TODO: finish. add_channel, send SM, append data, send data, then idle for time. Make sure sends heartbeat.
+    }
+
+    private EventHandler assertNotifiesNewBuffer(final AtomicLong termId)
+    {
+        return (eventTypeId, buffer, index, length) ->
+        {
+            assertThat(eventTypeId, is(NEW_SEND_BUFFER_NOTIFICATION));
+            bufferMessage.wrap(buffer, index);
+            termId.set(bufferMessage.termId());
+        };
+    }
+
+    private void appendValue() throws IOException
+    {
+        final LogAppender logAppender = mapLogAppenders(URI, SESSION_ID, CHANNEL_ID).get(0);
+        writeBuffer.putInt(0, VALUE, ByteOrder.BIG_ENDIAN);
+        assertTrue(logAppender.append(writeBuffer, 0, 64));
+    }
+
+    private void assertRegisteredFrameHandler()
+    {
+        assertNotNull(mediaDriverAdminThread.frameHandler(udpDestination()));
+    }
+
+    private UdpDestination udpDestination()
+    {
+        return UdpDestination.parse(URI);
     }
 
     private void writeChannelMessage(final int eventTypeId, final String destination,
@@ -453,7 +486,7 @@ public class UnicastSenderTest
 
     private InetSocketAddress determineControlAddressToSendTo() throws Exception
     {
-        final ControlFrameHandler frameHandler = mediaDriverAdminThread.frameHandler(UdpDestination.parse(URI));
+        final ControlFrameHandler frameHandler = mediaDriverAdminThread.frameHandler(udpDestination());
         final InetSocketAddress srcAddr = (InetSocketAddress)frameHandler.transport().channel().getLocalAddress();
 
         return new InetSocketAddress(HOST, srcAddr.getPort());

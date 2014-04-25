@@ -15,8 +15,6 @@
  */
 package uk.co.real_logic.aeron.mediadriver.buffer;
 
-import uk.co.real_logic.aeron.util.BitUtil;
-
 import java.io.IOException;
 import java.util.stream.Stream;
 

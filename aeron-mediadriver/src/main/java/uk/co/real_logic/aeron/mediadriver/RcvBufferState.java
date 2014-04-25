@@ -17,8 +17,6 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
 
-import java.nio.ByteBuffer;
-
 public class RcvBufferState
 {
     public static final int STATE_PENDING = 1;

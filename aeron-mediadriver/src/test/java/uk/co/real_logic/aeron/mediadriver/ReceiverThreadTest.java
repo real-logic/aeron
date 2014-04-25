@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy;
 

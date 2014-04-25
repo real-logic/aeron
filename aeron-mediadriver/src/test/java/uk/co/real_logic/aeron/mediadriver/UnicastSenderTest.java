@@ -371,7 +371,14 @@ public class UnicastSenderTest
     @Test(timeout = 1000)
     public void shouldNotSendUntilStatusMessageReceived()
     {
-        // TODO: finish
+        // TODO: finish. add_channel, do not send SM, append data. check make sure it doesn't send. send SM. check.
+    }
+
+    @Ignore
+    @Test(timeout = 1000)
+    public void shouldSendHeartbeatWhenIdle()
+    {
+        // TODO: finish. add_channel, send SM, append data, send data, then idle for time. Make sure sends heartbeat.
     }
 
     private void writeChannelMessage(final int eventTypeId, final String destination,

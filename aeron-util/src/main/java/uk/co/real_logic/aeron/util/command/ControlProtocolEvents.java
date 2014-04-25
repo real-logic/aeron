@@ -50,9 +50,9 @@ public class ControlProtocolEvents
     // Within Media Driver between threads
 
     /** Receiver thread tells media driver it wants to create a term buffer */
-    public static final int CREATE_RCV_TERM_BUFFER = 0xF0;
+    public static final int CREATE_CONSUMER_TERM_BUFFER = 0xF0;
 
     /** Receiver thread tells media driver it wants to remove a term buffer */
-    public static final int REMOVE_RCV_TERM_BUFFER = 0xF1;
+    public static final int REMOVE_CONSUMER_TERM_BUFFER = 0xF1;
 
 }

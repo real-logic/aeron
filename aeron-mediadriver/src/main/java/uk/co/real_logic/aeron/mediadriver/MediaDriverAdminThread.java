@@ -131,13 +131,13 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         {
             switch (eventTypeId)
             {
-                case CREATE_RCV_TERM_BUFFER:
+                case CREATE_CONSUMER_TERM_BUFFER:
                     completelyIdentifiedMessageFlyweight.wrap(buffer, index);
-                    onCreateRcvTermBufferEvent(completelyIdentifiedMessageFlyweight);
+                    onCreateConsumerTermBufferEvent(completelyIdentifiedMessageFlyweight);
                     return;
-                case REMOVE_RCV_TERM_BUFFER:
+                case REMOVE_CONSUMER_TERM_BUFFER:
                     completelyIdentifiedMessageFlyweight.wrap(buffer, index);
-                    onRemoveRcvTermBufferEvent(completelyIdentifiedMessageFlyweight);
+                    onRemoveConsumerTermBufferEvent(completelyIdentifiedMessageFlyweight);
                     return;
                 case ERROR_RESPONSE:
                     errorHeaderFlyweight.wrap(buffer, index);
@@ -408,7 +408,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
 
     }
 
-    private void onCreateRcvTermBufferEvent(final CompletelyIdentifiedMessageFlyweight completelyIdentifiedMessageFlyweight)
+    private void onCreateConsumerTermBufferEvent(final CompletelyIdentifiedMessageFlyweight completelyIdentifiedMessageFlyweight)
     {
         final String destination = completelyIdentifiedMessageFlyweight.destination();
         final long sessionId = completelyIdentifiedMessageFlyweight.sessionId();
@@ -434,7 +434,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         }
     }
 
-    private void onRemoveRcvTermBufferEvent(final CompletelyIdentifiedMessageFlyweight message)
+    private void onRemoveConsumerTermBufferEvent(final CompletelyIdentifiedMessageFlyweight message)
     {
         final String destination = completelyIdentifiedMessageFlyweight.destination();
         final long sessionId = completelyIdentifiedMessageFlyweight.sessionId();

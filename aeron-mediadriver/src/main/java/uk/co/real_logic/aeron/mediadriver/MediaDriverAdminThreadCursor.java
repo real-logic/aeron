@@ -24,9 +24,9 @@ import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 
 import java.nio.ByteBuffer;
 
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.CREATE_RCV_TERM_BUFFER;
+import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.CREATE_CONSUMER_TERM_BUFFER;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ERROR_RESPONSE;
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.REMOVE_RCV_TERM_BUFFER;
+import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.REMOVE_CONSUMER_TERM_BUFFER;
 import static uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight.HEADER_LENGTH;
 
 /**
@@ -61,14 +61,14 @@ public class MediaDriverAdminThreadCursor
                                             final long channelId,
                                             final long termId)
     {
-        writeProducerTermBufferEvent(destination, sessionId, channelId, termId, CREATE_RCV_TERM_BUFFER);
+        writeProducerTermBufferEvent(destination, sessionId, channelId, termId, CREATE_CONSUMER_TERM_BUFFER);
     }
 
     public void addRemoveRcvTermBufferEvent(final UdpDestination destination,
                                             final long sessionId,
                                             final long channelId)
     {
-        writeProducerTermBufferEvent(destination, sessionId, channelId, 0L, REMOVE_RCV_TERM_BUFFER);
+        writeProducerTermBufferEvent(destination, sessionId, channelId, 0L, REMOVE_CONSUMER_TERM_BUFFER);
     }
 
     private void writeProducerTermBufferEvent(final UdpDestination destination,

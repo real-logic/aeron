@@ -29,6 +29,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.SELECT_TIMEOUT;
 import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION;
 import static uk.co.real_logic.aeron.util.ErrorCode.CONSUMER_NOT_REGISTERED;
+import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ADD_CONSUMER;
+import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.REMOVE_CONSUMER;
 
 /**
  * Receiver Thread for JVM based mediadriver, uses an event loop with command buffer
@@ -39,7 +41,7 @@ public class ReceiverThread extends ClosableThread
     private final NioSelector nioSelector;
     private final MediaDriverAdminThreadCursor adminThreadCursor;
     private final Map<UdpDestination, RcvFrameHandler> rcvDestinationMap = new HashMap<>();
-    private final ConsumerMessageFlyweight receiverMessage;
+    private final ConsumerMessageFlyweight consumerMessage;
     private final Queue<RcvBufferState> buffers;
     private final RcvFrameHandlerFactory frameHandlerFactory;
 
@@ -51,7 +53,7 @@ public class ReceiverThread extends ClosableThread
                                                                              context.adminNioSelector());
         this.nioSelector = context.rcvNioSelector();
         this.frameHandlerFactory = context.rcvFrameHandlerFactory();
-        this.receiverMessage = new ConsumerMessageFlyweight();
+        this.consumerMessage = new ConsumerMessageFlyweight();
         this.buffers = new ConcurrentLinkedQueue<>();
     }
 
@@ -68,14 +70,14 @@ public class ReceiverThread extends ClosableThread
                 {
                     switch (eventTypeId)
                     {
-                        case ControlProtocolEvents.ADD_CONSUMER:
-                            receiverMessage.wrap(buffer, index);
-                            onNewReceiverEvent(receiverMessage.destination(), receiverMessage.channelIds());
+                        case ADD_CONSUMER:
+                            consumerMessage.wrap(buffer, index);
+                            onNewConsumer(consumerMessage.destination(), consumerMessage.channelIds());
                             return;
 
-                        case ControlProtocolEvents.REMOVE_CONSUMER:
-                            receiverMessage.wrap(buffer, index);
-                            onRemoveReceiverEvent(receiverMessage.destination(), receiverMessage.channelIds());
+                        case REMOVE_CONSUMER:
+                            consumerMessage.wrap(buffer, index);
+                            onRemoveConsumer(consumerMessage.destination(), consumerMessage.channelIds());
                             return;
                     }
                 }
@@ -111,7 +113,7 @@ public class ReceiverThread extends ClosableThread
 
     private void onError(final ErrorCode errorCode, final int length)
     {
-        adminThreadCursor.addErrorResponse(errorCode, receiverMessage, length);
+        adminThreadCursor.addErrorResponse(errorCode, consumerMessage, length);
     }
 
     /**
@@ -156,7 +158,7 @@ public class ReceiverThread extends ClosableThread
         return rcvDestinationMap.get(destination);
     }
 
-    private void onNewReceiverEvent(final String destination, final long[] channelIdList) throws Exception
+    private void onNewConsumer(final String destination, final long[] channelIdList) throws Exception
     {
         final UdpDestination rcvDestination = UdpDestination.parse(destination);
         RcvFrameHandler rcv = rcvDestinationMap.get(rcvDestination);
@@ -170,7 +172,7 @@ public class ReceiverThread extends ClosableThread
         rcv.addChannels(channelIdList);
     }
 
-    private void onRemoveReceiverEvent(final String destination, final long[] channelIdList)
+    private void onRemoveConsumer(final String destination, final long[] channelIdList)
     {
         final UdpDestination rcvDestination = UdpDestination.parse(destination);
         RcvFrameHandler rcv = rcvDestinationMap.get(rcvDestination);

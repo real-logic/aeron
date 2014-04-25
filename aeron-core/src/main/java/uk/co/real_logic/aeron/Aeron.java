@@ -185,7 +185,6 @@ public final class Aeron
         public Builder()
         {
             errorHandler = new DummyErrorHandler();
-            // TODO: decide on where admin buffers get located and remove buffer size if needed
             adminBuffers = new MappingAdminBufferStrategy(CommonConfiguration.ADMIN_DIR);
             producerControl = DefaultProducerControlStrategy::new;
         }

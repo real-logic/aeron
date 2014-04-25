@@ -37,7 +37,7 @@ public class RcvSessionState
     private final long sessionId;
 
     private final AtomicLong cleanedTermId;
-    private long currentTermId;
+    private final AtomicLong currentTermId;
     private int currentBufferId;
 
     private BufferRotator rotator;
@@ -48,13 +48,14 @@ public class RcvSessionState
     {
         this.srcAddr = srcAddr;
         this.sessionId = sessionId;
+        currentTermId = new AtomicLong(UNKNOWN_TERM_ID);
         cleanedTermId = new AtomicLong(UNKNOWN_TERM_ID);
         currentBufferId = 0;
     }
 
     public void termBuffer(final long initialTermId, final BufferRotator rotator)
     {
-        currentTermId = initialTermId;
+        currentTermId.lazySet(initialTermId);
         this.rotator = rotator;
         rebuilders = rotator.buffers()
                             .map(buffer -> new TermRebuilder(buffer))
@@ -74,6 +75,7 @@ public class RcvSessionState
 
     public void rebuildBuffer(final long termId, final DataHeaderFlyweight header)
     {
+        long currentTermId = this.currentTermId.get();
         if (termId == currentTermId)
         {
             final TermRebuilder rebuilder = rebuilders[currentBufferId];
@@ -81,9 +83,8 @@ public class RcvSessionState
         }
         else if (termId == (currentTermId + 1))
         {
-            currentTermId++;
+            cleanedTermId.incrementAndGet();
             currentBufferId = BufferRotationDescriptor.rotateId(currentBufferId);
-            // TODO: signal cleaning.
             TermRebuilder rebuilder = rebuilders[currentBufferId];
             while (rebuilder.tailVolatile() != 0)
             {
@@ -120,4 +121,10 @@ public class RcvSessionState
             logRebuilder.insert(header.atomicBuffer(), header.offset(), header.frameLength());
         }
     }
+
+    public void processBufferRotation()
+    {
+        // TODO
+    }
+
 }

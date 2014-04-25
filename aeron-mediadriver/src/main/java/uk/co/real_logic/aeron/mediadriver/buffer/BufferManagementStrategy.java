@@ -18,12 +18,18 @@ package uk.co.real_logic.aeron.mediadriver.buffer;
 import uk.co.real_logic.aeron.mediadriver.UdpDestination;
 
 import java.nio.ByteBuffer;
+import java.util.function.Function;
 
 /**
  * Interface for encapsulating the strategy of allocating ByteBuffers for Session, Channel, and Term
  */
-public interface BufferManagementStrategy
+public interface BufferManagementStrategy extends AutoCloseable
 {
+    static BufferManagementStrategy newMappedBufferManager(final String dataDir)
+    {
+        return new MappedBufferManagementStrategy(dataDir);
+    }
+
     BufferRotator addProducerChannel(final UdpDestination destination,
                                      final long sessionId,
                                      final long channelId) throws Exception;

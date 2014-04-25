@@ -16,9 +16,8 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import org.junit.*;
-import uk.co.real_logic.aeron.mediadriver.buffer.BasicBufferManagementStrategy;
+import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy;
 import uk.co.real_logic.aeron.util.AdminBuffers;
-import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.SharedDirectories;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
@@ -46,15 +45,13 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
-import static uk.co.real_logic.aeron.mediadriver.MediaDriver.ADMIN_THREAD_TICKS_PER_WHEEL;
-import static uk.co.real_logic.aeron.mediadriver.MediaDriver.ADMIN_THREAD_TICK_DURATION_MICROSECONDS;
-import static uk.co.real_logic.aeron.mediadriver.MediaDriver.COMMAND_BUFFER_SZ;
+import static uk.co.real_logic.aeron.mediadriver.MediaDriver.*;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriverAdminThread.HEADER_LENGTH;
+import static uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy.newMappedBufferManager;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.ErrorCode.*;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.BASE_HEADER_LENGTH;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_LENGTH;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertEventRead;
 
@@ -92,7 +89,7 @@ public class UnicastSenderTest
 
     private TimerWheel timerWheel;
 
-    private BasicBufferManagementStrategy bufferManagementStrategy;
+    private BufferManagementStrategy bufferManagementStrategy;
     private SenderThread senderThread;
     private ReceiverThread receiverThread;
     private MediaDriverAdminThread mediaDriverAdminThread;
@@ -103,7 +100,7 @@ public class UnicastSenderTest
     @Before
     public void setUp() throws Exception
     {
-        bufferManagementStrategy = new BasicBufferManagementStrategy(directory.dataDir());
+        bufferManagementStrategy = newMappedBufferManager(directory.dataDir());
 
         controlledTimestamp = 0;
         timerWheel = new TimerWheel(() -> controlledTimestamp,

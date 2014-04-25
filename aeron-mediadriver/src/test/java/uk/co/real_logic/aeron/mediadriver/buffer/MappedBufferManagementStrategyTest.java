@@ -28,7 +28,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
 
-public class BasicBufferManagementStrategyTest
+public class MappedBufferManagementStrategyTest
 {
 
     private static final File DATA_DIR = new File(IoUtil.tmpDir(), "DATA_DIR");
@@ -48,7 +48,7 @@ public class BasicBufferManagementStrategyTest
     @Test
     public void mappedFilesAreCorrectSizeAndZeroed() throws Exception
     {
-        final BasicBufferManagementStrategy strategy = new BasicBufferManagementStrategy(DATA_DIR.getAbsolutePath());
+        final MappedBufferManagementStrategy strategy = new MappedBufferManagementStrategy(DATA_DIR.getAbsolutePath());
         final MappedByteBuffer term = strategy.mapTerm(DATA_DIR, "udp://localhost:4321", 1, 1, 1, 256);
 
         assertThat(term.capacity(), is(256));

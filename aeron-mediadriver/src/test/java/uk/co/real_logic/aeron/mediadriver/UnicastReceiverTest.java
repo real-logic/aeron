@@ -17,12 +17,12 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import org.junit.*;
 import org.junit.rules.ExpectedException;
-import uk.co.real_logic.aeron.mediadriver.buffer.BasicBufferManagementStrategy;
+import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy;
 import uk.co.real_logic.aeron.util.AdminBuffers;
 import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.SharedDirectories;
-import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.ConsumerMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.StateViewer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
@@ -43,9 +43,10 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.COMMAND_BUFFER_SZ;
+import static uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy.newMappedBufferManager;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
-import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION;
 import static uk.co.real_logic.aeron.util.ErrorCode.CONSUMER_NOT_REGISTERED;
+import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION;
 import static uk.co.real_logic.aeron.util.SharedDirectories.Buffers;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
@@ -83,7 +84,7 @@ public class UnicastReceiverTest
     private final ConsumerMessageFlyweight receiverMessage = new ConsumerMessageFlyweight();
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
-    private BasicBufferManagementStrategy bufferManagementStrategy;
+    private BufferManagementStrategy bufferManagementStrategy;
     private SenderThread senderThread;
     private ReceiverThread receiverThread;
     private MediaDriverAdminThread mediaDriverAdminThread;
@@ -92,7 +93,7 @@ public class UnicastReceiverTest
     @Before
     public void setUp() throws Exception
     {
-        bufferManagementStrategy = new BasicBufferManagementStrategy(directory.dataDir());
+        bufferManagementStrategy = newMappedBufferManager(directory.dataDir());
 
         NioSelector nioSelector = new NioSelector();
         final MediaDriver.MediaDriverContext builder = new MediaDriver.MediaDriverContext()

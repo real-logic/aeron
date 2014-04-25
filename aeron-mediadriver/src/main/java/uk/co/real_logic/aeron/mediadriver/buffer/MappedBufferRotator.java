@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.mediadriver.buffer;
 
-import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.IoUtil;
 
 import java.io.File;
@@ -34,7 +33,7 @@ import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
  *
  * Keeps 3 buffers on hold at any one time.
  */
-public class MappedBufferRotator implements BufferRotator, AutoCloseable
+class MappedBufferRotator implements BufferRotator, AutoCloseable
 {
 
     private static final String LOG_SUFFIX = "-log";
@@ -45,13 +44,13 @@ public class MappedBufferRotator implements BufferRotator, AutoCloseable
 
     private final FileChannel stateTemplate;
     private final long stateBufferSize;
-    private final BasicLogBuffers[] buffers;
+    private final MappedLogBuffers[] buffers;
 
-    private BasicLogBuffers current;
-    private BasicLogBuffers clean;
-    private BasicLogBuffers dirty;
+    private MappedLogBuffers current;
+    private MappedLogBuffers clean;
+    private MappedLogBuffers dirty;
 
-    public MappedBufferRotator(final File directory,
+    MappedBufferRotator(final File directory,
                                final FileChannel logTemplate,
                                final long logBufferSize,
                                final FileChannel stateTemplate,
@@ -75,24 +74,24 @@ public class MappedBufferRotator implements BufferRotator, AutoCloseable
             throw new IllegalStateException(e);
         }
 
-        buffers = new BasicLogBuffers[]{ current, clean, dirty };
+        buffers = new MappedLogBuffers[]{ current, clean, dirty };
     }
 
-    private BasicLogBuffers newTerm(final String prefix, final File directory) throws IOException
+    private MappedLogBuffers newTerm(final String prefix, final File directory) throws IOException
     {
         final FileChannel logFile = openFile(directory, prefix + LOG_SUFFIX);
         final FileChannel stateFile = openFile(directory, prefix + STATE_SUFFIX);
-        return new BasicLogBuffers(logFile, stateFile, map(logBufferSize, logFile), map(stateBufferSize, stateFile));
+        return new MappedLogBuffers(logFile, stateFile, map(logBufferSize, logFile), map(stateBufferSize, stateFile));
     }
 
-    public Stream<BasicLogBuffers> buffers()
+    public Stream<MappedLogBuffers> buffers()
     {
         return Stream.of(buffers);
     }
 
     public void rotate() throws IOException
     {
-        final BasicLogBuffers newBuffer = clean;
+        final MappedLogBuffers newBuffer = clean;
 
         dirty.reset(logTemplate, stateTemplate);
         clean = dirty;
@@ -124,7 +123,7 @@ public class MappedBufferRotator implements BufferRotator, AutoCloseable
 
     public void close()
     {
-        buffers().forEach(BasicLogBuffers::close);
+        buffers().forEach(MappedLogBuffers::close);
     }
 
 }

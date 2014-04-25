@@ -38,7 +38,7 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor
 /**
  * Basic buffer management where each Term is a file.
  */
-public class BasicBufferManagementStrategy implements BufferManagementStrategy
+class MappedBufferManagementStrategy implements BufferManagementStrategy
 {
     private static final long LOG_BUFFER_SIZE = COMMAND_BUFFER_SZ + TRAILER_LENGTH;
 
@@ -52,7 +52,7 @@ public class BasicBufferManagementStrategy implements BufferManagementStrategy
     private final UdpChannelMap<MappedBufferRotator> rcvTermMap;
     private final FileMappingConvention fileConvention;
 
-    public BasicBufferManagementStrategy(final String dataDir)
+    MappedBufferManagementStrategy(final String dataDir)
     {
         fileConvention = new FileMappingConvention(dataDir);
         senderDir = fileConvention.senderDir();

@@ -25,7 +25,7 @@ import java.nio.channels.FileChannel;
 /**
  * .
  */
-public class BasicLogBuffers implements LogBuffers, AutoCloseable
+class MappedLogBuffers implements LogBuffers, AutoCloseable
 {
     private final FileChannel logFile;
     private final FileChannel stateFile;
@@ -36,10 +36,10 @@ public class BasicLogBuffers implements LogBuffers, AutoCloseable
     private final AtomicBuffer logBuffer;
     private final AtomicBuffer stateBuffer;
 
-    public BasicLogBuffers(final FileChannel logFile,
-                           final FileChannel stateFile,
-                           final MappedByteBuffer logBuffer,
-                           final MappedByteBuffer stateBuffer)
+    MappedLogBuffers(final FileChannel logFile,
+                     final FileChannel stateFile,
+                     final MappedByteBuffer logBuffer,
+                     final MappedByteBuffer stateBuffer)
     {
         this.logFile = logFile;
         this.stateFile = stateFile;

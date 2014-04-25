@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.mediadriver.buffer.BasicBufferManagementStrategy;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy;
 import uk.co.real_logic.aeron.util.AdminBufferStrategy;
 import uk.co.real_logic.aeron.util.CommonConfiguration;
@@ -30,6 +29,9 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 
+import static uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy.newMappedBufferManager;
+import static uk.co.real_logic.aeron.util.CommonConfiguration.ADMIN_DIR;
+import static uk.co.real_logic.aeron.util.CommonConfiguration.DATA_DIR;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_LENGTH;
 
 /**
@@ -127,8 +129,8 @@ public class MediaDriver implements AutoCloseable
                 .rcvNioSelector(nioSelector)
                 .adminNioSelector(new NioSelector())
                 .senderFlowControl(DefaultSenderFlowControlStrategy::new)
-                .adminBufferStrategy(new CreatingAdminBufferStrategy(CommonConfiguration.ADMIN_DIR, ADMIN_BUFFER_SZ))
-                .bufferManagementStrategy(new BasicBufferManagementStrategy(CommonConfiguration.DATA_DIR))
+                .adminBufferStrategy(new CreatingAdminBufferStrategy(ADMIN_DIR, ADMIN_BUFFER_SZ))
+                .bufferManagementStrategy(newMappedBufferManager(DATA_DIR))
                 .mtuLength(CommonConfiguration.MTU_LENGTH);
 
         context.rcvFrameHandlerFactory(new RcvFrameHandlerFactory(nioSelector,

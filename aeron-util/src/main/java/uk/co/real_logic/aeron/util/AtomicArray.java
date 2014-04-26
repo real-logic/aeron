@@ -32,8 +32,9 @@ public class AtomicArray<T>
     /**
      * Marks a point at which to start checking changes from.
      *
-     * @param consumer
+     * @param consumer of each element in turn.
      */
+    @SuppressWarnings("unchecked")
     public void forEachIfChanged(final Runnable init, final Consumer<T> consumer)
     {
         Object[] newMark = arrayRef.get();

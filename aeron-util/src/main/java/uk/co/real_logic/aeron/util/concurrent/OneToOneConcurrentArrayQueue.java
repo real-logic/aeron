@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron.util.concurrent;
 
 import uk.co.real_logic.aeron.util.BitUtil;
 
-
 import java.util.*;
 
 import static uk.co.real_logic.aeron.util.UnsafeAccess.UNSAFE;

@@ -120,11 +120,14 @@ public class OneToOneConcurrentArrayQueue<E>
             throw new NullPointerException("Null is not a valid element");
         }
 
-        final long offset = indexToOffset((int)tail & mask);
+        final Object[] buffer = this.buffer;
+        long currentTail = tail;
+        final long offset = indexToOffset((int)currentTail & mask);
+
         if (null == UNSAFE.getObjectVolatile(buffer, offset))
         {
             UNSAFE.putOrderedObject(buffer, offset, e);
-            tailOrdered(tail + 1);
+            tailOrdered(currentTail + 1);
 
             return true;
         }
@@ -135,13 +138,15 @@ public class OneToOneConcurrentArrayQueue<E>
     @SuppressWarnings("unchecked")
     public E poll()
     {
-        final long offset = indexToOffset((int)head & mask);
+        final Object[] buffer = this.buffer;
+        final long currentHead = head;
+        final long offset = indexToOffset((int)currentHead & mask);
 
         final Object e = UNSAFE.getObjectVolatile(buffer, offset);
         if (null != e)
         {
             UNSAFE.putOrderedObject(buffer, offset, null);
-            headOrdered(head + 1);
+            headOrdered(currentHead + 1);
         }
 
         return (E)e;
@@ -200,9 +205,11 @@ public class OneToOneConcurrentArrayQueue<E>
             return false;
         }
 
+        final Object[] buffer = this.buffer;
+
         for (long i = head, limit = tail; i < limit; i++)
         {
-            final E e = buffer[(int)i & mask];
+            final Object e = buffer[(int)i & mask];
             if (o.equals(e))
             {
                 return true;

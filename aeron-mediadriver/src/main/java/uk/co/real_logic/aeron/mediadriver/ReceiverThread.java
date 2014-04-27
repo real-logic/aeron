@@ -18,12 +18,12 @@ package uk.co.real_logic.aeron.mediadriver;
 import uk.co.real_logic.aeron.util.ClosableThread;
 import uk.co.real_logic.aeron.util.ErrorCode;
 import uk.co.real_logic.aeron.util.command.ConsumerMessageFlyweight;
+import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.SELECT_TIMEOUT;
 import static uk.co.real_logic.aeron.util.ErrorCode.CONSUMER_NOT_REGISTERED;
@@ -47,13 +47,14 @@ public class ReceiverThread extends ClosableThread
     public ReceiverThread(final MediaDriver.MediaDriverContext context) throws Exception
     {
         super(SELECT_TIMEOUT);
+
         this.commandBuffer = context.receiverThreadCommandBuffer();
         this.adminThreadCursor = new MediaDriverAdminThreadCursor(context.adminThreadCommandBuffer(),
-                                                                             context.adminNioSelector());
+                                                                  context.adminNioSelector());
         this.nioSelector = context.rcvNioSelector();
         this.frameHandlerFactory = context.rcvFrameHandlerFactory();
         this.consumerMessage = new ConsumerMessageFlyweight();
-        this.buffers = new ConcurrentLinkedQueue<>();
+        this.buffers = new OneToOneConcurrentArrayQueue<>(1024);
     }
 
     public void process()
@@ -64,9 +65,9 @@ public class ReceiverThread extends ClosableThread
             processCommandBuffer();
             processBufferQueue();
         }
-        catch (final Exception e)
+        catch (final Exception ex)
         {
-            e.printStackTrace();
+            ex.printStackTrace();
             // TODO: log
         }
     }
@@ -83,38 +84,39 @@ public class ReceiverThread extends ClosableThread
     private void processCommandBuffer()
     {
         commandBuffer.read((eventTypeId, buffer, index, length) ->
-        {
-            try
-            {
-                switch (eventTypeId)
-                {
-                    case ADD_CONSUMER:
-                        consumerMessage.wrap(buffer, index);
-                        onNewConsumer(consumerMessage.destination(), consumerMessage.channelIds());
-                        return;
+                           {
+                               try
+                               {
+                                   switch (eventTypeId)
+                                   {
+                                       case ADD_CONSUMER:
+                                           consumerMessage.wrap(buffer, index);
+                                           onNewConsumer(consumerMessage.destination(), consumerMessage.channelIds());
+                                           return;
 
-                    case REMOVE_CONSUMER:
-                        consumerMessage.wrap(buffer, index);
-                        onRemoveConsumer(consumerMessage.destination(), consumerMessage.channelIds());
-                        return;
-                }
-            }
-            catch (final InvalidDestinationException e)
-            {
-                // TODO: log this
-                onError(INVALID_DESTINATION, length);
-            }
-            catch (final ReceiverNotRegisteredException e)
-            {
-                // TODO: log this
-                onError(CONSUMER_NOT_REGISTERED, length);
-            }
-            catch (final Exception e)
-            {
-                // TODO: log this as well as send the error response
-                e.printStackTrace();
-            }
-        });
+                                       case REMOVE_CONSUMER:
+                                           consumerMessage.wrap(buffer, index);
+                                           onRemoveConsumer(consumerMessage.destination(),
+                                                            consumerMessage.channelIds());
+                                           return;
+                                   }
+                               }
+                               catch (final InvalidDestinationException e)
+                               {
+                                   // TODO: log this
+                                   onError(INVALID_DESTINATION, length);
+                               }
+                               catch (final ReceiverNotRegisteredException e)
+                               {
+                                   // TODO: log this
+                                   onError(CONSUMER_NOT_REGISTERED, length);
+                               }
+                               catch (final Exception e)
+                               {
+                                   // TODO: log this as well as send the error response
+                                   e.printStackTrace();
+                               }
+                           });
     }
 
     private void onError(final ErrorCode errorCode, final int length)
@@ -131,9 +133,9 @@ public class ReceiverThread extends ClosableThread
         wakeup();
 
         rcvDestinationMap.forEach((destination, frameHandler) ->
-        {
-            frameHandler.close();
-        });
+                                  {
+                                      frameHandler.close();
+                                  });
         // TODO: if needed, use a CountdownLatch to sync...
     }
 
@@ -147,6 +149,7 @@ public class ReceiverThread extends ClosableThread
 
     /**
      * Return the {@link uk.co.real_logic.aeron.mediadriver.NioSelector} in use by the thread
+     *
      * @return the {@link uk.co.real_logic.aeron.mediadriver.NioSelector} in use by the thread
      */
     public NioSelector nioSelector()

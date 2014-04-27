@@ -140,10 +140,10 @@ public class BitUtil
     }
 
     /**
-     * Increment indexes of an array in a cycle
+     * Cycles indices of an array one at a time.
      *
-     * @param current
-     * @return
+     * @param current value to be incremented.
+     * @return the next value, or zero if max is reached.
      */
     public static int next(final int current, final int max)
     {
@@ -152,7 +152,29 @@ public class BitUtil
         {
             next = 0;
         }
+
         return next;
     }
 
+    /**
+     * Calculate the shift value to scale a number based on how refs are compressed or not.
+     *
+     * @param scale of the number reported by Unsafe.
+     * @return how many times the number needs to be shifted to the left.
+     */
+    public static int calculateShiftForScale(final int scale)
+    {
+        if (4 == scale)
+        {
+            return 2;
+        }
+        else if (8 == scale)
+        {
+            return 3;
+        }
+        else
+        {
+            throw new IllegalArgumentException("Unknown pointer size");
+        }
+    }
 }

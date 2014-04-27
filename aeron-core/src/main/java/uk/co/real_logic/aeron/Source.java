@@ -35,12 +35,12 @@ public class Source implements AutoCloseable
     private final AtomicArray<Channel> channels;
 
     // called by Aeron to create new sessions
-    public Source(final AtomicArray<Channel> channels, final Builder builder)
+    public Source(final AtomicArray<Channel> channels, final Context context)
     {
         this.channels = channels;
-        this.sessionId = builder.sessionId;
-        this.destination = builder.destination;
-        this.adminThread = builder.adminThread;
+        this.sessionId = context.sessionId;
+        this.destination = context.destination;
+        this.adminThread = context.adminThread;
     }
 
     /**
@@ -113,29 +113,25 @@ public class Source implements AutoCloseable
         return destination;
     }
 
-    public static class Builder
+    public static class Context
     {
         private Destination destination;
         private ClientAdminThreadCursor adminThread;
         private long sessionId;
 
-        public Builder()
-        {
-        }
-
-        public Builder sessionId(final long sessionId)
+        public Context sessionId(final long sessionId)
         {
             this.sessionId = sessionId;
             return this;
         }
 
-        public Builder destination(final Destination destination)
+        public Context destination(final Destination destination)
         {
             this.destination = destination;
             return this;
         }
 
-        public Builder adminThread(final ClientAdminThreadCursor adminThread)
+        public Context adminThread(final ClientAdminThreadCursor adminThread)
         {
             this.adminThread = adminThread;
             return this;

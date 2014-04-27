@@ -54,7 +54,7 @@ public class UdpDestination
                 return malformedUri(destinationUri);
             }
 
-            final Builder builder = new Builder()
+            final Context context = new Context()
                 .uriStr(destinationUri)
                 .consistentHash(BitUtil.generateConsistentHash(destinationUri.getBytes()));
 
@@ -71,7 +71,7 @@ public class UdpDestination
                 final InetSocketAddress controlAddress = new InetSocketAddress(getByAddress(addressAsBytes), 0);
                 final InetSocketAddress dataAddress = new InetSocketAddress(hostAddress, 0);
 
-                builder.localControlAddress(controlAddress)
+                context.localControlAddress(controlAddress)
                        .remoteControlAddress(controlAddress)
                        .localDataAddress(dataAddress)
                        .remoteDataAddress(dataAddress);
@@ -84,7 +84,7 @@ public class UdpDestination
                 }
 
                 final InetSocketAddress remoteAddress = new InetSocketAddress(hostAddress, uriPort);
-                builder.remoteControlAddress(remoteAddress)
+                context.remoteControlAddress(remoteAddress)
                        .remoteDataAddress(remoteAddress);
 
                 InetSocketAddress localAddress = new InetSocketAddress(0);
@@ -103,15 +103,15 @@ public class UdpDestination
                     }
                 }
 
-                builder.localControlAddress(localAddress)
+                context.localControlAddress(localAddress)
                        .localDataAddress(localAddress);
             }
 
-            return new UdpDestination(builder);
+            return new UdpDestination(context);
         }
-        catch (Exception e)
+        catch (final Exception ex)
         {
-            throw new InvalidDestinationException(e);
+            throw new InvalidDestinationException(ex);
         }
     }
 
@@ -140,14 +140,14 @@ public class UdpDestination
         return localControl;
     }
 
-    public UdpDestination(final Builder builder)
+    public UdpDestination(final Context context)
     {
-        this.remoteData = builder.remoteData;
-        this.localData = builder.localData;
-        this.remoteControl = builder.remoteControl;
-        this.localControl = builder.localControl;
-        this.uriStr = builder.uriStr;
-        this.consistentHash = builder.consistentHash;
+        this.remoteData = context.remoteData;
+        this.localData = context.localData;
+        this.remoteControl = context.remoteControl;
+        this.localControl = context.localControl;
+        this.uriStr = context.uriStr;
+        this.consistentHash = context.consistentHash;
     }
 
     public long consistentHash()
@@ -205,7 +205,7 @@ public class UdpDestination
         return uriStr;
     }
 
-    public static class Builder
+    public static class Context
     {
         private InetSocketAddress remoteData;
         private InetSocketAddress localData;
@@ -214,37 +214,37 @@ public class UdpDestination
         private String uriStr;
         private long consistentHash;
 
-        public Builder uriStr(final String uri)
+        public Context uriStr(final String uri)
         {
             uriStr = uri;
             return this;
         }
 
-        public Builder consistentHash(final long hash)
+        public Context consistentHash(final long hash)
         {
             consistentHash = hash;
             return this;
         }
 
-        public Builder remoteDataAddress(final InetSocketAddress remoteData)
+        public Context remoteDataAddress(final InetSocketAddress remoteData)
         {
             this.remoteData = remoteData;
             return this;
         }
 
-        public Builder localDataAddress(final InetSocketAddress localData)
+        public Context localDataAddress(final InetSocketAddress localData)
         {
             this.localData = localData;
             return this;
         }
 
-        public Builder remoteControlAddress(final InetSocketAddress remoteControl)
+        public Context remoteControlAddress(final InetSocketAddress remoteControl)
         {
             this.remoteControl = remoteControl;
             return this;
         }
 
-        public Builder localControlAddress(final InetSocketAddress localControl)
+        public Context localControlAddress(final InetSocketAddress localControl)
         {
             this.localControl = localControl;
             return this;

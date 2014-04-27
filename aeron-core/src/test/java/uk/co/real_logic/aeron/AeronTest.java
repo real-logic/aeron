@@ -154,10 +154,10 @@ public class AeronTest
     {
         final RingBuffer buffer = adminBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
-        final Source.Builder sourceBuilder = new Source.Builder()
+        final Source.Context sourceContext = new Source.Context()
             .sessionId(SESSION_ID)
             .destination(new Destination(DESTINATION));
-        final Source source = aeron.newSource(sourceBuilder);
+        final Source source = aeron.newSource(sourceContext);
         final Channel channel = source.newChannel(CHANNEL_ID);
         final ClientAdminThread adminThread = aeron.adminThread();
 
@@ -175,10 +175,10 @@ public class AeronTest
     {
         final RingBuffer buffer = adminBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
-        final Source source = aeron.newSource(new Source.Builder()
+        final Source source = aeron.newSource(new Source.Context()
                 .sessionId(SESSION_ID)
                 .destination(new Destination(DESTINATION)));
-        final Source otherSource = aeron.newSource(new Source.Builder()
+        final Source otherSource = aeron.newSource(new Source.Context()
                 .sessionId(SESSION_ID + 1)
                 .destination(new Destination(DESTINATION)));
         final Channel channel = source.newChannel(CHANNEL_ID);
@@ -198,12 +198,12 @@ public class AeronTest
     {
         final RingBuffer toMediaDriver = adminBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
-        final Consumer.Builder builder = new Consumer.Builder()
+        final Consumer.Context context = new Consumer.Context()
                 .destination(new Destination(DESTINATION))
                 .channel(CHANNEL_ID, emptyDataHandler())
                 .channel(CHANNEL_ID_2, emptyDataHandler());
 
-        final Consumer consumer = aeron.newReceiver(builder);
+        final Consumer consumer = aeron.newReceiver(context);
 
         aeron.adminThread().process();
 
@@ -433,12 +433,12 @@ public class AeronTest
 
     private Consumer newReceiver(final Aeron aeron)
     {
-        final Consumer.Builder builder = new Consumer.Builder()
+        final Consumer.Context context = new Consumer.Context()
                 .destination(new Destination(DESTINATION))
                 .channel(CHANNEL_ID, channel2Handler)
                 .channel(CHANNEL_ID_2, emptyDataHandler());
 
-        return aeron.newReceiver(builder);
+        return aeron.newReceiver(context);
     }
 
     private EventHandler assertReceiverMessageOfType(final int expectedEventTypeId)
@@ -461,20 +461,20 @@ public class AeronTest
 
     private Channel newChannel(final Aeron aeron)
     {
-        final Source.Builder sourceBuilder = new Source.Builder()
+        final Source.Context sourceContext = new Source.Context()
             .sessionId(SESSION_ID)
             .destination(new Destination(DESTINATION));
-        final Source source = aeron.newSource(sourceBuilder);
+        final Source source = aeron.newSource(sourceContext);
         return source.newChannel(CHANNEL_ID);
     }
 
     private Aeron newAeron()
     {
-        final Aeron.Builder builder = new Aeron.Builder()
+        final Aeron.Context context = new Aeron.Context()
              .adminBufferStrategy(new MappingAdminBufferStrategy(adminBuffers.adminDir()))
              .invalidDestinationHandler(invalidDestination);
 
-        return Aeron.newSingleMediaDriver(builder);
+        return Aeron.newSingleMediaDriver(context);
     }
 
     private void assertChannelMessage(final RingBuffer mediaDriverBuffer, final int expectedEventTypeId)

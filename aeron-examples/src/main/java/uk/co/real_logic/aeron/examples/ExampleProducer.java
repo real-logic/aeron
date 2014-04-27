@@ -36,8 +36,8 @@ public class ExampleProducer
     {
         try
         {
-            final Aeron.Builder builder = new Aeron.Builder().errorHandler(ExampleProducer::onError);
-            final Aeron aeron = Aeron.newSingleMediaDriver(builder);
+            final Aeron.Context context = new Aeron.Context().errorHandler(ExampleProducer::onError);
+            final Aeron aeron = Aeron.newSingleMediaDriver(context);
             final Source source = aeron.newSource(DESTINATION);
             final Channel aChannel = source.newChannel(CHANNEL_ID);
             final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocateDirect(256));

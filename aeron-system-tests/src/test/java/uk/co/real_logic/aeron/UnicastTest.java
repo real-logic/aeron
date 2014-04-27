@@ -49,15 +49,15 @@ public class UnicastTest
         dataHandler = mock(DataHandler.class);
         sourceHandler = mock(NewSourceEventHandler.class);
 
-        producingClient = Aeron.newSingleMediaDriver(new Aeron.Builder());
-        receivingClient = Aeron.newSingleMediaDriver(new Aeron.Builder());
+        producingClient = Aeron.newSingleMediaDriver(new Aeron.Context());
+        receivingClient = Aeron.newSingleMediaDriver(new Aeron.Context());
 
-        consumer = receivingClient.newReceiver(new Consumer.Builder()
+        consumer = receivingClient.newReceiver(new Consumer.Context()
                 .destination(DESTINATION)
                 .channel(CHANNEL_ID, dataHandler)
                 .newSourceEvent(sourceHandler));
 
-        source = producingClient.newSource(new Source.Builder().destination(DESTINATION)
+        source = producingClient.newSource(new Source.Context().destination(DESTINATION)
                                                                .sessionId(SESSION_ID));
     }
 

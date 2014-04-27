@@ -38,28 +38,28 @@ public final class Aeron
     /**
      * Creates an media driver associated with this Aeron instance that can be used to create sources and receivers on.
      *
-     * @param builder of the media driver and Aeron configuration or null for default configuration
+     * @param context of the media driver and Aeron configuration or null for default configuration
      * @return Aeron instance
      */
-    public static Aeron newSingleMediaDriver(final Builder builder)
+    public static Aeron newSingleMediaDriver(final Context context)
     {
-        return new Aeron(builder);
+        return new Aeron(context);
     }
 
     /**
      * Creates multiple media drivers associated with multiple Aeron instances that can be used to create sources
      * and receivers.
      *
-     * @param builders of the media drivers
+     * @param contexts of the media drivers
      * @return array of Aeron instances
      */
-    public static Aeron[] newMultipleMediaDrivers(final Builder[] builders)
+    public static Aeron[] newMultipleMediaDrivers(final Context[] contexts)
     {
-        final Aeron[] aerons = new Aeron[builders.length];
+        final Aeron[] aerons = new Aeron[contexts.length];
 
-        for (int i = 0, max = builders.length; i < max; i++)
+        for (int i = 0, max = contexts.length; i < max; i++)
         {
-            aerons[i] = new Aeron(builders[i]);
+            aerons[i] = new Aeron(contexts[i]);
         }
 
         return aerons;
@@ -73,11 +73,11 @@ public final class Aeron
     private final AtomicArray<Channel> channels;
     private final AtomicArray<ConsumerChannel> receivers;
 
-    private Aeron(final Builder builder)
+    private Aeron(final Context context)
     {
-        errorHandler = builder.errorHandler;
-        adminBuffers = builder.adminBuffers;
-        producerControl = builder.producerControl;
+        errorHandler = context.errorHandler;
+        adminBuffers = context.adminBuffers;
+        producerControl = context.producerControl;
         channels = new AtomicArray<>();
         receivers = new AtomicArray<>();
         adminCommandBuffer = new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocate(ADMIN_BUFFER_SIZE)));
@@ -87,7 +87,7 @@ public final class Aeron
             final RingBuffer recvBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toApi()));
             final RingBuffer sendBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toMediaDriver()));
             final BufferUsageStrategy bufferUsage = new BasicBufferUsageStrategy(CommonConfiguration.DATA_DIR);
-            final AdminErrorHandler adminErrorHandler = new AdminErrorHandler(builder.invalidDestinationHandler);
+            final AdminErrorHandler adminErrorHandler = new AdminErrorHandler(context.invalidDestinationHandler);
             adminThread = new ClientAdminThread(adminCommandBuffer,
                                                 recvBuffer, sendBuffer,
                                                 bufferUsage,
@@ -95,25 +95,25 @@ public final class Aeron
                                                 adminErrorHandler,
                                                 producerControl);
         }
-        catch (Exception e)
+        catch (final Exception ex)
         {
-            throw new IllegalArgumentException("Unable to create Aeron", e);
+            throw new IllegalArgumentException("Unable to create Aeron", ex);
         }
     }
 
     /**
      * Create a new source that is to send to {@link uk.co.real_logic.aeron.Destination}.
      *
-     * A unique, random, session ID will be generated for the source if the builder does not
-     * set it. If the builder sets the Session ID, then it will be checked for conflicting with existing session Ids.
+     * A unique, random, session ID will be generated for the source if the context does not
+     * set it. If the context sets the Session ID, then it will be checked for conflicting with existing session Ids.
      *
-     * @param builder for source options, etc.
+     * @param context for source options, etc.
      * @return new source
      */
-    public Source newSource(final Source.Builder builder)
+    public Source newSource(final Source.Context context)
     {
-        builder.adminThread(new ClientAdminThreadCursor(adminCommandBuffer));
-        return new Source(channels, builder);
+        context.adminThread(new ClientAdminThreadCursor(adminCommandBuffer));
+        return new Source(channels, context);
     }
 
     /**
@@ -123,7 +123,7 @@ public final class Aeron
      */
     public Source newSource(final Destination destination)
     {
-        return newSource(new Source.Builder().destination(destination));
+        return newSource(new Source.Context().destination(destination));
     }
 
     /**
@@ -131,16 +131,16 @@ public final class Aeron
      *
      * Convenience function to make it easier to create a number of Sources easier.
      *
-     * @param builders for the source options, etc.
+     * @param contexts for the source options, etc.
      * @return array of new sources.
      */
-    public Source[] newSources(final Source.Builder[] builders)
+    public Source[] newSources(final Source.Context[] contexts)
     {
-        final Source[] sources = new Source[builders.length];
+        final Source[] sources = new Source[contexts.length];
 
-        for (int i = 0, max = builders.length; i < max; i++)
+        for (int i = 0, max = contexts.length; i < max; i++)
         {
-            sources[i] = newSource(builders[i]);
+            sources[i] = newSource(contexts[i]);
         }
 
         return sources;
@@ -148,13 +148,13 @@ public final class Aeron
 
     /**
      * Create a new receiver that will listen on {@link uk.co.real_logic.aeron.Destination}
-     * @param builder builder for receiver options.
+     * @param context context for receiver options.
      * @return new receiver
      */
-    public Consumer newReceiver(final Consumer.Builder builder)
+    public Consumer newReceiver(final Consumer.Context context)
     {
         final ClientAdminThreadCursor adminThread = new ClientAdminThreadCursor(adminCommandBuffer);
-        return new Consumer(adminThread, builder, receivers);
+        return new Consumer(adminThread, context, receivers);
     }
 
     /**
@@ -163,11 +163,11 @@ public final class Aeron
      * @param block to fill in receiver builder
      * @return new receiver
      */
-    public Consumer newConsumer(final java.util.function.Consumer<Consumer.Builder> block)
+    public Consumer newConsumer(final java.util.function.Consumer<Consumer.Context> block)
     {
-        Consumer.Builder builder = new Consumer.Builder();
-        block.accept(builder);
-        return newReceiver(builder);
+        Consumer.Context context = new Consumer.Context();
+        block.accept(context);
+        return newReceiver(context);
     }
 
     public ClientAdminThread adminThread()
@@ -175,43 +175,42 @@ public final class Aeron
         return adminThread;
     }
 
-    public static class Builder
+    public static class Context
     {
         private ErrorHandler errorHandler;
         private AdminBufferStrategy adminBuffers;
         private InvalidDestinationHandler invalidDestinationHandler;
         private ProducerControlFactory producerControl;
 
-        public Builder()
+        public Context()
         {
             errorHandler = new DummyErrorHandler();
             adminBuffers = new MappingAdminBufferStrategy(CommonConfiguration.ADMIN_DIR);
             producerControl = DefaultProducerControlStrategy::new;
         }
 
-        public Builder errorHandler(ErrorHandler errorHandler)
+        public Context errorHandler(ErrorHandler errorHandler)
         {
             this.errorHandler = errorHandler;
             return this;
         }
 
-        public Builder adminBufferStrategy(AdminBufferStrategy adminBuffers)
+        public Context adminBufferStrategy(AdminBufferStrategy adminBuffers)
         {
             this.adminBuffers = adminBuffers;
             return this;
         }
 
-        public Builder invalidDestinationHandler(final InvalidDestinationHandler invalidDestination)
+        public Context invalidDestinationHandler(final InvalidDestinationHandler invalidDestination)
         {
             this.invalidDestinationHandler = invalidDestination;
             return this;
         }
 
-        public Builder producerControl(final ProducerControlFactory producerControl)
+        public Context producerControl(final ProducerControlFactory producerControl)
         {
             this.producerControl = producerControl;
             return this;
         }
     }
-
 }

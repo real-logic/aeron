@@ -39,15 +39,15 @@ public class Consumer implements AutoCloseable
     private final List<ConsumerChannel> channels;
 
     public Consumer(final ClientAdminThreadCursor adminThread,
-                    final Builder builder,
+                    final Context context,
                     final AtomicArray<ConsumerChannel> receivers)
     {
         this.adminThread = adminThread;
         this.receivers = receivers;
-        this.destination = builder.destination;
-        this.channelMap = builder.channelMap;
-        this.newSourceEventHandler = builder.newSourceEventHandler;
-        this.inactiveSourceEventHandler = builder.inactiveSourceEventHandler;
+        this.destination = context.destination;
+        this.channelMap = context.channelMap;
+        this.newSourceEventHandler = context.newSourceEventHandler;
+        this.inactiveSourceEventHandler = context.inactiveSourceEventHandler;
         this.channelIds = channelMap.keySet().stream().mapToLong(i -> i).toArray();
         this.channels = channelMap.entrySet()
                                   .stream()
@@ -78,6 +78,7 @@ public class Consumer implements AutoCloseable
         {
             read += channel.process();
         }
+
         return read;
     }
 
@@ -127,36 +128,32 @@ public class Consumer implements AutoCloseable
         void handleInactiveSource(final long channelId, final long sessionId);
     }
 
-    public static class Builder
+    public static class Context
     {
         private Destination destination;
         private Long2ObjectHashMap<DataHandler> channelMap = new Long2ObjectHashMap<>();
         private NewSourceEventHandler newSourceEventHandler;
         private InactiveSourceEventHandler inactiveSourceEventHandler;
 
-        public Builder()
-        {
-        }
-
-        public Builder destination(final Destination destination)
+        public Context destination(final Destination destination)
         {
             this.destination = destination;
             return this;
         }
 
-        public Builder channel(final long channelId, final DataHandler handler)
+        public Context channel(final long channelId, final DataHandler handler)
         {
             channelMap.put(channelId, handler);
             return this;
         }
 
-        public Builder newSourceEvent(final NewSourceEventHandler handler)
+        public Context newSourceEvent(final NewSourceEventHandler handler)
         {
             this.newSourceEventHandler = handler;
             return this;
         }
 
-        public Builder inactiveSourceEvent(final InactiveSourceEventHandler handler)
+        public Context inactiveSourceEvent(final InactiveSourceEventHandler handler)
         {
             inactiveSourceEventHandler = handler;
             return this;

@@ -39,31 +39,31 @@ public class ExampleConsumer
 
         try
         {
-            final Aeron.Builder aeronBuilder = new Aeron.Builder().errorHandler(ExampleConsumer::onError);
-            final Aeron aeron = Aeron.newSingleMediaDriver(aeronBuilder);
-            final Consumer.Builder builder = new Consumer.Builder().destination(DESTINATION);
+            final Aeron.Context aeronContext = new Aeron.Context().errorHandler(ExampleConsumer::onError);
+            final Aeron aeron = Aeron.newSingleMediaDriver(aeronContext);
+            final Consumer.Context context = new Consumer.Context().destination(DESTINATION);
 
             // register some channels that use stateful objects
-            IntStream.range(0, CHANNELS.length).forEach(i -> builder.channel(CHANNELS[i].channelId(), CHANNELS[i]));
+            IntStream.range(0, CHANNELS.length).forEach(i -> context.channel(CHANNELS[i].channelId(), CHANNELS[i]));
 
             // register a channel that uses a lambda
-            builder.channel(30, (buffer, offset, sessionId, flags) -> { /* do something with message */ });
+            context.channel(30, (buffer, offset, sessionId, flags) -> { /* do something with message */ });
 
             // register for events using lambdas
-            builder.newSourceEvent((channelId, sessionId) -> System.out.println("new source for channel"))
+            context.newSourceEvent((channelId, sessionId) -> System.out.println("new source for channel"))
                    .inactiveSourceEvent((channelId, sessionId) -> System.out.println("inactive source for channel"));
 
-            final Consumer rcv1 = aeron.newReceiver(builder);
+            final Consumer rcv1 = aeron.newReceiver(context);
 
             // create a receiver using the fluent style lambda
-            final Consumer rcv2 =
-                aeron.newConsumer((bld) ->
-                                  {
-                                      bld.destination(DESTINATION)
-                                         .channel(100, (buffer, offset, sessionId, flags) -> { /* do something */ })
-                                         .newSourceEvent((channelId, sessionId) -> System.out
-                                             .println("new source for channel"));
-                                  });
+            final Consumer rcv2 = aeron.newConsumer(
+                (bld) ->
+                {
+                    bld.destination(DESTINATION)
+                       .channel(100, (buffer, offset, sessionId, flags) -> { /* do something */ })
+                       .newSourceEvent((channelId, sessionId) -> System.out.println("new source for channel"));
+                }
+            );
 
             // make a reusable, parameterized event loop function
             final java.util.function.Consumer<Consumer> loop =

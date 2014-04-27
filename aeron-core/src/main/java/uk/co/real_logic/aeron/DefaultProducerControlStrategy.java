@@ -23,7 +23,7 @@ public class DefaultProducerControlStrategy implements ProducerControlStrategy
 {
     private final AtomicBoolean pauseButton;
 
-    private StateViewer currentBuffer;
+    private StateViewer currentBuffer; // TODO: should this be volatile???
 
     public DefaultProducerControlStrategy(final AtomicBoolean pauseButton)
     {

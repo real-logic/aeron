@@ -38,11 +38,11 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
     private final AtomicArray<Channel> channels;
     private final AtomicBoolean paused;
 
-    private LogAppender[] logAppenders;
+    private LogAppender[] logAppenders; // TODO: should this be volatile???
 
-    private final AtomicLong currentTermId;
-    private final AtomicLong cleanedTermId;
-    private int currentBuffer;
+    private final AtomicLong currentTermId = new AtomicLong(UNKNOWN_TERM_ID);
+    private final AtomicLong cleanedTermId = new AtomicLong(UNKNOWN_TERM_ID);
+    private int currentBuffer = 0;
 
     public Channel(final String destination,
                    final ClientAdminThreadCursor adminCursor,
@@ -53,10 +53,6 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
                    final AtomicBoolean paused)
     {
         super(bufferNotifier, destination, channelId);
-
-        currentTermId = new AtomicLong(UNKNOWN_TERM_ID);
-        cleanedTermId = new AtomicLong(UNKNOWN_TERM_ID);
-        currentBuffer = 0;
 
         this.adminThread = adminCursor;
         this.sessionId = sessionId;
@@ -74,6 +70,7 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
         return logAppenders != null && !paused.get();
     }
 
+    // TODO: should logAppenders be volatile???
     public void onBuffersMapped(final LogAppender[] logAppenders)
     {
         this.logAppenders = logAppenders;
@@ -121,7 +118,8 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
         send(buffer, 0, buffer.capacity());
     }
 
-    public void send(final AtomicBuffer buffer, final int offset, final int length) throws BufferExhaustedException
+    public void send(final AtomicBuffer buffer, final int offset, final int length)
+        throws BufferExhaustedException
     {
         if (!offer(buffer, offset, length))
         {

@@ -47,23 +47,20 @@ public class ExampleConsumer
             IntStream.range(0, CHANNELS.length).forEach(i -> context.channel(CHANNELS[i].channelId(), CHANNELS[i]));
 
             // register a channel that uses a lambda
-            context.channel(30, (buffer, offset, sessionId, flags) -> { /* do something with message */ });
-
-            // register for events using lambdas
-            context.newSourceEvent((channelId, sessionId) -> System.out.println("new source for channel"))
+            context.channel(30, (buffer, offset, sessionId, flags) -> { /* do something with message */ })
+                   .newSourceEvent((channelId, sessionId) -> System.out.println("new source for channel"))
                    .inactiveSourceEvent((channelId, sessionId) -> System.out.println("inactive source for channel"));
 
             final Consumer rcv1 = aeron.newReceiver(context);
 
             // create a receiver using the fluent style lambda
             final Consumer rcv2 = aeron.newConsumer(
-                (bld) ->
+                (ctx) ->
                 {
-                    bld.destination(DESTINATION)
+                    ctx.destination(DESTINATION)
                        .channel(100, (buffer, offset, sessionId, flags) -> { /* do something */ })
                        .newSourceEvent((channelId, sessionId) -> System.out.println("new source for channel"));
-                }
-            );
+                });
 
             // make a reusable, parameterized event loop function
             final java.util.function.Consumer<Consumer> loop =
@@ -86,9 +83,9 @@ public class ExampleConsumer
             executor.execute(() -> loop.accept(rcv1));
             executor.execute(() -> loop.accept(rcv2));
         }
-        catch (final Exception e)
+        catch (final Exception ex)
         {
-            e.printStackTrace();
+            ex.printStackTrace();
         }
     }
 

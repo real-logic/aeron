@@ -28,7 +28,7 @@ public class BlockingChannel
     }
 
     private final Channel channel;
-    private BackOffStrategy backOffStrategy;
+    private final BackOffStrategy backOffStrategy;
 
     public BlockingChannel(final Channel channel, final BackOffStrategy backOffStrategy)
     {
@@ -53,12 +53,11 @@ public class BlockingChannel
                 {
                     Thread.sleep(backOff);
                 }
-                catch (final InterruptedException e)
+                catch (final InterruptedException ex)
                 {
-                    e.printStackTrace();
+                    ex.printStackTrace();
                 }
             }
         }
     }
-
 }

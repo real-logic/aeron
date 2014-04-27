@@ -35,6 +35,43 @@ public final class Aeron
 {
     private static final int ADMIN_BUFFER_SIZE = 512 + TRAILER_LENGTH;
 
+    private final ProducerControlFactory producerControl;
+    private final ManyToOneRingBuffer adminCommandBuffer;
+    private final ErrorHandler errorHandler;
+    private final ClientAdminThread adminThread;
+    private final AdminBufferStrategy adminBuffers;
+    private final AtomicArray<Channel> channels;
+    private final AtomicArray<ConsumerChannel> receivers;
+
+    private Aeron(final Context context)
+    {
+        errorHandler = context.errorHandler;
+        adminBuffers = context.adminBuffers;
+        producerControl = context.producerControl;
+        channels = new AtomicArray<>();
+        receivers = new AtomicArray<>();
+        adminCommandBuffer = new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocate(ADMIN_BUFFER_SIZE)));
+
+        try
+        {
+            final RingBuffer recvBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toApi()));
+            final RingBuffer sendBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toMediaDriver()));
+            final BufferUsageStrategy bufferUsage = new BasicBufferUsageStrategy(CommonConfiguration.DATA_DIR);
+            final AdminErrorHandler adminErrorHandler = new AdminErrorHandler(context.invalidDestinationHandler);
+
+            adminThread = new ClientAdminThread(adminCommandBuffer,
+                                                recvBuffer, sendBuffer,
+                                                bufferUsage,
+                                                channels, receivers,
+                                                adminErrorHandler,
+                                                producerControl);
+        }
+        catch (final Exception ex)
+        {
+            throw new IllegalArgumentException("Unable to create Aeron", ex);
+        }
+    }
+
     /**
      * Creates an media driver associated with this Aeron instance that can be used to create sources and receivers on.
      *
@@ -63,42 +100,6 @@ public final class Aeron
         }
 
         return aerons;
-    }
-
-    private final ProducerControlFactory producerControl;
-    private final ManyToOneRingBuffer adminCommandBuffer;
-    private final ErrorHandler errorHandler;
-    private final ClientAdminThread adminThread;
-    private final AdminBufferStrategy adminBuffers;
-    private final AtomicArray<Channel> channels;
-    private final AtomicArray<ConsumerChannel> receivers;
-
-    private Aeron(final Context context)
-    {
-        errorHandler = context.errorHandler;
-        adminBuffers = context.adminBuffers;
-        producerControl = context.producerControl;
-        channels = new AtomicArray<>();
-        receivers = new AtomicArray<>();
-        adminCommandBuffer = new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocate(ADMIN_BUFFER_SIZE)));
-
-        try
-        {
-            final RingBuffer recvBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toApi()));
-            final RingBuffer sendBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toMediaDriver()));
-            final BufferUsageStrategy bufferUsage = new BasicBufferUsageStrategy(CommonConfiguration.DATA_DIR);
-            final AdminErrorHandler adminErrorHandler = new AdminErrorHandler(context.invalidDestinationHandler);
-            adminThread = new ClientAdminThread(adminCommandBuffer,
-                                                recvBuffer, sendBuffer,
-                                                bufferUsage,
-                                                channels, receivers,
-                                                adminErrorHandler,
-                                                producerControl);
-        }
-        catch (final Exception ex)
-        {
-            throw new IllegalArgumentException("Unable to create Aeron", ex);
-        }
     }
 
     /**
@@ -154,6 +155,7 @@ public final class Aeron
     public Consumer newReceiver(final Consumer.Context context)
     {
         final ClientAdminThreadCursor adminThread = new ClientAdminThreadCursor(adminCommandBuffer);
+
         return new Consumer(adminThread, context, receivers);
     }
 
@@ -166,7 +168,8 @@ public final class Aeron
     public Consumer newConsumer(final java.util.function.Consumer<Consumer.Context> block)
     {
         Consumer.Context context = new Consumer.Context();
-        block.accept(context);
+        block.accept(new Consumer.Context());
+
         return newReceiver(context);
     }
 

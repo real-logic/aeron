@@ -51,14 +51,14 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
     private static final byte[] DEFAULT_HEADER = new byte[BASE_HEADER_LENGTH + SIZE_OF_INT];
     private static final int MAX_FRAME_LENGTH = 1024;
 
-    /** Maximum size of the write buffer */
+    /**
+     * Maximum size of the write buffer
+     */
     public static final int WRITE_BUFFER_CAPACITY = 256;
+
     private static final int SLEEP_PERIOD = 1;
-    /** Incoming message buffer from media driver */
     private final RingBuffer recvBuffer;
-    /** Incoming message buffer from other Core threads */
     private final RingBuffer commandBuffer;
-    /** Outgoing message buffer to media driver */
     private final RingBuffer sendBuffer;
 
     private final BufferUsageStrategy bufferUsage;
@@ -71,14 +71,12 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
     private final AdminErrorHandler errorHandler;
     private final ProducerControlFactory producerControl;
 
-    /** Atomic buffer to write message flyweights into before they get sent */
-    private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
-
     // Control protocol Flyweights
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
     private final ConsumerMessageFlyweight receiverMessage = new ConsumerMessageFlyweight();
     private final CompletelyIdentifiedMessageFlyweight requestTermMessage = new CompletelyIdentifiedMessageFlyweight();
-    private final CompletelyIdentifiedMessageFlyweight bufferNotificationMessage = new CompletelyIdentifiedMessageFlyweight();
+    private final CompletelyIdentifiedMessageFlyweight bufferNotificationMessage =
+        new CompletelyIdentifiedMessageFlyweight();
 
     public ClientAdminThread(final RingBuffer commandBuffer,
                              final RingBuffer recvBuffer,
@@ -90,6 +88,7 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
                              final ProducerControlFactory producerControl)
     {
         super(SLEEP_PERIOD);
+
         this.commandBuffer = commandBuffer;
         this.recvBuffer = recvBuffer;
         this.sendBuffer = sendBuffer;
@@ -101,6 +100,7 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
         this.sendNotifiers = new ChannelMap<>();
         this.recvNotifiers = new ConsumerMap();
 
+        final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
         channelMessage.wrap(writeBuffer, 0);
         receiverMessage.wrap(writeBuffer, 0);
         requestTermMessage.wrap(writeBuffer, 0);
@@ -114,47 +114,52 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
 
     private void handleCommandBuffer()
     {
-        commandBuffer.read((eventTypeId, buffer, index, length) ->
-        {
-            switch (eventTypeId)
+        commandBuffer.read(
+            (eventTypeId, buffer, index, length) ->
             {
-                case ADD_CHANNEL:
-                case REMOVE_CHANNEL:
+                switch (eventTypeId)
                 {
-                    channelMessage.wrap(buffer, index);
-                    final String destination = channelMessage.destination();
-                    final long channelId = channelMessage.channelId();
-                    final long sessionId = channelMessage.sessionId();
-                    if (eventTypeId == ADD_CHANNEL)
+                    case ADD_CHANNEL:
+                    case REMOVE_CHANNEL:
                     {
-                        addSender(destination, channelId, sessionId);
+                        channelMessage.wrap(buffer, index);
+                        final String destination = channelMessage.destination();
+                        final long channelId = channelMessage.channelId();
+                        final long sessionId = channelMessage.sessionId();
+
+                        if (eventTypeId == ADD_CHANNEL)
+                        {
+                            addSender(destination, channelId, sessionId);
+                        }
+                        else
+                        {
+                            removeSender(destination, channelId, sessionId);
+                        }
+                        sendBuffer.write(eventTypeId, buffer, index, length);
+
+                        return;
                     }
-                    else
+
+                    case ADD_CONSUMER:
+                    case REMOVE_CONSUMER:
                     {
-                        removeSender(destination, channelId, sessionId);
+                        receiverMessage.wrap(buffer, index);
+                        final long[] channelIds = receiverMessage.channelIds();
+                        final String destination = receiverMessage.destination();
+                        if (eventTypeId == ADD_CONSUMER)
+                        {
+                            addReceiver(destination, channelIds);
+                        }
+                        else
+                        {
+                            removeReceiver(destination, channelIds);
+                        }
+                        sendBuffer.write(eventTypeId, buffer, index, length);
+                        return;
                     }
-                    sendBuffer.write(eventTypeId, buffer, index, length);
-                    return;
-                }
-                case ADD_CONSUMER:
-                case REMOVE_CONSUMER:
-                {
-                    receiverMessage.wrap(buffer, index);
-                    final long[] channelIds = receiverMessage.channelIds();
-                    final String destination = receiverMessage.destination();
-                    if (eventTypeId == ADD_CONSUMER)
-                    {
-                        addReceiver(destination, channelIds);
-                    }
-                    else
-                    {
-                        removeReceiver(destination, channelIds);
-                    }
-                    sendBuffer.write(eventTypeId, buffer, index, length);
-                    return;
                 }
             }
-        });
+        );
     }
 
     private void addReceiver(final String destination, final long[] channelIds)
@@ -163,13 +168,15 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
         // and is during setup not a latency critical path
         for (final long channelId : channelIds)
         {
-            receivers.forEach(receiver ->
-            {
-                if (receiver.matches(destination, channelId))
+            receivers.forEach(
+                receiver ->
                 {
-                    recvNotifiers.put(destination, channelId, receiver);
+                    if (receiver.matches(destination, channelId))
+                    {
+                        recvNotifiers.put(destination, channelId, receiver);
+                    }
                 }
-            });
+            );
         }
     }
 
@@ -184,13 +191,14 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
     private void addSender(final String destination, final long channelId, final long sessionId)
     {
         // see addReceiver re efficiency
-        senders.forEach(channel ->
-        {
-            if (channel.matches(destination, sessionId, channelId))
+        senders.forEach(
+            channel ->
             {
-                sendNotifiers.put(destination, sessionId, channelId, channel);
-            }
-        });
+                if (channel.matches(destination, sessionId, channelId))
+                {
+                    sendNotifiers.put(destination, sessionId, channelId, channel);
+                }
+            });
     }
 
     private void removeSender(final String destination, final long channelId, final long sessionId)
@@ -203,31 +211,37 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
 
     private void handleReceiveBuffer()
     {
-        recvBuffer.read((eventTypeId, buffer, index, length) ->
-        {
-            switch (eventTypeId)
+        recvBuffer.read(
+            (eventTypeId, buffer, index, length) ->
             {
-                case NEW_RECEIVE_BUFFER_NOTIFICATION:
-                case NEW_SEND_BUFFER_NOTIFICATION:
-                    bufferNotificationMessage.wrap(buffer, index);
-                    final long sessionId = bufferNotificationMessage.sessionId();
-                    final long channelId = bufferNotificationMessage.channelId();
-                    final long termId = bufferNotificationMessage.termId();
-                    final String destination = bufferNotificationMessage.destination();
-                    if (eventTypeId == NEW_SEND_BUFFER_NOTIFICATION)
+                switch (eventTypeId)
+                {
+                    case NEW_RECEIVE_BUFFER_NOTIFICATION:
+                    case NEW_SEND_BUFFER_NOTIFICATION:
                     {
-                        onNewSenderBufferNotification(sessionId, channelId, termId, destination);
+                        bufferNotificationMessage.wrap(buffer, index);
+                        final long sessionId = bufferNotificationMessage.sessionId();
+                        final long channelId = bufferNotificationMessage.channelId();
+                        final long termId = bufferNotificationMessage.termId();
+                        final String destination = bufferNotificationMessage.destination();
+
+                        if (eventTypeId == NEW_SEND_BUFFER_NOTIFICATION)
+                        {
+                            onNewSenderBufferNotification(sessionId, channelId, termId, destination);
+                        }
+                        else
+                        {
+                            onNewReceiverBufferNotification(destination, channelId, sessionId, termId);
+                        }
+
+                        return;
                     }
-                    else
-                    {
-                        onNewReceiverBufferNotification(destination, channelId, sessionId, termId);
-                    }
-                    return;
-                case ERROR_RESPONSE:
-                    errorHandler.onErrorResponse(buffer, index, length);
-                    return;
-            }
-        });
+
+                    case ERROR_RESPONSE:
+                        errorHandler.onErrorResponse(buffer, index, length);
+                        return;
+                }
+            });
     }
 
     private void onNewReceiverBufferNotification(final String destination,
@@ -236,10 +250,10 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
                                                  final long termId)
     {
         onNewBufferNotification(sessionId, termId,
-            recvNotifiers.get(destination, channelId),
-            i -> newReader(destination, channelId, sessionId, i),
-            LogReader[]::new,
-            (chan, buffers) -> chan.onBuffersMapped(sessionId, buffers));
+                                recvNotifiers.get(destination, channelId),
+                                i -> newReader(destination, channelId, sessionId, i),
+                                LogReader[]::new,
+                                (chan, buffers) -> chan.onBuffersMapped(sessionId, buffers));
     }
 
     private void onNewSenderBufferNotification(final long sessionId,
@@ -248,7 +262,7 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
                                                final String destination)
     {
         onNewBufferNotification(sessionId, termId,
-                sendNotifiers.get(destination, sessionId, channelId),
+                                sendNotifiers.get(destination, sessionId, channelId),
                                 i -> newAppender(destination, sessionId, channelId, i),
                                 LogAppender[]::new,
                                 Channel::onBuffersMapped);
@@ -279,21 +293,22 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
             if (!channel.hasTerm(sessionId))
             {
                 // You know that you can map all 3 appenders at this point since its the first term
-                L[] logs = logArray.apply(BUFFER_COUNT);
+                final L[] logs = logArray.apply(BUFFER_COUNT);
                 for (int i = 0; i < BUFFER_COUNT; i++)
                 {
                     logs[i] = logFactory.make(i);
                 }
+
                 notifier.accept(channel, logs);
                 channel.initialTerm(sessionId, termId);
             }
 
             channel.cleanedTermBuffer(sessionId, termId);
         }
-        catch (final Exception e)
+        catch (final Exception ex)
         {
             // TODO: establish correct client error handling strategy
-            e.printStackTrace();
+            ex.printStackTrace();
         }
     }
 
@@ -304,6 +319,7 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
     {
         final AtomicBuffer logBuffer = bufferUsage.newSenderLogBuffer(destination, sessionId, channelId, index);
         final AtomicBuffer stateBuffer = bufferUsage.newSenderStateBuffer(destination, sessionId, channelId, index);
+
         return new LogAppender(logBuffer, stateBuffer, DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }
 
@@ -314,6 +330,7 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
     {
         final AtomicBuffer logBuffer = bufferUsage.newReceiverLogBuffer(destination, channelId, sessionId, index);
         final AtomicBuffer stateBuffer = bufferUsage.newReceiverStateBuffer(destination, channelId, sessionId, index);
+
         return new LogReader(logBuffer, stateBuffer);
     }
 

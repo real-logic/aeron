@@ -17,10 +17,8 @@ package uk.co.real_logic.aeron;
 
 public final class BufferExhaustedException extends Exception
 {
-
     public BufferExhaustedException(final String message)
     {
         super(message);
     }
-
 }

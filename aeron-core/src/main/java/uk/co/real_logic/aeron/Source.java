@@ -23,9 +23,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Aeron source
- *
+ * <p>
  * All channels and data must be contained within a session.
- *
  */
 public class Source implements AutoCloseable
 {
@@ -45,6 +44,7 @@ public class Source implements AutoCloseable
 
     /**
      * Create a new Channel on this Source
+     *
      * @param channelId for the Channel
      * @return channel
      */
@@ -61,18 +61,19 @@ public class Source implements AutoCloseable
                                             pauseButton);
         channels.add(channel);
         adminThread.sendAddChannel(destination.destination(), sessionId, channelId);
+
         return channel;
     }
 
     /**
      * Create an array of new Channels on this Source
-     *
+     * <p>
      * Convenience function.
      *
      * @param channelIds for the channels
      * @return array of channels
      */
-    public Channel[] newChannels(final long ... channelIds)
+    public Channel[] newChannels(final long... channelIds)
     {
         final Channel[] channels = new Channel[channelIds.length];
 
@@ -86,21 +87,22 @@ public class Source implements AutoCloseable
 
     public void close()
     {
-        channels.forEach(channel ->
-        {
-            if (channel.hasSessionId(sessionId))
+        channels.forEach(
+            channel ->
             {
-                try
+                if (channel.hasSessionId(sessionId))
                 {
-                    channel.close();
+                    try
+                    {
+                        channel.close();
+                    }
+                    catch (final Exception ex)
+                    {
+                        // TODO: errors
+                        ex.printStackTrace();
+                    }
                 }
-                catch (Exception e)
-                {
-                    // TODO: errors
-                    e.printStackTrace();
-                }
-            }
-        });
+            });
     }
 
     public long sessionId()

@@ -32,14 +32,14 @@ public class ConsumerChannel extends ChannelNotifiable
 {
     private static final int HEADER_LENGTH = BitUtil.align(BASE_HEADER_LENGTH, WORD_ALIGNMENT);
 
-    private Long2ObjectHashMap<ConsumerSession> logReaders;
+    private final Long2ObjectHashMap<ConsumerSession> logReaders = new Long2ObjectHashMap<>();
     private final Consumer.DataHandler dataHandler;
 
     public ConsumerChannel(final Destination destination, final long channelId, final Consumer.DataHandler dataHandler)
     {
         super(new TermBufferNotifier(), destination.destination(), channelId);
+
         this.dataHandler = dataHandler;
-        logReaders = new Long2ObjectHashMap<>();
     }
 
     public boolean matches(final String destination, final long channelId)
@@ -54,6 +54,7 @@ public class ConsumerChannel extends ChannelNotifiable
         {
             count += consumerSession.process();
         }
+
         return count;
     }
 
@@ -80,7 +81,7 @@ public class ConsumerChannel extends ChannelNotifiable
             LogReader logReader = logReaders[currentBuffer];
             if (logReader.isComplete())
             {
-                long candidateTermId = currentTermId.get() + 1;
+                final long candidateTermId = currentTermId.get() + 1;
                 if (candidateTermId <= cleanedTermId.get())
                 {
                     currentBuffer = BitUtil.next(currentBuffer, logReaders.length);
@@ -94,10 +95,11 @@ public class ConsumerChannel extends ChannelNotifiable
                 }
             }
 
-            return logReader.read((buffer, offset, length) ->
-            {
-                dataHandler.onData(buffer, offset + HEADER_LENGTH, sessionId, NONE);
-            });
+            return logReader.read(
+                (buffer, offset, length) ->
+                {
+                    dataHandler.onData(buffer, offset + HEADER_LENGTH, sessionId, NONE);
+                });
         }
 
         public void initialTerm(final long termId)
@@ -136,5 +138,4 @@ public class ConsumerChannel extends ChannelNotifiable
     {
         this.logReaders.put(sessionId, new ConsumerSession(logReaders, sessionId));
     }
-
 }

@@ -32,7 +32,7 @@ public class ExampleProducer
     public static final int CHANNEL_ID = 10;
     public static final Destination DESTINATION = new Destination("udp://172.16.29.29:40123");
 
-    public static void main(String[] args)
+    public static void main(final String[] args)
     {
         try
         {

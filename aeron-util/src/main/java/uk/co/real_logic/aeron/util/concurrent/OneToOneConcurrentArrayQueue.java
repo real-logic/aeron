@@ -26,7 +26,7 @@ import static uk.co.real_logic.aeron.util.UnsafeAccess.UNSAFE;
  */
 class Padding1
 {
-    protected volatile long p1, p2, p3, p4, p5, p6, p7;
+    protected long p1, p2, p3, p4, p5, p6, p7;
 }
 
 /**
@@ -42,7 +42,7 @@ class Tail extends Padding1
  */
 class Padding2 extends Tail
 {
-    protected volatile long p1, p2, p3, p4, p5, p6, p7;
+    protected long p8, p9, p10, p11, p12, p13, p14;
 }
 
 /**
@@ -58,7 +58,7 @@ class Head extends Padding2
  */
 class Padding3 extends Head
 {
-    protected volatile long p1, p2, p3, p4, p5, p6, p7;
+    protected long p15, p16, p17, p18, p19, p20, p21;
 }
 
 /**

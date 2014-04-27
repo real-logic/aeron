@@ -62,6 +62,12 @@ class Padding3 extends Head
     protected volatile long p1, p2, p3, p4, p5, p6, p7;
 }
 
+/**
+ * One producer to one consumer concurrent queue that is array backed. The algorithm is a a variable of Fast Flow
+ * adapted to work with the Java Memory Model on arrays by using {@link sun.misc.Unsafe}.
+ *
+ * @param <E> type of the elements stored in the {@link Queue}.
+ */
 public class OneToOneConcurrentArrayQueue<E>
     extends Padding3
     implements Queue<E>

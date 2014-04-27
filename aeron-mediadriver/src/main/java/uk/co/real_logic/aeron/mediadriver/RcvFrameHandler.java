@@ -39,13 +39,13 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
 
     public RcvFrameHandler(final UdpDestination destination,
                            final NioSelector nioSelector,
-                           final MediaDriverAdminThreadCursor AdminThreadCursor)
+                           final MediaDriverAdminThreadCursor adminThreadCursor)
         throws Exception
     {
         this.transport = new UdpTransport(this, destination, nioSelector);
         this.destination = destination;
         this.channelInterestMap = new Long2ObjectHashMap<>();
-        this.adminThreadCursor = AdminThreadCursor;
+        this.adminThreadCursor = adminThreadCursor;
         this.sendBuffer = ByteBuffer.allocateDirect(StatusMessageFlyweight.HEADER_LENGTH);
         this.writeBuffer = new AtomicBuffer(sendBuffer);
         this.statusMessageFlyweight = new StatusMessageFlyweight();

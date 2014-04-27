@@ -31,14 +31,16 @@ public interface BufferManagementStrategy extends AutoCloseable
                                      final long sessionId,
                                      final long channelId) throws Exception;
 
-    void removeProducerChannel(final UdpDestination destination, final long sessionId, final long channelId)
-        throws IllegalArgumentException;
+    void removeProducerChannel(final UdpDestination destination,
+                               final long sessionId,
+                               final long channelId) throws IllegalArgumentException;
 
     BufferRotator addConsumerChannel(final UdpDestination destination,
                                      final long sessionId,
                                      final long channelId) throws Exception;
 
-    void removeConsumerChannel(final UdpDestination destination, final long sessionId, final long channelId)
-        throws IllegalArgumentException;
+    void removeConsumerChannel(final UdpDestination destination,
+                               final long sessionId,
+                               final long channelId) throws IllegalArgumentException;
 
 }

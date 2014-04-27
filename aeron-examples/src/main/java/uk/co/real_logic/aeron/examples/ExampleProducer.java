@@ -46,9 +46,9 @@ public class ExampleProducer
             aChannel.send(buffer);
             // TODO: wait around for something...
         }
-        catch (final Exception e)
+        catch (final Exception ex)
         {
-            e.printStackTrace();
+            ex.printStackTrace();
         }
     }
 
@@ -60,5 +60,4 @@ public class ExampleProducer
     {
         System.err.println(message);
     }
-
 }

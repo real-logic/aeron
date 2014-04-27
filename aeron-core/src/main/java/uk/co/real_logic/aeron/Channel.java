@@ -82,14 +82,22 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
     /**
      * Non blocking message send
      *
-     * @param buffer
-     * @return
+     * @param buffer containing message.
+     * @return true if buffer is sent otherwise false.
      */
     public boolean offer(final AtomicBuffer buffer)
     {
         return offer(buffer, 0, buffer.capacity());
     }
 
+    /**
+     * Non-blocking send of a partial buffer.
+     *
+     * @param buffer containing message.
+     * @param offset offset in the buffer at which the encoded message begins.
+     * @param length in bytes of the encoded message.
+     * @return true if he message can be sent otherwise false.
+     */
     public boolean offer(final AtomicBuffer buffer, final int offset, final int length)
     {
         if (!canAppend())
@@ -98,7 +106,7 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
         }
 
         final LogAppender logAppender = logAppenders[currentBuffer];
-        boolean hasAppended = logAppender.append(buffer, offset, length);
+        final boolean hasAppended = logAppender.append(buffer, offset, length);
         if (!hasAppended)
         {
             currentBuffer = rotateId(currentBuffer);

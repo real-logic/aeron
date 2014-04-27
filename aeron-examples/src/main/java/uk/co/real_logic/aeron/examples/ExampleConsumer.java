@@ -33,7 +33,7 @@ public class ExampleConsumer
     public static final Destination DESTINATION = new Destination("udp://172.16.29.29:40123");
     private static final ExampleDataHandler[] CHANNELS = {new ExampleDataHandler(10), new ExampleDataHandler(20)};
 
-    public static void main(String[] args)
+    public static void main(final String[] args)
     {
         final Executor executor = Executors.newFixedThreadPool(2);
 
@@ -57,28 +57,30 @@ public class ExampleConsumer
 
             // create a receiver using the fluent style lambda
             final Consumer rcv2 =
-                    aeron.newConsumer((bld) ->
-                    {
-                        bld.destination(DESTINATION)
-                                .channel(100, (buffer, offset, sessionId, flags) -> { /* do something */ })
-                                .newSourceEvent((channelId, sessionId) -> System.out.println("new source for channel"));
-                    });
+                aeron.newConsumer((bld) ->
+                                  {
+                                      bld.destination(DESTINATION)
+                                         .channel(100, (buffer, offset, sessionId, flags) -> { /* do something */ })
+                                         .newSourceEvent((channelId, sessionId) -> System.out
+                                             .println("new source for channel"));
+                                  });
 
             // make a reusable, parameterized event loop function
-            final java.util.function.Consumer<Consumer> loop = (rcv) ->
-            {
-                try
+            final java.util.function.Consumer<Consumer> loop =
+                (rcv) ->
                 {
-                    while (true)
+                    try
                     {
-                        rcv.process();
+                        while (true)
+                        {
+                            rcv.process();
+                        }
                     }
-                }
-                catch (Exception e)
-                {
-                    e.printStackTrace();
-                }
-            };
+                    catch (final Exception ex)
+                    {
+                        ex.printStackTrace();
+                    }
+                };
 
             // spin off the two receiver threads
             executor.execute(() -> loop.accept(rcv1));
@@ -113,7 +115,10 @@ public class ExampleConsumer
             return channelId;
         }
 
-        public void onData(final AtomicBuffer buffer, final int offset, final long sessionId, final Consumer.MessageFlags flags)
+        public void onData(final AtomicBuffer buffer,
+                           final int offset,
+                           final long sessionId,
+                           final Consumer.MessageFlags flags)
         {
         }
     }

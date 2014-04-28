@@ -64,15 +64,12 @@ public class MediaDriverAdminThreadTest
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(256));
 
     private MediaDriverAdminThread mediaDriverAdminThread;
-    private List<SenderChannel> addedChannels;
-    private List<SenderChannel> removedChannels;
+    private List<SenderChannel> addedChannels = new ArrayList<>();
+    private List<SenderChannel> removedChannels = new ArrayList<>();
 
     @Before
     public void setUp()
     {
-        addedChannels = new ArrayList<>();
-        removedChannels = new ArrayList<>();
-
         final MediaDriver.Context ctx = new MediaDriver.Context()
                 .adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)

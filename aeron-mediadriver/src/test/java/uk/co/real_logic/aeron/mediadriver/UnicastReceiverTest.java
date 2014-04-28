@@ -96,7 +96,7 @@ public class UnicastReceiverTest
         bufferManagementStrategy = newMappedBufferManager(directory.dataDir());
 
         NioSelector nioSelector = new NioSelector();
-        final MediaDriver.Context builder = new MediaDriver.Context()
+        final MediaDriver.Context ctx = new MediaDriver.Context()
                 .adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .rcvNioSelector(nioSelector)
@@ -105,12 +105,13 @@ public class UnicastReceiverTest
                 .adminBufferStrategy(buffers.strategy())
                 .bufferManagementStrategy(bufferManagementStrategy);
 
-        builder.rcvFrameHandlerFactory(new RcvFrameHandlerFactory(nioSelector,
-                new MediaDriverAdminThreadCursor(builder.adminThreadCommandBuffer(), nioSelector)));
+        ctx.rcvFrameHandlerFactory(
+            new RcvFrameHandlerFactory(nioSelector, new MediaDriverAdminThreadCursor(ctx.adminThreadCommandBuffer(),
+                                                                                     nioSelector)));
 
         senderThread = mock(SenderThread.class);
-        receiverThread = new ReceiverThread(builder);
-        mediaDriverAdminThread = new MediaDriverAdminThread(builder, receiverThread, senderThread);
+        receiverThread = new ReceiverThread(ctx);
+        mediaDriverAdminThread = new MediaDriverAdminThread(ctx, receiverThread, senderThread);
         senderChannel = DatagramChannel.open();
         sendBuffer.clear();
     }

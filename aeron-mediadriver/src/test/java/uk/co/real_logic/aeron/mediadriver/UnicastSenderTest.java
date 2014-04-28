@@ -108,7 +108,7 @@ public class UnicastSenderTest
                                     TimeUnit.MICROSECONDS,
                                     ADMIN_THREAD_TICKS_PER_WHEEL);
 
-        final Context builder = new Context()
+        final Context ctx = new Context()
                 .adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .rcvNioSelector(new NioSelector())
@@ -118,9 +118,9 @@ public class UnicastSenderTest
                 .bufferManagementStrategy(bufferManagementStrategy)
                 .adminTimerWheel(timerWheel);
 
-        senderThread = new SenderThread(builder);
+        senderThread = new SenderThread(ctx);
         receiverThread = mock(ReceiverThread.class);
-        mediaDriverAdminThread = new MediaDriverAdminThread(builder, receiverThread, senderThread);
+        mediaDriverAdminThread = new MediaDriverAdminThread(ctx, receiverThread, senderThread);
         receiverChannel = DatagramChannel.open();
 
         receiverChannel.configureBlocking(false);

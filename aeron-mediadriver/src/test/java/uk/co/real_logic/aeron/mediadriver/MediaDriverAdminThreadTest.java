@@ -73,7 +73,7 @@ public class MediaDriverAdminThreadTest
         addedChannels = new ArrayList<>();
         removedChannels = new ArrayList<>();
 
-        final MediaDriver.Context builder = new MediaDriver.Context()
+        final MediaDriver.Context ctx = new MediaDriver.Context()
                 .adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .rcvNioSelector(new NioSelector())
@@ -82,7 +82,7 @@ public class MediaDriverAdminThreadTest
                 .adminBufferStrategy(new CreatingAdminBufferStrategy(adminPath, COMMAND_BUFFER_SZ + TRAILER_LENGTH))
                 .bufferManagementStrategy(newMappedBufferManager(adminPath));
 
-        SenderThread senderThread = new SenderThread(builder) {
+        SenderThread senderThread = new SenderThread(ctx) {
 
             public void addChannel(final SenderChannel channel)
             {
@@ -95,7 +95,7 @@ public class MediaDriverAdminThreadTest
             }
         };
         ReceiverThread receiverThread = mock(ReceiverThread.class);
-        mediaDriverAdminThread = new MediaDriverAdminThread(builder, receiverThread, senderThread);
+        mediaDriverAdminThread = new MediaDriverAdminThread(ctx, receiverThread, senderThread);
     }
 
     @Test

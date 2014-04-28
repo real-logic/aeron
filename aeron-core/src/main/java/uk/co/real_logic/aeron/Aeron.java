@@ -162,7 +162,7 @@ public final class Aeron
     /**
      * Create a new receiver that will listen on a given destination, etc.
      *
-     * @param block to fill in receiver builder
+     * @param block to fill in receiver context
      * @return new receiver
      */
     public Consumer newConsumer(final java.util.function.Consumer<Consumer.Context> block)

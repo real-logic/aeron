@@ -92,7 +92,7 @@ public class OneToOneConcurrentArrayQueue<E>
     }
 
     private final int capacity;
-    private final int mask;
+    private final long mask;
     private final E[] buffer;
 
     @SuppressWarnings("unchecked")
@@ -122,7 +122,7 @@ public class OneToOneConcurrentArrayQueue<E>
 
         final Object[] buffer = this.buffer;
         long currentTail = tail;
-        final long offset = indexToOffset((int)currentTail & mask);
+        final long offset = sequenceToOffset(currentTail);
 
         if (null == UNSAFE.getObjectVolatile(buffer, offset))
         {
@@ -140,7 +140,7 @@ public class OneToOneConcurrentArrayQueue<E>
     {
         final Object[] buffer = this.buffer;
         final long currentHead = head;
-        final long offset = indexToOffset((int)currentHead & mask);
+        final long offset = sequenceToOffset(currentHead);
 
         final Object e = UNSAFE.getObjectVolatile(buffer, offset);
         if (null != e)
@@ -174,9 +174,10 @@ public class OneToOneConcurrentArrayQueue<E>
         return e;
     }
 
+    @SuppressWarnings("unchecked")
     public E peek()
     {
-        return buffer[(int)head & mask];
+        return (E)UNSAFE.getObjectVolatile(buffer, sequenceToOffset(head));
     }
 
     public int size()
@@ -209,7 +210,7 @@ public class OneToOneConcurrentArrayQueue<E>
 
         for (long i = head, limit = tail; i < limit; i++)
         {
-            final Object e = buffer[(int)i & mask];
+            final Object e = UNSAFE.getObjectVolatile(buffer, sequenceToOffset(i));
             if (o.equals(e))
             {
                 return true;
@@ -292,8 +293,8 @@ public class OneToOneConcurrentArrayQueue<E>
         UNSAFE.putOrderedLong(this, HEAD_OFFSET, head);
     }
 
-    private static long indexToOffset(final int index)
+    private long sequenceToOffset(final long sequence)
     {
-        return ARRAY_BASE + ((long)index << SHIFT_FOR_SCALE);
+        return ARRAY_BASE + ((sequence & mask) << SHIFT_FOR_SCALE);
     }
 }

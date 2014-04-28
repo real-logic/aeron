@@ -60,7 +60,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
 
         channel.bind(local);
         channel.configureBlocking(false);
-        this.registeredKey = nioSelector.registerForRead(channel, this);
+        registeredKey = nioSelector.registerForRead(channel, this);
     }
 
     public UdpTransport(final RcvFrameHandler frameHandler,
@@ -84,7 +84,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
         }
 
         channel.configureBlocking(false);
-        this.registeredKey = nioSelector.registerForRead(channel, this);
+        registeredKey = nioSelector.registerForRead(channel, this);
     }
 
     public int sendTo(final ByteBuffer buffer, final InetSocketAddress remote) throws Exception
@@ -144,14 +144,17 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
                     dataHeader.wrap(readBuffer, offset);
                     frameHandler.onDataFrame(dataHeader, srcAddr);
                     break;
+
                 case HDR_TYPE_NAK:
                     nak.wrap(readBuffer, offset);
                     frameHandler.onNakFrame(nak, srcAddr);
                     break;
+
                 case HDR_TYPE_SM:
                     statusMessage.wrap(readBuffer, offset);
                     frameHandler.onStatusMessageFrame(statusMessage, srcAddr);
                     break;
+
                 default:
                     frameHandler.onControlFrame(header, srcAddr);
                     break;

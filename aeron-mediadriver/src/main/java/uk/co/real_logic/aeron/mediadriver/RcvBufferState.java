@@ -29,8 +29,11 @@ public class RcvBufferState
     private final UdpDestination destination;
     private int state;
 
-    public RcvBufferState(final UdpDestination destination, final long sessionId,
-                          final long channelId, final long termId, final BufferRotator buffer)
+    public RcvBufferState(final UdpDestination destination,
+                          final long sessionId,
+                          final long channelId,
+                          final long termId,
+                          final BufferRotator buffer)
     {
         this.sessionId = sessionId;
         this.channelId = channelId;

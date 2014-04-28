@@ -36,21 +36,17 @@ public class RcvSessionState
     private final InetSocketAddress srcAddr;
     private final long sessionId;
 
-    private final AtomicLong cleanedTermId;
-    private final AtomicLong currentTermId;
-    private int currentBufferId;
+    private final AtomicLong cleanedTermId = new AtomicLong(UNKNOWN_TERM_ID);
+    private final AtomicLong currentTermId = new AtomicLong(UNKNOWN_TERM_ID);
+    private int currentBufferId = 0;
 
     private BufferRotator rotator;
     private TermRebuilder[] rebuilders;
 
-    public RcvSessionState(final long sessionId,
-                           final InetSocketAddress srcAddr)
+    public RcvSessionState(final long sessionId, final InetSocketAddress srcAddr)
     {
         this.srcAddr = srcAddr;
         this.sessionId = sessionId;
-        currentTermId = new AtomicLong(UNKNOWN_TERM_ID);
-        cleanedTermId = new AtomicLong(UNKNOWN_TERM_ID);
-        currentBufferId = 0;
     }
 
     public void termBuffer(final long initialTermId, final BufferRotator rotator)
@@ -58,7 +54,7 @@ public class RcvSessionState
         currentTermId.lazySet(initialTermId);
         this.rotator = rotator;
         rebuilders = rotator.buffers()
-                            .map(buffer -> new TermRebuilder(buffer))
+                            .map(TermRebuilder::new)
                             .toArray(TermRebuilder[]::new);
         cleanedTermId.lazySet(initialTermId + 2);
     }
@@ -75,7 +71,7 @@ public class RcvSessionState
 
     public void rebuildBuffer(final long termId, final DataHeaderFlyweight header)
     {
-        long currentTermId = this.currentTermId.get();
+        final long currentTermId = this.currentTermId.get();
         if (termId == currentTermId)
         {
             final TermRebuilder rebuilder = rebuilders[currentBufferId];
@@ -106,7 +102,7 @@ public class RcvSessionState
 
         public TermRebuilder(final LogBuffers buffer)
         {
-            AtomicBuffer stateBuffer = buffer.stateBuffer();
+            final AtomicBuffer stateBuffer = buffer.stateBuffer();
             stateViewer = new StateViewer(stateBuffer);
             logRebuilder = new LogRebuilder(buffer.logBuffer(), stateBuffer);
         }
@@ -126,5 +122,4 @@ public class RcvSessionState
     {
         // TODO
     }
-
 }

@@ -15,9 +15,6 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-/**
- * .
- */
 public class RcvFrameHandlerFactory
 {
     private final NioSelector selector;
@@ -33,5 +30,4 @@ public class RcvFrameHandlerFactory
     {
         return new RcvFrameHandler(rcvDestination, selector, adminThreadCursor);
     }
-
 }

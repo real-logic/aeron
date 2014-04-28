@@ -40,21 +40,19 @@ public class ReceiverThread extends ClosableThread
     private final NioSelector nioSelector;
     private final MediaDriverAdminThreadCursor adminThreadCursor;
     private final Map<UdpDestination, RcvFrameHandler> rcvDestinationMap = new HashMap<>();
-    private final ConsumerMessageFlyweight consumerMessage;
-    private final Queue<RcvBufferState> buffers;
+    private final ConsumerMessageFlyweight consumerMessage = new ConsumerMessageFlyweight();
+    private final Queue<RcvBufferState> buffers = new OneToOneConcurrentArrayQueue<>(1024);;
     private final RcvFrameHandlerFactory frameHandlerFactory;
 
-    public ReceiverThread(final MediaDriver.MediaDriverContext context) throws Exception
+    public ReceiverThread(final MediaDriver.Context context) throws Exception
     {
         super(SELECT_TIMEOUT);
 
-        this.commandBuffer = context.receiverThreadCommandBuffer();
-        this.adminThreadCursor = new MediaDriverAdminThreadCursor(context.adminThreadCommandBuffer(),
-                                                                  context.adminNioSelector());
-        this.nioSelector = context.rcvNioSelector();
-        this.frameHandlerFactory = context.rcvFrameHandlerFactory();
-        this.consumerMessage = new ConsumerMessageFlyweight();
-        this.buffers = new OneToOneConcurrentArrayQueue<>(1024);
+        commandBuffer = context.receiverThreadCommandBuffer();
+        adminThreadCursor =
+            new MediaDriverAdminThreadCursor(context.adminThreadCommandBuffer(), context.adminNioSelector());
+        nioSelector = context.rcvNioSelector();
+        frameHandlerFactory = context.rcvFrameHandlerFactory();
     }
 
     public void process()
@@ -83,40 +81,40 @@ public class ReceiverThread extends ClosableThread
 
     private void processCommandBuffer()
     {
-        commandBuffer.read((eventTypeId, buffer, index, length) ->
-                           {
-                               try
-                               {
-                                   switch (eventTypeId)
-                                   {
-                                       case ADD_CONSUMER:
-                                           consumerMessage.wrap(buffer, index);
-                                           onNewConsumer(consumerMessage.destination(), consumerMessage.channelIds());
-                                           return;
+        commandBuffer.read(
+            (eventTypeId, buffer, index, length) ->
+            {
+               try
+               {
+                   switch (eventTypeId)
+                   {
+                       case ADD_CONSUMER:
+                           consumerMessage.wrap(buffer, index);
+                           onNewConsumer(consumerMessage.destination(), consumerMessage.channelIds());
+                           return;
 
-                                       case REMOVE_CONSUMER:
-                                           consumerMessage.wrap(buffer, index);
-                                           onRemoveConsumer(consumerMessage.destination(),
-                                                            consumerMessage.channelIds());
-                                           return;
-                                   }
-                               }
-                               catch (final InvalidDestinationException e)
-                               {
-                                   // TODO: log this
-                                   onError(INVALID_DESTINATION, length);
-                               }
-                               catch (final ReceiverNotRegisteredException e)
-                               {
-                                   // TODO: log this
-                                   onError(CONSUMER_NOT_REGISTERED, length);
-                               }
-                               catch (final Exception e)
-                               {
-                                   // TODO: log this as well as send the error response
-                                   e.printStackTrace();
-                               }
-                           });
+                       case REMOVE_CONSUMER:
+                           consumerMessage.wrap(buffer, index);
+                           onRemoveConsumer(consumerMessage.destination(), consumerMessage.channelIds());
+                           return;
+                   }
+               }
+               catch (final InvalidDestinationException ex)
+               {
+                   // TODO: log this
+                   onError(INVALID_DESTINATION, length);
+               }
+               catch (final ReceiverNotRegisteredException ex)
+               {
+                   // TODO: log this
+                   onError(CONSUMER_NOT_REGISTERED, length);
+               }
+               catch (final Exception ex)
+               {
+                   // TODO: log this as well as send the error response
+                   ex.printStackTrace();
+               }
+            });
     }
 
     private void onError(final ErrorCode errorCode, final int length)
@@ -132,10 +130,11 @@ public class ReceiverThread extends ClosableThread
         stop();
         wakeup();
 
-        rcvDestinationMap.forEach((destination, frameHandler) ->
-                                  {
-                                      frameHandler.close();
-                                  });
+        rcvDestinationMap.forEach(
+            (destination, frameHandler) ->
+            {
+              frameHandler.close();
+            });
         // TODO: if needed, use a CountdownLatch to sync...
     }
 

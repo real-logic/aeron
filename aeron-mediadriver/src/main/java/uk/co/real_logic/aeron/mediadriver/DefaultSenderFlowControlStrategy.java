@@ -29,7 +29,7 @@ public class DefaultSenderFlowControlStrategy implements SenderFlowControlStrate
         // TODO: review this logic
         final int newRightEdgeOfWindow = (int) (highestContiguousSequenceNumber + receiverWindow);
         rightEdgeOfWindow = Math.max(rightEdgeOfWindow, newRightEdgeOfWindow);
+
         return rightEdgeOfWindow;
     }
-
 }

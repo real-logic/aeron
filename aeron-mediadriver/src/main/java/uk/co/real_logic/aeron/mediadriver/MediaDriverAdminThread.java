@@ -66,41 +66,43 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
     private final ConsumerMessageFlyweight receiverMessageFlyweight = new ConsumerMessageFlyweight();
     private final ErrorHeaderFlyweight errorHeaderFlyweight = new ErrorHeaderFlyweight();
-    private final CompletelyIdentifiedMessageFlyweight completelyIdentifiedMessageFlyweight = new CompletelyIdentifiedMessageFlyweight();
+    private final CompletelyIdentifiedMessageFlyweight completelyIdentifiedMessageFlyweight =
+        new CompletelyIdentifiedMessageFlyweight();
     private final int mtuLength;
 
-    public MediaDriverAdminThread(final MediaDriver.MediaDriverContext builder,
+    public MediaDriverAdminThread(final Context ctx,
                                   final ReceiverThread receiverThread,
                                   final SenderThread senderThread)
     {
         super(SELECT_TIMEOUT);
-        this.commandBuffer = builder.adminThreadCommandBuffer();
-        this.receiverThreadCursor = new ReceiverThreadCursor(builder.receiverThreadCommandBuffer(), builder.rcvNioSelector());
-        this.bufferManagementStrategy = builder.bufferManagementStrategy();
-        this.nioSelector = builder.adminNioSelector();
-        this.mtuLength = builder.mtuLength();
+
+        this.commandBuffer = ctx.adminThreadCommandBuffer();
+        this.receiverThreadCursor = new ReceiverThreadCursor(ctx.receiverThreadCommandBuffer(), ctx.rcvNioSelector());
+        this.bufferManagementStrategy = ctx.bufferManagementStrategy();
+        this.nioSelector = ctx.adminNioSelector();
+        this.mtuLength = ctx.mtuLength();
         this.receiverThread = receiverThread;
         this.senderThread = senderThread;
-        this.senderFlowControl = builder.senderFlowControl();
+        this.senderFlowControl = ctx.senderFlowControl();
         this.srcDestinationMap = new Long2ObjectHashMap<>();
         this.writeBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(WRITE_BUFFER_CAPACITY));
-        this.timerWheel = (builder.adminTimerWheel() != null) ?
-                            builder.adminTimerWheel() :
-                            new TimerWheel(ADMIN_THREAD_TICK_DURATION_MICROSECONDS,
-                                           TimeUnit.MICROSECONDS,
-                                           ADMIN_THREAD_TICKS_PER_WHEEL);
+        this.timerWheel = (ctx.adminTimerWheel() != null) ?
+                              ctx.adminTimerWheel() :
+                              new TimerWheel(ADMIN_THREAD_TICK_DURATION_MICROSECONDS,
+                                             TimeUnit.MICROSECONDS,
+                                             ADMIN_THREAD_TICKS_PER_WHEEL);
 
         try
         {
-            final AdminBufferStrategy adminBufferStrategy = builder.adminBufferStrategy();
+            final AdminBufferStrategy adminBufferStrategy = ctx.adminBufferStrategy();
             this.toMediaDriver = adminBufferStrategy.toMediaDriver();
             this.toApi = adminBufferStrategy.toApi();
             this.adminReceiveBuffer = new ManyToOneRingBuffer(new AtomicBuffer(toMediaDriver));
             this.adminSendBuffer = new ManyToOneRingBuffer(new AtomicBuffer(toApi));
         }
-        catch (Exception e)
+        catch (final Exception ex)
         {
-            throw new IllegalStateException("Unable to create the admin media buffers", e);
+            throw new IllegalStateException("Unable to create the admin media buffers", ex);
         }
     }
 
@@ -115,11 +117,12 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         {
             nioSelector.processKeys();
         }
-        catch (Exception e)
+        catch (final Exception ex)
         {
             // TODO: error
-            e.printStackTrace();
+            ex.printStackTrace();
         }
+
         senderThread.processBufferRotation();
         processReceiveBuffer();
         processCommandBuffer();
@@ -128,75 +131,84 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
 
     private void processCommandBuffer()
     {
-        commandBuffer.read((eventTypeId, buffer, index, length) ->
-        {
-            switch (eventTypeId)
-            {
-                case CREATE_CONSUMER_TERM_BUFFER:
-                    completelyIdentifiedMessageFlyweight.wrap(buffer, index);
-                    onCreateConsumerTermBufferEvent(completelyIdentifiedMessageFlyweight);
-                    return;
-                case REMOVE_CONSUMER_TERM_BUFFER:
-                    completelyIdentifiedMessageFlyweight.wrap(buffer, index);
-                    onRemoveConsumerTermBufferEvent(completelyIdentifiedMessageFlyweight);
-                    return;
-                case ERROR_RESPONSE:
-                    errorHeaderFlyweight.wrap(buffer, index);
-                    adminSendBuffer.write(eventTypeId, buffer, index, length);
-                    return;
-            }
-        });
+        commandBuffer.read(
+              (eventTypeId, buffer, index, length) ->
+              {
+                  switch (eventTypeId)
+                  {
+                      case CREATE_CONSUMER_TERM_BUFFER:
+                          completelyIdentifiedMessageFlyweight.wrap(buffer, index);
+                          onCreateConsumerTermBufferEvent(completelyIdentifiedMessageFlyweight);
+                          return;
+
+                      case REMOVE_CONSUMER_TERM_BUFFER:
+                          completelyIdentifiedMessageFlyweight.wrap(buffer, index);
+                          onRemoveConsumerTermBufferEvent(completelyIdentifiedMessageFlyweight);
+                          return;
+
+                      case ERROR_RESPONSE:
+                          errorHeaderFlyweight.wrap(buffer, index);
+                          adminSendBuffer.write(eventTypeId, buffer, index, length);
+                          return;
+                  }
+              });
     }
 
     private void processReceiveBuffer()
     {
-        adminReceiveBuffer.read((eventTypeId, buffer, index, length) ->
-        {
-            Flyweight flyweight = channelMessage;
-
-            try
+        adminReceiveBuffer.read(
+            (eventTypeId, buffer, index, length) ->
             {
-                switch (eventTypeId)
+                Flyweight flyweight = channelMessage;
+
+                try
                 {
-                    case ADD_CHANNEL:
-                        channelMessage.wrap(buffer, index);
-                        flyweight = channelMessage;
-                        onAddChannel(channelMessage);
-                        return;
-                    case REMOVE_CHANNEL:
-                        channelMessage.wrap(buffer, index);
-                        flyweight = channelMessage;
-                        onRemoveChannel(channelMessage);
-                        return;
-                    case ADD_CONSUMER:
-                        receiverMessageFlyweight.wrap(buffer, index);
-                        flyweight = receiverMessageFlyweight;
-                        onAddConsumer(receiverMessageFlyweight);
-                        return;
-                    case REMOVE_CONSUMER:
-                        receiverMessageFlyweight.wrap(buffer, index);
-                        flyweight = receiverMessageFlyweight;
-                        onRemoveConsumer(receiverMessageFlyweight);
-                        return;
+                    switch (eventTypeId)
+                    {
+                        case ADD_CHANNEL:
+                            channelMessage.wrap(buffer, index);
+                            flyweight = channelMessage;
+                            onAddChannel(channelMessage);
+                            return;
+
+                        case REMOVE_CHANNEL:
+                            channelMessage.wrap(buffer, index);
+                            flyweight = channelMessage;
+                            onRemoveChannel(channelMessage);
+                            return;
+
+                        case ADD_CONSUMER:
+                            receiverMessageFlyweight.wrap(buffer, index);
+                            flyweight = receiverMessageFlyweight;
+                            onAddConsumer(receiverMessageFlyweight);
+                            return;
+
+                        case REMOVE_CONSUMER:
+                            receiverMessageFlyweight.wrap(buffer, index);
+                            flyweight = receiverMessageFlyweight;
+                            onRemoveConsumer(receiverMessageFlyweight);
+                            return;
+                    }
                 }
-            } catch (final ControlProtocolException e)
-            {
-                final byte[] err = e.getMessage().getBytes();
-                final int len = ErrorHeaderFlyweight.HEADER_LENGTH + length + err.length;
+                catch (final ControlProtocolException ex)
+                {
+                    final byte[] err = ex.getMessage().getBytes();
+                    final int len = ErrorHeaderFlyweight.HEADER_LENGTH + length + err.length;
 
-                errorHeaderFlyweight.wrap(writeBuffer, 0);
-                errorHeaderFlyweight.errorCode(e.errorCode())
-                        .offendingFlyweight(flyweight, length)
-                        .errorString(err)
-                        .frameLength(len);
+                    errorHeaderFlyweight.wrap(writeBuffer, 0);
+                    errorHeaderFlyweight.errorCode(ex.errorCode())
+                                        .offendingFlyweight(flyweight, length)
+                                        .errorString(err)
+                                        .frameLength(len);
 
-                adminSendBuffer.write(ERROR_RESPONSE, writeBuffer, 0, errorHeaderFlyweight.frameLength());
-            } catch (Exception e)
-            {
-                // TODO: log this instead
-                e.printStackTrace();
-            }
-        });
+                    adminSendBuffer.write(ERROR_RESPONSE, writeBuffer, 0, errorHeaderFlyweight.frameLength());
+                }
+                catch (final Exception ex)
+                {
+                    // TODO: log this instead
+                    ex.printStackTrace();
+                }
+            });
     }
 
     public void processTimers()
@@ -212,13 +224,14 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         stop();
         wakeup();
 
-        srcDestinationMap.forEach((hash, frameHandler) ->
-        {
-            frameHandler.close();
-        });
+        srcDestinationMap.forEach(
+            (hash, frameHandler) ->
+            {
+              frameHandler.close();
+            });
 
-        IoUtil.unmap((java.nio.MappedByteBuffer) toMediaDriver);
-        IoUtil.unmap((java.nio.MappedByteBuffer) toApi);
+        IoUtil.unmap((java.nio.MappedByteBuffer)toMediaDriver);
+        IoUtil.unmap((java.nio.MappedByteBuffer)toApi);
     }
 
     public void wakeup()
@@ -227,9 +240,9 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     }
 
     /**
-     * Return the {@link uk.co.real_logic.aeron.mediadriver.NioSelector} in use by this admin thread.
+     * Return the {@link NioSelector} in use by this admin thread.
      *
-     * @return the {@link uk.co.real_logic.aeron.mediadriver.NioSelector} in use by this admin thread
+     * @return the {@link NioSelector} in use by this admin thread
      */
     public NioSelector nioSelector()
     {
@@ -259,19 +272,19 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     {
         completelyIdentifiedMessageFlyweight.wrap(writeBuffer, 0);
         completelyIdentifiedMessageFlyweight.sessionId(sessionId)
-                .channelId(channelId)
-                .termId(termId)
-                .destination(destination);
+                                            .channelId(channelId)
+                                            .termId(termId)
+                                            .destination(destination);
 
         if (isSender)
         {
             adminSendBuffer.write(NEW_SEND_BUFFER_NOTIFICATION, writeBuffer,
-                    0, completelyIdentifiedMessageFlyweight.length());
+                                  0, completelyIdentifiedMessageFlyweight.length());
         }
         else
         {
             adminSendBuffer.write(NEW_RECEIVE_BUFFER_NOTIFICATION, writeBuffer,
-                    0, completelyIdentifiedMessageFlyweight.length());
+                                  0, completelyIdentifiedMessageFlyweight.length());
         }
     }
 
@@ -296,7 +309,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
                 if (!frameHandler.destination().equals(srcDestination))
                 {
                     throw new ControlProtocolException(ErrorCode.CHANNEL_ALREADY_EXISTS,
-                                                      "destinations hash same, but destinations different");
+                                                       "destinations hash same, but destinations different");
                 }
             }
 
@@ -304,12 +317,14 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             if (null != channel)
             {
                 throw new ControlProtocolException(ErrorCode.CHANNEL_ALREADY_EXISTS,
-                                                  "channel and session already exist on destination");
+                                                   "channel and session already exist on destination");
             }
 
             // new channel, so generate "random"-ish termId and create term buffer
             final long initialTermId = rng.nextLong();
-            final BufferRotator buffers = bufferManagementStrategy.addProducerChannel(srcDestination, sessionId, channelId);
+            final BufferRotator buffers =
+                bufferManagementStrategy.addProducerChannel(srcDestination, sessionId, channelId);
+
             channel = new SenderChannel(frameHandler,
                                         senderFlowControl.get(),
                                         buffers,
@@ -329,16 +344,16 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             // add channel to sender thread atomic array so it can be integrated in
             senderThread.addChannel(channel);
         }
-        catch (final ControlProtocolException e)
+        catch (final ControlProtocolException ex)
         {
-            throw e; // rethrow up for handling as normal
+            throw ex; // rethrow up for handling as normal
         }
-        catch (Exception e)
+        catch (final Exception ex)
         {
             // convert into generic error
             // TODO: log this
-            e.printStackTrace();
-            throw new ControlProtocolException(ErrorCode.GENERIC_ERROR_CHANNEL_MESSAGE, e.getMessage());
+            ex.printStackTrace();
+            throw new ControlProtocolException(ErrorCode.GENERIC_ERROR_CHANNEL_MESSAGE, ex.getMessage());
         }
     }
 
@@ -376,16 +391,16 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
                 frameHandler.close();
             }
         }
-        catch (ControlProtocolException e)
+        catch (final ControlProtocolException ex)
         {
-            throw e; // rethrow up for handling as normal
+            throw ex; // rethrow up for handling as normal
         }
-        catch (Exception e)
+        catch (final Exception ex)
         {
             // convert into generic error
             // TODO: log this
-            e.printStackTrace();
-            throw new ControlProtocolException(ErrorCode.GENERIC_ERROR_CHANNEL_MESSAGE, e.getMessage());
+            ex.printStackTrace();
+            throw new ControlProtocolException(ErrorCode.GENERIC_ERROR_CHANNEL_MESSAGE, ex.getMessage());
         }
     }
 
@@ -409,7 +424,8 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
 
     }
 
-    private void onCreateConsumerTermBufferEvent(final CompletelyIdentifiedMessageFlyweight completelyIdentifiedMessageFlyweight)
+    private void onCreateConsumerTermBufferEvent(
+            final CompletelyIdentifiedMessageFlyweight completelyIdentifiedMessageFlyweight)
     {
         final String destination = completelyIdentifiedMessageFlyweight.destination();
         final long sessionId = completelyIdentifiedMessageFlyweight.sessionId();
@@ -419,18 +435,19 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         try
         {
             final UdpDestination rcvDestination = UdpDestination.parse(destination);
-            final BufferRotator buffer = bufferManagementStrategy.addConsumerChannel(rcvDestination, sessionId, channelId);
+            final BufferRotator buffer =
+                bufferManagementStrategy.addConsumerChannel(rcvDestination, sessionId, channelId);
 
             // inform receiver thread of new buffer, destination, etc.
-            RcvBufferState bufferState = new RcvBufferState(rcvDestination, sessionId, channelId, termId, buffer);
+            final RcvBufferState bufferState = new RcvBufferState(rcvDestination, sessionId, channelId, termId, buffer);
             while (!receiverThread.sendBuffer(bufferState))
             {
                 // TODO: count errors
             }
         }
-        catch (Exception e)
+        catch (final Exception ex)
         {
-            e.printStackTrace();
+            ex.printStackTrace();
             // TODO: handle errors by logging
         }
     }
@@ -446,9 +463,9 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
 
             bufferManagementStrategy.removeConsumerChannel(rcvDestination, sessionId, channelId);
         }
-        catch (Exception e)
+        catch (final Exception ex)
         {
-            e.printStackTrace();
+            ex.printStackTrace();
             // TODO: handle errors by logging
         }
     }

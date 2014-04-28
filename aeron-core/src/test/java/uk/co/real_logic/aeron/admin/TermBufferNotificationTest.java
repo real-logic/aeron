@@ -30,12 +30,12 @@ import static uk.co.real_logic.aeron.admin.TermBufferNotifier.TERMS_STORED;
 
 public class TermBufferNotificationTest
 {
-
     private static final int ROLLOVER_TERM_COUNT = TERMS_STORED * 2;
-    private static final Runnable NOTHING = () ->
-    {
+    private static final Runnable NOTHING =
+        () ->
+        {
 
-    };
+        };
 
     private final TermBufferNotifier notification = new TermBufferNotifier();
     private final ByteBuffer termBuffer1 = ByteBuffer.allocate(10);
@@ -65,11 +65,12 @@ public class TermBufferNotificationTest
     public void termsCanRollOverIndefinitely()
     {
         LongStream.range(0L, ROLLOVER_TERM_COUNT)
-                  .forEach(termId ->
-                  {
-                      final ByteBuffer termBuffer = (termId % 2) == 0L ? termBuffer1 : termBuffer2;
-                      writeAndAssertTermBufferRead(termId, termBuffer);
-                  });
+                  .forEach(
+                      termId ->
+                      {
+                          final ByteBuffer termBuffer = (termId % 2) == 0L ? termBuffer1 : termBuffer2;
+                          writeAndAssertTermBufferRead(termId, termBuffer);
+                      });
     }
 
     @Test
@@ -87,6 +88,7 @@ public class TermBufferNotificationTest
             final ByteBuffer buffer = notification.termBufferBlocking(0L);
             returned.set(buffer != null);
         };
+
         final Runnable writer = () ->
         {
             notification.newTermBufferMapped(0L, termBuffer1);
@@ -111,6 +113,7 @@ public class TermBufferNotificationTest
             final ByteBuffer buffer = notification.termBufferBlocking(0L);
             returned.set(buffer != null);
         };
+
         withReaderAndWriter(reader, NOTHING, 50);
 
         assertThat(returned.get(), is(false));
@@ -133,5 +136,4 @@ public class TermBufferNotificationTest
             executor.shutdownNow();
         }
     }
-
 }

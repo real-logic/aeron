@@ -31,11 +31,11 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
 {
     private final UdpTransport transport;
     private final UdpDestination destination;
-    private final Long2ObjectHashMap<RcvChannelState> channelInterestMap;
+    private final Long2ObjectHashMap<RcvChannelState> channelInterestMap = new Long2ObjectHashMap<>();
     private final MediaDriverAdminThreadCursor adminThreadCursor;
-    private final ByteBuffer sendBuffer;
-    private final AtomicBuffer writeBuffer;
-    private final StatusMessageFlyweight statusMessageFlyweight;
+    private final ByteBuffer sendBuffer = ByteBuffer.allocateDirect(StatusMessageFlyweight.HEADER_LENGTH);
+    private final AtomicBuffer writeBuffer = new AtomicBuffer(sendBuffer);
+    private final StatusMessageFlyweight statusMessageFlyweight = new StatusMessageFlyweight();
 
     public RcvFrameHandler(final UdpDestination destination,
                            final NioSelector nioSelector,
@@ -44,11 +44,7 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
     {
         this.transport = new UdpTransport(this, destination, nioSelector);
         this.destination = destination;
-        this.channelInterestMap = new Long2ObjectHashMap<>();
         this.adminThreadCursor = adminThreadCursor;
-        this.sendBuffer = ByteBuffer.allocateDirect(StatusMessageFlyweight.HEADER_LENGTH);
-        this.writeBuffer = new AtomicBuffer(sendBuffer);
-        this.statusMessageFlyweight = new StatusMessageFlyweight();
     }
 
     public int sendTo(final ByteBuffer buffer, final long sessionId, final long channelId) throws Exception
@@ -210,10 +206,9 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
         {
             return transport.sendTo(sendBuffer, sessionState.sourceAddress());
         }
-        catch (Exception e)
+        catch (final Exception ex)
         {
-            throw new RuntimeException(e);
+            throw new RuntimeException(ex);
         }
     }
-
 }

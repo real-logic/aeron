@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron.mediadriver;
 
 public interface SenderFlowControlStrategy
 {
-
     /**
      * Updates the rightEdgeOfWindow based upon new status message information
      *

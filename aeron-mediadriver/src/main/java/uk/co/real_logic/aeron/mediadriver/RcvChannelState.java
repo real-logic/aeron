@@ -78,9 +78,10 @@ public class RcvChannelState
 
     public void close()
     {
-        sessionStateMap.forEach((sessionId, session) ->
-        {
-            adminThreadCursor.addRemoveRcvTermBufferEvent(destination, sessionId, channelId);
-        });
+        sessionStateMap.forEach(
+            (sessionId, session) ->
+            {
+                adminThreadCursor.addRemoveRcvTermBufferEvent(destination, sessionId, channelId);
+            });
     }
 }

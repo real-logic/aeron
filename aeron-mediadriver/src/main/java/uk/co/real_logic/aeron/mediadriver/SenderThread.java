@@ -27,16 +27,15 @@ import static uk.co.real_logic.aeron.mediadriver.MediaDriver.SELECT_TIMEOUT;
 public class SenderThread extends ClosableThread
 {
     private final RingBuffer adminThreadCommandBuffer;
-    private final AtomicArray<SenderChannel> channels;
+    private final AtomicArray<SenderChannel> channels = new AtomicArray<>();
 
-    private int counter;
+    private int counter = 0;
 
-    public SenderThread(final MediaDriver.MediaDriverContext builder)
+    public SenderThread(final MediaDriver.Context ctx)
     {
         super(SELECT_TIMEOUT);
-        this.adminThreadCommandBuffer = builder.adminThreadCommandBuffer();
-        this.channels = new AtomicArray<>();
-        this.counter = 0;
+
+        adminThreadCommandBuffer = ctx.adminThreadCommandBuffer();
     }
 
     public void process()
@@ -46,6 +45,7 @@ public class SenderThread extends ClosableThread
         {
             counter = 0;
         }
+
         channels.forEach(counter, SenderChannel::process);
     }
 
@@ -66,5 +66,4 @@ public class SenderThread extends ClosableThread
     {
         channels.forEach(SenderChannel::processBufferRotation);
     }
-
 }

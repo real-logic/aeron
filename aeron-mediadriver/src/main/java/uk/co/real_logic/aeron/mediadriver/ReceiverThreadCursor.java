@@ -33,21 +33,18 @@ public class ReceiverThreadCursor
 
     private final RingBuffer commandBuffer;
     private final NioSelector selector;
-    private final AtomicBuffer writeBuffer;
-    private final ConsumerMessageFlyweight receiverMessage;
-    private final CompletelyIdentifiedMessageFlyweight addTermBufferMessage;
+    private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
+    private final ConsumerMessageFlyweight receiverMessage = new ConsumerMessageFlyweight();
+    private final CompletelyIdentifiedMessageFlyweight addTermBufferMessage =
+        new CompletelyIdentifiedMessageFlyweight();
 
     public ReceiverThreadCursor(final RingBuffer commandBuffer, final NioSelector selector)
     {
         this.commandBuffer = commandBuffer;
         this.selector = selector;
-        writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
 
-        receiverMessage = new ConsumerMessageFlyweight();
         receiverMessage.wrap(writeBuffer, 0);
-
-        addTermBufferMessage = new CompletelyIdentifiedMessageFlyweight();
-        addTermBufferMessage.wrap(writeBuffer, 0);
+        addTermBufferMessage.wrap(writeBuffer, 0);  // TODO: is this safe on the same buffer???
     }
 
     public void addNewConsumerEvent(final String destination, final long[] channelIdList)
@@ -80,5 +77,4 @@ public class ReceiverThreadCursor
         commandBuffer.write(NEW_RECEIVE_BUFFER_NOTIFICATION, writeBuffer, 0, addTermBufferMessage.length());
         selector.wakeup();
     }
-
 }

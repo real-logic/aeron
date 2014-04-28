@@ -29,6 +29,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 
+import static java.lang.Integer.getInteger;
 import static uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy.newMappedBufferManager;
 import static uk.co.real_logic.aeron.util.CommonConfiguration.ADMIN_DIR;
 import static uk.co.real_logic.aeron.util.CommonConfiguration.DATA_DIR;
@@ -80,17 +81,18 @@ public class MediaDriver implements AutoCloseable
     /** Default timeout for select */
     public static final int SELECT_TIMEOUT_DEFAULT = 20;
 
-    public static final int READ_BYTE_BUFFER_SZ = Integer.getInteger(READ_BYTE_BUFFER_SZ_PROPERTY_NAME,
-                                                                     READ_BYTE_BUFFER_SZ_DEFAULT).intValue();
-    public static final int COMMAND_BUFFER_SZ = Integer.getInteger(COMMAND_BUFFER_SZ_PROPERTY_NAME,
-                                                                   COMMAND_BUFFER_SZ_DEFAULT).intValue();
-    public static final int ADMIN_BUFFER_SZ = Integer.getInteger(ADMIN_BUFFER_SZ_PROPERTY_NAME,
-                                                                 ADMIN_BUFFER_SZ_DEFAULT).intValue();
-    public static final int SELECT_TIMEOUT = Integer.getInteger(SELECT_TIMEOUT_PROPERTY_NAME,
-                                                                SELECT_TIMEOUT_DEFAULT).intValue();
+    public static final int READ_BYTE_BUFFER_SZ = getInteger(READ_BYTE_BUFFER_SZ_PROPERTY_NAME,
+                                                             READ_BYTE_BUFFER_SZ_DEFAULT).intValue();
+    public static final int COMMAND_BUFFER_SZ = getInteger(COMMAND_BUFFER_SZ_PROPERTY_NAME,
+                                                           COMMAND_BUFFER_SZ_DEFAULT).intValue();
+    public static final int ADMIN_BUFFER_SZ = getInteger(ADMIN_BUFFER_SZ_PROPERTY_NAME,
+                                                         ADMIN_BUFFER_SZ_DEFAULT).intValue();
+    public static final int SELECT_TIMEOUT = getInteger(SELECT_TIMEOUT_PROPERTY_NAME,
+                                                        SELECT_TIMEOUT_DEFAULT).intValue();
 
     /** ticksPerWheel for TimerWheel in admin thread */
     public static final int ADMIN_THREAD_TICKS_PER_WHEEL = 1024;
+
     /** tickDuration (in MICROSECONDS) for TimerWheel in admin thread */
     public static final int ADMIN_THREAD_TICK_DURATION_MICROSECONDS = 10 * 1000;
 
@@ -101,7 +103,7 @@ public class MediaDriver implements AutoCloseable
             // 1 for Receive Thread (Sockets to Buffers)
             // 1 for Send Thread (Buffers to Sockets)
             // 1 for Admin Thread (Buffer Management, NAK, Retransmit, etc.)
-            Executor executor = Executors.newFixedThreadPool(3);
+            final Executor executor = Executors.newFixedThreadPool(3);
 
             executor.execute(mediaDriver.receiverThread());
             executor.execute(mediaDriver.senderThread());
@@ -111,9 +113,9 @@ public class MediaDriver implements AutoCloseable
         {
             // catch this OK. We should finally close on it also... oh look, try-with-resources just did.
         }
-        catch (final Exception e)
+        catch (final Exception ex)
         {
-            e.printStackTrace();
+            ex.printStackTrace();
         }
     }
 
@@ -123,8 +125,9 @@ public class MediaDriver implements AutoCloseable
 
     public MediaDriver() throws Exception
     {
-        NioSelector nioSelector = new NioSelector();
-        MediaDriverContext context = new MediaDriverContext().adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
+        final NioSelector nioSelector = new NioSelector();
+        final Context context = new Context()
+                .adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .rcvNioSelector(nioSelector)
                 .adminNioSelector(new NioSelector())
@@ -163,11 +166,10 @@ public class MediaDriver implements AutoCloseable
         adminThread.close();
     }
 
-    public static class MediaDriverContext
+    public static class Context
     {
         private RingBuffer adminThreadCommandBuffer;
         private RingBuffer receiverThreadCommandBuffer;
-        private ReceiverThreadCursor receiverThreadCursor;
         private BufferManagementStrategy bufferManagementStrategy;
         private AdminBufferStrategy adminBufferStrategy;
         private NioSelector rcvNioSelector;
@@ -185,55 +187,55 @@ public class MediaDriver implements AutoCloseable
             return new ManyToOneRingBuffer(atomicBuffer);
         }
 
-        public MediaDriverContext adminThreadCommandBuffer(final int sz)
+        public Context adminThreadCommandBuffer(final int sz)
         {
             this.adminThreadCommandBuffer = createNewCommandBuffer(sz);
             return this;
         }
 
-        public MediaDriverContext receiverThreadCommandBuffer(final int sz)
+        public Context receiverThreadCommandBuffer(final int sz)
         {
             this.receiverThreadCommandBuffer = createNewCommandBuffer(sz);
             return this;
         }
 
-        public MediaDriverContext bufferManagementStrategy(final BufferManagementStrategy strategy)
+        public Context bufferManagementStrategy(final BufferManagementStrategy strategy)
         {
             this.bufferManagementStrategy = strategy;
             return this;
         }
 
-        public MediaDriverContext adminBufferStrategy(final AdminBufferStrategy adminBufferStrategy)
+        public Context adminBufferStrategy(final AdminBufferStrategy adminBufferStrategy)
         {
             this.adminBufferStrategy = adminBufferStrategy;
             return this;
         }
 
-        public MediaDriverContext rcvNioSelector(final NioSelector nioSelector)
+        public Context rcvNioSelector(final NioSelector nioSelector)
         {
             this.rcvNioSelector = nioSelector;
             return this;
         }
 
-        public MediaDriverContext adminNioSelector(final NioSelector nioSelector)
+        public Context adminNioSelector(final NioSelector nioSelector)
         {
             this.adminNioSelector = nioSelector;
             return this;
         }
 
-        public MediaDriverContext senderFlowControl(Supplier<SenderFlowControlStrategy> senderFlowControl)
+        public Context senderFlowControl(Supplier<SenderFlowControlStrategy> senderFlowControl)
         {
             this.senderFlowControl = senderFlowControl;
             return this;
         }
 
-        public MediaDriverContext mtuLength(final int mtuLength)
+        public Context mtuLength(final int mtuLength)
         {
             this.mtuLength = mtuLength;
             return this;
         }
 
-        public MediaDriverContext adminTimerWheel(final TimerWheel wheel)
+        public Context adminTimerWheel(final TimerWheel wheel)
         {
             this.adminTimerWheel = wheel;
             return this;
@@ -284,7 +286,7 @@ public class MediaDriver implements AutoCloseable
             return rcvFrameHandlerFactory;
         }
 
-        public MediaDriverContext rcvFrameHandlerFactory(final RcvFrameHandlerFactory rcvFrameHandlerFactory)
+        public Context rcvFrameHandlerFactory(final RcvFrameHandlerFactory rcvFrameHandlerFactory)
         {
             this.rcvFrameHandlerFactory = rcvFrameHandlerFactory;
             return this;

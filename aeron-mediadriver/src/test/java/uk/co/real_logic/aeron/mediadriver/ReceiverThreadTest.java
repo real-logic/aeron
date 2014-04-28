@@ -44,7 +44,7 @@ public class ReceiverThreadTest
         bufferManagementStrategy = mock(BufferManagementStrategy.class);
         frameHandlerFactory = mock(RcvFrameHandlerFactory.class);
 
-        final MediaDriver.MediaDriverContext context = new MediaDriver.MediaDriverContext()
+        final MediaDriver.Context context = new MediaDriver.Context()
                 .adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .rcvNioSelector(new NioSelector())

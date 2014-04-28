@@ -108,7 +108,7 @@ public class UnicastSenderTest
                                     TimeUnit.MICROSECONDS,
                                     ADMIN_THREAD_TICKS_PER_WHEEL);
 
-        final MediaDriver.MediaDriverContext builder = new MediaDriver.MediaDriverContext()
+        final Context builder = new Context()
                 .adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .rcvNioSelector(new NioSelector())

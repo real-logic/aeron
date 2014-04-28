@@ -96,7 +96,7 @@ public class UnicastReceiverTest
         bufferManagementStrategy = newMappedBufferManager(directory.dataDir());
 
         NioSelector nioSelector = new NioSelector();
-        final MediaDriver.MediaDriverContext builder = new MediaDriver.MediaDriverContext()
+        final MediaDriver.Context builder = new MediaDriver.Context()
                 .adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .rcvNioSelector(nioSelector)

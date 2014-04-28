@@ -53,8 +53,8 @@ public class SenderChannel
     private final int headerLength;
     private final int mtuLength;
     private TimerWheel.Timer flowControlTimer;
-    private final ByteBuffer scratchSendBuffer;
-    private final AtomicBuffer scratchAtomicBuffer;
+    private final ByteBuffer scratchSendBuffer = ByteBuffer.allocateDirect(DataHeaderFlyweight.HEADER_LENGTH);
+    private final AtomicBuffer scratchAtomicBuffer = new AtomicBuffer(scratchSendBuffer);
 
     private int currentIndex;
 
@@ -63,9 +63,9 @@ public class SenderChannel
     /** duplicate log buffers to work around the lack of a (buffer, start, length) send method */
     private final ByteBuffer[] sendBuffers;
 
-    private final SenderFlowControlState activeFlowControlState;
+    private final SenderFlowControlState activeFlowControlState = new SenderFlowControlState(0);
 
-    private final DataHeaderFlyweight dataHeader;
+    private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
     public SenderChannel(final ControlFrameHandler frameHandler,
                          final SenderFlowControlStrategy flowControlStrategy,
@@ -85,15 +85,10 @@ public class SenderChannel
         this.channelId = channelId;
         this.headerLength = headerLength;
         this.mtuLength = mtuLength;
-        this.scratchSendBuffer = ByteBuffer.allocateDirect(DataHeaderFlyweight.HEADER_LENGTH);
-        this.scratchAtomicBuffer = new AtomicBuffer(scratchSendBuffer);
-        this.dataHeader = new DataHeaderFlyweight();
 
-        scanners =  buffers.buffers()
-                           .map(this::newScanner)
-                           .toArray(MtuScanner[]::new);
-
-        activeFlowControlState = new SenderFlowControlState(0);
+        scanners = buffers.buffers()
+                          .map(this::newScanner)
+                          .toArray(MtuScanner[]::new);
 
         sendBuffers = buffers.buffers()
                              .map(this::duplicateLogBuffer)
@@ -111,6 +106,7 @@ public class SenderChannel
     {
         final ByteBuffer buffer = log.logBuffer().duplicateByteBuffer();
         buffer.clear();
+
         return buffer;
     }
 
@@ -168,10 +164,10 @@ public class SenderChannel
                 currentTermId.incrementAndGet();
             }
         }
-        catch (final Exception e)
+        catch (final Exception ex)
         {
             // TODO: error logging
-            e.printStackTrace();
+            ex.printStackTrace();
         }
     }
 
@@ -233,22 +229,22 @@ public class SenderChannel
 
         try
         {
-            int bytesSent = frameHandler.send(scratchSendBuffer);
+            final int bytesSent = frameHandler.send(scratchSendBuffer);
             if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
             {
                 // TODO: error
             }
         }
-        catch (Exception e)
+        catch (final Exception ex)
         {
             //TODO: errors
-            e.printStackTrace();
+            ex.printStackTrace();
         }
     }
 
     public void processBufferRotation()
     {
-        long requiredCleanTermid = currentTermId.get() + CLEAN_WINDOW;
+        final long requiredCleanTermid = currentTermId.get() + CLEAN_WINDOW;
         if (requiredCleanTermid > cleanedTermId.get())
         {
             try
@@ -256,13 +252,12 @@ public class SenderChannel
                 buffers.rotate();
                 cleanedTermId.incrementAndGet();
             }
-            catch (IOException e)
+            catch (final IOException ex)
             {
                 // TODO: log exception
                 // TODO: probably should deal with stopping this all together
-                e.printStackTrace();
+                ex.printStackTrace();
             }
         }
     }
-
 }

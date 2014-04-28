@@ -35,9 +35,9 @@ public class NioSelector implements AutoCloseable
         {
             this.selector = Selector.open(); // yes, SelectorProvider, blah, blah
         }
-        catch (Exception e)
+        catch (final Exception ex)
         {
-            throw new RuntimeException(e);
+            throw new RuntimeException(ex);
         }
     }
 
@@ -103,9 +103,9 @@ public class NioSelector implements AutoCloseable
         {
             ((ReadHandler)key.attachment()).onRead();
         }
-        catch (final Exception e)
+        catch (final Exception ex)
         {
-            e.printStackTrace();
+            ex.printStackTrace();
         }
     }
 

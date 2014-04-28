@@ -32,7 +32,7 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
     private final UdpTransport transport;
     private final UdpDestination destination;
     private final MediaDriverAdminThread mediaDriverAdminThread;
-    private final Long2ObjectHashMap<Long2ObjectHashMap<SenderChannel>> sessionMap;
+    private final Long2ObjectHashMap<Long2ObjectHashMap<SenderChannel>> sessionMap = new Long2ObjectHashMap<>();
 
     public ControlFrameHandler(final UdpDestination destination,
                                final MediaDriverAdminThread mediaDriverAdminThread) throws Exception
@@ -40,7 +40,6 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
         this.transport = new UdpTransport(this, destination.localControl(), mediaDriverAdminThread.nioSelector());
         this.destination = destination;
         this.mediaDriverAdminThread = mediaDriverAdminThread;
-        this.sessionMap = new Long2ObjectHashMap<>();
     }
 
     public int send(final ByteBuffer buffer) throws Exception

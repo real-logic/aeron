@@ -35,24 +35,25 @@ import static uk.co.real_logic.aeron.mediadriver.TemplateFileResource.BUFFER_SIZ
 
 public class MappedBufferRotatorTest
 {
-
     @ClassRule
     public static TemplateFileResource template = new TemplateFileResource();
 
     @Test
     public void returnedBuffersAreAlwaysFresh() throws IOException
     {
-        withRotatedBuffers(buffer ->
-        {
-           // check you get a clean buffer
-           IntStream.range(0, BUFFER_SIZE)
-                    .forEach(i -> assertThat(Byte.valueOf(buffer.getByte(i)), is(Byte.valueOf((byte) 0))));
+        withRotatedBuffers(
+            buffer ->
+            {
+                // check you get a clean buffer
+                IntStream.range(0, BUFFER_SIZE)
+                         .forEach(i -> assertThat(buffer.getByte(i), is((byte)0)));
 
-           // dirty up the buffer
-           buffer.putInt(1, 4);
-           buffer.putInt(500, 4);
-           buffer.putInt(996, 4);
-        });
+                // dirty up the buffer
+                buffer.putInt(1, 4);
+                buffer.putInt(500, 4);
+                buffer.putInt(996, 4);
+            }
+        );
     }
 
     @Test
@@ -65,8 +66,10 @@ public class MappedBufferRotatorTest
 
     private void withRotatedBuffers(final Consumer<AtomicBuffer> handler) throws IOException
     {
-        final MappedBufferRotator rotator = new MappedBufferRotator(template.directory(), template.file(), BUFFER_SIZE, template.file(), BUFFER_SIZE);
-        List<LogBuffers> buffers = rotator.buffers().collect(toList());
+        final MappedBufferRotator rotator =
+            new MappedBufferRotator(template.directory(), template.file(), BUFFER_SIZE, template.file(), BUFFER_SIZE);
+        final List<LogBuffers> buffers = rotator.buffers().collect(toList());
+
         for (int iteration = 0; iteration < 20; iteration++)
         {
             rotator.rotate();

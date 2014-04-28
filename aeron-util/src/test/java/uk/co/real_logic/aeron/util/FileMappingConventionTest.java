@@ -25,7 +25,6 @@ import static uk.co.real_logic.aeron.util.FileMappingConvention.destinationToDir
 
 public class FileMappingConventionTest
 {
-
     @Test
     public void destinationStringsAreValidFiles() throws IOException
     {
@@ -36,9 +35,8 @@ public class FileMappingConventionTest
 
     private void assertIsValidFile(final String destinationDir) throws IOException
     {
-        File file = new File(destinationDir);
+        final File file = new File(destinationDir);
         assertTrue("Can't create a file", file.mkdir());
         assertTrue("Failed to clean up", file.delete());
     }
-
 }

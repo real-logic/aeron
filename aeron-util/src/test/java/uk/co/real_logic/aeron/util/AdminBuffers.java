@@ -27,7 +27,6 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor
 
 public class AdminBuffers extends ExternalResource
 {
-
     public static final int BUFFER_SIZE = 512 + TRAILER_LENGTH;
 
     private final String adminDir;
@@ -56,6 +55,7 @@ public class AdminBuffers extends ExternalResource
         {
             IoUtil.delete(dir, false);
         }
+
         IoUtil.ensureDirectoryExists(dir, "admin dir");
         creatingStrategy = new CreatingAdminBufferStrategy(adminDir, bufferSize);
         mappingStrategy = new MappingAdminBufferStrategy(adminDir);
@@ -116,10 +116,9 @@ public class AdminBuffers extends ExternalResource
         {
             return supplier.supply();
         }
-        catch (Exception e)
+        catch (final Exception ex)
         {
-            throw new RuntimeException(e);
+            throw new RuntimeException(ex);
         }
     }
-
 }

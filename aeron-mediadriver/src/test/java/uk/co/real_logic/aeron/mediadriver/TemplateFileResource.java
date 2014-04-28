@@ -23,7 +23,6 @@ import java.nio.channels.FileChannel;
 
 public class TemplateFileResource extends ExternalResource
 {
-
     public static final int BUFFER_SIZE = 1000;
 
     private FileChannel templateFile;
@@ -46,5 +45,4 @@ public class TemplateFileResource extends ExternalResource
     {
         return directory;
     }
-
 }

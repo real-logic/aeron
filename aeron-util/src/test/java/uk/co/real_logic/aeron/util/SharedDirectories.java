@@ -61,12 +61,13 @@ public class SharedDirectories extends ExternalResource
 
     private File ensureDirectory(final String path) throws IOException
     {
-        File dir = new File(path);
+        final File dir = new File(path);
         if (dir.exists())
         {
             IoUtil.delete(dir, false);
         }
         IoUtil.ensureDirectoryExists(dir, "data dir");
+
         return dir;
     }
 
@@ -80,7 +81,6 @@ public class SharedDirectories extends ExternalResource
             this.stateBuffer = stateBuffer;
             this.logBuffer = logBuffer;
         }
-
 
         public AtomicBuffer logBuffer()
         {
@@ -129,6 +129,7 @@ public class SharedDirectories extends ExternalResource
         final File termLocation = termLocation(rootDir, sessionId, channelId, termId, true, destination, type);
         IoUtil.delete(termLocation, true);
         final FileChannel file = createEmptyFile(termLocation, BufferDescriptor.LOG_MIN_SIZE);
+
         return new AtomicBuffer(IoUtil.map(file));
     }
 
@@ -161,6 +162,7 @@ public class SharedDirectories extends ExternalResource
                                      final Type type) throws IOException
     {
         final File termLocation = termLocation(rootDir, sessionId, channelId, termId, false, destination, type);
+
         return new AtomicBuffer(IoUtil.mapExistingFile(termLocation, "Term Buffer"));
     }
 }

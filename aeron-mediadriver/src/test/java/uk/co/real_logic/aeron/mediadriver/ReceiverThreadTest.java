@@ -34,14 +34,13 @@ public class ReceiverThreadTest
     private static final long[] ONE_CHANNEL = { CHANNEL_ID };
 
     private ReceiverThread thread;
-    private BufferManagementStrategy bufferManagementStrategy;
     private ReceiverThreadCursor cursor;
     private RcvFrameHandlerFactory frameHandlerFactory;
 
     @Before
     public void setup() throws Exception
     {
-        bufferManagementStrategy = mock(BufferManagementStrategy.class);
+        final BufferManagementStrategy bufferManagementStrategy = mock(BufferManagementStrategy.class);
         frameHandlerFactory = mock(RcvFrameHandlerFactory.class);
 
         final MediaDriver.Context context = new MediaDriver.Context()
@@ -68,5 +67,4 @@ public class ReceiverThreadTest
         verify(frameHandlerFactory).newInstance(destination);
         verify(frameHandler).addChannels(ONE_CHANNEL);
     }
-
 }

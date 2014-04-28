@@ -176,6 +176,7 @@ public class AtomicArrayTest
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void arrayInitiallyUnchanged()
     {
         AtomicArray<Integer> array = new AtomicArray<>();
@@ -188,6 +189,7 @@ public class AtomicArrayTest
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void changesIdentified()
     {
         AtomicArray<Integer> array = new AtomicArray<>();
@@ -204,5 +206,4 @@ public class AtomicArrayTest
         inOrder.verify(handler).accept(2);
         inOrder.verifyNoMoreInteractions();
     }
-
 }

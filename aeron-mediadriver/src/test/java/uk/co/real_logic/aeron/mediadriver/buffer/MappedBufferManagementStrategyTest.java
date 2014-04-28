@@ -30,7 +30,6 @@ import static org.junit.Assert.assertThat;
 
 public class MappedBufferManagementStrategyTest
 {
-
     private static final File DATA_DIR = new File(IoUtil.tmpDir(), "DATA_DIR");
 
     @After
@@ -55,5 +54,4 @@ public class MappedBufferManagementStrategyTest
         assertThat(term.get(0), is((byte) 0));
         assertThat(term.get(255), is((byte) 0));
     }
-
 }

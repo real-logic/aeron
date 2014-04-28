@@ -22,7 +22,6 @@ import static org.junit.Assert.assertThat;
 
 public class ErrorCodeTest
 {
-
     @Test
     public void errorCodesShouldBeIndexes()
     {
@@ -32,5 +31,4 @@ public class ErrorCodeTest
             assertThat(ErrorCode.get(i).value(), is(i));
         }
     }
-
 }

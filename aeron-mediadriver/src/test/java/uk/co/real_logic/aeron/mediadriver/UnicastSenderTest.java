@@ -87,11 +87,10 @@ public class UnicastSenderTest
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
 
-    private TimerWheel timerWheel;
+    //private TimerWheel timerWheel;
 
     private BufferManagementStrategy bufferManagementStrategy;
     private SenderThread senderThread;
-    private ReceiverThread receiverThread;
     private MediaDriverAdminThread mediaDriverAdminThread;
     private DatagramChannel receiverChannel;
 
@@ -103,23 +102,24 @@ public class UnicastSenderTest
         bufferManagementStrategy = newMappedBufferManager(directory.dataDir());
 
         controlledTimestamp = 0;
-        timerWheel = new TimerWheel(() -> controlledTimestamp,
-                                    ADMIN_THREAD_TICK_DURATION_MICROSECONDS,
-                                    TimeUnit.MICROSECONDS,
-                                    ADMIN_THREAD_TICKS_PER_WHEEL);
+        final TimerWheel timerWheel = new TimerWheel(
+            () -> controlledTimestamp,
+            ADMIN_THREAD_TICK_DURATION_MICROSECONDS,
+            TimeUnit.MICROSECONDS,
+            ADMIN_THREAD_TICKS_PER_WHEEL);
 
         final Context ctx = new Context()
-                .adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
-                .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
-                .rcvNioSelector(new NioSelector())
-                .adminNioSelector(new NioSelector())
-                .senderFlowControl(DefaultSenderFlowControlStrategy::new)
-                .adminBufferStrategy(buffers.strategy())
-                .bufferManagementStrategy(bufferManagementStrategy)
-                .adminTimerWheel(timerWheel);
+            .adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
+            .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
+            .rcvNioSelector(new NioSelector())
+            .adminNioSelector(new NioSelector())
+            .senderFlowControl(DefaultSenderFlowControlStrategy::new)
+            .adminBufferStrategy(buffers.strategy())
+            .bufferManagementStrategy(bufferManagementStrategy)
+            .adminTimerWheel(timerWheel);
 
         senderThread = new SenderThread(ctx);
-        receiverThread = mock(ReceiverThread.class);
+        final ReceiverThread receiverThread = mock(ReceiverThread.class);
         mediaDriverAdminThread = new MediaDriverAdminThread(ctx, receiverThread, senderThread);
         receiverChannel = DatagramChannel.open();
 
@@ -428,7 +428,7 @@ public class UnicastSenderTest
 
     private void writeChannelMessage(final int eventTypeId, final String destination,
                                      final long sessionId, final long channelId)
-            throws IOException
+        throws IOException
     {
         final RingBuffer adminCommands = buffers.mappedToMediaDriver();
 
@@ -445,7 +445,7 @@ public class UnicastSenderTest
                                    final long termId,
                                    final int seqNum,
                                    final long window)
-            throws Exception
+        throws Exception
     {
         statusMessage.wrap(writeBuffer, 0);
 
@@ -455,7 +455,7 @@ public class UnicastSenderTest
                      .channelId(CHANNEL_ID)
                      .sessionId(SESSION_ID)
                      .version(HeaderFlyweight.CURRENT_VERSION)
-                     .flags((byte) 0)
+                     .flags((byte)0)
                      .headerType(HeaderFlyweight.HDR_TYPE_SM)
                      .frameLength(StatusMessageFlyweight.HEADER_LENGTH);
 
@@ -466,11 +466,12 @@ public class UnicastSenderTest
 
     private void processThreads(final int iterations)
     {
-        IntStream.range(0, iterations).forEach((i) ->
-        {
-            mediaDriverAdminThread.process();
-            senderThread.process();
-        });
+        IntStream.range(0, iterations).forEach(
+            (i) ->
+            {
+                mediaDriverAdminThread.process();
+                senderThread.process();
+            });
     }
 
     private void advanceTimeMilliseconds(final int msec)
@@ -492,9 +493,9 @@ public class UnicastSenderTest
         throws IOException
     {
         final List<SharedDirectories.Buffers> buffers = directory.mapTermFile(directory.senderDir(),
-                destination,
-                sessionId,
-                channelId);
+                                                                              destination,
+                                                                              sessionId,
+                                                                              channelId);
 
         return SharedDirectories.mapLoggers(buffers, DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }
@@ -503,6 +504,7 @@ public class UnicastSenderTest
     {
         final ControlFrameHandler frameHandler = mediaDriverAdminThread.frameHandler(udpDestination());
         final InetSocketAddress srcAddr = (InetSocketAddress)frameHandler.transport().channel().getLocalAddress();
+
         return new InetSocketAddress(HOST, srcAddr.getPort());
     }
 }

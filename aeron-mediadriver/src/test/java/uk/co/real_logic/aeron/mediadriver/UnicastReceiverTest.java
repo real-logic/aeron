@@ -59,10 +59,10 @@ public class UnicastReceiverTest
     private static final String URI = "udp://localhost:45678";
     private static final String INVALID_URI = "udp://";
     private static final long CHANNEL_ID = 10;
-    private static final long[] ONE_CHANNEL = { CHANNEL_ID };
-    private static final long[] ANOTHER_CHANNEL = { 20 };
-    private static final long[] TWO_CHANNELS = { 20, 30 };
-    private static final long[] THREE_CHANNELS = { 10, 20, 30 };
+    private static final long[] ONE_CHANNEL = {CHANNEL_ID};
+    private static final long[] ANOTHER_CHANNEL = {20};
+    private static final long[] TWO_CHANNELS = {20, 30};
+    private static final long[] THREE_CHANNELS = {10, 20, 30};
     private static final long SESSION_ID = 0xdeadbeefL;
     private static final long TERM_ID = 0xec1L;
     private static final int VALUE = 37;
@@ -85,7 +85,6 @@ public class UnicastReceiverTest
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
     private BufferManagementStrategy bufferManagementStrategy;
-    private SenderThread senderThread;
     private ReceiverThread receiverThread;
     private MediaDriverAdminThread mediaDriverAdminThread;
     private DatagramChannel senderChannel;
@@ -97,19 +96,20 @@ public class UnicastReceiverTest
 
         NioSelector nioSelector = new NioSelector();
         final MediaDriver.Context ctx = new MediaDriver.Context()
-                .adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
-                .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
-                .rcvNioSelector(nioSelector)
-                .adminNioSelector(new NioSelector())
-                .senderFlowControl(DefaultSenderFlowControlStrategy::new)
-                .adminBufferStrategy(buffers.strategy())
-                .bufferManagementStrategy(bufferManagementStrategy);
+            .adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
+            .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
+            .rcvNioSelector(nioSelector)
+            .adminNioSelector(new NioSelector())
+            .senderFlowControl(DefaultSenderFlowControlStrategy::new)
+            .adminBufferStrategy(buffers.strategy())
+            .bufferManagementStrategy(bufferManagementStrategy);
 
         ctx.rcvFrameHandlerFactory(
             new RcvFrameHandlerFactory(nioSelector, new MediaDriverAdminThreadCursor(ctx.adminThreadCommandBuffer(),
-                                                                                     nioSelector)));
+                                                                                     nioSelector))
+        );
 
-        senderThread = mock(SenderThread.class);
+        final SenderThread senderThread = mock(SenderThread.class);
         receiverThread = new ReceiverThread(ctx);
         mediaDriverAdminThread = new MediaDriverAdminThread(ctx, receiverThread, senderThread);
         senderChannel = DatagramChannel.open();
@@ -367,20 +367,20 @@ public class UnicastReceiverTest
     }
 
     private void writeConsumerMessage(final int eventTypeId, final String destination, final long[] channelIds)
-            throws IOException
+        throws IOException
     {
         final RingBuffer adminCommands = buffers.mappedToMediaDriver();
 
         receiverMessage.wrap(writeBuffer, 0);
 
         receiverMessage.channelIds(channelIds)
-                                .destination(destination);
+                       .destination(destination);
 
         adminCommands.write(eventTypeId, writeBuffer, 0, receiverMessage.length());
     }
 
     private void sendDataFrame(final UdpDestination destination, final long channelId, final int seqNum)
-            throws Exception
+        throws Exception
     {
         final DataHeaderFlyweight dataHeaderFlyweight = new DataHeaderFlyweight();
         dataHeaderFlyweight.wrap(writeBuffer, 0);
@@ -390,7 +390,7 @@ public class UnicastReceiverTest
                            .channelId(channelId)
                            .termId(TERM_ID)
                            .version(HeaderFlyweight.CURRENT_VERSION)
-                           .flags((byte) DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
+                           .flags((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
                            .headerType(HeaderFlyweight.HDR_TYPE_DATA)
                            .frameLength(HEADER_LENGTH);
 
@@ -402,10 +402,12 @@ public class UnicastReceiverTest
 
     private void processThreads(final int iterations)
     {
-        IntStream.range(0, iterations).forEach((i) ->
-        {
-            mediaDriverAdminThread.process();
-            receiverThread.process();
-        });
+        IntStream.range(0, iterations).forEach(
+            (i) ->
+            {
+                mediaDriverAdminThread.process();
+                receiverThread.process();
+            }
+        );
     }
 }

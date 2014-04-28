@@ -72,14 +72,14 @@ public class NioSelectorTest
         {
             public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
             {
-                assertThat(Short.valueOf(header.version()), is(Short.valueOf(HeaderFlyweight.CURRENT_VERSION)));
-                assertThat(Short.valueOf(header.flags()), is(Short.valueOf(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)));
-                assertThat(Integer.valueOf(header.headerType()), is(Integer.valueOf(HeaderFlyweight.HDR_TYPE_DATA)));
-                assertThat(Integer.valueOf(header.frameLength()), is(Integer.valueOf(24)));
-                assertThat(Long.valueOf(header.sessionId()), is(Long.valueOf(SESSION_ID)));
-                assertThat(Long.valueOf(header.channelId()), is(Long.valueOf(CHANNEL_ID)));
-                assertThat(Long.valueOf(header.termId()), is(Long.valueOf(TERM_ID)));
-                assertThat(Integer.valueOf(header.dataOffset()), is(Integer.valueOf(24)));
+                assertThat(header.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
+                assertThat(header.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+                assertThat(header.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
+                assertThat(header.frameLength(), is(24));
+                assertThat(header.sessionId(), is(SESSION_ID));
+                assertThat(header.channelId(), is(CHANNEL_ID));
+                assertThat(header.termId(), is(TERM_ID));
+                assertThat(header.dataOffset(), is(24));
                 dataHeadersRcved.incrementAndGet();
             }
         }, rcvLocalAddr, nioSelector);
@@ -107,7 +107,7 @@ public class NioSelectorTest
         processLoop(nioSelector, 5);
         nioSelector.close();
 
-        assertThat(Integer.valueOf(dataHeadersRcved.get()), is(Integer.valueOf(1)));
+        assertThat(dataHeadersRcved.get(), is(1));
     }
 
     @Test(timeout = 1000)
@@ -126,8 +126,8 @@ public class NioSelectorTest
 
             public void onStatusMessageFrame(final StatusMessageFlyweight statusMessage, final InetSocketAddress src)
             {
-                assertThat(Short.valueOf(statusMessage.version()), is(Short.valueOf(HeaderFlyweight.CURRENT_VERSION)));
-                assertThat(Integer.valueOf(statusMessage.frameLength()), is(Integer.valueOf(8)));
+                assertThat(statusMessage.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
+                assertThat(statusMessage.frameLength(), is(8));
                 cntlHeadersRcved.incrementAndGet();
             }
         }, rcvLocalAddr, nioSelector);
@@ -152,8 +152,8 @@ public class NioSelectorTest
         processLoop(nioSelector, 5);
         nioSelector.close();
 
-        assertThat(Integer.valueOf(dataHeadersRcved.get()), is(Integer.valueOf(0)));
-        assertThat(Integer.valueOf(cntlHeadersRcved.get()), is(Integer.valueOf(1)));
+        assertThat(dataHeadersRcved.get(), is(0));
+        assertThat(cntlHeadersRcved.get(), is(1));
     }
 
     @Test(timeout = 1000)
@@ -167,13 +167,13 @@ public class NioSelectorTest
         {
             public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
             {
-                assertThat(Short.valueOf(header.version()), is(Short.valueOf(HeaderFlyweight.CURRENT_VERSION)));
-                assertThat(Short.valueOf(header.flags()), is(Short.valueOf(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)));
-                assertThat(Integer.valueOf(header.headerType()), is(Integer.valueOf(HeaderFlyweight.HDR_TYPE_DATA)));
-                assertThat(Integer.valueOf(header.frameLength()), is(Integer.valueOf(24)));
-                assertThat(Long.valueOf(header.sessionId()), is(Long.valueOf(SESSION_ID)));
-                assertThat(Long.valueOf(header.channelId()), is(Long.valueOf(CHANNEL_ID)));
-                assertThat(Long.valueOf(header.termId()), is(Long.valueOf(TERM_ID)));
+                assertThat(header.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
+                assertThat(header.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+                assertThat(header.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
+                assertThat(header.frameLength(), is(24));
+                assertThat(header.sessionId(), is(SESSION_ID));
+                assertThat(header.channelId(), is(CHANNEL_ID));
+                assertThat(header.termId(), is(TERM_ID));
                 dataHeadersRcved.incrementAndGet();
             }
 
@@ -214,8 +214,8 @@ public class NioSelectorTest
         processLoop(nioSelector, 5);
         nioSelector.close();
 
-        assertThat(Integer.valueOf(dataHeadersRcved.get()), is(Integer.valueOf(2)));
-        assertThat(Integer.valueOf(cntlHeadersRcved.get()), is(Integer.valueOf(0)));
+        assertThat(dataHeadersRcved.get(), is(2));
+        assertThat(cntlHeadersRcved.get(), is(0));
     }
 
     @Test(timeout = 1000)
@@ -234,8 +234,8 @@ public class NioSelectorTest
 
             public void onStatusMessageFrame(final StatusMessageFlyweight statusMessage, final InetSocketAddress src)
             {
-                assertThat(Short.valueOf(statusMessage.version()), is(Short.valueOf(HeaderFlyweight.CURRENT_VERSION)));
-                assertThat(Integer.valueOf(statusMessage.frameLength()), is(Integer.valueOf(8)));
+                assertThat(statusMessage.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
+                assertThat(statusMessage.frameLength(), is(8));
                 cntlHeadersRcved.incrementAndGet();
             }
         }, srcLocalAddr, nioSelector);
@@ -261,8 +261,8 @@ public class NioSelectorTest
         processLoop(nioSelector, 5);
         nioSelector.close();
 
-        assertThat(Integer.valueOf(dataHeadersRcved.get()), is(Integer.valueOf(0)));
-        assertThat(Integer.valueOf(cntlHeadersRcved.get()), is(Integer.valueOf(1)));
+        assertThat(dataHeadersRcved.get(), is(0));
+        assertThat(cntlHeadersRcved.get(), is(1));
     }
 
     private void processLoop(final NioSelector nioSelector, final int iterations) throws Exception

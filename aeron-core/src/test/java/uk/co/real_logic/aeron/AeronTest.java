@@ -62,7 +62,7 @@ public class AeronTest
     private static final String INVALID_DESTINATION = "udp://lo124";
     private static final long CHANNEL_ID = 2L;
     private static final long CHANNEL_ID_2 = 4L;
-    private static final long[] CHANNEL_IDs = { CHANNEL_ID, CHANNEL_ID_2};
+    private static final long[] CHANNEL_IDs = {CHANNEL_ID, CHANNEL_ID_2};
     private static final long SESSION_ID = 3L;
     private static final long SESSION_ID_2 = 5L;
     public static final int PACKET_VALUE = 37;
@@ -113,7 +113,7 @@ public class AeronTest
         assertFalse(channel.offer(atomicSendBuffer, 0, 1));
     }
 
-    @Test(expected=BufferExhaustedException.class)
+    @Test(expected = BufferExhaustedException.class)
     public void cannotSendOnChannelUntilBuffersMapped() throws Exception
     {
         final Aeron aeron = newAeron();
@@ -176,11 +176,11 @@ public class AeronTest
         final RingBuffer buffer = adminBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
         final Source source = aeron.newSource(new Source.Context()
-                .sessionId(SESSION_ID)
-                .destination(new Destination(DESTINATION)));
+                                                  .sessionId(SESSION_ID)
+                                                  .destination(new Destination(DESTINATION)));
         final Source otherSource = aeron.newSource(new Source.Context()
-                .sessionId(SESSION_ID + 1)
-                .destination(new Destination(DESTINATION)));
+                                                       .sessionId(SESSION_ID + 1)
+                                                       .destination(new Destination(DESTINATION)));
         final Channel channel = source.newChannel(CHANNEL_ID);
         final ClientAdminThread adminThread = aeron.adminThread();
 
@@ -199,9 +199,9 @@ public class AeronTest
         final RingBuffer toMediaDriver = adminBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
         final Consumer.Context context = new Consumer.Context()
-                .destination(new Destination(DESTINATION))
-                .channel(CHANNEL_ID, emptyDataHandler())
-                .channel(CHANNEL_ID_2, emptyDataHandler());
+            .destination(new Destination(DESTINATION))
+            .channel(CHANNEL_ID, emptyDataHandler())
+            .channel(CHANNEL_ID_2, emptyDataHandler());
 
         final Consumer consumer = aeron.newReceiver(context);
 
@@ -261,7 +261,7 @@ public class AeronTest
         final Aeron aeron = newAeron();
         final Consumer consumer = newReceiver(aeron);
 
-        List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
+        final List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
 
         aeron.adminThread().process();
         skip(toMediaDriver, 1);
@@ -280,8 +280,8 @@ public class AeronTest
         final Aeron aeron = newAeron();
         final Consumer consumer = newReceiver(aeron);
 
-        List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
-        List<LogAppender> otherLogAppenders = createLogAppenders(SESSION_ID_2);
+        final List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
+        final List<LogAppender> otherLogAppenders = createLogAppenders(SESSION_ID_2);
 
         aeron.adminThread().process();
         skip(toMediaDriver, 1);
@@ -305,7 +305,7 @@ public class AeronTest
         skip(toMediaDriver, 1);
 
         final LogAppender logAppender = logAppenders.get(0);
-        int eventCount = logAppender.capacity() / sendBuffer.capacity();
+        final int eventCount = logAppender.capacity() / sendBuffer.capacity();
 
         writePackets(logAppender, eventCount);
         assertThat(consumer.process(), is(eventCount));
@@ -335,7 +335,7 @@ public class AeronTest
         skip(toMediaDriver, 1);
 
         final LogAppender logAppender = logAppenders.get(0);
-        int eventCount = logAppender.capacity() / sendBuffer.capacity();
+        final int eventCount = logAppender.capacity() / sendBuffer.capacity();
 
         writePackets(logAppender, eventCount);
         assertThat(consumer.process(), is(eventCount));
@@ -398,16 +398,20 @@ public class AeronTest
     private void writePackets(final LogAppender logAppender, final int events)
     {
         final int bytesToSend = atomicSendBuffer.capacity() - DEFAULT_HEADER.length;
-        IntStream.range(0, events)
-                 .forEach(i -> {
-                     atomicSendBuffer.putInt(0, PACKET_VALUE);
-                     assertTrue(logAppender.append(atomicSendBuffer, 0, bytesToSend));
-                 });
+        IntStream.range(0, events).forEach(
+            (i) ->
+            {
+                atomicSendBuffer.putInt(0, PACKET_VALUE);
+                assertTrue(logAppender.append(atomicSendBuffer, 0, bytesToSend));
+            }
+        );
     }
 
     private List<LogAppender> createLogAppenders(final long sessionId) throws IOException
     {
-        List<Buffers> termBuffers = createTermBuffer(0L, NEW_RECEIVE_BUFFER_NOTIFICATION, directory.receiverDir(), sessionId);
+        final List<Buffers> termBuffers =
+            createTermBuffer(0L, NEW_RECEIVE_BUFFER_NOTIFICATION, directory.receiverDir(), sessionId);
+
         return mapLoggers(termBuffers, DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }
 
@@ -416,8 +420,9 @@ public class AeronTest
                                            final File rootDir,
                                            final long sessionId) throws IOException
     {
-        List<Buffers> buffers = directory.createTermFile(rootDir, DESTINATION, sessionId, CHANNEL_ID);
+        final List<Buffers> buffers = directory.createTermFile(rootDir, DESTINATION, sessionId, CHANNEL_ID);
         sendNewBufferNotification(eventTypeId, termId, sessionId);
+
         return buffers;
     }
 
@@ -434,9 +439,9 @@ public class AeronTest
     private Consumer newReceiver(final Aeron aeron)
     {
         final Consumer.Context context = new Consumer.Context()
-                .destination(new Destination(DESTINATION))
-                .channel(CHANNEL_ID, channel2Handler)
-                .channel(CHANNEL_ID_2, emptyDataHandler());
+            .destination(new Destination(DESTINATION))
+            .channel(CHANNEL_ID, channel2Handler)
+            .channel(CHANNEL_ID_2, emptyDataHandler());
 
         return aeron.newReceiver(context);
     }
@@ -471,8 +476,8 @@ public class AeronTest
     private Aeron newAeron()
     {
         final Aeron.Context context = new Aeron.Context()
-             .adminBufferStrategy(new MappingAdminBufferStrategy(adminBuffers.adminDir()))
-             .invalidDestinationHandler(invalidDestination);
+            .adminBufferStrategy(new MappingAdminBufferStrategy(adminBuffers.adminDir()))
+            .invalidDestinationHandler(invalidDestination);
 
         return Aeron.newSingleMediaDriver(context);
     }
@@ -488,5 +493,4 @@ public class AeronTest
             assertThat(message.sessionId(), is(SESSION_ID));
         });
     }
-
 }

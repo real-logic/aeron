@@ -83,5 +83,4 @@ public class BitUtilTest
         assertFalse(BitUtil.isEven(-1));
         assertFalse(BitUtil.isEven(Integer.MAX_VALUE));
     }
-
 }

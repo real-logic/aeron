@@ -58,5 +58,4 @@ public class NakFlyweightTest
 
         assertThat(reader.countOfSequenceNumberRanges(), is(2));
     }
-
 }

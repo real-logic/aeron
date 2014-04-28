@@ -71,13 +71,13 @@ public class MediaDriverAdminThreadTest
     public void setUp()
     {
         final MediaDriver.Context ctx = new MediaDriver.Context()
-                .adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
-                .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
-                .rcvNioSelector(new NioSelector())
-                .adminNioSelector(new NioSelector())
-                .senderFlowControl(DefaultSenderFlowControlStrategy::new)
-                .adminBufferStrategy(new CreatingAdminBufferStrategy(adminPath, COMMAND_BUFFER_SZ + TRAILER_LENGTH))
-                .bufferManagementStrategy(newMappedBufferManager(adminPath));
+            .adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
+            .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
+            .rcvNioSelector(new NioSelector())
+            .adminNioSelector(new NioSelector())
+            .senderFlowControl(DefaultSenderFlowControlStrategy::new)
+            .adminBufferStrategy(new CreatingAdminBufferStrategy(adminPath, COMMAND_BUFFER_SZ + TRAILER_LENGTH))
+            .bufferManagementStrategy(newMappedBufferManager(adminPath));
 
         final SenderThread senderThread = new SenderThread(ctx)
         {
@@ -176,7 +176,7 @@ public class MediaDriverAdminThreadTest
     }
 
     private void writeChannelMessage(final int eventTypeId, final long channelId, final long sessionId, final int port)
-            throws IOException
+        throws IOException
     {
         final ByteBuffer buffer = new MappingAdminBufferStrategy(adminPath).toMediaDriver();
         final RingBuffer adminCommands = new ManyToOneRingBuffer(new AtomicBuffer(buffer));

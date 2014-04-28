@@ -30,7 +30,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class UdpDestinationTest
 {
-
     @Test
     public void shouldHandleExplicitLocalAddrAndPortFormat() throws Exception
     {

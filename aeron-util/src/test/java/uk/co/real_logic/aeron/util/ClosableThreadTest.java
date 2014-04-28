@@ -9,5 +9,4 @@ public class ClosableThreadTest
             thread.process();
         }
     }
-
 }

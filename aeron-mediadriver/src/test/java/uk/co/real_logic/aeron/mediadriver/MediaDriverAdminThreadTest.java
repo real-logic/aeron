@@ -43,7 +43,6 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor
 
 public class MediaDriverAdminThreadTest
 {
-
     private static final String ADMIN_DIR = "adminDir";
     private static final String DESTINATION = "udp://localhost:";
 
@@ -57,6 +56,7 @@ public class MediaDriverAdminThreadTest
         {
             IoUtil.delete(adminDir, false);
         }
+
         IoUtil.ensureDirectoryExists(adminDir, ADMIN_DIR);
         adminPath = adminDir.getAbsolutePath();
     }
@@ -82,8 +82,8 @@ public class MediaDriverAdminThreadTest
                 .adminBufferStrategy(new CreatingAdminBufferStrategy(adminPath, COMMAND_BUFFER_SZ + TRAILER_LENGTH))
                 .bufferManagementStrategy(newMappedBufferManager(adminPath));
 
-        SenderThread senderThread = new SenderThread(ctx) {
-
+        final SenderThread senderThread = new SenderThread(ctx)
+        {
             public void addChannel(final SenderChannel channel)
             {
                 addedChannels.add(channel);
@@ -94,7 +94,8 @@ public class MediaDriverAdminThreadTest
                 removedChannels.add(channel);
             }
         };
-        ReceiverThread receiverThread = mock(ReceiverThread.class);
+
+        final ReceiverThread receiverThread = mock(ReceiverThread.class);
         mediaDriverAdminThread = new MediaDriverAdminThread(ctx, receiverThread, senderThread);
     }
 
@@ -191,5 +192,4 @@ public class MediaDriverAdminThreadTest
 
         adminCommands.write(eventTypeId, writeBuffer, 0, channelMessage.length());
     }
-
 }

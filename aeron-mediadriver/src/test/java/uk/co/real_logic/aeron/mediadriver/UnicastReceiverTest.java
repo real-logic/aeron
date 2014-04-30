@@ -340,8 +340,7 @@ public class UnicastReceiverTest
         processThreads(5);
         assertReceiverNotRegistered();
 
-        exception.expect(IllegalArgumentException.class);
-        bufferManagementStrategy.removeConsumerChannel(udpDestination(), SESSION_ID, CHANNEL_ID);
+        assertBuffersNotRegistered();
     }
 
     @Ignore
@@ -349,6 +348,12 @@ public class UnicastReceiverTest
     public void shouldBeAbleToHandleTermBufferRolloverCorrectly()
     {
         // TODO: finish
+    }
+
+    private void assertBuffersNotRegistered()
+    {
+        exception.expect(IllegalArgumentException.class);
+        bufferManagementStrategy.removeConsumerChannel(udpDestination(), SESSION_ID, CHANNEL_ID);
     }
 
     private void assertReceiverNotRegistered()

@@ -19,7 +19,7 @@ import java.io.File;
 import java.nio.ByteBuffer;
 
 /**
- * Interface for encapsulating the strategy of allocating ByteBuffers admin ring buffers.
+ * Interface for encapsulating the strategy of allocating ByteBuffers conductor ring buffers.
  *
  * Assumes one media driver per API instance.
  */

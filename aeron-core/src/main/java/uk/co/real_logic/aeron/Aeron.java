@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.admin.*;
+import uk.co.real_logic.aeron.conductor.*;
 import uk.co.real_logic.aeron.util.AdminBufferStrategy;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.CommonConfiguration;
@@ -38,7 +38,7 @@ public final class Aeron
     private final ProducerControlFactory producerControl;
     private final ManyToOneRingBuffer adminCommandBuffer;
     private final ErrorHandler errorHandler;
-    private final ClientAdminThread adminThread;
+    private final ClientConductor adminThread;
     private final AdminBufferStrategy adminBuffers;
     private final AtomicArray<Channel> channels;
     private final AtomicArray<ConsumerChannel> receivers;
@@ -59,7 +59,7 @@ public final class Aeron
             final BufferUsageStrategy bufferUsage = new BasicBufferUsageStrategy(CommonConfiguration.DATA_DIR);
             final AdminErrorHandler adminErrorHandler = new AdminErrorHandler(context.invalidDestinationHandler);
 
-            adminThread = new ClientAdminThread(adminCommandBuffer,
+            adminThread = new ClientConductor(adminCommandBuffer,
                                                 recvBuffer, sendBuffer,
                                                 bufferUsage,
                                                 channels, receivers,
@@ -113,7 +113,7 @@ public final class Aeron
      */
     public Source newSource(final Source.Context context)
     {
-        context.adminThread(new ClientAdminThreadCursor(adminCommandBuffer));
+        context.adminThread(new ClientConductorCursor(adminCommandBuffer));
         return new Source(channels, context);
     }
 
@@ -154,7 +154,7 @@ public final class Aeron
      */
     public Consumer newReceiver(final Consumer.Context context)
     {
-        final ClientAdminThreadCursor adminThread = new ClientAdminThreadCursor(adminCommandBuffer);
+        final ClientConductorCursor adminThread = new ClientConductorCursor(adminCommandBuffer);
 
         return new Consumer(adminThread, context, receivers);
     }
@@ -173,7 +173,7 @@ public final class Aeron
         return newReceiver(context);
     }
 
-    public ClientAdminThread adminThread()
+    public ClientConductor adminThread()
     {
         return adminThread;
     }

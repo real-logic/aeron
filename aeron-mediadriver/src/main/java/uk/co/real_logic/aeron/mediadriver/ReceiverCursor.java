@@ -27,7 +27,7 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 /**
  * Cursor for writing into the Receiver Thread's command buffer.
  */
-public class ReceiverThreadCursor
+public class ReceiverCursor
 {
     private static final int WRITE_BUFFER_CAPACITY = 256;
 
@@ -38,7 +38,7 @@ public class ReceiverThreadCursor
     private final CompletelyIdentifiedMessageFlyweight addTermBufferMessage =
         new CompletelyIdentifiedMessageFlyweight();
 
-    public ReceiverThreadCursor(final RingBuffer commandBuffer, final NioSelector selector)
+    public ReceiverCursor(final RingBuffer commandBuffer, final NioSelector selector)
     {
         this.commandBuffer = commandBuffer;
         this.selector = selector;

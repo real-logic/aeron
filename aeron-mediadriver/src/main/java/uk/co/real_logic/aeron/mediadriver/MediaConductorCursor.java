@@ -28,9 +28,9 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight.HEADER_LENGTH;
 
 /**
- * Cursor for writing into the media driver admin thread command buffer
+ * Cursor for writing into the media driver conductor thread command buffer
  */
-public class MediaDriverAdminThreadCursor
+public class MediaConductorCursor
 {
     private static final int WRITE_BUFFER_CAPACITY = 256;
 
@@ -41,7 +41,7 @@ public class MediaDriverAdminThreadCursor
     private final CompletelyIdentifiedMessageFlyweight completelyIdentifiedMessage;
     private final ErrorHeaderFlyweight errorHeader;
 
-    public MediaDriverAdminThreadCursor(final RingBuffer commandBuffer, final NioSelector selector)
+    public MediaConductorCursor(final RingBuffer commandBuffer, final NioSelector selector)
     {
         this.commandBuffer = commandBuffer;
         this.selector = selector;

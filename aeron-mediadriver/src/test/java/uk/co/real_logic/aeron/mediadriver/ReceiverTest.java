@@ -27,14 +27,14 @@ import static uk.co.real_logic.aeron.mediadriver.MediaDriver.COMMAND_BUFFER_SZ;
 /**
  * .
  */
-public class ReceiverThreadTest
+public class ReceiverTest
 {
     private static final String URI = "udp://localhost:45678";
     private static final long CHANNEL_ID = 10;
     private static final long[] ONE_CHANNEL = { CHANNEL_ID };
 
-    private ReceiverThread thread;
-    private ReceiverThreadCursor cursor;
+    private Receiver thread;
+    private ReceiverCursor cursor;
     private RcvFrameHandlerFactory frameHandlerFactory;
 
     @Before
@@ -50,8 +50,8 @@ public class ReceiverThreadTest
                 .bufferManagementStrategy(bufferManagementStrategy)
                 .rcvFrameHandlerFactory(frameHandlerFactory);
 
-        cursor = new ReceiverThreadCursor(context.receiverThreadCommandBuffer(), context.rcvNioSelector());
-        thread = new ReceiverThread(context);
+        cursor = new ReceiverCursor(context.receiverThreadCommandBuffer(), context.rcvNioSelector());
+        thread = new Receiver(context);
     }
 
     @Test

@@ -15,8 +15,8 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.admin.ClientAdminThreadCursor;
-import uk.co.real_logic.aeron.admin.TermBufferNotifier;
+import uk.co.real_logic.aeron.conductor.ClientConductorCursor;
+import uk.co.real_logic.aeron.conductor.TermBufferNotifier;
 import uk.co.real_logic.aeron.util.AtomicArray;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -30,7 +30,7 @@ public class Source implements AutoCloseable
 {
     private final long sessionId;
     private final Destination destination;
-    private final ClientAdminThreadCursor adminThread;
+    private final ClientConductorCursor adminThread;
     private final AtomicArray<Channel> channels;
 
     // called by Aeron to create new sessions
@@ -118,7 +118,7 @@ public class Source implements AutoCloseable
     public static class Context
     {
         private Destination destination;
-        private ClientAdminThreadCursor adminThread;
+        private ClientConductorCursor adminThread;
         private long sessionId;
 
         public Context sessionId(final long sessionId)
@@ -133,7 +133,7 @@ public class Source implements AutoCloseable
             return this;
         }
 
-        public Context adminThread(final ClientAdminThreadCursor adminThread)
+        public Context adminThread(final ClientConductorCursor adminThread)
         {
             this.adminThread = adminThread;
             return this;

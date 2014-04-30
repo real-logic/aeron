@@ -25,10 +25,10 @@ public class CommonConfiguration
     /** Default directory for data buffers */
     public static final String DATA_DIR_PROPERTY_NAME_DEFAULT = IoUtil.tmpDir() + "/aeron/data";
 
-    /** Directory of the admin buffers */
-    public static final String ADMIN_DIR_PROPERTY_NAME = "aeron.admin.dir";
-    /** Default directory for admin buffers */
-    public static final String ADMIN_DIR_PROPERTY_NAME_DEFAULT = IoUtil.tmpDir() + "/aeron/admin";
+    /** Directory of the conductor buffers */
+    public static final String ADMIN_DIR_PROPERTY_NAME = "aeron.conductor.dir";
+    /** Default directory for conductor buffers */
+    public static final String ADMIN_DIR_PROPERTY_NAME_DEFAULT = IoUtil.tmpDir() + "/aeron/conductor";
 
     /** Length of the maximum transport unit of the media driver's protocol */
     private static final java.lang.String MTU_LENGTH_NAME = "aeron.mtu.length";

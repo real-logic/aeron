@@ -208,7 +208,7 @@ public class SenderChannel
 
     public void onFlowControlTimer()
     {
-        // called from admin thread on timeout
+        // called from conductor thread on timeout
 
         // used for both initial setup 0 length data as well as heartbeats
 

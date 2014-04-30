@@ -13,21 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.mediadriver;
+package uk.co.real_logic.aeron.util;
 
-public class RcvFrameHandlerFactory
+public class ServiceTest
 {
-    private final NioSelector selector;
-    private final MediaConductorCursor adminThreadCursor;
-
-    public RcvFrameHandlerFactory(final NioSelector selector, final MediaConductorCursor adminThreadCursor)
+    public static void processLoop(final Service thread, final int iterations)
     {
-        this.selector = selector;
-        this.adminThreadCursor = adminThreadCursor;
-    }
-
-    public RcvFrameHandler newInstance(final UdpDestination rcvDestination) throws Exception
-    {
-        return new RcvFrameHandler(rcvDestination, selector, adminThreadCursor);
+        for (int i = 0; i < iterations; i++)
+        {
+            thread.process();
+        }
     }
 }

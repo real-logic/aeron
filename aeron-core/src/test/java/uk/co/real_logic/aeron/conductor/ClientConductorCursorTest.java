@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.admin;
+package uk.co.real_logic.aeron.conductor;
 
 import org.junit.Test;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
@@ -31,14 +31,14 @@ import static org.junit.Assert.assertThat;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_LENGTH;
 
-public class ClientAdminThreadCursorTest
+public class ClientConductorCursorTest
 {
     private static final long[] CHANNEL_IDS = { 1L, 3L, 4L };
     private static final long SESSION_ID = 1L;
     public static final String DESTINATION = "udp://localhost:40123@localhost:40124";
     private final RingBuffer sendBuffer =
         new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocateDirect(TRAILER_LENGTH + 1024)));
-    private final ClientAdminThreadCursor thread = new ClientAdminThreadCursor(sendBuffer);
+    private final ClientConductorCursor thread = new ClientConductorCursor(sendBuffer);
 
     @Test
     public void threadSendsAddChannelMessage()

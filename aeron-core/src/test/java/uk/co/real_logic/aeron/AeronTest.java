@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron;
 
 import org.junit.ClassRule;
 import org.junit.Test;
-import uk.co.real_logic.aeron.admin.ClientAdminThread;
+import uk.co.real_logic.aeron.conductor.ClientConductor;
 import uk.co.real_logic.aeron.util.AdminBuffers;
 import uk.co.real_logic.aeron.util.ErrorCode;
 import uk.co.real_logic.aeron.util.MappingAdminBufferStrategy;
@@ -138,7 +138,7 @@ public class AeronTest
         final RingBuffer buffer = adminBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
         final Channel channel = newChannel(aeron);
-        final ClientAdminThread adminThread = aeron.adminThread();
+        final ClientConductor adminThread = aeron.adminThread();
 
         adminThread.process();
         skip(buffer, 1);
@@ -159,7 +159,7 @@ public class AeronTest
             .destination(new Destination(DESTINATION));
         final Source source = aeron.newSource(sourceContext);
         final Channel channel = source.newChannel(CHANNEL_ID);
-        final ClientAdminThread adminThread = aeron.adminThread();
+        final ClientConductor adminThread = aeron.adminThread();
 
         adminThread.process();
         skip(buffer, 1);
@@ -182,7 +182,7 @@ public class AeronTest
                                                        .sessionId(SESSION_ID + 1)
                                                        .destination(new Destination(DESTINATION)));
         final Channel channel = source.newChannel(CHANNEL_ID);
-        final ClientAdminThread adminThread = aeron.adminThread();
+        final ClientConductor adminThread = aeron.adminThread();
 
         adminThread.process();
         skip(buffer, 1);

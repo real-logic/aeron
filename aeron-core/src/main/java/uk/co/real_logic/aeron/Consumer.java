@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.admin.ClientAdminThreadCursor;
+import uk.co.real_logic.aeron.conductor.ClientConductorCursor;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -34,11 +34,11 @@ public class Consumer implements AutoCloseable
     private final InactiveSourceEventHandler inactiveSourceEventHandler;
     private final Long2ObjectHashMap<DataHandler> channelMap;
     private final long[] channelIds;
-    private final ClientAdminThreadCursor adminThread;
+    private final ClientConductorCursor adminThread;
     private final AtomicArray<ConsumerChannel> receivers;
     private final List<ConsumerChannel> channels;
 
-    public Consumer(final ClientAdminThreadCursor adminThread,
+    public Consumer(final ClientConductorCursor adminThread,
                     final Context context,
                     final AtomicArray<ConsumerChannel> receivers)
     {

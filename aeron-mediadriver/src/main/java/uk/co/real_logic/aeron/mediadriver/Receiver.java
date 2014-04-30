@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.util.ClosableThread;
+import uk.co.real_logic.aeron.util.Service;
 import uk.co.real_logic.aeron.util.ErrorCode;
 import uk.co.real_logic.aeron.util.command.ConsumerMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
@@ -32,25 +32,25 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ADD_CONS
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.REMOVE_CONSUMER;
 
 /**
- * Receiver Thread for JVM based mediadriver, uses an event loop with command buffer
+ * Receiver service for JVM based mediadriver, uses an event loop with command buffer
  */
-public class ReceiverThread extends ClosableThread
+public class Receiver extends Service
 {
     private final RingBuffer commandBuffer;
     private final NioSelector nioSelector;
-    private final MediaDriverAdminThreadCursor adminThreadCursor;
+    private final MediaConductorCursor adminThreadCursor;
     private final Map<UdpDestination, RcvFrameHandler> rcvDestinationMap = new HashMap<>();
     private final ConsumerMessageFlyweight consumerMessage = new ConsumerMessageFlyweight();
     private final Queue<RcvBufferState> buffers = new OneToOneConcurrentArrayQueue<>(1024);;
     private final RcvFrameHandlerFactory frameHandlerFactory;
 
-    public ReceiverThread(final MediaDriver.Context context) throws Exception
+    public Receiver(final MediaDriver.Context context) throws Exception
     {
         super(SELECT_TIMEOUT);
 
         commandBuffer = context.receiverThreadCommandBuffer();
         adminThreadCursor =
-            new MediaDriverAdminThreadCursor(context.adminThreadCommandBuffer(), context.adminNioSelector());
+            new MediaConductorCursor(context.adminThreadCommandBuffer(), context.adminNioSelector());
         nioSelector = context.rcvNioSelector();
         frameHandlerFactory = context.rcvFrameHandlerFactory();
     }

@@ -15,8 +15,8 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.admin.ChannelNotifiable;
-import uk.co.real_logic.aeron.admin.TermBufferNotifier;
+import uk.co.real_logic.aeron.conductor.ChannelNotifiable;
+import uk.co.real_logic.aeron.conductor.TermBufferNotifier;
 import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;

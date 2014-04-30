@@ -15,9 +15,9 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.admin.ChannelNotifiable;
-import uk.co.real_logic.aeron.admin.ClientAdminThreadCursor;
-import uk.co.real_logic.aeron.admin.TermBufferNotifier;
+import uk.co.real_logic.aeron.conductor.ChannelNotifiable;
+import uk.co.real_logic.aeron.conductor.ClientConductorCursor;
+import uk.co.real_logic.aeron.conductor.TermBufferNotifier;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
@@ -33,7 +33,7 @@ import static uk.co.real_logic.aeron.util.ChannelCounters.UNKNOWN_TERM_ID;
  */
 public class Channel extends ChannelNotifiable implements AutoCloseable
 {
-    private final ClientAdminThreadCursor adminThread;
+    private final ClientConductorCursor adminThread;
     private final long sessionId;
     private final AtomicArray<Channel> channels;
     private final AtomicBoolean paused;
@@ -45,7 +45,7 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
     private int currentBuffer = 0;
 
     public Channel(final String destination,
-                   final ClientAdminThreadCursor adminCursor,
+                   final ClientConductorCursor adminCursor,
                    final TermBufferNotifier bufferNotifier,
                    final long channelId,
                    final long sessionId,

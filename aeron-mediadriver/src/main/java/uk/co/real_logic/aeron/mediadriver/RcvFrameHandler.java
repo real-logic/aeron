@@ -32,14 +32,14 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
     private final UdpTransport transport;
     private final UdpDestination destination;
     private final Long2ObjectHashMap<RcvChannelState> channelInterestMap = new Long2ObjectHashMap<>();
-    private final MediaDriverAdminThreadCursor adminThreadCursor;
+    private final MediaConductorCursor adminThreadCursor;
     private final ByteBuffer sendBuffer = ByteBuffer.allocateDirect(StatusMessageFlyweight.HEADER_LENGTH);
     private final AtomicBuffer writeBuffer = new AtomicBuffer(sendBuffer);
     private final StatusMessageFlyweight statusMessageFlyweight = new StatusMessageFlyweight();
 
     public RcvFrameHandler(final UdpDestination destination,
                            final NioSelector nioSelector,
-                           final MediaDriverAdminThreadCursor adminThreadCursor)
+                           final MediaConductorCursor adminThreadCursor)
         throws Exception
     {
         this.transport = new UdpTransport(this, destination, nioSelector);
@@ -150,7 +150,7 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
             // TODO: this is a new source, so send 1 SM
         }
 
-        // ask admin thread to create buffer for destination, sessionId, channelId, and termId
+        // ask conductor thread to create buffer for destination, sessionId, channelId, and termId
         adminThreadCursor.addCreateRcvTermBufferEvent(destination(), sessionId, channelId, termId);
     }
 

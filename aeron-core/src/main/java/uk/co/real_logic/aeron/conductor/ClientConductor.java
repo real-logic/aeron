@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.admin;
+package uk.co.real_logic.aeron.conductor;
 
 import uk.co.real_logic.aeron.Channel;
 import uk.co.real_logic.aeron.ConsumerChannel;
 import uk.co.real_logic.aeron.ProducerControlFactory;
 import uk.co.real_logic.aeron.util.AtomicArray;
-import uk.co.real_logic.aeron.util.ClosableThread;
+import uk.co.real_logic.aeron.util.Service;
 import uk.co.real_logic.aeron.util.collections.ChannelMap;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
@@ -45,7 +45,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.B
  * Admin thread to take responses and notifications from mediadriver and act on them. As well as pass commands
  * to the mediadriver.
  */
-public final class ClientAdminThread extends ClosableThread implements MediaDriverFacade
+public final class ClientConductor extends Service implements MediaDriverFacade
 {
     // TODO: DI this
     private static final byte[] DEFAULT_HEADER = new byte[BASE_HEADER_LENGTH + SIZE_OF_INT];
@@ -78,14 +78,14 @@ public final class ClientAdminThread extends ClosableThread implements MediaDriv
     private final CompletelyIdentifiedMessageFlyweight bufferNotificationMessage =
         new CompletelyIdentifiedMessageFlyweight();
 
-    public ClientAdminThread(final RingBuffer commandBuffer,
-                             final RingBuffer recvBuffer,
-                             final RingBuffer sendBuffer,
-                             final BufferUsageStrategy bufferUsage,
-                             final AtomicArray<Channel> senders,
-                             final AtomicArray<ConsumerChannel> receivers,
-                             final AdminErrorHandler errorHandler,
-                             final ProducerControlFactory producerControl)
+    public ClientConductor(final RingBuffer commandBuffer,
+                           final RingBuffer recvBuffer,
+                           final RingBuffer sendBuffer,
+                           final BufferUsageStrategy bufferUsage,
+                           final AtomicArray<Channel> senders,
+                           final AtomicArray<ConsumerChannel> receivers,
+                           final AdminErrorHandler errorHandler,
+                           final ProducerControlFactory producerControl)
     {
         super(SLEEP_PERIOD);
 

@@ -16,22 +16,22 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.AtomicArray;
-import uk.co.real_logic.aeron.util.ClosableThread;
+import uk.co.real_logic.aeron.util.Service;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.SELECT_TIMEOUT;
 
 /**
- * Thread to take data in sender buffers and demux onto sending sockets
+ * Service to take data in sender buffers and demux onto sending sockets
  */
-public class SenderThread extends ClosableThread
+public class Sender extends Service
 {
     private final RingBuffer adminThreadCommandBuffer;
     private final AtomicArray<SenderChannel> channels = new AtomicArray<>();
 
     private int counter = 0;
 
-    public SenderThread(final MediaDriver.Context ctx)
+    public Sender(final MediaDriver.Context ctx)
     {
         super(SELECT_TIMEOUT);
 
@@ -60,7 +60,7 @@ public class SenderThread extends ClosableThread
     }
 
     /**
-     * Called from the admin thread
+     * Called from the conductor thread
      */
     public void processBufferRotation()
     {

@@ -46,11 +46,11 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor
  * </code>
  * Properties
  * <ul>
- *     <li><code>aeron.admin.dir</code>: Use value as directory name for admin buffers.</li>
+ *     <li><code>aeron.conductor.dir</code>: Use value as directory name for conductor buffers.</li>
  *     <li><code>aeron.data.dir</code>: Use value as directory name for data buffers.</li>
  *     <li><code>aeron.recv.bytebuffer.size</code>: Use int value as size of buffer for receiving from network.</li>
  *     <li><code>aeron.command.buffer.size</code>: Use int value as size of the command buffers between threads.</li>
- *     <li><code>aeron.admin.buffer.size</code>: Use int value as size of the admin buffers between the media driver
+ *     <li><code>aeron.conductor.buffer.size</code>: Use int value as size of the conductor buffers between the media driver
        and the client.</li>
  *     <li><code>aeron.select.timeout</code>: use int value as default timeout for NIO select calls</li>
  * </ul>
@@ -63,8 +63,8 @@ public class MediaDriver implements AutoCloseable
     /** Size (in bytes) of the command buffers between threads */
     public static final String COMMAND_BUFFER_SZ_PROPERTY_NAME = "aeron.command.buffer.size";
 
-    /** Size (in bytes) of the admin buffers between the media driver and the client */
-    public static final String ADMIN_BUFFER_SZ_PROPERTY_NAME = "aeron.admin.buffer.size";
+    /** Size (in bytes) of the conductor buffers between the media driver and the client */
+    public static final String ADMIN_BUFFER_SZ_PROPERTY_NAME = "aeron.conductor.buffer.size";
 
     /** Timeout (in msec) for the basic NIO select call */
     public static final String SELECT_TIMEOUT_PROPERTY_NAME = "aeron.select.timeout";
@@ -75,7 +75,7 @@ public class MediaDriver implements AutoCloseable
     /** Default buffer size for command buffers between threads */
     public static final int COMMAND_BUFFER_SZ_DEFAULT = 65536;
 
-    /** Default buffer size for admin buffers between the media driver and the client */
+    /** Default buffer size for conductor buffers between the media driver and the client */
     public static final int ADMIN_BUFFER_SZ_DEFAULT = 65536 + TRAILER_LENGTH;
 
     /** Default timeout for select */
@@ -90,10 +90,10 @@ public class MediaDriver implements AutoCloseable
     public static final int SELECT_TIMEOUT = getInteger(SELECT_TIMEOUT_PROPERTY_NAME,
                                                         SELECT_TIMEOUT_DEFAULT).intValue();
 
-    /** ticksPerWheel for TimerWheel in admin thread */
+    /** ticksPerWheel for TimerWheel in conductor thread */
     public static final int ADMIN_THREAD_TICKS_PER_WHEEL = 1024;
 
-    /** tickDuration (in MICROSECONDS) for TimerWheel in admin thread */
+    /** tickDuration (in MICROSECONDS) for TimerWheel in conductor thread */
     public static final int ADMIN_THREAD_TICK_DURATION_MICROSECONDS = 10 * 1000;
 
     public static void main(final String[] args)
@@ -119,9 +119,9 @@ public class MediaDriver implements AutoCloseable
         }
     }
 
-    private final ReceiverThread receiverThread;
-    private final SenderThread senderThread;
-    private final MediaDriverAdminThread adminThread;
+    private final Receiver receiver;
+    private final Sender sender;
+    private final MediaConductor adminThread;
 
     public MediaDriver() throws Exception
     {
@@ -137,32 +137,32 @@ public class MediaDriver implements AutoCloseable
                 .mtuLength(CommonConfiguration.MTU_LENGTH);
 
         context.rcvFrameHandlerFactory(new RcvFrameHandlerFactory(nioSelector,
-                new MediaDriverAdminThreadCursor(context.adminThreadCommandBuffer(), nioSelector)));
+                new MediaConductorCursor(context.adminThreadCommandBuffer(), nioSelector)));
 
-        receiverThread = new ReceiverThread(context);
-        senderThread = new SenderThread(context);
-        adminThread = new MediaDriverAdminThread(context, receiverThread, senderThread);
+        receiver = new Receiver(context);
+        sender = new Sender(context);
+        adminThread = new MediaConductor(context, receiver, sender);
     }
 
-    public ReceiverThread receiverThread()
+    public Receiver receiverThread()
     {
-        return receiverThread;
+        return receiver;
     }
 
-    public SenderThread senderThread()
+    public Sender senderThread()
     {
-        return senderThread;
+        return sender;
     }
 
-    public MediaDriverAdminThread adminThread()
+    public MediaConductor adminThread()
     {
         return adminThread;
     }
 
     public void close() throws Exception
     {
-        receiverThread.close();
-        senderThread.close();
+        receiver.close();
+        sender.close();
         adminThread.close();
     }
 

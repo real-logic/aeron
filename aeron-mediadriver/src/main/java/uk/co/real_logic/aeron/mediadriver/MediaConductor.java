@@ -41,16 +41,16 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.B
 /**
  * Admin thread to take commands from Producers and Consumers as well as handle NAKs and retransmissions
  */
-public class MediaDriverAdminThread extends ClosableThread implements LibraryFacade
+public class MediaConductor extends Service implements LibraryFacade
 {
     public static final int WRITE_BUFFER_CAPACITY = 256;
     public static final int HEADER_LENGTH = BASE_HEADER_LENGTH + SIZE_OF_INT;
 
     private final RingBuffer commandBuffer;
-    private final ReceiverThreadCursor receiverThreadCursor;
+    private final ReceiverCursor receiverCursor;
     private final NioSelector nioSelector;
-    private final ReceiverThread receiverThread;
-    private final SenderThread senderThread;
+    private final Receiver receiver;
+    private final Sender sender;
     private final BufferManagementStrategy bufferManagementStrategy;
     private final RingBuffer adminReceiveBuffer;
     private final RingBuffer adminSendBuffer;
@@ -70,19 +70,19 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         new CompletelyIdentifiedMessageFlyweight();
     private final int mtuLength;
 
-    public MediaDriverAdminThread(final Context ctx,
-                                  final ReceiverThread receiverThread,
-                                  final SenderThread senderThread)
+    public MediaConductor(final Context ctx,
+                          final Receiver receiver,
+                          final Sender sender)
     {
         super(SELECT_TIMEOUT);
 
         this.commandBuffer = ctx.adminThreadCommandBuffer();
-        this.receiverThreadCursor = new ReceiverThreadCursor(ctx.receiverThreadCommandBuffer(), ctx.rcvNioSelector());
+        this.receiverCursor = new ReceiverCursor(ctx.receiverThreadCommandBuffer(), ctx.rcvNioSelector());
         this.bufferManagementStrategy = ctx.bufferManagementStrategy();
         this.nioSelector = ctx.adminNioSelector();
         this.mtuLength = ctx.mtuLength();
-        this.receiverThread = receiverThread;
-        this.senderThread = senderThread;
+        this.receiver = receiver;
+        this.sender = sender;
         this.senderFlowControl = ctx.senderFlowControl();
         this.srcDestinationMap = new Long2ObjectHashMap<>();
         this.writeBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(WRITE_BUFFER_CAPACITY));
@@ -102,7 +102,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
         }
         catch (final Exception ex)
         {
-            throw new IllegalStateException("Unable to create the admin media buffers", ex);
+            throw new IllegalStateException("Unable to create the conductor media buffers", ex);
         }
     }
 
@@ -123,7 +123,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             ex.printStackTrace();
         }
 
-        senderThread.processBufferRotation();
+        sender.processBufferRotation();
         processReceiveBuffer();
         processCommandBuffer();
         processTimers();
@@ -240,9 +240,9 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     }
 
     /**
-     * Return the {@link NioSelector} in use by this admin thread.
+     * Return the {@link NioSelector} in use by this conductor thread.
      *
-     * @return the {@link NioSelector} in use by this admin thread
+     * @return the {@link NioSelector} in use by this conductor thread
      */
     public NioSelector nioSelector()
     {
@@ -338,11 +338,11 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             // add channel to frameHandler so it can demux NAKs and SMs
             frameHandler.addChannel(channel);
 
-            // tell the client admin thread of the new buffer
+            // tell the client conductor thread of the new buffer
             sendNewBufferNotification(sessionId, channelId, initialTermId, true, destination);
 
             // add channel to sender thread atomic array so it can be integrated in
-            senderThread.addChannel(channel);
+            sender.addChannel(channel);
         }
         catch (final ControlProtocolException ex)
         {
@@ -382,7 +382,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
             // remove from buffer management
             bufferManagementStrategy.removeProducerChannel(srcDestination, sessionId, channelId);
 
-            senderThread.removeChannel(channel);
+            sender.removeChannel(channel);
 
             // if no more channels, then remove framehandler and close it
             if (frameHandler.numSessions() == 0)
@@ -407,7 +407,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     public void onAddConsumer(final ConsumerMessageFlyweight consumerMessage)
     {
         // instruct receiver thread of new framehandler and new channelIdlist for such
-        receiverThreadCursor.addNewConsumerEvent(consumerMessage.destination(), consumerMessage.channelIds());
+        receiverCursor.addNewConsumerEvent(consumerMessage.destination(), consumerMessage.channelIds());
 
         // this thread does not add buffers. The RcvFrameHandler handle methods will send an event for this thread
         // to create buffers as needed
@@ -416,7 +416,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
     public void onRemoveConsumer(final ConsumerMessageFlyweight consumerMessage)
     {
         // instruct receiver thread to get rid of channels and possibly destination
-        receiverThreadCursor.addRemoveReceiverEvent(consumerMessage.destination(), consumerMessage.channelIds());
+        receiverCursor.addRemoveReceiverEvent(consumerMessage.destination(), consumerMessage.channelIds());
     }
 
     public void onRequestTerm(final long sessionId, final long channelId, final long termId)
@@ -440,7 +440,7 @@ public class MediaDriverAdminThread extends ClosableThread implements LibraryFac
 
             // inform receiver thread of new buffer, destination, etc.
             final RcvBufferState bufferState = new RcvBufferState(rcvDestination, sessionId, channelId, termId, buffer);
-            while (!receiverThread.sendBuffer(bufferState))
+            while (!receiver.sendBuffer(bufferState))
             {
                 // TODO: count errors
             }

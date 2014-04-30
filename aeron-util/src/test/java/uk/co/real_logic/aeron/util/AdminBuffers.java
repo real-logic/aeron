@@ -45,7 +45,7 @@ public class AdminBuffers extends ExternalResource
     public AdminBuffers(int bufferSize)
     {
         this.bufferSize = bufferSize;
-        adminDir = IoUtil.tmpDir() + "/admin";
+        adminDir = IoUtil.tmpDir() + "/conductor";
     }
 
     protected void before() throws Exception
@@ -56,7 +56,7 @@ public class AdminBuffers extends ExternalResource
             IoUtil.delete(dir, false);
         }
 
-        IoUtil.ensureDirectoryExists(dir, "admin dir");
+        IoUtil.ensureDirectoryExists(dir, "conductor dir");
         creatingStrategy = new CreatingAdminBufferStrategy(adminDir, bufferSize);
         mappingStrategy = new MappingAdminBufferStrategy(adminDir);
         toMediaDriver = creatingStrategy.toMediaDriver();

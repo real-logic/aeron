@@ -31,15 +31,15 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
 {
     private final UdpTransport transport;
     private final UdpDestination destination;
-    private final MediaDriverAdminThread mediaDriverAdminThread;
+    private final MediaConductor mediaConductor;
     private final Long2ObjectHashMap<Long2ObjectHashMap<SenderChannel>> sessionMap = new Long2ObjectHashMap<>();
 
     public ControlFrameHandler(final UdpDestination destination,
-                               final MediaDriverAdminThread mediaDriverAdminThread) throws Exception
+                               final MediaConductor mediaConductor) throws Exception
     {
-        this.transport = new UdpTransport(this, destination.localControl(), mediaDriverAdminThread.nioSelector());
+        this.transport = new UdpTransport(this, destination.localControl(), mediaConductor.nioSelector());
         this.destination = destination;
-        this.mediaDriverAdminThread = mediaDriverAdminThread;
+        this.mediaConductor = mediaConductor;
     }
 
     public int send(final ByteBuffer buffer) throws Exception
@@ -129,6 +129,6 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
 
     public TimerWheel.Timer newTimeout(final long delay, final TimeUnit timeUnit, final Runnable task)
     {
-        return mediaDriverAdminThread.newTimeout(delay, timeUnit, task);
+        return mediaConductor.newTimeout(delay, timeUnit, task);
     }
 }

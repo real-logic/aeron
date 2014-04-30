@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.admin;
+package uk.co.real_logic.aeron.conductor;
 
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
@@ -28,9 +28,9 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 /**
  * Separates the concern of talking the media driver protocol away from the rest of the API.
  *
- * Writes messages into the Client Admin Thread's admin buffer.
+ * Writes messages into the Client Admin Thread's conductor buffer.
  */
-public class ClientAdminThreadCursor
+public class ClientConductorCursor
 {
     /** Maximum size of the write buffer */
     public static final int WRITE_BUFFER_CAPACITY = 256;
@@ -41,7 +41,7 @@ public class ClientAdminThreadCursor
     private final ConsumerMessageFlyweight removeReceiverMessage;
     private final CompletelyIdentifiedMessageFlyweight requestTermMessage;
 
-    public ClientAdminThreadCursor(final RingBuffer adminThreadCommandBuffer)
+    public ClientConductorCursor(final RingBuffer adminThreadCommandBuffer)
     {
         this.adminThreadCommandBuffer = adminThreadCommandBuffer;
         this.writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));

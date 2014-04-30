@@ -47,7 +47,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.*;
-import static uk.co.real_logic.aeron.mediadriver.MediaDriverAdminThread.HEADER_LENGTH;
+import static uk.co.real_logic.aeron.mediadriver.MediaConductor.HEADER_LENGTH;
 import static uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy.newMappedBufferManager;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.ErrorCode.*;
@@ -90,8 +90,8 @@ public class UnicastSenderTest
     //private TimerWheel timerWheel;
 
     private BufferManagementStrategy bufferManagementStrategy;
-    private SenderThread senderThread;
-    private MediaDriverAdminThread mediaDriverAdminThread;
+    private Sender sender;
+    private MediaConductor mediaConductor;
     private DatagramChannel receiverChannel;
 
     private long controlledTimestamp;
@@ -118,9 +118,9 @@ public class UnicastSenderTest
             .bufferManagementStrategy(bufferManagementStrategy)
             .adminTimerWheel(timerWheel);
 
-        senderThread = new SenderThread(ctx);
-        final ReceiverThread receiverThread = mock(ReceiverThread.class);
-        mediaDriverAdminThread = new MediaDriverAdminThread(ctx, receiverThread, senderThread);
+        sender = new Sender(ctx);
+        final Receiver receiver = mock(Receiver.class);
+        mediaConductor = new MediaConductor(ctx, receiver, sender);
         receiverChannel = DatagramChannel.open();
 
         receiverChannel.configureBlocking(false);
@@ -133,9 +133,9 @@ public class UnicastSenderTest
     public void tearDown() throws Exception
     {
         receiverChannel.close();
-        senderThread.close();
-        mediaDriverAdminThread.close();
-        mediaDriverAdminThread.nioSelector().selectNowWithNoProcessing();
+        sender.close();
+        mediaConductor.close();
+        mediaConductor.nioSelector().selectNowWithNoProcessing();
         bufferManagementStrategy.close();
     }
 
@@ -164,7 +164,7 @@ public class UnicastSenderTest
 
         processThreads(5);
 
-        assertNull(mediaDriverAdminThread.frameHandler(udpDestination()));
+        assertNull(mediaConductor.frameHandler(udpDestination()));
     }
 
     @Test
@@ -418,7 +418,7 @@ public class UnicastSenderTest
 
     private void assertRegisteredFrameHandler()
     {
-        assertNotNull(mediaDriverAdminThread.frameHandler(udpDestination()));
+        assertNotNull(mediaConductor.frameHandler(udpDestination()));
     }
 
     private UdpDestination udpDestination()
@@ -469,8 +469,8 @@ public class UnicastSenderTest
         IntStream.range(0, iterations).forEach(
             (i) ->
             {
-                mediaDriverAdminThread.process();
-                senderThread.process();
+                mediaConductor.process();
+                sender.process();
             });
     }
 
@@ -502,7 +502,7 @@ public class UnicastSenderTest
 
     private InetSocketAddress determineControlAddressToSendTo() throws Exception
     {
-        final ControlFrameHandler frameHandler = mediaDriverAdminThread.frameHandler(udpDestination());
+        final ControlFrameHandler frameHandler = mediaConductor.frameHandler(udpDestination());
         final InetSocketAddress srcAddr = (InetSocketAddress)frameHandler.transport().channel().getLocalAddress();
 
         return new InetSocketAddress(HOST, srcAddr.getPort());

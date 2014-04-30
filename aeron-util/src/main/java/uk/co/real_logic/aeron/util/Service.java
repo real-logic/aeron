@@ -15,13 +15,13 @@
  */
 package uk.co.real_logic.aeron.util;
 
-public abstract class ClosableThread implements Runnable, AutoCloseable
+public abstract class Service implements Runnable, AutoCloseable
 {
     private volatile boolean running;
 
     private final long sleepPeriod;
 
-    public ClosableThread(final long sleepPeriod)
+    public Service(final long sleepPeriod)
     {
         this.sleepPeriod = sleepPeriod;
         running = true;

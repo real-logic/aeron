@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.admin;
+package uk.co.real_logic.aeron.conductor;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicReferenceArray;

@@ -26,13 +26,13 @@ public class RcvChannelState
 {
     private final UdpDestination destination;
     private final long channelId;
-    private final MediaDriverAdminThreadCursor adminThreadCursor;
+    private final MediaConductorCursor adminThreadCursor;
     private int referenceCount;
     private final Long2ObjectHashMap<RcvSessionState> sessionStateMap;
 
     public RcvChannelState(final UdpDestination destination,
                            final long channelId,
-                           final MediaDriverAdminThreadCursor adminThreadCursor)
+                           final MediaConductorCursor adminThreadCursor)
     {
         this.destination = destination;
         this.channelId = channelId;

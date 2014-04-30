@@ -41,7 +41,7 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ADD_CHAN
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.REMOVE_CHANNEL;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_LENGTH;
 
-public class MediaDriverAdminThreadTest
+public class MediaConductorTest
 {
     private static final String ADMIN_DIR = "adminDir";
     private static final String DESTINATION = "udp://localhost:";
@@ -63,7 +63,7 @@ public class MediaDriverAdminThreadTest
 
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(256));
 
-    private MediaDriverAdminThread mediaDriverAdminThread;
+    private MediaConductor mediaConductor;
     private List<SenderChannel> addedChannels = new ArrayList<>();
     private List<SenderChannel> removedChannels = new ArrayList<>();
 
@@ -79,7 +79,7 @@ public class MediaDriverAdminThreadTest
             .adminBufferStrategy(new CreatingAdminBufferStrategy(adminPath, COMMAND_BUFFER_SZ + TRAILER_LENGTH))
             .bufferManagementStrategy(newMappedBufferManager(adminPath));
 
-        final SenderThread senderThread = new SenderThread(ctx)
+        final Sender sender = new Sender(ctx)
         {
             public void addChannel(final SenderChannel channel)
             {
@@ -92,8 +92,8 @@ public class MediaDriverAdminThreadTest
             }
         };
 
-        final ReceiverThread receiverThread = mock(ReceiverThread.class);
-        mediaDriverAdminThread = new MediaDriverAdminThread(ctx, receiverThread, senderThread);
+        final Receiver receiver = mock(Receiver.class);
+        mediaConductor = new MediaConductor(ctx, receiver, sender);
     }
 
     @Test
@@ -101,7 +101,7 @@ public class MediaDriverAdminThreadTest
     {
         writeChannelMessage(ADD_CHANNEL, 1L, 2L, 4000);
 
-        mediaDriverAdminThread.process();
+        mediaConductor.process();
 
         assertThat(addedChannels, hasSize(1));
         assertChannelHas(addedChannels.get(0), 1L, 2L);
@@ -123,7 +123,7 @@ public class MediaDriverAdminThreadTest
         writeChannelMessage(ADD_CHANNEL, 3L, 2L, 4003);
         writeChannelMessage(ADD_CHANNEL, 3L, 4L, 4004);
 
-        mediaDriverAdminThread.process();
+        mediaConductor.process();
 
         assertThat(addedChannels, hasSize(4));
         assertChannelHas(addedChannels.get(0), 1L, 2L);
@@ -140,7 +140,7 @@ public class MediaDriverAdminThreadTest
         writeChannelMessage(ADD_CHANNEL, 1L, 2L, 4005);
         writeChannelMessage(REMOVE_CHANNEL, 1L, 2L, 4005);
 
-        mediaDriverAdminThread.process();
+        mediaConductor.process();
 
         assertThat(removedChannels, is(addedChannels));
         assertRemovedChannelsWereClosed();
@@ -159,7 +159,7 @@ public class MediaDriverAdminThreadTest
         writeChannelMessage(REMOVE_CHANNEL, 3L, 2L, 4008);
         writeChannelMessage(REMOVE_CHANNEL, 3L, 4L, 4008);
 
-        mediaDriverAdminThread.process();
+        mediaConductor.process();
 
         assertThat(removedChannels, is(addedChannels));
         assertRemovedChannelsWereClosed();

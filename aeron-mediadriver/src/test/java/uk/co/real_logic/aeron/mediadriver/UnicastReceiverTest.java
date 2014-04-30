@@ -85,8 +85,8 @@ public class UnicastReceiverTest
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
     private BufferManagementStrategy bufferManagementStrategy;
-    private ReceiverThread receiverThread;
-    private MediaDriverAdminThread mediaDriverAdminThread;
+    private Receiver receiver;
+    private MediaConductor mediaConductor;
     private DatagramChannel senderChannel;
 
     @Before
@@ -105,13 +105,13 @@ public class UnicastReceiverTest
             .bufferManagementStrategy(bufferManagementStrategy);
 
         ctx.rcvFrameHandlerFactory(
-            new RcvFrameHandlerFactory(nioSelector, new MediaDriverAdminThreadCursor(ctx.adminThreadCommandBuffer(),
+            new RcvFrameHandlerFactory(nioSelector, new MediaConductorCursor(ctx.adminThreadCommandBuffer(),
                                                                                      nioSelector))
         );
 
-        final SenderThread senderThread = mock(SenderThread.class);
-        receiverThread = new ReceiverThread(ctx);
-        mediaDriverAdminThread = new MediaDriverAdminThread(ctx, receiverThread, senderThread);
+        final Sender sender = mock(Sender.class);
+        receiver = new Receiver(ctx);
+        mediaConductor = new MediaConductor(ctx, receiver, sender);
         senderChannel = DatagramChannel.open();
         sendBuffer.clear();
     }
@@ -120,10 +120,10 @@ public class UnicastReceiverTest
     public void tearDown() throws Exception
     {
         senderChannel.close();
-        receiverThread.close();
-        receiverThread.nioSelector().selectNowWithNoProcessing();
-        mediaDriverAdminThread.close();
-        mediaDriverAdminThread.nioSelector().selectNowWithNoProcessing();
+        receiver.close();
+        receiver.nioSelector().selectNowWithNoProcessing();
+        mediaConductor.close();
+        mediaConductor.nioSelector().selectNowWithNoProcessing();
         bufferManagementStrategy.close();
     }
 
@@ -210,7 +210,7 @@ public class UnicastReceiverTest
 
         processThreads(5);
 
-        final RcvFrameHandler frameHandler = receiverThread.frameHandler(dest);
+        final RcvFrameHandler frameHandler = receiver.frameHandler(dest);
 
         assertNotNull(frameHandler);
         assertThat(frameHandler.channelInterestMap().size(), is(3));
@@ -219,7 +219,7 @@ public class UnicastReceiverTest
 
         processThreads(5);
 
-        assertNotNull(receiverThread.frameHandler(dest));
+        assertNotNull(receiver.frameHandler(dest));
         assertThat(frameHandler.channelInterestMap().size(), is(1));
     }
 
@@ -232,7 +232,7 @@ public class UnicastReceiverTest
 
         processThreads(5);
 
-        final RcvFrameHandler frameHandler = receiverThread.frameHandler(dest);
+        final RcvFrameHandler frameHandler = receiver.frameHandler(dest);
 
         assertNotNull(frameHandler);
         assertThat(frameHandler.channelInterestMap().size(), is(3));
@@ -241,13 +241,13 @@ public class UnicastReceiverTest
 
         processThreads(5);
 
-        assertNotNull(receiverThread.frameHandler(dest));
+        assertNotNull(receiver.frameHandler(dest));
         assertThat(frameHandler.channelInterestMap().size(), is(1));
 
         writeConsumerMessage(REMOVE_CONSUMER, URI, ONE_CHANNEL);
         processThreads(5);
 
-        assertNull(receiverThread.frameHandler(dest));
+        assertNull(receiver.frameHandler(dest));
     }
 
     @Test(timeout = 200000)
@@ -259,13 +259,13 @@ public class UnicastReceiverTest
 
         final UdpDestination dest = udpDestination();
 
-        assertNotNull(receiverThread.frameHandler(dest));
+        assertNotNull(receiver.frameHandler(dest));
 
         sendDataFrame(dest, ONE_CHANNEL[0], 0x0);
 
         processThreads(5);
 
-        final RcvFrameHandler frameHandler = receiverThread.frameHandler(dest);
+        final RcvFrameHandler frameHandler = receiver.frameHandler(dest);
         assertNotNull(frameHandler);
         final RcvChannelState channelState = frameHandler.channelInterestMap().get(ONE_CHANNEL[0]);
         assertNotNull(channelState);
@@ -353,12 +353,12 @@ public class UnicastReceiverTest
 
     private void assertReceiverNotRegistered()
     {
-        assertNull(receiverThread.frameHandler(udpDestination()));
+        assertNull(receiver.frameHandler(udpDestination()));
     }
 
     private void assertReceiverRegistered()
     {
-        assertNotNull(receiverThread.frameHandler(udpDestination()));
+        assertNotNull(receiver.frameHandler(udpDestination()));
     }
 
     private UdpDestination udpDestination()
@@ -405,8 +405,8 @@ public class UnicastReceiverTest
         IntStream.range(0, iterations).forEach(
             (i) ->
             {
-                mediaDriverAdminThread.process();
-                receiverThread.process();
+                mediaConductor.process();
+                receiver.process();
             }
         );
     }

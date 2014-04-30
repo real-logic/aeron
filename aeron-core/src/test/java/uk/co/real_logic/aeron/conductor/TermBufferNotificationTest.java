@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.admin;
+package uk.co.real_logic.aeron.conductor;
 
 import org.junit.Test;
 
@@ -26,7 +26,7 @@ import java.util.stream.LongStream;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
-import static uk.co.real_logic.aeron.admin.TermBufferNotifier.TERMS_STORED;
+import static uk.co.real_logic.aeron.conductor.TermBufferNotifier.TERMS_STORED;
 
 public class TermBufferNotificationTest
 {

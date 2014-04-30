@@ -94,7 +94,7 @@ public class MediaConductor extends Service implements LibraryFacade
 
         try
         {
-            final AdminBufferStrategy adminBufferStrategy = ctx.adminBufferStrategy();
+            final ConductorBufferStrategy adminBufferStrategy = ctx.adminBufferStrategy();
             this.toMediaDriver = adminBufferStrategy.toMediaDriver();
             this.toApi = adminBufferStrategy.toApi();
             this.adminReceiveBuffer = new ManyToOneRingBuffer(new AtomicBuffer(toMediaDriver));

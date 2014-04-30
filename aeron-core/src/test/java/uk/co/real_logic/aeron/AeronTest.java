@@ -20,7 +20,7 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
 import uk.co.real_logic.aeron.util.AdminBuffers;
 import uk.co.real_logic.aeron.util.ErrorCode;
-import uk.co.real_logic.aeron.util.MappingAdminBufferStrategy;
+import uk.co.real_logic.aeron.util.MappingConductorBufferStrategy;
 import uk.co.real_logic.aeron.util.SharedDirectories;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
@@ -476,7 +476,7 @@ public class AeronTest
     private Aeron newAeron()
     {
         final Aeron.Context context = new Aeron.Context()
-            .adminBufferStrategy(new MappingAdminBufferStrategy(adminBuffers.adminDir()))
+            .adminBufferStrategy(new MappingConductorBufferStrategy(adminBuffers.adminDir()))
             .invalidDestinationHandler(invalidDestination);
 
         return Aeron.newSingleMediaDriver(context);

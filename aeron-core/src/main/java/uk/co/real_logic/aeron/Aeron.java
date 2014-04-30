@@ -16,10 +16,10 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.conductor.*;
-import uk.co.real_logic.aeron.util.AdminBufferStrategy;
+import uk.co.real_logic.aeron.util.ConductorBufferStrategy;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.CommonConfiguration;
-import uk.co.real_logic.aeron.util.MappingAdminBufferStrategy;
+import uk.co.real_logic.aeron.util.MappingConductorBufferStrategy;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
@@ -39,7 +39,7 @@ public final class Aeron
     private final ManyToOneRingBuffer adminCommandBuffer;
     private final ErrorHandler errorHandler;
     private final ClientConductor adminThread;
-    private final AdminBufferStrategy adminBuffers;
+    private final ConductorBufferStrategy adminBuffers;
     private final AtomicArray<Channel> channels;
     private final AtomicArray<ConsumerChannel> receivers;
 
@@ -181,14 +181,14 @@ public final class Aeron
     public static class Context
     {
         private ErrorHandler errorHandler;
-        private AdminBufferStrategy adminBuffers;
+        private ConductorBufferStrategy adminBuffers;
         private InvalidDestinationHandler invalidDestinationHandler;
         private ProducerControlFactory producerControl;
 
         public Context()
         {
             errorHandler = new DummyErrorHandler();
-            adminBuffers = new MappingAdminBufferStrategy(CommonConfiguration.ADMIN_DIR);
+            adminBuffers = new MappingConductorBufferStrategy(CommonConfiguration.ADMIN_DIR);
             producerControl = DefaultProducerControlStrategy::new;
         }
 
@@ -198,7 +198,7 @@ public final class Aeron
             return this;
         }
 
-        public Context adminBufferStrategy(AdminBufferStrategy adminBuffers)
+        public Context adminBufferStrategy(ConductorBufferStrategy adminBuffers)
         {
             this.adminBuffers = adminBuffers;
             return this;

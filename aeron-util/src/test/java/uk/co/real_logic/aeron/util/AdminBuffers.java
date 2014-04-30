@@ -32,8 +32,8 @@ public class AdminBuffers extends ExternalResource
     private final String adminDir;
     private final int bufferSize;
 
-    private AdminBufferStrategy creatingStrategy;
-    private AdminBufferStrategy mappingStrategy;
+    private ConductorBufferStrategy creatingStrategy;
+    private ConductorBufferStrategy mappingStrategy;
     private ByteBuffer toMediaDriver;
     private ByteBuffer toApi;
 
@@ -57,8 +57,8 @@ public class AdminBuffers extends ExternalResource
         }
 
         IoUtil.ensureDirectoryExists(dir, "conductor dir");
-        creatingStrategy = new CreatingAdminBufferStrategy(adminDir, bufferSize);
-        mappingStrategy = new MappingAdminBufferStrategy(adminDir);
+        creatingStrategy = new CreatingConductorBufferStrategy(adminDir, bufferSize);
+        mappingStrategy = new MappingConductorBufferStrategy(adminDir);
         toMediaDriver = creatingStrategy.toMediaDriver();
         toApi = creatingStrategy.toApi();
     }
@@ -85,7 +85,7 @@ public class AdminBuffers extends ExternalResource
         return new ManyToOneRingBuffer(new AtomicBuffer(buffer));
     }
 
-    public AdminBufferStrategy strategy()
+    public ConductorBufferStrategy strategy()
     {
         return creatingStrategy;
     }

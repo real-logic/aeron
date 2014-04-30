@@ -16,9 +16,9 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy;
-import uk.co.real_logic.aeron.util.AdminBufferStrategy;
+import uk.co.real_logic.aeron.util.ConductorBufferStrategy;
 import uk.co.real_logic.aeron.util.CommonConfiguration;
-import uk.co.real_logic.aeron.util.CreatingAdminBufferStrategy;
+import uk.co.real_logic.aeron.util.CreatingConductorBufferStrategy;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
@@ -132,7 +132,7 @@ public class MediaDriver implements AutoCloseable
                 .rcvNioSelector(nioSelector)
                 .adminNioSelector(new NioSelector())
                 .senderFlowControl(DefaultSenderFlowControlStrategy::new)
-                .adminBufferStrategy(new CreatingAdminBufferStrategy(ADMIN_DIR, ADMIN_BUFFER_SZ))
+                .adminBufferStrategy(new CreatingConductorBufferStrategy(ADMIN_DIR, ADMIN_BUFFER_SZ))
                 .bufferManagementStrategy(newMappedBufferManager(DATA_DIR))
                 .mtuLength(CommonConfiguration.MTU_LENGTH);
 
@@ -171,7 +171,7 @@ public class MediaDriver implements AutoCloseable
         private RingBuffer adminThreadCommandBuffer;
         private RingBuffer receiverThreadCommandBuffer;
         private BufferManagementStrategy bufferManagementStrategy;
-        private AdminBufferStrategy adminBufferStrategy;
+        private ConductorBufferStrategy conductorBufferStrategy;
         private NioSelector rcvNioSelector;
         private NioSelector adminNioSelector;
         private Supplier<SenderFlowControlStrategy> senderFlowControl;
@@ -205,9 +205,9 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context adminBufferStrategy(final AdminBufferStrategy adminBufferStrategy)
+        public Context adminBufferStrategy(final ConductorBufferStrategy conductorBufferStrategy)
         {
-            this.adminBufferStrategy = adminBufferStrategy;
+            this.conductorBufferStrategy = conductorBufferStrategy;
             return this;
         }
 
@@ -256,9 +256,9 @@ public class MediaDriver implements AutoCloseable
             return bufferManagementStrategy;
         }
 
-        public AdminBufferStrategy adminBufferStrategy()
+        public ConductorBufferStrategy adminBufferStrategy()
         {
-            return adminBufferStrategy;
+            return conductorBufferStrategy;
         }
 
         public NioSelector rcvNioSelector()

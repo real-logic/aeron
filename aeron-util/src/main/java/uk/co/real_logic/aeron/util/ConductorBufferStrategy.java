@@ -23,7 +23,7 @@ import java.nio.ByteBuffer;
  *
  * Assumes one media driver per API instance.
  */
-public abstract class AdminBufferStrategy
+public abstract class ConductorBufferStrategy
 {
 
     protected static final String MEDIA_DRIVER_FILE = "media-driver";
@@ -32,7 +32,7 @@ public abstract class AdminBufferStrategy
     protected final File toMediaDriver;
     protected final File toApi;
 
-    public AdminBufferStrategy(final String adminDir)
+    public ConductorBufferStrategy(final String adminDir)
     {
         toMediaDriver = new File(adminDir, MEDIA_DRIVER_FILE);
         toApi = new File(adminDir, API_FILE);

@@ -18,9 +18,9 @@ package uk.co.real_logic.aeron.mediadriver;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import uk.co.real_logic.aeron.util.CreatingAdminBufferStrategy;
+import uk.co.real_logic.aeron.util.CreatingConductorBufferStrategy;
 import uk.co.real_logic.aeron.util.IoUtil;
-import uk.co.real_logic.aeron.util.MappingAdminBufferStrategy;
+import uk.co.real_logic.aeron.util.MappingConductorBufferStrategy;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
@@ -76,7 +76,7 @@ public class MediaConductorTest
             .rcvNioSelector(new NioSelector())
             .adminNioSelector(new NioSelector())
             .senderFlowControl(DefaultSenderFlowControlStrategy::new)
-            .adminBufferStrategy(new CreatingAdminBufferStrategy(adminPath, COMMAND_BUFFER_SZ + TRAILER_LENGTH))
+            .adminBufferStrategy(new CreatingConductorBufferStrategy(adminPath, COMMAND_BUFFER_SZ + TRAILER_LENGTH))
             .bufferManagementStrategy(newMappedBufferManager(adminPath));
 
         final Sender sender = new Sender(ctx)
@@ -178,7 +178,7 @@ public class MediaConductorTest
     private void writeChannelMessage(final int eventTypeId, final long channelId, final long sessionId, final int port)
         throws IOException
     {
-        final ByteBuffer buffer = new MappingAdminBufferStrategy(adminPath).toMediaDriver();
+        final ByteBuffer buffer = new MappingConductorBufferStrategy(adminPath).toMediaDriver();
         final RingBuffer adminCommands = new ManyToOneRingBuffer(new AtomicBuffer(buffer));
 
         final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();

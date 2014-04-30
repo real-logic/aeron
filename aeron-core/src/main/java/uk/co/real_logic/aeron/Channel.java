@@ -38,7 +38,7 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
     private final AtomicArray<Channel> channels;
     private final AtomicBoolean paused;
 
-    private LogAppender[] logAppenders; // TODO: should this be volatile???
+    private volatile LogAppender[] logAppenders;
 
     private final AtomicLong currentTermId = new AtomicLong(UNKNOWN_TERM_ID);
     private final AtomicLong cleanedTermId = new AtomicLong(UNKNOWN_TERM_ID);
@@ -70,7 +70,6 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
         return logAppenders != null && !paused.get();
     }
 
-    // TODO: should logAppenders be volatile???
     public void onBuffersMapped(final LogAppender[] logAppenders)
     {
         this.logAppenders = logAppenders;

@@ -57,13 +57,13 @@ public final class Aeron
             final RingBuffer recvBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toApi()));
             final RingBuffer sendBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toMediaDriver()));
             final BufferUsageStrategy bufferUsage = new BasicBufferUsageStrategy(CommonConfiguration.DATA_DIR);
-            final AdminErrorHandler adminErrorHandler = new AdminErrorHandler(context.invalidDestinationHandler);
+            final ConductorErrorHandler conductorErrorHandler = new ConductorErrorHandler(context.invalidDestinationHandler);
 
             adminThread = new ClientConductor(adminCommandBuffer,
                                                 recvBuffer, sendBuffer,
                                                 bufferUsage,
                                                 channels, receivers,
-                                                adminErrorHandler,
+                    conductorErrorHandler,
                                                 producerControl);
         }
         catch (final Exception ex)

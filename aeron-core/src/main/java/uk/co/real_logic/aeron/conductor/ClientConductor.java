@@ -68,7 +68,7 @@ public final class ClientConductor extends Service implements MediaDriverFacade
     private final ChannelMap<String, Channel> sendNotifiers;
     private final ConsumerMap recvNotifiers;
 
-    private final AdminErrorHandler errorHandler;
+    private final ConductorErrorHandler errorHandler;
     private final ProducerControlFactory producerControl;
 
     // Control protocol Flyweights
@@ -84,7 +84,7 @@ public final class ClientConductor extends Service implements MediaDriverFacade
                            final BufferUsageStrategy bufferUsage,
                            final AtomicArray<Channel> senders,
                            final AtomicArray<ConsumerChannel> receivers,
-                           final AdminErrorHandler errorHandler,
+                           final ConductorErrorHandler errorHandler,
                            final ProducerControlFactory producerControl)
     {
         super(SLEEP_PERIOD);

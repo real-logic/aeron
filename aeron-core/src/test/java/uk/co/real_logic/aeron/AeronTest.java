@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron;
 import org.junit.ClassRule;
 import org.junit.Test;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
-import uk.co.real_logic.aeron.util.AdminBuffers;
+import uk.co.real_logic.aeron.util.ConductorBuffers;
 import uk.co.real_logic.aeron.util.ErrorCode;
 import uk.co.real_logic.aeron.util.MappingConductorBufferStrategy;
 import uk.co.real_logic.aeron.util.SharedDirectories;
@@ -71,7 +71,7 @@ public class AeronTest
     public static SharedDirectories directory = new SharedDirectories();
 
     @ClassRule
-    public static AdminBuffers adminBuffers = new AdminBuffers();
+    public static ConductorBuffers conductorBuffers = new ConductorBuffers();
 
     private final InvalidDestinationHandler invalidDestination = mock(InvalidDestinationHandler.class);
 
@@ -101,7 +101,7 @@ public class AeronTest
         newChannel(aeron);
         aeron.adminThread().process();
 
-        assertChannelMessage(adminBuffers.toMediaDriver(), ADD_CHANNEL);
+        assertChannelMessage(conductorBuffers.toMediaDriver(), ADD_CHANNEL);
     }
 
     @Test
@@ -135,7 +135,7 @@ public class AeronTest
     @Test
     public void removingChannelsShouldNotifyMediaDriver() throws Exception
     {
-        final RingBuffer buffer = adminBuffers.toMediaDriver();
+        final RingBuffer buffer = conductorBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
         final Channel channel = newChannel(aeron);
         final ClientConductor adminThread = aeron.adminThread();
@@ -152,7 +152,7 @@ public class AeronTest
     @Test
     public void closingASourceRemovesItsAssociatedChannels() throws Exception
     {
-        final RingBuffer buffer = adminBuffers.toMediaDriver();
+        final RingBuffer buffer = conductorBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
         final Source.Context sourceContext = new Source.Context()
             .sessionId(SESSION_ID)
@@ -173,7 +173,7 @@ public class AeronTest
     @Test
     public void closingASourceDoesNotRemoveOtherChannels() throws Exception
     {
-        final RingBuffer buffer = adminBuffers.toMediaDriver();
+        final RingBuffer buffer = conductorBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
         final Source source = aeron.newSource(new Source.Context()
                                                   .sessionId(SESSION_ID)
@@ -196,7 +196,7 @@ public class AeronTest
     @Test
     public void registeringReceiverNotifiesMediaDriver() throws Exception
     {
-        final RingBuffer toMediaDriver = adminBuffers.toMediaDriver();
+        final RingBuffer toMediaDriver = conductorBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
         final Consumer.Context context = new Consumer.Context()
             .destination(new Destination(DESTINATION))
@@ -215,7 +215,7 @@ public class AeronTest
     @Test
     public void removingReceiverNotifiesMediaDriver()
     {
-        final RingBuffer toMediaDriver = adminBuffers.toMediaDriver();
+        final RingBuffer toMediaDriver = conductorBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
         final Consumer consumer = newReceiver(aeron);
 
@@ -242,7 +242,7 @@ public class AeronTest
         errorHeader.offendingFlyweight(receiverMessage, receiverMessage.length());
         errorHeader.frameLength(ErrorHeaderFlyweight.HEADER_LENGTH + receiverMessage.length());
 
-        adminBuffers.toApi().write(ERROR_RESPONSE,
+        conductorBuffers.toApi().write(ERROR_RESPONSE,
                                    atomicSendBuffer,
                                    receiverMessage.length(),
                                    errorHeader.frameLength());
@@ -257,7 +257,7 @@ public class AeronTest
     {
         channel2Handler = assertingHandler();
 
-        final RingBuffer toMediaDriver = adminBuffers.toMediaDriver();
+        final RingBuffer toMediaDriver = conductorBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
         final Consumer consumer = newReceiver(aeron);
 
@@ -276,7 +276,7 @@ public class AeronTest
     {
         channel2Handler = eitherSessionHandler();
 
-        final RingBuffer toMediaDriver = adminBuffers.toMediaDriver();
+        final RingBuffer toMediaDriver = conductorBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
         final Consumer consumer = newReceiver(aeron);
 
@@ -296,7 +296,7 @@ public class AeronTest
     {
         channel2Handler = assertingHandler();
 
-        final RingBuffer toMediaDriver = adminBuffers.toMediaDriver();
+        final RingBuffer toMediaDriver = conductorBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
         final Consumer consumer = newReceiver(aeron);
         final List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
@@ -326,7 +326,7 @@ public class AeronTest
     {
         channel2Handler = assertingHandler();
 
-        final RingBuffer toMediaDriver = adminBuffers.toMediaDriver();
+        final RingBuffer toMediaDriver = conductorBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
         final Consumer consumer = newReceiver(aeron);
         final List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
@@ -349,7 +349,7 @@ public class AeronTest
     {
         channel2Handler = eitherSessionHandler();
 
-        final RingBuffer toMediaDriver = adminBuffers.toMediaDriver();
+        final RingBuffer toMediaDriver = conductorBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
         final Consumer consumer = newReceiver(aeron);
         final List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
@@ -428,7 +428,7 @@ public class AeronTest
 
     private void sendNewBufferNotification(final int eventTypeId, final long termId, final long sessionId)
     {
-        final RingBuffer apiBuffer = adminBuffers.toApi();
+        final RingBuffer apiBuffer = conductorBuffers.toApi();
         identifiedMessage.channelId(CHANNEL_ID)
                          .sessionId(sessionId)
                          .termId(termId)
@@ -476,7 +476,7 @@ public class AeronTest
     private Aeron newAeron()
     {
         final Aeron.Context context = new Aeron.Context()
-            .adminBufferStrategy(new MappingConductorBufferStrategy(adminBuffers.adminDir()))
+            .adminBufferStrategy(new MappingConductorBufferStrategy(conductorBuffers.adminDir()))
             .invalidDestinationHandler(invalidDestination);
 
         return Aeron.newSingleMediaDriver(context);

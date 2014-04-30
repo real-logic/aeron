@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
 
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_LENGTH;
 
-public class AdminBuffers extends ExternalResource
+public class ConductorBuffers extends ExternalResource
 {
     public static final int BUFFER_SIZE = 512 + TRAILER_LENGTH;
 
@@ -37,12 +37,12 @@ public class AdminBuffers extends ExternalResource
     private ByteBuffer toMediaDriver;
     private ByteBuffer toApi;
 
-    public AdminBuffers()
+    public ConductorBuffers()
     {
         this(BUFFER_SIZE);
     }
 
-    public AdminBuffers(int bufferSize)
+    public ConductorBuffers(int bufferSize)
     {
         this.bufferSize = bufferSize;
         adminDir = IoUtil.tmpDir() + "/conductor";

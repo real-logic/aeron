@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.mediadriver;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy;
-import uk.co.real_logic.aeron.util.AdminBuffers;
+import uk.co.real_logic.aeron.util.ConductorBuffers;
 import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.SharedDirectories;
 import uk.co.real_logic.aeron.util.command.ConsumerMessageFlyweight;
@@ -68,7 +68,7 @@ public class UnicastReceiverTest
     private static final int VALUE = 37;
 
     @ClassRule
-    public static AdminBuffers buffers = new AdminBuffers(COMMAND_BUFFER_SZ + TRAILER_LENGTH);
+    public static ConductorBuffers buffers = new ConductorBuffers(COMMAND_BUFFER_SZ + TRAILER_LENGTH);
 
     @ClassRule
     public static SharedDirectories directory = new SharedDirectories();

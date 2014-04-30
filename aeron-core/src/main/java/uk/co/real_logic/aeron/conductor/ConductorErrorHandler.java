@@ -20,13 +20,17 @@ import uk.co.real_logic.aeron.util.command.ConsumerMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 
-public class AdminErrorHandler
+/**
+ * Maps the error messages that come back from the conductor protocol into different error
+ * handlling interfaces
+ */
+public class ConductorErrorHandler
 {
     private final ErrorHeaderFlyweight errorHeader;
     private final ConsumerMessageFlyweight receiverMessage;
     private final InvalidDestinationHandler invalidDestination;
 
-    public AdminErrorHandler(final InvalidDestinationHandler invalidDestination)
+    public ConductorErrorHandler(final InvalidDestinationHandler invalidDestination)
     {
         errorHeader = new ErrorHeaderFlyweight();
         receiverMessage = new ConsumerMessageFlyweight();

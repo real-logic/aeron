@@ -60,7 +60,7 @@ public class MediaConductor extends Service implements LibraryFacade
 
     private final ByteBuffer toMediaDriver;
     private final ByteBuffer toApi;
-    private final Supplier<SenderFlowControlStrategy> senderFlowControl;
+    private final Supplier<SenderControlStrategy> senderFlowControl;
 
     private final ThreadLocalRandom rng = ThreadLocalRandom.current();
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();

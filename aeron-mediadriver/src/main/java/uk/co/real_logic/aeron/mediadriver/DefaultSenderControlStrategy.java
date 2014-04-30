@@ -15,11 +15,11 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-public class DefaultSenderFlowControlStrategy implements SenderFlowControlStrategy
+public class DefaultSenderControlStrategy implements SenderControlStrategy
 {
     private int rightEdgeOfWindow;
 
-    public DefaultSenderFlowControlStrategy()
+    public DefaultSenderControlStrategy()
     {
         rightEdgeOfWindow = 0;
     }

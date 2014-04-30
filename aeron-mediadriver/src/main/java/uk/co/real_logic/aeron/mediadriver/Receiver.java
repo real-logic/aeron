@@ -16,8 +16,8 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.AtomicArray;
-import uk.co.real_logic.aeron.util.Service;
 import uk.co.real_logic.aeron.util.ErrorCode;
+import uk.co.real_logic.aeron.util.Service;
 import uk.co.real_logic.aeron.util.command.ConsumerMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;

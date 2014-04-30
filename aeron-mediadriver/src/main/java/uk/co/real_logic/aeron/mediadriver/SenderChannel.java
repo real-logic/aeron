@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.mediadriver;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
 import uk.co.real_logic.aeron.mediadriver.buffer.LogBuffers;
 import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
-import uk.co.real_logic.aeron.util.TimerWheel;
+import uk.co.real_logic.aeron.util.TimerWheel.Timer;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.MtuScanner;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
@@ -40,7 +40,7 @@ public class SenderChannel
     public static final int FLOW_CONTROL_TIMEOUT_MILLISECONDS = 100;
 
     private final ControlFrameHandler frameHandler;
-    private final SenderFlowControlStrategy flowControlStrategy;
+    private final SenderControlStrategy controlStrategy;
 
     private final BufferRotator buffers;
     private final UdpDestination destination;
@@ -52,7 +52,7 @@ public class SenderChannel
 
     private final int headerLength;
     private final int mtuLength;
-    private TimerWheel.Timer flowControlTimer;
+    private final Timer flowControlTimer;
     private final ByteBuffer scratchSendBuffer = ByteBuffer.allocateDirect(DataHeaderFlyweight.HEADER_LENGTH);
     private final AtomicBuffer scratchAtomicBuffer = new AtomicBuffer(scratchSendBuffer);
 
@@ -68,7 +68,7 @@ public class SenderChannel
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
     public SenderChannel(final ControlFrameHandler frameHandler,
-                         final SenderFlowControlStrategy flowControlStrategy,
+                         final SenderControlStrategy controlStrategy,
                          final BufferRotator buffers,
                          final UdpDestination destination,
                          final long sessionId,
@@ -78,7 +78,7 @@ public class SenderChannel
                          final int mtuLength)
     {
         this.frameHandler = frameHandler;
-        this.flowControlStrategy = flowControlStrategy;
+        this.controlStrategy = controlStrategy;
         this.buffers = buffers;
         this.destination = destination;
         this.sessionId = sessionId;
@@ -195,7 +195,7 @@ public class SenderChannel
                                 final long highestContiguousSequenceNumber,
                                 final long receiverWindow)
     {
-        final int rightEdge = flowControlStrategy.onStatusMessage(termId,
+        final int rightEdge = controlStrategy.onStatusMessage(termId,
                                                                   highestContiguousSequenceNumber,
                                                                   receiverWindow);
         activeFlowControlState.updateRightEdgeOfWindow(rightEdge);

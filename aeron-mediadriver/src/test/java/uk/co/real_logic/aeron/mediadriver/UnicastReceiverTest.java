@@ -18,8 +18,8 @@ package uk.co.real_logic.aeron.mediadriver;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy;
-import uk.co.real_logic.aeron.util.ConductorBuffers;
 import uk.co.real_logic.aeron.util.BitUtil;
+import uk.co.real_logic.aeron.util.ConductorBuffers;
 import uk.co.real_logic.aeron.util.SharedDirectories;
 import uk.co.real_logic.aeron.util.command.ConsumerMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
@@ -101,7 +101,7 @@ public class UnicastReceiverTest
             .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
             .rcvNioSelector(nioSelector)
             .adminNioSelector(new NioSelector())
-            .senderFlowControl(DefaultSenderFlowControlStrategy::new)
+            .senderFlowControl(DefaultSenderControlStrategy::new)
             .adminBufferStrategy(buffers.strategy())
             .bufferManagementStrategy(bufferManagementStrategy);
 

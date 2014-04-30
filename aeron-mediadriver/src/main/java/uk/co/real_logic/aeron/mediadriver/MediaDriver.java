@@ -16,8 +16,8 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy;
-import uk.co.real_logic.aeron.util.ConductorBufferStrategy;
 import uk.co.real_logic.aeron.util.CommonConfiguration;
+import uk.co.real_logic.aeron.util.ConductorBufferStrategy;
 import uk.co.real_logic.aeron.util.CreatingConductorBufferStrategy;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -131,7 +131,7 @@ public class MediaDriver implements AutoCloseable
                 .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .rcvNioSelector(nioSelector)
                 .adminNioSelector(new NioSelector())
-                .senderFlowControl(DefaultSenderFlowControlStrategy::new)
+                .senderFlowControl(DefaultSenderControlStrategy::new)
                 .adminBufferStrategy(new CreatingConductorBufferStrategy(ADMIN_DIR, ADMIN_BUFFER_SZ))
                 .bufferManagementStrategy(newMappedBufferManager(DATA_DIR))
                 .mtuLength(CommonConfiguration.MTU_LENGTH);
@@ -174,7 +174,7 @@ public class MediaDriver implements AutoCloseable
         private ConductorBufferStrategy conductorBufferStrategy;
         private NioSelector rcvNioSelector;
         private NioSelector adminNioSelector;
-        private Supplier<SenderFlowControlStrategy> senderFlowControl;
+        private Supplier<SenderControlStrategy> senderFlowControl;
         private TimerWheel adminTimerWheel;
         private int mtuLength;
         private RcvFrameHandlerFactory rcvFrameHandlerFactory;
@@ -223,7 +223,7 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context senderFlowControl(Supplier<SenderFlowControlStrategy> senderFlowControl)
+        public Context senderFlowControl(Supplier<SenderControlStrategy> senderFlowControl)
         {
             this.senderFlowControl = senderFlowControl;
             return this;
@@ -271,7 +271,7 @@ public class MediaDriver implements AutoCloseable
             return adminNioSelector;
         }
 
-        public Supplier<SenderFlowControlStrategy> senderFlowControl()
+        public Supplier<SenderControlStrategy> senderFlowControl()
         {
             return senderFlowControl;
         }

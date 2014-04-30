@@ -16,9 +16,9 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.conductor.*;
-import uk.co.real_logic.aeron.util.ConductorBufferStrategy;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.CommonConfiguration;
+import uk.co.real_logic.aeron.util.ConductorBufferStrategy;
 import uk.co.real_logic.aeron.util.MappingConductorBufferStrategy;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;

@@ -46,8 +46,8 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
-import static uk.co.real_logic.aeron.mediadriver.MediaDriver.*;
 import static uk.co.real_logic.aeron.mediadriver.MediaConductor.HEADER_LENGTH;
+import static uk.co.real_logic.aeron.mediadriver.MediaDriver.*;
 import static uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy.newMappedBufferManager;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.ErrorCode.*;
@@ -113,7 +113,7 @@ public class UnicastSenderTest
             .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
             .rcvNioSelector(new NioSelector())
             .adminNioSelector(new NioSelector())
-            .senderFlowControl(DefaultSenderFlowControlStrategy::new)
+            .senderFlowControl(DefaultSenderControlStrategy::new)
             .adminBufferStrategy(buffers.strategy())
             .bufferManagementStrategy(bufferManagementStrategy)
             .adminTimerWheel(timerWheel);

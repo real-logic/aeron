@@ -23,16 +23,19 @@ import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogRebuilder;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.StateViewer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicLong;
+
+import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.UNKNOWN_TERM_ID;
 
 /**
  * State maintained for active sessionIds within a channel for receiver processing
  */
 public class RcvSessionState
 {
-    private static final long UNKNOWN_TERM_ID = -1;
 
+    public static final int CLEAN_WINDOW = 2;
     private final InetSocketAddress srcAddr;
     private final long sessionId;
 
@@ -79,7 +82,7 @@ public class RcvSessionState
         }
         else if (termId == (currentTermId + 1))
         {
-            cleanedTermId.incrementAndGet();
+            this.currentTermId.incrementAndGet();
             currentBufferId = BufferRotationDescriptor.rotateId(currentBufferId);
             TermRebuilder rebuilder = rebuilders[currentBufferId];
             while (rebuilder.tailVolatile() != 0)
@@ -92,6 +95,7 @@ public class RcvSessionState
         else
         {
             // TODO: log or monitor this case
+            System.out.println("Unexpected Term Id " + currentTermId + ":" + termId);
         }
     }
 
@@ -120,6 +124,21 @@ public class RcvSessionState
 
     public void processBufferRotation()
     {
-        // TODO
+        final long currentTermId = this.currentTermId.get();
+        final long expectedTermId = currentTermId + CLEAN_WINDOW;
+        if (currentTermId != UNKNOWN_TERM_ID && expectedTermId > cleanedTermId.get())
+        {
+            try
+            {
+                rotator.rotate();
+                cleanedTermId.incrementAndGet();
+            }
+            catch (IOException ex)
+            {
+                // TODO; log
+                ex.printStackTrace();
+            }
+        }
     }
+
 }

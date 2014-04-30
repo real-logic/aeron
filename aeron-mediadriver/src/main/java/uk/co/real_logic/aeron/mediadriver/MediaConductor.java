@@ -124,6 +124,7 @@ public class MediaConductor extends Service implements LibraryFacade
         }
 
         sender.processBufferRotation();
+        receiver.processBufferRotation();
         processReceiveBuffer();
         processCommandBuffer();
         processTimers();
@@ -443,6 +444,7 @@ public class MediaConductor extends Service implements LibraryFacade
             while (!receiver.sendBuffer(bufferState))
             {
                 // TODO: count errors
+                System.out.println("Error adding to buffer");
             }
         }
         catch (final Exception ex)

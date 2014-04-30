@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.mediadriver.buffer;
 
 import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.StateViewer;
 
 import java.io.IOException;
 import java.nio.MappedByteBuffer;

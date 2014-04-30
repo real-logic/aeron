@@ -51,10 +51,10 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
     private MappedLogBuffers dirty;
 
     MappedBufferRotator(final File directory,
-                               final FileChannel logTemplate,
-                               final long logBufferSize,
-                               final FileChannel stateTemplate,
-                               final long stateBufferSize)
+                        final FileChannel logTemplate,
+                        final long logBufferSize,
+                        final FileChannel stateTemplate,
+                        final long stateBufferSize)
     {
         IoUtil.ensureDirectoryExists(directory, "buffer directory");
 
@@ -65,6 +65,8 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
 
         try
         {
+            requireEqual(logTemplate.size(), logBufferSize);
+            requireEqual(stateTemplate.size(), stateBufferSize);
             current = newTerm("0", directory);
             clean = newTerm("1", directory);
             dirty = newTerm("2", directory);
@@ -75,6 +77,14 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
         }
 
         buffers = new MappedLogBuffers[]{ current, clean, dirty };
+    }
+
+    private void requireEqual(final long a, final long b)
+    {
+        if (a != b)
+        {
+            throw new IllegalArgumentException("Values aren't equal: " + a + " and " + b);
+        }
     }
 
     private MappedLogBuffers newTerm(final String prefix, final File directory) throws IOException

@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 
 import java.net.InetSocketAddress;
@@ -27,16 +28,19 @@ public class RcvChannelState
     private final UdpDestination destination;
     private final long channelId;
     private final MediaConductorCursor adminThreadCursor;
+    private final AtomicArray<RcvSessionState> allSessionState;
     private int referenceCount;
     private final Long2ObjectHashMap<RcvSessionState> sessionStateMap;
 
     public RcvChannelState(final UdpDestination destination,
                            final long channelId,
-                           final MediaConductorCursor adminThreadCursor)
+                           final MediaConductorCursor adminThreadCursor,
+                           final AtomicArray<RcvSessionState> sessionState)
     {
         this.destination = destination;
         this.channelId = channelId;
         this.adminThreadCursor = adminThreadCursor;
+        this.allSessionState = sessionState;
         this.referenceCount = 1;
         this.sessionStateMap = new Long2ObjectHashMap<>();
     }
@@ -68,7 +72,9 @@ public class RcvChannelState
 
     public RcvSessionState createSessionState(final long sessionId, final InetSocketAddress srcAddr)
     {
-        return sessionStateMap.put(sessionId, new RcvSessionState(sessionId, srcAddr));
+        RcvSessionState sessionState = new RcvSessionState(sessionId, srcAddr);
+        allSessionState.add(sessionState);
+        return sessionStateMap.put(sessionId, sessionState);
     }
 
     public long channelId()

@@ -33,7 +33,7 @@ public class ReceiverTest
     private static final long CHANNEL_ID = 10;
     private static final long[] ONE_CHANNEL = { CHANNEL_ID };
 
-    private Receiver thread;
+    private Receiver receiver;
     private ReceiverCursor cursor;
     private RcvFrameHandlerFactory frameHandlerFactory;
 
@@ -51,7 +51,7 @@ public class ReceiverTest
                 .rcvFrameHandlerFactory(frameHandlerFactory);
 
         cursor = new ReceiverCursor(context.receiverThreadCommandBuffer(), context.rcvNioSelector());
-        thread = new Receiver(context);
+        receiver = new Receiver(context);
     }
 
     @Test
@@ -59,12 +59,12 @@ public class ReceiverTest
     {
         UdpDestination destination = UdpDestination.parse(URI);
         RcvFrameHandler frameHandler = mock(RcvFrameHandler.class);
-        Mockito.when(frameHandlerFactory.newInstance(destination)).thenReturn(frameHandler);
+        Mockito.when(frameHandlerFactory.newInstance(destination, receiver.sessionState())).thenReturn(frameHandler);
 
         cursor.addNewConsumerEvent(URI, ONE_CHANNEL);
-        thread.process();
+        receiver.process();
 
-        verify(frameHandlerFactory).newInstance(destination);
+        verify(frameHandlerFactory).newInstance(destination, receiver.sessionState());
         verify(frameHandler).addChannels(ONE_CHANNEL);
     }
 }

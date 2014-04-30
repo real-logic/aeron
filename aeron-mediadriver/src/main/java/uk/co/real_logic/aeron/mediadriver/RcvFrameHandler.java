@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
@@ -36,12 +37,15 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
     private final ByteBuffer sendBuffer = ByteBuffer.allocateDirect(StatusMessageFlyweight.HEADER_LENGTH);
     private final AtomicBuffer writeBuffer = new AtomicBuffer(sendBuffer);
     private final StatusMessageFlyweight statusMessageFlyweight = new StatusMessageFlyweight();
+    private final AtomicArray<RcvSessionState> sessionState;
 
     public RcvFrameHandler(final UdpDestination destination,
                            final NioSelector nioSelector,
-                           final MediaConductorCursor adminThreadCursor)
+                           final MediaConductorCursor adminThreadCursor,
+                           final AtomicArray<RcvSessionState> sessionState)
         throws Exception
     {
+        this.sessionState = sessionState;
         this.transport = new UdpTransport(this, destination, nioSelector);
         this.destination = destination;
         this.adminThreadCursor = adminThreadCursor;
@@ -88,7 +92,7 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
     {
         for (final long channelId : channelIdList)
         {
-            final RcvChannelState channel = channelInterestMap.get(channelId);
+            RcvChannelState channel = channelInterestMap.get(channelId);
 
             if (null != channel)
             {
@@ -96,7 +100,8 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
             }
             else
             {
-                channelInterestMap.put(channelId, new RcvChannelState(destination, channelId, adminThreadCursor));
+                channel = new RcvChannelState(destination, channelId, adminThreadCursor, sessionState);
+                channelInterestMap.put(channelId, channel);
             }
         }
     }
@@ -148,10 +153,11 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
             // new session, so make it here and save srcAddr
             channelState.createSessionState(sessionId, srcAddr);
             // TODO: this is a new source, so send 1 SM
-        }
 
-        // ask conductor thread to create buffer for destination, sessionId, channelId, and termId
-        adminThreadCursor.addCreateRcvTermBufferEvent(destination(), sessionId, channelId, termId);
+            // ask conductor thread to create buffer for destination, sessionId, channelId, and termId
+            // NB: this only needs to happen the first time, since we use counters to detect rollovers
+            adminThreadCursor.addCreateRcvTermBufferEvent(destination(), sessionId, channelId, termId);
+        }
     }
 
     public void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)

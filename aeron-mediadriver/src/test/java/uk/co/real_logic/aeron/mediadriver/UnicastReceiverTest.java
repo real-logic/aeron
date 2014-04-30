@@ -66,6 +66,7 @@ public class UnicastReceiverTest
     private static final long SESSION_ID = 0xdeadbeefL;
     private static final long TERM_ID = 0xec1L;
     private static final int VALUE = 37;
+    public static final int FAKE_PACKET_SIZE = 128;
 
     @ClassRule
     public static ConductorBuffers buffers = new ConductorBuffers(COMMAND_BUFFER_SZ + TRAILER_LENGTH);
@@ -294,14 +295,12 @@ public class UnicastReceiverTest
     public void shouldBeAbleToAddThenRemoveReceiverWithoutBuffers() throws Exception
     {
         writeConsumerMessage(ADD_CONSUMER, URI, ONE_CHANNEL);
-
-        processThreads(5);
+        processThreads();
 
         assertReceiverRegistered();
 
         writeConsumerMessage(ControlProtocolEvents.REMOVE_CONSUMER, URI, ONE_CHANNEL);
-
-        processThreads(5);
+        processThreads(2);
 
         assertReceiverNotRegistered();
     }
@@ -310,31 +309,29 @@ public class UnicastReceiverTest
     public void shouldBeAbleToReceiveDataFromNetwork() throws Exception
     {
         writeConsumerMessage(ADD_CONSUMER, URI, ONE_CHANNEL);
-        processThreads(5);
+        processThreads();
 
         sendDataFrame(udpDestination(), CHANNEL_ID, 0);
-        processThreads(5);
+        processThreads(2);
 
         sendDataFrame(udpDestination(), CHANNEL_ID, 1);
-        processThreads(5);
+        processThreads(2);
 
-        List<Buffers> buffers = directory.mapTermFile(directory.receiverDir(), URI, SESSION_ID, CHANNEL_ID);
-        StateViewer stateViewer = new StateViewer(buffers.get(0).stateBuffer());
-        assertThat(stateViewer.tailVolatile(), is(greaterThan(0)));
+        assertReceivedDataFromNetwork();
     }
 
-    @Test(timeout = 100000)
+    @Test(timeout = 1000)
     public void shouldBeAbleToAddThenRemoveReceiverWithBuffers() throws Exception
     {
         writeConsumerMessage(ADD_CONSUMER, URI, ONE_CHANNEL);
-        processThreads(5);
+        processThreads();
 
         UdpDestination destination = udpDestination();
         sendDataFrame(destination, CHANNEL_ID, 0);
-        processThreads(5);
+        processThreads();
 
         sendDataFrame(destination, CHANNEL_ID, 1);
-        processThreads(5);
+        processThreads();
 
         writeConsumerMessage(REMOVE_CONSUMER, URI, ONE_CHANNEL);
         processThreads(5);
@@ -343,11 +340,33 @@ public class UnicastReceiverTest
         assertBuffersNotRegistered();
     }
 
-    @Ignore
-    @Test(timeout = 1000)
-    public void shouldBeAbleToHandleTermBufferRolloverCorrectly()
+    @Test(timeout = 1500)
+    public void shouldBeAbleToHandleTermBufferRolloverCorrectly() throws Exception
     {
-        // TODO: finish
+        writeConsumerMessage(ADD_CONSUMER, URI, ONE_CHANNEL);
+        processThreads();
+
+        UdpDestination destination = udpDestination();
+        int packetsToFillBuffer = COMMAND_BUFFER_SZ / FAKE_PACKET_SIZE;
+        int iterations = 4 * packetsToFillBuffer;
+        long termId = 0;
+        for (int i = 0; i < iterations; i++)
+        {
+            if ((i % packetsToFillBuffer) == 0)
+            {
+                termId++;
+            }
+
+            sendDataFrame(destination, CHANNEL_ID, termId, i, FAKE_PACKET_SIZE);
+            processThreads(2);
+        }
+    }
+
+    private void assertReceivedDataFromNetwork() throws IOException
+    {
+        List<Buffers> buffers1 = directory.mapTermFile(directory.receiverDir(), URI, SESSION_ID, CHANNEL_ID);
+        StateViewer stateViewer = new StateViewer(buffers1.get(0).stateBuffer());
+        assertThat(stateViewer.tailVolatile(), is(greaterThan(0)));
     }
 
     private void assertBuffersNotRegistered()
@@ -384,25 +403,43 @@ public class UnicastReceiverTest
         adminCommands.write(eventTypeId, writeBuffer, 0, receiverMessage.length());
     }
 
-    private void sendDataFrame(final UdpDestination destination, final long channelId, final int seqNum)
-        throws Exception
+    private void sendDataFrame(final UdpDestination destination,
+                               final long channelId,
+                               final long termId,
+                               final int seqNum,
+                               final int amount)
+            throws Exception
     {
+        int alignedAmount = BitUtil.align(amount, FRAME_ALIGNMENT);
+
         final DataHeaderFlyweight dataHeaderFlyweight = new DataHeaderFlyweight();
         dataHeaderFlyweight.wrap(writeBuffer, 0);
 
         dataHeaderFlyweight.sequenceNumber(seqNum)
-                           .sessionId(SESSION_ID)
-                           .channelId(channelId)
-                           .termId(TERM_ID)
-                           .version(HeaderFlyweight.CURRENT_VERSION)
-                           .flags((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
-                           .headerType(HeaderFlyweight.HDR_TYPE_DATA)
-                           .frameLength(HEADER_LENGTH);
+                .sessionId(SESSION_ID)
+                .channelId(channelId)
+                .termId(termId)
+                .version(HeaderFlyweight.CURRENT_VERSION)
+                .flags((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
+                .headerType(HeaderFlyweight.HDR_TYPE_DATA)
+                .frameLength(alignedAmount);
 
         sendBuffer.position(0);
         sendBuffer.putInt(dataHeaderFlyweight.dataOffset(), VALUE);
-        sendBuffer.limit(BitUtil.align(HEADER_LENGTH + SIZE_OF_INT, FRAME_ALIGNMENT));
-        senderChannel.send(sendBuffer, destination.remoteData());
+        sendBuffer.limit(alignedAmount);
+        int sent = senderChannel.send(sendBuffer, destination.remoteData());
+        assertThat(sent, is(alignedAmount));
+    }
+
+    private void sendDataFrame(final UdpDestination destination, final long channelId, final int seqNum)
+        throws Exception
+    {
+        sendDataFrame(destination, channelId, TERM_ID, seqNum, HEADER_LENGTH + SIZE_OF_INT);
+    }
+
+    private void processThreads()
+    {
+        processThreads(1);
     }
 
     private void processThreads(final int iterations)

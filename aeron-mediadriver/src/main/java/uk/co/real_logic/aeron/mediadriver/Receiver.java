@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.Service;
 import uk.co.real_logic.aeron.util.ErrorCode;
 import uk.co.real_logic.aeron.util.command.ConsumerMessageFlyweight;
@@ -41,8 +42,10 @@ public class Receiver extends Service
     private final MediaConductorCursor adminThreadCursor;
     private final Map<UdpDestination, RcvFrameHandler> rcvDestinationMap = new HashMap<>();
     private final ConsumerMessageFlyweight consumerMessage = new ConsumerMessageFlyweight();
-    private final Queue<RcvBufferState> buffers = new OneToOneConcurrentArrayQueue<>(1024);;
+    private final Queue<RcvBufferState> buffers = new OneToOneConcurrentArrayQueue<>(1024);
     private final RcvFrameHandlerFactory frameHandlerFactory;
+
+    private final AtomicArray<RcvSessionState> sessionState = new AtomicArray<>();
 
     public Receiver(final MediaDriver.Context context) throws Exception
     {
@@ -122,6 +125,11 @@ public class Receiver extends Service
         adminThreadCursor.addErrorResponse(errorCode, consumerMessage, length);
     }
 
+    public AtomicArray<RcvSessionState> sessionState()
+    {
+        return sessionState;
+    }
+
     /**
      * Close ReceiverThread down. Returns immediately.
      */
@@ -173,7 +181,7 @@ public class Receiver extends Service
 
         if (null == rcv)
         {
-            rcv = frameHandlerFactory.newInstance(rcvDestination);
+            rcv = frameHandlerFactory.newInstance(rcvDestination, sessionState);
             rcvDestinationMap.put(rcvDestination, rcv);
         }
 
@@ -212,5 +220,13 @@ public class Receiver extends Service
         }
 
         rcv.attachBufferState(buffer);
+    }
+
+    /**
+     * Called by MediaConductor on its thread, must
+     */
+    public void processBufferRotation()
+    {
+        sessionState.forEach(RcvSessionState::processBufferRotation);
     }
 }

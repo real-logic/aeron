@@ -15,6 +15,8 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import uk.co.real_logic.aeron.util.AtomicArray;
+
 public class RcvFrameHandlerFactory
 {
     private final NioSelector selector;
@@ -26,8 +28,9 @@ public class RcvFrameHandlerFactory
         this.adminThreadCursor = adminThreadCursor;
     }
 
-    public RcvFrameHandler newInstance(final UdpDestination rcvDestination) throws Exception
+    public RcvFrameHandler newInstance(final UdpDestination rcvDestination,
+                                       final AtomicArray<RcvSessionState> sessionState) throws Exception
     {
-        return new RcvFrameHandler(rcvDestination, selector, adminThreadCursor);
+        return new RcvFrameHandler(rcvDestination, selector, adminThreadCursor, sessionState);
     }
 }

@@ -15,7 +15,10 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Test;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy;
 import uk.co.real_logic.aeron.util.ConductorBuffers;
 import uk.co.real_logic.aeron.util.SharedDirectories;

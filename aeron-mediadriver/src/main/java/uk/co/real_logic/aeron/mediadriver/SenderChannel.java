@@ -29,7 +29,6 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.CLEAN_WINDOW;
 
 /**
  * Encapsulates the information associated with a channel
@@ -253,7 +252,7 @@ public class SenderChannel
      */
     public void processBufferRotation()
     {
-        final long requiredCleanTermid = currentTermId.get() + CLEAN_WINDOW;
+        final long requiredCleanTermid = currentTermId.get() + 1;
         if (requiredCleanTermid > cleanedTermId.get())
         {
             try

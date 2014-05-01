@@ -19,12 +19,15 @@ import uk.co.real_logic.aeron.conductor.ChannelNotifiable;
 import uk.co.real_logic.aeron.conductor.ClientConductorCursor;
 import uk.co.real_logic.aeron.conductor.TermBufferNotifier;
 import uk.co.real_logic.aeron.util.AtomicArray;
+import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.CLEAN_WINDOW;
 import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.rotateId;
 import static uk.co.real_logic.aeron.util.ChannelCounters.UNKNOWN_TERM_ID;
 
@@ -42,7 +45,8 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
 
     private final AtomicLong currentTermId = new AtomicLong(UNKNOWN_TERM_ID);
     private final AtomicLong cleanedTermId = new AtomicLong(UNKNOWN_TERM_ID);
-    private int currentBuffer = 0;
+
+    private int currentBufferId = 0;
 
     public Channel(final String destination,
                    final ClientConductorCursor adminCursor,
@@ -101,12 +105,12 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
             return false;
         }
 
-        final LogAppender logAppender = logAppenders[currentBuffer];
+        final LogAppender logAppender = logAppenders[currentBufferId];
         final boolean hasAppended = logAppender.append(buffer, offset, length);
         if (!hasAppended)
         {
-            currentBuffer = rotateId(currentBuffer);
-            rollTerm();
+            requestTermRoll();
+            currentBufferId = rotateId(currentBufferId);
         }
 
         return hasAppended;
@@ -152,10 +156,9 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
         return currentTermId.get() != UNKNOWN_TERM_ID;
     }
 
-    protected void rollTerm()
+    protected void requestTermRoll()
     {
         requestTerm(currentTermId.incrementAndGet() + 1);
-        bufferNotifier.termBufferBlocking(currentTermId.get());
     }
 
     public boolean hasSessionId(final long sessionId)
@@ -166,10 +169,34 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
     public void initialTerm(final long sessionId, final long termId)
     {
         currentTermId.set(termId);
+        cleanedTermId.set(termId + CLEAN_WINDOW);
     }
 
-    public void cleanedTermBuffer(final long sessionId, final long termId)
+    /**
+     * This is performed on the Client Conductor's thread
+     */
+    public void scanForBufferRotation()
     {
-        cleanedTermId.set(termId);
+        long currentTermId = this.currentTermId.get();
+        if (currentTermId == UNKNOWN_TERM_ID)
+        {
+            // Doesn't have any buffers yet
+            return;
+        }
+
+        final long requiredCleanTermid = currentTermId + 1;
+        if (requiredCleanTermid > cleanedTermId.get())
+        {
+            LogAppender requiredBuffer = logAppenders[rotateId(currentBufferId)];
+            if (hasBeenCleaned(requiredBuffer)) {
+                cleanedTermId.incrementAndGet();
+            }
+        }
     }
+
+    private boolean hasBeenCleaned(final LogAppender appender)
+    {
+        return appender.tailVolatile() == 0;
+    }
+
 }

@@ -119,7 +119,7 @@ public class LogAppender
      *
      * @return the current value of the tail counter for the log.
      */
-    public int tail()
+    public int tailVolatile()
     {
         final int tail = stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET);
         return Math.min(tail, capacity);

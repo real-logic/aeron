@@ -62,8 +62,8 @@ public final class ClientConductor extends Service implements MediaDriverFacade
     private final RingBuffer sendBuffer;
 
     private final BufferUsageStrategy bufferUsage;
-    private final AtomicArray<Channel> senders;
-    private final AtomicArray<ConsumerChannel> receivers;
+    private final AtomicArray<Channel> producers;
+    private final AtomicArray<ConsumerChannel> consumers;
 
     private final ChannelMap<String, Channel> sendNotifiers;
     private final ConsumerMap recvNotifiers;
@@ -82,8 +82,8 @@ public final class ClientConductor extends Service implements MediaDriverFacade
                            final RingBuffer recvBuffer,
                            final RingBuffer sendBuffer,
                            final BufferUsageStrategy bufferUsage,
-                           final AtomicArray<Channel> senders,
-                           final AtomicArray<ConsumerChannel> receivers,
+                           final AtomicArray<Channel> producers,
+                           final AtomicArray<ConsumerChannel> consumers,
                            final ConductorErrorHandler errorHandler,
                            final ProducerControlFactory producerControl)
     {
@@ -93,8 +93,8 @@ public final class ClientConductor extends Service implements MediaDriverFacade
         this.recvBuffer = recvBuffer;
         this.sendBuffer = sendBuffer;
         this.bufferUsage = bufferUsage;
-        this.senders = senders;
-        this.receivers = receivers;
+        this.producers = producers;
+        this.consumers = consumers;
         this.errorHandler = errorHandler;
         this.producerControl = producerControl;
         this.sendNotifiers = new ChannelMap<>();
@@ -110,6 +110,12 @@ public final class ClientConductor extends Service implements MediaDriverFacade
     {
         handleCommandBuffer();
         handleReceiveBuffer();
+        scanProducerBuffers();
+    }
+
+    private void scanProducerBuffers()
+    {
+        producers.forEach(Channel::scanForBufferRotation);
     }
 
     private void handleCommandBuffer()
@@ -168,14 +174,14 @@ public final class ClientConductor extends Service implements MediaDriverFacade
         // and is during setup not a latency critical path
         for (final long channelId : channelIds)
         {
-            receivers.forEach(
-                receiver ->
-                {
-                    if (receiver.matches(destination, channelId))
+            consumers.forEach(
+                    receiver ->
                     {
-                        recvNotifiers.put(destination, channelId, receiver);
+                        if (receiver.matches(destination, channelId))
+                        {
+                            recvNotifiers.put(destination, channelId, receiver);
+                        }
                     }
-                }
             );
         }
     }
@@ -191,14 +197,15 @@ public final class ClientConductor extends Service implements MediaDriverFacade
     private void addSender(final String destination, final long channelId, final long sessionId)
     {
         // see addReceiver re efficiency
-        senders.forEach(
-            channel ->
-            {
-                if (channel.matches(destination, sessionId, channelId))
+        producers.forEach(
+                channel ->
                 {
-                    sendNotifiers.put(destination, sessionId, channelId, channel);
+                    if (channel.matches(destination, sessionId, channelId))
+                    {
+                        sendNotifiers.put(destination, sessionId, channelId, channel);
+                    }
                 }
-            });
+        );
     }
 
     private void removeSender(final String destination, final long channelId, final long sessionId)

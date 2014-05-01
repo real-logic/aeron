@@ -163,6 +163,9 @@ public final class ClientConductor extends Service implements MediaDriverFacade
                         sendBuffer.write(eventTypeId, buffer, index, length);
                         return;
                     }
+                    case REQUEST_CLEANED_TERM:
+                        sendBuffer.write(eventTypeId, buffer, index, length);
+                        return;
                 }
             }
         );

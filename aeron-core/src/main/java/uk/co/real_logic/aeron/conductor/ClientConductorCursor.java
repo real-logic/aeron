@@ -35,15 +35,15 @@ public class ClientConductorCursor
     /** Maximum size of the write buffer */
     public static final int WRITE_BUFFER_CAPACITY = 256;
 
-    private final RingBuffer adminThreadCommandBuffer;
+    private final RingBuffer conductorBuffer;
     private final AtomicBuffer writeBuffer;
     private final ChannelMessageFlyweight channelMessage;
     private final ConsumerMessageFlyweight removeReceiverMessage;
     private final CompletelyIdentifiedMessageFlyweight requestTermMessage;
 
-    public ClientConductorCursor(final RingBuffer adminThreadCommandBuffer)
+    public ClientConductorCursor(final RingBuffer conductorBuffer)
     {
-        this.adminThreadCommandBuffer = adminThreadCommandBuffer;
+        this.conductorBuffer = conductorBuffer;
         this.writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
         this.channelMessage = new ChannelMessageFlyweight();
         this.removeReceiverMessage = new ConsumerMessageFlyweight();
@@ -72,7 +72,7 @@ public class ClientConductorCursor
         channelMessage.sessionId(sessionId);
         channelMessage.channelId(channelId);
         channelMessage.destination(destination);
-        adminThreadCommandBuffer.write(eventTypeId, writeBuffer, 0, channelMessage.length());
+        conductorBuffer.write(eventTypeId, writeBuffer, 0, channelMessage.length());
     }
 
     public void sendAddReceiver(final String destination, final long[] channelIdList)
@@ -89,7 +89,7 @@ public class ClientConductorCursor
     {
         removeReceiverMessage.channelIds(channelIdList);
         removeReceiverMessage.destination(destination);
-        adminThreadCommandBuffer.write(eventTypeId, writeBuffer, 0, removeReceiverMessage.length());
+        conductorBuffer.write(eventTypeId, writeBuffer, 0, removeReceiverMessage.length());
     }
 
     public void sendRequestTerm(final String destination, final long sessionId, final long channelId, final long termId)
@@ -98,7 +98,7 @@ public class ClientConductorCursor
         requestTermMessage.channelId(channelId);
         requestTermMessage.termId(termId);
         requestTermMessage.destination(destination);
-        adminThreadCommandBuffer.write(REQUEST_CLEANED_TERM, writeBuffer, 0, requestTermMessage.length());
+        conductorBuffer.write(REQUEST_CLEANED_TERM, writeBuffer, 0, requestTermMessage.length());
     }
 
 }

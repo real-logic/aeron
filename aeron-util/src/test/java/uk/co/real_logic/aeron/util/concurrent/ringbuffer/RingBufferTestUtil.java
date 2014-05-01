@@ -36,4 +36,12 @@ public class RingBufferTestUtil
         {
         }, count);
     }
+
+    public static void assertNoMessages(final RingBuffer ringBuffer)
+    {
+        int events = ringBuffer.read((eventTypeId, buffer, index, length) ->
+        {
+        });
+        assertThat(events, is(0));
+    }
 }

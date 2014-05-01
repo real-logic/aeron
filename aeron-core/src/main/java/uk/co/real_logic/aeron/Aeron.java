@@ -173,7 +173,7 @@ public final class Aeron
         return newReceiver(context);
     }
 
-    public ClientConductor adminThread()
+    public ClientConductor conductor()
     {
         return adminThread;
     }

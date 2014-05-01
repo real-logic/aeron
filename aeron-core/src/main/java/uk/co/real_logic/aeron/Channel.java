@@ -33,7 +33,7 @@ import static uk.co.real_logic.aeron.util.ChannelCounters.UNKNOWN_TERM_ID;
  */
 public class Channel extends ChannelNotifiable implements AutoCloseable
 {
-    private final ClientConductorCursor adminThread;
+    private final ClientConductorCursor conductor;
     private final long sessionId;
     private final AtomicArray<Channel> channels;
     private final AtomicBoolean paused;
@@ -54,7 +54,7 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
     {
         super(destination, channelId);
 
-        this.adminThread = adminCursor;
+        this.conductor = adminCursor;
         this.sessionId = sessionId;
         this.channels = channels;
         this.paused = paused;
@@ -103,10 +103,11 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
 
         final LogAppender logAppender = logAppenders[currentBufferId];
         final boolean hasAppended = logAppender.append(buffer, offset, length);
-        if (!hasAppended)
+        if (!hasAppended && currentTermId.get() <= cleanedTermId.get())
         {
             requestTermRoll();
             currentBufferId = rotateId(currentBufferId);
+            currentTermId.incrementAndGet();
         }
 
         return hasAppended;
@@ -134,7 +135,7 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
     public void close() throws Exception
     {
         channels.remove(this);
-        adminThread.sendRemoveChannel(destination, sessionId, channelId);
+        conductor.sendRemoveChannel(destination, sessionId, channelId);
     }
 
     public boolean matches(final String destination, final long sessionId, final long channelId)
@@ -144,7 +145,7 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
 
     private void requestTerm(final long termId)
     {
-        adminThread.sendRequestTerm(destination, sessionId, channelId, termId);
+        conductor.sendRequestTerm(destination, sessionId, channelId, termId);
     }
 
     protected boolean hasTerm(final long sessionId)
@@ -154,7 +155,7 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
 
     protected void requestTermRoll()
     {
-        requestTerm(currentTermId.incrementAndGet() + 1);
+        requestTerm(currentTermId.get() + CLEAN_WINDOW);
     }
 
     public boolean hasSessionId(final long sessionId)
@@ -184,7 +185,8 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
         if (requiredCleanTermid > cleanedTermId.get())
         {
             LogAppender requiredBuffer = logAppenders[rotateId(currentBufferId)];
-            if (hasBeenCleaned(requiredBuffer)) {
+            if (hasBeenCleaned(requiredBuffer))
+            {
                 cleanedTermId.incrementAndGet();
             }
         }

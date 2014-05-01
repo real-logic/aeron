@@ -45,6 +45,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static uk.co.real_logic.aeron.Consumer.DataHandler;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
+import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.rotateId;
 import static uk.co.real_logic.aeron.util.SharedDirectories.Buffers;
 import static uk.co.real_logic.aeron.util.SharedDirectories.mapLoggers;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
@@ -66,6 +67,7 @@ public class AeronTest
     private static final long SESSION_ID = 3L;
     private static final long SESSION_ID_2 = 5L;
     public static final int PACKET_VALUE = 37;
+    public static final int SEND_BUFFER_CAPACITY = 256;
 
     @ClassRule
     public static SharedDirectories directory = new SharedDirectories();
@@ -83,7 +85,7 @@ public class AeronTest
 
     private final ErrorHeaderFlyweight errorHeader = new ErrorHeaderFlyweight();
 
-    private final ByteBuffer sendBuffer = ByteBuffer.allocate(256);
+    private final ByteBuffer sendBuffer = ByteBuffer.allocate(SEND_BUFFER_CAPACITY);
     private final AtomicBuffer atomicSendBuffer = new AtomicBuffer(sendBuffer);
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
@@ -99,7 +101,7 @@ public class AeronTest
     {
         final Aeron aeron = newAeron();
         newChannel(aeron);
-        aeron.adminThread().process();
+        aeron.conductor().process();
 
         assertChannelMessage(conductorBuffers.toMediaDriver(), ADD_CHANNEL);
     }
@@ -126,10 +128,55 @@ public class AeronTest
     {
         final Aeron aeron = newAeron();
         final Channel channel = newChannel(aeron);
-        aeron.adminThread().process();
+        aeron.conductor().process();
         createTermBuffer(0L, NEW_SEND_BUFFER_NOTIFICATION, directory.senderDir(), SESSION_ID);
-        aeron.adminThread().process();
+        aeron.conductor().process();
         assertTrue(channel.offer(atomicSendBuffer));
+    }
+
+    @Test
+    public void shouldRotateBuffersOnceFull() throws Exception
+    {
+        final RingBuffer toMediaDriver = conductorBuffers.toMediaDriver();
+        final Aeron aeron = newAeron();
+        final Channel channel = newChannel(aeron);
+        aeron.conductor().process();
+        List<Buffers> buffers = createTermBuffer(0L, NEW_SEND_BUFFER_NOTIFICATION, directory.senderDir(), SESSION_ID);
+
+        final int capacity = buffers.get(0).logBuffer().capacity();
+        final int eventCount = 4 * capacity / SEND_BUFFER_CAPACITY;
+
+        aeron.conductor().process();
+        skip(toMediaDriver, 1);
+        boolean previousAppend = true;
+        int bufferId = 0;
+        for (int i = 0; i < eventCount; i++)
+        {
+            boolean appended = channel.offer(atomicSendBuffer);
+            aeron.conductor().process();
+
+            // only two in a row is a failure, because we don't
+            // rollover immedately
+            assertTrue(previousAppend || appended);
+            previousAppend = appended;
+
+            if (!appended)
+            {
+                assertCleanTermRequested(toMediaDriver);
+                cleanBuffer(buffers.get(bufferId));
+                bufferId = rotateId(bufferId);
+            }
+        }
+
+    }
+
+    private void assertCleanTermRequested(final RingBuffer toMediaDriver)
+    {
+        assertEventRead(toMediaDriver,
+            (eventTypeId, buffer, index, length) ->
+            {
+                assertThat(eventTypeId, is(REQUEST_CLEANED_TERM));
+            });
     }
 
     @Test
@@ -138,7 +185,7 @@ public class AeronTest
         final RingBuffer buffer = conductorBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
         final Channel channel = newChannel(aeron);
-        final ClientConductor adminThread = aeron.adminThread();
+        final ClientConductor adminThread = aeron.conductor();
 
         adminThread.process();
         skip(buffer, 1);
@@ -159,7 +206,7 @@ public class AeronTest
             .destination(new Destination(DESTINATION));
         final Source source = aeron.newSource(sourceContext);
         final Channel channel = source.newChannel(CHANNEL_ID);
-        final ClientConductor adminThread = aeron.adminThread();
+        final ClientConductor adminThread = aeron.conductor();
 
         adminThread.process();
         skip(buffer, 1);
@@ -182,7 +229,7 @@ public class AeronTest
                                                        .sessionId(SESSION_ID + 1)
                                                        .destination(new Destination(DESTINATION)));
         final Channel channel = source.newChannel(CHANNEL_ID);
-        final ClientConductor adminThread = aeron.adminThread();
+        final ClientConductor adminThread = aeron.conductor();
 
         adminThread.process();
         skip(buffer, 1);
@@ -205,7 +252,7 @@ public class AeronTest
 
         final Consumer consumer = aeron.newReceiver(context);
 
-        aeron.adminThread().process();
+        aeron.conductor().process();
 
         assertEventRead(toMediaDriver, assertReceiverMessageOfType(ADD_CONSUMER));
 
@@ -217,13 +264,13 @@ public class AeronTest
     {
         final RingBuffer toMediaDriver = conductorBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
-        final Consumer consumer = newReceiver(aeron);
+        final Consumer consumer = newConsumer(aeron);
 
-        aeron.adminThread().process();
+        aeron.conductor().process();
         skip(toMediaDriver, 1);
 
         consumer.close();
-        aeron.adminThread().process();
+        aeron.conductor().process();
 
         assertEventRead(toMediaDriver, assertReceiverMessageOfType(REMOVE_CONSUMER));
     }
@@ -247,7 +294,7 @@ public class AeronTest
                                    receiverMessage.length(),
                                    errorHeader.frameLength());
 
-        aeron.adminThread().process();
+        aeron.conductor().process();
 
         verify(invalidDestination).onInvalidDestination(INVALID_DESTINATION);
     }
@@ -259,11 +306,11 @@ public class AeronTest
 
         final RingBuffer toMediaDriver = conductorBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
-        final Consumer consumer = newReceiver(aeron);
+        final Consumer consumer = newConsumer(aeron);
 
         final List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
 
-        aeron.adminThread().process();
+        aeron.conductor().process();
         skip(toMediaDriver, 1);
 
         writePacket(logAppenders.get(0));
@@ -278,33 +325,33 @@ public class AeronTest
 
         final RingBuffer toMediaDriver = conductorBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
-        final Consumer consumer = newReceiver(aeron);
+        final Consumer consumer = newConsumer(aeron);
 
         final List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
         final List<LogAppender> otherLogAppenders = createLogAppenders(SESSION_ID_2);
 
-        aeron.adminThread().process();
+        aeron.conductor().process();
         skip(toMediaDriver, 1);
 
         writePacket(logAppenders.get(0));
         writePacket(otherLogAppenders.get(0));
-        assertThat(consumer.process(), is(2));
+        assertThat(consumer.process(), is(1));
     }
 
     @Test
-    public void receivingEnoughPacketsCausesABufferRoll() throws Exception
+    public void receivingEnoughPacketsCausesAConsumerBufferRoll() throws Exception
     {
         channel2Handler = assertingHandler();
 
         final RingBuffer toMediaDriver = conductorBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
-        final Consumer consumer = newReceiver(aeron);
+        final Consumer consumer = newConsumer(aeron);
         final List<Buffers> termBuffers =
             createTermBuffer(0L, NEW_RECEIVE_BUFFER_NOTIFICATION, directory.receiverDir(), SESSION_ID);
 
         final List<LogAppender> logAppenders = createLogAppenders(termBuffers);
 
-        aeron.adminThread().process();
+        aeron.conductor().process();
         skip(toMediaDriver, 1);
 
         final LogAppender logAppender = logAppenders.get(0);
@@ -343,20 +390,20 @@ public class AeronTest
     }
 
     @Test
-    public void rollsDoNotOverflowTheCleanedBufferPosition() throws Exception
+    public void consumerBufferRollsDoNotOverflowTheCleanedBuffer() throws Exception
     {
         channel2Handler = assertingHandler();
 
         final RingBuffer toMediaDriver = conductorBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
-        final Consumer consumer = newReceiver(aeron);
+        final Consumer consumer = newConsumer(aeron);
         final List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
 
-        aeron.adminThread().process();
+        aeron.conductor().process();
         skip(toMediaDriver, 1);
 
         final LogAppender logAppender = logAppenders.get(0);
-        final int eventCount = logAppender.capacity() / sendBuffer.capacity();
+        final int eventCount = logAppender.capacity() / SEND_BUFFER_CAPACITY;
 
         writePackets(logAppender, eventCount);
         assertThat(consumer.process(), is(eventCount));
@@ -369,18 +416,18 @@ public class AeronTest
     }
 
     @Test
-    public void bufferRollsShouldNotAffectOtherSessions() throws Exception
+    public void consumerBufferRollsShouldNotAffectOtherSessions() throws Exception
     {
         channel2Handler = eitherSessionHandler();
 
         final RingBuffer toMediaDriver = conductorBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
-        final Consumer consumer = newReceiver(aeron);
+        final Consumer consumer = newConsumer(aeron);
         final List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
         final List<LogAppender> otherLogAppenders = createLogAppenders(SESSION_ID_2);
         sendNewBufferNotification(NEW_RECEIVE_BUFFER_NOTIFICATION, 1L, SESSION_ID);
 
-        aeron.adminThread().process();
+        aeron.conductor().process();
         skip(toMediaDriver, 1);
 
         final LogAppender logAppender = logAppenders.get(0);
@@ -460,7 +507,7 @@ public class AeronTest
         assertTrue(apiBuffer.write(eventTypeId, atomicSendBuffer, 0, identifiedMessage.length()));
     }
 
-    private Consumer newReceiver(final Aeron aeron)
+    private Consumer newConsumer(final Aeron aeron)
     {
         final Consumer.Context context = new Consumer.Context()
             .destination(new Destination(DESTINATION))

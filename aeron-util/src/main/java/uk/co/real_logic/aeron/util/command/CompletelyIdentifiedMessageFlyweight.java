@@ -24,7 +24,7 @@ import java.nio.ByteOrder;
  * represent a Triple of Session ID/Channel Id/Term ID and a destination. These are:
  *
  * <ul>
- *     <li>Request Term</li>
+ *     <li>Request Cleaned Term</li>
  *     <li>New Receive Buffer Notification</li>
  *     <li>New Send Buffer Notification</li>
  * </ul>

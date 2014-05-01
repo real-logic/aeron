@@ -79,11 +79,11 @@ public class UnicastTest
 
     private void process() throws Exception
     {
-        producingClient.adminThread().process();
+        producingClient.conductor().process();
         driver.adminThread().process();
         driver.senderThread().process();
         driver.receiverThread().process();
-        receivingClient.adminThread().process();
+        receivingClient.conductor().process();
         consumer.process();
     }
 

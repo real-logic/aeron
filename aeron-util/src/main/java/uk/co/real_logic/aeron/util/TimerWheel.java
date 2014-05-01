@@ -246,14 +246,17 @@ public class TimerWheel
         }
 
         /**
-         * Cancel pending timer.
+         * Cancel pending timer. Idempotent.
          *
          * @return indication of success or failure
          */
         public boolean cancel()
         {
-            remove();
-            state = TimerState.CANCELLED;
+            if (isActive())
+            {
+                remove();
+                state = TimerState.CANCELLED;
+            }
             return true;
         }
 

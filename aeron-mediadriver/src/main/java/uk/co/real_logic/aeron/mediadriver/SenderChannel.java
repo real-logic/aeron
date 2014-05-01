@@ -203,10 +203,7 @@ public class SenderChannel
                                                               receiverWindow);
         activeFlowControlState.updateRightEdgeOfWindow(rightEdge);
 
-        if (flowControlTimer.isActive())
-        {
-            flowControlTimer.cancel();
-        }
+        flowControlTimer.cancel();
     }
 
     public void onFlowControlTimer()

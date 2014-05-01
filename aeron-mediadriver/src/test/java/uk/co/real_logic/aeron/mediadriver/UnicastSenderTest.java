@@ -48,6 +48,7 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.mediadriver.MediaConductor.HEADER_LENGTH;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.*;
+import static uk.co.real_logic.aeron.mediadriver.SenderChannel.FLOW_CONTROL_TIMEOUT_MILLISECONDS;
 import static uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy.newMappedBufferManager;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.ErrorCode.*;
@@ -55,6 +56,7 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.BASE_HEADER_LENGTH;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_LENGTH;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertEventRead;
+import static uk.co.real_logic.aeron.util.protocol.HeaderFlyweight.HDR_TYPE_DATA;
 
 public class UnicastSenderTest
 {
@@ -75,11 +77,11 @@ public class UnicastSenderTest
     @ClassRule
     public static SharedDirectories directory = new SharedDirectories();
 
-    private final ByteBuffer sendBuffer = ByteBuffer.allocateDirect(BUFFER_SIZE);
-    private final AtomicBuffer writeBuffer = new AtomicBuffer(sendBuffer);
+    private final ByteBuffer wrappedWriteBuffer = ByteBuffer.allocateDirect(BUFFER_SIZE);
+    private final AtomicBuffer writeBuffer = new AtomicBuffer(wrappedWriteBuffer);
 
-    private final ByteBuffer recvBuffer = ByteBuffer.allocate(256);
-    private final AtomicBuffer readBuffer = new AtomicBuffer(recvBuffer);
+    private final ByteBuffer wrappedReadBuffer = ByteBuffer.allocate(256);
+    private final AtomicBuffer readBuffer = new AtomicBuffer(wrappedReadBuffer);
 
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
     private final ErrorHeaderFlyweight error = new ErrorHeaderFlyweight();
@@ -126,7 +128,7 @@ public class UnicastSenderTest
         receiverChannel.configureBlocking(false);
         receiverChannel.bind(new InetSocketAddress(HOST, PORT));
 
-        sendBuffer.clear();
+        wrappedWriteBuffer.clear();
     }
 
     @After
@@ -268,13 +270,6 @@ public class UnicastSenderTest
         assertPacketContainsValue();
     }
 
-    private long assertNotifiesTermBuffer()
-    {
-        final AtomicLong termId = new AtomicLong(0);
-        assertEventRead(buffers.toApi(), assertNotifiesNewBuffer(termId));
-        return termId.get();
-    }
-
     @Test(timeout = 1000)
     public void shouldNotSend0LengthDataFrameAfterReceivingStatusMessage() throws Exception
     {
@@ -285,7 +280,7 @@ public class UnicastSenderTest
 
         sendStatusMessage(controlAddr, termId, 0, 0);
 
-        advanceTimeMilliseconds(300);  // should send 0 length data after 100 msec, so give a bit more time
+        advanceTimeMilliseconds(3 * FLOW_CONTROL_TIMEOUT_MILLISECONDS);  // should send 0 length data after 100 msec, so give a bit more time
 
         assertNotReceivedPacket();
     }
@@ -333,17 +328,65 @@ public class UnicastSenderTest
         assertNotReceivedPacket();
     }
 
-    @Ignore
     @Test(timeout = 1000)
-    public void shouldSendHeartbeatWhenIdle()
+    public void shouldSend0LengthDataOnChannelWhenTimeoutWithoutStatusMessage() throws Exception
     {
-        // TODO: finish. add_channel, send SM, append data, send data, then idle for time. Make sure sends heartbeat.
+        successfullyAddChannel();
 
+        assertEventRead(buffers.toApi(), (eventTypeId, buffer, index, length) ->
+        {
+            assertThat(eventTypeId, is(NEW_SEND_BUFFER_NOTIFICATION));
+        });
+
+        advanceTimeMilliseconds(FLOW_CONTROL_TIMEOUT_MILLISECONDS - 10);   // should not send yet....
+
+        assertNotReceivedPacket();
+
+        advanceTimeMilliseconds(FLOW_CONTROL_TIMEOUT_MILLISECONDS + 10);  // should send 0 length data after 100 msec, so give a bit more time
+
+        assertReceivedZeroLengthPacket();
+    }
+
+    @Test(timeout = 1000)
+    public void shouldSendHeartbeatWhenIdle() throws Exception
+    {
+        successfullyAddChannel();
+
+        final InetSocketAddress controlAddr = determineControlAddressToSendTo();
+        final long termId = assertNotifiesTermBuffer();
+
+        // give it enough window to send
+        sendStatusMessage(controlAddr, termId, 0, 1000);
+
+        // append & send data
+        final LogAppender logAppender = mapLogAppenders(URI, SESSION_ID, CHANNEL_ID).get(0);
+        writeBuffer.putInt(0, VALUE, ByteOrder.BIG_ENDIAN);
+        assertTrue(logAppender.append(writeBuffer, 0, 64));
+        processThreads(5);
+
+        assertReceivedPacket();
+
+        // idle for time
+        advanceTimeMilliseconds(5 * FLOW_CONTROL_TIMEOUT_MILLISECONDS);
+
+        // heartbeat
+        assertReceivedZeroLengthPacket();
+    }
+
+    private void assertReceivedZeroLengthPacket() throws IOException
+    {
+        assertReceivedPacket();
+
+        dataHeader.wrap(readBuffer, 0);
+        assertThat(dataHeader.headerType(), is(HDR_TYPE_DATA));
+        assertThat(dataHeader.sessionId(), is(SESSION_ID));
+        assertThat(dataHeader.channelId(), is(CHANNEL_ID));
+        assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH)); // 0 length data
     }
 
     private void assertReceivedPacket() throws IOException
     {
-        SocketAddress address = receiverChannel.receive(recvBuffer);
+        SocketAddress address = receiverChannel.receive(wrappedReadBuffer);
         assertNotNull(address);
     }
 
@@ -354,14 +397,21 @@ public class UnicastSenderTest
         assertThat(channelMessage.destination(), is(URI));
     }
 
+    private long assertNotifiesTermBuffer()
+    {
+        final AtomicLong termId = new AtomicLong(0);
+        assertEventRead(buffers.toApi(), assertNotifiesNewBuffer(termId));
+        return termId.get();
+    }
+
     private void assertPacketContainsValue()
     {
-        assertThat(recvBuffer.getInt(HEADER_LENGTH), is(VALUE));
+        assertThat(wrappedReadBuffer.getInt(HEADER_LENGTH), is(VALUE));
     }
 
     private void assertNotReceivedPacket() throws IOException
     {
-        final SocketAddress address = receiverChannel.receive(recvBuffer);
+        final SocketAddress address = receiverChannel.receive(wrappedReadBuffer);
         assertNull(address);
     }
 
@@ -385,31 +435,6 @@ public class UnicastSenderTest
         writeChannelMessage(ADD_CHANNEL, URI, SESSION_ID, CHANNEL_ID);
         processThreads(1);
         assertRegisteredFrameHandler();
-    }
-
-    @Test(timeout = 1000)
-    public void shouldSend0LengthDataOnChannelWhenTimeoutWithoutStatusMessage() throws Exception
-    {
-        successfullyAddChannel();
-
-        assertEventRead(buffers.toApi(), (eventTypeId, buffer, index, length) ->
-        {
-            assertThat(eventTypeId, is(NEW_SEND_BUFFER_NOTIFICATION));
-        });
-
-        advanceTimeMilliseconds(90);   // should not send yet....
-
-        assertNotReceivedPacket();
-
-        advanceTimeMilliseconds(110);  // should send 0 length data after 100 msec, so give a bit more time
-
-        assertReceivedPacket();
-
-        dataHeader.wrap(readBuffer, 0);
-        assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
-        assertThat(dataHeader.sessionId(), is(SESSION_ID));
-        assertThat(dataHeader.channelId(), is(CHANNEL_ID));
-        assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH)); // 0 length data
     }
 
     private void appendValue() throws IOException
@@ -462,9 +487,9 @@ public class UnicastSenderTest
                      .headerType(HeaderFlyweight.HDR_TYPE_SM)
                      .frameLength(StatusMessageFlyweight.HEADER_LENGTH);
 
-        sendBuffer.position(0);
-        sendBuffer.limit(StatusMessageFlyweight.HEADER_LENGTH);
-        receiverChannel.send(sendBuffer, destAddr);
+        wrappedWriteBuffer.position(0);
+        wrappedWriteBuffer.limit(StatusMessageFlyweight.HEADER_LENGTH);
+        receiverChannel.send(wrappedWriteBuffer, destAddr);
     }
 
     private void processThreads(final int iterations)

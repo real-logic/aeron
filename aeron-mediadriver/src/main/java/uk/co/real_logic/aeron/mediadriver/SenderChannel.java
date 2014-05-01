@@ -218,6 +218,7 @@ public class SenderChannel
         // send 0 length data frame with current sequenceNumber
         dataHeader.wrap(scratchAtomicBuffer, 0);
 
+        System.out.println(sessionId);
         dataHeader.sessionId(sessionId)
                   .channelId(channelId)
                   .termId(currentTermId.get())

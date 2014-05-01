@@ -26,9 +26,9 @@ import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.CLEAN_WINDOW;
 
 /**
@@ -37,7 +37,9 @@ import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.CLEAN_WINDOW;
  */
 public class SenderChannel
 {
-    public static final int FLOW_CONTROL_TIMEOUT_MILLISECONDS = 100;
+    // TODO: discuss with Todd about whether we need two timeouts here
+    public static final int FLOW_CONTROL_TIMEOUT_IN_MILLISECONDS = 100;
+    public static final int HEARTBEAT_TIMEOUT_IN_MILLISECONDS = 500;
 
     private final ControlFrameHandler frameHandler;
     private final SenderControlStrategy controlStrategy;
@@ -52,20 +54,17 @@ public class SenderChannel
 
     private final int headerLength;
     private final int mtuLength;
-    private final Timer flowControlTimer;
     private final ByteBuffer scratchSendBuffer = ByteBuffer.allocateDirect(DataHeaderFlyweight.HEADER_LENGTH);
     private final AtomicBuffer scratchAtomicBuffer = new AtomicBuffer(scratchSendBuffer);
-
-    private int currentIndex;
-
     private final MtuScanner[] scanners;
 
     /** duplicate log buffers to work around the lack of a (buffer, start, length) send method */
     private final ByteBuffer[] sendBuffers;
-
     private final SenderFlowControlState activeFlowControlState = new SenderFlowControlState(0);
-
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
+
+    private int currentIndex;
+    private Timer flowControlTimer;
 
     public SenderChannel(final ControlFrameHandler frameHandler,
                          final SenderControlStrategy controlStrategy,
@@ -97,9 +96,14 @@ public class SenderChannel
         currentTermId = new AtomicLong(initialTermId);
         cleanedTermId = new AtomicLong(initialTermId + 2);
 
-        this.flowControlTimer = frameHandler.newTimeout(FLOW_CONTROL_TIMEOUT_MILLISECONDS,
-                                                        TimeUnit.MILLISECONDS,
-                                                        this::onFlowControlTimer);
+        initiateFlowControlTimer(FLOW_CONTROL_TIMEOUT_IN_MILLISECONDS);
+    }
+
+    private void initiateFlowControlTimer(final int timeoutInMilliseconds)
+    {
+        flowControlTimer = frameHandler.newTimeout(timeoutInMilliseconds,
+                                                   MILLISECONDS,
+                                                   this::onFlowControlTimer);
     }
 
     private ByteBuffer duplicateLogBuffer(final LogBuffers log)
@@ -204,6 +208,7 @@ public class SenderChannel
         activeFlowControlState.updateRightEdgeOfWindow(rightEdge);
 
         flowControlTimer.cancel();
+        initiateFlowControlTimer(HEARTBEAT_TIMEOUT_IN_MILLISECONDS);
     }
 
     public void onFlowControlTimer()
@@ -215,7 +220,6 @@ public class SenderChannel
         // send 0 length data frame with current sequenceNumber
         dataHeader.wrap(scratchAtomicBuffer, 0);
 
-        System.out.println(sessionId);
         dataHeader.sessionId(sessionId)
                   .channelId(channelId)
                   .termId(currentTermId.get())
@@ -233,7 +237,8 @@ public class SenderChannel
             final int bytesSent = frameHandler.send(scratchSendBuffer);
             if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
             {
-                // TODO: error
+                // TODO: log or count error
+                System.out.println("Error sending heartbeat packet");
             }
         }
         catch (final Exception ex)

@@ -48,7 +48,8 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.mediadriver.MediaConductor.HEADER_LENGTH;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.*;
-import static uk.co.real_logic.aeron.mediadriver.SenderChannel.FLOW_CONTROL_TIMEOUT_MILLISECONDS;
+import static uk.co.real_logic.aeron.mediadriver.SenderChannel.FLOW_CONTROL_TIMEOUT_IN_MILLISECONDS;
+import static uk.co.real_logic.aeron.mediadriver.SenderChannel.HEARTBEAT_TIMEOUT_IN_MILLISECONDS;
 import static uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy.newMappedBufferManager;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.ErrorCode.*;
@@ -280,7 +281,8 @@ public class UnicastSenderTest
 
         sendStatusMessage(controlAddr, termId, 0, 0);
 
-        advanceTimeMilliseconds(3 * FLOW_CONTROL_TIMEOUT_MILLISECONDS);  // should send 0 length data after 100 msec, so give a bit more time
+        // should send 0 length data after 100 msec, so give a bit more time
+        advanceTimeMilliseconds(3 * FLOW_CONTROL_TIMEOUT_IN_MILLISECONDS);
 
         assertNotReceivedPacket();
     }
@@ -338,16 +340,16 @@ public class UnicastSenderTest
             assertThat(eventTypeId, is(NEW_SEND_BUFFER_NOTIFICATION));
         });
 
-        advanceTimeMilliseconds(FLOW_CONTROL_TIMEOUT_MILLISECONDS - 10);   // should not send yet....
+        advanceTimeMilliseconds(FLOW_CONTROL_TIMEOUT_IN_MILLISECONDS - 10);   // should not send yet....
 
         assertNotReceivedPacket();
 
-        advanceTimeMilliseconds(FLOW_CONTROL_TIMEOUT_MILLISECONDS + 10);  // should send 0 length data after 100 msec, so give a bit more time
+        advanceTimeMilliseconds(FLOW_CONTROL_TIMEOUT_IN_MILLISECONDS + 10);  // should send 0 length data after 100 msec, so give a bit more time
 
         assertReceivedZeroLengthPacket();
     }
 
-    @Test(timeout = 1000)
+    @Test(timeout = 100000)
     public void shouldSendHeartbeatWhenIdle() throws Exception
     {
         successfullyAddChannel();
@@ -364,10 +366,12 @@ public class UnicastSenderTest
         assertTrue(logAppender.append(writeBuffer, 0, 64));
         processThreads(5);
 
+        // data packet
         assertReceivedPacket();
+        assertPacketContainsValue();
 
         // idle for time
-        advanceTimeMilliseconds(5 * FLOW_CONTROL_TIMEOUT_MILLISECONDS);
+        advanceTimeMilliseconds(2 * HEARTBEAT_TIMEOUT_IN_MILLISECONDS);
 
         // heartbeat
         assertReceivedZeroLengthPacket();
@@ -379,13 +383,14 @@ public class UnicastSenderTest
 
         dataHeader.wrap(readBuffer, 0);
         assertThat(dataHeader.headerType(), is(HDR_TYPE_DATA));
-        assertThat(dataHeader.sessionId(), is(SESSION_ID));
         assertThat(dataHeader.channelId(), is(CHANNEL_ID));
+        assertThat(dataHeader.sessionId(), is(SESSION_ID));
         assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH)); // 0 length data
     }
 
     private void assertReceivedPacket() throws IOException
     {
+        wrappedReadBuffer.clear();
         SocketAddress address = receiverChannel.receive(wrappedReadBuffer);
         assertNotNull(address);
     }

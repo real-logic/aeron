@@ -16,7 +16,6 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.conductor.ClientConductorCursor;
-import uk.co.real_logic.aeron.conductor.TermBufferNotifier;
 import uk.co.real_logic.aeron.util.AtomicArray;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -50,11 +49,9 @@ public class Source implements AutoCloseable
      */
     public Channel newChannel(final long channelId)
     {
-        final TermBufferNotifier bufferNotifier = new TermBufferNotifier();
         final AtomicBoolean pauseButton = new AtomicBoolean(false);
         final Channel channel = new Channel(destination.destination(),
                                             adminThread,
-                                            bufferNotifier,
                                             channelId,
                                             sessionId,
                                             channels,

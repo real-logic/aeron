@@ -16,9 +16,7 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.conductor.ChannelNotifiable;
-import uk.co.real_logic.aeron.conductor.TermBufferNotifier;
 import uk.co.real_logic.aeron.util.BitUtil;
-import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 
@@ -39,7 +37,7 @@ public class ConsumerChannel extends ChannelNotifiable
 
     public ConsumerChannel(final Destination destination, final long channelId, final Consumer.DataHandler dataHandler)
     {
-        super(new TermBufferNotifier(), destination.destination(), channelId);
+        super(destination.destination(), channelId);
 
         this.dataHandler = dataHandler;
     }

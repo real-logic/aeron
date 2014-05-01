@@ -17,13 +17,11 @@ package uk.co.real_logic.aeron.conductor;
 
 public abstract class ChannelNotifiable
 {
-    protected final TermBufferNotifier bufferNotifier;
     protected final String destination;
     protected final long channelId;
 
-    public ChannelNotifiable(final TermBufferNotifier bufferNotifier, final String destination, final long channelId)
+    public ChannelNotifiable(final String destination, final long channelId)
     {
-        this.bufferNotifier = bufferNotifier;
         this.destination = destination;
         this.channelId = channelId;
     }
@@ -31,7 +29,5 @@ public abstract class ChannelNotifiable
     protected abstract boolean hasTerm(final long sessionId);
 
     public abstract void initialTerm(final long sessionId, final long termId);
-
-    //public abstract void cleanedTermBuffer(long sessionId, long termId);
 
 }

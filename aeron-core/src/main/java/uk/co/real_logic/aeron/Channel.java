@@ -17,13 +17,10 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.conductor.ChannelNotifiable;
 import uk.co.real_logic.aeron.conductor.ClientConductorCursor;
-import uk.co.real_logic.aeron.conductor.TermBufferNotifier;
 import uk.co.real_logic.aeron.util.AtomicArray;
-import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 
-import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -50,13 +47,12 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
 
     public Channel(final String destination,
                    final ClientConductorCursor adminCursor,
-                   final TermBufferNotifier bufferNotifier,
                    final long channelId,
                    final long sessionId,
                    final AtomicArray<Channel> channels,
                    final AtomicBoolean paused)
     {
-        super(bufferNotifier, destination, channelId);
+        super(destination, channelId);
 
         this.adminThread = adminCursor;
         this.sessionId = sessionId;

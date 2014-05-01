@@ -32,6 +32,6 @@ public abstract class ChannelNotifiable
 
     public abstract void initialTerm(final long sessionId, final long termId);
 
-    public abstract void cleanedTermBuffer(long sessionId, long termId);
+    //public abstract void cleanedTermBuffer(long sessionId, long termId);
 
 }

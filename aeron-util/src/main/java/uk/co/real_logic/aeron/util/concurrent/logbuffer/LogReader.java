@@ -107,6 +107,16 @@ public class LogReader
         return cursor >= logBuffer.capacity();
     }
 
+    /**
+     * Returns the current tail of the buffer, using a volatile read.
+     *
+     * @return the current tail.
+     */
+    public int tailVolatile()
+    {
+        return stateViewer.tailVolatile();
+    }
+
     private int type(final int frameOffset)
     {
         return logBuffer.getInt(typeOffset(frameOffset), LITTLE_ENDIAN);

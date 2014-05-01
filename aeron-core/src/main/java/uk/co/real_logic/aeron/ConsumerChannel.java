@@ -18,12 +18,14 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.aeron.conductor.ChannelNotifiable;
 import uk.co.real_logic.aeron.conductor.TermBufferNotifier;
 import uk.co.real_logic.aeron.util.BitUtil;
+import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 
 import java.util.concurrent.atomic.AtomicLong;
 
 import static uk.co.real_logic.aeron.Consumer.MessageFlags.NONE;
+import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.rotateId;
 import static uk.co.real_logic.aeron.util.ChannelCounters.UNKNOWN_TERM_ID;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.BASE_HEADER_LENGTH;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.WORD_ALIGNMENT;
@@ -63,7 +65,6 @@ public class ConsumerChannel extends ChannelNotifiable
         private final LogReader[] logReaders;
         private final long sessionId;
         private final AtomicLong currentTermId;
-        private final AtomicLong cleanedTermId;
 
         private int currentBuffer;
 
@@ -72,7 +73,6 @@ public class ConsumerChannel extends ChannelNotifiable
             this.logReaders = readers;
             this.sessionId = sessionId;
             currentTermId = new AtomicLong(UNKNOWN_TERM_ID);
-            cleanedTermId = new AtomicLong(UNKNOWN_TERM_ID);
             currentBuffer = 0;
         }
 
@@ -81,12 +81,13 @@ public class ConsumerChannel extends ChannelNotifiable
             LogReader logReader = logReaders[currentBuffer];
             if (logReader.isComplete())
             {
-                final long candidateTermId = currentTermId.get() + 1;
-                if (candidateTermId <= cleanedTermId.get())
+                final int candidateBuffer = rotateId(currentBuffer);
+                final LogReader washedBuffer = logReaders[rotateId(candidateBuffer)];
+                if (hasCleanBuffer(washedBuffer))
                 {
-                    currentBuffer = BitUtil.next(currentBuffer, logReaders.length);
-                    logReader = logReaders[currentBuffer];
-                    currentTermId.lazySet(candidateTermId);
+                    logReader = logReaders[candidateBuffer];
+                    currentBuffer = candidateBuffer;
+                    currentTermId.incrementAndGet();
                 }
                 else
                 {
@@ -102,14 +103,14 @@ public class ConsumerChannel extends ChannelNotifiable
                 });
         }
 
+        private boolean hasCleanBuffer(final LogReader logReader)
+        {
+            return logReader.tailVolatile() == 0;
+        }
+
         public void initialTerm(final long termId)
         {
             currentTermId.lazySet(termId);
-        }
-
-        public void cleanedTermBuffer(final long termId)
-        {
-            cleanedTermId.lazySet(termId);
         }
 
         public boolean hasTerm()
@@ -127,11 +128,6 @@ public class ConsumerChannel extends ChannelNotifiable
     public void initialTerm(final long sessionId, final long termId)
     {
         logReaders.get(sessionId).initialTerm(termId);
-    }
-
-    public void cleanedTermBuffer(final long sessionId, final long termId)
-    {
-        logReaders.get(sessionId).cleanedTermBuffer(termId);
     }
 
     public void onBuffersMapped(final long sessionId, final LogReader[] logReaders)

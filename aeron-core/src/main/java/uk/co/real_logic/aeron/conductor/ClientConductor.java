@@ -302,8 +302,10 @@ public final class ClientConductor extends Service implements MediaDriverFacade
                 notifier.accept(channel, logs);
                 channel.initialTerm(sessionId, termId);
             }
-
-            channel.cleanedTermBuffer(sessionId, termId);
+            else
+            {
+                // TODO is this an error, or a reasonable case?
+            }
         }
         catch (final Exception ex)
         {

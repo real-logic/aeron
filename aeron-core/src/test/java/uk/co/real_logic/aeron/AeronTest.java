@@ -28,6 +28,7 @@ import uk.co.real_logic.aeron.util.command.ConsumerMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.EventHandler;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.StateViewer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
@@ -299,7 +300,10 @@ public class AeronTest
         final RingBuffer toMediaDriver = conductorBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
         final Consumer consumer = newReceiver(aeron);
-        final List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
+        final List<Buffers> termBuffers =
+            createTermBuffer(0L, NEW_RECEIVE_BUFFER_NOTIFICATION, directory.receiverDir(), SESSION_ID);
+
+        final List<LogAppender> logAppenders = createLogAppenders(termBuffers);
 
         aeron.adminThread().process();
         skip(toMediaDriver, 1);
@@ -310,15 +314,33 @@ public class AeronTest
         writePackets(logAppender, eventCount);
         assertThat(consumer.process(), is(eventCount));
 
-        sendNewBufferNotification(NEW_RECEIVE_BUFFER_NOTIFICATION, 1L, SESSION_ID);
-        sendNewBufferNotification(NEW_RECEIVE_BUFFER_NOTIFICATION, 2L, SESSION_ID);
-        aeron.adminThread().process();
+        // cleaning is triggered by the receiver and not the consumer
+        // so we clean two ahead of the current buffer
+        cleanBuffer(termBuffers.get(2));
 
         writePackets(logAppenders.get(1), eventCount);
         assertThat(consumer.process(), is(eventCount));
 
+        cleanBuffer(termBuffers.get(0));
+
         writePackets(logAppenders.get(2), eventCount);
         assertThat(consumer.process(), is(eventCount));
+    }
+
+    private void cleanBuffer(final Buffers buffers)
+    {
+        cleanBuffer(buffers.logBuffer());
+        cleanBuffer(buffers.stateBuffer());
+    }
+
+    private void cleanBuffer(final AtomicBuffer buffer)
+    {
+        buffer.putBytes(0, new byte[buffer.capacity()]);
+    }
+
+    private List<LogAppender> createLogAppenders(final List<Buffers> termBuffers)
+    {
+        return mapLoggers(termBuffers, DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }
 
     @Test
@@ -341,6 +363,9 @@ public class AeronTest
         assertThat(consumer.process(), is(eventCount));
 
         writePackets(logAppenders.get(1), eventCount);
+        assertThat(consumer.process(), is(eventCount));
+
+        writePackets(logAppenders.get(2), eventCount);
         assertThat(consumer.process(), is(0));
     }
 
@@ -412,7 +437,7 @@ public class AeronTest
         final List<Buffers> termBuffers =
             createTermBuffer(0L, NEW_RECEIVE_BUFFER_NOTIFICATION, directory.receiverDir(), sessionId);
 
-        return mapLoggers(termBuffers, DEFAULT_HEADER, MAX_FRAME_LENGTH);
+        return createLogAppenders(termBuffers);
     }
 
     private List<Buffers> createTermBuffer(final long termId,

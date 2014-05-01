@@ -66,7 +66,7 @@ public class UnicastReceiverTest
     private static final long SESSION_ID = 0xdeadbeefL;
     private static final long TERM_ID = 0xec1L;
     private static final int VALUE = 37;
-    public static final int FAKE_PACKET_SIZE = 128;
+    private static final int FAKE_PACKET_SIZE = 128;
 
     @ClassRule
     public static ConductorBuffers buffers = new ConductorBuffers(COMMAND_BUFFER_SZ + TRAILER_LENGTH);

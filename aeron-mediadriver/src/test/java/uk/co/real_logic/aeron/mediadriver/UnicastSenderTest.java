@@ -256,12 +256,11 @@ public class UnicastSenderTest
     {
         successfullyAddChannel();
 
-        final AtomicLong termId = new AtomicLong(0);
         final InetSocketAddress controlAddr = determineControlAddressToSendTo();
-        assertEventRead(buffers.toApi(), assertNotifiesNewBuffer(termId));
+        final long termId = assertNotifiesTermBuffer();
 
         // give it enough window to send
-        sendStatusMessage(controlAddr, termId.get(), 0, 1000);
+        sendStatusMessage(controlAddr, termId, 0, 1000);
         appendValue();
         processThreads(5);
 
@@ -269,17 +268,22 @@ public class UnicastSenderTest
         assertPacketContainsValue();
     }
 
+    private long assertNotifiesTermBuffer()
+    {
+        final AtomicLong termId = new AtomicLong(0);
+        assertEventRead(buffers.toApi(), assertNotifiesNewBuffer(termId));
+        return termId.get();
+    }
+
     @Test(timeout = 1000)
     public void shouldNotSend0LengthDataFrameAfterReceivingStatusMessage() throws Exception
     {
         successfullyAddChannel();
 
-        final AtomicLong termId = new AtomicLong(0);
         final InetSocketAddress controlAddr = determineControlAddressToSendTo();
+        final long termId = assertNotifiesTermBuffer();
 
-        assertEventRead(buffers.toApi(), assertNotifiesNewBuffer(termId));
-
-        sendStatusMessage(controlAddr, termId.get(), 0, 0);
+        sendStatusMessage(controlAddr, termId, 0, 0);
 
         advanceTimeMilliseconds(300);  // should send 0 length data after 100 msec, so give a bit more time
 
@@ -291,16 +295,15 @@ public class UnicastSenderTest
     {
         successfullyAddChannel();
 
-        final AtomicLong termId = new AtomicLong(0);
         final InetSocketAddress controlAddr = determineControlAddressToSendTo();
-        assertEventRead(buffers.toApi(), assertNotifiesNewBuffer(termId));
+        final long termId = assertNotifiesTermBuffer();
 
         appendValue();
 
         processThreads(5);
         assertNotReceivedPacket();
 
-        sendStatusMessage(controlAddr, termId.get(), 0, 1000);
+        sendStatusMessage(controlAddr, termId, 0, 1000);
         processThreads(5);
 
         assertReceivedPacket();
@@ -312,12 +315,11 @@ public class UnicastSenderTest
     {
         successfullyAddChannel();
 
-        final AtomicLong termId = new AtomicLong(0);
         final InetSocketAddress controlAddr = determineControlAddressToSendTo();
-        assertEventRead(buffers.toApi(), assertNotifiesNewBuffer(termId));
+        final long termId = assertNotifiesTermBuffer();
 
         // give it enough window to send
-        sendStatusMessage(controlAddr, termId.get(), 0, 1000);
+        sendStatusMessage(controlAddr, termId, 0, 1000);
 
         final LogAppender logAppender = mapLogAppenders(URI, SESSION_ID, CHANNEL_ID).get(0);
         writeBuffer.putInt(0, VALUE, ByteOrder.BIG_ENDIAN);
@@ -336,6 +338,7 @@ public class UnicastSenderTest
     public void shouldSendHeartbeatWhenIdle()
     {
         // TODO: finish. add_channel, send SM, append data, send data, then idle for time. Make sure sends heartbeat.
+
     }
 
     private void assertReceivedPacket() throws IOException

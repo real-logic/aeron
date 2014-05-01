@@ -191,13 +191,16 @@ public class SenderChannel
         return channelId;
     }
 
+    /**
+     * This is performed on the Media Conductor thread
+     */
     public void onStatusMessage(final long termId,
                                 final long highestContiguousSequenceNumber,
                                 final long receiverWindow)
     {
         final int rightEdge = controlStrategy.onStatusMessage(termId,
-                                                                  highestContiguousSequenceNumber,
-                                                                  receiverWindow);
+                                                              highestContiguousSequenceNumber,
+                                                              receiverWindow);
         activeFlowControlState.updateRightEdgeOfWindow(rightEdge);
 
         if (flowControlTimer.isActive())
@@ -242,6 +245,9 @@ public class SenderChannel
         }
     }
 
+    /**
+     * This is performed on the Media Conductor thread
+     */
     public void processBufferRotation()
     {
         final long requiredCleanTermid = currentTermId.get() + CLEAN_WINDOW;

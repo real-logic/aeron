@@ -196,6 +196,7 @@ public final class ClientConductor extends Service implements MediaDriverFacade
         {
             recvNotifiers.remove(destination, channelId);
         }
+        // TOOD: release buffers
     }
 
     private void addSender(final String destination, final long channelId, final long sessionId)
@@ -218,6 +219,8 @@ public final class ClientConductor extends Service implements MediaDriverFacade
         {
             // TODO: log an error
         }
+
+        bufferUsage.releaseSenderBuffers(destination, channelId, sessionId);
     }
 
     private void handleReceiveBuffer()
@@ -341,8 +344,8 @@ public final class ClientConductor extends Service implements MediaDriverFacade
                                 final long sessionId,
                                 final int index) throws IOException
     {
-        final AtomicBuffer logBuffer = bufferUsage.newReceiverLogBuffer(destination, channelId, sessionId, index);
-        final AtomicBuffer stateBuffer = bufferUsage.newReceiverStateBuffer(destination, channelId, sessionId, index);
+        final AtomicBuffer logBuffer = bufferUsage.newConsumerLogBuffer(destination, channelId, sessionId, index);
+        final AtomicBuffer stateBuffer = bufferUsage.newConsumerStateBuffer(destination, channelId, sessionId, index);
 
         return new LogReader(logBuffer, stateBuffer);
     }

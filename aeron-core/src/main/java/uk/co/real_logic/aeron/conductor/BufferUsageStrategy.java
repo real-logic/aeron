@@ -38,14 +38,21 @@ public interface BufferUsageStrategy
                                       final long channelId,
                                       final int index) throws IOException;
 
-    AtomicBuffer newReceiverLogBuffer(final String destination,
+    AtomicBuffer newConsumerLogBuffer(final String destination,
                                       final long channelId,
                                       final long sessionId,
                                       final int index) throws IOException;
 
-    AtomicBuffer newReceiverStateBuffer(final String destination,
+    AtomicBuffer newConsumerStateBuffer(final String destination,
                                         final long channelId,
                                         final long sessionId,
                                         final int index) throws IOException;
 
+    int releaseConsumerBuffers(final String destination,
+                             final long sessionId,
+                             final long channelId);
+
+    int releaseSenderBuffers(final String destination,
+                             final long sessionId,
+                             final long channelId);
 }

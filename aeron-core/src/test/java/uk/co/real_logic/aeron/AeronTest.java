@@ -363,13 +363,21 @@ public class AeronTest
         // cleaning is triggered by the receiver and not the consumer
         // so we clean two ahead of the current buffer
         cleanBuffer(termBuffers.get(2));
+        aeron.conductor().process();
 
         writePackets(logAppenders.get(1), eventCount);
         assertThat(consumer.process(), is(eventCount));
 
         cleanBuffer(termBuffers.get(0));
+        aeron.conductor().process();
 
         writePackets(logAppenders.get(2), eventCount);
+        assertThat(consumer.process(), is(eventCount));
+
+        cleanBuffer(termBuffers.get(1));
+        aeron.conductor().process();
+
+        writePackets(logAppender, eventCount);
         assertThat(consumer.process(), is(eventCount));
     }
 
@@ -412,6 +420,12 @@ public class AeronTest
         assertThat(consumer.process(), is(eventCount));
 
         writePackets(logAppenders.get(2), eventCount);
+        assertThat(consumer.process(), is(eventCount));
+
+        // force the roll
+        assertThat(consumer.process(), is(eventCount));
+
+        // Now you've hit an unclean buffer and can't proceed
         assertThat(consumer.process(), is(0));
     }
 

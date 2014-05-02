@@ -110,12 +110,13 @@ public final class ClientConductor extends Service implements MediaDriverFacade
     {
         handleCommandBuffer();
         handleReceiveBuffer();
-        scanProducerBuffers();
+        processBufferCleaningScan();
     }
 
-    private void scanProducerBuffers()
+    private void processBufferCleaningScan()
     {
-        producers.forEach(Channel::scanForBufferRotation);
+        producers.forEach(Channel::processBufferScan);
+        consumers.forEach(ConsumerChannel::processBufferScan);
     }
 
     private void handleCommandBuffer()

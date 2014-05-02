@@ -172,7 +172,7 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
     /**
      * This is performed on the Client Conductor's thread
      */
-    public void scanForBufferRotation()
+    public void processBufferScan()
     {
         long currentTermId = this.currentTermId.get();
         if (currentTermId == UNKNOWN_TERM_ID)

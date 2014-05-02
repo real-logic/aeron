@@ -192,7 +192,15 @@ public class Long2ObjectHashMap<V>
         return null;
     }
 
-    public V getOrDefault(long key, Supplier<V> supplier)
+    /**
+     * Get a value for a given key, or if it does ot exist then default the value via a {@link Supplier}
+     * and put it in the map.
+     *
+     * @param key to search on.
+     * @param supplier to provide a default if the get returns null.
+     * @return the value if found otherwise the default.
+     */
+    public V getOrDefault(final long key, final Supplier<V> supplier)
     {
         V value = get(key);
         if (value == null)
@@ -200,6 +208,7 @@ public class Long2ObjectHashMap<V>
             value = supplier.get();
             put(key, value);
         }
+
         return value;
     }
 

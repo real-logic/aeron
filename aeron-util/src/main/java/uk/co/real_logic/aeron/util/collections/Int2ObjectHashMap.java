@@ -19,6 +19,7 @@ package uk.co.real_logic.aeron.util.collections;
 import uk.co.real_logic.aeron.util.BitUtil;
 
 import java.util.*;
+import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
 
@@ -191,6 +192,26 @@ public class Int2ObjectHashMap<V>
         }
 
         return null;
+    }
+
+    /**
+     * Get a value for a given key, or if it does ot exist then default the value via a {@link Supplier}
+     * and put it in the map.
+     *
+     * @param key to search on.
+     * @param supplier to provide a default if the get returns null.
+     * @return the value if found otherwise the default.
+     */
+    public V getOrDefault(final int key, final Supplier<V> supplier)
+    {
+        V value = get(key);
+        if (value == null)
+        {
+            value = supplier.get();
+            put(key, value);
+        }
+
+        return value;
     }
 
     /**

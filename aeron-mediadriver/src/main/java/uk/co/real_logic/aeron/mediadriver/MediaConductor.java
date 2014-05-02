@@ -58,8 +58,6 @@ public class MediaConductor extends Service implements LibraryFacade
     private final AtomicBuffer writeBuffer;
     private final TimerWheel timerWheel;
 
-    private final ByteBuffer toMediaDriver;
-    private final ByteBuffer toApi;
     private final Supplier<SenderControlStrategy> senderFlowControl;
 
     private final ThreadLocalRandom rng = ThreadLocalRandom.current();
@@ -68,7 +66,9 @@ public class MediaConductor extends Service implements LibraryFacade
     private final ErrorHeaderFlyweight errorHeaderFlyweight = new ErrorHeaderFlyweight();
     private final CompletelyIdentifiedMessageFlyweight completelyIdentifiedMessageFlyweight =
         new CompletelyIdentifiedMessageFlyweight();
+
     private final int mtuLength;
+    private final ConductorBufferStrategy adminBufferStrategy;
 
     public MediaConductor(final Context ctx,
                           final Receiver receiver,
@@ -94,9 +94,9 @@ public class MediaConductor extends Service implements LibraryFacade
 
         try
         {
-            final ConductorBufferStrategy adminBufferStrategy = ctx.adminBufferStrategy();
-            this.toMediaDriver = adminBufferStrategy.toMediaDriver();
-            this.toApi = adminBufferStrategy.toApi();
+            adminBufferStrategy = ctx.adminBufferStrategy();
+            ByteBuffer toMediaDriver = adminBufferStrategy.toMediaDriver();
+            ByteBuffer toApi = adminBufferStrategy.toApi();
             this.adminReceiveBuffer = new ManyToOneRingBuffer(new AtomicBuffer(toMediaDriver));
             this.adminSendBuffer = new ManyToOneRingBuffer(new AtomicBuffer(toApi));
         }
@@ -231,8 +231,7 @@ public class MediaConductor extends Service implements LibraryFacade
               frameHandler.close();
             });
 
-        IoUtil.unmap((java.nio.MappedByteBuffer)toMediaDriver);
-        IoUtil.unmap((java.nio.MappedByteBuffer)toApi);
+        adminBufferStrategy.close();
     }
 
     public void wakeup()

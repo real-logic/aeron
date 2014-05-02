@@ -17,12 +17,9 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.conductor.ChannelNotifiable;
 import uk.co.real_logic.aeron.util.BitUtil;
-import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 
-import java.nio.Buffer;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static uk.co.real_logic.aeron.Consumer.MessageFlags.NONE;

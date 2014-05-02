@@ -17,24 +17,37 @@ package uk.co.real_logic.aeron.util;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 
 import static uk.co.real_logic.aeron.util.IoUtil.mapExistingFile;
 
 public class MappingConductorBufferStrategy extends ConductorBufferStrategy
 {
 
+    private MappedByteBuffer toMediaDriverBuffer;
+    private MappedByteBuffer toApiBuffer;
+
     public MappingConductorBufferStrategy(final String adminDir)
     {
         super(adminDir);
     }
 
+
     public ByteBuffer toMediaDriver() throws IOException
     {
-        return mapExistingFile(toMediaDriver, MEDIA_DRIVER_FILE);
+        toMediaDriverBuffer = mapExistingFile(toMediaDriver, MEDIA_DRIVER_FILE);
+        return toMediaDriverBuffer;
     }
 
     public ByteBuffer toApi() throws IOException
     {
-        return mapExistingFile(toApi, API_FILE);
+        toApiBuffer = mapExistingFile(toApi, API_FILE);
+        return toApiBuffer;
+    }
+
+    public void close()
+    {
+        IoUtil.unmap(toApiBuffer);
+        IoUtil.unmap(toMediaDriverBuffer);
     }
 }

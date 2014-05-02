@@ -66,8 +66,7 @@ public class ConductorBuffers extends ExternalResource
     protected void after()
     {
         // Force unmapping of byte buffers to allow deletion
-        IoUtil.unmap((java.nio.MappedByteBuffer) toMediaDriver);
-        IoUtil.unmap((java.nio.MappedByteBuffer) toApi);
+        creatingStrategy.close();
     }
 
     public RingBuffer toMediaDriver()

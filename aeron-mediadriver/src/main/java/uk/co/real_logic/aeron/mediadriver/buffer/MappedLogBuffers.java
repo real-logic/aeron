@@ -25,7 +25,7 @@ import java.nio.channels.FileChannel;
 /**
  * .
  */
-class MappedLogBuffers implements LogBuffers, AutoCloseable
+class MappedLogBuffers implements LogBuffers
 {
     private final FileChannel logFile;
     private final FileChannel stateFile;

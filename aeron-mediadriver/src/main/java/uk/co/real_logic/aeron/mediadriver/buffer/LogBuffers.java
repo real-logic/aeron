@@ -20,7 +20,7 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 /**
  * Encapsulates the pair of buffers used for sending/receiving
  */
-public interface LogBuffers
+public interface LogBuffers extends AutoCloseable
 {
     AtomicBuffer logBuffer();
 

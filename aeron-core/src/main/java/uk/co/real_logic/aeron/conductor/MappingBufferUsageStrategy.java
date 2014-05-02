@@ -27,13 +27,13 @@ import static uk.co.real_logic.aeron.util.FileMappingConvention.Type.STATE;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.termLocation;
 
 /**
- * Basic buffer usage where each Term is a file.
+ * Buffer usage where each Term is a memory mapped file.
  */
-public class BasicBufferUsageStrategy implements BufferUsageStrategy
+public class MappingBufferUsageStrategy implements BufferUsageStrategy
 {
     private final FileMappingConvention fileConventions;
 
-    public BasicBufferUsageStrategy(final String dataDir)
+    public MappingBufferUsageStrategy(final String dataDir)
     {
         fileConventions = new FileMappingConvention(dataDir);
     }

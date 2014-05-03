@@ -39,6 +39,7 @@ public class UdpDestination
     private final InetSocketAddress localControl;
 
     private final String uriStr;
+    private final String canonicalRepresentation;
     private final long consistentHash;
 
     public static UdpDestination parse(final String destinationUri)
@@ -55,10 +56,10 @@ public class UdpDestination
             }
 
             final Context context = new Context()
-                .uriStr(destinationUri)
-                .consistentHash(BitUtil.generateConsistentHash(destinationUri.getBytes()));
+                .uriStr(destinationUri);
 
             final InetAddress hostAddress = InetAddress.getByName(uri.getHost());
+
             if (hostAddress.isMulticastAddress())
             {
                 final byte[] addressAsBytes = hostAddress.getAddress();
@@ -68,13 +69,16 @@ public class UdpDestination
                 }
 
                 addressAsBytes[LAST_MULTICAST_DIGIT]++;
-                final InetSocketAddress controlAddress = new InetSocketAddress(getByAddress(addressAsBytes), 0);
-                final InetSocketAddress dataAddress = new InetSocketAddress(hostAddress, 0);
+                final InetSocketAddress controlAddress = new InetSocketAddress(getByAddress(addressAsBytes), uriPort);
+                final InetSocketAddress dataAddress = new InetSocketAddress(hostAddress, uriPort);
+
+                final InetSocketAddress localAddress = determineLocalAddressFromUserInfo(userInfo);
 
                 context.localControlAddress(controlAddress)
                        .remoteControlAddress(controlAddress)
                        .localDataAddress(dataAddress)
-                       .remoteDataAddress(dataAddress);
+                       .remoteDataAddress(dataAddress)
+                       .canonicalRepresentation(generateCanonicalRepresentation(localAddress, dataAddress));
             }
             else
             {
@@ -84,28 +88,16 @@ public class UdpDestination
                 }
 
                 final InetSocketAddress remoteAddress = new InetSocketAddress(hostAddress, uriPort);
+                final InetSocketAddress localAddress = determineLocalAddressFromUserInfo(userInfo);
+
                 context.remoteControlAddress(remoteAddress)
-                       .remoteDataAddress(remoteAddress);
-
-                InetSocketAddress localAddress = new InetSocketAddress(0);
-                if (userInfo != null)
-                {
-                    final int colonIndex = userInfo.indexOf(":");
-                    if (colonIndex == -1)
-                    {
-                        localAddress = new InetSocketAddress(InetAddress.getByName(userInfo), 0);
-                    }
-                    else
-                    {
-                        final InetAddress specifiedLocalHost = InetAddress.getByName(userInfo.substring(0, colonIndex));
-                        final int localPort = Integer.parseInt(userInfo.substring(colonIndex + 1));
-                        localAddress = new InetSocketAddress(specifiedLocalHost, localPort);
-                    }
-                }
-
-                context.localControlAddress(localAddress)
-                       .localDataAddress(localAddress);
+                       .remoteDataAddress(remoteAddress)
+                       .localControlAddress(localAddress)
+                       .localDataAddress(localAddress)
+                       .canonicalRepresentation(generateCanonicalRepresentation(localAddress, remoteAddress));
             }
+
+            context.consistentHash(BitUtil.generateConsistentHash(context.canonicalRepresentation.getBytes()));
 
             return new UdpDestination(context);
         }
@@ -118,6 +110,27 @@ public class UdpDestination
     private static UdpDestination malformedUri(final String destinationUri)
     {
         throw new IllegalArgumentException("malformed destination URI: " + destinationUri);
+    }
+
+    private static InetSocketAddress determineLocalAddressFromUserInfo(final String userInfo) throws Exception
+    {
+        InetSocketAddress localAddress = new InetSocketAddress(0);
+        if (null != userInfo)
+        {
+            final int colonIndex = userInfo.indexOf(":");
+            if (-1 == colonIndex)
+            {
+                localAddress = new InetSocketAddress(InetAddress.getByName(userInfo), 0);
+            }
+            else
+            {
+                final InetAddress specifiedLocalHost = InetAddress.getByName(userInfo.substring(0, colonIndex));
+                final int localPort = Integer.parseInt(userInfo.substring(colonIndex + 1));
+                localAddress = new InetSocketAddress(specifiedLocalHost, localPort);
+            }
+        }
+
+        return localAddress;
     }
 
     public InetSocketAddress remoteData()
@@ -148,6 +161,7 @@ public class UdpDestination
         this.localControl = context.localControl;
         this.uriStr = context.uriStr;
         this.consistentHash = context.consistentHash;
+        this.canonicalRepresentation = context.canonicalRepresentation;
     }
 
     public long consistentHash()
@@ -155,9 +169,14 @@ public class UdpDestination
         return consistentHash;
     }
 
+    public String canonicalRepresentation()
+    {
+        return canonicalRepresentation;
+    }
+
     public int hashCode()
     {
-        return remoteData.hashCode() + localData.hashCode(); // this could cause things to clump slightly
+        return (int)consistentHash;
     }
 
     public boolean equals(Object obj)
@@ -174,14 +193,33 @@ public class UdpDestination
 
     public String toString()
     {
-        if (isMulticast())
-        {
-            return String.format("udp://%1$s@%2$s", localData.getAddress(), localControl.getAddress());
-        }
+        return canonicalRepresentation;
+    }
 
-        return String.format("udp://%1$s:%2$d@%3$s:%4$d",
-                             localData.getAddress().getHostAddress(), Integer.valueOf(localData.getPort()),
-                             remoteData.getAddress().getHostAddress(), Integer.valueOf(remoteData.getPort()));
+    /**
+     * Return a string which is a canonical representation of the destination suitable for use as a file or directory
+     * name and also as a method of hashing, etc.
+     *
+     * A canonical representation:
+     * - begins with the string "UDP-"
+     * - has all hostnames converted to hexadecimal
+     * - has all fields expanded out
+     * - uses "-" as all field separators
+     *
+     * The general format is:
+     * UDP:interface:localPort:destinationAddr:destinationPort
+     *
+     * @return canonical representation as a string
+     */
+    public static String generateCanonicalRepresentation(final InetSocketAddress localData,
+                                                         final InetSocketAddress remoteData)
+            throws Exception
+    {
+        return String.format("UDP-%1$s-%2$d-%3$s-%4$d",
+                             BitUtil.toHex(localData.getAddress().getAddress()),
+                             Integer.valueOf(localData.getPort()),
+                             BitUtil.toHex(remoteData.getAddress().getAddress()),
+                             Integer.valueOf(remoteData.getPort()));
     }
 
     public boolean isMulticast()
@@ -212,6 +250,7 @@ public class UdpDestination
         private InetSocketAddress remoteControl;
         private InetSocketAddress localControl;
         private String uriStr;
+        private String canonicalRepresentation;
         private long consistentHash;
 
         public Context uriStr(final String uri)
@@ -247,6 +286,12 @@ public class UdpDestination
         public Context localControlAddress(final InetSocketAddress localControl)
         {
             this.localControl = localControl;
+            return this;
+        }
+
+        public Context canonicalRepresentation(final String rep)
+        {
+            this.canonicalRepresentation = rep;
             return this;
         }
     }

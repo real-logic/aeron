@@ -65,7 +65,7 @@ public class UdpDestinationTest
     }
 
     @Test(expected = InvalidDestinationException.class)
-    public void evenMulticastAddressIsBanned() throws Exception
+    public void shouldThrowExceptionOnEvenMulticastAddress() throws Exception
     {
         UdpDestination.parse("udp://224.10.9.8");
     }
@@ -73,26 +73,18 @@ public class UdpDestinationTest
     @Test
     public void shouldParseValidMulticastAddress() throws Exception
     {
-        final UdpDestination dest = UdpDestination.parse("udp://224.10.9.9");
+        final UdpDestination dest = UdpDestination.parse("udp://224.10.9.9:40124");
 
-        assertThat(dest.localControl(), isMulticastAddress("224.10.9.10"));
-        assertThat(dest.remoteControl(), isMulticastAddress("224.10.9.10"));
-        assertThat(dest.localData(), isMulticastAddress("224.10.9.9"));
-        assertThat(dest.remoteData(), isMulticastAddress("224.10.9.9"));
+        assertThat(dest.localControl(), isMulticastAddress("224.10.9.10", 40124));
+        assertThat(dest.remoteControl(), isMulticastAddress("224.10.9.10", 40124));
+        assertThat(dest.localData(), isMulticastAddress("224.10.9.9", 40124));
+        assertThat(dest.remoteData(), isMulticastAddress("224.10.9.9", 40124));
     }
 
-    private Matcher<InetSocketAddress> isMulticastAddress(String addressName) throws UnknownHostException
+    private Matcher<InetSocketAddress> isMulticastAddress(String addressName, int port) throws UnknownHostException
     {
         final InetAddress inetAddress = InetAddress.getByName(addressName);
-        return is(new InetSocketAddress(inetAddress, 0));
-    }
-
-    @Test
-    public void shouldToStringMulticastAddresses() throws Exception
-    {
-        final UdpDestination dest = UdpDestination.parse("udp://224.10.9.9");
-
-        assertThat(dest.toString(), is("udp:///224.10.9.9@/224.10.9.10"));
+        return is(new InetSocketAddress(inetAddress, port));
     }
 
     @Test
@@ -143,4 +135,36 @@ public class UdpDestinationTest
         assertThat(dest1.consistentHash(), is(dest2.consistentHash()));
         assertThat(dest2.consistentHash(), not(dest3.consistentHash()));
     }
+
+    @Test
+    public void shouldHandleCanonicalRepresentationForUnicastCorrectly() throws Exception
+    {
+        final UdpDestination dest = UdpDestination.parse("udp://192.168.0.1:40456");
+        final UdpDestination destLocal = UdpDestination.parse("udp://127.0.0.1@192.168.0.1:40456");
+        final UdpDestination destLocalPort = UdpDestination.parse("udp://127.0.0.1:40455@192.168.0.1:40456");
+        final UdpDestination destLocalhost = UdpDestination.parse("udp://localhost@localhost:40456");
+        // should resolve to 93.184.216.119
+        final UdpDestination destExampleCom = UdpDestination.parse("udp://example.com:40456");
+
+        assertThat(dest.canonicalRepresentation(), is("UDP-00000000-0-c0a80001-40456"));
+        assertThat(destLocal.canonicalRepresentation(), is("UDP-7f000001-0-c0a80001-40456"));
+        assertThat(destLocalPort.canonicalRepresentation(), is("UDP-7f000001-40455-c0a80001-40456"));
+        assertThat(destLocalhost.canonicalRepresentation(), is("UDP-7f000001-0-7f000001-40456"));
+        assertThat(destExampleCom.canonicalRepresentation(), is("UDP-00000000-0-5db8d877-40456"));
+    }
+
+    @Test
+    public void shouldHandleCanonicalRepresentationForMulticastCorrectly() throws Exception
+    {
+        final UdpDestination dest = UdpDestination.parse("udp://224.0.1.1:40456");
+        final UdpDestination destLocal = UdpDestination.parse("udp://127.0.0.1@224.0.1.1:40456");
+        final UdpDestination destLocalPort = UdpDestination.parse("udp://127.0.0.1:40455@224.0.1.1:40456");
+        final UdpDestination destAllSystems = UdpDestination.parse("udp://all-systems.mcast.net:40456");
+
+        assertThat(dest.canonicalRepresentation(), is("UDP-00000000-0-e0000101-40456"));
+        assertThat(destLocal.canonicalRepresentation(), is("UDP-7f000001-0-e0000101-40456"));
+        assertThat(destLocalPort.canonicalRepresentation(), is("UDP-7f000001-40455-e0000101-40456"));
+        assertThat(destAllSystems.canonicalRepresentation(), is("UDP-00000000-0-e0000001-40456"));
+    }
+
 }

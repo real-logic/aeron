@@ -26,7 +26,6 @@ import static org.junit.Assert.assertThat;
 
 public class MappingBufferUsageStrategyTest
 {
-
     private static final String DESTINATION = "udp://localhost:1234";
     private static final long SESSION_ID = 1L;
     private static final long CHANNEL_ID = 2L;
@@ -38,7 +37,7 @@ public class MappingBufferUsageStrategyTest
     private final BufferUsageStrategy usageStrategy = new MappingBufferUsageStrategy(directory.dataDir());
 
     @Test
-    public void testinitiallyNoBuffersToRelease()
+    public void testInitiallyNoBuffersToRelease()
     {
         assertBuffersReleased(0);
     }
@@ -93,5 +92,4 @@ public class MappingBufferUsageStrategyTest
     {
         directory.createTermFile(directory.senderDir(), DESTINATION, SESSION_ID, channelId);
     }
-
 }

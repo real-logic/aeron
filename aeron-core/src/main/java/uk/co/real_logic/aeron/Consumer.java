@@ -35,15 +35,15 @@ public class Consumer implements AutoCloseable
     private final Long2ObjectHashMap<DataHandler> channelMap;
     private final long[] channelIds;
     private final ClientConductorCursor adminThread;
-    private final AtomicArray<ConsumerChannel> receivers;
+    private final AtomicArray<ConsumerChannel> consumers;
     private final List<ConsumerChannel> channels;
 
     public Consumer(final ClientConductorCursor adminThread,
                     final Context context,
-                    final AtomicArray<ConsumerChannel> receivers)
+                    final AtomicArray<ConsumerChannel> consumers)
     {
         this.adminThread = adminThread;
-        this.receivers = receivers;
+        this.consumers = consumers;
         this.destination = context.destination;
         this.channelMap = context.channelMap;
         this.newSourceEventHandler = context.newSourceEventHandler;
@@ -53,13 +53,13 @@ public class Consumer implements AutoCloseable
                                   .stream()
                                   .map(entry -> new ConsumerChannel(destination, entry.getKey(), entry.getValue()))
                                   .collect(toList());
-        receivers.addAll(channels);
+        consumers.addAll(channels);
         adminThread.sendAddReceiver(destination.destination(), channelIds);
     }
 
     public void close()
     {
-        receivers.removeAll(channels);
+        consumers.removeAll(channels);
         adminThread.sendRemoveReceiver(destination.destination(), channelIds);
     }
 

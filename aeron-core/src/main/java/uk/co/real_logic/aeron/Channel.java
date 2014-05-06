@@ -70,9 +70,11 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
         return logAppenders != null && !paused.get();
     }
 
-    public void onBuffersMapped(final LogAppender[] logAppenders)
+    public void onBuffersMapped(final long termId, final LogAppender[] logAppenders)
     {
         this.logAppenders = logAppenders;
+        currentTermId.set(termId);
+        cleanedTermId.set(termId + CLEAN_WINDOW);
     }
 
     /**
@@ -161,12 +163,6 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
     public boolean hasSessionId(final long sessionId)
     {
         return this.sessionId == sessionId;
-    }
-
-    public void initialTerm(final long sessionId, final long termId)
-    {
-        currentTermId.set(termId);
-        cleanedTermId.set(termId + CLEAN_WINDOW);
     }
 
     /**

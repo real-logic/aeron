@@ -68,12 +68,12 @@ public class ConsumerChannel extends ChannelNotifiable
 
         private int currentBufferId;
 
-        private ConsumerSession(final LogReader[] readers, final long sessionId)
+        private ConsumerSession(final LogReader[] readers, final long sessionId, final long termId)
         {
             this.logReaders = readers;
             this.sessionId = sessionId;
-            currentTermId = new AtomicLong(UNKNOWN_TERM_ID);
-            cleanedTermId = new AtomicLong(UNKNOWN_TERM_ID);
+            currentTermId = new AtomicLong(termId);
+            cleanedTermId = new AtomicLong(termId + CLEAN_WINDOW);
             currentBufferId = 0;
         }
 
@@ -131,12 +131,6 @@ public class ConsumerChannel extends ChannelNotifiable
             }
         }
 
-        public void initialTerm(final long termId)
-        {
-            currentTermId.lazySet(termId);
-            cleanedTermId.lazySet(termId + CLEAN_WINDOW);
-        }
-
         public boolean hasTerm()
         {
             return currentTermId.get() != UNKNOWN_TERM_ID;
@@ -149,14 +143,10 @@ public class ConsumerChannel extends ChannelNotifiable
         return consumerSession != null && consumerSession.hasTerm();
     }
 
-    public void initialTerm(final long sessionId, final long termId)
+    public void onBuffersMapped(final long sessionId, final long termId, final LogReader[] logReaders)
     {
-        logReaders.get(sessionId).initialTerm(termId);
-    }
-
-    public void onBuffersMapped(final long sessionId, final LogReader[] logReaders)
-    {
-        this.logReaders.put(sessionId, new ConsumerSession(logReaders, sessionId));
+        ConsumerSession session = new ConsumerSession(logReaders, sessionId, termId);
+        this.logReaders.put(sessionId, session);
     }
 
     public void processBufferScan()

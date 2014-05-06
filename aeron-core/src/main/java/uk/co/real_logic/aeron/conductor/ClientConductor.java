@@ -267,7 +267,7 @@ public final class ClientConductor extends Service implements MediaDriverFacade
                                 recvNotifiers.get(destination, channelId),
                                 i -> newReader(destination, channelId, sessionId, i),
                                 LogReader[]::new,
-                                (chan, buffers) -> chan.onBuffersMapped(sessionId, buffers));
+                                (chan, buffers) -> chan.onBuffersMapped(sessionId, termId, buffers));
     }
 
     private void onNewSenderBufferNotification(final long sessionId,
@@ -279,7 +279,7 @@ public final class ClientConductor extends Service implements MediaDriverFacade
                                 sendNotifiers.get(destination, sessionId, channelId),
                                 i -> newAppender(destination, sessionId, channelId, i),
                                 LogAppender[]::new,
-                                Channel::onBuffersMapped);
+                                (chan, buffers) -> chan.onBuffersMapped(termId, buffers));
     }
 
     private interface LogFactory<L>
@@ -314,7 +314,6 @@ public final class ClientConductor extends Service implements MediaDriverFacade
                 }
 
                 notifier.accept(channel, logs);
-                channel.initialTerm(sessionId, termId);
             }
             else
             {

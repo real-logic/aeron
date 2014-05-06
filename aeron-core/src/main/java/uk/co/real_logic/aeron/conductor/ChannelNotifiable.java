@@ -28,6 +28,4 @@ public abstract class ChannelNotifiable
 
     protected abstract boolean hasTerm(final long sessionId);
 
-    public abstract void initialTerm(final long sessionId, final long termId);
-
 }

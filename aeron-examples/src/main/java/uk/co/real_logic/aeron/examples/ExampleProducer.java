@@ -40,6 +40,8 @@ public class ExampleProducer
             final Aeron aeron = Aeron.newSingleMediaDriver(context);
             final Source source = aeron.newSource(DESTINATION);
             final Channel aChannel = source.newChannel(CHANNEL_ID);
+
+
             final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocateDirect(256));
 
             // TODO: add data to buffer and get it ready to send

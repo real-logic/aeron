@@ -33,7 +33,7 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
     private final UdpTransport transport;
     private final UdpDestination destination;
     private final Long2ObjectHashMap<RcvChannelState> channelInterestMap = new Long2ObjectHashMap<>();
-    private final MediaConductorCursor adminThreadCursor;
+    private final MediaConductorCursor conductorCursor;
     private final ByteBuffer sendBuffer = ByteBuffer.allocateDirect(StatusMessageFlyweight.HEADER_LENGTH);
     private final AtomicBuffer writeBuffer = new AtomicBuffer(sendBuffer);
     private final StatusMessageFlyweight statusMessageFlyweight = new StatusMessageFlyweight();
@@ -41,14 +41,14 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
 
     public RcvFrameHandler(final UdpDestination destination,
                            final NioSelector nioSelector,
-                           final MediaConductorCursor adminThreadCursor,
+                           final MediaConductorCursor conductorCursor,
                            final AtomicArray<RcvSessionState> sessionState)
         throws Exception
     {
         this.sessionState = sessionState;
         this.transport = new UdpTransport(this, destination, nioSelector);
         this.destination = destination;
-        this.adminThreadCursor = adminThreadCursor;
+        this.conductorCursor = conductorCursor;
     }
 
     public int sendTo(final ByteBuffer buffer, final long sessionId, final long channelId) throws Exception
@@ -100,7 +100,7 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
             }
             else
             {
-                channel = new RcvChannelState(destination, channelId, adminThreadCursor, sessionState);
+                channel = new RcvChannelState(destination, channelId, conductorCursor, sessionState);
                 channelInterestMap.put(channelId, channel);
             }
         }
@@ -132,9 +132,7 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
 
     public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
     {
-        final long sessionId = header.sessionId();
         final long channelId = header.channelId();
-        final long termId = header.termId();
 
         final RcvChannelState channelState = channelInterestMap.get(channelId);
         if (null == channelState)
@@ -142,6 +140,8 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
             return;  // not interested in this channel at all
         }
 
+        final long sessionId = header.sessionId();
+        final long termId = header.termId();
         final RcvSessionState sessionState = channelState.getSessionState(sessionId);
         if (null != sessionState)
         {
@@ -155,8 +155,8 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
             // TODO: this is a new source, so send 1 SM
 
             // ask conductor thread to create buffer for destination, sessionId, channelId, and termId
-            // NB: this only needs to happen the first time, since we use counters to detect rollovers
-            adminThreadCursor.addCreateRcvTermBufferEvent(destination(), sessionId, channelId, termId);
+            // NB: this only needs to happen the first time, since we use status to detect rollovers
+            conductorCursor.addCreateRcvTermBufferEvent(destination(), sessionId, channelId, termId);
         }
     }
 

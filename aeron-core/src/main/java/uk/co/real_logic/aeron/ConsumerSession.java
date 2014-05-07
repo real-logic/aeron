@@ -52,7 +52,7 @@ public class ConsumerSession
         currentBufferId = 0;
     }
 
-    public int process()
+    public int consume()
     {
         LogReader logReader = logReaders[currentBufferId];
         if (logReader.isComplete())

@@ -152,7 +152,7 @@ public final class Aeron
      * @param context context for receiver options.
      * @return new receiver
      */
-    public Consumer newReceiver(final Consumer.Context context)
+    public Consumer newConsumer(final Consumer.Context context)
     {
         final ClientConductorCursor adminThread = new ClientConductorCursor(adminCommandBuffer);
 
@@ -170,7 +170,7 @@ public final class Aeron
         Consumer.Context context = new Consumer.Context();
         block.accept(new Consumer.Context());
 
-        return newReceiver(context);
+        return newConsumer(context);
     }
 
     public ClientConductor conductor()

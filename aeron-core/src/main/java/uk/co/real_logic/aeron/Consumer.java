@@ -64,19 +64,18 @@ public class Consumer implements AutoCloseable
     }
 
     /**
-     * Process a waiting data or event and deliver to {@link Consumer.DataHandler}s and/or event handlers.
+     * Consume waiting data or event and deliver to {@link Consumer.DataHandler}s and/or event handlers.
      *
      * Returns after handling a single data and/or event.
      *
-     * @throws java.lang.Exception
      * @return the number of messages read
      */
-    public int process() throws Exception
+    public int consume()
     {
         int read = 0;
         for (final ConsumerChannel channel : channels)
         {
-            read += channel.process();
+            read += channel.consume();
         }
 
         return read;

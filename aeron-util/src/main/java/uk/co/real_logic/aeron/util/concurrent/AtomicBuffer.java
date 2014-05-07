@@ -20,6 +20,9 @@ import uk.co.real_logic.aeron.util.UnsafeAccess;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
+
+import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 
 /**
  * Supports regular, byte ordered, and atomic (memory ordered) access to an underlying buffer.
@@ -34,6 +37,7 @@ public class AtomicBuffer
     private byte[] byteArray;
     private ByteBuffer byteBuffer;
     private long addressOffset;
+
     private int capacity;
 
     /**
@@ -55,6 +59,17 @@ public class AtomicBuffer
     public AtomicBuffer(final ByteBuffer buffer)
     {
         wrap(buffer);
+    }
+
+    /**
+     * Attach a view to an off-heap memory region by address.
+     *
+     * @param address where the memory begins off-heap
+     * @param capacity of the buffer from the given address
+     */
+    public AtomicBuffer(final long address, final int capacity)
+    {
+        wrap(address, capacity);
     }
 
     /**
@@ -92,6 +107,20 @@ public class AtomicBuffer
         }
 
         capacity = buffer.capacity();
+    }
+
+    /**
+     * Attach a view to an off-heap memory region by address.
+     *
+     * @param address where the memory begins off-heap
+     * @param capacity of the buffer from the given address
+     */
+    public void wrap(final long address, final int capacity)
+    {
+        addressOffset = address;
+        this.capacity = capacity;
+        byteArray = null;
+        byteBuffer = null;
     }
 
     /**
@@ -134,6 +163,16 @@ public class AtomicBuffer
 
             throw new IndexOutOfBoundsException(msg);
         }
+    }
+
+    /**
+     * Reads the underlying offset to to the memory address.
+     *
+     * @return the underlying offset to to the memory address.
+     */
+    public long addressOffset()
+    {
+        return addressOffset;
     }
 
     /**
@@ -790,5 +829,25 @@ public class AtomicBuffer
                           byteArray,
                           addressOffset + index,
                           length);
+    }
+
+    public String getString(final int offset, final ByteOrder byteOrder)
+    {
+        final int length = getInt(offset, byteOrder);
+        return getString(offset, length);
+    }
+
+    public String getString(final int offset, final int length)
+    {
+        final byte[] stringInBytes = new byte[length];
+        getBytes(offset + SIZE_OF_INT, stringInBytes);
+        return new String(stringInBytes, StandardCharsets.UTF_8);
+    }
+
+    public int putString(final int offset, final String value, final ByteOrder byteOrder)
+    {
+        final byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        putInt(offset, bytes.length, byteOrder);
+        return SIZE_OF_INT + putBytes(offset + SIZE_OF_INT, bytes);
     }
 }

@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.aeron.conductor.ChannelNotifiable;
 import uk.co.real_logic.aeron.conductor.ClientConductorCursor;
 import uk.co.real_logic.aeron.util.AtomicArray;
+import uk.co.real_logic.aeron.util.status.PositionIndicator;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 
@@ -31,7 +32,7 @@ import static uk.co.real_logic.aeron.util.ChannelCounters.UNKNOWN_TERM_ID;
 /**
  * Aeron Channel
  */
-public class Channel extends ChannelNotifiable implements AutoCloseable
+public class Channel extends ChannelNotifiable implements AutoCloseable, PositionIndicator
 {
     private final ClientConductorCursor conductor;
     private final long sessionId;
@@ -193,4 +194,9 @@ public class Channel extends ChannelNotifiable implements AutoCloseable
         return appender.tailVolatile() == 0;
     }
 
+    public long position()
+    {
+        logAppenders[currentBufferId].tailVolatile();
+        return 0;
+    }
 }

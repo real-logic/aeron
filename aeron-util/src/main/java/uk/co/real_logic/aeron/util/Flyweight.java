@@ -138,22 +138,13 @@ public class Flyweight
         return SIZE_OF_INT + (length * BitUtil.SIZE_OF_LONG);
     }
 
-    // TODO: consider efficiency for String encoding/decoding
-    // TODO: is there a sensible error handling for getBytes/putBytes not reading/writing the current amount of data
     public String stringGet(final int offset, final ByteOrder byteOrder)
     {
-        final int length = atomicBuffer.getInt(offset, byteOrder);
-        final byte[] stringInBytes = new byte[length];
-        atomicBuffer.getBytes(offset + SIZE_OF_INT, stringInBytes);
-
-        return new String(stringInBytes, StandardCharsets.UTF_8);
+        return atomicBuffer.getString(offset, byteOrder);
     }
 
     public int stringPut(final int offset, final String value, final ByteOrder byteOrder)
     {
-        final byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-        atomicBuffer.putInt(offset, bytes.length, byteOrder);
-
-        return SIZE_OF_INT + atomicBuffer.putBytes(offset + SIZE_OF_INT, bytes);
+        return atomicBuffer.putString(offset, value, byteOrder);
     }
 }

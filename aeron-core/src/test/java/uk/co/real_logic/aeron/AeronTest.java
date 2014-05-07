@@ -250,13 +250,13 @@ public class AeronTest
             .channel(CHANNEL_ID, emptyDataHandler())
             .channel(CHANNEL_ID_2, emptyDataHandler());
 
-        final Consumer consumer = aeron.newReceiver(context);
+        final Consumer consumer = aeron.newConsumer(context);
 
         aeron.conductor().process();
 
         assertEventRead(toMediaDriver, assertReceiverMessageOfType(ADD_CONSUMER));
 
-        assertThat(consumer.process(), is(0));
+        assertThat(consumer.consume(), is(0));
     }
 
     @Test
@@ -315,7 +315,7 @@ public class AeronTest
 
         writePacket(logAppenders.get(0));
 
-        assertThat(consumer.process(), is(1));
+        assertThat(consumer.consume(), is(1));
     }
 
     @Test
@@ -335,7 +335,7 @@ public class AeronTest
 
         writePacket(logAppenders.get(0));
         writePacket(otherLogAppenders.get(0));
-        assertThat(consumer.process(), is(1));
+        assertThat(consumer.consume(), is(1));
     }
 
     @Test
@@ -358,7 +358,7 @@ public class AeronTest
         final int eventCount = logAppender.capacity() / sendBuffer.capacity();
 
         writePackets(logAppender, eventCount);
-        assertThat(consumer.process(), is(eventCount));
+        assertThat(consumer.consume(), is(eventCount));
 
         // cleaning is triggered by the receiver and not the consumer
         // so we clean two ahead of the current buffer
@@ -366,19 +366,19 @@ public class AeronTest
         aeron.conductor().process();
 
         writePackets(logAppenders.get(1), eventCount);
-        assertThat(consumer.process(), is(eventCount));
+        assertThat(consumer.consume(), is(eventCount));
 
         cleanBuffer(termBuffers.get(0));
         aeron.conductor().process();
 
         writePackets(logAppenders.get(2), eventCount);
-        assertThat(consumer.process(), is(eventCount));
+        assertThat(consumer.consume(), is(eventCount));
 
         cleanBuffer(termBuffers.get(1));
         aeron.conductor().process();
 
         writePackets(logAppender, eventCount);
-        assertThat(consumer.process(), is(eventCount));
+        assertThat(consumer.consume(), is(eventCount));
     }
 
     private void cleanBuffer(final Buffers buffers)
@@ -414,19 +414,19 @@ public class AeronTest
         final int eventCount = logAppender.capacity() / SEND_BUFFER_CAPACITY;
 
         writePackets(logAppender, eventCount);
-        assertThat(consumer.process(), is(eventCount));
+        assertThat(consumer.consume(), is(eventCount));
 
         writePackets(logAppenders.get(1), eventCount);
-        assertThat(consumer.process(), is(eventCount));
+        assertThat(consumer.consume(), is(eventCount));
 
         writePackets(logAppenders.get(2), eventCount);
-        assertThat(consumer.process(), is(eventCount));
+        assertThat(consumer.consume(), is(eventCount));
 
         // force the roll
-        assertThat(consumer.process(), is(eventCount));
+        assertThat(consumer.consume(), is(eventCount));
 
         // Now you've hit an unclean buffer and can't proceed
-        assertThat(consumer.process(), is(0));
+        assertThat(consumer.consume(), is(0));
     }
 
     @Test
@@ -448,13 +448,13 @@ public class AeronTest
         final int eventCount = logAppender.capacity() / sendBuffer.capacity();
 
         writePackets(logAppender, eventCount);
-        assertThat(consumer.process(), is(eventCount));
+        assertThat(consumer.consume(), is(eventCount));
 
         writePackets(logAppenders.get(1), eventCount);
-        assertThat(consumer.process(), is(eventCount));
+        assertThat(consumer.consume(), is(eventCount));
 
         writePackets(otherLogAppenders.get(0), 5);
-        assertThat(consumer.process(), is(5));
+        assertThat(consumer.consume(), is(5));
     }
 
     private DataHandler eitherSessionHandler()
@@ -528,7 +528,7 @@ public class AeronTest
             .channel(CHANNEL_ID, channel2Handler)
             .channel(CHANNEL_ID_2, emptyDataHandler());
 
-        return aeron.newReceiver(context);
+        return aeron.newConsumer(context);
     }
 
     private EventHandler assertReceiverMessageOfType(final int expectedEventTypeId)

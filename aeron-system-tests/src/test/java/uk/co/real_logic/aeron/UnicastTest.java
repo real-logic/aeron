@@ -52,7 +52,7 @@ public class UnicastTest
         producingClient = Aeron.newSingleMediaDriver(new Aeron.Context());
         receivingClient = Aeron.newSingleMediaDriver(new Aeron.Context());
 
-        consumer = receivingClient.newReceiver(new Consumer.Context()
+        consumer = receivingClient.newConsumer(new Consumer.Context()
                 .destination(DESTINATION)
                 .channel(CHANNEL_ID, dataHandler)
                 .newSourceEvent(sourceHandler));
@@ -84,7 +84,7 @@ public class UnicastTest
         driver.senderThread().process();
         driver.receiverThread().process();
         receivingClient.conductor().process();
-        consumer.process();
+        consumer.consume();
     }
 
     @Test

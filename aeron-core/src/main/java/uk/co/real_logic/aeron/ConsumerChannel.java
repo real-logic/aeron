@@ -38,12 +38,12 @@ public class ConsumerChannel extends ChannelNotifiable
         return this.destination.equals(destination) && this.channelId == channelId;
     }
 
-    public int process() throws Exception
+    public int consume()
     {
         int count = 0;
         for (final ConsumerSession consumerSession : logReaders.values())
         {
-            count += consumerSession.process();
+            count += consumerSession.consume();
         }
 
         return count;

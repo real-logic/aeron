@@ -51,10 +51,10 @@ public class ExampleConsumer
                    .newSourceEvent((channelId, sessionId) -> System.out.println("new source for channel"))
                    .inactiveSourceEvent((channelId, sessionId) -> System.out.println("inactive source for channel"));
 
-            final Consumer rcv1 = aeron.newReceiver(context);
+            final Consumer consumer1 = aeron.newConsumer(context);
 
             // create a receiver using the fluent style lambda
-            final Consumer rcv2 = aeron.newConsumer(
+            final Consumer consumer2 = aeron.newConsumer(
                 (ctx) ->
                 {
                     ctx.destination(DESTINATION)
@@ -70,7 +70,7 @@ public class ExampleConsumer
                     {
                         while (true)
                         {
-                            rcv.process();
+                            rcv.consume();
                         }
                     }
                     catch (final Exception ex)
@@ -80,8 +80,8 @@ public class ExampleConsumer
                 };
 
             // spin off the two receiver threads
-            executor.execute(() -> loop.accept(rcv1));
-            executor.execute(() -> loop.accept(rcv2));
+            executor.execute(() -> loop.accept(consumer1));
+            executor.execute(() -> loop.accept(consumer2));
         }
         catch (final Exception ex)
         {

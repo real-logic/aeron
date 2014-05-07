@@ -66,6 +66,12 @@ public class MediaDriver implements AutoCloseable
     /** Size (in bytes) of the conductor buffers between the media driver and the client */
     public static final String ADMIN_BUFFER_SZ_PROPERTY_NAME = "aeron.conductor.buffer.size";
 
+    /** Size (in bytes) of the counter storage buffer */
+    public static final String COUNTERS_BUFFER_SZ_PROPERTY_NAME = "aeron.counters.buffer.size";
+
+    /** Size (in bytes) of the counter storage buffer */
+    public static final String DESCRIPTOR_BUFFER_SZ_PROPERTY_NAME = "aeron.counters.descriptor.size";
+
     /** Timeout (in msec) for the basic NIO select call */
     public static final String SELECT_TIMEOUT_PROPERTY_NAME = "aeron.select.timeout";
 
@@ -78,6 +84,12 @@ public class MediaDriver implements AutoCloseable
     /** Default buffer size for conductor buffers between the media driver and the client */
     public static final int ADMIN_BUFFER_SZ_DEFAULT = 65536 + TRAILER_LENGTH;
 
+    /** Size (in bytes) of the counter storage buffer */
+    public static final int COUNTERS_BUFFER_SZ_DEFAULT = 65536;
+
+    /** Size (in bytes) of the counter storage buffer */
+    public static final int DESCRIPTOR_BUFFER_SZ_DEFAULT = 65536;
+
     /** Default timeout for select */
     public static final int SELECT_TIMEOUT_DEFAULT = 20;
 
@@ -89,6 +101,10 @@ public class MediaDriver implements AutoCloseable
                                                          ADMIN_BUFFER_SZ_DEFAULT).intValue();
     public static final int SELECT_TIMEOUT = getInteger(SELECT_TIMEOUT_PROPERTY_NAME,
                                                         SELECT_TIMEOUT_DEFAULT).intValue();
+    public static final int COUNTERS_BUFFER_SZ = getInteger(COUNTERS_BUFFER_SZ_PROPERTY_NAME,
+                                                            COUNTERS_BUFFER_SZ_DEFAULT).intValue();
+    public static final int DESCRIPTOR_BUFFER_SZ = getInteger(DESCRIPTOR_BUFFER_SZ_PROPERTY_NAME,
+                                                              DESCRIPTOR_BUFFER_SZ_DEFAULT).intValue();
 
     /** ticksPerWheel for TimerWheel in conductor thread */
     public static final int ADMIN_THREAD_TICKS_PER_WHEEL = 1024;

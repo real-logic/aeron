@@ -18,9 +18,9 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.aeron.conductor.ChannelNotifiable;
 import uk.co.real_logic.aeron.conductor.ClientConductorCursor;
 import uk.co.real_logic.aeron.util.AtomicArray;
-import uk.co.real_logic.aeron.util.status.PositionIndicator;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
+import uk.co.real_logic.aeron.util.status.PositionIndicator;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;

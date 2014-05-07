@@ -18,10 +18,8 @@ package uk.co.real_logic.aeron.util.status;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
-import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
-import java.nio.ByteBuffer;
 import java.util.function.BiConsumer;
 
 import static java.nio.ByteBuffer.allocate;
@@ -29,7 +27,6 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_LONG;
 
 /**

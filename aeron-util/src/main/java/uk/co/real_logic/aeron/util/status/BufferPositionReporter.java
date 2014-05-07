@@ -24,14 +24,16 @@ public class BufferPositionReporter implements PositionReporter
 {
 
     private final AtomicBuffer buffer;
+    private final int offset;
 
-    public BufferPositionReporter(final AtomicBuffer buffer)
+    public BufferPositionReporter(final AtomicBuffer buffer, final int offset)
     {
         this.buffer = buffer;
+        this.offset = offset;
     }
 
     public void position(final long value)
     {
-        buffer.putLongOrdered(0, value);
+        buffer.putLongOrdered(offset, value);
     }
 }

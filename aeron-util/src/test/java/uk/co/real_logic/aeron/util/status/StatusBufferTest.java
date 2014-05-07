@@ -80,12 +80,14 @@ public class StatusBufferTest
     @Test
     public void registeredCountersCanBeMapped()
     {
+        manager.registerCounter("def");
+
         int id = manager.registerCounter("abc");
         int offset = manager.counterOffset(id);
-        Counter readCounter = new Counter(counterBuffer, offset);
-        Counter writeCounter = new Counter(counterBuffer, offset);
-        writeCounter.write(0xFFFFFFFFFL);
-        assertThat(readCounter.read(), is(0xFFFFFFFFFL));
+        BufferPositionIndicator reader = new BufferPositionIndicator(counterBuffer, offset);
+        BufferPositionReporter writer = new BufferPositionReporter(counterBuffer, offset);
+        writer.position(0xFFFFFFFFFL);
+        assertThat(reader.position(), is(0xFFFFFFFFFL));
     }
 
 }

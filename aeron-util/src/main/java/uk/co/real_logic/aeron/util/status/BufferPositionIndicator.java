@@ -23,14 +23,16 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 public class BufferPositionIndicator implements PositionIndicator
 {
     private final AtomicBuffer buffer;
+    private final int offset;
 
-    public BufferPositionIndicator(final AtomicBuffer buffer)
+    public BufferPositionIndicator(final AtomicBuffer buffer, final int offset)
     {
         this.buffer = buffer;
+        this.offset = offset;
     }
 
     public long position()
     {
-        return buffer.getLongVolatile(0);
+        return buffer.getLongVolatile(offset);
     }
 }

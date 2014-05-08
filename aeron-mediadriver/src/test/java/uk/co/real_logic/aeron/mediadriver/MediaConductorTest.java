@@ -15,9 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import uk.co.real_logic.aeron.util.CreatingConductorBufferStrategy;
 import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.MappingConductorBufferStrategy;
@@ -94,6 +92,12 @@ public class MediaConductorTest
 
         final Receiver receiver = mock(Receiver.class);
         mediaConductor = new MediaConductor(ctx, receiver, sender);
+    }
+
+    @After
+    public void teardown()
+    {
+        mediaConductor.close();
     }
 
     @Test

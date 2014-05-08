@@ -97,12 +97,6 @@ public class AeronTest
         dataHeader.wrap(atomicSendBuffer, 0);
     }
 
-    @After
-    public void tearDown()
-    {
-        directory.unmapBuffers();
-    }
-
     @Test
     public void creatingChannelsShouldNotifyMediaDriver() throws Exception
     {

@@ -72,6 +72,7 @@ public class UnicastSenderTest
     private static final String URI = "udp://" + HOST + ":" + PORT;
     private static final long CHANNEL_ID = 0xA;
     private static final long SESSION_ID = 0xdeadbeefL;
+
     public static final int BUFFER_SIZE = 256;
     public static final int VALUE = 37;
 

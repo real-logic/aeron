@@ -126,7 +126,6 @@ public class UnicastReceiverTest
         mediaConductor.close();
         mediaConductor.nioSelector().selectNowWithNoProcessing();
         bufferManagementStrategy.close();
-        directory.unmapBuffers();
     }
 
     @Test(timeout = 1000)

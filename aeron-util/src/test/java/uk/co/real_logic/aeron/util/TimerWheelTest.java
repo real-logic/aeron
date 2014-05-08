@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BooleanSupplier;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 public class TimerWheelTest
 {
@@ -46,7 +46,7 @@ public class TimerWheelTest
     {
         final TimerWheel wheel = new TimerWheel(100, TimeUnit.MILLISECONDS, 512);
 
-        assertThat(wheel.calculateDelayInMsec(), is(100L));
+        assertThat(wheel.calculateDelayInMsec(), allOf(greaterThanOrEqualTo(90L), lessThanOrEqualTo(110L)));
     }
 
     @Test

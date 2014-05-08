@@ -73,21 +73,17 @@ class MappedBufferManagementStrategy implements BufferManagementStrategy
             logTemplate.close();
             stateTemplate.close();
 
-            // wish these could be turned into lambdas, but seems that they can't.
-            srcTermMap.forEach(new ChannelMap.ChannelHandler<UdpDestination, MappedBufferRotator>() {
-                public void accept(final UdpDestination d, final Long sessionId, final Long channelId, final MappedBufferRotator buffer)
-                {
-                    buffer.close();
-                }
-            });
+            srcTermMap.forEach((ChannelMap.ChannelHandler<UdpDestination, MappedBufferRotator>)
+                    (final UdpDestination destination,
+                     final Long sessionId,
+                     final Long channelId,
+                     final MappedBufferRotator buffer) -> buffer.close());
 
-            rcvTermMap.forEach(new ChannelMap.ChannelHandler<UdpDestination, MappedBufferRotator>() {
-                public void accept(final UdpDestination d, final Long sessionId, final Long channelId, final MappedBufferRotator buffer)
-                {
-                    buffer.close();
-                }
-            });
-
+            rcvTermMap.forEach((ChannelMap.ChannelHandler<UdpDestination, MappedBufferRotator>)
+                    (final UdpDestination destination,
+                     final Long sessionId,
+                     final Long channelId,
+                     final MappedBufferRotator buffer) -> buffer.close());
         }
         catch (Exception e)
         {

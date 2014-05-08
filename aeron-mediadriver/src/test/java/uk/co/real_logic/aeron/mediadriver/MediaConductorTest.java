@@ -15,7 +15,10 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import uk.co.real_logic.aeron.util.CreatingConductorBufferStrategy;
 import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.MappingConductorBufferStrategy;
@@ -39,7 +42,6 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ADD_CHAN
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.REMOVE_CHANNEL;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_LENGTH;
 
-@Ignore
 public class MediaConductorTest
 {
     private static final String ADMIN_DIR = "adminDir";

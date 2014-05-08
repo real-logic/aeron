@@ -35,13 +35,19 @@ public class MappingConductorBufferStrategy extends ConductorBufferStrategy
 
     public ByteBuffer toMediaDriver() throws IOException
     {
-        toMediaDriverBuffer = mapExistingFile(toMediaDriver, MEDIA_DRIVER_FILE);
+        if (toMediaDriverBuffer == null)
+        {
+            toMediaDriverBuffer = mapExistingFile(toMediaDriver, MEDIA_DRIVER_FILE);
+        }
         return toMediaDriverBuffer;
     }
 
     public ByteBuffer toApi() throws IOException
     {
-        toApiBuffer = mapExistingFile(toApi, API_FILE);
+        if (toApiBuffer == null)
+        {
+            toApiBuffer = mapExistingFile(toApi, API_FILE);
+        }
         return toApiBuffer;
     }
 
@@ -49,5 +55,7 @@ public class MappingConductorBufferStrategy extends ConductorBufferStrategy
     {
         IoUtil.unmap(toApiBuffer);
         IoUtil.unmap(toMediaDriverBuffer);
+        toApiBuffer = null;
+        toMediaDriverBuffer = null;
     }
 }

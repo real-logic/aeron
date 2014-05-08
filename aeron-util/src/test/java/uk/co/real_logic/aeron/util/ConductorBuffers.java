@@ -67,6 +67,7 @@ public class ConductorBuffers extends ExternalResource
     {
         // Force unmapping of byte buffers to allow deletion
         creatingStrategy.close();
+        mappingStrategy.close();
     }
 
     public RingBuffer toMediaDriver()
@@ -86,7 +87,7 @@ public class ConductorBuffers extends ExternalResource
 
     public ConductorBufferStrategy strategy()
     {
-        return creatingStrategy;
+        return mappingStrategy;
     }
 
     public String adminDir()

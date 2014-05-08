@@ -179,6 +179,11 @@ public class IoUtil
      */
     public static void unmap(final MappedByteBuffer buffer)
     {
+        if (buffer == null)
+        {
+            return;
+        }
+
         try
         {
             final Method method = FileChannelImpl.class.getDeclaredMethod("unmap", MappedByteBuffer.class);

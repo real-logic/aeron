@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron;
 
-import org.junit.After;
 import org.junit.ClassRule;
 import org.junit.Test;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
@@ -95,12 +94,6 @@ public class AeronTest
         identifiedMessage.wrap(atomicSendBuffer, 0);
         errorHeader.wrap(atomicSendBuffer, 0);
         dataHeader.wrap(atomicSendBuffer, 0);
-    }
-
-    @After
-    public void tearDown()
-    {
-        directory.unmapBuffers();
     }
 
     @Test

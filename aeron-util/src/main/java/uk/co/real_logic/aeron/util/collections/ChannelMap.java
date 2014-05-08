@@ -17,8 +17,6 @@ package uk.co.real_logic.aeron.util.collections;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 import static uk.co.real_logic.aeron.util.collections.CollectionUtil.getOrDefault;
 

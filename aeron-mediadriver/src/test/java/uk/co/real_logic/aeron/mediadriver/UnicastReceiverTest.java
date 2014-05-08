@@ -20,6 +20,7 @@ import org.junit.rules.ExpectedException;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy;
 import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.ConductorBuffers;
+import uk.co.real_logic.aeron.util.MappingConductorBufferStrategy;
 import uk.co.real_logic.aeron.util.SharedDirectories;
 import uk.co.real_logic.aeron.util.command.ConsumerMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
@@ -102,7 +103,7 @@ public class UnicastReceiverTest
             .rcvNioSelector(nioSelector)
             .adminNioSelector(new NioSelector())
             .senderFlowControl(DefaultSenderControlStrategy::new)
-            .adminBufferStrategy(buffers.strategy())
+            .adminBufferStrategy(new MappingConductorBufferStrategy(buffers.adminDir()))
             .bufferManagementStrategy(bufferManagementStrategy);
 
         ctx.rcvFrameHandlerFactory(
@@ -126,7 +127,6 @@ public class UnicastReceiverTest
         mediaConductor.close();
         mediaConductor.nioSelector().selectNowWithNoProcessing();
         bufferManagementStrategy.close();
-        directory.unmapBuffers();
     }
 
     @Test(timeout = 1000)

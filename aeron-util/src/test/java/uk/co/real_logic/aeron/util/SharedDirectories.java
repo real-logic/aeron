@@ -62,7 +62,12 @@ public class SharedDirectories extends ExternalResource
         buffers = new ArrayList<>();
     }
 
-    public void unmapBuffers()
+    protected void after()
+    {
+        unmapBuffers();
+    }
+
+    private void unmapBuffers()
     {
         buffers.forEach((b) -> IoUtil.unmap(b));
         buffers.clear();

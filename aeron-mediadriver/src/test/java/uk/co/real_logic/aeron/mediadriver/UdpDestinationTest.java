@@ -16,7 +16,9 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import org.hamcrest.Matcher;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.ExternalResource;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -30,6 +32,34 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class UdpDestinationTest
 {
+    private static final String IP_STACK_PREF_PROPERTY = "java.net.preferIPv4Stack";
+
+    @ClassRule
+    public static final PropertyHandler stackPreference = new PropertyHandler();
+
+    public static class PropertyHandler extends ExternalResource
+    {
+        private String stackPreferenceValue;
+
+        public void before()
+        {
+            stackPreferenceValue = System.getProperty(IP_STACK_PREF_PROPERTY);
+            System.setProperty(IP_STACK_PREF_PROPERTY, "true");
+        }
+
+        public void after()
+        {
+            if (null != stackPreferenceValue)
+            {
+                System.setProperty(IP_STACK_PREF_PROPERTY, stackPreferenceValue);
+            }
+            else
+            {
+                System.clearProperty(IP_STACK_PREF_PROPERTY);
+            }
+        }
+    }
+
     @Test
     public void shouldHandleExplicitLocalAddrAndPortFormat() throws Exception
     {

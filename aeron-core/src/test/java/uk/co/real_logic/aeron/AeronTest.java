@@ -55,7 +55,6 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.B
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertEventRead;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.skip;
 
-@Ignore
 public class AeronTest
 {
 

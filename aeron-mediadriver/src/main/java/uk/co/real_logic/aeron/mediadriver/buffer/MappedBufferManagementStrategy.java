@@ -19,6 +19,7 @@ import uk.co.real_logic.aeron.mediadriver.UdpChannelMap;
 import uk.co.real_logic.aeron.mediadriver.UdpDestination;
 import uk.co.real_logic.aeron.util.FileMappingConvention;
 import uk.co.real_logic.aeron.util.IoUtil;
+import uk.co.real_logic.aeron.util.collections.ChannelMap;
 
 import java.io.File;
 import java.io.IOException;
@@ -71,6 +72,22 @@ class MappedBufferManagementStrategy implements BufferManagementStrategy
         {
             logTemplate.close();
             stateTemplate.close();
+
+            // wish these could be turned into lambdas, but seems that they can't.
+            srcTermMap.forEach(new ChannelMap.ChannelHandler<UdpDestination, MappedBufferRotator>() {
+                public void accept(final UdpDestination d, final Long sessionId, final Long channelId, final MappedBufferRotator buffer)
+                {
+                    buffer.close();
+                }
+            });
+
+            rcvTermMap.forEach(new ChannelMap.ChannelHandler<UdpDestination, MappedBufferRotator>() {
+                public void accept(final UdpDestination d, final Long sessionId, final Long channelId, final MappedBufferRotator buffer)
+                {
+                    buffer.close();
+                }
+            });
+
         }
         catch (Exception e)
         {

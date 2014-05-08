@@ -17,6 +17,8 @@ package uk.co.real_logic.aeron.util.collections;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import static uk.co.real_logic.aeron.util.collections.CollectionUtil.getOrDefault;
 
@@ -91,4 +93,19 @@ public class ChannelMap<D, T>
         return !map.containsKey(destination);
     }
 
+    public interface ChannelHandler<D, T>
+    {
+        void accept(final D destination, final Long sessionId, final Long channelId, final T value);
+    }
+
+    public void forEach(final ChannelHandler consumer)
+    {
+        map.forEach((destination, sessionMap) ->
+        {
+            sessionMap.forEach((sessionId, channelMap) ->
+            {
+                channelMap.forEach((channelId, value) -> consumer.accept(destination, sessionId, channelId, value));
+            });
+        });
+    }
 }

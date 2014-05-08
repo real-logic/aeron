@@ -113,6 +113,11 @@ public final class ClientConductor extends Service implements MediaDriverFacade
         processBufferCleaningScan();
     }
 
+    public void close()
+    {
+        bufferUsage.close();
+    }
+
     private void processBufferCleaningScan()
     {
         producers.forEach(Channel::processBufferScan);

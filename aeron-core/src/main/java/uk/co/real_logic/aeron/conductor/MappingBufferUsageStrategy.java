@@ -47,6 +47,12 @@ public class MappingBufferUsageStrategy implements BufferUsageStrategy
         consumerBuffers = new ArrayList<>();
     }
 
+    public void close()
+    {
+        senderBuffers.forEach((i) -> i.close());
+        consumerBuffers.forEach((i) -> i.close());
+    }
+
     public AtomicBuffer newSenderLogBuffer(final String destination,
                                            final long sessionId,
                                            final long channelId,

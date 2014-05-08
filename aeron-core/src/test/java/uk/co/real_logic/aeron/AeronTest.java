@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
+import org.junit.After;
 import org.junit.ClassRule;
 import org.junit.Test;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
@@ -96,6 +97,12 @@ public class AeronTest
         dataHeader.wrap(atomicSendBuffer, 0);
     }
 
+    @After
+    public void tearDown()
+    {
+        directory.unmapBuffers();
+    }
+
     @Test
     public void creatingChannelsShouldNotifyMediaDriver() throws Exception
     {
@@ -132,6 +139,7 @@ public class AeronTest
         createTermBuffer(0L, NEW_SEND_BUFFER_NOTIFICATION, directory.senderDir(), SESSION_ID);
         aeron.conductor().process();
         assertTrue(channel.offer(atomicSendBuffer));
+        aeron.conductor().close();
     }
 
     @Test
@@ -168,6 +176,7 @@ public class AeronTest
             }
         }
 
+        aeron.conductor().close();
     }
 
     private void assertCleanTermRequested(final RingBuffer toMediaDriver)
@@ -316,6 +325,8 @@ public class AeronTest
         writePacket(logAppenders.get(0));
 
         assertThat(consumer.consume(), is(1));
+
+        aeron.conductor().close();
     }
 
     @Test
@@ -336,6 +347,8 @@ public class AeronTest
         writePacket(logAppenders.get(0));
         writePacket(otherLogAppenders.get(0));
         assertThat(consumer.consume(), is(1));
+
+        aeron.conductor().close();
     }
 
     @Test
@@ -379,6 +392,8 @@ public class AeronTest
 
         writePackets(logAppender, eventCount);
         assertThat(consumer.consume(), is(eventCount));
+
+        aeron.conductor().close();
     }
 
     private void cleanBuffer(final Buffers buffers)
@@ -427,6 +442,8 @@ public class AeronTest
 
         // Now you've hit an unclean buffer and can't proceed
         assertThat(consumer.consume(), is(0));
+
+        aeron.conductor().close();
     }
 
     @Test
@@ -455,6 +472,8 @@ public class AeronTest
 
         writePackets(otherLogAppenders.get(0), 5);
         assertThat(consumer.consume(), is(5));
+
+        aeron.conductor().close();
     }
 
     private DataHandler eitherSessionHandler()

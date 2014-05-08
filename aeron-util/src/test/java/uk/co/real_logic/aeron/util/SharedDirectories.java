@@ -22,6 +22,7 @@ import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +40,7 @@ public class SharedDirectories extends ExternalResource
     private File adminDir;
     private File dataDir;
     private FileMappingConvention mapping;
+    private List<MappedByteBuffer> buffers;
 
     public static List<LogAppender> mapLoggers(final List<Buffers> termBuffers,
                                                final byte[] defaultHeader,
@@ -57,6 +59,13 @@ public class SharedDirectories extends ExternalResource
         dataDir = ensureDirectory(CommonConfiguration.DATA_DIR);
         adminDir = ensureDirectory(CommonConfiguration.ADMIN_DIR);
         mapping = new FileMappingConvention(dataDir.getAbsolutePath());
+        buffers = new ArrayList<>();
+    }
+
+    public void unmapBuffers()
+    {
+        buffers.forEach((b) -> IoUtil.unmap(b));
+        buffers.clear();
     }
 
     private File ensureDirectory(final String path) throws IOException
@@ -130,7 +139,10 @@ public class SharedDirectories extends ExternalResource
         IoUtil.delete(termLocation, true);
         final FileChannel file = createEmptyFile(termLocation, BufferDescriptor.LOG_MIN_SIZE);
 
-        return new AtomicBuffer(IoUtil.map(file));
+        final MappedByteBuffer buffer = IoUtil.map(file);
+        file.close();
+        buffers.add(buffer);
+        return new AtomicBuffer(buffer);
     }
 
     public String dataDir()
@@ -163,6 +175,9 @@ public class SharedDirectories extends ExternalResource
     {
         final File termLocation = termLocation(rootDir, sessionId, channelId, termId, false, destination, type);
 
-        return new AtomicBuffer(IoUtil.mapExistingFile(termLocation, "Term Buffer"));
+        final MappedByteBuffer buffer = IoUtil.mapExistingFile(termLocation, "Term Buffer");
+
+        buffers.add(buffer);
+        return new AtomicBuffer(buffer);
     }
 }

@@ -55,4 +55,6 @@ public interface BufferUsageStrategy
     int releaseSenderBuffers(final String destination,
                              final long sessionId,
                              final long channelId);
+
+    void close();
 }

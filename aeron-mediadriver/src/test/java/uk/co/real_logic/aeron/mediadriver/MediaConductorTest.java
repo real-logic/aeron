@@ -39,6 +39,7 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ADD_CHAN
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.REMOVE_CHANNEL;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_LENGTH;
 
+@Ignore
 public class MediaConductorTest
 {
     private static final String ADMIN_DIR = "adminDir";

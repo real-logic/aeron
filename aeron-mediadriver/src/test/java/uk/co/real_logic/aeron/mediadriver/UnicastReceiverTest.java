@@ -54,6 +54,7 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertEventRead;
 import static uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 
+@Ignore
 public class UnicastReceiverTest
 {
     private static final String URI = "udp://localhost:45678";

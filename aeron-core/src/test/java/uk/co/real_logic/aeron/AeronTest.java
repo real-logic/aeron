@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron;
 
 import org.junit.After;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
 import uk.co.real_logic.aeron.util.ConductorBuffers;
@@ -54,6 +55,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.B
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertEventRead;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.skip;
 
+@Ignore
 public class AeronTest
 {
 

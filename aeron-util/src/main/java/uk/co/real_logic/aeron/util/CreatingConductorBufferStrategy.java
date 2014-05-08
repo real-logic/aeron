@@ -26,8 +26,8 @@ public class CreatingConductorBufferStrategy extends ConductorBufferStrategy
 
     private final int bufferSize;
 
-    private MappedByteBuffer toMediaDriverBuffer;
-    private MappedByteBuffer toApiBuffer;
+    private MappedByteBuffer toMediaDriverBuffer = null;
+    private MappedByteBuffer toApiBuffer = null;
 
     public CreatingConductorBufferStrategy(final String adminDir, final int bufferSize)
     {
@@ -37,13 +37,19 @@ public class CreatingConductorBufferStrategy extends ConductorBufferStrategy
 
     public ByteBuffer toMediaDriver() throws IOException
     {
-        toMediaDriverBuffer = mapNewFile(toMediaDriver, MEDIA_DRIVER_FILE, bufferSize);
+        if (toMediaDriverBuffer == null)
+        {
+            toMediaDriverBuffer = mapNewFile(toMediaDriver, MEDIA_DRIVER_FILE, bufferSize);
+        }
         return toMediaDriverBuffer;
     }
 
     public ByteBuffer toApi() throws IOException
     {
-        toApiBuffer = mapNewFile(toApi, API_FILE, bufferSize);
+        if (toApiBuffer == null)
+        {
+            toApiBuffer = mapNewFile(toApi, API_FILE, bufferSize);
+        }
         return toApiBuffer;
     }
 
@@ -51,5 +57,7 @@ public class CreatingConductorBufferStrategy extends ConductorBufferStrategy
     {
         IoUtil.unmap(toApiBuffer);
         IoUtil.unmap(toMediaDriverBuffer);
+        toApiBuffer = null;
+        toMediaDriverBuffer = null;
     }
 }

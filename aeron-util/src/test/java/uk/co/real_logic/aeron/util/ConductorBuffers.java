@@ -87,7 +87,7 @@ public class ConductorBuffers extends ExternalResource
 
     public ConductorBufferStrategy strategy()
     {
-        return creatingStrategy;
+        return mappingStrategy;
     }
 
     public String adminDir()

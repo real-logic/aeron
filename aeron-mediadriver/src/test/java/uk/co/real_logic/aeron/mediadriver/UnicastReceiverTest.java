@@ -20,6 +20,7 @@ import org.junit.rules.ExpectedException;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy;
 import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.ConductorBuffers;
+import uk.co.real_logic.aeron.util.MappingConductorBufferStrategy;
 import uk.co.real_logic.aeron.util.SharedDirectories;
 import uk.co.real_logic.aeron.util.command.ConsumerMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
@@ -54,7 +55,6 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertEventRead;
 import static uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 
-@Ignore
 public class UnicastReceiverTest
 {
     private static final String URI = "udp://localhost:45678";
@@ -103,7 +103,7 @@ public class UnicastReceiverTest
             .rcvNioSelector(nioSelector)
             .adminNioSelector(new NioSelector())
             .senderFlowControl(DefaultSenderControlStrategy::new)
-            .adminBufferStrategy(buffers.strategy())
+            .adminBufferStrategy(new MappingConductorBufferStrategy(buffers.adminDir()))
             .bufferManagementStrategy(bufferManagementStrategy);
 
         ctx.rcvFrameHandlerFactory(

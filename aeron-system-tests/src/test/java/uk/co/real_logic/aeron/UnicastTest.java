@@ -70,6 +70,8 @@ public class UnicastTest
     public void closeEverything() throws Exception
     {
         consumer.close();
+        producingClient.close();
+        receivingClient.close();
         source.close();
         driver.close();
     }

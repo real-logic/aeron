@@ -15,6 +15,8 @@
  */
 package uk.co.real_logic.aeron;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
@@ -89,11 +91,25 @@ public class AeronTest
     private final AtomicBuffer atomicSendBuffer = new AtomicBuffer(sendBuffer);
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
+    private MappingConductorBufferStrategy adminBufferStrategy;
+
     public AeronTest()
     {
         identifiedMessage.wrap(atomicSendBuffer, 0);
         errorHeader.wrap(atomicSendBuffer, 0);
         dataHeader.wrap(atomicSendBuffer, 0);
+    }
+
+    @Before
+    public void setUp()
+    {
+        adminBufferStrategy = new MappingConductorBufferStrategy(conductorBuffers.adminDir());
+    }
+
+    @After
+    public void tearDown()
+    {
+        adminBufferStrategy.close();
     }
 
     @Test
@@ -573,7 +589,7 @@ public class AeronTest
     private Aeron newAeron()
     {
         final Aeron.Context context = new Aeron.Context()
-            .adminBufferStrategy(new MappingConductorBufferStrategy(conductorBuffers.adminDir()))
+            .adminBufferStrategy(adminBufferStrategy)
             .invalidDestinationHandler(invalidDestination);
 
         return Aeron.newSingleMediaDriver(context);

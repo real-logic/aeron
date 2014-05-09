@@ -15,6 +15,8 @@
  */
 package uk.co.real_logic.aeron.conductor;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import uk.co.real_logic.aeron.util.SharedDirectories;
@@ -34,7 +36,19 @@ public class MappingBufferUsageStrategyTest
     @ClassRule
     public static SharedDirectories directory = new SharedDirectories();
 
-    private final BufferUsageStrategy usageStrategy = new MappingBufferUsageStrategy(directory.dataDir());
+    private BufferUsageStrategy usageStrategy;
+
+    @Before
+    public void setUp()
+    {
+        usageStrategy = new MappingBufferUsageStrategy(directory.dataDir());
+    }
+
+    @After
+    public void tearDown()
+    {
+        usageStrategy.close();
+    }
 
     @Test
     public void testInitiallyNoBuffersToRelease()

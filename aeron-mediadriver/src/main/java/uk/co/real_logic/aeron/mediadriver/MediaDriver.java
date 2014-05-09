@@ -24,6 +24,7 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -139,17 +140,24 @@ public class MediaDriver implements AutoCloseable
     private final Sender sender;
     private final MediaConductor adminThread;
 
+    private final ConductorBufferStrategy conductorBufferStrategy;
+    private final BufferManagementStrategy bufferManagementStrategy;
+
     public MediaDriver() throws Exception
     {
         final NioSelector nioSelector = new NioSelector();
+
+        conductorBufferStrategy = new CreatingConductorBufferStrategy(ADMIN_DIR, ADMIN_BUFFER_SZ);
+        bufferManagementStrategy = newMappedBufferManager(DATA_DIR);
+
         final Context context = new Context()
                 .adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .rcvNioSelector(nioSelector)
                 .adminNioSelector(new NioSelector())
                 .senderFlowControl(DefaultSenderControlStrategy::new)
-                .adminBufferStrategy(new CreatingConductorBufferStrategy(ADMIN_DIR, ADMIN_BUFFER_SZ))
-                .bufferManagementStrategy(newMappedBufferManager(DATA_DIR))
+                .adminBufferStrategy(conductorBufferStrategy)
+                .bufferManagementStrategy(bufferManagementStrategy)
                 .mtuLength(CommonConfiguration.MTU_LENGTH);
 
         context.rcvFrameHandlerFactory(new RcvFrameHandlerFactory(nioSelector,
@@ -180,6 +188,8 @@ public class MediaDriver implements AutoCloseable
         receiver.close();
         sender.close();
         adminThread.close();
+        conductorBufferStrategy.close();
+        bufferManagementStrategy.close();
     }
 
     public static class Context

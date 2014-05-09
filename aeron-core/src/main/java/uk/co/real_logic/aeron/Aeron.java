@@ -72,6 +72,11 @@ public final class Aeron
         }
     }
 
+    public void close()
+    {
+        adminBuffers.close();
+    }
+
     /**
      * Creates an media driver associated with this Aeron instance that can be used to create sources and receivers on.
      *

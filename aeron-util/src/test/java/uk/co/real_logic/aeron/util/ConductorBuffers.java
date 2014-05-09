@@ -45,8 +45,18 @@ public class ConductorBuffers extends ExternalResource
 
     public ConductorBuffers(int bufferSize)
     {
+        this(IoUtil.tmpDir() + "/conductor", bufferSize);
+    }
+
+    public ConductorBuffers(final String adminDirStr)
+    {
+        this(adminDirStr, BUFFER_SIZE);
+    }
+
+    private ConductorBuffers(final String adminDirStr, int bufferSize)
+    {
+        this.adminDirStr = adminDirStr;
         this.bufferSize = bufferSize;
-        adminDirStr = IoUtil.tmpDir() + "/conductor";
     }
 
     protected void before() throws Exception

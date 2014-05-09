@@ -15,19 +15,15 @@
  */
 package uk.co.real_logic.aeron;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
-import uk.co.real_logic.aeron.util.CommonConfiguration;
-import uk.co.real_logic.aeron.util.IoUtil;
-
-import java.io.File;
+import uk.co.real_logic.aeron.util.ConductorBuffers;
+import uk.co.real_logic.aeron.util.SharedDirectories;
 
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.Consumer.DataHandler;
 import static uk.co.real_logic.aeron.Consumer.NewSourceEventHandler;
+import static uk.co.real_logic.aeron.util.CommonConfiguration.ADMIN_DIR;
 
 public class UnicastTest
 {
@@ -35,8 +31,11 @@ public class UnicastTest
     private static final long CHANNEL_ID = 1L;
     private static final long SESSION_ID = 2L;
 
-//    @ClassRule
-//    public static SharedDirectories dataDir = new SharedDirectories();
+    @ClassRule
+    public static SharedDirectories dataDir = new SharedDirectories();
+
+    @ClassRule
+    public static ConductorBuffers buffers = new ConductorBuffers(ADMIN_DIR);
 
     private DataHandler dataHandler;
     private NewSourceEventHandler sourceHandler;
@@ -47,19 +46,9 @@ public class UnicastTest
     private Consumer consumer;
     private Source source;
 
-    private File dataDir;
-
     @Before
     public void setupClients() throws Exception
     {
-        dataDir = new File(CommonConfiguration.DATA_DIR);
-        if (dataDir.exists())
-        {
-            IoUtil.delete(dataDir, false);
-        }
-
-        IoUtil.ensureDirectoryExists(dataDir, "data dir");
-
         driver = new MediaDriver();
 
         dataHandler = mock(DataHandler.class);
@@ -83,8 +72,6 @@ public class UnicastTest
         consumer.close();
         source.close();
         driver.close();
-
-        IoUtil.delete(dataDir, false);
     }
 
     private void process(final int times) throws Exception

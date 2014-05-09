@@ -23,7 +23,6 @@ import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import java.io.File;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,7 +32,6 @@ import static uk.co.real_logic.aeron.util.FileMappingConvention.Type;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.Type.LOG;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.Type.STATE;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.termLocation;
-import static uk.co.real_logic.aeron.util.IoUtil.createEmptyFile;
 import static uk.co.real_logic.aeron.util.IoUtil.mapNewFile;
 
 public class SharedDirectories extends ExternalResource

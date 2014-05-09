@@ -28,7 +28,6 @@ import java.io.IOException;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static uk.co.real_logic.aeron.util.IoUtil.checkFileExists;
 
 public class MappedBufferManagementStrategyTest
 {

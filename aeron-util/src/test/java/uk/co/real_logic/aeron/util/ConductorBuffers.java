@@ -29,13 +29,14 @@ public class ConductorBuffers extends ExternalResource
 {
     public static final int BUFFER_SIZE = 512 + TRAILER_LENGTH;
 
-    private final String adminDir;
+    private final String adminDirStr;
     private final int bufferSize;
 
     private ConductorBufferStrategy creatingStrategy;
     private ConductorBufferStrategy mappingStrategy;
     private ByteBuffer toMediaDriver;
     private ByteBuffer toApi;
+    private File adminDir;
 
     public ConductorBuffers()
     {
@@ -45,20 +46,20 @@ public class ConductorBuffers extends ExternalResource
     public ConductorBuffers(int bufferSize)
     {
         this.bufferSize = bufferSize;
-        adminDir = IoUtil.tmpDir() + "/conductor";
+        adminDirStr = IoUtil.tmpDir() + "/conductor";
     }
 
     protected void before() throws Exception
     {
-        final File dir = new File(adminDir);
-        if (dir.exists())
+        adminDir = new File(adminDirStr);
+        if (adminDir.exists())
         {
-            IoUtil.delete(dir, false);
+            IoUtil.delete(adminDir, false);
         }
 
-        IoUtil.ensureDirectoryExists(dir, "conductor dir");
-        creatingStrategy = new CreatingConductorBufferStrategy(adminDir, bufferSize);
-        mappingStrategy = new MappingConductorBufferStrategy(adminDir);
+        IoUtil.ensureDirectoryExists(adminDir, "conductor dir");
+        creatingStrategy = new CreatingConductorBufferStrategy(adminDirStr, bufferSize);
+        mappingStrategy = new MappingConductorBufferStrategy(adminDirStr);
         toMediaDriver = creatingStrategy.toMediaDriver();
         toApi = creatingStrategy.toApi();
     }
@@ -68,6 +69,16 @@ public class ConductorBuffers extends ExternalResource
         // Force unmapping of byte buffers to allow deletion
         creatingStrategy.close();
         mappingStrategy.close();
+
+        try
+        {
+            // do deletion here to make debugging easier if unmaps/closes are not done
+            IoUtil.delete(adminDir, false);
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     public RingBuffer toMediaDriver()
@@ -92,7 +103,7 @@ public class ConductorBuffers extends ExternalResource
 
     public String adminDir()
     {
-        return adminDir;
+        return adminDirStr;
     }
 
     public RingBuffer mappedToMediaDriver()

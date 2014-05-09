@@ -105,7 +105,7 @@ public class IoUtil
      * @param directory the directory which definitely exists after this method call.
      * @throws IllegalArgumentException thrown if the directory cannot be created
      */
-    public static void ensureDirectoryExists(File directory, String name) throws IllegalArgumentException
+    public static void ensureDirectoryExists(final File directory, final String name) throws IllegalArgumentException
     {
         if (!directory.exists())
         {
@@ -117,9 +117,12 @@ public class IoUtil
     }
 
     /**
-     * Check that a direct exists, throwing an exception if it doesn't.
+     * Check that a directory exists.
+     *
+     * @param directory to check for.
+     * @throws java.lang.IllegalArgumentException if the directory does not exist
      */
-    public static void checkDirectoryExists(File directory, String name)
+    public static void checkDirectoryExists(final File directory, final String name) throws IllegalArgumentException
     {
         if (!directory.exists() || !directory.isDirectory())
         {
@@ -127,6 +130,14 @@ public class IoUtil
         }
     }
 
+    /**
+     * Create an empty file, fill with 0s, and return the {@link FileChannel}
+     *
+     * @param file to create
+     * @param size of the file to create
+     * @return {@link java.nio.channels.FileChannel} for the file
+     * @throws IOException if file can not be created or filled with 0s.
+     */
     public static FileChannel createEmptyFile(final File file, final long size) throws IOException
     {
         final RandomAccessFile randomAccessFile = new RandomAccessFile(file, "rw");
@@ -136,24 +147,35 @@ public class IoUtil
         return templateFile;
     }
 
+    /**
+     * Check that file exists, open file, and return MappedByteBuffer for entire file
+     *
+     * The file itself will be closed, but the mapping will persist.
+     *
+     * @param location of the file to map
+     * @param name to be associated for any exceptions
+     * @return {@link java.nio.MappedByteBuffer} for the file
+     * @throws IOException for any errors
+     */
     public static MappedByteBuffer mapExistingFile(final File location, final String name) throws IOException
     {
         checkFileExists(location, name);
         try (final RandomAccessFile file = new RandomAccessFile(location, "rw"))
         {
             final FileChannel channel = file.getChannel();
-            return map(channel);
+            return channel.map(READ_WRITE, 0, channel.size());
         }
     }
 
-    public static MappedByteBuffer map(final FileChannel channel) throws IOException
-    {
-        long size = channel.size();
-        return channel.map(READ_WRITE, 0, size);
-    }
-
     /**
-     * Create an initialised
+     * Create a new file, fill with 0s, and return a {@link java.nio.MappedByteBuffer} for the file
+     *
+     * The file itself will be closed, but the mapping will persist.
+     *
+     * @param location of the file to create and map
+     * @param size of the file to create and map
+     * @return {@link java.nio.MappedByteBuffer} for the file
+     * @throws IOException for any errors
      */
     public static MappedByteBuffer mapNewFile(final File location, final String name, final long size)
             throws IOException
@@ -164,7 +186,14 @@ public class IoUtil
         }
     }
 
-    public static void checkFileExists(final File file, final String name)
+    /**
+     * Check that a file exists and throw an exception if not.
+     *
+     * @param file to check existence of.
+     * @param name to associate for the exception
+     * @throws java.lang.IllegalStateException if file does not exist
+     */
+    public static void checkFileExists(final File file, final String name) throws IllegalStateException
     {
         if (!file.exists())
         {
@@ -179,7 +208,7 @@ public class IoUtil
      */
     public static void unmap(final MappedByteBuffer buffer)
     {
-        if (buffer == null)
+        if (null == buffer)
         {
             return;
         }
@@ -197,6 +226,11 @@ public class IoUtil
         }
     }
 
+    /**
+     * Return the system property for java.io.tmpdir
+     *
+     * @return tmp directory for the runtime
+     */
     public static String tmpDir()
     {
         return System.getProperty("java.io.tmpdir");

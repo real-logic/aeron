@@ -100,7 +100,7 @@ public class FileMappingConvention
         return channelDir;
     }
 
-    static String destinationToDir(final String destination)
+    public static String destinationToDir(final String destination)
     {
         return destination.replace(':', '_')
                           .replace('/', '_');

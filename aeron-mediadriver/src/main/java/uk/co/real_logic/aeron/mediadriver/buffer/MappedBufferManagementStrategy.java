@@ -41,7 +41,7 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor
  */
 class MappedBufferManagementStrategy implements BufferManagementStrategy
 {
-    private static final long LOG_BUFFER_SIZE = COMMAND_BUFFER_SZ + TRAILER_LENGTH;
+    public static final long LOG_BUFFER_SIZE = COMMAND_BUFFER_SZ + TRAILER_LENGTH;
 
     private final FileChannel logTemplate;
     private final FileChannel stateTemplate;
@@ -63,7 +63,7 @@ class MappedBufferManagementStrategy implements BufferManagementStrategy
         IoUtil.ensureDirectoryExists(senderDir, "sender");
         IoUtil.ensureDirectoryExists(receiverDir, "receiver");
         logTemplate = createTemplateFile(dataDir, "logTemplate", LOG_BUFFER_SIZE);
-        stateTemplate = createTemplateFile(dataDir, "StateTemplate", STATE_BUFFER_LENGTH);
+        stateTemplate = createTemplateFile(dataDir, "stateTemplate", STATE_BUFFER_LENGTH);
     }
 
     public void close()
@@ -113,42 +113,8 @@ class MappedBufferManagementStrategy implements BufferManagementStrategy
         }
     }
 
-    /**
-     * Maps a buffer for a given term, ensuring that a file of the correct size is created.
-     */
-    public MappedByteBuffer mapTerm(final File rootDir,
-                                    final String destination,
-                                    final long sessionId,
-                                    final long channelId,
-                                    final long termId,
-                                    final long requiredSize) throws Exception
-    {
-        final File termIdFile = termLocation(rootDir, sessionId, channelId, termId, true, destination, STATE);
-        // must be checked at this point, opening a RandomAccessFile will cause this to be true
-        final boolean fileExists = termIdFile.exists();
-        try (final RandomAccessFile randomAccessFile = new RandomAccessFile(termIdFile, "rw"))
-        {
-            long size = requiredSize;
-            final FileChannel channel = randomAccessFile.getChannel();
-
-            if (fileExists)
-            {
-                size = randomAccessFile.length();
-            }
-            else
-            {
-                long transferred = logTemplate.transferTo(0, requiredSize, channel);
-                if (transferred != requiredSize)
-                {
-                    throw new IllegalStateException("Unable to initialize the required size of " + requiredSize);
-                }
-            }
-
-            return channel.map(READ_WRITE, 0, size);
-        }
-    }
-
-    public BufferRotator addProducerChannel(final UdpDestination destination, final long sessionId, final long channelId) throws Exception
+    public BufferRotator addProducerChannel(final UdpDestination destination, final long sessionId, final long channelId)
+            throws Exception
     {
         return addChannel(destination, sessionId, channelId, senderDir, srcTermMap);
     }
@@ -164,9 +130,9 @@ class MappedBufferManagementStrategy implements BufferManagementStrategy
         removeChannel(destination, sessionId, channelId, rcvTermMap);
     }
 
-    public MappedBufferRotator addConsumerChannel(final UdpDestination destination,
-                                                  final long sessionId,
-                                                  final long channelId) throws Exception
+    public BufferRotator addConsumerChannel(final UdpDestination destination,
+                                            final long sessionId,
+                                            final long channelId) throws Exception
     {
         return addChannel(destination, sessionId, channelId, receiverDir, rcvTermMap);
     }

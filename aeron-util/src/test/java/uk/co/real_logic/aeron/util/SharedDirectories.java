@@ -34,10 +34,10 @@ import static uk.co.real_logic.aeron.util.FileMappingConvention.Type.LOG;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.Type.STATE;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.termLocation;
 import static uk.co.real_logic.aeron.util.IoUtil.createEmptyFile;
+import static uk.co.real_logic.aeron.util.IoUtil.mapNewFile;
 
 public class SharedDirectories extends ExternalResource
 {
-    private File adminDir;
     private File dataDir;
     private FileMappingConvention mapping;
     private List<MappedByteBuffer> buffers;
@@ -57,14 +57,22 @@ public class SharedDirectories extends ExternalResource
     protected void before() throws Throwable
     {
         dataDir = ensureDirectory(CommonConfiguration.DATA_DIR);
-        adminDir = ensureDirectory(CommonConfiguration.ADMIN_DIR);
         mapping = new FileMappingConvention(dataDir.getAbsolutePath());
         buffers = new ArrayList<>();
     }
 
     protected void after()
     {
-        unmapBuffers();
+        try
+        {
+            // delete the dirs here so that if they error, we know the test that failed to unmap/close
+            unmapBuffers();
+            IoUtil.delete(dataDir, false);
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     private void unmapBuffers()
@@ -142,10 +150,9 @@ public class SharedDirectories extends ExternalResource
     {
         final File termLocation = termLocation(rootDir, sessionId, channelId, termId, true, destination, type);
         IoUtil.delete(termLocation, true);
-        final FileChannel file = createEmptyFile(termLocation, BufferDescriptor.LOG_MIN_SIZE);
 
-        final MappedByteBuffer buffer = IoUtil.map(file);
-        file.close();
+        final MappedByteBuffer buffer = mapNewFile(termLocation, "Term Buffer", BufferDescriptor.LOG_MIN_SIZE);
+
         buffers.add(buffer);
         return new AtomicBuffer(buffer);
     }

@@ -18,3 +18,7 @@ checkstyle {
     // lambdas break checkstyle currently. Grrrr!
     ignoreFailures = true
 }
+
+test {
+    jvmArgs '-Djava.net.preferIPv4Stack=true'
+}

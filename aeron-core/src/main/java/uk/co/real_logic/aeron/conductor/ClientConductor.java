@@ -16,15 +16,15 @@
 package uk.co.real_logic.aeron.conductor;
 
 import uk.co.real_logic.aeron.Channel;
-import uk.co.real_logic.aeron.SubscriberChannel;
 import uk.co.real_logic.aeron.PublisherControlFactory;
+import uk.co.real_logic.aeron.SubscriberChannel;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.Service;
 import uk.co.real_logic.aeron.util.collections.ChannelMap;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
+import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;

@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.util.status;
 
-import uk.co.real_logic.aeron.util.CommonConfiguration;
 import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 

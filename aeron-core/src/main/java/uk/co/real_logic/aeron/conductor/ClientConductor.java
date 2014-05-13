@@ -16,19 +16,22 @@
 package uk.co.real_logic.aeron.conductor;
 
 import uk.co.real_logic.aeron.Channel;
-import uk.co.real_logic.aeron.SubscriberChannel;
 import uk.co.real_logic.aeron.PublisherControlFactory;
+import uk.co.real_logic.aeron.SubscriberChannel;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.Service;
 import uk.co.real_logic.aeron.util.collections.ChannelMap;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
+import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.aeron.util.status.PositionIndicator;
+import uk.co.real_logic.aeron.util.status.PositionReporter;
+import uk.co.real_logic.aeron.util.status.StatusBufferMapper;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -71,6 +74,8 @@ public final class ClientConductor extends Service implements MediaDriverFacade
     private final ConductorErrorHandler errorHandler;
     private final PublisherControlFactory producerControl;
 
+    private final StatusBufferMapper statusCounters;
+
     // Control protocol Flyweights
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
     private final SubscriberMessageFlyweight receiverMessage = new SubscriberMessageFlyweight();
@@ -88,6 +93,8 @@ public final class ClientConductor extends Service implements MediaDriverFacade
                            final PublisherControlFactory producerControl)
     {
         super(SLEEP_PERIOD);
+
+        statusCounters = new StatusBufferMapper();
 
         this.commandBuffer = commandBuffer;
         this.recvBuffer = recvBuffer;
@@ -116,6 +123,7 @@ public final class ClientConductor extends Service implements MediaDriverFacade
     public void close()
     {
         bufferUsage.close();
+        statusCounters.close();
     }
 
     private void processBufferCleaningScan()
@@ -141,11 +149,11 @@ public final class ClientConductor extends Service implements MediaDriverFacade
 
                         if (eventTypeId == ADD_CHANNEL)
                         {
-                            addSender(destination, channelId, sessionId);
+                            addProducer(destination, channelId, sessionId);
                         }
                         else
                         {
-                            removeSender(destination, channelId, sessionId);
+                            removeProducer(destination, channelId, sessionId);
                         }
                         sendBuffer.write(eventTypeId, buffer, index, length);
 
@@ -205,7 +213,7 @@ public final class ClientConductor extends Service implements MediaDriverFacade
         // TOOD: release buffers
     }
 
-    private void addSender(final String destination, final long channelId, final long sessionId)
+    private void addProducer(final String destination, final long channelId, final long sessionId)
     {
         // see addReceiver re efficiency
         producers.forEach(
@@ -219,7 +227,7 @@ public final class ClientConductor extends Service implements MediaDriverFacade
         );
     }
 
-    private void removeSender(final String destination, final long channelId, final long sessionId)
+    private void removeProducer(final String destination, final long channelId, final long sessionId)
     {
         if (sendNotifiers.remove(destination, channelId, sessionId) == null)
         {
@@ -269,11 +277,16 @@ public final class ClientConductor extends Service implements MediaDriverFacade
                                                  final long sessionId,
                                                  final long termId)
     {
-        onNewBufferNotification(sessionId, termId,
+        onNewBufferNotification(sessionId,
                                 recvNotifiers.get(destination, channelId),
                                 i -> newReader(destination, channelId, sessionId, i),
                                 LogReader[]::new,
-                                (chan, buffers) -> chan.onBuffersMapped(sessionId, termId, buffers));
+                                (chan, buffers) ->
+                                {
+                                    // TODO: get the counter id
+                                    final PositionReporter reporter = statusCounters.reporter(0);
+                                    chan.onBuffersMapped(sessionId, termId, buffers, reporter);
+                                });
     }
 
     private void onNewSenderBufferNotification(final long sessionId,
@@ -281,11 +294,16 @@ public final class ClientConductor extends Service implements MediaDriverFacade
                                                final long termId,
                                                final String destination)
     {
-        onNewBufferNotification(sessionId, termId,
+        onNewBufferNotification(sessionId,
                                 sendNotifiers.get(destination, sessionId, channelId),
                                 i -> newAppender(destination, sessionId, channelId, i),
                                 LogAppender[]::new,
-                                (chan, buffers) -> chan.onBuffersMapped(termId, buffers));
+                                (chan, buffers) ->
+                                {
+                                    // TODO: get the counter id
+                                    final PositionIndicator indicator = statusCounters.indicator(0);
+                                    chan.onBuffersMapped(termId, buffers, indicator);
+                                });
     }
 
     private interface LogFactory<L>
@@ -295,7 +313,6 @@ public final class ClientConductor extends Service implements MediaDriverFacade
 
     private <C extends ChannelNotifiable, L>
     void onNewBufferNotification(final long sessionId,
-                                 final long termId,
                                  final C channel,
                                  final LogFactory<L> logFactory,
                                  final IntFunction<L[]> logArray,

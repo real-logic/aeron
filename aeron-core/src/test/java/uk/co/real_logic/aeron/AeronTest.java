@@ -20,10 +20,7 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
-import uk.co.real_logic.aeron.util.ConductorBuffers;
-import uk.co.real_logic.aeron.util.ErrorCode;
-import uk.co.real_logic.aeron.util.MappingConductorBufferStrategy;
-import uk.co.real_logic.aeron.util.SharedDirectories;
+import uk.co.real_logic.aeron.util.*;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
@@ -69,6 +66,9 @@ public class AeronTest
     private static final long SESSION_ID_2 = 5L;
     public static final int PACKET_VALUE = 37;
     public static final int SEND_BUFFER_CAPACITY = 256;
+
+    @ClassRule
+    public static CountersResource counters = new CountersResource();
 
     @ClassRule
     public static SharedDirectories directory = new SharedDirectories();
@@ -352,7 +352,7 @@ public class AeronTest
 
         writePacket(logAppenders.get(0));
         writePacket(otherLogAppenders.get(0));
-        assertThat(subscriber.read(), is(1));
+        assertThat(subscriber.read(), is(2));
 
         aeron.conductor().close();
     }

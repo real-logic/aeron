@@ -40,6 +40,7 @@ public class Channel extends ChannelNotifiable implements AutoCloseable, Positio
     private final AtomicBoolean paused;
 
     private volatile LogAppender[] logAppenders;
+    private PositionIndicator positionIndicator;
 
     private final AtomicLong currentTermId = new AtomicLong(UNKNOWN_TERM_ID);
     private final AtomicLong cleanedTermId = new AtomicLong(UNKNOWN_TERM_ID);
@@ -71,9 +72,10 @@ public class Channel extends ChannelNotifiable implements AutoCloseable, Positio
         return logAppenders != null && !paused.get();
     }
 
-    public void onBuffersMapped(final long termId, final LogAppender[] logAppenders)
+    public void onBuffersMapped(final long termId, final LogAppender[] logAppenders, final PositionIndicator positionIndicator)
     {
         this.logAppenders = logAppenders;
+        this.positionIndicator = positionIndicator;
         currentTermId.set(termId);
         cleanedTermId.set(termId + CLEAN_WINDOW);
     }

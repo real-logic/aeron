@@ -27,8 +27,8 @@ import java.util.Map;
 import java.util.Queue;
 
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.SELECT_TIMEOUT;
-import static uk.co.real_logic.aeron.util.ErrorCode.SUBSCRIBER_NOT_REGISTERED;
 import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION;
+import static uk.co.real_logic.aeron.util.ErrorCode.SUBSCRIBER_NOT_REGISTERED;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ADD_SUBSCRIBER;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.REMOVE_SUBSCRIBER;
 

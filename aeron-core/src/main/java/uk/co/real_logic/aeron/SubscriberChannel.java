@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.aeron.conductor.ChannelNotifiable;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
+import uk.co.real_logic.aeron.util.status.PositionReporter;
 
 import static uk.co.real_logic.aeron.Subscriber.DataHandler;
 
@@ -55,9 +56,12 @@ public class SubscriberChannel extends ChannelNotifiable
         return subscriberSession != null && subscriberSession.hasTerm();
     }
 
-    public void onBuffersMapped(final long sessionId, final long termId, final LogReader[] logReaders)
+    public void onBuffersMapped(final long sessionId,
+                                final long termId,
+                                final LogReader[] logReaders,
+                                final PositionReporter positionReporter)
     {
-        SubscriberSession session = new SubscriberSession(logReaders, sessionId, termId, dataHandler);
+        SubscriberSession session = new SubscriberSession(logReaders, sessionId, termId, dataHandler, positionReporter);
         this.logReaders.put(sessionId, session);
     }
 

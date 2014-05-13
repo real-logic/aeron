@@ -15,13 +15,14 @@
  */
 package uk.co.real_logic.aeron.util.status;
 
-import uk.co.real_logic.aeron.util.CommonConfiguration;
 import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
+
+import static uk.co.real_logic.aeron.util.CommonConfiguration.COUNTERS_DIR;
 
 /**
  * Common Class
@@ -41,11 +42,11 @@ public class BufferMapper
 
     public BufferMapper(final Mapper descriptorMapper, final Mapper counterMapper)
     {
-        final File directory = new File(CommonConfiguration.COUNTERS_DIR);
+        final File directory = new File(COUNTERS_DIR);
         try
         {
-            descriptor = descriptorMapper.map(directory, "descriptor");
-            counter = counterMapper.map(directory, "counter");
+            descriptor = descriptorMapper.map(new File(directory, "descriptor"), "descriptor");
+            counter = counterMapper.map(new File(directory, "counter"), "counter");
 
             descriptorBuffer = new AtomicBuffer(descriptor);
             counterBuffer = new AtomicBuffer(counter);
@@ -61,11 +62,6 @@ public class BufferMapper
         return descriptorBuffer;
     }
 
-    public AtomicBuffer counterBuffer()
-    {
-        return counterBuffer;
-    }
-
     public PositionIndicator indicator(final int offset) {
         return new BufferPositionIndicator(counterBuffer, offset);
     }
@@ -74,7 +70,7 @@ public class BufferMapper
         return new BufferPositionReporter(counterBuffer, offset);
     }
 
-    public void close() throws Exception
+    public void close()
     {
         IoUtil.unmap(descriptor);
         IoUtil.unmap(counter);

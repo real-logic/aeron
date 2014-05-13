@@ -46,7 +46,7 @@ public class Sender extends Service
             counter = 0;
         }
 
-        channels.forEach(counter, SenderChannel::process);
+        channels.forEach(counter, SenderChannel::send);
     }
 
     public void addChannel(final SenderChannel channel)

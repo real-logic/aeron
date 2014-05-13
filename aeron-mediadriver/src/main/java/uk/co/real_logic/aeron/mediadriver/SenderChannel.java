@@ -116,7 +116,7 @@ public class SenderChannel
         return new LogScanner(log.logBuffer(), log.stateBuffer(), headerLength);
     }
 
-    public void process()
+    public void send()
     {
         // TODO: blocking due to flow control
         // read from term buffer

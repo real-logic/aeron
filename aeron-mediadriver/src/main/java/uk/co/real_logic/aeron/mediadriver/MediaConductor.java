@@ -225,11 +225,7 @@ public class MediaConductor extends Service implements LibraryFacade
         stop();
         wakeup();
 
-        srcDestinationMap.forEach(
-            (hash, frameHandler) ->
-            {
-              frameHandler.close();
-            });
+        srcDestinationMap.forEach((hash, frameHandler) -> frameHandler.close());
 
         adminBufferStrategy.close();
     }

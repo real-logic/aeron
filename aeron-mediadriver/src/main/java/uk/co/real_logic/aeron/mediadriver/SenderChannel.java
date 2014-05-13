@@ -62,7 +62,7 @@ public class SenderChannel
     private final SenderFlowControlState activeFlowControlState = new SenderFlowControlState(0);
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
-    private int currentIndex;
+    private int currentIndex = 0;
     private Timer flowControlTimer;
 
     public SenderChannel(final ControlFrameHandler frameHandler,
@@ -91,7 +91,7 @@ public class SenderChannel
         sendBuffers = buffers.buffers()
                              .map(this::duplicateLogBuffer)
                              .toArray(ByteBuffer[]::new);
-        currentIndex = 0;
+
         currentTermId = new AtomicLong(initialTermId);
         cleanedTermId = new AtomicLong(initialTermId + 2);
 
@@ -147,10 +147,10 @@ public class SenderChannel
                         // TODO: error
                     }
                 }
-                catch (Exception e)
+                catch (final Exception ex)
                 {
                     //TODO: errors
-                    e.printStackTrace();
+                    ex.printStackTrace();
                 }
             }
 

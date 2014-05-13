@@ -16,21 +16,21 @@
 package uk.co.real_logic.aeron.util.status;
 
 /**
- * An implementation of a limit barrier that defines a limit as being a window further along than a position.
+ * A enumeration of common labels to be used by status counters.
  */
-public class WindowedLimitBarrier implements LimitBarrier
+public enum  StatusLabels
 {
-    private final PositionIndicator indicator;
-    private final long window;
+    PRODUCER_TO_SOURCE_POSITION("Producer to Source Position"),
+    RECEIVER_TO_CONSUMER_POSITION("Producer to Source Position")
+    ;
 
-    public WindowedLimitBarrier(final PositionIndicator indicator, final long window)
+    // TODO: get label from
+
+    private final String label;
+
+    private StatusLabels(final String label)
     {
-        this.indicator = indicator;
-        this.window = window;
+        this.label = label;
     }
 
-    public long limit()
-    {
-        return indicator.position() + window;
-    }
 }

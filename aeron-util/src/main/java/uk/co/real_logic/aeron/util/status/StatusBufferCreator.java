@@ -15,22 +15,16 @@
  */
 package uk.co.real_logic.aeron.util.status;
 
+import static uk.co.real_logic.aeron.util.IoUtil.mapNewFile;
+
 /**
- * An implementation of a limit barrier that defines a limit as being a window further along than a position.
+ * .Creates buffers when it maps then.
  */
-public class WindowedLimitBarrier implements LimitBarrier
+public class StatusBufferCreator extends BufferMapper
 {
-    private final PositionIndicator indicator;
-    private final long window;
-
-    public WindowedLimitBarrier(final PositionIndicator indicator, final long window)
+    public StatusBufferCreator(final long descriptorBufferSize, final long countersBufferSize)
     {
-        this.indicator = indicator;
-        this.window = window;
-    }
-
-    public long limit()
-    {
-        return indicator.position() + window;
+        super((dir, file) -> mapNewFile(dir, file, descriptorBufferSize),
+              (dir, file) -> mapNewFile(dir, file, countersBufferSize));
     }
 }

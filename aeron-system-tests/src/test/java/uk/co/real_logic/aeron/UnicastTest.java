@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron;
 import org.junit.*;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
 import uk.co.real_logic.aeron.util.ConductorBuffers;
+import uk.co.real_logic.aeron.util.CountersResource;
 import uk.co.real_logic.aeron.util.SharedDirectories;
 
 import static org.mockito.Mockito.mock;
@@ -30,6 +31,9 @@ public class UnicastTest
     private static final Destination DESTINATION = new Destination("udp://localhost:54321");
     private static final long CHANNEL_ID = 1L;
     private static final long SESSION_ID = 2L;
+
+    @ClassRule
+    public static CountersResource counters = new CountersResource();
 
     @ClassRule
     public static SharedDirectories dataDir = new SharedDirectories();

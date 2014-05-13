@@ -17,9 +17,11 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
+import uk.co.real_logic.aeron.util.status.PositionReporter;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import static uk.co.real_logic.aeron.Consumer.DataHandler;
 import static uk.co.real_logic.aeron.Consumer.MessageFlags.NONE;
 import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.CLEAN_WINDOW;
 import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.rotateId;
@@ -36,17 +38,23 @@ public class ConsumerSession
 
     private final LogReader[] logReaders;
     private final long sessionId;
-    private final Consumer.DataHandler dataHandler;
+    private final DataHandler dataHandler;
+    private final PositionReporter positionReporter;
     private final AtomicLong currentTermId;
     private final AtomicLong cleanedTermId;
 
     private int currentBufferId;
 
-    public ConsumerSession(final LogReader[] readers, final long sessionId, final long termId, Consumer.DataHandler dataHandler)
+    public ConsumerSession(final LogReader[] readers,
+                           final long sessionId,
+                           final long termId,
+                           final DataHandler dataHandler,
+                           final PositionReporter positionReporter)
     {
         this.logReaders = readers;
         this.sessionId = sessionId;
         this.dataHandler = dataHandler;
+        this.positionReporter = positionReporter;
         currentTermId = new AtomicLong(termId);
         cleanedTermId = new AtomicLong(termId + CLEAN_WINDOW);
         currentBufferId = 0;

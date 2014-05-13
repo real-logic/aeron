@@ -28,7 +28,7 @@ import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*;
 
-public class MtuScannerTest
+public class LogScannerTest
 {
     private static final int LOG_BUFFER_CAPACITY = 1024 * 16;
     private static final int STATE_BUFFER_CAPACITY = STATE_BUFFER_LENGTH;
@@ -39,7 +39,7 @@ public class MtuScannerTest
     private final AtomicBuffer logBuffer = mock(AtomicBuffer.class);
     private final AtomicBuffer stateBuffer = mock(AtomicBuffer.class);
 
-    private MtuScanner scanner;
+    private LogScanner scanner;
 
     @Before
     public void setUp()
@@ -47,7 +47,7 @@ public class MtuScannerTest
         when(logBuffer.capacity()).thenReturn(LOG_BUFFER_CAPACITY);
         when(stateBuffer.capacity()).thenReturn(STATE_BUFFER_CAPACITY);
 
-        scanner = new MtuScanner(logBuffer, stateBuffer, MTU_LENGTH, HEADER_LENGTH);
+        scanner = new LogScanner(logBuffer, stateBuffer, HEADER_LENGTH);
     }
 
     @Test
@@ -57,15 +57,9 @@ public class MtuScannerTest
     }
 
     @Test
-    public void shouldReportMtu()
-    {
-        assertThat(scanner.mtuLength(), is(MTU_LENGTH));
-    }
-
-    @Test
     public void shouldReturnFalseOnEmptyLog()
     {
-        assertFalse(scanner.scanNext());
+        assertFalse(scanner.scanNext(MTU_LENGTH));
     }
 
     @Test
@@ -80,7 +74,7 @@ public class MtuScannerTest
         when(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN))
             .thenReturn(MSG_TYPE);
 
-        assertTrue(scanner.scanNext());
+        assertTrue(scanner.scanNext(MTU_LENGTH));
         assertThat(scanner.offset(), is(frameOffset));
         assertThat(scanner.length(), is(FRAME_ALIGNMENT));
         assertFalse(scanner.isComplete());
@@ -107,7 +101,7 @@ public class MtuScannerTest
         when(logBuffer.getShort(typeOffset(frameOffset + FRAME_ALIGNMENT), LITTLE_ENDIAN))
             .thenReturn(MSG_TYPE);
 
-        assertTrue(scanner.scanNext());
+        assertTrue(scanner.scanNext(MTU_LENGTH));
         assertThat(scanner.offset(), is(frameOffset));
         assertThat(scanner.length(), is(FRAME_ALIGNMENT * 2));
         assertFalse(scanner.isComplete());
@@ -140,7 +134,7 @@ public class MtuScannerTest
         when(logBuffer.getShort(typeOffset(frameOffset + frameOneLength), LITTLE_ENDIAN))
             .thenReturn(MSG_TYPE);
 
-        assertTrue(scanner.scanNext());
+        assertTrue(scanner.scanNext(MTU_LENGTH));
         assertThat(scanner.offset(), is(frameOffset));
         assertThat(scanner.length(), is(frameOneLength + frameTwoLength));
         assertFalse(scanner.isComplete());
@@ -173,7 +167,7 @@ public class MtuScannerTest
         when(logBuffer.getShort(typeOffset(frameOffset + frameOneLength), LITTLE_ENDIAN))
             .thenReturn(MSG_TYPE);
 
-        assertTrue(scanner.scanNext());
+        assertTrue(scanner.scanNext(MTU_LENGTH));
         assertThat(scanner.offset(), is(frameOffset));
         assertThat(scanner.length(), is(frameOneLength));
         assertFalse(scanner.isComplete());
@@ -202,11 +196,11 @@ public class MtuScannerTest
 
         scanner.seek(frameOffset);
 
-        assertTrue(scanner.scanNext());
+        assertTrue(scanner.scanNext(MTU_LENGTH));
         assertThat(scanner.offset(), is(frameOffset));
         assertThat(scanner.length(), is(FRAME_ALIGNMENT));
         assertTrue(scanner.isComplete());
-        assertFalse(scanner.scanNext());
+        assertFalse(scanner.scanNext(MTU_LENGTH));
     }
 
     @Test
@@ -227,10 +221,10 @@ public class MtuScannerTest
 
         scanner.seek(frameOffset);
 
-        assertTrue(scanner.scanNext());
+        assertTrue(scanner.scanNext(MTU_LENGTH));
         assertThat(scanner.offset(), is(frameOffset));
         assertThat(scanner.length(), is(FRAME_ALIGNMENT * 2));
         assertTrue(scanner.isComplete());
-        assertFalse(scanner.scanNext());
+        assertFalse(scanner.scanNext(MTU_LENGTH));
     }
 }

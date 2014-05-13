@@ -30,11 +30,10 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*
  *
  * <b>Note:</b> An instance of this class is not threadsafe. Each thread must have its own instance.
  */
-public class MtuScanner
+public class LogScanner
 {
     private final AtomicBuffer logBuffer;
     private final AtomicBuffer stateBuffer;
-    private final int mtuLength;
     private final int alignedHeaderLength;
     private final int capacity;
 
@@ -48,22 +47,18 @@ public class MtuScanner
      *
      * @param logBuffer containing the framed messages.
      * @param stateBuffer containing the state variables indicating the tail progress.
-     * @param mtuLength of the underlying transport.
      * @param headerLength of frame before payload begins.
      */
-    public MtuScanner(final AtomicBuffer logBuffer,
+    public LogScanner(final AtomicBuffer logBuffer,
                       final AtomicBuffer stateBuffer,
-                      final int mtuLength,
                       final int headerLength)
     {
         checkLogBuffer(logBuffer);
         checkStateBuffer(stateBuffer);
-        checkMaxFrameLength(mtuLength);
         checkHeaderLength(headerLength);
 
         this.logBuffer = logBuffer;
         this.stateBuffer = stateBuffer;
-        this.mtuLength = mtuLength;
         alignedHeaderLength = align(headerLength, FRAME_ALIGNMENT);
         capacity = logBuffer.capacity();
     }
@@ -76,16 +71,6 @@ public class MtuScanner
     public int capacity()
     {
         return capacity;
-    }
-
-    /**
-     * The length of the Maximum Transmission Unit for the transport.
-     *
-     * @return the length of the MTU for the transport.
-     */
-    public int mtuLength()
-    {
-        return mtuLength;
     }
 
     /**
@@ -119,11 +104,13 @@ public class MtuScanner
     }
 
     /**
-     * Scan forward in the buffer for available frames limited by what will fit in the MTU.
+     * Scan forward in the buffer for available frames limited by what will fit in the MTU or maxLength,
+     * whichever is smaller.
      *
+     * @param maxLength in bytes to scan.
      * @return true if data is available otherwise false.
      */
-    public boolean scanNext()
+    public boolean scanNext(final int maxLength)
     {
         boolean available = false;
 
@@ -150,7 +137,7 @@ public class MtuScanner
 
                     length += frameLength;
 
-                    if (length > mtuLength)
+                    if (length > maxLength)
                     {
                         length -= frameLength;
                         break;
@@ -179,8 +166,7 @@ public class MtuScanner
         final int tail = getTailVolatile();
         if (offset < 0 || offset > tail)
         {
-            throw new IllegalStateException(String.format("Invalid offset %d: range is 0 - %d",
-                                                          Integer.valueOf(offset), Integer.valueOf(tail)));
+            throw new IllegalStateException(String.format("Invalid offset %d: range is 0 - %d", offset, tail));
         }
 
         isComplete = false;

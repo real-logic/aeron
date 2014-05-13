@@ -20,7 +20,7 @@ import uk.co.real_logic.aeron.mediadriver.buffer.LogBuffers;
 import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.TimerWheel.Timer;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.MtuScanner;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogScanner;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
@@ -55,7 +55,7 @@ public class SenderChannel
     private final int mtuLength;
     private final ByteBuffer scratchSendBuffer = ByteBuffer.allocateDirect(DataHeaderFlyweight.HEADER_LENGTH);
     private final AtomicBuffer scratchAtomicBuffer = new AtomicBuffer(scratchSendBuffer);
-    private final MtuScanner[] scanners;
+    private final LogScanner[] scanners;
 
     /** duplicate log buffers to work around the lack of a (buffer, start, length) send method */
     private final ByteBuffer[] sendBuffers;
@@ -86,7 +86,7 @@ public class SenderChannel
 
         scanners = buffers.buffers()
                           .map(this::newScanner)
-                          .toArray(MtuScanner[]::new);
+                          .toArray(LogScanner[]::new);
 
         sendBuffers = buffers.buffers()
                              .map(this::duplicateLogBuffer)
@@ -113,9 +113,9 @@ public class SenderChannel
         return buffer;
     }
 
-    public MtuScanner newScanner(final LogBuffers log)
+    public LogScanner newScanner(final LogBuffers log)
     {
-        return new MtuScanner(log.logBuffer(), log.stateBuffer(), mtuLength, headerLength);
+        return new LogScanner(log.logBuffer(), log.stateBuffer(), headerLength);
     }
 
     public void process()
@@ -134,8 +134,8 @@ public class SenderChannel
                 return;
             }
 
-            final MtuScanner scanner = scanners[currentIndex];
-            if (scanner.scanNext())
+            final LogScanner scanner = scanners[currentIndex];
+            if (scanner.scanNext(mtuLength))
             {
                 // at this point sendBuffer wraps the same underlying
                 // bytebuffer as the buffer parameter

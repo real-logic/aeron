@@ -15,7 +15,12 @@
  */
 package uk.co.real_logic.aeron;
 
-public interface ConsumerNotRegistered
+import java.util.concurrent.atomic.AtomicBoolean;
+
+/**
+ * Factory for custom control flow strategies, can just be a method reference to a constructor.
+ */
+public interface PublisherControlFactory
 {
-    void onConsumerNotRegistered(final String destination, final long[] channelIds);
+    ProducerControlStrategy make(final AtomicBoolean pauseButton);
 }

@@ -16,14 +16,14 @@
 package uk.co.real_logic.aeron.conductor;
 
 import uk.co.real_logic.aeron.Channel;
-import uk.co.real_logic.aeron.ConsumerChannel;
-import uk.co.real_logic.aeron.ProducerControlFactory;
+import uk.co.real_logic.aeron.SubscriberChannel;
+import uk.co.real_logic.aeron.PublisherControlFactory;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.Service;
 import uk.co.real_logic.aeron.util.collections.ChannelMap;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.ConsumerMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
@@ -63,17 +63,17 @@ public final class ClientConductor extends Service implements MediaDriverFacade
 
     private final BufferUsageStrategy bufferUsage;
     private final AtomicArray<Channel> producers;
-    private final AtomicArray<ConsumerChannel> consumers;
+    private final AtomicArray<SubscriberChannel> subscriberChannels;
 
     private final ChannelMap<String, Channel> sendNotifiers;
-    private final ConsumerMap recvNotifiers;
+    private final SubscriberMap recvNotifiers;
 
     private final ConductorErrorHandler errorHandler;
-    private final ProducerControlFactory producerControl;
+    private final PublisherControlFactory producerControl;
 
     // Control protocol Flyweights
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
-    private final ConsumerMessageFlyweight receiverMessage = new ConsumerMessageFlyweight();
+    private final SubscriberMessageFlyweight receiverMessage = new SubscriberMessageFlyweight();
     private final CompletelyIdentifiedMessageFlyweight requestTermMessage = new CompletelyIdentifiedMessageFlyweight();
     private final CompletelyIdentifiedMessageFlyweight bufferNotificationMessage =
         new CompletelyIdentifiedMessageFlyweight();
@@ -83,9 +83,9 @@ public final class ClientConductor extends Service implements MediaDriverFacade
                            final RingBuffer sendBuffer,
                            final BufferUsageStrategy bufferUsage,
                            final AtomicArray<Channel> producers,
-                           final AtomicArray<ConsumerChannel> consumers,
+                           final AtomicArray<SubscriberChannel> subscriberChannels,
                            final ConductorErrorHandler errorHandler,
-                           final ProducerControlFactory producerControl)
+                           final PublisherControlFactory producerControl)
     {
         super(SLEEP_PERIOD);
 
@@ -94,11 +94,11 @@ public final class ClientConductor extends Service implements MediaDriverFacade
         this.sendBuffer = sendBuffer;
         this.bufferUsage = bufferUsage;
         this.producers = producers;
-        this.consumers = consumers;
+        this.subscriberChannels = subscriberChannels;
         this.errorHandler = errorHandler;
         this.producerControl = producerControl;
         this.sendNotifiers = new ChannelMap<>();
-        this.recvNotifiers = new ConsumerMap();
+        this.recvNotifiers = new SubscriberMap();
 
         final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
         channelMessage.wrap(writeBuffer, 0);
@@ -121,7 +121,7 @@ public final class ClientConductor extends Service implements MediaDriverFacade
     private void processBufferCleaningScan()
     {
         producers.forEach(Channel::processBufferScan);
-        consumers.forEach(ConsumerChannel::processBufferScan);
+        subscriberChannels.forEach(SubscriberChannel::processBufferScan);
     }
 
     private void handleCommandBuffer()
@@ -152,13 +152,13 @@ public final class ClientConductor extends Service implements MediaDriverFacade
                         return;
                     }
 
-                    case ADD_CONSUMER:
-                    case REMOVE_CONSUMER:
+                    case ADD_SUBSCRIBER:
+                    case REMOVE_SUBSCRIBER:
                     {
                         receiverMessage.wrap(buffer, index);
                         final long[] channelIds = receiverMessage.channelIds();
                         final String destination = receiverMessage.destination();
-                        if (eventTypeId == ADD_CONSUMER)
+                        if (eventTypeId == ADD_SUBSCRIBER)
                         {
                             addReceiver(destination, channelIds);
                         }
@@ -169,9 +169,10 @@ public final class ClientConductor extends Service implements MediaDriverFacade
                         sendBuffer.write(eventTypeId, buffer, index, length);
                         return;
                     }
+
                     case REQUEST_CLEANED_TERM:
                         sendBuffer.write(eventTypeId, buffer, index, length);
-                        return;
+                        break;
                 }
             }
         );
@@ -183,14 +184,14 @@ public final class ClientConductor extends Service implements MediaDriverFacade
         // and is during setup not a latency critical path
         for (final long channelId : channelIds)
         {
-            consumers.forEach(
-                    receiver ->
+            subscriberChannels.forEach(
+                receiver ->
+                {
+                    if (receiver.matches(destination, channelId))
                     {
-                        if (receiver.matches(destination, channelId))
-                        {
-                            recvNotifiers.put(destination, channelId, receiver);
-                        }
+                        recvNotifiers.put(destination, channelId, receiver);
                     }
+                }
             );
         }
     }
@@ -225,7 +226,7 @@ public final class ClientConductor extends Service implements MediaDriverFacade
             // TODO: log an error
         }
 
-        bufferUsage.releaseSenderBuffers(destination, channelId, sessionId);
+        bufferUsage.releasePublisherBuffers(destination, channelId, sessionId);
     }
 
     private void handleReceiveBuffer()
@@ -337,8 +338,8 @@ public final class ClientConductor extends Service implements MediaDriverFacade
                                    final long channelId,
                                    final int index) throws IOException
     {
-        final AtomicBuffer logBuffer = bufferUsage.newSenderLogBuffer(destination, sessionId, channelId, index);
-        final AtomicBuffer stateBuffer = bufferUsage.newSenderStateBuffer(destination, sessionId, channelId, index);
+        final AtomicBuffer logBuffer = bufferUsage.newPublisherLogBuffer(destination, sessionId, channelId, index);
+        final AtomicBuffer stateBuffer = bufferUsage.newPublisherStateBuffer(destination, sessionId, channelId, index);
 
         return new LogAppender(logBuffer, stateBuffer, DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }
@@ -348,8 +349,8 @@ public final class ClientConductor extends Service implements MediaDriverFacade
                                 final long sessionId,
                                 final int index) throws IOException
     {
-        final AtomicBuffer logBuffer = bufferUsage.newConsumerLogBuffer(destination, channelId, sessionId, index);
-        final AtomicBuffer stateBuffer = bufferUsage.newConsumerStateBuffer(destination, channelId, sessionId, index);
+        final AtomicBuffer logBuffer = bufferUsage.newSubscriberLogBuffer(destination, channelId, sessionId, index);
+        final AtomicBuffer stateBuffer = bufferUsage.newSubscriberStateBuffer(destination, channelId, sessionId, index);
 
         return new LogReader(logBuffer, stateBuffer);
     }
@@ -366,12 +367,12 @@ public final class ClientConductor extends Service implements MediaDriverFacade
 
     }
 
-    public void sendAddConsumer(final String destination, final long[] channelIdList)
+    public void sendAddSubscriber(final String destination, final long[] channelIdList)
     {
 
     }
 
-    public void sendRemoveConsumer(final String destination, final long[] channelIdList)
+    public void sendRemoveSubscriber(final String destination, final long[] channelIdList)
     {
 
     }

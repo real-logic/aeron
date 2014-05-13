@@ -91,15 +91,15 @@ public class MappingBufferUsageStrategyTest
 
     private void assertBuffersReleased(final int count)
     {
-        int buffersReleased = usageStrategy.releaseSenderBuffers(DESTINATION, SESSION_ID, CHANNEL_ID);
+        int buffersReleased = usageStrategy.releasePublisherBuffers(DESTINATION, SESSION_ID, CHANNEL_ID);
         assertThat(buffersReleased, is(count));
     }
 
     private void mapTermBuffers(final long channelId) throws IOException
     {
-        usageStrategy.newSenderLogBuffer(DESTINATION, SESSION_ID, channelId, 0);
-        usageStrategy.newSenderLogBuffer(DESTINATION, SESSION_ID, channelId, 1);
-        usageStrategy.newSenderLogBuffer(DESTINATION, SESSION_ID, channelId, 2);
+        usageStrategy.newPublisherLogBuffer(DESTINATION, SESSION_ID, channelId, 0);
+        usageStrategy.newPublisherLogBuffer(DESTINATION, SESSION_ID, channelId, 1);
+        usageStrategy.newPublisherLogBuffer(DESTINATION, SESSION_ID, channelId, 2);
     }
 
     private void createTermBuffers(final long channelId) throws IOException

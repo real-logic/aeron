@@ -59,14 +59,14 @@ public class MediaConductorCursor
                                             final long channelId,
                                             final long termId)
     {
-        writeProducerTermBufferEvent(destination, sessionId, channelId, termId, CREATE_CONSUMER_TERM_BUFFER);
+        writeProducerTermBufferEvent(destination, sessionId, channelId, termId, CREATE_TERM_BUFFER);
     }
 
     public void addRemoveRcvTermBufferEvent(final UdpDestination destination,
                                             final long sessionId,
                                             final long channelId)
     {
-        writeProducerTermBufferEvent(destination, sessionId, channelId, 0L, REMOVE_CONSUMER_TERM_BUFFER);
+        writeProducerTermBufferEvent(destination, sessionId, channelId, 0L, REMOVE_TERM_BUFFER);
     }
 
     private void writeProducerTermBufferEvent(final UdpDestination destination,

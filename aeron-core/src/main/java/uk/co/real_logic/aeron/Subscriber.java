@@ -25,9 +25,9 @@ import java.util.List;
 import static java.util.stream.Collectors.toList;
 
 /**
- * Aeron Consumer API
+ * Aeron Subscriber API
  */
-public class Consumer implements AutoCloseable
+public class Subscriber implements AutoCloseable
 {
     private final Destination destination;
     private final NewSourceEventHandler newSourceEventHandler;
@@ -35,15 +35,15 @@ public class Consumer implements AutoCloseable
     private final Long2ObjectHashMap<DataHandler> channelMap;
     private final long[] channelIds;
     private final ClientConductorCursor adminThread;
-    private final AtomicArray<ConsumerChannel> consumers;
-    private final List<ConsumerChannel> channels;
+    private final AtomicArray<SubscriberChannel> subscriberChannels;
+    private final List<SubscriberChannel> channels;
 
-    public Consumer(final ClientConductorCursor adminThread,
-                    final Context context,
-                    final AtomicArray<ConsumerChannel> consumers)
+    public Subscriber(final ClientConductorCursor adminThread,
+                      final Context context,
+                      final AtomicArray<SubscriberChannel> subscriberChannels)
     {
         this.adminThread = adminThread;
-        this.consumers = consumers;
+        this.subscriberChannels = subscriberChannels;
         this.destination = context.destination;
         this.channelMap = context.channelMap;
         this.newSourceEventHandler = context.newSourceEventHandler;
@@ -51,31 +51,31 @@ public class Consumer implements AutoCloseable
         this.channelIds = channelMap.keySet().stream().mapToLong(i -> i).toArray();
         this.channels = channelMap.entrySet()
                                   .stream()
-                                  .map(entry -> new ConsumerChannel(destination, entry.getKey(), entry.getValue()))
+                                  .map(entry -> new SubscriberChannel(destination, entry.getKey(), entry.getValue()))
                                   .collect(toList());
-        consumers.addAll(channels);
-        adminThread.sendAddReceiver(destination.destination(), channelIds);
+        subscriberChannels.addAll(channels);
+        adminThread.sendAddSubscriber(destination.destination(), channelIds);
     }
 
     public void close()
     {
-        consumers.removeAll(channels);
-        adminThread.sendRemoveReceiver(destination.destination(), channelIds);
+        subscriberChannels.removeAll(channels);
+        adminThread.sendRemoveSubscriber(destination.destination(), channelIds);
     }
 
     /**
-     * Consume waiting data or event and deliver to {@link Consumer.DataHandler}s and/or event handlers.
+     * Read waiting data or event and deliver to {@link Subscriber.DataHandler}s and/or event handlers.
      *
      * Returns after handling a single data and/or event.
      *
      * @return the number of messages read
      */
-    public int consume()
+    public int read()
     {
         int read = 0;
-        for (final ConsumerChannel channel : channels)
+        for (final SubscriberChannel channel : channels)
         {
-            read += channel.consume();
+            read += channel.receive();
         }
 
         return read;
@@ -87,12 +87,12 @@ public class Consumer implements AutoCloseable
     }
 
     /**
-     * Interface for delivery of data to a {@link Consumer}
+     * Interface for delivery of data to a {@link Subscriber}
      */
     public interface DataHandler
     {
         /**
-         * Method called by Aeron to deliver data to a {@link Consumer}
+         * Method called by Aeron to deliver data to a {@link Subscriber}
          * @param buffer to be delivered
          * @param offset within buffer that data starts
          * @param sessionId for the data source
@@ -102,7 +102,7 @@ public class Consumer implements AutoCloseable
     }
 
     /**
-     * Interface for delivery of new source events to a {@link Consumer}
+     * Interface for delivery of new source events to a {@link Subscriber}
      */
     public interface NewSourceEventHandler
     {
@@ -115,7 +115,7 @@ public class Consumer implements AutoCloseable
     }
 
     /**
-     * Interface for delivery of inactive source events to a {@link Consumer}
+     * Interface for delivery of inactive source events to a {@link Subscriber}
      */
     public interface InactiveSourceEventHandler
     {

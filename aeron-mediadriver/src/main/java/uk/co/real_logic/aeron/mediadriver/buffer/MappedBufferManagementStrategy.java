@@ -108,26 +108,26 @@ class MappedBufferManagementStrategy implements BufferManagementStrategy
         }
     }
 
-    public BufferRotator addProducerChannel(final UdpDestination destination, final long sessionId, final long channelId)
+    public BufferRotator addPublisherChannel(final UdpDestination destination, final long sessionId, final long channelId)
             throws Exception
     {
         return addChannel(destination, sessionId, channelId, senderDir, srcTermMap);
     }
 
-    public void removeProducerChannel(final UdpDestination destination, final long sessionId, final long channelId)
+    public void removePublisherChannel(final UdpDestination destination, final long sessionId, final long channelId)
             throws IllegalArgumentException
     {
         removeChannel(destination, sessionId, channelId, srcTermMap);
     }
 
-    public void removeConsumerChannel(final UdpDestination destination, final long sessionId, final long channelId)
+    public void removeSubscriberChannel(final UdpDestination destination, final long sessionId, final long channelId)
     {
         removeChannel(destination, sessionId, channelId, rcvTermMap);
     }
 
-    public BufferRotator addConsumerChannel(final UdpDestination destination,
-                                            final long sessionId,
-                                            final long channelId) throws Exception
+    public BufferRotator addSubscriberChannel(final UdpDestination destination,
+                                              final long sessionId,
+                                              final long channelId) throws Exception
     {
         return addChannel(destination, sessionId, channelId, receiverDir, rcvTermMap);
     }

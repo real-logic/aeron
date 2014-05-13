@@ -28,33 +28,33 @@ import java.io.IOException;
 public interface BufferUsageStrategy
 {
 
-    AtomicBuffer newSenderLogBuffer(final String destination,
-                                    final long sessionId,
-                                    final long channelId,
-                                    final int index) throws IOException;
+    AtomicBuffer newPublisherLogBuffer(final String destination,
+                                       final long sessionId,
+                                       final long channelId,
+                                       final int index) throws IOException;
 
-    AtomicBuffer newSenderStateBuffer(final String destination,
-                                      final long sessionId,
-                                      final long channelId,
-                                      final int index) throws IOException;
+    AtomicBuffer newPublisherStateBuffer(final String destination,
+                                         final long sessionId,
+                                         final long channelId,
+                                         final int index) throws IOException;
 
-    AtomicBuffer newConsumerLogBuffer(final String destination,
-                                      final long channelId,
-                                      final long sessionId,
-                                      final int index) throws IOException;
-
-    AtomicBuffer newConsumerStateBuffer(final String destination,
+    AtomicBuffer newSubscriberLogBuffer(final String destination,
                                         final long channelId,
                                         final long sessionId,
                                         final int index) throws IOException;
 
-    int releaseConsumerBuffers(final String destination,
-                             final long sessionId,
-                             final long channelId);
+    AtomicBuffer newSubscriberStateBuffer(final String destination,
+                                          final long channelId,
+                                          final long sessionId,
+                                          final int index) throws IOException;
 
-    int releaseSenderBuffers(final String destination,
-                             final long sessionId,
-                             final long channelId);
+    int releaseSubscriberBuffers(final String destination,
+                                 final long sessionId,
+                                 final long channelId);
+
+    int releasePublisherBuffers(final String destination,
+                                final long sessionId,
+                                final long channelId);
 
     void close();
 }

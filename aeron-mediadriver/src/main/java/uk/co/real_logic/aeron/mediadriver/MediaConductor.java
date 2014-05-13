@@ -21,7 +21,7 @@ import uk.co.real_logic.aeron.util.*;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.ConsumerMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.LibraryFacade;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
@@ -39,7 +39,7 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.BASE_HEADER_LENGTH;
 
 /**
- * Admin thread to take commands from Producers and Consumers as well as handle NAKs and retransmissions
+ * Admin thread to take commands from Publishers and Subscribers as well as handle NAKs and retransmissions
  */
 public class MediaConductor extends Service implements LibraryFacade
 {
@@ -62,7 +62,7 @@ public class MediaConductor extends Service implements LibraryFacade
 
     private final ThreadLocalRandom rng = ThreadLocalRandom.current();
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
-    private final ConsumerMessageFlyweight receiverMessageFlyweight = new ConsumerMessageFlyweight();
+    private final SubscriberMessageFlyweight receiverMessageFlyweight = new SubscriberMessageFlyweight();
     private final ErrorHeaderFlyweight errorHeaderFlyweight = new ErrorHeaderFlyweight();
     private final CompletelyIdentifiedMessageFlyweight completelyIdentifiedMessageFlyweight =
         new CompletelyIdentifiedMessageFlyweight();
@@ -137,14 +137,14 @@ public class MediaConductor extends Service implements LibraryFacade
               {
                   switch (eventTypeId)
                   {
-                      case CREATE_CONSUMER_TERM_BUFFER:
+                      case CREATE_TERM_BUFFER:
                           completelyIdentifiedMessageFlyweight.wrap(buffer, index);
-                          onCreateConsumerTermBufferEvent(completelyIdentifiedMessageFlyweight);
+                          onCreateSubscriberTermBufferEvent(completelyIdentifiedMessageFlyweight);
                           return;
 
-                      case REMOVE_CONSUMER_TERM_BUFFER:
+                      case REMOVE_TERM_BUFFER:
                           completelyIdentifiedMessageFlyweight.wrap(buffer, index);
-                          onRemoveConsumerTermBufferEvent(completelyIdentifiedMessageFlyweight);
+                          onRemoveSubscriberTermBufferEvent(completelyIdentifiedMessageFlyweight);
                           return;
 
                       case ERROR_RESPONSE:
@@ -178,16 +178,16 @@ public class MediaConductor extends Service implements LibraryFacade
                             onRemoveChannel(channelMessage);
                             return;
 
-                        case ADD_CONSUMER:
+                        case ADD_SUBSCRIBER:
                             receiverMessageFlyweight.wrap(buffer, index);
                             flyweight = receiverMessageFlyweight;
-                            onAddConsumer(receiverMessageFlyweight);
+                            onAddSubscriber(receiverMessageFlyweight);
                             return;
 
-                        case REMOVE_CONSUMER:
+                        case REMOVE_SUBSCRIBER:
                             receiverMessageFlyweight.wrap(buffer, index);
                             flyweight = receiverMessageFlyweight;
-                            onRemoveConsumer(receiverMessageFlyweight);
+                            onRemoveSubscriber(receiverMessageFlyweight);
                             return;
                     }
                 }
@@ -323,7 +323,7 @@ public class MediaConductor extends Service implements LibraryFacade
             // new channel, so generate "random"-ish termId and create term buffer
             final long initialTermId = rng.nextLong();
             final BufferRotator buffers =
-                bufferManagementStrategy.addProducerChannel(srcDestination, sessionId, channelId);
+                bufferManagementStrategy.addPublisherChannel(srcDestination, sessionId, channelId);
 
             channel = new SenderChannel(frameHandler,
                                         senderFlowControl.get(),
@@ -380,7 +380,7 @@ public class MediaConductor extends Service implements LibraryFacade
             }
 
             // remove from buffer management
-            bufferManagementStrategy.removeProducerChannel(srcDestination, sessionId, channelId);
+            bufferManagementStrategy.removePublisherChannel(srcDestination, sessionId, channelId);
 
             sender.removeChannel(channel);
 
@@ -404,28 +404,27 @@ public class MediaConductor extends Service implements LibraryFacade
         }
     }
 
-    public void onAddConsumer(final ConsumerMessageFlyweight consumerMessage)
+    public void onAddSubscriber(final SubscriberMessageFlyweight subscriberMessage)
     {
         // instruct receiver thread of new framehandler and new channelIdlist for such
-        receiverCursor.addNewConsumerEvent(consumerMessage.destination(), consumerMessage.channelIds());
+        receiverCursor.addNewSubscriberEvent(subscriberMessage.destination(), subscriberMessage.channelIds());
 
         // this thread does not add buffers. The RcvFrameHandler handle methods will send an event for this thread
         // to create buffers as needed
     }
 
-    public void onRemoveConsumer(final ConsumerMessageFlyweight consumerMessage)
+    public void onRemoveSubscriber(final SubscriberMessageFlyweight subscriberMessage)
     {
         // instruct receiver thread to get rid of channels and possibly destination
-        receiverCursor.addRemoveReceiverEvent(consumerMessage.destination(), consumerMessage.channelIds());
+        receiverCursor.addRemoveSubscriberEvent(subscriberMessage.destination(), subscriberMessage.channelIds());
     }
 
     public void onRequestTerm(final long sessionId, final long channelId, final long termId)
     {
-
     }
 
-    private void onCreateConsumerTermBufferEvent(
-            final CompletelyIdentifiedMessageFlyweight completelyIdentifiedMessageFlyweight)
+    private void onCreateSubscriberTermBufferEvent(
+        final CompletelyIdentifiedMessageFlyweight completelyIdentifiedMessageFlyweight)
     {
         final String destination = completelyIdentifiedMessageFlyweight.destination();
         final long sessionId = completelyIdentifiedMessageFlyweight.sessionId();
@@ -436,7 +435,7 @@ public class MediaConductor extends Service implements LibraryFacade
         {
             final UdpDestination rcvDestination = UdpDestination.parse(destination);
             final BufferRotator buffer =
-                bufferManagementStrategy.addConsumerChannel(rcvDestination, sessionId, channelId);
+                bufferManagementStrategy.addSubscriberChannel(rcvDestination, sessionId, channelId);
 
             // inform receiver thread of new buffer, destination, etc.
             final RcvBufferState bufferState = new RcvBufferState(rcvDestination, sessionId, channelId, termId, buffer);
@@ -453,7 +452,7 @@ public class MediaConductor extends Service implements LibraryFacade
         }
     }
 
-    private void onRemoveConsumerTermBufferEvent(final CompletelyIdentifiedMessageFlyweight message)
+    private void onRemoveSubscriberTermBufferEvent(final CompletelyIdentifiedMessageFlyweight message)
     {
         final String destination = completelyIdentifiedMessageFlyweight.destination();
         final long sessionId = completelyIdentifiedMessageFlyweight.sessionId();
@@ -462,7 +461,7 @@ public class MediaConductor extends Service implements LibraryFacade
         {
             final UdpDestination rcvDestination = UdpDestination.parse(destination);
 
-            bufferManagementStrategy.removeConsumerChannel(rcvDestination, sessionId, channelId);
+            bufferManagementStrategy.removeSubscriberChannel(rcvDestination, sessionId, channelId);
         }
         catch (final Exception ex)
         {

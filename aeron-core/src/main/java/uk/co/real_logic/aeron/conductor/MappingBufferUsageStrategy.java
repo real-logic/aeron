@@ -38,59 +38,59 @@ public class MappingBufferUsageStrategy implements BufferUsageStrategy
 {
     private final FileMappingConvention fileConventions;
     private final List<IdentifiedBuffer> senderBuffers;
-    private final List<IdentifiedBuffer> consumerBuffers;
+    private final List<IdentifiedBuffer> receiverBuffers;
 
     public MappingBufferUsageStrategy(final String dataDir)
     {
         fileConventions = new FileMappingConvention(dataDir);
         senderBuffers = new ArrayList<>();
-        consumerBuffers = new ArrayList<>();
+        receiverBuffers = new ArrayList<>();
     }
 
     public void close()
     {
-        senderBuffers.forEach((i) -> i.close());
-        consumerBuffers.forEach((i) -> i.close());
+        senderBuffers.forEach(IdentifiedBuffer::close);
+        receiverBuffers.forEach(IdentifiedBuffer::close);
     }
 
-    public AtomicBuffer newSenderLogBuffer(final String destination,
-                                           final long sessionId,
-                                           final long channelId,
-                                           final int index) throws IOException
+    public AtomicBuffer newPublisherLogBuffer(final String destination,
+                                              final long sessionId,
+                                              final long channelId,
+                                              final int index) throws IOException
     {
         return map(destination, sessionId, channelId, index, fileConventions.senderDir(), LOG, senderBuffers);
     }
 
-    public AtomicBuffer newSenderStateBuffer(final String destination,
-                                             final long sessionId,
-                                             final long channelId,
-                                             final int index) throws IOException
+    public AtomicBuffer newPublisherStateBuffer(final String destination,
+                                                final long sessionId,
+                                                final long channelId,
+                                                final int index) throws IOException
     {
         return map(destination, sessionId, channelId, index, fileConventions.senderDir(), STATE, senderBuffers);
     }
 
-    public AtomicBuffer newConsumerLogBuffer(final String destination,
-                                             final long channelId,
-                                             final long sessionId,
-                                             final int index) throws IOException
-    {
-        return map(destination, sessionId, channelId, index, fileConventions.receiverDir(), LOG, consumerBuffers);
-    }
-
-    public AtomicBuffer newConsumerStateBuffer(final String destination,
+    public AtomicBuffer newSubscriberLogBuffer(final String destination,
                                                final long channelId,
                                                final long sessionId,
                                                final int index) throws IOException
     {
-        return map(destination, sessionId, channelId, index, fileConventions.receiverDir(), STATE, consumerBuffers);
+        return map(destination, sessionId, channelId, index, fileConventions.receiverDir(), LOG, receiverBuffers);
     }
 
-    public int releaseConsumerBuffers(final String destination, final long sessionId, final long channelId)
+    public AtomicBuffer newSubscriberStateBuffer(final String destination,
+                                                 final long channelId,
+                                                 final long sessionId,
+                                                 final int index) throws IOException
     {
-        return release(destination, sessionId, channelId, consumerBuffers);
+        return map(destination, sessionId, channelId, index, fileConventions.receiverDir(), STATE, receiverBuffers);
     }
 
-    public int releaseSenderBuffers(final String destination, final long sessionId, final long channelId)
+    public int releaseSubscriberBuffers(final String destination, final long sessionId, final long channelId)
+    {
+        return release(destination, sessionId, channelId, receiverBuffers);
+    }
+
+    public int releasePublisherBuffers(final String destination, final long sessionId, final long channelId)
     {
         return release(destination, sessionId, channelId, senderBuffers);
     }
@@ -126,6 +126,7 @@ public class MappingBufferUsageStrategy implements BufferUsageStrategy
                 count++;
             }
         }
+
         return count;
     }
 
@@ -157,5 +158,4 @@ public class MappingBufferUsageStrategy implements BufferUsageStrategy
             IoUtil.unmap(buffer);
         }
     }
-
 }

@@ -19,14 +19,14 @@ import uk.co.real_logic.aeron.conductor.ChannelNotifiable;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 
-import static uk.co.real_logic.aeron.Consumer.DataHandler;
+import static uk.co.real_logic.aeron.Subscriber.DataHandler;
 
-public class ConsumerChannel extends ChannelNotifiable
+public class SubscriberChannel extends ChannelNotifiable
 {
-    private final Long2ObjectHashMap<ConsumerSession> logReaders = new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<SubscriberSession> logReaders = new Long2ObjectHashMap<>();
     private final DataHandler dataHandler;
 
-    public ConsumerChannel(final Destination destination, final long channelId, final DataHandler dataHandler)
+    public SubscriberChannel(final Destination destination, final long channelId, final DataHandler dataHandler)
     {
         super(destination.destination(), channelId);
 
@@ -38,12 +38,12 @@ public class ConsumerChannel extends ChannelNotifiable
         return this.destination.equals(destination) && this.channelId == channelId;
     }
 
-    public int consume()
+    public int receive()
     {
         int count = 0;
-        for (final ConsumerSession consumerSession : logReaders.values())
+        for (final SubscriberSession subscriberSession : logReaders.values())
         {
-            count += consumerSession.consume();
+            count += subscriberSession.read();
         }
 
         return count;
@@ -51,19 +51,18 @@ public class ConsumerChannel extends ChannelNotifiable
 
     protected boolean hasTerm(final long sessionId)
     {
-        final ConsumerSession consumerSession = logReaders.get(sessionId);
-        return consumerSession != null && consumerSession.hasTerm();
+        final SubscriberSession subscriberSession = logReaders.get(sessionId);
+        return subscriberSession != null && subscriberSession.hasTerm();
     }
 
     public void onBuffersMapped(final long sessionId, final long termId, final LogReader[] logReaders)
     {
-        ConsumerSession session = new ConsumerSession(logReaders, sessionId, termId, dataHandler);
+        SubscriberSession session = new SubscriberSession(logReaders, sessionId, termId, dataHandler);
         this.logReaders.put(sessionId, session);
     }
 
     public void processBufferScan()
     {
-        logReaders.values().forEach(ConsumerSession::processBufferScan);
+        logReaders.values().forEach(SubscriberSession::processBufferScan);
     }
-
 }

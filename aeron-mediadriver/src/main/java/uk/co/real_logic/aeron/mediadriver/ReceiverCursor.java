@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.ConsumerMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
@@ -34,7 +34,7 @@ public class ReceiverCursor
     private final RingBuffer commandBuffer;
     private final NioSelector selector;
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
-    private final ConsumerMessageFlyweight receiverMessage = new ConsumerMessageFlyweight();
+    private final SubscriberMessageFlyweight receiverMessage = new SubscriberMessageFlyweight();
     private final CompletelyIdentifiedMessageFlyweight addTermBufferMessage =
         new CompletelyIdentifiedMessageFlyweight();
 
@@ -47,14 +47,14 @@ public class ReceiverCursor
         addTermBufferMessage.wrap(writeBuffer, 0);  // TODO: is this safe on the same buffer???
     }
 
-    public void addNewConsumerEvent(final String destination, final long[] channelIdList)
+    public void addNewSubscriberEvent(final String destination, final long[] channelIdList)
     {
-        addReceiverEvent(ADD_CONSUMER, destination, channelIdList);
+        addReceiverEvent(ADD_SUBSCRIBER, destination, channelIdList);
     }
 
-    public void addRemoveReceiverEvent(final String destination, final long[] channelIdList)
+    public void addRemoveSubscriberEvent(final String destination, final long[] channelIdList)
     {
-        addReceiverEvent(REMOVE_CONSUMER, destination, channelIdList);
+        addReceiverEvent(REMOVE_SUBSCRIBER, destination, channelIdList);
     }
 
     private void addReceiverEvent(final int eventTypeId, final String destination, final long[] channelIdList)

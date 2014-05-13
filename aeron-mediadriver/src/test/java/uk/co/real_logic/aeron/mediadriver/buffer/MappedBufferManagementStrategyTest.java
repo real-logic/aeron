@@ -55,7 +55,7 @@ public class MappedBufferManagementStrategyTest
     @Test
     public void mappedFilesAreCorrectSizeAndZeroed() throws Exception
     {
-        final BufferRotator rotator = strategy.addProducerChannel(destination, SESSION_ID, CHANNEL_ID);
+        final BufferRotator rotator = strategy.addPublisherChannel(destination, SESSION_ID, CHANNEL_ID);
 
         rotator.buffers().forEach((logBuffer) ->
         {
@@ -76,26 +76,26 @@ public class MappedBufferManagementStrategyTest
     @Test(expected = IllegalArgumentException.class)
     public void shouldExceptionWhenRemovingUnknownProducerChannel() throws Exception
     {
-        strategy.removeProducerChannel(destination, SESSION_ID, CHANNEL_ID);
+        strategy.removePublisherChannel(destination, SESSION_ID, CHANNEL_ID);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldExceptionWhenRemovingUnknownConsumerChannel() throws Exception
     {
-        strategy.removeConsumerChannel(destination, SESSION_ID, CHANNEL_ID);
+        strategy.removeSubscriberChannel(destination, SESSION_ID, CHANNEL_ID);
     }
 
     @Test
     public void shouldBeAbleToAddAndRemoveProducerChannel() throws Exception
     {
-        final BufferRotator rotator = strategy.addProducerChannel(destination, SESSION_ID, CHANNEL_ID);
-        strategy.removeProducerChannel(destination, SESSION_ID, CHANNEL_ID);
+        final BufferRotator rotator = strategy.addPublisherChannel(destination, SESSION_ID, CHANNEL_ID);
+        strategy.removePublisherChannel(destination, SESSION_ID, CHANNEL_ID);
     }
 
     @Test
     public void shouldBeAbleToAddAndRemoveConsumerChannel() throws Exception
     {
-        final BufferRotator rotator = strategy.addConsumerChannel(destination, SESSION_ID, CHANNEL_ID);
-        strategy.removeConsumerChannel(destination, SESSION_ID, CHANNEL_ID);
+        final BufferRotator rotator = strategy.addSubscriberChannel(destination, SESSION_ID, CHANNEL_ID);
+        strategy.removeSubscriberChannel(destination, SESSION_ID, CHANNEL_ID);
     }
 }

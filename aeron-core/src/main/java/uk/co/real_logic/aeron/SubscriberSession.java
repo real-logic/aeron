@@ -20,7 +20,7 @@ import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import static uk.co.real_logic.aeron.Consumer.MessageFlags.NONE;
+import static uk.co.real_logic.aeron.Subscriber.MessageFlags.NONE;
 import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.CLEAN_WINDOW;
 import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.rotateId;
 import static uk.co.real_logic.aeron.util.ChannelCounters.UNKNOWN_TERM_ID;
@@ -28,31 +28,33 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.B
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.WORD_ALIGNMENT;
 
 /**
-* .
-*/
-public class ConsumerSession
+ * .
+ */
+public class SubscriberSession
 {
     private static final int HEADER_LENGTH = BitUtil.align(BASE_HEADER_LENGTH, WORD_ALIGNMENT);
 
     private final LogReader[] logReaders;
     private final long sessionId;
-    private final Consumer.DataHandler dataHandler;
+    private final Subscriber.DataHandler dataHandler;
     private final AtomicLong currentTermId;
     private final AtomicLong cleanedTermId;
 
-    private int currentBufferId;
+    private int currentBufferId = 0;
 
-    public ConsumerSession(final LogReader[] readers, final long sessionId, final long termId, Consumer.DataHandler dataHandler)
+    public SubscriberSession(final LogReader[] readers,
+                             final long sessionId,
+                             final long termId,
+                             final Subscriber.DataHandler dataHandler)
     {
         this.logReaders = readers;
         this.sessionId = sessionId;
         this.dataHandler = dataHandler;
         currentTermId = new AtomicLong(termId);
         cleanedTermId = new AtomicLong(termId + CLEAN_WINDOW);
-        currentBufferId = 0;
     }
 
-    public int consume()
+    public int read()
     {
         LogReader logReader = logReaders[currentBufferId];
         if (logReader.isComplete())
@@ -72,12 +74,8 @@ public class ConsumerSession
             }
         }
 
-        return logReader.read(
-                (buffer, offset, length) ->
-                {
-                    dataHandler.onData(buffer, offset + HEADER_LENGTH, sessionId, NONE);
-                }
-        );
+        return logReader.read((buffer, offset, length) ->
+                                  dataHandler.onData(buffer, offset + HEADER_LENGTH, sessionId, NONE));
     }
 
     private boolean hasBeenCleaned(final LogReader logReader)

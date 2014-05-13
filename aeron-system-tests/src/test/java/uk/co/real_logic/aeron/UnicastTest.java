@@ -21,8 +21,8 @@ import uk.co.real_logic.aeron.util.ConductorBuffers;
 import uk.co.real_logic.aeron.util.SharedDirectories;
 
 import static org.mockito.Mockito.mock;
-import static uk.co.real_logic.aeron.Consumer.DataHandler;
-import static uk.co.real_logic.aeron.Consumer.NewSourceEventHandler;
+import static uk.co.real_logic.aeron.Subscriber.DataHandler;
+import static uk.co.real_logic.aeron.Subscriber.NewSourceEventHandler;
 import static uk.co.real_logic.aeron.util.CommonConfiguration.ADMIN_DIR;
 
 public class UnicastTest
@@ -43,7 +43,7 @@ public class UnicastTest
     private Aeron producingClient;
     private Aeron receivingClient;
     private MediaDriver driver;
-    private Consumer consumer;
+    private Subscriber subscriber;
     private Source source;
 
     @Before
@@ -57,10 +57,10 @@ public class UnicastTest
         producingClient = Aeron.newSingleMediaDriver(new Aeron.Context());
         receivingClient = Aeron.newSingleMediaDriver(new Aeron.Context());
 
-        consumer = receivingClient.newConsumer(new Consumer.Context()
-                .destination(DESTINATION)
-                .channel(CHANNEL_ID, dataHandler)
-                .newSourceEvent(sourceHandler));
+        subscriber = receivingClient.newSubscriber(new Subscriber.Context()
+                                                       .destination(DESTINATION)
+                                                       .channel(CHANNEL_ID, dataHandler)
+                                                       .newSourceEvent(sourceHandler));
 
         source = producingClient.newSource(new Source.Context().destination(DESTINATION)
                                                                .sessionId(SESSION_ID));
@@ -69,7 +69,7 @@ public class UnicastTest
     @After
     public void closeEverything() throws Exception
     {
-        consumer.close();
+        subscriber.close();
         producingClient.close();
         receivingClient.close();
         source.close();
@@ -91,7 +91,7 @@ public class UnicastTest
         driver.senderThread().process();
         driver.receiverThread().process();
         receivingClient.conductor().process();
-        consumer.consume();
+        subscriber.read();
     }
 
     @Test
@@ -102,9 +102,9 @@ public class UnicastTest
 
     @Ignore
     @Test
-    public void producerMessagesConsumer()
+    public void publisherMessagesSubscriber()
     {
-        // TODO: simple message send/receive
+        // TODO: simple message send/read
     }
 
     @Ignore

@@ -251,7 +251,7 @@ public class SenderChannel
             try
             {
                 buffers.rotate();
-                cleanedTermId.incrementAndGet();
+                cleanedTermId.incrementAndGet();  // TODO: Does this need to be an CAS'ed update? Is it for ordering?
             }
             catch (final IOException ex)
             {

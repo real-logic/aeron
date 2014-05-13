@@ -100,9 +100,7 @@ public class SenderChannel
 
     private void initiateFlowControlTimer(final int timeoutInMilliseconds)
     {
-        flowControlTimer = frameHandler.newTimeout(timeoutInMilliseconds,
-                                                   MILLISECONDS,
-                                                   this::onFlowControlTimer);
+        flowControlTimer = frameHandler.newTimeout(timeoutInMilliseconds, MILLISECONDS, this::onFlowControlTimer);
     }
 
     private ByteBuffer duplicateLogBuffer(final LogBuffers log)
@@ -125,20 +123,15 @@ public class SenderChannel
         try
         {
             final int frameSequenceNumber = 0;  // TODO: grab this from peeking at the frame
-            final int frameLength = 1000;       // TODO: grab this from peeking at the frame
             final int rightEdge = activeFlowControlState.rightEdgeOfWindowAtomic();
-
-            // if we can't send, then break out of the loop
-            if ((frameSequenceNumber + frameLength) > rightEdge)
-            {
-                return;
-            }
+            final int availableBuffer = rightEdge - frameSequenceNumber;
+            final int maxLength = Math.min(availableBuffer, mtuLength);
 
             final LogScanner scanner = scanners[currentIndex];
-            if (scanner.scanNext(mtuLength))
+            if (scanner.scanNext(maxLength))
             {
                 // at this point sendBuffer wraps the same underlying
-                // bytebuffer as the buffer parameter
+                // ByteBuffer as the buffer parameter
                 final ByteBuffer sendBuffer = sendBuffers[currentIndex];
 
                 final int offset = scanner.offset();
@@ -252,8 +245,8 @@ public class SenderChannel
      */
     public void processBufferRotation()
     {
-        final long requiredCleanTermid = currentTermId.get() + 1;
-        if (requiredCleanTermid > cleanedTermId.get())
+        final long requiredCleanTermId = currentTermId.get() + 1;
+        if (requiredCleanTermId > cleanedTermId.get())
         {
             try
             {

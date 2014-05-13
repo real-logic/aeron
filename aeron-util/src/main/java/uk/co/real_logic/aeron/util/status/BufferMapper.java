@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.status;
+package uk.co.real_logic.aeron.util.status;
 
 import uk.co.real_logic.aeron.util.CommonConfiguration;
 import uk.co.real_logic.aeron.util.IoUtil;
@@ -23,12 +23,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
 
-import static uk.co.real_logic.aeron.util.IoUtil.mapExistingFile;
-
 /**
- * .
+ * Common Class
  */
-public class StatusBufferMapper implements AutoCloseable
+public class BufferMapper
 {
     private final MappedByteBuffer descriptor;
     private final MappedByteBuffer counter;
@@ -36,13 +34,18 @@ public class StatusBufferMapper implements AutoCloseable
     private final AtomicBuffer descriptorBuffer;
     private final AtomicBuffer counterBuffer;
 
-    public StatusBufferMapper()
+    static interface Mapper
+    {
+        MappedByteBuffer map(final File directory, final String file) throws IOException;
+    }
+
+    public BufferMapper(final Mapper descriptorMapper, final Mapper counterMapper)
     {
         final File directory = new File(CommonConfiguration.COUNTERS_DIR);
         try
         {
-            descriptor = mapExistingFile(directory, "descriptor");
-            counter = mapExistingFile(directory, "counter");
+            descriptor = descriptorMapper.map(directory, "descriptor");
+            counter = counterMapper.map(directory, "counter");
 
             descriptorBuffer = new AtomicBuffer(descriptor);
             counterBuffer = new AtomicBuffer(counter);
@@ -61,6 +64,14 @@ public class StatusBufferMapper implements AutoCloseable
     public AtomicBuffer counterBuffer()
     {
         return counterBuffer;
+    }
+
+    public PositionIndicator indicator(final int offset) {
+        return new BufferPositionIndicator(counterBuffer, offset);
+    }
+
+    public PositionReporter reporter(final int offset) {
+        return new BufferPositionReporter(counterBuffer, offset);
     }
 
     public void close() throws Exception

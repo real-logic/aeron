@@ -345,7 +345,8 @@ public class UnicastSenderTest
 
         assertNotReceivedPacket();
 
-        advanceTimeMilliseconds(FLOW_CONTROL_TIMEOUT_IN_MILLISECONDS + 10);  // should send 0 length data after 100 msec, so give a bit more time
+        // should send 0 length data after 100 msec, so give a bit more time
+        advanceTimeMilliseconds(FLOW_CONTROL_TIMEOUT_IN_MILLISECONDS + 10);
 
         assertReceivedZeroLengthPacket();
     }

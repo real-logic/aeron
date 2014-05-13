@@ -23,12 +23,11 @@ import uk.co.real_logic.aeron.conductor.ClientConductor;
 import uk.co.real_logic.aeron.util.*;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.ConsumerMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.EventHandler;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
-import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 
 import java.io.File;
@@ -42,7 +41,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static uk.co.real_logic.aeron.Consumer.DataHandler;
+import static uk.co.real_logic.aeron.Subscriber.DataHandler;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.rotateId;
 import static uk.co.real_logic.aeron.util.SharedDirectories.Buffers;
@@ -83,13 +82,12 @@ public class AeronTest
 
     private final ChannelMessageFlyweight message = new ChannelMessageFlyweight();
     private final CompletelyIdentifiedMessageFlyweight identifiedMessage = new CompletelyIdentifiedMessageFlyweight();
-    private final ConsumerMessageFlyweight receiverMessage = new ConsumerMessageFlyweight();
+    private final SubscriberMessageFlyweight receiverMessage = new SubscriberMessageFlyweight();
 
     private final ErrorHeaderFlyweight errorHeader = new ErrorHeaderFlyweight();
 
     private final ByteBuffer sendBuffer = ByteBuffer.allocate(SEND_BUFFER_CAPACITY);
     private final AtomicBuffer atomicSendBuffer = new AtomicBuffer(sendBuffer);
-    private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
     private MappingConductorBufferStrategy adminBufferStrategy;
 
@@ -97,7 +95,6 @@ public class AeronTest
     {
         identifiedMessage.wrap(atomicSendBuffer, 0);
         errorHeader.wrap(atomicSendBuffer, 0);
-        dataHeader.wrap(atomicSendBuffer, 0);
     }
 
     @Before
@@ -263,18 +260,18 @@ public class AeronTest
     {
         final RingBuffer toMediaDriver = conductorBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
-        final Consumer.Context context = new Consumer.Context()
+        final Subscriber.Context context = new Subscriber.Context()
             .destination(new Destination(DESTINATION))
             .channel(CHANNEL_ID, emptyDataHandler())
             .channel(CHANNEL_ID_2, emptyDataHandler());
 
-        final Consumer consumer = aeron.newConsumer(context);
+        final Subscriber subscriber = aeron.newSubscriber(context);
 
         aeron.conductor().process();
 
-        assertEventRead(toMediaDriver, assertReceiverMessageOfType(ADD_CONSUMER));
+        assertEventRead(toMediaDriver, assertReceiverMessageOfType(ADD_SUBSCRIBER));
 
-        assertThat(consumer.consume(), is(0));
+        assertThat(subscriber.read(), is(0));
     }
 
     @Test
@@ -282,15 +279,15 @@ public class AeronTest
     {
         final RingBuffer toMediaDriver = conductorBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
-        final Consumer consumer = newConsumer(aeron);
+        final Subscriber subscriber = newSubscriber(aeron);
 
         aeron.conductor().process();
         skip(toMediaDriver, 1);
 
-        consumer.close();
+        subscriber.close();
         aeron.conductor().process();
 
-        assertEventRead(toMediaDriver, assertReceiverMessageOfType(REMOVE_CONSUMER));
+        assertEventRead(toMediaDriver, assertReceiverMessageOfType(REMOVE_SUBSCRIBER));
     }
 
     @Test
@@ -324,7 +321,7 @@ public class AeronTest
 
         final RingBuffer toMediaDriver = conductorBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
-        final Consumer consumer = newConsumer(aeron);
+        final Subscriber subscriber = newSubscriber(aeron);
 
         final List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
 
@@ -333,7 +330,7 @@ public class AeronTest
 
         writePacket(logAppenders.get(0));
 
-        assertThat(consumer.consume(), is(1));
+        assertThat(subscriber.read(), is(1));
 
         aeron.conductor().close();
     }
@@ -345,7 +342,7 @@ public class AeronTest
 
         final RingBuffer toMediaDriver = conductorBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
-        final Consumer consumer = newConsumer(aeron);
+        final Subscriber subscriber = newSubscriber(aeron);
 
         final List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
         final List<LogAppender> otherLogAppenders = createLogAppenders(SESSION_ID_2);
@@ -355,19 +352,19 @@ public class AeronTest
 
         writePacket(logAppenders.get(0));
         writePacket(otherLogAppenders.get(0));
-        assertThat(consumer.consume(), is(1));
+        assertThat(subscriber.read(), is(2));
 
         aeron.conductor().close();
     }
 
     @Test
-    public void receivingEnoughPacketsCausesAConsumerBufferRoll() throws Exception
+    public void receivingEnoughPacketsCausesSubscriberBufferRoll() throws Exception
     {
         channel2Handler = assertingHandler();
 
         final RingBuffer toMediaDriver = conductorBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
-        final Consumer consumer = newConsumer(aeron);
+        final Subscriber subscriber = newSubscriber(aeron);
         final List<Buffers> termBuffers =
             createTermBuffer(0L, NEW_RECEIVE_BUFFER_NOTIFICATION, directory.receiverDir(), SESSION_ID);
 
@@ -380,27 +377,27 @@ public class AeronTest
         final int eventCount = logAppender.capacity() / sendBuffer.capacity();
 
         writePackets(logAppender, eventCount);
-        assertThat(consumer.consume(), is(eventCount));
+        assertThat(subscriber.read(), is(eventCount));
 
-        // cleaning is triggered by the receiver and not the consumer
+        // cleaning is triggered by the receiver and not the subscriber
         // so we clean two ahead of the current buffer
         cleanBuffer(termBuffers.get(2));
         aeron.conductor().process();
 
         writePackets(logAppenders.get(1), eventCount);
-        assertThat(consumer.consume(), is(eventCount));
+        assertThat(subscriber.read(), is(eventCount));
 
         cleanBuffer(termBuffers.get(0));
         aeron.conductor().process();
 
         writePackets(logAppenders.get(2), eventCount);
-        assertThat(consumer.consume(), is(eventCount));
+        assertThat(subscriber.read(), is(eventCount));
 
         cleanBuffer(termBuffers.get(1));
         aeron.conductor().process();
 
         writePackets(logAppender, eventCount);
-        assertThat(consumer.consume(), is(eventCount));
+        assertThat(subscriber.read(), is(eventCount));
 
         aeron.conductor().close();
     }
@@ -422,13 +419,13 @@ public class AeronTest
     }
 
     @Test
-    public void consumerBufferRollsDoNotOverflowTheCleanedBuffer() throws Exception
+    public void subscriberBufferRollsDoNotOverflowTheCleanedBuffer() throws Exception
     {
         channel2Handler = assertingHandler();
 
         final RingBuffer toMediaDriver = conductorBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
-        final Consumer consumer = newConsumer(aeron);
+        final Subscriber subscriber = newSubscriber(aeron);
         final List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
 
         aeron.conductor().process();
@@ -438,31 +435,31 @@ public class AeronTest
         final int eventCount = logAppender.capacity() / SEND_BUFFER_CAPACITY;
 
         writePackets(logAppender, eventCount);
-        assertThat(consumer.consume(), is(eventCount));
+        assertThat(subscriber.read(), is(eventCount));
 
         writePackets(logAppenders.get(1), eventCount);
-        assertThat(consumer.consume(), is(eventCount));
+        assertThat(subscriber.read(), is(eventCount));
 
         writePackets(logAppenders.get(2), eventCount);
-        assertThat(consumer.consume(), is(eventCount));
+        assertThat(subscriber.read(), is(eventCount));
 
         // force the roll
-        assertThat(consumer.consume(), is(eventCount));
+        assertThat(subscriber.read(), is(eventCount));
 
         // Now you've hit an unclean buffer and can't proceed
-        assertThat(consumer.consume(), is(0));
+        assertThat(subscriber.read(), is(0));
 
         aeron.conductor().close();
     }
 
     @Test
-    public void consumerBufferRollsShouldNotAffectOtherSessions() throws Exception
+    public void subscriberBufferRollsShouldNotAffectOtherSessions() throws Exception
     {
         channel2Handler = eitherSessionHandler();
 
         final RingBuffer toMediaDriver = conductorBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
-        final Consumer consumer = newConsumer(aeron);
+        final Subscriber subscriber = newSubscriber(aeron);
         final List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
         final List<LogAppender> otherLogAppenders = createLogAppenders(SESSION_ID_2);
         sendNewBufferNotification(NEW_RECEIVE_BUFFER_NOTIFICATION, 1L, SESSION_ID);
@@ -474,13 +471,13 @@ public class AeronTest
         final int eventCount = logAppender.capacity() / sendBuffer.capacity();
 
         writePackets(logAppender, eventCount);
-        assertThat(consumer.consume(), is(eventCount));
+        assertThat(subscriber.read(), is(eventCount));
 
         writePackets(logAppenders.get(1), eventCount);
-        assertThat(consumer.consume(), is(eventCount));
+        assertThat(subscriber.read(), is(eventCount));
 
         writePackets(otherLogAppenders.get(0), 5);
-        assertThat(consumer.consume(), is(5));
+        assertThat(subscriber.read(), is(5));
 
         aeron.conductor().close();
     }
@@ -549,14 +546,14 @@ public class AeronTest
         assertTrue(apiBuffer.write(eventTypeId, atomicSendBuffer, 0, identifiedMessage.length()));
     }
 
-    private Consumer newConsumer(final Aeron aeron)
+    private Subscriber newSubscriber(final Aeron aeron)
     {
-        final Consumer.Context context = new Consumer.Context()
+        final Subscriber.Context context = new Subscriber.Context()
             .destination(new Destination(DESTINATION))
             .channel(CHANNEL_ID, channel2Handler)
             .channel(CHANNEL_ID_2, emptyDataHandler());
 
-        return aeron.newConsumer(context);
+        return aeron.newSubscriber(context);
     }
 
     private EventHandler assertReceiverMessageOfType(final int expectedEventTypeId)

@@ -22,7 +22,7 @@ import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.ConductorBuffers;
 import uk.co.real_logic.aeron.util.MappingConductorBufferStrategy;
 import uk.co.real_logic.aeron.util.SharedDirectories;
-import uk.co.real_logic.aeron.util.command.ConsumerMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.StateViewer;
@@ -46,7 +46,7 @@ import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.COMMAND_BUFFER_SZ;
 import static uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy.newMappedBufferManager;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
-import static uk.co.real_logic.aeron.util.ErrorCode.CONSUMER_NOT_REGISTERED;
+import static uk.co.real_logic.aeron.util.ErrorCode.SUBSCRIBER_NOT_REGISTERED;
 import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION;
 import static uk.co.real_logic.aeron.util.SharedDirectories.Buffers;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
@@ -83,7 +83,7 @@ public class UnicastReceiverTest
 
     private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
     private final ErrorHeaderFlyweight error = new ErrorHeaderFlyweight();
-    private final ConsumerMessageFlyweight receiverMessage = new ConsumerMessageFlyweight();
+    private final SubscriberMessageFlyweight receiverMessage = new SubscriberMessageFlyweight();
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
     private BufferManagementStrategy bufferManagementStrategy;
@@ -132,7 +132,7 @@ public class UnicastReceiverTest
     @Test(timeout = 1000)
     public void shouldBeAbleToAddReceiver() throws Exception
     {
-        writeConsumerMessage(ADD_CONSUMER, URI, ONE_CHANNEL);
+        writeSubscriberMessage(ADD_SUBSCRIBER, URI, ONE_CHANNEL);
 
         processThreads(5);
 
@@ -142,7 +142,7 @@ public class UnicastReceiverTest
     @Test(timeout = 1000)
     public void shouldSendErrorForInvalidUri() throws Exception
     {
-        writeConsumerMessage(ADD_CONSUMER, INVALID_URI, ONE_CHANNEL);
+        writeSubscriberMessage(ADD_SUBSCRIBER, INVALID_URI, ONE_CHANNEL);
 
         processThreads(5);
 
@@ -163,7 +163,7 @@ public class UnicastReceiverTest
     @Test(timeout = 1000)
     public void shouldSendErrorForRemovingNonExistentReceiver() throws Exception
     {
-        writeConsumerMessage(REMOVE_CONSUMER, URI, ONE_CHANNEL);
+        writeSubscriberMessage(REMOVE_SUBSCRIBER, URI, ONE_CHANNEL);
 
         processThreads(5);
 
@@ -172,7 +172,7 @@ public class UnicastReceiverTest
             assertThat(eventTypeId, is(ERROR_RESPONSE));
 
             error.wrap(buffer, index);
-            assertThat(error.errorCode(), is(CONSUMER_NOT_REGISTERED));
+            assertThat(error.errorCode(), is(SUBSCRIBER_NOT_REGISTERED));
             assertThat(error.errorStringLength(), is(0));
 
             receiverMessage.wrap(buffer, error.offendingHeaderOffset());
@@ -184,8 +184,8 @@ public class UnicastReceiverTest
     @Test(timeout = 1000)
     public void shouldSendErrorForRemovingReceiverFromWrongChannels() throws Exception
     {
-        writeConsumerMessage(ADD_CONSUMER, URI, ONE_CHANNEL);
-        writeConsumerMessage(REMOVE_CONSUMER, URI, ANOTHER_CHANNEL);
+        writeSubscriberMessage(ADD_SUBSCRIBER, URI, ONE_CHANNEL);
+        writeSubscriberMessage(REMOVE_SUBSCRIBER, URI, ANOTHER_CHANNEL);
 
         processThreads(5);
 
@@ -194,7 +194,7 @@ public class UnicastReceiverTest
             assertThat(eventTypeId, is(ERROR_RESPONSE));
 
             error.wrap(buffer, index);
-            assertThat(error.errorCode(), is(CONSUMER_NOT_REGISTERED));
+            assertThat(error.errorCode(), is(SUBSCRIBER_NOT_REGISTERED));
             assertThat(error.errorStringLength(), is(0));
 
             receiverMessage.wrap(buffer, error.offendingHeaderOffset());
@@ -208,7 +208,7 @@ public class UnicastReceiverTest
     {
         final UdpDestination dest = udpDestination();
 
-        writeConsumerMessage(ADD_CONSUMER, URI, THREE_CHANNELS);
+        writeSubscriberMessage(ADD_SUBSCRIBER, URI, THREE_CHANNELS);
 
         processThreads(5);
 
@@ -217,7 +217,7 @@ public class UnicastReceiverTest
         assertNotNull(frameHandler);
         assertThat(frameHandler.channelInterestMap().size(), is(3));
 
-        writeConsumerMessage(REMOVE_CONSUMER, URI, TWO_CHANNELS);
+        writeSubscriberMessage(REMOVE_SUBSCRIBER, URI, TWO_CHANNELS);
 
         processThreads(5);
 
@@ -230,7 +230,7 @@ public class UnicastReceiverTest
     {
         final UdpDestination dest = udpDestination();
 
-        writeConsumerMessage(ADD_CONSUMER, URI, THREE_CHANNELS);
+        writeSubscriberMessage(ADD_SUBSCRIBER, URI, THREE_CHANNELS);
 
         processThreads(5);
 
@@ -239,14 +239,14 @@ public class UnicastReceiverTest
         assertNotNull(frameHandler);
         assertThat(frameHandler.channelInterestMap().size(), is(3));
 
-        writeConsumerMessage(REMOVE_CONSUMER, URI, TWO_CHANNELS);
+        writeSubscriberMessage(REMOVE_SUBSCRIBER, URI, TWO_CHANNELS);
 
         processThreads(5);
 
         assertNotNull(receiver.frameHandler(dest));
         assertThat(frameHandler.channelInterestMap().size(), is(1));
 
-        writeConsumerMessage(REMOVE_CONSUMER, URI, ONE_CHANNEL);
+        writeSubscriberMessage(REMOVE_SUBSCRIBER, URI, ONE_CHANNEL);
         processThreads(5);
 
         assertNull(receiver.frameHandler(dest));
@@ -255,7 +255,7 @@ public class UnicastReceiverTest
     @Test(timeout = 200000)
     public void shouldBeAbleToCreateRcvTermOnZeroLengthData() throws Exception
     {
-        writeConsumerMessage(ADD_CONSUMER, URI, ONE_CHANNEL);
+        writeSubscriberMessage(ADD_SUBSCRIBER, URI, ONE_CHANNEL);
 
         processThreads(10);
 
@@ -295,12 +295,12 @@ public class UnicastReceiverTest
     @Test(timeout = 1000)
     public void shouldBeAbleToAddThenRemoveReceiverWithoutBuffers() throws Exception
     {
-        writeConsumerMessage(ADD_CONSUMER, URI, ONE_CHANNEL);
+        writeSubscriberMessage(ADD_SUBSCRIBER, URI, ONE_CHANNEL);
         processThreads();
 
         assertReceiverRegistered();
 
-        writeConsumerMessage(ControlProtocolEvents.REMOVE_CONSUMER, URI, ONE_CHANNEL);
+        writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIBER, URI, ONE_CHANNEL);
         processThreads(2);
 
         assertReceiverNotRegistered();
@@ -309,7 +309,7 @@ public class UnicastReceiverTest
     @Test(timeout = 1000)
     public void shouldBeAbleToReceiveDataFromNetwork() throws Exception
     {
-        writeConsumerMessage(ADD_CONSUMER, URI, ONE_CHANNEL);
+        writeSubscriberMessage(ADD_SUBSCRIBER, URI, ONE_CHANNEL);
         processThreads();
 
         sendDataFrame(udpDestination(), CHANNEL_ID, 0);
@@ -324,7 +324,7 @@ public class UnicastReceiverTest
     @Test(timeout = 1000)
     public void shouldBeAbleToAddThenRemoveReceiverWithBuffers() throws Exception
     {
-        writeConsumerMessage(ADD_CONSUMER, URI, ONE_CHANNEL);
+        writeSubscriberMessage(ADD_SUBSCRIBER, URI, ONE_CHANNEL);
         processThreads();
 
         UdpDestination destination = udpDestination();
@@ -334,7 +334,7 @@ public class UnicastReceiverTest
         sendDataFrame(destination, CHANNEL_ID, 1);
         processThreads();
 
-        writeConsumerMessage(REMOVE_CONSUMER, URI, ONE_CHANNEL);
+        writeSubscriberMessage(REMOVE_SUBSCRIBER, URI, ONE_CHANNEL);
         processThreads(5);
         assertReceiverNotRegistered();
 
@@ -344,7 +344,7 @@ public class UnicastReceiverTest
     @Test(timeout = 1500)
     public void shouldBeAbleToHandleTermBufferRolloverCorrectly() throws Exception
     {
-        writeConsumerMessage(ADD_CONSUMER, URI, ONE_CHANNEL);
+        writeSubscriberMessage(ADD_SUBSCRIBER, URI, ONE_CHANNEL);
         processThreads();
 
         UdpDestination destination = udpDestination();
@@ -373,7 +373,7 @@ public class UnicastReceiverTest
     private void assertBuffersNotRegistered()
     {
         exception.expect(IllegalArgumentException.class);
-        bufferManagementStrategy.removeConsumerChannel(udpDestination(), SESSION_ID, CHANNEL_ID);
+        bufferManagementStrategy.removeSubscriberChannel(udpDestination(), SESSION_ID, CHANNEL_ID);
     }
 
     private void assertReceiverNotRegistered()
@@ -391,7 +391,7 @@ public class UnicastReceiverTest
         return UdpDestination.parse(URI);
     }
 
-    private void writeConsumerMessage(final int eventTypeId, final String destination, final long[] channelIds)
+    private void writeSubscriberMessage(final int eventTypeId, final String destination, final long[] channelIds)
         throws IOException
     {
         final RingBuffer adminCommands = buffers.mappedToMediaDriver();

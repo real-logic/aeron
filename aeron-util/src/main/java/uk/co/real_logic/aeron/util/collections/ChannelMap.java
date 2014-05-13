@@ -96,13 +96,13 @@ public class ChannelMap<D, T>
         void accept(final D destination, final Long sessionId, final Long channelId, final T value);
     }
 
-    public void forEach(final ChannelHandler consumer)
+    public void forEach(final ChannelHandler subscriber)
     {
         map.forEach((destination, sessionMap) ->
         {
             sessionMap.forEach((sessionId, channelMap) ->
             {
-                channelMap.forEach((channelId, value) -> consumer.accept(destination, sessionId, channelId, value));
+                channelMap.forEach((channelId, value) -> subscriber.accept(destination, sessionId, channelId, value));
             });
         });
     }

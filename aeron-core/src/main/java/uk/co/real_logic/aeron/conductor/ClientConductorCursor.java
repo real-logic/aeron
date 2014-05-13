@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.conductor;
 
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.ConsumerMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
@@ -38,7 +38,7 @@ public class ClientConductorCursor
     private final RingBuffer conductorBuffer;
     private final AtomicBuffer writeBuffer;
     private final ChannelMessageFlyweight channelMessage;
-    private final ConsumerMessageFlyweight removeReceiverMessage;
+    private final SubscriberMessageFlyweight removeSubscriberMessage;
     private final CompletelyIdentifiedMessageFlyweight requestTermMessage;
 
     public ClientConductorCursor(final RingBuffer conductorBuffer)
@@ -46,11 +46,11 @@ public class ClientConductorCursor
         this.conductorBuffer = conductorBuffer;
         this.writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
         this.channelMessage = new ChannelMessageFlyweight();
-        this.removeReceiverMessage = new ConsumerMessageFlyweight();
+        this.removeSubscriberMessage = new SubscriberMessageFlyweight();
         this.requestTermMessage = new CompletelyIdentifiedMessageFlyweight();
 
         channelMessage.wrap(writeBuffer, 0);
-        removeReceiverMessage.wrap(writeBuffer, 0);
+        removeSubscriberMessage.wrap(writeBuffer, 0);
         requestTermMessage.wrap(writeBuffer, 0);
     }
 
@@ -75,21 +75,21 @@ public class ClientConductorCursor
         conductorBuffer.write(eventTypeId, writeBuffer, 0, channelMessage.length());
     }
 
-    public void sendAddReceiver(final String destination, final long[] channelIdList)
+    public void sendAddSubscriber(final String destination, final long[] channelIdList)
     {
-        sendReceiverMessage(ADD_CONSUMER, destination, channelIdList);
+        sendReceiverMessage(ADD_SUBSCRIBER, destination, channelIdList);
     }
 
-    public void sendRemoveReceiver(final String destination, final long[] channelIdList)
+    public void sendRemoveSubscriber(final String destination, final long[] channelIdList)
     {
-        sendReceiverMessage(REMOVE_CONSUMER, destination, channelIdList);
+        sendReceiverMessage(REMOVE_SUBSCRIBER, destination, channelIdList);
     }
 
     private void sendReceiverMessage(final int eventTypeId, final String destination, final long[] channelIdList)
     {
-        removeReceiverMessage.channelIds(channelIdList);
-        removeReceiverMessage.destination(destination);
-        conductorBuffer.write(eventTypeId, writeBuffer, 0, removeReceiverMessage.length());
+        removeSubscriberMessage.channelIds(channelIdList);
+        removeSubscriberMessage.destination(destination);
+        conductorBuffer.write(eventTypeId, writeBuffer, 0, removeSubscriberMessage.length());
     }
 
     public void sendRequestTerm(final String destination, final long sessionId, final long channelId, final long termId)
@@ -100,5 +100,4 @@ public class ClientConductorCursor
         requestTermMessage.destination(destination);
         conductorBuffer.write(REQUEST_CLEANED_TERM, writeBuffer, 0, requestTermMessage.length());
     }
-
 }

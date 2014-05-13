@@ -69,7 +69,6 @@ public class UnicastSenderTest
     private static final String URI = "udp://" + HOST + ":" + PORT;
     private static final long CHANNEL_ID = 0xA;
     private static final long SESSION_ID = 0xdeadbeefL;
-    private static final short MSG_TYPE = 777;
 
     public static final int BUFFER_SIZE = 256;
     public static final int VALUE = 37;
@@ -346,7 +345,8 @@ public class UnicastSenderTest
 
         assertNotReceivedPacket();
 
-        advanceTimeMilliseconds(FLOW_CONTROL_TIMEOUT_IN_MILLISECONDS + 10);  // should send 0 length data after 100 msec, so give a bit more time
+        // should send 0 length data after 100 msec, so give a bit more time
+        advanceTimeMilliseconds(FLOW_CONTROL_TIMEOUT_IN_MILLISECONDS + 10);
 
         assertReceivedZeroLengthPacket();
     }

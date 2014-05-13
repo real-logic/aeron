@@ -55,13 +55,13 @@ public class ReceiverTest
     }
 
     @Test
-    public void addingConsumerShouldCreateHandler() throws Exception
+    public void addingSubscriberShouldCreateHandler() throws Exception
     {
         UdpDestination destination = UdpDestination.parse(URI);
         RcvFrameHandler frameHandler = mock(RcvFrameHandler.class);
         Mockito.when(frameHandlerFactory.newInstance(destination, receiver.sessionState())).thenReturn(frameHandler);
 
-        cursor.addNewConsumerEvent(URI, ONE_CHANNEL);
+        cursor.addNewSubscriberEvent(URI, ONE_CHANNEL);
         receiver.process();
 
         verify(frameHandlerFactory).newInstance(destination, receiver.sessionState());

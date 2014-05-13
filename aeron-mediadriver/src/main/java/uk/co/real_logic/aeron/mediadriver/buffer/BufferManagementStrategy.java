@@ -27,20 +27,20 @@ public interface BufferManagementStrategy extends AutoCloseable
         return new MappedBufferManagementStrategy(dataDir);
     }
 
-    BufferRotator addProducerChannel(final UdpDestination destination,
-                                     final long sessionId,
-                                     final long channelId) throws Exception;
+    BufferRotator addPublisherChannel(final UdpDestination destination,
+                                      final long sessionId,
+                                      final long channelId) throws Exception;
 
-    void removeProducerChannel(final UdpDestination destination,
-                               final long sessionId,
-                               final long channelId) throws IllegalArgumentException;
+    void removePublisherChannel(final UdpDestination destination,
+                                final long sessionId,
+                                final long channelId) throws IllegalArgumentException;
 
-    BufferRotator addConsumerChannel(final UdpDestination destination,
-                                     final long sessionId,
-                                     final long channelId) throws Exception;
+    BufferRotator addSubscriberChannel(final UdpDestination destination,
+                                       final long sessionId,
+                                       final long channelId) throws Exception;
 
-    void removeConsumerChannel(final UdpDestination destination,
-                               final long sessionId,
-                               final long channelId) throws IllegalArgumentException;
+    void removeSubscriberChannel(final UdpDestination destination,
+                                 final long sessionId,
+                                 final long channelId) throws IllegalArgumentException;
 
 }

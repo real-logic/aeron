@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.mediadriver;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.ErrorCode;
 import uk.co.real_logic.aeron.util.Service;
-import uk.co.real_logic.aeron.util.command.ConsumerMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
@@ -27,10 +27,10 @@ import java.util.Map;
 import java.util.Queue;
 
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.SELECT_TIMEOUT;
-import static uk.co.real_logic.aeron.util.ErrorCode.CONSUMER_NOT_REGISTERED;
+import static uk.co.real_logic.aeron.util.ErrorCode.SUBSCRIBER_NOT_REGISTERED;
 import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION;
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ADD_CONSUMER;
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.REMOVE_CONSUMER;
+import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ADD_SUBSCRIBER;
+import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.REMOVE_SUBSCRIBER;
 
 /**
  * Receiver service for JVM based mediadriver, uses an event loop with command buffer
@@ -41,7 +41,7 @@ public class Receiver extends Service
     private final NioSelector nioSelector;
     private final MediaConductorCursor adminThreadCursor;
     private final Map<UdpDestination, RcvFrameHandler> rcvDestinationMap = new HashMap<>();
-    private final ConsumerMessageFlyweight consumerMessage = new ConsumerMessageFlyweight();
+    private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
     private final Queue<RcvBufferState> buffers = new OneToOneConcurrentArrayQueue<>(1024);
     private final RcvFrameHandlerFactory frameHandlerFactory;
 
@@ -91,14 +91,14 @@ public class Receiver extends Service
                {
                    switch (eventTypeId)
                    {
-                       case ADD_CONSUMER:
-                           consumerMessage.wrap(buffer, index);
-                           onNewConsumer(consumerMessage.destination(), consumerMessage.channelIds());
+                       case ADD_SUBSCRIBER:
+                           subscriberMessage.wrap(buffer, index);
+                           onNewSubscriber(subscriberMessage.destination(), subscriberMessage.channelIds());
                            return;
 
-                       case REMOVE_CONSUMER:
-                           consumerMessage.wrap(buffer, index);
-                           onRemoveConsumer(consumerMessage.destination(), consumerMessage.channelIds());
+                       case REMOVE_SUBSCRIBER:
+                           subscriberMessage.wrap(buffer, index);
+                           onRemoveSubscriber(subscriberMessage.destination(), subscriberMessage.channelIds());
                            return;
                    }
                }
@@ -110,7 +110,7 @@ public class Receiver extends Service
                catch (final ReceiverNotRegisteredException ex)
                {
                    // TODO: log this
-                   onError(CONSUMER_NOT_REGISTERED, length);
+                   onError(SUBSCRIBER_NOT_REGISTERED, length);
                }
                catch (final Exception ex)
                {
@@ -122,7 +122,7 @@ public class Receiver extends Service
 
     private void onError(final ErrorCode errorCode, final int length)
     {
-        adminThreadCursor.addErrorResponse(errorCode, consumerMessage, length);
+        adminThreadCursor.addErrorResponse(errorCode, subscriberMessage, length);
     }
 
     public AtomicArray<RcvSessionState> sessionState()
@@ -174,7 +174,7 @@ public class Receiver extends Service
         return rcvDestinationMap.get(destination);
     }
 
-    private void onNewConsumer(final String destination, final long[] channelIdList) throws Exception
+    private void onNewSubscriber(final String destination, final long[] channelIdList) throws Exception
     {
         final UdpDestination rcvDestination = UdpDestination.parse(destination);
         RcvFrameHandler rcv = rcvDestinationMap.get(rcvDestination);
@@ -188,7 +188,7 @@ public class Receiver extends Service
         rcv.addChannels(channelIdList);
     }
 
-    private void onRemoveConsumer(final String destination, final long[] channelIdList)
+    private void onRemoveSubscriber(final String destination, final long[] channelIdList)
     {
         final UdpDestination rcvDestination = UdpDestination.parse(destination);
         RcvFrameHandler rcv = rcvDestinationMap.get(rcvDestination);

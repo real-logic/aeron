@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.examples;
 
 import uk.co.real_logic.aeron.Aeron;
-import uk.co.real_logic.aeron.Consumer;
+import uk.co.real_logic.aeron.Subscriber;
 import uk.co.real_logic.aeron.Destination;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
@@ -26,9 +26,9 @@ import java.util.concurrent.Executors;
 import java.util.stream.IntStream;
 
 /**
- * Example Aeron consumer application
+ * Example Aeron subscriber application
  */
-public class ExampleConsumer
+public class ExampleSubscriber
 {
     public static final Destination DESTINATION = new Destination("udp://172.16.29.29:40123");
     private static final ExampleDataHandler[] CHANNELS = {new ExampleDataHandler(10), new ExampleDataHandler(20)};
@@ -39,9 +39,9 @@ public class ExampleConsumer
 
         try
         {
-            final Aeron.Context aeronContext = new Aeron.Context().errorHandler(ExampleConsumer::onError);
+            final Aeron.Context aeronContext = new Aeron.Context().errorHandler(ExampleSubscriber::onError);
             final Aeron aeron = Aeron.newSingleMediaDriver(aeronContext);
-            final Consumer.Context context = new Consumer.Context().destination(DESTINATION);
+            final Subscriber.Context context = new Subscriber.Context().destination(DESTINATION);
 
             // register some channels that use stateful objects
             IntStream.range(0, CHANNELS.length).forEach(i -> context.channel(CHANNELS[i].channelId(), CHANNELS[i]));
@@ -51,26 +51,27 @@ public class ExampleConsumer
                    .newSourceEvent((channelId, sessionId) -> System.out.println("new source for channel"))
                    .inactiveSourceEvent((channelId, sessionId) -> System.out.println("inactive source for channel"));
 
-            final Consumer consumer1 = aeron.newConsumer(context);
+            final Subscriber subscriber1 = aeron.newSubscriber(context);
 
             // create a receiver using the fluent style lambda
-            final Consumer consumer2 = aeron.newConsumer(
+            final Subscriber subscriber2 = aeron.newSubscriber(
                 (ctx) ->
                 {
                     ctx.destination(DESTINATION)
                        .channel(100, (buffer, offset, sessionId, flags) -> { /* do something */ })
                        .newSourceEvent((channelId, sessionId) -> System.out.println("new source for channel"));
-                });
+                }
+            );
 
             // make a reusable, parameterized event loop function
-            final java.util.function.Consumer<Consumer> loop =
+            final java.util.function.Consumer<Subscriber> loop =
                 (rcv) ->
                 {
                     try
                     {
                         while (true)
                         {
-                            rcv.consume();
+                            rcv.read();
                         }
                     }
                     catch (final Exception ex)
@@ -80,8 +81,8 @@ public class ExampleConsumer
                 };
 
             // spin off the two receiver threads
-            executor.execute(() -> loop.accept(consumer1));
-            executor.execute(() -> loop.accept(consumer2));
+            executor.execute(() -> loop.accept(subscriber1));
+            executor.execute(() -> loop.accept(subscriber2));
         }
         catch (final Exception ex)
         {
@@ -98,7 +99,7 @@ public class ExampleConsumer
         System.err.println(message);
     }
 
-    public static class ExampleDataHandler implements Consumer.DataHandler
+    public static class ExampleDataHandler implements Subscriber.DataHandler
     {
         private final long channelId;
 
@@ -115,7 +116,7 @@ public class ExampleConsumer
         public void onData(final AtomicBuffer buffer,
                            final int offset,
                            final long sessionId,
-                           final Consumer.MessageFlags flags)
+                           final Subscriber.MessageFlags flags)
         {
         }
     }

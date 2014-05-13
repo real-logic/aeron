@@ -29,10 +29,10 @@ public class ControlProtocolEvents
     public static final int REMOVE_CHANNEL = 0x02;
     /** Remove Term */
     public static final int REMOVE_TERM = 0x03;
-    /** Add Consumer */
-    public static final int ADD_CONSUMER = 0x04;
-    /** Remove Consume */
-    public static final int REMOVE_CONSUMER = 0x05;
+    /** Add Subscriber */
+    public static final int ADD_SUBSCRIBER = 0x04;
+    /** Remove Subscriber */
+    public static final int REMOVE_SUBSCRIBER = 0x05;
     /** Request Term */
     public static final int REQUEST_CLEANED_TERM = 0x06;
 
@@ -50,9 +50,9 @@ public class ControlProtocolEvents
     // Within Media Driver between threads
 
     /** Receiver thread tells media driver it wants to create a term buffer */
-    public static final int CREATE_CONSUMER_TERM_BUFFER = 0xF0;
+    public static final int CREATE_TERM_BUFFER = 0xF0;
 
     /** Receiver thread tells media driver it wants to remove a term buffer */
-    public static final int REMOVE_CONSUMER_TERM_BUFFER = 0xF1;
+    public static final int REMOVE_TERM_BUFFER = 0xF1;
 
 }

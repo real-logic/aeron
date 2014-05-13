@@ -35,19 +35,19 @@ public final class Aeron
 {
     private static final int ADMIN_BUFFER_SIZE = 512 + TRAILER_LENGTH;
 
-    private final ProducerControlFactory producerControl;
+    private final PublisherControlFactory publisherControl;
     private final ManyToOneRingBuffer adminCommandBuffer;
     private final ErrorHandler errorHandler;
-    private final ClientConductor adminThread;
+    private final ClientConductor clientConductor;
     private final ConductorBufferStrategy adminBuffers;
     private final AtomicArray<Channel> channels;
-    private final AtomicArray<ConsumerChannel> receivers;
+    private final AtomicArray<SubscriberChannel> receivers;
 
     private Aeron(final Context context)
     {
         errorHandler = context.errorHandler;
         adminBuffers = context.adminBuffers;
-        producerControl = context.producerControl;
+        publisherControl = context.publisherControl;
         channels = new AtomicArray<>();
         receivers = new AtomicArray<>();
         adminCommandBuffer = new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocate(ADMIN_BUFFER_SIZE)));
@@ -57,14 +57,15 @@ public final class Aeron
             final RingBuffer recvBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toApi()));
             final RingBuffer sendBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toMediaDriver()));
             final BufferUsageStrategy bufferUsage = new MappingBufferUsageStrategy(CommonConfiguration.DATA_DIR);
-            final ConductorErrorHandler conductorErrorHandler = new ConductorErrorHandler(context.invalidDestinationHandler);
+            final ConductorErrorHandler conductorErrorHandler =
+                new ConductorErrorHandler(context.invalidDestinationHandler);
 
-            adminThread = new ClientConductor(adminCommandBuffer,
-                                                recvBuffer, sendBuffer,
-                                                bufferUsage,
-                                                channels, receivers,
-                    conductorErrorHandler,
-                                                producerControl);
+            clientConductor = new ClientConductor(adminCommandBuffer,
+                                                  recvBuffer, sendBuffer,
+                                                  bufferUsage,
+                                                  channels, receivers,
+                                                  conductorErrorHandler,
+                                                  publisherControl);
         }
         catch (final Exception ex)
         {
@@ -109,7 +110,7 @@ public final class Aeron
 
     /**
      * Create a new source that is to send to {@link uk.co.real_logic.aeron.Destination}.
-     *
+     * <p>
      * A unique, random, session ID will be generated for the source if the context does not
      * set it. If the context sets the Session ID, then it will be checked for conflicting with existing session Ids.
      *
@@ -124,6 +125,7 @@ public final class Aeron
 
     /**
      * Create a new source that is to send to {@link Destination}
+     *
      * @param destination address to send all data to
      * @return new source
      */
@@ -134,7 +136,7 @@ public final class Aeron
 
     /**
      * Create an array of sources.
-     *
+     * <p>
      * Convenience function to make it easier to create a number of Sources easier.
      *
      * @param contexts for the source options, etc.
@@ -154,33 +156,34 @@ public final class Aeron
 
     /**
      * Create a new receiver that will listen on {@link uk.co.real_logic.aeron.Destination}
+     *
      * @param context context for receiver options.
      * @return new receiver
      */
-    public Consumer newConsumer(final Consumer.Context context)
+    public Subscriber newSubscriber(final Subscriber.Context context)
     {
         final ClientConductorCursor adminThread = new ClientConductorCursor(adminCommandBuffer);
 
-        return new Consumer(adminThread, context, receivers);
+        return new Subscriber(adminThread, context, receivers);
     }
 
     /**
      * Create a new receiver that will listen on a given destination, etc.
      *
      * @param block to fill in receiver context
-     * @return new receiver
+     * @return new Subscriber
      */
-    public Consumer newConsumer(final java.util.function.Consumer<Consumer.Context> block)
+    public Subscriber newSubscriber(final java.util.function.Consumer<Subscriber.Context> block)
     {
-        Consumer.Context context = new Consumer.Context();
-        block.accept(new Consumer.Context());
+        Subscriber.Context context = new Subscriber.Context();
+        block.accept(new Subscriber.Context());
 
-        return newConsumer(context);
+        return newSubscriber(context);
     }
 
     public ClientConductor conductor()
     {
-        return adminThread;
+        return clientConductor;
     }
 
     public static class Context
@@ -188,13 +191,13 @@ public final class Aeron
         private ErrorHandler errorHandler;
         private ConductorBufferStrategy adminBuffers;
         private InvalidDestinationHandler invalidDestinationHandler;
-        private ProducerControlFactory producerControl;
+        private PublisherControlFactory publisherControl;
 
         public Context()
         {
             errorHandler = new DummyErrorHandler();
             adminBuffers = new MappingConductorBufferStrategy(CommonConfiguration.ADMIN_DIR);
-            producerControl = DefaultProducerControlStrategy::new;
+            publisherControl = DefaultProducerControlStrategy::new;
         }
 
         public Context errorHandler(ErrorHandler errorHandler)
@@ -215,9 +218,9 @@ public final class Aeron
             return this;
         }
 
-        public Context producerControl(final ProducerControlFactory producerControl)
+        public Context publisherControl(final PublisherControlFactory publisherControl)
         {
-            this.producerControl = producerControl;
+            this.publisherControl = publisherControl;
             return this;
         }
     }

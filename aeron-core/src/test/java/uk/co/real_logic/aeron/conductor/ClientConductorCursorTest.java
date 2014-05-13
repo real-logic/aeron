@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.conductor;
 import org.junit.Test;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.ConsumerMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.EventHandler;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
@@ -71,14 +71,14 @@ public class ClientConductorCursorTest
     @Test
     public void threadSendsRemoveReceiverMessage()
     {
-        thread.sendRemoveReceiver(DESTINATION, CHANNEL_IDS);
+        thread.sendRemoveSubscriber(DESTINATION, CHANNEL_IDS);
 
         assertReadsOneMessage((eventTypeId, buffer, index, length) ->
         {
-            ConsumerMessageFlyweight removeReceiverMessage = new ConsumerMessageFlyweight();
+            SubscriberMessageFlyweight removeReceiverMessage = new SubscriberMessageFlyweight();
             removeReceiverMessage.wrap(buffer, index);
 
-            assertThat(eventTypeId, is(REMOVE_CONSUMER));
+            assertThat(eventTypeId, is(REMOVE_SUBSCRIBER));
             assertThat(removeReceiverMessage.destination(), is(DESTINATION));
             assertThat(removeReceiverMessage.channelIds(), is(CHANNEL_IDS));
         });

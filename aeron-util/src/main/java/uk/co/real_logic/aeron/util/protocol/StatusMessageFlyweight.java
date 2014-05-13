@@ -140,5 +140,4 @@ public class StatusMessageFlyweight extends HeaderFlyweight
         uint32Put(offset() + RECEIVER_WINDOW_FIELD_OFFSET, receiverWindow, LITTLE_ENDIAN);
         return this;
     }
-
 }

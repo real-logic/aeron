@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron;
+package uk.co.real_logic.aeron.examples;
 
+import uk.co.real_logic.aeron.BufferExhaustedException;
+import uk.co.real_logic.aeron.Channel;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 /**
- * A wrapper around {@see Channel} which supports blocking
+ * A example wrapper around {@see Channel} which supports blocking
  */
 public class BlockingChannel
 {

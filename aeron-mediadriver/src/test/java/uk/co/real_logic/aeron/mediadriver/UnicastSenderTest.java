@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import org.junit.*;
-import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy;
+import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
 import uk.co.real_logic.aeron.util.ConductorBuffers;
 import uk.co.real_logic.aeron.util.SharedDirectories;
 import uk.co.real_logic.aeron.util.TimerWheel;
@@ -48,9 +48,9 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.mediadriver.MediaConductor.HEADER_LENGTH;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.*;
-import static uk.co.real_logic.aeron.mediadriver.SenderChannel.INITIAL_HEARTBEAT_TIMEOUT_IN_MILLIS;
-import static uk.co.real_logic.aeron.mediadriver.SenderChannel.HEARTBEAT_TIMEOUT_IN_MILLIS;
-import static uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy.newMappedBufferManager;
+import static uk.co.real_logic.aeron.mediadriver.SenderChannel.INITIAL_HEARTBEAT_TIMEOUT_MS;
+import static uk.co.real_logic.aeron.mediadriver.SenderChannel.HEARTBEAT_TIMEOUT_MS;
+import static uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement.newMappedBufferManager;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.ErrorCode.*;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
@@ -93,7 +93,7 @@ public class UnicastSenderTest
 
     //private TimerWheel timerWheel;
 
-    private BufferManagementStrategy bufferManagementStrategy;
+    private BufferManagement bufferManagement;
     private Sender sender;
     private MediaConductor mediaConductor;
     private DatagramChannel receiverChannel;
@@ -103,12 +103,12 @@ public class UnicastSenderTest
     @Before
     public void setUp() throws Exception
     {
-        bufferManagementStrategy = newMappedBufferManager(directory.dataDir());
+        bufferManagement = newMappedBufferManager(directory.dataDir());
 
         controlledTimestamp = 0;
         final TimerWheel timerWheel = new TimerWheel(
             () -> controlledTimestamp,
-                MEDIA_CONDUCTOR_TICK_DURATION_MICROSECONDS,
+            MEDIA_CONDUCTOR_TICK_DURATION_MICROS,
             TimeUnit.MICROSECONDS,
                 MEDIA_CONDUCTOR_TICKS_PER_WHEEL);
 
@@ -119,7 +119,7 @@ public class UnicastSenderTest
             .adminNioSelector(new NioSelector())
             .senderFlowControl(DefaultSenderControlStrategy::new)
             .adminBufferStrategy(buffers.strategy())
-            .bufferManagementStrategy(bufferManagementStrategy)
+            .bufferManagementStrategy(bufferManagement)
             .adminTimerWheel(timerWheel);
 
         sender = new Sender(ctx);
@@ -140,7 +140,7 @@ public class UnicastSenderTest
         sender.close();
         mediaConductor.close();
         mediaConductor.nioSelector().selectNowWithNoProcessing();
-        bufferManagementStrategy.close();
+        bufferManagement.close();
     }
 
     @Test(timeout = 1000)
@@ -283,7 +283,7 @@ public class UnicastSenderTest
         sendStatusMessage(controlAddr, termId, 0, 0);
 
         // should send 0 length data after 100 msec, so give a bit more time
-        advanceTimeMilliseconds(3 * INITIAL_HEARTBEAT_TIMEOUT_IN_MILLIS);
+        advanceTimeMilliseconds(3 * INITIAL_HEARTBEAT_TIMEOUT_MS);
 
         assertNotReceivedPacket();
     }
@@ -341,12 +341,12 @@ public class UnicastSenderTest
                         (eventTypeId, buffer, index, length) ->
                             assertThat(eventTypeId, is(NEW_SEND_BUFFER_NOTIFICATION)));
 
-        advanceTimeMilliseconds(INITIAL_HEARTBEAT_TIMEOUT_IN_MILLIS - 10);   // should not send yet....
+        advanceTimeMilliseconds(INITIAL_HEARTBEAT_TIMEOUT_MS - 10);   // should not send yet....
 
         assertNotReceivedPacket();
 
         // should send 0 length data after 100 msec, so give a bit more time
-        advanceTimeMilliseconds(INITIAL_HEARTBEAT_TIMEOUT_IN_MILLIS + 10);
+        advanceTimeMilliseconds(INITIAL_HEARTBEAT_TIMEOUT_MS + 10);
 
         assertReceivedZeroLengthPacket();
     }
@@ -373,7 +373,7 @@ public class UnicastSenderTest
         assertPacketContainsValue();
 
         // idle for time
-        advanceTimeMilliseconds(2 * HEARTBEAT_TIMEOUT_IN_MILLIS);
+        advanceTimeMilliseconds(2 * HEARTBEAT_TIMEOUT_MS);
 
         // heartbeat
         assertReceivedZeroLengthPacket();
@@ -520,7 +520,7 @@ public class UnicastSenderTest
 
     private void advanceTimeMilliseconds(final int msec)
     {
-        final long tickNanos = TimeUnit.MICROSECONDS.toNanos(MEDIA_CONDUCTOR_TICK_DURATION_MICROSECONDS);
+        final long tickNanos = TimeUnit.MICROSECONDS.toNanos(MEDIA_CONDUCTOR_TICK_DURATION_MICROS);
         final long spanNanos = TimeUnit.MILLISECONDS.toNanos(msec);
         final long startTimestamp = controlledTimestamp;
 

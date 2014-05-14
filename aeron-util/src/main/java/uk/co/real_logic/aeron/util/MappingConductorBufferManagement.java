@@ -15,54 +15,47 @@
  */
 package uk.co.real_logic.aeron.util;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 
-import static uk.co.real_logic.aeron.util.IoUtil.mapNewFile;
+import static uk.co.real_logic.aeron.util.IoUtil.mapExistingFile;
 
-public class CreatingConductorBufferStrategy extends ConductorBufferStrategy
+public class MappingConductorBufferManagement extends ConductorBufferManagement
 {
+    private MappedByteBuffer toMediaDriverBuffer;
+    private MappedByteBuffer toClientBuffer;
 
-    private final File adminDir;
-    private final int bufferSize;
-
-    private MappedByteBuffer toMediaDriverBuffer = null;
-    private MappedByteBuffer toApiBuffer = null;
-
-    public CreatingConductorBufferStrategy(final String adminDir, final int bufferSize)
+    public MappingConductorBufferManagement(final String adminDir)
     {
         super(adminDir);
-        this.adminDir = new File(adminDir);
-        this.bufferSize = bufferSize;
     }
 
     public ByteBuffer toMediaDriver() throws IOException
     {
         if (toMediaDriverBuffer == null)
         {
-            IoUtil.checkDirectoryExists(adminDir, "adminDir");
-            toMediaDriverBuffer = mapNewFile(toMediaDriver, MEDIA_DRIVER_FILE, bufferSize);
+            toMediaDriverBuffer = mapExistingFile(toMediaDriver, MEDIA_DRIVER_FILE);
         }
+
         return toMediaDriverBuffer;
     }
 
-    public ByteBuffer toApi() throws IOException
+    public ByteBuffer toClient() throws IOException
     {
-        if (toApiBuffer == null)
+        if (toClientBuffer == null)
         {
-            IoUtil.checkDirectoryExists(adminDir, "adminDir");
-            toApiBuffer = mapNewFile(toApi, API_FILE, bufferSize);
+            toClientBuffer = mapExistingFile(toClient, CLIENT_FILE);
         }
-        return toApiBuffer;
+
+        return toClientBuffer;
     }
 
     public void close()
     {
-        IoUtil.unmap(toApiBuffer);
+        IoUtil.unmap(toClientBuffer);
         IoUtil.unmap(toMediaDriverBuffer);
-        toApiBuffer = null;
+        toClientBuffer = null;
         toMediaDriverBuffer = null;
     }
 }

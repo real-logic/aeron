@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy;
+import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
 import uk.co.real_logic.aeron.util.*;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
@@ -53,7 +53,7 @@ public class MediaConductor extends Service implements LibraryFacade
     private final NioSelector nioSelector;
     private final Receiver receiver;
     private final Sender sender;
-    private final BufferManagementStrategy bufferManagementStrategy;
+    private final BufferManagement bufferManagement;
     private final RingBuffer adminReceiveBuffer;
     private final RingBuffer adminSendBuffer;
     private final Long2ObjectHashMap<ControlFrameHandler> srcDestinationMap;
@@ -70,7 +70,7 @@ public class MediaConductor extends Service implements LibraryFacade
         new CompletelyIdentifiedMessageFlyweight();
 
     private final int mtuLength;
-    private final ConductorBufferStrategy adminBufferStrategy;
+    private final ConductorBufferManagement adminBufferStrategy;
     private TimerWheel.Timer heartbeatTimer;
 
     public MediaConductor(final Context ctx,
@@ -81,7 +81,7 @@ public class MediaConductor extends Service implements LibraryFacade
 
         this.commandBuffer = ctx.adminThreadCommandBuffer();
         this.receiverCursor = new ReceiverCursor(ctx.receiverThreadCommandBuffer(), ctx.rcvNioSelector());
-        this.bufferManagementStrategy = ctx.bufferManagementStrategy();
+        this.bufferManagement = ctx.bufferManagementStrategy();
         this.nioSelector = ctx.adminNioSelector();
         this.mtuLength = ctx.mtuLength();
         this.receiver = receiver;
@@ -91,17 +91,17 @@ public class MediaConductor extends Service implements LibraryFacade
         this.writeBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(WRITE_BUFFER_CAPACITY));
         this.timerWheel = (ctx.adminTimerWheel() != null) ?
                               ctx.adminTimerWheel() :
-                              new TimerWheel(MEDIA_CONDUCTOR_TICK_DURATION_MICROSECONDS,
+                              new TimerWheel(MEDIA_CONDUCTOR_TICK_DURATION_MICROS,
                                              TimeUnit.MICROSECONDS,
                                              MEDIA_CONDUCTOR_TICKS_PER_WHEEL);
 
-        this.heartbeatTimer = newTimeout(HEARTBEAT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS, this::onHeartbeatCheck);
+        heartbeatTimer = newTimeout(HEARTBEAT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS, this::onHeartbeatCheck);
 
         try
         {
             adminBufferStrategy = ctx.adminBufferStrategy();
             ByteBuffer toMediaDriver = adminBufferStrategy.toMediaDriver();
-            ByteBuffer toApi = adminBufferStrategy.toApi();
+            ByteBuffer toApi = adminBufferStrategy.toClient();
             this.adminReceiveBuffer = new ManyToOneRingBuffer(new AtomicBuffer(toMediaDriver));
             this.adminSendBuffer = new ManyToOneRingBuffer(new AtomicBuffer(toApi));
         }
@@ -219,7 +219,7 @@ public class MediaConductor extends Service implements LibraryFacade
 
     public void processTimers()
     {
-        if (timerWheel.calculateDelayInMsec() <= 0)
+        if (timerWheel.calculateDelayInMs() <= 0)
         {
             timerWheel.expireTimers();
         }
@@ -257,7 +257,7 @@ public class MediaConductor extends Service implements LibraryFacade
 
     public long currentTime()
     {
-        return timerWheel.currentTime();
+        return timerWheel.now();
     }
 
     public void sendErrorResponse(final int code, final byte[] message)
@@ -329,7 +329,7 @@ public class MediaConductor extends Service implements LibraryFacade
             // new channel, so generate "random"-ish termId and create term buffer
             final long initialTermId = rng.nextLong();
             final BufferRotator buffers =
-                bufferManagementStrategy.addPublisherChannel(srcDestination, sessionId, channelId);
+                bufferManagement.addPublisherChannel(srcDestination, sessionId, channelId);
 
             channel = new SenderChannel(frameHandler,
                                         senderFlowControl.get(),
@@ -386,7 +386,7 @@ public class MediaConductor extends Service implements LibraryFacade
             }
 
             // remove from buffer management
-            bufferManagementStrategy.removePublisherChannel(srcDestination, sessionId, channelId);
+            bufferManagement.removePublisherChannel(srcDestination, sessionId, channelId);
 
             sender.removeChannel(channel);
 
@@ -441,7 +441,7 @@ public class MediaConductor extends Service implements LibraryFacade
         {
             final UdpDestination rcvDestination = UdpDestination.parse(destination);
             final BufferRotator buffer =
-                bufferManagementStrategy.addSubscriberChannel(rcvDestination, sessionId, channelId);
+                bufferManagement.addSubscriberChannel(rcvDestination, sessionId, channelId);
 
             // inform receiver thread of new buffer, destination, etc.
             final RcvBufferState bufferState = new RcvBufferState(rcvDestination, sessionId, channelId, termId, buffer);
@@ -467,7 +467,7 @@ public class MediaConductor extends Service implements LibraryFacade
         {
             final UdpDestination rcvDestination = UdpDestination.parse(destination);
 
-            bufferManagementStrategy.removeSubscriberChannel(rcvDestination, sessionId, channelId);
+            bufferManagement.removeSubscriberChannel(rcvDestination, sessionId, channelId);
         }
         catch (final Exception ex)
         {

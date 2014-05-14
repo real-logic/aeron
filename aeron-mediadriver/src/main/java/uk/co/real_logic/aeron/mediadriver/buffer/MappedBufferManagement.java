@@ -34,7 +34,7 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor
 /**
  * Basic buffer management where each Term is a file.
  */
-class MappedBufferManagementStrategy implements BufferManagementStrategy
+class MappedBufferManagement implements BufferManagement
 {
     public static final long LOG_BUFFER_SIZE = COMMAND_BUFFER_SZ + TRAILER_LENGTH;
 
@@ -48,7 +48,7 @@ class MappedBufferManagementStrategy implements BufferManagementStrategy
     private final UdpChannelMap<MappedBufferRotator> rcvTermMap;
     private final FileMappingConvention fileConvention;
 
-    MappedBufferManagementStrategy(final String dataDir)
+    MappedBufferManagement(final String dataDir)
     {
         fileConvention = new FileMappingConvention(dataDir);
         senderDir = fileConvention.senderDir();
@@ -69,20 +69,20 @@ class MappedBufferManagementStrategy implements BufferManagementStrategy
             stateTemplate.close();
 
             srcTermMap.forEach((ChannelMap.ChannelHandler<UdpDestination, MappedBufferRotator>)
-                    (final UdpDestination destination,
-                     final Long sessionId,
-                     final Long channelId,
-                     final MappedBufferRotator buffer) -> buffer.close());
+                                   (final UdpDestination destination,
+                                    final Long sessionId,
+                                    final Long channelId,
+                                    final MappedBufferRotator buffer) -> buffer.close());
 
             rcvTermMap.forEach((ChannelMap.ChannelHandler<UdpDestination, MappedBufferRotator>)
-                    (final UdpDestination destination,
-                     final Long sessionId,
-                     final Long channelId,
-                     final MappedBufferRotator buffer) -> buffer.close());
+                                   (final UdpDestination destination,
+                                    final Long sessionId,
+                                    final Long channelId,
+                                    final MappedBufferRotator buffer) -> buffer.close());
         }
-        catch (Exception e)
+        catch (final Exception ex)
         {
-            throw new RuntimeException(e);
+            throw new RuntimeException(ex);
         }
     }
 
@@ -91,8 +91,8 @@ class MappedBufferManagementStrategy implements BufferManagementStrategy
      * This lets us just use transferTo to initialize the buffers.
      *
      * @param dataDir in which template file will be created.
-     * @param name
-     * @param size
+     * @param name of the file to create.
+     * @param size of the file to create.
      */
     private FileChannel createTemplateFile(final String dataDir, final String name, final long size)
     {
@@ -102,20 +102,22 @@ class MappedBufferManagementStrategy implements BufferManagementStrategy
         {
             return IoUtil.createEmptyFile(templateFile, size);
         }
-        catch (IOException e)
+        catch (final IOException ex)
         {
-            throw new IllegalStateException("Cannot create template file", e);
+            throw new IllegalStateException("Cannot create template file", ex);
         }
     }
 
-    public BufferRotator addPublisherChannel(final UdpDestination destination, final long sessionId, final long channelId)
-            throws Exception
+    public BufferRotator addPublisherChannel(final UdpDestination destination,
+                                             final long sessionId,
+                                             final long channelId)
+        throws Exception
     {
         return addChannel(destination, sessionId, channelId, senderDir, srcTermMap);
     }
 
     public void removePublisherChannel(final UdpDestination destination, final long sessionId, final long channelId)
-            throws IllegalArgumentException
+        throws IllegalArgumentException
     {
         removeChannel(destination, sessionId, channelId, srcTermMap);
     }
@@ -158,12 +160,13 @@ class MappedBufferManagementStrategy implements BufferManagementStrategy
         {
             final File dir = channelLocation(rootDir, sessionId, channelId, true, destination.clientAwareUri());
             channelBuffer = new MappedBufferRotator(dir,
-                    logTemplate,
-                    LOG_BUFFER_SIZE,
-                    stateTemplate,
-                    STATE_BUFFER_LENGTH);
+                                                    logTemplate,
+                                                    LOG_BUFFER_SIZE,
+                                                    stateTemplate,
+                                                    STATE_BUFFER_LENGTH);
             termMap.put(destination, sessionId, channelId, channelBuffer);
         }
+
         return channelBuffer;
     }
 }

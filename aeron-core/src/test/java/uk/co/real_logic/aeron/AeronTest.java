@@ -89,7 +89,7 @@ public class AeronTest
     private final ByteBuffer sendBuffer = ByteBuffer.allocate(SEND_BUFFER_CAPACITY);
     private final AtomicBuffer atomicSendBuffer = new AtomicBuffer(sendBuffer);
 
-    private MappingConductorBufferStrategy adminBufferStrategy;
+    private MappingConductorBufferManagement adminBufferStrategy;
 
     public AeronTest()
     {
@@ -100,7 +100,7 @@ public class AeronTest
     @Before
     public void setUp()
     {
-        adminBufferStrategy = new MappingConductorBufferStrategy(conductorBuffers.adminDir());
+        adminBufferStrategy = new MappingConductorBufferManagement(conductorBuffers.adminDir());
     }
 
     @After

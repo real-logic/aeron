@@ -53,7 +53,7 @@ public class ExampleSubscriber
 
             final Subscriber subscriber1 = aeron.newSubscriber(context);
 
-            // create a receiver using the fluent style lambda
+            // create a receiver using the fluent style lambda expression
             final Subscriber subscriber2 = aeron.newSubscriber(
                 (ctx) ->
                 {

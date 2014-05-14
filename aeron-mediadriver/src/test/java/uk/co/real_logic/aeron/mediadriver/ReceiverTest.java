@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.mediadriver;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
-import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy;
+import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -40,14 +40,14 @@ public class ReceiverTest
     @Before
     public void setUp() throws Exception
     {
-        final BufferManagementStrategy bufferManagementStrategy = mock(BufferManagementStrategy.class);
+        final BufferManagement bufferManagement = mock(BufferManagement.class);
         frameHandlerFactory = mock(RcvFrameHandlerFactory.class);
 
         final MediaDriver.Context context = new MediaDriver.Context()
                 .adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
                 .rcvNioSelector(new NioSelector())
-                .bufferManagementStrategy(bufferManagementStrategy)
+                .bufferManagementStrategy(bufferManagement)
                 .rcvFrameHandlerFactory(frameHandlerFactory);
 
         cursor = new ReceiverCursor(context.receiverThreadCommandBuffer(), context.rcvNioSelector());

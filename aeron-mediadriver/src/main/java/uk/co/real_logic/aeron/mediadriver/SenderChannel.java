@@ -25,8 +25,9 @@ import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * Encapsulates the information associated with a channel
@@ -35,13 +36,11 @@ import java.util.concurrent.atomic.AtomicLong;
 public class SenderChannel
 {
     /** initial heartbeat timeout (cancelled by SM) */
-    public static final int INITIAL_HEARTBEAT_TIMEOUT_IN_MILLIS = 100;
-    public static final long INITIAL_HEARTBEAT_TIMEOUT_IN_NANOS =
-            TimeUnit.MILLISECONDS.toNanos(INITIAL_HEARTBEAT_TIMEOUT_IN_MILLIS);
+    public static final int INITIAL_HEARTBEAT_TIMEOUT_MS = 100;
+    public static final long INITIAL_HEARTBEAT_TIMEOUT_NS = MILLISECONDS.toNanos(INITIAL_HEARTBEAT_TIMEOUT_MS);
     /** heartbeat after data sent */
-    public static final int HEARTBEAT_TIMEOUT_IN_MILLIS = 500;
-    public static final long HEARTBEAT_TIMEOUT_IN_NANOS =
-            TimeUnit.MILLISECONDS.toNanos(HEARTBEAT_TIMEOUT_IN_MILLIS);
+    public static final int HEARTBEAT_TIMEOUT_MS = 500;
+    public static final long HEARTBEAT_TIMEOUT_NS = MILLISECONDS.toNanos(HEARTBEAT_TIMEOUT_MS);
 
     private final ControlFrameHandler frameHandler;
     private final SenderControlStrategy controlStrategy;
@@ -244,17 +243,17 @@ public class SenderChannel
 
     public void heartbeatCheck()
     {
-        // TODO: currentTime should be cached in TimerWheel to avoid too many calls
+        // TODO: now should be cached in TimerWheel to avoid too many calls
         if (statusMessagesSeen > 0)
         {
-            if ((frameHandler.currentTime() - timeOfLastSendOrHeartbeat.get()) > HEARTBEAT_TIMEOUT_IN_NANOS)
+            if ((frameHandler.currentTime() - timeOfLastSendOrHeartbeat.get()) > HEARTBEAT_TIMEOUT_NS)
             {
                 sendHeartbeat();
             }
         }
         else
         {
-            if ((frameHandler.currentTime() - timeOfLastSendOrHeartbeat.get()) > INITIAL_HEARTBEAT_TIMEOUT_IN_NANOS)
+            if ((frameHandler.currentTime() - timeOfLastSendOrHeartbeat.get()) > INITIAL_HEARTBEAT_TIMEOUT_NS)
             {
                 sendHeartbeat();
             }

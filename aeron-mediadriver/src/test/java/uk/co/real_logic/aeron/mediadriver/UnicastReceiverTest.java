@@ -17,10 +17,10 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import org.junit.*;
 import org.junit.rules.ExpectedException;
-import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy;
+import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
 import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.ConductorBuffers;
-import uk.co.real_logic.aeron.util.MappingConductorBufferStrategy;
+import uk.co.real_logic.aeron.util.MappingConductorBufferManagement;
 import uk.co.real_logic.aeron.util.SharedDirectories;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
@@ -44,7 +44,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.COMMAND_BUFFER_SZ;
-import static uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy.newMappedBufferManager;
+import static uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement.newMappedBufferManager;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION;
 import static uk.co.real_logic.aeron.util.ErrorCode.SUBSCRIBER_NOT_REGISTERED;
@@ -86,7 +86,7 @@ public class UnicastReceiverTest
     private final SubscriberMessageFlyweight receiverMessage = new SubscriberMessageFlyweight();
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
-    private BufferManagementStrategy bufferManagementStrategy;
+    private BufferManagement bufferManagement;
     private Receiver receiver;
     private MediaConductor mediaConductor;
     private DatagramChannel senderChannel;
@@ -94,7 +94,7 @@ public class UnicastReceiverTest
     @Before
     public void setUp() throws Exception
     {
-        bufferManagementStrategy = newMappedBufferManager(directory.dataDir());
+        bufferManagement = newMappedBufferManager(directory.dataDir());
 
         NioSelector nioSelector = new NioSelector();
         final MediaDriver.Context ctx = new MediaDriver.Context()
@@ -103,8 +103,8 @@ public class UnicastReceiverTest
             .rcvNioSelector(nioSelector)
             .adminNioSelector(new NioSelector())
             .senderFlowControl(DefaultSenderControlStrategy::new)
-            .adminBufferStrategy(new MappingConductorBufferStrategy(buffers.adminDir()))
-            .bufferManagementStrategy(bufferManagementStrategy);
+            .adminBufferStrategy(new MappingConductorBufferManagement(buffers.adminDir()))
+            .bufferManagementStrategy(bufferManagement);
 
         ctx.rcvFrameHandlerFactory(
             new RcvFrameHandlerFactory(nioSelector, new MediaConductorCursor(ctx.adminThreadCommandBuffer(),
@@ -126,7 +126,7 @@ public class UnicastReceiverTest
         receiver.nioSelector().selectNowWithNoProcessing();
         mediaConductor.close();
         mediaConductor.nioSelector().selectNowWithNoProcessing();
-        bufferManagementStrategy.close();
+        bufferManagement.close();
     }
 
     @Test(timeout = 1000)
@@ -373,7 +373,7 @@ public class UnicastReceiverTest
     private void assertBuffersNotRegistered()
     {
         exception.expect(IllegalArgumentException.class);
-        bufferManagementStrategy.removeSubscriberChannel(udpDestination(), SESSION_ID, CHANNEL_ID);
+        bufferManagement.removeSubscriberChannel(udpDestination(), SESSION_ID, CHANNEL_ID);
     }
 
     private void assertReceiverNotRegistered()

@@ -18,13 +18,13 @@ package uk.co.real_logic.aeron.mediadriver.buffer;
 import uk.co.real_logic.aeron.mediadriver.UdpDestination;
 
 /**
- * Interface for encapsulating the strategy of allocating ByteBuffers for Session, Channel, and Term
+ * Interface for encapsulating the allocation of ByteBuffers for Session, Channel, and Term
  */
-public interface BufferManagementStrategy extends AutoCloseable
+public interface BufferManagement extends AutoCloseable
 {
-    static BufferManagementStrategy newMappedBufferManager(final String dataDir)
+    static BufferManagement newMappedBufferManager(final String dataDir)
     {
-        return new MappedBufferManagementStrategy(dataDir);
+        return new MappedBufferManagement(dataDir);
     }
 
     BufferRotator addPublisherChannel(final UdpDestination destination,

@@ -29,20 +29,20 @@ import java.io.IOException;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
-public class MappedBufferManagementStrategyTest
+public class MappedBufferManagementTest
 {
     private static final String DESTINATION_URI = "udp://localhost:4321";
     private static final long SESSION_ID = 100;
     private static final long CHANNEL_ID = 100;
     private static final File DATA_DIR = new File(IoUtil.tmpDir(), "DATA_DIR");
-    private MappedBufferManagementStrategy strategy;
+    private MappedBufferManagement strategy;
     private UdpDestination destination = UdpDestination.parse(DESTINATION_URI);
 
     @Before
     public void createDataDir()
     {
         IoUtil.ensureDirectoryExists(DATA_DIR, "data");
-        strategy = new MappedBufferManagementStrategy(DATA_DIR.getAbsolutePath());
+        strategy = new MappedBufferManagement(DATA_DIR.getAbsolutePath());
     }
 
     @After
@@ -62,9 +62,9 @@ public class MappedBufferManagementStrategyTest
             {
                 final AtomicBuffer log = logBuffer.logBuffer();
 
-                assertThat((long)log.capacity(), is(MappedBufferManagementStrategy.LOG_BUFFER_SIZE));
+                assertThat((long)log.capacity(), is(MappedBufferManagement.LOG_BUFFER_SIZE));
                 assertThat(log.getByte(0), is((byte)0));
-                assertThat(log.getByte((int)MappedBufferManagementStrategy.LOG_BUFFER_SIZE - 1), is((byte)0));
+                assertThat(log.getByte((int)MappedBufferManagement.LOG_BUFFER_SIZE - 1), is((byte)0));
 
                 final AtomicBuffer state = logBuffer.stateBuffer();
 

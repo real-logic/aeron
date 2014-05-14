@@ -19,9 +19,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import uk.co.real_logic.aeron.util.CreatingConductorBufferStrategy;
+import uk.co.real_logic.aeron.util.CreatingConductorBufferManagement;
 import uk.co.real_logic.aeron.util.IoUtil;
-import uk.co.real_logic.aeron.util.MappingConductorBufferStrategy;
+import uk.co.real_logic.aeron.util.MappingConductorBufferManagement;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
@@ -37,7 +37,7 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.COMMAND_BUFFER_SZ;
-import static uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy.newMappedBufferManager;
+import static uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement.newMappedBufferManager;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ADD_CHANNEL;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.REMOVE_CHANNEL;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_LENGTH;
@@ -77,7 +77,7 @@ public class MediaConductorTest
             .rcvNioSelector(new NioSelector())
             .adminNioSelector(new NioSelector())
             .senderFlowControl(DefaultSenderControlStrategy::new)
-            .adminBufferStrategy(new CreatingConductorBufferStrategy(adminPath, COMMAND_BUFFER_SZ + TRAILER_LENGTH))
+            .adminBufferStrategy(new CreatingConductorBufferManagement(adminPath, COMMAND_BUFFER_SZ + TRAILER_LENGTH))
             .bufferManagementStrategy(newMappedBufferManager(adminPath));
 
         final Sender sender = new Sender(ctx)
@@ -185,7 +185,7 @@ public class MediaConductorTest
     private void writeChannelMessage(final int eventTypeId, final long channelId, final long sessionId, final int port)
         throws IOException
     {
-        final ByteBuffer buffer = new MappingConductorBufferStrategy(adminPath).toMediaDriver();
+        final ByteBuffer buffer = new MappingConductorBufferManagement(adminPath).toMediaDriver();
         final RingBuffer adminCommands = new ManyToOneRingBuffer(new AtomicBuffer(buffer));
 
         final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();

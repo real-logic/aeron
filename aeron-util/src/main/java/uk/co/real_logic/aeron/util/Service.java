@@ -37,10 +37,10 @@ public abstract class Service implements Runnable, AutoCloseable
             {
                 Thread.sleep(sleepPeriod);
             }
-            catch (InterruptedException e)
+            catch (final InterruptedException ex)
             {
                 // TODO: logging
-                e.printStackTrace();
+                ex.printStackTrace();
             }
         }
     }

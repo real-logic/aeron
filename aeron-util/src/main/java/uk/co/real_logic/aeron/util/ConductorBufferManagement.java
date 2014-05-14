@@ -23,23 +23,23 @@ import java.nio.ByteBuffer;
  *
  * Assumes one media driver per API instance.
  */
-public abstract class ConductorBufferStrategy implements AutoCloseable
+public abstract class ConductorBufferManagement implements AutoCloseable
 {
     protected static final String MEDIA_DRIVER_FILE = "media-driver";
-    protected static final String API_FILE = "api";
+    protected static final String CLIENT_FILE = "client";
 
     protected final File toMediaDriver;
-    protected final File toApi;
+    protected final File toClient;
 
-    public ConductorBufferStrategy(final String adminDir)
+    public ConductorBufferManagement(final String adminDir)
     {
         toMediaDriver = new File(adminDir, MEDIA_DRIVER_FILE);
-        toApi = new File(adminDir, API_FILE);
+        toClient = new File(adminDir, CLIENT_FILE);
     }
 
     public abstract ByteBuffer toMediaDriver() throws Exception;
 
-    public abstract ByteBuffer toApi() throws Exception;
+    public abstract ByteBuffer toClient() throws Exception;
 
     public abstract void close();
 }

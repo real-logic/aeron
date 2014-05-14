@@ -34,15 +34,15 @@ public class Subscriber implements AutoCloseable
     private final InactiveSourceEventHandler inactiveSourceEventHandler;
     private final Long2ObjectHashMap<DataHandler> channelMap;
     private final long[] channelIds;
-    private final ClientConductorCursor adminThread;
+    private final ClientConductorCursor clientConductorCursor;
     private final AtomicArray<SubscriberChannel> subscriberChannels;
     private final List<SubscriberChannel> channels;
 
-    public Subscriber(final ClientConductorCursor adminThread,
+    public Subscriber(final ClientConductorCursor clientConductorCursor,
                       final Context context,
                       final AtomicArray<SubscriberChannel> subscriberChannels)
     {
-        this.adminThread = adminThread;
+        this.clientConductorCursor = clientConductorCursor;
         this.subscriberChannels = subscriberChannels;
         this.destination = context.destination;
         this.channelMap = context.channelMap;
@@ -54,13 +54,13 @@ public class Subscriber implements AutoCloseable
                                   .map(entry -> new SubscriberChannel(destination, entry.getKey(), entry.getValue()))
                                   .collect(toList());
         subscriberChannels.addAll(channels);
-        adminThread.sendAddSubscriber(destination.destination(), channelIds);
+        clientConductorCursor.sendAddSubscriber(destination.destination(), channelIds);
     }
 
     public void close()
     {
         subscriberChannels.removeAll(channels);
-        adminThread.sendRemoveSubscriber(destination.destination(), channelIds);
+        clientConductorCursor.sendRemoveSubscriber(destination.destination(), channelIds);
     }
 
     /**

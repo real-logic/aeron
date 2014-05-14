@@ -18,8 +18,8 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.aeron.conductor.*;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.CommonConfiguration;
-import uk.co.real_logic.aeron.util.ConductorBufferStrategy;
-import uk.co.real_logic.aeron.util.MappingConductorBufferStrategy;
+import uk.co.real_logic.aeron.util.ConductorBufferManagement;
+import uk.co.real_logic.aeron.util.MappingConductorBufferManagement;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
@@ -39,7 +39,7 @@ public final class Aeron
     private final ManyToOneRingBuffer adminCommandBuffer;
     private final ErrorHandler errorHandler;
     private final ClientConductor clientConductor;
-    private final ConductorBufferStrategy adminBuffers;
+    private final ConductorBufferManagement adminBuffers;
     private final AtomicArray<Channel> channels;
     private final AtomicArray<SubscriberChannel> receivers;
 
@@ -54,14 +54,14 @@ public final class Aeron
 
         try
         {
-            final RingBuffer recvBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toApi()));
+            final RingBuffer rcvBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toClient()));
             final RingBuffer sendBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toMediaDriver()));
             final BufferUsageStrategy bufferUsage = new MappingBufferUsageStrategy(CommonConfiguration.DATA_DIR);
             final ConductorErrorHandler conductorErrorHandler =
                 new ConductorErrorHandler(context.invalidDestinationHandler);
 
             clientConductor = new ClientConductor(adminCommandBuffer,
-                                                  recvBuffer, sendBuffer,
+                                                  rcvBuffer, sendBuffer,
                                                   bufferUsage,
                                                   channels, receivers,
                                                   conductorErrorHandler,
@@ -189,14 +189,14 @@ public final class Aeron
     public static class Context
     {
         private ErrorHandler errorHandler;
-        private ConductorBufferStrategy adminBuffers;
+        private ConductorBufferManagement adminBuffers;
         private InvalidDestinationHandler invalidDestinationHandler;
         private PublisherControlFactory publisherControl;
 
         public Context()
         {
             errorHandler = new DummyErrorHandler();
-            adminBuffers = new MappingConductorBufferStrategy(CommonConfiguration.ADMIN_DIR);
+            adminBuffers = new MappingConductorBufferManagement(CommonConfiguration.ADMIN_DIR);
             publisherControl = DefaultPublisherControlStrategy::new;
         }
 
@@ -206,7 +206,7 @@ public final class Aeron
             return this;
         }
 
-        public Context adminBufferStrategy(ConductorBufferStrategy adminBuffers)
+        public Context adminBufferStrategy(ConductorBufferManagement adminBuffers)
         {
             this.adminBuffers = adminBuffers;
             return this;

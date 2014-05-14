@@ -66,7 +66,7 @@ public class TimerWheel
      * @param tickDuration of each tick of the wheel
      * @param timeUnit for the tick duration
      * @param ticksPerWheel of the wheel. Must be a power of 2.
-     * @throws java.lang.IllegalArgumentException if {@code ticksPerWheel} is not a power of 2.
+     * @throws IllegalArgumentException if {@code ticksPerWheel} is not a power of 2.
      */
     public TimerWheel(final long tickDuration,
                       final TimeUnit timeUnit,
@@ -98,18 +98,18 @@ public class TimerWheel
         this.startTime = timeFunc.getAsLong();
         this.tickDurationInNanos = timeUnit.toNanos(tickDuration);
 
-        if (tickDurationInNanos >= Long.MAX_VALUE / ticksPerWheel)
+        if (tickDurationInNanos >= (Long.MAX_VALUE / ticksPerWheel))
         {
             throw new IllegalArgumentException(String.format(
                     "tickDuration: %d (expected: 0 < tickDurationInNanos < %d",
                     tickDuration, Long.MAX_VALUE / ticksPerWheel));
         }
 
-        this.wheel = new Object[ticksPerWheel];
+        wheel = new Object[ticksPerWheel];
 
         for (int i = 0; i < ticksPerWheel; i++)
         {
-            this.wheel[i] = new Timer[INITIAL_TICK_DEPTH];
+            wheel[i] = new Timer[INITIAL_TICK_DEPTH];
         }
     }
 
@@ -118,7 +118,7 @@ public class TimerWheel
      *
      * @return number of nanoseconds since start of the wheel
      */
-    public long currentTime()
+    public long now()
     {
         return timeFunc.getAsLong() - startTime;
     }
@@ -135,7 +135,7 @@ public class TimerWheel
                             final TimeUnit unit,
                             final Runnable task)
     {
-        final long deadline = currentTime() + unit.toNanos(delay);
+        final long deadline = now() + unit.toNanos(delay);
         final Timer timeout = new Timer(deadline, task);
 
         wheel[timeout.wheelIndex] = addTimeoutToArray((Timer[]) wheel[timeout.wheelIndex], timeout);
@@ -148,11 +148,11 @@ public class TimerWheel
      *
      * @return number of milliseconds to next tick of the wheel.
      */
-    public long calculateDelayInMsec()
+    public long calculateDelayInMs()
     {
         final long deadline = tickDurationInNanos * (currentTick + 1);
 
-        return (deadline - currentTime() + 999999) / 1000000;
+        return ((deadline - now()) + 999999) / 1000000;
     }
 
     /**
@@ -161,7 +161,7 @@ public class TimerWheel
     public void expireTimers()
     {
         final Timer[] array = (Timer[])wheel[(int)(currentTick & mask)];
-        final long deadline = currentTime();
+        final long deadline = now();
 
         for (final Timer timer : array)
         {
@@ -192,8 +192,7 @@ public class TimerWheel
     {
         if (ticksPerWheel < 2 || 1 != Integer.bitCount(ticksPerWheel))
         {
-            final String msg =
-                    "ticksPerWheel must be a positive power of 2: ticksPerWheel=" + ticksPerWheel;
+            final String msg = "ticksPerWheel must be a positive power of 2: ticksPerWheel=" + ticksPerWheel;
             throw new IllegalArgumentException(msg);
         }
     }
@@ -206,6 +205,7 @@ public class TimerWheel
             {
                 oldArray[i] = timeout;
                 timeout.tickIndex = i;
+
                 return oldArray;
             }
         }
@@ -217,7 +217,7 @@ public class TimerWheel
         return newArray;
     }
 
-    public static enum TimerState
+    public enum TimerState
     {
         ACTIVE,
         CANCELLED
@@ -257,6 +257,7 @@ public class TimerWheel
                 remove();
                 state = TimerState.CANCELLED;
             }
+
             return true;
         }
 

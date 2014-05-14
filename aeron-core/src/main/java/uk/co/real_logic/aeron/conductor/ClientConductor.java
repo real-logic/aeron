@@ -60,7 +60,7 @@ public final class ClientConductor extends Service implements MediaDriverFacade
     public static final int WRITE_BUFFER_CAPACITY = 256;
 
     private static final int SLEEP_PERIOD = 1;
-    private final RingBuffer recvBuffer;
+    private final RingBuffer rcvBuffer;
     private final RingBuffer commandBuffer;
     private final RingBuffer sendBuffer;
 
@@ -96,7 +96,7 @@ public final class ClientConductor extends Service implements MediaDriverFacade
         statusCounters = new StatusBufferMapper();
 
         this.commandBuffer = commandBuffer;
-        this.recvBuffer = rcvBuffer;
+        this.rcvBuffer = rcvBuffer;
         this.sendBuffer = sendBuffer;
         this.bufferUsage = bufferUsage;
         this.publishers = publishers;
@@ -237,7 +237,7 @@ public final class ClientConductor extends Service implements MediaDriverFacade
 
     private void handleReceiveBuffer()
     {
-        recvBuffer.read(
+        rcvBuffer.read(
             (eventTypeId, buffer, index, length) ->
             {
                 switch (eventTypeId)
@@ -267,7 +267,8 @@ public final class ClientConductor extends Service implements MediaDriverFacade
                         errorHandler.onErrorResponse(buffer, index, length);
                         return;
                 }
-            });
+            }
+        );
     }
 
     private void onNewReceiverBufferNotification(final String destination,

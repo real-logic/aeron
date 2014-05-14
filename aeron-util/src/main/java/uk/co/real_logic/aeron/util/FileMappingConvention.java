@@ -28,8 +28,7 @@ import java.io.File;
  */
 public class FileMappingConvention
 {
-
-    public static enum Type { LOG, STATE };
+    public static enum Type { LOG, STATE }
 
     private final File receiverDir;
     private final File senderDir;
@@ -81,6 +80,7 @@ public class FileMappingConvention
     {
         final File channelDir = channelLocation(rootDir, sessionId, channelId, createIfMissing, destination);
         final String suffix = Long.toString(index) + "-" + type.name().toLowerCase();
+
         return new File(channelDir, suffix);
     }
 
@@ -97,6 +97,7 @@ public class FileMappingConvention
         {
             IoUtil.ensureDirectoryExists(channelDir, "channel");
         }
+
         return channelDir;
     }
 
@@ -105,5 +106,4 @@ public class FileMappingConvention
         return destination.replace(':', '_')
                           .replace('/', '_');
     }
-
 }

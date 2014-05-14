@@ -17,9 +17,9 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.conductor.*;
 import uk.co.real_logic.aeron.util.AtomicArray;
+import uk.co.real_logic.aeron.util.ClientConductorMappedBuffers;
 import uk.co.real_logic.aeron.util.CommonConfiguration;
-import uk.co.real_logic.aeron.util.ConductorBufferManagement;
-import uk.co.real_logic.aeron.util.MappingConductorBufferManagement;
+import uk.co.real_logic.aeron.util.ConductorMappedBuffers;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
@@ -35,19 +35,15 @@ public final class Aeron
 {
     private static final int ADMIN_BUFFER_SIZE = 512 + TRAILER_LENGTH;
 
-    private final PublisherControlFactory publisherControl;
     private final ManyToOneRingBuffer mediaConductorCommandBuffer;
-    private final ErrorHandler errorHandler;
     private final ClientConductor clientConductor;
-    private final ConductorBufferManagement adminBuffers;
+    private final ConductorMappedBuffers adminBuffers;
     private final AtomicArray<Channel> channels;
     private final AtomicArray<SubscriberChannel> receivers;
 
     private Aeron(final Context context)
     {
-        errorHandler = context.errorHandler;
-        adminBuffers = context.conductorBufferManagement;
-        publisherControl = context.publisherControl;
+        adminBuffers = context.conductorMappedBuffers;
         channels = new AtomicArray<>();
         receivers = new AtomicArray<>();
         mediaConductorCommandBuffer = new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocate(ADMIN_BUFFER_SIZE)));
@@ -56,7 +52,7 @@ public final class Aeron
         {
             final RingBuffer rcvBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toClient()));
             final RingBuffer sendBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toMediaDriver()));
-            final BufferUsageStrategy bufferUsage = new MappingBufferUsageStrategy(CommonConfiguration.DATA_DIR);
+            final BufferUsageStrategy bufferUsage = new MappingBufferUsageStrategy(CommonConfiguration.DATA_DIR_NAME);
             final ConductorErrorHandler conductorErrorHandler =
                 new ConductorErrorHandler(context.invalidDestinationHandler);
 
@@ -65,7 +61,7 @@ public final class Aeron
                                                   bufferUsage,
                                                   channels, receivers,
                                                   conductorErrorHandler,
-                                                  publisherControl);
+                                                  context.publisherControlFactory);
         }
         catch (final Exception ex)
         {
@@ -175,7 +171,7 @@ public final class Aeron
      */
     public Subscriber newSubscriber(final java.util.function.Consumer<Subscriber.Context> block)
     {
-        Subscriber.Context context = new Subscriber.Context();
+        final Subscriber.Context context = new Subscriber.Context();
         block.accept(new Subscriber.Context());
 
         return newSubscriber(context);
@@ -188,17 +184,10 @@ public final class Aeron
 
     public static class Context
     {
-        private ErrorHandler errorHandler;
-        private ConductorBufferManagement conductorBufferManagement;
+        private ErrorHandler errorHandler = new DummyErrorHandler();
+        private ConductorMappedBuffers conductorMappedBuffers;
         private InvalidDestinationHandler invalidDestinationHandler;
-        private PublisherControlFactory publisherControl;
-
-        public Context()
-        {
-            errorHandler = new DummyErrorHandler();
-            conductorBufferManagement = new MappingConductorBufferManagement(CommonConfiguration.ADMIN_DIR);
-            publisherControl = DefaultPublisherControlStrategy::new;
-        }
+        private PublisherControlFactory publisherControlFactory = DefaultPublisherControlStrategy::new;
 
         public Context errorHandler(ErrorHandler errorHandler)
         {
@@ -206,9 +195,9 @@ public final class Aeron
             return this;
         }
 
-        public Context adminBufferStrategy(ConductorBufferManagement conductorBufferManagement)
+        public Context conductorMappedBuffers(ConductorMappedBuffers conductorMappedBuffers)
         {
-            this.conductorBufferManagement = conductorBufferManagement;
+            this.conductorMappedBuffers = conductorMappedBuffers;
             return this;
         }
 
@@ -218,9 +207,9 @@ public final class Aeron
             return this;
         }
 
-        public Context publisherControl(final PublisherControlFactory publisherControl)
+        public Context publisherControlFactory(final PublisherControlFactory publisherControlFactory)
         {
-            this.publisherControl = publisherControl;
+            this.publisherControlFactory = publisherControlFactory;
             return this;
         }
     }

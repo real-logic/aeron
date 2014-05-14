@@ -21,25 +21,25 @@ import java.io.File;
  * Encodes the file mapping convention used by both the client and the media driver for exchanging buffer files.
  *
  * Root directory is the "aeron.data.dir"
- * Senders are under "aeron.data.dir/sender"
- * Receivers are under "aeron.data.dir/receiver"
+ * Senders are under "${aeron.data.dir}/sender"
+ * Receivers are under "${aeron.data.dir}/receiver"
  *
  * Both sources and receivers share the same structure of "sessionId/channelId/termId".
  */
 public class FileMappingConvention
 {
-    public static enum Type { LOG, STATE }
+    public enum Type { LOG, STATE }
 
     private final File receiverDir;
     private final File senderDir;
-    private final File dataDirFile;
+    private final File dataDir;
 
-    public FileMappingConvention(final String dataDir)
+    public FileMappingConvention(final String dataDirName)
     {
-        dataDirFile = new File(dataDir);
-        IoUtil.checkDirectoryExists(dataDirFile, "data directory");
-        senderDir = new File(dataDirFile, "sender");
-        receiverDir = new File(dataDirFile, "receiver");
+        dataDir = new File(dataDirName);
+        IoUtil.checkDirectoryExists(dataDir, "data directory");
+        senderDir = new File(dataDir, "sender");
+        receiverDir = new File(dataDir, "receiver");
     }
 
     /**
@@ -62,9 +62,9 @@ public class FileMappingConvention
         return receiverDir;
     }
 
-    public File dataDirFile()
+    public File dataDir()
     {
-        return dataDirFile;
+        return dataDir;
     }
 
     /**
@@ -93,6 +93,7 @@ public class FileMappingConvention
         final File destinationDir = new File(rootDir, destinationToDir(destination));
         final File sessionDir = new File(destinationDir, Long.toString(sessionId));
         final File channelDir = new File(sessionDir, Long.toString(channelId));
+
         if (createIfMissing)
         {
             IoUtil.ensureDirectoryExists(channelDir, "channel");

@@ -115,19 +115,19 @@ public class Subscriber implements AutoCloseable
     /**
      * Read waiting data or event and deliver to {@link Subscriber.DataHandler}s and/or event handlers.
      *
-     * Returns after handling a single data and/or event.
+     * Returns after handling a single data item and/or event.
      *
      * @return the number of messages read
      */
     public int read()
     {
-        int read = 0;
+        int messageCount = 0;
         for (final SubscriberChannel channel : channels)
         {
-            read += channel.receive();
+            messageCount += channel.receive();
         }
 
-        return read;
+        return messageCount;
     }
 
     public static class Context

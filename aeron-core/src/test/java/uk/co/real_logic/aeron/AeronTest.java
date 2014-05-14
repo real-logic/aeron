@@ -27,6 +27,8 @@ import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.EventHandler;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
+import uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor;
+import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 
@@ -53,7 +55,6 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUt
 
 public class AeronTest
 {
-
     private static final byte[] DEFAULT_HEADER = new byte[BASE_HEADER_LENGTH + SIZE_OF_INT];
     private static final int MAX_FRAME_LENGTH = 1024;
 
@@ -64,8 +65,9 @@ public class AeronTest
     private static final long[] CHANNEL_IDs = {CHANNEL_ID, CHANNEL_ID_2};
     private static final long SESSION_ID = 3L;
     private static final long SESSION_ID_2 = 5L;
-    public static final int PACKET_VALUE = 37;
-    public static final int SEND_BUFFER_CAPACITY = 256;
+    private static final int PACKET_VALUE = 37;
+    private static final int SEND_BUFFER_CAPACITY = 256;
+    private static final int CONDUCTOR_BUFFER_SIZE = (4 * 1024) + BufferDescriptor.TRAILER_LENGTH;
 
     @ClassRule
     public static CountersResource counters = new CountersResource();
@@ -81,7 +83,7 @@ public class AeronTest
     private DataHandler channel2Handler = emptyDataHandler();
 
     private final ChannelMessageFlyweight message = new ChannelMessageFlyweight();
-    private final QualifiedMessageFlyweight identifiedMessage = new QualifiedMessageFlyweight();
+    private final QualifiedMessageFlyweight qualifiedMessage = new QualifiedMessageFlyweight();
     private final SubscriberMessageFlyweight receiverMessage = new SubscriberMessageFlyweight();
 
     private final ErrorHeaderFlyweight errorHeader = new ErrorHeaderFlyweight();
@@ -89,24 +91,28 @@ public class AeronTest
     private final ByteBuffer sendBuffer = ByteBuffer.allocate(SEND_BUFFER_CAPACITY);
     private final AtomicBuffer atomicSendBuffer = new AtomicBuffer(sendBuffer);
 
-    private MappingConductorBufferManagement adminBufferStrategy;
+    private ClientConductorMappedBuffers clientConductorMappedBuffers;
+    private MediaDriverConductorMappedBuffers mediaDriverConductorMappedBuffers;
 
     public AeronTest()
     {
-        identifiedMessage.wrap(atomicSendBuffer, 0);
+        qualifiedMessage.wrap(atomicSendBuffer, 0);
         errorHeader.wrap(atomicSendBuffer, 0);
     }
 
     @Before
     public void setUp()
     {
-        adminBufferStrategy = new MappingConductorBufferManagement(conductorBuffers.adminDir());
+        mediaDriverConductorMappedBuffers =
+            new MediaDriverConductorMappedBuffers(conductorBuffers.adminDirName(), CONDUCTOR_BUFFER_SIZE);
+        clientConductorMappedBuffers = new ClientConductorMappedBuffers(conductorBuffers.adminDirName());
     }
 
     @After
     public void tearDown()
     {
-        adminBufferStrategy.close();
+        clientConductorMappedBuffers.close();
+        mediaDriverConductorMappedBuffers.close();
     }
 
     @Test
@@ -116,7 +122,7 @@ public class AeronTest
         newChannel(aeron);
         aeron.conductor().process();
 
-        assertChannelMessage(conductorBuffers.toMediaDriver(), ADD_CHANNEL);
+        assertChannelMessage(toMediaDriver(), ADD_CHANNEL);
     }
 
     @Test
@@ -151,14 +157,15 @@ public class AeronTest
     @Test
     public void shouldRotateBuffersOnceFull() throws Exception
     {
-        final RingBuffer toMediaDriver = conductorBuffers.toMediaDriver();
+        final RingBuffer toMediaDriver = toMediaDriver();
         final Aeron aeron = newAeron();
         final Channel channel = newChannel(aeron);
         aeron.conductor().process();
-        List<Buffers> buffers = createTermBuffer(0L, NEW_SEND_BUFFER_NOTIFICATION, directory.senderDir(), SESSION_ID);
+        final List<Buffers> buffers =
+            createTermBuffer(0L, NEW_SEND_BUFFER_NOTIFICATION, directory.senderDir(), SESSION_ID);
 
         final int capacity = buffers.get(0).logBuffer().capacity();
-        final int eventCount = 4 * capacity / SEND_BUFFER_CAPACITY;
+        final int eventCount = (4 * capacity) / SEND_BUFFER_CAPACITY;
 
         aeron.conductor().process();
         skip(toMediaDriver, 1);
@@ -166,11 +173,10 @@ public class AeronTest
         int bufferId = 0;
         for (int i = 0; i < eventCount; i++)
         {
-            boolean appended = channel.offer(atomicSendBuffer);
+            final boolean appended = channel.offer(atomicSendBuffer);
             aeron.conductor().process();
 
-            // only two in a row is a failure, because we don't
-            // rollover immedately
+            // only two in a row is a failure, because we don't rollover immediately
             assertTrue(previousAppend || appended);
             previousAppend = appended;
 
@@ -188,48 +194,44 @@ public class AeronTest
     private void assertCleanTermRequested(final RingBuffer toMediaDriver)
     {
         assertEventRead(toMediaDriver,
-            (eventTypeId, buffer, index, length) ->
-            {
-                assertThat(eventTypeId, is(REQUEST_CLEANED_TERM));
-            });
+                        (eventTypeId, buffer, index, length) -> assertThat(eventTypeId, is(REQUEST_CLEANED_TERM)));
     }
 
     @Test
     public void removingChannelsShouldNotifyMediaDriver() throws Exception
     {
-        final RingBuffer buffer = conductorBuffers.toMediaDriver();
+        final RingBuffer toMediaDriver = toMediaDriver();
         final Aeron aeron = newAeron();
         final Channel channel = newChannel(aeron);
         final ClientConductor adminThread = aeron.conductor();
 
         adminThread.process();
-        skip(buffer, 1);
+        skip(toMediaDriver, 1);
 
         channel.close();
         adminThread.process();
 
-        assertChannelMessage(buffer, REMOVE_CHANNEL);
+        assertChannelMessage(toMediaDriver, REMOVE_CHANNEL);
     }
 
     @Test
     public void closingASourceRemovesItsAssociatedChannels() throws Exception
     {
-        final RingBuffer buffer = conductorBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
         final Source.Context sourceContext = new Source.Context()
             .sessionId(SESSION_ID)
             .destination(new Destination(DESTINATION));
         final Source source = aeron.newSource(sourceContext);
-        final Channel channel = source.newChannel(CHANNEL_ID);
+        source.newChannel(CHANNEL_ID);
         final ClientConductor adminThread = aeron.conductor();
 
         adminThread.process();
-        skip(buffer, 1);
+        skip(toMediaDriver(), 1);
 
         source.close();
         adminThread.process();
 
-        assertChannelMessage(buffer, REMOVE_CHANNEL);
+        assertChannelMessage(toMediaDriver(), REMOVE_CHANNEL);
     }
 
     @Test
@@ -243,14 +245,14 @@ public class AeronTest
         final Source otherSource = aeron.newSource(new Source.Context()
                                                        .sessionId(SESSION_ID + 1)
                                                        .destination(new Destination(DESTINATION)));
-        final Channel channel = source.newChannel(CHANNEL_ID);
-        final ClientConductor adminThread = aeron.conductor();
+        source.newChannel(CHANNEL_ID);
+        final ClientConductor clientConductor = aeron.conductor();
 
-        adminThread.process();
+        clientConductor.process();
         skip(buffer, 1);
 
         otherSource.close();
-        adminThread.process();
+        clientConductor.process();
 
         skip(buffer, 0);
     }
@@ -258,7 +260,6 @@ public class AeronTest
     @Test
     public void registeringReceiverNotifiesMediaDriver() throws Exception
     {
-        final RingBuffer toMediaDriver = conductorBuffers.toMediaDriver();
         final Aeron aeron = newAeron();
         final Subscriber.Context context = new Subscriber.Context()
             .destination(new Destination(DESTINATION))
@@ -269,7 +270,7 @@ public class AeronTest
 
         aeron.conductor().process();
 
-        assertEventRead(toMediaDriver, assertReceiverMessageOfType(ADD_SUBSCRIBER));
+        assertEventRead(toMediaDriver(), assertReceiverMessageOfType(ADD_SUBSCRIBER));
 
         assertThat(subscriber.read(), is(0));
     }
@@ -277,7 +278,7 @@ public class AeronTest
     @Test
     public void removingReceiverNotifiesMediaDriver()
     {
-        final RingBuffer toMediaDriver = conductorBuffers.toMediaDriver();
+        final RingBuffer toMediaDriver = toMediaDriver();
         final Aeron aeron = newAeron();
         final Subscriber subscriber = newSubscriber(aeron);
 
@@ -304,10 +305,10 @@ public class AeronTest
         errorHeader.offendingFlyweight(receiverMessage, receiverMessage.length());
         errorHeader.frameLength(ErrorHeaderFlyweight.HEADER_LENGTH + receiverMessage.length());
 
-        conductorBuffers.toApi().write(ERROR_RESPONSE,
-                                   atomicSendBuffer,
-                                   receiverMessage.length(),
-                                   errorHeader.frameLength());
+        toClient().write(ERROR_RESPONSE,
+                      atomicSendBuffer,
+                      receiverMessage.length(),
+                      errorHeader.frameLength());
 
         aeron.conductor().process();
 
@@ -538,12 +539,23 @@ public class AeronTest
 
     private void sendNewBufferNotification(final int eventTypeId, final long termId, final long sessionId)
     {
-        final RingBuffer apiBuffer = conductorBuffers.toApi();
-        identifiedMessage.channelId(CHANNEL_ID)
+        final RingBuffer apiBuffer = toClient();
+        qualifiedMessage.channelId(CHANNEL_ID)
                          .sessionId(sessionId)
                          .termId(termId)
                          .destination(DESTINATION);
-        assertTrue(apiBuffer.write(eventTypeId, atomicSendBuffer, 0, identifiedMessage.length()));
+
+        assertTrue(apiBuffer.write(eventTypeId, atomicSendBuffer, 0, qualifiedMessage.length()));
+    }
+
+    private ManyToOneRingBuffer toClient()
+    {
+        return new ManyToOneRingBuffer(new AtomicBuffer(mediaDriverConductorMappedBuffers.toClient()));
+    }
+
+    private ManyToOneRingBuffer toMediaDriver()
+    {
+        return new ManyToOneRingBuffer(new AtomicBuffer(mediaDriverConductorMappedBuffers.toMediaDriver()));
     }
 
     private Subscriber newSubscriber(final Aeron aeron)
@@ -561,6 +573,7 @@ public class AeronTest
         return (eventTypeId, buffer, index, length) ->
         {
             assertThat(eventTypeId, is(expectedEventTypeId));
+
             receiverMessage.wrap(buffer, index);
             assertThat(receiverMessage.channelIds(), is(CHANNEL_IDs));
             assertThat(receiverMessage.destination(), is(DESTINATION));
@@ -569,9 +582,7 @@ public class AeronTest
 
     private DataHandler emptyDataHandler()
     {
-        return (buffer, offset, sessionId, flags) ->
-        {
-        };
+        return (buffer, offset, sessionId, flags) -> {};
     }
 
     private Channel newChannel(final Aeron aeron)
@@ -580,13 +591,14 @@ public class AeronTest
             .sessionId(SESSION_ID)
             .destination(new Destination(DESTINATION));
         final Source source = aeron.newSource(sourceContext);
+
         return source.newChannel(CHANNEL_ID);
     }
 
     private Aeron newAeron()
     {
         final Aeron.Context context = new Aeron.Context()
-            .adminBufferStrategy(adminBufferStrategy)
+            .conductorMappedBuffers(clientConductorMappedBuffers)
             .invalidDestinationHandler(invalidDestination);
 
         return Aeron.newSingleMediaDriver(context);
@@ -597,6 +609,7 @@ public class AeronTest
         assertEventRead(mediaDriverBuffer, (eventTypeId, buffer, index, length) ->
         {
             assertThat(eventTypeId, is(expectedEventTypeId));
+
             message.wrap(buffer, index);
             assertThat(message.destination(), is(DESTINATION));
             assertThat(message.channelId(), is(CHANNEL_ID));

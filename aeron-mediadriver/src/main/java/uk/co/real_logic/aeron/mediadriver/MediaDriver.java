@@ -17,8 +17,8 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
 import uk.co.real_logic.aeron.util.CommonConfiguration;
-import uk.co.real_logic.aeron.util.ConductorBufferManagement;
-import uk.co.real_logic.aeron.util.CreatingConductorBufferManagement;
+import uk.co.real_logic.aeron.util.ConductorMappedBuffers;
+import uk.co.real_logic.aeron.util.MediaDriverConductorMappedBuffers;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
@@ -31,8 +31,8 @@ import java.util.function.Supplier;
 
 import static java.lang.Integer.getInteger;
 import static uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement.newMappedBufferManager;
-import static uk.co.real_logic.aeron.util.CommonConfiguration.ADMIN_DIR;
-import static uk.co.real_logic.aeron.util.CommonConfiguration.DATA_DIR;
+import static uk.co.real_logic.aeron.util.CommonConfiguration.ADMIN_DIR_NAME;
+import static uk.co.real_logic.aeron.util.CommonConfiguration.DATA_DIR_NAME;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_LENGTH;
 
 /**
@@ -48,7 +48,7 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor
  * <ul>
  *     <li><code>aeron.conductor.dir</code>: Use value as directory name for conductor buffers.</li>
  *     <li><code>aeron.data.dir</code>: Use value as directory name for data buffers.</li>
- *     <li><code>aeron.recv.bytebuffer.size</code>: Use int value as size of buffer for receiving from network.</li>
+ *     <li><code>aeron.rcv.buffer.size</code>: Use int value as size of buffer for receiving from network.</li>
  *     <li><code>aeron.command.buffer.size</code>: Use int value as size of the command buffers between threads.</li>
  *     <li><code>aeron.conductor.buffer.size</code>: Use int value as size of the conductor buffers between the media driver
        and the client.</li>
@@ -132,34 +132,34 @@ public class MediaDriver implements AutoCloseable
 
     private final Receiver receiver;
     private final Sender sender;
-    private final MediaConductor adminThread;
+    private final MediaConductor mediaConductor;
 
-    private final ConductorBufferManagement conductorBufferManagement;
+    private final ConductorMappedBuffers conductorMappedBuffers;
     private final BufferManagement bufferManagement;
 
     public MediaDriver() throws Exception
     {
         final NioSelector nioSelector = new NioSelector();
 
-        conductorBufferManagement = new CreatingConductorBufferManagement(ADMIN_DIR, ADMIN_BUFFER_SZ);
-        bufferManagement = newMappedBufferManager(DATA_DIR);
+        conductorMappedBuffers = new MediaDriverConductorMappedBuffers(ADMIN_DIR_NAME, ADMIN_BUFFER_SZ);
+        bufferManagement = newMappedBufferManager(DATA_DIR_NAME);
 
         final Context context = new Context()
-                .adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
-                .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
+                .conductorCommandBuffer(COMMAND_BUFFER_SZ)
+                .receiverCommandBuffer(COMMAND_BUFFER_SZ)
                 .rcvNioSelector(nioSelector)
                 .adminNioSelector(new NioSelector())
                 .senderFlowControl(DefaultSenderControlStrategy::new)
-                .adminBufferStrategy(conductorBufferManagement)
-                .bufferManagementStrategy(bufferManagement)
+                .conductorCommsBuffers(conductorMappedBuffers)
+                .bufferManagement(bufferManagement)
                 .mtuLength(CommonConfiguration.MTU_LENGTH);
 
         context.rcvFrameHandlerFactory(new RcvFrameHandlerFactory(nioSelector,
-                new MediaConductorCursor(context.adminThreadCommandBuffer(), nioSelector)));
+                new MediaConductorCursor(context.conductorCommandBuffer(), nioSelector)));
 
         receiver = new Receiver(context);
         sender = new Sender(context);
-        adminThread = new MediaConductor(context, receiver, sender);
+        mediaConductor = new MediaConductor(context, receiver, sender);
     }
 
     public Receiver receiverThread()
@@ -174,24 +174,24 @@ public class MediaDriver implements AutoCloseable
 
     public MediaConductor adminThread()
     {
-        return adminThread;
+        return mediaConductor;
     }
 
     public void close() throws Exception
     {
         receiver.close();
         sender.close();
-        adminThread.close();
-        conductorBufferManagement.close();
+        mediaConductor.close();
+        conductorMappedBuffers.close();
         bufferManagement.close();
     }
 
     public static class Context
     {
-        private RingBuffer adminThreadCommandBuffer;
-        private RingBuffer receiverThreadCommandBuffer;
+        private RingBuffer conductorCommandBuffer;
+        private RingBuffer receiverCommandBuffer;
         private BufferManagement bufferManagement;
-        private ConductorBufferManagement conductorBufferManagement;
+        private ConductorMappedBuffers conductorMappedBuffers;
         private NioSelector rcvNioSelector;
         private NioSelector adminNioSelector;
         private Supplier<SenderControlStrategy> senderFlowControl;
@@ -207,27 +207,27 @@ public class MediaDriver implements AutoCloseable
             return new ManyToOneRingBuffer(atomicBuffer);
         }
 
-        public Context adminThreadCommandBuffer(final int sz)
+        public Context conductorCommandBuffer(final int sz)
         {
-            this.adminThreadCommandBuffer = createNewCommandBuffer(sz);
+            this.conductorCommandBuffer = createNewCommandBuffer(sz);
             return this;
         }
 
-        public Context receiverThreadCommandBuffer(final int sz)
+        public Context receiverCommandBuffer(final int sz)
         {
-            this.receiverThreadCommandBuffer = createNewCommandBuffer(sz);
+            this.receiverCommandBuffer = createNewCommandBuffer(sz);
             return this;
         }
 
-        public Context bufferManagementStrategy(final BufferManagement bufferManagement)
+        public Context bufferManagement(final BufferManagement bufferManagement)
         {
             this.bufferManagement = bufferManagement;
             return this;
         }
 
-        public Context adminBufferStrategy(final ConductorBufferManagement conductorBufferManagement)
+        public Context conductorCommsBuffers(final ConductorMappedBuffers conductorMappedBuffers)
         {
-            this.conductorBufferManagement = conductorBufferManagement;
+            this.conductorMappedBuffers = conductorMappedBuffers;
             return this;
         }
 
@@ -261,24 +261,24 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public RingBuffer adminThreadCommandBuffer()
+        public RingBuffer conductorCommandBuffer()
         {
-            return adminThreadCommandBuffer;
+            return conductorCommandBuffer;
         }
 
-        public RingBuffer receiverThreadCommandBuffer()
+        public RingBuffer receiverCommandBuffer()
         {
-            return receiverThreadCommandBuffer;
+            return receiverCommandBuffer;
         }
 
-        public BufferManagement bufferManagementStrategy()
+        public BufferManagement bufferManagement()
         {
             return bufferManagement;
         }
 
-        public ConductorBufferManagement adminBufferStrategy()
+        public ConductorMappedBuffers conductorCommsBuffers()
         {
-            return conductorBufferManagement;
+            return conductorMappedBuffers;
         }
 
         public NioSelector rcvNioSelector()

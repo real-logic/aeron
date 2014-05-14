@@ -51,9 +51,9 @@ public class Receiver extends Agent
     {
         super(SELECT_TIMEOUT);
 
-        commandBuffer = context.receiverThreadCommandBuffer();
+        commandBuffer = context.receiverCommandBuffer();
         adminThreadCursor =
-            new MediaConductorCursor(context.adminThreadCommandBuffer(), context.adminNioSelector());
+            new MediaConductorCursor(context.conductorCommandBuffer(), context.adminNioSelector());
         nioSelector = context.rcvNioSelector();
         frameHandlerFactory = context.rcvFrameHandlerFactory();
     }

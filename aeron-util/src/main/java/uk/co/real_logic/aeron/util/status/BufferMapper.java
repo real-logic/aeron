@@ -22,7 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
 
-import static uk.co.real_logic.aeron.util.CommonConfiguration.COUNTERS_DIR;
+import static uk.co.real_logic.aeron.util.CommonConfiguration.COUNTERS_DIR_NAME;
 
 /**
  * Common Class
@@ -42,7 +42,7 @@ public class BufferMapper
 
     public BufferMapper(final Mapper descriptorMapper, final Mapper counterMapper)
     {
-        final File directory = new File(COUNTERS_DIR);
+        final File directory = new File(COUNTERS_DIR_NAME);
         try
         {
             descriptor = descriptorMapper.map(new File(directory, "descriptor"), "descriptor");

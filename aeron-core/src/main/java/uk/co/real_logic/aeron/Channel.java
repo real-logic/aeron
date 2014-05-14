@@ -182,10 +182,10 @@ public class Channel extends ChannelNotifiable implements AutoCloseable, Positio
             return;
         }
 
-        final long requiredCleanTermid = currentTermId + 1;
-        if (requiredCleanTermid > cleanedTermId.get())
+        final long requiredCleanTermId = currentTermId + 1;
+        if (requiredCleanTermId > cleanedTermId.get())
         {
-            LogAppender requiredBuffer = logAppenders[rotateId(currentBufferId)];
+            final LogAppender requiredBuffer = logAppenders[rotateId(currentBufferId)];
             if (hasBeenCleaned(requiredBuffer))
             {
                 cleanedTermId.incrementAndGet();
@@ -201,6 +201,7 @@ public class Channel extends ChannelNotifiable implements AutoCloseable, Positio
     public long position()
     {
         logAppenders[currentBufferId].tailVolatile();
+
         return 0;
     }
 }

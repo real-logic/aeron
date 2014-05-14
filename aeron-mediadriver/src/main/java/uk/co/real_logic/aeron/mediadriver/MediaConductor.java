@@ -70,7 +70,7 @@ public class MediaConductor extends Agent implements LibraryFacade
         new QualifiedMessageFlyweight();
 
     private final int mtuLength;
-    private final ConductorBufferManagement adminBufferStrategy;
+    private final ConductorMappedBuffers adminBufferStrategy;
     private TimerWheel.Timer heartbeatTimer;
 
     public MediaConductor(final Context ctx,
@@ -79,9 +79,9 @@ public class MediaConductor extends Agent implements LibraryFacade
     {
         super(SELECT_TIMEOUT);
 
-        this.commandBuffer = ctx.adminThreadCommandBuffer();
-        this.receiverCursor = new ReceiverCursor(ctx.receiverThreadCommandBuffer(), ctx.rcvNioSelector());
-        this.bufferManagement = ctx.bufferManagementStrategy();
+        this.commandBuffer = ctx.conductorCommandBuffer();
+        this.receiverCursor = new ReceiverCursor(ctx.receiverCommandBuffer(), ctx.rcvNioSelector());
+        this.bufferManagement = ctx.bufferManagement();
         this.nioSelector = ctx.adminNioSelector();
         this.mtuLength = ctx.mtuLength();
         this.receiver = receiver;
@@ -99,7 +99,7 @@ public class MediaConductor extends Agent implements LibraryFacade
 
         try
         {
-            adminBufferStrategy = ctx.adminBufferStrategy();
+            adminBufferStrategy = ctx.conductorCommsBuffers();
             ByteBuffer toMediaDriver = adminBufferStrategy.toMediaDriver();
             ByteBuffer toApi = adminBufferStrategy.toClient();
             this.adminReceiveBuffer = new ManyToOneRingBuffer(new AtomicBuffer(toMediaDriver));

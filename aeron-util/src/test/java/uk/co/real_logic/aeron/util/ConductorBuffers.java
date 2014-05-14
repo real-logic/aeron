@@ -29,13 +29,13 @@ public class ConductorBuffers extends ExternalResource
 {
     public static final int BUFFER_SIZE = 512 + TRAILER_LENGTH;
 
-    private final String adminDirStr;
+    private final String adminDirName;
     private final int bufferSize;
 
-    private ConductorBufferManagement creatingStrategy;
-    private ConductorBufferManagement mappingStrategy;
+    private ConductorMappedBuffers ownedBuffers;
+    private ConductorMappedBuffers mappedBuffers;
     private ByteBuffer toMediaDriver;
-    private ByteBuffer toApi;
+    private ByteBuffer toClient;
     private File adminDir;
 
     public ConductorBuffers()
@@ -45,49 +45,49 @@ public class ConductorBuffers extends ExternalResource
 
     public ConductorBuffers(int bufferSize)
     {
-        this(IoUtil.tmpDir() + "/conductor", bufferSize);
+        this(CommonConfiguration.ADMIN_DIR_PROP_DEFAULT, bufferSize);
     }
 
-    public ConductorBuffers(final String adminDirStr)
+    public ConductorBuffers(final String adminDirName)
     {
-        this(adminDirStr, BUFFER_SIZE);
+        this(adminDirName, BUFFER_SIZE);
     }
 
-    private ConductorBuffers(final String adminDirStr, int bufferSize)
+    private ConductorBuffers(final String adminDirName, int bufferSize)
     {
-        this.adminDirStr = adminDirStr;
+        this.adminDirName = adminDirName;
         this.bufferSize = bufferSize;
     }
 
     protected void before() throws Exception
     {
-        adminDir = new File(adminDirStr);
+        adminDir = new File(adminDirName);
         if (adminDir.exists())
         {
             IoUtil.delete(adminDir, false);
         }
 
         IoUtil.ensureDirectoryExists(adminDir, "conductor dir");
-        creatingStrategy = new CreatingConductorBufferManagement(adminDirStr, bufferSize);
-        mappingStrategy = new MappingConductorBufferManagement(adminDirStr);
-        toMediaDriver = creatingStrategy.toMediaDriver();
-        toApi = creatingStrategy.toClient();
+        ownedBuffers = new MediaDriverConductorMappedBuffers(adminDirName, bufferSize);
+        mappedBuffers = new ClientConductorMappedBuffers(adminDirName);
+        toMediaDriver = ownedBuffers.toMediaDriver();
+        toClient = ownedBuffers.toClient();
     }
 
     protected void after()
     {
-        // Force unmapping of byte buffers to allow deletion
-        creatingStrategy.close();
-        mappingStrategy.close();
+        // Force unmapping of byte mappedBuffers to allow deletion
+        ownedBuffers.close();
+        mappedBuffers.close();
 
         try
         {
             // do deletion here to make debugging easier if unmaps/closes are not done
             IoUtil.delete(adminDir, false);
         }
-        catch (Exception e)
+        catch (final Exception ex)
         {
-            throw new RuntimeException(e);
+            throw new RuntimeException(ex);
         }
     }
 
@@ -98,7 +98,7 @@ public class ConductorBuffers extends ExternalResource
 
     public RingBuffer toApi()
     {
-        return ringBuffer(toApi);
+        return ringBuffer(toClient);
     }
 
     private ManyToOneRingBuffer ringBuffer(final ByteBuffer buffer)
@@ -106,14 +106,19 @@ public class ConductorBuffers extends ExternalResource
         return new ManyToOneRingBuffer(new AtomicBuffer(buffer));
     }
 
-    public ConductorBufferManagement strategy()
+    public ConductorMappedBuffers mappedBuffers()
     {
-        return mappingStrategy;
+        return mappedBuffers;
     }
 
-    public String adminDir()
+    public ConductorMappedBuffers ownedBuffers()
     {
-        return adminDirStr;
+        return ownedBuffers;
+    }
+
+    public String adminDirName()
+    {
+        return adminDirName;
     }
 
     public RingBuffer mappedToMediaDriver()
@@ -121,9 +126,9 @@ public class ConductorBuffers extends ExternalResource
         return suppress(() -> ringBuffer(toMediaDriver));
     }
 
-    public RingBuffer mappedToApi()
+    public RingBuffer mappedToClient()
     {
-        return suppress(() -> ringBuffer(toApi));
+        return suppress(() -> ringBuffer(toClient));
     }
 
     private static interface ExceptionalSupplier<T>

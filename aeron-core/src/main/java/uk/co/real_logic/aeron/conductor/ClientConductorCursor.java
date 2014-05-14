@@ -26,7 +26,7 @@ import java.nio.ByteBuffer;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 
 /**
- * Separates the concern of talking the media driver protocol away from the rest of the API.
+ * Separates the concern of talking to the media driver protocol away from the rest of the API.
  *
  * Writes messages into the Client Admin Thread's conductor buffer.
  */
@@ -38,7 +38,7 @@ public class ClientConductorCursor
     private final RingBuffer conductorBuffer;
     private final AtomicBuffer writeBuffer;
     private final ChannelMessageFlyweight channelMessage;
-    private final SubscriberMessageFlyweight removeSubscriberMessage;
+    private final SubscriberMessageFlyweight subscriberMessage;
     private final CompletelyIdentifiedMessageFlyweight requestTermMessage;
 
     public ClientConductorCursor(final RingBuffer conductorBuffer)
@@ -46,11 +46,11 @@ public class ClientConductorCursor
         this.conductorBuffer = conductorBuffer;
         this.writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
         this.channelMessage = new ChannelMessageFlyweight();
-        this.removeSubscriberMessage = new SubscriberMessageFlyweight();
+        this.subscriberMessage = new SubscriberMessageFlyweight();
         this.requestTermMessage = new CompletelyIdentifiedMessageFlyweight();
 
         channelMessage.wrap(writeBuffer, 0);
-        removeSubscriberMessage.wrap(writeBuffer, 0);
+        subscriberMessage.wrap(writeBuffer, 0);
         requestTermMessage.wrap(writeBuffer, 0);
     }
 
@@ -75,21 +75,21 @@ public class ClientConductorCursor
         conductorBuffer.write(eventTypeId, writeBuffer, 0, channelMessage.length());
     }
 
-    public void sendAddSubscriber(final String destination, final long[] channelIdList)
+    public void sendAddSubscriber(final String destination, final long[] channelIds)
     {
-        sendReceiverMessage(ADD_SUBSCRIBER, destination, channelIdList);
+        sendReceiverMessage(ADD_SUBSCRIBER, destination, channelIds);
     }
 
-    public void sendRemoveSubscriber(final String destination, final long[] channelIdList)
+    public void sendRemoveSubscriber(final String destination, final long[] channelIds)
     {
-        sendReceiverMessage(REMOVE_SUBSCRIBER, destination, channelIdList);
+        sendReceiverMessage(REMOVE_SUBSCRIBER, destination, channelIds);
     }
 
-    private void sendReceiverMessage(final int eventTypeId, final String destination, final long[] channelIdList)
+    private void sendReceiverMessage(final int eventTypeId, final String destination, final long[] channelIds)
     {
-        removeSubscriberMessage.channelIds(channelIdList);
-        removeSubscriberMessage.destination(destination);
-        conductorBuffer.write(eventTypeId, writeBuffer, 0, removeSubscriberMessage.length());
+        subscriberMessage.channelIds(channelIds);
+        subscriberMessage.destination(destination);
+        conductorBuffer.write(eventTypeId, writeBuffer, 0, subscriberMessage.length());
     }
 
     public void sendRequestTerm(final String destination, final long sessionId, final long channelId, final long termId)

@@ -305,7 +305,7 @@ public class AeronTest
         errorHeader.offendingFlyweight(receiverMessage, receiverMessage.length());
         errorHeader.frameLength(ErrorHeaderFlyweight.HEADER_LENGTH + receiverMessage.length());
 
-        toApi().write(ERROR_RESPONSE,
+        toClient().write(ERROR_RESPONSE,
                       atomicSendBuffer,
                       receiverMessage.length(),
                       errorHeader.frameLength());
@@ -539,7 +539,7 @@ public class AeronTest
 
     private void sendNewBufferNotification(final int eventTypeId, final long termId, final long sessionId)
     {
-        final RingBuffer apiBuffer = toApi();
+        final RingBuffer apiBuffer = toClient();
         qualifiedMessage.channelId(CHANNEL_ID)
                          .sessionId(sessionId)
                          .termId(termId)
@@ -548,7 +548,7 @@ public class AeronTest
         assertTrue(apiBuffer.write(eventTypeId, atomicSendBuffer, 0, qualifiedMessage.length()));
     }
 
-    private ManyToOneRingBuffer toApi()
+    private ManyToOneRingBuffer toClient()
     {
         return new ManyToOneRingBuffer(new AtomicBuffer(mediaDriverConductorMappedBuffers.toClient()));
     }

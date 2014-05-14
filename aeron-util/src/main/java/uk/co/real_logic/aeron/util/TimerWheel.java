@@ -144,6 +144,47 @@ public class TimerWheel
     }
 
     /**
+     * Reschedule an expired timer, reusing the {@link uk.co.real_logic.aeron.util.TimerWheel.Timer} object.
+     *
+     * @param delay until timer should expire
+     * @param unit of time for {@code delay}
+     * @param timer to reschedule
+     * @throws java.lang.IllegalArgumentException if timer is active
+     */
+    public void rescheduleTimeout(final long delay,
+                                  final TimeUnit unit,
+                                  final Timer timer)
+    {
+        rescheduleTimeout(delay, unit, timer, timer.task);
+    }
+
+    /**
+     * Reschedule an expired timer, reusing the {@link uk.co.real_logic.aeron.util.TimerWheel.Timer} object.
+     *
+     * @param delay until timer should expire
+     * @param unit of time for {@code delay}
+     * @param timer to reschedule
+     * @param task to execute when timer expires
+     * @throws java.lang.IllegalArgumentException if timer is active
+     */
+    public void rescheduleTimeout(final long delay,
+                                  final TimeUnit unit,
+                                  final Timer timer,
+                                  final Runnable task)
+    {
+        if (timer.isActive())
+        {
+            throw new IllegalArgumentException("timer is active");
+        }
+
+        final long deadline = now() + unit.toNanos(delay);
+
+        timer.reset(deadline, task);
+
+        wheel[timer.wheelIndex] = addTimeoutToArray((Timer[]) wheel[timer.wheelIndex], timer);
+    }
+
+    /**
      * Calculate delay in milliseconds until next tick.
      *
      * @return number of milliseconds to next tick of the wheel.
@@ -173,6 +214,7 @@ public class TimerWheel
             if (0 >= timer.remainingRounds)
             {
                 timer.remove();
+                timer.state = TimerState.EXPIRED;
 
                 if (timer.deadline <= deadline)
                 {
@@ -220,20 +262,26 @@ public class TimerWheel
     public enum TimerState
     {
         ACTIVE,
-        CANCELLED
+        CANCELLED,
+        EXPIRED
     }
 
     public final class Timer
     {
 
-        private final int wheelIndex;
-        private final long deadline;
-        private final Runnable task;
+        private int wheelIndex;
+        private long deadline;
+        private Runnable task;
         private int tickIndex;
         private long remainingRounds;
         private TimerState state;
 
         public Timer(final long deadline, final Runnable task)
+        {
+            reset(deadline, task);
+        }
+
+        public void reset(final long deadline, final Runnable task)
         {
             this.deadline = deadline;
             this.task = task;
@@ -279,6 +327,16 @@ public class TimerWheel
         public boolean isCancelled()
         {
             return TimerState.CANCELLED == state;
+        }
+
+        /**
+         * Has timer expired or not
+         *
+         * @return boolean indicating if timer has expired or not
+         */
+        public boolean isExpired()
+        {
+            return TimerState.EXPIRED == state;
         }
 
         public void remove()

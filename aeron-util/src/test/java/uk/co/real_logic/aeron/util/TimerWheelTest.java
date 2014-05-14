@@ -23,6 +23,8 @@ import java.util.function.BooleanSupplier;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class TimerWheelTest
 {
@@ -213,6 +215,48 @@ public class TimerWheelTest
 
         assertThat(firedTimestamp1.get(), is(TimeUnit.MILLISECONDS.toNanos(16)));
         assertThat(firedTimestamp2.get(), is(TimeUnit.MILLISECONDS.toNanos(24)));
+    }
+
+    @Test
+    public void shouldHandleRescheduledTimers()
+    {
+        controlTimestamp = 0;
+        final AtomicLong firedTimestamp1 = new AtomicLong(-1);
+        final AtomicLong firedTimestamp2 = new AtomicLong(-1);
+        final TimerWheel wheel = new TimerWheel(this::getControlTimestamp, 1, TimeUnit.MILLISECONDS, 8);
+        final Runnable task1 = () -> firedTimestamp1.set(wheel.now());
+        final Runnable task2 = () -> firedTimestamp2.set(wheel.now());
+
+        TimerWheel.Timer timer = wheel.newTimeout(15, TimeUnit.MILLISECONDS, task1);
+
+        processTimersUntil(wheel, ONE_MSEC_OF_NANOS, () -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(50));
+
+        assertTrue(timer.isExpired());
+        assertFalse(timer.isActive());
+
+        assertThat(firedTimestamp1.get(), is(TimeUnit.MILLISECONDS.toNanos(16)));
+        assertThat(firedTimestamp2.get(), is(-1L));
+
+        wheel.rescheduleTimeout(23, TimeUnit.MILLISECONDS, timer, task2);
+
+        processTimersUntil(wheel, ONE_MSEC_OF_NANOS, () -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(50 + 50));
+
+        assertTrue(timer.isExpired());
+        assertFalse(timer.isActive());
+
+        assertThat(firedTimestamp1.get(), is(TimeUnit.MILLISECONDS.toNanos(16)));
+        assertThat(firedTimestamp2.get(), is(TimeUnit.MILLISECONDS.toNanos(24 + 50)));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldExceptionOnReschedulingActiveTimer()
+    {
+        controlTimestamp = 0;
+        final TimerWheel wheel = new TimerWheel(this::getControlTimestamp, 1, TimeUnit.MILLISECONDS, 8);
+        final Runnable task = () -> wheel.now();
+
+        TimerWheel.Timer timer = wheel.newTimeout(15, TimeUnit.MILLISECONDS, task);
+        wheel.rescheduleTimeout(23, TimeUnit.MILLISECONDS, timer);
     }
 
     private long processTimersUntil(final TimerWheel wheel, final long increment, final BooleanSupplier condition)

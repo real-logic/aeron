@@ -35,7 +35,6 @@ import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
  */
 class MappedBufferRotator implements BufferRotator, AutoCloseable
 {
-
     private static final String LOG_SUFFIX = "-log";
     private static final String STATE_SUFFIX = "-state";
 
@@ -91,6 +90,7 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
     {
         final FileChannel logFile = openFile(directory, prefix + LOG_SUFFIX);
         final FileChannel stateFile = openFile(directory, prefix + STATE_SUFFIX);
+
         return new MappedLogBuffers(logFile, stateFile, map(logBufferSize, logFile), map(stateBufferSize, stateFile));
     }
 
@@ -111,10 +111,7 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
 
     private FileChannel openFile(final File directory, final String child) throws FileNotFoundException
     {
-        final File fileToMap = new File(directory, child);
-        final RandomAccessFile file = new RandomAccessFile(fileToMap, "rw");
-
-        return file.getChannel();
+        return new RandomAccessFile(new File(directory, child), "rw").getChannel();
     }
 
     private MappedByteBuffer map(final long bufferSize, final FileChannel channel) throws IOException
@@ -135,5 +132,4 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
     {
         buffers().forEach(MappedLogBuffers::close);
     }
-
 }

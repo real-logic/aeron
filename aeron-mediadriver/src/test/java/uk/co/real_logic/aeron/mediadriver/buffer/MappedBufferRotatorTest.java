@@ -61,6 +61,7 @@ public class MappedBufferRotatorTest
     {
         final Map<AtomicBuffer, Boolean> buffers = new IdentityHashMap<>();
         withRotatedBuffers(buffer -> buffers.put(buffer, Boolean.TRUE));
+
         assertThat(buffers.entrySet(), hasSize(6));
     }
 
@@ -70,11 +71,11 @@ public class MappedBufferRotatorTest
             new MappedBufferRotator(template.directory(), template.file(), BUFFER_SIZE, template.file(), BUFFER_SIZE);
         final List<LogBuffers> buffers = rotator.buffers().collect(toList());
 
-        for (int iteration = 0; iteration < 20; iteration++)
+        for (int i = 0; i < 20; i++)
         {
             rotator.rotate();
 
-            final LogBuffers buffer = buffers.get(iteration % buffers.size());
+            final LogBuffers buffer = buffers.get(i % buffers.size());
             handler.accept(buffer.logBuffer());
             handler.accept(buffer.stateBuffer());
         }

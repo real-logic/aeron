@@ -69,7 +69,6 @@ public class SenderChannel
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
     private int currentIndex = 0;
-
     private int statusMessagesSeen = 0;
 
     public SenderChannel(final ControlFrameHandler frameHandler,
@@ -147,6 +146,7 @@ public class SenderChannel
                     {
                         // TODO: error
                     }
+
                     timeOfLastSendOrHeartbeat.lazySet(frameHandler.currentTime());
                 }
                 catch (final Exception ex)
@@ -232,6 +232,7 @@ public class SenderChannel
                 // TODO: log or count error
                 System.out.println("Error sending heartbeat packet");
             }
+
             timeOfLastSendOrHeartbeat.lazySet(frameHandler.currentTime());
         }
         catch (final Exception ex)
@@ -271,7 +272,7 @@ public class SenderChannel
             try
             {
                 buffers.rotate();
-                cleanedTermId.incrementAndGet();  // TODO: Does this need to be a CAS'ed update? Is it for ordering?
+                cleanedTermId.lazySet(requiredCleanTermId);
             }
             catch (final IOException ex)
             {

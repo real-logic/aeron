@@ -34,7 +34,6 @@ import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.UNKNOWN_TERM_
  */
 public class RcvSessionState
 {
-
     public static final int CLEAN_WINDOW = 2;
     private final InetSocketAddress srcAddr;
     private final long sessionId;
@@ -82,7 +81,7 @@ public class RcvSessionState
         }
         else if (termId == (currentTermId + 1))
         {
-            this.currentTermId.incrementAndGet();
+            this.currentTermId.incrementAndGet(); // TODO: should this be an atomic increment?
             currentBufferId = BufferRotationDescriptor.rotateId(currentBufferId);
             TermRebuilder rebuilder = rebuilders[currentBufferId];
             while (rebuilder.tailVolatile() != 0)
@@ -131,14 +130,13 @@ public class RcvSessionState
             try
             {
                 rotator.rotate();
-                cleanedTermId.incrementAndGet();
+                cleanedTermId.incrementAndGet(); // TODO: should this be an atomic increment?
             }
-            catch (IOException ex)
+            catch (final IOException ex)
             {
                 // TODO; log
                 ex.printStackTrace();
             }
         }
     }
-
 }

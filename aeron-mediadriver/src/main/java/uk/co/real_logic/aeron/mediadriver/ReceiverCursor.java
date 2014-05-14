@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.QualifiedMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
@@ -35,8 +35,8 @@ public class ReceiverCursor
     private final NioSelector selector;
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
     private final SubscriberMessageFlyweight receiverMessage = new SubscriberMessageFlyweight();
-    private final CompletelyIdentifiedMessageFlyweight addTermBufferMessage =
-        new CompletelyIdentifiedMessageFlyweight();
+    private final QualifiedMessageFlyweight addTermBufferMessage =
+        new QualifiedMessageFlyweight();
 
     public ReceiverCursor(final RingBuffer commandBuffer, final NioSelector selector)
     {

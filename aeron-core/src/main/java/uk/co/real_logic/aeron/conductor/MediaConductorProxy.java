@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.conductor;
 
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.QualifiedMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
@@ -39,7 +39,7 @@ public class MediaConductorProxy
     private final AtomicBuffer writeBuffer;
     private final ChannelMessageFlyweight channelMessage;
     private final SubscriberMessageFlyweight subscriberMessage;
-    private final CompletelyIdentifiedMessageFlyweight requestTermMessage;
+    private final QualifiedMessageFlyweight qualifiedMessage;
 
     public MediaConductorProxy(final RingBuffer conductorBuffer)
     {
@@ -47,11 +47,11 @@ public class MediaConductorProxy
         this.writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
         this.channelMessage = new ChannelMessageFlyweight();
         this.subscriberMessage = new SubscriberMessageFlyweight();
-        this.requestTermMessage = new CompletelyIdentifiedMessageFlyweight();
+        this.qualifiedMessage = new QualifiedMessageFlyweight();
 
         channelMessage.wrap(writeBuffer, 0);
         subscriberMessage.wrap(writeBuffer, 0);
-        requestTermMessage.wrap(writeBuffer, 0);
+        qualifiedMessage.wrap(writeBuffer, 0);
     }
 
     public void sendAddChannel(final String destination, final long sessionId, final long channelId)
@@ -94,10 +94,10 @@ public class MediaConductorProxy
 
     public void sendRequestTerm(final String destination, final long sessionId, final long channelId, final long termId)
     {
-        requestTermMessage.sessionId(sessionId);
-        requestTermMessage.channelId(channelId);
-        requestTermMessage.termId(termId);
-        requestTermMessage.destination(destination);
-        conductorBuffer.write(REQUEST_CLEANED_TERM, writeBuffer, 0, requestTermMessage.length());
+        qualifiedMessage.sessionId(sessionId);
+        qualifiedMessage.channelId(channelId);
+        qualifiedMessage.termId(termId);
+        qualifiedMessage.destination(destination);
+        conductorBuffer.write(REQUEST_CLEANED_TERM, writeBuffer, 0, qualifiedMessage.length());
     }
 }

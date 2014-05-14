@@ -43,7 +43,7 @@ import java.nio.ByteOrder;
  * |                                                             ...
  * +---------------------------------------------------------------+
  */
-public class CompletelyIdentifiedMessageFlyweight extends Flyweight
+public class QualifiedMessageFlyweight extends Flyweight
 {
     private static final int SESSION_ID_OFFSET = 0;
     private static final int CHANNEL_ID_FIELD_OFFSET = 4;
@@ -66,7 +66,7 @@ public class CompletelyIdentifiedMessageFlyweight extends Flyweight
      * @param sessionId field value
      * @return flyweight
      */
-    public CompletelyIdentifiedMessageFlyweight sessionId(final long sessionId)
+    public QualifiedMessageFlyweight sessionId(final long sessionId)
     {
         uint32Put(offset() + SESSION_ID_OFFSET, (int)sessionId, ByteOrder.LITTLE_ENDIAN);
         return this;
@@ -88,7 +88,7 @@ public class CompletelyIdentifiedMessageFlyweight extends Flyweight
      * @param channelId field value
      * @return flyweight
      */
-    public CompletelyIdentifiedMessageFlyweight channelId(final long channelId)
+    public QualifiedMessageFlyweight channelId(final long channelId)
     {
         uint32Put(offset() + CHANNEL_ID_FIELD_OFFSET, channelId, ByteOrder.LITTLE_ENDIAN);
         return this;
@@ -110,7 +110,7 @@ public class CompletelyIdentifiedMessageFlyweight extends Flyweight
      * @param termId field value
      * @return flyweight
      */
-    public CompletelyIdentifiedMessageFlyweight termId(final long termId)
+    public QualifiedMessageFlyweight termId(final long termId)
     {
         uint32Put(offset() + TERM_ID_FIELD_OFFSET, termId, ByteOrder.LITTLE_ENDIAN);
         return this;
@@ -132,7 +132,7 @@ public class CompletelyIdentifiedMessageFlyweight extends Flyweight
      * @param destination field value
      * @return flyweight
      */
-    public CompletelyIdentifiedMessageFlyweight destination(final String destination)
+    public QualifiedMessageFlyweight destination(final String destination)
     {
         lengthOfDestination = stringPut(offset() + DESTINATION_OFFSET,
                                         destination,
@@ -151,5 +151,4 @@ public class CompletelyIdentifiedMessageFlyweight extends Flyweight
     {
         return DESTINATION_OFFSET + lengthOfDestination;
     }
-
 }

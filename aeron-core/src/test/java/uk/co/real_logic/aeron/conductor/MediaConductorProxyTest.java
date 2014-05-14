@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.conductor;
 
 import org.junit.Test;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.QualifiedMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.EventHandler;
@@ -37,9 +37,9 @@ public class MediaConductorProxyTest
 
     private static final long[] CHANNEL_IDS = {1L, 3L, 4L};
     private static final long SESSION_ID = 1L;
-    private final RingBuffer sendBuffer =
+    private final RingBuffer mediaConductorBuffer =
         new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocateDirect(TRAILER_LENGTH + 1024)));
-    private final MediaConductorProxy mediaConductor = new MediaConductorProxy(sendBuffer);
+    private final MediaConductorProxy mediaConductor = new MediaConductorProxy(mediaConductorBuffer);
 
     @Test
     public void threadSendsAddChannelMessage()
@@ -97,7 +97,7 @@ public class MediaConductorProxyTest
         assertReadsOneMessage(
             (eventTypeId, buffer, index, length) ->
             {
-                CompletelyIdentifiedMessageFlyweight requestTermBuffer = new CompletelyIdentifiedMessageFlyweight();
+                QualifiedMessageFlyweight requestTermBuffer = new QualifiedMessageFlyweight();
                 requestTermBuffer.wrap(buffer, index);
 
                 assertThat(eventTypeId, is(REQUEST_CLEANED_TERM));
@@ -111,7 +111,7 @@ public class MediaConductorProxyTest
 
     private void assertReadsOneMessage(final EventHandler handler)
     {
-        final int messageCount = sendBuffer.read(handler);
+        final int messageCount = mediaConductorBuffer.read(handler);
         assertThat(messageCount, is(1));
     }
 }

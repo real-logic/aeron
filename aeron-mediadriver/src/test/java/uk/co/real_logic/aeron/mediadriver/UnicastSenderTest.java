@@ -21,7 +21,7 @@ import uk.co.real_logic.aeron.util.ConductorBuffers;
 import uk.co.real_logic.aeron.util.SharedDirectories;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.QualifiedMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.EventHandler;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
@@ -87,7 +87,7 @@ public class UnicastSenderTest
 
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
     private final ErrorHeaderFlyweight error = new ErrorHeaderFlyweight();
-    private final CompletelyIdentifiedMessageFlyweight bufferMessage = new CompletelyIdentifiedMessageFlyweight();
+    private final QualifiedMessageFlyweight bufferMessage = new QualifiedMessageFlyweight();
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
 

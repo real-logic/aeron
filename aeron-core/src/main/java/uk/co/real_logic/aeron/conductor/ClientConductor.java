@@ -22,7 +22,7 @@ import uk.co.real_logic.aeron.util.Agent;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.collections.ChannelMap;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.QualifiedMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
 import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -79,8 +79,8 @@ public final class ClientConductor extends Agent implements MediaDriverFacade
     // Control protocol Flyweights
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
     private final SubscriberMessageFlyweight receiverMessage = new SubscriberMessageFlyweight();
-    private final CompletelyIdentifiedMessageFlyweight bufferNotificationMessage =
-        new CompletelyIdentifiedMessageFlyweight();
+    private final QualifiedMessageFlyweight bufferNotificationMessage =
+        new QualifiedMessageFlyweight();
 
     public ClientConductor(final RingBuffer commandBuffer,
                            final RingBuffer rcvBuffer,

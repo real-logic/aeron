@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.ErrorCode;
 import uk.co.real_logic.aeron.util.Flyweight;
-import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.QualifiedMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
@@ -38,7 +38,7 @@ public class MediaConductorCursor
     private final NioSelector selector;
     private final AtomicBuffer writeBuffer;
 
-    private final CompletelyIdentifiedMessageFlyweight completelyIdentifiedMessage;
+    private final QualifiedMessageFlyweight completelyIdentifiedMessage;
     private final ErrorHeaderFlyweight errorHeader;
 
     public MediaConductorCursor(final RingBuffer commandBuffer, final NioSelector selector)
@@ -47,7 +47,7 @@ public class MediaConductorCursor
         this.selector = selector;
         this.writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
 
-        completelyIdentifiedMessage = new CompletelyIdentifiedMessageFlyweight();
+        completelyIdentifiedMessage = new QualifiedMessageFlyweight();
         completelyIdentifiedMessage.wrap(writeBuffer, 0);
 
         errorHeader = new ErrorHeaderFlyweight();

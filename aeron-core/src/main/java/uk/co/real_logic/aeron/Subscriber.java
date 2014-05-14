@@ -29,6 +29,55 @@ import static java.util.stream.Collectors.toList;
  */
 public class Subscriber implements AutoCloseable
 {
+    public enum MessageFlags
+    {
+        NONE, BEGIN_MESSAGE, END_MESSAGE
+    }
+
+    /**
+     * Interface for delivery of data to a {@link Subscriber}
+     */
+    public interface DataHandler
+    {
+        /**
+         * Method called by Aeron to deliver data to a {@link Subscriber}
+         *
+         * @param buffer to be delivered
+         * @param offset within buffer that data starts
+         * @param sessionId for the data source
+         * @param flags for the data
+         */
+        void onData(final AtomicBuffer buffer, final int offset, final long sessionId, final MessageFlags flags);
+    }
+
+    /**
+     * Interface for delivery of new source events to a {@link Subscriber}
+     */
+    public interface NewSourceEventHandler
+    {
+        /**
+         * Method called by Aeron to deliver notification of a new source session
+         *
+         * @param channelId for the event
+         * @param sessionId of the new source
+         */
+        void handleNewSource(final long channelId, final long sessionId);
+    }
+
+    /**
+     * Interface for delivery of inactive source events to a {@link Subscriber}
+     */
+    public interface InactiveSourceEventHandler
+    {
+        /**
+         * Method called by Aeron to deliver notification that a source has gone inactive
+         *
+         * @param channelId for the event
+         * @param sessionId of the inactive source
+         */
+        void handleInactiveSource(final long channelId, final long sessionId);
+    }
+
     private final Destination destination;
     private final NewSourceEventHandler newSourceEventHandler;
     private final InactiveSourceEventHandler inactiveSourceEventHandler;
@@ -79,52 +128,6 @@ public class Subscriber implements AutoCloseable
         }
 
         return read;
-    }
-
-    public enum MessageFlags
-    {
-        NONE, START_MESSAGE, END_MESSAGE
-    }
-
-    /**
-     * Interface for delivery of data to a {@link Subscriber}
-     */
-    public interface DataHandler
-    {
-        /**
-         * Method called by Aeron to deliver data to a {@link Subscriber}
-         * @param buffer to be delivered
-         * @param offset within buffer that data starts
-         * @param sessionId for the data source
-         * @param flags for the data
-         */
-        void onData(final AtomicBuffer buffer, final int offset, final long sessionId, final MessageFlags flags);
-    }
-
-    /**
-     * Interface for delivery of new source events to a {@link Subscriber}
-     */
-    public interface NewSourceEventHandler
-    {
-        /**
-         * Method called by Aeron to deliver notification of a new source session
-         * @param channelId for the event
-         * @param sessionId of the new source
-         */
-        void handleNewSource(final long channelId, final long sessionId);
-    }
-
-    /**
-     * Interface for delivery of inactive source events to a {@link Subscriber}
-     */
-    public interface InactiveSourceEventHandler
-    {
-        /**
-         * Method called by Aeron to deliver notification that a source has gone inactive
-         * @param channelId for the event
-         * @param sessionId of the inactive source
-         */
-        void handleInactiveSource(final long channelId, final long sessionId);
     }
 
     public static class Context

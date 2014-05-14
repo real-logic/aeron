@@ -20,7 +20,7 @@ import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
 import uk.co.real_logic.aeron.util.*;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.QualifiedMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.LibraryFacade;
 import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -66,8 +66,8 @@ public class MediaConductor extends Agent implements LibraryFacade
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
     private final SubscriberMessageFlyweight receiverMessageFlyweight = new SubscriberMessageFlyweight();
     private final ErrorHeaderFlyweight errorHeaderFlyweight = new ErrorHeaderFlyweight();
-    private final CompletelyIdentifiedMessageFlyweight completelyIdentifiedMessageFlyweight =
-        new CompletelyIdentifiedMessageFlyweight();
+    private final QualifiedMessageFlyweight qualifiedMessageFlyweight =
+        new QualifiedMessageFlyweight();
 
     private final int mtuLength;
     private final ConductorBufferManagement adminBufferStrategy;
@@ -143,13 +143,13 @@ public class MediaConductor extends Agent implements LibraryFacade
                   switch (eventTypeId)
                   {
                       case CREATE_TERM_BUFFER:
-                          completelyIdentifiedMessageFlyweight.wrap(buffer, index);
-                          onCreateSubscriberTermBufferEvent(completelyIdentifiedMessageFlyweight);
+                          qualifiedMessageFlyweight.wrap(buffer, index);
+                          onCreateSubscriberTermBufferEvent(qualifiedMessageFlyweight);
                           return;
 
                       case REMOVE_TERM_BUFFER:
-                          completelyIdentifiedMessageFlyweight.wrap(buffer, index);
-                          onRemoveSubscriberTermBufferEvent(completelyIdentifiedMessageFlyweight);
+                          qualifiedMessageFlyweight.wrap(buffer, index);
+                          onRemoveSubscriberTermBufferEvent(qualifiedMessageFlyweight);
                           return;
 
                       case ERROR_RESPONSE:
@@ -276,8 +276,8 @@ public class MediaConductor extends Agent implements LibraryFacade
                                           final boolean isSender,
                                           final String destination)
     {
-        completelyIdentifiedMessageFlyweight.wrap(writeBuffer, 0);
-        completelyIdentifiedMessageFlyweight.sessionId(sessionId)
+        qualifiedMessageFlyweight.wrap(writeBuffer, 0);
+        qualifiedMessageFlyweight.sessionId(sessionId)
                                             .channelId(channelId)
                                             .termId(termId)
                                             .destination(destination);
@@ -285,12 +285,12 @@ public class MediaConductor extends Agent implements LibraryFacade
         if (isSender)
         {
             adminSendBuffer.write(NEW_SEND_BUFFER_NOTIFICATION, writeBuffer,
-                                  0, completelyIdentifiedMessageFlyweight.length());
+                                  0, qualifiedMessageFlyweight.length());
         }
         else
         {
             adminSendBuffer.write(NEW_RECEIVE_BUFFER_NOTIFICATION, writeBuffer,
-                                  0, completelyIdentifiedMessageFlyweight.length());
+                                  0, qualifiedMessageFlyweight.length());
         }
     }
 
@@ -430,12 +430,12 @@ public class MediaConductor extends Agent implements LibraryFacade
     }
 
     private void onCreateSubscriberTermBufferEvent(
-        final CompletelyIdentifiedMessageFlyweight completelyIdentifiedMessageFlyweight)
+        final QualifiedMessageFlyweight qualifiedMessageFlyweight)
     {
-        final String destination = completelyIdentifiedMessageFlyweight.destination();
-        final long sessionId = completelyIdentifiedMessageFlyweight.sessionId();
-        final long channelId = completelyIdentifiedMessageFlyweight.channelId();
-        final long termId = completelyIdentifiedMessageFlyweight.termId();
+        final String destination = qualifiedMessageFlyweight.destination();
+        final long sessionId = qualifiedMessageFlyweight.sessionId();
+        final long channelId = qualifiedMessageFlyweight.channelId();
+        final long termId = qualifiedMessageFlyweight.termId();
 
         try
         {
@@ -458,11 +458,11 @@ public class MediaConductor extends Agent implements LibraryFacade
         }
     }
 
-    private void onRemoveSubscriberTermBufferEvent(final CompletelyIdentifiedMessageFlyweight message)
+    private void onRemoveSubscriberTermBufferEvent(final QualifiedMessageFlyweight message)
     {
-        final String destination = completelyIdentifiedMessageFlyweight.destination();
-        final long sessionId = completelyIdentifiedMessageFlyweight.sessionId();
-        final long channelId = completelyIdentifiedMessageFlyweight.channelId();
+        final String destination = qualifiedMessageFlyweight.destination();
+        final long sessionId = qualifiedMessageFlyweight.sessionId();
+        final long channelId = qualifiedMessageFlyweight.channelId();
         try
         {
             final UdpDestination rcvDestination = UdpDestination.parse(destination);

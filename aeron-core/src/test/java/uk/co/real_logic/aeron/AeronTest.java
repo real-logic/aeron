@@ -22,7 +22,7 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
 import uk.co.real_logic.aeron.util.*;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.QualifiedMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.EventHandler;
@@ -81,7 +81,7 @@ public class AeronTest
     private DataHandler channel2Handler = emptyDataHandler();
 
     private final ChannelMessageFlyweight message = new ChannelMessageFlyweight();
-    private final CompletelyIdentifiedMessageFlyweight identifiedMessage = new CompletelyIdentifiedMessageFlyweight();
+    private final QualifiedMessageFlyweight identifiedMessage = new QualifiedMessageFlyweight();
     private final SubscriberMessageFlyweight receiverMessage = new SubscriberMessageFlyweight();
 
     private final ErrorHeaderFlyweight errorHeader = new ErrorHeaderFlyweight();

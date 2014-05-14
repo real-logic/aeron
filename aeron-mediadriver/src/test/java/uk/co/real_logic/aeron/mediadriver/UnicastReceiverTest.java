@@ -416,7 +416,7 @@ public class UnicastReceiverTest
         final DataHeaderFlyweight dataHeaderFlyweight = new DataHeaderFlyweight();
         dataHeaderFlyweight.wrap(writeBuffer, 0);
 
-        dataHeaderFlyweight.sequenceNumber(seqNum)
+        dataHeaderFlyweight.termOffset(seqNum)
                 .sessionId(SESSION_ID)
                 .channelId(channelId)
                 .termId(termId)

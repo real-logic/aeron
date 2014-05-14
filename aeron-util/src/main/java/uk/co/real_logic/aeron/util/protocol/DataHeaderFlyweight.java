@@ -23,11 +23,11 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  * 0                   1                   2                   3
  * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |  Version    |S|E|   Flags   |             Type (=0x00)        |
+ * |  Version    |S|E|   Flags   |             Type (=0x01)        |
  * +-------------+-+-+-+-+-+-+-+-+---------------------------------+
  * |                         Frame Length                          |
  * +---------------------------------------------------------------+
- * |                        Sequence Number                        |
+ * |                         Term Offset                           |
  * +---------------------------------------------------------------+
  * |                          Session ID                           |
  * +---------------------------------------------------------------+
@@ -53,7 +53,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
     /** Begin and End Flags */
     public static final short BEGIN_AND_END_FLAGS = (BEGIN_FLAG | END_FLAG);
 
-    private static final int SEQUENCE_NUMBER_FIELD_OFFSET = 8;
+    private static final int TERM_OFFSET_FIELD_OFFSET = 8;
     private static final int SESSION_ID_FIELD_OFFSET = 12;
     private static final int CHANNEL_ID_FIELD_OFFSET = 16;
     private static final int TERM_ID_FIELD_OFFSET = 20;
@@ -124,24 +124,24 @@ public class DataHeaderFlyweight extends HeaderFlyweight
     }
 
     /**
-     * return sequence number field
+     * return term offset field
      *
-     * @return sequence number field
+     * @return term offset field
      */
-    public long sequenceNumber()
+    public long termOffset()
     {
-        return uint32Get(offset() + SEQUENCE_NUMBER_FIELD_OFFSET, LITTLE_ENDIAN);
+        return uint32Get(offset() + TERM_OFFSET_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
-     * set sequence number field
+     * set term offset field
      *
-     * @param sequenceNumber field value
+     * @param termOffset field value
      * @return flyweight
      */
-    public DataHeaderFlyweight sequenceNumber(final long sequenceNumber)
+    public DataHeaderFlyweight termOffset(final long termOffset)
     {
-        uint32Put(offset() + SEQUENCE_NUMBER_FIELD_OFFSET, sequenceNumber, LITTLE_ENDIAN);
+        uint32Put(offset() + TERM_OFFSET_FIELD_OFFSET, termOffset, LITTLE_ENDIAN);
         return this;
     }
 

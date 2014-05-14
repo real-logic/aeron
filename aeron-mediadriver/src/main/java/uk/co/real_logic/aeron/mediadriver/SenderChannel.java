@@ -209,13 +209,13 @@ public class SenderChannel
 
         // used for both initial setup 0 length data as well as heartbeats
 
-        // send 0 length data frame with current sequenceNumber
+        // send 0 length data frame with current termOffset
         dataHeader.wrap(scratchAtomicBuffer, 0);
 
         dataHeader.sessionId(sessionId)
                   .channelId(channelId)
                   .termId(currentTermId.get())
-                  .sequenceNumber(0)
+                  .termOffset(0)
                   .frameLength(DataHeaderFlyweight.HEADER_LENGTH)
                   .headerType(HeaderFlyweight.HDR_TYPE_DATA)
                   .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)

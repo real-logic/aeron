@@ -44,13 +44,13 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 public class HeaderFlyweight extends Flyweight
 {
     /** header type DATA */
-    public static final int HDR_TYPE_DATA = 0x00;
+    public static final int HDR_TYPE_DATA = 0x01;
     /** header type NAK */
-    public static final int HDR_TYPE_NAK = 0x01;
+    public static final int HDR_TYPE_NAK = 0x02;
     /** header type SM */
-    public static final int HDR_TYPE_SM = 0x02;
+    public static final int HDR_TYPE_SM = 0x03;
     /** header type ERR */
-    public static final int HDR_TYPE_ERR = 0x03;
+    public static final int HDR_TYPE_ERR = 0x04;
     /** header type EXT */
     public static final int HDR_TYPE_EXT = 0xFFFF;
 

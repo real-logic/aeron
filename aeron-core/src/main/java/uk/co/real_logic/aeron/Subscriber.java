@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.conductor.ClientConductorCursor;
+import uk.co.real_logic.aeron.conductor.MediaConductorProxy;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -34,15 +34,15 @@ public class Subscriber implements AutoCloseable
     private final InactiveSourceEventHandler inactiveSourceEventHandler;
     private final Long2ObjectHashMap<DataHandler> channelMap;
     private final long[] channelIds;
-    private final ClientConductorCursor clientConductorCursor;
+    private final MediaConductorProxy mediaConductorProxy;
     private final AtomicArray<SubscriberChannel> subscriberChannels;
     private final List<SubscriberChannel> channels;
 
-    public Subscriber(final ClientConductorCursor clientConductorCursor,
+    public Subscriber(final MediaConductorProxy mediaConductorProxy,
                       final Context context,
                       final AtomicArray<SubscriberChannel> subscriberChannels)
     {
-        this.clientConductorCursor = clientConductorCursor;
+        this.mediaConductorProxy = mediaConductorProxy;
         this.subscriberChannels = subscriberChannels;
         this.destination = context.destination;
         this.channelMap = context.channelMap;
@@ -54,13 +54,13 @@ public class Subscriber implements AutoCloseable
                                   .map(entry -> new SubscriberChannel(destination, entry.getKey(), entry.getValue()))
                                   .collect(toList());
         subscriberChannels.addAll(channels);
-        clientConductorCursor.sendAddSubscriber(destination.destination(), channelIds);
+        mediaConductorProxy.sendAddSubscriber(destination.destination(), channelIds);
     }
 
     public void close()
     {
         subscriberChannels.removeAll(channels);
-        clientConductorCursor.sendRemoveSubscriber(destination.destination(), channelIds);
+        mediaConductorProxy.sendRemoveSubscriber(destination.destination(), channelIds);
     }
 
     /**

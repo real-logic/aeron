@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.conductor.ClientConductorCursor;
+import uk.co.real_logic.aeron.conductor.MediaConductorProxy;
 import uk.co.real_logic.aeron.util.AtomicArray;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -29,7 +29,7 @@ public class Source implements AutoCloseable
 {
     private final long sessionId;
     private final Destination destination;
-    private final ClientConductorCursor adminThread;
+    private final MediaConductorProxy mediaConductorProxy;
     private final AtomicArray<Channel> channels;
 
     // called by Aeron to create new sessions
@@ -38,7 +38,7 @@ public class Source implements AutoCloseable
         this.channels = channels;
         this.sessionId = context.sessionId;
         this.destination = context.destination;
-        this.adminThread = context.adminThread;
+        this.mediaConductorProxy = context.mediaConductorProxy;
     }
 
     /**
@@ -51,13 +51,13 @@ public class Source implements AutoCloseable
     {
         final AtomicBoolean pauseButton = new AtomicBoolean(false);
         final Channel channel = new Channel(destination.destination(),
-                                            adminThread,
+                                            mediaConductorProxy,
                                             channelId,
                                             sessionId,
                                             channels,
                                             pauseButton);
         channels.add(channel);
-        adminThread.sendAddChannel(destination.destination(), sessionId, channelId);
+        mediaConductorProxy.sendAddChannel(destination.destination(), sessionId, channelId);
 
         return channel;
     }
@@ -115,7 +115,7 @@ public class Source implements AutoCloseable
     public static class Context
     {
         private Destination destination;
-        private ClientConductorCursor adminThread;
+        private MediaConductorProxy mediaConductorProxy;
         private long sessionId;
 
         public Context sessionId(final long sessionId)
@@ -130,9 +130,9 @@ public class Source implements AutoCloseable
             return this;
         }
 
-        public Context adminThread(final ClientConductorCursor adminThread)
+        public Context mediaConductorProxy(final MediaConductorProxy mediaConductorProxy)
         {
-            this.adminThread = adminThread;
+            this.mediaConductorProxy = mediaConductorProxy;
             return this;
         }
     }

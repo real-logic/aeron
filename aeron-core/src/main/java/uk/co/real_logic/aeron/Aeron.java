@@ -36,7 +36,7 @@ public final class Aeron
     private static final int ADMIN_BUFFER_SIZE = 512 + TRAILER_LENGTH;
 
     private final PublisherControlFactory publisherControl;
-    private final ManyToOneRingBuffer adminCommandBuffer;
+    private final ManyToOneRingBuffer mediaConductorCommandBuffer;
     private final ErrorHandler errorHandler;
     private final ClientConductor clientConductor;
     private final ConductorBufferManagement adminBuffers;
@@ -46,11 +46,11 @@ public final class Aeron
     private Aeron(final Context context)
     {
         errorHandler = context.errorHandler;
-        adminBuffers = context.adminBuffers;
+        adminBuffers = context.conductorBufferManagement;
         publisherControl = context.publisherControl;
         channels = new AtomicArray<>();
         receivers = new AtomicArray<>();
-        adminCommandBuffer = new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocate(ADMIN_BUFFER_SIZE)));
+        mediaConductorCommandBuffer = new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocate(ADMIN_BUFFER_SIZE)));
 
         try
         {
@@ -60,7 +60,7 @@ public final class Aeron
             final ConductorErrorHandler conductorErrorHandler =
                 new ConductorErrorHandler(context.invalidDestinationHandler);
 
-            clientConductor = new ClientConductor(adminCommandBuffer,
+            clientConductor = new ClientConductor(mediaConductorCommandBuffer,
                                                   rcvBuffer, sendBuffer,
                                                   bufferUsage,
                                                   channels, receivers,
@@ -119,7 +119,7 @@ public final class Aeron
      */
     public Source newSource(final Source.Context context)
     {
-        context.adminThread(new ClientConductorCursor(adminCommandBuffer));
+        context.mediaConductorProxy(new MediaConductorProxy(mediaConductorCommandBuffer));
         return new Source(channels, context);
     }
 
@@ -162,9 +162,9 @@ public final class Aeron
      */
     public Subscriber newSubscriber(final Subscriber.Context context)
     {
-        final ClientConductorCursor adminThread = new ClientConductorCursor(adminCommandBuffer);
+        final MediaConductorProxy mediaConductorProxy = new MediaConductorProxy(mediaConductorCommandBuffer);
 
-        return new Subscriber(adminThread, context, receivers);
+        return new Subscriber(mediaConductorProxy, context, receivers);
     }
 
     /**
@@ -189,14 +189,14 @@ public final class Aeron
     public static class Context
     {
         private ErrorHandler errorHandler;
-        private ConductorBufferManagement adminBuffers;
+        private ConductorBufferManagement conductorBufferManagement;
         private InvalidDestinationHandler invalidDestinationHandler;
         private PublisherControlFactory publisherControl;
 
         public Context()
         {
             errorHandler = new DummyErrorHandler();
-            adminBuffers = new MappingConductorBufferManagement(CommonConfiguration.ADMIN_DIR);
+            conductorBufferManagement = new MappingConductorBufferManagement(CommonConfiguration.ADMIN_DIR);
             publisherControl = DefaultPublisherControlStrategy::new;
         }
 
@@ -206,9 +206,9 @@ public final class Aeron
             return this;
         }
 
-        public Context adminBufferStrategy(ConductorBufferManagement adminBuffers)
+        public Context adminBufferStrategy(ConductorBufferManagement conductorBufferManagement)
         {
-            this.adminBuffers = adminBuffers;
+            this.conductorBufferManagement = conductorBufferManagement;
             return this;
         }
 

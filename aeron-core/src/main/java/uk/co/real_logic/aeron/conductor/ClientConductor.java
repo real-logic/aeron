@@ -72,7 +72,7 @@ public final class ClientConductor extends Agent implements MediaDriverFacade
     private final SubscriberMap rcvNotifiers;
 
     private final ConductorErrorHandler errorHandler;
-    private final PublisherControlFactory publisherControl;
+    private final PublisherControlFactory publisherControlFactory;
 
     private final StatusBufferMapper statusCounters;
 
@@ -89,7 +89,7 @@ public final class ClientConductor extends Agent implements MediaDriverFacade
                            final AtomicArray<Channel> publishers,
                            final AtomicArray<SubscriberChannel> subscriberChannels,
                            final ConductorErrorHandler errorHandler,
-                           final PublisherControlFactory publisherControl)
+                           final PublisherControlFactory publisherControlFactory)
     {
         super(SLEEP_PERIOD);
 
@@ -102,7 +102,7 @@ public final class ClientConductor extends Agent implements MediaDriverFacade
         this.publishers = publishers;
         this.subscriberChannels = subscriberChannels;
         this.errorHandler = errorHandler;
-        this.publisherControl = publisherControl;
+        this.publisherControlFactory = publisherControlFactory;
         this.sendNotifiers = new ChannelMap<>();
         this.rcvNotifiers = new SubscriberMap();
 

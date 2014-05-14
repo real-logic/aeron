@@ -26,11 +26,11 @@ import java.nio.ByteBuffer;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 
 /**
- * Separates the concern of talking to the media driver protocol away from the rest of the API.
+ * Separates the concern of communicating with the media driver away from the rest of the client.
  *
- * Writes messages into the Client Admin Thread's conductor buffer.
+ * Writes messages into the media driver conductor buffer.
  */
-public class ClientConductorCursor
+public class MediaConductorProxy
 {
     /** Maximum size of the write buffer */
     public static final int WRITE_BUFFER_CAPACITY = 256;
@@ -41,7 +41,7 @@ public class ClientConductorCursor
     private final SubscriberMessageFlyweight subscriberMessage;
     private final CompletelyIdentifiedMessageFlyweight requestTermMessage;
 
-    public ClientConductorCursor(final RingBuffer conductorBuffer)
+    public MediaConductorProxy(final RingBuffer conductorBuffer)
     {
         this.conductorBuffer = conductorBuffer;
         this.writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));

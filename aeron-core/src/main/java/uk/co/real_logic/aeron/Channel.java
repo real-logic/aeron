@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.conductor.ChannelNotifiable;
-import uk.co.real_logic.aeron.conductor.ClientConductorCursor;
+import uk.co.real_logic.aeron.conductor.MediaConductorProxy;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
@@ -34,7 +34,7 @@ import static uk.co.real_logic.aeron.util.ChannelCounters.UNKNOWN_TERM_ID;
  */
 public class Channel extends ChannelNotifiable implements AutoCloseable, PositionIndicator
 {
-    private final ClientConductorCursor conductor;
+    private final MediaConductorProxy mediaConductorProxy;
     private final long sessionId;
     private final AtomicArray<Channel> channels;
     private final AtomicBoolean paused;
@@ -48,7 +48,7 @@ public class Channel extends ChannelNotifiable implements AutoCloseable, Positio
     private int currentBufferId = 0;
 
     public Channel(final String destination,
-                   final ClientConductorCursor adminCursor,
+                   final MediaConductorProxy mediaConductorProxy,
                    final long channelId,
                    final long sessionId,
                    final AtomicArray<Channel> channels,
@@ -56,7 +56,7 @@ public class Channel extends ChannelNotifiable implements AutoCloseable, Positio
     {
         super(destination, channelId);
 
-        this.conductor = adminCursor;
+        this.mediaConductorProxy = mediaConductorProxy;
         this.sessionId = sessionId;
         this.channels = channels;
         this.paused = paused;
@@ -72,7 +72,9 @@ public class Channel extends ChannelNotifiable implements AutoCloseable, Positio
         return logAppenders != null && !paused.get();
     }
 
-    public void onBuffersMapped(final long termId, final LogAppender[] logAppenders, final PositionIndicator positionIndicator)
+    public void onBuffersMapped(final long termId,
+                                final LogAppender[] logAppenders,
+                                final PositionIndicator positionIndicator)
     {
         this.logAppenders = logAppenders;
         this.positionIndicator = positionIndicator;
@@ -140,7 +142,7 @@ public class Channel extends ChannelNotifiable implements AutoCloseable, Positio
     public void close() throws Exception
     {
         channels.remove(this);
-        conductor.sendRemoveChannel(destination, sessionId, channelId);
+        mediaConductorProxy.sendRemoveChannel(destination, sessionId, channelId);
     }
 
     public boolean matches(final String destination, final long sessionId, final long channelId)
@@ -150,7 +152,7 @@ public class Channel extends ChannelNotifiable implements AutoCloseable, Positio
 
     private void requestTerm(final long termId)
     {
-        conductor.sendRequestTerm(destination, sessionId, channelId, termId);
+        mediaConductorProxy.sendRequestTerm(destination, sessionId, channelId, termId);
     }
 
     protected boolean hasTerm(final long sessionId)

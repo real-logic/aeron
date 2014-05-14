@@ -15,9 +15,9 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import uk.co.real_logic.aeron.util.Agent;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.ErrorCode;
-import uk.co.real_logic.aeron.util.Service;
 import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
@@ -35,7 +35,7 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.REMOVE_S
 /**
  * Receiver service for JVM based mediadriver, uses an event loop with command buffer
  */
-public class Receiver extends Service
+public class Receiver extends Agent
 {
     private final RingBuffer commandBuffer;
     private final NioSelector nioSelector;

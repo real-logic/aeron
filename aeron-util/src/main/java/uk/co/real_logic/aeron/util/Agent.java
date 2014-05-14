@@ -15,13 +15,16 @@
  */
 package uk.co.real_logic.aeron.util;
 
-public abstract class Service implements Runnable, AutoCloseable
+/**
+ * Base agent that is responsible for an ongoing activity which runs in its own thread.
+ */
+public abstract class Agent implements Runnable, AutoCloseable
 {
     private volatile boolean running;
 
     private final long sleepPeriod;
 
-    public Service(final long sleepPeriod)
+    public Agent(final long sleepPeriod)
     {
         this.sleepPeriod = sleepPeriod;
         running = true;

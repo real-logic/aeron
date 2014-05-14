@@ -41,7 +41,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.B
 /**
  * Admin thread to take commands from Publishers and Subscribers as well as handle NAKs and retransmissions
  */
-public class MediaConductor extends Service implements LibraryFacade
+public class MediaConductor extends Agent implements LibraryFacade
 {
     public static final int WRITE_BUFFER_CAPACITY = 256;
     public static final int HEADER_LENGTH = BASE_HEADER_LENGTH + SIZE_OF_INT;

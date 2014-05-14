@@ -15,13 +15,13 @@
  */
 package uk.co.real_logic.aeron.util;
 
-public class ServiceTest
+public class AgentTest
 {
-    public static void processLoop(final Service thread, final int iterations)
+    public static void processLoop(final Agent agent, final int iterations)
     {
         for (int i = 0; i < iterations; i++)
         {
-            thread.process();
+            agent.process();
         }
     }
 }

@@ -16,15 +16,15 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.AtomicArray;
-import uk.co.real_logic.aeron.util.Service;
+import uk.co.real_logic.aeron.util.Agent;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.SELECT_TIMEOUT;
 
 /**
- * Service to take data in sender buffers and demux onto sending sockets
+ * Agent to take data in sender buffers and demux onto sending sockets
  */
-public class Sender extends Service
+public class Sender extends Agent
 {
     private final RingBuffer adminThreadCommandBuffer;
     private final AtomicArray<SenderChannel> channels = new AtomicArray<>();

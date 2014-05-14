@@ -18,8 +18,8 @@ package uk.co.real_logic.aeron.conductor;
 import uk.co.real_logic.aeron.Channel;
 import uk.co.real_logic.aeron.PublisherControlFactory;
 import uk.co.real_logic.aeron.SubscriberChannel;
+import uk.co.real_logic.aeron.util.Agent;
 import uk.co.real_logic.aeron.util.AtomicArray;
-import uk.co.real_logic.aeron.util.Service;
 import uk.co.real_logic.aeron.util.collections.ChannelMap;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.CompletelyIdentifiedMessageFlyweight;
@@ -48,7 +48,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.B
  * Admin thread to take responses and notifications from mediadriver and act on them. As well as pass commands
  * to the mediadriver.
  */
-public final class ClientConductor extends Service implements MediaDriverFacade
+public final class ClientConductor extends Agent implements MediaDriverFacade
 {
     // TODO: DI this
     private static final byte[] DEFAULT_HEADER = new byte[BASE_HEADER_LENGTH + SIZE_OF_INT];

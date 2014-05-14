@@ -127,11 +127,6 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
         // TODO: have the sender channel, so look for the term within it
     }
 
-    public TimerWheel.Timer newTimeout(final long delay, final TimeUnit timeUnit, final Runnable task)
-    {
-        return mediaConductor.newTimeout(delay, timeUnit, task);
-    }
-
     public long currentTime()
     {
         return mediaConductor.currentTime();

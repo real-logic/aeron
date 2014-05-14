@@ -255,6 +255,11 @@ public class MediaConductor extends Agent implements LibraryFacade
         return timerWheel.newTimeout(delay, timeUnit, task);
     }
 
+    public void rescheduleTimeout(final long delay, final TimeUnit timeUnit, final TimerWheel.Timer timer)
+    {
+        timerWheel.rescheduleTimeout(delay, timeUnit, timer);
+    }
+
     public long currentTime()
     {
         return timerWheel.now();
@@ -479,6 +484,7 @@ public class MediaConductor extends Agent implements LibraryFacade
     private void onHeartbeatCheck()
     {
         sender.heartbeatChecks();
-        heartbeatTimer = newTimeout(HEARTBEAT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS, this::onHeartbeatCheck);
+
+        rescheduleTimeout(HEARTBEAT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS, heartbeatTimer);
     }
 }

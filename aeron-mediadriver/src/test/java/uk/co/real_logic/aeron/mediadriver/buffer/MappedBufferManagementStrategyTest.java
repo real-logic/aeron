@@ -57,45 +57,47 @@ public class MappedBufferManagementStrategyTest
     {
         final BufferRotator rotator = strategy.addPublisherChannel(destination, SESSION_ID, CHANNEL_ID);
 
-        rotator.buffers().forEach((logBuffer) ->
-        {
-            final AtomicBuffer log = logBuffer.logBuffer();
+        rotator.buffers().forEach(
+            (logBuffer) ->
+            {
+                final AtomicBuffer log = logBuffer.logBuffer();
 
-            assertThat(Long.valueOf(log.capacity()), is(MappedBufferManagementStrategy.LOG_BUFFER_SIZE));
-            assertThat(log.getByte(0), is((byte) 0));
-            assertThat(log.getByte((int) MappedBufferManagementStrategy.LOG_BUFFER_SIZE - 1), is((byte) 0));
+                assertThat((long)log.capacity(), is(MappedBufferManagementStrategy.LOG_BUFFER_SIZE));
+                assertThat(log.getByte(0), is((byte)0));
+                assertThat(log.getByte((int)MappedBufferManagementStrategy.LOG_BUFFER_SIZE - 1), is((byte)0));
 
-            final AtomicBuffer state = logBuffer.stateBuffer();
+                final AtomicBuffer state = logBuffer.stateBuffer();
 
-            assertThat(state.capacity(), is(BufferDescriptor.STATE_BUFFER_LENGTH));
-            assertThat(state.getByte(0), is((byte) 0));
-            assertThat(state.getByte((int) BufferDescriptor.STATE_BUFFER_LENGTH - 1), is((byte) 0));
-        });
+                assertThat(state.capacity(), is(BufferDescriptor.STATE_BUFFER_LENGTH));
+                assertThat(state.getByte(0), is((byte)0));
+                assertThat(state.getByte(BufferDescriptor.STATE_BUFFER_LENGTH - 1), is((byte)0));
+            }
+        );
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void shouldExceptionWhenRemovingUnknownProducerChannel() throws Exception
+    public void shouldExceptionWhenRemovingUnknownPublisherChannel() throws Exception
     {
         strategy.removePublisherChannel(destination, SESSION_ID, CHANNEL_ID);
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void shouldExceptionWhenRemovingUnknownConsumerChannel() throws Exception
+    public void shouldExceptionWhenRemovingUnknownSubscriberChannel() throws Exception
     {
         strategy.removeSubscriberChannel(destination, SESSION_ID, CHANNEL_ID);
     }
 
     @Test
-    public void shouldBeAbleToAddAndRemoveProducerChannel() throws Exception
+    public void shouldBeAbleToAddAndRemovePublisherChannel() throws Exception
     {
-        final BufferRotator rotator = strategy.addPublisherChannel(destination, SESSION_ID, CHANNEL_ID);
+        strategy.addPublisherChannel(destination, SESSION_ID, CHANNEL_ID);
         strategy.removePublisherChannel(destination, SESSION_ID, CHANNEL_ID);
     }
 
     @Test
-    public void shouldBeAbleToAddAndRemoveConsumerChannel() throws Exception
+    public void shouldBeAbleToAddAndRemoveSubscriberChannel() throws Exception
     {
-        final BufferRotator rotator = strategy.addSubscriberChannel(destination, SESSION_ID, CHANNEL_ID);
+        strategy.addSubscriberChannel(destination, SESSION_ID, CHANNEL_ID);
         strategy.removeSubscriberChannel(destination, SESSION_ID, CHANNEL_ID);
     }
 }

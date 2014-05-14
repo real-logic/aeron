@@ -20,8 +20,8 @@ package uk.co.real_logic.aeron.util.status;
  */
 public enum  StatusLabels
 {
-    PRODUCER_TO_SOURCE_POSITION("Producer to Source Position"),
-    RECEIVER_TO_CONSUMER_POSITION("Producer to Source Position")
+    PUBLISHER_TO_SENDER_POSITION("Publisher to Sender Position"),
+    RECEIVER_TO_SUBSCRIBER_POSITION("Receiver to Subscriber Position")
     ;
 
     // TODO: get label from
@@ -33,4 +33,8 @@ public enum  StatusLabels
         this.label = label;
     }
 
+    public String label()
+    {
+        return label;
+    }
 }

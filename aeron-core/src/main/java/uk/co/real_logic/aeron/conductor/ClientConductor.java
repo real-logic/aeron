@@ -65,52 +65,50 @@ public final class ClientConductor extends Service implements MediaDriverFacade
     private final RingBuffer sendBuffer;
 
     private final BufferUsageStrategy bufferUsage;
-    private final AtomicArray<Channel> producers;
+    private final AtomicArray<Channel> publishers;
     private final AtomicArray<SubscriberChannel> subscriberChannels;
 
     private final ChannelMap<String, Channel> sendNotifiers;
-    private final SubscriberMap recvNotifiers;
+    private final SubscriberMap rcvNotifiers;
 
     private final ConductorErrorHandler errorHandler;
-    private final PublisherControlFactory producerControl;
+    private final PublisherControlFactory publisherControl;
 
     private final StatusBufferMapper statusCounters;
 
     // Control protocol Flyweights
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
     private final SubscriberMessageFlyweight receiverMessage = new SubscriberMessageFlyweight();
-    private final CompletelyIdentifiedMessageFlyweight requestTermMessage = new CompletelyIdentifiedMessageFlyweight();
     private final CompletelyIdentifiedMessageFlyweight bufferNotificationMessage =
         new CompletelyIdentifiedMessageFlyweight();
 
     public ClientConductor(final RingBuffer commandBuffer,
-                           final RingBuffer recvBuffer,
+                           final RingBuffer rcvBuffer,
                            final RingBuffer sendBuffer,
                            final BufferUsageStrategy bufferUsage,
-                           final AtomicArray<Channel> producers,
+                           final AtomicArray<Channel> publishers,
                            final AtomicArray<SubscriberChannel> subscriberChannels,
                            final ConductorErrorHandler errorHandler,
-                           final PublisherControlFactory producerControl)
+                           final PublisherControlFactory publisherControl)
     {
         super(SLEEP_PERIOD);
 
         statusCounters = new StatusBufferMapper();
 
         this.commandBuffer = commandBuffer;
-        this.recvBuffer = recvBuffer;
+        this.recvBuffer = rcvBuffer;
         this.sendBuffer = sendBuffer;
         this.bufferUsage = bufferUsage;
-        this.producers = producers;
+        this.publishers = publishers;
         this.subscriberChannels = subscriberChannels;
         this.errorHandler = errorHandler;
-        this.producerControl = producerControl;
+        this.publisherControl = publisherControl;
         this.sendNotifiers = new ChannelMap<>();
-        this.recvNotifiers = new SubscriberMap();
+        this.rcvNotifiers = new SubscriberMap();
 
         final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
         channelMessage.wrap(writeBuffer, 0);
         receiverMessage.wrap(writeBuffer, 0);
-        requestTermMessage.wrap(writeBuffer, 0);
     }
 
     public void process()
@@ -128,7 +126,7 @@ public final class ClientConductor extends Service implements MediaDriverFacade
 
     private void processBufferCleaningScan()
     {
-        producers.forEach(Channel::processBufferScan);
+        publishers.forEach(Channel::processBufferScan);
         subscriberChannels.forEach(SubscriberChannel::processBufferScan);
     }
 
@@ -149,11 +147,11 @@ public final class ClientConductor extends Service implements MediaDriverFacade
 
                         if (eventTypeId == ADD_CHANNEL)
                         {
-                            addProducer(destination, channelId, sessionId);
+                            addPublisher(destination, channelId, sessionId);
                         }
                         else
                         {
-                            removeProducer(destination, channelId, sessionId);
+                            removePublisher(destination, channelId, sessionId);
                         }
                         sendBuffer.write(eventTypeId, buffer, index, length);
 
@@ -197,7 +195,7 @@ public final class ClientConductor extends Service implements MediaDriverFacade
                 {
                     if (receiver.matches(destination, channelId))
                     {
-                        recvNotifiers.put(destination, channelId, receiver);
+                        rcvNotifiers.put(destination, channelId, receiver);
                     }
                 }
             );
@@ -208,26 +206,26 @@ public final class ClientConductor extends Service implements MediaDriverFacade
     {
         for (final long channelId : channelIds)
         {
-            recvNotifiers.remove(destination, channelId);
+            rcvNotifiers.remove(destination, channelId);
         }
         // TOOD: release buffers
     }
 
-    private void addProducer(final String destination, final long channelId, final long sessionId)
+    private void addPublisher(final String destination, final long channelId, final long sessionId)
     {
         // see addReceiver re efficiency
-        producers.forEach(
-                channel ->
+        publishers.forEach(
+            channel ->
+            {
+                if (channel.matches(destination, sessionId, channelId))
                 {
-                    if (channel.matches(destination, sessionId, channelId))
-                    {
-                        sendNotifiers.put(destination, sessionId, channelId, channel);
-                    }
+                    sendNotifiers.put(destination, sessionId, channelId, channel);
                 }
+            }
         );
     }
 
-    private void removeProducer(final String destination, final long channelId, final long sessionId)
+    private void removePublisher(final String destination, final long channelId, final long sessionId)
     {
         if (sendNotifiers.remove(destination, channelId, sessionId) == null)
         {
@@ -278,7 +276,7 @@ public final class ClientConductor extends Service implements MediaDriverFacade
                                                  final long termId)
     {
         onNewBufferNotification(sessionId,
-                                recvNotifiers.get(destination, channelId),
+                                rcvNotifiers.get(destination, channelId),
                                 i -> newReader(destination, channelId, sessionId, i),
                                 LogReader[]::new,
                                 (chan, buffers) ->

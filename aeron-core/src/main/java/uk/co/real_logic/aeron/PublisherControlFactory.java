@@ -22,5 +22,5 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public interface PublisherControlFactory
 {
-    ProducerControlStrategy make(final AtomicBoolean pauseButton);
+    PublisherControlStrategy make(final AtomicBoolean pauseButton);
 }

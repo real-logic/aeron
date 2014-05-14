@@ -197,7 +197,7 @@ public final class Aeron
         {
             errorHandler = new DummyErrorHandler();
             adminBuffers = new MappingConductorBufferStrategy(CommonConfiguration.ADMIN_DIR);
-            publisherControl = DefaultProducerControlStrategy::new;
+            publisherControl = DefaultPublisherControlStrategy::new;
         }
 
         public Context errorHandler(ErrorHandler errorHandler)

@@ -34,16 +34,18 @@ import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
  */
 public class IoUtil
 {
-    /** Size in bytes of a file page. */
+    /**
+     * Size in bytes of a file page.
+     */
     public static final int BLOCK_SIZE = 4 * 1024;
 
     /**
      * Fill a region of a file with a given byte value.
      *
      * @param fileChannel to fill
-     * @param position at which to start writing.
-     * @param length of the region to write.
-     * @param value to fill the region with.
+     * @param position    at which to start writing.
+     * @param length      of the region to write.
+     * @param value       to fill the region with.
      */
     public static void fill(final FileChannel fileChannel, final long position, final long length, final byte value)
         throws IOException
@@ -73,7 +75,7 @@ public class IoUtil
     /**
      * Recursively delete a file or directory tree.
      *
-     * @param file to be deleted.
+     * @param file           to be deleted.
      * @param ignoreFailures don't throw an exception if a delete fails.
      * @throws IOException if an error occurs while trying to delete the files.
      */
@@ -142,18 +144,18 @@ public class IoUtil
     {
         final RandomAccessFile randomAccessFile = new RandomAccessFile(file, "rw");
         final FileChannel templateFile = randomAccessFile.getChannel();
-        fill(templateFile, 0, size, (byte) 0);
+        fill(templateFile, 0, size, (byte)0);
 
         return templateFile;
     }
 
     /**
      * Check that file exists, open file, and return MappedByteBuffer for entire file
-     *
+     * <p>
      * The file itself will be closed, but the mapping will persist.
      *
      * @param location of the file to map
-     * @param name to be associated for any exceptions
+     * @param name     to be associated for any exceptions
      * @return {@link java.nio.MappedByteBuffer} for the file
      * @throws IOException for any errors
      */
@@ -169,16 +171,16 @@ public class IoUtil
 
     /**
      * Create a new file, fill with 0s, and return a {@link java.nio.MappedByteBuffer} for the file
-     *
+     * <p>
      * The file itself will be closed, but the mapping will persist.
      *
      * @param location of the file to create and map
-     * @param size of the file to create and map
+     * @param size     of the file to create and map
      * @return {@link java.nio.MappedByteBuffer} for the file
      * @throws IOException for any errors
      */
     public static MappedByteBuffer mapNewFile(final File location, final String name, final long size)
-            throws IOException
+        throws IOException
     {
         try (final FileChannel channel = createEmptyFile(location, size))
         {

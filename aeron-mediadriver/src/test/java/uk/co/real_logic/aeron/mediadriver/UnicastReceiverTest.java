@@ -19,8 +19,8 @@ import org.junit.*;
 import org.junit.rules.ExpectedException;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
 import uk.co.real_logic.aeron.util.BitUtil;
+import uk.co.real_logic.aeron.util.ClientConductorMappedBuffers;
 import uk.co.real_logic.aeron.util.ConductorBuffers;
-import uk.co.real_logic.aeron.util.MappingConductorBufferManagement;
 import uk.co.real_logic.aeron.util.SharedDirectories;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
@@ -98,16 +98,16 @@ public class UnicastReceiverTest
 
         NioSelector nioSelector = new NioSelector();
         final MediaDriver.Context ctx = new MediaDriver.Context()
-            .adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
-            .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
+            .conductorCommandBuffer(COMMAND_BUFFER_SZ)
+            .receiverCommandBuffer(COMMAND_BUFFER_SZ)
             .rcvNioSelector(nioSelector)
             .adminNioSelector(new NioSelector())
             .senderFlowControl(DefaultSenderControlStrategy::new)
-            .adminBufferStrategy(new MappingConductorBufferManagement(buffers.adminDir()))
-            .bufferManagementStrategy(bufferManagement);
+            .conductorCommsBuffers(new ClientConductorMappedBuffers(buffers.adminDirName()))
+            .bufferManagement(bufferManagement);
 
         ctx.rcvFrameHandlerFactory(
-            new RcvFrameHandlerFactory(nioSelector, new MediaConductorCursor(ctx.adminThreadCommandBuffer(),
+            new RcvFrameHandlerFactory(nioSelector, new MediaConductorCursor(ctx.conductorCommandBuffer(),
                                                                                      nioSelector))
         );
 

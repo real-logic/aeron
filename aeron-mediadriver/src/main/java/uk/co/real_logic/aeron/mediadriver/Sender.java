@@ -35,7 +35,7 @@ public class Sender extends Agent
     {
         super(SELECT_TIMEOUT);
 
-        adminThreadCommandBuffer = ctx.adminThreadCommandBuffer();
+        adminThreadCommandBuffer = ctx.conductorCommandBuffer();
     }
 
     public void process()

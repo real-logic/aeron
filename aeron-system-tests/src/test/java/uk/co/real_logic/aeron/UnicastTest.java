@@ -17,14 +17,12 @@ package uk.co.real_logic.aeron;
 
 import org.junit.*;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
-import uk.co.real_logic.aeron.util.ConductorBuffers;
-import uk.co.real_logic.aeron.util.CountersResource;
-import uk.co.real_logic.aeron.util.SharedDirectories;
+import uk.co.real_logic.aeron.util.*;
 
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.Subscriber.DataHandler;
 import static uk.co.real_logic.aeron.Subscriber.NewSourceEventHandler;
-import static uk.co.real_logic.aeron.util.CommonConfiguration.ADMIN_DIR;
+import static uk.co.real_logic.aeron.util.CommonConfiguration.ADMIN_DIR_NAME;
 
 public class UnicastTest
 {
@@ -39,7 +37,7 @@ public class UnicastTest
     public static SharedDirectories dataDir = new SharedDirectories();
 
     @ClassRule
-    public static ConductorBuffers buffers = new ConductorBuffers(ADMIN_DIR);
+    public static ConductorBuffers buffers = new ConductorBuffers(ADMIN_DIR_NAME);
 
     private DataHandler dataHandler;
     private NewSourceEventHandler sourceHandler;
@@ -58,8 +56,8 @@ public class UnicastTest
         dataHandler = mock(DataHandler.class);
         sourceHandler = mock(NewSourceEventHandler.class);
 
-        producingClient = Aeron.newSingleMediaDriver(new Aeron.Context());
-        receivingClient = Aeron.newSingleMediaDriver(new Aeron.Context());
+        producingClient = Aeron.newSingleMediaDriver(newAeronContext());
+        receivingClient = Aeron.newSingleMediaDriver(newAeronContext());
 
         subscriber = receivingClient.newSubscriber(new Subscriber.Context()
                                                        .destination(DESTINATION)
@@ -68,6 +66,12 @@ public class UnicastTest
 
         source = producingClient.newSource(new Source.Context().destination(DESTINATION)
                                                                .sessionId(SESSION_ID));
+    }
+
+    private Aeron.Context newAeronContext()
+    {
+        return new Aeron.Context()
+                                         .conductorMappedBuffers(new ClientConductorMappedBuffers(ADMIN_DIR_NAME));
     }
 
     @After

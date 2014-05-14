@@ -19,9 +19,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import uk.co.real_logic.aeron.util.CreatingConductorBufferManagement;
+import uk.co.real_logic.aeron.util.ClientConductorMappedBuffers;
+import uk.co.real_logic.aeron.util.MediaDriverConductorMappedBuffers;
 import uk.co.real_logic.aeron.util.IoUtil;
-import uk.co.real_logic.aeron.util.MappingConductorBufferManagement;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
@@ -44,7 +44,7 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor
 
 public class MediaConductorTest
 {
-    private static final String ADMIN_DIR = "adminDir";
+    private static final String ADMIN_DIR = "adminDirName";
     private static final String DESTINATION = "udp://localhost:";
 
     private static String adminPath;
@@ -52,7 +52,7 @@ public class MediaConductorTest
     @BeforeClass
     public static void setupDirectories() throws IOException
     {
-        final File adminDir = new File(IoUtil.tmpDir(), ADMIN_DIR);
+        final File adminDir = new File(IoUtil.tmpDirName(), ADMIN_DIR);
         if (adminDir.exists())
         {
             IoUtil.delete(adminDir, false);
@@ -72,13 +72,13 @@ public class MediaConductorTest
     public void setUp()
     {
         final MediaDriver.Context ctx = new MediaDriver.Context()
-            .adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
-            .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
+            .conductorCommandBuffer(COMMAND_BUFFER_SZ)
+            .receiverCommandBuffer(COMMAND_BUFFER_SZ)
             .rcvNioSelector(new NioSelector())
             .adminNioSelector(new NioSelector())
             .senderFlowControl(DefaultSenderControlStrategy::new)
-            .adminBufferStrategy(new CreatingConductorBufferManagement(adminPath, COMMAND_BUFFER_SZ + TRAILER_LENGTH))
-            .bufferManagementStrategy(newMappedBufferManager(adminPath));
+            .conductorCommsBuffers(new MediaDriverConductorMappedBuffers(adminPath, COMMAND_BUFFER_SZ + TRAILER_LENGTH))
+            .bufferManagement(newMappedBufferManager(adminPath));
 
         final Sender sender = new Sender(ctx)
         {
@@ -185,7 +185,7 @@ public class MediaConductorTest
     private void writeChannelMessage(final int eventTypeId, final long channelId, final long sessionId, final int port)
         throws IOException
     {
-        final ByteBuffer buffer = new MappingConductorBufferManagement(adminPath).toMediaDriver();
+        final ByteBuffer buffer = new ClientConductorMappedBuffers(adminPath).toMediaDriver();
         final RingBuffer adminCommands = new ManyToOneRingBuffer(new AtomicBuffer(buffer));
 
         final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();

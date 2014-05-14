@@ -15,39 +15,39 @@
  */
 package uk.co.real_logic.aeron.util;
 
-import java.io.IOException;
+import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 
-import static uk.co.real_logic.aeron.util.IoUtil.mapExistingFile;
-
-public class MappingConductorBufferManagement extends ConductorBufferManagement
+/**
+ * Interface for encapsulating the allocation of conductor communication buffers.
+ *
+ * Assumes one media driver per client instance.
+ */
+public abstract class ConductorMappedBuffers implements AutoCloseable
 {
-    private MappedByteBuffer toMediaDriverBuffer;
-    private MappedByteBuffer toClientBuffer;
+    protected static final String MEDIA_DRIVER_FILE = "media-driver";
+    protected static final String CLIENT_FILE = "client";
 
-    public MappingConductorBufferManagement(final String adminDir)
+    protected final File toMediaDriverFile;
+    protected final File toClientFile;
+
+    protected MappedByteBuffer toMediaDriverBuffer;
+    protected MappedByteBuffer toClientBuffer;
+
+    protected ConductorMappedBuffers(final String adminDirName)
     {
-        super(adminDir);
+        toMediaDriverFile = new File(adminDirName, MEDIA_DRIVER_FILE);
+        toClientFile = new File(adminDirName, CLIENT_FILE);
     }
 
-    public ByteBuffer toMediaDriver() throws IOException
+    public ByteBuffer toMediaDriver()
     {
-        if (toMediaDriverBuffer == null)
-        {
-            toMediaDriverBuffer = mapExistingFile(toMediaDriver, MEDIA_DRIVER_FILE);
-        }
-
         return toMediaDriverBuffer;
     }
 
-    public ByteBuffer toClient() throws IOException
+    public ByteBuffer toClient()
     {
-        if (toClientBuffer == null)
-        {
-            toClientBuffer = mapExistingFile(toClient, CLIENT_FILE);
-        }
-
         return toClientBuffer;
     }
 

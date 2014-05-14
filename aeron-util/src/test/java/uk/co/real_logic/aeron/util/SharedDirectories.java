@@ -54,9 +54,9 @@ public class SharedDirectories extends ExternalResource
 
     protected void before() throws Throwable
     {
-        dataDir = ensureDirectory(CommonConfiguration.DATA_DIR);
+        dataDir = ensureDirectory(CommonConfiguration.DATA_DIR_NAME);
         mapping = new FileMappingConvention(dataDir.getAbsolutePath());
-        buffers = new ArrayList<>();
+        buffers = new ArrayList<>(3);
     }
 
     protected void after()
@@ -67,15 +67,15 @@ public class SharedDirectories extends ExternalResource
             unmapBuffers();
             IoUtil.delete(dataDir, false);
         }
-        catch (Exception e)
+        catch (final Exception ex)
         {
-            throw new RuntimeException(e);
+            throw new RuntimeException(ex);
         }
     }
 
     private void unmapBuffers()
     {
-        buffers.forEach((b) -> IoUtil.unmap(b));
+        buffers.forEach(IoUtil::unmap);
         buffers.clear();
     }
 
@@ -150,8 +150,8 @@ public class SharedDirectories extends ExternalResource
         IoUtil.delete(termLocation, true);
 
         final MappedByteBuffer buffer = mapNewFile(termLocation, "Term Buffer", BufferDescriptor.LOG_MIN_SIZE);
-
         buffers.add(buffer);
+
         return new AtomicBuffer(buffer);
     }
 
@@ -186,8 +186,8 @@ public class SharedDirectories extends ExternalResource
         final File termLocation = termLocation(rootDir, sessionId, channelId, termId, false, destination, type);
 
         final MappedByteBuffer buffer = IoUtil.mapExistingFile(termLocation, "Term Buffer");
-
         buffers.add(buffer);
+
         return new AtomicBuffer(buffer);
     }
 }

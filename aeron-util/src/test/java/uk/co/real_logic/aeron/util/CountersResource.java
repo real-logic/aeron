@@ -21,7 +21,7 @@ import uk.co.real_logic.aeron.util.status.StatusBufferCreator;
 import java.io.File;
 import java.io.IOException;
 
-import static uk.co.real_logic.aeron.util.CommonConfiguration.COUNTERS_DIR;
+import static uk.co.real_logic.aeron.util.CommonConfiguration.COUNTERS_DIR_NAME;
 import static uk.co.real_logic.aeron.util.IoUtil.ensureDirectoryExists;
 
 /**
@@ -30,7 +30,7 @@ import static uk.co.real_logic.aeron.util.IoUtil.ensureDirectoryExists;
 public class CountersResource extends ExternalResource
 {
     private static final long BUFFER_SIZE = 1024L;
-    private final File file = new File(COUNTERS_DIR);
+    private final File file = new File(COUNTERS_DIR_NAME);
 
     private StatusBufferCreator creator;
 

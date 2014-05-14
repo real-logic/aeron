@@ -44,13 +44,13 @@ public class ReceiverTest
         frameHandlerFactory = mock(RcvFrameHandlerFactory.class);
 
         final MediaDriver.Context context = new MediaDriver.Context()
-                .adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
-                .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
+                .conductorCommandBuffer(COMMAND_BUFFER_SZ)
+                .receiverCommandBuffer(COMMAND_BUFFER_SZ)
                 .rcvNioSelector(new NioSelector())
-                .bufferManagementStrategy(bufferManagement)
+                .bufferManagement(bufferManagement)
                 .rcvFrameHandlerFactory(frameHandlerFactory);
 
-        cursor = new ReceiverCursor(context.receiverThreadCommandBuffer(), context.rcvNioSelector());
+        cursor = new ReceiverCursor(context.receiverCommandBuffer(), context.rcvNioSelector());
         receiver = new Receiver(context);
     }
 

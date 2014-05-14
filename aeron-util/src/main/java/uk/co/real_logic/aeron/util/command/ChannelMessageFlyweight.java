@@ -119,5 +119,4 @@ public class ChannelMessageFlyweight extends Flyweight
     {
         return DESTINATION_OFFSET + lengthOfDestination;
     }
-
 }

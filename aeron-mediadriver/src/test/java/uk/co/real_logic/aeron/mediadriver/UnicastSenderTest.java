@@ -73,8 +73,8 @@ public class UnicastSenderTest
     public static final int BUFFER_SIZE = 256;
     public static final int VALUE = 37;
 
-    @ClassRule
-    public static ConductorBuffers buffers = new ConductorBuffers(COMMAND_BUFFER_SZ + TRAILER_LENGTH);
+    @Rule
+    public ConductorBuffers buffers = new ConductorBuffers(COMMAND_BUFFER_SZ + TRAILER_LENGTH);
 
     @ClassRule
     public static SharedDirectories directory = new SharedDirectories();
@@ -113,13 +113,13 @@ public class UnicastSenderTest
                 MEDIA_CONDUCTOR_TICKS_PER_WHEEL);
 
         final Context ctx = new Context()
-            .adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
-            .receiverThreadCommandBuffer(COMMAND_BUFFER_SZ)
+            .conductorCommandBuffer(COMMAND_BUFFER_SZ)
+            .receiverCommandBuffer(COMMAND_BUFFER_SZ)
             .rcvNioSelector(new NioSelector())
             .adminNioSelector(new NioSelector())
             .senderFlowControl(DefaultSenderControlStrategy::new)
-            .adminBufferStrategy(buffers.strategy())
-            .bufferManagementStrategy(bufferManagement)
+            .conductorCommsBuffers(buffers.ownedBuffers())
+            .bufferManagement(bufferManagement)
             .adminTimerWheel(timerWheel);
 
         sender = new Sender(ctx);

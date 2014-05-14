@@ -229,12 +229,18 @@ public class IoUtil
     }
 
     /**
-     * Return the system property for java.io.tmpdir
+     * Return the system property for java.io.tmpdir ensuring a {@link File#separator} is at the end.
      *
      * @return tmp directory for the runtime
      */
-    public static String tmpDir()
+    public static String tmpDirName()
     {
-        return System.getProperty("java.io.tmpdir");
+        String tmpDirName = System.getProperty("java.io.tmpdir");
+        if (!tmpDirName.endsWith(File.separator))
+        {
+            tmpDirName += File.separator;
+        }
+
+        return tmpDirName;
     }
 }

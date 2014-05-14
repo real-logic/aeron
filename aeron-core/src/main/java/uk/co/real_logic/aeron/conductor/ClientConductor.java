@@ -43,10 +43,9 @@ import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.BASE_HEADER_LENGTH;
 
-
 /**
- * Admin thread to take responses and notifications from mediadriver and act on them. As well as pass commands
- * to the mediadriver.
+ * Client conductor takes responses and notifications from media driver and acts on them. As well as pass commands
+ * to the media driver.
  */
 public final class ClientConductor extends Agent implements MediaDriverFacade
 {
@@ -54,15 +53,14 @@ public final class ClientConductor extends Agent implements MediaDriverFacade
     private static final byte[] DEFAULT_HEADER = new byte[BASE_HEADER_LENGTH + SIZE_OF_INT];
     private static final int MAX_FRAME_LENGTH = 1024;
 
-    /**
-     * Maximum size of the write buffer
-     */
+    /** Maximum size of the write buffer. */
     public static final int WRITE_BUFFER_CAPACITY = 256;
 
     private static final int SLEEP_PERIOD = 1;
-    private final RingBuffer rcvBuffer;
+
+    private final RingBuffer fromMediaDriverBuffer;
     private final RingBuffer commandBuffer;
-    private final RingBuffer sendBuffer;
+    private final RingBuffer toMediaDriverBuffer;
 
     private final BufferUsageStrategy bufferUsage;
     private final AtomicArray<Channel> publishers;
@@ -83,8 +81,8 @@ public final class ClientConductor extends Agent implements MediaDriverFacade
         new QualifiedMessageFlyweight();
 
     public ClientConductor(final RingBuffer commandBuffer,
-                           final RingBuffer rcvBuffer,
-                           final RingBuffer sendBuffer,
+                           final RingBuffer fromMediaDriverBuffer,
+                           final RingBuffer toMediaDriverBuffer,
                            final BufferUsageStrategy bufferUsage,
                            final AtomicArray<Channel> publishers,
                            final AtomicArray<SubscriberChannel> subscriberChannels,
@@ -96,8 +94,8 @@ public final class ClientConductor extends Agent implements MediaDriverFacade
         statusCounters = new StatusBufferMapper();
 
         this.commandBuffer = commandBuffer;
-        this.rcvBuffer = rcvBuffer;
-        this.sendBuffer = sendBuffer;
+        this.fromMediaDriverBuffer = fromMediaDriverBuffer;
+        this.toMediaDriverBuffer = toMediaDriverBuffer;
         this.bufferUsage = bufferUsage;
         this.publishers = publishers;
         this.subscriberChannels = subscriberChannels;
@@ -153,7 +151,8 @@ public final class ClientConductor extends Agent implements MediaDriverFacade
                         {
                             removePublisher(destination, channelId, sessionId);
                         }
-                        sendBuffer.write(eventTypeId, buffer, index, length);
+
+                        toMediaDriverBuffer.write(eventTypeId, buffer, index, length);
 
                         return;
                     }
@@ -172,12 +171,13 @@ public final class ClientConductor extends Agent implements MediaDriverFacade
                         {
                             removeReceiver(destination, channelIds);
                         }
-                        sendBuffer.write(eventTypeId, buffer, index, length);
+
+                        toMediaDriverBuffer.write(eventTypeId, buffer, index, length);
                         return;
                     }
 
                     case REQUEST_CLEANED_TERM:
-                        sendBuffer.write(eventTypeId, buffer, index, length);
+                        toMediaDriverBuffer.write(eventTypeId, buffer, index, length);
                         break;
                 }
             }
@@ -237,7 +237,7 @@ public final class ClientConductor extends Agent implements MediaDriverFacade
 
     private void handleReceiveBuffer()
     {
-        rcvBuffer.read(
+        fromMediaDriverBuffer.read(
             (eventTypeId, buffer, index, length) ->
             {
                 switch (eventTypeId)
@@ -295,7 +295,7 @@ public final class ClientConductor extends Agent implements MediaDriverFacade
     {
         onNewBufferNotification(sessionId,
                                 sendNotifiers.get(destination, sessionId, channelId),
-                                i -> newAppender(destination, sessionId, channelId, i),
+                                (i) -> newAppender(destination, sessionId, channelId, i),
                                 LogAppender[]::new,
                                 (chan, buffers) ->
                                 {
@@ -414,6 +414,5 @@ public final class ClientConductor extends Agent implements MediaDriverFacade
                                         final boolean isSender,
                                         final String destination)
     {
-
     }
 }

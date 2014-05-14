@@ -72,7 +72,7 @@ public class MediaConductorProxy
         channelMessage.sessionId(sessionId);
         channelMessage.channelId(channelId);
         channelMessage.destination(destination);
-        conductorBuffer.write(eventTypeId, writeBuffer, 0, channelMessage.length());
+        conductorBuffer.write(eventTypeId, writeBuffer, 0, channelMessage.length()); // TODO: need to check return!
     }
 
     public void sendAddSubscriber(final String destination, final long[] channelIds)

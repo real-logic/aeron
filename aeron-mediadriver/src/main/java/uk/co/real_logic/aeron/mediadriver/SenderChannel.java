@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron.mediadriver;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
 import uk.co.real_logic.aeron.mediadriver.buffer.LogBuffers;
 import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
-import uk.co.real_logic.aeron.util.TimerWheel.Timer;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogScanner;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
@@ -26,9 +25,8 @@ import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * Encapsulates the information associated with a channel
@@ -36,9 +34,14 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  */
 public class SenderChannel
 {
-    // TODO: discuss with Todd about whether we need two timeouts here
-    public static final int FLOW_CONTROL_TIMEOUT_IN_MILLISECONDS = 100;
+    /** initial heartbeat timeout (cancelled by SM) */
+    public static final int INITIAL_HEARTBEAT_TIMEOUT_IN_MILLISECONDS = 100;
+    public static final long INITIAL_HEARTBEAT_TIMEOUT_IN_NANOSECONDS =
+            TimeUnit.MILLISECONDS.toNanos(INITIAL_HEARTBEAT_TIMEOUT_IN_MILLISECONDS);
+    /** heartbeat after data sent */
     public static final int HEARTBEAT_TIMEOUT_IN_MILLISECONDS = 500;
+    public static final long HEARTBEAT_TIMEOUT_IN_NANOSECONDS =
+            TimeUnit.MILLISECONDS.toNanos(HEARTBEAT_TIMEOUT_IN_MILLISECONDS);
 
     private final ControlFrameHandler frameHandler;
     private final SenderControlStrategy controlStrategy;
@@ -50,6 +53,9 @@ public class SenderChannel
 
     private final AtomicLong currentTermId;
     private final AtomicLong cleanedTermId;
+
+    // TODO: temporary. Replace with counter.
+    private final AtomicLong timeOfLastSendOrHeartbeat;
 
     private final int headerLength;
     private final int mtuLength;
@@ -63,7 +69,8 @@ public class SenderChannel
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
     private int currentIndex = 0;
-    private Timer flowControlTimer;
+
+    private int statusMessagesSeen = 0;
 
     public SenderChannel(final ControlFrameHandler frameHandler,
                          final SenderControlStrategy controlStrategy,
@@ -94,13 +101,7 @@ public class SenderChannel
 
         currentTermId = new AtomicLong(initialTermId);
         cleanedTermId = new AtomicLong(initialTermId + 2);
-
-        initiateFlowControlTimer(FLOW_CONTROL_TIMEOUT_IN_MILLISECONDS);
-    }
-
-    private void initiateFlowControlTimer(final int timeoutInMilliseconds)
-    {
-        flowControlTimer = frameHandler.newTimeout(timeoutInMilliseconds, MILLISECONDS, this::onFlowControlTimer);
+        timeOfLastSendOrHeartbeat = new AtomicLong(frameHandler.currentTime());
     }
 
     private ByteBuffer duplicateLogBuffer(final LogBuffers log)
@@ -146,6 +147,7 @@ public class SenderChannel
                     {
                         // TODO: error
                     }
+                    timeOfLastSendOrHeartbeat.lazySet(frameHandler.currentTime());
                 }
                 catch (final Exception ex)
                 {
@@ -198,12 +200,10 @@ public class SenderChannel
                                                               highestContiguousSequenceNumber,
                                                               receiverWindow);
         activeFlowControlState.updateRightEdgeOfWindow(rightEdge);
-
-        flowControlTimer.cancel();
-        initiateFlowControlTimer(HEARTBEAT_TIMEOUT_IN_MILLISECONDS);
+        statusMessagesSeen++;
     }
 
-    public void onFlowControlTimer()
+    public void sendHeartbeat()
     {
         // called from conductor thread on timeout
 
@@ -232,11 +232,31 @@ public class SenderChannel
                 // TODO: log or count error
                 System.out.println("Error sending heartbeat packet");
             }
+            timeOfLastSendOrHeartbeat.lazySet(frameHandler.currentTime());
         }
         catch (final Exception ex)
         {
             //TODO: errors
             ex.printStackTrace();
+        }
+    }
+
+    public void heartbeatCheck()
+    {
+        // TODO: currenTime should be cached in TimerWheel to avoid too many calls
+        if (statusMessagesSeen > 0)
+        {
+            if ((frameHandler.currentTime() - timeOfLastSendOrHeartbeat.get()) > HEARTBEAT_TIMEOUT_IN_NANOSECONDS)
+            {
+                sendHeartbeat();
+            }
+        }
+        else
+        {
+            if ((frameHandler.currentTime() - timeOfLastSendOrHeartbeat.get()) > INITIAL_HEARTBEAT_TIMEOUT_IN_NANOSECONDS)
+            {
+                sendHeartbeat();
+            }
         }
     }
 

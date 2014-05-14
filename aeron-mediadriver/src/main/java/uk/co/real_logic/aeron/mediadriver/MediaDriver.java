@@ -107,10 +107,10 @@ public class MediaDriver implements AutoCloseable
                                                               DESCRIPTOR_BUFFER_SZ_DEFAULT).intValue();
 
     /** ticksPerWheel for TimerWheel in conductor thread */
-    public static final int ADMIN_THREAD_TICKS_PER_WHEEL = 1024;
+    public static final int MEDIA_CONDUCTOR_TICKS_PER_WHEEL = 1024;
 
     /** tickDuration (in MICROSECONDS) for TimerWheel in conductor thread */
-    public static final int ADMIN_THREAD_TICK_DURATION_MICROSECONDS = 10 * 1000;
+    public static final int MEDIA_CONDUCTOR_TICK_DURATION_MICROSECONDS = 10 * 1000;
 
     public static void main(final String[] args)
     {

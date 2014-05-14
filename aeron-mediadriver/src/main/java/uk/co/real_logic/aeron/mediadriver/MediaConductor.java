@@ -46,6 +46,8 @@ public class MediaConductor extends Service implements LibraryFacade
     public static final int WRITE_BUFFER_CAPACITY = 256;
     public static final int HEADER_LENGTH = BASE_HEADER_LENGTH + SIZE_OF_INT;
 
+    public static final int HEARTBEAT_TIMEOUT_MILLISECONDS = 100;
+
     private final RingBuffer commandBuffer;
     private final ReceiverCursor receiverCursor;
     private final NioSelector nioSelector;
@@ -69,6 +71,7 @@ public class MediaConductor extends Service implements LibraryFacade
 
     private final int mtuLength;
     private final ConductorBufferStrategy adminBufferStrategy;
+    private TimerWheel.Timer heartbeatTimer;
 
     public MediaConductor(final Context ctx,
                           final Receiver receiver,
@@ -88,9 +91,11 @@ public class MediaConductor extends Service implements LibraryFacade
         this.writeBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(WRITE_BUFFER_CAPACITY));
         this.timerWheel = (ctx.adminTimerWheel() != null) ?
                               ctx.adminTimerWheel() :
-                              new TimerWheel(ADMIN_THREAD_TICK_DURATION_MICROSECONDS,
+                              new TimerWheel(MEDIA_CONDUCTOR_TICK_DURATION_MICROSECONDS,
                                              TimeUnit.MICROSECONDS,
-                                             ADMIN_THREAD_TICKS_PER_WHEEL);
+                                             MEDIA_CONDUCTOR_TICKS_PER_WHEEL);
+
+        this.heartbeatTimer = newTimeout(HEARTBEAT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS, this::onHeartbeatCheck);
 
         try
         {
@@ -248,6 +253,11 @@ public class MediaConductor extends Service implements LibraryFacade
     public TimerWheel.Timer newTimeout(final long delay, final TimeUnit timeUnit, final Runnable task)
     {
         return timerWheel.newTimeout(delay, timeUnit, task);
+    }
+
+    public long currentTime()
+    {
+        return timerWheel.currentTime();
     }
 
     public void sendErrorResponse(final int code, final byte[] message)
@@ -464,5 +474,11 @@ public class MediaConductor extends Service implements LibraryFacade
             ex.printStackTrace();
             // TODO: handle errors by logging
         }
+    }
+
+    private void onHeartbeatCheck()
+    {
+        sender.heartbeatChecks();
+        heartbeatTimer = newTimeout(HEARTBEAT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS, this::onHeartbeatCheck);
     }
 }

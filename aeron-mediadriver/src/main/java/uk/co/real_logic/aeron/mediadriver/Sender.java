@@ -66,4 +66,12 @@ public class Sender extends Service
     {
         channels.forEach(SenderChannel::processBufferRotation);
     }
+
+    /**
+     * called from the conductor thread
+     */
+    public void heartbeatChecks()
+    {
+        channels.forEach(SenderChannel::heartbeatCheck);
+    }
 }

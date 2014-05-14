@@ -131,4 +131,9 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
     {
         return mediaConductor.newTimeout(delay, timeUnit, task);
     }
+
+    public long currentTime()
+    {
+        return mediaConductor.currentTime();
+    }
 }

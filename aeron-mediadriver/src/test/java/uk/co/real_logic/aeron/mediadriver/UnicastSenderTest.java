@@ -48,7 +48,7 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.mediadriver.MediaConductor.HEADER_LENGTH;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.*;
-import static uk.co.real_logic.aeron.mediadriver.SenderChannel.FLOW_CONTROL_TIMEOUT_IN_MILLISECONDS;
+import static uk.co.real_logic.aeron.mediadriver.SenderChannel.INITIAL_HEARTBEAT_TIMEOUT_IN_MILLISECONDS;
 import static uk.co.real_logic.aeron.mediadriver.SenderChannel.HEARTBEAT_TIMEOUT_IN_MILLISECONDS;
 import static uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy.newMappedBufferManager;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
@@ -108,9 +108,9 @@ public class UnicastSenderTest
         controlledTimestamp = 0;
         final TimerWheel timerWheel = new TimerWheel(
             () -> controlledTimestamp,
-            ADMIN_THREAD_TICK_DURATION_MICROSECONDS,
+                MEDIA_CONDUCTOR_TICK_DURATION_MICROSECONDS,
             TimeUnit.MICROSECONDS,
-            ADMIN_THREAD_TICKS_PER_WHEEL);
+                MEDIA_CONDUCTOR_TICKS_PER_WHEEL);
 
         final Context ctx = new Context()
             .adminThreadCommandBuffer(COMMAND_BUFFER_SZ)
@@ -283,7 +283,7 @@ public class UnicastSenderTest
         sendStatusMessage(controlAddr, termId, 0, 0);
 
         // should send 0 length data after 100 msec, so give a bit more time
-        advanceTimeMilliseconds(3 * FLOW_CONTROL_TIMEOUT_IN_MILLISECONDS);
+        advanceTimeMilliseconds(3 * INITIAL_HEARTBEAT_TIMEOUT_IN_MILLISECONDS);
 
         assertNotReceivedPacket();
     }
@@ -341,12 +341,12 @@ public class UnicastSenderTest
                         (eventTypeId, buffer, index, length) ->
                             assertThat(eventTypeId, is(NEW_SEND_BUFFER_NOTIFICATION)));
 
-        advanceTimeMilliseconds(FLOW_CONTROL_TIMEOUT_IN_MILLISECONDS - 10);   // should not send yet....
+        advanceTimeMilliseconds(INITIAL_HEARTBEAT_TIMEOUT_IN_MILLISECONDS - 10);   // should not send yet....
 
         assertNotReceivedPacket();
 
         // should send 0 length data after 100 msec, so give a bit more time
-        advanceTimeMilliseconds(FLOW_CONTROL_TIMEOUT_IN_MILLISECONDS + 10);
+        advanceTimeMilliseconds(INITIAL_HEARTBEAT_TIMEOUT_IN_MILLISECONDS + 10);
 
         assertReceivedZeroLengthPacket();
     }
@@ -377,6 +377,13 @@ public class UnicastSenderTest
 
         // heartbeat
         assertReceivedZeroLengthPacket();
+    }
+
+    @Test(timeout = 1000)
+    @Ignore
+    public void shouldSendMultipleHeartbeatsCorrectly() throws Exception
+    {
+
     }
 
     private void assertReceivedZeroLengthPacket() throws IOException
@@ -513,7 +520,7 @@ public class UnicastSenderTest
 
     private void advanceTimeMilliseconds(final int msec)
     {
-        final long tickNanos = TimeUnit.MICROSECONDS.toNanos(ADMIN_THREAD_TICK_DURATION_MICROSECONDS);
+        final long tickNanos = TimeUnit.MICROSECONDS.toNanos(MEDIA_CONDUCTOR_TICK_DURATION_MICROSECONDS);
         final long spanNanos = TimeUnit.MILLISECONDS.toNanos(msec);
         final long startTimestamp = controlledTimestamp;
 

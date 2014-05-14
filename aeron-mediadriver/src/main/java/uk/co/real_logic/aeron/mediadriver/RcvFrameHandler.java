@@ -198,7 +198,7 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
         statusMessageFlyweight.sessionId(sessionState.sessionId())
                               .channelId(channelState.channelId())
                               .termId(termId)
-                              .highestContiguousSequenceNumber(seqNum)
+                              .highestContiguousTermOffset(seqNum)
                               .receiverWindow(window)
                               .headerType(HeaderFlyweight.HDR_TYPE_SM)
                               .frameLength(StatusMessageFlyweight.HEADER_LENGTH)

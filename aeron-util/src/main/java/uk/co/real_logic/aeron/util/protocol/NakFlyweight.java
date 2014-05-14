@@ -25,35 +25,34 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  */
 public class NakFlyweight extends HeaderFlyweight
 {
-    public static final int MAX_SEQUENCE_NUMBER_RANGES = 16;
+    public static final int MAX_RANGES = 16;
 
-    private static final int SEQUENCE_NUMBER_RANGE_SIZE = 16;
+    private static final int RANGE_SIZE = 16;
     private static final int START_TERM_ID_RELATIVE_OFFSET = 0;
-    private static final int START_SEQUENCE_NUMBER_RELATIVE_OFFSET = 4;
+    private static final int START_TERM_OFFSET_RELATIVE_OFFSET = 4;
     private static final int END_TERM_ID_RELATIVE_OFFSET = 8;
-    private static final int END_SEQUENCE_NUMBER_RELATIVE_OFFSET = 12;
+    private static final int END_TERM_OFFSET_RELATIVE_OFFSET = 12;
 
     private static final int SESSION_ID_FIELD_OFFSET = 8;
     private static final int CHANNEL_ID_FIELD_OFFSET = 12;
-    private static final int SEQUENCE_RANGES_FIELDS_OFFSET = 16;
+    private static final int RANGES_FIELDS_OFFSET = 16;
 
-    public NakFlyweight countOfSequenceNumberRanges(int countOfSequenceNumberRanges)
+    public NakFlyweight countOfRanges(int countOfRanges)
     {
-        if (countOfSequenceNumberRanges > MAX_SEQUENCE_NUMBER_RANGES)
+        if (countOfRanges > MAX_RANGES)
         {
             String message = String.format("You may request up to %d sequence number ranges, not %d",
-                                           MAX_SEQUENCE_NUMBER_RANGES,
-                                           countOfSequenceNumberRanges);
+                    MAX_RANGES, countOfRanges);
             throw new IllegalArgumentException(message);
         }
 
-        frameLength(SEQUENCE_RANGES_FIELDS_OFFSET + countOfSequenceNumberRanges * SEQUENCE_NUMBER_RANGE_SIZE);
+        frameLength(RANGES_FIELDS_OFFSET + countOfRanges * RANGE_SIZE);
         return this;
     }
 
-    public int countOfSequenceNumberRanges()
+    public int countOfRanges()
     {
-        return (frameLength() - SEQUENCE_RANGES_FIELDS_OFFSET) / SEQUENCE_NUMBER_RANGE_SIZE;
+        return (frameLength() - RANGES_FIELDS_OFFSET) / RANGE_SIZE;
     }
 
     /**
@@ -99,47 +98,47 @@ public class NakFlyweight extends HeaderFlyweight
     }
 
     /**
-     * set a sequence range
+     * set a loss range
      *
      * @return flyweight
      */
-    public NakFlyweight sequenceRange(final long startTermId,
-                                      final long startSequenceNumber,
-                                      final long endTermId,
-                                      final long endSequenceNumber,
-                                      final int index)
+    public NakFlyweight range(final long startTermId,
+                              final long startTermOffset,
+                              final long endTermId,
+                              final long endTermOffset,
+                              final int index)
     {
-        final int offset = sequenceRangeOffset(index);
+        final int offset = rangeOffset(index);
         uint32Put(offset + START_TERM_ID_RELATIVE_OFFSET, startTermId, LITTLE_ENDIAN);
-        uint32Put(offset + START_SEQUENCE_NUMBER_RELATIVE_OFFSET, startSequenceNumber, LITTLE_ENDIAN);
+        uint32Put(offset + START_TERM_OFFSET_RELATIVE_OFFSET, startTermOffset, LITTLE_ENDIAN);
         uint32Put(offset + END_TERM_ID_RELATIVE_OFFSET, endTermId, LITTLE_ENDIAN);
-        uint32Put(offset + END_SEQUENCE_NUMBER_RELATIVE_OFFSET, endSequenceNumber, LITTLE_ENDIAN);
+        uint32Put(offset + END_TERM_OFFSET_RELATIVE_OFFSET, endTermOffset, LITTLE_ENDIAN);
         return this;
     }
 
     public long startTermId(final int index)
     {
-        return uint32Get(sequenceRangeOffset(index) + START_TERM_ID_RELATIVE_OFFSET, LITTLE_ENDIAN);
+        return uint32Get(rangeOffset(index) + START_TERM_ID_RELATIVE_OFFSET, LITTLE_ENDIAN);
     }
 
-    public long startSequenceNumber(final int index)
+    public long startTermOffset(final int index)
     {
-        return uint32Get(sequenceRangeOffset(index) + START_SEQUENCE_NUMBER_RELATIVE_OFFSET, LITTLE_ENDIAN);
+        return uint32Get(rangeOffset(index) + START_TERM_OFFSET_RELATIVE_OFFSET, LITTLE_ENDIAN);
     }
 
     public long endTermId(final int index)
     {
-        return uint32Get(sequenceRangeOffset(index) + END_TERM_ID_RELATIVE_OFFSET, LITTLE_ENDIAN);
+        return uint32Get(rangeOffset(index) + END_TERM_ID_RELATIVE_OFFSET, LITTLE_ENDIAN);
     }
 
-    public long endSequenceNumber(final int index)
+    public long endTermOffset(final int index)
     {
-        return uint32Get(sequenceRangeOffset(index) + END_SEQUENCE_NUMBER_RELATIVE_OFFSET, LITTLE_ENDIAN);
+        return uint32Get(rangeOffset(index) + END_TERM_OFFSET_RELATIVE_OFFSET, LITTLE_ENDIAN);
     }
 
-    private int sequenceRangeOffset(final int index)
+    private int rangeOffset(final int index)
     {
-        return offset() + SEQUENCE_RANGES_FIELDS_OFFSET + (SEQUENCE_NUMBER_RANGE_SIZE * index);
+        return offset() + RANGES_FIELDS_OFFSET + (RANGE_SIZE * index);
     }
 
 }

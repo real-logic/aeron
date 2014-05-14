@@ -116,7 +116,7 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
     {
         final SenderChannel channel = findChannel(statusMessage.sessionId(), statusMessage.channelId());
         channel.onStatusMessage(statusMessage.termId(),
-                                statusMessage.highestContiguousSequenceNumber(),
+                                statusMessage.highestContiguousTermOffset(),
                                 statusMessage.receiverWindow());
     }
 

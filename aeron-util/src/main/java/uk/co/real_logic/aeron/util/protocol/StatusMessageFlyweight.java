@@ -30,7 +30,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     private static final int SESSION_ID_FIELD_OFFSET = 8;
     private static final int CHANNEL_ID_FIELD_OFFSET = 12;
     private static final int TERM_ID_FIELD_OFFSET = 16;
-    private static final int CONTIGUOUS_SEQUENCE_NUMBER_FIELD_OFFSET = 20;
+    private static final int CONTIGUOUS_TERM_OFFSET_FIELD_OFFSET = 20;
     private static final int RECEIVER_WINDOW_FIELD_OFFSET = 24;
 
     /**
@@ -76,24 +76,24 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     }
 
     /**
-     * return highest contiguous sequence number field
+     * return highest contiguous term offset field
      *
-     * @return highest contiguous sequence number field
+     * @return highest contiguous term offset field
      */
-    public long highestContiguousSequenceNumber()
+    public long highestContiguousTermOffset()
     {
-        return uint32Get(offset() + CONTIGUOUS_SEQUENCE_NUMBER_FIELD_OFFSET, LITTLE_ENDIAN);
+        return uint32Get(offset() + CONTIGUOUS_TERM_OFFSET_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
-     * set highest contiguous sequence number field
+     * set highest contiguous term offset field
      *
-     * @param sequenceNumber field value
+     * @param termOffset field value
      * @return flyweight
      */
-    public StatusMessageFlyweight highestContiguousSequenceNumber(final long sequenceNumber)
+    public StatusMessageFlyweight highestContiguousTermOffset(final long termOffset)
     {
-        uint32Put(offset() + CONTIGUOUS_SEQUENCE_NUMBER_FIELD_OFFSET, sequenceNumber, LITTLE_ENDIAN);
+        uint32Put(offset() + CONTIGUOUS_TERM_OFFSET_FIELD_OFFSET, termOffset, LITTLE_ENDIAN);
         return this;
     }
 

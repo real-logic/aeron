@@ -486,7 +486,7 @@ public class UnicastSenderTest
     {
         statusMessage.wrap(writeBuffer, 0);
 
-        statusMessage.highestContiguousSequenceNumber(seqNum)
+        statusMessage.highestContiguousTermOffset(seqNum)
                      .receiverWindow(window)
                      .termId(termId)
                      .channelId(CHANNEL_ID)

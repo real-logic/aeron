@@ -34,11 +34,11 @@ public class NakFlyweightTest
         writer.channelId(1L);
         writer.sessionId(2L);
 
-        writer.sequenceRange(3L, 4L, 5L, 6L, 0);
+        writer.range(3L, 4L, 5L, 6L, 0);
 
-        writer.sequenceRange(7L, 8L, 9L, 10L, 1);
+        writer.range(7L, 8L, 9L, 10L, 1);
 
-        writer.countOfSequenceNumberRanges(2);
+        writer.countOfRanges(2);
 
         final NakFlyweight reader = new NakFlyweight();
         reader.wrap(buffer);
@@ -47,15 +47,15 @@ public class NakFlyweightTest
         assertThat(reader.sessionId(), is(2L));
 
         assertThat(reader.startTermId(0), is(3L));
-        assertThat(reader.startSequenceNumber(0), is(4L));
+        assertThat(reader.startTermOffset(0), is(4L));
         assertThat(reader.endTermId(0), is(5L));
-        assertThat(reader.endSequenceNumber(0), is(6L));
+        assertThat(reader.endTermOffset(0), is(6L));
 
         assertThat(reader.startTermId(1), is(7L));
-        assertThat(reader.startSequenceNumber(1), is(8L));
+        assertThat(reader.startTermOffset(1), is(8L));
         assertThat(reader.endTermId(1), is(9L));
-        assertThat(reader.endSequenceNumber(1), is(10L));
+        assertThat(reader.endTermOffset(1), is(10L));
 
-        assertThat(reader.countOfSequenceNumberRanges(), is(2));
+        assertThat(reader.countOfRanges(), is(2));
     }
 }

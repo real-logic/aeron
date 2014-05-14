@@ -38,7 +38,7 @@ public class ReceiverTest
     private RcvFrameHandlerFactory frameHandlerFactory;
 
     @Before
-    public void setup() throws Exception
+    public void setUp() throws Exception
     {
         final BufferManagementStrategy bufferManagementStrategy = mock(BufferManagementStrategy.class);
         frameHandlerFactory = mock(RcvFrameHandlerFactory.class);

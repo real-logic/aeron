@@ -35,13 +35,13 @@ import java.util.concurrent.atomic.AtomicLong;
 public class SenderChannel
 {
     /** initial heartbeat timeout (cancelled by SM) */
-    public static final int INITIAL_HEARTBEAT_TIMEOUT_IN_MILLISECONDS = 100;
-    public static final long INITIAL_HEARTBEAT_TIMEOUT_IN_NANOSECONDS =
-            TimeUnit.MILLISECONDS.toNanos(INITIAL_HEARTBEAT_TIMEOUT_IN_MILLISECONDS);
+    public static final int INITIAL_HEARTBEAT_TIMEOUT_IN_MILLIS = 100;
+    public static final long INITIAL_HEARTBEAT_TIMEOUT_IN_NANOS =
+            TimeUnit.MILLISECONDS.toNanos(INITIAL_HEARTBEAT_TIMEOUT_IN_MILLIS);
     /** heartbeat after data sent */
-    public static final int HEARTBEAT_TIMEOUT_IN_MILLISECONDS = 500;
-    public static final long HEARTBEAT_TIMEOUT_IN_NANOSECONDS =
-            TimeUnit.MILLISECONDS.toNanos(HEARTBEAT_TIMEOUT_IN_MILLISECONDS);
+    public static final int HEARTBEAT_TIMEOUT_IN_MILLIS = 500;
+    public static final long HEARTBEAT_TIMEOUT_IN_NANOS =
+            TimeUnit.MILLISECONDS.toNanos(HEARTBEAT_TIMEOUT_IN_MILLIS);
 
     private final ControlFrameHandler frameHandler;
     private final SenderControlStrategy controlStrategy;
@@ -243,17 +243,17 @@ public class SenderChannel
 
     public void heartbeatCheck()
     {
-        // TODO: currenTime should be cached in TimerWheel to avoid too many calls
+        // TODO: currentTime should be cached in TimerWheel to avoid too many calls
         if (statusMessagesSeen > 0)
         {
-            if ((frameHandler.currentTime() - timeOfLastSendOrHeartbeat.get()) > HEARTBEAT_TIMEOUT_IN_NANOSECONDS)
+            if ((frameHandler.currentTime() - timeOfLastSendOrHeartbeat.get()) > HEARTBEAT_TIMEOUT_IN_NANOS)
             {
                 sendHeartbeat();
             }
         }
         else
         {
-            if ((frameHandler.currentTime() - timeOfLastSendOrHeartbeat.get()) > INITIAL_HEARTBEAT_TIMEOUT_IN_NANOSECONDS)
+            if ((frameHandler.currentTime() - timeOfLastSendOrHeartbeat.get()) > INITIAL_HEARTBEAT_TIMEOUT_IN_NANOS)
             {
                 sendHeartbeat();
             }
@@ -271,7 +271,7 @@ public class SenderChannel
             try
             {
                 buffers.rotate();
-                cleanedTermId.incrementAndGet();  // TODO: Does this need to be an CAS'ed update? Is it for ordering?
+                cleanedTermId.incrementAndGet();  // TODO: Does this need to be a CAS'ed update? Is it for ordering?
             }
             catch (final IOException ex)
             {

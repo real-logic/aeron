@@ -48,8 +48,8 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.mediadriver.MediaConductor.HEADER_LENGTH;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.*;
-import static uk.co.real_logic.aeron.mediadriver.SenderChannel.INITIAL_HEARTBEAT_TIMEOUT_IN_MILLISECONDS;
-import static uk.co.real_logic.aeron.mediadriver.SenderChannel.HEARTBEAT_TIMEOUT_IN_MILLISECONDS;
+import static uk.co.real_logic.aeron.mediadriver.SenderChannel.INITIAL_HEARTBEAT_TIMEOUT_IN_MILLIS;
+import static uk.co.real_logic.aeron.mediadriver.SenderChannel.HEARTBEAT_TIMEOUT_IN_MILLIS;
 import static uk.co.real_logic.aeron.mediadriver.buffer.BufferManagementStrategy.newMappedBufferManager;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.ErrorCode.*;
@@ -283,7 +283,7 @@ public class UnicastSenderTest
         sendStatusMessage(controlAddr, termId, 0, 0);
 
         // should send 0 length data after 100 msec, so give a bit more time
-        advanceTimeMilliseconds(3 * INITIAL_HEARTBEAT_TIMEOUT_IN_MILLISECONDS);
+        advanceTimeMilliseconds(3 * INITIAL_HEARTBEAT_TIMEOUT_IN_MILLIS);
 
         assertNotReceivedPacket();
     }
@@ -341,12 +341,12 @@ public class UnicastSenderTest
                         (eventTypeId, buffer, index, length) ->
                             assertThat(eventTypeId, is(NEW_SEND_BUFFER_NOTIFICATION)));
 
-        advanceTimeMilliseconds(INITIAL_HEARTBEAT_TIMEOUT_IN_MILLISECONDS - 10);   // should not send yet....
+        advanceTimeMilliseconds(INITIAL_HEARTBEAT_TIMEOUT_IN_MILLIS - 10);   // should not send yet....
 
         assertNotReceivedPacket();
 
         // should send 0 length data after 100 msec, so give a bit more time
-        advanceTimeMilliseconds(INITIAL_HEARTBEAT_TIMEOUT_IN_MILLISECONDS + 10);
+        advanceTimeMilliseconds(INITIAL_HEARTBEAT_TIMEOUT_IN_MILLIS + 10);
 
         assertReceivedZeroLengthPacket();
     }
@@ -373,7 +373,7 @@ public class UnicastSenderTest
         assertPacketContainsValue();
 
         // idle for time
-        advanceTimeMilliseconds(2 * HEARTBEAT_TIMEOUT_IN_MILLISECONDS);
+        advanceTimeMilliseconds(2 * HEARTBEAT_TIMEOUT_IN_MILLIS);
 
         // heartbeat
         assertReceivedZeroLengthPacket();

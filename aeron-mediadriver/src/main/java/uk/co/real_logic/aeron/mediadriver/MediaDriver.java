@@ -49,8 +49,8 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor
  *     <li><code>aeron.data.dir</code>: Use value as directory name for data buffers.</li>
  *     <li><code>aeron.rcv.buffer.size</code>: Use int value as size of buffer for receiving from network.</li>
  *     <li><code>aeron.command.buffer.size</code>: Use int value as size of the command buffers between threads.</li>
- *     <li><code>aeron.conductor.buffer.size</code>: Use int value as size of the conductor buffers between the media driver
-       and the client.</li>
+ *     <li><code>aeron.conductor.buffer.size</code>: Use int value as size of the conductor buffers between the media
+ *          driver and the client.</li>
  *     <li><code>aeron.select.timeout</code>: use int value as default timeout for NIO select calls</li>
  * </ul>
  */

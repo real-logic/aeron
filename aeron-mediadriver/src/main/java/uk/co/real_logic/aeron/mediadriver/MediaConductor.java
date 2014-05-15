@@ -20,8 +20,8 @@ import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
 import uk.co.real_logic.aeron.util.*;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.ClientFacade;
 import uk.co.real_logic.aeron.util.command.QualifiedMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.LibraryFacade;
 import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
@@ -41,7 +41,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.B
 /**
  * Admin thread to take commands from Publishers and Subscribers as well as handle NAKs and retransmissions
  */
-public class MediaConductor extends Agent implements LibraryFacade
+public class MediaConductor extends Agent implements ClientFacade
 {
     public static final int WRITE_BUFFER_CAPACITY = 256;
     public static final int HEADER_LENGTH = BASE_HEADER_LENGTH + SIZE_OF_INT;
@@ -66,16 +66,13 @@ public class MediaConductor extends Agent implements LibraryFacade
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
     private final SubscriberMessageFlyweight receiverMessageFlyweight = new SubscriberMessageFlyweight();
     private final ErrorHeaderFlyweight errorHeaderFlyweight = new ErrorHeaderFlyweight();
-    private final QualifiedMessageFlyweight qualifiedMessageFlyweight =
-        new QualifiedMessageFlyweight();
+    private final QualifiedMessageFlyweight qualifiedMessageFlyweight = new QualifiedMessageFlyweight();
 
     private final int mtuLength;
     private final ConductorMappedBuffers adminBufferStrategy;
     private TimerWheel.Timer heartbeatTimer;
 
-    public MediaConductor(final Context ctx,
-                          final Receiver receiver,
-                          final Sender sender)
+    public MediaConductor(final Context ctx, final Receiver receiver, final Sender sender)
     {
         super(SELECT_TIMEOUT);
 
@@ -89,7 +86,7 @@ public class MediaConductor extends Agent implements LibraryFacade
         this.senderFlowControl = ctx.senderFlowControl();
         this.srcDestinationMap = new Long2ObjectHashMap<>();
         this.writeBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(WRITE_BUFFER_CAPACITY));
-        this.timerWheel = (ctx.adminTimerWheel() != null) ?
+        this.timerWheel = ctx.adminTimerWheel() != null ?
                               ctx.adminTimerWheel() :
                               new TimerWheel(MEDIA_CONDUCTOR_TICK_DURATION_MICROS,
                                              TimeUnit.MICROSECONDS,

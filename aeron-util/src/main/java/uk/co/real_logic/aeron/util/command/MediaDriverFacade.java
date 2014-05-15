@@ -30,7 +30,7 @@ public interface MediaDriverFacade
      *
      * The media driver will create sessions and underlying destination components as necessary
      *
-     * @see LibraryFacade#onAddChannel(ChannelMessageFlyweight)
+     * @see ClientFacade#onAddChannel(ChannelMessageFlyweight)
      *
      * @param destination to add the channel on
      * @param sessionId to add the channel on
@@ -43,7 +43,7 @@ public interface MediaDriverFacade
      *
      * If this is the last channel on this session, it will NOT be removed. It must be removed explicitly later.
      *
-     * @see LibraryFacade#onRemoveChannel(ChannelMessageFlyweight)
+     * @see ClientFacade#onRemoveChannel(ChannelMessageFlyweight)
      *
      * @param destination to remove the channel from
      * @param sessionId to remove the channel from
@@ -57,7 +57,7 @@ public interface MediaDriverFacade
      *
      * The destination will be created if not already in use by another application.
      *
-     * @see LibraryFacade#onAddSubscriber(SubscriberMessageFlyweight)
+     * @see ClientFacade#onAddSubscriber(SubscriberMessageFlyweight)
      * @param destination to add the channels to
      * @param channelIdList of interested channels
      */
@@ -68,7 +68,7 @@ public interface MediaDriverFacade
      *
      * The destination will be removed if this application is the last application using the destination.
      *
-     * @see LibraryFacade#onRemoveSubscriber(SubscriberMessageFlyweight)
+     * @see ClientFacade#onRemoveSubscriber(SubscriberMessageFlyweight)
      * @param destination to remove
      * @param channelIdList the list of channels to remove on
      */
@@ -77,7 +77,7 @@ public interface MediaDriverFacade
     /**
      * Request the media driver should setup state for the next Term Buffer
      *
-     * @see LibraryFacade#onRequestTerm(long, long, long)
+     * @see ClientFacade#onRequestTerm(long, long, long)
      */
     void sendRequestTerm(final long sessionId, final long channelId, final long termId);
 
@@ -88,7 +88,7 @@ public interface MediaDriverFacade
      *
      * This is an error in response to a command.
      *
-     * @see LibraryFacade#sendErrorResponse(int, byte[])
+     * @see ClientFacade#sendErrorResponse(int, byte[])
      * @see uk.co.real_logic.aeron.util.ErrorCode
      *
      * @param code of the error
@@ -101,7 +101,7 @@ public interface MediaDriverFacade
      *
      * This is an error in operation (not in response to a command).
      *
-     * @see LibraryFacade#sendError(int, byte[])
+     * @see ClientFacade#sendError(int, byte[])
      * @see uk.co.real_logic.aeron.util.ErrorCode
      *
      * @param code of the error
@@ -112,7 +112,7 @@ public interface MediaDriverFacade
     /**
      * Handle a response from the media driver of returning a list of filenames for buffers
      *
-     * @see LibraryFacade#sendNewBufferNotification(long, long, long, boolean, String)
+     * @see ClientFacade#sendNewBufferNotification(long, long, long, boolean, String)
      *
      */
     void onNewBufferNotification(final long sessionId,

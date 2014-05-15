@@ -16,17 +16,15 @@
 package uk.co.real_logic.aeron.util.command;
 
 /**
- * Facade of application library for use by media driver to send/receiver control commands/responses
+ * Facade of client application for use by media driver to send/receive control commands/responses
  *
- * The media driver (aeron-mediadriver) implements this interface to send notifications to a library/application
- * and to handle commands, Aeron control frames, etc. that come from the library/application.
+ * The media driver (aeron-mediadriver) implements this interface to send notifications to a  client application
+ * and to handle commands, Aeron control frames, etc. that come from the client application.
  */
-public interface LibraryFacade
+public interface ClientFacade
 {
-    /* callbacks from library/application */
-
     /**
-     * Handle an addChannel request from the library
+     * Handle an addChannel request from the client
      *
      * The destination and session will be created if necessary
      *
@@ -37,7 +35,7 @@ public interface LibraryFacade
     void onAddChannel(final ChannelMessageFlyweight channelMessage);
 
     /**
-     * Handle a removeChannel request from the library
+     * Handle a removeChannel request from the client
      *
      * The session and destination will NOT be removed.
      *
@@ -48,9 +46,9 @@ public interface LibraryFacade
     void onRemoveChannel(final ChannelMessageFlyweight channelMessage);
 
     /**
-     * Handle a addReceiver request from the library.
+     * Handle a addReceiver request from the client.
      *
-     * The destination will be created if not in use by another library/application.
+     * The destination will be created if not in use by another client.
      *
      * @see MediaDriverFacade#sendAddSubscriber(String, long[])
      * @param subscriberMessage the message
@@ -58,9 +56,9 @@ public interface LibraryFacade
     void onAddSubscriber(final SubscriberMessageFlyweight subscriberMessage);
 
     /**
-     * Handle a removeReceiver request from the library.
+     * Handle a removeReceiver request from the client.
      *
-     * The destination will be removed if this library/application is the last one using this destination.
+     * The destination will be removed if this client is the last one using this destination.
      *
      * @see MediaDriverFacade#sendRemoveSubscriber(String, long[])
      * @param subscriberMessage the message
@@ -75,10 +73,8 @@ public interface LibraryFacade
      */
     void onRequestTerm(final long sessionId, final long channelId, final long termId);
 
-    /* notifications to library/application */
-
     /**
-     * Notify the library of an error for a request that it sent previously
+     * Notify the client of an error for a request that it sent previously
      *
      * @see MediaDriverFacade#onErrorResponse(int, byte[])
      * @see uk.co.real_logic.aeron.util.ErrorCode
@@ -89,7 +85,7 @@ public interface LibraryFacade
     void sendErrorResponse(final int code, final byte[] message);
 
     /**
-     * Notify the library of an error in operation not associated with a request from the application
+     * Notify the client of an error in operation not associated with a request from the application
      *
      * @see MediaDriverFacade#onError(int, byte[])
      * @see uk.co.real_logic.aeron.util.ErrorCode
@@ -100,7 +96,7 @@ public interface LibraryFacade
     void sendError(final int code, final byte[] message);
 
     /**
-     * Notify the library of new term buffers.
+     * Notify the client of new term buffers.
      *
      * @see MediaDriverFacade#onNewBufferNotification(long, long, long, boolean, String)
      *

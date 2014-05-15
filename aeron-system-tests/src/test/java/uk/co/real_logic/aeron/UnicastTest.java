@@ -31,7 +31,7 @@ public class UnicastTest
     private static final long SESSION_ID = 2L;
 
     @ClassRule
-    public static CountersResource counters = new CountersResource();
+    public static CountersFile counters = new CountersFile();
 
     @ClassRule
     public static SharedDirectories dataDir = new SharedDirectories();

@@ -70,7 +70,7 @@ public class AeronTest
     private static final int CONDUCTOR_BUFFER_SIZE = (4 * 1024) + BufferDescriptor.TRAILER_LENGTH;
 
     @ClassRule
-    public static CountersResource counters = new CountersResource();
+    public static CountersFile counters = new CountersFile();
 
     @ClassRule
     public static SharedDirectories directory = new SharedDirectories();

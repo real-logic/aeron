@@ -32,8 +32,8 @@ public class ConductorBuffers extends ExternalResource
     private final String adminDirName;
     private final int bufferSize;
 
-    private ConductorMappedBuffers ownedBuffers;
-    private ConductorMappedBuffers mappedBuffers;
+    private ConductorMappedBuffers mediaDriverBuffers;
+    private ConductorMappedBuffers clientBuffers;
     private ByteBuffer toMediaDriver;
     private ByteBuffer toClient;
     private File adminDir;
@@ -68,17 +68,17 @@ public class ConductorBuffers extends ExternalResource
         }
 
         IoUtil.ensureDirectoryExists(adminDir, "conductor dir");
-        ownedBuffers = new MediaDriverConductorMappedBuffers(adminDirName, bufferSize);
-        mappedBuffers = new ClientConductorMappedBuffers(adminDirName);
-        toMediaDriver = ownedBuffers.toMediaDriver();
-        toClient = ownedBuffers.toClient();
+        mediaDriverBuffers = new MediaDriverConductorMappedBuffers(adminDirName, bufferSize);
+        clientBuffers = new ClientConductorMappedBuffers(adminDirName);
+        toMediaDriver = mediaDriverBuffers.toMediaDriver();
+        toClient = mediaDriverBuffers.toClient();
     }
 
     protected void after()
     {
-        // Force unmapping of byte mappedBuffers to allow deletion
-        ownedBuffers.close();
-        mappedBuffers.close();
+        // Force unmapping of byte clientBuffers to allow deletion
+        mediaDriverBuffers.close();
+        clientBuffers.close();
 
         try
         {
@@ -96,7 +96,7 @@ public class ConductorBuffers extends ExternalResource
         return ringBuffer(toMediaDriver);
     }
 
-    public RingBuffer toApi()
+    public RingBuffer toClient()
     {
         return ringBuffer(toClient);
     }
@@ -106,14 +106,14 @@ public class ConductorBuffers extends ExternalResource
         return new ManyToOneRingBuffer(new AtomicBuffer(buffer));
     }
 
-    public ConductorMappedBuffers mappedBuffers()
+    public ConductorMappedBuffers clientBuffers()
     {
-        return mappedBuffers;
+        return clientBuffers;
     }
 
-    public ConductorMappedBuffers ownedBuffers()
+    public ConductorMappedBuffers mediaDriverBuffers()
     {
-        return ownedBuffers;
+        return mediaDriverBuffers;
     }
 
     public String adminDirName()

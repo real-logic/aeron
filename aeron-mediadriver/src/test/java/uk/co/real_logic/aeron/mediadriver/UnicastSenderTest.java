@@ -118,7 +118,7 @@ public class UnicastSenderTest
             .rcvNioSelector(new NioSelector())
             .adminNioSelector(new NioSelector())
             .senderFlowControl(DefaultSenderControlStrategy::new)
-            .conductorCommsBuffers(buffers.ownedBuffers())
+            .conductorCommsBuffers(buffers.mediaDriverBuffers())
             .bufferManagement(bufferManagement)
             .adminTimerWheel(timerWheel);
 
@@ -148,7 +148,7 @@ public class UnicastSenderTest
     {
         successfullyAddChannel();
 
-        assertEventRead(buffers.toApi(), (eventTypeId, buffer, index, length) ->
+        assertEventRead(buffers.toClient(), (eventTypeId, buffer, index, length) ->
         {
             assertThat(eventTypeId, is(NEW_SEND_BUFFER_NOTIFICATION));
 
@@ -176,7 +176,7 @@ public class UnicastSenderTest
     {
         successfullyAddChannel();
 
-        assertEventRead(buffers.toApi(), (eventTypeId, buffer, index, length) ->
+        assertEventRead(buffers.toClient(), (eventTypeId, buffer, index, length) ->
         {
             assertThat(eventTypeId, is(NEW_SEND_BUFFER_NOTIFICATION));
 
@@ -190,7 +190,7 @@ public class UnicastSenderTest
 
         processThreads(5);
 
-        assertEventRead(buffers.toApi(), (eventTypeId, buffer, index, length) ->
+        assertEventRead(buffers.toClient(), (eventTypeId, buffer, index, length) ->
         {
             assertThat(eventTypeId, is(ERROR_RESPONSE));
 
@@ -210,7 +210,7 @@ public class UnicastSenderTest
 
         processThreads(5);
 
-        assertEventRead(buffers.toApi(), (eventTypeId, buffer, index, length) ->
+        assertEventRead(buffers.toClient(), (eventTypeId, buffer, index, length) ->
         {
             assertThat(eventTypeId, is(ERROR_RESPONSE));
 
@@ -228,7 +228,7 @@ public class UnicastSenderTest
     {
         successfullyAddChannel();
 
-        assertEventRead(buffers.toApi(), (eventTypeId, buffer, index, length) ->
+        assertEventRead(buffers.toClient(), (eventTypeId, buffer, index, length) ->
         {
             assertThat(eventTypeId, is(NEW_SEND_BUFFER_NOTIFICATION));
 
@@ -242,7 +242,7 @@ public class UnicastSenderTest
 
         processThreads(5);
 
-        assertEventRead(buffers.toApi(), (eventTypeId, buffer, index, length) ->
+        assertEventRead(buffers.toClient(), (eventTypeId, buffer, index, length) ->
         {
             assertThat(eventTypeId, is(ERROR_RESPONSE));
 
@@ -337,7 +337,7 @@ public class UnicastSenderTest
     {
         successfullyAddChannel();
 
-        assertEventRead(buffers.toApi(),
+        assertEventRead(buffers.toClient(),
                         (eventTypeId, buffer, index, length) ->
                             assertThat(eventTypeId, is(NEW_SEND_BUFFER_NOTIFICATION)));
 
@@ -414,7 +414,7 @@ public class UnicastSenderTest
     private long assertNotifiesTermBuffer()
     {
         final AtomicLong termId = new AtomicLong(0);
-        assertEventRead(buffers.toApi(), assertNotifiesNewBuffer(termId));
+        assertEventRead(buffers.toClient(), assertNotifiesNewBuffer(termId));
         return termId.get();
     }
 

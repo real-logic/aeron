@@ -146,7 +146,7 @@ public class UnicastReceiverTest
 
         processThreads(5);
 
-        assertEventRead(buffers.toApi(), (eventTypeId, buffer, index, length) ->
+        assertEventRead(buffers.toClient(), (eventTypeId, buffer, index, length) ->
         {
             assertThat(eventTypeId, is(ERROR_RESPONSE));
 
@@ -167,7 +167,7 @@ public class UnicastReceiverTest
 
         processThreads(5);
 
-        assertEventRead(buffers.toApi(), (eventTypeId, buffer, index, length) ->
+        assertEventRead(buffers.toClient(), (eventTypeId, buffer, index, length) ->
         {
             assertThat(eventTypeId, is(ERROR_RESPONSE));
 
@@ -189,7 +189,7 @@ public class UnicastReceiverTest
 
         processThreads(5);
 
-        assertEventRead(buffers.toApi(), (eventTypeId, buffer, index, length) ->
+        assertEventRead(buffers.toClient(), (eventTypeId, buffer, index, length) ->
         {
             assertThat(eventTypeId, is(ERROR_RESPONSE));
 

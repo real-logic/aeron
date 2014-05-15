@@ -37,20 +37,20 @@ import static uk.co.real_logic.aeron.util.IoUtil.mapExistingFile;
 public class MappingBufferUsageStrategy implements BufferUsageStrategy
 {
     private final FileMappingConvention fileConventions;
-    private final List<IdentifiedBuffer> senderBuffers;
-    private final List<IdentifiedBuffer> receiverBuffers;
+    private final List<IdentifiedBuffer> publisherBuffers;
+    private final List<IdentifiedBuffer> subscriberBuffers;
 
     public MappingBufferUsageStrategy(final String dataDir)
     {
         fileConventions = new FileMappingConvention(dataDir);
-        senderBuffers = new ArrayList<>();
-        receiverBuffers = new ArrayList<>();
+        publisherBuffers = new ArrayList<>();
+        subscriberBuffers = new ArrayList<>();
     }
 
     public void close()
     {
-        senderBuffers.forEach(IdentifiedBuffer::close);
-        receiverBuffers.forEach(IdentifiedBuffer::close);
+        publisherBuffers.forEach(IdentifiedBuffer::close);
+        subscriberBuffers.forEach(IdentifiedBuffer::close);
     }
 
     public AtomicBuffer newPublisherLogBuffer(final String destination,
@@ -58,7 +58,7 @@ public class MappingBufferUsageStrategy implements BufferUsageStrategy
                                               final long channelId,
                                               final int index) throws IOException
     {
-        return map(destination, sessionId, channelId, index, fileConventions.senderDir(), LOG, senderBuffers);
+        return map(destination, sessionId, channelId, index, fileConventions.senderDir(), LOG, publisherBuffers);
     }
 
     public AtomicBuffer newPublisherStateBuffer(final String destination,
@@ -66,7 +66,7 @@ public class MappingBufferUsageStrategy implements BufferUsageStrategy
                                                 final long channelId,
                                                 final int index) throws IOException
     {
-        return map(destination, sessionId, channelId, index, fileConventions.senderDir(), STATE, senderBuffers);
+        return map(destination, sessionId, channelId, index, fileConventions.senderDir(), STATE, publisherBuffers);
     }
 
     public AtomicBuffer newSubscriberLogBuffer(final String destination,
@@ -74,7 +74,7 @@ public class MappingBufferUsageStrategy implements BufferUsageStrategy
                                                final long sessionId,
                                                final int index) throws IOException
     {
-        return map(destination, sessionId, channelId, index, fileConventions.receiverDir(), LOG, receiverBuffers);
+        return map(destination, sessionId, channelId, index, fileConventions.receiverDir(), LOG, subscriberBuffers);
     }
 
     public AtomicBuffer newSubscriberStateBuffer(final String destination,
@@ -82,17 +82,17 @@ public class MappingBufferUsageStrategy implements BufferUsageStrategy
                                                  final long sessionId,
                                                  final int index) throws IOException
     {
-        return map(destination, sessionId, channelId, index, fileConventions.receiverDir(), STATE, receiverBuffers);
+        return map(destination, sessionId, channelId, index, fileConventions.receiverDir(), STATE, subscriberBuffers);
     }
 
     public int releaseSubscriberBuffers(final String destination, final long sessionId, final long channelId)
     {
-        return release(destination, sessionId, channelId, receiverBuffers);
+        return release(destination, sessionId, channelId, subscriberBuffers);
     }
 
     public int releasePublisherBuffers(final String destination, final long sessionId, final long channelId)
     {
-        return release(destination, sessionId, channelId, senderBuffers);
+        return release(destination, sessionId, channelId, publisherBuffers);
     }
 
     private AtomicBuffer map(final String destination,

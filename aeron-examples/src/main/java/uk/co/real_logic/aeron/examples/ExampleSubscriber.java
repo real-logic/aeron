@@ -53,7 +53,7 @@ public class ExampleSubscriber
 
             final Subscriber subscriber1 = aeron.newSubscriber(context);
 
-            // create a receiver using the fluent style lambda expression
+            // create a subscriber using the fluent style lambda expression
             final Subscriber subscriber2 = aeron.newSubscriber(
                 (ctx) ->
                 {
@@ -80,7 +80,7 @@ public class ExampleSubscriber
                     }
                 };
 
-            // spin off the two receiver threads
+            // spin off the two subscriber threads
             executor.execute(() -> loop.accept(subscriber1));
             executor.execute(() -> loop.accept(subscriber2));
         }

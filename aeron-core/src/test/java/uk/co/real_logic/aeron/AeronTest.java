@@ -82,9 +82,9 @@ public class AeronTest
 
     private DataHandler channel2Handler = emptyDataHandler();
 
-    private final ChannelMessageFlyweight message = new ChannelMessageFlyweight();
+    private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
     private final QualifiedMessageFlyweight qualifiedMessage = new QualifiedMessageFlyweight();
-    private final SubscriberMessageFlyweight receiverMessage = new SubscriberMessageFlyweight();
+    private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
 
     private final ErrorHeaderFlyweight errorHeader = new ErrorHeaderFlyweight();
 
@@ -258,7 +258,7 @@ public class AeronTest
     }
 
     @Test
-    public void registeringReceiverNotifiesMediaDriver() throws Exception
+    public void registeringSubscriberNotifiesMediaDriver() throws Exception
     {
         final Aeron aeron = newAeron();
         final Subscriber.Context context = new Subscriber.Context()
@@ -270,13 +270,13 @@ public class AeronTest
 
         aeron.conductor().process();
 
-        assertEventRead(toMediaDriver(), assertReceiverMessageOfType(ADD_SUBSCRIBER));
+        assertEventRead(toMediaDriver(), assertSubscriberMessageOfType(ADD_SUBSCRIBER));
 
         assertThat(subscriber.read(), is(0));
     }
 
     @Test
-    public void removingReceiverNotifiesMediaDriver()
+    public void removingSubscriberNotifiesMediaDriver()
     {
         final RingBuffer toMediaDriver = toMediaDriver();
         final Aeron aeron = newAeron();
@@ -288,7 +288,7 @@ public class AeronTest
         subscriber.close();
         aeron.conductor().process();
 
-        assertEventRead(toMediaDriver, assertReceiverMessageOfType(REMOVE_SUBSCRIBER));
+        assertEventRead(toMediaDriver, assertSubscriberMessageOfType(REMOVE_SUBSCRIBER));
     }
 
     @Test
@@ -296,18 +296,18 @@ public class AeronTest
     {
         final Aeron aeron = newAeron();
 
-        receiverMessage.wrap(atomicSendBuffer, 0);
-        receiverMessage.channelIds(CHANNEL_IDs);
-        receiverMessage.destination(INVALID_DESTINATION);
+        subscriberMessage.wrap(atomicSendBuffer, 0);
+        subscriberMessage.channelIds(CHANNEL_IDs);
+        subscriberMessage.destination(INVALID_DESTINATION);
 
-        errorHeader.wrap(atomicSendBuffer, receiverMessage.length());
+        errorHeader.wrap(atomicSendBuffer, subscriberMessage.length());
         errorHeader.errorCode(ErrorCode.INVALID_DESTINATION);
-        errorHeader.offendingFlyweight(receiverMessage, receiverMessage.length());
-        errorHeader.frameLength(ErrorHeaderFlyweight.HEADER_LENGTH + receiverMessage.length());
+        errorHeader.offendingFlyweight(subscriberMessage, subscriberMessage.length());
+        errorHeader.frameLength(ErrorHeaderFlyweight.HEADER_LENGTH + subscriberMessage.length());
 
         toClient().write(ERROR_RESPONSE,
                       atomicSendBuffer,
-                      receiverMessage.length(),
+                      subscriberMessage.length(),
                       errorHeader.frameLength());
 
         aeron.conductor().process();
@@ -316,7 +316,7 @@ public class AeronTest
     }
 
     @Test
-    public void canReceiveAMessage() throws Exception
+    public void subscriberCanReceiveAMessage() throws Exception
     {
         channel2Handler = assertingHandler();
 
@@ -337,7 +337,7 @@ public class AeronTest
     }
 
     @Test
-    public void canReceivePacketsFromMultipleSessions() throws Exception
+    public void subscriberCanReceivePacketsFromMultipleSessions() throws Exception
     {
         channel2Handler = eitherSessionHandler();
 
@@ -380,7 +380,7 @@ public class AeronTest
         writePackets(logAppender, eventCount);
         assertThat(subscriber.read(), is(eventCount));
 
-        // cleaning is triggered by the receiver and not the subscriber
+        // cleaning is triggered by the subscriber and not the subscriber
         // so we clean two ahead of the current buffer
         cleanBuffer(termBuffers.get(2));
         aeron.conductor().process();
@@ -568,15 +568,15 @@ public class AeronTest
         return aeron.newSubscriber(context);
     }
 
-    private EventHandler assertReceiverMessageOfType(final int expectedEventTypeId)
+    private EventHandler assertSubscriberMessageOfType(final int expectedEventTypeId)
     {
         return (eventTypeId, buffer, index, length) ->
         {
             assertThat(eventTypeId, is(expectedEventTypeId));
 
-            receiverMessage.wrap(buffer, index);
-            assertThat(receiverMessage.channelIds(), is(CHANNEL_IDs));
-            assertThat(receiverMessage.destination(), is(DESTINATION));
+            subscriberMessage.wrap(buffer, index);
+            assertThat(subscriberMessage.channelIds(), is(CHANNEL_IDs));
+            assertThat(subscriberMessage.destination(), is(DESTINATION));
         };
     }
 
@@ -610,10 +610,10 @@ public class AeronTest
         {
             assertThat(eventTypeId, is(expectedEventTypeId));
 
-            message.wrap(buffer, index);
-            assertThat(message.destination(), is(DESTINATION));
-            assertThat(message.channelId(), is(CHANNEL_ID));
-            assertThat(message.sessionId(), is(SESSION_ID));
+            channelMessage.wrap(buffer, index);
+            assertThat(channelMessage.destination(), is(DESTINATION));
+            assertThat(channelMessage.channelId(), is(CHANNEL_ID));
+            assertThat(channelMessage.sessionId(), is(SESSION_ID));
         });
     }
 }

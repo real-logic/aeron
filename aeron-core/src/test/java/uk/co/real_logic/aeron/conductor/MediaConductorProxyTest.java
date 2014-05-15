@@ -72,19 +72,19 @@ public class MediaConductorProxyTest
     }
 
     @Test
-    public void threadSendsRemoveReceiverMessage()
+    public void threadSendsRemoveSubscriberMessage()
     {
         mediaConductor.sendRemoveSubscriber(DESTINATION, CHANNEL_IDS);
 
         assertReadsOneMessage(
             (eventTypeId, buffer, index, length) ->
             {
-                SubscriberMessageFlyweight removeReceiverMessage = new SubscriberMessageFlyweight();
-                removeReceiverMessage.wrap(buffer, index);
+                SubscriberMessageFlyweight removeSubscriberMessage = new SubscriberMessageFlyweight();
+                removeSubscriberMessage.wrap(buffer, index);
 
                 assertThat(eventTypeId, is(REMOVE_SUBSCRIBER));
-                assertThat(removeReceiverMessage.destination(), is(DESTINATION));
-                assertThat(removeReceiverMessage.channelIds(), is(CHANNEL_IDS));
+                assertThat(removeSubscriberMessage.destination(), is(DESTINATION));
+                assertThat(removeSubscriberMessage.channelIds(), is(CHANNEL_IDS));
             }
         );
     }

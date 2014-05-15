@@ -70,8 +70,7 @@ public class UnicastTest
 
     private Aeron.Context newAeronContext()
     {
-        return new Aeron.Context()
-                                         .conductorMappedBuffers(new ClientConductorMappedBuffers(ADMIN_DIR_NAME));
+        return new Aeron.Context().conductorByteBuffers(new ConductorByteBuffers(ADMIN_DIR_NAME));
     }
 
     @After

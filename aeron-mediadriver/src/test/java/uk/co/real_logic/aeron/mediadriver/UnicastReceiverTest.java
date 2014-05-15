@@ -18,10 +18,7 @@ package uk.co.real_logic.aeron.mediadriver;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
-import uk.co.real_logic.aeron.util.BitUtil;
-import uk.co.real_logic.aeron.util.ClientConductorMappedBuffers;
-import uk.co.real_logic.aeron.util.ConductorBuffers;
-import uk.co.real_logic.aeron.util.SharedDirectories;
+import uk.co.real_logic.aeron.util.*;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -84,7 +81,6 @@ public class UnicastReceiverTest
     private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
     private final ErrorHeaderFlyweight error = new ErrorHeaderFlyweight();
     private final SubscriberMessageFlyweight receiverMessage = new SubscriberMessageFlyweight();
-    private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
     private BufferManagement bufferManagement;
     private Receiver receiver;
@@ -103,7 +99,7 @@ public class UnicastReceiverTest
             .rcvNioSelector(nioSelector)
             .adminNioSelector(new NioSelector())
             .senderFlowControl(DefaultSenderControlStrategy::new)
-            .conductorCommsBuffers(new ClientConductorMappedBuffers(buffers.adminDirName()))
+            .conductorCommsBuffers(new ConductorByteBuffers(buffers.adminDirName()))
             .bufferManagement(bufferManagement);
 
         ctx.rcvFrameHandlerFactory(

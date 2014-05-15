@@ -17,9 +17,8 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.conductor.*;
 import uk.co.real_logic.aeron.util.AtomicArray;
-import uk.co.real_logic.aeron.util.ClientConductorMappedBuffers;
 import uk.co.real_logic.aeron.util.CommonConfiguration;
-import uk.co.real_logic.aeron.util.ConductorMappedBuffers;
+import uk.co.real_logic.aeron.util.ConductorByteBuffers;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
@@ -37,13 +36,13 @@ public final class Aeron
 
     private final ManyToOneRingBuffer mediaConductorCommandBuffer;
     private final ClientConductor clientConductor;
-    private final ConductorMappedBuffers adminBuffers;
+    private final ConductorByteBuffers adminBuffers;
     private final AtomicArray<Channel> channels;
     private final AtomicArray<SubscriberChannel> receivers;
 
     private Aeron(final Context context)
     {
-        adminBuffers = context.conductorMappedBuffers;
+        adminBuffers = context.conductorByteBuffers;
         channels = new AtomicArray<>();
         receivers = new AtomicArray<>();
         mediaConductorCommandBuffer = new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocate(ADMIN_BUFFER_SIZE)));
@@ -185,7 +184,7 @@ public final class Aeron
     public static class Context
     {
         private ErrorHandler errorHandler = new DummyErrorHandler();
-        private ConductorMappedBuffers conductorMappedBuffers;
+        private ConductorByteBuffers conductorByteBuffers;
         private InvalidDestinationHandler invalidDestinationHandler;
         private PublisherControlFactory publisherControlFactory = DefaultPublisherControlStrategy::new;
 
@@ -195,9 +194,9 @@ public final class Aeron
             return this;
         }
 
-        public Context conductorMappedBuffers(ConductorMappedBuffers conductorMappedBuffers)
+        public Context conductorByteBuffers(ConductorByteBuffers conductorByteBuffers)
         {
-            this.conductorMappedBuffers = conductorMappedBuffers;
+            this.conductorByteBuffers = conductorByteBuffers;
             return this;
         }
 

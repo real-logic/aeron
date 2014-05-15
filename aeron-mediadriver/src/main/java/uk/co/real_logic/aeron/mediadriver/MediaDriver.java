@@ -17,8 +17,7 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
 import uk.co.real_logic.aeron.util.CommonConfiguration;
-import uk.co.real_logic.aeron.util.ConductorMappedBuffers;
-import uk.co.real_logic.aeron.util.MediaDriverConductorMappedBuffers;
+import uk.co.real_logic.aeron.util.ConductorByteBuffers;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
@@ -134,14 +133,14 @@ public class MediaDriver implements AutoCloseable
     private final Sender sender;
     private final MediaConductor mediaConductor;
 
-    private final ConductorMappedBuffers conductorMappedBuffers;
+    private final ConductorByteBuffers conductorByteBuffers;
     private final BufferManagement bufferManagement;
 
     public MediaDriver() throws Exception
     {
         final NioSelector nioSelector = new NioSelector();
 
-        conductorMappedBuffers = new MediaDriverConductorMappedBuffers(ADMIN_DIR_NAME, ADMIN_BUFFER_SZ);
+        conductorByteBuffers = new ConductorByteBuffers(ADMIN_DIR_NAME, ADMIN_BUFFER_SZ);
         bufferManagement = newMappedBufferManager(DATA_DIR_NAME);
 
         final Context context = new Context()
@@ -150,7 +149,7 @@ public class MediaDriver implements AutoCloseable
                 .rcvNioSelector(nioSelector)
                 .adminNioSelector(new NioSelector())
                 .senderFlowControl(DefaultSenderControlStrategy::new)
-                .conductorCommsBuffers(conductorMappedBuffers)
+                .conductorCommsBuffers(conductorByteBuffers)
                 .bufferManagement(bufferManagement)
                 .mtuLength(CommonConfiguration.MTU_LENGTH);
 
@@ -182,7 +181,7 @@ public class MediaDriver implements AutoCloseable
         receiver.close();
         sender.close();
         mediaConductor.close();
-        conductorMappedBuffers.close();
+        conductorByteBuffers.close();
         bufferManagement.close();
     }
 
@@ -191,7 +190,7 @@ public class MediaDriver implements AutoCloseable
         private RingBuffer conductorCommandBuffer;
         private RingBuffer receiverCommandBuffer;
         private BufferManagement bufferManagement;
-        private ConductorMappedBuffers conductorMappedBuffers;
+        private ConductorByteBuffers conductorByteBuffers;
         private NioSelector rcvNioSelector;
         private NioSelector adminNioSelector;
         private Supplier<SenderControlStrategy> senderFlowControl;
@@ -225,9 +224,9 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context conductorCommsBuffers(final ConductorMappedBuffers conductorMappedBuffers)
+        public Context conductorCommsBuffers(final ConductorByteBuffers conductorByteBuffers)
         {
-            this.conductorMappedBuffers = conductorMappedBuffers;
+            this.conductorByteBuffers = conductorByteBuffers;
             return this;
         }
 
@@ -276,9 +275,9 @@ public class MediaDriver implements AutoCloseable
             return bufferManagement;
         }
 
-        public ConductorMappedBuffers conductorCommsBuffers()
+        public ConductorByteBuffers conductorCommsBuffers()
         {
-            return conductorMappedBuffers;
+            return conductorByteBuffers;
         }
 
         public NioSelector rcvNioSelector()

@@ -32,8 +32,8 @@ public class ConductorBuffers extends ExternalResource
     private final String adminDirName;
     private final int bufferSize;
 
-    private ConductorMappedBuffers mediaDriverBuffers;
-    private ConductorMappedBuffers clientBuffers;
+    private ConductorByteBuffers mediaDriverBuffers;
+    private ConductorByteBuffers clientBuffers;
     private ByteBuffer toMediaDriver;
     private ByteBuffer toClient;
     private File adminDir;
@@ -68,21 +68,21 @@ public class ConductorBuffers extends ExternalResource
         }
 
         IoUtil.ensureDirectoryExists(adminDir, "conductor dir");
-        mediaDriverBuffers = new MediaDriverConductorMappedBuffers(adminDirName, bufferSize);
-        clientBuffers = new ClientConductorMappedBuffers(adminDirName);
+        mediaDriverBuffers = new ConductorByteBuffers(adminDirName, bufferSize);
+        clientBuffers = new ConductorByteBuffers(adminDirName);
         toMediaDriver = mediaDriverBuffers.toMediaDriver();
         toClient = mediaDriverBuffers.toClient();
     }
 
     protected void after()
     {
-        // Force unmapping of byte clientBuffers to allow deletion
+        // Force un-mapping of byte clientBuffers to allow deletion
         mediaDriverBuffers.close();
         clientBuffers.close();
 
         try
         {
-            // do deletion here to make debugging easier if unmaps/closes are not done
+            // do deletion here to make debugging easier if un-maps/closes are not done
             IoUtil.delete(adminDir, false);
         }
         catch (final Exception ex)
@@ -106,12 +106,12 @@ public class ConductorBuffers extends ExternalResource
         return new ManyToOneRingBuffer(new AtomicBuffer(buffer));
     }
 
-    public ConductorMappedBuffers clientBuffers()
+    public ConductorByteBuffers clientBuffers()
     {
         return clientBuffers;
     }
 
-    public ConductorMappedBuffers mediaDriverBuffers()
+    public ConductorByteBuffers mediaDriverBuffers()
     {
         return mediaDriverBuffers;
     }

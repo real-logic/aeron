@@ -91,8 +91,8 @@ public class AeronTest
     private final ByteBuffer sendBuffer = ByteBuffer.allocate(SEND_BUFFER_CAPACITY);
     private final AtomicBuffer atomicSendBuffer = new AtomicBuffer(sendBuffer);
 
-    private ClientConductorMappedBuffers clientConductorMappedBuffers;
-    private MediaDriverConductorMappedBuffers mediaDriverConductorMappedBuffers;
+    private ConductorByteBuffers clientConductorByteBuffers;
+    private ConductorByteBuffers mediaDriverConductorByteBuffers;
 
     public AeronTest()
     {
@@ -103,16 +103,16 @@ public class AeronTest
     @Before
     public void setUp()
     {
-        mediaDriverConductorMappedBuffers =
-            new MediaDriverConductorMappedBuffers(conductorBuffers.adminDirName(), CONDUCTOR_BUFFER_SIZE);
-        clientConductorMappedBuffers = new ClientConductorMappedBuffers(conductorBuffers.adminDirName());
+        mediaDriverConductorByteBuffers = new ConductorByteBuffers(conductorBuffers.adminDirName(),
+                                                                       CONDUCTOR_BUFFER_SIZE);
+        clientConductorByteBuffers = new ConductorByteBuffers(conductorBuffers.adminDirName());
     }
 
     @After
     public void tearDown()
     {
-        clientConductorMappedBuffers.close();
-        mediaDriverConductorMappedBuffers.close();
+        clientConductorByteBuffers.close();
+        mediaDriverConductorByteBuffers.close();
     }
 
     @Test
@@ -306,9 +306,9 @@ public class AeronTest
         errorHeader.frameLength(ErrorHeaderFlyweight.HEADER_LENGTH + subscriberMessage.length());
 
         toClient().write(ERROR_RESPONSE,
-                      atomicSendBuffer,
-                      subscriberMessage.length(),
-                      errorHeader.frameLength());
+                         atomicSendBuffer,
+                         subscriberMessage.length(),
+                         errorHeader.frameLength());
 
         aeron.conductor().process();
 
@@ -550,12 +550,12 @@ public class AeronTest
 
     private ManyToOneRingBuffer toClient()
     {
-        return new ManyToOneRingBuffer(new AtomicBuffer(mediaDriverConductorMappedBuffers.toClient()));
+        return new ManyToOneRingBuffer(new AtomicBuffer(mediaDriverConductorByteBuffers.toClient()));
     }
 
     private ManyToOneRingBuffer toMediaDriver()
     {
-        return new ManyToOneRingBuffer(new AtomicBuffer(mediaDriverConductorMappedBuffers.toMediaDriver()));
+        return new ManyToOneRingBuffer(new AtomicBuffer(mediaDriverConductorByteBuffers.toMediaDriver()));
     }
 
     private Subscriber newSubscriber(final Aeron aeron)
@@ -598,7 +598,7 @@ public class AeronTest
     private Aeron newAeron()
     {
         final Aeron.Context context = new Aeron.Context()
-            .conductorMappedBuffers(clientConductorMappedBuffers)
+            .conductorByteBuffers(clientConductorByteBuffers)
             .invalidDestinationHandler(invalidDestination);
 
         return Aeron.newSingleMediaDriver(context);

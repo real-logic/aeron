@@ -69,7 +69,7 @@ public class MediaConductor extends Agent implements ClientFacade
     private final QualifiedMessageFlyweight qualifiedMessageFlyweight = new QualifiedMessageFlyweight();
 
     private final int mtuLength;
-    private final ConductorMappedBuffers adminBufferStrategy;
+    private final ConductorByteBuffers adminBufferStrategy;
     private TimerWheel.Timer heartbeatTimer;
 
     public MediaConductor(final Context ctx, final Receiver receiver, final Sender sender)

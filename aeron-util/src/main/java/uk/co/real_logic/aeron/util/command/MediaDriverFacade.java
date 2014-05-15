@@ -16,15 +16,13 @@
 package uk.co.real_logic.aeron.util.command;
 
 /**
- * Facade of MediaDriver for use by Library to send/receiver control commands/responses
+ * Facade of MediaDriver for use by client to send/receive control commands/responses
  *
- * The library (aeron-core) implements this interface to send commands to a media driver and to handle
+ * The Client (aeron-core) implements this interface to send commands to a media driver and to handle
  * responses, Aeron control frames, etc. that come from the a media driver.
  */
 public interface MediaDriverFacade
 {
-    /* commands to MediaDriver */
-
     /**
      * Request media driver to add a source for a given channel onto a given session Id for a given destination.
      *
@@ -81,8 +79,6 @@ public interface MediaDriverFacade
      */
     void sendRequestTerm(final long sessionId, final long channelId, final long termId);
 
-    /* callbacks from MediaDriver */
-
     /**
      * Handle an error response from the media driver
      *
@@ -120,5 +116,4 @@ public interface MediaDriverFacade
                                  final long termId,
                                  final boolean isSender,
                                  final String destination);
-
 }

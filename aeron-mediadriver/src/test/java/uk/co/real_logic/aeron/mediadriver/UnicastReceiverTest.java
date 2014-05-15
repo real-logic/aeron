@@ -67,7 +67,8 @@ public class UnicastReceiverTest
     private static final int FAKE_PACKET_SIZE = 128;
 
     @ClassRule
-    public static ConductorBuffers buffers = new ConductorBuffers(COMMAND_BUFFER_SZ + TRAILER_LENGTH);
+    public static ConductorBuffersExternalResource buffers =
+        new ConductorBuffersExternalResource(COMMAND_BUFFER_SZ + TRAILER_LENGTH);
 
     @ClassRule
     public static SharedDirectories directory = new SharedDirectories();
@@ -104,7 +105,7 @@ public class UnicastReceiverTest
 
         ctx.rcvFrameHandlerFactory(
             new RcvFrameHandlerFactory(nioSelector, new MediaConductorCursor(ctx.conductorCommandBuffer(),
-                                                                                     nioSelector))
+                                                                             nioSelector))
         );
 
         final Sender sender = mock(Sender.class);
@@ -202,13 +203,13 @@ public class UnicastReceiverTest
     @Test(timeout = 1000)
     public void shouldKeepFrameHandlerUponRemoveOfAllButOneChannel() throws Exception
     {
-        final UdpDestination dest = udpDestination();
+        final UdpDestination destination = udpDestination();
 
         writeSubscriberMessage(ADD_SUBSCRIBER, URI, THREE_CHANNELS);
 
         processThreads(5);
 
-        final RcvFrameHandler frameHandler = receiver.frameHandler(dest);
+        final RcvFrameHandler frameHandler = receiver.frameHandler(destination);
 
         assertNotNull(frameHandler);
         assertThat(frameHandler.channelInterestMap().size(), is(3));
@@ -217,20 +218,20 @@ public class UnicastReceiverTest
 
         processThreads(5);
 
-        assertNotNull(receiver.frameHandler(dest));
+        assertNotNull(receiver.frameHandler(destination));
         assertThat(frameHandler.channelInterestMap().size(), is(1));
     }
 
     @Test(timeout = 1000)
     public void shouldOnlyRemoveFrameHandlerUponRemovalOfAllChannels() throws Exception
     {
-        final UdpDestination dest = udpDestination();
+        final UdpDestination destination = udpDestination();
 
         writeSubscriberMessage(ADD_SUBSCRIBER, URI, THREE_CHANNELS);
 
         processThreads(5);
 
-        final RcvFrameHandler frameHandler = receiver.frameHandler(dest);
+        final RcvFrameHandler frameHandler = receiver.frameHandler(destination);
 
         assertNotNull(frameHandler);
         assertThat(frameHandler.channelInterestMap().size(), is(3));
@@ -239,13 +240,13 @@ public class UnicastReceiverTest
 
         processThreads(5);
 
-        assertNotNull(receiver.frameHandler(dest));
+        assertNotNull(receiver.frameHandler(destination));
         assertThat(frameHandler.channelInterestMap().size(), is(1));
 
         writeSubscriberMessage(REMOVE_SUBSCRIBER, URI, ONE_CHANNEL);
         processThreads(5);
 
-        assertNull(receiver.frameHandler(dest));
+        assertNull(receiver.frameHandler(destination));
     }
 
     @Test(timeout = 200000)
@@ -255,15 +256,15 @@ public class UnicastReceiverTest
 
         processThreads(10);
 
-        final UdpDestination dest = udpDestination();
+        final UdpDestination destination = udpDestination();
 
-        assertNotNull(receiver.frameHandler(dest));
+        assertNotNull(receiver.frameHandler(destination));
 
-        sendDataFrame(dest, ONE_CHANNEL[0], 0x0);
+        sendDataFrame(destination, ONE_CHANNEL[0], 0x0);
 
         processThreads(5);
 
-        final RcvFrameHandler frameHandler = receiver.frameHandler(dest);
+        final RcvFrameHandler frameHandler = receiver.frameHandler(destination);
         assertNotNull(frameHandler);
         final RcvChannelState channelState = frameHandler.channelInterestMap().get(ONE_CHANNEL[0]);
         assertNotNull(channelState);
@@ -280,7 +281,7 @@ public class UnicastReceiverTest
 
         statusMessage.wrap(rcvBuffer);
         assertNotNull(rcvAddr);
-        assertThat(rcvAddr.getPort(), is(dest.remoteData().getPort()));
+        assertThat(rcvAddr.getPort(), is(destination.remoteData().getPort()));
         assertThat(statusMessage.headerType(), is(HeaderFlyweight.HDR_TYPE_SM));
         assertThat(statusMessage.channelId(), is(ONE_CHANNEL[0]));
         assertThat(statusMessage.sessionId(), is(SESSION_ID));
@@ -405,7 +406,7 @@ public class UnicastReceiverTest
                                final long termId,
                                final int seqNum,
                                final int amount)
-            throws Exception
+        throws Exception
     {
         int alignedAmount = BitUtil.align(amount, FRAME_ALIGNMENT);
 
@@ -413,13 +414,13 @@ public class UnicastReceiverTest
         dataHeaderFlyweight.wrap(writeBuffer, 0);
 
         dataHeaderFlyweight.termOffset(seqNum)
-                .sessionId(SESSION_ID)
-                .channelId(channelId)
-                .termId(termId)
-                .version(HeaderFlyweight.CURRENT_VERSION)
-                .flags((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
-                .headerType(HeaderFlyweight.HDR_TYPE_DATA)
-                .frameLength(alignedAmount);
+                           .sessionId(SESSION_ID)
+                           .channelId(channelId)
+                           .termId(termId)
+                           .version(HeaderFlyweight.CURRENT_VERSION)
+                           .flags((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
+                           .headerType(HeaderFlyweight.HDR_TYPE_DATA)
+                           .frameLength(alignedAmount);
 
         sendBuffer.position(0);
         sendBuffer.putInt(dataHeaderFlyweight.dataOffset(), VALUE);

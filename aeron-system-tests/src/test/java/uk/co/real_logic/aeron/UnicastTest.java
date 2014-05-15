@@ -37,10 +37,7 @@ public class UnicastTest
     public static SharedDirectories dataDir = new SharedDirectories();
 
     @ClassRule
-    public static ConductorBuffers buffers = new ConductorBuffers(ADMIN_DIR_NAME);
-
-    private DataHandler dataHandler;
-    private NewSourceEventHandler sourceHandler;
+    public static ConductorBuffersExternalResource buffers = new ConductorBuffersExternalResource(ADMIN_DIR_NAME);
 
     private Aeron producingClient;
     private Aeron receivingClient;
@@ -53,8 +50,8 @@ public class UnicastTest
     {
         driver = new MediaDriver();
 
-        dataHandler = mock(DataHandler.class);
-        sourceHandler = mock(NewSourceEventHandler.class);
+        final DataHandler dataHandler = mock(DataHandler.class);
+        final NewSourceEventHandler sourceHandler = mock(NewSourceEventHandler.class);
 
         producingClient = Aeron.newSingleMediaDriver(newAeronContext());
         receivingClient = Aeron.newSingleMediaDriver(newAeronContext());
@@ -127,5 +124,4 @@ public class UnicastTest
     {
         // TODO: throw away some packets, check they are delivered
     }
-
 }

@@ -76,7 +76,7 @@ public class AeronTest
     public static SharedDirectories directory = new SharedDirectories();
 
     @ClassRule
-    public static ConductorBuffers conductorBuffers = new ConductorBuffers();
+    public static ConductorBuffersExternalResource conductorBuffers = new ConductorBuffersExternalResource();
 
     private final InvalidDestinationHandler invalidDestination = mock(InvalidDestinationHandler.class);
 
@@ -104,7 +104,7 @@ public class AeronTest
     public void setUp()
     {
         mediaDriverConductorByteBuffers = new ConductorByteBuffers(conductorBuffers.adminDirName(),
-                                                                       CONDUCTOR_BUFFER_SIZE);
+                                                                   CONDUCTOR_BUFFER_SIZE);
         clientConductorByteBuffers = new ConductorByteBuffers(conductorBuffers.adminDirName());
     }
 
@@ -541,9 +541,9 @@ public class AeronTest
     {
         final RingBuffer apiBuffer = toClient();
         qualifiedMessage.channelId(CHANNEL_ID)
-                         .sessionId(sessionId)
-                         .termId(termId)
-                         .destination(DESTINATION);
+                        .sessionId(sessionId)
+                        .termId(termId)
+                        .destination(DESTINATION);
 
         assertTrue(apiBuffer.write(eventTypeId, atomicSendBuffer, 0, qualifiedMessage.length()));
     }
@@ -582,7 +582,8 @@ public class AeronTest
 
     private DataHandler emptyDataHandler()
     {
-        return (buffer, offset, sessionId, flags) -> {};
+        return (buffer, offset, sessionId, flags) -> {
+        };
     }
 
     private Channel newChannel(final Aeron aeron)

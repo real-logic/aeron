@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import org.junit.*;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
-import uk.co.real_logic.aeron.util.ConductorBuffers;
+import uk.co.real_logic.aeron.util.ConductorBuffersExternalResource;
 import uk.co.real_logic.aeron.util.SharedDirectories;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
@@ -74,7 +74,8 @@ public class UnicastSenderTest
     public static final int VALUE = 37;
 
     @Rule
-    public ConductorBuffers buffers = new ConductorBuffers(COMMAND_BUFFER_SZ + TRAILER_LENGTH);
+    public ConductorBuffersExternalResource buffers
+        = new ConductorBuffersExternalResource(COMMAND_BUFFER_SZ + TRAILER_LENGTH);
 
     @ClassRule
     public static SharedDirectories directory = new SharedDirectories();
@@ -383,7 +384,6 @@ public class UnicastSenderTest
     @Ignore
     public void shouldSendMultipleHeartbeatsCorrectly() throws Exception
     {
-
     }
 
     private void assertReceivedZeroLengthPacket() throws IOException

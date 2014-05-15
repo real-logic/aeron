@@ -86,8 +86,8 @@ public class MediaConductor extends Agent implements ClientFacade
         this.senderFlowControl = ctx.senderFlowControl();
         this.srcDestinationMap = new Long2ObjectHashMap<>();
         this.writeBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(WRITE_BUFFER_CAPACITY));
-        this.timerWheel = ctx.adminTimerWheel() != null ?
-                              ctx.adminTimerWheel() :
+        this.timerWheel = ctx.conductorTimerWheel() != null ?
+                              ctx.conductorTimerWheel() :
                               new TimerWheel(MEDIA_CONDUCTOR_TICK_DURATION_MICROS,
                                              TimeUnit.MICROSECONDS,
                                              MEDIA_CONDUCTOR_TICKS_PER_WHEEL);
@@ -96,7 +96,7 @@ public class MediaConductor extends Agent implements ClientFacade
 
         try
         {
-            adminBufferStrategy = ctx.conductorCommsBuffers();
+            adminBufferStrategy = ctx.conductorByteBuffers();
             ByteBuffer toMediaDriver = adminBufferStrategy.toMediaDriver();
             ByteBuffer toApi = adminBufferStrategy.toClient();
             this.adminReceiveBuffer = new ManyToOneRingBuffer(new AtomicBuffer(toMediaDriver));

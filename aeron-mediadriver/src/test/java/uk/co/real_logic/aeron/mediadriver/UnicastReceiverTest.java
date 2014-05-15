@@ -99,7 +99,7 @@ public class UnicastReceiverTest
             .rcvNioSelector(nioSelector)
             .adminNioSelector(new NioSelector())
             .senderFlowControl(DefaultSenderControlStrategy::new)
-            .conductorCommsBuffers(new ConductorByteBuffers(buffers.adminDirName()))
+            .conductorByteBuffers(new ConductorByteBuffers(buffers.adminDirName()))
             .bufferManagement(bufferManagement);
 
         ctx.rcvFrameHandlerFactory(

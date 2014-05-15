@@ -118,9 +118,9 @@ public class UnicastSenderTest
             .rcvNioSelector(new NioSelector())
             .adminNioSelector(new NioSelector())
             .senderFlowControl(DefaultSenderControlStrategy::new)
-            .conductorCommsBuffers(buffers.mediaDriverBuffers())
+            .conductorByteBuffers(buffers.mediaDriverBuffers())
             .bufferManagement(bufferManagement)
-            .adminTimerWheel(timerWheel);
+            .conductorTimerWheel(timerWheel);
 
         sender = new Sender(ctx);
         final Receiver receiver = mock(Receiver.class);

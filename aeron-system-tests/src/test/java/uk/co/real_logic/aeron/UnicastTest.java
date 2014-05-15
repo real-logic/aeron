@@ -94,9 +94,9 @@ public class UnicastTest
     private void process() throws Exception
     {
         producingClient.conductor().process();
-        driver.adminThread().process();
-        driver.senderThread().process();
-        driver.receiverThread().process();
+        driver.mediaConductor().process();
+        driver.sender().process();
+        driver.receiver().process();
         receivingClient.conductor().process();
         subscriber.read();
     }

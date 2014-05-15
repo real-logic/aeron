@@ -115,9 +115,9 @@ public class MediaDriver implements AutoCloseable
             // 1 for Admin Thread (Buffer Management, NAK, Retransmit, etc.)
             final Executor executor = Executors.newFixedThreadPool(3);
 
-            executor.execute(mediaDriver.receiverThread());
-            executor.execute(mediaDriver.senderThread());
-            executor.execute(mediaDriver.adminThread());
+            executor.execute(mediaDriver.receiver());
+            executor.execute(mediaDriver.sender());
+            executor.execute(mediaDriver.mediaConductor());
         }
         catch (final InterruptedException ie)
         {
@@ -149,7 +149,7 @@ public class MediaDriver implements AutoCloseable
                 .rcvNioSelector(nioSelector)
                 .adminNioSelector(new NioSelector())
                 .senderFlowControl(DefaultSenderControlStrategy::new)
-                .conductorCommsBuffers(conductorByteBuffers)
+                .conductorByteBuffers(conductorByteBuffers)
                 .bufferManagement(bufferManagement)
                 .mtuLength(CommonConfiguration.MTU_LENGTH);
 
@@ -161,17 +161,17 @@ public class MediaDriver implements AutoCloseable
         mediaConductor = new MediaConductor(context, receiver, sender);
     }
 
-    public Receiver receiverThread()
+    public Receiver receiver()
     {
         return receiver;
     }
 
-    public Sender senderThread()
+    public Sender sender()
     {
         return sender;
     }
 
-    public MediaConductor adminThread()
+    public MediaConductor mediaConductor()
     {
         return mediaConductor;
     }
@@ -194,7 +194,7 @@ public class MediaDriver implements AutoCloseable
         private NioSelector rcvNioSelector;
         private NioSelector adminNioSelector;
         private Supplier<SenderControlStrategy> senderFlowControl;
-        private TimerWheel adminTimerWheel;
+        private TimerWheel conductorTimerWheel;
         private int mtuLength;
         private RcvFrameHandlerFactory rcvFrameHandlerFactory;
 
@@ -224,7 +224,7 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context conductorCommsBuffers(final ConductorByteBuffers conductorByteBuffers)
+        public Context conductorByteBuffers(final ConductorByteBuffers conductorByteBuffers)
         {
             this.conductorByteBuffers = conductorByteBuffers;
             return this;
@@ -254,9 +254,9 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context adminTimerWheel(final TimerWheel wheel)
+        public Context conductorTimerWheel(final TimerWheel wheel)
         {
-            this.adminTimerWheel = wheel;
+            this.conductorTimerWheel = wheel;
             return this;
         }
 
@@ -275,7 +275,7 @@ public class MediaDriver implements AutoCloseable
             return bufferManagement;
         }
 
-        public ConductorByteBuffers conductorCommsBuffers()
+        public ConductorByteBuffers conductorByteBuffers()
         {
             return conductorByteBuffers;
         }
@@ -311,9 +311,9 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public TimerWheel adminTimerWheel()
+        public TimerWheel conductorTimerWheel()
         {
-            return adminTimerWheel;
+            return conductorTimerWheel;
         }
     }
 }

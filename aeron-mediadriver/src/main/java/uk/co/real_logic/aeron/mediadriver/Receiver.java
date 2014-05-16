@@ -177,7 +177,7 @@ public class Receiver extends Agent
     private void onNewSubscriber(final String destination, final long[] channelIdList) throws Exception
     {
         final UdpDestination rcvDestination = UdpDestination.parse(destination);
-        RcvFrameHandler rcv = rcvDestinationMap.get(rcvDestination);
+        RcvFrameHandler rcv = frameHandler(rcvDestination);
 
         if (null == rcv)
         {
@@ -191,7 +191,7 @@ public class Receiver extends Agent
     private void onRemoveSubscriber(final String destination, final long[] channelIdList)
     {
         final UdpDestination rcvDestination = UdpDestination.parse(destination);
-        RcvFrameHandler rcv = rcvDestinationMap.get(rcvDestination);
+        RcvFrameHandler rcv = frameHandler(rcvDestination);
 
         if (null == rcv)
         {
@@ -210,7 +210,7 @@ public class Receiver extends Agent
 
     private void attachBufferState(final RcvBufferState buffer)
     {
-        RcvFrameHandler rcv = rcvDestinationMap.get(buffer.destination());
+        RcvFrameHandler rcv = frameHandler(buffer.destination());
 
         if (null == rcv)
         {
@@ -228,5 +228,13 @@ public class Receiver extends Agent
     public void processBufferRotation()
     {
         sessionState.forEach(RcvSessionState::processBufferRotation);
+    }
+
+    /**
+     * Called by MediaConductor on its thread
+     */
+    public void scanForGaps()
+    {
+        sessionState.forEach(RcvSessionState::scanForGaps);
     }
 }

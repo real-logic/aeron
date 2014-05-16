@@ -19,6 +19,7 @@ import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
 import uk.co.real_logic.aeron.mediadriver.buffer.LogBuffers;
 import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.GapScanner;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogRebuilder;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.StateViewer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
@@ -44,6 +45,7 @@ public class RcvSessionState
 
     private BufferRotator rotator;
     private TermRebuilder[] rebuilders;
+    private GapScanner gapScanner;
 
     public RcvSessionState(final long sessionId, final InetSocketAddress srcAddr)
     {
@@ -138,5 +140,10 @@ public class RcvSessionState
                 ex.printStackTrace();
             }
         }
+    }
+
+    public void scanForGaps()
+    {
+
     }
 }

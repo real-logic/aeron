@@ -51,28 +51,6 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
         this.conductorCursor = conductorCursor;
     }
 
-    public int sendTo(final ByteBuffer buffer, final long sessionId, final long channelId) throws Exception
-    {
-        final RcvChannelState channel = channelInterestMap.get(channelId);
-        if (null == channel)
-        {
-            return 0;
-        }
-
-        final RcvSessionState session = channel.getSessionState(sessionId);
-        if (null == session)
-        {
-            return 0;
-        }
-
-        return sendTo(buffer, session.sourceAddress());
-    }
-
-    public int sendTo(final ByteBuffer buffer, final InetSocketAddress addr) throws Exception
-    {
-        return transport.sendTo(buffer, addr);
-    }
-
     public void close()
     {
         transport.close();
@@ -187,7 +165,7 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
         sendStatusMessage(0, 0, buffer.termId(), sessionState, channelState);
     }
 
-    private int sendStatusMessage(final int seqNum,
+    private int sendStatusMessage(final int termOffset,
                                   final int window,
                                   final long termId,
                                   final RcvSessionState sessionState,
@@ -198,7 +176,7 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
         statusMessageFlyweight.sessionId(sessionState.sessionId())
                               .channelId(channelState.channelId())
                               .termId(termId)
-                              .highestContiguousTermOffset(seqNum)
+                              .highestContiguousTermOffset(termOffset)
                               .receiverWindow(window)
                               .headerType(HeaderFlyweight.HDR_TYPE_SM)
                               .frameLength(StatusMessageFlyweight.HEADER_LENGTH)

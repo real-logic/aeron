@@ -107,6 +107,7 @@ public class LossHandler
     private void onTimerExpire()
     {
         sendNakHandler.onSendNak(currentGap.termId, currentGap.termOffset);
+        scheduleTimer(determineNakDelay());
     }
 
     private long determineNakDelay()

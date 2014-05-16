@@ -84,16 +84,43 @@ public class LossHandlerTest
     }
 
     @Test
-    public void shouldSetUpNakStateCorrectly()
+    public void shouldNakMissingData()
     {
         rcvDataFrame(0);
         rcvDataFrame(0 + (2 * MESSAGE_LENGTH));
 
         handler.scan();
-        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(50));
+        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(40));
 
         verify(sendNakHandler).onSendNak(0, MESSAGE_LENGTH);
         verifyNoMoreInteractions(sendNakHandler);
+    }
+
+    @Test
+    public void shouldRetransmitNakForMissingData()
+    {
+        rcvDataFrame(0);
+        rcvDataFrame(0 + (2 * MESSAGE_LENGTH));
+
+        handler.scan();
+        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(60));
+
+        verify(sendNakHandler, times(2)).onSendNak(0, MESSAGE_LENGTH);
+        verifyNoMoreInteractions(sendNakHandler);
+    }
+
+    @Test
+    public void shouldSuppressNakOnReceivingNak()
+    {
+        rcvDataFrame(0);
+        rcvDataFrame(0 + (2 * MESSAGE_LENGTH));
+
+        handler.scan();
+        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(20));
+        handler.onNak(0, MESSAGE_LENGTH);
+        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(20));
+
+        verifyZeroInteractions(sendNakHandler);
     }
 
     private void rcvDataFrame(final int offset)

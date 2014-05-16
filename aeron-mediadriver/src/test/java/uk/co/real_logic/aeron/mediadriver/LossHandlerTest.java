@@ -93,7 +93,6 @@ public class LossHandlerTest
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(40));
 
         verify(sendNakHandler).onSendNak(0, MESSAGE_LENGTH);
-        verifyNoMoreInteractions(sendNakHandler);
     }
 
     @Test
@@ -105,8 +104,7 @@ public class LossHandlerTest
         handler.scan();
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(60));
 
-        verify(sendNakHandler, times(2)).onSendNak(0, MESSAGE_LENGTH);
-        verifyNoMoreInteractions(sendNakHandler);
+        verify(sendNakHandler, atLeast(2)).onSendNak(0, MESSAGE_LENGTH);
     }
 
     @Test

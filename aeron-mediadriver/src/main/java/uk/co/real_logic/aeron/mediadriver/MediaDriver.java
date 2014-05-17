@@ -92,6 +92,20 @@ public class MediaDriver implements AutoCloseable
     /** Default timeout for select */
     public static final int SELECT_TIMEOUT_DEFAULT = 20;
 
+    /** Default group size estimate for NAK delay randomization */
+    public static final int NAK_GROUPSIZE_DEFAULT = 10;
+    /** Default group RTT estimate for NAK delay randomization in msec */
+    public static final int NAK_GRTT_DEFAULT = 10;
+    /** Default max backoff for NAK delay randomization in msec */
+    public static final int NAK_MAX_BACKOFF_DEFAULT = 60;
+
+    /** Default group size estimate for retransmit delay randomization */
+    public static final int RETRANS_GROUPSIZE_DEFAULT = 10;
+    /** Default group RTT estimate for retransmit delay randomization in msec */
+    public static final int RETRANS_GRTT_DEFAULT = 10;
+    /** Default max backoff for retransmit delay randomization in msec */
+    public static final int RETRANS_MAX_BACKOFF_DEFAULT = 60;
+
     public static final int READ_BYTE_BUFFER_SZ = getInteger(READ_BUFFER_SZ_PROP_NAME, READ_BYTE_BUFFER_SZ_DEFAULT);
     public static final int COMMAND_BUFFER_SZ = getInteger(COMMAND_BUFFER_SZ_PROP_NAME, COMMAND_BUFFER_SZ_DEFAULT);
     public static final int ADMIN_BUFFER_SZ = getInteger(ADMIN_BUFFER_SZ_PROP_NAME, ADMIN_BUFFER_SZ_DEFAULT);

@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import uk.co.real_logic.aeron.util.FeedbackDelayGenerator;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 
@@ -22,8 +23,17 @@ import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
  */
 public class RetransmitController
 {
+    private static final FeedbackDelayGenerator feedbackDelay;
+
     private final LogReader reader;
     private final TimerWheel wheel;
+
+    static
+    {
+        feedbackDelay = new FeedbackDelayGenerator(MediaDriver.RETRANS_MAX_BACKOFF_DEFAULT,
+                                                   MediaDriver.RETRANS_GROUPSIZE_DEFAULT,
+                                                   MediaDriver.RETRANS_GRTT_DEFAULT);
+    }
 
     public RetransmitController(final LogReader reader, final TimerWheel wheel)
     {

@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import uk.co.real_logic.aeron.util.FeedbackDelayGenerator;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.GapScanner;
@@ -26,6 +27,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class LossHandler
 {
+    private static final FeedbackDelayGenerator feedbackDelay;
+
     private final GapScanner[] scanners;
     private final TimerWheel wheel;
     private final GapState currentGap;
@@ -46,6 +49,13 @@ public class LossHandler
     public interface SendNakHandler
     {
         void onSendNak(final int termId, final int termOffset);
+    }
+
+    static
+    {
+        feedbackDelay = new FeedbackDelayGenerator(MediaDriver.NAK_MAX_BACKOFF_DEFAULT,
+                                                   MediaDriver.NAK_GROUPSIZE_DEFAULT,
+                                                   MediaDriver.NAK_GRTT_DEFAULT);
     }
 
     public LossHandler(final GapScanner[] scanners, final TimerWheel wheel, final SendNakHandler sendNakHandler)
@@ -112,6 +122,9 @@ public class LossHandler
 
     private long determineNakDelay()
     {
+        /*
+         * TODO: This should be 0 for unicast and use FeedbackDelayGenerator for multicast situations.
+         */
         return TimeUnit.MILLISECONDS.toNanos(20);
     }
 

@@ -247,11 +247,11 @@ public class FlyweightTest
         assertLengthFindsNonZeroedBytes(0);
         encodeNewBuffer.wrap(aBuff, 0);
 
-        encodeNewBuffer.channelId(1L);
-        encodeNewBuffer.sessionId(2L);
-        encodeNewBuffer.termId(3L);
-        encodeNewBuffer.destination("abc");
-        encodeNewBuffer.file("def");
+        encodeNewBuffer.channelId(1L)
+                       .sessionId(2L)
+                       .termId(3L)
+                       .destination("abc")
+                       .file("def");
 
         assertLengthFindsNonZeroedBytes(encodeNewBuffer.length());
 

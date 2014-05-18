@@ -21,7 +21,7 @@ import uk.co.real_logic.aeron.util.ConductorBuffersExternalResource;
 import uk.co.real_logic.aeron.util.SharedDirectories;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.QualifiedMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.EventHandler;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
@@ -31,6 +31,7 @@ import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -45,6 +46,7 @@ import java.util.stream.IntStream;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.mediadriver.MediaConductor.HEADER_LENGTH;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.*;
@@ -88,7 +90,7 @@ public class UnicastSenderTest
 
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
     private final ErrorHeaderFlyweight error = new ErrorHeaderFlyweight();
-    private final QualifiedMessageFlyweight bufferMessage = new QualifiedMessageFlyweight();
+    private final NewBufferMessageFlyweight bufferMessage = new NewBufferMessageFlyweight();
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
 
@@ -157,7 +159,14 @@ public class UnicastSenderTest
             assertThat(bufferMessage.sessionId(), is(SESSION_ID));
             assertThat(bufferMessage.channelId(), is(CHANNEL_ID));
             assertThat(bufferMessage.destination(), is(URI));
+            assertIsDirectory(bufferMessage.location());
         });
+    }
+
+    private void assertIsDirectory(final String location)
+    {
+        final File dir = new File(location);
+        assertTrue("Isn't a directory: " + location, dir.isDirectory());
     }
 
     @Test(timeout = 1000)
@@ -185,6 +194,7 @@ public class UnicastSenderTest
             assertThat(bufferMessage.sessionId(), is(SESSION_ID));
             assertThat(bufferMessage.channelId(), is(CHANNEL_ID));
             assertThat(bufferMessage.destination(), is(URI));
+            assertIsDirectory(bufferMessage.location());
         });
 
         writeChannelMessage(ADD_CHANNEL, URI, SESSION_ID, CHANNEL_ID);
@@ -237,6 +247,7 @@ public class UnicastSenderTest
             assertThat(bufferMessage.sessionId(), is(SESSION_ID));
             assertThat(bufferMessage.channelId(), is(CHANNEL_ID));
             assertThat(bufferMessage.destination(), is(URI));
+            assertIsDirectory(bufferMessage.location());
         });
 
         writeChannelMessage(REMOVE_CHANNEL, URI, SESSION_ID + 1, CHANNEL_ID);
@@ -439,6 +450,7 @@ public class UnicastSenderTest
             assertThat(bufferMessage.sessionId(), is(SESSION_ID));
             assertThat(bufferMessage.channelId(), is(CHANNEL_ID));
             assertThat(bufferMessage.destination(), is(URI));
+            assertIsDirectory(bufferMessage.location());
 
             termId.set(bufferMessage.termId());
         };

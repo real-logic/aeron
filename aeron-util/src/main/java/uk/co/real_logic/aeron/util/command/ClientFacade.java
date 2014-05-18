@@ -104,6 +104,8 @@ public interface ClientFacade
     void sendNewBufferNotification(final long sessionId,
                                    final long channelId,
                                    final long termId,
-                                   final boolean isSender, final String destination);
+                                   final boolean isSender,
+                                   final String destination,
+                                   final String location);
 
 }

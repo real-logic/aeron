@@ -44,6 +44,7 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
     private final FileChannel stateTemplate;
     private final long stateBufferSize;
     private final MappedLogBuffers[] buffers;
+    private final File directory;
 
     private MappedLogBuffers current;
     private MappedLogBuffers clean;
@@ -55,6 +56,7 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
                         final FileChannel stateTemplate,
                         final long stateBufferSize)
     {
+        this.directory = directory;
         IoUtil.ensureDirectoryExists(directory, "buffer directory");
 
         this.logTemplate = logTemplate;
@@ -107,6 +109,11 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
         clean = dirty;
         dirty = current;
         current = newBuffer;
+    }
+
+    public String location()
+    {
+        return directory.getAbsolutePath();
     }
 
     private FileChannel openFile(final File directory, final String child) throws FileNotFoundException

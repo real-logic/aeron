@@ -17,6 +17,8 @@ package uk.co.real_logic.aeron.util.command;
 
 import java.nio.ByteOrder;
 
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
+
 /**
  * Message to denote that new buffers have been added for a subscription.
  *
@@ -34,14 +36,14 @@ import java.nio.ByteOrder;
  * |      Destination Length       |   Destination               ...
  * |                                                             ...
  * +---------------------------------------------------------------+
- * |      File Length              |   File                      ...
+ * |      Location Length          |   Location                  ...
  * |                                                             ...
  * +---------------------------------------------------------------+
  */
 public class NewBufferMessageFlyweight extends QualifiedMessageFlyweight
 {
 
-    private int lengthOfFile;
+    private int lengthOfLocation;
 
     /**
      * {@inheritDoc}
@@ -85,30 +87,30 @@ public class NewBufferMessageFlyweight extends QualifiedMessageFlyweight
     }
 
     /**
-     * return file where the buffer is located.
+     * return location of buffers
      *
      * NB: you must read this after the destination field.
      *
-     * @return file where the buffer is located
+     * @return location of buffers
      */
-    public String file()
+    public String location()
     {
-        return stringGet(endOfDestination(), ByteOrder.LITTLE_ENDIAN);
+        return stringGet(endOfDestination(), LITTLE_ENDIAN);
     }
 
     /**
-     * set file where the buffer is located
+     * set location of buffers
      *
      * NB: you must write this after the destination field.
      *
-     * @param file the file where the buffer is located
+     * @param location location of buffers
      * @return flyweight
      */
-    public NewBufferMessageFlyweight file(final String file)
+    public NewBufferMessageFlyweight location(final String location)
     {
-        lengthOfFile = stringPut(endOfDestination(),
-                                 file,
-                                 ByteOrder.LITTLE_ENDIAN);
+        lengthOfLocation = stringPut(endOfDestination(),
+                                     location,
+                                     LITTLE_ENDIAN);
         return this;
     }
 
@@ -121,6 +123,6 @@ public class NewBufferMessageFlyweight extends QualifiedMessageFlyweight
      */
     public int length()
     {
-        return super.length();
+        return super.length() + lengthOfLocation;
     }
 }

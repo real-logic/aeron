@@ -251,17 +251,16 @@ public class FlyweightTest
                        .sessionId(2L)
                        .termId(3L)
                        .destination("abc")
-                       .file("def");
+                       .location("def");
 
         assertLengthFindsNonZeroedBytes(encodeNewBuffer.length());
-
         decodeNewBuffer.wrap(aBuff, 0);
 
         assertThat(decodeNewBuffer.channelId(), is(1L));
         assertThat(decodeNewBuffer.sessionId(), is(2L));
         assertThat(decodeNewBuffer.termId(), is(3L));
         assertThat(decodeNewBuffer.destination(), is("abc"));
-        assertThat(decodeNewBuffer.file(), is("def"));
+        assertThat(decodeNewBuffer.location(), is("def"));
     }
 
     private void assertLengthFindsNonZeroedBytes(final int length)
@@ -269,7 +268,7 @@ public class FlyweightTest
         IntStream.range(aBuff.capacity() - 1, length)
                  .forEach(i ->
                  {
-                     assertThat(aBuff.getByte(0), is(0));
+                     assertThat(aBuff.getByte(i), is(0));
                  });
     }
 }

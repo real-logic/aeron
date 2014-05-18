@@ -19,10 +19,7 @@ import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
 import uk.co.real_logic.aeron.util.*;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
-import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.ClientFacade;
-import uk.co.real_logic.aeron.util.command.QualifiedMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.*;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
@@ -33,6 +30,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import static java.nio.ByteBuffer.allocateDirect;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.*;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
@@ -67,6 +65,7 @@ public class MediaConductor extends Agent implements ClientFacade
     private final SubscriberMessageFlyweight receiverMessageFlyweight = new SubscriberMessageFlyweight();
     private final ErrorHeaderFlyweight errorHeaderFlyweight = new ErrorHeaderFlyweight();
     private final QualifiedMessageFlyweight qualifiedMessageFlyweight = new QualifiedMessageFlyweight();
+    private final NewBufferMessageFlyweight newBufferMessage = new NewBufferMessageFlyweight();
 
     private final int mtuLength;
     private final ConductorByteBuffers adminBufferStrategy;
@@ -85,7 +84,9 @@ public class MediaConductor extends Agent implements ClientFacade
         this.sender = sender;
         this.senderFlowControl = ctx.senderFlowControl();
         this.srcDestinationMap = new Long2ObjectHashMap<>();
-        this.writeBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(WRITE_BUFFER_CAPACITY));
+        this.writeBuffer = new AtomicBuffer(allocateDirect(WRITE_BUFFER_CAPACITY));
+        newBufferMessage.wrap(writeBuffer, 0);
+
         this.timerWheel = ctx.conductorTimerWheel() != null ?
                               ctx.conductorTimerWheel() :
                               new TimerWheel(MEDIA_CONDUCTOR_TICK_DURATION_MICROS,
@@ -276,24 +277,17 @@ public class MediaConductor extends Agent implements ClientFacade
                                           final long channelId,
                                           final long termId,
                                           final boolean isSender,
-                                          final String destination)
+                                          final String destination,
+                                          final String file)
     {
-        qualifiedMessageFlyweight.wrap(writeBuffer, 0);
-        qualifiedMessageFlyweight.sessionId(sessionId)
-                                            .channelId(channelId)
-                                            .termId(termId)
-                                            .destination(destination);
+        newBufferMessage.sessionId(sessionId)
+                        .channelId(channelId)
+                        .termId(termId)
+                        .destination(destination)
+                        .location(file);
 
-        if (isSender)
-        {
-            adminSendBuffer.write(NEW_SEND_BUFFER_NOTIFICATION, writeBuffer,
-                                  0, qualifiedMessageFlyweight.length());
-        }
-        else
-        {
-            adminSendBuffer.write(NEW_RECEIVE_BUFFER_NOTIFICATION, writeBuffer,
-                                  0, qualifiedMessageFlyweight.length());
-        }
+        final int eventTypeId = isSender ? NEW_SEND_BUFFER_NOTIFICATION : NEW_RECEIVE_BUFFER_NOTIFICATION;
+        adminSendBuffer.write(eventTypeId, writeBuffer, 0, newBufferMessage.length());
     }
 
     public void onAddChannel(final ChannelMessageFlyweight channelMessage)
@@ -347,7 +341,7 @@ public class MediaConductor extends Agent implements ClientFacade
             frameHandler.addChannel(channel);
 
             // tell the client conductor thread of the new buffer
-            sendNewBufferNotification(sessionId, channelId, initialTermId, true, destination);
+            sendNewBufferNotification(sessionId, channelId, initialTermId, true, destination, buffers.location());
 
             // add channel to sender thread atomic array so it can be integrated in
             sender.addChannel(channel);

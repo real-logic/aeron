@@ -26,4 +26,6 @@ public interface BufferRotator
     Stream<? extends LogBuffers> buffers();
 
     void rotate() throws IOException;
+
+    String location();
 }

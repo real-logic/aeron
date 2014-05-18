@@ -31,13 +31,14 @@ public class LossHandler
 
     private final GapScanner[] scanners;
     private final TimerWheel wheel;
-    private final GapState currentGap;
+    private final GapState[] scanGaps = new GapState[2];
+    private final GapState activeGap= new GapState();
     private final SendNakHandler sendNakHandler;
 
     private TimerWheel.Timer timer;
 
     private int currentIndex = 0;
-    private int numOutstanding = 0;
+    private int scanCursor = 0;
 
     private long nakSentTimestamp;
 
@@ -58,66 +59,82 @@ public class LossHandler
                                                    MediaDriver.NAK_GRTT_DEFAULT);
     }
 
-    public LossHandler(final GapScanner[] scanners, final TimerWheel wheel, final SendNakHandler sendNakHandler)
+    public LossHandler(final GapScanner[] scanners,
+                       final TimerWheel wheel,
+                       final SendNakHandler sendNakHandler)
     {
         this.scanners = scanners;
         this.wheel = wheel;
         this.sendNakHandler = sendNakHandler;
         this.nakSentTimestamp = wheel.now();
-        this.currentGap = new GapState();
+
+        for (int i = 0, max = scanGaps.length; i < max; i++)
+        {
+            this.scanGaps[i] = new GapState();
+        }
     }
 
     public void scan()
     {
-        final int gaps = scanners[currentIndex].scan(this::onGap);
-        onScanComplete(gaps);
+        scanCursor = 0;
 
-        // TODO: determine if the buffer is complete and we need to rotate currentIndex
+        scanners[currentIndex].scan(this::onGap);
+        onScanComplete();
+
+        // TODO: determine if the buffer is complete and we need to rotate currentIndex for next scanner
         // if (0 == gaps && ... )
     }
 
     public void onNak(final int termId, final int termOffset)
     {
-        if (numOutstanding > 0 && currentGap.isFor(termId, termOffset))
+        if (null != timer && timer.isActive() && activeGap.isFor(termId, termOffset))
         {
             // suppress sending NAK if it matches what we are waiting on
             nakSentTimestamp = wheel.now();
-            if (timer.isActive())
-            {
-                timer.cancel();
-                scheduleTimer(determineNakDelay());
-            }
+            scheduleTimer();
         }
     }
 
     private void onGap(final AtomicBuffer buffer, final int offset, final int length)
     {
+        // grab termId from the actual buffer
         dataHeader.wrap(buffer, offset);
 
-        if (numOutstanding > 0)
+        if (scanCursor < scanGaps.length)
         {
-            // re-verify gap is still present or we've passed over it (i.e. it was filled)
+            scanGaps[scanCursor].reset((int) dataHeader.termId(), offset);
+
+            scanCursor++;
+        }
+    }
+
+    private void onScanComplete()
+    {
+        // if no active gap
+        if (null == timer || !timer.isActive())
+        {
+            activeGap.reset(scanGaps[0].termId, scanGaps[0].termOffset);
+            scheduleTimer();
+            nakSentTimestamp = wheel.now();
+        }
+        else if (scanCursor == 0)
+        {
+            timer.cancel();
         }
         else
         {
-            // no existing Gaps
-            // grab termId from the actual buffer
-            currentGap.reset((int)dataHeader.termId(), offset);
-            numOutstanding++;
-            scheduleTimer(determineNakDelay());
+            // replace old gap with new gap and reschedule
+            activeGap.reset(scanGaps[0].termId, scanGaps[0].termOffset);
+            scheduleTimer();
             nakSentTimestamp = wheel.now();
         }
     }
 
-    private void onScanComplete(final int gaps)
-    {
-
-    }
-
     private void onTimerExpire()
     {
-        sendNakHandler.onSendNak(currentGap.termId, currentGap.termOffset);
-        scheduleTimer(determineNakDelay());
+        sendNakHandler.onSendNak(activeGap.termId, activeGap.termOffset);
+        scheduleTimer();
+        nakSentTimestamp = wheel.now();
     }
 
     private long determineNakDelay()
@@ -128,14 +145,21 @@ public class LossHandler
         return TimeUnit.MILLISECONDS.toNanos(20);
     }
 
-    private void scheduleTimer(final long delay)
+    private void scheduleTimer()
     {
+        final long delay = determineNakDelay();
+
         if (null == timer)
         {
             timer = wheel.newTimeout(delay, TimeUnit.NANOSECONDS, this::onTimerExpire);
         }
         else
         {
+            if (timer.isActive())
+            {
+                timer.cancel();
+            }
+
             wheel.rescheduleTimeout(delay, TimeUnit.NANOSECONDS, timer);
         }
     }

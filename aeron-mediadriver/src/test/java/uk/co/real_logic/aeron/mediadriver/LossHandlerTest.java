@@ -121,6 +121,55 @@ public class LossHandlerTest
         verifyZeroInteractions(sendNakHandler);
     }
 
+    @Test
+    public void shouldStopNakOnReceivingData()
+    {
+        rcvDataFrame(0);
+        rcvDataFrame(0 + (2 * MESSAGE_LENGTH));
+
+        handler.scan();
+        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(20));
+        rcvDataFrame(0 + MESSAGE_LENGTH);
+        handler.scan();
+        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
+
+        verifyZeroInteractions(sendNakHandler);
+    }
+
+    @Test
+    public void shouldHandleMoreThan2Gaps()
+    {
+        rcvDataFrame(0);
+        rcvDataFrame(0 + (2 * MESSAGE_LENGTH));
+        rcvDataFrame(0 + (4 * MESSAGE_LENGTH));
+        rcvDataFrame(0 + (6 * MESSAGE_LENGTH));
+
+        handler.scan();
+        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(40));
+        rcvDataFrame(0 + MESSAGE_LENGTH);
+        handler.scan();
+        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(80));
+
+        verify(sendNakHandler, atLeast(1)).onSendNak(0, MESSAGE_LENGTH);
+        verify(sendNakHandler, atLeast(1)).onSendNak(0, (3 * MESSAGE_LENGTH));
+    }
+
+    @Test
+    public void shouldReplaceOldNakWithNewNak()
+    {
+        rcvDataFrame(0);
+        rcvDataFrame(0 + (2 * MESSAGE_LENGTH));
+
+        handler.scan();
+        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(20));
+        rcvDataFrame(0 + (4 * MESSAGE_LENGTH));
+        rcvDataFrame(0 + MESSAGE_LENGTH);
+        handler.scan();
+        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
+
+        verify(sendNakHandler, atLeast(1)).onSendNak(0, (3 * MESSAGE_LENGTH));
+    }
+
     private void rcvDataFrame(final int offset)
     {
         dataHeader.termId(0)

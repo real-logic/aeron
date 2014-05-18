@@ -15,9 +15,12 @@
  */
 package uk.co.real_logic.aeron.util.command;
 
+import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.Flyweight;
 
 import java.nio.ByteOrder;
+
+import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 
 /**
  * Control message flyweight for any message that needs to
@@ -25,8 +28,7 @@ import java.nio.ByteOrder;
  *
  * <ul>
  *     <li>Request Cleaned Term</li>
- *     <li>New Receive Buffer Notification</li>
- *     <li>New Send Buffer Notification</li>
+ *     <li>{@see NewBufferMessageFlyweight}</li>
  * </ul>
  *
  * <p>
@@ -123,7 +125,10 @@ public class QualifiedMessageFlyweight extends Flyweight
      */
     public String destination()
     {
-        return stringGet(offset() + DESTINATION_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        final int destinationOffset = offset() + DESTINATION_OFFSET;
+        final int length = atomicBuffer().getInt(destinationOffset, ByteOrder.LITTLE_ENDIAN);
+        lengthOfDestination = SIZE_OF_INT + length;
+        return atomicBuffer().getString(destinationOffset, length);
     }
 
     /**

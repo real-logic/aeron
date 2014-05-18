@@ -17,14 +17,17 @@ package uk.co.real_logic.aeron.util;
 
 import org.junit.Test;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.nio.ByteBuffer;
+import java.util.stream.IntStream;
 
 import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 public class FlyweightTest
@@ -39,6 +42,8 @@ public class FlyweightTest
     private final ChannelMessageFlyweight decodeChannel = new ChannelMessageFlyweight();
     private final ErrorHeaderFlyweight encodeErrorHeader = new ErrorHeaderFlyweight();
     private final ErrorHeaderFlyweight decodeErrorHeader = new ErrorHeaderFlyweight();
+    private final NewBufferMessageFlyweight encodeNewBuffer = new NewBufferMessageFlyweight();
+    private final NewBufferMessageFlyweight decodeNewBuffer = new NewBufferMessageFlyweight();
 
     @Test
     public void shouldWriteCorrectValuesForGenericHeaderFields()
@@ -233,5 +238,38 @@ public class FlyweightTest
                                                              ErrorHeaderFlyweight.HEADER_LENGTH));
         assertThat(decodeErrorHeader.errorStringLength(), is(errorString.length()));
         assertThat(decodeErrorHeader.errorStringAsBytes(), is(errorString.getBytes()));
+    }
+
+    @Test
+    public void newBufferMessagesSupportMultipleVariableLengthFields()
+    {
+        // given the buffers are clean to begin with
+        assertLengthFindsNonZeroedBytes(0);
+        encodeNewBuffer.wrap(aBuff, 0);
+
+        encodeNewBuffer.channelId(1L);
+        encodeNewBuffer.sessionId(2L);
+        encodeNewBuffer.termId(3L);
+        encodeNewBuffer.destination("abc");
+        encodeNewBuffer.file("def");
+
+        assertLengthFindsNonZeroedBytes(encodeNewBuffer.length());
+
+        decodeNewBuffer.wrap(aBuff, 0);
+
+        assertThat(decodeNewBuffer.channelId(), is(1L));
+        assertThat(decodeNewBuffer.sessionId(), is(2L));
+        assertThat(decodeNewBuffer.termId(), is(3L));
+        assertThat(decodeNewBuffer.destination(), is("abc"));
+        assertThat(decodeNewBuffer.file(), is("def"));
+    }
+
+    private void assertLengthFindsNonZeroedBytes(final int length)
+    {
+        IntStream.range(aBuff.capacity() - 1, length)
+                 .forEach(i ->
+                 {
+                     assertThat(aBuff.getByte(0), is(0));
+                 });
     }
 }

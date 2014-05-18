@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.TimerWheel;
@@ -168,6 +169,13 @@ public class LossHandlerTest
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
 
         verify(sendNakHandler, atLeast(1)).onSendNak(0, (3 * MESSAGE_LENGTH));
+    }
+
+    @Test
+    @Ignore
+    public void shouldRotateToNewTermIdCorrectly()
+    {
+
     }
 
     private void rcvDataFrame(final int offset)

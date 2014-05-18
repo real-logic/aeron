@@ -19,14 +19,18 @@ import uk.co.real_logic.aeron.util.FeedbackDelayGenerator;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 
+import java.util.concurrent.TimeUnit;
+
 /**
+ * Tracking and handling of retransmit request, NAKs, for senders and receivers
  */
-public class RetransmitController
+public class RetransmitHandler
 {
     private static final FeedbackDelayGenerator feedbackDelay;
 
     private final LogReader reader;
     private final TimerWheel wheel;
+    private final LogReader.FrameHandler sendRetransmitHandler;
 
     static
     {
@@ -35,14 +39,54 @@ public class RetransmitController
                                                    MediaDriver.RETRANS_GRTT_DEFAULT);
     }
 
-    public RetransmitController(final LogReader reader, final TimerWheel wheel)
+    public RetransmitHandler(final LogReader reader,
+                             final TimerWheel wheel,
+                             final LogReader.FrameHandler retransmitHandler)
     {
         this.reader = reader;
         this.wheel = wheel;
+        this.sendRetransmitHandler = retransmitHandler;
     }
 
     public void onNak(final int termOffset)
     {
 
+    }
+
+    public void onRetransmitReceived(final int termOffset)
+    {
+
+    }
+
+    private long determineRetransmitDelay()
+    {
+        // TODO: will be 0 if this is the only retransmitter. Or will delay if not.
+        return TimeUnit.MILLISECONDS.toNanos(20);
+    }
+
+    private long determineLingerTimeout()
+    {
+        return TimeUnit.MILLISECONDS.toNanos(10);
+    }
+
+    /*
+     * Fixed number of retransmits being handled. Including ones in Linger.
+     */
+
+    public enum State
+    {
+        DELAY,
+        LINGER,
+        INACTIVE
+    }
+
+    public class RetransmitState
+    {
+        private int termOffset;
+
+        public void reset(final int termOffset)
+        {
+            this.termOffset = termOffset;
+        }
     }
 }

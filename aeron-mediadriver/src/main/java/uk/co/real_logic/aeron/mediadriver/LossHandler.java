@@ -24,9 +24,27 @@ import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * Tracking and handling of gaps in a channel
+ *
+ * This handler only sends a single NAK at a time.
  */
 public class LossHandler
 {
+    /**
+     * Handler for sending a NAK
+     */
+    @FunctionalInterface
+    public interface SendNakHandler
+    {
+        /**
+         * Called when a NAK should be sent
+         *
+         * @param termId for the NAK
+         * @param termOffset for the NAK
+         */
+        void onSendNak(final int termId, final int termOffset);
+    }
+
     private static final FeedbackDelayGenerator feedbackDelay;
 
     private final GapScanner[] scanners;
@@ -44,14 +62,6 @@ public class LossHandler
 
     private DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
-    /**
-     * Handler for sending a NAK
-     */
-    public interface SendNakHandler
-    {
-        void onSendNak(final int termId, final int termOffset);
-    }
-
     static
     {
         feedbackDelay = new FeedbackDelayGenerator(MediaDriver.NAK_MAX_BACKOFF_DEFAULT,
@@ -59,6 +69,13 @@ public class LossHandler
                                                    MediaDriver.NAK_GRTT_DEFAULT);
     }
 
+    /**
+     * Create a loss handler for a channel.
+     *
+     * @param scanners for the gaps attached to the {@link uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader}
+     * @param wheel for timer management
+     * @param sendNakHandler to call when sending a NAK is indicated
+     */
     public LossHandler(final GapScanner[] scanners,
                        final TimerWheel wheel,
                        final SendNakHandler sendNakHandler)
@@ -74,6 +91,11 @@ public class LossHandler
         }
     }
 
+    /**
+     * Scan for gaps and handle received data.
+     *
+     * The handler keeps track from scan to scan what is a gap and what must have been repaired.
+     */
     public void scan()
     {
         scanCursor = 0;
@@ -85,6 +107,12 @@ public class LossHandler
         // if (0 == gaps && ... )
     }
 
+    /**
+     * Called on reception of a NAK
+     *
+     * @param termId in the NAK
+     * @param termOffset in the NAK
+     */
     public void onNak(final int termId, final int termOffset)
     {
         if (null != timer && timer.isActive() && activeGap.isFor(termId, termOffset))

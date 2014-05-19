@@ -106,6 +106,9 @@ public class MediaDriver implements AutoCloseable
     /** Default max backoff for retransmit delay randomization in msec */
     public static final int RETRANS_MAX_BACKOFF_DEFAULT = 60;
 
+    /** Default max number of active retransmissions per Term */
+    public static final int MAX_RETRANSMITS_DEFAULT = 16;
+
     public static final int READ_BYTE_BUFFER_SZ = getInteger(READ_BUFFER_SZ_PROP_NAME, READ_BYTE_BUFFER_SZ_DEFAULT);
     public static final int COMMAND_BUFFER_SZ = getInteger(COMMAND_BUFFER_SZ_PROP_NAME, COMMAND_BUFFER_SZ_DEFAULT);
     public static final int ADMIN_BUFFER_SZ = getInteger(ADMIN_BUFFER_SZ_PROP_NAME, ADMIN_BUFFER_SZ_DEFAULT);

@@ -154,6 +154,7 @@ public class GapScannerTest
             .thenReturn(0);
         when(logBuffer.getInt(lengthOffset(FRAME_ALIGNMENT * 5), LITTLE_ENDIAN))
             .thenReturn(FRAME_ALIGNMENT);
+        when(gapHandler.onGap(logBuffer, FRAME_ALIGNMENT, FRAME_ALIGNMENT)).thenReturn(true);
 
         assertThat(scanner.scan(gapHandler), is(2));
 

@@ -265,7 +265,7 @@ public class LogAppender
         if (length > maxMessageLength)
         {
             final String msg = String.format("encoded event exceeds maxMessageLength of %d, length=%d",
-                                             Integer.valueOf(maxMessageLength), Integer.valueOf(length));
+                                             maxMessageLength, length);
 
             throw new IllegalArgumentException(msg);
         }

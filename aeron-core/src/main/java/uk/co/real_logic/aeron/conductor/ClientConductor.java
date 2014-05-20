@@ -21,10 +21,7 @@ import uk.co.real_logic.aeron.SubscriberChannel;
 import uk.co.real_logic.aeron.util.Agent;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.collections.ChannelMap;
-import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.QualifiedMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
-import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.*;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
@@ -77,8 +74,8 @@ public final class ClientConductor extends Agent implements MediaDriverFacade
     // Control protocol Flyweights
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
     private final SubscriberMessageFlyweight receiverMessage = new SubscriberMessageFlyweight();
-    private final QualifiedMessageFlyweight bufferNotificationMessage =
-        new QualifiedMessageFlyweight();
+    private final NewBufferMessageFlyweight bufferNotificationMessage =
+        new NewBufferMessageFlyweight();
 
     public ClientConductor(final RingBuffer commandBuffer,
                            final RingBuffer fromMediaDriverBuffer,
@@ -232,7 +229,8 @@ public final class ClientConductor extends Agent implements MediaDriverFacade
             // TODO: log an error
         }
 
-        bufferUsage.releasePublisherBuffers(destination, channelId, sessionId);
+        // TODO
+        // bufferUsage.releasePublisherBuffers(destination, channelId, sessionId);
     }
 
     private void handleReceiveBuffer()
@@ -250,14 +248,15 @@ public final class ClientConductor extends Agent implements MediaDriverFacade
                         final long channelId = bufferNotificationMessage.channelId();
                         final long termId = bufferNotificationMessage.termId();
                         final String destination = bufferNotificationMessage.destination();
+                        final String location = bufferNotificationMessage.location();
 
                         if (eventTypeId == NEW_SEND_BUFFER_NOTIFICATION)
                         {
-                            onNewSenderBufferNotification(sessionId, channelId, termId, destination);
+                            onNewSenderBufferNotification(sessionId, channelId, termId, destination, location);
                         }
                         else
                         {
-                            onNewReceiverBufferNotification(destination, channelId, sessionId, termId);
+                            onNewReceiverBufferNotification(destination, channelId, sessionId, termId, location);
                         }
 
                         return;
@@ -274,11 +273,12 @@ public final class ClientConductor extends Agent implements MediaDriverFacade
     private void onNewReceiverBufferNotification(final String destination,
                                                  final long channelId,
                                                  final long sessionId,
-                                                 final long termId)
+                                                 final long termId,
+                                                 final String location)
     {
         onNewBufferNotification(sessionId,
                                 rcvNotifiers.get(destination, channelId),
-                                i -> newReader(destination, channelId, sessionId, i),
+                                i -> newReader(location, i),
                                 LogReader[]::new,
                                 (chan, buffers) ->
                                 {
@@ -291,11 +291,12 @@ public final class ClientConductor extends Agent implements MediaDriverFacade
     private void onNewSenderBufferNotification(final long sessionId,
                                                final long channelId,
                                                final long termId,
-                                               final String destination)
+                                               final String destination,
+                                               final String location)
     {
         onNewBufferNotification(sessionId,
                                 sendNotifiers.get(destination, sessionId, channelId),
-                                (i) -> newAppender(destination, sessionId, channelId, i),
+                                (i) -> newAppender(location, i),
                                 LogAppender[]::new,
                                 (chan, buffers) ->
                                 {
@@ -349,25 +350,19 @@ public final class ClientConductor extends Agent implements MediaDriverFacade
         }
     }
 
-    public LogAppender newAppender(final String destination,
-                                   final long sessionId,
-                                   final long channelId,
+    public LogAppender newAppender(final String location,
                                    final int index) throws IOException
     {
-        final AtomicBuffer logBuffer = bufferUsage.newPublisherLogBuffer(destination, sessionId, channelId, index);
-        final AtomicBuffer stateBuffer = bufferUsage.newPublisherStateBuffer(destination, sessionId, channelId, index);
-
+        final AtomicBuffer logBuffer = bufferUsage.newLogBuffer(location, index);
+        final AtomicBuffer stateBuffer = bufferUsage.newStateBuffer(location, index);
         return new LogAppender(logBuffer, stateBuffer, DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }
 
-    private LogReader newReader(final String destination,
-                                final long channelId,
-                                final long sessionId,
+    private LogReader newReader(final String location,
                                 final int index) throws IOException
     {
-        final AtomicBuffer logBuffer = bufferUsage.newSubscriberLogBuffer(destination, channelId, sessionId, index);
-        final AtomicBuffer stateBuffer = bufferUsage.newSubscriberStateBuffer(destination, channelId, sessionId, index);
-
+        final AtomicBuffer logBuffer = bufferUsage.newLogBuffer(location, index);
+        final AtomicBuffer stateBuffer = bufferUsage.newStateBuffer(location, index);
         return new LogReader(logBuffer, stateBuffer);
     }
 

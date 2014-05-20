@@ -15,111 +15,62 @@
  */
 package uk.co.real_logic.aeron.conductor;
 
-import uk.co.real_logic.aeron.util.FileMappingConvention;
 import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import static uk.co.real_logic.aeron.util.FileMappingConvention.Type;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.Type.LOG;
-import static uk.co.real_logic.aeron.util.FileMappingConvention.Type.STATE;
-import static uk.co.real_logic.aeron.util.FileMappingConvention.termLocation;
+import static uk.co.real_logic.aeron.util.FileMappingConvention.bufferSuffix;
 import static uk.co.real_logic.aeron.util.IoUtil.mapExistingFile;
 
 /**
  * Buffer usage where each Term is a memory mapped file.
+ *
+ * Not threadsafe - Methods only called from MediaConductor.
  */
 public class MappingBufferUsageStrategy implements BufferUsageStrategy
 {
-    private final FileMappingConvention fileConventions;
-    private final List<IdentifiedBuffer> publisherBuffers;
-    private final List<IdentifiedBuffer> subscriberBuffers;
+    private final List<IdentifiedBuffer> buffers;
 
-    public MappingBufferUsageStrategy(final String dataDir)
+    public MappingBufferUsageStrategy()
     {
-        fileConventions = new FileMappingConvention(dataDir);
-        publisherBuffers = new ArrayList<>();
-        subscriberBuffers = new ArrayList<>();
+        buffers = new ArrayList<>();
     }
 
-    public void close()
+    public AtomicBuffer newBuffer(final String location, final int offset, final int length) throws IOException
     {
-        publisherBuffers.forEach(IdentifiedBuffer::close);
-        subscriberBuffers.forEach(IdentifiedBuffer::close);
-    }
-
-    public AtomicBuffer newPublisherLogBuffer(final String destination,
-                                              final long sessionId,
-                                              final long channelId,
-                                              final int index) throws IOException
-    {
-        return map(destination, sessionId, channelId, index, fileConventions.senderDir(), LOG, publisherBuffers);
-    }
-
-    public AtomicBuffer newPublisherStateBuffer(final String destination,
-                                                final long sessionId,
-                                                final long channelId,
-                                                final int index) throws IOException
-    {
-        return map(destination, sessionId, channelId, index, fileConventions.senderDir(), STATE, publisherBuffers);
-    }
-
-    public AtomicBuffer newSubscriberLogBuffer(final String destination,
-                                               final long channelId,
-                                               final long sessionId,
-                                               final int index) throws IOException
-    {
-        return map(destination, sessionId, channelId, index, fileConventions.receiverDir(), LOG, subscriberBuffers);
-    }
-
-    public AtomicBuffer newSubscriberStateBuffer(final String destination,
-                                                 final long channelId,
-                                                 final long sessionId,
-                                                 final int index) throws IOException
-    {
-        return map(destination, sessionId, channelId, index, fileConventions.receiverDir(), STATE, subscriberBuffers);
-    }
-
-    public int releaseSubscriberBuffers(final String destination, final long sessionId, final long channelId)
-    {
-        return release(destination, sessionId, channelId, subscriberBuffers);
-    }
-
-    public int releasePublisherBuffers(final String destination, final long sessionId, final long channelId)
-    {
-        return release(destination, sessionId, channelId, publisherBuffers);
-    }
-
-    private AtomicBuffer map(final String destination,
-                             final long sessionId,
-                             final long channelId,
-                             final int index,
-                             final File rootDir,
-                             final FileMappingConvention.Type type,
-                             final List<IdentifiedBuffer> buffers) throws IOException
-    {
-        final File termIdFile = termLocation(rootDir, sessionId, channelId, index, false, destination, type);
-        MappedByteBuffer buffer = mapExistingFile(termIdFile, "Term Buffer");
-        buffers.add(new IdentifiedBuffer(destination, sessionId, channelId, buffer));
+        MappedByteBuffer buffer = mapExistingFile(new File(location), "Term Buffer");
+        if (requiresIndirection(buffer, offset, length))
+        {
+            buffer.position(offset);
+            buffer.limit(offset + length);
+        }
+        buffers.add(new IdentifiedBuffer(location, buffer));
         return new AtomicBuffer(buffer);
     }
 
-    private int release(final String destination,
-                        final long sessionId,
-                        final long channelId,
-                        final List<IdentifiedBuffer> buffers)
+    private boolean requiresIndirection(final ByteBuffer buffer, final int offset, final int length)
     {
+        return offset != 0 || buffer.capacity() != length;
+    }
+
+    public int releaseBuffers(final String location, final int offset, final int length)
+    {
+        final int limit = offset + length;
         int count = 0;
         final Iterator<IdentifiedBuffer> it = buffers.iterator();
         while (it.hasNext())
         {
             final IdentifiedBuffer buffer = it.next();
-            if (buffer.matches(destination, sessionId, channelId))
+            if (buffer.matches(location, offset, limit))
             {
                 buffer.close();
                 it.remove();
@@ -130,27 +81,26 @@ public class MappingBufferUsageStrategy implements BufferUsageStrategy
         return count;
     }
 
+    public void close()
+    {
+        buffers.forEach(IdentifiedBuffer::close);
+    }
+
     private class IdentifiedBuffer
     {
-        private final String destination;
-        private final long sessionId;
-        private final long channelId;
+        private final String location;
         private final MappedByteBuffer buffer;
 
-        private IdentifiedBuffer(final String destination,
-                                 final long sessionId,
-                                 final long channelId,
+        private IdentifiedBuffer(final String location,
                                  final MappedByteBuffer buffer)
         {
-            this.destination = destination;
-            this.sessionId = sessionId;
-            this.channelId = channelId;
+            this.location = location;
             this.buffer = buffer;
         }
 
-        public boolean matches(final String destination, final long sessionId, final long channelId)
+        public boolean matches(final String location, final int offset, final int limit)
         {
-            return this.sessionId == sessionId && this.channelId == channelId && this.destination.equals(destination);
+            return this.location.equals(location) && buffer.position() == offset && buffer.limit() == limit;
         }
 
         public void close()

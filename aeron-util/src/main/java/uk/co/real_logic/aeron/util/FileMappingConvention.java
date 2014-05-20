@@ -79,9 +79,14 @@ public class FileMappingConvention
                                     final Type type)
     {
         final File channelDir = channelLocation(rootDir, sessionId, channelId, createIfMissing, destination);
-        final String suffix = Long.toString(index) + "-" + type.name().toLowerCase();
+        final String suffix = bufferSuffix(index, type);
 
         return new File(channelDir, suffix);
+    }
+
+    public static String bufferSuffix(final long index, final Type type)
+    {
+        return Long.toString(index) + "-" + type.name().toLowerCase();
     }
 
     public static File channelLocation(final File rootDir,

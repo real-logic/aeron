@@ -15,9 +15,14 @@
  */
 package uk.co.real_logic.aeron.util.command;
 
+import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
+import uk.co.real_logic.aeron.util.Flyweight;
+
 import java.nio.ByteOrder;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
+import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
 
 /**
  * Message to denote that new buffers have been added for a subscription.
@@ -33,85 +38,187 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  * +---------------------------------------------------------------+
  * |                           Term ID                             |
  * +---------------------------------------------------------------+
- * |      Destination Length       |   Destination               ...
+ * |                          File Offset 0                        |
+ * +---------------------------------------------------------------+
+ * |                          File Offset 1                        |
+ * +---------------------------------------------------------------+
+ * |                          File Offset 2                        |
+ * +---------------------------------------------------------------+
+ * |                             Length 0                          |
+ * +---------------------------------------------------------------+
+ * |                             Length 1                          |
+ * +---------------------------------------------------------------+
+ * |                             Length 2                          |
+ * +---------------------------------------------------------------+
+ * |                          Location 0 Start                     |
+ * +---------------------------------------------------------------+
+ * |                          Location 1 Start                     |
+ * +---------------------------------------------------------------+
+ * |                          Location 2 Start                     |
+ * +---------------------------------------------------------------+
+ * |                          Destination Start                    |
+ * +---------------------------------------------------------------+
+ * |                          Destination Length                   |
+ * +---------------------------------------------------------------+
+ * |                            Location 0                       ...
  * |                                                             ...
  * +---------------------------------------------------------------+
- * |      Location Length          |   Location                  ...
+ * |                            Location 1                       ...
+ * |                                                             ...
+ * +---------------------------------------------------------------+
+ * |                            Location 2                       ...
+ * |                                                             ...
+ * +---------------------------------------------------------------+
+ * |                            Destination                      ...
  * |                                                             ...
  * +---------------------------------------------------------------+
  */
-public class NewBufferMessageFlyweight extends QualifiedMessageFlyweight
+public class NewBufferMessageFlyweight extends Flyweight
 {
+    private static final int SESSION_ID_OFFSET = 0;
+    private static final int CHANNEL_ID_FIELD_OFFSET = 4;
+    private static final int TERM_ID_FIELD_OFFSET = 8;
+    private static final int FILE_OFFSETS_FIELDS_OFFSET = 12;
+    private static final int BUFFER_LENGTHS_FIELDS_OFFSET = 24;
+    private static final int LOCATION_POINTER_FIELDS_OFFSET = 36;
+    private static final int DESTINATION_FIELD_LENGTH_FIELD_OFFSET = 52;
 
+    private int lengthOfDestination;
     private int lengthOfLocation;
 
-    /**
-     * {@inheritDoc}
-     */
-    public NewBufferMessageFlyweight destination(final String destination)
+    public int bufferOffset(final int index)
     {
-        super.destination(destination);
-        return this;
+        return relativeIntField(index, FILE_OFFSETS_FIELDS_OFFSET);
+    }
+
+    public NewBufferMessageFlyweight bufferOffset(final int index, final int value)
+    {
+        return relativeIntField(index, value, FILE_OFFSETS_FIELDS_OFFSET);
+    }
+
+    public int bufferLength(final int index)
+    {
+        return relativeIntField(index, BUFFER_LENGTHS_FIELDS_OFFSET);
+    }
+
+    public NewBufferMessageFlyweight bufferLength(final int index, final int value)
+    {
+        return relativeIntField(index, value, BUFFER_LENGTHS_FIELDS_OFFSET);
     }
 
     /**
-     * {@inheritDoc}
+     * return session id field
+     * @return session id field
      */
-    public NewBufferMessageFlyweight termId(final long termId)
+    public long sessionId()
     {
-        super.termId(termId);
-        return this;
+        return uint32Get(offset() + SESSION_ID_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
-     * {@inheritDoc}
-     */
-    public NewBufferMessageFlyweight channelId(final long channelId)
-    {
-        super.channelId(channelId);
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
+     * set session id field
+     * @param sessionId field value
+     * @return flyweight
      */
     public NewBufferMessageFlyweight sessionId(final long sessionId)
     {
-        super.sessionId(sessionId);
+        uint32Put(offset() + SESSION_ID_OFFSET, (int)sessionId, LITTLE_ENDIAN);
         return this;
     }
 
-    private int endOfDestination()
-    {
-        return offset() + super.length();
-    }
-
     /**
-     * return location of buffers
+     * return channel id field
      *
-     * NB: you must read this after the destination field.
-     *
-     * @return location of buffers
+     * @return channel id field
      */
-    public String location()
+    public long channelId()
     {
-        return stringGet(endOfDestination(), LITTLE_ENDIAN);
+        return uint32Get(offset() + CHANNEL_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
-     * set location of buffers
+     * set channel id field
      *
-     * NB: you must write this after the destination field.
-     *
-     * @param location location of buffers
+     * @param channelId field value
      * @return flyweight
      */
-    public NewBufferMessageFlyweight location(final String location)
+    public NewBufferMessageFlyweight channelId(final long channelId)
     {
-        lengthOfLocation = stringPut(endOfDestination(),
-                                     location,
-                                     LITTLE_ENDIAN);
+        uint32Put(offset() + CHANNEL_ID_FIELD_OFFSET, channelId, LITTLE_ENDIAN);
         return this;
+    }
+
+    /**
+     * return termId field
+     *
+     * @return termId field
+     */
+    public long termId()
+    {
+        return uint32Get(offset() + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+    }
+
+    /**
+     * set termId field
+     *
+     * @param termId field value
+     * @return flyweight
+     */
+    public NewBufferMessageFlyweight termId(final long termId)
+    {
+        uint32Put(offset() + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
+        return this;
+    }
+
+    private int relativeIntField(final int index, final int fieldOffset)
+    {
+        return atomicBuffer().getInt(relativeOffset(index, fieldOffset), LITTLE_ENDIAN);
+    }
+
+    private NewBufferMessageFlyweight relativeIntField(final int index, final int value, final int fieldOffset)
+    {
+        atomicBuffer().putInt(relativeOffset(index, fieldOffset), value, LITTLE_ENDIAN);
+        return this;
+    }
+
+    private int relativeOffset(final int index, final int fieldOffset)
+    {
+        return offset() + fieldOffset + index * SIZE_OF_INT;
+    }
+
+    private int locationPointer(final int index)
+    {
+        return relativeIntField(index, LOCATION_POINTER_FIELDS_OFFSET);
+    }
+
+    private NewBufferMessageFlyweight locationPointer(final int index, final int value)
+    {
+        return relativeIntField(index, value, LOCATION_POINTER_FIELDS_OFFSET);
+    }
+
+    public String location(final int index)
+    {
+        final int start = locationPointer(index);
+        final int length = locationPointer(index + 1) - start;
+        return atomicBuffer().getString(offset() + start, length);
+    }
+
+    public String destination(final int index)
+    {
+        return location(3);
+    }
+
+    public NewBufferMessageFlyweight location(final int index, final String value)
+    {
+        final int start = locationPointer(index);
+        final int length = atomicBuffer().putString(offset() + start, value, LITTLE_ENDIAN);
+        locationPointer(index + 1, start + length);
+        return this;
+    }
+
+    public NewBufferMessageFlyweight destination(final String value)
+    {
+        return location(3, value);
     }
 
     /**
@@ -123,6 +230,7 @@ public class NewBufferMessageFlyweight extends QualifiedMessageFlyweight
      */
     public int length()
     {
-        return super.length() + lengthOfLocation;
+        return locationPointer(BUFFER_COUNT + 1);
     }
+
 }

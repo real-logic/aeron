@@ -27,34 +27,13 @@ import java.io.IOException;
  */
 public interface BufferUsageStrategy
 {
+    AtomicBuffer newBuffer(final String location,
+                           final int offset,
+                           final int length) throws IOException;
 
-    AtomicBuffer newPublisherLogBuffer(final String destination,
-                                       final long sessionId,
-                                       final long channelId,
-                                       final int index) throws IOException;
-
-    AtomicBuffer newPublisherStateBuffer(final String destination,
-                                         final long sessionId,
-                                         final long channelId,
-                                         final int index) throws IOException;
-
-    AtomicBuffer newSubscriberLogBuffer(final String destination,
-                                        final long channelId,
-                                        final long sessionId,
-                                        final int index) throws IOException;
-
-    AtomicBuffer newSubscriberStateBuffer(final String destination,
-                                          final long channelId,
-                                          final long sessionId,
-                                          final int index) throws IOException;
-
-    int releaseSubscriberBuffers(final String destination,
-                                 final long sessionId,
-                                 final long channelId);
-
-    int releasePublisherBuffers(final String destination,
-                                final long sessionId,
-                                final long channelId);
+    int releaseBuffers(final String location,
+                       final int offset,
+                       final int length);
 
     void close();
 }

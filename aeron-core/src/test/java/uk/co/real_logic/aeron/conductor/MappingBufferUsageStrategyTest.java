@@ -15,95 +15,109 @@
  */
 package uk.co.real_logic.aeron.conductor;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
-import uk.co.real_logic.aeron.util.SharedDirectories;
+import org.junit.*;
+import uk.co.real_logic.aeron.util.IoUtil;
 
+import java.io.File;
 import java.io.IOException;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static uk.co.real_logic.aeron.util.FileMappingConvention.Type.LOG;
+import static uk.co.real_logic.aeron.util.FileMappingConvention.bufferSuffix;
 
 public class MappingBufferUsageStrategyTest
 {
-    private static final String DESTINATION = "udp://localhost:1234";
-    private static final long SESSION_ID = 1L;
-    private static final long CHANNEL_ID = 2L;
-    private static final long OTHER_CHANNEL_ID = 3L;
-
-    @ClassRule
-    public static SharedDirectories directory = new SharedDirectories();
+    private static String LOCATION = IoUtil.tmpDirName() + "/file_to_map";
+    private static String OTHER_LOCATION = LOCATION + "_other";
 
     private BufferUsageStrategy usageStrategy;
 
     @Before
-    public void setUp()
+    public void setUp() throws IOException
     {
-        usageStrategy = new MappingBufferUsageStrategy(directory.dataDir());
+        createFile(LOCATION);
+        createFile(OTHER_LOCATION);
+        usageStrategy = new MappingBufferUsageStrategy();
+    }
+
+    private void createFile(final String location) throws IOException
+    {
+        File file = new File(location);
+        file.createNewFile();
     }
 
     @After
     public void tearDown()
     {
         usageStrategy.close();
+        removeFile(LOCATION);
+        removeFile(OTHER_LOCATION);
+    }
+
+    private void removeFile(final String location)
+    {
+        
     }
 
     @Test
     public void testInitiallyNoBuffersToRelease()
     {
-        assertBuffersReleased(0);
+        assertBuffersReleased(0, LOCATION);
     }
 
     @Test
     public void mappedBuffersShouldBeReleased() throws IOException
     {
-        createTermBuffers(CHANNEL_ID);
+        createTermBuffers(LOCATION);
 
-        mapTermBuffers(CHANNEL_ID);
+        mapTermBuffers(LOCATION);
 
-        assertBuffersReleased(3);
+        assertBuffersReleased(3, LOCATION);
     }
 
     @Test
     public void mappedBuffersShouldOnlyBeReleasedOnce() throws IOException
     {
-        createTermBuffers(CHANNEL_ID);
+        createTermBuffers(LOCATION);
 
-        mapTermBuffers(CHANNEL_ID);
+        mapTermBuffers(LOCATION);
 
-        assertBuffersReleased(3);
-        assertBuffersReleased(0);
+        assertBuffersReleased(3, LOCATION);
+        assertBuffersReleased(0, LOCATION);
     }
 
     @Test
     public void onlyRelevantMappedBuffersShouldBeReleased() throws IOException
     {
-        createTermBuffers(CHANNEL_ID);
-        createTermBuffers(OTHER_CHANNEL_ID);
+        createTermBuffers(LOCATION);
+        createTermBuffers(OTHER_LOCATION);
 
-        mapTermBuffers(CHANNEL_ID);
-        mapTermBuffers(OTHER_CHANNEL_ID);
+        mapTermBuffers(LOCATION);
+        mapTermBuffers(OTHER_LOCATION);
 
-        assertBuffersReleased(3);
+
+        assertBuffersReleased(3, LOCATION);
     }
 
-    private void assertBuffersReleased(final int count)
+    private void assertBuffersReleased(final int count, final String location)
     {
-        int buffersReleased = usageStrategy.releasePublisherBuffers(DESTINATION, SESSION_ID, CHANNEL_ID);
+        int buffersReleased = usageStrategy.releaseBuffers(location);
         assertThat(buffersReleased, is(count));
     }
 
-    private void mapTermBuffers(final long channelId) throws IOException
+    private void mapTermBuffers(final String location) throws IOException
     {
-        usageStrategy.newPublisherLogBuffer(DESTINATION, SESSION_ID, channelId, 0);
-        usageStrategy.newPublisherLogBuffer(DESTINATION, SESSION_ID, channelId, 1);
-        usageStrategy.newPublisherLogBuffer(DESTINATION, SESSION_ID, channelId, 2);
+        usageStrategy.newLogBuffer(location, 0);
     }
 
-    private void createTermBuffers(final long channelId) throws IOException
+    private void createTermBuffers(final String location) throws IOException
     {
-        directory.createTermFile(directory.senderDir(), DESTINATION, SESSION_ID, channelId);
+        new File(location).mkdir();
+        System.out.println(location);
+        File logFile = new File(location, bufferSuffix(0, LOG));
+        System.out.println(logFile.getAbsolutePath());
+        logFile.createNewFile();
     }
 }

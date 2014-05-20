@@ -123,7 +123,7 @@ public class LossHandler
         }
     }
 
-    private void onGap(final AtomicBuffer buffer, final int offset, final int length)
+    private boolean onGap(final AtomicBuffer buffer, final int offset, final int length)
     {
         // grab termId from the actual buffer
         dataHeader.wrap(buffer, offset);
@@ -133,7 +133,11 @@ public class LossHandler
             scanGaps[scanCursor].reset((int) dataHeader.termId(), offset);
 
             scanCursor++;
+
+            return (scanCursor == scanGaps.length);
         }
+
+        return false;
     }
 
     private void onScanComplete()

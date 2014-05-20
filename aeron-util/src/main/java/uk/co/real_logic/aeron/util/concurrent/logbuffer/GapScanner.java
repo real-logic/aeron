@@ -37,7 +37,7 @@ public class GapScanner
     @FunctionalInterface
     public interface GapHandler
     {
-        void onGap(final AtomicBuffer buffer, final int offset, final int length);
+        boolean onGap(final AtomicBuffer buffer, final int offset, final int length);
     }
 
     private final AtomicBuffer logBuffer;
@@ -79,7 +79,7 @@ public class GapScanner
             }
             else
             {
-                offset = scanGap(handler, offset);
+                offset = scanGap(handler, offset, highWaterMark);
                 ++count;
             }
         }
@@ -87,7 +87,7 @@ public class GapScanner
         return count;
     }
 
-    private int scanGap(final GapHandler handler, final int offset)
+    private int scanGap(final GapHandler handler, final int offset, final int highWaterMark)
     {
         int gapLength = 0;
         int frameLength;
@@ -98,9 +98,7 @@ public class GapScanner
         }
         while (0 == frameLength);
 
-        handler.onGap(logBuffer, offset, gapLength);
-
-        return offset + gapLength;
+        return (handler.onGap(logBuffer, offset, gapLength)) ? (offset + gapLength) : highWaterMark;
     }
 
     private int frameLength(final int cursor)

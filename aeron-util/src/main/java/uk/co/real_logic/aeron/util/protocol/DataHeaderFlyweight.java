@@ -23,7 +23,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  * 0                   1                   2                   3
  * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |  Version    |B|E|   Flags   |             Type (=0x01)        |
+ * |  Version    |B|E|R|  Flags  |             Type (=0x01)        |
  * +-------------+-+-+-+-+-+-+-+-+---------------------------------+
  * |                         Frame Length                          |
  * +---------------------------------------------------------------+
@@ -36,7 +36,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  * |                            Term ID                            |
  * +---------------------------------------------------------------+
  * |                             Data                             ...
- * ...                                                              |
+ * ...                                                             |
  * +---------------------------------------------------------------+
  */
 public class DataHeaderFlyweight extends HeaderFlyweight
@@ -49,6 +49,9 @@ public class DataHeaderFlyweight extends HeaderFlyweight
 
     /** End Flag */
     public static final short END_FLAG = 0x40;
+
+    /** Retransmit Flag */
+    public static final short RETRANSMIT_FLAG = 0x20;
 
     /** Begin and End Flags */
     public static final short BEGIN_AND_END_FLAGS = (BEGIN_FLAG | END_FLAG);

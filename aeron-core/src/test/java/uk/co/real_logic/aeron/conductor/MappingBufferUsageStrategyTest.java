@@ -15,24 +15,20 @@
  */
 package uk.co.real_logic.aeron.conductor;
 
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import uk.co.real_logic.aeron.util.IoUtil;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.file.OpenOption;
-import java.nio.file.StandardOpenOption;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static uk.co.real_logic.aeron.util.FileMappingConvention.Type.LOG;
-import static uk.co.real_logic.aeron.util.FileMappingConvention.bufferSuffix;
 
 public class MappingBufferUsageStrategyTest
 {

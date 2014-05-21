@@ -17,7 +17,10 @@ package uk.co.real_logic.aeron;
 
 import org.junit.*;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
-import uk.co.real_logic.aeron.util.*;
+import uk.co.real_logic.aeron.util.ConductorBuffersExternalResource;
+import uk.co.real_logic.aeron.util.ConductorByteBuffers;
+import uk.co.real_logic.aeron.util.CountersFile;
+import uk.co.real_logic.aeron.util.SharedDirectories;
 
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.Subscriber.DataHandler;

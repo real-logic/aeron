@@ -15,8 +15,8 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.Agent;
+import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.SELECT_TIMEOUT;

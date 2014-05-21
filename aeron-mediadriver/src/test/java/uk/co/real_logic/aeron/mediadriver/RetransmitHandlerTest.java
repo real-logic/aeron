@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron.mediadriver;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import uk.co.real_logic.aeron.util.OptimalMcastDelayGenerator;
 import uk.co.real_logic.aeron.util.StaticDelayGenerator;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;

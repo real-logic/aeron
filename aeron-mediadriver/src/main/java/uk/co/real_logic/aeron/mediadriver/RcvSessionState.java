@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.CLEAN_WINDOW;
 import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.UNKNOWN_TERM_ID;
 
 /**
@@ -35,7 +36,6 @@ import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.UNKNOWN_TERM_
  */
 public class RcvSessionState
 {
-    public static final int CLEAN_WINDOW = 2;
     private final InetSocketAddress srcAddr;
     private final long sessionId;
 

@@ -15,10 +15,7 @@
  */
 package uk.co.real_logic.aeron.util.command;
 
-import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.Flyweight;
-
-import java.nio.ByteOrder;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
@@ -56,7 +53,7 @@ import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
  * +---------------------------------------------------------------+
  * |                          Destination Start                    |
  * +---------------------------------------------------------------+
- * |                          Destination Length                   |
+ * |                          Destination End                      |
  * +---------------------------------------------------------------+
  * |                            Location 0                       ...
  * |                                                             ...
@@ -79,7 +76,7 @@ public class NewBufferMessageFlyweight extends Flyweight
     private static final int FILE_OFFSETS_FIELDS_OFFSET = 12;
     private static final int BUFFER_LENGTHS_FIELDS_OFFSET = 24;
     private static final int LOCATION_POINTER_FIELDS_OFFSET = 36;
-    private static final int LOCATION_0_FIELD_OFFSET = 52;
+    private static final int LOCATION_0_FIELD_OFFSET = 56;
 
     private int lengthOfDestination;
     private int lengthOfLocation;
@@ -203,21 +200,20 @@ public class NewBufferMessageFlyweight extends Flyweight
     {
         final int start = locationPointer(index);
         final int length = locationPointer(index + 1) - start;
-        return atomicBuffer().getString(offset() + start, length);
-    }
-
-    public String destination()
-    {
-        return location(3);
+        return atomicBuffer().getStringWithoutLength(offset() + start, length);
     }
 
     public NewBufferMessageFlyweight location(final int index, final String value)
     {
         final int start = locationPointer(index);
-        final int length = atomicBuffer().putString(offset() + start, value, LITTLE_ENDIAN);
-        System.out.println(length + "@" + start);
+        final int length = atomicBuffer().putStringWithoutLength(offset() + start, value);
         locationPointer(index + 1, start + length);
         return this;
+    }
+
+    public String destination()
+    {
+        return location(3);
     }
 
     public NewBufferMessageFlyweight destination(final String value)

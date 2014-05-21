@@ -834,6 +834,7 @@ public class AtomicBuffer
     public String getString(final int offset, final ByteOrder byteOrder)
     {
         final int length = getInt(offset, byteOrder);
+        System.out.println("Read length: " + length + " @ " + offset);
         return getString(offset, length);
     }
 
@@ -849,5 +850,18 @@ public class AtomicBuffer
         final byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
         putInt(offset, bytes.length, byteOrder);
         return SIZE_OF_INT + putBytes(offset + SIZE_OF_INT, bytes);
+    }
+
+    public String getStringWithoutLength(final int offset, final int length)
+    {
+        final byte[] stringInBytes = new byte[length];
+        getBytes(offset, stringInBytes);
+        return new String(stringInBytes, StandardCharsets.UTF_8);
+    }
+
+    public int putStringWithoutLength(final int offset, final String value)
+    {
+        final byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        return putBytes(offset, bytes);
     }
 }

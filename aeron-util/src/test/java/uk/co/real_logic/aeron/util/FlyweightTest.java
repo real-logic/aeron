@@ -259,7 +259,8 @@ public class FlyweightTest
                        .location(0, "def")
                        .location(1, "ghi")
                        .location(2, "jkl")
-                       .destination("abc");
+                       .destination("abc")
+                       ;
 
         assertLengthFindsNonZeroedBytes(encodeNewBuffer.length());
         decodeNewBuffer.wrap(aBuff, 0);
@@ -288,7 +289,7 @@ public class FlyweightTest
         IntStream.range(aBuff.capacity() - 1, length)
                  .forEach(i ->
                  {
-                     assertThat(aBuff.getByte(i), is(0));
+                     assertThat(aBuff.getByte(i), is((byte) 0));
                  });
     }
 }

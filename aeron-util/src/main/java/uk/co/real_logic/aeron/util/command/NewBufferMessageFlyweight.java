@@ -50,8 +50,6 @@ import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
  * +---------------------------------------------------------------+
  * |                             Length 2                          |
  * +---------------------------------------------------------------+
- * |                          Location 0 Start                     |
- * +---------------------------------------------------------------+
  * |                          Location 1 Start                     |
  * +---------------------------------------------------------------+
  * |                          Location 2 Start                     |
@@ -81,7 +79,7 @@ public class NewBufferMessageFlyweight extends Flyweight
     private static final int FILE_OFFSETS_FIELDS_OFFSET = 12;
     private static final int BUFFER_LENGTHS_FIELDS_OFFSET = 24;
     private static final int LOCATION_POINTER_FIELDS_OFFSET = 36;
-    private static final int DESTINATION_FIELD_LENGTH_FIELD_OFFSET = 52;
+    private static final int LOCATION_0_FIELD_OFFSET = 52;
 
     private int lengthOfDestination;
     private int lengthOfLocation;
@@ -188,6 +186,11 @@ public class NewBufferMessageFlyweight extends Flyweight
 
     private int locationPointer(final int index)
     {
+        if (index == 0)
+        {
+            return LOCATION_0_FIELD_OFFSET;
+        }
+
         return relativeIntField(index, LOCATION_POINTER_FIELDS_OFFSET);
     }
 
@@ -203,7 +206,7 @@ public class NewBufferMessageFlyweight extends Flyweight
         return atomicBuffer().getString(offset() + start, length);
     }
 
-    public String destination(final int index)
+    public String destination()
     {
         return location(3);
     }
@@ -212,6 +215,7 @@ public class NewBufferMessageFlyweight extends Flyweight
     {
         final int start = locationPointer(index);
         final int length = atomicBuffer().putString(offset() + start, value, LITTLE_ENDIAN);
+        System.out.println(length + "@" + start);
         locationPointer(index + 1, start + length);
         return this;
     }

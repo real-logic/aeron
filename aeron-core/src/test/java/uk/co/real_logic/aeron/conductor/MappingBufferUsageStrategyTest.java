@@ -49,16 +49,16 @@ public class MappingBufferUsageStrategyTest
     }
 
     @After
-    public void tearDown()
+    public void tearDown() throws IOException
     {
         usageStrategy.close();
         removeFile(LOCATION);
         removeFile(OTHER_LOCATION);
     }
 
-    private void removeFile(final String location)
+    private void removeFile(final String location) throws IOException
     {
-        
+        IoUtil.delete(new File(location), false);
     }
 
     @Test
@@ -70,8 +70,6 @@ public class MappingBufferUsageStrategyTest
     @Test
     public void mappedBuffersShouldBeReleased() throws IOException
     {
-        createTermBuffers(LOCATION);
-
         mapTermBuffers(LOCATION);
 
         assertBuffersReleased(3, LOCATION);
@@ -80,8 +78,6 @@ public class MappingBufferUsageStrategyTest
     @Test
     public void mappedBuffersShouldOnlyBeReleasedOnce() throws IOException
     {
-        createTermBuffers(LOCATION);
-
         mapTermBuffers(LOCATION);
 
         assertBuffersReleased(3, LOCATION);
@@ -91,33 +87,21 @@ public class MappingBufferUsageStrategyTest
     @Test
     public void onlyRelevantMappedBuffersShouldBeReleased() throws IOException
     {
-        createTermBuffers(LOCATION);
-        createTermBuffers(OTHER_LOCATION);
-
         mapTermBuffers(LOCATION);
         mapTermBuffers(OTHER_LOCATION);
-
 
         assertBuffersReleased(3, LOCATION);
     }
 
     private void assertBuffersReleased(final int count, final String location)
     {
-        int buffersReleased = usageStrategy.releaseBuffers(location);
+        int buffersReleased = usageStrategy.releaseBuffers(location, 0, 1);
         assertThat(buffersReleased, is(count));
     }
 
     private void mapTermBuffers(final String location) throws IOException
     {
-        usageStrategy.newLogBuffer(location, 0);
+        usageStrategy.newBuffer(location, 0, 1);
     }
 
-    private void createTermBuffers(final String location) throws IOException
-    {
-        new File(location).mkdir();
-        System.out.println(location);
-        File logFile = new File(location, bufferSuffix(0, LOG));
-        System.out.println(logFile.getAbsolutePath());
-        logFile.createNewFile();
-    }
 }

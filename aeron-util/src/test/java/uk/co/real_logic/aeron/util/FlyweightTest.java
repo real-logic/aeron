@@ -250,8 +250,16 @@ public class FlyweightTest
         encodeNewBuffer.channelId(1L)
                        .sessionId(2L)
                        .termId(3L)
-                       .destination("abc")
-                       .location("def");
+                       .bufferOffset(0, 1)
+                       .bufferOffset(1, 2)
+                       .bufferOffset(2, 3)
+                       .bufferLength(0, 1)
+                       .bufferLength(1, 2)
+                       .bufferLength(2, 3)
+                       .location(0, "def")
+                       .location(1, "ghi")
+                       .location(2, "jkl")
+                       .destination("abc");
 
         assertLengthFindsNonZeroedBytes(encodeNewBuffer.length());
         decodeNewBuffer.wrap(aBuff, 0);
@@ -259,8 +267,20 @@ public class FlyweightTest
         assertThat(decodeNewBuffer.channelId(), is(1L));
         assertThat(decodeNewBuffer.sessionId(), is(2L));
         assertThat(decodeNewBuffer.termId(), is(3L));
+
+        assertThat(decodeNewBuffer.bufferOffset(0),is(1));
+        assertThat(decodeNewBuffer.bufferOffset(1),is(2));
+        assertThat(decodeNewBuffer.bufferOffset(2),is(3));
+
+        assertThat(decodeNewBuffer.bufferLength(0),is(1));
+        assertThat(decodeNewBuffer.bufferLength(1),is(2));
+        assertThat(decodeNewBuffer.bufferLength(2),is(3));
+
+        assertThat(decodeNewBuffer.location(0),is("def"));
+        assertThat(decodeNewBuffer.location(1),is("ghi"));
+        assertThat(decodeNewBuffer.location(2),is("jkl"));
+
         assertThat(decodeNewBuffer.destination(), is("abc"));
-        assertThat(decodeNewBuffer.location(), is("def"));
     }
 
     private void assertLengthFindsNonZeroedBytes(final int length)

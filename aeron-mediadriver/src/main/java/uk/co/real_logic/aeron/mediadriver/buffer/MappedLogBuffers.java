@@ -92,9 +92,13 @@ class MappedLogBuffers implements LogBuffers
         IoUtil.unmap(mappedStateBuffer);
     }
 
-    public void bufferInformation(final int index, final NewBufferMessageFlyweight newBufferMessage)
+    public void logBufferInformation(final int index, final NewBufferMessageFlyweight newBufferMessage)
     {
         bufferInformation(index, newBufferMessage, mappedLogBuffer, logPath);
+    }
+
+    public void stateBufferInformation(final int index, final NewBufferMessageFlyweight newBufferMessage)
+    {
         bufferInformation(index + BUFFER_COUNT, newBufferMessage, mappedStateBuffer, statePath);
     }
 

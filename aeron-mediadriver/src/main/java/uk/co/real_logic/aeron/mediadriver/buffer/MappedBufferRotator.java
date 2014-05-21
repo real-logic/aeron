@@ -15,7 +15,9 @@
  */
 package uk.co.real_logic.aeron.mediadriver.buffer;
 
+import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.IoUtil;
+import uk.co.real_logic.aeron.util.collections.CollectionUtil;
 import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
 
 import java.io.File;
@@ -27,6 +29,7 @@ import java.nio.channels.FileChannel;
 import java.util.stream.Stream;
 
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
+import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
 
 /**
  * Encapsulates responsibility for rotating and reusing memory mapped files used by
@@ -121,9 +124,14 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
 
     public void bufferInformation(final NewBufferMessageFlyweight newBufferMessage)
     {
-        for(int i = 0; i < buffers.length; i++)
+        for(int i = 0; i < BUFFER_COUNT; i++)
         {
-            buffers[i].bufferInformation(i, newBufferMessage);
+            buffers[i].logBufferInformation(i, newBufferMessage);
+        }
+
+        for(int i = 0; i < BUFFER_COUNT; i++)
+        {
+            buffers[i].stateBufferInformation(i, newBufferMessage);
         }
     }
 

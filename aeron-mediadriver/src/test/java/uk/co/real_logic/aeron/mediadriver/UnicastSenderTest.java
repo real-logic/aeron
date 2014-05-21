@@ -71,7 +71,7 @@ public class UnicastSenderTest
     private static final long CHANNEL_ID = 0xA;
     private static final long SESSION_ID = 0xdeadbeefL;
 
-    public static final int BUFFER_SIZE = 256;
+    public static final int BUFFER_SIZE = 512;
     public static final int VALUE = 37;
 
     @Rule
@@ -155,6 +155,7 @@ public class UnicastSenderTest
             assertThat(eventTypeId, is(NEW_SEND_BUFFER_NOTIFICATION));
 
             bufferMessage.wrap(buffer, index);
+
             assertThat(bufferMessage.sessionId(), is(SESSION_ID));
             assertThat(bufferMessage.channelId(), is(CHANNEL_ID));
             assertThat(bufferMessage.destination(), is(URI));

@@ -241,6 +241,10 @@ public class NewBufferMessageFlyweight extends Flyweight
     public NewBufferMessageFlyweight location(final int index, final String value)
     {
         final int start = locationPointer(index);
+        if (start == 0)
+        {
+            throw new IllegalStateException("Previous location been hasn't been set yet at index " + index);
+        }
         final int length = atomicBuffer().putStringWithoutLength(offset() + start, value);
         locationPointer(index + 1, start + length);
         return this;

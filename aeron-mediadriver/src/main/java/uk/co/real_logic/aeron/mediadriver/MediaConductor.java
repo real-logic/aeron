@@ -25,6 +25,7 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 
+import javax.xml.bind.SchemaOutputResolver;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -41,7 +42,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.B
  */
 public class MediaConductor extends Agent implements ClientFacade
 {
-    public static final int WRITE_BUFFER_CAPACITY = 256;
+    public static final int WRITE_BUFFER_CAPACITY = 512;
     public static final int HEADER_LENGTH = BASE_HEADER_LENGTH + SIZE_OF_INT;
 
     public static final int HEARTBEAT_TIMEOUT_MILLISECONDS = 100;
@@ -282,13 +283,15 @@ public class MediaConductor extends Agent implements ClientFacade
     {
         newBufferMessage.sessionId(sessionId)
                         .channelId(channelId)
-                        .termId(termId)
-                        .destination(destination);
-
+                        .termId(termId);
         buffers.bufferInformation(newBufferMessage);
+        newBufferMessage.destination(destination);
 
         final int eventTypeId = isSender ? NEW_SEND_BUFFER_NOTIFICATION : NEW_RECEIVE_BUFFER_NOTIFICATION;
-        adminSendBuffer.write(eventTypeId, writeBuffer, 0, newBufferMessage.length());
+        if (!adminSendBuffer.write(eventTypeId, writeBuffer, 0, newBufferMessage.length()))
+        {
+            System.err.println("Error occurred writing new buffer notification");
+        }
     }
 
     public void onAddChannel(final ChannelMessageFlyweight channelMessage)

@@ -15,9 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver.buffer;
 
-import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.IoUtil;
-import uk.co.real_logic.aeron.util.collections.CollectionUtil;
 import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
 
 import java.io.File;

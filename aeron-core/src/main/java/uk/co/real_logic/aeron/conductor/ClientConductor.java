@@ -293,7 +293,7 @@ public final class ClientConductor extends Agent implements MediaDriverFacade
     {
         onNewBufferNotification(sessionId,
                                 sendNotifiers.get(destination, sessionId, channelId),
-                                (i) -> newAppender(i),
+                                this::newAppender,
                                 LogAppender[]::new,
                                 (chan, buffers) ->
                                 {

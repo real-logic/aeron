@@ -19,8 +19,15 @@ import org.junit.*;
 import uk.co.real_logic.aeron.util.IoUtil;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.OpenOption;
+import java.nio.file.StandardOpenOption;
 
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.WRITE;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -45,7 +52,10 @@ public class MappingBufferUsageStrategyTest
     private void createFile(final String location) throws IOException
     {
         File file = new File(location);
-        file.createNewFile();
+        try (FileChannel channel = FileChannel.open(file.toPath(), CREATE, WRITE))
+        {
+            channel.write(ByteBuffer.allocate(10));
+        }
     }
 
     @After
@@ -72,7 +82,7 @@ public class MappingBufferUsageStrategyTest
     {
         mapTermBuffers(LOCATION);
 
-        assertBuffersReleased(3, LOCATION);
+        assertBuffersReleased(1, LOCATION);
     }
 
     @Test
@@ -80,7 +90,7 @@ public class MappingBufferUsageStrategyTest
     {
         mapTermBuffers(LOCATION);
 
-        assertBuffersReleased(3, LOCATION);
+        assertBuffersReleased(1, LOCATION);
         assertBuffersReleased(0, LOCATION);
     }
 
@@ -90,18 +100,18 @@ public class MappingBufferUsageStrategyTest
         mapTermBuffers(LOCATION);
         mapTermBuffers(OTHER_LOCATION);
 
-        assertBuffersReleased(3, LOCATION);
+        assertBuffersReleased(1, LOCATION);
     }
 
     private void assertBuffersReleased(final int count, final String location)
     {
-        int buffersReleased = usageStrategy.releaseBuffers(location, 0, 1);
+        int buffersReleased = usageStrategy.releaseBuffers(location, 0, 10);
         assertThat(buffersReleased, is(count));
     }
 
     private void mapTermBuffers(final String location) throws IOException
     {
-        usageStrategy.newBuffer(location, 0, 1);
+        usageStrategy.newBuffer(location, 0, 10);
     }
 
 }

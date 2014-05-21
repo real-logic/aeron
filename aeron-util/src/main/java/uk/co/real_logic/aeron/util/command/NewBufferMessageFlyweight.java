@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.util.command;
 
-import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.Flyweight;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;

@@ -83,7 +83,7 @@ public class RcvSessionState
         }
         else if (termId == (currentTermId + 1))
         {
-            this.currentTermId.incrementAndGet(); // TODO: should this be an atomic increment?
+            this.currentTermId.lazySet(termId);
             currentBufferId = BufferRotationDescriptor.rotateId(currentBufferId);
             TermRebuilder rebuilder = rebuilders[currentBufferId];
             while (rebuilder.tailVolatile() != 0)
@@ -127,12 +127,13 @@ public class RcvSessionState
     {
         final long currentTermId = this.currentTermId.get();
         final long expectedTermId = currentTermId + CLEAN_WINDOW;
-        if (currentTermId != UNKNOWN_TERM_ID && expectedTermId > cleanedTermId.get())
+        final long cleanedTermId = this.cleanedTermId.get();
+        if (currentTermId != UNKNOWN_TERM_ID && expectedTermId > cleanedTermId)
         {
             try
             {
                 rotator.rotate();
-                cleanedTermId.incrementAndGet(); // TODO: should this be an atomic increment?
+                this.cleanedTermId.lazySet(cleanedTermId + 1);
             }
             catch (final IOException ex)
             {

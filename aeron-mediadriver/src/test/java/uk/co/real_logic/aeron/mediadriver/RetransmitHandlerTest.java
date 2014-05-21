@@ -18,6 +18,8 @@ package uk.co.real_logic.aeron.mediadriver;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import uk.co.real_logic.aeron.util.OptimalMcastDelayGenerator;
+import uk.co.real_logic.aeron.util.StaticDelayGenerator;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
@@ -31,9 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.stream.IntStream;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.STATE_BUFFER_LENGTH;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_LENGTH;
 
@@ -52,6 +52,9 @@ public class RetransmitHandlerTest
                                            0x00, 0x54, 0x00, 0x3F,
                                            0x7F, 0x00, 0x33, 0x55};
 
+    public static final StaticDelayGenerator delayGenerator =
+            new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(20));
+
     private final AtomicBuffer logBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(LOG_BUFFER_SIZE));
     private final AtomicBuffer stateBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(STATE_BUFFER_SIZE));
     private final LogAppender logAppender = new LogAppender(logBuffer, stateBuffer, HEADER, 1024);
@@ -68,7 +71,8 @@ public class RetransmitHandlerTest
 
     private final LogReader.FrameHandler retransmitHandler = mock(LogReader.FrameHandler.class);
 
-    private final RetransmitHandler handler = new RetransmitHandler(logReader, wheel, retransmitHandler);
+    private final RetransmitHandler handler = new RetransmitHandler(logReader, wheel,
+            delayGenerator, retransmitHandler);
 
     @Before
     public void setUp()

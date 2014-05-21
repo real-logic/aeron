@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.FeedbackDelayGenerator;
+import uk.co.real_logic.aeron.util.OptimalMcastDelayGenerator;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.GapScanner;
@@ -45,12 +46,11 @@ public class LossHandler
         void onSendNak(final int termId, final int termOffset);
     }
 
-    private static final FeedbackDelayGenerator feedbackDelay;
-
     private final GapScanner[] scanners;
     private final TimerWheel wheel;
     private final GapState[] scanGaps = new GapState[2];
     private final GapState activeGap= new GapState();
+    private final FeedbackDelayGenerator delayGenerator;
     private final SendNakHandler sendNakHandler;
 
     private TimerWheel.Timer timer;
@@ -62,26 +62,22 @@ public class LossHandler
 
     private DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
-    static
-    {
-        feedbackDelay = new FeedbackDelayGenerator(MediaDriver.NAK_MAX_BACKOFF_DEFAULT,
-                                                   MediaDriver.NAK_GROUPSIZE_DEFAULT,
-                                                   MediaDriver.NAK_GRTT_DEFAULT);
-    }
-
     /**
      * Create a loss handler for a channel.
      *
      * @param scanners for the gaps attached to the {@link uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader}
      * @param wheel for timer management
+     * @param delayGenerator to use for delay determination
      * @param sendNakHandler to call when sending a NAK is indicated
      */
     public LossHandler(final GapScanner[] scanners,
                        final TimerWheel wheel,
+                       final FeedbackDelayGenerator delayGenerator,
                        final SendNakHandler sendNakHandler)
     {
         this.scanners = scanners;
         this.wheel = wheel;
+        this.delayGenerator = delayGenerator;
         this.sendNakHandler = sendNakHandler;
         this.nakSentTimestamp = wheel.now();
 
@@ -171,10 +167,8 @@ public class LossHandler
 
     private long determineNakDelay()
     {
-        /*
-         * TODO: This should be 0 for unicast and use FeedbackDelayGenerator for multicast situations.
-         */
-        return TimeUnit.MILLISECONDS.toNanos(20);
+        // this should be 0 for unicast and use OptimalMcastDelayGenerator for multicast situations.
+        return delayGenerator.generateDelay();
     }
 
     private void scheduleTimer()

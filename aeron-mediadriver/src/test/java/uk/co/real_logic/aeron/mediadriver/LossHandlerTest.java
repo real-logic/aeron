@@ -19,6 +19,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
+import uk.co.real_logic.aeron.util.StaticDelayGenerator;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.GapScanner;
@@ -42,6 +43,9 @@ public class LossHandlerTest
     private static final int MESSAGE_LENGTH = DataHeaderFlyweight.HEADER_LENGTH + DATA.length;
     private static final long SESSION_ID = 0x5E55101DL;
     private static final long CHANNEL_ID = 0xC400EL;
+
+    public static final StaticDelayGenerator delayGenerator =
+            new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(20));
 
     private final AtomicBuffer[] logBuffers = new AtomicBuffer[BufferRotationDescriptor.BUFFER_COUNT];
     private final AtomicBuffer[] stateBuffers = new AtomicBuffer[BufferRotationDescriptor.BUFFER_COUNT];
@@ -74,7 +78,7 @@ public class LossHandlerTest
 
         sendNakHandler = mock(LossHandler.SendNakHandler.class);
 
-        handler = new LossHandler(scanners, wheel, sendNakHandler);
+        handler = new LossHandler(scanners, wheel, delayGenerator, sendNakHandler);
         dataHeader.wrap(rcvBuffer, 0);
     }
 

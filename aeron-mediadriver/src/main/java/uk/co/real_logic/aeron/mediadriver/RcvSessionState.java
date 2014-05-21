@@ -60,7 +60,7 @@ public class RcvSessionState
         rebuilders = rotator.buffers()
                             .map(TermRebuilder::new)
                             .toArray(TermRebuilder[]::new);
-        cleanedTermId.lazySet(initialTermId + 2);
+        cleanedTermId.lazySet(initialTermId + CLEAN_WINDOW);
     }
 
     public InetSocketAddress sourceAddress()

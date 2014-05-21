@@ -834,7 +834,6 @@ public class AtomicBuffer
     public String getString(final int offset, final ByteOrder byteOrder)
     {
         final int length = getInt(offset, byteOrder);
-        System.out.println("Read length: " + length + " @ " + offset);
         return getString(offset, length);
     }
 

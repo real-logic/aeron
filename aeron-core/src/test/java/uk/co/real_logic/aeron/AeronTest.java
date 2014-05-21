@@ -73,7 +73,7 @@ public class AeronTest
     private static final long SESSION_ID = 3L;
     private static final long SESSION_ID_2 = 5L;
     private static final int PACKET_VALUE = 37;
-    private static final int SEND_BUFFER_CAPACITY = 256;
+    private static final int SEND_BUFFER_CAPACITY = 512;
     private static final int CONDUCTOR_BUFFER_SIZE = (4 * 1024) + BufferDescriptor.TRAILER_LENGTH;
 
     @ClassRule
@@ -553,8 +553,7 @@ public class AeronTest
         final RingBuffer apiBuffer = toClient();
         newBufferMessage.channelId(CHANNEL_ID)
                         .sessionId(sessionId)
-                        .termId(termId)
-                        .destination(DESTINATION);
+                        .termId(termId);
 
         IntStream.range(0, PAYLOAD_BUFFER_COUNT)
                  .forEach(i ->
@@ -564,20 +563,22 @@ public class AeronTest
                      });
         addBufferLocation(rootDir, termId, sessionId, LOG, 0);
         addBufferLocation(rootDir, termId, sessionId, STATE, BUFFER_COUNT);
+        newBufferMessage.destination(DESTINATION);
 
         assertTrue(apiBuffer.write(eventTypeId, atomicSendBuffer, 0, newBufferMessage.length()));
     }
 
-    private void addBufferLocation(final File rootDir,
+    private void addBufferLocation(final File dir,
                                    final long termId,
                                    final long sessionId,
                                    final Type type,
                                    final int start)
     {
-        IntStream.range(start, start + BUFFER_COUNT)
+        IntStream.range(0, BUFFER_COUNT)
                  .forEach(i ->
                      {
-                         termLocation(rootDir, sessionId, CHANNEL_ID, termId + i, true, DESTINATION, type);
+                         File term = termLocation(dir, sessionId, CHANNEL_ID, termId + i, true, DESTINATION, type);
+                         newBufferMessage.location(i + start, term.getAbsolutePath());
                      });
     }
 

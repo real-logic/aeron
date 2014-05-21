@@ -265,7 +265,7 @@ public class NewBufferMessageFlyweight extends Flyweight
      */
     public int length()
     {
-        return locationPointer(PAYLOAD_BUFFER_COUNT + 1);
+        return locationPointer(DESTINATION_INDEX + 1);
     }
 
 }

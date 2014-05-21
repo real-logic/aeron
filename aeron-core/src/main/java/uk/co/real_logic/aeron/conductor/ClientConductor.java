@@ -112,7 +112,7 @@ public final class ClientConductor extends Agent implements MediaDriverFacade
     public void process()
     {
         handleCommandBuffer();
-        handleReceiveBuffer();
+        handleMessagesFromMediaDriver();
         processBufferCleaningScan();
     }
 
@@ -236,7 +236,7 @@ public final class ClientConductor extends Agent implements MediaDriverFacade
         // bufferUsage.releasePublisherBuffers(destination, channelId, sessionId);
     }
 
-    private void handleReceiveBuffer()
+    private void handleMessagesFromMediaDriver()
     {
         fromMediaDriverBuffer.read(
             (eventTypeId, buffer, index, length) ->

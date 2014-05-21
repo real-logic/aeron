@@ -32,11 +32,19 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.l
 public class GapScanner
 {
     /**
-     * Handler for reading data that is coming off the log.
+     * Handler for notifying of gaps in the log.
      */
     @FunctionalInterface
     public interface GapHandler
     {
+        /**
+         * Gap detected in log buffer that is being rebuilt.
+         *
+         * @param buffer containing the gap.
+         * @param offset at which the gap begins.
+         * @param length of the gap in bytes.
+         * @return true if scanning should continue otherwise false to halt scanning.
+         */
         boolean onGap(final AtomicBuffer buffer, final int offset, final int length);
     }
 
@@ -98,7 +106,7 @@ public class GapScanner
         }
         while (0 == frameLength);
 
-        return (handler.onGap(logBuffer, offset, gapLength)) ? (offset + gapLength) : highWaterMark;
+        return handler.onGap(logBuffer, offset, gapLength) ? (offset + gapLength) : highWaterMark;
     }
 
     private int frameLength(final int cursor)

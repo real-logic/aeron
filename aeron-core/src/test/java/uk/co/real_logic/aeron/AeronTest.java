@@ -22,7 +22,7 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
 import uk.co.real_logic.aeron.util.*;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.QualifiedMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.EventHandler;
@@ -45,10 +45,17 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static uk.co.real_logic.aeron.Subscriber.DataHandler;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
+import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
 import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.rotateId;
+import static uk.co.real_logic.aeron.util.FileMappingConvention.Type;
+import static uk.co.real_logic.aeron.util.FileMappingConvention.Type.LOG;
+import static uk.co.real_logic.aeron.util.FileMappingConvention.Type.STATE;
+import static uk.co.real_logic.aeron.util.FileMappingConvention.termLocation;
 import static uk.co.real_logic.aeron.util.SharedDirectories.Buffers;
 import static uk.co.real_logic.aeron.util.SharedDirectories.mapLoggers;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
+import static uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight.PAYLOAD_BUFFER_COUNT;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.LOG_MIN_SIZE;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.BASE_HEADER_LENGTH;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertEventRead;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.skip;
@@ -83,7 +90,7 @@ public class AeronTest
     private DataHandler channel2Handler = emptyDataHandler();
 
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
-    private final QualifiedMessageFlyweight qualifiedMessage = new QualifiedMessageFlyweight();
+    private final NewBufferMessageFlyweight newBufferMessage = new NewBufferMessageFlyweight();
     private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
 
     private final ErrorHeaderFlyweight errorHeader = new ErrorHeaderFlyweight();
@@ -96,7 +103,7 @@ public class AeronTest
 
     public AeronTest()
     {
-        qualifiedMessage.wrap(atomicSendBuffer, 0);
+        newBufferMessage.wrap(atomicSendBuffer, 0);
         errorHeader.wrap(atomicSendBuffer, 0);
     }
 
@@ -463,7 +470,8 @@ public class AeronTest
         final Subscriber subscriber = newSubscriber(aeron);
         final List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
         final List<LogAppender> otherLogAppenders = createLogAppenders(SESSION_ID_2);
-        sendNewBufferNotification(NEW_RECEIVE_BUFFER_NOTIFICATION, 1L, SESSION_ID);
+
+        sendNewBufferNotification(directory.receiverDir(), NEW_RECEIVE_BUFFER_NOTIFICATION, 1L, SESSION_ID);
 
         aeron.conductor().process();
         skip(toMediaDriver, 1);
@@ -532,20 +540,45 @@ public class AeronTest
                                            final long sessionId) throws IOException
     {
         final List<Buffers> buffers = directory.createTermFile(rootDir, DESTINATION, sessionId, CHANNEL_ID);
-        sendNewBufferNotification(eventTypeId, termId, sessionId);
+        sendNewBufferNotification(rootDir, eventTypeId, termId, sessionId);
 
         return buffers;
     }
 
-    private void sendNewBufferNotification(final int eventTypeId, final long termId, final long sessionId)
+    private void sendNewBufferNotification(final File rootDir,
+                                           final int eventTypeId,
+                                           final long termId,
+                                           final long sessionId)
     {
         final RingBuffer apiBuffer = toClient();
-        qualifiedMessage.channelId(CHANNEL_ID)
+        newBufferMessage.channelId(CHANNEL_ID)
                         .sessionId(sessionId)
                         .termId(termId)
                         .destination(DESTINATION);
 
-        assertTrue(apiBuffer.write(eventTypeId, atomicSendBuffer, 0, qualifiedMessage.length()));
+        IntStream.range(0, PAYLOAD_BUFFER_COUNT)
+                 .forEach(i ->
+                     {
+                         newBufferMessage.bufferOffset(i, 0);
+                         newBufferMessage.bufferLength(i, LOG_MIN_SIZE);
+                     });
+        addBufferLocation(rootDir, termId, sessionId, LOG, 0);
+        addBufferLocation(rootDir, termId, sessionId, STATE, BUFFER_COUNT);
+
+        assertTrue(apiBuffer.write(eventTypeId, atomicSendBuffer, 0, newBufferMessage.length()));
+    }
+
+    private void addBufferLocation(final File rootDir,
+                                   final long termId,
+                                   final long sessionId,
+                                   final Type type,
+                                   final int start)
+    {
+        IntStream.range(start, start + BUFFER_COUNT)
+                 .forEach(i ->
+                     {
+                         termLocation(rootDir, sessionId, CHANNEL_ID, termId + i, true, DESTINATION, type);
+                     });
     }
 
     private ManyToOneRingBuffer toClient()

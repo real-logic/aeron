@@ -15,11 +15,11 @@
  */
 package uk.co.real_logic.aeron.util.command;
 
+import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.Flyweight;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
-import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
 
 /**
  * Message to denote that new buffers have been added for a subscription.
@@ -106,10 +106,15 @@ public class NewBufferMessageFlyweight extends Flyweight
     private static final int LOCATION_0_FIELD_OFFSET = 92;
 
     /**
+     * Contains both log buffers and state buffers
+     */
+    public static final int PAYLOAD_BUFFER_COUNT = BufferRotationDescriptor.BUFFER_COUNT * 2;
+
+    /**
      * The Destination sits at the end of the message, after the location strings for both the
      * log and state buffers.
      */
-    private static final int DESTINATION_INDEX = 6;
+    private static final int DESTINATION_INDEX = PAYLOAD_BUFFER_COUNT;
 
     public int bufferOffset(final int index)
     {
@@ -260,7 +265,7 @@ public class NewBufferMessageFlyweight extends Flyweight
      */
     public int length()
     {
-        return locationPointer(BUFFER_COUNT + 1);
+        return locationPointer(PAYLOAD_BUFFER_COUNT + 1);
     }
 
 }

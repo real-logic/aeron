@@ -51,7 +51,7 @@ public final class Aeron
         {
             final RingBuffer rcvBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toClient()));
             final RingBuffer sendBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toMediaDriver()));
-            final BufferUsageStrategy bufferUsage = new MappingBufferUsageStrategy(CommonConfiguration.DATA_DIR_NAME);
+            final BufferUsageStrategy bufferUsage = new MappingBufferUsageStrategy();
             final ConductorErrorHandler conductorErrorHandler =
                 new ConductorErrorHandler(context.invalidDestinationHandler);
 

@@ -95,17 +95,4 @@ public interface ClientFacade
      */
     void sendError(final int code, final byte[] message);
 
-    /**
-     * Notify the client of new term buffers.
-     *
-     * @see MediaDriverFacade#onNewBufferNotification(long, long, long, boolean, String)
-     *
-     */
-    void sendNewBufferNotification(final long sessionId,
-                                   final long channelId,
-                                   final long termId,
-                                   final boolean isSender,
-                                   final String destination,
-                                   final String location);
-
 }

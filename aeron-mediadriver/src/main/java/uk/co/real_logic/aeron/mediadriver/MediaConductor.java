@@ -278,13 +278,14 @@ public class MediaConductor extends Agent implements ClientFacade
                                           final long termId,
                                           final boolean isSender,
                                           final String destination,
-                                          final String file)
+                                          final BufferRotator buffers)
     {
         newBufferMessage.sessionId(sessionId)
                         .channelId(channelId)
                         .termId(termId)
-                        .destination(destination)
-                        .location(file);
+                        .destination(destination);
+
+        buffers.bufferInformation(newBufferMessage);
 
         final int eventTypeId = isSender ? NEW_SEND_BUFFER_NOTIFICATION : NEW_RECEIVE_BUFFER_NOTIFICATION;
         adminSendBuffer.write(eventTypeId, writeBuffer, 0, newBufferMessage.length());
@@ -341,7 +342,7 @@ public class MediaConductor extends Agent implements ClientFacade
             frameHandler.addChannel(channel);
 
             // tell the client conductor thread of the new buffer
-            sendNewBufferNotification(sessionId, channelId, initialTermId, true, destination, buffers.location());
+            sendNewBufferNotification(sessionId, channelId, initialTermId, true, destination, buffers);
 
             // add channel to sender thread atomic array so it can be integrated in
             sender.addChannel(channel);

@@ -15,18 +15,25 @@
  */
 package uk.co.real_logic.aeron.mediadriver.buffer;
 
+import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.IoUtil;
+import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
+import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
+
 /**
  * .
  */
 class MappedLogBuffers implements LogBuffers
 {
+    private final String logPath;
+    private final String statePath;
+
     private final FileChannel logFile;
     private final FileChannel stateFile;
 
@@ -36,11 +43,15 @@ class MappedLogBuffers implements LogBuffers
     private final AtomicBuffer logBuffer;
     private final AtomicBuffer stateBuffer;
 
-    MappedLogBuffers(final FileChannel logFile,
+    MappedLogBuffers(final String logPath,
+                     final String statePath,
+                     final FileChannel logFile,
                      final FileChannel stateFile,
                      final MappedByteBuffer logBuffer,
                      final MappedByteBuffer stateBuffer)
     {
+        this.logPath = logPath;
+        this.statePath = statePath;
         this.logFile = logFile;
         this.stateFile = stateFile;
 
@@ -80,6 +91,23 @@ class MappedLogBuffers implements LogBuffers
         }
         IoUtil.unmap(mappedLogBuffer);
         IoUtil.unmap(mappedStateBuffer);
+    }
+
+    public void bufferInformation(final int index, final NewBufferMessageFlyweight newBufferMessage)
+    {
+        bufferInformation(index, newBufferMessage, mappedLogBuffer, logPath);
+        bufferInformation(index + BUFFER_COUNT, newBufferMessage, mappedStateBuffer, statePath);
+    }
+
+    private void bufferInformation(final int index,
+                                   final NewBufferMessageFlyweight newBufferMessage,
+                                   final MappedByteBuffer buffer,
+                                   final String path)
+    {
+        final int offset = buffer.position();
+        newBufferMessage.bufferOffset(index, offset);
+        newBufferMessage.bufferLength(index, buffer.position() - offset);
+        newBufferMessage.location(index, path);
     }
 
 }

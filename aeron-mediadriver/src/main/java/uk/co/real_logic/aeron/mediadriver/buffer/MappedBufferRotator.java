@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.mediadriver.buffer;
 
 import uk.co.real_logic.aeron.util.IoUtil;
+import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -90,10 +91,17 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
 
     private MappedLogBuffers newTerm(final String prefix, final File directory) throws IOException
     {
-        final FileChannel logFile = openFile(directory, prefix + LOG_SUFFIX);
-        final FileChannel stateFile = openFile(directory, prefix + STATE_SUFFIX);
+        final String logPath = prefix + LOG_SUFFIX;
+        final String statePath = prefix + STATE_SUFFIX;
+        final FileChannel logFile = openFile(directory, logPath);
+        final FileChannel stateFile = openFile(directory, statePath);
 
-        return new MappedLogBuffers(logFile, stateFile, map(logBufferSize, logFile), map(stateBufferSize, stateFile));
+        return new MappedLogBuffers(logPath,
+                                    statePath,
+                                    logFile,
+                                    stateFile,
+                                    map(logBufferSize, logFile),
+                                    map(stateBufferSize, stateFile));
     }
 
     public Stream<MappedLogBuffers> buffers()
@@ -109,6 +117,14 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
         clean = dirty;
         dirty = current;
         current = newBuffer;
+    }
+
+    public void bufferInformation(final NewBufferMessageFlyweight newBufferMessage)
+    {
+        for(int i = 0; i < buffers.length; i++)
+        {
+            buffers[i].bufferInformation(i, newBufferMessage);
+        }
     }
 
     public String location()

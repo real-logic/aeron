@@ -248,15 +248,14 @@ public final class ClientConductor extends Agent implements MediaDriverFacade
                         final long channelId = bufferNotificationMessage.channelId();
                         final long termId = bufferNotificationMessage.termId();
                         final String destination = bufferNotificationMessage.destination();
-                        final String location = bufferNotificationMessage.location();
 
                         if (eventTypeId == NEW_SEND_BUFFER_NOTIFICATION)
                         {
-                            onNewSenderBufferNotification(sessionId, channelId, termId, destination, location);
+                            onNewSenderBufferNotification(sessionId, channelId, termId, destination);
                         }
                         else
                         {
-                            onNewReceiverBufferNotification(destination, channelId, sessionId, termId, location);
+                            onNewReceiverBufferNotification(destination, channelId, sessionId, termId);
                         }
 
                         return;
@@ -273,12 +272,11 @@ public final class ClientConductor extends Agent implements MediaDriverFacade
     private void onNewReceiverBufferNotification(final String destination,
                                                  final long channelId,
                                                  final long sessionId,
-                                                 final long termId,
-                                                 final String location)
+                                                 final long termId)
     {
         onNewBufferNotification(sessionId,
                                 rcvNotifiers.get(destination, channelId),
-                                i -> newReader(location, i),
+                                this::newReader,
                                 LogReader[]::new,
                                 (chan, buffers) ->
                                 {
@@ -291,12 +289,11 @@ public final class ClientConductor extends Agent implements MediaDriverFacade
     private void onNewSenderBufferNotification(final long sessionId,
                                                final long channelId,
                                                final long termId,
-                                               final String destination,
-                                               final String location)
+                                               final String destination)
     {
         onNewBufferNotification(sessionId,
                                 sendNotifiers.get(destination, sessionId, channelId),
-                                (i) -> newAppender(location, i),
+                                (i) -> newAppender(i),
                                 LogAppender[]::new,
                                 (chan, buffers) ->
                                 {
@@ -350,19 +347,17 @@ public final class ClientConductor extends Agent implements MediaDriverFacade
         }
     }
 
-    public LogAppender newAppender(final String location,
-                                   final int index) throws IOException
+    public LogAppender newAppender(final int index) throws IOException
     {
-        final AtomicBuffer logBuffer = bufferUsage.newLogBuffer(location, index);
-        final AtomicBuffer stateBuffer = bufferUsage.newStateBuffer(location, index);
+        final AtomicBuffer logBuffer = bufferUsage.newBuffer(bufferNotificationMessage, index);
+        final AtomicBuffer stateBuffer = bufferUsage.newBuffer(bufferNotificationMessage, index + BUFFER_COUNT);
         return new LogAppender(logBuffer, stateBuffer, DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }
 
-    private LogReader newReader(final String location,
-                                final int index) throws IOException
+    private LogReader newReader(final int index) throws IOException
     {
-        final AtomicBuffer logBuffer = bufferUsage.newLogBuffer(location, index);
-        final AtomicBuffer stateBuffer = bufferUsage.newStateBuffer(location, index);
+        final AtomicBuffer logBuffer = bufferUsage.newBuffer(bufferNotificationMessage, index);
+        final AtomicBuffer stateBuffer = bufferUsage.newBuffer(bufferNotificationMessage, index + BUFFER_COUNT);
         return new LogReader(logBuffer, stateBuffer);
     }
 

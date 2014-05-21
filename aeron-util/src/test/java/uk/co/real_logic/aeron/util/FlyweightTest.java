@@ -32,7 +32,7 @@ import static org.junit.Assert.assertThat;
 
 public class FlyweightTest
 {
-    private final ByteBuffer buffer = ByteBuffer.allocateDirect(256);
+    private final ByteBuffer buffer = ByteBuffer.allocateDirect(512);
     private final AtomicBuffer aBuff = new AtomicBuffer(buffer);
     private final HeaderFlyweight encodeHeader = new HeaderFlyweight();
     private final HeaderFlyweight decodeHeader = new HeaderFlyweight();
@@ -259,6 +259,9 @@ public class FlyweightTest
                        .location(0, "def")
                        .location(1, "ghi")
                        .location(2, "jkl")
+                       .location(3, "def")
+                       .location(4, "ghi")
+                       .location(5, "jkl")
                        .destination("abc")
                        ;
 
@@ -280,6 +283,10 @@ public class FlyweightTest
         assertThat(decodeNewBuffer.location(0),is("def"));
         assertThat(decodeNewBuffer.location(1),is("ghi"));
         assertThat(decodeNewBuffer.location(2),is("jkl"));
+
+        assertThat(decodeNewBuffer.location(3),is("def"));
+        assertThat(decodeNewBuffer.location(4),is("ghi"));
+        assertThat(decodeNewBuffer.location(5),is("jkl"));
 
         assertThat(decodeNewBuffer.destination(), is("abc"));
     }

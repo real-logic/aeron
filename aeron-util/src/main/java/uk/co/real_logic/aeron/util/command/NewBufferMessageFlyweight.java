@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.util.command;
 
+import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.Flyweight;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
@@ -41,15 +42,33 @@ import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
  * +---------------------------------------------------------------+
  * |                          File Offset 2                        |
  * +---------------------------------------------------------------+
+ * |                          File Offset 3                        |
+ * +---------------------------------------------------------------+
+ * |                          File Offset 4                        |
+ * +---------------------------------------------------------------+
+ * |                          File Offset 5                        |
+ * +---------------------------------------------------------------+
  * |                             Length 0                          |
  * +---------------------------------------------------------------+
  * |                             Length 1                          |
  * +---------------------------------------------------------------+
  * |                             Length 2                          |
  * +---------------------------------------------------------------+
+ * |                             Length 3                          |
+ * +---------------------------------------------------------------+
+ * |                             Length 4                          |
+ * +---------------------------------------------------------------+
+ * |                             Length 5                          |
+ * +---------------------------------------------------------------+
  * |                          Location 1 Start                     |
  * +---------------------------------------------------------------+
  * |                          Location 2 Start                     |
+ * +---------------------------------------------------------------+
+ * |                          Location 3 Start                     |
+ * +---------------------------------------------------------------+
+ * |                          Location 4 Start                     |
+ * +---------------------------------------------------------------+
+ * |                          Location 5 Start                     |
  * +---------------------------------------------------------------+
  * |                          Destination Start                    |
  * +---------------------------------------------------------------+
@@ -64,6 +83,15 @@ import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
  * |                            Location 2                       ...
  * |                                                             ...
  * +---------------------------------------------------------------+
+ * |                            Location 3                       ...
+ * |                                                             ...
+ * +---------------------------------------------------------------+
+ * |                            Location 4                       ...
+ * |                                                             ...
+ * +---------------------------------------------------------------+
+ * |                            Location 5                       ...
+ * |                                                             ...
+ * +---------------------------------------------------------------+
  * |                            Destination                      ...
  * |                                                             ...
  * +---------------------------------------------------------------+
@@ -74,12 +102,15 @@ public class NewBufferMessageFlyweight extends Flyweight
     private static final int CHANNEL_ID_FIELD_OFFSET = 4;
     private static final int TERM_ID_FIELD_OFFSET = 8;
     private static final int FILE_OFFSETS_FIELDS_OFFSET = 12;
-    private static final int BUFFER_LENGTHS_FIELDS_OFFSET = 24;
-    private static final int LOCATION_POINTER_FIELDS_OFFSET = 36;
-    private static final int LOCATION_0_FIELD_OFFSET = 56;
+    private static final int BUFFER_LENGTHS_FIELDS_OFFSET = 36;
+    private static final int LOCATION_POINTER_FIELDS_OFFSET = 60;
+    private static final int LOCATION_0_FIELD_OFFSET = 92;
 
-    private int lengthOfDestination;
-    private int lengthOfLocation;
+    /**
+     * The Destination sits at the end of the message, after the location strings for both the
+     * log and state buffers.
+     */
+    private static final int DESTINATION_INDEX = 6;
 
     public int bufferOffset(final int index)
     {
@@ -213,12 +244,12 @@ public class NewBufferMessageFlyweight extends Flyweight
 
     public String destination()
     {
-        return location(3);
+        return location(DESTINATION_INDEX);
     }
 
     public NewBufferMessageFlyweight destination(final String value)
     {
-        return location(3, value);
+        return location(DESTINATION_INDEX, value);
     }
 
     /**

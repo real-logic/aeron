@@ -16,14 +16,25 @@
 package uk.co.real_logic.aeron.util;
 
 /**
- * Feedback delay generator.
+ * Delay generator that simply returns a constant value (such as 0)
  */
-public interface FeedbackDelayGenerator
+public class StaticDelayGenerator implements FeedbackDelayGenerator
 {
+    private final long delay;
+
     /**
-     * Generate a new delay value
+     * Create a delay generator that uses the specified delay.
      *
-     * @return delay value in nanoseconds
+     * @param delay to return
      */
-    long generateDelay();
+    public StaticDelayGenerator(final long delay)
+    {
+        this.delay = delay;
+    }
+
+    /** {@inheritDoc */
+    public long generateDelay()
+    {
+        return delay;
+    }
 }

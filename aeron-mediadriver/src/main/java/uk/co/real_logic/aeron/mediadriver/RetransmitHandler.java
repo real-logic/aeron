@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.FeedbackDelayGenerator;
+import uk.co.real_logic.aeron.util.OptimalMcastDelayGenerator;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.collections.Int2ObjectHashMap;
 import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
@@ -33,36 +34,32 @@ import java.util.stream.IntStream;
  */
 public class RetransmitHandler
 {
+    /** Maximum number of concurrent retransmits */
     public static final int MAX_RETRANSMITS = MediaDriver.MAX_RETRANSMITS_DEFAULT;
-
-    private static final FeedbackDelayGenerator feedbackDelay;
 
     private final LogReader reader;
     private final TimerWheel wheel;
     private final LogReader.FrameHandler sendRetransmitHandler;
     private final Queue<Retransmit> inActive;
     private final Int2ObjectHashMap<Retransmit> activeMap;
-
-    static
-    {
-        feedbackDelay = new FeedbackDelayGenerator(MediaDriver.RETRANS_MAX_BACKOFF_DEFAULT,
-                                                   MediaDriver.RETRANS_GROUPSIZE_DEFAULT,
-                                                   MediaDriver.RETRANS_GRTT_DEFAULT);
-    }
+    private final FeedbackDelayGenerator delayGenerator;
 
     /**
      * Create a retransmit handler for a log buffer.
      *
      * @param reader to read frames from for retransmission
      * @param wheel for timers
+     * @param delayGenerator to use for delay determination
      * @param retransmitHandler for sending retransmits
      */
     public RetransmitHandler(final LogReader reader,
                              final TimerWheel wheel,
+                             final FeedbackDelayGenerator delayGenerator,
                              final LogReader.FrameHandler retransmitHandler)
     {
         this.reader = reader;
         this.wheel = wheel;
+        this.delayGenerator = delayGenerator;
         this.sendRetransmitHandler = retransmitHandler;
 
         this.inActive = new OneToOneConcurrentArrayQueue<>(MAX_RETRANSMITS);
@@ -121,13 +118,12 @@ public class RetransmitHandler
 
     private long determineRetransmitDelay()
     {
-        // TODO: will be 0 if this is the only retransmitter. Or will delay if not.
-        return TimeUnit.MILLISECONDS.toNanos(20);
+        return delayGenerator.generateDelay();
     }
 
     private long determineLingerTimeout()
     {
-        // TODO: grab value from MedidDriver config
+        // TODO: grab value from MediaDriver config
         return TimeUnit.MILLISECONDS.toNanos(10);
     }
 

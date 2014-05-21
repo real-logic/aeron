@@ -22,20 +22,20 @@ import java.util.stream.IntStream;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 
-public class FeedbackDelayGeneratorTest
+public class OptimalMcastDelayGeneratorTest
 {
     public static final long MAX_BACKOFF = 60;
     public static final long GROUP_SIZE = 10;
     public static final long GRTT = 10;
 
-    public FeedbackDelayGenerator generator = new FeedbackDelayGenerator(MAX_BACKOFF, GROUP_SIZE, GRTT);
+    public OptimalMcastDelayGenerator generator = new OptimalMcastDelayGenerator(MAX_BACKOFF, GROUP_SIZE, GRTT);
 
     @Test
     public void shouldNotExceedTmaxBackoff()
     {
         IntStream.range(0, 100000).forEach((i) ->
         {
-            final double delay = generator.generateNewDelay();
+            final double delay = generator.generateNewOptimalDelay();
             assertThat(delay, lessThanOrEqualTo((double)MAX_BACKOFF));
         });
     }

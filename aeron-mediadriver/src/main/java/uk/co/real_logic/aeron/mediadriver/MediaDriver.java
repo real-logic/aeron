@@ -215,23 +215,23 @@ public class MediaDriver implements AutoCloseable
         private int mtuLength;
         private RcvFrameHandlerFactory rcvFrameHandlerFactory;
 
-        private RingBuffer createNewCommandBuffer(final int sz)
+        private RingBuffer createNewCommandBuffer(final int size)
         {
-            final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(sz + TRAILER_LENGTH);
+            final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(size + TRAILER_LENGTH);
             final AtomicBuffer atomicBuffer = new AtomicBuffer(byteBuffer);
 
             return new ManyToOneRingBuffer(atomicBuffer);
         }
 
-        public Context conductorCommandBuffer(final int sz)
+        public Context conductorCommandBuffer(final int size)
         {
-            this.conductorCommandBuffer = createNewCommandBuffer(sz);
+            this.conductorCommandBuffer = createNewCommandBuffer(size);
             return this;
         }
 
-        public Context receiverCommandBuffer(final int sz)
+        public Context receiverCommandBuffer(final int size)
         {
-            this.receiverCommandBuffer = createNewCommandBuffer(sz);
+            this.receiverCommandBuffer = createNewCommandBuffer(size);
             return this;
         }
 
@@ -259,7 +259,7 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context senderFlowControl(Supplier<SenderControlStrategy> senderFlowControl)
+        public Context senderFlowControl(final Supplier<SenderControlStrategy> senderFlowControl)
         {
             this.senderFlowControl = senderFlowControl;
             return this;

@@ -40,7 +40,7 @@ public class RetransmitHandler
     private final TimerWheel wheel;
     private final LogReader.FrameHandler sendRetransmitHandler;
     private final Queue<Retransmit> inActiveRetransmitQueue = new OneToOneConcurrentArrayQueue<>(MAX_RETRANSMITS);
-    private final Int2ObjectHashMap<Retransmit> activeRetransmitByTermOffsetMap  = new Int2ObjectHashMap<>();
+    private final Int2ObjectHashMap<Retransmit> activeRetransmitByTermOffsetMap = new Int2ObjectHashMap<>();
     private final FeedbackDelayGenerator delayGenerator;
 
     /**

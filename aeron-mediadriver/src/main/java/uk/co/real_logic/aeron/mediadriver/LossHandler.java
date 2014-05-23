@@ -129,7 +129,7 @@ public class LossHandler
 
             scanCursor++;
 
-            return (scanCursor == scanGaps.length);
+            return scanCursor == scanGaps.length;
         }
 
         return false;
@@ -189,7 +189,7 @@ public class LossHandler
         }
     }
 
-    public class GapState
+    public static class GapState
     {
         private int termId;
         private int termOffset;
@@ -202,12 +202,7 @@ public class LossHandler
 
         public boolean isFor(final int termId, final int termOffset)
         {
-            if (termId == this.termId && termOffset == this.termOffset)
-            {
-                return true;
-            }
-
-            return false;
+            return termId == this.termId && termOffset == this.termOffset;
         }
     }
 }

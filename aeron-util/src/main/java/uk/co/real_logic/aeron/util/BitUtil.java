@@ -96,6 +96,7 @@ public class BitUtil
             outputBuffer[i] = HEX_DIGIT_TABLE[(b >> 4) & 0x0F];
             outputBuffer[i + 1] = HEX_DIGIT_TABLE[b & 0x0F];
         }
+
         return outputBuffer;
     }
 

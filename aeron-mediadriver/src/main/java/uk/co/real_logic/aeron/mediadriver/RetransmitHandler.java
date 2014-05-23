@@ -61,7 +61,7 @@ public class RetransmitHandler
         this.delayGenerator = delayGenerator;
         this.sendRetransmitHandler = retransmitHandler;
 
-        IntStream.range(0, MAX_RETRANSMITS).forEach((i) -> this.inActiveRetransmitQueue.offer(new Retransmit()));
+        IntStream.range(0, MAX_RETRANSMITS).forEach((i) -> inActiveRetransmitQueue.offer(new Retransmit()));
     }
 
     /**
@@ -129,14 +129,14 @@ public class RetransmitHandler
         reader.read(sendRetransmitHandler);
     }
 
-    public enum State
+    private enum State
     {
         DELAYED,
         LINGERING,
         INACTIVE
     }
 
-    public class Retransmit
+    private class Retransmit
     {
         private int termOffset;
         private State state = State.INACTIVE;

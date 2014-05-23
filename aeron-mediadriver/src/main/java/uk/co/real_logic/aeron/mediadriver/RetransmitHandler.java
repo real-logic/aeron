@@ -39,8 +39,8 @@ public class RetransmitHandler
     private final LogReader reader;
     private final TimerWheel wheel;
     private final LogReader.FrameHandler sendRetransmitHandler;
-    private final Queue<Retransmit> inActive;
-    private final Int2ObjectHashMap<Retransmit> activeMap;
+    private final Queue<Retransmit> inActiveRetransmitQueue = new OneToOneConcurrentArrayQueue<>(MAX_RETRANSMITS);
+    private final Int2ObjectHashMap<Retransmit> activeRetransmitByTermOffsetMap  = new Int2ObjectHashMap<>();
     private final FeedbackDelayGenerator delayGenerator;
 
     /**
@@ -61,10 +61,7 @@ public class RetransmitHandler
         this.delayGenerator = delayGenerator;
         this.sendRetransmitHandler = retransmitHandler;
 
-        this.inActive = new OneToOneConcurrentArrayQueue<>(MAX_RETRANSMITS);
-        this.activeMap = new Int2ObjectHashMap<>();
-
-        IntStream.range(0, MAX_RETRANSMITS).forEach((i) -> this.inActive.offer(new Retransmit()));
+        IntStream.range(0, MAX_RETRANSMITS).forEach((i) -> this.inActiveRetransmitQueue.offer(new Retransmit()));
     }
 
     /**
@@ -76,9 +73,9 @@ public class RetransmitHandler
     {
         // only handle the NAK if we have a free Retransmit to store the state and we aren't holding
         // state for the offset already
-        if (inActive.size() > 0 && null == activeMap.get(termOffset))
+        if (inActiveRetransmitQueue.size() > 0 && null == activeRetransmitByTermOffsetMap.get(termOffset))
         {
-            final Retransmit rx = inActive.poll();
+            final Retransmit rx = inActiveRetransmitQueue.poll();
             final long delay = determineRetransmitDelay();
 
             rx.termOffset = termOffset;
@@ -93,7 +90,7 @@ public class RetransmitHandler
                 rx.delay(delay);
             }
 
-            activeMap.put(termOffset, rx);
+            activeRetransmitByTermOffsetMap.put(termOffset, rx);
         }
     }
 
@@ -104,14 +101,14 @@ public class RetransmitHandler
      */
     public void onRetransmitReceived(final int termOffset)
     {
-        final Retransmit rx = activeMap.get(termOffset);
+        final Retransmit rx = activeRetransmitByTermOffsetMap.get(termOffset);
 
         // suppress sending retransmit only if we are delaying
         if (null != rx && State.DELAYED == rx.state)
         {
-            activeMap.remove(termOffset);
+            activeRetransmitByTermOffsetMap.remove(termOffset);
             rx.state = State.INACTIVE;
-            inActive.offer(rx);
+            inActiveRetransmitQueue.offer(rx);
         }
     }
 
@@ -181,8 +178,8 @@ public class RetransmitHandler
         public void onLingerTimeout()
         {
             state = State.INACTIVE;
-            activeMap.remove(termOffset);
-            inActive.offer(this);
+            activeRetransmitByTermOffsetMap.remove(termOffset);
+            inActiveRetransmitQueue.offer(this);
         }
     }
 }

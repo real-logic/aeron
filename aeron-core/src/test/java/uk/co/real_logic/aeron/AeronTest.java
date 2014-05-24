@@ -73,7 +73,7 @@ public class AeronTest
     private static final long SESSION_ID = 3L;
     private static final long SESSION_ID_2 = 5L;
     private static final int PACKET_VALUE = 37;
-    private static final int SEND_BUFFER_CAPACITY = 512;
+    private static final int SEND_BUFFER_CAPACITY = 1024;
     private static final int CONDUCTOR_BUFFER_SIZE = (4 * 1024) + BufferDescriptor.TRAILER_LENGTH;
 
     @ClassRule

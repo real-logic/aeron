@@ -29,9 +29,9 @@ import java.util.List;
 import static uk.co.real_logic.aeron.util.IoUtil.mapExistingFile;
 
 /**
- * Buffer usage where each Term is a memory mapped file.
+ * Default mapping buffer usage strategy for the client
  *
- * Not threadsafe - Methods only called from MediaConductor.
+ * Not thread-safe - Methods only called from ClientConductor
  */
 public class MappingBufferUsageStrategy implements BufferUsageStrategy
 {

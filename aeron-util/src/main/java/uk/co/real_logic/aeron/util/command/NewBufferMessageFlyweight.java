@@ -26,7 +26,7 @@ import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
  *
  * @see uk.co.real_logic.aeron.util.command.ControlProtocolEvents
  *
- *  * 0                   1                   2                   3
+ * 0                   1                   2                   3
  * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  * |                          Session ID                           |

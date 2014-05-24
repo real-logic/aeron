@@ -170,6 +170,29 @@ public class IoUtil
     }
 
     /**
+     * Check that file exists, open file, and return MappedByteBuffer for only region specified
+     *
+     * The file itself will be closed, but the mapping will persist.
+     *
+     * @param location  of the file to map
+     * @param name      to be associated for an exceptions
+     * @param offset    offset to start mapping at
+     * @param size      length to map region
+     * @return          {@link java.nio.MappedByteBuffer} for the file
+     * @throws IOException for any errors
+     */
+    public static MappedByteBuffer mapExistingFile(final File location, final String name,
+                                                   final int offset, final int size) throws IOException
+    {
+        checkFileExists(location, name);
+        try (final RandomAccessFile file = new RandomAccessFile(location, "rw"))
+        {
+            final FileChannel channel = file.getChannel();
+            return channel.map(READ_WRITE, offset, size);
+        }
+    }
+
+    /**
      * Create a new file, fill with 0s, and return a {@link java.nio.MappedByteBuffer} for the file
      * <p>
      * The file itself will be closed, but the mapping will persist.

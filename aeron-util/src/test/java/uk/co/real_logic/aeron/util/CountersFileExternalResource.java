@@ -27,7 +27,7 @@ import static uk.co.real_logic.aeron.util.IoUtil.ensureDirectoryExists;
 /**
  * The file to be used
  */
-public class CountersFile extends ExternalResource
+public class CountersFileExternalResource extends ExternalResource
 {
     private static final long BUFFER_SIZE = 1024L;
     private final File file = new File(COUNTERS_DIR_NAME);

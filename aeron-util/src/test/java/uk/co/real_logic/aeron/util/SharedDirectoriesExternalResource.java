@@ -34,7 +34,7 @@ import static uk.co.real_logic.aeron.util.FileMappingConvention.Type.STATE;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.termLocation;
 import static uk.co.real_logic.aeron.util.IoUtil.mapNewFile;
 
-public class SharedDirectories extends ExternalResource
+public class SharedDirectoriesExternalResource extends ExternalResource
 {
     private File dataDir;
     private FileMappingConvention mapping;

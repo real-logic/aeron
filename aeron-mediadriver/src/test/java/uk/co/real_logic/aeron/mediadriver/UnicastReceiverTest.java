@@ -21,7 +21,7 @@ import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
 import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.ConductorBuffersExternalResource;
 import uk.co.real_logic.aeron.util.ConductorByteBuffers;
-import uk.co.real_logic.aeron.util.SharedDirectories;
+import uk.co.real_logic.aeron.util.SharedDirectoriesExternalResource;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -48,7 +48,7 @@ import static uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement.newMapp
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION;
 import static uk.co.real_logic.aeron.util.ErrorCode.SUBSCRIBER_NOT_REGISTERED;
-import static uk.co.real_logic.aeron.util.SharedDirectories.Buffers;
+import static uk.co.real_logic.aeron.util.SharedDirectoriesExternalResource.Buffers;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_LENGTH;
@@ -74,7 +74,7 @@ public class UnicastReceiverTest
         new ConductorBuffersExternalResource(COMMAND_BUFFER_SZ + TRAILER_LENGTH);
 
     @ClassRule
-    public static SharedDirectories directory = new SharedDirectories();
+    public static SharedDirectoriesExternalResource directory = new SharedDirectoriesExternalResource();
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -421,7 +421,7 @@ public class UnicastReceiverTest
                            .channelId(channelId)
                            .termId(termId)
                            .version(HeaderFlyweight.CURRENT_VERSION)
-                           .flags((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
+                           .flags((byte) DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
                            .headerType(HeaderFlyweight.HDR_TYPE_DATA)
                            .frameLength(alignedAmount);
 

@@ -19,8 +19,8 @@ import org.junit.*;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
 import uk.co.real_logic.aeron.util.ConductorBuffersExternalResource;
 import uk.co.real_logic.aeron.util.ConductorByteBuffers;
-import uk.co.real_logic.aeron.util.CountersFile;
-import uk.co.real_logic.aeron.util.SharedDirectories;
+import uk.co.real_logic.aeron.util.CountersFileExternalResource;
+import uk.co.real_logic.aeron.util.SharedDirectoriesExternalResource;
 
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.Subscriber.DataHandler;
@@ -34,10 +34,10 @@ public class UnicastTest
     private static final long SESSION_ID = 2L;
 
     @ClassRule
-    public static CountersFile counters = new CountersFile();
+    public static CountersFileExternalResource counters = new CountersFileExternalResource();
 
     @ClassRule
-    public static SharedDirectories dataDir = new SharedDirectories();
+    public static SharedDirectoriesExternalResource dataDir = new SharedDirectoriesExternalResource();
 
     @ClassRule
     public static ConductorBuffersExternalResource buffers = new ConductorBuffersExternalResource(ADMIN_DIR_NAME);

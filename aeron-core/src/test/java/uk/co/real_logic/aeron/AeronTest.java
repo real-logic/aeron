@@ -51,8 +51,8 @@ import static uk.co.real_logic.aeron.util.FileMappingConvention.Type;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.Type.LOG;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.Type.STATE;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.termLocation;
-import static uk.co.real_logic.aeron.util.SharedDirectories.Buffers;
-import static uk.co.real_logic.aeron.util.SharedDirectories.mapLoggers;
+import static uk.co.real_logic.aeron.util.SharedDirectoriesExternalResource.Buffers;
+import static uk.co.real_logic.aeron.util.SharedDirectoriesExternalResource.mapLoggers;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight.PAYLOAD_BUFFER_COUNT;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.LOG_MIN_SIZE;
@@ -77,10 +77,10 @@ public class AeronTest
     private static final int CONDUCTOR_BUFFER_SIZE = (4 * 1024) + BufferDescriptor.TRAILER_LENGTH;
 
     @ClassRule
-    public static CountersFile counters = new CountersFile();
+    public static CountersFileExternalResource counters = new CountersFileExternalResource();
 
     @ClassRule
-    public static SharedDirectories directory = new SharedDirectories();
+    public static SharedDirectoriesExternalResource directory = new SharedDirectoriesExternalResource();
 
     @ClassRule
     public static ConductorBuffersExternalResource conductorBuffers = new ConductorBuffersExternalResource();

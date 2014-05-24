@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.mediadriver;
 import org.junit.*;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
 import uk.co.real_logic.aeron.util.ConductorBuffersExternalResource;
-import uk.co.real_logic.aeron.util.SharedDirectories;
+import uk.co.real_logic.aeron.util.SharedDirectoriesExternalResource;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
@@ -79,7 +79,7 @@ public class UnicastSenderTest
         = new ConductorBuffersExternalResource(COMMAND_BUFFER_SZ + TRAILER_LENGTH);
 
     @ClassRule
-    public static SharedDirectories directory = new SharedDirectories();
+    public static SharedDirectoriesExternalResource directory = new SharedDirectoriesExternalResource();
 
     private final ByteBuffer wrappedWriteBuffer = ByteBuffer.allocateDirect(BUFFER_SIZE);
     private final AtomicBuffer writeBuffer = new AtomicBuffer(wrappedWriteBuffer);
@@ -552,12 +552,12 @@ public class UnicastSenderTest
                                                      final long channelId)
         throws IOException
     {
-        final List<SharedDirectories.Buffers> buffers = directory.mapTermFile(directory.senderDir(),
+        final List<SharedDirectoriesExternalResource.Buffers> buffers = directory.mapTermFile(directory.senderDir(),
                                                                               destination,
                                                                               sessionId,
                                                                               channelId);
 
-        return SharedDirectories.mapLoggers(buffers, DEFAULT_HEADER, MAX_FRAME_LENGTH);
+        return SharedDirectoriesExternalResource.mapLoggers(buffers, DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }
 
     private InetSocketAddress determineControlAddressToSendTo() throws Exception

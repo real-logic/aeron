@@ -177,6 +177,13 @@ public class LossHandlerTest
 
     @Test
     @Ignore
+    public void shouldHandleImmediateNak()
+    {
+
+    }
+
+    @Test
+    @Ignore
     public void shouldRotateToNewTermIdCorrectly()
     {
 

@@ -39,8 +39,8 @@ public class RetransmitHandler
     private final LogReader reader;
     private final TimerWheel timerWheel;
     private final LogReader.FrameHandler sendRetransmitHandler;
-    private final Queue<RetransmitRequest> retransmitRequestPool = new OneToOneConcurrentArrayQueue<>(MAX_RETRANSMITS);
-    private final Int2ObjectHashMap<RetransmitRequest> activeRequestByTermOffsetMap = new Int2ObjectHashMap<>();
+    private final Queue<RetransmitAction> retransmitActionPool = new OneToOneConcurrentArrayQueue<>(MAX_RETRANSMITS);
+    private final Int2ObjectHashMap<RetransmitAction> activeRetransmitByTermOffsetMap = new Int2ObjectHashMap<>();
     private final FeedbackDelayGenerator delayGenerator;
 
     /**
@@ -61,7 +61,7 @@ public class RetransmitHandler
         this.delayGenerator = delayGenerator;
         this.sendRetransmitHandler = retransmitHandler;
 
-        IntStream.range(0, MAX_RETRANSMITS).forEach((i) -> retransmitRequestPool.offer(new RetransmitRequest()));
+        IntStream.range(0, MAX_RETRANSMITS).forEach((i) -> retransmitActionPool.offer(new RetransmitAction()));
     }
 
     /**
@@ -73,24 +73,24 @@ public class RetransmitHandler
     {
         // only handle the NAK if we have a free Retransmit to store the state and we aren't holding
         // state for the offset already
-        if (retransmitRequestPool.size() > 0 && null == activeRequestByTermOffsetMap.get(termOffset))
+        if (retransmitActionPool.size() > 0 && null == activeRetransmitByTermOffsetMap.get(termOffset))
         {
-            final RetransmitRequest retransmitRequest = retransmitRequestPool.poll();
+            final RetransmitAction retransmitAction = retransmitActionPool.poll();
             final long delay = determineRetransmitDelay();
 
-            retransmitRequest.termOffset = termOffset;
+            retransmitAction.termOffset = termOffset;
 
             if (0 == delay)
             {
-                send(retransmitRequest);
-                retransmitRequest.linger(determineLingerTimeout());
+                perform(retransmitAction);
+                retransmitAction.linger(determineLingerTimeout());
             }
             else
             {
-                retransmitRequest.delay(delay);
+                retransmitAction.delay(delay);
             }
 
-            activeRequestByTermOffsetMap.put(termOffset, retransmitRequest);
+            activeRetransmitByTermOffsetMap.put(termOffset, retransmitAction);
         }
     }
 
@@ -101,14 +101,14 @@ public class RetransmitHandler
      */
     public void onRetransmitReceived(final int termOffset)
     {
-        final RetransmitRequest retransmitRequest = activeRequestByTermOffsetMap.get(termOffset);
+        final RetransmitAction retransmitAction = activeRetransmitByTermOffsetMap.get(termOffset);
 
         // suppress sending retransmit only if we are delaying
-        if (null != retransmitRequest && State.DELAYED == retransmitRequest.state)
+        if (null != retransmitAction && State.DELAYED == retransmitAction.state)
         {
-            activeRequestByTermOffsetMap.remove(termOffset);
-            retransmitRequest.state = State.INACTIVE;
-            retransmitRequestPool.offer(retransmitRequest);
+            activeRetransmitByTermOffsetMap.remove(termOffset);
+            retransmitAction.state = State.INACTIVE;
+            retransmitActionPool.offer(retransmitAction);
         }
     }
 
@@ -123,9 +123,9 @@ public class RetransmitHandler
         return TimeUnit.MILLISECONDS.toNanos(10);
     }
 
-    private void send(final RetransmitRequest retransmitRequest)
+    private void perform(final RetransmitAction retransmitAction)
     {
-        reader.seek(retransmitRequest.termOffset);
+        reader.seek(retransmitAction.termOffset);
         reader.read(sendRetransmitHandler);
     }
 
@@ -136,7 +136,7 @@ public class RetransmitHandler
         INACTIVE
     }
 
-    private class RetransmitRequest
+    private class RetransmitAction
     {
         private int termOffset;
         private State state = State.INACTIVE;
@@ -171,15 +171,15 @@ public class RetransmitHandler
 
         public void onDelayTimeout()
         {
-            send(this);
+            perform(this);
             linger(determineLingerTimeout());
         }
 
         public void onLingerTimeout()
         {
             state = State.INACTIVE;
-            activeRequestByTermOffsetMap.remove(termOffset);
-            retransmitRequestPool.offer(this);
+            activeRetransmitByTermOffsetMap.remove(termOffset);
+            retransmitActionPool.offer(this);
         }
     }
 }

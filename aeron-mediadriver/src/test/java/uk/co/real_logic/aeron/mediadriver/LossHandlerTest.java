@@ -22,6 +22,7 @@ import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.StaticDelayGenerator;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.GapScanner;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogRebuilder;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
@@ -32,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
 import static org.mockito.Mockito.*;
+import static uk.co.real_logic.aeron.util.BitUtil.CACHE_LINE_SIZE;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.STATE_BUFFER_LENGTH;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_LENGTH;
 
@@ -43,6 +45,7 @@ public class LossHandlerTest
     private static final int MESSAGE_LENGTH = DataHeaderFlyweight.HEADER_LENGTH + DATA.length;
     private static final long SESSION_ID = 0x5E55101DL;
     private static final long CHANNEL_ID = 0xC400EL;
+    private static final long TERM_ID = 0xEE81D;
 
     public static final StaticDelayGenerator delayGenerator =
             new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(20));
@@ -80,6 +83,8 @@ public class LossHandlerTest
 
         handler = new LossHandler(scanners, wheel, delayGenerator, sendNakHandler);
         dataHeader.wrap(rcvBuffer, 0);
+
+        handler.currentTermId(TERM_ID);
     }
 
     @Before
@@ -91,36 +96,36 @@ public class LossHandlerTest
     @Test
     public void shouldNakMissingData()
     {
-        rcvDataFrame(0);
-        rcvDataFrame(0 + (2 * MESSAGE_LENGTH));
+        rcvDataFrame(offsetOfMessage(0));
+        rcvDataFrame(offsetOfMessage(2));
 
         handler.scan();
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(40));
 
-        verify(sendNakHandler).onSendNak(0, MESSAGE_LENGTH);
+        verify(sendNakHandler).onSendNak(TERM_ID, offsetOfMessage(1));
     }
 
     @Test
     public void shouldRetransmitNakForMissingData()
     {
-        rcvDataFrame(0);
-        rcvDataFrame(0 + (2 * MESSAGE_LENGTH));
+        rcvDataFrame(offsetOfMessage(0));
+        rcvDataFrame(offsetOfMessage(2));
 
         handler.scan();
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(60));
 
-        verify(sendNakHandler, atLeast(2)).onSendNak(0, MESSAGE_LENGTH);
+        verify(sendNakHandler, atLeast(2)).onSendNak(TERM_ID, offsetOfMessage(1));
     }
 
     @Test
     public void shouldSuppressNakOnReceivingNak()
     {
-        rcvDataFrame(0);
-        rcvDataFrame(0 + (2 * MESSAGE_LENGTH));
+        rcvDataFrame(offsetOfMessage(0));
+        rcvDataFrame(offsetOfMessage(2));
 
         handler.scan();
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(20));
-        handler.onNak(0, MESSAGE_LENGTH);
+        handler.onNak(TERM_ID, offsetOfMessage(1));
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(20));
 
         verifyZeroInteractions(sendNakHandler);
@@ -129,12 +134,12 @@ public class LossHandlerTest
     @Test
     public void shouldStopNakOnReceivingData()
     {
-        rcvDataFrame(0);
-        rcvDataFrame(0 + (2 * MESSAGE_LENGTH));
+        rcvDataFrame(offsetOfMessage(0));
+        rcvDataFrame(offsetOfMessage(2));
 
         handler.scan();
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(20));
-        rcvDataFrame(0 + MESSAGE_LENGTH);
+        rcvDataFrame(offsetOfMessage(1));
         handler.scan();
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
 
@@ -144,35 +149,35 @@ public class LossHandlerTest
     @Test
     public void shouldHandleMoreThan2Gaps()
     {
-        rcvDataFrame(0);
-        rcvDataFrame(0 + (2 * MESSAGE_LENGTH));
-        rcvDataFrame(0 + (4 * MESSAGE_LENGTH));
-        rcvDataFrame(0 + (6 * MESSAGE_LENGTH));
+        rcvDataFrame(offsetOfMessage(0));
+        rcvDataFrame(offsetOfMessage(2));
+        rcvDataFrame(offsetOfMessage(4));
+        rcvDataFrame(offsetOfMessage(6));
 
         handler.scan();
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(40));
-        rcvDataFrame(0 + MESSAGE_LENGTH);
+        rcvDataFrame(offsetOfMessage(1));
         handler.scan();
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(80));
 
-        verify(sendNakHandler, atLeast(1)).onSendNak(0, MESSAGE_LENGTH);
-        verify(sendNakHandler, atLeast(1)).onSendNak(0, (3 * MESSAGE_LENGTH));
+        verify(sendNakHandler, atLeast(1)).onSendNak(TERM_ID, offsetOfMessage(3));
+//        verify(sendNakHandler, atLeast(1)).onSendNak(0, 3 * CACHE_LINE_SIZE);
     }
 
     @Test
     public void shouldReplaceOldNakWithNewNak()
     {
         rcvDataFrame(0);
-        rcvDataFrame(0 + (2 * MESSAGE_LENGTH));
+        rcvDataFrame(offsetOfMessage(2));
 
         handler.scan();
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(20));
-        rcvDataFrame(0 + (4 * MESSAGE_LENGTH));
-        rcvDataFrame(0 + MESSAGE_LENGTH);
+        rcvDataFrame(offsetOfMessage(4));
+        rcvDataFrame(offsetOfMessage(1));
         handler.scan();
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
 
-        verify(sendNakHandler, atLeast(1)).onSendNak(0, (3 * MESSAGE_LENGTH));
+        verify(sendNakHandler, atLeast(1)).onSendNak(TERM_ID, offsetOfMessage(3));
     }
 
     @Test
@@ -191,7 +196,7 @@ public class LossHandlerTest
 
     private void rcvDataFrame(final int offset)
     {
-        dataHeader.termId(0)
+        dataHeader.termId(TERM_ID)
                   .channelId(CHANNEL_ID)
                   .sessionId(SESSION_ID)
                   .termOffset(offset)
@@ -203,6 +208,11 @@ public class LossHandlerTest
         dataHeader.atomicBuffer().putBytes(dataHeader.dataOffset(), DATA);
 
         rebuilders[0].insert(dataHeader.atomicBuffer(), 0, MESSAGE_LENGTH);
+    }
+
+    private int offsetOfMessage(final int index)
+    {
+        return index * FrameDescriptor.FRAME_ALIGNMENT;
     }
 
     private long processTimersUntil(final BooleanSupplier condition)

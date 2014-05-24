@@ -42,7 +42,7 @@ public class LossHandler
          * @param termId for the NAK
          * @param termOffset for the NAK
          */
-        void onSendNak(final int termId, final int termOffset);
+        void onSendNak(final long termId, final int termOffset);
     }
 
     private final GapScanner[] scanners;
@@ -56,10 +56,9 @@ public class LossHandler
 
     private int currentIndex = 0;
     private int scanCursor = 0;
+    private long currentTermId;
 
     private long nakSentTimestamp;
-
-    private DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
     /**
      * Create a loss handler for a channel.
@@ -87,6 +86,16 @@ public class LossHandler
     }
 
     /**
+     * Set current Term Id for the active buffer
+     *
+     * @param termId for the active buffer
+     */
+    public void currentTermId(final long termId)
+    {
+        this.currentTermId = termId;
+    }
+
+    /**
      * Scan for gaps and handle received data.
      *
      * The handler keeps track from scan to scan what is a gap and what must have been repaired.
@@ -108,7 +117,7 @@ public class LossHandler
      * @param termId in the NAK
      * @param termOffset in the NAK
      */
-    public void onNak(final int termId, final int termOffset)
+    public void onNak(final long termId, final int termOffset)
     {
         if (null != timer && timer.isActive() && activeGap.isFor(termId, termOffset))
         {
@@ -120,12 +129,9 @@ public class LossHandler
 
     private boolean onGap(final AtomicBuffer buffer, final int offset, final int length)
     {
-        // grab termId from the actual buffer
-        dataHeader.wrap(buffer, offset);
-
         if (scanCursor < scanGaps.length)
         {
-            scanGaps[scanCursor].reset((int) dataHeader.termId(), offset);
+            scanGaps[scanCursor].reset(currentTermId, offset);
 
             scanCursor++;
 
@@ -191,16 +197,16 @@ public class LossHandler
 
     public static class GapState
     {
-        private int termId;
+        private long termId;
         private int termOffset;
 
-        public void reset(final int termId, final int termOffset)
+        public void reset(final long termId, final int termOffset)
         {
             this.termId = termId;
             this.termOffset = termOffset;
         }
 
-        public boolean isFor(final int termId, final int termOffset)
+        public boolean isFor(final long termId, final int termOffset)
         {
             return termId == this.termId && termOffset == this.termOffset;
         }

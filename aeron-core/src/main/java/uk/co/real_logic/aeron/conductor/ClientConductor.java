@@ -22,7 +22,6 @@ import uk.co.real_logic.aeron.util.Agent;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.collections.ChannelMap;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.MediaDriverFacade;
 import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -47,7 +46,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.B
  * Client conductor takes responses and notifications from media driver and acts on them. As well as pass commands
  * to the media driver.
  */
-public final class ClientConductor extends Agent implements MediaDriverFacade
+public final class ClientConductor extends Agent
 {
     // TODO: DI this
     private static final byte[] DEFAULT_HEADER = new byte[BASE_HEADER_LENGTH + SIZE_OF_INT];
@@ -362,50 +361,5 @@ public final class ClientConductor extends Agent implements MediaDriverFacade
         final AtomicBuffer logBuffer = bufferUsage.newBuffer(bufferNotificationMessage, index);
         final AtomicBuffer stateBuffer = bufferUsage.newBuffer(bufferNotificationMessage, index + BUFFER_COUNT);
         return new LogReader(logBuffer, stateBuffer);
-    }
-
-    /* commands to MediaDriver */
-
-    public void sendAddChannel(final String destination, final long sessionId, final long channelId)
-    {
-
-    }
-
-    public void sendRemoveChannel(final String destination, final long sessionId, final long channelId)
-    {
-
-    }
-
-    public void sendAddSubscriber(final String destination, final long[] channelIdList)
-    {
-
-    }
-
-    public void sendRemoveSubscriber(final String destination, final long[] channelIdList)
-    {
-
-    }
-
-    public void sendRequestTerm(final long sessionId, final long channelId, final long termId)
-    {
-
-    }
-
-    /* callbacks from MediaDriver */
-
-    public void onErrorResponse(final int code, final byte[] message)
-    {
-    }
-
-    public void onError(final int code, final byte[] message)
-    {
-    }
-
-    public void onNewBufferNotification(final long sessionId,
-                                        final long channelId,
-                                        final long termId,
-                                        final boolean isSender,
-                                        final String destination)
-    {
     }
 }

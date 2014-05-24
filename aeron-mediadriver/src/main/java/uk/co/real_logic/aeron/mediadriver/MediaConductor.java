@@ -39,7 +39,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.B
 /**
  * Admin thread to take commands from Publishers and Subscribers as well as handle NAKs and retransmissions
  */
-public class MediaConductor extends Agent implements ClientFacade
+public class MediaConductor extends Agent
 {
     public static final int WRITE_BUFFER_CAPACITY = 512;
     public static final int HEADER_LENGTH = BASE_HEADER_LENGTH + SIZE_OF_INT;
@@ -263,16 +263,6 @@ public class MediaConductor extends Agent implements ClientFacade
         return timerWheel.now();
     }
 
-    public void sendErrorResponse(final int code, final byte[] message)
-    {
-        // TODO: construct error response for control buffer and write it in
-    }
-
-    public void sendError(final int code, final byte[] message)
-    {
-        // TODO: construct error notification for control buffer and write it in
-    }
-
     public void sendNewBufferNotification(final long sessionId,
                                           final long channelId,
                                           final long termId,
@@ -422,10 +412,6 @@ public class MediaConductor extends Agent implements ClientFacade
     {
         // instruct receiver thread to get rid of channels and possibly destination
         receiverCursor.addRemoveSubscriberEvent(subscriberMessage.destination(), subscriberMessage.channelIds());
-    }
-
-    public void onRequestTerm(final long sessionId, final long channelId, final long termId)
-    {
     }
 
     private void onCreateSubscriberTermBufferEvent(

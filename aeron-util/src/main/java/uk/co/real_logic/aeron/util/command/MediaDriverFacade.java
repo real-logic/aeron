@@ -21,6 +21,7 @@ package uk.co.real_logic.aeron.util.command;
  * The Client (aeron-core) implements this interface to send commands to a media driver and to handle
  * responses, Aeron control frames, etc. that come from the a media driver.
  */
+@Deprecated
 public interface MediaDriverFacade
 {
     /**

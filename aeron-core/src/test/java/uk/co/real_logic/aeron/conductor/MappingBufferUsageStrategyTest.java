@@ -32,8 +32,8 @@ import static org.junit.Assert.assertThat;
 
 public class MappingBufferUsageStrategyTest
 {
-    private static String LOCATION = IoUtil.tmpDirName() + "/file_to_map";
-    private static String OTHER_LOCATION = LOCATION + "_other";
+    private static final String LOCATION = IoUtil.tmpDirName() + "/file_to_map";
+    private static final String OTHER_LOCATION = LOCATION + "_other";
 
     private BufferUsageStrategy usageStrategy;
 
@@ -47,8 +47,7 @@ public class MappingBufferUsageStrategyTest
 
     private void createFile(final String location) throws IOException
     {
-        File file = new File(location);
-        try (FileChannel channel = FileChannel.open(file.toPath(), CREATE, WRITE))
+        try (final FileChannel channel = FileChannel.open(new File(location).toPath(), CREATE, WRITE))
         {
             channel.write(ByteBuffer.allocate(10));
         }
@@ -109,5 +108,4 @@ public class MappingBufferUsageStrategyTest
     {
         usageStrategy.newBuffer(location, 0, 10);
     }
-
 }

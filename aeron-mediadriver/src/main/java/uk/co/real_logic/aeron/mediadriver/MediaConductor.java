@@ -62,9 +62,9 @@ public class MediaConductor extends Agent
 
     private final ThreadLocalRandom rng = ThreadLocalRandom.current();
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
-    private final SubscriberMessageFlyweight receiverMessageFlyweight = new SubscriberMessageFlyweight();
-    private final ErrorHeaderFlyweight errorHeaderFlyweight = new ErrorHeaderFlyweight();
-    private final QualifiedMessageFlyweight qualifiedMessageFlyweight = new QualifiedMessageFlyweight();
+    private final SubscriberMessageFlyweight receiverMessage = new SubscriberMessageFlyweight();
+    private final ErrorHeaderFlyweight errorHeader = new ErrorHeaderFlyweight();
+    private final QualifiedMessageFlyweight qualifiedMessage = new QualifiedMessageFlyweight();
     private final NewBufferMessageFlyweight newBufferMessage = new NewBufferMessageFlyweight();
 
     private final int mtuLength;
@@ -141,17 +141,17 @@ public class MediaConductor extends Agent
                   switch (eventTypeId)
                   {
                       case CREATE_TERM_BUFFER:
-                          qualifiedMessageFlyweight.wrap(buffer, index);
-                          onCreateSubscriberTermBufferEvent(qualifiedMessageFlyweight);
+                          qualifiedMessage.wrap(buffer, index);
+                          onCreateSubscriberTermBufferEvent(qualifiedMessage);
                           return;
 
                       case REMOVE_TERM_BUFFER:
-                          qualifiedMessageFlyweight.wrap(buffer, index);
-                          onRemoveSubscriberTermBufferEvent(qualifiedMessageFlyweight);
+                          qualifiedMessage.wrap(buffer, index);
+                          onRemoveSubscriberTermBufferEvent(qualifiedMessage);
                           return;
 
                       case ERROR_RESPONSE:
-                          errorHeaderFlyweight.wrap(buffer, index);
+                          errorHeader.wrap(buffer, index);
                           adminSendBuffer.write(eventTypeId, buffer, index, length);
                           return;
                   }
@@ -182,15 +182,15 @@ public class MediaConductor extends Agent
                             return;
 
                         case ADD_SUBSCRIBER:
-                            receiverMessageFlyweight.wrap(buffer, index);
-                            flyweight = receiverMessageFlyweight;
-                            onAddSubscriber(receiverMessageFlyweight);
+                            receiverMessage.wrap(buffer, index);
+                            flyweight = receiverMessage;
+                            onAddSubscriber(receiverMessage);
                             return;
 
                         case REMOVE_SUBSCRIBER:
-                            receiverMessageFlyweight.wrap(buffer, index);
-                            flyweight = receiverMessageFlyweight;
-                            onRemoveSubscriber(receiverMessageFlyweight);
+                            receiverMessage.wrap(buffer, index);
+                            flyweight = receiverMessage;
+                            onRemoveSubscriber(receiverMessage);
                             return;
                     }
                 }
@@ -199,13 +199,13 @@ public class MediaConductor extends Agent
                     final byte[] err = ex.getMessage().getBytes();
                     final int len = ErrorHeaderFlyweight.HEADER_LENGTH + length + err.length;
 
-                    errorHeaderFlyweight.wrap(writeBuffer, 0);
-                    errorHeaderFlyweight.errorCode(ex.errorCode())
+                    errorHeader.wrap(writeBuffer, 0);
+                    errorHeader.errorCode(ex.errorCode())
                                         .offendingFlyweight(flyweight, length)
                                         .errorString(err)
                                         .frameLength(len);
 
-                    adminSendBuffer.write(ERROR_RESPONSE, writeBuffer, 0, errorHeaderFlyweight.frameLength());
+                    adminSendBuffer.write(ERROR_RESPONSE, writeBuffer, 0, errorHeader.frameLength());
                 }
                 catch (final Exception ex)
                 {
@@ -277,6 +277,7 @@ public class MediaConductor extends Agent
         newBufferMessage.destination(destination);
 
         final int eventTypeId = isSender ? NEW_SEND_BUFFER_NOTIFICATION : NEW_RECEIVE_BUFFER_NOTIFICATION;
+
         if (!adminSendBuffer.write(eventTypeId, writeBuffer, 0, newBufferMessage.length()))
         {
             System.err.println("Error occurred writing new buffer notification");
@@ -414,13 +415,12 @@ public class MediaConductor extends Agent
         receiverCursor.addRemoveSubscriberEvent(subscriberMessage.destination(), subscriberMessage.channelIds());
     }
 
-    private void onCreateSubscriberTermBufferEvent(
-        final QualifiedMessageFlyweight qualifiedMessageFlyweight)
+    private void onCreateSubscriberTermBufferEvent(final QualifiedMessageFlyweight qualifiedMessage)
     {
-        final String destination = qualifiedMessageFlyweight.destination();
-        final long sessionId = qualifiedMessageFlyweight.sessionId();
-        final long channelId = qualifiedMessageFlyweight.channelId();
-        final long termId = qualifiedMessageFlyweight.termId();
+        final String destination = qualifiedMessage.destination();
+        final long sessionId = qualifiedMessage.sessionId();
+        final long channelId = qualifiedMessage.channelId();
+        final long termId = qualifiedMessage.termId();
 
         try
         {
@@ -443,11 +443,12 @@ public class MediaConductor extends Agent
         }
     }
 
-    private void onRemoveSubscriberTermBufferEvent(final QualifiedMessageFlyweight message)
+    private void onRemoveSubscriberTermBufferEvent(final QualifiedMessageFlyweight qualifiedMessage)
     {
-        final String destination = qualifiedMessageFlyweight.destination();
-        final long sessionId = qualifiedMessageFlyweight.sessionId();
-        final long channelId = qualifiedMessageFlyweight.channelId();
+        final String destination = qualifiedMessage.destination();
+        final long sessionId = qualifiedMessage.sessionId();
+        final long channelId = qualifiedMessage.channelId();
+
         try
         {
             final UdpDestination rcvDestination = UdpDestination.parse(destination);

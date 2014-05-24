@@ -53,6 +53,7 @@ public class LogRebuilderTest
     public void shouldThrowExceptionWhenCapacityNotMultipleOfAlignment()
     {
         final int logBufferCapacity = BufferDescriptor.LOG_MIN_SIZE + FRAME_ALIGNMENT + 1;
+
         when(logBuffer.capacity()).thenReturn(logBufferCapacity);
 
         logRebuilder = new LogRebuilder(logBuffer, stateBuffer);
@@ -86,23 +87,25 @@ public class LogRebuilderTest
     @Test
     public void shouldInsertLastFrameIntoBuffer()
     {
-        final int length = FRAME_ALIGNMENT * 2;
+        final int frameLength = FRAME_ALIGNMENT * 2;
         final int srcOffset = 0;
-        final int tail = LOG_BUFFER_CAPACITY - FRAME_ALIGNMENT;
-        final AtomicBuffer packet = new AtomicBuffer(ByteBuffer.allocate(length));
+        final int tail = LOG_BUFFER_CAPACITY - frameLength;
+        final AtomicBuffer packet = new AtomicBuffer(ByteBuffer.allocate(FRAME_ALIGNMENT));
+        packet.putShort(typeOffset(srcOffset), PADDING_MSG_TYPE, ByteOrder.LITTLE_ENDIAN);
         packet.putInt(termOffsetOffset(srcOffset), tail, ByteOrder.LITTLE_ENDIAN);
+        packet.putInt(lengthOffset(srcOffset), frameLength, ByteOrder.LITTLE_ENDIAN);
 
         when(stateBuffer.getInt(TAIL_COUNTER_OFFSET)).thenReturn(tail);
         when(stateBuffer.getInt(HIGH_WATER_MARK_OFFSET)).thenReturn(tail);
-        when(logBuffer.getInt(lengthOffset(tail))).thenReturn(length);
+        when(logBuffer.getInt(lengthOffset(tail))).thenReturn(frameLength);
         when(logBuffer.getShort(typeOffset(tail))).thenReturn(PADDING_MSG_TYPE);
 
-        logRebuilder.insert(packet, srcOffset, length);
+        logRebuilder.insert(packet, srcOffset, frameLength);
 
         final InOrder inOrder = inOrder(logBuffer, stateBuffer);
-        inOrder.verify(logBuffer).putBytes(tail, packet, srcOffset, length);
-        inOrder.verify(stateBuffer).putIntOrdered(TAIL_COUNTER_OFFSET, tail + length);
-        inOrder.verify(stateBuffer).putIntOrdered(HIGH_WATER_MARK_OFFSET, tail + length);
+        inOrder.verify(logBuffer).putBytes(tail, packet, srcOffset, frameLength);
+        inOrder.verify(stateBuffer).putIntOrdered(TAIL_COUNTER_OFFSET, tail + frameLength);
+        inOrder.verify(stateBuffer).putIntOrdered(HIGH_WATER_MARK_OFFSET, tail + frameLength);
     }
 
     @Test

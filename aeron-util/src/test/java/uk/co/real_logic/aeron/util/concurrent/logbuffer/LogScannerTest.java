@@ -25,6 +25,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
+import static uk.co.real_logic.aeron.util.BitUtil.align;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*;
 
@@ -65,18 +66,21 @@ public class LogScannerTest
     @Test
     public void shouldScanSingleMessage()
     {
+        final int msgLength = 1;
+        final int frameLength = HEADER_LENGTH + msgLength;
+        final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
         final int frameOffset = 0;
 
         when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))
-            .thenReturn(FRAME_ALIGNMENT);
+            .thenReturn(alignedFrameLength);
         when(logBuffer.getIntVolatile(lengthOffset(frameOffset)))
-            .thenReturn(FRAME_ALIGNMENT);
+            .thenReturn(frameLength);
         when(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN))
             .thenReturn(MSG_TYPE);
 
         assertTrue(scanner.scanNext(MTU_LENGTH));
         assertThat(scanner.offset(), is(frameOffset));
-        assertThat(scanner.length(), is(FRAME_ALIGNMENT));
+        assertThat(scanner.length(), is(alignedFrameLength));
         assertFalse(scanner.isComplete());
 
         final InOrder inOrder = inOrder(stateBuffer, logBuffer);

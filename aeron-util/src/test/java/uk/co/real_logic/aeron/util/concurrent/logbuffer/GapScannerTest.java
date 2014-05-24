@@ -62,6 +62,7 @@ public class GapScannerTest
     public void shouldReportNoGapsWhenTailEqualsHighWaterMark()
     {
         final int fillLevel = FRAME_ALIGNMENT * 4;
+
         when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(fillLevel);
         when(stateBuffer.getIntVolatile(HIGH_WATER_MARK_OFFSET)).thenReturn(fillLevel);
 
@@ -78,6 +79,7 @@ public class GapScannerTest
     {
         final int frameOffset = FRAME_ALIGNMENT * 3;
         final int highWaterMark = frameOffset + FRAME_ALIGNMENT;
+
         when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(0);
         when(stateBuffer.getIntVolatile(HIGH_WATER_MARK_OFFSET)).thenReturn(highWaterMark);
         when(logBuffer.getInt(lengthOffset(frameOffset), LITTLE_ENDIAN)).thenReturn(FRAME_ALIGNMENT);
@@ -95,6 +97,7 @@ public class GapScannerTest
     {
         final int tail = FRAME_ALIGNMENT;
         final int highWaterMark = FRAME_ALIGNMENT * 3;
+
         when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(tail);
         when(stateBuffer.getIntVolatile(HIGH_WATER_MARK_OFFSET)).thenReturn(highWaterMark);
 
@@ -118,6 +121,7 @@ public class GapScannerTest
     {
         final int tail = LOG_BUFFER_CAPACITY - (FRAME_ALIGNMENT * 2);
         final int highWaterMark = LOG_BUFFER_CAPACITY;
+
         when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(tail);
         when(stateBuffer.getIntVolatile(HIGH_WATER_MARK_OFFSET)).thenReturn(highWaterMark);
 
@@ -141,6 +145,7 @@ public class GapScannerTest
     {
         final int tail = FRAME_ALIGNMENT;
         final int highWaterMark = FRAME_ALIGNMENT * 6;
+
         when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(tail);
         when(stateBuffer.getIntVolatile(HIGH_WATER_MARK_OFFSET)).thenReturn(highWaterMark);
 

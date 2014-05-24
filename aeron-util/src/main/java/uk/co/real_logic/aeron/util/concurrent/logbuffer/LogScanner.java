@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.util.concurrent.logbuffer;
 
+import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import java.nio.ByteOrder;
@@ -126,7 +127,7 @@ public class LogScanner
 
                 do
                 {
-                    final int frameLength = waitForFrameLengthVolatile(offset + length);
+                    final int alignedFrameLength = align(waitForFrameLengthVolatile(offset + length), FRAME_ALIGNMENT);
 
                     if (PADDING_MSG_TYPE == getMessageType(offset + length))
                     {
@@ -135,11 +136,11 @@ public class LogScanner
                         break;
                     }
 
-                    length += frameLength;
+                    length += alignedFrameLength;
 
                     if (length > maxLength)
                     {
-                        length -= frameLength;
+                        length -= alignedFrameLength;
                         break;
                     }
                 }

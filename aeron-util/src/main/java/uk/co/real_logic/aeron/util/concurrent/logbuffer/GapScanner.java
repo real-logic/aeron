@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.util.concurrent.logbuffer;
 
+import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
@@ -80,7 +81,7 @@ public class GapScanner
 
         while (offset < highWaterMark)
         {
-            final int frameLength = frameLength(offset);
+            final int frameLength = alignedFrameLength(offset);
             if (frameLength > 0)
             {
                 offset += frameLength;
@@ -98,19 +99,19 @@ public class GapScanner
     private int scanGap(final GapHandler handler, final int offset, final int highWaterMark)
     {
         int gapLength = 0;
-        int frameLength;
+        int alignedFrameLength;
         do
         {
             gapLength += FRAME_ALIGNMENT;
-            frameLength = frameLength(offset + gapLength);
+            alignedFrameLength = alignedFrameLength(offset + gapLength);
         }
-        while (0 == frameLength);
+        while (0 == alignedFrameLength);
 
         return handler.onGap(logBuffer, offset, gapLength) ? (offset + gapLength) : highWaterMark;
     }
 
-    private int frameLength(final int cursor)
+    private int alignedFrameLength(final int cursor)
     {
-        return logBuffer.getInt(lengthOffset(cursor), LITTLE_ENDIAN);
+        return BitUtil.align(logBuffer.getInt(lengthOffset(cursor), LITTLE_ENDIAN), FRAME_ALIGNMENT);
     }
 }

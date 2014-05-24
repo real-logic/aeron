@@ -148,10 +148,11 @@ public class LogAppender
 
     private boolean appendUnfragmentedMessage(final AtomicBuffer srcBuffer, final int srcOffset, final int length)
     {
-        final int frameLength = align(length + headerLength, FRAME_ALIGNMENT);
-        final int frameOffset = getTailAndAdd(frameLength);
+        final int frameLength = length + headerLength;
+        final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
+        final int frameOffset = getTailAndAdd(alignedLength);
 
-        if (frameOffset + frameLength > capacity)
+        if (frameOffset + alignedLength > capacity)
         {
             if (frameOffset < capacity)
             {
@@ -194,7 +195,8 @@ public class LogAppender
         do
         {
             final int bytesToWrite = Math.min(remaining, maxPayload);
-            final int frameLength = align(bytesToWrite + headerLength, FRAME_ALIGNMENT);
+            final int frameLength = bytesToWrite + headerLength;
+            final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
 
             logBuffer.putBytes(frameOffset, defaultHeader, 0, headerLength);
             logBuffer.putBytes(frameOffset + headerLength,
@@ -212,7 +214,7 @@ public class LogAppender
             putLengthOrdered(frameOffset, frameLength);
 
             flags = 0;
-            frameOffset += frameLength;
+            frameOffset += alignedLength;
             remaining -= bytesToWrite;
         }
         while (remaining > 0);

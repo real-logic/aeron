@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.util.concurrent.logbuffer;
 
+import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
@@ -89,7 +90,7 @@ public class LogReader
             }
             finally
             {
-                cursor += frameLength;
+                cursor += BitUtil.align(frameLength, FrameDescriptor.FRAME_ALIGNMENT);
                 counter++;
             }
         }

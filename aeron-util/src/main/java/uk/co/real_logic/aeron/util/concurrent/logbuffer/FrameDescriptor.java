@@ -24,6 +24,7 @@ import static java.lang.Integer.valueOf;
 
 /**
  * Description of the structure for message framing in a log buffer.
+ *
  * All messages are logged in frames that have a minimum header layout as follows plus a reserve then
  * the encoded message follows:
  *
@@ -51,7 +52,7 @@ import static java.lang.Integer.valueOf;
  */
 public class FrameDescriptor
 {
-    /** Alignment as a multiple of bytes for each frame. */
+    /** Alignment as a multiple of bytes for each frame. The length field will store the unaligned length in bytes. */
     public static final int FRAME_ALIGNMENT = BitUtil.CACHE_LINE_SIZE;
 
     /** Word alignment for fields. */
@@ -215,7 +216,7 @@ public class FrameDescriptor
     }
 
     /**
-     * Check that a given offset is at the correct {@link uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor#FRAME_ALIGNMENT} for a frame to begin.
+     * Check that a given offset is at the correct {@link FrameDescriptor#FRAME_ALIGNMENT} for a frame to begin.
      *
      * @param offset to be checked.
      * @throws IllegalArgumentException if the offset is not on a frame alignment boundary.

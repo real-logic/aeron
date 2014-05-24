@@ -71,15 +71,12 @@ public class RetransmitHandler
      */
     public void onNak(final int termOffset)
     {
-        // only handle the NAK if we have a free Retransmit to store the state and we aren't holding
-        // state for the offset already
-        if (retransmitActionPool.size() > 0 && null == activeRetransmitByTermOffsetMap.get(termOffset))
+        if (!retransmitActionPool.isEmpty() && null == activeRetransmitByTermOffsetMap.get(termOffset))
         {
             final RetransmitAction retransmitAction = retransmitActionPool.poll();
-            final long delay = determineRetransmitDelay();
-
             retransmitAction.termOffset = termOffset;
 
+            final long delay = determineRetransmitDelay();
             if (0 == delay)
             {
                 perform(retransmitAction);
@@ -103,7 +100,6 @@ public class RetransmitHandler
     {
         final RetransmitAction retransmitAction = activeRetransmitByTermOffsetMap.get(termOffset);
 
-        // suppress sending retransmit only if we are delaying
         if (null != retransmitAction && State.DELAYED == retransmitAction.state)
         {
             activeRetransmitByTermOffsetMap.remove(termOffset);

@@ -160,8 +160,9 @@ public class LossHandlerTest
         handler.scan();
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(80));
 
+        verify(sendNakHandler, atLeast(1)).onSendNak(TERM_ID, offsetOfMessage(1));
         verify(sendNakHandler, atLeast(1)).onSendNak(TERM_ID, offsetOfMessage(3));
-//        verify(sendNakHandler, atLeast(1)).onSendNak(0, 3 * CACHE_LINE_SIZE);
+        verify(sendNakHandler, never()).onSendNak(TERM_ID, offsetOfMessage(5));
     }
 
     @Test

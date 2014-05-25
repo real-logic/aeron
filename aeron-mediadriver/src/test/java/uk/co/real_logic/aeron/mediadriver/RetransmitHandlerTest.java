@@ -81,14 +81,22 @@ public class RetransmitHandlerTest
     }
 
     @Test
-    @Ignore
     public void shouldRetransmit()
     {
         handler.onNak(0);
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
 
-        verify(retransmitHandler).onFrame(logBuffer, 0, HEADER.length + DATA.length);
-        verifyNoMoreInteractions(retransmitHandler);
+        verify(retransmitHandler, times(1)).onFrame(logBuffer, 0, HEADER.length + DATA.length);
+    }
+
+    @Test
+    @Ignore
+    public void shouldNotRetransmitWhenReceivingNakWhileInLinger()
+    {
+        handler.onNak(0);
+        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
+
+        verify(retransmitHandler, times(1)).onFrame(logBuffer, 0, HEADER.length + DATA.length);
     }
 
     private void rcvDataFrame()

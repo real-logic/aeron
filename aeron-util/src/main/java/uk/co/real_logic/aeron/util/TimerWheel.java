@@ -55,7 +55,7 @@ public class TimerWheel
     private final long mask;
     private final long startTime;
     private final long tickDurationInNanos;
-    private final LongSupplier timeFunc;
+    private final LongSupplier clock;
     private final Timer[][] wheel;
 
     private long currentTick;
@@ -80,13 +80,13 @@ public class TimerWheel
      *
      * This constructor allows a custom function to return the current time instead of {@link System#nanoTime()}.
      *
-     * @param timeFunc to use for system time
+     * @param clock to use for system time
      * @param tickDuration of each tick of the wheel
      * @param timeUnit for the tick duration
      * @param ticksPerWheel of the wheel. Must be a power of 2.
      * @throws IllegalArgumentException if {@code ticksPerWheel} is not a power of 2.
      */
-    public TimerWheel(final LongSupplier timeFunc,
+    public TimerWheel(final LongSupplier clock,
                       final long tickDuration,
                       final TimeUnit timeUnit,
                       final int ticksPerWheel)
@@ -94,8 +94,8 @@ public class TimerWheel
         checkTicksPerWheel(ticksPerWheel);
 
         this.mask = ticksPerWheel - 1;
-        this.timeFunc = timeFunc;
-        this.startTime = timeFunc.getAsLong();
+        this.clock = clock;
+        this.startTime = clock.getAsLong();
         this.tickDurationInNanos = timeUnit.toNanos(tickDuration);
 
         if (tickDurationInNanos >= (Long.MAX_VALUE / ticksPerWheel))
@@ -120,7 +120,7 @@ public class TimerWheel
      */
     public long now()
     {
-        return timeFunc.getAsLong() - startTime;
+        return clock.getAsLong() - startTime;
     }
 
     /**
@@ -147,7 +147,7 @@ public class TimerWheel
      * @param delay until timer should expire
      * @param unit of time for {@code delay}
      * @param timer to reschedule
-     * @throws java.lang.IllegalArgumentException if timer is active
+     * @throws IllegalArgumentException if timer is active
      */
     public void rescheduleTimeout(final long delay, final TimeUnit unit, final Timer timer)
     {
@@ -161,7 +161,7 @@ public class TimerWheel
      * @param unit of time for {@code delay}
      * @param timer to reschedule
      * @param task to execute when timer expires
-     * @throws java.lang.IllegalArgumentException if timer is active
+     * @throws IllegalArgumentException if timer is active
      */
     public void rescheduleTimeout(final long delay,
                                   final TimeUnit unit,

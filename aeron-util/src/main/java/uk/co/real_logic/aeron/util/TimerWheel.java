@@ -56,7 +56,7 @@ public class TimerWheel
     private final long startTime;
     private final long tickDurationInNanos;
     private final LongSupplier timeFunc;
-    private final Object[] wheel;
+    private final Timer[][] wheel;
 
     private long currentTick;
 
@@ -84,7 +84,7 @@ public class TimerWheel
      * @param tickDuration of each tick of the wheel
      * @param timeUnit for the tick duration
      * @param ticksPerWheel of the wheel. Must be a power of 2.
-     * @throws java.lang.IllegalArgumentException if {@code ticksPerWheel} is not a power of 2.
+     * @throws IllegalArgumentException if {@code ticksPerWheel} is not a power of 2.
      */
     public TimerWheel(final LongSupplier timeFunc,
                       final long tickDuration,
@@ -105,7 +105,7 @@ public class TimerWheel
                     tickDuration, Long.MAX_VALUE / ticksPerWheel));
         }
 
-        wheel = new Object[ticksPerWheel];
+        wheel = new Timer[ticksPerWheel][];
 
         for (int i = 0; i < ticksPerWheel; i++)
         {
@@ -131,14 +131,12 @@ public class TimerWheel
      * @param task to execute when timer expires
      * @return {@link Timer} for timer
      */
-    public Timer newTimeout(final long delay,
-                            final TimeUnit unit,
-                            final Runnable task)
+    public Timer newTimeout(final long delay, final TimeUnit unit, final Runnable task)
     {
         final long deadline = now() + unit.toNanos(delay);
         final Timer timeout = new Timer(deadline, task);
 
-        wheel[timeout.wheelIndex] = addTimeoutToArray((Timer[]) wheel[timeout.wheelIndex], timeout);
+        wheel[timeout.wheelIndex] = addTimeoutToArray(wheel[timeout.wheelIndex], timeout);
 
         return timeout;
     }
@@ -151,9 +149,7 @@ public class TimerWheel
      * @param timer to reschedule
      * @throws java.lang.IllegalArgumentException if timer is active
      */
-    public void rescheduleTimeout(final long delay,
-                                  final TimeUnit unit,
-                                  final Timer timer)
+    public void rescheduleTimeout(final long delay, final TimeUnit unit, final Timer timer)
     {
         rescheduleTimeout(delay, unit, timer, timer.task);
     }
@@ -181,7 +177,7 @@ public class TimerWheel
 
         timer.reset(deadline, task);
 
-        wheel[timer.wheelIndex] = addTimeoutToArray((Timer[]) wheel[timer.wheelIndex], timer);
+        wheel[timer.wheelIndex] = addTimeoutToArray(wheel[timer.wheelIndex], timer);
     }
 
     /**
@@ -201,10 +197,9 @@ public class TimerWheel
      */
     public void expireTimers()
     {
-        final Timer[] array = (Timer[])wheel[(int)(currentTick & mask)];
         final long deadline = now();
 
-        for (final Timer timer : array)
+        for (final Timer timer : wheel[(int)(currentTick & mask)])
         {
             if (null == timer)
             {
@@ -268,7 +263,6 @@ public class TimerWheel
 
     public final class Timer
     {
-
         private int wheelIndex;
         private long deadline;
         private Runnable task;
@@ -341,8 +335,7 @@ public class TimerWheel
 
         public void remove()
         {
-            Timer[] array = (Timer[])(wheel[this.wheelIndex]);
-
+            final Timer[] array = wheel[this.wheelIndex];
             array[this.tickIndex] = null;
         }
 

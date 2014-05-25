@@ -142,7 +142,7 @@ public class TimerWheel
     }
 
     /**
-     * Reschedule an expired timer, reusing the {@link uk.co.real_logic.aeron.util.TimerWheel.Timer} object.
+     * Reschedule an expired timer, reusing the {@link Timer} object.
      *
      * @param delay until timer should expire
      * @param unit of time for {@code delay}
@@ -155,7 +155,7 @@ public class TimerWheel
     }
 
     /**
-     * Reschedule an expired timer, reusing the {@link uk.co.real_logic.aeron.util.TimerWheel.Timer} object.
+     * Reschedule an expired timer, reusing the {@link Timer} object.
      *
      * @param delay until timer should expire
      * @param unit of time for {@code delay}
@@ -197,7 +197,7 @@ public class TimerWheel
      */
     public void expireTimers()
     {
-        final long deadline = now();
+        final long now = now();
 
         for (final Timer timer : wheel[(int)(currentTick & mask)])
         {
@@ -211,7 +211,7 @@ public class TimerWheel
                 timer.remove();
                 timer.state = TimerState.EXPIRED;
 
-                if (timer.deadline <= deadline)
+                if (now >= timer.deadline)
                 {
                     timer.task.run();
                 }

@@ -18,7 +18,8 @@ package uk.co.real_logic.aeron.mediadriver;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import uk.co.real_logic.aeron.util.StaticDelayGenerator;
+import org.mockito.InOrder;
+import uk.co.real_logic.aeron.util.FeedbackDelayGenerator;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
@@ -51,8 +52,11 @@ public class RetransmitHandlerTest
                                            0x00, 0x54, 0x00, 0x3F,
                                            0x7F, 0x00, 0x33, 0x55};
 
-    public static final StaticDelayGenerator delayGenerator =
-            new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(20), false);
+    public static final FeedbackDelayGenerator delayGenerator = () -> TimeUnit.MILLISECONDS.toNanos(20);
+
+    public static final FeedbackDelayGenerator zeroDelayGenerator = () -> TimeUnit.MILLISECONDS.toNanos(0);
+
+    public static final FeedbackDelayGenerator lingerGenerator = () -> TimeUnit.MILLISECONDS.toNanos(40);
 
     private final AtomicBuffer logBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(LOG_BUFFER_SIZE));
     private final AtomicBuffer stateBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(STATE_BUFFER_SIZE));
@@ -70,8 +74,8 @@ public class RetransmitHandlerTest
 
     private final LogReader.FrameHandler retransmitHandler = mock(LogReader.FrameHandler.class);
 
-    private final RetransmitHandler handler = new RetransmitHandler(logReader, wheel,
-            delayGenerator, retransmitHandler);
+    private RetransmitHandler handler = new RetransmitHandler(logReader, wheel,
+            delayGenerator, lingerGenerator, retransmitHandler);
 
     @Before
     public void setUp()
@@ -81,22 +85,109 @@ public class RetransmitHandlerTest
     }
 
     @Test
-    public void shouldRetransmit()
+    public void shouldRetransmitOnNak()
     {
-        handler.onNak(0);
+        handler.onNak(offsetOfMessage(0));
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
 
-        verify(retransmitHandler, times(1)).onFrame(logBuffer, 0, HEADER.length + DATA.length);
+        verify(retransmitHandler).onFrame(logBuffer, offsetOfMessage(0), MESSAGE_LENGTH);
+    }
+
+    @Test
+    public void shouldNotRetransmitOnNakWhileInLinger()
+    {
+        handler.onNak(offsetOfMessage(0));
+        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(40));
+        handler.onNak(offsetOfMessage(0));
+        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
+
+        verify(retransmitHandler).onFrame(logBuffer, offsetOfMessage(0), MESSAGE_LENGTH);
+    }
+
+    @Test
+    public void shouldRetransmitOnNakAfterLinger()
+    {
+        handler.onNak(offsetOfMessage(0));
+        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
+        handler.onNak(offsetOfMessage(0));
+        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(200));
+
+        verify(retransmitHandler, times(2)).onFrame(logBuffer, offsetOfMessage(0), MESSAGE_LENGTH);
+    }
+
+    @Test
+    public void shouldRetransmitOnMultipleNaks()
+    {
+        handler.onNak(offsetOfMessage(0));
+        handler.onNak(offsetOfMessage(1));
+        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
+
+        InOrder inOrder = inOrder(retransmitHandler);
+        inOrder.verify(retransmitHandler).onFrame(logBuffer, offsetOfMessage(0), MESSAGE_LENGTH);
+        inOrder.verify(retransmitHandler).onFrame(logBuffer, offsetOfMessage(1), MESSAGE_LENGTH);
+    }
+
+    @Test
+    public void shouldStopRetransmitOnRetransmitReception()
+    {
+        handler.onNak(offsetOfMessage(0));
+        handler.onRetransmitReceived(offsetOfMessage(0));
+        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
+
+        verifyZeroInteractions(retransmitHandler);
+    }
+
+    @Test
+    public void shouldStopOnlyOneRetransmitOnRetransmitReception()
+    {
+        handler.onNak(offsetOfMessage(0));
+        handler.onNak(offsetOfMessage(1));
+        handler.onRetransmitReceived(offsetOfMessage(0));
+        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
+
+        verify(retransmitHandler).onFrame(logBuffer, offsetOfMessage(1), MESSAGE_LENGTH);
+    }
+
+    @Test
+    public void shouldImmediateRetransmitOnNak()
+    {
+        handler = new RetransmitHandler(logReader, wheel, zeroDelayGenerator, lingerGenerator, retransmitHandler);
+
+        handler.onNak(offsetOfMessage(0));
+
+        verify(retransmitHandler).onFrame(logBuffer, offsetOfMessage(0), MESSAGE_LENGTH);
+    }
+
+    @Test
+    public void shouldGoIntoLingerOnImmediateRetransmit()
+    {
+        handler = new RetransmitHandler(logReader, wheel, zeroDelayGenerator, lingerGenerator, retransmitHandler);
+
+        handler.onNak(offsetOfMessage(0));
+        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(40));
+        handler.onNak(offsetOfMessage(0));
+
+        verify(retransmitHandler).onFrame(logBuffer, offsetOfMessage(0), MESSAGE_LENGTH);
+    }
+
+    @Test
+    public void shouldOnlyImmediateRetransmitOnNakWhenConfiguredTo()
+    {
+        handler.onNak(offsetOfMessage(0));
+
+        verifyZeroInteractions(retransmitHandler);
     }
 
     @Test
     @Ignore
-    public void shouldNotRetransmitWhenReceivingNakWhileInLinger()
+    public void shouldNotRetransmitOnNakForMissingFrame()
     {
-        handler.onNak(0);
-        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
 
-        verify(retransmitHandler, times(1)).onFrame(logBuffer, 0, HEADER.length + DATA.length);
+    }
+
+    private int offsetOfMessage(final int index)
+    {
+        return index * FrameDescriptor.FRAME_ALIGNMENT;
     }
 
     private void rcvDataFrame()

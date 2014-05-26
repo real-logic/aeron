@@ -42,6 +42,7 @@ public class RetransmitHandler
     private final Queue<RetransmitAction> retransmitActionPool = new OneToOneConcurrentArrayQueue<>(MAX_RETRANSMITS);
     private final Int2ObjectHashMap<RetransmitAction> activeRetransmitByTermOffsetMap = new Int2ObjectHashMap<>();
     private final FeedbackDelayGenerator delayGenerator;
+    private final FeedbackDelayGenerator lingerTimeoutGenerator;
 
     /**
      * Create a retransmit handler for a log buffer.
@@ -49,16 +50,19 @@ public class RetransmitHandler
      * @param reader to read frames from for retransmission
      * @param timerWheel for timers
      * @param delayGenerator to use for delay determination
+     * @param lingerTimeoutGenerator to use for linger timeout
      * @param retransmitHandler for sending retransmits
      */
     public RetransmitHandler(final LogReader reader,
                              final TimerWheel timerWheel,
                              final FeedbackDelayGenerator delayGenerator,
+                             final FeedbackDelayGenerator lingerTimeoutGenerator,
                              final LogReader.FrameHandler retransmitHandler)
     {
         this.reader = reader;
         this.timerWheel = timerWheel;
         this.delayGenerator = delayGenerator;
+        this.lingerTimeoutGenerator = lingerTimeoutGenerator;
         this.sendRetransmitHandler = retransmitHandler;
 
         IntStream.range(0, MAX_RETRANSMITS).forEach((i) -> retransmitActionPool.offer(new RetransmitAction()));
@@ -105,6 +109,8 @@ public class RetransmitHandler
             activeRetransmitByTermOffsetMap.remove(termOffset);
             retransmitAction.state = State.INACTIVE;
             retransmitActionPool.offer(retransmitAction);
+            retransmitAction.delayTimer.cancel();
+            // do not go into linger
         }
     }
 
@@ -115,8 +121,7 @@ public class RetransmitHandler
 
     private long determineLingerTimeout()
     {
-        // TODO: grab value from MediaDriver config
-        return TimeUnit.MILLISECONDS.toNanos(10);
+        return lingerTimeoutGenerator.generateDelay();
     }
 
     private void perform(final RetransmitAction retransmitAction)

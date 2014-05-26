@@ -18,8 +18,8 @@ package uk.co.real_logic.aeron.mediadriver;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.mockito.InOrder;
 import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
-import uk.co.real_logic.aeron.util.FeedbackDelayGenerator;
 import uk.co.real_logic.aeron.util.StaticDelayGenerator;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -163,9 +163,10 @@ public class LossHandlerTest
         handler.scan();
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(80));
 
-        verify(sendNakHandler, atLeast(1)).onSendNak(TERM_ID, offsetOfMessage(1), gapLength());
-        verify(sendNakHandler, atLeast(1)).onSendNak(TERM_ID, offsetOfMessage(3), gapLength());
-        verify(sendNakHandler, never()).onSendNak(TERM_ID, offsetOfMessage(5), gapLength());
+        InOrder inOrder = inOrder(sendNakHandler);
+        inOrder.verify(sendNakHandler, atLeast(1)).onSendNak(TERM_ID, offsetOfMessage(1), gapLength());
+        inOrder.verify(sendNakHandler, atLeast(1)).onSendNak(TERM_ID, offsetOfMessage(3), gapLength());
+        inOrder.verify(sendNakHandler, never()).onSendNak(TERM_ID, offsetOfMessage(5), gapLength());
     }
 
     @Test

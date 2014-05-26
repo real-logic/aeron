@@ -41,8 +41,9 @@ public class LossHandler
          *
          * @param termId for the NAK
          * @param termOffset for the NAK
+         * @param length for the NAK
          */
-        void onSendNak(final long termId, final int termOffset);
+        void onSendNak(final long termId, final int termOffset, final int length);
     }
 
     private final GapScanner[] scanners;
@@ -131,7 +132,7 @@ public class LossHandler
     {
         if (scanCursor < scanGaps.length)
         {
-            scanGaps[scanCursor].reset(currentTermId, offset);
+            scanGaps[scanCursor].reset(currentTermId, offset, length);
 
             scanCursor++;
 
@@ -146,7 +147,7 @@ public class LossHandler
         // if no active gap
         if (null == timer || !timer.isActive())
         {
-            activeGap.reset(scanGaps[0].termId, scanGaps[0].termOffset);
+            activeGap.reset(scanGaps[0].termId, scanGaps[0].termOffset, scanGaps[0].length);
             scheduleTimer();
             nakSentTimestamp = wheel.now();
         }
@@ -157,7 +158,7 @@ public class LossHandler
         else
         {
             // replace old gap with new gap and reschedule
-            activeGap.reset(scanGaps[0].termId, scanGaps[0].termOffset);
+            activeGap.reset(scanGaps[0].termId, scanGaps[0].termOffset, scanGaps[0].length);
             scheduleTimer();
             nakSentTimestamp = wheel.now();
         }
@@ -165,7 +166,7 @@ public class LossHandler
 
     private void onTimerExpire()
     {
-        sendNakHandler.onSendNak(activeGap.termId, activeGap.termOffset);
+        sendNakHandler.onSendNak(activeGap.termId, activeGap.termOffset, activeGap.length);
         scheduleTimer();
         nakSentTimestamp = wheel.now();
     }
@@ -199,11 +200,13 @@ public class LossHandler
     {
         private long termId;
         private int termOffset;
+        private int length;
 
-        public void reset(final long termId, final int termOffset)
+        public void reset(final long termId, final int termOffset, final int length)
         {
             this.termId = termId;
             this.termOffset = termOffset;
+            this.length = length;
         }
 
         public boolean isFor(final long termId, final int termOffset)

@@ -32,7 +32,7 @@ public class StaticDelayGenerator implements FeedbackDelayGenerator
         this.delay = delay;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDo}c */
     public long generateDelay()
     {
         return delay;

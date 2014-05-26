@@ -34,6 +34,7 @@ import java.util.function.BooleanSupplier;
 
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.util.BitUtil.CACHE_LINE_SIZE;
+import static uk.co.real_logic.aeron.util.BitUtil.align;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.STATE_BUFFER_LENGTH;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_LENGTH;
 
@@ -102,7 +103,7 @@ public class LossHandlerTest
         handler.scan();
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(40));
 
-        verify(sendNakHandler).onSendNak(TERM_ID, offsetOfMessage(1));
+        verify(sendNakHandler).onSendNak(TERM_ID, offsetOfMessage(1), gapLength());
     }
 
     @Test
@@ -114,7 +115,7 @@ public class LossHandlerTest
         handler.scan();
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(60));
 
-        verify(sendNakHandler, atLeast(2)).onSendNak(TERM_ID, offsetOfMessage(1));
+        verify(sendNakHandler, atLeast(2)).onSendNak(TERM_ID, offsetOfMessage(1), gapLength());
     }
 
     @Test
@@ -160,9 +161,9 @@ public class LossHandlerTest
         handler.scan();
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(80));
 
-        verify(sendNakHandler, atLeast(1)).onSendNak(TERM_ID, offsetOfMessage(1));
-        verify(sendNakHandler, atLeast(1)).onSendNak(TERM_ID, offsetOfMessage(3));
-        verify(sendNakHandler, never()).onSendNak(TERM_ID, offsetOfMessage(5));
+        verify(sendNakHandler, atLeast(1)).onSendNak(TERM_ID, offsetOfMessage(1), gapLength());
+        verify(sendNakHandler, atLeast(1)).onSendNak(TERM_ID, offsetOfMessage(3), gapLength());
+        verify(sendNakHandler, never()).onSendNak(TERM_ID, offsetOfMessage(5), gapLength());
     }
 
     @Test
@@ -178,7 +179,7 @@ public class LossHandlerTest
         handler.scan();
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
 
-        verify(sendNakHandler, atLeast(1)).onSendNak(TERM_ID, offsetOfMessage(3));
+        verify(sendNakHandler, atLeast(1)).onSendNak(TERM_ID, offsetOfMessage(3), gapLength());
     }
 
     @Test
@@ -214,6 +215,11 @@ public class LossHandlerTest
     private int offsetOfMessage(final int index)
     {
         return index * FrameDescriptor.FRAME_ALIGNMENT;
+    }
+
+    private int gapLength()
+    {
+        return align(MESSAGE_LENGTH, FrameDescriptor.FRAME_ALIGNMENT);
     }
 
     private long processTimersUntil(final BooleanSupplier condition)

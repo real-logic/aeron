@@ -84,6 +84,8 @@ public class LossHandler
         {
             this.scanGaps[i] = new GapState();
         }
+
+        this.currentIndex = 0;
     }
 
     /**
@@ -150,6 +152,11 @@ public class LossHandler
             activeGap.reset(scanGaps[0].termId, scanGaps[0].termOffset, scanGaps[0].length);
             scheduleTimer();
             nakSentTimestamp = wheel.now();
+
+            if (delayGenerator.immediateFeedback())
+            {
+                sendNakHandler.onSendNak(activeGap.termId, activeGap.termOffset, activeGap.length);
+            }
         }
         else if (scanCursor == 0)
         {
@@ -161,6 +168,11 @@ public class LossHandler
             activeGap.reset(scanGaps[0].termId, scanGaps[0].termOffset, scanGaps[0].length);
             scheduleTimer();
             nakSentTimestamp = wheel.now();
+
+            if (delayGenerator.immediateFeedback())
+            {
+                sendNakHandler.onSendNak(activeGap.termId, activeGap.termOffset, activeGap.length);
+            }
         }
     }
 

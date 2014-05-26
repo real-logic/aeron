@@ -19,6 +19,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
+import uk.co.real_logic.aeron.util.FeedbackDelayGenerator;
 import uk.co.real_logic.aeron.util.StaticDelayGenerator;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -33,7 +34,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
 import static org.mockito.Mockito.*;
-import static uk.co.real_logic.aeron.util.BitUtil.CACHE_LINE_SIZE;
 import static uk.co.real_logic.aeron.util.BitUtil.align;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.STATE_BUFFER_LENGTH;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_LENGTH;
@@ -49,7 +49,10 @@ public class LossHandlerTest
     private static final long TERM_ID = 0xEE81D;
 
     public static final StaticDelayGenerator delayGenerator =
-            new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(20));
+            new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(20), false);
+
+    public static final StaticDelayGenerator delayGeneratorWithImmediate =
+            new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(20), true);
 
     private final AtomicBuffer[] logBuffers = new AtomicBuffer[BufferRotationDescriptor.BUFFER_COUNT];
     private final AtomicBuffer[] stateBuffers = new AtomicBuffer[BufferRotationDescriptor.BUFFER_COUNT];
@@ -60,8 +63,7 @@ public class LossHandlerTest
     private final AtomicBuffer rcvBuffer = new AtomicBuffer(new byte[MESSAGE_LENGTH]);
 
     private final TimerWheel wheel;
-    private final LossHandler handler;
-
+    private LossHandler handler;
     private LossHandler.SendNakHandler sendNakHandler;
     private long currentTime;
 
@@ -183,10 +185,28 @@ public class LossHandlerTest
     }
 
     @Test
-    @Ignore
     public void shouldHandleImmediateNak()
     {
+        handler = new LossHandler(scanners, wheel, delayGeneratorWithImmediate, sendNakHandler);
+        handler.currentTermId(TERM_ID);
 
+        rcvDataFrame(offsetOfMessage(0));
+        rcvDataFrame(offsetOfMessage(2));
+
+        handler.scan();
+
+        verify(sendNakHandler).onSendNak(TERM_ID, offsetOfMessage(1), gapLength());
+    }
+
+    @Test
+    public void shouldNotNakImmediatelyByDefault()
+    {
+        rcvDataFrame(offsetOfMessage(0));
+        rcvDataFrame(offsetOfMessage(2));
+
+        handler.scan();
+
+        verifyZeroInteractions(sendNakHandler);
     }
 
     @Test

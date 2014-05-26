@@ -26,4 +26,14 @@ public interface FeedbackDelayGenerator
      * @return delay value in nanoseconds
      */
     long generateDelay();
+
+    /**
+     * Should feedback be immediately sent?
+     *
+     * @return whether feedback should be immediate or not
+     */
+    default boolean immediateFeedback()
+    {
+        return false;
+    }
 }

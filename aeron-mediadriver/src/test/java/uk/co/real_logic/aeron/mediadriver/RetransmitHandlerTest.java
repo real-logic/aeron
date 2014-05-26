@@ -52,7 +52,7 @@ public class RetransmitHandlerTest
                                            0x7F, 0x00, 0x33, 0x55};
 
     public static final StaticDelayGenerator delayGenerator =
-            new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(20));
+            new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(20), false);
 
     private final AtomicBuffer logBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(LOG_BUFFER_SIZE));
     private final AtomicBuffer stateBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(STATE_BUFFER_SIZE));

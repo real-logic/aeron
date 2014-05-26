@@ -75,7 +75,7 @@ public class MediaConductorTest
             .receiverCommandBuffer(COMMAND_BUFFER_SZ)
             .rcvNioSelector(new NioSelector())
             .adminNioSelector(new NioSelector())
-            .senderFlowControl(DefaultSenderControlStrategy::new)
+            .senderFlowControl(UnicastSenderControlStrategy::new)
             .conductorByteBuffers(new ConductorByteBuffers(adminPath, COMMAND_BUFFER_SZ + TRAILER_LENGTH))
             .bufferManagement(newMappedBufferManager(adminPath));
 

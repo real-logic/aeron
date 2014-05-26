@@ -165,7 +165,7 @@ public class MediaDriver implements AutoCloseable
                 .receiverCommandBuffer(COMMAND_BUFFER_SZ)
                 .rcvNioSelector(nioSelector)
                 .adminNioSelector(new NioSelector())
-                .senderFlowControl(DefaultSenderControlStrategy::new)
+                .senderFlowControl(UnicastSenderControlStrategy::new)
                 .conductorByteBuffers(conductorByteBuffers)
                 .bufferManagement(bufferManagement)
                 .mtuLength(CommonConfiguration.MTU_LENGTH);

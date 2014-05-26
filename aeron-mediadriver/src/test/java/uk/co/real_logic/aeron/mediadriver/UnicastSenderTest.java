@@ -119,7 +119,7 @@ public class UnicastSenderTest
             .receiverCommandBuffer(COMMAND_BUFFER_SZ)
             .rcvNioSelector(new NioSelector())
             .adminNioSelector(new NioSelector())
-            .senderFlowControl(DefaultSenderControlStrategy::new)
+            .senderFlowControl(UnicastSenderControlStrategy::new)
             .conductorByteBuffers(buffers.mediaDriverBuffers())
             .bufferManagement(bufferManagement)
             .conductorTimerWheel(timerWheel);

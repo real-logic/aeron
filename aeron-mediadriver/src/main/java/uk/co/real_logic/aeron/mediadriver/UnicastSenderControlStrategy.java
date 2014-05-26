@@ -15,15 +15,16 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-public class DefaultSenderControlStrategy implements SenderControlStrategy
+public class UnicastSenderControlStrategy implements SenderControlStrategy
 {
     private int rightEdgeOfWindow;
 
-    public DefaultSenderControlStrategy()
+    public UnicastSenderControlStrategy()
     {
         rightEdgeOfWindow = 0;
     }
 
+    /** {@inheritDoc} */
     public int onStatusMessage(final long termId, final long highestContiguousSequenceNumber, final long receiverWindow)
     {
         // TODO: review this logic

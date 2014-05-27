@@ -96,6 +96,7 @@ public class ChannelMap<D, T>
         void accept(final D destination, final Long sessionId, final Long channelId, final T value);
     }
 
+    @SuppressWarnings("unchecked")
     public void forEach(final ChannelHandler subscriber)
     {
         map.forEach((destination, sessionMap) ->

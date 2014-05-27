@@ -16,7 +16,7 @@
 
 defaultTasks 'clean', 'build'
 
-group = 'uk.co.real_logic'
+group = 'uk.co.real-logic'
 
 allprojects {
     apply plugin: 'eclipse'

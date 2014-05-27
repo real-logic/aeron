@@ -75,7 +75,9 @@ public class RetransmitHandler
      */
     public void onNak(final int termOffset)
     {
-        if (!retransmitActionPool.isEmpty() && null == activeRetransmitByTermOffsetMap.get(termOffset))
+        if (!retransmitActionPool.isEmpty() &&
+            null == activeRetransmitByTermOffsetMap.get(termOffset) &&
+            reader.tailVolatile() > termOffset)
         {
             final RetransmitAction retransmitAction = retransmitActionPool.poll();
             retransmitAction.termOffset = termOffset;

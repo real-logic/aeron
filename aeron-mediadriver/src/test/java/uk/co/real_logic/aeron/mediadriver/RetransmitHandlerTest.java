@@ -15,9 +15,11 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.experimental.theories.DataPoint;
+import org.junit.experimental.theories.Theories;
+import org.junit.experimental.theories.Theory;
+import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 import uk.co.real_logic.aeron.util.FeedbackDelayGenerator;
 import uk.co.real_logic.aeron.util.TimerWheel;
@@ -25,11 +27,13 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogRebuilder;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.stream.IntStream;
 
@@ -37,6 +41,7 @@ import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.STATE_BUFFER_LENGTH;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_LENGTH;
 
+@RunWith(Theories.class)
 public class RetransmitHandlerTest
 {
     private static final int LOG_BUFFER_SIZE = 65536 + TRAILER_LENGTH;
@@ -49,8 +54,11 @@ public class RetransmitHandlerTest
                                            0, 0, 0, 0,
                                            0, 0, 0, 0,
                                            0x5E, 0x55, 0x10, 0x1D,
-                                           0x00, 0x54, 0x00, 0x3F,
+                                           0x00, 0x05, 0x40, 0x0E,
                                            0x7F, 0x00, 0x33, 0x55};
+    private static final long SESSION_ID = 0x5E55101DL;
+    private static final long CHANNEL_ID = 0x5400EL;
+    private static final long TERM_ID = 0x7F003355L;
 
     public static final FeedbackDelayGenerator delayGenerator = () -> TimeUnit.MILLISECONDS.toNanos(20);
 
@@ -60,10 +68,14 @@ public class RetransmitHandlerTest
 
     private final AtomicBuffer logBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(LOG_BUFFER_SIZE));
     private final AtomicBuffer stateBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(STATE_BUFFER_SIZE));
-    private final LogAppender logAppender = new LogAppender(logBuffer, stateBuffer, HEADER, 1024);
     private final LogReader logReader = new LogReader(logBuffer, stateBuffer);
 
+    private final LogAppender logAppender = new LogAppender(logBuffer, stateBuffer, HEADER, 1024);
+    private final LogRebuilder logRebuilder = new LogRebuilder(logBuffer, stateBuffer);
+
     private final AtomicBuffer rcvBuffer = new AtomicBuffer(new byte[MESSAGE_LENGTH]);
+
+    private DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
     private long currentTime;
 
@@ -77,25 +89,27 @@ public class RetransmitHandlerTest
     private RetransmitHandler handler = new RetransmitHandler(logReader, wheel,
             delayGenerator, lingerGenerator, retransmitHandler);
 
-    @Before
-    public void setUp()
-    {
-        // add 10 frames to the log to use
-        IntStream.range(0, 10).forEach((i) -> rcvDataFrame());
-    }
+    @DataPoint
+    public static final BiConsumer<RetransmitHandlerTest, Integer> senderAddDataFrame = (h, i) -> addSentDataFrame(h);
 
-    @Test
-    public void shouldRetransmitOnNak()
+    @DataPoint
+    public static final BiConsumer<RetransmitHandlerTest, Integer>
+        receiverAddDataFrame = (h, i) -> addRcvdDataFrame(h, i);
+
+    @Theory
+    public void shouldRetransmitOnNak(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
+        createTermBuffer(creator, 5);
         handler.onNak(offsetOfMessage(0));
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
 
         verify(retransmitHandler).onFrame(logBuffer, offsetOfMessage(0), MESSAGE_LENGTH);
     }
 
-    @Test
-    public void shouldNotRetransmitOnNakWhileInLinger()
+    @Theory
+    public void shouldNotRetransmitOnNakWhileInLinger(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
+        createTermBuffer(creator, 5);
         handler.onNak(offsetOfMessage(0));
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(40));
         handler.onNak(offsetOfMessage(0));
@@ -104,9 +118,10 @@ public class RetransmitHandlerTest
         verify(retransmitHandler).onFrame(logBuffer, offsetOfMessage(0), MESSAGE_LENGTH);
     }
 
-    @Test
-    public void shouldRetransmitOnNakAfterLinger()
+    @Theory
+    public void shouldRetransmitOnNakAfterLinger(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
+        createTermBuffer(creator, 5);
         handler.onNak(offsetOfMessage(0));
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
         handler.onNak(offsetOfMessage(0));
@@ -115,9 +130,10 @@ public class RetransmitHandlerTest
         verify(retransmitHandler, times(2)).onFrame(logBuffer, offsetOfMessage(0), MESSAGE_LENGTH);
     }
 
-    @Test
-    public void shouldRetransmitOnMultipleNaks()
+    @Theory
+    public void shouldRetransmitOnMultipleNaks(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
+        createTermBuffer(creator, 5);
         handler.onNak(offsetOfMessage(0));
         handler.onNak(offsetOfMessage(1));
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
@@ -127,9 +143,10 @@ public class RetransmitHandlerTest
         inOrder.verify(retransmitHandler).onFrame(logBuffer, offsetOfMessage(1), MESSAGE_LENGTH);
     }
 
-    @Test
-    public void shouldStopRetransmitOnRetransmitReception()
+    @Theory
+    public void shouldStopRetransmitOnRetransmitReception(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
+        createTermBuffer(creator, 5);
         handler.onNak(offsetOfMessage(0));
         handler.onRetransmitReceived(offsetOfMessage(0));
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
@@ -137,9 +154,10 @@ public class RetransmitHandlerTest
         verifyZeroInteractions(retransmitHandler);
     }
 
-    @Test
-    public void shouldStopOnlyOneRetransmitOnRetransmitReception()
+    @Theory
+    public void shouldStopOnlyOneRetransmitOnRetransmitReception(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
+        createTermBuffer(creator, 5);
         handler.onNak(offsetOfMessage(0));
         handler.onNak(offsetOfMessage(1));
         handler.onRetransmitReceived(offsetOfMessage(0));
@@ -148,9 +166,10 @@ public class RetransmitHandlerTest
         verify(retransmitHandler).onFrame(logBuffer, offsetOfMessage(1), MESSAGE_LENGTH);
     }
 
-    @Test
-    public void shouldImmediateRetransmitOnNak()
+    @Theory
+    public void shouldImmediateRetransmitOnNak(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
+        createTermBuffer(creator, 5);
         handler = new RetransmitHandler(logReader, wheel, zeroDelayGenerator, lingerGenerator, retransmitHandler);
 
         handler.onNak(offsetOfMessage(0));
@@ -158,9 +177,10 @@ public class RetransmitHandlerTest
         verify(retransmitHandler).onFrame(logBuffer, offsetOfMessage(0), MESSAGE_LENGTH);
     }
 
-    @Test
-    public void shouldGoIntoLingerOnImmediateRetransmit()
+    @Theory
+    public void shouldGoIntoLingerOnImmediateRetransmit(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
+        createTermBuffer(creator, 5);
         handler = new RetransmitHandler(logReader, wheel, zeroDelayGenerator, lingerGenerator, retransmitHandler);
 
         handler.onNak(offsetOfMessage(0));
@@ -170,30 +190,64 @@ public class RetransmitHandlerTest
         verify(retransmitHandler).onFrame(logBuffer, offsetOfMessage(0), MESSAGE_LENGTH);
     }
 
-    @Test
-    public void shouldOnlyImmediateRetransmitOnNakWhenConfiguredTo()
+    @Theory
+    public void shouldOnlyImmediateRetransmitOnNakWhenConfiguredTo(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
+        createTermBuffer(creator, 5);
         handler.onNak(offsetOfMessage(0));
 
         verifyZeroInteractions(retransmitHandler);
     }
 
     @Test
-    @Ignore
     public void shouldNotRetransmitOnNakForMissingFrame()
     {
+        createTermBufferWithGap(receiverAddDataFrame, 5, 2);
+        handler.onNak(offsetOfMessage(2));
 
+        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(40));
+        verifyZeroInteractions(retransmitHandler);
     }
 
-    private int offsetOfMessage(final int index)
+    private void createTermBuffer(final BiConsumer<RetransmitHandlerTest, Integer> creater, final int num)
+    {
+        IntStream.range(0, num).forEach((i) -> creater.accept(this, i));
+    }
+
+    private void createTermBufferWithGap(final BiConsumer<RetransmitHandlerTest, Integer> creater,
+                                         final int num, final int gap)
+    {
+        IntStream.range(0, gap).forEach((i) -> creater.accept(this, i));
+        IntStream.range(gap + 1, num).forEach((i) -> creater.accept(this, i));
+    }
+
+    private static int offsetOfMessage(final int index)
     {
         return index * FrameDescriptor.FRAME_ALIGNMENT;
     }
 
-    private void rcvDataFrame()
+    private static void addSentDataFrame(final RetransmitHandlerTest handler)
     {
-        rcvBuffer.putBytes(0, DATA);
-        logAppender.append(rcvBuffer, 0, DATA.length);
+        handler.rcvBuffer.putBytes(0, DATA);
+        handler.logAppender.append(handler.rcvBuffer, 0, DATA.length);
+    }
+
+    private static void addRcvdDataFrame(final RetransmitHandlerTest handler, final int msgNum)
+    {
+        handler.dataHeader.wrap(handler.rcvBuffer, 0);
+
+        handler.dataHeader.termId(TERM_ID)
+            .channelId(CHANNEL_ID)
+            .sessionId(SESSION_ID)
+            .termOffset(offsetOfMessage(msgNum))
+            .frameLength(MESSAGE_LENGTH)
+            .headerType(HeaderFlyweight.HDR_TYPE_DATA)
+            .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
+            .version(HeaderFlyweight.CURRENT_VERSION);
+
+        handler.dataHeader.atomicBuffer().putBytes(handler.dataHeader.dataOffset(), DATA);
+
+        handler.logRebuilder.insert(handler.dataHeader.atomicBuffer(), 0, MESSAGE_LENGTH);
     }
 
     private long processTimersUntil(final BooleanSupplier condition)

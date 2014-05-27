@@ -228,15 +228,25 @@ public class RetransmitHandlerTest
 
     private static void addSentDataFrame(final RetransmitHandlerTest handler)
     {
-        handler.rcvBuffer.putBytes(0, DATA);
-        handler.logAppender.append(handler.rcvBuffer, 0, DATA.length);
+        handler.addSentDataFrame();
     }
 
     private static void addRcvdDataFrame(final RetransmitHandlerTest handler, final int msgNum)
     {
-        handler.dataHeader.wrap(handler.rcvBuffer, 0);
+        handler.addRcvdDataFrame(msgNum);
+    }
 
-        handler.dataHeader.termId(TERM_ID)
+    private void addSentDataFrame()
+    {
+        rcvBuffer.putBytes(0, DATA);
+        logAppender.append(rcvBuffer, 0, DATA.length);
+    }
+
+    private void addRcvdDataFrame(final int msgNum)
+    {
+        dataHeader.wrap(rcvBuffer, 0);
+
+        dataHeader.termId(TERM_ID)
             .channelId(CHANNEL_ID)
             .sessionId(SESSION_ID)
             .termOffset(offsetOfMessage(msgNum))
@@ -245,9 +255,9 @@ public class RetransmitHandlerTest
             .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
             .version(HeaderFlyweight.CURRENT_VERSION);
 
-        handler.dataHeader.atomicBuffer().putBytes(handler.dataHeader.dataOffset(), DATA);
+        dataHeader.atomicBuffer().putBytes(dataHeader.dataOffset(), DATA);
 
-        handler.logRebuilder.insert(handler.dataHeader.atomicBuffer(), 0, MESSAGE_LENGTH);
+        logRebuilder.insert(dataHeader.atomicBuffer(), 0, MESSAGE_LENGTH);
     }
 
     private long processTimersUntil(final BooleanSupplier condition)

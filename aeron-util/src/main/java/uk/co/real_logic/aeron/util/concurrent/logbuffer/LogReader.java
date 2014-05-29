@@ -58,8 +58,7 @@ public class LogReader
      */
     public void seek(final int offset)
     {
-        final int tail = stateViewer.tailVolatile();
-        checkOffset(offset, tail);
+        checkOffset(offset, stateViewer.tailVolatile());
         checkOffsetAlignment(offset);
 
         cursor = offset;

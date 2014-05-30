@@ -640,4 +640,24 @@ public class AtomicBufferTest
 
         assertThat(buff, is(testBytes));
     }
+
+    @Theory
+    public void shouldGetBytesIntoAtomicBufferFromAtomicBuffer(final AtomicBuffer buffer)
+    {
+        final byte[] testBytes = "Hello World".getBytes();
+        final ByteBuffer srcBuffer = ByteBuffer.allocateDirect(testBytes.length);
+        srcBuffer.put(testBytes).flip();
+
+        final AtomicBuffer srcAtomicBuffer = new AtomicBuffer(srcBuffer);
+
+        srcAtomicBuffer.getBytes(0, buffer, INDEX, testBytes.length);
+
+        final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(BYTE_ORDER);
+        duplicateBuffer.position(INDEX);
+
+        final byte[] buff = new byte[testBytes.length];
+        duplicateBuffer.get(buff);
+
+        assertThat(buff, is(testBytes));
+    }
 }

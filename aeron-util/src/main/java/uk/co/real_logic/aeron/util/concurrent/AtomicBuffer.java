@@ -717,6 +717,19 @@ public class AtomicBuffer
     }
 
     /**
+     * Get bytes from this {@link AtomicBuffer} into the provided {@link AtomicBuffer} at given indices.
+     *
+     * @param index in this buffer to begin putting the bytes.
+     * @param dstBuffer from which the bytes will be copied.
+     * @param dstIndex in the destination buffer to which the byte copy will begin.
+     * @param length of the bytes to be copied.
+     */
+    public void getBytes(final int index, final AtomicBuffer dstBuffer, final int dstIndex, final int length)
+    {
+        dstBuffer.putBytes(dstIndex, this, index, length);
+    }
+
+    /**
      * Get from the underlying buffer into a supplied {@link ByteBuffer}.
      *
      * @param index     in the underlying buffer to start from.

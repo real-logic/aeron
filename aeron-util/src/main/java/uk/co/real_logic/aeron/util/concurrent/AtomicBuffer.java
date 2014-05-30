@@ -719,8 +719,8 @@ public class AtomicBuffer
     /**
      * Get bytes from this {@link AtomicBuffer} into the provided {@link AtomicBuffer} at given indices.
      *
-     * @param index in this buffer to begin putting the bytes.
-     * @param dstBuffer from which the bytes will be copied.
+     * @param index in this buffer to begin getting the bytes.
+     * @param dstBuffer to which the bytes will be copied.
      * @param dstIndex in the destination buffer to which the byte copy will begin.
      * @param length of the bytes to be copied.
      */

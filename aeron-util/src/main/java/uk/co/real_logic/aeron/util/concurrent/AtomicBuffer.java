@@ -157,10 +157,7 @@ public class AtomicBuffer
     {
         if (limit > capacity)
         {
-            final String msg = String.format("limit=%d is beyond capacity=%d",
-                                             Integer.valueOf(limit),
-                                             Integer.valueOf(capacity));
-
+            final String msg = String.format("limit=%d is beyond capacity=%d", limit, capacity);
             throw new IndexOutOfBoundsException(msg);
         }
     }

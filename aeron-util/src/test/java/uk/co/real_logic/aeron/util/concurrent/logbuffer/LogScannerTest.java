@@ -39,6 +39,7 @@ public class LogScannerTest
 
     private final AtomicBuffer logBuffer = mock(AtomicBuffer.class);
     private final AtomicBuffer stateBuffer = mock(AtomicBuffer.class);
+    private final LogScanner.AvailabilityHandler handler = mock(LogScanner.AvailabilityHandler.class);
 
     private LogScanner scanner;
 
@@ -60,7 +61,7 @@ public class LogScannerTest
     @Test
     public void shouldReturnFalseOnEmptyLog()
     {
-        assertFalse(scanner.scanNext(MTU_LENGTH));
+        assertFalse(scanner.scanNext(MTU_LENGTH, handler));
     }
 
     @Test
@@ -78,15 +79,14 @@ public class LogScannerTest
         when(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN))
             .thenReturn(MSG_TYPE);
 
-        assertTrue(scanner.scanNext(MTU_LENGTH));
-        assertThat(scanner.offset(), is(frameOffset));
-        assertThat(scanner.length(), is(alignedFrameLength));
+        assertTrue(scanner.scanNext(MTU_LENGTH, handler));
         assertFalse(scanner.isComplete());
 
-        final InOrder inOrder = inOrder(stateBuffer, logBuffer);
+        final InOrder inOrder = inOrder(stateBuffer, logBuffer, handler);
         inOrder.verify(stateBuffer).getIntVolatile(TAIL_COUNTER_OFFSET);
         inOrder.verify(logBuffer).getIntVolatile(lengthOffset(frameOffset));
         inOrder.verify(logBuffer).getShort(typeOffset(frameOffset), LITTLE_ENDIAN);
+        inOrder.verify(handler).onAvailable(frameOffset, alignedFrameLength);
     }
 
     @Test
@@ -105,12 +105,10 @@ public class LogScannerTest
         when(logBuffer.getShort(typeOffset(frameOffset + FRAME_ALIGNMENT), LITTLE_ENDIAN))
             .thenReturn(MSG_TYPE);
 
-        assertTrue(scanner.scanNext(MTU_LENGTH));
-        assertThat(scanner.offset(), is(frameOffset));
-        assertThat(scanner.length(), is(FRAME_ALIGNMENT * 2));
+        assertTrue(scanner.scanNext(MTU_LENGTH, handler));
         assertFalse(scanner.isComplete());
 
-        final InOrder inOrder = inOrder(stateBuffer, logBuffer);
+        final InOrder inOrder = inOrder(stateBuffer, logBuffer, handler);
         inOrder.verify(stateBuffer).getIntVolatile(TAIL_COUNTER_OFFSET);
         inOrder.verify(logBuffer).getIntVolatile(lengthOffset(frameOffset));
         inOrder.verify(logBuffer).getShort(typeOffset(frameOffset), LITTLE_ENDIAN);
@@ -118,6 +116,8 @@ public class LogScannerTest
         frameOffset += FRAME_ALIGNMENT;
         inOrder.verify(logBuffer).getIntVolatile(lengthOffset(frameOffset));
         inOrder.verify(logBuffer).getShort(typeOffset(frameOffset), LITTLE_ENDIAN);
+
+        inOrder.verify(handler).onAvailable(0, FRAME_ALIGNMENT * 2);
     }
 
     @Test
@@ -138,12 +138,10 @@ public class LogScannerTest
         when(logBuffer.getShort(typeOffset(frameOffset + frameOneLength), LITTLE_ENDIAN))
             .thenReturn(MSG_TYPE);
 
-        assertTrue(scanner.scanNext(MTU_LENGTH));
-        assertThat(scanner.offset(), is(frameOffset));
-        assertThat(scanner.length(), is(frameOneLength + frameTwoLength));
+        assertTrue(scanner.scanNext(MTU_LENGTH, handler));
         assertFalse(scanner.isComplete());
 
-        final InOrder inOrder = inOrder(stateBuffer, logBuffer);
+        final InOrder inOrder = inOrder(stateBuffer, logBuffer, handler);
         inOrder.verify(stateBuffer).getIntVolatile(TAIL_COUNTER_OFFSET);
         inOrder.verify(logBuffer).getIntVolatile(lengthOffset(frameOffset));
         inOrder.verify(logBuffer).getShort(typeOffset(frameOffset), LITTLE_ENDIAN);
@@ -151,6 +149,8 @@ public class LogScannerTest
         frameOffset += frameOneLength;
         inOrder.verify(logBuffer).getIntVolatile(lengthOffset(frameOffset));
         inOrder.verify(logBuffer).getShort(typeOffset(frameOffset), LITTLE_ENDIAN);
+
+        inOrder.verify(handler).onAvailable(0, frameOneLength + frameTwoLength);
     }
 
     @Test
@@ -171,12 +171,10 @@ public class LogScannerTest
         when(logBuffer.getShort(typeOffset(frameOffset + frameOneLength), LITTLE_ENDIAN))
             .thenReturn(MSG_TYPE);
 
-        assertTrue(scanner.scanNext(MTU_LENGTH));
-        assertThat(scanner.offset(), is(frameOffset));
-        assertThat(scanner.length(), is(frameOneLength));
+        assertTrue(scanner.scanNext(MTU_LENGTH, handler));
         assertFalse(scanner.isComplete());
 
-        final InOrder inOrder = inOrder(stateBuffer, logBuffer);
+        final InOrder inOrder = inOrder(stateBuffer, logBuffer, handler);
         inOrder.verify(stateBuffer).getIntVolatile(TAIL_COUNTER_OFFSET);
         inOrder.verify(logBuffer).getIntVolatile(lengthOffset(frameOffset));
         inOrder.verify(logBuffer).getShort(typeOffset(frameOffset), LITTLE_ENDIAN);
@@ -184,6 +182,8 @@ public class LogScannerTest
         frameOffset += frameOneLength;
         inOrder.verify(logBuffer).getIntVolatile(lengthOffset(frameOffset));
         inOrder.verify(logBuffer).getShort(typeOffset(frameOffset), LITTLE_ENDIAN);
+
+        inOrder.verify(handler).onAvailable(0, frameOneLength);
     }
 
     @Test
@@ -200,11 +200,11 @@ public class LogScannerTest
 
         scanner.seek(frameOffset);
 
-        assertTrue(scanner.scanNext(MTU_LENGTH));
-        assertThat(scanner.offset(), is(frameOffset));
-        assertThat(scanner.length(), is(FRAME_ALIGNMENT));
+        assertTrue(scanner.scanNext(MTU_LENGTH, handler));
         assertTrue(scanner.isComplete());
-        assertFalse(scanner.scanNext(MTU_LENGTH));
+        assertFalse(scanner.scanNext(MTU_LENGTH, handler));
+
+        verify(handler).onAvailable(frameOffset, FRAME_ALIGNMENT);
     }
 
     @Test
@@ -225,10 +225,10 @@ public class LogScannerTest
 
         scanner.seek(frameOffset);
 
-        assertTrue(scanner.scanNext(MTU_LENGTH));
-        assertThat(scanner.offset(), is(frameOffset));
-        assertThat(scanner.length(), is(FRAME_ALIGNMENT * 2));
+        assertTrue(scanner.scanNext(MTU_LENGTH, handler));
         assertTrue(scanner.isComplete());
-        assertFalse(scanner.scanNext(MTU_LENGTH));
+        assertFalse(scanner.scanNext(MTU_LENGTH, handler));
+
+        verify(handler, times(1)).onAvailable(frameOffset, FRAME_ALIGNMENT * 2);
     }
 }

@@ -62,8 +62,7 @@ public class SenderChannel
     private final AtomicBuffer scratchAtomicBuffer = new AtomicBuffer(scratchSendBuffer);
     private final LogScanner[] scanners;
 
-    /** duplicate log buffers to work around the lack of a (buffer, start, length) send method */
-    private final ByteBuffer[] sendBuffers;
+    private final ByteBuffer[] termSendBuffers;
     private final SenderFlowControlState activeFlowControlState = new SenderFlowControlState(0);
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
@@ -89,13 +88,8 @@ public class SenderChannel
         this.headerLength = headerLength;
         this.mtuLength = mtuLength;
 
-        scanners = buffers.buffers()
-                          .map(this::newScanner)
-                          .toArray(LogScanner[]::new);
-
-        sendBuffers = buffers.buffers()
-                             .map(this::duplicateLogBuffer)
-                             .toArray(ByteBuffer[]::new);
+        scanners = buffers.buffers().map(this::newScanner).toArray(LogScanner[]::new);
+        termSendBuffers = buffers.buffers().map(this::duplicateLogBuffer).toArray(ByteBuffer[]::new);
 
         currentTermId = new AtomicLong(initialTermId);
         cleanedTermId = new AtomicLong(initialTermId + 2);
@@ -126,22 +120,19 @@ public class SenderChannel
             final int availableBuffer = rightEdge - frameSequenceNumber;
             final int maxLength = Math.min(availableBuffer, mtuLength);
 
-            final LogScanner scanner = scanners[currentIndex];
-            if (scanner.scanNext(maxLength))
+            final LogScanner.AvailabilityHandler handler = (offset, length) ->
             {
                 // at this point sendBuffer wraps the same underlying
                 // ByteBuffer as the buffer parameter
-                final ByteBuffer sendBuffer = sendBuffers[currentIndex];
+                final ByteBuffer sendBuffer = termSendBuffers[currentIndex];
 
-                final int offset = scanner.offset();
-                final int expectedBytesSent = scanner.length();
                 sendBuffer.position(offset);
-                sendBuffer.limit(offset + expectedBytesSent);
+                sendBuffer.limit(offset + length);
 
                 try
                 {
                     int bytesSent = frameHandler.send(sendBuffer);
-                    if (expectedBytesSent != bytesSent)
+                    if (length != bytesSent)
                     {
                         // TODO: error
                     }
@@ -153,7 +144,10 @@ public class SenderChannel
                     //TODO: errors
                     ex.printStackTrace();
                 }
-            }
+            };
+
+            final LogScanner scanner = scanners[currentIndex];
+            scanner.scanNext(maxLength, handler);
 
             if (scanner.isComplete())
             {

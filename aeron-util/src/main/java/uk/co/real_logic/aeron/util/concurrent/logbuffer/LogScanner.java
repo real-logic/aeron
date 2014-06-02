@@ -32,14 +32,21 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*
  */
 public class LogScanner
 {
+    /**
+     * Handler for notifying availability from latest offset.
+     */
+    @FunctionalInterface
+    public interface AvailabilityHandler
+    {
+        void onAvailable(final int offset, final int length);
+    }
+
     private final AtomicBuffer logBuffer;
     private final AtomicBuffer stateBuffer;
     private final int alignedHeaderLength;
     private final int capacity;
 
     private int offset = 0;
-    private int length = 0;
-    private boolean isComplete = false;
 
     /**
      * Construct a reader that iterates over a log buffer with associated state buffer. Messages are identified as
@@ -84,54 +91,44 @@ public class LogScanner
     }
 
     /**
-     * The length of the next range of frames that will be <= MTU.
-     *
-     * @return the length of the next range of frames that will be <= MTU.
-     */
-    public int length()
-    {
-        return length;
-    }
-
-    /**
      * Is the scanning of the log buffer complete?
      *
      * @return is the scanning of the log buffer complete?
      */
     public boolean isComplete()
     {
-        return isComplete;
+        return offset >= capacity;
     }
 
     /**
-     * Scan forward in the buffer for available frames limited by what will fit in the MTU or maxLength,
-     * whichever is smaller.
+     * Scan forward in the buffer for available frames limited by what will fit in maxLength.
      *
      * @param maxLength in bytes to scan.
+     * @param handler called back if a frame is available.
      * @return true if data is available otherwise false.
      */
-    public boolean scanNext(final int maxLength)
+    public boolean scanNext(final int maxLength, final AvailabilityHandler handler)
     {
         boolean available = false;
 
-        if (!isComplete)
+        if (!isComplete())
         {
-            offset += length;
-            length = 0;
-
-            final int tail = getTailVolatile();
+            final int tail = getTail();
+            final int offset = this.offset;
             if (tail > offset)
             {
                 available = true;
+                int length = 0;
+                int padding = 0;
 
                 do
                 {
-                    final int alignedFrameLength = align(waitForFrameLengthVolatile(offset + length), FRAME_ALIGNMENT);
+                    final int alignedFrameLength = align(waitForFrameLength(offset + length), FRAME_ALIGNMENT);
 
                     if (PADDING_MSG_TYPE == getMessageType(offset + length))
                     {
-                        isComplete = true;
                         length += alignedHeaderLength;
+                        padding = alignedFrameLength - alignedHeaderLength;
                         break;
                     }
 
@@ -143,12 +140,11 @@ public class LogScanner
                         break;
                     }
                 }
-                while (tail > (offset + length));
+                while ((offset + length) < tail);
 
-                if ((offset + length) == capacity)
-                {
-                    isComplete = true;
-                }
+                this.offset += (length + padding);
+
+                handler.onAvailable(offset, length);
             }
         }
 
@@ -163,20 +159,18 @@ public class LogScanner
      */
     public void seek(final int offset)
     {
-        final int tail = getTailVolatile();
+        final int tail = getTail();
         if (offset < 0 || offset > tail)
         {
             throw new IllegalStateException(String.format("Invalid offset %d: range is 0 - %d", offset, tail));
         }
 
-        isComplete = false;
         this.offset = offset;
-        length = 0;
     }
 
-    private int waitForFrameLengthVolatile(final int frameOffset)
+    private int waitForFrameLength(final int frameOffset)
     {
-        return waitForFrameLength(logBuffer, frameOffset);
+        return FrameDescriptor.waitForFrameLength(logBuffer, frameOffset);
     }
 
     private int getMessageType(final int frameOffset)
@@ -184,7 +178,7 @@ public class LogScanner
         return logBuffer.getShort(typeOffset(frameOffset), ByteOrder.LITTLE_ENDIAN);
     }
 
-    private int getTailVolatile()
+    private int getTail()
     {
         return stateBuffer.getIntVolatile(BufferDescriptor.TAIL_COUNTER_OFFSET);
     }

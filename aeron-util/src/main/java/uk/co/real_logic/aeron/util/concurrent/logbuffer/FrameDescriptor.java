@@ -112,6 +112,13 @@ public class FrameDescriptor
             throw new IllegalStateException(s);
         }
 
+        if (length > FRAME_ALIGNMENT)
+        {
+            final String s = String.format("Frame header length must not be greater than %d, length=%d",
+                                           valueOf(FRAME_ALIGNMENT), valueOf(length));
+            throw new IllegalStateException(s);
+        }
+
         if (length % WORD_ALIGNMENT != 0)
         {
             final String s = String.format("Frame header length must be a multiple of %d, length=%d",

@@ -90,7 +90,14 @@ public class LogAppenderTest
     @Test(expected = IllegalStateException.class)
     public void shouldThrowExceptionOnDefaultHeaderLengthLessThanBaseHeaderLength()
     {
-        int length = BASE_HEADER_LENGTH - 1;
+        final int length = BASE_HEADER_LENGTH - 1;
+        logAppender = new LogAppender(logBuffer, stateBuffer, new byte[length], MAX_FRAME_LENGTH);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void shouldThrowExceptionOnDefaultHeaderLengthGreaterThanFrameAlignment()
+    {
+        final int length = FRAME_ALIGNMENT + 1;
         logAppender = new LogAppender(logBuffer, stateBuffer, new byte[length], MAX_FRAME_LENGTH);
     }
 

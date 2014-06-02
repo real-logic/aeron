@@ -30,7 +30,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*
 public class LogReader
 {
     /**
-     * Handler for reading data that is coming off the log.
+     * Handler for reading data that is coming from a log buffer.
      */
     @FunctionalInterface
     public interface FrameHandler
@@ -78,18 +78,15 @@ public class LogReader
         while (tail > cursor)
         {
             final int frameLength = waitForFrameLength(logBuffer, cursor);
-            final int type = type(cursor);
+            final int length = type(cursor) != PADDING_MSG_TYPE ? frameLength : FRAME_ALIGNMENT;
 
             try
             {
-                if (type != BufferDescriptor.PADDING_MSG_TYPE)
-                {
-                    handler.onFrame(logBuffer, cursor, frameLength);
-                }
+                handler.onFrame(logBuffer, cursor, length);
             }
             finally
             {
-                cursor += BitUtil.align(frameLength, FrameDescriptor.FRAME_ALIGNMENT);
+                cursor += BitUtil.align(frameLength, FRAME_ALIGNMENT);
                 counter++;
             }
         }

@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
+import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.status.PositionReporter;
 
 import java.util.concurrent.atomic.AtomicLong;
@@ -33,7 +34,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.W
  */
 public class SubscriberSession
 {
-    private static final int HEADER_LENGTH = BitUtil.align(BASE_HEADER_LENGTH, WORD_ALIGNMENT);
+    private static final int HEADER_LENGTH = BitUtil.align(DataHeaderFlyweight.HEADER_LENGTH, WORD_ALIGNMENT);
 
     private final LogReader[] logReaders;
     private final long sessionId;

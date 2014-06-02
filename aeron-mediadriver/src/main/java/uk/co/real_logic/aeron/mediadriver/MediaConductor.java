@@ -23,6 +23,7 @@ import uk.co.real_logic.aeron.util.command.*;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 
 import java.nio.ByteBuffer;
@@ -42,7 +43,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.B
 public class MediaConductor extends Agent
 {
     public static final int WRITE_BUFFER_CAPACITY = 512;
-    public static final int HEADER_LENGTH = BASE_HEADER_LENGTH + SIZE_OF_INT;
+    public static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
 
     public static final int HEARTBEAT_TIMEOUT_MILLISECONDS = 100;
 

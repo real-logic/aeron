@@ -26,11 +26,13 @@ import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.EventHandler;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
+import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.io.File;
 import java.io.IOException;
@@ -62,7 +64,15 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUt
 
 public class AeronTest
 {
-    private static final byte[] DEFAULT_HEADER = new byte[BASE_HEADER_LENGTH + SIZE_OF_INT];
+    private static final byte[] DEFAULT_HEADER = {
+        HeaderFlyweight.CURRENT_VERSION, FrameDescriptor.UNFRAGMENTED, 0, HeaderFlyweight.HDR_TYPE_DATA,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 3,
+        0, 0, 0, 2,
+        0, 0, 0, 0
+    };
+
     private static final int MAX_FRAME_LENGTH = 1024;
 
     private static final String DESTINATION = "udp://localhost:40124";
@@ -556,11 +566,12 @@ public class AeronTest
                         .termId(termId);
 
         IntStream.range(0, PAYLOAD_BUFFER_COUNT).forEach(
-            (i) ->
-            {
-                newBufferMessage.bufferOffset(i, 0);
-                newBufferMessage.bufferLength(i, LOG_MIN_SIZE);
-            });
+                (i) ->
+                {
+                    newBufferMessage.bufferOffset(i, 0);
+                    newBufferMessage.bufferLength(i, LOG_MIN_SIZE);
+                }
+        );
         addBufferLocation(rootDir, termId, sessionId, LOG, 0);
         addBufferLocation(rootDir, termId, sessionId, STATE, BUFFER_COUNT);
         newBufferMessage.destination(DESTINATION);
@@ -575,11 +586,12 @@ public class AeronTest
                                    final int start)
     {
         IntStream.range(0, BUFFER_COUNT).forEach(
-            (i) ->
-            {
-                File term = termLocation(dir, sessionId, CHANNEL_ID, termId + i, true, DESTINATION, type);
-                newBufferMessage.location(i + start, term.getAbsolutePath());
-            });
+                (i) ->
+                {
+                    File term = termLocation(dir, sessionId, CHANNEL_ID, termId + i, true, DESTINATION, type);
+                    newBufferMessage.location(i + start, term.getAbsolutePath());
+                }
+        );
     }
 
     private ManyToOneRingBuffer toClient()

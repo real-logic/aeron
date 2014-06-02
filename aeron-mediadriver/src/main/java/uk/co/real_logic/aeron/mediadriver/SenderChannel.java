@@ -131,7 +131,7 @@ public class SenderChannel
 
                 try
                 {
-                    int bytesSent = frameHandler.send(sendBuffer);
+                    final int bytesSent = frameHandler.send(sendBuffer);
                     if (length != bytesSent)
                     {
                         // TODO: error

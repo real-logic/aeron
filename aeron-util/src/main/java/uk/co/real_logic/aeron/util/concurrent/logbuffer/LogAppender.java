@@ -34,6 +34,9 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*
  *
  * A default message header is applied to each message with the fields filled in for fragment flags, sequence number,
  * and frame length as appropriate.
+ *
+ * A message of type {@link BufferDescriptor#PADDING_MSG_TYPE} is appended at the end of the buffer if claimed space
+ * is not sufficiently large to accommodate the message about to be written.
  */
 public class LogAppender
 {

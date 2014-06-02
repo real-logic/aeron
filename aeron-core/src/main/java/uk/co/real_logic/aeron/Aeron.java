@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.conductor.*;
 import uk.co.real_logic.aeron.util.AtomicArray;
+import uk.co.real_logic.aeron.util.CommonConfiguration;
 import uk.co.real_logic.aeron.util.ConductorByteBuffers;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
@@ -41,10 +42,18 @@ public final class Aeron
 
     private Aeron(final Context context)
     {
-        adminBuffers = context.conductorByteBuffers;
-        channels = new AtomicArray<>();
-        receivers = new AtomicArray<>();
-        mediaConductorCommandBuffer = new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocate(ADMIN_BUFFER_SIZE)));
+        this.channels = new AtomicArray<>();
+        this.receivers = new AtomicArray<>();
+        this.mediaConductorCommandBuffer = new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocate(ADMIN_BUFFER_SIZE)));
+
+        if (null == context.conductorByteBuffers)
+        {
+            this.adminBuffers = new ConductorByteBuffers(CommonConfiguration.ADMIN_DIR_NAME);
+        }
+        else
+        {
+            this.adminBuffers = context.conductorByteBuffers;
+        }
 
         try
         {
@@ -54,12 +63,12 @@ public final class Aeron
             final ConductorErrorHandler conductorErrorHandler =
                 new ConductorErrorHandler(context.invalidDestinationHandler);
 
-            clientConductor = new ClientConductor(mediaConductorCommandBuffer,
-                                                  rcvBuffer, sendBuffer,
-                                                  bufferUsage,
-                                                  channels, receivers,
-                                                  conductorErrorHandler,
-                                                  context.publisherControlFactory);
+            this.clientConductor = new ClientConductor(mediaConductorCommandBuffer,
+                                                       rcvBuffer, sendBuffer,
+                                                       bufferUsage,
+                                                       channels, receivers,
+                                                       conductorErrorHandler,
+                                                       context.publisherControlFactory);
         }
         catch (final Exception ex)
         {

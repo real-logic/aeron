@@ -46,6 +46,8 @@ subprojects {
         }
     }
 
+    group = 'uk.co.real-logic'
+
     compileJava {
         sourceCompatibility = 1.8
         targetCompatibility = 1.8
@@ -114,9 +116,19 @@ subprojects {
 }
 
 project(':aeron-mediadriver') {
+    apply plugin: 'application'
+
+    mainClassName = 'uk.co.real_logic.aeron.mediadriver.MediaDriver'
+
     dependencies {
         compile project(':aeron-util')
         testCompile project(path: ':aeron-util', configuration: 'tests')
+    }
+
+    build.doLast {
+        tasks.startScripts.execute()
+        tasks.installApp.execute()
+        tasks.distZip.execute()
     }
 }
 
@@ -129,31 +141,46 @@ project(':aeron-core') {
 
 project(':aeron-examples') {
     dependencies {
-        compile project(':aeron-core')
+        compile project(':aeron-core'), project(':aeron-mediadriver')
+    }
+
+    task(pub, dependsOn: 'build', type: JavaExec) {
+        description 'Runs ExamplePublisher'
+        main = 'uk.co.real_logic.aeron.examples.ExamplePublisher'
+        classpath = sourceSets.main.runtimeClasspath
+    }
+
+    task(sub, dependsOn: 'build', type: JavaExec) {
+        description 'Runs ExampleSubscriber'
+        main = 'uk.co.real_logic.aeron.examples.ExampleSubscriber'
+        classpath = sourceSets.main.runtimeClasspath
     }
 }
 
 project(':aeron-benchmark') {
     apply plugin: 'shadow'
+
     dependencies {
         compile project(':aeron-core'), project(':aeron-mediadriver')
         compile 'org.openjdk.jmh:jmh-core:0.4.2'
     }
+
     shadow {
         outputFile = new File('aeron-benchmark/build/libs/microbenchmarks.jar')
     }
+
     jar {
         manifest {
             attributes 'Main-Class': 'org.openjdk.jmh.Main'
         }
     }
+
     build.doLast {
         tasks.shadowJar.execute()
     }
 }
 
 project(':aeron-system-tests') {
-    apply plugin: 'shadow'
     dependencies {
         compile project(':aeron-core'), project(':aeron-mediadriver')
         testCompile project(path: ':aeron-util', configuration: 'tests')

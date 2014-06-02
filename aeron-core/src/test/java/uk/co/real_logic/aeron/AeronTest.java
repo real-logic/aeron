@@ -618,8 +618,7 @@ public class AeronTest
 
     private DataHandler emptyDataHandler()
     {
-        return (buffer, offset, sessionId, flags) -> {
-        };
+        return (buffer, offset, sessionId, flags) -> {};
     }
 
     private Channel newChannel(final Aeron aeron)

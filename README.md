@@ -71,7 +71,7 @@ You can run the `ExampleSubscriber` with its own Media Driver via Gradle
 Media Driver Packaging
 ----------------------
 
-The Media Driver is packaged by the default build into an application that can be found
+The Media Driver is packaged by the default build into an application that can be found here
 
     aeron-mediadriver/build/distributions/aeron-mediadriver-${VERSION}.zip
 

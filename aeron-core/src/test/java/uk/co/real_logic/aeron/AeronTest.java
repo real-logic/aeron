@@ -556,7 +556,8 @@ public class AeronTest
                         .termId(termId);
 
         IntStream.range(0, PAYLOAD_BUFFER_COUNT)
-                 .forEach(i ->
+                 .forEach(
+                     i ->
                      {
                          newBufferMessage.bufferOffset(i, 0);
                          newBufferMessage.bufferLength(i, LOG_MIN_SIZE);
@@ -575,7 +576,8 @@ public class AeronTest
                                    final int start)
     {
         IntStream.range(0, BUFFER_COUNT)
-                 .forEach(i ->
+                 .forEach(
+                     i ->
                      {
                          File term = termLocation(dir, sessionId, CHANNEL_ID, termId + i, true, DESTINATION, type);
                          newBufferMessage.location(i + start, term.getAbsolutePath());

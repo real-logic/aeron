@@ -113,7 +113,7 @@ public class LogScanner
 
         if (!isComplete())
         {
-            final int tail = getTail();
+            final int tail = tail();
             final int offset = this.offset;
             if (tail > offset)
             {
@@ -125,7 +125,7 @@ public class LogScanner
                 {
                     final int alignedFrameLength = align(waitForFrameLength(offset + length), FRAME_ALIGNMENT);
 
-                    if (PADDING_MSG_TYPE == getMessageType(offset + length))
+                    if (PADDING_FRAME_TYPE == frameType(offset + length))
                     {
                         length += alignedHeaderLength;
                         padding = alignedFrameLength - alignedHeaderLength;
@@ -159,7 +159,7 @@ public class LogScanner
      */
     public void seek(final int offset)
     {
-        final int tail = getTail();
+        final int tail = tail();
         if (offset < 0 || offset > tail)
         {
             throw new IllegalStateException(String.format("Invalid offset %d: range is 0 - %d", offset, tail));
@@ -173,12 +173,12 @@ public class LogScanner
         return FrameDescriptor.waitForFrameLength(logBuffer, frameOffset);
     }
 
-    private int getMessageType(final int frameOffset)
+    private int frameType(final int frameOffset)
     {
-        return logBuffer.getShort(typeOffset(frameOffset), ByteOrder.LITTLE_ENDIAN);
+        return logBuffer.getShort(typeOffset(frameOffset), ByteOrder.LITTLE_ENDIAN) & 0xFFFF;
     }
 
-    private int getTail()
+    private int tail()
     {
         return stateBuffer.getIntVolatile(BufferDescriptor.TAIL_COUNTER_OFFSET);
     }

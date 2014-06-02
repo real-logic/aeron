@@ -230,7 +230,7 @@ public class LogAppenderTest
         final InOrder inOrder = inOrder(logBuffer, stateBuffer);
         inOrder.verify(stateBuffer, times(1)).getAndAddInt(TAIL_COUNTER_OFFSET, requiredFrameSize);
         inOrder.verify(logBuffer, times(1)).putBytes(tailValue, DEFAULT_HEADER, 0, headerLength);
-        inOrder.verify(logBuffer, times(1)).putShort(typeOffset(tailValue), PADDING_MSG_TYPE, LITTLE_ENDIAN);
+        inOrder.verify(logBuffer, times(1)).putShort(typeOffset(tailValue), (short)PADDING_FRAME_TYPE, LITTLE_ENDIAN);
         inOrder.verify(logBuffer, times(1)).putByte(flagsOffset(tailValue), UNFRAGMENTED);
         inOrder.verify(logBuffer, times(1)).putInt(termOffsetOffset(tailValue), tailValue, LITTLE_ENDIAN);
         inOrder.verify(logBuffer, times(1)).putIntOrdered(lengthOffset(tailValue), LOG_BUFFER_CAPACITY - tailValue);

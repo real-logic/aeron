@@ -35,7 +35,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*
  * A default message header is applied to each message with the fields filled in for fragment flags, sequence number,
  * and frame length as appropriate.
  *
- * A message of type {@link BufferDescriptor#PADDING_MSG_TYPE} is appended at the end of the buffer if claimed space
+ * A message of type {@link BufferDescriptor#PADDING_FRAME_TYPE} is appended at the end of the buffer if claimed space
  * is not sufficiently large to accommodate the message about to be written.
  */
 public class LogAppender
@@ -229,15 +229,15 @@ public class LogAppender
     {
         logBuffer.putBytes(frameOffset, defaultHeader, 0, headerLength);
 
-        putType(frameOffset, PADDING_MSG_TYPE);
+        putFrameType(frameOffset, PADDING_FRAME_TYPE);
         putFlags(frameOffset, UNFRAGMENTED);
         putTermOffset(frameOffset, frameOffset);
         putLengthOrdered(frameOffset, capacity - frameOffset);
     }
 
-    private void putType(final int frameOffset, final short type)
+    private void putFrameType(final int frameOffset, final int type)
     {
-        logBuffer.putShort(typeOffset(frameOffset), type, LITTLE_ENDIAN);
+        logBuffer.putShort(typeOffset(frameOffset), (short)type, LITTLE_ENDIAN);
     }
 
     private void putFlags(final int frameOffset, final byte flags)

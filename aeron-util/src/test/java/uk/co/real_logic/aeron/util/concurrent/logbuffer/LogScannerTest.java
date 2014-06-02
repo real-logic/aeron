@@ -221,7 +221,7 @@ public class LogScannerTest
         when(logBuffer.getIntVolatile(lengthOffset(frameOffset + FRAME_ALIGNMENT)))
             .thenReturn(FRAME_ALIGNMENT * 2);
         when(logBuffer.getShort(typeOffset(frameOffset + FRAME_ALIGNMENT), LITTLE_ENDIAN))
-            .thenReturn(PADDING_MSG_TYPE);
+            .thenReturn((short)PADDING_FRAME_TYPE);
 
         scanner.seek(frameOffset);
 

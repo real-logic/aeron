@@ -21,9 +21,9 @@ import org.mockito.InOrder;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 import static java.lang.Integer.valueOf;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
@@ -74,7 +74,7 @@ public class LogRebuilderTest
         int srcOffset = 0;
         int length = 256;
 
-        when(logBuffer.getInt(lengthOffset(0))).thenReturn(length);
+        when(logBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN)).thenReturn(length);
 
         logRebuilder.insert(packet, srcOffset, length);
 
@@ -91,14 +91,14 @@ public class LogRebuilderTest
         final int srcOffset = 0;
         final int tail = LOG_BUFFER_CAPACITY - frameLength;
         final AtomicBuffer packet = new AtomicBuffer(ByteBuffer.allocate(FRAME_ALIGNMENT));
-        packet.putShort(typeOffset(srcOffset), PADDING_MSG_TYPE, ByteOrder.LITTLE_ENDIAN);
-        packet.putInt(termOffsetOffset(srcOffset), tail, ByteOrder.LITTLE_ENDIAN);
-        packet.putInt(lengthOffset(srcOffset), frameLength, ByteOrder.LITTLE_ENDIAN);
+        packet.putShort(typeOffset(srcOffset), (short)PADDING_FRAME_TYPE, LITTLE_ENDIAN);
+        packet.putInt(termOffsetOffset(srcOffset), tail, LITTLE_ENDIAN);
+        packet.putInt(lengthOffset(srcOffset), frameLength, LITTLE_ENDIAN);
 
         when(stateBuffer.getInt(TAIL_COUNTER_OFFSET)).thenReturn(tail);
         when(stateBuffer.getInt(HIGH_WATER_MARK_OFFSET)).thenReturn(tail);
-        when(logBuffer.getInt(lengthOffset(tail))).thenReturn(frameLength);
-        when(logBuffer.getShort(typeOffset(tail))).thenReturn(PADDING_MSG_TYPE);
+        when(logBuffer.getInt(lengthOffset(tail), LITTLE_ENDIAN)).thenReturn(frameLength);
+        when(logBuffer.getShort(typeOffset(tail), LITTLE_ENDIAN)).thenReturn((short)PADDING_FRAME_TYPE);
 
         logRebuilder.insert(packet, srcOffset, frameLength);
 
@@ -115,13 +115,13 @@ public class LogRebuilderTest
         final int srcOffset = 0;
         final int tail = FRAME_ALIGNMENT;
         final AtomicBuffer packet = new AtomicBuffer(ByteBuffer.allocate(length));
-        packet.putInt(termOffsetOffset(srcOffset), tail, ByteOrder.LITTLE_ENDIAN);
+        packet.putInt(termOffsetOffset(srcOffset), tail, LITTLE_ENDIAN);
 
         stateBuffer.putInt(TAIL_COUNTER_OFFSET, FRAME_ALIGNMENT);
         stateBuffer.putInt(HIGH_WATER_MARK_OFFSET, FRAME_ALIGNMENT * 3);
         when(logBuffer.getInt(lengthOffset(0))).thenReturn(length);
-        when(logBuffer.getInt(lengthOffset(FRAME_ALIGNMENT))).thenReturn(length);
-        when(logBuffer.getInt(lengthOffset(FRAME_ALIGNMENT * 2))).thenReturn(length);
+        when(logBuffer.getInt(lengthOffset(FRAME_ALIGNMENT), LITTLE_ENDIAN)).thenReturn(length);
+        when(logBuffer.getInt(lengthOffset(FRAME_ALIGNMENT * 2), LITTLE_ENDIAN)).thenReturn(length);
 
         logRebuilder.insert(packet, srcOffset, length);
 
@@ -139,12 +139,12 @@ public class LogRebuilderTest
         final int length = FRAME_ALIGNMENT;
         final int srcOffset = 0;
         final AtomicBuffer packet = new AtomicBuffer(ByteBuffer.allocate(length));
-        packet.putInt(termOffsetOffset(srcOffset), FRAME_ALIGNMENT * 2, ByteOrder.LITTLE_ENDIAN);
+        packet.putInt(termOffsetOffset(srcOffset), FRAME_ALIGNMENT * 2, LITTLE_ENDIAN);
 
         stateBuffer.putInt(TAIL_COUNTER_OFFSET, 0);
         stateBuffer.putInt(HIGH_WATER_MARK_OFFSET, FRAME_ALIGNMENT * 2);
-        when(logBuffer.getInt(lengthOffset(0))).thenReturn(0);
-        when(logBuffer.getInt(lengthOffset(FRAME_ALIGNMENT))).thenReturn(length);
+        when(logBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN)).thenReturn(0);
+        when(logBuffer.getInt(lengthOffset(FRAME_ALIGNMENT), LITTLE_ENDIAN)).thenReturn(length);
 
         logRebuilder.insert(packet, srcOffset, length);
 
@@ -162,12 +162,12 @@ public class LogRebuilderTest
         final int length = FRAME_ALIGNMENT;
         final int srcOffset = 0;
         final AtomicBuffer packet = new AtomicBuffer(ByteBuffer.allocate(length));
-        packet.putInt(termOffsetOffset(srcOffset), FRAME_ALIGNMENT * 2, ByteOrder.LITTLE_ENDIAN);
+        packet.putInt(termOffsetOffset(srcOffset), FRAME_ALIGNMENT * 2, LITTLE_ENDIAN);
 
         stateBuffer.putInt(TAIL_COUNTER_OFFSET, FRAME_ALIGNMENT);
         stateBuffer.putInt(HIGH_WATER_MARK_OFFSET, FRAME_ALIGNMENT * 4);
-        when(logBuffer.getInt(lengthOffset(0))).thenReturn(FRAME_ALIGNMENT);
-        when(logBuffer.getInt(lengthOffset(FRAME_ALIGNMENT))).thenReturn(0);
+        when(logBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN)).thenReturn(FRAME_ALIGNMENT);
+        when(logBuffer.getInt(lengthOffset(FRAME_ALIGNMENT), LITTLE_ENDIAN)).thenReturn(0);
 
         logRebuilder.insert(packet, srcOffset, length);
 

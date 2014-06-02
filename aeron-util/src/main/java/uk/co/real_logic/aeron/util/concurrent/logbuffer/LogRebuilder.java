@@ -18,6 +18,8 @@ package uk.co.real_logic.aeron.util.concurrent.logbuffer;
 import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
+import java.nio.ByteOrder;
+
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
@@ -87,7 +89,7 @@ public class LogRebuilder
 
     private int alignedFrameLength(final int tail)
     {
-        return BitUtil.align(logBuffer.getInt(lengthOffset(tail)), FRAME_ALIGNMENT);
+        return BitUtil.align(logBuffer.getInt(lengthOffset(tail), ByteOrder.LITTLE_ENDIAN), FRAME_ALIGNMENT);
     }
 
     private void putTailOrdered(int tail)

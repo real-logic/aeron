@@ -20,7 +20,6 @@ import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.hamcrest.Matchers.is;
@@ -28,9 +27,11 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.util.BitUtil.align;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.PADDING_FRAME_TYPE;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.STATE_BUFFER_LENGTH;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.TAIL_COUNTER_OFFSET;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*;
+import static uk.co.real_logic.aeron.util.protocol.HeaderFlyweight.HDR_TYPE_DATA;
 
 public class LogReaderTest
 {
@@ -70,7 +71,7 @@ public class LogReaderTest
 
         when(logBuffer.getIntVolatile(lengthOffset(0))).thenReturn(frameLength);
         when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(alignedFrameLength);
-        when(logBuffer.getInt(typeOffset(0), LITTLE_ENDIAN)).thenReturn(HeaderFlyweight.HDR_TYPE_NAK);
+        when(logBuffer.getShort(typeOffset(0), LITTLE_ENDIAN)).thenReturn((short)HDR_TYPE_DATA);
 
         assertThat(logReader.read(handler), is(1));
 
@@ -100,7 +101,7 @@ public class LogReaderTest
 
         when(logBuffer.getIntVolatile(anyInt())).thenReturn(frameLength);
         when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(alignedFrameLength * 2);
-        when(logBuffer.getInt(anyInt(), any())).thenReturn(HeaderFlyweight.HDR_TYPE_NAK);
+        when(logBuffer.getShort(anyInt(), any())).thenReturn((short)HDR_TYPE_DATA);
 
         assertThat(logReader.read(handler), is(2));
 
@@ -123,8 +124,7 @@ public class LogReaderTest
 
         when(logBuffer.getIntVolatile(lengthOffset(startOfMessage))).thenReturn(frameLength);
         when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(LOG_BUFFER_CAPACITY);
-        when(logBuffer.getInt(typeOffset(startOfMessage), LITTLE_ENDIAN))
-            .thenReturn(HeaderFlyweight.HDR_TYPE_NAK);
+        when(logBuffer.getShort(typeOffset(startOfMessage), LITTLE_ENDIAN)).thenReturn((short)HDR_TYPE_DATA);
 
         logReader.seek(startOfMessage);
         assertThat(logReader.read(handler), is(1));
@@ -134,5 +134,27 @@ public class LogReaderTest
         inOrder.verify(stateBuffer, atLeastOnce()).getIntVolatile(TAIL_COUNTER_OFFSET);
         inOrder.verify(logBuffer).getIntVolatile(lengthOffset(startOfMessage));
         verify(handler).onFrame(logBuffer, startOfMessage, frameLength);
+    }
+
+    @Test
+    public void shouldNotReadLastMessageWhenPadding()
+    {
+        final int msgLength = 1;
+        final int frameLength = HEADER_LENGTH + msgLength;
+        final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
+        final int startOfMessage = LOG_BUFFER_CAPACITY - alignedFrameLength;
+
+        when(logBuffer.getIntVolatile(lengthOffset(startOfMessage))).thenReturn(frameLength);
+        when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(LOG_BUFFER_CAPACITY);
+        when(logBuffer.getShort(typeOffset(startOfMessage), LITTLE_ENDIAN)).thenReturn((short)PADDING_FRAME_TYPE);
+
+        logReader.seek(startOfMessage);
+        assertThat(logReader.read(handler), is(0));
+        assertTrue(logReader.isComplete());
+
+        final InOrder inOrder = inOrder(logBuffer, stateBuffer);
+        inOrder.verify(stateBuffer, atLeastOnce()).getIntVolatile(TAIL_COUNTER_OFFSET);
+        inOrder.verify(logBuffer).getIntVolatile(lengthOffset(startOfMessage));
+        verify(handler, never()).onFrame(any(), anyInt(), anyInt());
     }
 }

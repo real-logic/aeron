@@ -18,7 +18,8 @@ package uk.co.real_logic.aeron.util.concurrent.logbuffer;
 import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import java.nio.ByteOrder;
+
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*;
 
@@ -78,16 +79,17 @@ public class LogReader
         while (tail > cursor)
         {
             final int frameLength = waitForFrameLength(logBuffer, cursor);
-            final int length = type(cursor) != PADDING_MSG_TYPE ? frameLength : FRAME_ALIGNMENT;
-
             try
             {
-                handler.onFrame(logBuffer, cursor, length);
+                if (frameType(cursor) != PADDING_FRAME_TYPE)
+                {
+                    ++counter;
+                    handler.onFrame(logBuffer, cursor, frameLength);
+                }
             }
             finally
             {
                 cursor += BitUtil.align(frameLength, FRAME_ALIGNMENT);
-                counter++;
             }
         }
 
@@ -114,8 +116,8 @@ public class LogReader
         return stateViewer.tailVolatile();
     }
 
-    private int type(final int frameOffset)
+    private int frameType(final int frameOffset)
     {
-        return logBuffer.getInt(typeOffset(frameOffset), LITTLE_ENDIAN);
+        return logBuffer.getShort(typeOffset(frameOffset), ByteOrder.LITTLE_ENDIAN) & 0xFFFF;
     }
 }

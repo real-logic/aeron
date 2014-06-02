@@ -555,13 +555,12 @@ public class AeronTest
                         .sessionId(sessionId)
                         .termId(termId);
 
-        IntStream.range(0, PAYLOAD_BUFFER_COUNT)
-                 .forEach(
-                     i ->
-                     {
-                         newBufferMessage.bufferOffset(i, 0);
-                         newBufferMessage.bufferLength(i, LOG_MIN_SIZE);
-                     });
+        IntStream.range(0, PAYLOAD_BUFFER_COUNT).forEach(
+            (i) ->
+            {
+                newBufferMessage.bufferOffset(i, 0);
+                newBufferMessage.bufferLength(i, LOG_MIN_SIZE);
+            });
         addBufferLocation(rootDir, termId, sessionId, LOG, 0);
         addBufferLocation(rootDir, termId, sessionId, STATE, BUFFER_COUNT);
         newBufferMessage.destination(DESTINATION);
@@ -575,13 +574,12 @@ public class AeronTest
                                    final Type type,
                                    final int start)
     {
-        IntStream.range(0, BUFFER_COUNT)
-                 .forEach(
-                     i ->
-                     {
-                         File term = termLocation(dir, sessionId, CHANNEL_ID, termId + i, true, DESTINATION, type);
-                         newBufferMessage.location(i + start, term.getAbsolutePath());
-                     });
+        IntStream.range(0, BUFFER_COUNT).forEach(
+            (i) ->
+            {
+                File term = termLocation(dir, sessionId, CHANNEL_ID, termId + i, true, DESTINATION, type);
+                newBufferMessage.location(i + start, term.getAbsolutePath());
+            });
     }
 
     private ManyToOneRingBuffer toClient()

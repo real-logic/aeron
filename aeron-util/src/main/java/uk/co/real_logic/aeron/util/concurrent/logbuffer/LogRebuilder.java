@@ -87,6 +87,16 @@ public class LogRebuilder
         }
     }
 
+    /**
+     * Is the rebuild of this log complete?
+     *
+     * @return true if it is complete otherwise false.
+     */
+    public boolean isComplete()
+    {
+        return stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET) >= logBuffer.capacity();
+    }
+
     private int alignedFrameLength(final int tail)
     {
         return BitUtil.align(logBuffer.getInt(lengthOffset(tail), ByteOrder.LITTLE_ENDIAN), FRAME_ALIGNMENT);

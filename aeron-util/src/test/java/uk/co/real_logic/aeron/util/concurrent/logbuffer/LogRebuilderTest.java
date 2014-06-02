@@ -25,7 +25,9 @@ import java.nio.ByteBuffer;
 import static java.lang.Integer.valueOf;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*;
@@ -77,6 +79,7 @@ public class LogRebuilderTest
         when(logBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN)).thenReturn(length);
 
         logRebuilder.insert(packet, srcOffset, length);
+        assertFalse(logRebuilder.isComplete());
 
         final InOrder inOrder = inOrder(logBuffer, stateBuffer);
         inOrder.verify(logBuffer).putBytes(0, packet, srcOffset, length);
@@ -101,6 +104,7 @@ public class LogRebuilderTest
         when(logBuffer.getShort(typeOffset(tail), LITTLE_ENDIAN)).thenReturn((short)PADDING_FRAME_TYPE);
 
         logRebuilder.insert(packet, srcOffset, frameLength);
+        assertTrue(logRebuilder.isComplete());
 
         final InOrder inOrder = inOrder(logBuffer, stateBuffer);
         inOrder.verify(logBuffer).putBytes(tail, packet, srcOffset, frameLength);

@@ -96,7 +96,8 @@ public class UnicastReceiverTest
     {
         bufferManagement = newMappedBufferManager(directory.dataDir());
 
-        NioSelector nioSelector = new NioSelector();
+        final NioSelector nioSelector = new NioSelector();
+
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .conductorCommandBuffer(COMMAND_BUFFER_SZ)
             .receiverCommandBuffer(COMMAND_BUFFER_SZ)
@@ -107,8 +108,8 @@ public class UnicastReceiverTest
             .bufferManagement(bufferManagement);
 
         ctx.rcvFrameHandlerFactory(
-            new RcvFrameHandlerFactory(nioSelector, new MediaConductorCursor(ctx.conductorCommandBuffer(),
-                                                                             nioSelector))
+            new RcvFrameHandlerFactory(nioSelector,
+                                       new MediaConductorCursor(ctx.conductorCommandBuffer(), nioSelector))
         );
 
         final Sender sender = mock(Sender.class);
@@ -283,6 +284,7 @@ public class UnicastReceiverTest
         final InetSocketAddress rcvAddr = (InetSocketAddress)senderChannel.receive(rcvBuffer);
 
         statusMessage.wrap(rcvBuffer);
+
         assertNotNull(rcvAddr);
         assertThat(rcvAddr.getPort(), is(destination.remoteData().getPort()));
         assertThat(statusMessage.headerType(), is(HeaderFlyweight.HDR_TYPE_SM));
@@ -327,7 +329,7 @@ public class UnicastReceiverTest
         writeSubscriberMessage(ADD_SUBSCRIBER, URI, ONE_CHANNEL);
         processThreads();
 
-        UdpDestination destination = udpDestination();
+        final UdpDestination destination = udpDestination();
         sendDataFrame(destination, CHANNEL_ID, 0);
         processThreads();
 
@@ -347,10 +349,11 @@ public class UnicastReceiverTest
         writeSubscriberMessage(ADD_SUBSCRIBER, URI, ONE_CHANNEL);
         processThreads();
 
-        UdpDestination destination = udpDestination();
-        int packetsToFillBuffer = COMMAND_BUFFER_SZ / FAKE_PACKET_SIZE;
-        int iterations = 4 * packetsToFillBuffer;
+        final UdpDestination destination = udpDestination();
+        final int packetsToFillBuffer = COMMAND_BUFFER_SZ / FAKE_PACKET_SIZE;
+        final int iterations = 4 * packetsToFillBuffer;
         long termId = 0;
+
         for (int i = 0; i < iterations; i++)
         {
             if ((i % packetsToFillBuffer) == 0)
@@ -365,8 +368,9 @@ public class UnicastReceiverTest
 
     private void assertReceivedDataFromNetwork() throws IOException
     {
-        List<Buffers> buffers1 = directory.mapTermFile(directory.receiverDir(), URI, SESSION_ID, CHANNEL_ID);
-        StateViewer stateViewer = new StateViewer(buffers1.get(0).stateBuffer());
+        final List<Buffers> buffers1 = directory.mapTermFile(directory.receiverDir(), URI, SESSION_ID, CHANNEL_ID);
+        final StateViewer stateViewer = new StateViewer(buffers1.get(0).stateBuffer());
+
         assertThat(stateViewer.tailVolatile(), is(greaterThan(0)));
     }
 
@@ -411,7 +415,7 @@ public class UnicastReceiverTest
                                final int amount)
         throws Exception
     {
-        int alignedAmount = BitUtil.align(amount, FRAME_ALIGNMENT);
+        final int alignedAmount = BitUtil.align(amount, FRAME_ALIGNMENT);
 
         final DataHeaderFlyweight dataHeaderFlyweight = new DataHeaderFlyweight();
         dataHeaderFlyweight.wrap(writeBuffer, 0);
@@ -421,14 +425,15 @@ public class UnicastReceiverTest
                            .channelId(channelId)
                            .termId(termId)
                            .version(HeaderFlyweight.CURRENT_VERSION)
-                           .flags((byte) DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
+                           .flags((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
                            .headerType(HeaderFlyweight.HDR_TYPE_DATA)
                            .frameLength(alignedAmount);
 
         sendBuffer.position(0);
         sendBuffer.putInt(dataHeaderFlyweight.dataOffset(), VALUE);
         sendBuffer.limit(alignedAmount);
-        int sent = senderChannel.send(sendBuffer, destination.remoteData());
+        final int sent = senderChannel.send(sendBuffer, destination.remoteData());
+
         assertThat(sent, is(alignedAmount));
     }
 

@@ -31,7 +31,6 @@ import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -112,7 +111,7 @@ public class UnicastSenderTest
             () -> controlledTimestamp,
             MEDIA_CONDUCTOR_TICK_DURATION_MICROS,
             TimeUnit.MICROSECONDS,
-                MEDIA_CONDUCTOR_TICKS_PER_WHEEL);
+            MEDIA_CONDUCTOR_TICKS_PER_WHEEL);
 
         final Context ctx = new Context()
             .conductorCommandBuffer(COMMAND_BUFFER_SZ)
@@ -162,12 +161,6 @@ public class UnicastSenderTest
             // TODO
             //assertIsDirectory(bufferMessage.location());
         });
-    }
-
-    private void assertIsDirectory(final String location)
-    {
-        final File dir = new File(location);
-        assertTrue("Isn't a directory: " + location, dir.isDirectory());
     }
 
     @Test(timeout = 1000)
@@ -501,7 +494,7 @@ public class UnicastSenderTest
         adminCommands.write(eventTypeId, writeBuffer, 0, channelMessage.length());
     }
 
-    private void sendStatusMessage(final InetSocketAddress destAddr,
+    private void sendStatusMessage(final InetSocketAddress dstAddr,
                                    final long termId,
                                    final int seqNum,
                                    final long window)
@@ -521,7 +514,7 @@ public class UnicastSenderTest
 
         wrappedWriteBuffer.position(0);
         wrappedWriteBuffer.limit(StatusMessageFlyweight.HEADER_LENGTH);
-        receiverChannel.send(wrappedWriteBuffer, destAddr);
+        receiverChannel.send(wrappedWriteBuffer, dstAddr);
     }
 
     private void processThreads(final int iterations)
@@ -552,10 +545,8 @@ public class UnicastSenderTest
                                                      final long channelId)
         throws IOException
     {
-        final List<SharedDirectoriesExternalResource.Buffers> buffers = directory.mapTermFile(directory.senderDir(),
-                                                                              destination,
-                                                                              sessionId,
-                                                                              channelId);
+        final List<SharedDirectoriesExternalResource.Buffers> buffers
+            = directory.mapTermFile(directory.senderDir(), destination, sessionId, channelId);
 
         return SharedDirectoriesExternalResource.mapLoggers(buffers, DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }

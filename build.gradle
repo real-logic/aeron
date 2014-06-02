@@ -144,16 +144,25 @@ project(':aeron-examples') {
         compile project(':aeron-core'), project(':aeron-mediadriver')
     }
 
+    def pubBaseDir = System.properties['java.io.tmpdir'] + "pub"
+    def subBaseDir = System.properties['java.io.tmpdir'] + "sub"
+
     task(pub, dependsOn: 'build', type: JavaExec) {
         description 'Runs ExamplePublisher'
         main = 'uk.co.real_logic.aeron.examples.ExamplePublisher'
         classpath = sourceSets.main.runtimeClasspath
+        systemProperties("aeron.data.dir": pubBaseDir + 'data',
+                         "aeron.conductor.dir": pubBaseDir + 'conductor',
+                         "aeron.counters.dir": pubBaseDir + 'counters')
     }
 
     task(sub, dependsOn: 'build', type: JavaExec) {
         description 'Runs ExampleSubscriber'
         main = 'uk.co.real_logic.aeron.examples.ExampleSubscriber'
         classpath = sourceSets.main.runtimeClasspath
+        systemProperties("aeron.data.dir": subBaseDir + 'data',
+                         "aeron.conductor.dir": subBaseDir + 'conductor',
+                         "aeron.counters.dir": subBaseDir + 'counters')
     }
 }
 

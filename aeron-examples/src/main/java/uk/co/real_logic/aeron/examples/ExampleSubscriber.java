@@ -30,17 +30,16 @@ import java.util.stream.IntStream;
  */
 public class ExampleSubscriber
 {
-    public static final Destination DESTINATION = new Destination("udp://172.16.29.29:40123");
+    public static final Destination DESTINATION = new Destination("udp://localhost:40123");
     private static final ExampleDataHandler[] CHANNELS = {new ExampleDataHandler(10), new ExampleDataHandler(20)};
 
     public static void main(final String[] args)
     {
         final Executor executor = Executors.newFixedThreadPool(2);
+        final Aeron.Context aeronContext = new Aeron.Context().errorHandler(ExampleSubscriber::onError);
 
-        try
+        try (final Aeron aeron = Aeron.newSingleMediaDriver(aeronContext))
         {
-            final Aeron.Context aeronContext = new Aeron.Context().errorHandler(ExampleSubscriber::onError);
-            final Aeron aeron = Aeron.newSingleMediaDriver(aeronContext);
             final Subscriber.Context context = new Subscriber.Context().destination(DESTINATION);
 
             // register some channels that use stateful objects

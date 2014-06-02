@@ -19,33 +19,33 @@ import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Channel;
 import uk.co.real_logic.aeron.Destination;
 import uk.co.real_logic.aeron.Source;
+import uk.co.real_logic.aeron.mediadriver.MediaDriver;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.nio.ByteBuffer;
 
 /**
- * Example Aeron sender application
+ * Example Aeron pusblisher application
  */
 public class ExamplePublisher
 {
     public static final int CHANNEL_ID = 10;
-    public static final Destination DESTINATION = new Destination("udp://172.16.29.29:40123");
+    public static final Destination DESTINATION = new Destination("udp://localhost:40123");
+
+    private static final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocateDirect(256));
 
     public static void main(final String[] args)
     {
-        try
+        final Aeron.Context context = new Aeron.Context().errorHandler(ExamplePublisher::onError);
+
+        try (final MediaDriver driver = ExampleUtil.createEmbeddedMediaDriver();
+             final Aeron aeron = Aeron.newSingleMediaDriver(context);
+             final Source source = aeron.newSource(DESTINATION);
+             final Channel channel = source.newChannel(CHANNEL_ID))
         {
-            final Aeron.Context context = new Aeron.Context().errorHandler(ExamplePublisher::onError);
-            final Aeron aeron = Aeron.newSingleMediaDriver(context);
-            final Source source = aeron.newSource(DESTINATION);
-            final Channel aChannel = source.newChannel(CHANNEL_ID);
-
-
-            final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocateDirect(256));
-
             // TODO: add data to buffer and get it ready to send
-            aChannel.send(buffer);
+            //channel.send(buffer);
             // TODO: wait around for something...
         }
         catch (final Exception ex)

@@ -18,11 +18,14 @@ package uk.co.real_logic.aeron.mediadriver;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
 import uk.co.real_logic.aeron.util.CommonConfiguration;
 import uk.co.real_logic.aeron.util.ConductorByteBuffers;
+import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.aeron.util.status.StatusBufferCreator;
 
+import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -31,6 +34,7 @@ import java.util.function.Supplier;
 import static java.lang.Integer.getInteger;
 import static uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement.newMappedBufferManager;
 import static uk.co.real_logic.aeron.util.CommonConfiguration.ADMIN_DIR_NAME;
+import static uk.co.real_logic.aeron.util.CommonConfiguration.COUNTERS_DIR_NAME;
 import static uk.co.real_logic.aeron.util.CommonConfiguration.DATA_DIR_NAME;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_LENGTH;
 
@@ -109,6 +113,9 @@ public class MediaDriver implements AutoCloseable
     /** Default max number of active retransmissions per Term */
     public static final int MAX_RETRANSMITS_DEFAULT = 16;
 
+    public static final long DESCRIPTOR_BUFFER_SIZE = 1024L;
+    public static final long COUNTERS_BUFFER_SIZE = 1024L;
+
     public static final int READ_BYTE_BUFFER_SZ = getInteger(READ_BUFFER_SZ_PROP_NAME, READ_BYTE_BUFFER_SZ_DEFAULT);
     public static final int COMMAND_BUFFER_SZ = getInteger(COMMAND_BUFFER_SZ_PROP_NAME, COMMAND_BUFFER_SZ_DEFAULT);
     public static final int ADMIN_BUFFER_SZ = getInteger(ADMIN_BUFFER_SZ_PROP_NAME, ADMIN_BUFFER_SZ_DEFAULT);
@@ -122,6 +129,10 @@ public class MediaDriver implements AutoCloseable
 
     /** tickDuration (in MICROSECONDS) for TimerWheel in conductor thread */
     public static final int MEDIA_CONDUCTOR_TICK_DURATION_MICROS = 10 * 1000;
+
+    private final File adminDirFile;
+    private final File dataDirFile;
+    private final File countersDirFile;
 
     public static void main(final String[] args)
     {
@@ -152,26 +163,34 @@ public class MediaDriver implements AutoCloseable
 
     private final ConductorByteBuffers conductorByteBuffers;
     private final BufferManagement bufferManagement;
+    private final StatusBufferCreator countersCreator;
 
     public MediaDriver() throws Exception
     {
-        final NioSelector nioSelector = new NioSelector();
+        final NioSelector rcvNioSelector = new NioSelector();
+
+        adminDirFile = new File(ADMIN_DIR_NAME);
+        dataDirFile = new File(DATA_DIR_NAME);
+        countersDirFile = new File(COUNTERS_DIR_NAME);
+
+        ensureDirectoriesExist();
 
         conductorByteBuffers = new ConductorByteBuffers(ADMIN_DIR_NAME, ADMIN_BUFFER_SZ);
         bufferManagement = newMappedBufferManager(DATA_DIR_NAME);
+        countersCreator = new StatusBufferCreator(DESCRIPTOR_BUFFER_SIZE, COUNTERS_BUFFER_SIZE);
 
         final Context context = new Context()
                 .conductorCommandBuffer(COMMAND_BUFFER_SZ)
                 .receiverCommandBuffer(COMMAND_BUFFER_SZ)
-                .rcvNioSelector(nioSelector)
+                .rcvNioSelector(rcvNioSelector)
                 .adminNioSelector(new NioSelector())
                 .senderFlowControl(UnicastSenderControlStrategy::new)
                 .conductorByteBuffers(conductorByteBuffers)
                 .bufferManagement(bufferManagement)
                 .mtuLength(CommonConfiguration.MTU_LENGTH);
 
-        context.rcvFrameHandlerFactory(new RcvFrameHandlerFactory(nioSelector,
-                new MediaConductorCursor(context.conductorCommandBuffer(), nioSelector)));
+        context.rcvFrameHandlerFactory(new RcvFrameHandlerFactory(rcvNioSelector,
+                new MediaConductorCursor(context.conductorCommandBuffer(), rcvNioSelector)));
 
         receiver = new Receiver(context);
         sender = new Sender(context);
@@ -200,6 +219,22 @@ public class MediaDriver implements AutoCloseable
         mediaConductor.close();
         conductorByteBuffers.close();
         bufferManagement.close();
+        countersCreator.close();
+        deleteDirectories();
+    }
+
+    public void ensureDirectoriesExist() throws Exception
+    {
+        IoUtil.ensureDirectoryExists(adminDirFile, "adminDir");
+        IoUtil.ensureDirectoryExists(dataDirFile, "dataDir");
+        IoUtil.ensureDirectoryExists(countersDirFile, "countersDir");
+    }
+
+    public void deleteDirectories() throws Exception
+    {
+        IoUtil.delete(adminDirFile, false);
+        IoUtil.delete(dataDirFile, false);
+        IoUtil.delete(countersDirFile, false);
     }
 
     public static class Context

@@ -30,7 +30,7 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor
 /**
  * Encapsulation of media driver and API for source and receiver construction
  */
-public final class Aeron
+public final class Aeron implements AutoCloseable
 {
     private static final int ADMIN_BUFFER_SIZE = 512 + TRAILER_LENGTH;
 
@@ -79,6 +79,7 @@ public final class Aeron
     public void close()
     {
         adminBuffers.close();
+        clientConductor.close();
     }
 
     /**

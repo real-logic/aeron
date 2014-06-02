@@ -15,12 +15,12 @@
  */
 package uk.co.real_logic.aeron;
 
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
-import uk.co.real_logic.aeron.util.ConductorBuffersExternalResource;
 import uk.co.real_logic.aeron.util.ConductorByteBuffers;
-import uk.co.real_logic.aeron.util.CountersFileExternalResource;
-import uk.co.real_logic.aeron.util.SharedDirectoriesExternalResource;
 
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.Subscriber.DataHandler;
@@ -32,15 +32,6 @@ public class UnicastTest
     private static final Destination DESTINATION = new Destination("udp://localhost:54321");
     private static final long CHANNEL_ID = 1L;
     private static final long SESSION_ID = 2L;
-
-    @ClassRule
-    public static CountersFileExternalResource counters = new CountersFileExternalResource();
-
-    @ClassRule
-    public static SharedDirectoriesExternalResource dataDir = new SharedDirectoriesExternalResource();
-
-    @ClassRule
-    public static ConductorBuffersExternalResource buffers = new ConductorBuffersExternalResource(ADMIN_DIR_NAME);
 
     private Aeron producingClient;
     private Aeron receivingClient;

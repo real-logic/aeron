@@ -22,19 +22,19 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class SenderFlowControlState
 {
-    private final AtomicInteger rightEdge;
+    private final AtomicInteger rightEdge = new AtomicInteger();
 
     public SenderFlowControlState(final int initialRightEdge)
     {
-        this.rightEdge = new AtomicInteger(initialRightEdge);
+        rightEdge.lazySet(initialRightEdge);
     }
 
-    public void updateRightEdgeOfWindow(final int rightEdge)
+    public void rightEdgeOfWindowOrdered(final int rightEdge)
     {
         this.rightEdge.lazySet(rightEdge);
     }
 
-    public int rightEdgeOfWindowAtomic()
+    public int rightEdgeOfWindowVolatile()
     {
         return rightEdge.get();
     }

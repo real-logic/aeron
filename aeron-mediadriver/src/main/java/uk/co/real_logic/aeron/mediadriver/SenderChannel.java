@@ -122,7 +122,7 @@ public class SenderChannel
         try
         {
             final int frameSequenceNumber = 0;  // TODO: grab this from peeking at the frame
-            final int rightEdge = activeFlowControlState.rightEdgeOfWindowAtomic();
+            final int rightEdge = activeFlowControlState.rightEdgeOfWindowVolatile();
             final int availableBuffer = rightEdge - frameSequenceNumber;
             final int maxLength = Math.min(availableBuffer, mtuLength);
 
@@ -198,7 +198,7 @@ public class SenderChannel
         final int rightEdge = controlStrategy.onStatusMessage(termId,
                                                               highestContiguousSequenceNumber,
                                                               receiverWindow);
-        activeFlowControlState.updateRightEdgeOfWindow(rightEdge);
+        activeFlowControlState.rightEdgeOfWindowOrdered(rightEdge);
         statusMessagesSeen++;
     }
 

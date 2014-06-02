@@ -55,4 +55,26 @@ The preferred way to build is using the gradle script included.
 
 Full clean and build of all modules
 
-    ./gradlew clean build
+    $ ./gradlew
+
+Running Examples
+----------------
+
+You can run the `ExamplePublisher` with its own Media Driver via Gradle
+
+    $ ./gradlew pub
+
+You can run the `ExampleSubscriber` with its own Media Driver via Gradle
+
+    $ ./gradlew sub
+
+Media Driver Packaging
+----------------------
+
+The Media Driver is packaged by the default build into an application that can be found
+
+    aeron-mediadriver/build/distributions/aeron-mediadriver-${VERSION}.zip
+
+The Media Driver can also be run directly from Gradle
+
+    $ ./gradlew aeron-mediadriver:run

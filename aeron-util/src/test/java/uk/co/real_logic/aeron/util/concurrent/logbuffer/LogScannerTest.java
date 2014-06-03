@@ -28,6 +28,7 @@ import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.util.BitUtil.align;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*;
+import static uk.co.real_logic.aeron.util.protocol.HeaderFlyweight.HDR_TYPE_DATA;
 
 public class LogScannerTest
 {
@@ -35,7 +36,6 @@ public class LogScannerTest
     private static final int STATE_BUFFER_CAPACITY = STATE_BUFFER_LENGTH;
     private static final int MTU_LENGTH = 1024;
     private static final int HEADER_LENGTH = 32;
-    private static final short MSG_TYPE = 7;
 
     private final AtomicBuffer logBuffer = mock(AtomicBuffer.class);
     private final AtomicBuffer stateBuffer = mock(AtomicBuffer.class);
@@ -77,7 +77,7 @@ public class LogScannerTest
         when(logBuffer.getIntVolatile(lengthOffset(frameOffset)))
             .thenReturn(frameLength);
         when(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN))
-            .thenReturn(MSG_TYPE);
+            .thenReturn((short)HDR_TYPE_DATA);
 
         assertTrue(scanner.scanNext(MTU_LENGTH, handler));
         assertFalse(scanner.isComplete());
@@ -90,6 +90,32 @@ public class LogScannerTest
     }
 
     @Test
+    public void shouldFailToScanMessageLargerThanMaxLength()
+    {
+        final int maxLength = FRAME_ALIGNMENT - 1;
+        final int msgLength = 1;
+        final int frameLength = HEADER_LENGTH + msgLength;
+        final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
+        final int frameOffset = 0;
+
+        when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))
+            .thenReturn(alignedFrameLength);
+        when(logBuffer.getIntVolatile(lengthOffset(frameOffset)))
+            .thenReturn(frameLength);
+        when(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN))
+            .thenReturn((short)HDR_TYPE_DATA);
+
+        assertFalse(scanner.scanNext(maxLength, handler));
+        assertFalse(scanner.isComplete());
+
+        final InOrder inOrder = inOrder(stateBuffer, logBuffer, handler);
+        inOrder.verify(stateBuffer).getIntVolatile(TAIL_COUNTER_OFFSET);
+        inOrder.verify(logBuffer).getIntVolatile(lengthOffset(frameOffset));
+        inOrder.verify(logBuffer).getShort(typeOffset(frameOffset), LITTLE_ENDIAN);
+        inOrder.verify(handler, never()).onAvailable(anyInt(), anyInt());
+    }
+
+    @Test
     public void shouldScanTwoMessagesThatFitInSingleMtu()
     {
         int frameOffset = 0;
@@ -99,11 +125,11 @@ public class LogScannerTest
         when(logBuffer.getIntVolatile(lengthOffset(frameOffset)))
             .thenReturn(FRAME_ALIGNMENT);
         when(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN))
-            .thenReturn(MSG_TYPE);
+            .thenReturn((short)HDR_TYPE_DATA);
         when(logBuffer.getIntVolatile(lengthOffset(frameOffset + FRAME_ALIGNMENT)))
             .thenReturn(FRAME_ALIGNMENT);
         when(logBuffer.getShort(typeOffset(frameOffset + FRAME_ALIGNMENT), LITTLE_ENDIAN))
-            .thenReturn(MSG_TYPE);
+            .thenReturn((short)HDR_TYPE_DATA);
 
         assertTrue(scanner.scanNext(MTU_LENGTH, handler));
         assertFalse(scanner.isComplete());
@@ -132,11 +158,11 @@ public class LogScannerTest
         when(logBuffer.getIntVolatile(lengthOffset(frameOffset)))
             .thenReturn(frameOneLength);
         when(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN))
-            .thenReturn(MSG_TYPE);
+            .thenReturn((short)HDR_TYPE_DATA);
         when(logBuffer.getIntVolatile(lengthOffset(frameOffset + frameOneLength)))
             .thenReturn(frameTwoLength);
         when(logBuffer.getShort(typeOffset(frameOffset + frameOneLength), LITTLE_ENDIAN))
-            .thenReturn(MSG_TYPE);
+            .thenReturn((short)HDR_TYPE_DATA);
 
         assertTrue(scanner.scanNext(MTU_LENGTH, handler));
         assertFalse(scanner.isComplete());
@@ -165,11 +191,11 @@ public class LogScannerTest
         when(logBuffer.getIntVolatile(lengthOffset(frameOffset)))
             .thenReturn(frameOneLength);
         when(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN))
-            .thenReturn(MSG_TYPE);
+            .thenReturn((short)HDR_TYPE_DATA);
         when(logBuffer.getIntVolatile(lengthOffset(frameOffset + frameOneLength)))
             .thenReturn(frameTwoLength);
         when(logBuffer.getShort(typeOffset(frameOffset + frameOneLength), LITTLE_ENDIAN))
-            .thenReturn(MSG_TYPE);
+            .thenReturn((short)HDR_TYPE_DATA);
 
         assertTrue(scanner.scanNext(MTU_LENGTH, handler));
         assertFalse(scanner.isComplete());
@@ -196,7 +222,7 @@ public class LogScannerTest
         when(logBuffer.getIntVolatile(lengthOffset(frameOffset)))
             .thenReturn(FRAME_ALIGNMENT);
         when(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN))
-            .thenReturn(MSG_TYPE);
+            .thenReturn((short)HDR_TYPE_DATA);
 
         scanner.seek(frameOffset);
 
@@ -217,7 +243,7 @@ public class LogScannerTest
         when(valueOf(logBuffer.getIntVolatile(lengthOffset(frameOffset))))
             .thenReturn(FRAME_ALIGNMENT);
         when(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN))
-            .thenReturn(MSG_TYPE);
+            .thenReturn((short)HDR_TYPE_DATA);
         when(logBuffer.getIntVolatile(lengthOffset(frameOffset + FRAME_ALIGNMENT)))
             .thenReturn(FRAME_ALIGNMENT * 2);
         when(logBuffer.getShort(typeOffset(frameOffset + FRAME_ALIGNMENT), LITTLE_ENDIAN))

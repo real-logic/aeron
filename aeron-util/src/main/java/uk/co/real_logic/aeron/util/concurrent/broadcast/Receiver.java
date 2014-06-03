@@ -43,7 +43,7 @@ public class Receiver
     private int recordOffset = 0;
     private long cursor = 0;
     private long nextRecord = 0;
-    private final AtomicLong lappedCount = new AtomicLong(0);
+    private final AtomicLong lappedCount = new AtomicLong();
 
     /**
      * Construct a new broadcast receiver based on an underlying {@link AtomicBuffer}.
@@ -94,7 +94,7 @@ public class Receiver
      *
      * @return type of the message received.
      */
-    public int messageType()
+    public int type()
     {
         return buffer.getInt(msgTypeOffset(recordOffset));
     }
@@ -134,7 +134,7 @@ public class Receiver
      *
      * If loss has occurred then {@link #lappedCount()} will be incremented.
      *
-     * @return true if transmission is available with {@link #offset()} and {@link #length()}
+     * @return true if transmission is available with {@link #offset()}, {@link #length()} and {@link #type()}
      *         set for the next message to be consumed. If no transmission is available then false.
      */
     public boolean receiveNext()

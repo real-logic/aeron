@@ -77,7 +77,7 @@ public class ReceiverTest
         when(buffer.getInt(msgTypeOffset(recordOffset))).thenReturn(MSG_TYPE_ID);
 
         assertTrue(receiver.receiveNext());
-        assertThat(receiver.messageType(), is(MSG_TYPE_ID));
+        assertThat(receiver.type(), is(MSG_TYPE_ID));
         assertThat(receiver.buffer(), is(buffer));
         assertThat(receiver.offset(), is(msgOffset(recordOffset)));
         assertThat(receiver.length(), is(length));
@@ -113,7 +113,7 @@ public class ReceiverTest
         when(buffer.getInt(msgTypeOffset(recordOffsetTwo))).thenReturn(MSG_TYPE_ID);
 
         assertTrue(receiver.receiveNext());
-        assertThat(receiver.messageType(), is(MSG_TYPE_ID));
+        assertThat(receiver.type(), is(MSG_TYPE_ID));
         assertThat(receiver.buffer(), is(buffer));
         assertThat(receiver.offset(), is(msgOffset(recordOffsetOne)));
         assertThat(receiver.length(), is(length));
@@ -121,7 +121,7 @@ public class ReceiverTest
         assertTrue(receiver.validate());
 
         assertTrue(receiver.receiveNext());
-        assertThat(receiver.messageType(), is(MSG_TYPE_ID));
+        assertThat(receiver.type(), is(MSG_TYPE_ID));
         assertThat(receiver.buffer(), is(buffer));
         assertThat(receiver.offset(), is(msgOffset(recordOffsetTwo)));
         assertThat(receiver.length(), is(length));
@@ -149,7 +149,7 @@ public class ReceiverTest
         when(buffer.getInt(msgTypeOffset(recordOffset))).thenReturn(MSG_TYPE_ID);
 
         assertTrue(receiver.receiveNext());
-        assertThat(receiver.messageType(), is(MSG_TYPE_ID));
+        assertThat(receiver.type(), is(MSG_TYPE_ID));
         assertThat(receiver.buffer(), is(buffer));
         assertThat(receiver.offset(), is(msgOffset(recordOffset)));
         assertThat(receiver.length(), is(length));
@@ -193,7 +193,7 @@ public class ReceiverTest
         assertTrue(receiver.receiveNext()); // To catch up to record before padding.
 
         assertTrue(receiver.receiveNext()); // no skip over the padding and read next record.
-        assertThat(receiver.messageType(), is(MSG_TYPE_ID));
+        assertThat(receiver.type(), is(MSG_TYPE_ID));
         assertThat(receiver.buffer(), is(buffer));
         assertThat(receiver.offset(), is(msgOffset(recordOffset)));
         assertThat(receiver.length(), is(length));
@@ -219,7 +219,7 @@ public class ReceiverTest
         when(buffer.getInt(msgTypeOffset(recordOffset))).thenReturn(MSG_TYPE_ID);
 
         assertTrue(receiver.receiveNext());
-        assertThat(receiver.messageType(), is(MSG_TYPE_ID));
+        assertThat(receiver.type(), is(MSG_TYPE_ID));
         assertThat(receiver.buffer(), is(buffer));
         assertThat(receiver.offset(), is(msgOffset(recordOffset)));
         assertThat(receiver.length(), is(length));

@@ -117,19 +117,17 @@ public class LogScanner
             final int offset = this.offset;
             if (tail > offset)
             {
-                available = true;
                 int length = 0;
                 int padding = 0;
 
                 do
                 {
-                    final int alignedFrameLength = align(waitForFrameLength(offset + length), FRAME_ALIGNMENT);
+                    int alignedFrameLength = align(waitForFrameLength(offset + length), FRAME_ALIGNMENT);
 
                     if (PADDING_FRAME_TYPE == frameType(offset + length))
                     {
-                        length += alignedHeaderLength;
                         padding = alignedFrameLength - alignedHeaderLength;
-                        break;
+                        alignedFrameLength = alignedHeaderLength;
                     }
 
                     length += alignedFrameLength;
@@ -140,11 +138,14 @@ public class LogScanner
                         break;
                     }
                 }
-                while ((offset + length) < tail);
+                while ((offset + length + padding) < tail);
 
-                this.offset += (length + padding);
-
-                handler.onAvailable(offset, length);
+                if (length > 0)
+                {
+                    available = true;
+                    this.offset += (length + padding);
+                    handler.onAvailable(offset, length);
+                }
             }
         }
 

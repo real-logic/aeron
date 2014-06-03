@@ -27,8 +27,8 @@ package uk.co.real_logic.aeron.util.concurrent.broadcast;
  *  +-+-------------------------------------------------------------+
  *  |R|                       Message Length                        |
  *  +-+-------------------------------------------------------------+
- *  |R|                        Message Type                         |
- *  +-+-------------------------------------------------------------+
+ *  |                          Message Type                         |
+ *  +---------------------------------------------------------------+
  *  |                           Reserved                            |
  *  +-+-------------------------------------------------------------+
  *  |R|                       Tail Sequence                         |
@@ -140,7 +140,7 @@ public class RecordDescriptor
     {
         if (msgTypeId < 1)
         {
-            final String msg = String.format("event type id must be greater than zero, msgTypeId=%d",
+            final String msg = String.format("Message type id must be greater than zero, msgTypeId=%d",
                                              msgTypeId);
 
             throw new IllegalArgumentException(msg);

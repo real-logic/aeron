@@ -106,8 +106,8 @@ public class AeronTest
     private final ByteBuffer sendBuffer = ByteBuffer.allocate(SEND_BUFFER_CAPACITY);
     private final AtomicBuffer atomicSendBuffer = new AtomicBuffer(sendBuffer);
 
-    private ConductorByteBuffers clientConductorByteBuffers;
-    private ConductorByteBuffers mediaDriverConductorByteBuffers;
+    private InterConductorByteBuffers clientInterConductorByteBuffers;
+    private InterConductorByteBuffers mediaDriverInterConductorByteBuffers;
 
     public AeronTest()
     {
@@ -118,16 +118,16 @@ public class AeronTest
     @Before
     public void setUp()
     {
-        mediaDriverConductorByteBuffers = new ConductorByteBuffers(conductorBuffers.adminDirName(),
+        mediaDriverInterConductorByteBuffers = new InterConductorByteBuffers(conductorBuffers.adminDirName(),
                                                                    CONDUCTOR_BUFFER_SIZE);
-        clientConductorByteBuffers = new ConductorByteBuffers(conductorBuffers.adminDirName());
+        clientInterConductorByteBuffers = new InterConductorByteBuffers(conductorBuffers.adminDirName());
     }
 
     @After
     public void tearDown()
     {
-        clientConductorByteBuffers.close();
-        mediaDriverConductorByteBuffers.close();
+        clientInterConductorByteBuffers.close();
+        mediaDriverInterConductorByteBuffers.close();
     }
 
     @Test
@@ -594,12 +594,12 @@ public class AeronTest
 
     private ManyToOneRingBuffer toClient()
     {
-        return new ManyToOneRingBuffer(new AtomicBuffer(mediaDriverConductorByteBuffers.toClient()));
+        return new ManyToOneRingBuffer(new AtomicBuffer(mediaDriverInterConductorByteBuffers.toClient()));
     }
 
     private ManyToOneRingBuffer toMediaDriver()
     {
-        return new ManyToOneRingBuffer(new AtomicBuffer(mediaDriverConductorByteBuffers.toMediaDriver()));
+        return new ManyToOneRingBuffer(new AtomicBuffer(mediaDriverInterConductorByteBuffers.toDriver()));
     }
 
     private Subscriber newSubscriber(final Aeron aeron)
@@ -642,7 +642,7 @@ public class AeronTest
     private Aeron newAeron()
     {
         final Aeron.Context context = new Aeron.Context()
-            .conductorByteBuffers(clientConductorByteBuffers)
+            .conductorByteBuffers(clientInterConductorByteBuffers)
             .invalidDestinationHandler(invalidDestination);
 
         return Aeron.newSingleMediaDriver(context);

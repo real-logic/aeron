@@ -19,7 +19,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import uk.co.real_logic.aeron.util.ConductorByteBuffers;
+import uk.co.real_logic.aeron.util.InterConductorByteBuffers;
 import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -76,7 +76,7 @@ public class MediaConductorTest
             .receiverNioSelector(new NioSelector())
             .conductorNioSelector(new NioSelector())
             .senderFlowControl(UnicastSenderControlStrategy::new)
-            .conductorByteBuffers(new ConductorByteBuffers(adminPath, COMMAND_BUFFER_SZ + TRAILER_LENGTH))
+            .conductorByteBuffers(new InterConductorByteBuffers(adminPath, COMMAND_BUFFER_SZ + TRAILER_LENGTH))
             .bufferManagement(newMappedBufferManager(adminPath));
 
         final Sender sender = new Sender(ctx)
@@ -184,7 +184,7 @@ public class MediaConductorTest
     private void writeChannelMessage(final int eventTypeId, final long channelId, final long sessionId, final int port)
         throws IOException
     {
-        final ByteBuffer buffer = new ConductorByteBuffers(adminPath).toMediaDriver();
+        final ByteBuffer buffer = new InterConductorByteBuffers(adminPath).toDriver();
         final RingBuffer adminCommands = new ManyToOneRingBuffer(new AtomicBuffer(buffer));
 
         final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();

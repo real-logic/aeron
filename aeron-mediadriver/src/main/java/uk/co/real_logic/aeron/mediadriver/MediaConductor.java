@@ -26,7 +26,6 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -44,13 +43,13 @@ public class MediaConductor extends Agent
     public static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
     public static final int HEARTBEAT_TIMEOUT_MS = 100;
 
-    private final RingBuffer mediaCommandBuffer;
+    private final RingBuffer commandBuffer;
     private final ReceiverProxy receiverProxy;
     private final NioSelector nioSelector;
     private final Receiver receiver;
     private final Sender sender;
     private final BufferManagement bufferManagement;
-    private final RingBuffer toMediaDriverBuffer;
+    private final RingBuffer toMediaBuffer;
     private final RingBuffer toClientBuffer;
     private final Long2ObjectHashMap<ControlFrameHandler> srcDestinationMap = new Long2ObjectHashMap<>();
     private final AtomicBuffer writeBuffer = new AtomicBuffer(allocateDirect(WRITE_BUFFER_CAPACITY));
@@ -66,14 +65,14 @@ public class MediaConductor extends Agent
     private final NewBufferMessageFlyweight newBufferMessage = new NewBufferMessageFlyweight();
 
     private final int mtuLength;
-    private final ConductorByteBuffers conductorByteBuffers;
+    private final InterConductorByteBuffers interConductorByteBuffers;
     private final TimerWheel.Timer heartbeatTimer;
 
     public MediaConductor(final Context ctx, final Receiver receiver, final Sender sender)
     {
         super(SELECT_TIMEOUT);
 
-        this.mediaCommandBuffer = ctx.mediaCommandBuffer();
+        this.commandBuffer = ctx.mediaCommandBuffer();
         this.receiverProxy = new ReceiverProxy(ctx.receiverCommandBuffer(), ctx.receiverNioSelector());
         this.bufferManagement = ctx.bufferManagement();
         this.nioSelector = ctx.conductorNioSelector();
@@ -92,9 +91,9 @@ public class MediaConductor extends Agent
 
         heartbeatTimer = newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheck);
 
-        conductorByteBuffers = ctx.conductorByteBuffers();
-        toMediaDriverBuffer = new ManyToOneRingBuffer(new AtomicBuffer(conductorByteBuffers.toMediaDriver()));
-        toClientBuffer = new ManyToOneRingBuffer(new AtomicBuffer(conductorByteBuffers.toClient()));
+        interConductorByteBuffers = ctx.conductorByteBuffers();
+        toMediaBuffer = new ManyToOneRingBuffer(new AtomicBuffer(interConductorByteBuffers.toDriver()));
+        toClientBuffer = new ManyToOneRingBuffer(new AtomicBuffer(interConductorByteBuffers.toClient()));
     }
 
     public ControlFrameHandler frameHandler(final UdpDestination destination)
@@ -123,7 +122,7 @@ public class MediaConductor extends Agent
 
     private void processCommandBuffer()
     {
-        mediaCommandBuffer.read(
+        commandBuffer.read(
             (eventTypeId, buffer, index, length) ->
             {
                 switch (eventTypeId)
@@ -148,7 +147,7 @@ public class MediaConductor extends Agent
 
     private void processReceiveBuffer()
     {
-        toMediaDriverBuffer.read(
+        toMediaBuffer.read(
             (eventTypeId, buffer, index, length) ->
             {
                 Flyweight flyweight = channelMessage;
@@ -218,7 +217,7 @@ public class MediaConductor extends Agent
 
         srcDestinationMap.forEach((hash, frameHandler) -> frameHandler.close());
 
-        conductorByteBuffers.close();
+        interConductorByteBuffers.close();
     }
 
     public void wakeup()

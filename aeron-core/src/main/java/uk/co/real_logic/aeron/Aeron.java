@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.aeron.conductor.*;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.CommonConfiguration;
-import uk.co.real_logic.aeron.util.ConductorByteBuffers;
+import uk.co.real_logic.aeron.util.InterConductorByteBuffers;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
@@ -40,41 +40,34 @@ public final class Aeron implements AutoCloseable
     private final AtomicArray<Channel> channels = new AtomicArray<>();
     private final AtomicArray<SubscriberChannel> receivers = new AtomicArray<>();
     private final ClientConductor clientConductor;
-    private final ConductorByteBuffers conductorByteBuffers;
+    private final InterConductorByteBuffers interConductorByteBuffers;
 
     private Aeron(final Context context)
     {
-        if (null == context.conductorByteBuffers)
+        if (null == context.interConductorByteBuffers)
         {
-            this.conductorByteBuffers = new ConductorByteBuffers(CommonConfiguration.ADMIN_DIR_NAME);
+            interConductorByteBuffers = new InterConductorByteBuffers(CommonConfiguration.ADMIN_DIR_NAME);
         }
         else
         {
-            this.conductorByteBuffers = context.conductorByteBuffers;
+            interConductorByteBuffers = context.interConductorByteBuffers;
         }
 
-        final RingBuffer rcvBuffer = new ManyToOneRingBuffer(new AtomicBuffer(conductorByteBuffers.toClient()));
-        final RingBuffer sendBuffer = new ManyToOneRingBuffer(new AtomicBuffer(conductorByteBuffers.toMediaDriver()));
+        final RingBuffer toClientBuffer = new ManyToOneRingBuffer(new AtomicBuffer(interConductorByteBuffers.toClient()));
+        final RingBuffer toDriverBuffer = new ManyToOneRingBuffer(new AtomicBuffer(interConductorByteBuffers.toDriver()));
         final BufferUsageStrategy bufferUsage = new MappingBufferUsageStrategy();
         final ConductorErrorHandler errorHandler = new ConductorErrorHandler(context.invalidDestinationHandler);
 
-        try
-        {
-            clientConductor = new ClientConductor(clientConductorCommandBuffer,
-                                                  sendBuffer, rcvBuffer,
-                                                  bufferUsage,
-                                                  channels, receivers,
-                                                  errorHandler);
-        }
-        catch (final Exception ex)
-        {
-            throw new IllegalArgumentException("Unable to create Aeron", ex);
-        }
+        clientConductor = new ClientConductor(clientConductorCommandBuffer,
+                                              toDriverBuffer, toClientBuffer,
+                                              bufferUsage,
+                                              channels, receivers,
+                                              errorHandler);
     }
 
     public void close()
     {
-        conductorByteBuffers.close();
+        interConductorByteBuffers.close();
         clientConductor.close();
     }
 
@@ -190,7 +183,7 @@ public final class Aeron implements AutoCloseable
     public static class Context
     {
         private ErrorHandler errorHandler = new DummyErrorHandler();
-        private ConductorByteBuffers conductorByteBuffers;
+        private InterConductorByteBuffers interConductorByteBuffers;
         private InvalidDestinationHandler invalidDestinationHandler;
 
         public Context errorHandler(ErrorHandler errorHandler)
@@ -199,9 +192,9 @@ public final class Aeron implements AutoCloseable
             return this;
         }
 
-        public Context conductorByteBuffers(ConductorByteBuffers conductorByteBuffers)
+        public Context conductorByteBuffers(final InterConductorByteBuffers interConductorByteBuffers)
         {
-            this.conductorByteBuffers = conductorByteBuffers;
+            this.interConductorByteBuffers = interConductorByteBuffers;
             return this;
         }
 

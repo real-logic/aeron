@@ -32,8 +32,8 @@ public class ConductorBuffersExternalResource extends ExternalResource
     private final String adminDirName;
     private final int bufferSize;
 
-    private ConductorByteBuffers mediaDriverBuffers;
-    private ConductorByteBuffers clientBuffers;
+    private InterConductorByteBuffers mediaDriverBuffers;
+    private InterConductorByteBuffers clientBuffers;
     private ByteBuffer toMediaDriver;
     private ByteBuffer toClient;
     private File adminDir;
@@ -68,9 +68,9 @@ public class ConductorBuffersExternalResource extends ExternalResource
         }
 
         IoUtil.ensureDirectoryExists(adminDir, "conductor dir");
-        mediaDriverBuffers = new ConductorByteBuffers(adminDirName, bufferSize);
-        clientBuffers = new ConductorByteBuffers(adminDirName);
-        toMediaDriver = mediaDriverBuffers.toMediaDriver();
+        mediaDriverBuffers = new InterConductorByteBuffers(adminDirName, bufferSize);
+        clientBuffers = new InterConductorByteBuffers(adminDirName);
+        toMediaDriver = mediaDriverBuffers.toDriver();
         toClient = mediaDriverBuffers.toClient();
     }
 
@@ -106,12 +106,12 @@ public class ConductorBuffersExternalResource extends ExternalResource
         return new ManyToOneRingBuffer(new AtomicBuffer(buffer));
     }
 
-    public ConductorByteBuffers clientBuffers()
+    public InterConductorByteBuffers clientBuffers()
     {
         return clientBuffers;
     }
 
-    public ConductorByteBuffers mediaDriverBuffers()
+    public InterConductorByteBuffers mediaDriverBuffers()
     {
         return mediaDriverBuffers;
     }

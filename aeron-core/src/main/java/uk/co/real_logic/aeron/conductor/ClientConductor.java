@@ -51,9 +51,9 @@ public final class ClientConductor extends Agent
     private static final int MAX_FRAME_LENGTH = 1024;
     private static final int SLEEP_PERIOD_MS = 1;
 
-    private final RingBuffer clientCommandBuffer;
-    private final RingBuffer fromMediaDriverBuffer;
-    private final RingBuffer toMediaDriverBuffer;
+    private final RingBuffer commandBuffer;
+    private final RingBuffer toClientBuffer;
+    private final RingBuffer toDriverBuffer;
 
     private final BufferUsageStrategy bufferUsage;
     private final AtomicArray<Channel> publishers;
@@ -69,9 +69,9 @@ public final class ClientConductor extends Agent
     private final SubscriberMessageFlyweight receiverMessage = new SubscriberMessageFlyweight();
     private final NewBufferMessageFlyweight bufferNotificationMessage = new NewBufferMessageFlyweight();
 
-    public ClientConductor(final RingBuffer clientCommandBuffer,
-                           final RingBuffer toMediaDriverBuffer,
-                           final RingBuffer fromMediaDriverBuffer,
+    public ClientConductor(final RingBuffer commandBuffer,
+                           final RingBuffer toDriverBuffer,
+                           final RingBuffer toClientBuffer,
                            final BufferUsageStrategy bufferUsage,
                            final AtomicArray<Channel> publishers,
                            final AtomicArray<SubscriberChannel> subscriberChannels,
@@ -79,9 +79,9 @@ public final class ClientConductor extends Agent
     {
         super(SLEEP_PERIOD_MS);
 
-        this.clientCommandBuffer = clientCommandBuffer;
-        this.fromMediaDriverBuffer = fromMediaDriverBuffer;
-        this.toMediaDriverBuffer = toMediaDriverBuffer;
+        this.commandBuffer = commandBuffer;
+        this.toClientBuffer = toClientBuffer;
+        this.toDriverBuffer = toDriverBuffer;
         this.bufferUsage = bufferUsage;
         this.publishers = publishers;
         this.subscriberChannels = subscriberChannels;
@@ -109,7 +109,7 @@ public final class ClientConductor extends Agent
 
     private void handleClientCommandBuffer()
     {
-        clientCommandBuffer.read(
+        commandBuffer.read(
             (eventTypeId, buffer, index, length) ->
             {
                 switch (eventTypeId)
@@ -131,7 +131,7 @@ public final class ClientConductor extends Agent
                             removePublisher(destination, channelId, sessionId);
                         }
 
-                        toMediaDriverBuffer.write(eventTypeId, buffer, index, length);
+                        toDriverBuffer.write(eventTypeId, buffer, index, length);
                         break;
                     }
 
@@ -150,12 +150,12 @@ public final class ClientConductor extends Agent
                             removeReceiver(destination, channelIds);
                         }
 
-                        toMediaDriverBuffer.write(eventTypeId, buffer, index, length);
+                        toDriverBuffer.write(eventTypeId, buffer, index, length);
                         break;
                     }
 
                     case REQUEST_CLEANED_TERM:
-                        toMediaDriverBuffer.write(eventTypeId, buffer, index, length);
+                        toDriverBuffer.write(eventTypeId, buffer, index, length);
                         break;
                 }
             }
@@ -216,7 +216,7 @@ public final class ClientConductor extends Agent
 
     private void handleMessagesFromMediaDriver()
     {
-        fromMediaDriverBuffer.read(
+        toClientBuffer.read(
             (eventTypeId, buffer, index, length) ->
             {
                 switch (eventTypeId)

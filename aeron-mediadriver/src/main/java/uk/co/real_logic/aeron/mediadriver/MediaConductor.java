@@ -142,17 +142,17 @@ public class MediaConductor extends Agent
                       case CREATE_TERM_BUFFER:
                           qualifiedMessage.wrap(buffer, index);
                           onCreateSubscriberTermBufferEvent(qualifiedMessage);
-                          return;
+                          break;
 
                       case REMOVE_TERM_BUFFER:
                           qualifiedMessage.wrap(buffer, index);
                           onRemoveSubscriberTermBufferEvent(qualifiedMessage);
-                          return;
+                          break;
 
                       case ERROR_RESPONSE:
                           errorHeader.wrap(buffer, index);
                           adminSendBuffer.write(eventTypeId, buffer, index, length);
-                          return;
+                          break;
                   }
               });
     }
@@ -172,25 +172,25 @@ public class MediaConductor extends Agent
                             channelMessage.wrap(buffer, index);
                             flyweight = channelMessage;
                             onAddChannel(channelMessage);
-                            return;
+                            break;
 
                         case REMOVE_CHANNEL:
                             channelMessage.wrap(buffer, index);
                             flyweight = channelMessage;
                             onRemoveChannel(channelMessage);
-                            return;
+                            break;
 
                         case ADD_SUBSCRIBER:
                             receiverMessage.wrap(buffer, index);
                             flyweight = receiverMessage;
                             onAddSubscriber(receiverMessage);
-                            return;
+                            break;
 
                         case REMOVE_SUBSCRIBER:
                             receiverMessage.wrap(buffer, index);
                             flyweight = receiverMessage;
                             onRemoveSubscriber(receiverMessage);
-                            return;
+                            break;
                     }
                 }
                 catch (final ControlProtocolException ex)

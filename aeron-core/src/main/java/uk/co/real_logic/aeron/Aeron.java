@@ -32,10 +32,10 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor
  */
 public final class Aeron implements AutoCloseable
 {
-    private static final int ADMIN_BUFFER_SIZE = 512 + TRAILER_LENGTH;
+    private static final int COMMAND_BUFFER_SIZE = 4096 + TRAILER_LENGTH;
 
-    private final ManyToOneRingBuffer mediaConductorCommandBuffer =
-        new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocate(ADMIN_BUFFER_SIZE)));
+    private final ManyToOneRingBuffer clientConductorCommandBuffer =
+        new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocate(COMMAND_BUFFER_SIZE)));
 
     private final AtomicArray<Channel> channels = new AtomicArray<>();
     private final AtomicArray<SubscriberChannel> receivers = new AtomicArray<>();
@@ -60,8 +60,8 @@ public final class Aeron implements AutoCloseable
 
         try
         {
-            clientConductor = new ClientConductor(mediaConductorCommandBuffer,
-                                                  rcvBuffer, sendBuffer,
+            clientConductor = new ClientConductor(clientConductorCommandBuffer,
+                                                  sendBuffer, rcvBuffer,
                                                   bufferUsage,
                                                   channels, receivers,
                                                   errorHandler,
@@ -110,7 +110,7 @@ public final class Aeron implements AutoCloseable
     }
 
     /**
-     * Create a new source that is to send to {@link uk.co.real_logic.aeron.Destination}.
+     * Create a new source that is to send to {@link Destination}.
      * <p>
      * A unique, random, session ID will be generated for the source if the context does not
      * set it. If the context sets the Session ID, then it will be checked for conflicting with existing session Ids.
@@ -120,7 +120,7 @@ public final class Aeron implements AutoCloseable
      */
     public Source newSource(final Source.Context context)
     {
-        context.mediaConductorProxy(new MediaConductorProxy(mediaConductorCommandBuffer));
+        context.mediaConductorProxy(new MediaConductorProxy(clientConductorCommandBuffer));
 
         return new Source(channels, context);
     }
@@ -157,14 +157,14 @@ public final class Aeron implements AutoCloseable
     }
 
     /**
-     * Create a new receiver that will listen on {@link uk.co.real_logic.aeron.Destination}
+     * Create a new receiver that will listen on {@link Destination}
      *
      * @param context context for receiver options.
      * @return new receiver
      */
     public Subscriber newSubscriber(final Subscriber.Context context)
     {
-        final MediaConductorProxy mediaConductorProxy = new MediaConductorProxy(mediaConductorCommandBuffer);
+        final MediaConductorProxy mediaConductorProxy = new MediaConductorProxy(clientConductorCommandBuffer);
 
         return new Subscriber(mediaConductorProxy, context, receivers);
     }

@@ -40,7 +40,6 @@ public class BufferDescriptor
     {
         HIGH_WATER_MARK_OFFSET = 0;
         TAIL_COUNTER_OFFSET = SIZE_OF_INT;
-
         STATE_BUFFER_LENGTH = CACHE_LINE_SIZE;
     }
 

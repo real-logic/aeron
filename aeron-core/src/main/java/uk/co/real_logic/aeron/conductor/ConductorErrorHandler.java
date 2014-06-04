@@ -21,8 +21,7 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 
 /**
- * Maps the error messages that come back from the conductor protocol into different error
- * handlling interfaces
+ * Maps the error messages that come back from the conductor protocol into different error handling interfaces.
  */
 public class ConductorErrorHandler
 {
@@ -40,13 +39,13 @@ public class ConductorErrorHandler
     public void onErrorResponse(final AtomicBuffer buffer, final int index, final int length)
     {
         errorHeader.wrap(buffer, index);
+
         switch (errorHeader.errorCode())
         {
             case INVALID_DESTINATION:
                 receiverMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
                 invalidDestination.onInvalidDestination(receiverMessage.destination());
-                return;
+                break;
         }
     }
-
 }

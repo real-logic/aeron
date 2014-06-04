@@ -23,7 +23,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 /**
- * Encapsulation of NIO Selector logic for integration into Receiver Thread and Admin Thread
+ * Encapsulation of NIO Selector logic for integration into Receiver Thread and Conductor Thread
  */
 public class NioSelector implements AutoCloseable
 {
@@ -111,28 +111,18 @@ public class NioSelector implements AutoCloseable
 
     private void handleSelectedKeys() throws Exception
     {
-        // Try this as we would like to be able to have the JVM optimize the Set<SelectionKey>
-        // instead of instrumenting it.
-        // Only have to handle readable at the moment. Will change if this is used with TCP.
-        // Could filter based on key.attachment() being instanceof ReadHandler
-        //        selector.selectedKeys().stream()
-        //                .filter(SelectionKey::isReadable)
-        //                .forEach(this::handleReadable);
-
         final Set<SelectionKey> selectedKeys = selector.selectedKeys();
-        if (selectedKeys.isEmpty())
+        if (!selectedKeys.isEmpty())
         {
-            return;
-        }
-
-        final Iterator<SelectionKey> iter = selectedKeys.iterator();
-        while (iter.hasNext())
-        {
-            final SelectionKey key = iter.next();
-            if (key.isReadable())
+            final Iterator<SelectionKey> iter = selectedKeys.iterator();
+            while (iter.hasNext())
             {
-                handleReadable(key);
-                iter.remove();
+                final SelectionKey key = iter.next();
+                if (key.isReadable())
+                {
+                    handleReadable(key);
+                    iter.remove();
+                }
             }
         }
     }

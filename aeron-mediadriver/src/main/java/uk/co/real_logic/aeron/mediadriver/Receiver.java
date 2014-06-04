@@ -94,12 +94,12 @@ public class Receiver extends Agent
                        case ADD_SUBSCRIBER:
                            subscriberMessage.wrap(buffer, index);
                            onNewSubscriber(subscriberMessage.destination(), subscriberMessage.channelIds());
-                           return;
+                           break;
 
                        case REMOVE_SUBSCRIBER:
                            subscriberMessage.wrap(buffer, index);
                            onRemoveSubscriber(subscriberMessage.destination(), subscriberMessage.channelIds());
-                           return;
+                           break;
                    }
                }
                catch (final InvalidDestinationException ex)

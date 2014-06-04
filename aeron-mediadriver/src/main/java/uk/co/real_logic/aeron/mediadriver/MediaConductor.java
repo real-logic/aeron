@@ -36,7 +36,7 @@ import static uk.co.real_logic.aeron.mediadriver.MediaDriver.*;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 
 /**
- * Admin thread to take commands from Publishers and Subscribers as well as handle NAKs and retransmissions
+ * Media Conductor to take commands from Publishers and Subscribers as well as handle NAKs and retransmissions
  */
 public class MediaConductor extends Agent
 {

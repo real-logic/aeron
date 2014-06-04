@@ -33,7 +33,6 @@ import uk.co.real_logic.aeron.util.status.PositionReporter;
 import uk.co.real_logic.aeron.util.status.StatusBufferMapper;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.function.BiConsumer;
 import java.util.function.IntFunction;
 
@@ -48,9 +47,6 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.B
  */
 public final class ClientConductor extends Agent
 {
-    /** Maximum size of the write buffer. */ // TODO: what is this for?
-    public static final int MSG_BUFFER_CAPACITY = 4096;
-
     // TODO: DI this
     private static final byte[] DEFAULT_HEADER = new byte[BASE_HEADER_LENGTH + SIZE_OF_INT];
     private static final int MAX_FRAME_LENGTH = 1024;
@@ -94,11 +90,6 @@ public final class ClientConductor extends Agent
         this.subscriberChannels = subscriberChannels;
         this.errorHandler = errorHandler;
         this.publisherControlFactory = publisherControlFactory;
-
-        // TODO: what is this buffer for?
-        final AtomicBuffer msgBuffer = new AtomicBuffer(ByteBuffer.allocate(MSG_BUFFER_CAPACITY));
-        channelMessage.wrap(msgBuffer, 0);
-        receiverMessage.wrap(msgBuffer, 0);
     }
 
     public void process()
@@ -245,11 +236,11 @@ public final class ClientConductor extends Agent
 
                         if (eventTypeId == NEW_SEND_BUFFER_NOTIFICATION)
                         {
-                            onNewSenderBuffer(sessionId, channelId, termId, destination);
+                            onNewSenderBuffer(destination, sessionId, channelId, termId);
                         }
                         else
                         {
-                            onNewReceiverBuffer(destination, channelId, sessionId, termId);
+                            onNewReceiverBuffer(destination, sessionId, channelId, termId);
                         }
                         break;
 
@@ -264,8 +255,8 @@ public final class ClientConductor extends Agent
         );
     }
 
-    private void onNewReceiverBuffer(final String destination, final long channelId,
-                                     final long sessionId, final long termId)
+    private void onNewReceiverBuffer(final String destination, final long sessionId,
+                                     final long channelId, final long termId)
     {
         onNewBuffer(sessionId,
                     rcvNotifiers.get(destination, channelId),
@@ -279,8 +270,8 @@ public final class ClientConductor extends Agent
                     });
     }
 
-    private void onNewSenderBuffer(final long sessionId, final long channelId,
-                                   final long termId, final String destination)
+    private void onNewSenderBuffer(final String destination, final long sessionId,
+                                   final long channelId, final long termId)
     {
         onNewBuffer(sessionId,
                     sendNotifiers.get(destination, sessionId, channelId),

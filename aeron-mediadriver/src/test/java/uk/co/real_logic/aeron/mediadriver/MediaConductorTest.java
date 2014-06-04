@@ -73,8 +73,8 @@ public class MediaConductorTest
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .conductorCommandBuffer(COMMAND_BUFFER_SZ)
             .receiverCommandBuffer(COMMAND_BUFFER_SZ)
-            .rcvNioSelector(new NioSelector())
-            .adminNioSelector(new NioSelector())
+            .receiverNioSelector(new NioSelector())
+            .conductorNioSelector(new NioSelector())
             .senderFlowControl(UnicastSenderControlStrategy::new)
             .conductorByteBuffers(new ConductorByteBuffers(adminPath, COMMAND_BUFFER_SZ + TRAILER_LENGTH))
             .bufferManagement(newMappedBufferManager(adminPath));

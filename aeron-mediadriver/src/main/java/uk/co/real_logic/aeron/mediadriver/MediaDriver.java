@@ -128,7 +128,7 @@ public class MediaDriver implements AutoCloseable
     public static final int MEDIA_CONDUCTOR_TICKS_PER_WHEEL = 1024;
 
     /** tickDuration (in MICROSECONDS) for TimerWheel in conductor thread */
-    public static final int MEDIA_CONDUCTOR_TICK_DURATION_MICROS = 10 * 1000;
+    public static final int MEDIA_CONDUCTOR_TICK_DURATION_US = 10 * 1000;
 
     private final File adminDirFile;
     private final File dataDirFile;
@@ -182,8 +182,8 @@ public class MediaDriver implements AutoCloseable
         final Context context = new Context()
                 .conductorCommandBuffer(COMMAND_BUFFER_SZ)
                 .receiverCommandBuffer(COMMAND_BUFFER_SZ)
-                .rcvNioSelector(rcvNioSelector)
-                .adminNioSelector(new NioSelector())
+                .receiverNioSelector(rcvNioSelector)
+                .conductorNioSelector(new NioSelector())
                 .senderFlowControl(UnicastSenderControlStrategy::new)
                 .conductorByteBuffers(conductorByteBuffers)
                 .bufferManagement(bufferManagement)
@@ -243,8 +243,8 @@ public class MediaDriver implements AutoCloseable
         private RingBuffer receiverCommandBuffer;
         private BufferManagement bufferManagement;
         private ConductorByteBuffers conductorByteBuffers;
-        private NioSelector rcvNioSelector;
-        private NioSelector adminNioSelector;
+        private NioSelector receiverNioSelector;
+        private NioSelector conductorNioSelector;
         private Supplier<SenderControlStrategy> senderFlowControl;
         private TimerWheel conductorTimerWheel;
         private int mtuLength;
@@ -282,15 +282,15 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context rcvNioSelector(final NioSelector nioSelector)
+        public Context receiverNioSelector(final NioSelector nioSelector)
         {
-            this.rcvNioSelector = nioSelector;
+            this.receiverNioSelector = nioSelector;
             return this;
         }
 
-        public Context adminNioSelector(final NioSelector nioSelector)
+        public Context conductorNioSelector(final NioSelector nioSelector)
         {
-            this.adminNioSelector = nioSelector;
+            this.conductorNioSelector = nioSelector;
             return this;
         }
 
@@ -332,14 +332,14 @@ public class MediaDriver implements AutoCloseable
             return conductorByteBuffers;
         }
 
-        public NioSelector rcvNioSelector()
+        public NioSelector receiverNioSelector()
         {
-            return rcvNioSelector;
+            return receiverNioSelector;
         }
 
-        public NioSelector adminNioSelector()
+        public NioSelector conductorNioSelector()
         {
-            return adminNioSelector;
+            return conductorNioSelector;
         }
 
         public Supplier<SenderControlStrategy> senderFlowControl()

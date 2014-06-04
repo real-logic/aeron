@@ -42,19 +42,18 @@ public class MediaConductor extends Agent
 {
     public static final int WRITE_BUFFER_CAPACITY = 512;
     public static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
-
-    public static final int HEARTBEAT_TIMEOUT_MILLISECONDS = 100;
+    public static final int HEARTBEAT_TIMEOUT_MS = 100;
 
     private final RingBuffer commandBuffer;
-    private final ReceiverCursor receiverCursor;
+    private final ReceiverProxy receiverProxy;
     private final NioSelector nioSelector;
     private final Receiver receiver;
     private final Sender sender;
     private final BufferManagement bufferManagement;
-    private final RingBuffer adminReceiveBuffer;
-    private final RingBuffer adminSendBuffer;
-    private final Long2ObjectHashMap<ControlFrameHandler> srcDestinationMap;
-    private final AtomicBuffer writeBuffer;
+    private final RingBuffer toMediaDriverBuffer;
+    private final RingBuffer toClientBuffer;
+    private final Long2ObjectHashMap<ControlFrameHandler> srcDestinationMap = new Long2ObjectHashMap<>();
+    private final AtomicBuffer writeBuffer = new AtomicBuffer(allocateDirect(WRITE_BUFFER_CAPACITY));
     private final TimerWheel timerWheel;
 
     private final Supplier<SenderControlStrategy> senderFlowControl;
@@ -67,40 +66,39 @@ public class MediaConductor extends Agent
     private final NewBufferMessageFlyweight newBufferMessage = new NewBufferMessageFlyweight();
 
     private final int mtuLength;
-    private final ConductorByteBuffers adminBufferStrategy;
-    private TimerWheel.Timer heartbeatTimer;
+    private final ConductorByteBuffers conductorByteBuffers;
+    private final TimerWheel.Timer heartbeatTimer;
 
     public MediaConductor(final Context ctx, final Receiver receiver, final Sender sender)
     {
         super(SELECT_TIMEOUT);
 
         this.commandBuffer = ctx.conductorCommandBuffer();
-        this.receiverCursor = new ReceiverCursor(ctx.receiverCommandBuffer(), ctx.rcvNioSelector());
+        this.receiverProxy = new ReceiverProxy(ctx.receiverCommandBuffer(), ctx.receiverNioSelector());
         this.bufferManagement = ctx.bufferManagement();
-        this.nioSelector = ctx.adminNioSelector();
+        this.nioSelector = ctx.conductorNioSelector();
         this.mtuLength = ctx.mtuLength();
         this.receiver = receiver;
         this.sender = sender;
         this.senderFlowControl = ctx.senderFlowControl();
-        this.srcDestinationMap = new Long2ObjectHashMap<>();
-        this.writeBuffer = new AtomicBuffer(allocateDirect(WRITE_BUFFER_CAPACITY));
+
         newBufferMessage.wrap(writeBuffer, 0);
 
-        this.timerWheel = ctx.conductorTimerWheel() != null ?
-                              ctx.conductorTimerWheel() :
-                              new TimerWheel(MEDIA_CONDUCTOR_TICK_DURATION_MICROS,
-                                             TimeUnit.MICROSECONDS,
-                                             MEDIA_CONDUCTOR_TICKS_PER_WHEEL);
+        timerWheel = ctx.conductorTimerWheel() != null ?
+            ctx.conductorTimerWheel() :
+            new TimerWheel(MEDIA_CONDUCTOR_TICK_DURATION_US,
+                           TimeUnit.MICROSECONDS,
+                           MEDIA_CONDUCTOR_TICKS_PER_WHEEL);
 
-        heartbeatTimer = newTimeout(HEARTBEAT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS, this::onHeartbeatCheck);
+        heartbeatTimer = newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheck);
 
         try
         {
-            adminBufferStrategy = ctx.conductorByteBuffers();
-            ByteBuffer toMediaDriver = adminBufferStrategy.toMediaDriver();
-            ByteBuffer toApi = adminBufferStrategy.toClient();
-            this.adminReceiveBuffer = new ManyToOneRingBuffer(new AtomicBuffer(toMediaDriver));
-            this.adminSendBuffer = new ManyToOneRingBuffer(new AtomicBuffer(toApi));
+            conductorByteBuffers = ctx.conductorByteBuffers();
+            final ByteBuffer toMediaDriver = conductorByteBuffers.toMediaDriver();
+            final ByteBuffer toClient = conductorByteBuffers.toClient();
+            toMediaDriverBuffer = new ManyToOneRingBuffer(new AtomicBuffer(toMediaDriver));
+            toClientBuffer = new ManyToOneRingBuffer(new AtomicBuffer(toClient));
         }
         catch (final Exception ex)
         {
@@ -135,31 +133,31 @@ public class MediaConductor extends Agent
     private void processCommandBuffer()
     {
         commandBuffer.read(
-              (eventTypeId, buffer, index, length) ->
-              {
-                  switch (eventTypeId)
-                  {
-                      case CREATE_TERM_BUFFER:
-                          qualifiedMessage.wrap(buffer, index);
-                          onCreateSubscriberTermBufferEvent(qualifiedMessage);
-                          break;
+            (eventTypeId, buffer, index, length) ->
+            {
+                switch (eventTypeId)
+                {
+                    case CREATE_TERM_BUFFER:
+                        qualifiedMessage.wrap(buffer, index);
+                        onCreateSubscriberTermBufferEvent(qualifiedMessage);
+                        break;
 
-                      case REMOVE_TERM_BUFFER:
-                          qualifiedMessage.wrap(buffer, index);
-                          onRemoveSubscriberTermBufferEvent(qualifiedMessage);
-                          break;
+                    case REMOVE_TERM_BUFFER:
+                        qualifiedMessage.wrap(buffer, index);
+                        onRemoveSubscriberTermBufferEvent(qualifiedMessage);
+                        break;
 
-                      case ERROR_RESPONSE:
-                          errorHeader.wrap(buffer, index);
-                          adminSendBuffer.write(eventTypeId, buffer, index, length);
-                          break;
-                  }
-              });
+                    case ERROR_RESPONSE:
+                        errorHeader.wrap(buffer, index);
+                        toClientBuffer.write(eventTypeId, buffer, index, length);
+                        break;
+                }
+            });
     }
 
     private void processReceiveBuffer()
     {
-        adminReceiveBuffer.read(
+        toMediaDriverBuffer.read(
             (eventTypeId, buffer, index, length) ->
             {
                 Flyweight flyweight = channelMessage;
@@ -200,11 +198,11 @@ public class MediaConductor extends Agent
 
                     errorHeader.wrap(writeBuffer, 0);
                     errorHeader.errorCode(ex.errorCode())
-                                        .offendingFlyweight(flyweight, length)
-                                        .errorString(err)
-                                        .frameLength(len);
+                               .offendingFlyweight(flyweight, length)
+                               .errorString(err)
+                               .frameLength(len);
 
-                    adminSendBuffer.write(ERROR_RESPONSE, writeBuffer, 0, errorHeader.frameLength());
+                    toClientBuffer.write(ERROR_RESPONSE, writeBuffer, 0, errorHeader.frameLength());
                 }
                 catch (final Exception ex)
                 {
@@ -229,7 +227,7 @@ public class MediaConductor extends Agent
 
         srcDestinationMap.forEach((hash, frameHandler) -> frameHandler.close());
 
-        adminBufferStrategy.close();
+        conductorByteBuffers.close();
     }
 
     public void wakeup()
@@ -277,7 +275,7 @@ public class MediaConductor extends Agent
 
         final int eventTypeId = isSender ? NEW_SEND_BUFFER_NOTIFICATION : NEW_RECEIVE_BUFFER_NOTIFICATION;
 
-        if (!adminSendBuffer.write(eventTypeId, writeBuffer, 0, newBufferMessage.length()))
+        if (!toClientBuffer.write(eventTypeId, writeBuffer, 0, newBufferMessage.length()))
         {
             System.err.println("Error occurred writing new buffer notification");
         }
@@ -402,7 +400,7 @@ public class MediaConductor extends Agent
     public void onAddSubscriber(final SubscriberMessageFlyweight subscriberMessage)
     {
         // instruct receiver thread of new framehandler and new channelIdlist for such
-        receiverCursor.addNewSubscriberEvent(subscriberMessage.destination(), subscriberMessage.channelIds());
+        receiverProxy.addNewSubscriberEvent(subscriberMessage.destination(), subscriberMessage.channelIds());
 
         // this thread does not add buffers. The RcvFrameHandler handle methods will send an event for this thread
         // to create buffers as needed
@@ -411,7 +409,7 @@ public class MediaConductor extends Agent
     public void onRemoveSubscriber(final SubscriberMessageFlyweight subscriberMessage)
     {
         // instruct receiver thread to get rid of channels and possibly destination
-        receiverCursor.addRemoveSubscriberEvent(subscriberMessage.destination(), subscriberMessage.channelIds());
+        receiverProxy.addRemoveSubscriberEvent(subscriberMessage.destination(), subscriberMessage.channelIds());
     }
 
     private void onCreateSubscriberTermBufferEvent(final QualifiedMessageFlyweight qualifiedMessage)
@@ -464,6 +462,6 @@ public class MediaConductor extends Agent
     {
         sender.heartbeatChecks();
 
-        rescheduleTimeout(HEARTBEAT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS, heartbeatTimer);
+        rescheduleTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, heartbeatTimer);
     }
 }

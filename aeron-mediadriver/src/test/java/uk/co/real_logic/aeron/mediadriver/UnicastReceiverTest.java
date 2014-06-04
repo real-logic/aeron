@@ -101,8 +101,8 @@ public class UnicastReceiverTest
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .conductorCommandBuffer(COMMAND_BUFFER_SZ)
             .receiverCommandBuffer(COMMAND_BUFFER_SZ)
-            .rcvNioSelector(nioSelector)
-            .adminNioSelector(new NioSelector())
+            .receiverNioSelector(nioSelector)
+            .conductorNioSelector(new NioSelector())
             .senderFlowControl(UnicastSenderControlStrategy::new)
             .conductorByteBuffers(new ConductorByteBuffers(buffers.adminDirName()))
             .bufferManagement(bufferManagement);

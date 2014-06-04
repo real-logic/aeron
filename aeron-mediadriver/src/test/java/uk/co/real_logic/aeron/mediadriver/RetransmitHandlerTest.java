@@ -78,7 +78,7 @@ public class RetransmitHandlerTest
     private long currentTime;
 
     private final TimerWheel wheel = new TimerWheel(() -> currentTime,
-                                                    MediaDriver.MEDIA_CONDUCTOR_TICK_DURATION_MICROS,
+                                                    MediaDriver.MEDIA_CONDUCTOR_TICK_DURATION_US,
                                                     TimeUnit.MICROSECONDS,
                                                     MediaDriver.MEDIA_CONDUCTOR_TICKS_PER_WHEEL);
 
@@ -267,7 +267,7 @@ public class RetransmitHandlerTest
         {
             if (wheel.calculateDelayInMs() > 0)
             {
-                currentTime += TimeUnit.MICROSECONDS.toNanos(MediaDriver.MEDIA_CONDUCTOR_TICK_DURATION_MICROS);
+                currentTime += TimeUnit.MICROSECONDS.toNanos(MediaDriver.MEDIA_CONDUCTOR_TICK_DURATION_US);
             }
 
             wheel.expireTimers();

@@ -34,7 +34,7 @@ public class ReceiverTest
     private static final long[] ONE_CHANNEL = { CHANNEL_ID };
 
     private Receiver receiver;
-    private ReceiverCursor cursor;
+    private ReceiverProxy cursor;
     private RcvFrameHandlerFactory frameHandlerFactory;
 
     @Before
@@ -46,11 +46,11 @@ public class ReceiverTest
         final MediaDriver.Context context = new MediaDriver.Context()
                 .conductorCommandBuffer(COMMAND_BUFFER_SZ)
                 .receiverCommandBuffer(COMMAND_BUFFER_SZ)
-                .rcvNioSelector(new NioSelector())
+                .receiverNioSelector(new NioSelector())
                 .bufferManagement(bufferManagement)
                 .rcvFrameHandlerFactory(frameHandlerFactory);
 
-        cursor = new ReceiverCursor(context.receiverCommandBuffer(), context.rcvNioSelector());
+        cursor = new ReceiverProxy(context.receiverCommandBuffer(), context.receiverNioSelector());
         receiver = new Receiver(context);
     }
 

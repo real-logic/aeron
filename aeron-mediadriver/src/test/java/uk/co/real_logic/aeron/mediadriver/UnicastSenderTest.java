@@ -52,10 +52,8 @@ import static uk.co.real_logic.aeron.mediadriver.MediaDriver.*;
 import static uk.co.real_logic.aeron.mediadriver.SenderChannel.HEARTBEAT_TIMEOUT_MS;
 import static uk.co.real_logic.aeron.mediadriver.SenderChannel.INITIAL_HEARTBEAT_TIMEOUT_MS;
 import static uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement.newMappedBufferManager;
-import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.ErrorCode.*;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.BASE_HEADER_LENGTH;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_LENGTH;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertEventRead;
 import static uk.co.real_logic.aeron.util.protocol.HeaderFlyweight.HDR_TYPE_DATA;
@@ -119,15 +117,15 @@ public class UnicastSenderTest
         controlledTimestamp = 0;
         final TimerWheel timerWheel = new TimerWheel(
             () -> controlledTimestamp,
-            MEDIA_CONDUCTOR_TICK_DURATION_MICROS,
+            MEDIA_CONDUCTOR_TICK_DURATION_US,
             TimeUnit.MICROSECONDS,
             MEDIA_CONDUCTOR_TICKS_PER_WHEEL);
 
         final Context ctx = new Context()
             .conductorCommandBuffer(COMMAND_BUFFER_SZ)
             .receiverCommandBuffer(COMMAND_BUFFER_SZ)
-            .rcvNioSelector(new NioSelector())
-            .adminNioSelector(new NioSelector())
+            .receiverNioSelector(new NioSelector())
+            .conductorNioSelector(new NioSelector())
             .senderFlowControl(UnicastSenderControlStrategy::new)
             .conductorByteBuffers(buffers.mediaDriverBuffers())
             .bufferManagement(bufferManagement)
@@ -541,7 +539,7 @@ public class UnicastSenderTest
 
     private void advanceTimeMilliseconds(final int msec)
     {
-        final long tickNanos = TimeUnit.MICROSECONDS.toNanos(MEDIA_CONDUCTOR_TICK_DURATION_MICROS);
+        final long tickNanos = TimeUnit.MICROSECONDS.toNanos(MEDIA_CONDUCTOR_TICK_DURATION_US);
         final long spanNanos = TimeUnit.MILLISECONDS.toNanos(msec);
         final long startTimestamp = controlledTimestamp;
 

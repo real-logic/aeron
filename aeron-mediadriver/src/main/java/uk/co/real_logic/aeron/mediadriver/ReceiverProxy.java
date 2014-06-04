@@ -25,9 +25,9 @@ import java.nio.ByteBuffer;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 
 /**
- * Cursor for writing into the Receiver Thread's command buffer.
+ * Proxy for writing into the Receiver Thread's command buffer.
  */
-public class ReceiverCursor
+public class ReceiverProxy
 {
     private static final int WRITE_BUFFER_CAPACITY = 256;
 
@@ -35,10 +35,9 @@ public class ReceiverCursor
     private final NioSelector selector;
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
     private final SubscriberMessageFlyweight receiverMessage = new SubscriberMessageFlyweight();
-    private final QualifiedMessageFlyweight addTermBufferMessage =
-        new QualifiedMessageFlyweight();
+    private final QualifiedMessageFlyweight addTermBufferMessage = new QualifiedMessageFlyweight();
 
-    public ReceiverCursor(final RingBuffer commandBuffer, final NioSelector selector)
+    public ReceiverProxy(final RingBuffer commandBuffer, final NioSelector selector)
     {
         this.commandBuffer = commandBuffer;
         this.selector = selector;

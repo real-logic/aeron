@@ -120,7 +120,7 @@ public final class Aeron implements AutoCloseable
      */
     public Source newSource(final Source.Context context)
     {
-        context.mediaConductorProxy(new MediaConductorProxy(clientConductorCommandBuffer));
+        context.clientConductorProxy(new ClientConductorProxy(clientConductorCommandBuffer));
 
         return new Source(channels, context);
     }
@@ -164,9 +164,9 @@ public final class Aeron implements AutoCloseable
      */
     public Subscriber newSubscriber(final Subscriber.Context context)
     {
-        final MediaConductorProxy mediaConductorProxy = new MediaConductorProxy(clientConductorCommandBuffer);
+        final ClientConductorProxy clientConductorProxy = new ClientConductorProxy(clientConductorCommandBuffer);
 
-        return new Subscriber(mediaConductorProxy, context, receivers);
+        return new Subscriber(clientConductorProxy, context, receivers);
     }
 
     /**

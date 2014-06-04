@@ -26,11 +26,11 @@ import java.nio.ByteBuffer;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 
 /**
- * Separates the concern of communicating with the media driver away from the rest of the client.
+ * Separates the concern of communicating with the client conductor away from the rest of the client.
  *
- * Writes messages into the media driver conductor buffer.
+ * Writes messages into the client conductor buffer.
  */
-public class MediaConductorProxy
+public class ClientConductorProxy
 {
     /** Maximum size of the write buffer */
     public static final int WRITE_BUFFER_CAPACITY = 4096;
@@ -42,7 +42,7 @@ public class MediaConductorProxy
 
     private final RingBuffer conductorBuffer;
 
-    public MediaConductorProxy(final RingBuffer conductorBuffer)
+    public ClientConductorProxy(final RingBuffer conductorBuffer)
     {
         this.conductorBuffer = conductorBuffer;
 

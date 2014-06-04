@@ -90,6 +90,8 @@ public class MediaConductor extends Agent
                            TimeUnit.MICROSECONDS,
                            MEDIA_CONDUCTOR_TICKS_PER_WHEEL);
 
+        heartbeatTimer = newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheck);
+
         try
         {
             conductorByteBuffers = ctx.conductorByteBuffers();
@@ -102,8 +104,6 @@ public class MediaConductor extends Agent
         {
             throw new IllegalStateException("Unable to create the conductor media buffers", ex);
         }
-
-        heartbeatTimer = newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheck);
     }
 
     public ControlFrameHandler frameHandler(final UdpDestination destination)

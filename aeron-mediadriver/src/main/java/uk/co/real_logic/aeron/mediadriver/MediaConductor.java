@@ -93,10 +93,8 @@ public class MediaConductor extends Agent
         heartbeatTimer = newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheck);
 
         conductorByteBuffers = ctx.conductorByteBuffers();
-        final ByteBuffer toMediaDriver = conductorByteBuffers.toMediaDriver();
-        final ByteBuffer toClient = conductorByteBuffers.toClient();
-        toMediaDriverBuffer = new ManyToOneRingBuffer(new AtomicBuffer(toMediaDriver));
-        toClientBuffer = new ManyToOneRingBuffer(new AtomicBuffer(toClient));
+        toMediaDriverBuffer = new ManyToOneRingBuffer(new AtomicBuffer(conductorByteBuffers.toMediaDriver()));
+        toClientBuffer = new ManyToOneRingBuffer(new AtomicBuffer(conductorByteBuffers.toClient()));
     }
 
     public ControlFrameHandler frameHandler(final UdpDestination destination)

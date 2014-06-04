@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.util.command;
 /**
  * Facade of client application for use by media driver to send/receive control commands/responses
  *
- * The media driver (aeron-mediadriver) implements this interface to send notifications to a  client application
+ * The media driver (aeron-mediadriver) implements this interface to send notifications to a client application
  * and to handle commands, Aeron control frames, etc. that come from the client application.
  */
 @Deprecated

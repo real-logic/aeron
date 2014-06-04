@@ -53,7 +53,7 @@ public class Receiver extends Agent
 
         commandBuffer = context.receiverCommandBuffer();
         adminThreadCursor =
-            new MediaConductorCursor(context.conductorCommandBuffer(), context.conductorNioSelector());
+            new MediaConductorCursor(context.mediaCommandBuffer(), context.conductorNioSelector());
         nioSelector = context.receiverNioSelector();
         frameHandlerFactory = context.rcvFrameHandlerFactory();
     }

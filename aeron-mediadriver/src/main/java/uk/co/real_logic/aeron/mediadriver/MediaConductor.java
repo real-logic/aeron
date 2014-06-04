@@ -44,7 +44,7 @@ public class MediaConductor extends Agent
     public static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
     public static final int HEARTBEAT_TIMEOUT_MS = 100;
 
-    private final RingBuffer commandBuffer;
+    private final RingBuffer mediaCommandBuffer;
     private final ReceiverProxy receiverProxy;
     private final NioSelector nioSelector;
     private final Receiver receiver;
@@ -73,7 +73,7 @@ public class MediaConductor extends Agent
     {
         super(SELECT_TIMEOUT);
 
-        this.commandBuffer = ctx.conductorCommandBuffer();
+        this.mediaCommandBuffer = ctx.mediaCommandBuffer();
         this.receiverProxy = new ReceiverProxy(ctx.receiverCommandBuffer(), ctx.receiverNioSelector());
         this.bufferManagement = ctx.bufferManagement();
         this.nioSelector = ctx.conductorNioSelector();
@@ -132,7 +132,7 @@ public class MediaConductor extends Agent
 
     private void processCommandBuffer()
     {
-        commandBuffer.read(
+        mediaCommandBuffer.read(
             (eventTypeId, buffer, index, length) ->
             {
                 switch (eventTypeId)

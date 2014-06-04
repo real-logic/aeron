@@ -190,7 +190,7 @@ public class MediaDriver implements AutoCloseable
                 .mtuLength(CommonConfiguration.MTU_LENGTH);
 
         context.rcvFrameHandlerFactory(new RcvFrameHandlerFactory(rcvNioSelector,
-                new MediaConductorCursor(context.conductorCommandBuffer(), rcvNioSelector)));
+                new MediaConductorCursor(context.mediaCommandBuffer(), rcvNioSelector)));
 
         receiver = new Receiver(context);
         sender = new Sender(context);
@@ -239,7 +239,7 @@ public class MediaDriver implements AutoCloseable
 
     public static class Context
     {
-        private RingBuffer conductorCommandBuffer;
+        private RingBuffer mediaCommandBuffer;
         private RingBuffer receiverCommandBuffer;
         private BufferManagement bufferManagement;
         private ConductorByteBuffers conductorByteBuffers;
@@ -260,7 +260,7 @@ public class MediaDriver implements AutoCloseable
 
         public Context conductorCommandBuffer(final int size)
         {
-            this.conductorCommandBuffer = createNewCommandBuffer(size);
+            this.mediaCommandBuffer = createNewCommandBuffer(size);
             return this;
         }
 
@@ -312,9 +312,9 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public RingBuffer conductorCommandBuffer()
+        public RingBuffer mediaCommandBuffer()
         {
-            return conductorCommandBuffer;
+            return mediaCommandBuffer;
         }
 
         public RingBuffer receiverCommandBuffer()

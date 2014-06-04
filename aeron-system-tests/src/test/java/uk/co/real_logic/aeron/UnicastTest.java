@@ -20,7 +20,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
-import uk.co.real_logic.aeron.util.InterConductorByteBuffers;
+import uk.co.real_logic.aeron.util.ConductorShmBuffers;
 
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.Subscriber.DataHandler;
@@ -61,7 +61,7 @@ public class UnicastTest
 
     private Aeron.Context newAeronContext()
     {
-        return new Aeron.Context().conductorByteBuffers(new InterConductorByteBuffers(ADMIN_DIR_NAME));
+        return new Aeron.Context().conductorShmBuffers(new ConductorShmBuffers(ADMIN_DIR_NAME));
     }
 
     @After

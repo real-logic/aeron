@@ -28,10 +28,10 @@ import static uk.co.real_logic.aeron.util.IoUtil.mapNewFile;
  *
  * Assumes one media driver per client instance.
  */
-public class InterConductorByteBuffers implements AutoCloseable
+public class ConductorShmBuffers implements AutoCloseable
 {
-    protected static final String MEDIA_DRIVER_FILE = "media-driver";
-    protected static final String CLIENT_FILE = "client";
+    protected static final String TO_DRIVER_FILE = "to-driver";
+    protected static final String TO_CLIENT_FILE = "to-client";
 
     private MappedByteBuffer toDriver;
     private MappedByteBuffer toClient;
@@ -42,18 +42,18 @@ public class InterConductorByteBuffers implements AutoCloseable
      * @param adminDirName in which to create the buffers.
      * @param bufferSize to be used for the files.
      */
-    public InterConductorByteBuffers(final String adminDirName, final int bufferSize)
+    public ConductorShmBuffers(final String adminDirName, final int bufferSize)
     {
         final File adminDir  = new File(adminDirName);
         IoUtil.checkDirectoryExists(new File(adminDirName), "adminDir");
 
-        final File toDriverFile = new File(adminDir, MEDIA_DRIVER_FILE);
-        final File toClientFile = new File(adminDir, CLIENT_FILE);
+        final File toDriverFile = new File(adminDir, TO_DRIVER_FILE);
+        final File toClientFile = new File(adminDir, TO_CLIENT_FILE);
 
         try
         {
-            toDriver = mapNewFile(toDriverFile, MEDIA_DRIVER_FILE, bufferSize);
-            toClient = mapNewFile(toClientFile, CLIENT_FILE, bufferSize);
+            toDriver = mapNewFile(toDriverFile, TO_DRIVER_FILE, bufferSize);
+            toClient = mapNewFile(toClientFile, TO_CLIENT_FILE, bufferSize);
         }
         catch (final IOException ex)
         {
@@ -66,18 +66,18 @@ public class InterConductorByteBuffers implements AutoCloseable
      *
      * @param adminDirName in which to create the buffers.
      */
-    public InterConductorByteBuffers(final String adminDirName)
+    public ConductorShmBuffers(final String adminDirName)
     {
         final File adminDir  = new File(adminDirName);
         IoUtil.checkDirectoryExists(new File(adminDirName), "adminDir");
 
-        final File toMediaDriverFile = new File(adminDir, MEDIA_DRIVER_FILE);
-        final File toClientFile = new File(adminDir, CLIENT_FILE);
+        final File toMediaDriverFile = new File(adminDir, TO_DRIVER_FILE);
+        final File toClientFile = new File(adminDir, TO_CLIENT_FILE);
 
         try
         {
-            toDriver = mapExistingFile(toMediaDriverFile, MEDIA_DRIVER_FILE);
-            toClient = mapExistingFile(toClientFile, CLIENT_FILE);
+            toDriver = mapExistingFile(toMediaDriverFile, TO_DRIVER_FILE);
+            toClient = mapExistingFile(toClientFile, TO_CLIENT_FILE);
         }
         catch (final IOException ex)
         {

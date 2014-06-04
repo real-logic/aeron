@@ -32,8 +32,8 @@ public class ConductorBuffersExternalResource extends ExternalResource
     private final String adminDirName;
     private final int bufferSize;
 
-    private InterConductorByteBuffers mediaDriverBuffers;
-    private InterConductorByteBuffers clientBuffers;
+    private ConductorShmBuffers mediaShmBuffers;
+    private ConductorShmBuffers clientShmBuffers;
     private ByteBuffer toMediaDriver;
     private ByteBuffer toClient;
     private File adminDir;
@@ -68,17 +68,17 @@ public class ConductorBuffersExternalResource extends ExternalResource
         }
 
         IoUtil.ensureDirectoryExists(adminDir, "conductor dir");
-        mediaDriverBuffers = new InterConductorByteBuffers(adminDirName, bufferSize);
-        clientBuffers = new InterConductorByteBuffers(adminDirName);
-        toMediaDriver = mediaDriverBuffers.toDriver();
-        toClient = mediaDriverBuffers.toClient();
+        mediaShmBuffers = new ConductorShmBuffers(adminDirName, bufferSize);
+        clientShmBuffers = new ConductorShmBuffers(adminDirName);
+        toMediaDriver = mediaShmBuffers.toDriver();
+        toClient = mediaShmBuffers.toClient();
     }
 
     protected void after()
     {
-        // Force un-mapping of byte clientBuffers to allow deletion
-        mediaDriverBuffers.close();
-        clientBuffers.close();
+        // Force un-mapping of byte clientShmBuffers to allow deletion
+        mediaShmBuffers.close();
+        clientShmBuffers.close();
 
         try
         {
@@ -106,14 +106,14 @@ public class ConductorBuffersExternalResource extends ExternalResource
         return new ManyToOneRingBuffer(new AtomicBuffer(buffer));
     }
 
-    public InterConductorByteBuffers clientBuffers()
+    public ConductorShmBuffers clientShmBuffers()
     {
-        return clientBuffers;
+        return clientShmBuffers;
     }
 
-    public InterConductorByteBuffers mediaDriverBuffers()
+    public ConductorShmBuffers mediaShmBuffers()
     {
-        return mediaDriverBuffers;
+        return mediaShmBuffers;
     }
 
     public String adminDirName()

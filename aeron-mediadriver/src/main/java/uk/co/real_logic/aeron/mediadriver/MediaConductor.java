@@ -65,7 +65,7 @@ public class MediaConductor extends Agent
     private final NewBufferMessageFlyweight newBufferMessage = new NewBufferMessageFlyweight();
 
     private final int mtuLength;
-    private final InterConductorByteBuffers interConductorByteBuffers;
+    private final ConductorShmBuffers conductorShmBuffers;
     private final TimerWheel.Timer heartbeatTimer;
 
     public MediaConductor(final Context ctx, final Receiver receiver, final Sender sender)
@@ -91,9 +91,9 @@ public class MediaConductor extends Agent
 
         heartbeatTimer = newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheck);
 
-        interConductorByteBuffers = ctx.conductorByteBuffers();
-        toMediaBuffer = new ManyToOneRingBuffer(new AtomicBuffer(interConductorByteBuffers.toDriver()));
-        toClientBuffer = new ManyToOneRingBuffer(new AtomicBuffer(interConductorByteBuffers.toClient()));
+        conductorShmBuffers = ctx.conductorShmBuffers();
+        toMediaBuffer = new ManyToOneRingBuffer(new AtomicBuffer(conductorShmBuffers.toDriver()));
+        toClientBuffer = new ManyToOneRingBuffer(new AtomicBuffer(conductorShmBuffers.toClient()));
     }
 
     public ControlFrameHandler frameHandler(final UdpDestination destination)
@@ -217,7 +217,7 @@ public class MediaConductor extends Agent
 
         srcDestinationMap.forEach((hash, frameHandler) -> frameHandler.close());
 
-        interConductorByteBuffers.close();
+        conductorShmBuffers.close();
     }
 
     public void wakeup()

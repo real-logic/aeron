@@ -70,8 +70,8 @@ public final class ClientConductor extends Agent
     private final NewBufferMessageFlyweight bufferNotificationMessage = new NewBufferMessageFlyweight();
 
     public ClientConductor(final RingBuffer commandBuffer,
-                           final RingBuffer toDriverBuffer,
                            final RingBuffer toClientBuffer,
+                           final RingBuffer toDriverBuffer,
                            final BufferUsageStrategy bufferUsage,
                            final AtomicArray<Channel> publishers,
                            final AtomicArray<SubscriberChannel> subscriberChannels,

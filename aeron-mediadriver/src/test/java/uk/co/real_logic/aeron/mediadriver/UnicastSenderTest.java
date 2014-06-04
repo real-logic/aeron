@@ -127,7 +127,7 @@ public class UnicastSenderTest
             .receiverNioSelector(new NioSelector())
             .conductorNioSelector(new NioSelector())
             .senderFlowControl(UnicastSenderControlStrategy::new)
-            .conductorByteBuffers(buffers.mediaDriverBuffers())
+            .conductorShmBuffers(buffers.mediaShmBuffers())
             .bufferManagement(bufferManagement)
             .mtuLength(MAX_FRAME_LENGTH)
             .conductorTimerWheel(timerWheel);

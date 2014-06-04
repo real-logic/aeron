@@ -18,12 +18,13 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.aeron.conductor.*;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.CommonConfiguration;
-import uk.co.real_logic.aeron.util.InterConductorByteBuffers;
+import uk.co.real_logic.aeron.util.ConductorShmBuffers;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import java.nio.ByteBuffer;
+import java.util.function.Consumer;
 
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_LENGTH;
 
@@ -40,26 +41,26 @@ public final class Aeron implements AutoCloseable
     private final AtomicArray<Channel> channels = new AtomicArray<>();
     private final AtomicArray<SubscriberChannel> receivers = new AtomicArray<>();
     private final ClientConductor clientConductor;
-    private final InterConductorByteBuffers interConductorByteBuffers;
+    private final ConductorShmBuffers conductorShmBuffers;
 
     private Aeron(final Context context)
     {
-        if (null == context.interConductorByteBuffers)
+        if (null == context.conductorShmBuffers)
         {
-            interConductorByteBuffers = new InterConductorByteBuffers(CommonConfiguration.ADMIN_DIR_NAME);
+            conductorShmBuffers = new ConductorShmBuffers(CommonConfiguration.ADMIN_DIR_NAME);
         }
         else
         {
-            interConductorByteBuffers = context.interConductorByteBuffers;
+            conductorShmBuffers = context.conductorShmBuffers;
         }
 
-        final RingBuffer toClientBuffer = new ManyToOneRingBuffer(new AtomicBuffer(interConductorByteBuffers.toClient()));
-        final RingBuffer toDriverBuffer = new ManyToOneRingBuffer(new AtomicBuffer(interConductorByteBuffers.toDriver()));
+        final RingBuffer toClientBuffer = new ManyToOneRingBuffer(new AtomicBuffer(conductorShmBuffers.toClient()));
+        final RingBuffer toDriverBuffer = new ManyToOneRingBuffer(new AtomicBuffer(conductorShmBuffers.toDriver()));
         final BufferUsageStrategy bufferUsage = new MappingBufferUsageStrategy();
         final ConductorErrorHandler errorHandler = new ConductorErrorHandler(context.invalidDestinationHandler);
 
         clientConductor = new ClientConductor(clientConductorCommandBuffer,
-                                              toDriverBuffer, toClientBuffer,
+                                              toClientBuffer, toDriverBuffer,
                                               bufferUsage,
                                               channels, receivers,
                                               errorHandler);
@@ -67,7 +68,7 @@ public final class Aeron implements AutoCloseable
 
     public void close()
     {
-        interConductorByteBuffers.close();
+        conductorShmBuffers.close();
         clientConductor.close();
     }
 
@@ -167,7 +168,7 @@ public final class Aeron implements AutoCloseable
      * @param block to fill in receiver context
      * @return new Subscriber
      */
-    public Subscriber newSubscriber(final java.util.function.Consumer<Subscriber.Context> block)
+    public Subscriber newSubscriber(final Consumer<Subscriber.Context> block)
     {
         final Subscriber.Context context = new Subscriber.Context();
         block.accept(new Subscriber.Context());
@@ -183,7 +184,7 @@ public final class Aeron implements AutoCloseable
     public static class Context
     {
         private ErrorHandler errorHandler = new DummyErrorHandler();
-        private InterConductorByteBuffers interConductorByteBuffers;
+        private ConductorShmBuffers conductorShmBuffers;
         private InvalidDestinationHandler invalidDestinationHandler;
 
         public Context errorHandler(ErrorHandler errorHandler)
@@ -192,9 +193,9 @@ public final class Aeron implements AutoCloseable
             return this;
         }
 
-        public Context conductorByteBuffers(final InterConductorByteBuffers interConductorByteBuffers)
+        public Context conductorShmBuffers(final ConductorShmBuffers conductorShmBuffers)
         {
-            this.interConductorByteBuffers = interConductorByteBuffers;
+            this.conductorShmBuffers = conductorShmBuffers;
             return this;
         }
 

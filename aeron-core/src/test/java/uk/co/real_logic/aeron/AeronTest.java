@@ -62,7 +62,8 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUt
 
 public class AeronTest
 {
-    private static final byte[] DEFAULT_HEADER = {
+    private static final byte[] DEFAULT_HEADER =
+    {
         HeaderFlyweight.CURRENT_VERSION, FrameDescriptor.UNFRAGMENTED, 0, HeaderFlyweight.HDR_TYPE_DATA,
         0, 0, 0, 0,
         0, 0, 0, 0,
@@ -106,8 +107,8 @@ public class AeronTest
     private final ByteBuffer sendBuffer = ByteBuffer.allocate(SEND_BUFFER_CAPACITY);
     private final AtomicBuffer atomicSendBuffer = new AtomicBuffer(sendBuffer);
 
-    private InterConductorByteBuffers clientInterConductorByteBuffers;
-    private InterConductorByteBuffers mediaDriverInterConductorByteBuffers;
+    private ConductorShmBuffers clientConductorShmBuffers;
+    private ConductorShmBuffers driverConductorShmBuffers;
 
     public AeronTest()
     {
@@ -118,16 +119,15 @@ public class AeronTest
     @Before
     public void setUp()
     {
-        mediaDriverInterConductorByteBuffers = new InterConductorByteBuffers(conductorBuffers.adminDirName(),
-                                                                   CONDUCTOR_BUFFER_SIZE);
-        clientInterConductorByteBuffers = new InterConductorByteBuffers(conductorBuffers.adminDirName());
+        driverConductorShmBuffers = new ConductorShmBuffers(conductorBuffers.adminDirName(), CONDUCTOR_BUFFER_SIZE);
+        clientConductorShmBuffers = new ConductorShmBuffers(conductorBuffers.adminDirName());
     }
 
     @After
     public void tearDown()
     {
-        clientInterConductorByteBuffers.close();
-        mediaDriverInterConductorByteBuffers.close();
+        clientConductorShmBuffers.close();
+        driverConductorShmBuffers.close();
     }
 
     @Test
@@ -564,11 +564,11 @@ public class AeronTest
                         .termId(termId);
 
         IntStream.range(0, PAYLOAD_BUFFER_COUNT).forEach(
-                (i) ->
-                {
-                    newBufferMessage.bufferOffset(i, 0);
-                    newBufferMessage.bufferLength(i, LOG_MIN_SIZE);
-                }
+            (i) ->
+            {
+                newBufferMessage.bufferOffset(i, 0);
+                newBufferMessage.bufferLength(i, LOG_MIN_SIZE);
+            }
         );
         addBufferLocation(rootDir, termId, sessionId, LOG, 0);
         addBufferLocation(rootDir, termId, sessionId, STATE, BUFFER_COUNT);
@@ -584,22 +584,22 @@ public class AeronTest
                                    final int start)
     {
         IntStream.range(0, BUFFER_COUNT).forEach(
-                (i) ->
-                {
-                    File term = termLocation(dir, sessionId, CHANNEL_ID, termId + i, true, DESTINATION, type);
-                    newBufferMessage.location(i + start, term.getAbsolutePath());
-                }
+            (i) ->
+            {
+                File term = termLocation(dir, sessionId, CHANNEL_ID, termId + i, true, DESTINATION, type);
+                newBufferMessage.location(i + start, term.getAbsolutePath());
+            }
         );
     }
 
     private ManyToOneRingBuffer toClient()
     {
-        return new ManyToOneRingBuffer(new AtomicBuffer(mediaDriverInterConductorByteBuffers.toClient()));
+        return new ManyToOneRingBuffer(new AtomicBuffer(driverConductorShmBuffers.toClient()));
     }
 
     private ManyToOneRingBuffer toMediaDriver()
     {
-        return new ManyToOneRingBuffer(new AtomicBuffer(mediaDriverInterConductorByteBuffers.toDriver()));
+        return new ManyToOneRingBuffer(new AtomicBuffer(driverConductorShmBuffers.toDriver()));
     }
 
     private Subscriber newSubscriber(final Aeron aeron)
@@ -642,7 +642,7 @@ public class AeronTest
     private Aeron newAeron()
     {
         final Aeron.Context context = new Aeron.Context()
-            .conductorByteBuffers(clientInterConductorByteBuffers)
+            .conductorShmBuffers(clientConductorShmBuffers)
             .invalidDestinationHandler(invalidDestination);
 
         return Aeron.newSingleMediaDriver(context);

@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
 import uk.co.real_logic.aeron.util.CommonConfiguration;
-import uk.co.real_logic.aeron.util.InterConductorByteBuffers;
+import uk.co.real_logic.aeron.util.ConductorShmBuffers;
 import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -161,7 +161,7 @@ public class MediaDriver implements AutoCloseable
     private final Sender sender;
     private final MediaConductor mediaConductor;
 
-    private final InterConductorByteBuffers interConductorByteBuffers;
+    private final ConductorShmBuffers conductorShmBuffers;
     private final BufferManagement bufferManagement;
     private final StatusBufferCreator countersCreator;
 
@@ -175,7 +175,7 @@ public class MediaDriver implements AutoCloseable
 
         ensureDirectoriesExist();
 
-        interConductorByteBuffers = new InterConductorByteBuffers(ADMIN_DIR_NAME, ADMIN_BUFFER_SZ);
+        conductorShmBuffers = new ConductorShmBuffers(ADMIN_DIR_NAME, ADMIN_BUFFER_SZ);
         bufferManagement = newMappedBufferManager(DATA_DIR_NAME);
         countersCreator = new StatusBufferCreator(DESCRIPTOR_BUFFER_SIZE, COUNTERS_BUFFER_SIZE);
 
@@ -185,7 +185,7 @@ public class MediaDriver implements AutoCloseable
                 .receiverNioSelector(rcvNioSelector)
                 .conductorNioSelector(new NioSelector())
                 .senderFlowControl(UnicastSenderControlStrategy::new)
-                .conductorByteBuffers(interConductorByteBuffers)
+                .conductorShmBuffers(conductorShmBuffers)
                 .bufferManagement(bufferManagement)
                 .mtuLength(CommonConfiguration.MTU_LENGTH);
 
@@ -217,7 +217,7 @@ public class MediaDriver implements AutoCloseable
         receiver.close();
         sender.close();
         mediaConductor.close();
-        interConductorByteBuffers.close();
+        conductorShmBuffers.close();
         bufferManagement.close();
         countersCreator.close();
         deleteDirectories();
@@ -242,7 +242,7 @@ public class MediaDriver implements AutoCloseable
         private RingBuffer mediaCommandBuffer;
         private RingBuffer receiverCommandBuffer;
         private BufferManagement bufferManagement;
-        private InterConductorByteBuffers interConductorByteBuffers;
+        private ConductorShmBuffers conductorShmBuffers;
         private NioSelector receiverNioSelector;
         private NioSelector conductorNioSelector;
         private Supplier<SenderControlStrategy> senderFlowControl;
@@ -276,9 +276,9 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context conductorByteBuffers(final InterConductorByteBuffers interConductorByteBuffers)
+        public Context conductorShmBuffers(final ConductorShmBuffers conductorShmBuffers)
         {
-            this.interConductorByteBuffers = interConductorByteBuffers;
+            this.conductorShmBuffers = conductorShmBuffers;
             return this;
         }
 
@@ -327,9 +327,9 @@ public class MediaDriver implements AutoCloseable
             return bufferManagement;
         }
 
-        public InterConductorByteBuffers conductorByteBuffers()
+        public ConductorShmBuffers conductorShmBuffers()
         {
-            return interConductorByteBuffers;
+            return conductorShmBuffers;
         }
 
         public NioSelector receiverNioSelector()

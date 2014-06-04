@@ -27,5 +27,4 @@ public abstract class ChannelNotifiable
     }
 
     protected abstract boolean hasTerm(final long sessionId);
-
 }

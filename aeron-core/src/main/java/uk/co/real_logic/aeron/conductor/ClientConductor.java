@@ -48,10 +48,8 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.B
  */
 public final class ClientConductor extends Agent
 {
-    /**
-     * Maximum size of the write buffer.
-     */
-    public static final int WRITE_BUFFER_CAPACITY = 256;
+    /** Maximum size of the write buffer. */ // TODO: what is this for?
+    public static final int MSG_BUFFER_CAPACITY = 4096;
 
     // TODO: DI this
     private static final byte[] DEFAULT_HEADER = new byte[BASE_HEADER_LENGTH + SIZE_OF_INT];
@@ -97,9 +95,10 @@ public final class ClientConductor extends Agent
         this.errorHandler = errorHandler;
         this.publisherControlFactory = publisherControlFactory;
 
-        final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
-        channelMessage.wrap(writeBuffer, 0);
-        receiverMessage.wrap(writeBuffer, 0);
+        // TODO: what is this buffer for?
+        final AtomicBuffer msgBuffer = new AtomicBuffer(ByteBuffer.allocate(MSG_BUFFER_CAPACITY));
+        channelMessage.wrap(msgBuffer, 0);
+        receiverMessage.wrap(msgBuffer, 0);
     }
 
     public void process()

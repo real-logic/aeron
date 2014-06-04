@@ -33,21 +33,18 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 public class MediaConductorProxy
 {
     /** Maximum size of the write buffer */
-    public static final int WRITE_BUFFER_CAPACITY = 256;
+    public static final int WRITE_BUFFER_CAPACITY = 4096;
+
+    private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
+    private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
+    private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
+    private final QualifiedMessageFlyweight qualifiedMessage = new QualifiedMessageFlyweight();
 
     private final RingBuffer conductorBuffer;
-    private final AtomicBuffer writeBuffer;
-    private final ChannelMessageFlyweight channelMessage;
-    private final SubscriberMessageFlyweight subscriberMessage;
-    private final QualifiedMessageFlyweight qualifiedMessage;
 
     public MediaConductorProxy(final RingBuffer conductorBuffer)
     {
         this.conductorBuffer = conductorBuffer;
-        this.writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
-        this.channelMessage = new ChannelMessageFlyweight();
-        this.subscriberMessage = new SubscriberMessageFlyweight();
-        this.qualifiedMessage = new QualifiedMessageFlyweight();
 
         channelMessage.wrap(writeBuffer, 0);
         subscriberMessage.wrap(writeBuffer, 0);

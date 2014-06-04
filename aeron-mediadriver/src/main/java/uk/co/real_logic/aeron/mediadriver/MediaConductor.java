@@ -39,7 +39,7 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
  */
 public class MediaConductor extends Agent
 {
-    public static final int WRITE_BUFFER_CAPACITY = 512;
+    public static final int MSG_BUFFER_CAPACITY = 512;
     public static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
     public static final int HEARTBEAT_TIMEOUT_MS = 100;
 
@@ -52,7 +52,7 @@ public class MediaConductor extends Agent
     private final RingBuffer toMediaBuffer;
     private final RingBuffer toClientBuffer;
     private final Long2ObjectHashMap<ControlFrameHandler> srcDestinationMap = new Long2ObjectHashMap<>();
-    private final AtomicBuffer writeBuffer = new AtomicBuffer(allocateDirect(WRITE_BUFFER_CAPACITY));
+    private final AtomicBuffer msgBuffer = new AtomicBuffer(allocateDirect(MSG_BUFFER_CAPACITY));
     private final TimerWheel timerWheel;
 
     private final Supplier<SenderControlStrategy> senderFlowControl;
@@ -81,7 +81,7 @@ public class MediaConductor extends Agent
         this.sender = sender;
         this.senderFlowControl = ctx.senderFlowControl();
 
-        newBufferMessage.wrap(writeBuffer, 0);
+        newBufferMessage.wrap(msgBuffer, 0);
 
         timerWheel = ctx.conductorTimerWheel() != null ?
             ctx.conductorTimerWheel() :
@@ -186,13 +186,13 @@ public class MediaConductor extends Agent
                     final byte[] err = ex.getMessage().getBytes();
                     final int len = ErrorHeaderFlyweight.HEADER_LENGTH + length + err.length;
 
-                    errorHeader.wrap(writeBuffer, 0);
+                    errorHeader.wrap(msgBuffer, 0);
                     errorHeader.errorCode(ex.errorCode())
                                .offendingFlyweight(flyweight, length)
                                .errorString(err)
                                .frameLength(len);
 
-                    toClientBuffer.write(ERROR_RESPONSE, writeBuffer, 0, errorHeader.frameLength());
+                    toClientBuffer.write(ERROR_RESPONSE, msgBuffer, 0, errorHeader.frameLength());
                 }
                 catch (final Exception ex)
                 {
@@ -265,7 +265,7 @@ public class MediaConductor extends Agent
 
         final int eventTypeId = isSender ? NEW_SEND_BUFFER_NOTIFICATION : NEW_RECEIVE_BUFFER_NOTIFICATION;
 
-        if (!toClientBuffer.write(eventTypeId, writeBuffer, 0, newBufferMessage.length()))
+        if (!toClientBuffer.write(eventTypeId, msgBuffer, 0, newBufferMessage.length()))
         {
             System.err.println("Error occurred writing new buffer notification");
         }
@@ -286,14 +286,10 @@ public class MediaConductor extends Agent
                 frameHandler = new ControlFrameHandler(srcDestination, this);
                 srcDestinationMap.put(srcDestination.consistentHash(), frameHandler);
             }
-            else
+            else if (!frameHandler.destination().equals(srcDestination))
             {
-                // check for hash collision
-                if (!frameHandler.destination().equals(srcDestination))
-                {
-                    throw new ControlProtocolException(ErrorCode.CHANNEL_ALREADY_EXISTS,
-                                                       "destinations hash same, but destinations different");
-                }
+                throw new ControlProtocolException(ErrorCode.CHANNEL_ALREADY_EXISTS,
+                                                   "destinations hash same, but destinations different");
             }
 
             SenderChannel channel = frameHandler.findChannel(sessionId, channelId);
@@ -303,7 +299,6 @@ public class MediaConductor extends Agent
                                                    "channel and session already exist on destination");
             }
 
-            // new channel, so generate "random"-ish termId and create term buffer
             final long initialTermId = rng.nextLong();
             final BufferRotator buffers =
                 bufferManagement.addPublisherChannel(srcDestination, sessionId, channelId);
@@ -318,22 +313,16 @@ public class MediaConductor extends Agent
                                         HEADER_LENGTH,
                                         mtuLength);
 
-            // add channel to frameHandler so it can demux NAKs and SMs
             frameHandler.addChannel(channel);
-
-            // tell the client conductor thread of the new buffer
             sendNewBufferNotification(sessionId, channelId, initialTermId, true, destination, buffers);
-
-            // add channel to sender thread atomic array so it can be integrated in
             sender.addChannel(channel);
         }
         catch (final ControlProtocolException ex)
         {
-            throw ex; // rethrow up for handling as normal
+            throw ex;
         }
         catch (final Exception ex)
         {
-            // convert into generic error
             // TODO: log this
             ex.printStackTrace();
             throw new ControlProtocolException(ErrorCode.GENERIC_ERROR_CHANNEL_MESSAGE, ex.getMessage());
@@ -362,12 +351,10 @@ public class MediaConductor extends Agent
                                                    "session and channel unknown for destination");
             }
 
-            // remove from buffer management
             bufferManagement.removePublisherChannel(srcDestination, sessionId, channelId);
 
             sender.removeChannel(channel);
 
-            // if no more channels, then remove framehandler and close it
             if (frameHandler.numSessions() == 0)
             {
                 srcDestinationMap.remove(srcDestination.consistentHash());
@@ -376,11 +363,10 @@ public class MediaConductor extends Agent
         }
         catch (final ControlProtocolException ex)
         {
-            throw ex; // rethrow up for handling as normal
+            throw ex;
         }
         catch (final Exception ex)
         {
-            // convert into generic error
             // TODO: log this
             ex.printStackTrace();
             throw new ControlProtocolException(ErrorCode.GENERIC_ERROR_CHANNEL_MESSAGE, ex.getMessage());
@@ -389,7 +375,6 @@ public class MediaConductor extends Agent
 
     public void onAddSubscriber(final SubscriberMessageFlyweight subscriberMessage)
     {
-        // instruct receiver thread of new framehandler and new channelIdlist for such
         receiverProxy.addNewSubscriberEvent(subscriberMessage.destination(), subscriberMessage.channelIds());
 
         // this thread does not add buffers. The RcvFrameHandler handle methods will send an event for this thread
@@ -398,7 +383,6 @@ public class MediaConductor extends Agent
 
     public void onRemoveSubscriber(final SubscriberMessageFlyweight subscriberMessage)
     {
-        // instruct receiver thread to get rid of channels and possibly destination
         receiverProxy.addRemoveSubscriberEvent(subscriberMessage.destination(), subscriberMessage.channelIds());
     }
 
@@ -415,7 +399,6 @@ public class MediaConductor extends Agent
             final BufferRotator buffer =
                 bufferManagement.addSubscriberChannel(rcvDestination, sessionId, channelId);
 
-            // inform receiver thread of new buffer, destination, etc.
             final RcvBufferState bufferState = new RcvBufferState(rcvDestination, sessionId, channelId, termId, buffer);
             while (!receiver.sendBuffer(bufferState))
             {

@@ -18,11 +18,10 @@ package uk.co.real_logic.aeron.util.status;
 import uk.co.real_logic.aeron.util.IoUtil;
 
 /**
- * .Maps existing status buffers
+ * Maps existing status buffers
  */
 public class StatusBufferMapper extends BufferMapper
 {
-
     public StatusBufferMapper()
     {
         super(IoUtil::mapExistingFile, IoUtil::mapExistingFile);

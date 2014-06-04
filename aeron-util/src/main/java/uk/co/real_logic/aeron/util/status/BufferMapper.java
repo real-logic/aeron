@@ -24,9 +24,6 @@ import java.nio.MappedByteBuffer;
 
 import static uk.co.real_logic.aeron.util.CommonConfiguration.COUNTERS_DIR_NAME;
 
-/**
- * Common Class
- */
 public class BufferMapper
 {
     private final MappedByteBuffer descriptor;
@@ -35,7 +32,7 @@ public class BufferMapper
     private final AtomicBuffer descriptorBuffer;
     private final AtomicBuffer counterBuffer;
 
-    static interface Mapper
+    interface Mapper
     {
         MappedByteBuffer map(final File directory, final String file) throws IOException;
     }
@@ -51,9 +48,9 @@ public class BufferMapper
             descriptorBuffer = new AtomicBuffer(descriptor);
             counterBuffer = new AtomicBuffer(counter);
         }
-        catch (IOException e)
+        catch (final IOException ex)
         {
-            throw new IllegalStateException(e);
+            throw new IllegalStateException(ex);
         }
     }
 

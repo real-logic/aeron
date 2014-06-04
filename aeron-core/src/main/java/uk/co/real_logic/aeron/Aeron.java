@@ -28,47 +28,44 @@ import java.nio.ByteBuffer;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_LENGTH;
 
 /**
- * Encapsulation of media driver and API for source and receiver construction
+ * Encapsulation of media driver and client for source and receiver construction
  */
 public final class Aeron implements AutoCloseable
 {
     private static final int ADMIN_BUFFER_SIZE = 512 + TRAILER_LENGTH;
 
-    private final ManyToOneRingBuffer mediaConductorCommandBuffer;
+    private final ManyToOneRingBuffer mediaConductorCommandBuffer =
+        new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocate(ADMIN_BUFFER_SIZE)));
+
+    private final AtomicArray<Channel> channels = new AtomicArray<>();
+    private final AtomicArray<SubscriberChannel> receivers = new AtomicArray<>();
     private final ClientConductor clientConductor;
-    private final ConductorByteBuffers adminBuffers;
-    private final AtomicArray<Channel> channels;
-    private final AtomicArray<SubscriberChannel> receivers;
+    private final ConductorByteBuffers conductorByteBuffers;
 
     private Aeron(final Context context)
     {
-        this.channels = new AtomicArray<>();
-        this.receivers = new AtomicArray<>();
-        this.mediaConductorCommandBuffer = new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocate(ADMIN_BUFFER_SIZE)));
-
         if (null == context.conductorByteBuffers)
         {
-            this.adminBuffers = new ConductorByteBuffers(CommonConfiguration.ADMIN_DIR_NAME);
+            this.conductorByteBuffers = new ConductorByteBuffers(CommonConfiguration.ADMIN_DIR_NAME);
         }
         else
         {
-            this.adminBuffers = context.conductorByteBuffers;
+            this.conductorByteBuffers = context.conductorByteBuffers;
         }
+
+        final RingBuffer rcvBuffer = new ManyToOneRingBuffer(new AtomicBuffer(conductorByteBuffers.toClient()));
+        final RingBuffer sendBuffer = new ManyToOneRingBuffer(new AtomicBuffer(conductorByteBuffers.toMediaDriver()));
+        final BufferUsageStrategy bufferUsage = new MappingBufferUsageStrategy();
+        final ConductorErrorHandler errorHandler = new ConductorErrorHandler(context.invalidDestinationHandler);
 
         try
         {
-            final RingBuffer rcvBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toClient()));
-            final RingBuffer sendBuffer = new ManyToOneRingBuffer(new AtomicBuffer(adminBuffers.toMediaDriver()));
-            final BufferUsageStrategy bufferUsage = new MappingBufferUsageStrategy();
-            final ConductorErrorHandler conductorErrorHandler =
-                new ConductorErrorHandler(context.invalidDestinationHandler);
-
-            this.clientConductor = new ClientConductor(mediaConductorCommandBuffer,
-                                                       rcvBuffer, sendBuffer,
-                                                       bufferUsage,
-                                                       channels, receivers,
-                                                       conductorErrorHandler,
-                                                       context.publisherControlFactory);
+            clientConductor = new ClientConductor(mediaConductorCommandBuffer,
+                                                  rcvBuffer, sendBuffer,
+                                                  bufferUsage,
+                                                  channels, receivers,
+                                                  errorHandler,
+                                                  context.publisherControlFactory);
         }
         catch (final Exception ex)
         {
@@ -78,7 +75,7 @@ public final class Aeron implements AutoCloseable
 
     public void close()
     {
-        adminBuffers.close();
+        conductorByteBuffers.close();
         clientConductor.close();
     }
 
@@ -124,6 +121,7 @@ public final class Aeron implements AutoCloseable
     public Source newSource(final Source.Context context)
     {
         context.mediaConductorProxy(new MediaConductorProxy(mediaConductorCommandBuffer));
+
         return new Source(channels, context);
     }
 

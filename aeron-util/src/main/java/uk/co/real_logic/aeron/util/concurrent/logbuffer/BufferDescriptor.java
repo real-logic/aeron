@@ -40,7 +40,7 @@ public class BufferDescriptor
     {
         HIGH_WATER_MARK_OFFSET = 0;
         TAIL_COUNTER_OFFSET = SIZE_OF_INT;
-        
+
         STATE_BUFFER_LENGTH = CACHE_LINE_SIZE;
     }
 
@@ -95,7 +95,7 @@ public class BufferDescriptor
      * Check that the offset is is not greater than the tail.
      *
      * @param offset to check.
-     * @param tail current value fo the tail.
+     * @param tail   current value fo the tail.
      */
     public static void checkOffset(final int offset, final int tail)
     {

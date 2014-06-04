@@ -22,13 +22,13 @@ import java.util.stream.IntStream;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 
-public class OptimalMcastDelayGeneratorTest
+public class OptimalMulticastDelayGeneratorTest
 {
     public static final long MAX_BACKOFF = 60;
     public static final long GROUP_SIZE = 10;
     public static final long GRTT = 10;
 
-    public OptimalMcastDelayGenerator generator = new OptimalMcastDelayGenerator(MAX_BACKOFF, GROUP_SIZE, GRTT);
+    public OptimalMulticastDelayGenerator generator = new OptimalMulticastDelayGenerator(MAX_BACKOFF, GROUP_SIZE, GRTT);
 
     @Test
     public void shouldNotExceedTmaxBackoff()

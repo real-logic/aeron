@@ -33,9 +33,7 @@ import java.util.function.Supplier;
 
 import static java.nio.ByteBuffer.allocateDirect;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.*;
-import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.BASE_HEADER_LENGTH;
 
 /**
  * Admin thread to take commands from Publishers and Subscribers as well as handle NAKs and retransmissions
@@ -453,7 +451,6 @@ public class MediaConductor extends Agent
         try
         {
             final UdpDestination rcvDestination = UdpDestination.parse(destination);
-
             bufferManagement.removeSubscriberChannel(rcvDestination, sessionId, channelId);
         }
         catch (final Exception ex)

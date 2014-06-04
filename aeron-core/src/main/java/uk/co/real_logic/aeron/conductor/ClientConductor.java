@@ -48,12 +48,14 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.B
  */
 public final class ClientConductor extends Agent
 {
+    /**
+     * Maximum size of the write buffer.
+     */
+    public static final int WRITE_BUFFER_CAPACITY = 256;
+
     // TODO: DI this
     private static final byte[] DEFAULT_HEADER = new byte[BASE_HEADER_LENGTH + SIZE_OF_INT];
     private static final int MAX_FRAME_LENGTH = 1024;
-
-    /** Maximum size of the write buffer. */
-    public static final int WRITE_BUFFER_CAPACITY = 256;
 
     private static final int SLEEP_PERIOD = 1;
 
@@ -65,19 +67,16 @@ public final class ClientConductor extends Agent
     private final AtomicArray<Channel> publishers;
     private final AtomicArray<SubscriberChannel> subscriberChannels;
 
-    private final ChannelMap<String, Channel> sendNotifiers;
-    private final SubscriberMap rcvNotifiers;
+    private final ChannelMap<String, Channel> sendNotifiers = new ChannelMap<>();
+    private final SubscriberMap rcvNotifiers = new SubscriberMap();
+    private final StatusBufferMapper statusCounters = new StatusBufferMapper();
 
     private final ConductorErrorHandler errorHandler;
     private final PublisherControlFactory publisherControlFactory;
 
-    private final StatusBufferMapper statusCounters;
-
-    // Control protocol Flyweights
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
     private final SubscriberMessageFlyweight receiverMessage = new SubscriberMessageFlyweight();
-    private final NewBufferMessageFlyweight bufferNotificationMessage =
-        new NewBufferMessageFlyweight();
+    private final NewBufferMessageFlyweight bufferNotificationMessage = new NewBufferMessageFlyweight();
 
     public ClientConductor(final RingBuffer commandBuffer,
                            final RingBuffer fromMediaDriverBuffer,
@@ -90,8 +89,6 @@ public final class ClientConductor extends Agent
     {
         super(SLEEP_PERIOD);
 
-        statusCounters = new StatusBufferMapper();
-
         this.commandBuffer = commandBuffer;
         this.fromMediaDriverBuffer = fromMediaDriverBuffer;
         this.toMediaDriverBuffer = toMediaDriverBuffer;
@@ -100,8 +97,6 @@ public final class ClientConductor extends Agent
         this.subscriberChannels = subscriberChannels;
         this.errorHandler = errorHandler;
         this.publisherControlFactory = publisherControlFactory;
-        this.sendNotifiers = new ChannelMap<>();
-        this.rcvNotifiers = new SubscriberMap();
 
         final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
         channelMessage.wrap(writeBuffer, 0);
@@ -186,11 +181,11 @@ public final class ClientConductor extends Agent
     private void addReceiver(final String destination, final long[] channelIds)
     {
         // Not efficient but only happens once per channel ever
-        // and is during setup not a latency critical path
+        // and is during setup and not a latency critical path
         for (final long channelId : channelIds)
         {
             subscriberChannels.forEach(
-                receiver ->
+                (receiver) ->
                 {
                     if (receiver.matches(destination, channelId))
                     {
@@ -214,7 +209,7 @@ public final class ClientConductor extends Agent
     {
         // see addReceiver re efficiency
         publishers.forEach(
-            channel ->
+            (channel) ->
             {
                 if (channel.matches(destination, sessionId, channelId))
                 {
@@ -244,8 +239,8 @@ public final class ClientConductor extends Agent
                 {
                     case NEW_RECEIVE_BUFFER_NOTIFICATION:
                     case NEW_SEND_BUFFER_NOTIFICATION:
-                    {
                         bufferNotificationMessage.wrap(buffer, index);
+
                         final long sessionId = bufferNotificationMessage.sessionId();
                         final long channelId = bufferNotificationMessage.channelId();
                         final long termId = bufferNotificationMessage.termId();
@@ -261,7 +256,6 @@ public final class ClientConductor extends Agent
                         }
 
                         return;
-                    }
 
                     case ERROR_RESPONSE:
                         errorHandler.onErrorResponse(buffer, index, length);
@@ -310,12 +304,11 @@ public final class ClientConductor extends Agent
         public L make(int index) throws IOException;
     }
 
-    private <C extends ChannelNotifiable, L>
-    void onNewBufferNotification(final long sessionId,
-                                 final C channel,
-                                 final LogFactory<L> logFactory,
-                                 final IntFunction<L[]> logArray,
-                                 final BiConsumer<C, L[]> notifier)
+    private <C extends ChannelNotifiable, L> void onNewBufferNotification(final long sessionId,
+                                                                          final C channel,
+                                                                          final LogFactory<L> logFactory,
+                                                                          final IntFunction<L[]> logArray,
+                                                                          final BiConsumer<C, L[]> notifier)
     {
         try
         {
@@ -328,7 +321,6 @@ public final class ClientConductor extends Agent
 
             if (!channel.hasTerm(sessionId))
             {
-                // You know that you can map all 3 appenders at this point since its the first term
                 final L[] logs = logArray.apply(BUFFER_COUNT);
                 for (int i = 0; i < BUFFER_COUNT; i++)
                 {
@@ -353,6 +345,7 @@ public final class ClientConductor extends Agent
     {
         final AtomicBuffer logBuffer = bufferUsage.newBuffer(bufferNotificationMessage, index);
         final AtomicBuffer stateBuffer = bufferUsage.newBuffer(bufferNotificationMessage, index + BUFFER_COUNT);
+
         return new LogAppender(logBuffer, stateBuffer, DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }
 
@@ -360,6 +353,7 @@ public final class ClientConductor extends Agent
     {
         final AtomicBuffer logBuffer = bufferUsage.newBuffer(bufferNotificationMessage, index);
         final AtomicBuffer stateBuffer = bufferUsage.newBuffer(bufferNotificationMessage, index + BUFFER_COUNT);
+
         return new LogReader(logBuffer, stateBuffer);
     }
 }

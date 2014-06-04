@@ -21,39 +21,41 @@ package uk.co.real_logic.aeron.util;
  * Generates delay based on Optimal Multicast Feedback
  * http://tools.ietf.org/html/rfc5401#page-13
  *
- * T_maxBackoff is max interval for delay
+ * maxBackoffT is max interval for delay
  *
  * C version:
  *
- * double RandomBackoff(double T_maxBackoff, double groupSize)
+ * <code>
+ * double RandomBackoff(double maxBackoffT, double groupSize)
  * {
  *     double lambda = log(groupSize) + 1;
- *     double x = UniformRand(lambda/T_maxBackoff) + lambda / (T_maxBackoff*(exp(lambda)-1));
- *     return ((T_maxBackoff/lambda) * log(x*(exp(lambda)-1)*(T_maxBackoff/lambda)));
+ *     double x = UniformRand(lambda/maxBackoffT) + lambda / (maxBackoffT*(exp(lambda)-1));
+ *     return ((maxBackoffT/lambda) * log(x*(exp(lambda)-1)*(maxBackoffT/lambda)));
  * }
+ * </code>
  *
  * where UniformRand(x) is uniform distribution from 0..max
  *
  * In this implementations calculation:
  * - the groupSize is a constant (could be configurable as system property)
- * - T_maxBackoff is a constant (could be configurable as system property)
+ * - maxBackoffT is a constant (could be configurable as system property)
  * - GRTT is a constant (could be configurable as a system property)
  *
  * N (the expected number of feedback messages per RTT) is
- *   N = exp(1.2 * L / (2*T_maxBackoff/GRTT))
+ *   N = exp(1.2 * L / (2*maxBackoffT/GRTT))
  *
  * Assumptions:
- * T_maxBackoff = K * GRTT (K >= 1)
+ * maxBackoffT = K * GRTT (K >= 1)
  *
  * Recommended K:
  * - K = 4 for situations where responses come from multiple places (i.e. for NAKs, multiple retransmitters)
  * - K = 6 for situations where responses come from single places (i.e. for NAKs, source only retransmit)
  */
-public class OptimalMcastDelayGenerator implements FeedbackDelayGenerator
+public class OptimalMulticastDelayGenerator implements FeedbackDelayGenerator
 {
     private final double lambda;
     private final double groupSize;
-    private final double T_maxBackoff;
+    private final double maxBackoffT;
     private final double gRtt;
     private final double calculatedN;
 
@@ -63,27 +65,27 @@ public class OptimalMcastDelayGenerator implements FeedbackDelayGenerator
     private final double factorT;
 
     /**
-     * Create new feedback delay generator based on estimates. Pre-calculating some paramters upfront.
+     * Create new feedback delay generator based on estimates. Pre-calculating some parameters upfront.
      *
-     * {@code T_maxBackoff} and {@code gRtt} must be expressed in the same units.
+     * {@code maxBackoffT} and {@code gRtt} must be expressed in the same units.
      *
-     * @param T_maxBackoff of the delay inetrval
+     * @param maxBackoffT of the delay interval
      * @param groupSize estimate
      * @param gRtt estimate
      */
-    public OptimalMcastDelayGenerator(final double T_maxBackoff, final double groupSize, final double gRtt)
+    public OptimalMulticastDelayGenerator(final double maxBackoffT, final double groupSize, final double gRtt)
     {
         this.lambda = Math.log(groupSize) + 1;
         this.groupSize = groupSize;
-        this.T_maxBackoff = T_maxBackoff;
+        this.maxBackoffT = maxBackoffT;
         this.gRtt = gRtt;
-        this.calculatedN = Math.exp(1.2 * lambda / (2 * T_maxBackoff / gRtt));
+        this.calculatedN = Math.exp(1.2 * lambda / (2 * maxBackoffT / gRtt));
 
         // constant pieces of the calculation
-        this.randMax = lambda / T_maxBackoff;
-        this.baseX = lambda / (T_maxBackoff * (Math.exp(lambda) - 1));
-        this.constantT = T_maxBackoff / lambda;
-        this.factorT = (Math.exp(lambda) - 1) * (T_maxBackoff / lambda);
+        this.randMax = lambda / maxBackoffT;
+        this.baseX = lambda / (maxBackoffT * (Math.exp(lambda) - 1));
+        this.constantT = maxBackoffT / lambda;
+        this.factorT = (Math.exp(lambda) - 1) * (maxBackoffT / lambda);
     }
 
     /**
@@ -103,7 +105,7 @@ public class OptimalMcastDelayGenerator implements FeedbackDelayGenerator
     {
         double x = uniformRandom(randMax) + baseX;
 
-        return (constantT * Math.log(x * factorT));
+        return constantT * Math.log(x * factorT);
     }
 
     /**

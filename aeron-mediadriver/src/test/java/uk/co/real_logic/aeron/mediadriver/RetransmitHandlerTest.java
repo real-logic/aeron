@@ -46,24 +46,22 @@ public class RetransmitHandlerTest
 {
     private static final int LOG_BUFFER_SIZE = 65536 + TRAILER_LENGTH;
     private static final int STATE_BUFFER_SIZE = STATE_BUFFER_LENGTH;
-    private static final byte[] DATA = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
+    private static final byte[] DATA = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
     private static final int MESSAGE_LENGTH = DataHeaderFlyweight.HEADER_LENGTH + DATA.length;
-    private static final byte[] HEADER = { HeaderFlyweight.CURRENT_VERSION,
-                                           FrameDescriptor.UNFRAGMENTED,
-                                           0, HeaderFlyweight.HDR_TYPE_DATA,
-                                           0, 0, 0, 0,
-                                           0, 0, 0, 0,
-                                           0x5E, 0x55, 0x10, 0x1D,
-                                           0x00, 0x05, 0x40, 0x0E,
-                                           0x7F, 0x00, 0x33, 0x55};
+    private static final byte[] HEADER = {HeaderFlyweight.CURRENT_VERSION,
+                                          FrameDescriptor.UNFRAGMENTED,
+                                          0, HeaderFlyweight.HDR_TYPE_DATA,
+                                          0, 0, 0, 0,
+                                          0, 0, 0, 0,
+                                          0x5E, 0x55, 0x10, 0x1D,
+                                          0x00, 0x05, 0x40, 0x0E,
+                                          0x7F, 0x00, 0x33, 0x55};
     private static final long SESSION_ID = 0x5E55101DL;
     private static final long CHANNEL_ID = 0x5400EL;
     private static final long TERM_ID = 0x7F003355L;
 
     public static final FeedbackDelayGenerator delayGenerator = () -> TimeUnit.MILLISECONDS.toNanos(20);
-
     public static final FeedbackDelayGenerator zeroDelayGenerator = () -> TimeUnit.MILLISECONDS.toNanos(0);
-
     public static final FeedbackDelayGenerator lingerGenerator = () -> TimeUnit.MILLISECONDS.toNanos(40);
 
     private final AtomicBuffer logBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(LOG_BUFFER_SIZE));
@@ -80,21 +78,21 @@ public class RetransmitHandlerTest
     private long currentTime;
 
     private final TimerWheel wheel = new TimerWheel(() -> currentTime,
-            MediaDriver.MEDIA_CONDUCTOR_TICK_DURATION_MICROS,
-            TimeUnit.MICROSECONDS,
-            MediaDriver.MEDIA_CONDUCTOR_TICKS_PER_WHEEL);
+                                                    MediaDriver.MEDIA_CONDUCTOR_TICK_DURATION_MICROS,
+                                                    TimeUnit.MICROSECONDS,
+                                                    MediaDriver.MEDIA_CONDUCTOR_TICKS_PER_WHEEL);
 
     private final LogReader.FrameHandler retransmitHandler = mock(LogReader.FrameHandler.class);
 
-    private RetransmitHandler handler = new RetransmitHandler(logReader, wheel,
-            delayGenerator, lingerGenerator, retransmitHandler);
+    private RetransmitHandler handler =
+        new RetransmitHandler(logReader, wheel, delayGenerator, lingerGenerator, retransmitHandler);
 
     @DataPoint
     public static final BiConsumer<RetransmitHandlerTest, Integer> senderAddDataFrame = (h, i) -> addSentDataFrame(h);
 
     @DataPoint
-    public static final BiConsumer<RetransmitHandlerTest, Integer>
-        receiverAddDataFrame = (h, i) -> addRcvdDataFrame(h, i);
+    public static final BiConsumer<RetransmitHandlerTest, Integer> receiverAddDataFrame =
+        (handler, msgNum) -> addReceivedDataFrame(handler, msgNum);
 
     @Theory
     public void shouldRetransmitOnNak(final BiConsumer<RetransmitHandlerTest, Integer> creator)
@@ -155,7 +153,7 @@ public class RetransmitHandlerTest
     }
 
     @Theory
-    public void shouldStopOnlyOneRetransmitOnRetransmitReception(final BiConsumer<RetransmitHandlerTest, Integer> creator)
+    public void shouldStopOneRetransmitOnRetransmitReception(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
         createTermBuffer(creator, 5);
         handler.onNak(offsetOfMessage(0));
@@ -191,7 +189,7 @@ public class RetransmitHandlerTest
     }
 
     @Theory
-    public void shouldOnlyImmediateRetransmitOnNakWhenConfiguredTo(final BiConsumer<RetransmitHandlerTest, Integer> creator)
+    public void shouldOnlyRetransmitOnNakWhenConfiguredTo(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
         createTermBuffer(creator, 5);
         handler.onNak(offsetOfMessage(0));
@@ -209,16 +207,17 @@ public class RetransmitHandlerTest
         verifyZeroInteractions(retransmitHandler);
     }
 
-    private void createTermBuffer(final BiConsumer<RetransmitHandlerTest, Integer> creater, final int num)
+    private void createTermBuffer(final BiConsumer<RetransmitHandlerTest, Integer> creator, final int num)
     {
-        IntStream.range(0, num).forEach((i) -> creater.accept(this, i));
+        IntStream.range(0, num).forEach((i) -> creator.accept(this, i));
     }
 
-    private void createTermBufferWithGap(final BiConsumer<RetransmitHandlerTest, Integer> creater,
-                                         final int num, final int gap)
+    private void createTermBufferWithGap(final BiConsumer<RetransmitHandlerTest, Integer> creator,
+                                         final int num,
+                                         final int gap)
     {
-        IntStream.range(0, gap).forEach((i) -> creater.accept(this, i));
-        IntStream.range(gap + 1, num).forEach((i) -> creater.accept(this, i));
+        IntStream.range(0, gap).forEach((i) -> creator.accept(this, i));
+        IntStream.range(gap + 1, num).forEach((i) -> creator.accept(this, i));
     }
 
     private static int offsetOfMessage(final int index)
@@ -231,9 +230,9 @@ public class RetransmitHandlerTest
         handler.addSentDataFrame();
     }
 
-    private static void addRcvdDataFrame(final RetransmitHandlerTest handler, final int msgNum)
+    private static void addReceivedDataFrame(final RetransmitHandlerTest handler, final int msgNum)
     {
-        handler.addRcvdDataFrame(msgNum);
+        handler.addReceivedDataFrame(msgNum);
     }
 
     private void addSentDataFrame()
@@ -242,18 +241,18 @@ public class RetransmitHandlerTest
         logAppender.append(rcvBuffer, 0, DATA.length);
     }
 
-    private void addRcvdDataFrame(final int msgNum)
+    private void addReceivedDataFrame(final int msgNum)
     {
         dataHeader.wrap(rcvBuffer, 0);
 
         dataHeader.termId(TERM_ID)
-            .channelId(CHANNEL_ID)
-            .sessionId(SESSION_ID)
-            .termOffset(offsetOfMessage(msgNum))
-            .frameLength(MESSAGE_LENGTH)
-            .headerType(HeaderFlyweight.HDR_TYPE_DATA)
-            .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
-            .version(HeaderFlyweight.CURRENT_VERSION);
+                  .channelId(CHANNEL_ID)
+                  .sessionId(SESSION_ID)
+                  .termOffset(offsetOfMessage(msgNum))
+                  .frameLength(MESSAGE_LENGTH)
+                  .headerType(HeaderFlyweight.HDR_TYPE_DATA)
+                  .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
+                  .version(HeaderFlyweight.CURRENT_VERSION);
 
         dataHeader.atomicBuffer().putBytes(dataHeader.dataOffset(), DATA);
 
@@ -262,7 +261,7 @@ public class RetransmitHandlerTest
 
     private long processTimersUntil(final BooleanSupplier condition)
     {
-        final long startTime = wheel.now();
+        final long start = wheel.now();
 
         while (!condition.getAsBoolean())
         {
@@ -274,6 +273,6 @@ public class RetransmitHandlerTest
             wheel.expireTimers();
         }
 
-        return (wheel.now() - startTime);
+        return wheel.now() - start;
     }
 }

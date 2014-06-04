@@ -64,8 +64,7 @@ public final class Aeron implements AutoCloseable
                                                   sendBuffer, rcvBuffer,
                                                   bufferUsage,
                                                   channels, receivers,
-                                                  errorHandler,
-                                                  context.publisherControlFactory);
+                                                  errorHandler);
         }
         catch (final Exception ex)
         {
@@ -193,7 +192,6 @@ public final class Aeron implements AutoCloseable
         private ErrorHandler errorHandler = new DummyErrorHandler();
         private ConductorByteBuffers conductorByteBuffers;
         private InvalidDestinationHandler invalidDestinationHandler;
-        private PublisherControlFactory publisherControlFactory = DefaultPublisherControlStrategy::new;
 
         public Context errorHandler(ErrorHandler errorHandler)
         {
@@ -207,15 +205,9 @@ public final class Aeron implements AutoCloseable
             return this;
         }
 
-        public Context invalidDestinationHandler(final InvalidDestinationHandler invalidDestination)
+        public Context invalidDestinationHandler(final InvalidDestinationHandler invalidDestinationHandler)
         {
-            this.invalidDestinationHandler = invalidDestination;
-            return this;
-        }
-
-        public Context publisherControlFactory(final PublisherControlFactory publisherControlFactory)
-        {
-            this.publisherControlFactory = publisherControlFactory;
+            this.invalidDestinationHandler = invalidDestinationHandler;
             return this;
         }
     }

@@ -29,9 +29,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_LONG;
 
-/**
- * .
- */
 public class StatusBufferTest
 {
     private AtomicBuffer descriptorBuffer = new AtomicBuffer(allocate(512));

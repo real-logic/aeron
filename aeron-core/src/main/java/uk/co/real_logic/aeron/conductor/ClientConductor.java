@@ -16,7 +16,6 @@
 package uk.co.real_logic.aeron.conductor;
 
 import uk.co.real_logic.aeron.Channel;
-import uk.co.real_logic.aeron.PublisherControlFactory;
 import uk.co.real_logic.aeron.SubscriberChannel;
 import uk.co.real_logic.aeron.util.Agent;
 import uk.co.real_logic.aeron.util.AtomicArray;
@@ -65,7 +64,6 @@ public final class ClientConductor extends Agent
     private final StatusBufferMapper statusCounters = new StatusBufferMapper();
 
     private final ConductorErrorHandler errorHandler;
-    private final PublisherControlFactory publisherControlFactory;
 
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
     private final SubscriberMessageFlyweight receiverMessage = new SubscriberMessageFlyweight();
@@ -77,8 +75,7 @@ public final class ClientConductor extends Agent
                            final BufferUsageStrategy bufferUsage,
                            final AtomicArray<Channel> publishers,
                            final AtomicArray<SubscriberChannel> subscriberChannels,
-                           final ConductorErrorHandler errorHandler,
-                           final PublisherControlFactory publisherControlFactory)
+                           final ConductorErrorHandler errorHandler)
     {
         super(SLEEP_PERIOD_MS);
 
@@ -89,7 +86,6 @@ public final class ClientConductor extends Agent
         this.publishers = publishers;
         this.subscriberChannels = subscriberChannels;
         this.errorHandler = errorHandler;
-        this.publisherControlFactory = publisherControlFactory;
     }
 
     public void process()

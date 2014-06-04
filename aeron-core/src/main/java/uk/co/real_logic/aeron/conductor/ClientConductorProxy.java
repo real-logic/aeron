@@ -33,9 +33,9 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 public class ClientConductorProxy
 {
     /** Maximum size of the write buffer */
-    public static final int WRITE_BUFFER_CAPACITY = 4096;
+    public static final int MSG_BUFFER_CAPACITY = 1024;
 
-    private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
+    private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(MSG_BUFFER_CAPACITY));
     private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
     private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
     private final QualifiedMessageFlyweight qualifiedMessage = new QualifiedMessageFlyweight();

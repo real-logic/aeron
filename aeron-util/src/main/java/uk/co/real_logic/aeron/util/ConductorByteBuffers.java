@@ -33,8 +33,8 @@ public class ConductorByteBuffers implements AutoCloseable
     protected static final String MEDIA_DRIVER_FILE = "media-driver";
     protected static final String CLIENT_FILE = "client";
 
-    private MappedByteBuffer toMediaDriverBuffer;
-    private MappedByteBuffer toClientBuffer;
+    private MappedByteBuffer toMediaDriver;
+    private MappedByteBuffer toClient;
 
     /**
      * Create and map the conductor buffers between the media driver and the client.
@@ -52,8 +52,8 @@ public class ConductorByteBuffers implements AutoCloseable
 
         try
         {
-            toMediaDriverBuffer = mapNewFile(toMediaDriverFile, MEDIA_DRIVER_FILE, bufferSize);
-            toClientBuffer = mapNewFile(toClientFile, CLIENT_FILE, bufferSize);
+            toMediaDriver = mapNewFile(toMediaDriverFile, MEDIA_DRIVER_FILE, bufferSize);
+            toClient = mapNewFile(toClientFile, CLIENT_FILE, bufferSize);
         }
         catch (final IOException ex)
         {
@@ -76,8 +76,8 @@ public class ConductorByteBuffers implements AutoCloseable
 
         try
         {
-            toMediaDriverBuffer = mapExistingFile(toMediaDriverFile, MEDIA_DRIVER_FILE);
-            toClientBuffer = mapExistingFile(toClientFile, CLIENT_FILE);
+            toMediaDriver = mapExistingFile(toMediaDriverFile, MEDIA_DRIVER_FILE);
+            toClient = mapExistingFile(toClientFile, CLIENT_FILE);
         }
         catch (final IOException ex)
         {
@@ -92,7 +92,7 @@ public class ConductorByteBuffers implements AutoCloseable
      */
     public ByteBuffer toMediaDriver()
     {
-        return toMediaDriverBuffer;
+        return toMediaDriver;
     }
 
     /**
@@ -102,7 +102,7 @@ public class ConductorByteBuffers implements AutoCloseable
      */
     public ByteBuffer toClient()
     {
-        return toClientBuffer;
+        return toClient;
     }
 
     /**
@@ -110,9 +110,9 @@ public class ConductorByteBuffers implements AutoCloseable
      */
     public void close()
     {
-        IoUtil.unmap(toClientBuffer);
-        IoUtil.unmap(toMediaDriverBuffer);
-        toClientBuffer = null;
-        toMediaDriverBuffer = null;
+        IoUtil.unmap(toClient);
+        IoUtil.unmap(toMediaDriver);
+        toClient = null;
+        toMediaDriver = null;
     }
 }

@@ -36,7 +36,7 @@ public final class Aeron implements AutoCloseable
     private static final int COMMAND_BUFFER_SIZE = 4096 + TRAILER_LENGTH;
 
     private final ManyToOneRingBuffer clientConductorCommandBuffer =
-        new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocate(COMMAND_BUFFER_SIZE)));
+        new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocateDirect(COMMAND_BUFFER_SIZE)));
 
     private final AtomicArray<Channel> channels = new AtomicArray<>();
     private final AtomicArray<SubscriberChannel> receivers = new AtomicArray<>();

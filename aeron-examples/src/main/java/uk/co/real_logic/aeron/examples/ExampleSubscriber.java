@@ -37,7 +37,7 @@ public class ExampleSubscriber
 
     public static void main(final String[] args)
     {
-        final Executor executor = Executors.newFixedThreadPool(2);
+        final Executor executor = Executors.newFixedThreadPool(6);
         final Aeron.Context aeronContext = new Aeron.Context().errorHandler(ExampleSubscriber::onError);
         final Subscriber.Context subContext = new Subscriber.Context().destination(DESTINATION);
         final Subscriber.DataHandler messageHandler =
@@ -71,8 +71,8 @@ public class ExampleSubscriber
             }
         };
 
-        try (final MediaDriver driver = ExampleUtil.createEmbeddedMediaDriver();
-             final Aeron aeron = Aeron.newSingleMediaDriver(aeronContext);
+        try (final MediaDriver driver = ExampleUtil.createEmbeddedMediaDriver(executor);
+             final Aeron aeron = ExampleUtil.createAeron(aeronContext);
              final Subscriber subscriber1 = aeron.newSubscriber(subContext);
              // create a subscriber using the fluent style lambda expression
              final Subscriber subscriber2 = aeron.newSubscriber((ctx) ->
@@ -81,6 +81,9 @@ public class ExampleSubscriber
             // spin off the two subscriber threads
             executor.execute(() -> loop.accept(subscriber1));
             executor.execute(() -> loop.accept(subscriber2));
+
+            // run aeron conductor thread from here
+            aeron.conductor().run();
         }
         catch (final Exception ex)
         {

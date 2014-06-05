@@ -24,6 +24,8 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 /**
  * Example Aeron pusblisher application
@@ -37,10 +39,11 @@ public class ExamplePublisher
 
     public static void main(final String[] args)
     {
+        final Executor executor = Executors.newFixedThreadPool(4);
         final Aeron.Context context = new Aeron.Context().errorHandler(ExamplePublisher::onError);
 
-        try (final MediaDriver driver = ExampleUtil.createEmbeddedMediaDriver();
-             final Aeron aeron = Aeron.newSingleMediaDriver(context);
+        try (final MediaDriver driver = ExampleUtil.createEmbeddedMediaDriver(executor);
+             final Aeron aeron = ExampleUtil.createAeron(context, executor);
              final Source source = aeron.newSource(DESTINATION);
              final Channel channel = source.newChannel(CHANNEL_ID))
         {

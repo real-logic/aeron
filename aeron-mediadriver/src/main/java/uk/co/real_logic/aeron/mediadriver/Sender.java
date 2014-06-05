@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.Agent;
 import uk.co.real_logic.aeron.util.AtomicArray;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.SELECT_TIMEOUT;
 
@@ -26,16 +25,13 @@ import static uk.co.real_logic.aeron.mediadriver.MediaDriver.SELECT_TIMEOUT;
  */
 public class Sender extends Agent
 {
-    private final RingBuffer adminThreadCommandBuffer;
     private final AtomicArray<SenderChannel> channels = new AtomicArray<>();
 
     private int counter = 0;
 
-    public Sender(final MediaDriver.Context ctx)
+    public Sender()
     {
         super(SELECT_TIMEOUT);
-
-        adminThreadCommandBuffer = ctx.mediaCommandBuffer();
     }
 
     public void process()

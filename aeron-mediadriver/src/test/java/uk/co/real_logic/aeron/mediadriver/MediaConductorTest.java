@@ -79,7 +79,7 @@ public class MediaConductorTest
             .conductorShmBuffers(new ConductorShmBuffers(adminPath, COMMAND_BUFFER_SZ + TRAILER_LENGTH))
             .bufferManagement(newMappedBufferManager(adminPath));
 
-        final Sender sender = new Sender(ctx)
+        final Sender sender = new Sender()
         {
             public void addChannel(final SenderChannel channel)
             {

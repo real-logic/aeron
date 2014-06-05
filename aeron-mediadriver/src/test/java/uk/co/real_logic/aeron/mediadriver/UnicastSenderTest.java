@@ -132,7 +132,7 @@ public class UnicastSenderTest
             .mtuLength(MAX_FRAME_LENGTH)
             .conductorTimerWheel(timerWheel);
 
-        sender = new Sender(ctx);
+        sender = new Sender();
         final Receiver receiver = mock(Receiver.class);
         mediaConductor = new MediaConductor(ctx, receiver, sender);
         receiverChannel = DatagramChannel.open();

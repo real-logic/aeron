@@ -25,17 +25,17 @@ import static java.lang.System.getProperty;
 public class CommonConfiguration
 {
     /** Directory of the data buffers */
-    public static final String DATA_DIR_PROP_NAME = "aeron.data.dir";
+    public static final String DATA_DIR_PROP_NAME = "aeron.dir.data";
     /** Default directory for data buffers */
     public static final String DATA_DIR_PROP_DEFAULT = IoUtil.tmpDirName() + "aeron" + File.separator + "data";
 
     /** Directory of the conductor buffers */
-    public static final String ADMIN_DIR_PROP_NAME = "aeron.conductor.dir";
+    public static final String ADMIN_DIR_PROP_NAME = "aeron.dir.conductor";
     /** Default directory for conductor buffers */
     public static final String ADMIN_DIR_PROP_DEFAULT = IoUtil.tmpDirName() + "aeron" + File.separator + "conductor";
 
     /** Directory for the counters */
-    public static final String COUNTERS_DIR_PROP_NAME = "aeron.counters.dir";
+    public static final String COUNTERS_DIR_PROP_NAME = "aeron.dir.counters";
     /** Default directory for conductor buffers */
     public static final String COUNTERS_DIR_PROP_DEFAULT = IoUtil.tmpDirName() + "aeron" + File.separator + "counters";
 
@@ -43,8 +43,12 @@ public class CommonConfiguration
     private static final String MTU_LENGTH_NAME = "aeron.mtu.length";
     private static final int MTU_LENGTH_DEFAULT = 1280;
 
+    /** Attempt to delete directories on exit */
+    public static final String DIRS_DELETE_ON_EXIT_PROP_NAME = "aeron.dir.delete.on.exit";
+
     public static final String DATA_DIR_NAME = getProperty(DATA_DIR_PROP_NAME, DATA_DIR_PROP_DEFAULT);
     public static final String ADMIN_DIR_NAME = getProperty(ADMIN_DIR_PROP_NAME, ADMIN_DIR_PROP_DEFAULT);
     public static final String COUNTERS_DIR_NAME = getProperty(COUNTERS_DIR_PROP_NAME, COUNTERS_DIR_PROP_DEFAULT);
     public static final int MTU_LENGTH = Integer.getInteger(MTU_LENGTH_NAME, MTU_LENGTH_DEFAULT);
+    public static final boolean DIRS_DELETE_ON_EXIT = Boolean.getBoolean(DIRS_DELETE_ON_EXIT_PROP_NAME);
 }

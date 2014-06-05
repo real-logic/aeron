@@ -18,11 +18,13 @@ package uk.co.real_logic.aeron.examples;
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Destination;
 import uk.co.real_logic.aeron.Subscriber;
+import uk.co.real_logic.aeron.mediadriver.MediaDriver;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
 /**
@@ -37,48 +39,45 @@ public class ExampleSubscriber
     {
         final Executor executor = Executors.newFixedThreadPool(2);
         final Aeron.Context aeronContext = new Aeron.Context().errorHandler(ExampleSubscriber::onError);
+        final Subscriber.Context subContext = new Subscriber.Context().destination(DESTINATION);
+        final Subscriber.DataHandler messageHandler =
+            (buffer, offset, sessionId, flags) -> System.out.println("Message " + sessionId);
+        final Subscriber.NewSourceEventHandler newSourceHandler =
+                (channelId, sessionId) -> System.out.println("new source " + sessionId + " " + channelId);
+        final Subscriber.InactiveSourceEventHandler inactiveSourceHandler =
+                (channelId, sessionId) -> System.out.println("inactive source " + sessionId + " " + channelId);
 
-        try (final Aeron aeron = Aeron.newSingleMediaDriver(aeronContext))
+        // register some channels that use stateful objects
+        IntStream.range(0, CHANNELS.length).forEach(i -> subContext.channel(CHANNELS[i].channelId(), CHANNELS[i]));
+
+        // register a channel that uses a lambda
+        subContext.channel(30, messageHandler)
+            .newSourceEvent(newSourceHandler)
+            .inactiveSourceEvent(inactiveSourceHandler);
+
+        // make a reusable, parameterized event loop function
+        final Consumer<Subscriber> loop = (rcv) ->
         {
-            final Subscriber.Context context = new Subscriber.Context().destination(DESTINATION);
-
-            // register some channels that use stateful objects
-            IntStream.range(0, CHANNELS.length).forEach(i -> context.channel(CHANNELS[i].channelId(), CHANNELS[i]));
-
-            // register a channel that uses a lambda
-            context.channel(30, (buffer, offset, sessionId, flags) -> { /* do something with message */ })
-                   .newSourceEvent((channelId, sessionId) -> System.out.println("new source for channel"))
-                   .inactiveSourceEvent((channelId, sessionId) -> System.out.println("inactive source for channel"));
-
-            final Subscriber subscriber1 = aeron.newSubscriber(context);
-
-            // create a subscriber using the fluent style lambda expression
-            final Subscriber subscriber2 = aeron.newSubscriber(
-                (ctx) ->
+            try
+            {
+                while (true)
                 {
-                    ctx.destination(DESTINATION)
-                       .channel(100, (buffer, offset, sessionId, flags) -> { /* do something */ })
-                       .newSourceEvent((channelId, sessionId) -> System.out.println("new source for channel"));
+                    rcv.read();
                 }
-            );
+            }
+            catch (final Exception ex)
+            {
+                ex.printStackTrace();
+            }
+        };
 
-            // make a reusable, parameterized event loop function
-            final java.util.function.Consumer<Subscriber> loop =
-                (rcv) ->
-                {
-                    try
-                    {
-                        while (true)
-                        {
-                            rcv.read();
-                        }
-                    }
-                    catch (final Exception ex)
-                    {
-                        ex.printStackTrace();
-                    }
-                };
-
+        try (final MediaDriver driver = ExampleUtil.createEmbeddedMediaDriver();
+             final Aeron aeron = Aeron.newSingleMediaDriver(aeronContext);
+             final Subscriber subscriber1 = aeron.newSubscriber(subContext);
+             // create a subscriber using the fluent style lambda expression
+             final Subscriber subscriber2 = aeron.newSubscriber((ctx) ->
+                 ctx.destination(DESTINATION).channel(100, messageHandler).newSourceEvent(newSourceHandler)))
+        {
             // spin off the two subscriber threads
             executor.execute(() -> loop.accept(subscriber1));
             executor.execute(() -> loop.accept(subscriber2));

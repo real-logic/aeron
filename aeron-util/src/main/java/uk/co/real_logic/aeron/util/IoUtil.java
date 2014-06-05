@@ -26,6 +26,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.util.Arrays;
+import java.util.function.BiConsumer;
 
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 
@@ -105,6 +106,7 @@ public class IoUtil
      * Create a directory if it doesn't already exist.
      *
      * @param directory the directory which definitely exists after this method call.
+     * @param name to associate with the directory for any exceptions.
      * @throws IllegalArgumentException thrown if the directory cannot be created
      */
     public static void ensureDirectoryExists(final File directory, final String name) throws IllegalArgumentException
@@ -115,6 +117,31 @@ public class IoUtil
             {
                 throw new IllegalArgumentException("could not create " + name + " directory: " + directory);
             }
+        }
+    }
+
+    /**
+     * Create a directory if it doesn't already exist and call callback if it does exist.
+     *
+     * @param directory the directory which definitely exists after this method call.
+     * @param name to associate with the directory for any exceptions and callback.
+     * @param callback to call if directory exists passing back absolute path and name.
+     * @throws IllegalArgumentException thrown if the directory cannot be created
+     */
+    public static void ensureDirectoryExists(final File directory, final String name,
+                                             final BiConsumer<String, String> callback)
+            throws IllegalArgumentException
+    {
+        if (!directory.exists())
+        {
+            if (!directory.mkdirs())
+            {
+                throw new IllegalArgumentException("could not create " + name + " directory: " + directory);
+            }
+        }
+        else
+        {
+            callback.accept(directory.getAbsolutePath(), name);
         }
     }
 

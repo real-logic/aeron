@@ -151,18 +151,20 @@ project(':aeron-examples') {
         description 'Runs ExamplePublisher'
         main = 'uk.co.real_logic.aeron.examples.ExamplePublisher'
         classpath = sourceSets.main.runtimeClasspath
-        systemProperties("aeron.data.dir": pubBaseDir + 'data',
-                         "aeron.conductor.dir": pubBaseDir + 'conductor',
-                         "aeron.counters.dir": pubBaseDir + 'counters')
+        systemProperties("aeron.dir.data": pubBaseDir + 'data',
+                         "aeron.dir.conductor": pubBaseDir + 'conductor',
+                         "aeron.dir.counters": pubBaseDir + 'counters',
+                         "aeron.dir.delete.on.exit": System.properties['aeron.dir.delete.on.exit']);
     }
 
     task(sub, dependsOn: 'build', type: JavaExec) {
         description 'Runs ExampleSubscriber'
         main = 'uk.co.real_logic.aeron.examples.ExampleSubscriber'
         classpath = sourceSets.main.runtimeClasspath
-        systemProperties("aeron.data.dir": subBaseDir + 'data',
-                         "aeron.conductor.dir": subBaseDir + 'conductor',
-                         "aeron.counters.dir": subBaseDir + 'counters')
+        systemProperties("aeron.dir.data": subBaseDir + 'data',
+                         "aeron.dir.conductor": subBaseDir + 'conductor',
+                         "aeron.dir.counters": subBaseDir + 'counters',
+                         "aeron.dir.delete.on.exit": System.properties['aeron.dir.delete.on.exit']);
     }
 }
 

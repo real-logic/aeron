@@ -29,13 +29,12 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import static java.lang.Integer.getInteger;
 import static uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement.newMappedBufferManager;
-import static uk.co.real_logic.aeron.util.CommonConfiguration.ADMIN_DIR_NAME;
-import static uk.co.real_logic.aeron.util.CommonConfiguration.COUNTERS_DIR_NAME;
-import static uk.co.real_logic.aeron.util.CommonConfiguration.DATA_DIR_NAME;
+import static uk.co.real_logic.aeron.util.CommonConfiguration.*;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_LENGTH;
 
 /**
@@ -225,16 +224,25 @@ public class MediaDriver implements AutoCloseable
 
     public void ensureDirectoriesExist() throws Exception
     {
-        IoUtil.ensureDirectoryExists(adminDirFile, "adminDir");
-        IoUtil.ensureDirectoryExists(dataDirFile, "dataDir");
-        IoUtil.ensureDirectoryExists(countersDirFile, "countersDir");
+        final BiConsumer<String, String> callback = (path, name) ->
+        {
+            // TODO: replace with logging?
+            System.err.println("WARNING: " + name + " directory already exists: " + path);
+        };
+
+        IoUtil.ensureDirectoryExists(adminDirFile, "conductor", callback);
+        IoUtil.ensureDirectoryExists(dataDirFile, "data", callback);
+        IoUtil.ensureDirectoryExists(countersDirFile, "counter", callback);
     }
 
     public void deleteDirectories() throws Exception
     {
-        IoUtil.delete(adminDirFile, false);
-        IoUtil.delete(dataDirFile, false);
-        IoUtil.delete(countersDirFile, false);
+        if (DIRS_DELETE_ON_EXIT)
+        {
+            IoUtil.delete(adminDirFile, false);
+            IoUtil.delete(dataDirFile, false);
+            IoUtil.delete(countersDirFile, false);
+        }
     }
 
     public static class Context

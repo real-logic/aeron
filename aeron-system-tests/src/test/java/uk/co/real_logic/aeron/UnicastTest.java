@@ -26,6 +26,7 @@ import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.Subscriber.DataHandler;
 import static uk.co.real_logic.aeron.Subscriber.NewSourceEventHandler;
 import static uk.co.real_logic.aeron.util.CommonConfiguration.ADMIN_DIR_NAME;
+import static uk.co.real_logic.aeron.util.CommonConfiguration.DIRS_DELETE_ON_EXIT_PROP_NAME;
 
 public class UnicastTest
 {
@@ -38,10 +39,12 @@ public class UnicastTest
     private MediaDriver driver;
     private Subscriber subscriber;
     private Source source;
+    private Channel channel;
 
     @Before
     public void setupClients() throws Exception
     {
+        System.setProperty(DIRS_DELETE_ON_EXIT_PROP_NAME, "true");
         driver = new MediaDriver();
 
         final DataHandler dataHandler = mock(DataHandler.class);
@@ -57,6 +60,8 @@ public class UnicastTest
 
         source = producingClient.newSource(new Source.Context().destination(DESTINATION)
                                                                .sessionId(SESSION_ID));
+
+        channel = source.newChannel(CHANNEL_ID);
     }
 
     private Aeron.Context newAeronContext()
@@ -98,10 +103,11 @@ public class UnicastTest
         process(3);
     }
 
-    @Ignore
     @Test
-    public void publisherMessagesSubscriber()
+    @Ignore("isn't finished yet")
+    public void publisherMessagesSubscriber() throws Exception
     {
+        process(5);
         // TODO: simple message send/read
     }
 

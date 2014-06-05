@@ -214,8 +214,10 @@ public class MediaDriver implements AutoCloseable
     public void close() throws Exception
     {
         receiver.close();
+        receiver.nioSelector().selectNowWithNoProcessing();
         sender.close();
         mediaConductor.close();
+        mediaConductor.nioSelector().selectNowWithNoProcessing();
         conductorShmBuffers.close();
         bufferManagement.close();
         countersCreator.close();

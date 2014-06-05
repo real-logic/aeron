@@ -16,19 +16,19 @@
 package uk.co.real_logic.aeron.util.concurrent.ringbuffer;
 
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.EventHandler;
+import uk.co.real_logic.aeron.util.concurrent.MessageHandler;
 
 import static uk.co.real_logic.aeron.util.BitUtil.align;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.*;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RecordDescriptor.*;
 
 /**
- * A ring-buffer that supports the exchange of events from many producers to a single consumer.
+ * A ring-buffer that supports the exchange of messages from many producers to a single consumer.
  */
 public class ManyToOneRingBuffer implements RingBuffer
 {
     /** Event type is padding to prevent fragmentation in the buffer. */
-    public static final int PADDING_EVENT_TYPE_ID = -1;
+    public static final int PADDING_MSG_TYPE_ID = -1;
 
     /** Buffer has insufficient capacity to record an event. */
     public static final int INSUFFICIENT_CAPACITY = -1;
@@ -36,7 +36,7 @@ public class ManyToOneRingBuffer implements RingBuffer
     private final AtomicBuffer buffer;
     private final int capacity;
     private final int mask;
-    private final int maxEventLength;
+    private final int maxMsgLength;
     private final int tailCounterIndex;
     private final int headCounterIndex;
     private final int correlationIdCounterIndex;
@@ -58,7 +58,7 @@ public class ManyToOneRingBuffer implements RingBuffer
         checkCapacity(capacity);
 
         mask = capacity - 1;
-        maxEventLength = capacity / 8;
+        maxMsgLength = capacity / 8;
         tailCounterIndex = capacity + TAIL_COUNTER_OFFSET;
         headCounterIndex = capacity + HEAD_COUNTER_OFFSET;
         correlationIdCounterIndex = capacity + CORRELATION_COUNTER_OFFSET;
@@ -75,10 +75,10 @@ public class ManyToOneRingBuffer implements RingBuffer
     /**
      * {@inheritDoc}
      */
-    public boolean write(final int eventTypeId, final AtomicBuffer srcBuffer, final int srcIndex, final int length)
+    public boolean write(final int msgTypeId, final AtomicBuffer srcBuffer, final int srcIndex, final int length)
     {
-        checkEventTypeId(eventTypeId);
-        checkEventLength(length);
+        checkMsgTypeId(msgTypeId);
+        checkMsgLength(length);
 
         final int requiredCapacity = align(length + HEADER_LENGTH, ALIGNMENT);
         final int recordIndex = claimCapacity(requiredCapacity);
@@ -87,9 +87,9 @@ public class ManyToOneRingBuffer implements RingBuffer
             return false;
         }
 
-        writeEventLength(recordIndex, length);
-        writeEventType(recordIndex, eventTypeId);
-        writeEvent(recordIndex, srcBuffer, srcIndex, length);
+        writeMsgLength(recordIndex, length);
+        writeMsgType(recordIndex, msgTypeId);
+        writeMsg(recordIndex, srcBuffer, srcIndex, length);
 
         writeRecordLengthOrdered(recordIndex, requiredCapacity);
 
@@ -99,7 +99,7 @@ public class ManyToOneRingBuffer implements RingBuffer
     /**
      * {@inheritDoc}
      */
-    public int read(final EventHandler handler)
+    public int read(final MessageHandler handler)
     {
         return read(handler, Integer.MAX_VALUE);
     }
@@ -107,7 +107,7 @@ public class ManyToOneRingBuffer implements RingBuffer
     /**
      * {@inheritDoc}
      */
-    public int read(final EventHandler handler, final int maxEvents)
+    public int read(final MessageHandler handler, final int limit)
     {
         final long tail = getTailVolatile();
         final long head = getHeadVolatile();
@@ -122,20 +122,20 @@ public class ManyToOneRingBuffer implements RingBuffer
 
             try
             {
-                while ((bytesRead < contiguousBlockSize) && (recordsRead <= maxEvents))
+                while ((bytesRead < contiguousBlockSize) && (recordsRead <= limit))
                 {
                     final int recordIndex = headIndex + bytesRead;
                     final int recordLength = waitForRecordLengthVolatile(recordIndex);
 
-                    final int eventLength = getEventLength(recordIndex);
-                    final int eventTypeId = getEventType(recordIndex);
+                    final int msgLength = getMsgLength(recordIndex);
+                    final int msgTypeId = getMsgType(recordIndex);
 
                     bytesRead += recordLength;
 
-                    if (eventTypeId != PADDING_EVENT_TYPE_ID)
+                    if (msgTypeId != PADDING_MSG_TYPE_ID)
                     {
                         ++recordsRead;
-                        handler.onEvent(eventTypeId, buffer, encodedEventOffset(recordIndex), eventLength);
+                        handler.onMessage(msgTypeId, buffer, encodedMsgOffset(recordIndex), msgLength);
                     }
                 }
             }
@@ -152,9 +152,9 @@ public class ManyToOneRingBuffer implements RingBuffer
     /**
      * {@inheritDoc}
      */
-    public int maxEventLength()
+    public int maxMsgLength()
     {
-        return maxEventLength;
+        return maxMsgLength;
     }
 
     /**
@@ -165,12 +165,12 @@ public class ManyToOneRingBuffer implements RingBuffer
         return buffer.getAndAddLong(correlationIdCounterIndex, 1);
     }
 
-    private void checkEventLength(final int length)
+    private void checkMsgLength(final int length)
     {
-        if (length > maxEventLength)
+        if (length > maxMsgLength)
         {
-            final String msg = String.format("encoded event exceeds maxEventLength of %d, length=%d",
-                                             maxEventLength, length);
+            final String msg = String.format("encoded event exceeds maxMsgLength of %d, length=%d",
+                                             maxMsgLength, length);
 
             throw new IllegalArgumentException(msg);
         }
@@ -239,7 +239,7 @@ public class ManyToOneRingBuffer implements RingBuffer
 
     private void writePaddingRecord(final int recordIndex, final int padding)
     {
-        writeEventType(recordIndex, PADDING_EVENT_TYPE_ID);
+        writeMsgType(recordIndex, PADDING_MSG_TYPE_ID);
         writeRecordLengthOrdered(recordIndex, padding);
     }
 
@@ -248,29 +248,29 @@ public class ManyToOneRingBuffer implements RingBuffer
         buffer.putIntOrdered(lengthOffset(recordIndex), length);
     }
 
-    private void writeEventLength(final int recordIndex, final int length)
+    private void writeMsgLength(final int recordIndex, final int length)
     {
-        buffer.putInt(eventLengthOffset(recordIndex), length);
+        buffer.putInt(msgLengthOffset(recordIndex), length);
     }
 
-    private void writeEventType(final int recordIndex, final int eventTypeId)
+    private void writeMsgType(final int recordIndex, final int msgTypeId)
     {
-        buffer.putInt(eventTypeOffset(recordIndex), eventTypeId);
+        buffer.putInt(msgTypeOffset(recordIndex), msgTypeId);
     }
 
-    private void writeEvent(final int recordIndex, final AtomicBuffer srcBuffer, final int srcIndex, final int length)
+    private void writeMsg(final int recordIndex, final AtomicBuffer srcBuffer, final int srcIndex, final int length)
     {
-        buffer.putBytes(encodedEventOffset(recordIndex), srcBuffer, srcIndex, length);
+        buffer.putBytes(encodedMsgOffset(recordIndex), srcBuffer, srcIndex, length);
     }
 
-    private int getEventType(final int recordIndex)
+    private int getMsgType(final int recordIndex)
     {
-        return buffer.getInt(eventTypeOffset(recordIndex));
+        return buffer.getInt(msgTypeOffset(recordIndex));
     }
 
-    private int getEventLength(final int recordIndex)
+    private int getMsgLength(final int recordIndex)
     {
-        return buffer.getInt(eventLengthOffset(recordIndex));
+        return buffer.getInt(msgLengthOffset(recordIndex));
     }
 
     private int waitForRecordLengthVolatile(final int recordIndex)

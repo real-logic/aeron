@@ -20,7 +20,7 @@ import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.QualifiedMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.EventHandler;
+import uk.co.real_logic.aeron.util.concurrent.MessageHandler;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
@@ -109,7 +109,7 @@ public class ClientConductorProxyTest
         );
     }
 
-    private void assertReadsOneMessage(final EventHandler handler)
+    private void assertReadsOneMessage(final MessageHandler handler)
     {
         final int messageCount = mediaConductorBuffer.read(handler);
         assertThat(messageCount, is(1));

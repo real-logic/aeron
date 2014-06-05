@@ -23,7 +23,7 @@ import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.EventHandler;
+import uk.co.real_logic.aeron.util.concurrent.MessageHandler;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
@@ -446,7 +446,7 @@ public class UnicastSenderTest
         assertNull(address);
     }
 
-    private EventHandler assertNotifiesNewBuffer(final AtomicLong termId)
+    private MessageHandler assertNotifiesNewBuffer(final AtomicLong termId)
     {
         return (eventTypeId, buffer, index, length) ->
         {

@@ -16,17 +16,17 @@
 package uk.co.real_logic.aeron.util.concurrent;
 
 /**
- * Callback interface for processing of events that are read from a buffer.
+ * Callback interface for processing of messages that are read from a buffer.
  */
-public interface EventHandler
+public interface MessageHandler
 {
     /**
-     * Called for the processing of each event read from a buffer in turn.
+     * Called for the processing of each message read from a buffer in turn.
      *
-     * @param eventTypeId type of the encoded event.
-     * @param buffer containing the encoded event.
-     * @param index at which the encoded event begins.
-     * @param length in bytes of the encoded event.
+     * @param msgTypeId type of the encoded message.
+     * @param buffer containing the encoded message.
+     * @param index at which the encoded message begins.
+     * @param length in bytes of the encoded message.
      */
-    void onEvent(final int eventTypeId, final AtomicBuffer buffer, final int index, final int length);
+    void onMessage(final int msgTypeId, final AtomicBuffer buffer, final int index, final int length);
 }

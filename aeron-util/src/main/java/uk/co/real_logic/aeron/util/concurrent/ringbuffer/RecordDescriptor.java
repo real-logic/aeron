@@ -23,15 +23,15 @@ import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 public class RecordDescriptor
 {
     /**
-     * Header length made up of fields for record length, event length, event type, and reserved,
-     * and then the encoded event.
+     * Header length made up of fields for record length, message length, message type, and reserved,
+     * and then the encoded message.
      * <p>
      * Writing of the record length signals the event recording is complete.
      * <p>
      * <pre>
      *   0        4        8        12       16 -byte position
      *   +--------+--------+--------+--------+------------------------+
-     *   |rec len |evt len |evt type|reserve |encoded event...........|
+     *   |rec len |msg len |msg type|reserve |encoded message.........|
      *   +--------+--------+--------+--------+------------------------+
      * </pre>
      */
@@ -54,51 +54,49 @@ public class RecordDescriptor
     }
 
     /**
-     * The offset from the beginning of a record at which the event length field begins.
+     * The offset from the beginning of a record at which the message length field begins.
      *
      * @param recordOffset beginning index of the record.
      * @return offset from the beginning of a record at which the type field begins.
      */
-    public static int eventLengthOffset(final int recordOffset)
+    public static int msgLengthOffset(final int recordOffset)
     {
         return recordOffset + SIZE_OF_INT;
     }
 
     /**
-     * The offset from the beginning of a record at which the event type field begins.
+     * The offset from the beginning of a record at which the message type field begins.
      *
      * @param recordOffset beginning index of the record.
      * @return offset from the beginning of a record at which the type field begins.
      */
-    public static int eventTypeOffset(final int recordOffset)
+    public static int msgTypeOffset(final int recordOffset)
     {
         return recordOffset + SIZE_OF_INT + SIZE_OF_INT;
     }
 
     /**
-     * The offset from the beginning of a record at which the encoded event begins.
+     * The offset from the beginning of a record at which the encoded message begins.
      *
      * @param recordOffset beginning index of the record.
-     * @return offset from the beginning of a record at which the encoded event begins.
+     * @return offset from the beginning of a record at which the encoded message begins.
      */
-    public static int encodedEventOffset(final int recordOffset)
+    public static int encodedMsgOffset(final int recordOffset)
     {
         return recordOffset + HEADER_LENGTH;
     }
 
     /**
-     * Check that and event id is in the valid range.
+     * Check that and message id is in the valid range.
      *
-     * @param eventTypeId to be checked.
+     * @param msgTypeId to be checked.
      * @throws IllegalArgumentException if the id is not in the valid range.
      */
-    public static void checkEventTypeId(final int eventTypeId)
+    public static void checkMsgTypeId(final int msgTypeId)
     {
-        if (eventTypeId < 1)
+        if (msgTypeId < 1)
         {
-            final String msg = String.format("event type id must be greater than zero, eventTypeId=%d",
-                                             Integer.valueOf(eventTypeId));
-
+            final String msg = String.format("Message type id must be greater than zero, msgTypeId=%d", msgTypeId);
             throw new IllegalArgumentException(msg);
         }
     }

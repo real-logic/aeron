@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.util.concurrent.ringbuffer;
 import org.junit.Test;
 import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.EventHandler;
+import uk.co.real_logic.aeron.util.concurrent.MessageHandler;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CyclicBarrier;
@@ -88,7 +88,7 @@ public class ManyToOneRingBufferConcurrentTest
 
         final int[] counts = new int[numProducers];
 
-        final EventHandler handler =
+        final MessageHandler handler =
             (eventTypeId, buffer, index, length) ->
             {
                 final int producerId = buffer.getInt(index);

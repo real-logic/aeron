@@ -16,10 +16,10 @@
 package uk.co.real_logic.aeron.util.concurrent.ringbuffer;
 
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.EventHandler;
+import uk.co.real_logic.aeron.util.concurrent.MessageHandler;
 
 /**
- * Ring-buffer for the concurrent exchanging of binary encoded events from producer to consumer in a FIFO manner.
+ * Ring-buffer for the concurrent exchanging of binary encoded messages from producer to consumer in a FIFO manner.
  */
 public interface RingBuffer
 {
@@ -31,44 +31,44 @@ public interface RingBuffer
     int capacity();
 
     /**
-     * Non blocking write of an event to an underlying ring-srcBuffer.
+     * Non-blocking write of an message to an underlying ring-buffer.
      *
-     * @param eventTypeId type of the event encoding.
-     * @param srcBuffer containing the encoded binary event.
-     * @param srcIndex at which the encoded event begins.
-     * @param length of the encoded event in bytes.
-     * @return true if written to the ring-srcBuffer, or false if insufficient space exists.
-     * @throws IllegalArgumentException if the length is greater than {@link RingBuffer#maxEventLength()}
+     * @param msgTypeId type of the message encoding.
+     * @param srcBuffer containing the encoded binary message.
+     * @param srcIndex at which the encoded message begins.
+     * @param length of the encoded message in bytes.
+     * @return true if written to the ring-buffer, or false if insufficient space exists.
+     * @throws IllegalArgumentException if the length is greater than {@link RingBuffer#maxMsgLength()}
      */
-    boolean write(final int eventTypeId, final AtomicBuffer srcBuffer, final int srcIndex, final int length);
+    boolean write(final int msgTypeId, final AtomicBuffer srcBuffer, final int srcIndex, final int length);
 
     /**
-     * Read as many events as are available from the ring buffer.
+     * Read as many messages as are available from the ring buffer.
+     *
+     * @param handler to be called for processing each message in turn.
+     * @return the number of messages that have been processed.
+     */
+    int read(final MessageHandler handler);
+
+    /**
+     * Read as many messages as are available from the ring buffer to up a supplied maximum.
      *
      * @param handler to be called for processing each event in turn.
-     * @return the number of event that have been processed.
+     * @param limit the number of messages will be read in a single invocation.
+     * @return the number of messages that have been processed.
      */
-    int read(final EventHandler handler);
+    int read(final MessageHandler handler, final int limit);
 
     /**
-     * Read as many events as are available from the ring buffer to up a supplied maximum.
+     * The maximum message length in bytes supported by the underlying ring buffer.
      *
-     * @param handler to be called for processing each event in turn.
-     * @param maxEvents that will be read in a single invocation.
-     * @return the number of event that have been processed.
+     * @return the maximum message length in bytes supported by the underlying ring buffer.
      */
-    int read(final EventHandler handler, final int maxEvents);
+    int maxMsgLength();
 
     /**
-     * The maximum event length in bytes supported by the underlying ring buffer.
+     * Get the next value that can be used for a correlation id on an message when a response needs to be correlated.
      *
-     * @return the maximum event length in bytes supported by the underlying ring buffer.
-     */
-    int maxEventLength();
-
-    /**
-     * Get the next value that can be used for a correlation id on an event when a response needs to be correlated.
-     * <p/>
      * This method should be thread safe.
      *
      * @return the next value in the correlation sequence.

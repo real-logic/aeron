@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.util.concurrent.ringbuffer;
 
-import uk.co.real_logic.aeron.util.concurrent.EventHandler;
+import uk.co.real_logic.aeron.util.concurrent.MessageHandler;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
@@ -24,7 +24,7 @@ import static org.junit.Assert.assertThat;
 public class RingBufferTestUtil
 {
 
-    public static void assertEventRead(final RingBuffer ringBuffer, final EventHandler handler)
+    public static void assertEventRead(final RingBuffer ringBuffer, final MessageHandler handler)
     {
         int eventsRead = ringBuffer.read(handler);
         assertThat(eventsRead, is(greaterThanOrEqualTo(1)));

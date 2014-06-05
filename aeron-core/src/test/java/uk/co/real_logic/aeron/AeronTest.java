@@ -25,7 +25,7 @@ import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.EventHandler;
+import uk.co.real_logic.aeron.util.concurrent.MessageHandler;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
@@ -612,7 +612,7 @@ public class AeronTest
         return aeron.newSubscriber(context);
     }
 
-    private EventHandler assertSubscriberMessageOfType(final int expectedEventTypeId)
+    private MessageHandler assertSubscriberMessageOfType(final int expectedEventTypeId)
     {
         return (eventTypeId, buffer, index, length) ->
         {

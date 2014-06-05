@@ -32,7 +32,7 @@ public class ExampleUtil
 
         executor.execute(mediaDriver.receiver());
         executor.execute(mediaDriver.sender());
-        executor.execute(mediaDriver.mediaConductor());
+        executor.execute(mediaDriver.conductor());
 
         return mediaDriver;
     }

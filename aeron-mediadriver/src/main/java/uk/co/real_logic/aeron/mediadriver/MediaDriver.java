@@ -133,32 +133,21 @@ public class MediaDriver implements AutoCloseable
     private final File dataDirFile;
     private final File countersDirFile;
 
-    public static void main(final String[] args)
+    public static void main(final String[] args) throws Exception
     {
         try (final MediaDriver mediaDriver = new MediaDriver())
         {
-            // 1 for Receive Thread (Sockets to Buffers)
-            // 1 for Send Thread (Buffers to Sockets)
-            // 1 for Admin Thread (Buffer Management, NAK, Retransmit, etc.)
             final Executor executor = Executors.newFixedThreadPool(3);
 
+            executor.execute(mediaDriver.conductor());
             executor.execute(mediaDriver.receiver());
             executor.execute(mediaDriver.sender());
-            executor.execute(mediaDriver.mediaConductor());
-        }
-        catch (final InterruptedException ie)
-        {
-            // catch this OK. We should finally close on it also... oh look, try-with-resources just did.
-        }
-        catch (final Exception ex)
-        {
-            ex.printStackTrace();
         }
     }
 
     private final Receiver receiver;
     private final Sender sender;
-    private final MediaConductor mediaConductor;
+    private final MediaConductor conductor;
 
     private final ConductorShmBuffers conductorShmBuffers;
     private final BufferManagement bufferManagement;
@@ -193,7 +182,7 @@ public class MediaDriver implements AutoCloseable
 
         receiver = new Receiver(context);
         sender = new Sender();
-        mediaConductor = new MediaConductor(context, receiver, sender);
+        conductor = new MediaConductor(context, receiver, sender);
     }
 
     public Receiver receiver()
@@ -206,9 +195,9 @@ public class MediaDriver implements AutoCloseable
         return sender;
     }
 
-    public MediaConductor mediaConductor()
+    public MediaConductor conductor()
     {
-        return mediaConductor;
+        return conductor;
     }
 
     public void close() throws Exception
@@ -216,8 +205,8 @@ public class MediaDriver implements AutoCloseable
         receiver.close();
         receiver.nioSelector().selectNowWithNoProcessing();
         sender.close();
-        mediaConductor.close();
-        mediaConductor.nioSelector().selectNowWithNoProcessing();
+        conductor.close();
+        conductor.nioSelector().selectNowWithNoProcessing();
         conductorShmBuffers.close();
         bufferManagement.close();
         countersCreator.close();

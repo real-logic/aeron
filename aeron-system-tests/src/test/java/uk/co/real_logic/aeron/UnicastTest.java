@@ -90,7 +90,7 @@ public class UnicastTest
     private void process() throws Exception
     {
         producingClient.conductor().process();
-        driver.mediaConductor().process();
+        driver.conductor().process();
         driver.sender().process();
         driver.receiver().process();
         receivingClient.conductor().process();

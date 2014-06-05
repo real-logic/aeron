@@ -32,10 +32,10 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RecordDescriptor
 public class ManyToOneRingBufferTest
 {
     public static final int EVENT_TYPE_ID = 7;
-    public static final int CAPACITY = 1024;
-    public static final int TOTAL_BUFFER_SIZE = CAPACITY + BufferDescriptor.TRAILER_LENGTH;
-    public static final int TAIL_COUNTER_INDEX = CAPACITY + BufferDescriptor.TAIL_COUNTER_OFFSET;
-    public static final int HEAD_COUNTER_INDEX = CAPACITY + BufferDescriptor.HEAD_COUNTER_OFFSET;
+    public static final int CAPACITY = 4096;
+    public static final int TOTAL_BUFFER_SIZE = CAPACITY + RingBufferDescriptor.TRAILER_LENGTH;
+    public static final int TAIL_COUNTER_INDEX = CAPACITY + RingBufferDescriptor.TAIL_COUNTER_OFFSET;
+    public static final int HEAD_COUNTER_INDEX = CAPACITY + RingBufferDescriptor.HEAD_COUNTER_OFFSET;
 
     private final AtomicBuffer buffer = mock(AtomicBuffer.class);
     private RingBuffer ringBuffer;
@@ -58,7 +58,7 @@ public class ManyToOneRingBufferTest
     public void shouldThrowExceptionForCapacityThatIsNotPowerOfTwo()
     {
         final int capacity = 777;
-        final int totalBufferSize = capacity + BufferDescriptor.TRAILER_LENGTH;
+        final int totalBufferSize = capacity + RingBufferDescriptor.TRAILER_LENGTH;
 
         when(buffer.capacity()).thenReturn(totalBufferSize);
 

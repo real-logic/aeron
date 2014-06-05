@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.util.concurrent.logbuffer;
 
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.*;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.*;
 
 /**
  * View over the state for a log buffer that can be read in a thread safe manner.

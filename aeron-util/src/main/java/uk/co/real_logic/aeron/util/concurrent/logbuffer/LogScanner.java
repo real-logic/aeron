@@ -20,7 +20,7 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import java.nio.ByteOrder;
 
 import static uk.co.real_logic.aeron.util.BitUtil.align;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.*;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*;
 
 /**
@@ -181,6 +181,6 @@ public class LogScanner
 
     private int tail()
     {
-        return stateBuffer.getIntVolatile(BufferDescriptor.TAIL_COUNTER_OFFSET);
+        return stateBuffer.getIntVolatile(LogBufferDescriptor.TAIL_COUNTER_OFFSET);
     }
 }

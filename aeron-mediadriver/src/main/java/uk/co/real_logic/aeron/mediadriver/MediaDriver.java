@@ -35,7 +35,7 @@ import java.util.function.Supplier;
 import static java.lang.Integer.getInteger;
 import static uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement.newMappedBufferManager;
 import static uk.co.real_logic.aeron.util.CommonConfiguration.*;
-import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_LENGTH;
+import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
 
 /**
  * Main class for JVM-based mediadriver

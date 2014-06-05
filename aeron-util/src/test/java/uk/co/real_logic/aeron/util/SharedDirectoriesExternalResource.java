@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.util;
 
 import org.junit.rules.ExternalResource;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 
 import java.io.File;
@@ -149,7 +149,7 @@ public class SharedDirectoriesExternalResource extends ExternalResource
         final File termLocation = termLocation(rootDir, sessionId, channelId, termId, true, destination, type);
         IoUtil.delete(termLocation, true);
 
-        final MappedByteBuffer buffer = mapNewFile(termLocation, "Term Buffer", BufferDescriptor.LOG_MIN_SIZE);
+        final MappedByteBuffer buffer = mapNewFile(termLocation, "Term Buffer", LogBufferDescriptor.LOG_MIN_SIZE);
         buffers.add(buffer);
 
         return new AtomicBuffer(buffer);

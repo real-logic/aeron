@@ -25,7 +25,7 @@ import java.util.concurrent.CyclicBarrier;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
-import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.TRAILER_LENGTH;
+import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
 
 public class ManyToOneRingBufferConcurrentTest
 {

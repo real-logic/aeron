@@ -25,7 +25,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.F
 /**
  * Layout description for the log and state buffers.
  */
-public class BufferDescriptor
+public class LogBufferDescriptor
 {
     /** Offset within the trailer where the tail value is stored. */
     public static final int TAIL_COUNTER_OFFSET;

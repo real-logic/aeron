@@ -21,7 +21,7 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.mediadriver.UdpDestination;
 import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
 
 import java.io.File;
 import java.io.IOException;
@@ -68,9 +68,9 @@ public class MappedBufferManagementTest
 
                 final AtomicBuffer state = logBuffer.stateBuffer();
 
-                assertThat(state.capacity(), is(BufferDescriptor.STATE_BUFFER_LENGTH));
+                assertThat(state.capacity(), is(LogBufferDescriptor.STATE_BUFFER_LENGTH));
                 assertThat(state.getByte(0), is((byte)0));
-                assertThat(state.getByte(BufferDescriptor.STATE_BUFFER_LENGTH - 1), is((byte)0));
+                assertThat(state.getByte(LogBufferDescriptor.STATE_BUFFER_LENGTH - 1), is((byte)0));
             }
         );
     }

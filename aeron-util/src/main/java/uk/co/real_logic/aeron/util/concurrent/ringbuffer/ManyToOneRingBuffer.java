@@ -19,7 +19,7 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.EventHandler;
 
 import static uk.co.real_logic.aeron.util.BitUtil.align;
-import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.BufferDescriptor.*;
+import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.*;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RecordDescriptor.*;
 
 /**
@@ -44,21 +44,21 @@ public class ManyToOneRingBuffer implements RingBuffer
     /**
      * Construct a new {@link RingBuffer} based on an underlying {@link AtomicBuffer}.
      * The underlying buffer must a power of 2 in size plus sufficient space
-     * for the {@link BufferDescriptor#TRAILER_LENGTH}.
+     * for the {@link RingBufferDescriptor#TRAILER_LENGTH}.
      *
      * @param buffer via which events will be exchanged.
      * @throws IllegalStateException if the buffer capacity is not a power of 2
-     *                               plus {@link BufferDescriptor#TRAILER_LENGTH} in capacity.
+     *                               plus {@link RingBufferDescriptor#TRAILER_LENGTH} in capacity.
      */
     public ManyToOneRingBuffer(final AtomicBuffer buffer)
     {
         this.buffer = buffer;
-        capacity = buffer.capacity() - BufferDescriptor.TRAILER_LENGTH;
+        capacity = buffer.capacity() - RingBufferDescriptor.TRAILER_LENGTH;
 
         checkCapacity(capacity);
 
         mask = capacity - 1;
-        maxEventLength = capacity / 4;
+        maxEventLength = capacity / 8;
         tailCounterIndex = capacity + TAIL_COUNTER_OFFSET;
         headCounterIndex = capacity + HEAD_COUNTER_OFFSET;
         correlationIdCounterIndex = capacity + CORRELATION_COUNTER_OFFSET;
@@ -170,7 +170,7 @@ public class ManyToOneRingBuffer implements RingBuffer
         if (length > maxEventLength)
         {
             final String msg = String.format("encoded event exceeds maxEventLength of %d, length=%d",
-                                             Integer.valueOf(maxEventLength), Integer.valueOf(length));
+                                             maxEventLength, length);
 
             throw new IllegalArgumentException(msg);
         }

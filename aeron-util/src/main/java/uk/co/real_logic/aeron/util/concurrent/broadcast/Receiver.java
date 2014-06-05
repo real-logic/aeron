@@ -20,7 +20,7 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static uk.co.real_logic.aeron.util.UnsafeAccess.UNSAFE;
-import static uk.co.real_logic.aeron.util.concurrent.broadcast.BufferDescriptor.*;
+import static uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastBufferDescriptor.*;
 import static uk.co.real_logic.aeron.util.concurrent.broadcast.RecordDescriptor.*;
 
 /**
@@ -48,16 +48,16 @@ public class Receiver
     /**
      * Construct a new broadcast receiver based on an underlying {@link AtomicBuffer}.
      * The underlying buffer must a power of 2 in size plus sufficient space
-     * for the {@link BufferDescriptor#TRAILER_SIZE}.
+     * for the {@link BroadcastBufferDescriptor#TRAILER_LENGTH}.
      *
      * @param buffer via which events will be exchanged.
      * @throws IllegalStateException if the buffer capacity is not a power of 2
-     *                               plus {@link BufferDescriptor#TRAILER_SIZE} in capacity.
+     *                               plus {@link BroadcastBufferDescriptor#TRAILER_LENGTH} in capacity.
      */
     public Receiver(final AtomicBuffer buffer)
     {
         this.buffer = buffer;
-        this.capacity = buffer.capacity() - TRAILER_SIZE;
+        this.capacity = buffer.capacity() - TRAILER_LENGTH;
 
         checkCapacity(capacity);
 

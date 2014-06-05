@@ -16,9 +16,9 @@ public class ReceiverTest
 {
     public static final int MSG_TYPE_ID = 7;
     public static final int CAPACITY = 1024;
-    public static final int TOTAL_BUFFER_SIZE = CAPACITY + BufferDescriptor.TRAILER_SIZE;
-    public static final int TAIL_COUNTER_INDEX = CAPACITY + BufferDescriptor.TAIL_COUNTER_OFFSET;
-    public static final int LATEST_COUNTER_INDEX = CAPACITY + BufferDescriptor.LATEST_COUNTER_OFFSET;
+    public static final int TOTAL_BUFFER_SIZE = CAPACITY + BroadcastBufferDescriptor.TRAILER_LENGTH;
+    public static final int TAIL_COUNTER_INDEX = CAPACITY + BroadcastBufferDescriptor.TAIL_COUNTER_OFFSET;
+    public static final int LATEST_COUNTER_INDEX = CAPACITY + BroadcastBufferDescriptor.LATEST_COUNTER_OFFSET;
 
     private final AtomicBuffer buffer = mock(AtomicBuffer.class);
     private Receiver receiver;
@@ -41,7 +41,7 @@ public class ReceiverTest
     public void shouldThrowExceptionForCapacityThatIsNotPowerOfTwo()
     {
         final int capacity = 777;
-        final int totalBufferSize = capacity + BufferDescriptor.TRAILER_SIZE;
+        final int totalBufferSize = capacity + BroadcastBufferDescriptor.TRAILER_LENGTH;
 
         when(buffer.capacity()).thenReturn(totalBufferSize);
 

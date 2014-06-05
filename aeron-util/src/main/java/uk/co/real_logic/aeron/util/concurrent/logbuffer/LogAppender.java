@@ -21,7 +21,7 @@ import java.nio.ByteOrder;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.aeron.util.BitUtil.align;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.*;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*;
 
 /**
@@ -35,7 +35,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*
  * A default message header is applied to each message with the fields filled in for fragment flags, sequence number,
  * and frame length as appropriate.
  *
- * A message of type {@link BufferDescriptor#PADDING_FRAME_TYPE} is appended at the end of the buffer if claimed space
+ * A message of type {@link LogBufferDescriptor#PADDING_FRAME_TYPE} is appended at the end of the buffer if claimed space
  * is not sufficiently large to accommodate the message about to be written.
  */
 public class LogAppender

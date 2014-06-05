@@ -26,7 +26,7 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.BitUtil.align;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.*;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*;
 
 public class LogAppenderTest
@@ -65,7 +65,7 @@ public class LogAppenderTest
     @Test(expected = IllegalStateException.class)
     public void shouldThrowExceptionOnInsufficientCapacityForLog()
     {
-        when(logBuffer.capacity()).thenReturn(BufferDescriptor.LOG_MIN_SIZE - 1);
+        when(logBuffer.capacity()).thenReturn(LogBufferDescriptor.LOG_MIN_SIZE - 1);
 
         logAppender = new LogAppender(logBuffer, stateBuffer, DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }
@@ -73,7 +73,7 @@ public class LogAppenderTest
     @Test(expected = IllegalStateException.class)
     public void shouldThrowExceptionWhenCapacityNotMultipleOfAlignment()
     {
-        final int logBufferCapacity = BufferDescriptor.LOG_MIN_SIZE + FRAME_ALIGNMENT + 1;
+        final int logBufferCapacity = LogBufferDescriptor.LOG_MIN_SIZE + FRAME_ALIGNMENT + 1;
         when(logBuffer.capacity()).thenReturn(logBufferCapacity);
 
         logAppender = new LogAppender(logBuffer, stateBuffer, DEFAULT_HEADER, MAX_FRAME_LENGTH);
@@ -82,7 +82,7 @@ public class LogAppenderTest
     @Test(expected = IllegalStateException.class)
     public void shouldThrowExceptionOnInsufficientStateBufferCapacity()
     {
-        when(stateBuffer.capacity()).thenReturn(BufferDescriptor.STATE_BUFFER_LENGTH - 1);
+        when(stateBuffer.capacity()).thenReturn(LogBufferDescriptor.STATE_BUFFER_LENGTH - 1);
 
         logAppender = new LogAppender(logBuffer, stateBuffer, DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }

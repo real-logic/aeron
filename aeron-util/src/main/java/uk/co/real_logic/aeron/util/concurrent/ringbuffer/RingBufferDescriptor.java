@@ -22,7 +22,7 @@ import uk.co.real_logic.aeron.util.BitUtil;
  * of a ring of messages which is a power of 2 in size, followed by a trailer section containing state
  * information for the producers and consumers of the ring.
  */
-public class BufferDescriptor
+public class RingBufferDescriptor
 {
     /** Offset within the trailer for where the tail value is stored. */
     public static final int TAIL_COUNTER_OFFSET;

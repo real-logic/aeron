@@ -20,7 +20,7 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import java.nio.ByteOrder;
 
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.BufferDescriptor.*;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*;
 
 /**

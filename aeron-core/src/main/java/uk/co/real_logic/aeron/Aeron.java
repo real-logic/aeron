@@ -171,7 +171,7 @@ public final class Aeron implements AutoCloseable
     public Subscriber newSubscriber(final Consumer<Subscriber.Context> block)
     {
         final Subscriber.Context context = new Subscriber.Context();
-        block.accept(new Subscriber.Context());
+        block.accept(context);
 
         return newSubscriber(context);
     }

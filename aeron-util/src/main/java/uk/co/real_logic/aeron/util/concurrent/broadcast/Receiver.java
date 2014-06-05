@@ -92,9 +92,9 @@ public class Receiver
     /**
      * Type of the message received.
      *
-     * @return type of the message received.
+     * @return typeId of the message received.
      */
-    public int type()
+    public int typeId()
     {
         return buffer.getInt(msgTypeOffset(recordOffset));
     }
@@ -134,7 +134,7 @@ public class Receiver
      *
      * If loss has occurred then {@link #lappedCount()} will be incremented.
      *
-     * @return true if transmission is available with {@link #offset()}, {@link #length()} and {@link #type()}
+     * @return true if transmission is available with {@link #offset()}, {@link #length()} and {@link #typeId()}
      *         set for the next message to be consumed. If no transmission is available then false.
      */
     public boolean receiveNext()

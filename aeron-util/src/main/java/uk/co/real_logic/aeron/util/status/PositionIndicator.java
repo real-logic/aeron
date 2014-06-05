@@ -27,5 +27,5 @@ public interface PositionIndicator
      *
      * @return the current position of the component
      */
-    public long position();
+    long position();
 }

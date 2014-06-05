@@ -28,7 +28,11 @@ import java.io.File;
  */
 public class FileMappingConvention
 {
-    public enum Type { LOG, STATE }
+    public enum Type
+    {
+        LOG,
+        STATE
+    }
 
     private final File receiverDir;
     private final File senderDir;

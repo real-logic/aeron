@@ -41,9 +41,8 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
     private static final String STATE_SUFFIX = "-state";
 
     private final FileChannel logTemplate;
-    private final long logBufferSize;
-
     private final FileChannel stateTemplate;
+    private final long logBufferSize;
     private final long stateBufferSize;
     private final MappedLogBuffers[] buffers;
     private final File directory;
@@ -82,27 +81,9 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
         buffers = new MappedLogBuffers[]{ current, clean, dirty };
     }
 
-    private void requireEqual(final long a, final long b)
+    public void close()
     {
-        if (a != b)
-        {
-            throw new IllegalArgumentException("Values aren't equal: " + a + " and " + b);
-        }
-    }
-
-    private MappedLogBuffers newTerm(final String prefix, final File directory) throws IOException
-    {
-        final String logPath = prefix + LOG_SUFFIX;
-        final String statePath = prefix + STATE_SUFFIX;
-        final FileChannel logFile = openFile(directory, logPath);
-        final FileChannel stateFile = openFile(directory, statePath);
-
-        return new MappedLogBuffers(logPath,
-                                    statePath,
-                                    logFile,
-                                    stateFile,
-                                    map(logBufferSize, logFile),
-                                    map(stateBufferSize, stateFile));
+        buffers().forEach(MappedLogBuffers::close);
     }
 
     public Stream<MappedLogBuffers> buffers()
@@ -133,32 +114,45 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
         }
     }
 
-    public String location()
-    {
-        return directory.getAbsolutePath();
-    }
-
-    private FileChannel openFile(final File directory, final String child) throws FileNotFoundException
-    {
-        return new RandomAccessFile(new File(directory, child), "rw").getChannel();
-    }
-
-    private MappedByteBuffer map(final long bufferSize, final FileChannel channel) throws IOException
-    {
-        reset(channel, logTemplate, logBufferSize);
-
-        return channel.map(READ_WRITE, 0, bufferSize);
-    }
-
     public static void reset(final FileChannel channel, final FileChannel template, final long bufferSize)
-        throws IOException
+            throws IOException
     {
         channel.position(0);
         template.transferTo(0, bufferSize, channel);
     }
 
-    public void close()
+    private void requireEqual(final long a, final long b)
     {
-        buffers().forEach(MappedLogBuffers::close);
+        if (a != b)
+        {
+            throw new IllegalArgumentException("Values aren't equal: " + a + " and " + b);
+        }
+    }
+
+    private MappedLogBuffers newTerm(final String prefix, final File directory) throws IOException
+    {
+        final File logFile = new File(directory, prefix + LOG_SUFFIX);
+        final File stateFile = new File(directory, prefix + STATE_SUFFIX);
+        final FileChannel logFileChannel = openBufferFile(logFile);
+        final FileChannel stateFileChannel = openBufferFile(stateFile);
+
+        return new MappedLogBuffers(logFile,
+                                    stateFile,
+                                    logFileChannel,
+                                    stateFileChannel,
+                                    mapBufferFile(logFileChannel, logBufferSize),
+                                    mapBufferFile(stateFileChannel, stateBufferSize));
+    }
+
+    private FileChannel openBufferFile(final File file) throws FileNotFoundException
+    {
+        return new RandomAccessFile(file, "rw").getChannel();
+    }
+
+    private MappedByteBuffer mapBufferFile(final FileChannel channel, final long bufferSize) throws IOException
+    {
+        reset(channel, logTemplate, logBufferSize);
+
+        return channel.map(READ_WRITE, 0, bufferSize);
     }
 }

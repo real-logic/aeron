@@ -26,8 +26,7 @@ public enum ErrorCode
     CHANNEL_ALREADY_EXISTS(3),
     GENERIC_ERROR_CHANNEL_MESSAGE(4),
     GENERIC_ERROR_RECEIVER_MESSAGE(5),
-    CHANNEL_UNKNOWN(6)
-    ;
+    CHANNEL_UNKNOWN(6);
 
     private final short value;
 

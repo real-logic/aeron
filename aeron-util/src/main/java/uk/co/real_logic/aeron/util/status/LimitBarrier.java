@@ -27,5 +27,5 @@ public interface LimitBarrier
      *
      * @return the maximum limit to which you can write.
      */
-    public long limit();
+    long limit();
 }

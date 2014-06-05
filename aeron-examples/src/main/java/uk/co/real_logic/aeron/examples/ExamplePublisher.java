@@ -50,6 +50,8 @@ public class ExamplePublisher
             // TODO: add data to buffer and get it ready to send
             //channel.send(buffer);
             // TODO: wait around for something...
+
+            Thread.sleep(10*1000);
         }
         catch (final Exception ex)
         {

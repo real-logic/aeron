@@ -59,11 +59,13 @@ public class BufferMapper
         return descriptorBuffer;
     }
 
-    public PositionIndicator indicator(final int offset) {
+    public PositionIndicator indicator(final int offset)
+    {
         return new BufferPositionIndicator(counterBuffer, offset);
     }
 
-    public PositionReporter reporter(final int offset) {
+    public PositionReporter reporter(final int offset)
+    {
         return new BufferPositionReporter(counterBuffer, offset);
     }
 

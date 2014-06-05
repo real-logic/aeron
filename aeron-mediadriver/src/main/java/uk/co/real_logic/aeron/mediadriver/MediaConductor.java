@@ -39,7 +39,7 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
  */
 public class MediaConductor extends Agent
 {
-    public static final int MSG_BUFFER_CAPACITY = 512;
+    public static final int MSG_BUFFER_CAPACITY = 4096;
     public static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
     public static final int HEARTBEAT_TIMEOUT_MS = 100;
 

@@ -93,7 +93,7 @@ public class MediaDriver implements AutoCloseable
     public static final int DESCRIPTOR_BUFFER_SZ_DEFAULT = 65536;
 
     /** Default timeout for select */
-    public static final int SELECT_TIMEOUT_DEFAULT = 20;
+    public static final int SELECT_TIMEOUT_DEFAULT = 10;
 
     /** Default group size estimate for NAK delay randomization */
     public static final int NAK_GROUPSIZE_DEFAULT = 10;

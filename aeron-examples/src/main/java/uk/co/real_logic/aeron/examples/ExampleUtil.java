@@ -19,7 +19,6 @@ import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
 
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 
 /**
  * Utility functions for examples

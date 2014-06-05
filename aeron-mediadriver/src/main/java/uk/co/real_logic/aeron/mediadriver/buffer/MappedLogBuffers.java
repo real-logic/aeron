@@ -19,6 +19,7 @@ import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -30,11 +31,11 @@ import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
  */
 class MappedLogBuffers implements LogBuffers
 {
-    private final String logPath;
-    private final String statePath;
+    private final File logFile;
+    private final File stateFile;
 
-    private final FileChannel logFile;
-    private final FileChannel stateFile;
+    private final FileChannel logFileChannel;
+    private final FileChannel stateFileChannel;
 
     private final MappedByteBuffer mappedLogBuffer;
     private final MappedByteBuffer mappedStateBuffer;
@@ -42,17 +43,17 @@ class MappedLogBuffers implements LogBuffers
     private final AtomicBuffer logBuffer;
     private final AtomicBuffer stateBuffer;
 
-    MappedLogBuffers(final String logPath,
-                     final String statePath,
-                     final FileChannel logFile,
-                     final FileChannel stateFile,
+    MappedLogBuffers(final File logFile,
+                     final File stateFile,
+                     final FileChannel logFileChannel,
+                     final FileChannel stateFileChannel,
                      final MappedByteBuffer logBuffer,
                      final MappedByteBuffer stateBuffer)
     {
-        this.logPath = logPath;
-        this.statePath = statePath;
         this.logFile = logFile;
         this.stateFile = stateFile;
+        this.logFileChannel = logFileChannel;
+        this.stateFileChannel = stateFileChannel;
 
         this.mappedLogBuffer = logBuffer;
         this.mappedStateBuffer = stateBuffer;
@@ -73,16 +74,16 @@ class MappedLogBuffers implements LogBuffers
 
     public void reset(final FileChannel logTemplate, final FileChannel stateTemplate) throws IOException
     {
-        MappedBufferRotator.reset(logFile, logTemplate, logBuffer.capacity());
-        MappedBufferRotator.reset(stateFile, stateTemplate, stateBuffer.capacity());
+        MappedBufferRotator.reset(logFileChannel, logTemplate, logBuffer.capacity());
+        MappedBufferRotator.reset(stateFileChannel, stateTemplate, stateBuffer.capacity());
     }
 
     public void close()
     {
         try
         {
-            logFile.close();
-            stateFile.close();
+            logFileChannel.close();
+            stateFileChannel.close();
         }
         catch (IOException e)
         {
@@ -94,23 +95,23 @@ class MappedLogBuffers implements LogBuffers
 
     public void logBufferInformation(final int index, final NewBufferMessageFlyweight newBufferMessage)
     {
-        bufferInformation(index, newBufferMessage, mappedLogBuffer, logPath);
+        bufferInformation(index, newBufferMessage, mappedLogBuffer, logFile);
     }
 
     public void stateBufferInformation(final int index, final NewBufferMessageFlyweight newBufferMessage)
     {
-        bufferInformation(index + BUFFER_COUNT, newBufferMessage, mappedStateBuffer, statePath);
+        bufferInformation(index + BUFFER_COUNT, newBufferMessage, mappedStateBuffer, stateFile);
     }
 
     private void bufferInformation(final int index,
                                    final NewBufferMessageFlyweight newBufferMessage,
                                    final MappedByteBuffer buffer,
-                                   final String path)
+                                   final File file)
     {
         final int offset = buffer.position();
         newBufferMessage.bufferOffset(index, offset);
         newBufferMessage.bufferLength(index, buffer.position() - offset);
-        newBufferMessage.location(index, path);
+        newBufferMessage.location(index, file.getAbsolutePath());
     }
 
 }

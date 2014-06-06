@@ -126,14 +126,25 @@ public class SenderChannel
                 // ByteBuffer as the buffer parameter
                 final ByteBuffer sendBuffer = termSendBuffers[currentIndex];
 
+                dataHeader.wrap(sendBuffer, offset);
+//                System.out.println("send " + length + "@" + offset + " " +
+//                        dataHeader.frameLength() + "@" + dataHeader.termOffset() + " " +
+//                        dataHeader.headerType());
+
+                dataHeader.sessionId(sessionId)
+                          .channelId(channelId)
+                          .termId(currentTermId.get());
+
+                sendBuffer.limit(offset + dataHeader.frameLength());
                 sendBuffer.position(offset);
-                sendBuffer.limit(offset + length);
 
                 try
                 {
                     final int bytesSent = frameHandler.send(sendBuffer);
-                    if (length != bytesSent)
+                    if (dataHeader.frameLength() != bytesSent)
                     {
+                        throw new IllegalStateException("could not send all of message: " + bytesSent + "/" +
+                                                        dataHeader.frameLength());
                         // TODO: error
                     }
 

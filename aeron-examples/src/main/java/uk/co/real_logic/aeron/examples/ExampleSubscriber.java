@@ -121,6 +121,7 @@ public class ExampleSubscriber
                            final long sessionId,
                            final Subscriber.MessageFlags flags)
         {
+            System.out.println("ExampleDataHandler Message " + sessionId);
         }
     }
 }

@@ -53,6 +53,7 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertEventRead;
+import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.skip;
 import static uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 
 public class UnicastReceiverTest
@@ -122,6 +123,7 @@ public class UnicastReceiverTest
     @After
     public void tearDown() throws Exception
     {
+        skip(buffers.toClient(), 10);
         senderChannel.close();
         receiver.close();
         receiver.nioSelector().selectNowWithNoProcessing();

@@ -112,6 +112,9 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
     {
         final long channelId = header.channelId();
 
+//        System.out.println("onDataFrame " + header.sessionId() + " " + header.channelId() + " " +
+//                           header.termId() + " " + header.frameLength() + "@" + header.termOffset());
+
         final RcvChannelState channelState = channelInterestMap.get(channelId);
         if (null == channelState)
         {
@@ -162,7 +165,7 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
         // now we are all setup, so send an SM to allow the source to send if it is waiting
         // TODO: grab initial term offset from data and store in sessionState somehow (per TermID)
         // TODO: need a strategy object to track the initial receiver window to send in the SMs.
-        sendStatusMessage(0, 0, buffer.termId(), sessionState, channelState);
+        sendStatusMessage(0, 1000, buffer.termId(), sessionState, channelState);
     }
 
     private int sendStatusMessage(final int termOffset,

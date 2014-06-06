@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.NakFlyweight;
@@ -132,11 +133,20 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
         {
             header.wrap(readBuffer, offset);
 
+//            System.out.println("onRead " + header.frameLength() + " offset " + offset + " type " + header.headerType());
             // drop a version we don't know
             if (header.version() != HeaderFlyweight.CURRENT_VERSION)
             {
                 continue;
             }
+
+            // malformed, so log and break
+            if (header.frameLength() <= FrameDescriptor.BASE_HEADER_LENGTH)
+            {
+                System.err.println("received malformed frameLength (" + header.frameLength() + "), dropping");
+                break;
+            }
+
 
             switch (header.headerType())
             {

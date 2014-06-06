@@ -41,6 +41,7 @@ public class NioSelectorTest
     private final ByteBuffer buffer = ByteBuffer.allocateDirect(256);
     private final AtomicBuffer atomicBuffer = new AtomicBuffer(buffer);
     private final DataHeaderFlyweight encodeDataHeader = new DataHeaderFlyweight();
+    private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
     private final InetSocketAddress rcvRemoteAddr = new InetSocketAddress("localhost", SRC_PORT);
     private final InetSocketAddress rcvLocalAddr = new InetSocketAddress(RCV_PORT);
     private final InetSocketAddress srcLocalAddr = new InetSocketAddress(SRC_PORT);
@@ -127,19 +128,24 @@ public class NioSelectorTest
             public void onStatusMessageFrame(final StatusMessageFlyweight statusMessage, final InetSocketAddress src)
             {
                 assertThat(statusMessage.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
-                assertThat(statusMessage.frameLength(), is(8));
+                assertThat(statusMessage.frameLength(), is(StatusMessageFlyweight.HEADER_LENGTH));
                 cntlHeadersRcved.incrementAndGet();
             }
         }, rcvLocalAddr, nioSelector);
 
         final UdpTransport src = new UdpTransport(nullHandler, srcLocalAddr, nioSelector);
 
-        encodeDataHeader.wrap(atomicBuffer, 0);
-        encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
-                        .flags((short) 0)
-                        .headerType(HeaderFlyweight.HDR_TYPE_SM)
-                        .frameLength(8);
-        buffer.position(0).limit(8);
+        statusMessage.wrap(atomicBuffer, 0);
+        statusMessage.channelId(CHANNEL_ID)
+                     .sessionId(SESSION_ID)
+                     .termId(TERM_ID)
+                     .receiverWindow(1000)
+                     .highestContiguousTermOffset(0)
+                     .version(HeaderFlyweight.CURRENT_VERSION)
+                     .flags((short) 0)
+                     .headerType(HeaderFlyweight.HDR_TYPE_SM)
+                     .frameLength(StatusMessageFlyweight.HEADER_LENGTH);
+        buffer.position(0).limit(statusMessage.frameLength());
 
         processLoop(nioSelector, 5);
         src.sendTo(buffer, srcRemoteAddr);
@@ -235,19 +241,24 @@ public class NioSelectorTest
             public void onStatusMessageFrame(final StatusMessageFlyweight statusMessage, final InetSocketAddress src)
             {
                 assertThat(statusMessage.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
-                assertThat(statusMessage.frameLength(), is(8));
+                assertThat(statusMessage.frameLength(), is(StatusMessageFlyweight.HEADER_LENGTH));
                 cntlHeadersRcved.incrementAndGet();
             }
         }, srcLocalAddr, nioSelector);
 
         final UdpTransport rcv = new UdpTransport(nullHandler, rcvLocalAddr, nioSelector);
 
-        encodeDataHeader.wrap(atomicBuffer, 0);
-        encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
-                        .flags((short) 0)
-                        .headerType(HeaderFlyweight.HDR_TYPE_SM)
-                        .frameLength(8);
-        buffer.position(0).limit(8);
+        statusMessage.wrap(atomicBuffer, 0);
+        statusMessage.channelId(CHANNEL_ID)
+                .sessionId(SESSION_ID)
+                .termId(TERM_ID)
+                .receiverWindow(1000)
+                .highestContiguousTermOffset(0)
+                .version(HeaderFlyweight.CURRENT_VERSION)
+                .flags((short) 0)
+                .headerType(HeaderFlyweight.HDR_TYPE_SM)
+                .frameLength(StatusMessageFlyweight.HEADER_LENGTH);
+        buffer.position(0).limit(statusMessage.frameLength());
 
         processLoop(nioSelector, 5);
         rcv.sendTo(buffer, rcvRemoteAddr);

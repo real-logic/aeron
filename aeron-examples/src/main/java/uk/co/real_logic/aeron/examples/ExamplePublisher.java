@@ -56,7 +56,7 @@ public class ExamplePublisher
                 buffer.putByte(0, (byte)i);
 
                 System.out.print("offering " + i);
-                final boolean result = channel.offer(buffer);
+                final boolean result = channel.offer(buffer, 0, 14);
 
                 if (false == result)
                 {

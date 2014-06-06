@@ -399,6 +399,8 @@ public class MediaConductor extends Agent
             final BufferRotator buffer =
                 bufferManagement.addSubscriberChannel(rcvDestination, sessionId, channelId);
 
+            sendNewBufferNotification(sessionId, channelId, termId, false, destination, buffer);
+
             final RcvBufferState bufferState = new RcvBufferState(rcvDestination, sessionId, channelId, termId, buffer);
             while (!receiver.sendBuffer(bufferState))
             {

@@ -24,9 +24,11 @@ import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.util.status.PositionIndicator;
 import uk.co.real_logic.aeron.util.status.PositionReporter;
 import uk.co.real_logic.aeron.util.status.StatusBufferMapper;
@@ -46,8 +48,15 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.B
  */
 public final class ClientConductor extends Agent
 {
-    // TODO: DI this
-    private static final byte[] DEFAULT_HEADER = new byte[BASE_HEADER_LENGTH + SIZE_OF_INT];
+    private static final byte[] DEFAULT_HEADER = {
+            HeaderFlyweight.CURRENT_VERSION, FrameDescriptor.UNFRAGMENTED, 0, HeaderFlyweight.HDR_TYPE_DATA,
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0
+    };
+
     private static final int MAX_FRAME_LENGTH = 1024;
     private static final int SLEEP_PERIOD_MS = 1;
 

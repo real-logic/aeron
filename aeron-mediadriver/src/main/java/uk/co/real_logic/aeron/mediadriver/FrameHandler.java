@@ -25,11 +25,7 @@ import java.net.InetSocketAddress;
 /**
  * Callback interface for various Frame types. For mediadriver, specifically, this is Data or Control.
  *
- * This interface should expand to handle various addressing models. But InetSocketAddress is exposed
- * at the moment.
- *
- * All methods have empty defaults, since not every implementation needs to handle every type of
- * frame.
+ * Subclasses must explicitly handle all cases for clarity.
  */
 public interface FrameHandler
 {
@@ -39,21 +35,7 @@ public interface FrameHandler
      * @param header of the Frame
      * @param srcAddr of the Frame
      */
-    default void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
-    {
-
-    }
-
-    /**
-     * Handle a Control Frame, such as a CONN, SM, etc.
-     *
-     * @param header of the Frame
-     * @param srcAddr of the Frame
-     */
-    default void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
-    {
-
-    }
+    void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr);
 
     /**
      * Handle a Status Message Frame
@@ -61,10 +43,7 @@ public interface FrameHandler
      * @param statusMessage of the Frame
      * @param srcAddr of the Frame
      */
-    default void onStatusMessageFrame(final StatusMessageFlyweight statusMessage, final InetSocketAddress srcAddr)
-    {
-
-    }
+    void onStatusMessageFrame(final StatusMessageFlyweight statusMessage, final InetSocketAddress srcAddr);
 
     /**
      * Handle a Nak Frame
@@ -72,8 +51,5 @@ public interface FrameHandler
      * @param nak the nak Frame
      * @param srcAddr of the Frame
      */
-    default void onNakFrame(final NakFlyweight nak, final InetSocketAddress srcAddr)
-    {
-
-    }
+    void onNakFrame(final NakFlyweight nak, final InetSocketAddress srcAddr);
 }

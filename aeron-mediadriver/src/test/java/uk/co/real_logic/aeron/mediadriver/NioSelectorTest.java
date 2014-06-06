@@ -19,6 +19,7 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.util.protocol.NakFlyweight;
 import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
 
 import java.net.InetSocketAddress;
@@ -47,7 +48,12 @@ public class NioSelectorTest
     private final InetSocketAddress srcLocalAddr = new InetSocketAddress(SRC_PORT);
     private final InetSocketAddress srcRemoteAddr = new InetSocketAddress("localhost", RCV_PORT);
 
-    private final FrameHandler nullHandler = new FrameHandler() {};
+    private final FrameHandler nullHandler = new FrameHandler()
+    {
+        public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr) {}
+        public void onStatusMessageFrame(final StatusMessageFlyweight header, final InetSocketAddress srcAddr) {}
+        public void onNakFrame(final NakFlyweight header, final InetSocketAddress srcAddr) {}
+    };
 
     @Test(timeout = 1000)
     public void shouldHandleBasicSetupAndTeardown() throws Exception
@@ -83,6 +89,8 @@ public class NioSelectorTest
                 assertThat(header.dataOffset(), is(24));
                 dataHeadersRcved.incrementAndGet();
             }
+            public void onStatusMessageFrame(final StatusMessageFlyweight header, final InetSocketAddress srcAddr) {}
+            public void onNakFrame(final NakFlyweight nak, final InetSocketAddress src) {}
         }, rcvLocalAddr, nioSelector);
 
         final UdpTransport src = new UdpTransport(nullHandler, srcLocalAddr, nioSelector);
@@ -125,12 +133,14 @@ public class NioSelectorTest
                 dataHeadersRcved.incrementAndGet();
             }
 
-            public void onStatusMessageFrame(final StatusMessageFlyweight statusMessage, final InetSocketAddress src)
+            public void onStatusMessageFrame(final StatusMessageFlyweight header, final InetSocketAddress srcAddr)
             {
-                assertThat(statusMessage.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
-                assertThat(statusMessage.frameLength(), is(StatusMessageFlyweight.HEADER_LENGTH));
+                assertThat(header.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
+                assertThat(header.frameLength(), is(StatusMessageFlyweight.HEADER_LENGTH));
                 cntlHeadersRcved.incrementAndGet();
             }
+
+            public void onNakFrame(final NakFlyweight header, final InetSocketAddress srcAddr) {}
         }, rcvLocalAddr, nioSelector);
 
         final UdpTransport src = new UdpTransport(nullHandler, srcLocalAddr, nioSelector);
@@ -183,7 +193,12 @@ public class NioSelectorTest
                 dataHeadersRcved.incrementAndGet();
             }
 
-            public void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
+            public void onNakFrame(final NakFlyweight header, final InetSocketAddress srcAddr)
+            {
+                cntlHeadersRcved.incrementAndGet();
+            }
+
+            public void onStatusMessageFrame(final StatusMessageFlyweight header, final InetSocketAddress srcAddr)
             {
                 cntlHeadersRcved.incrementAndGet();
             }
@@ -238,10 +253,15 @@ public class NioSelectorTest
                 dataHeadersRcved.incrementAndGet();
             }
 
-            public void onStatusMessageFrame(final StatusMessageFlyweight statusMessage, final InetSocketAddress src)
+            public void onStatusMessageFrame(final StatusMessageFlyweight header, final InetSocketAddress src)
             {
-                assertThat(statusMessage.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
-                assertThat(statusMessage.frameLength(), is(StatusMessageFlyweight.HEADER_LENGTH));
+                assertThat(header.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
+                assertThat(header.frameLength(), is(StatusMessageFlyweight.HEADER_LENGTH));
+                cntlHeadersRcved.incrementAndGet();
+            }
+
+            public void onNakFrame(final NakFlyweight header, final InetSocketAddress srcAddr)
+            {
                 cntlHeadersRcved.incrementAndGet();
             }
         }, srcLocalAddr, nioSelector);

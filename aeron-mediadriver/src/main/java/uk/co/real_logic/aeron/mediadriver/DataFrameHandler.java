@@ -20,6 +20,7 @@ import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.util.protocol.NakFlyweight;
 import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
 
 import java.net.InetSocketAddress;
@@ -141,9 +142,14 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         }
     }
 
-    public void onControlFrame(final HeaderFlyweight header, final InetSocketAddress srcAddr)
+    public void onStatusMessageFrame(final StatusMessageFlyweight statusMessage, final InetSocketAddress srcAddr)
     {
-        // this should be on the data channel and shouldn't include NAKs or SMs, so ignore.
+        // this should be on the data channel and shouldn't include SMs, so ignore.
+    }
+
+    public void onNakFrame(final NakFlyweight nak, final InetSocketAddress srcAddr)
+    {
+        // this should be on the data channel and shouldn't include Naks, so ignore.
     }
 
     public void attachBufferState(final RcvBufferState buffer)

@@ -16,6 +16,8 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
+import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.NakFlyweight;
 import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
 
@@ -123,6 +125,11 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
         final SenderChannel channel = findChannel(nak.sessionId(), nak.channelId());
 
         // TODO: have the sender channel, so look for the term within it
+    }
+
+    public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
+    {
+        // ignore data
     }
 
     public long currentTime()

@@ -140,7 +140,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
                 continue;
             }
 
-            // malformed, so log and break
+            // malformed, so log and break out of entire packet
             if (header.frameLength() <= FrameDescriptor.BASE_HEADER_LENGTH)
             {
                 System.err.println("received malformed frameLength (" + header.frameLength() + "), dropping");
@@ -166,7 +166,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
                     break;
 
                 default:
-                    frameHandler.onControlFrame(header, srcAddr);
+                    System.err.println("received unknown type (" + header.headerType() + "), dropping");
                     break;
             }
 

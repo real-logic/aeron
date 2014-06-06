@@ -40,7 +40,7 @@ public class Receiver extends Agent
     private final RingBuffer commandBuffer;
     private final NioSelector nioSelector;
     private final MediaConductorCursor adminThreadCursor;
-    private final Map<UdpDestination, RcvFrameHandler> rcvDestinationMap = new HashMap<>();
+    private final Map<UdpDestination, DataFrameHandler> rcvDestinationMap = new HashMap<>();
     private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
     private final Queue<RcvBufferState> buffers = new OneToOneConcurrentArrayQueue<>(1024);
     private final RcvFrameHandlerFactory frameHandlerFactory;
@@ -168,7 +168,7 @@ public class Receiver extends Agent
         return buffers.offer(buffer);
     }
 
-    public RcvFrameHandler frameHandler(final UdpDestination destination)
+    public DataFrameHandler frameHandler(final UdpDestination destination)
     {
         return rcvDestinationMap.get(destination);
     }
@@ -176,7 +176,7 @@ public class Receiver extends Agent
     private void onNewSubscriber(final String destination, final long[] channelIdList) throws Exception
     {
         final UdpDestination rcvDestination = UdpDestination.parse(destination);
-        RcvFrameHandler rcv = frameHandler(rcvDestination);
+        DataFrameHandler rcv = frameHandler(rcvDestination);
 
         if (null == rcv)
         {
@@ -190,7 +190,7 @@ public class Receiver extends Agent
     private void onRemoveSubscriber(final String destination, final long[] channelIdList)
     {
         final UdpDestination rcvDestination = UdpDestination.parse(destination);
-        RcvFrameHandler rcv = frameHandler(rcvDestination);
+        DataFrameHandler rcv = frameHandler(rcvDestination);
 
         if (null == rcv)
         {
@@ -209,7 +209,7 @@ public class Receiver extends Agent
 
     private void attachBufferState(final RcvBufferState buffer)
     {
-        RcvFrameHandler rcv = frameHandler(buffer.destination());
+        DataFrameHandler rcv = frameHandler(buffer.destination());
 
         if (null == rcv)
         {

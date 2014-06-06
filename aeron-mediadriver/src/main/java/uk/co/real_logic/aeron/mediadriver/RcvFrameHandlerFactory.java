@@ -28,9 +28,9 @@ public class RcvFrameHandlerFactory
         this.adminThreadCursor = adminThreadCursor;
     }
 
-    public RcvFrameHandler newInstance(final UdpDestination rcvDestination,
+    public DataFrameHandler newInstance(final UdpDestination rcvDestination,
                                        final AtomicArray<RcvSessionState> sessionState) throws Exception
     {
-        return new RcvFrameHandler(rcvDestination, selector, adminThreadCursor, sessionState);
+        return new DataFrameHandler(rcvDestination, selector, adminThreadCursor, sessionState);
     }
 }

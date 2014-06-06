@@ -215,7 +215,7 @@ public class UnicastReceiverTest
 
         processThreads(5);
 
-        final RcvFrameHandler frameHandler = receiver.frameHandler(destination);
+        final DataFrameHandler frameHandler = receiver.frameHandler(destination);
 
         assertNotNull(frameHandler);
         assertThat(frameHandler.channelInterestMap().size(), is(3));
@@ -237,7 +237,7 @@ public class UnicastReceiverTest
 
         processThreads(5);
 
-        final RcvFrameHandler frameHandler = receiver.frameHandler(destination);
+        final DataFrameHandler frameHandler = receiver.frameHandler(destination);
 
         assertNotNull(frameHandler);
         assertThat(frameHandler.channelInterestMap().size(), is(3));
@@ -270,7 +270,7 @@ public class UnicastReceiverTest
 
         processThreads(5);
 
-        final RcvFrameHandler frameHandler = receiver.frameHandler(destination);
+        final DataFrameHandler frameHandler = receiver.frameHandler(destination);
         assertNotNull(frameHandler);
         final RcvChannelState channelState = frameHandler.channelInterestMap().get(ONE_CHANNEL[0]);
         assertNotNull(channelState);

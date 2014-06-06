@@ -26,9 +26,9 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 /**
- * Frame processing for receivers
+ * Frame processing for data
  */
-public class RcvFrameHandler implements FrameHandler, AutoCloseable
+public class DataFrameHandler implements FrameHandler, AutoCloseable
 {
     private final UdpTransport transport;
     private final UdpDestination destination;
@@ -39,10 +39,10 @@ public class RcvFrameHandler implements FrameHandler, AutoCloseable
     private final StatusMessageFlyweight statusMessageFlyweight = new StatusMessageFlyweight();
     private final AtomicArray<RcvSessionState> sessionState;
 
-    public RcvFrameHandler(final UdpDestination destination,
-                           final NioSelector nioSelector,
-                           final MediaConductorCursor conductorCursor,
-                           final AtomicArray<RcvSessionState> sessionState)
+    public DataFrameHandler(final UdpDestination destination,
+                            final NioSelector nioSelector,
+                            final MediaConductorCursor conductorCursor,
+                            final AtomicArray<RcvSessionState> sessionState)
         throws Exception
     {
         this.sessionState = sessionState;

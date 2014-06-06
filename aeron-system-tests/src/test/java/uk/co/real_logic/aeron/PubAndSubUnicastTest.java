@@ -28,7 +28,10 @@ import static uk.co.real_logic.aeron.Subscriber.NewSourceEventHandler;
 import static uk.co.real_logic.aeron.util.CommonConfiguration.ADMIN_DIR_NAME;
 import static uk.co.real_logic.aeron.util.CommonConfiguration.DIRS_DELETE_ON_EXIT_PROP_NAME;
 
-public class UnicastTest
+/**
+ * Test that has a publisher and subscriber and single media driver for unicast cases
+ */
+public class PubAndSubUnicastTest
 {
     private static final Destination DESTINATION = new Destination("udp://localhost:54321");
     private static final long CHANNEL_ID = 1L;

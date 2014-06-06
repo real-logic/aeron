@@ -377,7 +377,7 @@ public class MediaConductor extends Agent
     {
         receiverProxy.addNewSubscriberEvent(subscriberMessage.destination(), subscriberMessage.channelIds());
 
-        // this thread does not add buffers. The RcvFrameHandler handle methods will send an event for this thread
+        // this thread does not add buffers. The DataFrameHandler handle methods will send an event for this thread
         // to create buffers as needed
     }
 

@@ -20,11 +20,13 @@ import uk.co.real_logic.aeron.Channel;
 import uk.co.real_logic.aeron.Destination;
 import uk.co.real_logic.aeron.Source;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
+import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.Executor;
+import java.nio.ByteOrder;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
@@ -39,7 +41,7 @@ public class ExamplePublisher
 
     public static void main(final String[] args)
     {
-        final Executor executor = Executors.newFixedThreadPool(4);
+        final ExecutorService executor = Executors.newFixedThreadPool(4);
         final Aeron.Context context = new Aeron.Context().errorHandler(ExamplePublisher::onError);
 
         try (final MediaDriver driver = ExampleUtil.createEmbeddedMediaDriver(executor);
@@ -47,16 +49,33 @@ public class ExamplePublisher
              final Source source = aeron.newSource(DESTINATION);
              final Channel channel = source.newChannel(CHANNEL_ID))
         {
-            // TODO: add data to buffer and get it ready to send
-            //channel.send(buffer);
-            // TODO: wait around for something...
 
-            Thread.sleep(10*1000);
+            for (int i = 0; i < 10; i++)
+            {
+                buffer.putString(BitUtil.SIZE_OF_BYTE, "Hello World!", ByteOrder.LITTLE_ENDIAN);
+                buffer.putByte(0, (byte)i);
+
+                System.out.print("offering " + i);
+                final boolean result = channel.offer(buffer);
+
+                if (false == result)
+                {
+                    System.out.println(" ah?!");
+                }
+                else
+                {
+                    System.out.println(" yay!");
+                }
+
+                Thread.sleep(1000);
+            }
         }
         catch (final Exception ex)
         {
             ex.printStackTrace();
         }
+
+        executor.shutdown();
     }
 
     public static void onError(final String destination,

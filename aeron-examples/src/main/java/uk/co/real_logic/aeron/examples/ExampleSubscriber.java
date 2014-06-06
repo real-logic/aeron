@@ -22,7 +22,7 @@ import uk.co.real_logic.aeron.mediadriver.MediaDriver;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
@@ -37,7 +37,7 @@ public class ExampleSubscriber
 
     public static void main(final String[] args)
     {
-        final Executor executor = Executors.newFixedThreadPool(6);
+        final ExecutorService executor = Executors.newFixedThreadPool(6);
         final Aeron.Context aeronContext = new Aeron.Context().errorHandler(ExampleSubscriber::onError);
         final Subscriber.Context subContext = new Subscriber.Context().destination(DESTINATION);
         final Subscriber.DataHandler messageHandler =
@@ -89,6 +89,8 @@ public class ExampleSubscriber
         {
             ex.printStackTrace();
         }
+
+        executor.shutdown();
     }
 
     public static void onError(final String destination,

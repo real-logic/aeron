@@ -15,6 +15,8 @@
  */
 package uk.co.real_logic.aeron.util;
 
+import java.util.concurrent.CountDownLatch;
+
 /**
  * Base agent that is responsible for an ongoing activity which runs in its own thread.
  */
@@ -23,6 +25,8 @@ public abstract class Agent implements Runnable, AutoCloseable
     private volatile boolean running;
 
     private final long sleepPeriod;
+
+    private CountDownLatch latch = new CountDownLatch(1);
 
     public Agent(final long sleepPeriod)
     {
@@ -46,16 +50,32 @@ public abstract class Agent implements Runnable, AutoCloseable
                 ex.printStackTrace();
             }
         }
+
+        latch.countDown();
     }
 
     public void close() throws Exception
     {
         running = false;
+        //await();
     }
 
     public void stop()
     {
         running = false;
+        //await();
+    }
+
+    public void await()
+    {
+        try
+        {
+            latch.await();
+        }
+        catch (final Exception e)
+        {
+            e.printStackTrace();
+        }
     }
 
     public abstract void process();

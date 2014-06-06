@@ -97,6 +97,7 @@ public final class ClientConductor extends Agent
 
     public void close()
     {
+        stop();
         bufferUsage.close();
         statusCounters.close();
     }

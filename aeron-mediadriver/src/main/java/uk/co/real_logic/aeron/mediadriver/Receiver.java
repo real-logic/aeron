@@ -138,11 +138,10 @@ public class Receiver extends Agent
         stop();
         wakeup();
 
-        rcvDestinationMap.forEach(
-            (destination, frameHandler) ->
-            {
-              frameHandler.close();
-            });
+        rcvDestinationMap.forEach((destination, frameHandler) ->
+        {
+          frameHandler.close();
+        });
         // TODO: if needed, use a CountdownLatch to sync...
     }
 

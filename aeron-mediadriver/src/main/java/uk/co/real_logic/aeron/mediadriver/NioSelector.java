@@ -74,7 +74,7 @@ public class NioSelector implements AutoCloseable
     }
 
     /**
-     * Explicit event loop processing as poll (Primarily for unit testing)
+     * Explicit event loop processing as poll
      */
     public void processKeys() throws Exception
     {

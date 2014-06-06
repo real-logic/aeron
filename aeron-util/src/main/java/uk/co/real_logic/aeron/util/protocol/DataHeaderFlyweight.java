@@ -56,6 +56,17 @@ public class DataHeaderFlyweight extends HeaderFlyweight
     /** Begin and End Flags */
     public static final short BEGIN_AND_END_FLAGS = (BEGIN_FLAG | END_FLAG);
 
+    /** Default header for a Data Frame (for ease of use with LogAppender) */
+    public static final byte[] DEFAULT_HEADER =
+        {
+            HeaderFlyweight.CURRENT_VERSION, 0, 0, HeaderFlyweight.HDR_TYPE_DATA,
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0
+        };
+
     private static final int TERM_OFFSET_FIELD_OFFSET = 8;
     private static final int SESSION_ID_FIELD_OFFSET = 12;
     private static final int CHANNEL_ID_FIELD_OFFSET = 16;

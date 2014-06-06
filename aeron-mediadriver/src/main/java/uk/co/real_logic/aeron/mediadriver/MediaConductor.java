@@ -306,12 +306,14 @@ public class MediaConductor extends Agent
             channel = new SenderChannel(frameHandler,
                                         senderFlowControl.get(),
                                         buffers,
-                                        srcDestination,
                                         sessionId,
                                         channelId,
                                         initialTermId,
                                         HEADER_LENGTH,
-                                        mtuLength);
+                                        mtuLength,
+                                        frameHandler::sendTo,
+                                        timerWheel::now
+                    );
 
             frameHandler.addChannel(channel);
             sendNewBufferNotification(sessionId, channelId, initialTermId, true, destination, buffers);

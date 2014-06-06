@@ -15,22 +15,31 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.util.AtomicArray;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 
-public class RcvFrameHandlerFactory
+/**
+ * Test Sender in isolation
+ */
+public class SenderTest
 {
-    private final NioSelector selector;
-    private final MediaConductorCursor adminThreadCursor;
+    private final Sender sender = new Sender();
+    private SenderChannel channel;
 
-    public RcvFrameHandlerFactory(final NioSelector selector, final MediaConductorCursor adminThreadCursor)
+    @Before
+    public void setUp()
     {
-        this.selector = selector;
-        this.adminThreadCursor = adminThreadCursor;
+        //channel = new SenderChannel();
     }
 
-    public DataFrameHandler newInstance(final UdpDestination rcvDestination,
-                                        final AtomicArray<RcvSessionState> sessionState) throws Exception
+    @Test
+    @Ignore("incomplete")
+    public void shouldAddAndRemoveSenderChannel()
     {
-        return new DataFrameHandler(rcvDestination, selector, adminThreadCursor, sessionState);
+        sender.addChannel(channel);
+        sender.removeChannel(channel);
     }
+
+
 }

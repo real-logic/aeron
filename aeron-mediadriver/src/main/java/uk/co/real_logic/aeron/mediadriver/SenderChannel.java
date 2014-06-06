@@ -24,6 +24,7 @@ import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -35,6 +36,22 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  */
 public class SenderChannel
 {
+    /*
+     * interface for changing or redirecting sending (mostly testing)
+     */
+    public interface SendFunction
+    {
+        int sendTo(final ByteBuffer buffer, final InetSocketAddress addr) throws Exception;
+    }
+
+    /*
+     * interface for changing or redirecting grabbing current time (in nanos) (mostly for testing)
+     */
+    public interface TimeFunction
+    {
+        long currentTime();
+    }
+
     /** initial heartbeat timeout (cancelled by SM) */
     public static final int INITIAL_HEARTBEAT_TIMEOUT_MS = 100;
     public static final long INITIAL_HEARTBEAT_TIMEOUT_NS = MILLISECONDS.toNanos(INITIAL_HEARTBEAT_TIMEOUT_MS);
@@ -46,7 +63,6 @@ public class SenderChannel
     private final SenderControlStrategy controlStrategy;
 
     private final BufferRotator buffers;
-    private final UdpDestination destination;
     private final long sessionId;
     private final long channelId;
 
@@ -69,31 +85,38 @@ public class SenderChannel
     private int currentIndex = 0;
     private int statusMessagesSeen = 0;
 
+    private final SendFunction sendFunction;
+    private final TimeFunction timeFunction;
+    private final InetSocketAddress destAddr;
+
     public SenderChannel(final ControlFrameHandler frameHandler,
                          final SenderControlStrategy controlStrategy,
                          final BufferRotator buffers,
-                         final UdpDestination destination,
                          final long sessionId,
                          final long channelId,
                          final long initialTermId,
                          final int headerLength,
-                         final int mtuLength)
+                         final int mtuLength,
+                         final SendFunction sendFunction,
+                         final TimeFunction timeFunction)
     {
         this.frameHandler = frameHandler;
+        this.destAddr = frameHandler.destination().remoteData();
         this.controlStrategy = controlStrategy;
         this.buffers = buffers;
-        this.destination = destination;
         this.sessionId = sessionId;
         this.channelId = channelId;
         this.headerLength = headerLength;
         this.mtuLength = mtuLength;
+        this.sendFunction = sendFunction;
+        this.timeFunction = timeFunction;
 
         scanners = buffers.buffers().map(this::newScanner).toArray(LogScanner[]::new);
         termSendBuffers = buffers.buffers().map(this::duplicateLogBuffer).toArray(ByteBuffer[]::new);
 
         currentTermId = new AtomicLong(initialTermId);
         cleanedTermId = new AtomicLong(initialTermId + 2);
-        timeOfLastSendOrHeartbeat = new AtomicLong(frameHandler.currentTime());
+        timeOfLastSendOrHeartbeat = new AtomicLong(this.timeFunction.currentTime());
     }
 
     private ByteBuffer duplicateLogBuffer(final LogBuffers log)
@@ -140,7 +163,7 @@ public class SenderChannel
 
                 try
                 {
-                    final int bytesSent = frameHandler.send(sendBuffer);
+                    final int bytesSent = sendFunction.sendTo(sendBuffer, destAddr);
                     if (dataHeader.frameLength() != bytesSent)
                     {
                         throw new IllegalStateException("could not send all of message: " + bytesSent + "/" +
@@ -148,7 +171,7 @@ public class SenderChannel
                         // TODO: error
                     }
 
-                    timeOfLastSendOrHeartbeat.lazySet(frameHandler.currentTime());
+                    timeOfLastSendOrHeartbeat.lazySet(timeFunction.currentTime());
                 }
                 catch (final Exception ex)
                 {
@@ -176,11 +199,6 @@ public class SenderChannel
     public boolean isOpen()
     {
         return frameHandler.isOpen();
-    }
-
-    public UdpDestination destination()
-    {
-        return destination;
     }
 
     public long sessionId()
@@ -230,14 +248,14 @@ public class SenderChannel
 
         try
         {
-            final int bytesSent = frameHandler.send(scratchSendBuffer);
+            final int bytesSent = sendFunction.sendTo(scratchSendBuffer, destAddr);
             if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
             {
                 // TODO: log or count error
                 System.out.println("Error sending heartbeat packet");
             }
 
-            timeOfLastSendOrHeartbeat.lazySet(frameHandler.currentTime());
+            timeOfLastSendOrHeartbeat.lazySet(timeFunction.currentTime());
         }
         catch (final Exception ex)
         {
@@ -251,14 +269,14 @@ public class SenderChannel
         // TODO: now should be cached in TimerWheel to avoid too many calls
         if (statusMessagesSeen > 0)
         {
-            if ((frameHandler.currentTime() - timeOfLastSendOrHeartbeat.get()) > HEARTBEAT_TIMEOUT_NS)
+            if ((timeFunction.currentTime() - timeOfLastSendOrHeartbeat.get()) > HEARTBEAT_TIMEOUT_NS)
             {
                 sendHeartbeat();
             }
         }
         else
         {
-            if ((frameHandler.currentTime() - timeOfLastSendOrHeartbeat.get()) > INITIAL_HEARTBEAT_TIMEOUT_NS)
+            if ((timeFunction.currentTime() - timeOfLastSendOrHeartbeat.get()) > INITIAL_HEARTBEAT_TIMEOUT_NS)
             {
                 sendHeartbeat();
             }

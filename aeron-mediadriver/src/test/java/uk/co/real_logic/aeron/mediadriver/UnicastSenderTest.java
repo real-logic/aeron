@@ -60,16 +60,6 @@ import static uk.co.real_logic.aeron.util.protocol.HeaderFlyweight.HDR_TYPE_DATA
 
 public class UnicastSenderTest
 {
-    //private static final byte[] DEFAULT_HEADER = new byte[BASE_HEADER_LENGTH + SIZE_OF_INT];
-    private static final byte[] DEFAULT_HEADER = {
-            HeaderFlyweight.CURRENT_VERSION, FrameDescriptor.UNFRAGMENTED, 0, HeaderFlyweight.HDR_TYPE_DATA,
-            0, 0, 0, 0,
-            0, 0, 0, 0,
-            0, 0, 0, 3,
-            0, 0, 0, 2,
-            0, 0, 0, 0
-    };
-
     private static final int MAX_FRAME_LENGTH = 1024;
 
     private static final String HOST = "localhost";
@@ -558,7 +548,8 @@ public class UnicastSenderTest
         final List<SharedDirectoriesExternalResource.Buffers> buffers
             = directory.mapTermFile(directory.senderDir(), destination, sessionId, channelId);
 
-        return SharedDirectoriesExternalResource.mapLoggers(buffers, DEFAULT_HEADER, MAX_FRAME_LENGTH);
+        return SharedDirectoriesExternalResource.mapLoggers(buffers, DataHeaderFlyweight.DEFAULT_HEADER,
+            MAX_FRAME_LENGTH);
     }
 
     private InetSocketAddress determineControlAddressToSendTo() throws Exception

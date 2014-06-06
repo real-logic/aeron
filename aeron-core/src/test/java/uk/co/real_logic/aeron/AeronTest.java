@@ -31,6 +31,7 @@ import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
@@ -62,16 +63,6 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUt
 
 public class AeronTest
 {
-    private static final byte[] DEFAULT_HEADER =
-    {
-        HeaderFlyweight.CURRENT_VERSION, FrameDescriptor.UNFRAGMENTED, 0, HeaderFlyweight.HDR_TYPE_DATA,
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-        0, 0, 0, 3,
-        0, 0, 0, 2,
-        0, 0, 0, 0
-    };
-
     private static final int MAX_FRAME_LENGTH = 1024;
 
     private static final String DESTINATION = "udp://localhost:40124";
@@ -431,7 +422,7 @@ public class AeronTest
 
     private List<LogAppender> createLogAppenders(final List<Buffers> termBuffers)
     {
-        return mapLoggers(termBuffers, DEFAULT_HEADER, MAX_FRAME_LENGTH);
+        return mapLoggers(termBuffers, DataHeaderFlyweight.DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }
 
     @Test
@@ -524,7 +515,7 @@ public class AeronTest
 
     private void writePackets(final LogAppender logAppender, final int events)
     {
-        final int bytesToSend = atomicSendBuffer.capacity() - DEFAULT_HEADER.length;
+        final int bytesToSend = atomicSendBuffer.capacity() - DataHeaderFlyweight.DEFAULT_HEADER.length;
         IntStream.range(0, events).forEach(
             (i) ->
             {

@@ -28,6 +28,7 @@ import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.util.status.PositionIndicator;
 import uk.co.real_logic.aeron.util.status.PositionReporter;
@@ -48,15 +49,6 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.B
  */
 public final class ClientConductor extends Agent
 {
-    private static final byte[] DEFAULT_HEADER = {
-            HeaderFlyweight.CURRENT_VERSION, FrameDescriptor.UNFRAGMENTED, 0, HeaderFlyweight.HDR_TYPE_DATA,
-            0, 0, 0, 0,
-            0, 0, 0, 0,
-            0, 0, 0, 0,
-            0, 0, 0, 0,
-            0, 0, 0, 0
-    };
-
     private static final int MAX_FRAME_LENGTH = 1024;
     private static final int SLEEP_PERIOD_MS = 1;
 
@@ -338,7 +330,7 @@ public final class ClientConductor extends Agent
         final AtomicBuffer logBuffer = bufferUsage.newBuffer(bufferNotificationMessage, index);
         final AtomicBuffer stateBuffer = bufferUsage.newBuffer(bufferNotificationMessage, index + BUFFER_COUNT);
 
-        return new LogAppender(logBuffer, stateBuffer, DEFAULT_HEADER, MAX_FRAME_LENGTH);
+        return new LogAppender(logBuffer, stateBuffer, DataHeaderFlyweight.DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }
 
     private LogReader newReader(final int index) throws IOException

@@ -48,14 +48,14 @@ public class RetransmitHandlerTest
     private static final int STATE_BUFFER_SIZE = STATE_BUFFER_LENGTH;
     private static final byte[] DATA = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
     private static final int MESSAGE_LENGTH = DataHeaderFlyweight.HEADER_LENGTH + DATA.length;
-    private static final byte[] HEADER = {HeaderFlyweight.CURRENT_VERSION,
-                                          FrameDescriptor.UNFRAGMENTED,
-                                          0, HeaderFlyweight.HDR_TYPE_DATA,
-                                          0, 0, 0, 0,
-                                          0, 0, 0, 0,
-                                          0x5E, 0x55, 0x10, 0x1D,
-                                          0x00, 0x05, 0x40, 0x0E,
-                                          0x7F, 0x00, 0x33, 0x55};
+//    private static final byte[] HEADER = {HeaderFlyweight.CURRENT_VERSION,
+//                                          FrameDescriptor.UNFRAGMENTED,
+//                                          0, HeaderFlyweight.HDR_TYPE_DATA,
+//                                          0, 0, 0, 0,
+//                                          0, 0, 0, 0,
+//                                          0x5E, 0x55, 0x10, 0x1D,
+//                                          0x00, 0x05, 0x40, 0x0E,
+//                                          0x7F, 0x00, 0x33, 0x55};
     private static final long SESSION_ID = 0x5E55101DL;
     private static final long CHANNEL_ID = 0x5400EL;
     private static final long TERM_ID = 0x7F003355L;
@@ -68,7 +68,8 @@ public class RetransmitHandlerTest
     private final AtomicBuffer stateBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(STATE_BUFFER_SIZE));
     private final LogReader logReader = new LogReader(logBuffer, stateBuffer);
 
-    private final LogAppender logAppender = new LogAppender(logBuffer, stateBuffer, HEADER, 1024);
+    private final LogAppender logAppender = new LogAppender(logBuffer, stateBuffer, DataHeaderFlyweight.DEFAULT_HEADER,
+        1024);
     private final LogRebuilder logRebuilder = new LogRebuilder(logBuffer, stateBuffer);
 
     private final AtomicBuffer rcvBuffer = new AtomicBuffer(new byte[MESSAGE_LENGTH]);

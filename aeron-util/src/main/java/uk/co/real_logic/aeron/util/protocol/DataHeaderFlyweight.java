@@ -59,7 +59,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
     /** Default header for a Data Frame (for ease of use with LogAppender) */
     public static final byte[] DEFAULT_HEADER =
         {
-            HeaderFlyweight.CURRENT_VERSION, 0, 0, HeaderFlyweight.HDR_TYPE_DATA,
+            HeaderFlyweight.CURRENT_VERSION, 0, HeaderFlyweight.HDR_TYPE_DATA, 0,
             0, 0, 0, 0,
             0, 0, 0, 0,
             0, 0, 0, 0,

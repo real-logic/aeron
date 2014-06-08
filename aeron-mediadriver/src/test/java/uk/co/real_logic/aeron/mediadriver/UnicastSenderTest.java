@@ -263,6 +263,7 @@ public class UnicastSenderTest
     }
 
     @Test(timeout = 1000)
+    @Ignore("moved to SenderTest")
     public void shouldBeAbleToSendOnChannel() throws Exception
     {
         successfullyAddChannel();
@@ -280,6 +281,7 @@ public class UnicastSenderTest
     }
 
     @Test(timeout = 1000)
+    @Ignore("moved to SenderTest")
     public void shouldNotSend0LengthDataFrameAfterReceivingStatusMessage() throws Exception
     {
         successfullyAddChannel();
@@ -341,6 +343,7 @@ public class UnicastSenderTest
     }
 
     @Test(timeout = 1000)
+    @Ignore("moved to SenderTest")
     public void shouldSend0LengthDataOnChannelWhenTimeoutWithoutStatusMessage() throws Exception
     {
         successfullyAddChannel();

@@ -118,6 +118,16 @@ public class LogAppender
     }
 
     /**
+     * The length of the default header that will be put into the log.
+     *
+     * @return the length of the default header that will be put in the log.
+     */
+    public int defaultHeaderLength()
+    {
+        return headerLength;
+    }
+
+    /**
      * Get the current value of the tail counter for the log.
      *
      * @return the current value of the tail counter for the log.

@@ -29,7 +29,7 @@ import java.util.stream.Stream;
 /**
  * Buffer utility functions
  */
-public class BufferUtils
+public class BufferAndFrameUtils
 {
     public static LogAppender[] createLogAppenders(final BufferRotator rotator, final int maxFrameLength)
     {
@@ -73,14 +73,17 @@ public class BufferUtils
     {
         return new LogBuffers()
         {
+            private final AtomicBuffer logBuffer = new AtomicBuffer((ByteBuffer.allocate((int)logBufferSize)));
+            private final AtomicBuffer stateBuffer = new AtomicBuffer((ByteBuffer.allocate((int)stateBufferSize)));
+
             public AtomicBuffer logBuffer()
             {
-                return new AtomicBuffer(ByteBuffer.allocate((int) logBufferSize));
+                return logBuffer;
             }
 
             public AtomicBuffer stateBuffer()
             {
-                return new AtomicBuffer(ByteBuffer.allocate((int)stateBufferSize));
+                return stateBuffer;
             }
 
             public void close() throws Exception

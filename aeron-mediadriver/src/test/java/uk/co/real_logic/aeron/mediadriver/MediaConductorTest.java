@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import org.hamcrest.core.Is;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -22,6 +23,7 @@ import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
 import uk.co.real_logic.aeron.util.ConductorShmBuffers;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
+import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
@@ -30,16 +32,16 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.NEW_SEND_BUFFER_NOTIFICATION;
 
 /**
  * Test the Media Driver Conductor in isolation
@@ -58,13 +60,14 @@ public class MediaConductorTest
 
     private final BufferManagement mockBufferManagement = mock(BufferManagement.class);
 
-    final RingBuffer adminCommands = new ManyToOneRingBuffer(new AtomicBuffer(toDriverBuffer));
+    final RingBuffer conductorCommands = new ManyToOneRingBuffer(new AtomicBuffer(toDriverBuffer));
     final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
+    final RingBuffer conductorNotifications = new ManyToOneRingBuffer(new AtomicBuffer(toClientBuffer));
+    private final NewBufferMessageFlyweight bufferMessage = new NewBufferMessageFlyweight();
 
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(256));
 
     private MediaConductor mediaConductor;
-
     private Sender sender;
     private Receiver receiver;
 
@@ -108,6 +111,19 @@ public class MediaConductorTest
         assertNotNull(sender.channels().get(0));
         assertThat(sender.channels().get(0).channelId(), is(1L));
         assertThat(sender.channels().get(0).sessionId(), is(2L));
+
+        final int msgs = conductorNotifications.read(
+            (msgTypeId, buffer, index, length) ->
+            {
+                assertThat(msgTypeId, is(ControlProtocolEvents.NEW_SEND_BUFFER_NOTIFICATION));
+
+                bufferMessage.wrap(buffer, index);
+
+                assertThat(bufferMessage.sessionId(), is(2L));
+                assertThat(bufferMessage.channelId(), is(1L));
+                assertThat(bufferMessage.destination(), is(DESTINATION_URI + 4000));
+            });
+        assertThat(msgs, is(1));
     }
 
     @Test
@@ -133,6 +149,7 @@ public class MediaConductorTest
         mediaConductor.process();
 
         assertThat(sender.channels().length(), is(0));
+        assertNull(mediaConductor.frameHandler(UdpDestination.parse(DESTINATION_URI + 4005)));
     }
 
     @Test
@@ -161,6 +178,6 @@ public class MediaConductorTest
         channelMessage.sessionId(sessionId);
         channelMessage.destination(DESTINATION_URI + port);
 
-        adminCommands.write(msgTypeId, writeBuffer, 0, channelMessage.length());
+        conductorCommands.write(msgTypeId, writeBuffer, 0, channelMessage.length());
     }
 }

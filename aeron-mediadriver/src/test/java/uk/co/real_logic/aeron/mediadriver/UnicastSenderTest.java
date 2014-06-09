@@ -138,6 +138,7 @@ public class UnicastSenderTest
     }
 
     @Test(timeout = 1000)
+    @Ignore("moved to MediaConductorTest")
     public void shouldBeAbleToAddChannel() throws Exception
     {
         successfullyAddChannel();
@@ -157,6 +158,7 @@ public class UnicastSenderTest
     }
 
     @Test(timeout = 1000)
+    @Ignore("moved to MediaConductorTest")
     public void shouldBeAbleToRemoveChannel() throws Exception
     {
         successfullyAddChannel();

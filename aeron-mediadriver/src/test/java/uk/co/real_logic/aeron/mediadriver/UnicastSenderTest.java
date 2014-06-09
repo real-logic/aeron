@@ -298,7 +298,7 @@ public class UnicastSenderTest
     }
 
     @Test(timeout = 1000)
-    @Ignore
+    @Ignore("moved to SenderTest")
     public void shouldNotSendUntilStatusMessageReceived() throws Exception
     {
         successfullyAddChannel();
@@ -319,7 +319,7 @@ public class UnicastSenderTest
     }
 
     @Test(timeout = 1000)
-    @Ignore("LogScanner not handling maxLength properly with usage in SenderChannel")
+    @Ignore("moved to SenderTest")
     public void shouldNotBeAbleToSendAfterUsingUpYourWindow() throws Exception
     {
         successfullyAddChannel();
@@ -363,6 +363,7 @@ public class UnicastSenderTest
     }
 
     @Test(timeout = 100000)
+    @Ignore("moved to SenderTest")
     public void shouldSendHeartbeatWhenIdle() throws Exception
     {
         successfullyAddChannel();
@@ -391,7 +392,7 @@ public class UnicastSenderTest
     }
 
     @Test(timeout = 1000)
-    @Ignore
+    @Ignore("moved to SenderTest")
     public void shouldSendMultipleHeartbeatsCorrectly() throws Exception
     {
     }

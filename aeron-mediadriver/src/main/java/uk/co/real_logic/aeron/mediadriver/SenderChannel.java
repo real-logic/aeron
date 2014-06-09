@@ -19,6 +19,7 @@ import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
 import uk.co.real_logic.aeron.mediadriver.buffer.LogBuffers;
 import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogScanner;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
@@ -29,6 +30,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static uk.co.real_logic.aeron.util.BitUtil.align;
 
 /**
  * Encapsulates the information associated with a channel
@@ -84,6 +86,7 @@ public class SenderChannel
 
     private int currentIndex = 0;
     private int statusMessagesSeen = 0;
+    private long nextOffset = 0;
 
     private final SendFunction sendFunction;
     private final TimeFunction timeFunction;
@@ -134,13 +137,11 @@ public class SenderChannel
 
     public void send()
     {
-        // TODO: blocking due to flow control
         // read from term buffer
         try
         {
-            final int frameSequenceNumber = 0;  // TODO: grab this from peeking at the frame
             final int rightEdge = activeFlowControlState.rightEdgeOfWindowVolatile();
-            final int availableBuffer = rightEdge - frameSequenceNumber;
+            final int availableBuffer = rightEdge - (int)nextOffset;
             final int maxLength = Math.min(availableBuffer, mtuLength);
 
             final LogScanner.AvailabilityHandler handler = (offset, length) ->
@@ -151,8 +152,7 @@ public class SenderChannel
 
                 dataHeader.wrap(sendBuffer, offset);
 //                System.out.println("send " + length + "@" + offset + " " +
-//                        dataHeader.frameLength() + "@" + dataHeader.termOffset() + " " +
-//                        dataHeader.headerType());
+//                        dataHeader.frameLength() + "@" + dataHeader.termOffset());
 
                 dataHeader.sessionId(sessionId)
                           .channelId(channelId)
@@ -172,6 +172,9 @@ public class SenderChannel
                     }
 
                     timeOfLastSendOrHeartbeat.lazySet(timeFunction.currentTime());
+
+                    nextOffset = align((int)(dataHeader.termOffset() + dataHeader.frameLength()),
+                            FrameDescriptor.FRAME_ALIGNMENT);
                 }
                 catch (final Exception ex)
                 {
@@ -237,7 +240,7 @@ public class SenderChannel
         dataHeader.sessionId(sessionId)
                   .channelId(channelId)
                   .termId(currentTermId.get())
-                  .termOffset(0)
+                  .termOffset(nextOffset)
                   .frameLength(DataHeaderFlyweight.HEADER_LENGTH)
                   .headerType(HeaderFlyweight.HDR_TYPE_DATA)
                   .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)

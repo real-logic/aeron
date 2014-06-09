@@ -25,7 +25,7 @@ import static org.mockito.Mockito.verify;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.COMMAND_BUFFER_SZ;
 
 /**
- * .
+ * Test Receiver in isolation
  */
 public class ReceiverTest
 {

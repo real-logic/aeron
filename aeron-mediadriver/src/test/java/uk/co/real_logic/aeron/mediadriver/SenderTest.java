@@ -232,7 +232,7 @@ public class SenderTest
     }
 
     @Test
-    @Ignore("Does not work currently. Have to account for LogScanner returning padding between frames")
+    @Ignore("Does not work currently. SenderChannel needs to use gather sends. DatagramChannel.write(ByteBuffer[])")
     public void shouldBeAbleToSendOnChannelTwiceAsBatch()
     {
         channel.onStatusMessage(INITIAL_TERM_ID, 0, (2 * align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT)));

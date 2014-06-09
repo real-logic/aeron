@@ -21,13 +21,15 @@ import org.junit.Ignore;
 import org.junit.Test;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
 import uk.co.real_logic.aeron.util.ConductorShmBuffers;
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
 
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 
+import static org.junit.Assert.assertTrue;
 import static uk.co.real_logic.aeron.util.CommonConfiguration.ADMIN_DIR_NAME;
 import static uk.co.real_logic.aeron.util.CommonConfiguration.DIRS_DELETE_ON_EXIT_PROP_NAME;
 
@@ -41,6 +43,9 @@ public class PubUnicastTest
     private static final Destination DESTINATION = new Destination("udp://" + HOST + ":" + PORT);
     private static final long CHANNEL_ID = 1L;
     private static final long SESSION_ID = 2L;
+    private static final byte[] PAYLOAD = "Payload goes here!".getBytes();
+
+    private final AtomicBuffer payload = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
 
     private Aeron producingClient;
     private MediaDriver driver;
@@ -69,6 +74,8 @@ public class PubUnicastTest
                 .sessionId(SESSION_ID));
 
         channel = source.newChannel(CHANNEL_ID);
+
+        payload.putBytes(0, PAYLOAD);
     }
 
     private Aeron.Context newAeronContext()
@@ -107,10 +114,19 @@ public class PubUnicastTest
         process(3);
     }
 
+    // TODO: get rid of these tests. Think they are redundant with good tests for media driver and client
+    // instead rely on PubAndSubUnicastTest for systems integration once we have broadcast buffer in
+
     @Test
     @Ignore("isn't finished yet")
     public void shouldSendCorrectDataFrames() throws Exception
     {
+        // let buffers get connected
+        process(1);
+
+        assertTrue(channel.offer(payload, 0, PAYLOAD.length));
+
+        process(1);
         // TODO: process to get buffers setup from setUp()
         // TODO: assert receiving a correct 0 length data frame on senderChannel
         // TODO: send SM to get client to send

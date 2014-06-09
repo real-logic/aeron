@@ -19,8 +19,8 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.MessageHandler;
 
 import static uk.co.real_logic.aeron.util.BitUtil.align;
-import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.*;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RecordDescriptor.*;
+import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.*;
 
 /**
  * A ring-buffer that supports the exchange of messages from many producers to a single consumer.

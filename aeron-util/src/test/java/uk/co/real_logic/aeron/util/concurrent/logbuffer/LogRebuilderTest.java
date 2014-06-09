@@ -25,12 +25,10 @@ import java.nio.ByteBuffer;
 import static java.lang.Integer.valueOf;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.*;
 
 public class LogRebuilderTest
 {

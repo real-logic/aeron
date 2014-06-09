@@ -19,10 +19,7 @@ package uk.co.real_logic.aeron.util.collections;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 import static java.lang.Long.valueOf;
 import static org.hamcrest.core.Is.is;

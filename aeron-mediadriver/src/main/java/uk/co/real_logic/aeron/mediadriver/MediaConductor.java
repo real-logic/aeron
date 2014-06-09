@@ -123,9 +123,9 @@ public class MediaConductor extends Agent
     private void processCommandBuffer()
     {
         commandBuffer.read(
-            (eventTypeId, buffer, index, length) ->
+            (msgTypeId, buffer, index, length) ->
             {
-                switch (eventTypeId)
+                switch (msgTypeId)
                 {
                     case CREATE_TERM_BUFFER:
                         qualifiedMessage.wrap(buffer, index);
@@ -139,7 +139,7 @@ public class MediaConductor extends Agent
 
                     case ERROR_RESPONSE:
                         errorHeader.wrap(buffer, index);
-                        toClientBuffer.write(eventTypeId, buffer, index, length);
+                        toClientBuffer.write(msgTypeId, buffer, index, length);
                         break;
                 }
             });
@@ -148,13 +148,13 @@ public class MediaConductor extends Agent
     private void processReceiveBuffer()
     {
         toMediaBuffer.read(
-            (eventTypeId, buffer, index, length) ->
+            (msgTypeId, buffer, index, length) ->
             {
                 Flyweight flyweight = channelMessage;
 
                 try
                 {
-                    switch (eventTypeId)
+                    switch (msgTypeId)
                     {
                         case ADD_CHANNEL:
                             channelMessage.wrap(buffer, index);
@@ -263,9 +263,9 @@ public class MediaConductor extends Agent
         buffers.bufferInformation(newBufferMessage);
         newBufferMessage.destination(destination);
 
-        final int eventTypeId = isSender ? NEW_SEND_BUFFER_NOTIFICATION : NEW_RECEIVE_BUFFER_NOTIFICATION;
+        final int msgTypeId = isSender ? NEW_SEND_BUFFER_NOTIFICATION : NEW_RECEIVE_BUFFER_NOTIFICATION;
 
-        if (!toClientBuffer.write(eventTypeId, msgBuffer, 0, newBufferMessage.length()))
+        if (!toClientBuffer.write(msgTypeId, msgBuffer, 0, newBufferMessage.length()))
         {
             System.err.println("Error occurred writing new buffer notification");
         }

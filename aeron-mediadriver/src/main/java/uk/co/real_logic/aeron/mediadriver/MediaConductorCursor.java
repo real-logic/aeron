@@ -90,9 +90,9 @@ public class MediaConductorCursor
         write(ERROR_RESPONSE, errorHeader.frameLength());
     }
 
-    private void write(final int eventTypeId, final int length)
+    private void write(final int msgTypeId, final int length)
     {
-        commandBuffer.write(eventTypeId, writeBuffer, 0, length);
+        commandBuffer.write(msgTypeId, writeBuffer, 0, length);
         selector.wakeup();
     }
 

@@ -27,10 +27,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.util.BitUtil.align;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.PADDING_FRAME_TYPE;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.TAIL_COUNTER_OFFSET;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.util.protocol.HeaderFlyweight.HDR_TYPE_DATA;
 
 public class LogReaderTest

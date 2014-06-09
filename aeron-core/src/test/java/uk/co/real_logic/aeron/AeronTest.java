@@ -15,25 +15,16 @@
  */
 package uk.co.real_logic.aeron;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.*;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
 import uk.co.real_logic.aeron.util.*;
-import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.*;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.MessageHandler;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.aeron.util.concurrent.ringbuffer.*;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
-import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.io.File;
 import java.io.IOException;
@@ -58,7 +49,7 @@ import static uk.co.real_logic.aeron.util.SharedDirectoriesExternalResource.mapL
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight.PAYLOAD_BUFFER_COUNT;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.LOG_MIN_SIZE;
-import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertEventRead;
+import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertMsgRead;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.skip;
 
 public class AeronTest
@@ -199,8 +190,8 @@ public class AeronTest
 
     private void assertCleanTermRequested(final RingBuffer toMediaDriver)
     {
-        assertEventRead(toMediaDriver,
-                        (eventTypeId, buffer, index, length) -> assertThat(eventTypeId, is(REQUEST_CLEANED_TERM)));
+        assertMsgRead(toMediaDriver,
+                      (msgTypeId, buffer, index, length) -> assertThat(msgTypeId, is(REQUEST_CLEANED_TERM)));
     }
 
     @Test
@@ -276,7 +267,7 @@ public class AeronTest
 
         aeron.conductor().process();
 
-        assertEventRead(toMediaDriver(), assertSubscriberMessageOfType(ADD_SUBSCRIBER));
+        assertMsgRead(toMediaDriver(), assertSubscriberMessageOfType(ADD_SUBSCRIBER));
 
         assertThat(subscriber.read(), is(0));
     }
@@ -294,7 +285,7 @@ public class AeronTest
         subscriber.close();
         aeron.conductor().process();
 
-        assertEventRead(toMediaDriver, assertSubscriberMessageOfType(REMOVE_SUBSCRIBER));
+        assertMsgRead(toMediaDriver, assertSubscriberMessageOfType(REMOVE_SUBSCRIBER));
     }
 
     @Test
@@ -534,18 +525,18 @@ public class AeronTest
     }
 
     private List<Buffers> createTermBuffer(final long termId,
-                                           final int eventTypeId,
+                                           final int msgTypeId,
                                            final File rootDir,
                                            final long sessionId) throws IOException
     {
         final List<Buffers> buffers = directory.createTermFile(rootDir, DESTINATION, sessionId, CHANNEL_ID);
-        sendNewBufferNotification(rootDir, eventTypeId, termId, sessionId);
+        sendNewBufferNotification(rootDir, msgTypeId, termId, sessionId);
 
         return buffers;
     }
 
     private void sendNewBufferNotification(final File rootDir,
-                                           final int eventTypeId,
+                                           final int msgTypeId,
                                            final long termId,
                                            final long sessionId)
     {
@@ -565,7 +556,7 @@ public class AeronTest
         addBufferLocation(rootDir, termId, sessionId, STATE, BUFFER_COUNT);
         newBufferMessage.destination(DESTINATION);
 
-        assertTrue(apiBuffer.write(eventTypeId, atomicSendBuffer, 0, newBufferMessage.length()));
+        assertTrue(apiBuffer.write(msgTypeId, atomicSendBuffer, 0, newBufferMessage.length()));
     }
 
     private void addBufferLocation(final File dir,
@@ -603,11 +594,11 @@ public class AeronTest
         return aeron.newSubscriber(context);
     }
 
-    private MessageHandler assertSubscriberMessageOfType(final int expectedEventTypeId)
+    private MessageHandler assertSubscriberMessageOfType(final int expectedMsgTypeId)
     {
-        return (eventTypeId, buffer, index, length) ->
+        return (msgTypeId, buffer, index, length) ->
         {
-            assertThat(eventTypeId, is(expectedEventTypeId));
+            assertThat(msgTypeId, is(expectedMsgTypeId));
 
             subscriberMessage.wrap(buffer, index);
             assertThat(subscriberMessage.channelIds(), is(CHANNEL_IDs));
@@ -641,9 +632,9 @@ public class AeronTest
 
     private void assertChannelMessage(final RingBuffer mediaDriverBuffer, final int expectedEventTypeId)
     {
-        assertEventRead(mediaDriverBuffer, (eventTypeId, buffer, index, length) ->
+        assertMsgRead(mediaDriverBuffer, (msgTypeId, buffer, index, length) ->
         {
-            assertThat(eventTypeId, is(expectedEventTypeId));
+            assertThat(msgTypeId, is(expectedEventTypeId));
 
             channelMessage.wrap(buffer, index);
             assertThat(channelMessage.destination(), is(DESTINATION));

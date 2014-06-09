@@ -17,8 +17,8 @@ package uk.co.real_logic.aeron.util;
 
 import org.junit.rules.ExternalResource;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
 
 import java.io.File;
 import java.io.IOException;

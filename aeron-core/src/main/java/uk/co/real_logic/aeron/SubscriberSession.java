@@ -26,7 +26,6 @@ import static uk.co.real_logic.aeron.Subscriber.MessageFlags.NONE;
 import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.CLEAN_WINDOW;
 import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.rotateId;
 import static uk.co.real_logic.aeron.util.ChannelCounters.UNKNOWN_TERM_ID;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.BASE_HEADER_LENGTH;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.WORD_ALIGNMENT;
 
 /**

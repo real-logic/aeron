@@ -26,8 +26,8 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.BitUtil.align;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.*;
 
 public class LogAppenderTest
 {

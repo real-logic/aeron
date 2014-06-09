@@ -23,25 +23,20 @@ import static org.junit.Assert.assertThat;
 
 public class RingBufferTestUtil
 {
-
-    public static void assertEventRead(final RingBuffer ringBuffer, final MessageHandler handler)
+    public static void assertMsgRead(final RingBuffer ringBuffer, final MessageHandler handler)
     {
-        int eventsRead = ringBuffer.read(handler);
-        assertThat(eventsRead, is(greaterThanOrEqualTo(1)));
+        final int messages = ringBuffer.read(handler);
+        assertThat(messages, is(greaterThanOrEqualTo(1)));
     }
 
     public static void skip(final RingBuffer ringBuffer, int count)
     {
-        ringBuffer.read((eventTypeId, buffer, index, length) ->
-        {
-        }, count);
+        ringBuffer.read((msgTypeId, buffer, index, length) -> {}, count);
     }
 
     public static void assertNoMessages(final RingBuffer ringBuffer)
     {
-        int events = ringBuffer.read((eventTypeId, buffer, index, length) ->
-        {
-        });
-        assertThat(events, is(0));
+        final int messages = ringBuffer.read((msgTypeId, buffer, index, length) -> {});
+        assertThat(messages, is(0));
     }
 }

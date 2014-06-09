@@ -17,20 +17,14 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import org.junit.*;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
-import uk.co.real_logic.aeron.util.ConductorBuffersExternalResource;
-import uk.co.real_logic.aeron.util.SharedDirectoriesExternalResource;
-import uk.co.real_logic.aeron.util.TimerWheel;
+import uk.co.real_logic.aeron.util.*;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.MessageHandler;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
-import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
-import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
-import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
+import uk.co.real_logic.aeron.util.protocol.*;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -55,7 +49,7 @@ import static uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement.newMapp
 import static uk.co.real_logic.aeron.util.ErrorCode.*;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
-import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertEventRead;
+import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertMsgRead;
 import static uk.co.real_logic.aeron.util.protocol.HeaderFlyweight.HDR_TYPE_DATA;
 
 public class UnicastSenderTest
@@ -148,9 +142,9 @@ public class UnicastSenderTest
     {
         successfullyAddChannel();
 
-        assertEventRead(buffers.toClient(), (eventTypeId, buffer, index, length) ->
+        assertMsgRead(buffers.toClient(), (msgTypeId, buffer, index, length) ->
         {
-            assertThat(eventTypeId, is(NEW_SEND_BUFFER_NOTIFICATION));
+            assertThat(msgTypeId, is(NEW_SEND_BUFFER_NOTIFICATION));
 
             bufferMessage.wrap(buffer, index);
 
@@ -179,9 +173,9 @@ public class UnicastSenderTest
     {
         successfullyAddChannel();
 
-        assertEventRead(buffers.toClient(), (eventTypeId, buffer, index, length) ->
+        assertMsgRead(buffers.toClient(), (msgTypeId, buffer, index, length) ->
         {
-            assertThat(eventTypeId, is(NEW_SEND_BUFFER_NOTIFICATION));
+            assertThat(msgTypeId, is(NEW_SEND_BUFFER_NOTIFICATION));
 
             bufferMessage.wrap(buffer, index);
             assertThat(bufferMessage.sessionId(), is(SESSION_ID));
@@ -195,9 +189,9 @@ public class UnicastSenderTest
 
         processThreads(5);
 
-        assertEventRead(buffers.toClient(), (eventTypeId, buffer, index, length) ->
+        assertMsgRead(buffers.toClient(), (msgTypeId, buffer, index, length) ->
         {
-            assertThat(eventTypeId, is(ERROR_RESPONSE));
+            assertThat(msgTypeId, is(ERROR_RESPONSE));
 
             error.wrap(buffer, index);
             assertThat(error.errorCode(), is(CHANNEL_ALREADY_EXISTS));
@@ -215,9 +209,9 @@ public class UnicastSenderTest
 
         processThreads(5);
 
-        assertEventRead(buffers.toClient(), (eventTypeId, buffer, index, length) ->
+        assertMsgRead(buffers.toClient(), (msgTypeId, buffer, index, length) ->
         {
-            assertThat(eventTypeId, is(ERROR_RESPONSE));
+            assertThat(msgTypeId, is(ERROR_RESPONSE));
 
             error.wrap(buffer, index);
             assertThat(error.errorCode(), is(INVALID_DESTINATION));
@@ -233,9 +227,9 @@ public class UnicastSenderTest
     {
         successfullyAddChannel();
 
-        assertEventRead(buffers.toClient(), (eventTypeId, buffer, index, length) ->
+        assertMsgRead(buffers.toClient(), (msgTypeId, buffer, index, length) ->
         {
-            assertThat(eventTypeId, is(NEW_SEND_BUFFER_NOTIFICATION));
+            assertThat(msgTypeId, is(NEW_SEND_BUFFER_NOTIFICATION));
 
             bufferMessage.wrap(buffer, index);
             assertThat(bufferMessage.sessionId(), is(SESSION_ID));
@@ -249,9 +243,9 @@ public class UnicastSenderTest
 
         processThreads(5);
 
-        assertEventRead(buffers.toClient(), (eventTypeId, buffer, index, length) ->
+        assertMsgRead(buffers.toClient(), (msgTypeId, buffer, index, length) ->
         {
-            assertThat(eventTypeId, is(ERROR_RESPONSE));
+            assertThat(msgTypeId, is(ERROR_RESPONSE));
 
             error.wrap(buffer, index);
             assertThat(error.errorCode(), is(CHANNEL_UNKNOWN));
@@ -348,9 +342,9 @@ public class UnicastSenderTest
     {
         successfullyAddChannel();
 
-        assertEventRead(buffers.toClient(),
-                        (eventTypeId, buffer, index, length) ->
-                            assertThat(eventTypeId, is(NEW_SEND_BUFFER_NOTIFICATION)));
+        assertMsgRead(buffers.toClient(),
+                      (msgTypeId, buffer, index, length) ->
+                          assertThat(msgTypeId, is(NEW_SEND_BUFFER_NOTIFICATION)));
 
         advanceTimeMilliseconds(INITIAL_HEARTBEAT_TIMEOUT_MS - 10);   // should not send yet....
 
@@ -425,7 +419,7 @@ public class UnicastSenderTest
     private long assertNotifiesTermBuffer()
     {
         final AtomicLong termId = new AtomicLong(0);
-        assertEventRead(buffers.toClient(), assertNotifiesNewBuffer(termId));
+        assertMsgRead(buffers.toClient(), assertNotifiesNewBuffer(termId));
         return termId.get();
     }
 
@@ -442,9 +436,9 @@ public class UnicastSenderTest
 
     private MessageHandler assertNotifiesNewBuffer(final AtomicLong termId)
     {
-        return (eventTypeId, buffer, index, length) ->
+        return (msgTypeId, buffer, index, length) ->
         {
-            assertThat(eventTypeId, is(NEW_SEND_BUFFER_NOTIFICATION));
+            assertThat(msgTypeId, is(NEW_SEND_BUFFER_NOTIFICATION));
             bufferMessage.wrap(buffer, index);
 
             assertThat(bufferMessage.sessionId(), is(SESSION_ID));
@@ -481,7 +475,7 @@ public class UnicastSenderTest
         return UdpDestination.parse(URI);
     }
 
-    private void writeChannelMessage(final int eventTypeId,
+    private void writeChannelMessage(final int msgTypeId,
                                      final String destination,
                                      final long sessionId,
                                      final long channelId)
@@ -495,7 +489,7 @@ public class UnicastSenderTest
                       .sessionId(sessionId)
                       .destination(destination);
 
-        adminCommands.write(eventTypeId, writeBuffer, 0, channelMessage.length());
+        adminCommands.write(msgTypeId, writeBuffer, 0, channelMessage.length());
     }
 
     private void sendStatusMessage(final InetSocketAddress dstAddr,

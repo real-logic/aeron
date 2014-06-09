@@ -56,11 +56,11 @@ public class ReceiverProxy
         addReceiverEvent(REMOVE_SUBSCRIBER, destination, channelIdList);
     }
 
-    private void addReceiverEvent(final int eventTypeId, final String destination, final long[] channelIdList)
+    private void addReceiverEvent(final int msgTypeId, final String destination, final long[] channelIdList)
     {
         receiverMessage.channelIds(channelIdList);
         receiverMessage.destination(destination);
-        commandBuffer.write(eventTypeId, writeBuffer, 0, receiverMessage.length());
+        commandBuffer.write(msgTypeId, writeBuffer, 0, receiverMessage.length());
         selector.wakeup();
     }
 

@@ -19,10 +19,10 @@ import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.checkLogBuffer;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.checkStateBuffer;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.lengthOffset;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.checkLogBuffer;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.checkStateBuffer;
 
 /**
  * Scans for gaps in the sequence of bytes in a replicated term buffer between the tail and the

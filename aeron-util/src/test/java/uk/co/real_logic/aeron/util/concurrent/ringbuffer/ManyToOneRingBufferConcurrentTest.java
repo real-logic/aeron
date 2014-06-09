@@ -89,7 +89,7 @@ public class ManyToOneRingBufferConcurrentTest
         final int[] counts = new int[numProducers];
 
         final MessageHandler handler =
-            (eventTypeId, buffer, index, length) ->
+            (msgTypeId, buffer, index, length) ->
             {
                 final int producerId = buffer.getInt(index);
                 final int iteration = buffer.getInt(index + BitUtil.SIZE_OF_INT);

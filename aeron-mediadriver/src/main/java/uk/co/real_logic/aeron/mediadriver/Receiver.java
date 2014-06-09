@@ -15,16 +15,12 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.util.Agent;
-import uk.co.real_logic.aeron.util.AtomicArray;
-import uk.co.real_logic.aeron.util.ErrorCode;
+import uk.co.real_logic.aeron.util.*;
 import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
 
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.SELECT_TIMEOUT;
 import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION;
@@ -85,11 +81,11 @@ public class Receiver extends Agent
     private void processCommandBuffer()
     {
         commandBuffer.read(
-            (eventTypeId, buffer, index, length) ->
+            (msgTypeId, buffer, index, length) ->
             {
                try
                {
-                   switch (eventTypeId)
+                   switch (msgTypeId)
                    {
                        case ADD_SUBSCRIBER:
                            subscriberMessage.wrap(buffer, index);

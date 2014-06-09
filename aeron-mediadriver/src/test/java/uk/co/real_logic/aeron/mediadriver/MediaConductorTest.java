@@ -15,10 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import uk.co.real_logic.aeron.util.ConductorShmBuffers;
 import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
@@ -181,7 +178,7 @@ public class MediaConductorTest
         addedChannels.forEach(channel -> assertTrue("Channel isn't open", channel.isOpen()));
     }
 
-    private void writeChannelMessage(final int eventTypeId, final long channelId, final long sessionId, final int port)
+    private void writeChannelMessage(final int msgTypeId, final long channelId, final long sessionId, final int port)
         throws IOException
     {
         final ByteBuffer buffer = new ConductorShmBuffers(adminPath).toDriver();
@@ -193,6 +190,6 @@ public class MediaConductorTest
         channelMessage.sessionId(sessionId);
         channelMessage.destination(DESTINATION + port);
 
-        adminCommands.write(eventTypeId, writeBuffer, 0, channelMessage.length());
+        adminCommands.write(msgTypeId, writeBuffer, 0, channelMessage.length());
     }
 }

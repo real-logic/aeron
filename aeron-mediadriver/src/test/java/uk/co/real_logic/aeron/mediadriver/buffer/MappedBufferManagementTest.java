@@ -15,9 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver.buffer;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import uk.co.real_logic.aeron.mediadriver.UdpDestination;
 import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;

@@ -20,28 +20,20 @@ import uk.co.real_logic.aeron.SubscriberChannel;
 import uk.co.real_logic.aeron.util.Agent;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.collections.ChannelMap;
-import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.*;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
-import uk.co.real_logic.aeron.util.status.PositionIndicator;
-import uk.co.real_logic.aeron.util.status.PositionReporter;
-import uk.co.real_logic.aeron.util.status.StatusBufferMapper;
+import uk.co.real_logic.aeron.util.status.*;
 
 import java.io.IOException;
 import java.util.function.BiConsumer;
 import java.util.function.IntFunction;
 
-import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.BASE_HEADER_LENGTH;
 
 /**
  * Client conductor takes responses and notifications from media driver and acts on them. As well as pass commands
@@ -112,9 +104,9 @@ public final class ClientConductor extends Agent
     private void handleClientCommandBuffer()
     {
         commandBuffer.read(
-            (eventTypeId, buffer, index, length) ->
+            (msgTypeId, buffer, index, length) ->
             {
-                switch (eventTypeId)
+                switch (msgTypeId)
                 {
                     case ADD_CHANNEL:
                     case REMOVE_CHANNEL:
@@ -124,7 +116,7 @@ public final class ClientConductor extends Agent
                         final long channelId = channelMessage.channelId();
                         final long sessionId = channelMessage.sessionId();
 
-                        if (eventTypeId == ADD_CHANNEL)
+                        if (msgTypeId == ADD_CHANNEL)
                         {
                             addPublisher(destination, channelId, sessionId);
                         }
@@ -133,7 +125,7 @@ public final class ClientConductor extends Agent
                             removePublisher(destination, channelId, sessionId);
                         }
 
-                        toDriverBuffer.write(eventTypeId, buffer, index, length);
+                        toDriverBuffer.write(msgTypeId, buffer, index, length);
                         break;
                     }
 
@@ -143,7 +135,7 @@ public final class ClientConductor extends Agent
                         receiverMessage.wrap(buffer, index);
                         final long[] channelIds = receiverMessage.channelIds();
                         final String destination = receiverMessage.destination();
-                        if (eventTypeId == ADD_SUBSCRIBER)
+                        if (msgTypeId == ADD_SUBSCRIBER)
                         {
                             addReceiver(destination, channelIds);
                         }
@@ -152,12 +144,12 @@ public final class ClientConductor extends Agent
                             removeReceiver(destination, channelIds);
                         }
 
-                        toDriverBuffer.write(eventTypeId, buffer, index, length);
+                        toDriverBuffer.write(msgTypeId, buffer, index, length);
                         break;
                     }
 
                     case REQUEST_CLEANED_TERM:
-                        toDriverBuffer.write(eventTypeId, buffer, index, length);
+                        toDriverBuffer.write(msgTypeId, buffer, index, length);
                         break;
                 }
             }
@@ -219,9 +211,9 @@ public final class ClientConductor extends Agent
     private void handleMessagesFromMediaDriver()
     {
         toClientBuffer.read(
-            (eventTypeId, buffer, index, length) ->
+            (msgTypeId, buffer, index, length) ->
             {
-                switch (eventTypeId)
+                switch (msgTypeId)
                 {
                     case NEW_RECEIVE_BUFFER_NOTIFICATION:
                     case NEW_SEND_BUFFER_NOTIFICATION:
@@ -232,7 +224,7 @@ public final class ClientConductor extends Agent
                         final long termId = bufferNotificationMessage.termId();
                         final String destination = bufferNotificationMessage.destination();
 
-                        if (eventTypeId == NEW_SEND_BUFFER_NOTIFICATION)
+                        if (msgTypeId == NEW_SEND_BUFFER_NOTIFICATION)
                         {
                             onNewSenderBuffer(destination, sessionId, channelId, termId);
                         }

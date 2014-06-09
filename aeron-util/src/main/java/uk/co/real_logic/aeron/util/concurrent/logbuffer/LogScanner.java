@@ -20,8 +20,8 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import java.nio.ByteOrder;
 
 import static uk.co.real_logic.aeron.util.BitUtil.align;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.*;
 
 /**
  * Cursor that scans a log buffer reading MTU (Maximum Transmission Unit) ranges of messages

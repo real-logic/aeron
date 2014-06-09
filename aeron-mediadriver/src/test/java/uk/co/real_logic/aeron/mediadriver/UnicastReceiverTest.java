@@ -18,19 +18,13 @@ package uk.co.real_logic.aeron.mediadriver;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
-import uk.co.real_logic.aeron.util.BitUtil;
-import uk.co.real_logic.aeron.util.ConductorBuffersExternalResource;
-import uk.co.real_logic.aeron.util.ConductorShmBuffers;
-import uk.co.real_logic.aeron.util.SharedDirectoriesExternalResource;
+import uk.co.real_logic.aeron.util.*;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.StateViewer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
-import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
-import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
-import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
+import uk.co.real_logic.aeron.util.protocol.*;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -52,7 +46,7 @@ import static uk.co.real_logic.aeron.util.SharedDirectoriesExternalResource.Buff
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
-import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertEventRead;
+import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertMsgRead;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.skip;
 import static uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 
@@ -149,9 +143,9 @@ public class UnicastReceiverTest
 
         processThreads(5);
 
-        assertEventRead(buffers.toClient(), (eventTypeId, buffer, index, length) ->
+        assertMsgRead(buffers.toClient(), (msgTypeId, buffer, index, length) ->
         {
-            assertThat(eventTypeId, is(ERROR_RESPONSE));
+            assertThat(msgTypeId, is(ERROR_RESPONSE));
 
             error.wrap(buffer, index);
             assertThat(error.errorCode(), is(INVALID_DESTINATION));
@@ -170,9 +164,9 @@ public class UnicastReceiverTest
 
         processThreads(5);
 
-        assertEventRead(buffers.toClient(), (eventTypeId, buffer, index, length) ->
+        assertMsgRead(buffers.toClient(), (msgTypeId, buffer, index, length) ->
         {
-            assertThat(eventTypeId, is(ERROR_RESPONSE));
+            assertThat(msgTypeId, is(ERROR_RESPONSE));
 
             error.wrap(buffer, index);
             assertThat(error.errorCode(), is(SUBSCRIBER_NOT_REGISTERED));
@@ -192,9 +186,9 @@ public class UnicastReceiverTest
 
         processThreads(5);
 
-        assertEventRead(buffers.toClient(), (eventTypeId, buffer, index, length) ->
+        assertMsgRead(buffers.toClient(), (msgTypeId, buffer, index, length) ->
         {
-            assertThat(eventTypeId, is(ERROR_RESPONSE));
+            assertThat(msgTypeId, is(ERROR_RESPONSE));
 
             error.wrap(buffer, index);
             assertThat(error.errorCode(), is(SUBSCRIBER_NOT_REGISTERED));
@@ -397,7 +391,7 @@ public class UnicastReceiverTest
         return UdpDestination.parse(URI);
     }
 
-    private void writeSubscriberMessage(final int eventTypeId, final String destination, final long[] channelIds)
+    private void writeSubscriberMessage(final int msgTypeId, final String destination, final long[] channelIds)
         throws IOException
     {
         final RingBuffer adminCommands = buffers.mappedToMediaDriver();
@@ -407,7 +401,7 @@ public class UnicastReceiverTest
         receiverMessage.channelIds(channelIds)
                        .destination(destination);
 
-        adminCommands.write(eventTypeId, writeBuffer, 0, receiverMessage.length());
+        adminCommands.write(msgTypeId, writeBuffer, 0, receiverMessage.length());
     }
 
     private void sendDataFrame(final UdpDestination destination,

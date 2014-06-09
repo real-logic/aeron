@@ -15,9 +15,7 @@
  */
 package uk.co.real_logic.aeron.conductor;
 
-import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.QualifiedMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.*;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
@@ -64,12 +62,12 @@ public class ClientConductorProxy
     private void sendChannelMessage(final String destination,
                                     final long sessionId,
                                     final long channelId,
-                                    final int eventTypeId)
+                                    final int msgTypeId)
     {
         channelMessage.sessionId(sessionId);
         channelMessage.channelId(channelId);
         channelMessage.destination(destination);
-        if (! conductorBuffer.write(eventTypeId, writeBuffer, 0, channelMessage.length()))
+        if (! conductorBuffer.write(msgTypeId, writeBuffer, 0, channelMessage.length()))
         {
             throw new IllegalStateException("could not write channel message");
         }
@@ -85,11 +83,11 @@ public class ClientConductorProxy
         sendReceiverMessage(REMOVE_SUBSCRIBER, destination, channelIds);
     }
 
-    private void sendReceiverMessage(final int eventTypeId, final String destination, final long[] channelIds)
+    private void sendReceiverMessage(final int msgTypeId, final String destination, final long[] channelIds)
     {
         subscriberMessage.channelIds(channelIds);
         subscriberMessage.destination(destination);
-        if (!conductorBuffer.write(eventTypeId, writeBuffer, 0, subscriberMessage.length()))
+        if (!conductorBuffer.write(msgTypeId, writeBuffer, 0, subscriberMessage.length()))
         {
             throw new IllegalStateException("could not write receiver message");
         }

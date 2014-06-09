@@ -17,9 +17,7 @@ package uk.co.real_logic.aeron.util;
 
 import sun.nio.ch.FileChannelImpl;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.io.*;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;

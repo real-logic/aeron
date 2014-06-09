@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import static java.lang.Integer.valueOf;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;

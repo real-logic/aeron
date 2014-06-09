@@ -41,7 +41,7 @@ import static uk.co.real_logic.aeron.util.BitUtil.align;
  */
 public class SenderTest
 {
-    public static final long LOG_BUFFER_SIZE = (64*1024) + RingBufferDescriptor.TRAILER_LENGTH;
+    public static final long LOG_BUFFER_SIZE = (64 * 1024) + RingBufferDescriptor.TRAILER_LENGTH;
     public static final int MAX_FRAME_LENGTH = 1024;
     public static final long SESSION_ID = 1L;
     public static final long CHANNEL_ID = 2L;
@@ -49,8 +49,8 @@ public class SenderTest
     public static final byte[] PAYLOAD = "Payload is here!".getBytes();
 
     private final Sender sender = new Sender();
-    private final BufferRotator rotator = BufferAndFrameUtils.createTestRotator(LOG_BUFFER_SIZE,
-            LogBufferDescriptor.STATE_BUFFER_LENGTH);
+    private final BufferRotator rotator =
+        BufferAndFrameUtils.createTestRotator(LOG_BUFFER_SIZE, LogBufferDescriptor.STATE_BUFFER_LENGTH);
     private final LogAppender[] logAppenders = BufferAndFrameUtils.createLogAppenders(rotator, MAX_FRAME_LENGTH);
 
     private SenderChannel channel;
@@ -66,17 +66,18 @@ public class SenderTest
 
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
-    private SenderChannel.SendFunction sendFunction = (buffer, addr) ->
-    {
-        assertThat(addr, is(recvAddr));
+    private SenderChannel.SendFunction sendFunction =
+        (buffer, addr) ->
+        {
+            assertThat(addr, is(recvAddr));
 
-        final int size = buffer.limit() - buffer.position();
-        final ByteBuffer savedFrame = ByteBuffer.allocate(size);
-        savedFrame.put(buffer);
-        receivedFrames.add(savedFrame);
+            final int size = buffer.limit() - buffer.position();
+            final ByteBuffer savedFrame = ByteBuffer.allocate(size);
+            savedFrame.put(buffer);
+            receivedFrames.add(savedFrame);
 
-        return size;
-    };
+            return size;
+        };
 
     private SenderChannel.TimeFunction timeFunction = () -> currentTimestamp;
 
@@ -88,8 +89,8 @@ public class SenderTest
         when(mockFrameHandler.destination()).thenReturn(destination);
 
         channel = new SenderChannel(mockFrameHandler, spySenderControlStrategy, rotator, SESSION_ID,
-                CHANNEL_ID, INITIAL_TERM_ID, logAppenders[0].defaultHeaderLength(), MAX_FRAME_LENGTH,
-                sendFunction, timeFunction);
+                                    CHANNEL_ID, INITIAL_TERM_ID, logAppenders[0].defaultHeaderLength(),
+                                    MAX_FRAME_LENGTH, sendFunction, timeFunction);
         sender.addChannel(channel);
     }
 
@@ -100,7 +101,7 @@ public class SenderTest
     }
 
     @Test
-    public void shouldSend0LengthDataFrameOnChannelWhenTimeoutWithoutStatusMessage()
+    public void shouldSendZeroLengthDataFrameOnChannelWhenTimeoutWithoutStatusMessage()
     {
         currentTimestamp += TimeUnit.MILLISECONDS.toNanos(SenderChannel.INITIAL_HEARTBEAT_TIMEOUT_MS) - 1;
         sender.heartbeatChecks();
@@ -111,7 +112,7 @@ public class SenderTest
 
         dataHeader.wrap(new AtomicBuffer(receivedFrames.remove()), 0);
 
-        assertThat(dataHeader.version(), is(Short.valueOf(HeaderFlyweight.CURRENT_VERSION)));
+        assertThat(dataHeader.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
         assertThat(dataHeader.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
         assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
         assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH));
@@ -122,7 +123,7 @@ public class SenderTest
     }
 
     @Test
-    public void shouldSendMultiple0LengthDataFrameOnChannelWhenTimeoutWithoutStatusMessage()
+    public void shouldSendMultipleZeroLengthDataFrameOnChannelWhenTimeoutWithoutStatusMessage()
     {
         currentTimestamp += TimeUnit.MILLISECONDS.toNanos(SenderChannel.INITIAL_HEARTBEAT_TIMEOUT_MS) - 1;
         sender.heartbeatChecks();
@@ -133,7 +134,7 @@ public class SenderTest
 
         dataHeader.wrap(new AtomicBuffer(receivedFrames.remove()), 0);
 
-        assertThat(dataHeader.version(), is(Short.valueOf(HeaderFlyweight.CURRENT_VERSION)));
+        assertThat(dataHeader.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
         assertThat(dataHeader.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
         assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
         assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH));
@@ -156,7 +157,7 @@ public class SenderTest
     }
 
     @Test
-    public void shouldNotSend0LengthDataFrameAfterReceivingStatusMessage()
+    public void shouldNotSendZeroLengthDataFrameAfterReceivingStatusMessage()
     {
         currentTimestamp += TimeUnit.MILLISECONDS.toNanos(SenderChannel.HEARTBEAT_TIMEOUT_MS);
         channel.onStatusMessage(INITIAL_TERM_ID, 0, 0);
@@ -179,7 +180,7 @@ public class SenderTest
 
         dataHeader.wrap(new AtomicBuffer(receivedFrames.remove()), 0);
 
-        assertThat(dataHeader.version(), is(Short.valueOf(HeaderFlyweight.CURRENT_VERSION)));
+        assertThat(dataHeader.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
         assertThat(dataHeader.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
         assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
         assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
@@ -206,7 +207,7 @@ public class SenderTest
 
         dataHeader.wrap(new AtomicBuffer(receivedFrames.remove()), 0);  // first frame
 
-        assertThat(dataHeader.version(), is(Short.valueOf(HeaderFlyweight.CURRENT_VERSION)));
+        assertThat(dataHeader.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
         assertThat(dataHeader.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
         assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
         assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
@@ -217,7 +218,7 @@ public class SenderTest
 
         dataHeader.wrap(new AtomicBuffer(receivedFrames.remove()), 0);  // second frame
 
-        assertThat(dataHeader.version(), is(Short.valueOf(HeaderFlyweight.CURRENT_VERSION)));
+        assertThat(dataHeader.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
         assertThat(dataHeader.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
         assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
         assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
@@ -246,7 +247,7 @@ public class SenderTest
 
         dataHeader.wrap(receivedBuffer, 0);  // first frame
 
-        assertThat(dataHeader.version(), is(Short.valueOf(HeaderFlyweight.CURRENT_VERSION)));
+        assertThat(dataHeader.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
         assertThat(dataHeader.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
         assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
         assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
@@ -257,7 +258,7 @@ public class SenderTest
 
         dataHeader.wrap(receivedBuffer, DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length);  // second frame
 
-        assertThat(dataHeader.version(), is(Short.valueOf(HeaderFlyweight.CURRENT_VERSION)));
+        assertThat(dataHeader.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
         assertThat(dataHeader.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
         assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
         assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));

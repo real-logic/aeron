@@ -35,7 +35,7 @@ public class Receiver extends Agent
 {
     private final RingBuffer commandBuffer;
     private final NioSelector nioSelector;
-    private final MediaConductorCursor adminThreadCursor;
+    private final MediaConductorProxy conductorProxy;
     private final Map<UdpDestination, DataFrameHandler> rcvDestinationMap = new HashMap<>();
     private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
     private final Queue<RcvBufferState> buffers = new OneToOneConcurrentArrayQueue<>(1024);
@@ -48,8 +48,7 @@ public class Receiver extends Agent
         super(SELECT_TIMEOUT);
 
         commandBuffer = context.receiverCommandBuffer();
-        adminThreadCursor =
-            new MediaConductorCursor(context.mediaCommandBuffer(), context.conductorNioSelector());
+        conductorProxy = new MediaConductorProxy(context.mediaCommandBuffer(), context.conductorNioSelector());
         nioSelector = context.receiverNioSelector();
         frameHandlerFactory = context.rcvFrameHandlerFactory();
     }
@@ -118,7 +117,7 @@ public class Receiver extends Agent
 
     private void onError(final ErrorCode errorCode, final int length)
     {
-        adminThreadCursor.addErrorResponse(errorCode, subscriberMessage, length);
+        conductorProxy.addErrorResponse(errorCode, subscriberMessage, length);
     }
 
     public AtomicArray<RcvSessionState> sessionState()

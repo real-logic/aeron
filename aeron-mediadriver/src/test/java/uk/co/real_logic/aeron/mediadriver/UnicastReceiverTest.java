@@ -104,7 +104,7 @@ public class UnicastReceiverTest
 
         ctx.rcvFrameHandlerFactory(
             new RcvFrameHandlerFactory(nioSelector,
-                                       new MediaConductorCursor(ctx.mediaCommandBuffer(), nioSelector))
+                                       new MediaConductorProxy(ctx.mediaCommandBuffer(), nioSelector))
         );
 
         final Sender sender = mock(Sender.class);

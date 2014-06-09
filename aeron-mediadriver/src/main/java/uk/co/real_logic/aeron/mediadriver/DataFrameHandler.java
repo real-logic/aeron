@@ -31,7 +31,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
     private final UdpTransport transport;
     private final UdpDestination destination;
     private final Long2ObjectHashMap<RcvChannelState> channelInterestMap = new Long2ObjectHashMap<>();
-    private final MediaConductorCursor conductorCursor;
+    private final MediaConductorProxy conductorProxy;
     private final ByteBuffer sendBuffer = ByteBuffer.allocateDirect(StatusMessageFlyweight.HEADER_LENGTH);
     private final AtomicBuffer writeBuffer = new AtomicBuffer(sendBuffer);
     private final StatusMessageFlyweight statusMessageFlyweight = new StatusMessageFlyweight();
@@ -39,14 +39,14 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
 
     public DataFrameHandler(final UdpDestination destination,
                             final NioSelector nioSelector,
-                            final MediaConductorCursor conductorCursor,
+                            final MediaConductorProxy conductorProxy,
                             final AtomicArray<RcvSessionState> sessionState)
         throws Exception
     {
         this.sessionState = sessionState;
         this.transport = new UdpTransport(this, destination, nioSelector);
         this.destination = destination;
-        this.conductorCursor = conductorCursor;
+        this.conductorProxy = conductorProxy;
     }
 
     public void close()
@@ -72,11 +72,11 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
 
             if (null != channel)
             {
-                channel.incrementReference();
+                channel.incRef();
             }
             else
             {
-                channel = new RcvChannelState(destination, channelId, conductorCursor, sessionState);
+                channel = new RcvChannelState(destination, channelId, conductorProxy, sessionState);
                 channelInterestMap.put(channelId, channel);
             }
         }
@@ -93,7 +93,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
                 throw new ReceiverNotRegisteredException("No channel registered on " + channelId);
             }
 
-            if (channel.decrementReference() == 0)
+            if (channel.decRef() == 0)
             {
                 channelInterestMap.remove(channelId);
                 channel.close();
@@ -109,9 +109,6 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
     public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
     {
         final long channelId = header.channelId();
-
-//        System.out.println("onDataFrame " + header.sessionId() + " " + header.channelId() + " " +
-//                           header.termId() + " " + header.frameLength() + "@" + header.termOffset());
 
         final RcvChannelState channelState = channelInterestMap.get(channelId);
         if (null == channelState)
@@ -135,7 +132,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
 
             // ask conductor thread to create buffer for destination, sessionId, channelId, and termId
             // NB: this only needs to happen the first time, since we use status to detect rollovers
-            conductorCursor.addCreateRcvTermBufferEvent(destination(), sessionId, channelId, termId);
+            conductorProxy.addCreateRcvTermBufferEvent(destination(), sessionId, channelId, termId);
         }
     }
 

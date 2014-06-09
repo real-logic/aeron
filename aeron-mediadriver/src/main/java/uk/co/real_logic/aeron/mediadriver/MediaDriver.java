@@ -175,7 +175,7 @@ public class MediaDriver implements AutoCloseable
                 .mtuLength(CommonConfiguration.MTU_LENGTH);
 
         context.rcvFrameHandlerFactory(new RcvFrameHandlerFactory(rcvNioSelector,
-                                       new MediaConductorCursor(context.mediaCommandBuffer(), rcvNioSelector)));
+                                       new MediaConductorProxy(context.mediaCommandBuffer(), rcvNioSelector)));
 
         receiver = new Receiver(context);
         sender = new Sender();

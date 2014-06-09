@@ -20,17 +20,17 @@ import uk.co.real_logic.aeron.util.AtomicArray;
 public class RcvFrameHandlerFactory
 {
     private final NioSelector selector;
-    private final MediaConductorCursor adminThreadCursor;
+    private final MediaConductorProxy conductorProxy;
 
-    public RcvFrameHandlerFactory(final NioSelector selector, final MediaConductorCursor adminThreadCursor)
+    public RcvFrameHandlerFactory(final NioSelector selector, final MediaConductorProxy conductorProxy)
     {
         this.selector = selector;
-        this.adminThreadCursor = adminThreadCursor;
+        this.conductorProxy = conductorProxy;
     }
 
     public DataFrameHandler newInstance(final UdpDestination rcvDestination,
                                         final AtomicArray<RcvSessionState> sessionState) throws Exception
     {
-        return new DataFrameHandler(rcvDestination, selector, adminThreadCursor, sessionState);
+        return new DataFrameHandler(rcvDestination, selector, conductorProxy, sessionState);
     }
 }

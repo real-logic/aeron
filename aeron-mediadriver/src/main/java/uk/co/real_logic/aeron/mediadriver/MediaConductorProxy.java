@@ -28,29 +28,25 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight.HEADER_LENGTH;
 
 /**
- * Cursor for writing into the media driver conductor thread command buffer
+ * Proxy for writing into the media driver conductor command buffer
  */
-public class MediaConductorCursor
+public class MediaConductorProxy
 {
-    private static final int WRITE_BUFFER_CAPACITY = 256;
+    private static final int WRITE_BUFFER_CAPACITY = 1024;
 
     private final RingBuffer commandBuffer;
     private final NioSelector selector;
-    private final AtomicBuffer writeBuffer;
+    private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
 
-    private final QualifiedMessageFlyweight completelyIdentifiedMessage;
-    private final ErrorHeaderFlyweight errorHeader;
+    private final QualifiedMessageFlyweight qualifiedMessageFlyweight = new QualifiedMessageFlyweight();
+    private final ErrorHeaderFlyweight errorHeader = new ErrorHeaderFlyweight();
 
-    public MediaConductorCursor(final RingBuffer commandBuffer, final NioSelector selector)
+    public MediaConductorProxy(final RingBuffer commandBuffer, final NioSelector selector)
     {
         this.commandBuffer = commandBuffer;
         this.selector = selector;
-        this.writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
 
-        completelyIdentifiedMessage = new QualifiedMessageFlyweight();
-        completelyIdentifiedMessage.wrap(writeBuffer, 0);
-
-        errorHeader = new ErrorHeaderFlyweight();
+        qualifiedMessageFlyweight.wrap(writeBuffer, 0);
         errorHeader.wrap(writeBuffer, 0);
     }
 
@@ -75,11 +71,11 @@ public class MediaConductorCursor
                                                final long termId,
                                                final int typeId)
     {
-        completelyIdentifiedMessage.sessionId(sessionId)
+        qualifiedMessageFlyweight.sessionId(sessionId)
                                    .channelId(channelId)
                                    .termId(termId)
                                    .destination(destination.clientAwareUri());
-        write(typeId, completelyIdentifiedMessage.length());
+        write(typeId, qualifiedMessageFlyweight.length());
     }
 
     public void addErrorResponse(final ErrorCode code, final Flyweight flyweight, final int length)
@@ -95,5 +91,4 @@ public class MediaConductorCursor
         commandBuffer.write(msgTypeId, writeBuffer, 0, length);
         selector.wakeup();
     }
-
 }

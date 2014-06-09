@@ -27,37 +27,35 @@ public class RcvChannelState
 {
     private final UdpDestination destination;
     private final long channelId;
-    private final MediaConductorCursor adminThreadCursor;
+    private final MediaConductorProxy conductorProxy;
     private final AtomicArray<RcvSessionState> allSessionState;
-    private int referenceCount;
-    private final Long2ObjectHashMap<RcvSessionState> sessionStateMap;
+    private int refCount = 1;  // TODO: Is this concurrent?
+    private final Long2ObjectHashMap<RcvSessionState> sessionStateMap = new Long2ObjectHashMap<>();
 
     public RcvChannelState(final UdpDestination destination,
                            final long channelId,
-                           final MediaConductorCursor adminThreadCursor,
+                           final MediaConductorProxy conductorProxy,
                            final AtomicArray<RcvSessionState> sessionState)
     {
         this.destination = destination;
         this.channelId = channelId;
-        this.adminThreadCursor = adminThreadCursor;
+        this.conductorProxy = conductorProxy;
         this.allSessionState = sessionState;
-        this.referenceCount = 1;
-        this.sessionStateMap = new Long2ObjectHashMap<>();
     }
 
-    public int decrementReference()
+    public int decRef()
     {
-        return --referenceCount;
+        return --refCount;
     }
 
-    public int incrementReference()
+    public int incRef()
     {
-        return ++referenceCount;
+        return ++refCount;
     }
 
     public int referenceCount()
     {
-        return referenceCount;
+        return refCount;
     }
 
     public RcvSessionState getSessionState(final long sessionId)
@@ -72,8 +70,9 @@ public class RcvChannelState
 
     public RcvSessionState createSessionState(final long sessionId, final InetSocketAddress srcAddr)
     {
-        RcvSessionState sessionState = new RcvSessionState(sessionId, srcAddr);
+        final RcvSessionState sessionState = new RcvSessionState(sessionId, srcAddr);
         allSessionState.add(sessionState);
+
         return sessionStateMap.put(sessionId, sessionState);
     }
 
@@ -87,7 +86,7 @@ public class RcvChannelState
         sessionStateMap.forEach(
             (sessionId, session) ->
             {
-                adminThreadCursor.addRemoveRcvTermBufferEvent(destination, sessionId, channelId);
+                conductorProxy.addRemoveRcvTermBufferEvent(destination, sessionId, channelId);
             });
     }
 }

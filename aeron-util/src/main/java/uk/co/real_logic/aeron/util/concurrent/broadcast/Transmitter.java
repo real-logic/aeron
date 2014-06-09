@@ -40,7 +40,7 @@ public class Transmitter
      * The underlying buffer must a power of 2 in size plus sufficient space
      * for the {@link BroadcastBufferDescriptor#TRAILER_LENGTH}.
      *
-     * @param buffer via which events will be exchanged.
+     * @param buffer via which messages will be exchanged.
      * @throws IllegalStateException if the buffer capacity is not a power of 2
      *                               plus {@link BroadcastBufferDescriptor#TRAILER_LENGTH} in capacity.
      */

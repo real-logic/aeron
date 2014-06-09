@@ -29,7 +29,7 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescri
 
 public class ManyToOneRingBufferConcurrentTest
 {
-    public static final int EVENT_TYPE_ID = 7;
+    public static final int MSG_TYPE_ID = 7;
 
     private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect((16 * 1024) + TRAILER_LENGTH);
     private final AtomicBuffer atomicBuffer = new AtomicBuffer(byteBuffer);
@@ -75,7 +75,7 @@ public class ManyToOneRingBufferConcurrentTest
     }
 
     @Test
-    public void shouldExchangeEvents() throws Exception
+    public void shouldExchangeMessages() throws Exception
     {
         final int reps = 10 * 1000 * 1000;
         final int numProducers = 2;
@@ -100,8 +100,8 @@ public class ManyToOneRingBufferConcurrentTest
                 counts[producerId]++;
             };
 
-        int eventCount = 0;
-        while (eventCount < (reps * numProducers))
+        int msgCount = 0;
+        while (msgCount < (reps * numProducers))
         {
             final int readCount = ringBuffer.read(handler);
             if (0 == readCount)
@@ -109,10 +109,10 @@ public class ManyToOneRingBufferConcurrentTest
                 Thread.yield();
             }
 
-            eventCount += readCount;
+            msgCount += readCount;
         }
 
-        assertThat(eventCount, is(reps * numProducers));
+        assertThat(msgCount, is(reps * numProducers));
     }
 
     private class Producer implements Runnable
@@ -148,7 +148,7 @@ public class ManyToOneRingBufferConcurrentTest
             {
                 srcBuffer.putInt(repsValueOffset, i);
 
-                while (!ringBuffer.write(EVENT_TYPE_ID, srcBuffer, 0, length))
+                while (!ringBuffer.write(MSG_TYPE_ID, srcBuffer, 0, length))
                 {
                     Thread.yield();
                 }

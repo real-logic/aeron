@@ -162,13 +162,13 @@ public class AeronTest
             createTermBuffer(0L, NEW_SEND_BUFFER_NOTIFICATION, directory.senderDir(), SESSION_ID);
 
         final int capacity = buffers.get(0).logBuffer().capacity();
-        final int eventCount = (4 * capacity) / SEND_BUFFER_CAPACITY;
+        final int msgCount = (4 * capacity) / SEND_BUFFER_CAPACITY;
 
         aeron.conductor().process();
         skip(toMediaDriver, 1);
         boolean previousAppend = true;
         int bufferId = 0;
-        for (int i = 0; i < eventCount; i++)
+        for (int i = 0; i < msgCount; i++)
         {
             final boolean appended = channel.offer(atomicSendBuffer);
             aeron.conductor().process();
@@ -372,30 +372,30 @@ public class AeronTest
         skip(toMediaDriver, 1);
 
         final LogAppender logAppender = logAppenders.get(0);
-        final int eventCount = logAppender.capacity() / sendBuffer.capacity();
+        final int msgCount = logAppender.capacity() / sendBuffer.capacity();
 
-        writePackets(logAppender, eventCount);
-        assertThat(subscriber.read(), is(eventCount));
+        writePackets(logAppender, msgCount);
+        assertThat(subscriber.read(), is(msgCount));
 
         // cleaning is triggered by the subscriber and not the subscriber
         // so we clean two ahead of the current buffer
         cleanBuffer(termBuffers.get(2));
         aeron.conductor().process();
 
-        writePackets(logAppenders.get(1), eventCount);
-        assertThat(subscriber.read(), is(eventCount));
+        writePackets(logAppenders.get(1), msgCount);
+        assertThat(subscriber.read(), is(msgCount));
 
         cleanBuffer(termBuffers.get(0));
         aeron.conductor().process();
 
-        writePackets(logAppenders.get(2), eventCount);
-        assertThat(subscriber.read(), is(eventCount));
+        writePackets(logAppenders.get(2), msgCount);
+        assertThat(subscriber.read(), is(msgCount));
 
         cleanBuffer(termBuffers.get(1));
         aeron.conductor().process();
 
-        writePackets(logAppender, eventCount);
-        assertThat(subscriber.read(), is(eventCount));
+        writePackets(logAppender, msgCount);
+        assertThat(subscriber.read(), is(msgCount));
 
         aeron.conductor().close();
     }
@@ -430,19 +430,19 @@ public class AeronTest
         skip(toMediaDriver, 1);
 
         final LogAppender logAppender = logAppenders.get(0);
-        final int eventCount = logAppender.capacity() / SEND_BUFFER_CAPACITY;
+        final int msgCount = logAppender.capacity() / SEND_BUFFER_CAPACITY;
 
-        writePackets(logAppender, eventCount);
-        assertThat(subscriber.read(), is(eventCount));
+        writePackets(logAppender, msgCount);
+        assertThat(subscriber.read(), is(msgCount));
 
-        writePackets(logAppenders.get(1), eventCount);
-        assertThat(subscriber.read(), is(eventCount));
+        writePackets(logAppenders.get(1), msgCount);
+        assertThat(subscriber.read(), is(msgCount));
 
-        writePackets(logAppenders.get(2), eventCount);
-        assertThat(subscriber.read(), is(eventCount));
+        writePackets(logAppenders.get(2), msgCount);
+        assertThat(subscriber.read(), is(msgCount));
 
         // force the roll
-        assertThat(subscriber.read(), is(eventCount));
+        assertThat(subscriber.read(), is(msgCount));
 
         // Now you've hit an unclean buffer and can't proceed
         assertThat(subscriber.read(), is(0));
@@ -467,13 +467,13 @@ public class AeronTest
         skip(toMediaDriver, 1);
 
         final LogAppender logAppender = logAppenders.get(0);
-        final int eventCount = logAppender.capacity() / sendBuffer.capacity();
+        final int msgCount = logAppender.capacity() / sendBuffer.capacity();
 
-        writePackets(logAppender, eventCount);
-        assertThat(subscriber.read(), is(eventCount));
+        writePackets(logAppender, msgCount);
+        assertThat(subscriber.read(), is(msgCount));
 
-        writePackets(logAppenders.get(1), eventCount);
-        assertThat(subscriber.read(), is(eventCount));
+        writePackets(logAppenders.get(1), msgCount);
+        assertThat(subscriber.read(), is(msgCount));
 
         writePackets(otherLogAppenders.get(0), 5);
         assertThat(subscriber.read(), is(5));
@@ -630,11 +630,11 @@ public class AeronTest
         return Aeron.newSingleMediaDriver(context);
     }
 
-    private void assertChannelMessage(final RingBuffer mediaDriverBuffer, final int expectedEventTypeId)
+    private void assertChannelMessage(final RingBuffer mediaDriverBuffer, final int expectedMsgTypeId)
     {
         assertMsgRead(mediaDriverBuffer, (msgTypeId, buffer, index, length) ->
         {
-            assertThat(msgTypeId, is(expectedEventTypeId));
+            assertThat(msgTypeId, is(expectedMsgTypeId));
 
             channelMessage.wrap(buffer, index);
             assertThat(channelMessage.destination(), is(DESTINATION));

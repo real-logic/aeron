@@ -129,12 +129,12 @@ public class MediaConductor extends Agent
                 {
                     case CREATE_TERM_BUFFER:
                         qualifiedMessage.wrap(buffer, index);
-                        onCreateSubscriberTermBufferEvent(qualifiedMessage);
+                        onCreateSubscriberTermBuffer(qualifiedMessage);
                         break;
 
                     case REMOVE_TERM_BUFFER:
                         qualifiedMessage.wrap(buffer, index);
-                        onRemoveSubscriberTermBufferEvent(qualifiedMessage);
+                        onRemoveSubscriberTermBuffer(qualifiedMessage);
                         break;
 
                     case ERROR_RESPONSE:
@@ -377,7 +377,7 @@ public class MediaConductor extends Agent
 
     public void onAddSubscriber(final SubscriberMessageFlyweight subscriberMessage)
     {
-        receiverProxy.addNewSubscriberEvent(subscriberMessage.destination(), subscriberMessage.channelIds());
+        receiverProxy.newSubscriber(subscriberMessage.destination(), subscriberMessage.channelIds());
 
         // this thread does not add buffers. The DataFrameHandler handle methods will send an event for this thread
         // to create buffers as needed
@@ -385,10 +385,10 @@ public class MediaConductor extends Agent
 
     public void onRemoveSubscriber(final SubscriberMessageFlyweight subscriberMessage)
     {
-        receiverProxy.addRemoveSubscriberEvent(subscriberMessage.destination(), subscriberMessage.channelIds());
+        receiverProxy.removeSubscriber(subscriberMessage.destination(), subscriberMessage.channelIds());
     }
 
-    private void onCreateSubscriberTermBufferEvent(final QualifiedMessageFlyweight qualifiedMessage)
+    private void onCreateSubscriberTermBuffer(final QualifiedMessageFlyweight qualifiedMessage)
     {
         final String destination = qualifiedMessage.destination();
         final long sessionId = qualifiedMessage.sessionId();
@@ -417,7 +417,7 @@ public class MediaConductor extends Agent
         }
     }
 
-    private void onRemoveSubscriberTermBufferEvent(final QualifiedMessageFlyweight qualifiedMessage)
+    private void onRemoveSubscriberTermBuffer(final QualifiedMessageFlyweight qualifiedMessage)
     {
         final String destination = qualifiedMessage.destination();
         final long sessionId = qualifiedMessage.sessionId();

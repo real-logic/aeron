@@ -66,7 +66,7 @@ public class ManyToOneRingBufferTest
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void shouldThrowExceptionWhenMaxEventSizeExceeded()
+    public void shouldThrowExceptionWhenMaxMessageSizeExceeded()
     {
         final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[1024]);
 
@@ -139,7 +139,7 @@ public class ManyToOneRingBufferTest
     }
 
     @Test
-    public void shouldInsertPaddingRecordPlusEventOnBufferWrap()
+    public void shouldInsertPaddingRecordPlusMessageOnBufferWrap()
     {
         final int length = 200;
         final int recordLength = align(length + HEADER_LENGTH, ALIGNMENT);
@@ -176,13 +176,13 @@ public class ManyToOneRingBufferTest
         when(buffer.getLongVolatile(TAIL_COUNTER_INDEX)).thenReturn(tail);
 
         final MessageHandler handler = (msgTypeId, buffer, index, length) -> fail("should not be called");
-        final int eventsRead = ringBuffer.read(handler);
+        final int messagesRead = ringBuffer.read(handler);
 
-        assertThat(eventsRead, is(0));
+        assertThat(messagesRead, is(0));
     }
 
     @Test
-    public void shouldReadSingleEventWithAllReadInCorrectMemoryOrder()
+    public void shouldReadSingleMessageWithAllReadInCorrectMemoryOrder()
     {
         final long tail = ALIGNMENT;
         final long head = 0L;
@@ -212,7 +212,7 @@ public class ManyToOneRingBufferTest
     }
 
     @Test
-    public void shouldReadTwoEvents()
+    public void shouldReadTwoMessages()
     {
         final long tail = ALIGNMENT * 2;
         final long head = 0L;
@@ -228,9 +228,9 @@ public class ManyToOneRingBufferTest
 
         final int[] times = new int[1];
         final MessageHandler handler = (msgTypeId, buffer, index, length) -> times[0]++;
-        final int msgsRead = ringBuffer.read(handler);
+        final int messagesRead = ringBuffer.read(handler);
 
-        assertThat(msgsRead, is(2));
+        assertThat(messagesRead, is(2));
         assertThat(times[0], is(2));
 
         final InOrder inOrder = inOrder(buffer);

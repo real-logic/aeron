@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.util.concurrent.ringbuffer;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 
 /**
- * Description of the record structure for event framing in the a {@link RingBuffer}.
+ * Description of the record structure for message framing in the a {@link RingBuffer}.
  */
 public class RecordDescriptor
 {
@@ -26,7 +26,7 @@ public class RecordDescriptor
      * Header length made up of fields for record length, message length, message type, and reserved,
      * and then the encoded message.
      * <p>
-     * Writing of the record length signals the event recording is complete.
+     * Writing of the record length signals the message recording is complete.
      * <p>
      * <pre>
      *   0        4        8        12       16 -byte position

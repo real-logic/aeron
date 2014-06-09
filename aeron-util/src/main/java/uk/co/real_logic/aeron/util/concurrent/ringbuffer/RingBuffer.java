@@ -53,7 +53,7 @@ public interface RingBuffer
     /**
      * Read as many messages as are available from the ring buffer to up a supplied maximum.
      *
-     * @param handler to be called for processing each event in turn.
+     * @param handler to be called for processing each message in turn.
      * @param limit the number of messages will be read in a single invocation.
      * @return the number of messages that have been processed.
      */

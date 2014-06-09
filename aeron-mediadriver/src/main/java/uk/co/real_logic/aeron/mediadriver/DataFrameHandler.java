@@ -132,7 +132,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
 
             // ask conductor thread to create buffer for destination, sessionId, channelId, and termId
             // NB: this only needs to happen the first time, since we use status to detect rollovers
-            conductorProxy.addCreateRcvTermBufferEvent(destination(), sessionId, channelId, termId);
+            conductorProxy.addCreateRcvTermBuffer(destination(), sessionId, channelId, termId);
         }
     }
 

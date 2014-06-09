@@ -52,7 +52,7 @@ public class LogAppender
     /**
      * Construct a view over a log buffer and state buffer for appending frames.
      *
-     * @param logBuffer for where events are stored.
+     * @param logBuffer for where messages are stored.
      * @param stateBuffer for where the state of writers is stored manage concurrency.
      * @param defaultHeader to be applied for each frame logged.
      * @param maxFrameLength maximum frame length supported by the underlying transport.
@@ -279,7 +279,7 @@ public class LogAppender
     {
         if (length > maxMessageLength)
         {
-            final String msg = String.format("encoded event exceeds maxMessageLength of %d, length=%d",
+            final String msg = String.format("encoded message exceeds maxMessageLength of %d, length=%d",
                                              maxMessageLength, length);
 
             throw new IllegalArgumentException(msg);

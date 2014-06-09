@@ -86,7 +86,7 @@ public class RcvChannelState
         sessionStateMap.forEach(
             (sessionId, session) ->
             {
-                conductorProxy.addRemoveRcvTermBufferEvent(destination, sessionId, channelId);
+                conductorProxy.removeRcvTermBuffer(destination, sessionId, channelId);
             });
     }
 }

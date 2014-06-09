@@ -30,7 +30,7 @@ public class ManyToOneRingBuffer implements RingBuffer
     /** Event type is padding to prevent fragmentation in the buffer. */
     public static final int PADDING_MSG_TYPE_ID = -1;
 
-    /** Buffer has insufficient capacity to record an event. */
+    /** Buffer has insufficient capacity to record a message. */
     public static final int INSUFFICIENT_CAPACITY = -1;
 
     private final AtomicBuffer buffer;
@@ -169,7 +169,7 @@ public class ManyToOneRingBuffer implements RingBuffer
     {
         if (length > maxMsgLength)
         {
-            final String msg = String.format("encoded event exceeds maxMsgLength of %d, length=%d",
+            final String msg = String.format("encoded message exceeds maxMsgLength of %d, length=%d",
                                              maxMsgLength, length);
 
             throw new IllegalArgumentException(msg);

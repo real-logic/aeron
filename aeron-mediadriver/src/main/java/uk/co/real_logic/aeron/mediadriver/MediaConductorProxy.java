@@ -50,26 +50,26 @@ public class MediaConductorProxy
         errorHeader.wrap(writeBuffer, 0);
     }
 
-    public void addCreateRcvTermBufferEvent(final UdpDestination destination,
-                                            final long sessionId,
-                                            final long channelId,
-                                            final long termId)
+    public void addCreateRcvTermBuffer(final UdpDestination destination,
+                                       final long sessionId,
+                                       final long channelId,
+                                       final long termId)
     {
-        writePublisherTermBufferEvent(destination, sessionId, channelId, termId, CREATE_TERM_BUFFER);
+        writePublisherTermBufferMsg(destination, sessionId, channelId, termId, CREATE_TERM_BUFFER);
     }
 
-    public void addRemoveRcvTermBufferEvent(final UdpDestination destination,
-                                            final long sessionId,
-                                            final long channelId)
+    public void removeRcvTermBuffer(final UdpDestination destination,
+                                    final long sessionId,
+                                    final long channelId)
     {
-        writePublisherTermBufferEvent(destination, sessionId, channelId, 0L, REMOVE_TERM_BUFFER);
+        writePublisherTermBufferMsg(destination, sessionId, channelId, 0L, REMOVE_TERM_BUFFER);
     }
 
-    private void writePublisherTermBufferEvent(final UdpDestination destination,
-                                               final long sessionId,
-                                               final long channelId,
-                                               final long termId,
-                                               final int typeId)
+    private void writePublisherTermBufferMsg(final UdpDestination destination,
+                                             final long sessionId,
+                                             final long channelId,
+                                             final long termId,
+                                             final int typeId)
     {
         qualifiedMessageFlyweight.sessionId(sessionId)
                                    .channelId(channelId)

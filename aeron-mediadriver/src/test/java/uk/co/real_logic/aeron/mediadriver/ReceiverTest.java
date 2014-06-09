@@ -61,7 +61,7 @@ public class ReceiverTest
         DataFrameHandler frameHandler = mock(DataFrameHandler.class);
         Mockito.when(frameHandlerFactory.newInstance(destination, receiver.sessionState())).thenReturn(frameHandler);
 
-        cursor.addNewSubscriberEvent(URI, ONE_CHANNEL);
+        cursor.newSubscriber(URI, ONE_CHANNEL);
         receiver.process();
 
         verify(frameHandlerFactory).newInstance(destination, receiver.sessionState());

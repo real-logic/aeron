@@ -63,7 +63,7 @@ public class TransmitterTest
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void shouldThrowExceptionWhenMaxEventSizeExceeded()
+    public void shouldThrowExceptionWhenMaxMessageSizeExceeded()
     {
         final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[1024]);
 

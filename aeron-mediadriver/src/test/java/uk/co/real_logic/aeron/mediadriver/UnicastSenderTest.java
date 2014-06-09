@@ -171,6 +171,7 @@ public class UnicastSenderTest
     }
 
     @Test
+    @Ignore("moved to MediaConductorTest")
     public void shouldErrorOnAddChannelOnExistingSession() throws Exception
     {
         successfullyAddChannel();

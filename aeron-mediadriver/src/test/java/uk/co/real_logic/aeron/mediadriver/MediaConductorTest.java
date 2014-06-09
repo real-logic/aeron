@@ -21,6 +21,7 @@ import org.junit.Before;
 import org.junit.Test;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
 import uk.co.real_logic.aeron.util.ConductorShmBuffers;
+import uk.co.real_logic.aeron.util.ErrorCode;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
@@ -29,19 +30,20 @@ import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
+import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.NEW_SEND_BUFFER_NOTIFICATION;
+import static uk.co.real_logic.aeron.util.ErrorCode.CHANNEL_ALREADY_EXISTS;
+import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ERROR_RESPONSE;
 
 /**
  * Test the Media Driver Conductor in isolation
@@ -64,6 +66,7 @@ public class MediaConductorTest
     final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
     final RingBuffer conductorNotifications = new ManyToOneRingBuffer(new AtomicBuffer(toClientBuffer));
     private final NewBufferMessageFlyweight bufferMessage = new NewBufferMessageFlyweight();
+    private final ErrorHeaderFlyweight errorHeader = new ErrorHeaderFlyweight();
 
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(256));
 
@@ -95,9 +98,10 @@ public class MediaConductorTest
     }
 
     @After
-    public void teardown()
+    public void teardown() throws Exception
     {
         mediaConductor.close();
+        mediaConductor.nioSelector().selectNowWithNoProcessing();
     }
 
     @Test
@@ -168,6 +172,37 @@ public class MediaConductorTest
         mediaConductor.process();
 
         assertThat(sender.channels().length(), is(0));
+    }
+
+    @Test
+    public void shouldErrorOnAddDuplicateChannelOnExistingSession() throws Exception
+    {
+        writeChannelMessage(ControlProtocolEvents.ADD_CHANNEL, 1L, 2L, 4000);
+        writeChannelMessage(ControlProtocolEvents.ADD_CHANNEL, 1L, 2L, 4000);
+
+        mediaConductor.process();
+
+        assertThat(sender.channels().length(), is(1));
+        assertNotNull(sender.channels().get(0));
+        assertThat(sender.channels().get(0).channelId(), is(1L));
+        assertThat(sender.channels().get(0).sessionId(), is(2L));
+
+        conductorNotifications.read((msgTypeId, buffer, index, length) -> {}, 0); // eat new buffer notification
+        final int msgs = conductorNotifications.read(
+            (msgTypeId, buffer, index, length) ->
+            {
+                assertThat(msgTypeId, is(ControlProtocolEvents.ERROR_RESPONSE));
+
+                errorHeader.wrap(buffer, index);
+                assertThat(errorHeader.errorCode(), is(ErrorCode.CHANNEL_ALREADY_EXISTS));
+                assertThat(errorHeader.errorStringLength(), greaterThan(0));
+
+                channelMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
+                assertThat(channelMessage.sessionId(), is(2L));
+                assertThat(channelMessage.channelId(), is(1L));
+                assertThat(channelMessage.destination(), is(DESTINATION_URI + 4000));
+            });
+        assertThat(msgs, is(1));
     }
 
     private void writeChannelMessage(final int msgTypeId, final long channelId, final long sessionId, final int port)

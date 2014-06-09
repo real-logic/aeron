@@ -45,11 +45,31 @@ public class Sender extends Agent
         channels.forEach(counter, SenderChannel::send);
     }
 
+    /**
+     * Return the underlying {@link uk.co.real_logic.aeron.util.AtomicArray}
+     *
+     * @return {@link uk.co.real_logic.aeron.util.AtomicArray} of the channels
+     */
+    public AtomicArray<SenderChannel> channels()
+    {
+        return channels;
+    }
+
+    /**
+     * Add channel to channels Sender must manage.
+     *
+     * @param channel to add
+     */
     public void addChannel(final SenderChannel channel)
     {
         channels.add(channel);
     }
 
+    /**
+     * Remove channel from channels Sender must manage.
+     *
+     * @param channel to remove
+     */
     public void removeChannel(final SenderChannel channel)
     {
         channels.remove(channel);

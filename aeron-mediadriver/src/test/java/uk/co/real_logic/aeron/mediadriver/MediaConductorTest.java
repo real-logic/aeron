@@ -15,81 +15,79 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
 import uk.co.real_logic.aeron.util.ConductorShmBuffers;
-import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.mock;
-import static uk.co.real_logic.aeron.mediadriver.MediaDriver.COMMAND_BUFFER_SZ;
-import static uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement.newMappedBufferManager;
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ADD_CHANNEL;
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.REMOVE_CHANNEL;
-import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
+import static org.mockito.Mockito.when;
 
+/**
+ * Test the Media Driver Conductor in isolation
+ */
 public class MediaConductorTest
 {
-    private static final String ADMIN_DIR = "adminDirName";
-    private static final String DESTINATION = "udp://localhost:";
+    private static final String DESTINATION_URI = "udp://localhost:";
 
-    private static String adminPath;
+    private final ConductorShmBuffers mockConductorShmBuffers = mock(ConductorShmBuffers.class);
+    private final ByteBuffer toDriverBuffer = ByteBuffer.allocate(MediaDriver.COMMAND_BUFFER_SZ +
+        RingBufferDescriptor.TRAILER_LENGTH);
+    private final ByteBuffer toClientBuffer = ByteBuffer.allocate(MediaDriver.COMMAND_BUFFER_SZ +
+        RingBufferDescriptor.TRAILER_LENGTH);
 
-    @BeforeClass
-    public static void setupDirectories() throws IOException
-    {
-        final File adminDir = new File(IoUtil.tmpDirName(), ADMIN_DIR);
-        if (adminDir.exists())
-        {
-            IoUtil.delete(adminDir, false);
-        }
+    private final NioSelector nioSelector = mock(NioSelector.class);
 
-        IoUtil.ensureDirectoryExists(adminDir, ADMIN_DIR);
-        adminPath = adminDir.getAbsolutePath();
-    }
+    private final BufferManagement mockBufferManagement = mock(BufferManagement.class);
+
+    final RingBuffer adminCommands = new ManyToOneRingBuffer(new AtomicBuffer(toDriverBuffer));
+    final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
 
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(256));
 
     private MediaConductor mediaConductor;
-    private List<SenderChannel> addedChannels = new ArrayList<>();
-    private List<SenderChannel> removedChannels = new ArrayList<>();
+
+    private Sender sender;
+    private Receiver receiver;
 
     @Before
-    public void setUp()
+    public void setUp() throws Exception
     {
+        when(mockConductorShmBuffers.toDriver()).thenReturn(toDriverBuffer);
+        when(mockConductorShmBuffers.toClient()).thenReturn(toClientBuffer);
+        when(mockBufferManagement.addPublisherChannel(anyObject(), anyLong(), anyLong()))
+                .thenReturn(BufferAndFrameUtils.createTestRotator(65536 + RingBufferDescriptor.TRAILER_LENGTH,
+                        LogBufferDescriptor.STATE_BUFFER_LENGTH));
+
         final MediaDriver.Context ctx = new MediaDriver.Context()
-            .conductorCommandBuffer(COMMAND_BUFFER_SZ)
-            .receiverCommandBuffer(COMMAND_BUFFER_SZ)
-            .receiverNioSelector(new NioSelector())
-            .conductorNioSelector(new NioSelector())
+            .conductorCommandBuffer(MediaDriver.COMMAND_BUFFER_SZ)
+            .receiverCommandBuffer(MediaDriver.COMMAND_BUFFER_SZ)
+            .receiverNioSelector(nioSelector)
+            .conductorNioSelector(nioSelector)
             .senderFlowControl(UnicastSenderControlStrategy::new)
-            .conductorShmBuffers(new ConductorShmBuffers(adminPath, COMMAND_BUFFER_SZ + TRAILER_LENGTH))
-            .bufferManagement(newMappedBufferManager(adminPath));
+            .conductorShmBuffers(mockConductorShmBuffers)
+            .bufferManagement(mockBufferManagement);
 
-        final Sender sender = new Sender()
-        {
-            public void addChannel(final SenderChannel channel)
-            {
-                addedChannels.add(channel);
-            }
-
-            public void removeChannel(final SenderChannel channel)
-            {
-                removedChannels.add(channel);
-            }
-        };
-
-        final Receiver receiver = mock(Receiver.class);
+        sender = new Sender();
+        receiver = mock(Receiver.class);
         mediaConductor = new MediaConductor(ctx, receiver, sender);
     }
 
@@ -100,95 +98,68 @@ public class MediaConductorTest
     }
 
     @Test
-    public void addingChannelShouldNotifySenderThread() throws IOException
+    public void shouldNotifySenderThreadOnAddingChannel() throws Exception
     {
-        writeChannelMessage(ADD_CHANNEL, 1L, 2L, 4000);
+        writeChannelMessage(ControlProtocolEvents.ADD_CHANNEL, 1L, 2L, 4000);
 
         mediaConductor.process();
 
-        assertThat(addedChannels, hasSize(1));
-        assertChannelHas(addedChannels.get(0), 1L, 2L);
-        assertAddedChannelsWereConnected();
-    }
-
-    private void assertChannelHas(final SenderChannel channel, final long channelId, final long sessionId)
-    {
-        assertThat(channel, notNullValue());
-        assertThat(channel.channelId(), is(channelId));
-        assertThat(channel.sessionId(), is(sessionId));
+        assertThat(sender.channels().length(), is(1));
+        assertNotNull(sender.channels().get(0));
+        assertThat(sender.channels().get(0).channelId(), is(1L));
+        assertThat(sender.channels().get(0).sessionId(), is(2L));
     }
 
     @Test
-    public void addingMultipleChannelsNotifiesSenderThread() throws IOException
+    public void shouldNotifySenderThreadUponAddingMultipleChannels() throws Exception
     {
-        writeChannelMessage(ADD_CHANNEL, 1L, 2L, 4001);
-        writeChannelMessage(ADD_CHANNEL, 1L, 3L, 4002);
-        writeChannelMessage(ADD_CHANNEL, 3L, 2L, 4003);
-        writeChannelMessage(ADD_CHANNEL, 3L, 4L, 4004);
+
+        writeChannelMessage(ControlProtocolEvents.ADD_CHANNEL, 1L, 2L, 4001);
+        writeChannelMessage(ControlProtocolEvents.ADD_CHANNEL, 1L, 3L, 4002);
+        writeChannelMessage(ControlProtocolEvents.ADD_CHANNEL, 3L, 2L, 4003);
+        writeChannelMessage(ControlProtocolEvents.ADD_CHANNEL, 3L, 4L, 4004);
 
         mediaConductor.process();
 
-        assertThat(addedChannels, hasSize(4));
-        assertChannelHas(addedChannels.get(0), 1L, 2L);
-        assertChannelHas(addedChannels.get(1), 1L, 3L);
-        assertChannelHas(addedChannels.get(2), 3L, 2L);
-        assertChannelHas(addedChannels.get(3), 3L, 4L);
-
-        assertAddedChannelsWereConnected();
+        assertThat(sender.channels().length(), is(4));
     }
 
     @Test
-    public void removingChannelShouldNotifySenderThread() throws IOException
+    public void shouldNotifySenderThreadUponRemovingChannel() throws Exception
     {
-        writeChannelMessage(ADD_CHANNEL, 1L, 2L, 4005);
-        writeChannelMessage(REMOVE_CHANNEL, 1L, 2L, 4005);
+        writeChannelMessage(ControlProtocolEvents.ADD_CHANNEL, 1L, 2L, 4005);
+        writeChannelMessage(ControlProtocolEvents.REMOVE_CHANNEL, 1L, 2L, 4005);
 
         mediaConductor.process();
 
-        assertThat(removedChannels, is(addedChannels));
-        assertRemovedChannelsWereClosed();
+        assertThat(sender.channels().length(), is(0));
     }
 
     @Test
-    public void removingMultipleChannelsNotifiesSenderThread() throws IOException
+    public void shouldNotifySenderThreadUponRemovingMultipleChannels() throws IOException
     {
-        writeChannelMessage(ADD_CHANNEL, 1L, 2L, 4006);
-        writeChannelMessage(ADD_CHANNEL, 1L, 3L, 4007);
-        writeChannelMessage(ADD_CHANNEL, 3L, 2L, 4008);
-        writeChannelMessage(ADD_CHANNEL, 3L, 4L, 4008);
+        writeChannelMessage(ControlProtocolEvents.ADD_CHANNEL, 1L, 2L, 4006);
+        writeChannelMessage(ControlProtocolEvents.ADD_CHANNEL, 1L, 3L, 4007);
+        writeChannelMessage(ControlProtocolEvents.ADD_CHANNEL, 3L, 2L, 4008);
+        writeChannelMessage(ControlProtocolEvents.ADD_CHANNEL, 3L, 4L, 4008);
 
-        writeChannelMessage(REMOVE_CHANNEL, 1L, 2L, 4006);
-        writeChannelMessage(REMOVE_CHANNEL, 1L, 3L, 4007);
-        writeChannelMessage(REMOVE_CHANNEL, 3L, 2L, 4008);
-        writeChannelMessage(REMOVE_CHANNEL, 3L, 4L, 4008);
+        writeChannelMessage(ControlProtocolEvents.REMOVE_CHANNEL, 1L, 2L, 4006);
+        writeChannelMessage(ControlProtocolEvents.REMOVE_CHANNEL, 1L, 3L, 4007);
+        writeChannelMessage(ControlProtocolEvents.REMOVE_CHANNEL, 3L, 2L, 4008);
+        writeChannelMessage(ControlProtocolEvents.REMOVE_CHANNEL, 3L, 4L, 4008);
 
         mediaConductor.process();
 
-        assertThat(removedChannels, is(addedChannels));
-        assertRemovedChannelsWereClosed();
-    }
-
-    private void assertRemovedChannelsWereClosed()
-    {
-        removedChannels.forEach(channel -> assertFalse("Channel wasn't closed", channel.isOpen()));
-    }
-
-    private void assertAddedChannelsWereConnected()
-    {
-        addedChannels.forEach(channel -> assertTrue("Channel isn't open", channel.isOpen()));
+        assertThat(sender.channels().length(), is(0));
     }
 
     private void writeChannelMessage(final int msgTypeId, final long channelId, final long sessionId, final int port)
         throws IOException
     {
-        final ByteBuffer buffer = new ConductorShmBuffers(adminPath).toDriver();
-        final RingBuffer adminCommands = new ManyToOneRingBuffer(new AtomicBuffer(buffer));
-
-        final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
         channelMessage.wrap(writeBuffer, 0);
         channelMessage.channelId(channelId);
         channelMessage.sessionId(sessionId);
-        channelMessage.destination(DESTINATION + port);
+        channelMessage.destination(DESTINATION_URI + port);
 
         adminCommands.write(msgTypeId, writeBuffer, 0, channelMessage.length());
     }

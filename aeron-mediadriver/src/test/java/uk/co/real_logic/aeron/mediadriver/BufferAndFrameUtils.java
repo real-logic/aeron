@@ -26,6 +26,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.stream.Stream;
 
+import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
+
 /**
  * Buffer utility functions
  */
@@ -64,7 +66,19 @@ public class BufferAndFrameUtils
 
             public void bufferInformation(final NewBufferMessageFlyweight newBufferMessage)
             {
+                for(int i = 0; i < BUFFER_COUNT; i++)
+                {
+                    newBufferMessage.bufferOffset(i, 0);
+                    newBufferMessage.bufferLength(i, (int)logBufferSize);
+                    newBufferMessage.location(i, "logBuffer-" + i);
+                }
 
+                for(int i = 0; i < BUFFER_COUNT; i++)
+                {
+                    newBufferMessage.bufferOffset(i + BUFFER_COUNT, 0);
+                    newBufferMessage.bufferLength(i + BUFFER_COUNT, (int)stateBufferSize);
+                    newBufferMessage.location(i + BUFFER_COUNT, "stateBuffer-" + i);
+                }
             }
         };
     }

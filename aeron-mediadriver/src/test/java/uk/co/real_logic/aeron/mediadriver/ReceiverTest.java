@@ -34,7 +34,7 @@ public class ReceiverTest
     private static final long[] ONE_CHANNEL = { CHANNEL_ID };
 
     private Receiver receiver;
-    private ReceiverProxy cursor;
+    private ReceiverProxy proxy;
     private RcvFrameHandlerFactory frameHandlerFactory;
 
     @Before
@@ -44,13 +44,13 @@ public class ReceiverTest
         frameHandlerFactory = mock(RcvFrameHandlerFactory.class);
 
         final MediaDriver.Context context = new MediaDriver.Context()
-                .conductorCommandBuffer(COMMAND_BUFFER_SZ)
-                .receiverCommandBuffer(COMMAND_BUFFER_SZ)
-                .receiverNioSelector(new NioSelector())
-                .bufferManagement(bufferManagement)
-                .rcvFrameHandlerFactory(frameHandlerFactory);
+            .conductorCommandBuffer(COMMAND_BUFFER_SZ)
+            .receiverCommandBuffer(COMMAND_BUFFER_SZ)
+            .receiverNioSelector(new NioSelector())
+            .bufferManagement(bufferManagement)
+            .rcvFrameHandlerFactory(frameHandlerFactory);
 
-        cursor = new ReceiverProxy(context.receiverCommandBuffer(), context.receiverNioSelector());
+        proxy = new ReceiverProxy(context.receiverCommandBuffer(), context.receiverNioSelector());
         receiver = new Receiver(context);
     }
 
@@ -61,7 +61,7 @@ public class ReceiverTest
         DataFrameHandler frameHandler = mock(DataFrameHandler.class);
         Mockito.when(frameHandlerFactory.newInstance(destination, receiver.sessionState())).thenReturn(frameHandler);
 
-        cursor.newSubscriber(URI, ONE_CHANNEL);
+        proxy.newSubscriber(URI, ONE_CHANNEL);
         receiver.process();
 
         verify(frameHandlerFactory).newInstance(destination, receiver.sessionState());

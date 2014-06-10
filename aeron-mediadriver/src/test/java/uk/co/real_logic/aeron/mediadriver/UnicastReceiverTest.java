@@ -147,6 +147,7 @@ public class UnicastReceiverTest
     }
 
     @Test(timeout = 1000)
+    @Ignore("moved to MediaConductorTest")
     public void shouldSendErrorForInvalidUri() throws Exception
     {
         writeSubscriberMessage(ADD_SUBSCRIBER, INVALID_URI, ONE_CHANNEL);
@@ -168,6 +169,7 @@ public class UnicastReceiverTest
     }
 
     @Test(timeout = 1000)
+    @Ignore("moved to MediaConductorTest")
     public void shouldSendErrorForRemovingNonExistentReceiver() throws Exception
     {
         writeSubscriberMessage(REMOVE_SUBSCRIBER, URI, ONE_CHANNEL);
@@ -189,6 +191,7 @@ public class UnicastReceiverTest
     }
 
     @Test(timeout = 1000)
+    @Ignore("moved to MediaConductorTest")
     public void shouldSendErrorForRemovingReceiverFromWrongChannels() throws Exception
     {
         writeSubscriberMessage(ADD_SUBSCRIBER, URI, ONE_CHANNEL);
@@ -211,6 +214,7 @@ public class UnicastReceiverTest
     }
 
     @Test(timeout = 1000)
+    @Ignore("moved to MediaConductorTest")
     public void shouldKeepFrameHandlerUponRemoveOfAllButOneChannel() throws Exception
     {
         final UdpDestination destination = udpDestination();
@@ -233,6 +237,7 @@ public class UnicastReceiverTest
     }
 
     @Test(timeout = 1000)
+    @Ignore("moved to MediaConductorTest")
     public void shouldOnlyRemoveFrameHandlerUponRemovalOfAllChannels() throws Exception
     {
         final UdpDestination destination = udpDestination();
@@ -301,6 +306,7 @@ public class UnicastReceiverTest
     }
 
     @Test(timeout = 1000)
+    @Ignore("moved to MediaConductorTest")
     public void shouldBeAbleToAddThenRemoveReceiverWithoutBuffers() throws Exception
     {
         writeSubscriberMessage(ADD_SUBSCRIBER, URI, ONE_CHANNEL);

@@ -165,6 +165,18 @@ public class MediaConductorTest
     }
 
     @Test
+    public void shouldBeAbleToAddAndRemoveSingleSubscriber() throws Exception
+    {
+        writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIBER, DESTINATION_URI + 4000, ONE_CHANNEL);
+        writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIBER, DESTINATION_URI + 4000, ONE_CHANNEL);
+
+        mediaConductor.process();
+        receiver.process();
+
+        assertNull(receiver.frameHandler(UdpDestination.parse(DESTINATION_URI + 4000)));
+    }
+
+    @Test
     public void shouldBeAbleToAddMultipleChannels() throws Exception
     {
         writeChannelMessage(ControlProtocolEvents.ADD_CHANNEL, 1L, 2L, 4001);
@@ -205,6 +217,61 @@ public class MediaConductorTest
         mediaConductor.process();
 
         assertThat(sender.channels().length(), is(0));
+    }
+
+    @Test
+    public void shouldKeepFrameHandlerUponRemovalOfAllButOneSubscriber() throws Exception
+    {
+        final UdpDestination destination = UdpDestination.parse(DESTINATION_URI + 4000);
+
+        writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIBER, DESTINATION_URI + 4000, THREE_CHANNELS);
+
+        mediaConductor.process();
+        receiver.process();
+
+        final DataFrameHandler frameHandler = receiver.frameHandler(destination);
+
+        assertNotNull(frameHandler);
+        assertThat(frameHandler.channelInterestMap().size(), is(3));
+
+        writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIBER, DESTINATION_URI + 4000, TWO_CHANNELS);
+
+        mediaConductor.process();
+        receiver.process();
+
+        assertNotNull(receiver.frameHandler(destination));
+        assertThat(frameHandler.channelInterestMap().size(), is(1));
+    }
+
+    @Test
+    public void shouldOnlyRemoveFrameHandlerUponRemovalOfAllSubscribers() throws Exception
+    {
+        final UdpDestination destination = UdpDestination.parse(DESTINATION_URI + 4000);
+
+        writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIBER, DESTINATION_URI + 4000, THREE_CHANNELS);
+
+        mediaConductor.process();
+        receiver.process();
+
+        final DataFrameHandler frameHandler = receiver.frameHandler(destination);
+
+        assertNotNull(frameHandler);
+        assertThat(frameHandler.channelInterestMap().size(), is(3));
+
+        writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIBER, DESTINATION_URI + 4000, TWO_CHANNELS);
+
+        mediaConductor.process();
+        receiver.process();
+
+        assertNotNull(receiver.frameHandler(destination));
+        assertThat(frameHandler.channelInterestMap().size(), is(1));
+
+        writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIBER, DESTINATION_URI + 4000, ONE_CHANNEL);
+
+        mediaConductor.process();
+        receiver.process();
+
+        assertNull(receiver.frameHandler(destination));
     }
 
     @Test
@@ -346,6 +413,57 @@ public class MediaConductorTest
                 subscriberMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
                 assertThat(subscriberMessage.channelIds(), is(ONE_CHANNEL));
                 assertThat(subscriberMessage.destination(), is(INVALID_URI));
+            });
+        assertThat(msgs, is(1));
+    }
+
+    @Test
+    public void shouldSendErrorOnRemoveSubscriberWithNonExistentDestination() throws Exception
+    {
+        writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIBER, DESTINATION_URI + 4000, ONE_CHANNEL);
+
+        mediaConductor.process();
+        receiver.process();
+        mediaConductor.process();
+
+        final int msgs = conductorNotifications.read(
+            (msgTypeId, buffer, index, length) ->
+            {
+                assertThat(msgTypeId, is(ControlProtocolEvents.ERROR_RESPONSE));
+
+                errorHeader.wrap(buffer, index);
+                assertThat(errorHeader.errorCode(), is(ErrorCode.SUBSCRIBER_NOT_REGISTERED));
+                assertThat(errorHeader.errorStringLength(), is(0));
+
+                subscriberMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
+                assertThat(subscriberMessage.channelIds(), is(ONE_CHANNEL));
+                assertThat(subscriberMessage.destination(), is(DESTINATION_URI + 4000));
+            });
+        assertThat(msgs, is(1));
+    }
+
+    @Test
+    public void shouldSendErrorOnRemoveSubscriberFromWrongChannels() throws Exception
+    {
+        writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIBER, DESTINATION_URI + 4000, ONE_CHANNEL);
+        writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIBER, DESTINATION_URI + 4000, ANOTHER_CHANNEL);
+
+        mediaConductor.process();
+        receiver.process();
+        mediaConductor.process();
+
+        final int msgs = conductorNotifications.read(
+            (msgTypeId, buffer, index, length) ->
+            {
+                assertThat(msgTypeId, is(ControlProtocolEvents.ERROR_RESPONSE));
+
+                errorHeader.wrap(buffer, index);
+                assertThat(errorHeader.errorCode(), is(ErrorCode.SUBSCRIBER_NOT_REGISTERED));
+                assertThat(errorHeader.errorStringLength(), is(0));
+
+                subscriberMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
+                assertThat(subscriberMessage.channelIds(), is(ANOTHER_CHANNEL));
+                assertThat(subscriberMessage.destination(), is(DESTINATION_URI + 4000));
             });
         assertThat(msgs, is(1));
     }

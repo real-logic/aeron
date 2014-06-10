@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
@@ -29,15 +30,16 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 /**
  * Test Receiver in isolation
@@ -53,7 +55,7 @@ public class ReceiverTest
     private static final long[] ONE_CHANNEL = { CHANNEL_ID };
     private static final long TERM_ID = 3;
     private static final long SESSION_ID = 1;
-    private static final byte[] PAYLOAD = "This is some payload!".getBytes();
+    private static final byte[] FAKE_PAYLOAD = new byte[128];
 
     private final NioSelector mockNioSelector = mock(NioSelector.class);
     private final BufferManagement mockBufferManagement = mock(BufferManagement.class);
@@ -65,8 +67,10 @@ public class ReceiverTest
 
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final QualifiedMessageFlyweight messageHeader = new QualifiedMessageFlyweight();
+    private final StatusMessageFlyweight statusHeader = new StatusMessageFlyweight();
 
-    private final InetSocketAddress srcAddr = new InetSocketAddress("localhost", 40123);
+    private DatagramChannel senderChannel;
+    private InetSocketAddress senderAddr = new InetSocketAddress("localhost", 40123);
 
     private Receiver receiver;
     private ReceiverProxy receiverProxy;
@@ -94,13 +98,19 @@ public class ReceiverTest
 
         receiver = new Receiver(ctx);
 
+        senderChannel = DatagramChannel.open();
+        senderChannel.bind(senderAddr);
+        senderChannel.configureBlocking(false);
+
         dataHeader.wrap(dataBuffer, 0);  // we will only be using these together
     }
 
     @After
-    public void tearDown()
+    public void tearDown() throws Exception
     {
+        senderChannel.close();
         receiver.close();
+        receiver.nioSelector().selectNowWithNoProcessing();
     }
 
     @Test
@@ -116,7 +126,7 @@ public class ReceiverTest
 
         fillDataFrame(dataHeader, 0, null);
 
-        frameHandler.onDataFrame(dataHeader, srcAddr);  // 0 length data frame
+        frameHandler.onDataFrame(dataHeader, senderAddr);  // 0 length data frame
 
         final int msgs = toConductorBuffer.read(        // term buffer created
             (msgTypeId, buffer, index, length) ->
@@ -128,11 +138,69 @@ public class ReceiverTest
                 assertThat(messageHeader.sessionId(), is(SESSION_ID));
                 assertThat(messageHeader.destination(), is(URI));
 
-                // pass in new term buffer from media conductor
+                // pass in new term buffer from media conductor, which should trigger SM
                 receiverProxy.newReceiveBuffer(new NewReceiveBufferEvent(destination, SESSION_ID,
                         CHANNEL_ID, TERM_ID, rotator));
             });
         assertThat(msgs, is(1));
+
+        receiver.process();
+
+        final ByteBuffer rcvBuffer = ByteBuffer.allocateDirect(256);
+        final InetSocketAddress rcvAddr = (InetSocketAddress)senderChannel.receive(rcvBuffer);
+
+        statusHeader.wrap(rcvBuffer);
+
+        assertNotNull(rcvAddr);
+        assertThat(rcvAddr.getPort(), is(destination.remoteData().getPort()));
+        assertThat(statusHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_SM));
+        assertThat(statusHeader.channelId(), is(ONE_CHANNEL[0]));
+        assertThat(statusHeader.sessionId(), is(SESSION_ID));
+        assertThat(statusHeader.termId(), is(TERM_ID));
+        assertThat(statusHeader.frameLength(), is(StatusMessageFlyweight.HEADER_LENGTH));
+    }
+
+    @Test
+    @Ignore("does not work correctly yet")
+    public void shouldBeAbleToHandleTermBufferRolloverCorrectly() throws Exception
+    {
+        receiverProxy.newSubscriber(URI, ONE_CHANNEL);  // ADD_SUBSCRIBER from client
+
+        receiver.process();
+
+        DataFrameHandler frameHandler = receiver.frameHandler(destination);
+
+        assertNotNull(frameHandler);
+
+        fillDataFrame(dataHeader, 0, null);
+
+        frameHandler.onDataFrame(dataHeader, senderAddr);  // 0 length data frame
+
+        final int msgs = toConductorBuffer.read(        // term buffer created
+                (msgTypeId, buffer, index, length) ->
+                {
+                    // pass in new term buffer from media conductor, which should trigger SM
+                    receiverProxy.newReceiveBuffer(new NewReceiveBufferEvent(destination, SESSION_ID,
+                            CHANNEL_ID, TERM_ID, rotator));
+                });
+        assertThat(msgs, is(1));
+
+        final int packetsToFillBuffer = MediaDriver.COMMAND_BUFFER_SZ / FAKE_PAYLOAD.length;
+        final int iterations = 4 * packetsToFillBuffer;
+        final int offset = 0;
+        long termId = TERM_ID;
+
+        for (int i = 0; i < iterations; i++)
+        {
+            if ((i % packetsToFillBuffer) == 0)
+            {
+                termId++;
+            }
+
+            fillDataFrame(dataHeader, offset, FAKE_PAYLOAD);
+            frameHandler.onDataFrame(dataHeader, senderAddr);
+            receiver.process();
+        }
     }
 
     private void fillDataFrame(final DataHeaderFlyweight header, final int termOffset, final byte[] payload)

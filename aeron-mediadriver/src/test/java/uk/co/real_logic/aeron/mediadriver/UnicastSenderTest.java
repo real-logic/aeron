@@ -116,6 +116,9 @@ public class UnicastSenderTest
             .conductorShmBuffers(buffers.mediaShmBuffers())
             .bufferManagement(bufferManagement)
             .mtuLength(MAX_FRAME_LENGTH)
+            .conductorTimerWheel(new TimerWheel(MEDIA_CONDUCTOR_TICK_DURATION_US,
+                                                TimeUnit.MICROSECONDS,
+                                                MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
             .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .conductorTimerWheel(timerWheel);
 

@@ -81,19 +81,14 @@ public class MediaConductor extends Agent
         this.sender = sender;
         this.senderFlowControl = ctx.senderFlowControl();
 
-        newBufferMessage.wrap(msgBuffer, 0);
-
-        timerWheel = ctx.conductorTimerWheel() != null ?
-            ctx.conductorTimerWheel() :
-            new TimerWheel(MEDIA_CONDUCTOR_TICK_DURATION_US,
-                           TimeUnit.MICROSECONDS,
-                           MEDIA_CONDUCTOR_TICKS_PER_WHEEL);
-
+        timerWheel = ctx.conductorTimerWheel();
         heartbeatTimer = newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheck);
 
         conductorShmBuffers = ctx.conductorShmBuffers();
         toMediaBuffer = new ManyToOneRingBuffer(new AtomicBuffer(conductorShmBuffers.toDriver()));
         toClientBuffer = new ManyToOneRingBuffer(new AtomicBuffer(conductorShmBuffers.toClient()));
+
+        newBufferMessage.wrap(msgBuffer, 0);
     }
 
     public ControlFrameHandler frameHandler(final UdpDestination destination)

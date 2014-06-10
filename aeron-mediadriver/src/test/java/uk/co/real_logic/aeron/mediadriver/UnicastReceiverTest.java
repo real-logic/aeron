@@ -32,6 +32,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 import static org.hamcrest.Matchers.greaterThan;
@@ -39,6 +40,8 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.COMMAND_BUFFER_SZ;
+import static uk.co.real_logic.aeron.mediadriver.MediaDriver.MEDIA_CONDUCTOR_TICKS_PER_WHEEL;
+import static uk.co.real_logic.aeron.mediadriver.MediaDriver.MEDIA_CONDUCTOR_TICK_DURATION_US;
 import static uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement.newMappedBufferManager;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION;
@@ -101,6 +104,9 @@ public class UnicastReceiverTest
             .conductorNioSelector(new NioSelector())
             .senderFlowControl(UnicastSenderControlStrategy::new)
             .conductorShmBuffers(new ConductorShmBuffers(buffers.adminDirName()))
+            .conductorTimerWheel(new TimerWheel(MEDIA_CONDUCTOR_TICK_DURATION_US,
+                                                TimeUnit.MICROSECONDS,
+                                                MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
             .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .bufferManagement(bufferManagement);
 

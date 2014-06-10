@@ -28,6 +28,7 @@ import java.nio.ByteBuffer;
 import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
@@ -174,6 +175,9 @@ public class MediaDriver implements AutoCloseable
                                 .senderFlowControl(UnicastSenderControlStrategy::new)
                                 .conductorShmBuffers(conductorShmBuffers)
                                 .bufferManagement(bufferManagement)
+                                .conductorTimerWheel(new TimerWheel(MEDIA_CONDUCTOR_TICK_DURATION_US,
+                                                                    TimeUnit.MICROSECONDS,
+                                                                    MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
                                 .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024))
                                 .mtuLength(CommonConfiguration.MTU_LENGTH);
 

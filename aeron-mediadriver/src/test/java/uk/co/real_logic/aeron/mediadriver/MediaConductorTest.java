@@ -21,6 +21,7 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
 import uk.co.real_logic.aeron.util.ConductorShmBuffers;
 import uk.co.real_logic.aeron.util.ErrorCode;
+import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
@@ -34,6 +35,7 @@ import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
@@ -42,6 +44,8 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static uk.co.real_logic.aeron.mediadriver.MediaDriver.MEDIA_CONDUCTOR_TICKS_PER_WHEEL;
+import static uk.co.real_logic.aeron.mediadriver.MediaDriver.MEDIA_CONDUCTOR_TICK_DURATION_US;
 
 /**
  * Test the Media Driver Conductor in isolation
@@ -88,6 +92,9 @@ public class MediaConductorTest
             .conductorNioSelector(nioSelector)
             .senderFlowControl(UnicastSenderControlStrategy::new)
             .conductorShmBuffers(mockConductorShmBuffers)
+            .conductorTimerWheel(new TimerWheel(MEDIA_CONDUCTOR_TICK_DURATION_US,
+                                                TimeUnit.MICROSECONDS,
+                                                MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
             .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .bufferManagement(mockBufferManagement);
 

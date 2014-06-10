@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import org.hamcrest.core.Is;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,8 +41,6 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static uk.co.real_logic.aeron.util.ErrorCode.CHANNEL_ALREADY_EXISTS;
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ERROR_RESPONSE;
 
 /**
  * Test the Media Driver Conductor in isolation
@@ -113,8 +110,8 @@ public class MediaConductorTest
 
         assertThat(sender.channels().length(), is(1));
         assertNotNull(sender.channels().get(0));
-        assertThat(sender.channels().get(0).channelId(), is(1L));
-        assertThat(sender.channels().get(0).sessionId(), is(2L));
+        assertThat(sender.channels().get(0).sessionId(), is(1L));
+        assertThat(sender.channels().get(0).channelId(), is(2L));
 
         final int msgs = conductorNotifications.read(
             (msgTypeId, buffer, index, length) ->
@@ -123,8 +120,8 @@ public class MediaConductorTest
 
                 bufferMessage.wrap(buffer, index);
 
-                assertThat(bufferMessage.sessionId(), is(2L));
-                assertThat(bufferMessage.channelId(), is(1L));
+                assertThat(bufferMessage.sessionId(), is(1L));
+                assertThat(bufferMessage.channelId(), is(2L));
                 assertThat(bufferMessage.destination(), is(DESTINATION_URI + 4000));
             });
         assertThat(msgs, is(1));
@@ -184,8 +181,8 @@ public class MediaConductorTest
 
         assertThat(sender.channels().length(), is(1));
         assertNotNull(sender.channels().get(0));
-        assertThat(sender.channels().get(0).channelId(), is(1L));
-        assertThat(sender.channels().get(0).sessionId(), is(2L));
+        assertThat(sender.channels().get(0).sessionId(), is(1L));
+        assertThat(sender.channels().get(0).channelId(), is(2L));
 
         conductorNotifications.read((msgTypeId, buffer, index, length) -> {}, 0); // eat new buffer notification
         final int msgs = conductorNotifications.read(
@@ -198,14 +195,101 @@ public class MediaConductorTest
                 assertThat(errorHeader.errorStringLength(), greaterThan(0));
 
                 channelMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
-                assertThat(channelMessage.sessionId(), is(2L));
-                assertThat(channelMessage.channelId(), is(1L));
+                assertThat(channelMessage.sessionId(), is(1L));
+                assertThat(channelMessage.channelId(), is(2L));
                 assertThat(channelMessage.destination(), is(DESTINATION_URI + 4000));
             });
         assertThat(msgs, is(1));
     }
 
-    private void writeChannelMessage(final int msgTypeId, final long channelId, final long sessionId, final int port)
+    @Test
+    public void shouldErrorOnRemoveChannelOnUnknownDestination() throws Exception
+    {
+        writeChannelMessage(ControlProtocolEvents.REMOVE_CHANNEL, 1L, 2L, 4000);
+
+        mediaConductor.process();
+
+        assertThat(sender.channels().length(), is(0));
+        final int msgs = conductorNotifications.read(
+                (msgTypeId, buffer, index, length) ->
+                {
+                    assertThat(msgTypeId, is(ControlProtocolEvents.ERROR_RESPONSE));
+
+                    errorHeader.wrap(buffer, index);
+                    assertThat(errorHeader.errorCode(), is(ErrorCode.INVALID_DESTINATION));
+                    assertThat(errorHeader.errorStringLength(), greaterThan(0));
+
+                    channelMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
+                    assertThat(channelMessage.sessionId(), is(1L));
+                    assertThat(channelMessage.channelId(), is(2L));
+                    assertThat(channelMessage.destination(), is(DESTINATION_URI + 4000));
+                });
+        assertThat(msgs, is(1));
+    }
+
+    @Test
+    public void shouldErrorOnRemoveChannelOnUnknownSessionId() throws Exception
+    {
+        writeChannelMessage(ControlProtocolEvents.ADD_CHANNEL, 1L, 2L, 4000);
+        writeChannelMessage(ControlProtocolEvents.REMOVE_CHANNEL, 2L, 2L, 4000);
+
+        mediaConductor.process();
+
+        assertThat(sender.channels().length(), is(1));
+        assertNotNull(sender.channels().get(0));
+        assertThat(sender.channels().get(0).sessionId(), is(1L));
+        assertThat(sender.channels().get(0).channelId(), is(2L));
+
+        conductorNotifications.read((msgTypeId, buffer, index, length) -> {}, 0); // eat new buffer notification
+        final int msgs = conductorNotifications.read(
+                (msgTypeId, buffer, index, length) ->
+                {
+                    assertThat(msgTypeId, is(ControlProtocolEvents.ERROR_RESPONSE));
+
+                    errorHeader.wrap(buffer, index);
+                    assertThat(errorHeader.errorCode(), is(ErrorCode.CHANNEL_UNKNOWN));
+                    assertThat(errorHeader.errorStringLength(), greaterThan(0));
+
+                    channelMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
+                    assertThat(channelMessage.sessionId(), is(2L));
+                    assertThat(channelMessage.channelId(), is(2L));
+                    assertThat(channelMessage.destination(), is(DESTINATION_URI + 4000));
+                });
+        assertThat(msgs, is(1));
+    }
+
+    @Test
+    public void shouldErrorOnRemoveChannelOnUnknownChannelId() throws Exception
+    {
+        writeChannelMessage(ControlProtocolEvents.ADD_CHANNEL, 1L, 2L, 4000);
+        writeChannelMessage(ControlProtocolEvents.REMOVE_CHANNEL, 1L, 3L, 4000);
+
+        mediaConductor.process();
+
+        assertThat(sender.channels().length(), is(1));
+        assertNotNull(sender.channels().get(0));
+        assertThat(sender.channels().get(0).sessionId(), is(1L));
+        assertThat(sender.channels().get(0).channelId(), is(2L));
+
+        conductorNotifications.read((msgTypeId, buffer, index, length) -> {}, 0); // eat new buffer notification
+        final int msgs = conductorNotifications.read(
+                (msgTypeId, buffer, index, length) ->
+                {
+                    assertThat(msgTypeId, is(ControlProtocolEvents.ERROR_RESPONSE));
+
+                    errorHeader.wrap(buffer, index);
+                    assertThat(errorHeader.errorCode(), is(ErrorCode.CHANNEL_UNKNOWN));
+                    assertThat(errorHeader.errorStringLength(), greaterThan(0));
+
+                    channelMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
+                    assertThat(channelMessage.sessionId(), is(1L));
+                    assertThat(channelMessage.channelId(), is(3L));
+                    assertThat(channelMessage.destination(), is(DESTINATION_URI + 4000));
+                });
+        assertThat(msgs, is(1));
+    }
+
+    private void writeChannelMessage(final int msgTypeId, final long sessionId, final long channelId, final int port)
         throws IOException
     {
         channelMessage.wrap(writeBuffer, 0);

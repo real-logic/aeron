@@ -38,7 +38,6 @@ public class Receiver extends Agent
     private final Map<UdpDestination, DataFrameHandler> rcvDestinationMap = new HashMap<>();
     private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
     private final Queue<NewReceiveBufferEvent> newBufferEventQueue;
-    private final RcvFrameHandlerFactory frameHandlerFactory;
 
     private final AtomicArray<RcvSessionState> sessionState = new AtomicArray<>();
 
@@ -49,7 +48,6 @@ public class Receiver extends Agent
         commandBuffer = context.receiverCommandBuffer();
         conductorProxy = context.mediaConductorProxy();
         nioSelector = context.receiverNioSelector();
-        frameHandlerFactory = context.rcvFrameHandlerFactory();
         newBufferEventQueue = context.newReceiveBufferEventQueue();
     }
 
@@ -166,49 +164,49 @@ public class Receiver extends Agent
     private void onNewSubscriber(final String destination, final long[] channelIdList) throws Exception
     {
         final UdpDestination rcvDestination = UdpDestination.parse(destination);
-        DataFrameHandler rcv = frameHandler(rcvDestination);
+        DataFrameHandler frameHandler = frameHandler(rcvDestination);
 
-        if (null == rcv)
+        if (null == frameHandler)
         {
-            rcv = frameHandlerFactory.newInstance(rcvDestination, sessionState);
-            rcvDestinationMap.put(rcvDestination, rcv);
+            frameHandler = new DataFrameHandler(rcvDestination, nioSelector, conductorProxy, sessionState);
+            rcvDestinationMap.put(rcvDestination, frameHandler);
         }
 
-        rcv.addChannels(channelIdList);
+        frameHandler.addChannels(channelIdList);
     }
 
     private void onRemoveSubscriber(final String destination, final long[] channelIdList)
     {
         final UdpDestination rcvDestination = UdpDestination.parse(destination);
-        DataFrameHandler rcv = frameHandler(rcvDestination);
+        DataFrameHandler frameHandler = frameHandler(rcvDestination);
 
-        if (null == rcv)
+        if (null == frameHandler)
         {
             throw new ReceiverNotRegisteredException("destination unknown for receiver remove: " + destination);
         }
 
-        rcv.removeChannels(channelIdList);
+        frameHandler.removeChannels(channelIdList);
 
         // if all channels gone, then take care of removing everything and closing the framehandler
-        if (0 == rcv.channelCount())
+        if (0 == frameHandler.channelCount())
         {
             rcvDestinationMap.remove(rcvDestination);
-            rcv.close();
+            frameHandler.close();
         }
     }
 
     private void attachBufferState(final NewReceiveBufferEvent buffer)
     {
-        DataFrameHandler rcv = frameHandler(buffer.destination());
+        DataFrameHandler frameHandler = frameHandler(buffer.destination());
 
-        if (null == rcv)
+        if (null == frameHandler)
         {
             // should not happen
             // TODO: log this
             return;
         }
 
-        rcv.attachBufferState(buffer);
+        frameHandler.attachBufferState(buffer);
     }
 
     /**

@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
@@ -36,21 +37,18 @@ public class ReceiverTest
 
     private Receiver receiver;
     private ReceiverProxy proxy;
-    private RcvFrameHandlerFactory frameHandlerFactory;
 
     @Before
     public void setUp() throws Exception
     {
         final BufferManagement bufferManagement = mock(BufferManagement.class);
-        frameHandlerFactory = mock(RcvFrameHandlerFactory.class);
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .conductorCommandBuffer(COMMAND_BUFFER_SZ)
             .receiverCommandBuffer(COMMAND_BUFFER_SZ)
             .receiverNioSelector(new NioSelector())
             .bufferManagement(bufferManagement)
-            .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024))
-            .rcvFrameHandlerFactory(frameHandlerFactory);
+            .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024));
 
         ctx.mediaConductorProxy(new MediaConductorProxy(ctx.mediaCommandBuffer(), ctx.conductorNioSelector()));
 
@@ -62,16 +60,17 @@ public class ReceiverTest
     }
 
     @Test
+    @Ignore("not needed with tests in MediaConductorTest")
     public void addingSubscriberShouldCreateHandler() throws Exception
     {
         UdpDestination destination = UdpDestination.parse(URI);
         DataFrameHandler frameHandler = mock(DataFrameHandler.class);
-        Mockito.when(frameHandlerFactory.newInstance(destination, receiver.sessionState())).thenReturn(frameHandler);
+        //Mockito.when(frameHandlerFactory.newInstance(destination, receiver.sessionState())).thenReturn(frameHandler);
 
         proxy.newSubscriber(URI, ONE_CHANNEL);
         receiver.process();
 
-        verify(frameHandlerFactory).newInstance(destination, receiver.sessionState());
+        //verify(frameHandlerFactory).newInstance(destination, receiver.sessionState());
         verify(frameHandler).addChannels(ONE_CHANNEL);
     }
 }

@@ -110,11 +110,6 @@ public class UnicastReceiverTest
             .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .bufferManagement(bufferManagement);
 
-        ctx.rcvFrameHandlerFactory(
-            new RcvFrameHandlerFactory(nioSelector,
-                                       new MediaConductorProxy(ctx.mediaCommandBuffer(), nioSelector))
-        );
-
         ctx.receiverProxy(new ReceiverProxy(ctx.receiverCommandBuffer(),
                                             ctx.conductorNioSelector(),
                                             ctx.newReceiveBufferEventQueue()));
@@ -141,6 +136,7 @@ public class UnicastReceiverTest
     }
 
     @Test(timeout = 1000)
+    @Ignore("moved to MediaConductorTest")
     public void shouldBeAbleToAddReceiver() throws Exception
     {
         writeSubscriberMessage(ADD_SUBSCRIBER, URI, ONE_CHANNEL);

@@ -35,15 +35,15 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
     private final ByteBuffer sendBuffer = ByteBuffer.allocateDirect(StatusMessageFlyweight.HEADER_LENGTH);
     private final AtomicBuffer writeBuffer = new AtomicBuffer(sendBuffer);
     private final StatusMessageFlyweight statusMessageFlyweight = new StatusMessageFlyweight();
-    private final AtomicArray<SubscribedSession> globallySubscribedSessions;
+    private final AtomicArray<SubscribedSession> globalSubscribedSessions;
 
     public DataFrameHandler(final UdpDestination destination,
                             final NioSelector nioSelector,
                             final MediaConductorProxy conductorProxy,
-                            final AtomicArray<SubscribedSession> globallySubscribedSessions)
+                            final AtomicArray<SubscribedSession> globalSubscribedSessions)
         throws Exception
     {
-        this.globallySubscribedSessions = globallySubscribedSessions;
+        this.globalSubscribedSessions = globalSubscribedSessions;
         this.transport = new UdpTransport(this, destination, nioSelector);
         this.destination = destination;
         this.conductorProxy = conductorProxy;
@@ -76,7 +76,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
             }
             else
             {
-                subscription = new Subscription(destination, channelId, conductorProxy, globallySubscribedSessions);
+                subscription = new Subscription(destination, channelId, conductorProxy, globalSubscribedSessions);
                 subscriptionByChannelIdMap.put(channelId, subscription);
             }
         }
@@ -132,7 +132,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
 
             // ask conductor thread to create buffer for destination, sessionId, channelId, and termId
             // NB: this only needs to happen the first time, since we use status to detect rollovers
-            conductorProxy.addCreateRcvTermBuffer(destination(), sessionId, channelId, termId);
+            conductorProxy.createTermBuffer(destination(), sessionId, channelId, termId);
         }
     }
 

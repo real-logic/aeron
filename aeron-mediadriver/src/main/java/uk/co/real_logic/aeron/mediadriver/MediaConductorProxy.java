@@ -38,7 +38,7 @@ public class MediaConductorProxy
     private final NioSelector selector;
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
 
-    private final QualifiedMessageFlyweight qualifiedMessageFlyweight = new QualifiedMessageFlyweight();
+    private final QualifiedMessageFlyweight qualifiedMessage = new QualifiedMessageFlyweight();
     private final ErrorHeaderFlyweight errorHeader = new ErrorHeaderFlyweight();
 
     public MediaConductorProxy(final RingBuffer commandBuffer, final NioSelector selector)
@@ -46,41 +46,42 @@ public class MediaConductorProxy
         this.commandBuffer = commandBuffer;
         this.selector = selector;
 
-        qualifiedMessageFlyweight.wrap(writeBuffer, 0);
+        qualifiedMessage.wrap(writeBuffer, 0);
         errorHeader.wrap(writeBuffer, 0);
     }
 
-    public void addCreateRcvTermBuffer(final UdpDestination destination,
-                                       final long sessionId,
-                                       final long channelId,
-                                       final long termId)
+    public void createTermBuffer(final UdpDestination destination,
+                                 final long sessionId,
+                                 final long channelId,
+                                 final long termId)
     {
-        writePublisherTermBufferMsg(destination, sessionId, channelId, termId, CREATE_TERM_BUFFER);
+        writeTermBufferMsg(destination, sessionId, channelId, termId, CREATE_TERM_BUFFER);
     }
 
-    public void removeRcvTermBuffer(final UdpDestination destination,
+    public void removeTermBuffer(final UdpDestination destination,
+                                 final long sessionId,
+                                 final long channelId)
+    {
+        writeTermBufferMsg(destination, sessionId, channelId, 0L, REMOVE_TERM_BUFFER);
+    }
+
+    private void writeTermBufferMsg(final UdpDestination destination,
                                     final long sessionId,
-                                    final long channelId)
+                                    final long channelId,
+                                    final long termId,
+                                    final int msgTypeId)
     {
-        writePublisherTermBufferMsg(destination, sessionId, channelId, 0L, REMOVE_TERM_BUFFER);
+        qualifiedMessage.sessionId(sessionId)
+                        .channelId(channelId)
+                        .termId(termId)
+                        .destination(destination.clientAwareUri());
+
+        write(msgTypeId, qualifiedMessage.length());
     }
 
-    private void writePublisherTermBufferMsg(final UdpDestination destination,
-                                             final long sessionId,
-                                             final long channelId,
-                                             final long termId,
-                                             final int typeId)
+    public void addErrorResponse(final ErrorCode errorCode, final Flyweight flyweight, final int length)
     {
-        qualifiedMessageFlyweight.sessionId(sessionId)
-                                   .channelId(channelId)
-                                   .termId(termId)
-                                   .destination(destination.clientAwareUri());
-        write(typeId, qualifiedMessageFlyweight.length());
-    }
-
-    public void addErrorResponse(final ErrorCode code, final Flyweight flyweight, final int length)
-    {
-        errorHeader.errorCode(code);
+        errorHeader.errorCode(errorCode);
         errorHeader.offendingFlyweight(flyweight, length);
         errorHeader.frameLength(HEADER_LENGTH + length);
         write(ERROR_RESPONSE, errorHeader.frameLength());

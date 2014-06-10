@@ -75,7 +75,7 @@ public class Subscription
     public void close()
     {
         subscribedSessionBySessionIdMap.forEach(
-            (sessionId, session) -> conductorProxy.removeRcvTermBuffer(destination, sessionId, channelId)
+            (sessionId, session) -> conductorProxy.removeTermBuffer(destination, sessionId, channelId)
         );
     }
 }

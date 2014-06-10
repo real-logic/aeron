@@ -35,11 +35,12 @@ public class Receiver extends Agent
     private final RingBuffer commandBuffer;
     private final NioSelector nioSelector;
     private final MediaConductorProxy conductorProxy;
-    private final Map<UdpDestination, DataFrameHandler> rcvDestinationMap = new HashMap<>();
+    private final Map<UdpDestination, DataFrameHandler> frameHandlerByDestinationMap = new HashMap<>();
     private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
     private final Queue<NewReceiveBufferEvent> newBufferEventQueue;
+    private final DataFrameHandlerFactory frameHandlerFactory;
 
-    private final AtomicArray<RcvSessionState> sessionState = new AtomicArray<>();
+    private final AtomicArray<SubscribedSession> globallySubscribedSessions = new AtomicArray<>();
 
     public Receiver(final MediaDriver.Context context) throws Exception
     {
@@ -48,6 +49,7 @@ public class Receiver extends Agent
         commandBuffer = context.receiverCommandBuffer();
         conductorProxy = context.mediaConductorProxy();
         nioSelector = context.receiverNioSelector();
+        frameHandlerFactory = context.rcvFrameHandlerFactory();
         newBufferEventQueue = context.newReceiveBufferEventQueue();
     }
 
@@ -71,46 +73,48 @@ public class Receiver extends Agent
         NewReceiveBufferEvent state;
         while ((state = newBufferEventQueue.poll()) != null)
         {
-            attachBufferState(state);
+            onNewReceiveBuffers(state);
         }
     }
 
     private void processCommandBuffer()
     {
         commandBuffer.read(
-            (msgTypeId, buffer, index, length) ->
-            {
-               try
-               {
-                   switch (msgTypeId)
-                   {
-                       case ADD_SUBSCRIBER:
-                           subscriberMessage.wrap(buffer, index);
-                           onNewSubscriber(subscriberMessage.destination(), subscriberMessage.channelIds());
-                           break;
+              (msgTypeId, buffer, index, length) ->
+              {
+                  try
+                  {
+                      switch (msgTypeId)
+                      {
+                          case ADD_SUBSCRIBER:
+                              subscriberMessage.wrap(buffer, index);
+                              onNewSubscriber(subscriberMessage.destination(),
+                                              subscriberMessage.channelIds());
+                              break;
 
-                       case REMOVE_SUBSCRIBER:
-                           subscriberMessage.wrap(buffer, index);
-                           onRemoveSubscriber(subscriberMessage.destination(), subscriberMessage.channelIds());
-                           break;
-                   }
-               }
-               catch (final InvalidDestinationException ex)
-               {
-                   // TODO: log this
-                   onError(INVALID_DESTINATION, length);
-               }
-               catch (final ReceiverNotRegisteredException ex)
-               {
-                   // TODO: log this
-                   onError(SUBSCRIBER_NOT_REGISTERED, length);
-               }
-               catch (final Exception ex)
-               {
-                   // TODO: log this as well as send the error response
-                   ex.printStackTrace();
-               }
-            });
+                          case REMOVE_SUBSCRIBER:
+                              subscriberMessage.wrap(buffer, index);
+                              onRemoveSubscriber(subscriberMessage.destination(),
+                                                 subscriberMessage.channelIds());
+                              break;
+                      }
+                  }
+                  catch (final InvalidDestinationException ex)
+                  {
+                      // TODO: log this
+                      onError(INVALID_DESTINATION, length);
+                  }
+                  catch (final SubscriptionNotRegisteredException ex)
+                  {
+                      // TODO: log this
+                      onError(SUBSCRIBER_NOT_REGISTERED, length);
+                  }
+                  catch (final Exception ex)
+                  {
+                      // TODO: log this as well as send the error response
+                      ex.printStackTrace();
+                  }
+              });
     }
 
     private void onError(final ErrorCode errorCode, final int length)
@@ -118,9 +122,9 @@ public class Receiver extends Agent
         conductorProxy.addErrorResponse(errorCode, subscriberMessage, length);
     }
 
-    public AtomicArray<RcvSessionState> sessionState()
+    public AtomicArray<SubscribedSession> globallySubscribedSessions()
     {
-        return sessionState;
+        return globallySubscribedSessions;
     }
 
     /**
@@ -131,10 +135,7 @@ public class Receiver extends Agent
         stop();
         wakeup();
 
-        rcvDestinationMap.forEach((destination, frameHandler) ->
-        {
-          frameHandler.close();
-        });
+        frameHandlerByDestinationMap.forEach((destination, frameHandler) ->frameHandler.close());
         // TODO: if needed, use a CountdownLatch to sync...
     }
 
@@ -158,7 +159,7 @@ public class Receiver extends Agent
 
     public DataFrameHandler frameHandler(final UdpDestination destination)
     {
-        return rcvDestinationMap.get(destination);
+        return frameHandlerByDestinationMap.get(destination);
     }
 
     private void onNewSubscriber(final String destination, final long[] channelIdList) throws Exception
@@ -168,8 +169,8 @@ public class Receiver extends Agent
 
         if (null == frameHandler)
         {
-            frameHandler = new DataFrameHandler(rcvDestination, nioSelector, conductorProxy, sessionState);
-            rcvDestinationMap.put(rcvDestination, frameHandler);
+            frameHandler = frameHandlerFactory.newInstance(rcvDestination, globallySubscribedSessions);
+            frameHandlerByDestinationMap.put(rcvDestination, frameHandler);
         }
 
         frameHandler.addChannels(channelIdList);
@@ -182,7 +183,7 @@ public class Receiver extends Agent
 
         if (null == frameHandler)
         {
-            throw new ReceiverNotRegisteredException("destination unknown for receiver remove: " + destination);
+            throw new SubscriptionNotRegisteredException("destination unknown for receiver remove: " + destination);
         }
 
         frameHandler.removeChannels(channelIdList);
@@ -190,14 +191,14 @@ public class Receiver extends Agent
         // if all channels gone, then take care of removing everything and closing the framehandler
         if (0 == frameHandler.channelCount())
         {
-            rcvDestinationMap.remove(rcvDestination);
+            frameHandlerByDestinationMap.remove(rcvDestination);
             frameHandler.close();
         }
     }
 
-    private void attachBufferState(final NewReceiveBufferEvent buffer)
+    private void onNewReceiveBuffers(final NewReceiveBufferEvent e)
     {
-        DataFrameHandler frameHandler = frameHandler(buffer.destination());
+        final DataFrameHandler frameHandler = frameHandler(e.destination());
 
         if (null == frameHandler)
         {
@@ -206,7 +207,7 @@ public class Receiver extends Agent
             return;
         }
 
-        frameHandler.attachBufferState(buffer);
+        frameHandler.onSubscriptionReady(e);
     }
 
     /**
@@ -214,7 +215,7 @@ public class Receiver extends Agent
      */
     public void processBufferRotation()
     {
-        sessionState.forEach(RcvSessionState::processBufferRotation);
+        globallySubscribedSessions.forEach(SubscribedSession::processBufferRotation);
     }
 
     /**
@@ -222,6 +223,6 @@ public class Receiver extends Agent
      */
     public void scanForGaps()
     {
-        sessionState.forEach(RcvSessionState::scanForGaps);
+        globallySubscribedSessions.forEach(SubscribedSession::scanForGaps);
     }
 }

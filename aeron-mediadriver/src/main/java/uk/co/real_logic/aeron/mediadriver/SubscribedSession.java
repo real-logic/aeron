@@ -32,7 +32,7 @@ import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.UNKNOWN_TERM_
 /**
  * State maintained for active sessionIds within a channel for receiver processing
  */
-public class RcvSessionState
+public class SubscribedSession
 {
     private final InetSocketAddress srcAddr;
     private final long sessionId;
@@ -43,9 +43,8 @@ public class RcvSessionState
 
     private BufferRotator rotator;
     private TermRebuilder[] rebuilders;
-    private GapScanner gapScanner;
 
-    public RcvSessionState(final long sessionId, final InetSocketAddress srcAddr)
+    public SubscribedSession(final long sessionId, final InetSocketAddress srcAddr)
     {
         this.srcAddr = srcAddr;
         this.sessionId = sessionId;
@@ -71,9 +70,11 @@ public class RcvSessionState
         return sessionId;
     }
 
-    public void rebuildBuffer(final long termId, final DataHeaderFlyweight header)
+    public void rebuildBuffer(final DataHeaderFlyweight header)
     {
+        final long termId = header.termId();
         final long currentTermId = this.currentTermId.get();
+
         if (termId == currentTermId)
         {
             final TermRebuilder rebuilder = rebuilders[currentBufferId];
@@ -89,6 +90,7 @@ public class RcvSessionState
                 // TODO:
                 Thread.yield();
             }
+
             rebuilder.insert(header);
         }
         else
@@ -98,7 +100,7 @@ public class RcvSessionState
         }
     }
 
-    private class TermRebuilder
+    static class TermRebuilder
     {
         private final LogRebuilder logRebuilder;
         private final StateViewer stateViewer;
@@ -143,6 +145,5 @@ public class RcvSessionState
 
     public void scanForGaps()
     {
-
     }
 }

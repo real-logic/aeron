@@ -110,6 +110,10 @@ public class UnicastReceiverTest
             .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .bufferManagement(bufferManagement);
 
+        ctx.rcvFrameHandlerFactory(
+            new DataFrameHandlerFactory(nioSelector, new MediaConductorProxy(ctx.mediaCommandBuffer(), nioSelector))
+        );
+
         ctx.receiverProxy(new ReceiverProxy(ctx.receiverCommandBuffer(),
                                             ctx.conductorNioSelector(),
                                             ctx.newReceiveBufferEventQueue()));
@@ -226,14 +230,14 @@ public class UnicastReceiverTest
         final DataFrameHandler frameHandler = receiver.frameHandler(destination);
 
         assertNotNull(frameHandler);
-        assertThat(frameHandler.channelInterestMap().size(), is(3));
+        assertThat(frameHandler.subscriptionMap().size(), is(3));
 
         writeSubscriberMessage(REMOVE_SUBSCRIBER, URI, TWO_CHANNELS);
 
         processThreads(5);
 
         assertNotNull(receiver.frameHandler(destination));
-        assertThat(frameHandler.channelInterestMap().size(), is(1));
+        assertThat(frameHandler.subscriptionMap().size(), is(1));
     }
 
     @Test(timeout = 1000)
@@ -249,14 +253,14 @@ public class UnicastReceiverTest
         final DataFrameHandler frameHandler = receiver.frameHandler(destination);
 
         assertNotNull(frameHandler);
-        assertThat(frameHandler.channelInterestMap().size(), is(3));
+        assertThat(frameHandler.subscriptionMap().size(), is(3));
 
         writeSubscriberMessage(REMOVE_SUBSCRIBER, URI, TWO_CHANNELS);
 
         processThreads(5);
 
         assertNotNull(receiver.frameHandler(destination));
-        assertThat(frameHandler.channelInterestMap().size(), is(1));
+        assertThat(frameHandler.subscriptionMap().size(), is(1));
 
         writeSubscriberMessage(REMOVE_SUBSCRIBER, URI, ONE_CHANNEL);
         processThreads(5);
@@ -281,12 +285,12 @@ public class UnicastReceiverTest
 
         final DataFrameHandler frameHandler = receiver.frameHandler(destination);
         assertNotNull(frameHandler);
-        final RcvChannelState channelState = frameHandler.channelInterestMap().get(ONE_CHANNEL[0]);
-        assertNotNull(channelState);
-        final RcvSessionState sessionState = channelState.getSessionState(SESSION_ID);
-        assertNotNull(sessionState);
+        final Subscription subscription = frameHandler.subscriptionMap().get(ONE_CHANNEL[0]);
+        assertNotNull(subscription);
+        final SubscribedSession subscribedSession = subscription.getSubscribedSession(SESSION_ID);
+        assertNotNull(subscribedSession);
         final InetSocketAddress srcAddr = (InetSocketAddress)senderChannel.getLocalAddress();
-        assertThat(sessionState.sourceAddress().getPort(), is(srcAddr.getPort()));
+        assertThat(subscribedSession.sourceAddress().getPort(), is(srcAddr.getPort()));
 
         processThreads(5);
 

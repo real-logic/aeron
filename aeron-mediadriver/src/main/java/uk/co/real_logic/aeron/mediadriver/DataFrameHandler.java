@@ -30,20 +30,20 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
 {
     private final UdpTransport transport;
     private final UdpDestination destination;
-    private final Long2ObjectHashMap<RcvChannelState> channelInterestMap = new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<Subscription> subscriptionByChannelIdMap = new Long2ObjectHashMap<>();
     private final MediaConductorProxy conductorProxy;
     private final ByteBuffer sendBuffer = ByteBuffer.allocateDirect(StatusMessageFlyweight.HEADER_LENGTH);
     private final AtomicBuffer writeBuffer = new AtomicBuffer(sendBuffer);
     private final StatusMessageFlyweight statusMessageFlyweight = new StatusMessageFlyweight();
-    private final AtomicArray<RcvSessionState> sessionState;
+    private final AtomicArray<SubscribedSession> globallySubscribedSessions;
 
     public DataFrameHandler(final UdpDestination destination,
                             final NioSelector nioSelector,
                             final MediaConductorProxy conductorProxy,
-                            final AtomicArray<RcvSessionState> sessionState)
+                            final AtomicArray<SubscribedSession> globallySubscribedSessions)
         throws Exception
     {
-        this.sessionState = sessionState;
+        this.globallySubscribedSessions = globallySubscribedSessions;
         this.transport = new UdpTransport(this, destination, nioSelector);
         this.destination = destination;
         this.conductorProxy = conductorProxy;
@@ -59,75 +59,75 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         return destination;
     }
 
-    public Long2ObjectHashMap<RcvChannelState> channelInterestMap()
+    public Long2ObjectHashMap<Subscription> subscriptionMap()
     {
-        return channelInterestMap;
+        return subscriptionByChannelIdMap;
     }
 
     public void addChannels(final long[] channelIdList)
     {
         for (final long channelId : channelIdList)
         {
-            RcvChannelState channel = channelInterestMap.get(channelId);
+            Subscription subscription = subscriptionByChannelIdMap.get(channelId);
 
-            if (null != channel)
+            if (null != subscription)
             {
-                channel.incRef();
+                subscription.incRef();
             }
             else
             {
-                channel = new RcvChannelState(destination, channelId, conductorProxy, sessionState);
-                channelInterestMap.put(channelId, channel);
+                subscription = new Subscription(destination, channelId, conductorProxy, globallySubscribedSessions);
+                subscriptionByChannelIdMap.put(channelId, subscription);
             }
         }
     }
 
-    public void removeChannels(final long[] channelIdList)
+    public void removeChannels(final long[] channelIds)
     {
-        for (final long channelId : channelIdList)
+        for (final long channelId : channelIds)
         {
-            final RcvChannelState channel = channelInterestMap.get(channelId);
+            final Subscription subscription = subscriptionByChannelIdMap.get(channelId);
 
-            if (channel == null)
+            if (subscription == null)
             {
-                throw new ReceiverNotRegisteredException("No channel registered on " + channelId);
+                throw new SubscriptionNotRegisteredException("No subscription registered on " + channelId);
             }
 
-            if (channel.decRef() == 0)
+            if (subscription.decRef() == 0)
             {
-                channelInterestMap.remove(channelId);
-                channel.close();
+                subscriptionByChannelIdMap.remove(channelId);
+                subscription.close();
             }
         }
     }
 
     public int channelCount()
     {
-        return channelInterestMap.size();
+        return subscriptionByChannelIdMap.size();
     }
 
-    public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
+    public void onDataFrame(final DataHeaderFlyweight frameHeader, final InetSocketAddress srcAddr)
     {
-        final long channelId = header.channelId();
+        final long channelId = frameHeader.channelId();
 
-        final RcvChannelState channelState = channelInterestMap.get(channelId);
-        if (null == channelState)
+        final Subscription subscription = subscriptionByChannelIdMap.get(channelId);
+        if (null == subscription)
         {
             return;  // not interested in this channel at all
         }
 
-        final long sessionId = header.sessionId();
-        final long termId = header.termId();
-        final RcvSessionState sessionState = channelState.getSessionState(sessionId);
-        if (null != sessionState)
+        final long sessionId = frameHeader.sessionId();
+        final long termId = frameHeader.termId();
+        final SubscribedSession subscribedSession = subscription.getSubscribedSession(sessionId);
+        if (null != subscribedSession)
         {
-            sessionState.rebuildBuffer(termId, header);
+            subscribedSession.rebuildBuffer(frameHeader);
             // if we don't know the term, this will drop down and the term buffer will be created.
         }
         else
         {
             // new session, so make it here and save srcAddr
-            channelState.createSessionState(sessionId, srcAddr);
+            subscription.createSubscribedSession(sessionId, srcAddr);
             // TODO: this is a new source, so send 1 SM
 
             // ask conductor thread to create buffer for destination, sessionId, channelId, and termId
@@ -146,44 +146,44 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         // this should be on the data channel and shouldn't include Naks, so ignore.
     }
 
-    public void attachBufferState(final NewReceiveBufferEvent buffer)
+    public void onSubscriptionReady(final NewReceiveBufferEvent event)
     {
-        final RcvChannelState channelState = channelInterestMap.get(buffer.channelId());
-        if (null == channelState)
+        final Subscription subscription = subscriptionByChannelIdMap.get(event.channelId());
+        if (null == subscription)
         {
             throw new IllegalStateException("channel not found");
         }
 
-        final RcvSessionState sessionState = channelState.getSessionState(buffer.sessionId());
-        if (null == sessionState)
+        final SubscribedSession subscriberSession = subscription.getSubscribedSession(event.sessionId());
+        if (null == subscriberSession)
         {
             throw new IllegalStateException("session not found");
         }
 
-        sessionState.termBuffer(buffer.termId(), buffer.buffer());
+        subscriberSession.termBuffer(event.termId(), event.buffer());
 
         // now we are all setup, so send an SM to allow the source to send if it is waiting
-        // TODO: grab initial term offset from data and store in sessionState somehow (per TermID)
+        // TODO: grab initial term offset from data and store in subscriberSession somehow (per TermID)
         // TODO: need a strategy object to track the initial receiver window to send in the SMs.
-        sendStatusMessage(0, 1000, buffer.termId(), sessionState, channelState);
+        sendStatusMessage(0, 1000, event.termId(), subscriberSession, subscription);
     }
 
     private int sendStatusMessage(final int termOffset,
                                   final int window,
                                   final long termId,
-                                  final RcvSessionState sessionState,
-                                  final RcvChannelState channelState)
+                                  final SubscribedSession subscribedSession,
+                                  final Subscription subscription)
     {
         statusMessageFlyweight.wrap(writeBuffer, 0);
 
-        statusMessageFlyweight.sessionId(sessionState.sessionId())
-                              .channelId(channelState.channelId())
+        statusMessageFlyweight.sessionId(subscribedSession.sessionId())
+                              .channelId(subscription.channelId())
                               .termId(termId)
                               .highestContiguousTermOffset(termOffset)
                               .receiverWindow(window)
                               .headerType(HeaderFlyweight.HDR_TYPE_SM)
                               .frameLength(StatusMessageFlyweight.HEADER_LENGTH)
-                              .flags((byte) 0)
+                              .flags((byte)0)
                               .version(HeaderFlyweight.CURRENT_VERSION);
 
         sendBuffer.position(0);
@@ -191,7 +191,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
 
         try
         {
-            return transport.sendTo(sendBuffer, sessionState.sourceAddress());
+            return transport.sendTo(sendBuffer, subscribedSession.sourceAddress());
         }
         catch (final Exception ex)
         {

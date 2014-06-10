@@ -15,9 +15,9 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-public class ReceiverNotRegisteredException extends IllegalArgumentException
+public class SubscriptionNotRegisteredException extends IllegalArgumentException
 {
-    public ReceiverNotRegisteredException(final String message)
+    public SubscriptionNotRegisteredException(final String message)
     {
         super(message);
     }

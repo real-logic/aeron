@@ -107,6 +107,10 @@ public class MediaConductorTest
             .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .bufferManagement(mockBufferManagement);
 
+        ctx.rcvFrameHandlerFactory(
+            new DataFrameHandlerFactory(nioSelector, new MediaConductorProxy(ctx.mediaCommandBuffer(), nioSelector))
+        );
+
         ctx.receiverProxy(new ReceiverProxy(ctx.receiverCommandBuffer(),
                                             ctx.conductorNioSelector(),
                                             ctx.newReceiveBufferEventQueue()));
@@ -232,7 +236,7 @@ public class MediaConductorTest
         final DataFrameHandler frameHandler = receiver.frameHandler(destination);
 
         assertNotNull(frameHandler);
-        assertThat(frameHandler.channelInterestMap().size(), is(3));
+        assertThat(frameHandler.subscriptionMap().size(), is(3));
 
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIBER, DESTINATION_URI + 4000, TWO_CHANNELS);
 
@@ -240,7 +244,7 @@ public class MediaConductorTest
         receiver.process();
 
         assertNotNull(receiver.frameHandler(destination));
-        assertThat(frameHandler.channelInterestMap().size(), is(1));
+        assertThat(frameHandler.subscriptionMap().size(), is(1));
     }
 
     @Test
@@ -256,7 +260,7 @@ public class MediaConductorTest
         final DataFrameHandler frameHandler = receiver.frameHandler(destination);
 
         assertNotNull(frameHandler);
-        assertThat(frameHandler.channelInterestMap().size(), is(3));
+        assertThat(frameHandler.subscriptionMap().size(), is(3));
 
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIBER, DESTINATION_URI + 4000, TWO_CHANNELS);
 
@@ -264,7 +268,7 @@ public class MediaConductorTest
         receiver.process();
 
         assertNotNull(receiver.frameHandler(destination));
-        assertThat(frameHandler.channelInterestMap().size(), is(1));
+        assertThat(frameHandler.subscriptionMap().size(), is(1));
 
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIBER, DESTINATION_URI + 4000, ONE_CHANNEL);
 

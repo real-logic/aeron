@@ -24,7 +24,7 @@ import static uk.co.real_logic.aeron.Subscriber.DataHandler;
 
 public class SubscriberChannel extends ChannelNotifiable
 {
-    private final Long2ObjectHashMap<SubscriberSession> logReaders = new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<SubscriberSession> sessionByIdMap = new Long2ObjectHashMap<>();
     private final DataHandler dataHandler;
 
     public SubscriberChannel(final Destination destination, final long channelId, final DataHandler dataHandler)
@@ -42,7 +42,7 @@ public class SubscriberChannel extends ChannelNotifiable
     public int receive()
     {
         int count = 0;
-        for (final SubscriberSession subscriberSession : logReaders.values())
+        for (final SubscriberSession subscriberSession : sessionByIdMap.values())
         {
             count += subscriberSession.read();
         }
@@ -52,7 +52,7 @@ public class SubscriberChannel extends ChannelNotifiable
 
     protected boolean hasTerm(final long sessionId)
     {
-        final SubscriberSession subscriberSession = logReaders.get(sessionId);
+        final SubscriberSession subscriberSession = sessionByIdMap.get(sessionId);
         return subscriberSession != null && subscriberSession.hasTerm();
     }
 
@@ -62,11 +62,11 @@ public class SubscriberChannel extends ChannelNotifiable
                                 final PositionReporter positionReporter)
     {
         SubscriberSession session = new SubscriberSession(logReaders, sessionId, termId, dataHandler, positionReporter);
-        this.logReaders.put(sessionId, session);
+        this.sessionByIdMap.put(sessionId, session);
     }
 
     public void processBufferScan()
     {
-        logReaders.values().forEach(SubscriberSession::processBufferScan);
+        sessionByIdMap.values().forEach(SubscriberSession::processBufferScan);
     }
 }

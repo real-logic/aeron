@@ -199,11 +199,6 @@ public class SenderChannel
         }
     }
 
-    public boolean isOpen()
-    {
-        return frameHandler.isOpen();
-    }
-
     public long sessionId()
     {
         return sessionId;

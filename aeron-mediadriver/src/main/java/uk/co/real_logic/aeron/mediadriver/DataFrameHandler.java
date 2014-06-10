@@ -128,7 +128,6 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         {
             // new session, so make it here and save srcAddr
             subscription.createSubscribedSession(sessionId, srcAddr);
-            // TODO: this is a new source, so send 1 SM
 
             // ask conductor thread to create buffer for destination, sessionId, channelId, and termId
             // NB: this only needs to happen the first time, since we use status to detect rollovers
@@ -175,7 +174,6 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
                                   final Subscription subscription)
     {
         statusMessageFlyweight.wrap(writeBuffer, 0);
-
         statusMessageFlyweight.sessionId(subscribedSession.sessionId())
                               .channelId(subscription.channelId())
                               .termId(termId)

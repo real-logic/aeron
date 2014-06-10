@@ -181,10 +181,6 @@ public class MediaDriver implements AutoCloseable
                                 .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024))
                                 .mtuLength(CommonConfiguration.MTU_LENGTH);
 
-        ctx.dataFrameHandlerFactory(
-                                       new DataFrameHandlerFactory(rcvNioSelector,
-                                                                   new MediaConductorProxy(ctx.mediaCommandBuffer(), rcvNioSelector)));
-
         ctx.receiverProxy(new ReceiverProxy(ctx.receiverCommandBuffer(),
                                             ctx.conductorNioSelector(),
                                             ctx.newReceiveBufferEventQueue()));
@@ -258,12 +254,10 @@ public class MediaDriver implements AutoCloseable
         private Supplier<SenderControlStrategy> senderFlowControl;
         private TimerWheel conductorTimerWheel;
         private int mtuLength;
-        private DataFrameHandlerFactory dataFrameHandlerFactory;
         private Queue<NewReceiveBufferEvent> newReceiveBufferEventQueue;
         private ReceiverProxy receiverProxy;
         private MediaConductorProxy mediaConductorProxy;
 
-        // TODO: this should NOT be used. buffers should be passed in fully formed instead of created here!
         private RingBuffer createNewCommandBuffer(final int size)
         {
             final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(size + TRAILER_LENGTH);
@@ -326,12 +320,6 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context dataFrameHandlerFactory(final DataFrameHandlerFactory dataFrameHandlerFactory)
-        {
-            this.dataFrameHandlerFactory = dataFrameHandlerFactory;
-            return this;
-        }
-
         public Context newReceiveBufferEventQueue(final Queue<NewReceiveBufferEvent> newReceiveBufferEventQueue)
         {
             this.newReceiveBufferEventQueue = newReceiveBufferEventQueue;
@@ -388,11 +376,6 @@ public class MediaDriver implements AutoCloseable
         public int mtuLength()
         {
             return mtuLength;
-        }
-
-        public DataFrameHandlerFactory dataFrameHandlerFactory()
-        {
-            return dataFrameHandlerFactory;
         }
 
         public TimerWheel conductorTimerWheel()

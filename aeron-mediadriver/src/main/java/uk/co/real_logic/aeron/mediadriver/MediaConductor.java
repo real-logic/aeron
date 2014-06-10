@@ -111,7 +111,7 @@ public class MediaConductor extends Agent
         sender.processBufferRotation();
         receiver.processBufferRotation();
         processClientCommandBuffer();
-        processCommandBuffer();
+        processLocalCommandBuffer();
         processTimers();
     }
 
@@ -130,7 +130,7 @@ public class MediaConductor extends Agent
         // TODO
     }
 
-    private void processCommandBuffer()
+    private void processLocalCommandBuffer()
     {
         localCommandBuffer.read(
             (msgTypeId, buffer, index, length) ->

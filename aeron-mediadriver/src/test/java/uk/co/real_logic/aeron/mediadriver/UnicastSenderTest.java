@@ -52,6 +52,7 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescri
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertMsgRead;
 import static uk.co.real_logic.aeron.util.protocol.HeaderFlyweight.HDR_TYPE_DATA;
 
+@Ignore("all tests moved to MediaConductorTest or SenderTest")
 public class UnicastSenderTest
 {
     private static final int MAX_FRAME_LENGTH = 1024;
@@ -206,6 +207,7 @@ public class UnicastSenderTest
     }
 
     @Test
+    @Ignore("moved to MediaConductorTest")
     public void shouldErrorOnRemoveChannelOnUnknownDestination() throws Exception
     {
         writeChannelMessage(REMOVE_CHANNEL, URI, SESSION_ID, CHANNEL_ID);
@@ -226,6 +228,7 @@ public class UnicastSenderTest
     }
 
     @Test
+    @Ignore("moved to MediaConductorTest")
     public void shouldErrorOnRemoveChannelOnUnknownSession() throws Exception
     {
         successfullyAddChannel();

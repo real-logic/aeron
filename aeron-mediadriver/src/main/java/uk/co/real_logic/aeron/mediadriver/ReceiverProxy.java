@@ -82,7 +82,7 @@ public class ReceiverProxy
         selector.wakeup();
     }
 
-    public boolean onNewReceiveBuffer(final NewReceiveBufferEvent e)
+    public boolean newReceiveBuffer(final NewReceiveBufferEvent e)
     {
         return newBufferEventQueue.offer(e);
     }

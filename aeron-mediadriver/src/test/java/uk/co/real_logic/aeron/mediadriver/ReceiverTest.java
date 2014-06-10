@@ -15,62 +15,140 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.mockito.Mockito;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
+import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
+import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
+import uk.co.real_logic.aeron.util.command.QualifiedMessageFlyweight;
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
+import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
+import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static uk.co.real_logic.aeron.mediadriver.MediaDriver.COMMAND_BUFFER_SZ;
 
 /**
  * Test Receiver in isolation
+ *
+ * Test reception of data, etc.
  */
 public class ReceiverTest
 {
+    public static final long LOG_BUFFER_SIZE = (64 * 1024) + RingBufferDescriptor.TRAILER_LENGTH;
     private static final String URI = "udp://localhost:45678";
+    private static final UdpDestination destination = UdpDestination.parse(URI);
     private static final long CHANNEL_ID = 10;
     private static final long[] ONE_CHANNEL = { CHANNEL_ID };
+    private static final long TERM_ID = 3;
+    private static final long SESSION_ID = 1;
+    private static final byte[] PAYLOAD = "This is some payload!".getBytes();
+
+    private final NioSelector mockNioSelector = mock(NioSelector.class);
+    private final BufferManagement mockBufferManagement = mock(BufferManagement.class);
+    private final ByteBuffer dataFrameBuffer = ByteBuffer.allocate(2*1024);
+    private final AtomicBuffer dataBuffer = new AtomicBuffer(dataFrameBuffer);
+
+    private final BufferRotator rotator =
+        BufferAndFrameUtils.createTestRotator(LOG_BUFFER_SIZE, LogBufferDescriptor.STATE_BUFFER_LENGTH);
+
+    private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
+    private final QualifiedMessageFlyweight messageHeader = new QualifiedMessageFlyweight();
+
+    private final InetSocketAddress srcAddr = new InetSocketAddress("localhost", 40123);
 
     private Receiver receiver;
-    private ReceiverProxy proxy;
+    private ReceiverProxy receiverProxy;
+    private MediaConductorProxy mediaConductorProxy;
+    private RingBuffer toConductorBuffer;
 
     @Before
     public void setUp() throws Exception
     {
-        final BufferManagement bufferManagement = mock(BufferManagement.class);
-
         final MediaDriver.Context ctx = new MediaDriver.Context()
-            .conductorCommandBuffer(COMMAND_BUFFER_SZ)
-            .receiverCommandBuffer(COMMAND_BUFFER_SZ)
-            .receiverNioSelector(new NioSelector())
-            .bufferManagement(bufferManagement)
+            .conductorCommandBuffer(MediaDriver.COMMAND_BUFFER_SZ)
+            .receiverCommandBuffer(MediaDriver.COMMAND_BUFFER_SZ)
+            .receiverNioSelector(mockNioSelector)
+            .conductorNioSelector(mockNioSelector)
+            .bufferManagement(mockBufferManagement)
             .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024));
 
-        ctx.mediaConductorProxy(new MediaConductorProxy(ctx.mediaCommandBuffer(), ctx.conductorNioSelector()));
+        toConductorBuffer = ctx.mediaCommandBuffer();
+        mediaConductorProxy = new MediaConductorProxy(toConductorBuffer, ctx.conductorNioSelector());
+        ctx.mediaConductorProxy(mediaConductorProxy);
 
-        proxy = new ReceiverProxy(ctx.receiverCommandBuffer(),
-                                  ctx.receiverNioSelector(),
-                                  ctx.newReceiveBufferEventQueue());
+        receiverProxy = new ReceiverProxy(ctx.receiverCommandBuffer(),
+            ctx.receiverNioSelector(),
+            ctx.newReceiveBufferEventQueue());
 
         receiver = new Receiver(ctx);
+
+        dataHeader.wrap(dataBuffer, 0);  // we will only be using these together
+    }
+
+    @After
+    public void tearDown()
+    {
+        receiver.close();
     }
 
     @Test
-    @Ignore("not needed with tests in MediaConductorTest")
-    public void addingSubscriberShouldCreateHandler() throws Exception
+    public void shouldCreateRcvTermAndSendSmOnZeroLengthData() throws Exception
     {
-        UdpDestination destination = UdpDestination.parse(URI);
-        DataFrameHandler frameHandler = mock(DataFrameHandler.class);
-        //Mockito.when(frameHandlerFactory.newInstance(destination, receiver.sessionState())).thenReturn(frameHandler);
+        receiverProxy.newSubscriber(URI, ONE_CHANNEL);  // ADD_SUBSCRIBER from client
 
-        proxy.newSubscriber(URI, ONE_CHANNEL);
         receiver.process();
 
-        //verify(frameHandlerFactory).newInstance(destination, receiver.sessionState());
-        verify(frameHandler).addChannels(ONE_CHANNEL);
+        DataFrameHandler frameHandler = receiver.frameHandler(destination);
+
+        assertNotNull(frameHandler);
+
+        fillDataFrame(dataHeader, 0, null);
+
+        frameHandler.onDataFrame(dataHeader, srcAddr);  // 0 length data frame
+
+        final int msgs = toConductorBuffer.read(        // term buffer created
+            (msgTypeId, buffer, index, length) ->
+            {
+                assertThat(msgTypeId, is(ControlProtocolEvents.CREATE_TERM_BUFFER));
+                messageHeader.wrap(buffer, index);
+                assertThat(messageHeader.termId(), is(TERM_ID));
+                assertThat(messageHeader.channelId(), is(CHANNEL_ID));
+                assertThat(messageHeader.sessionId(), is(SESSION_ID));
+                assertThat(messageHeader.destination(), is(URI));
+
+                // pass in new term buffer from media conductor
+                receiverProxy.newReceiveBuffer(new NewReceiveBufferEvent(destination, SESSION_ID,
+                        CHANNEL_ID, TERM_ID, rotator));
+            });
+        assertThat(msgs, is(1));
+    }
+
+    private void fillDataFrame(final DataHeaderFlyweight header, final int termOffset, final byte[] payload)
+    {
+        header.termOffset(termOffset)
+            .termId(TERM_ID)
+            .channelId(CHANNEL_ID)
+            .sessionId(SESSION_ID)
+            .frameLength(DataHeaderFlyweight.HEADER_LENGTH + ((null == payload) ? 0 : payload.length))
+            .headerType(HeaderFlyweight.HDR_TYPE_DATA)
+            .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
+            .version(HeaderFlyweight.CURRENT_VERSION);
+
+        if (null != payload)
+        {
+            dataBuffer.putBytes(header.dataOffset(), payload);
+        }
     }
 }

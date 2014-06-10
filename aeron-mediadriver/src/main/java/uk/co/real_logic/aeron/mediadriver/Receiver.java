@@ -38,7 +38,6 @@ public class Receiver extends Agent
     private final Map<UdpDestination, DataFrameHandler> frameHandlerByDestinationMap = new HashMap<>();
     private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
     private final Queue<NewReceiveBufferEvent> newBufferEventQueue;
-    private final DataFrameHandlerFactory frameHandlerFactory;
 
     private final AtomicArray<SubscribedSession> globalSubscribedSessions = new AtomicArray<>();
 
@@ -46,11 +45,10 @@ public class Receiver extends Agent
     {
         super(SELECT_TIMEOUT);
 
-        commandBuffer = context.receiverCommandBuffer();
-        conductorProxy = context.mediaConductorProxy();
-        nioSelector = context.receiverNioSelector();
-        frameHandlerFactory = context.dataFrameHandlerFactory();
-        newBufferEventQueue = context.newReceiveBufferEventQueue();
+        this.commandBuffer = context.receiverCommandBuffer();
+        this.conductorProxy = context.mediaConductorProxy();
+        this.nioSelector = context.receiverNioSelector();
+        this.newBufferEventQueue = context.newReceiveBufferEventQueue();
     }
 
     public void process()
@@ -164,7 +162,8 @@ public class Receiver extends Agent
 
         if (null == frameHandler)
         {
-            frameHandler = frameHandlerFactory.newInstance(rcvDestination, globalSubscribedSessions);
+            frameHandler = new DataFrameHandler(rcvDestination, nioSelector,
+                conductorProxy, globalSubscribedSessions);
             frameHandlerByDestinationMap.put(rcvDestination, frameHandler);
         }
 

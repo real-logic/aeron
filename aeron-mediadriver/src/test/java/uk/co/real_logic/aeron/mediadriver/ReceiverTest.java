@@ -19,6 +19,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
+import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -43,15 +44,18 @@ public class ReceiverTest
         final BufferManagement bufferManagement = mock(BufferManagement.class);
         frameHandlerFactory = mock(RcvFrameHandlerFactory.class);
 
-        final MediaDriver.Context context = new MediaDriver.Context()
+        final MediaDriver.Context ctx = new MediaDriver.Context()
             .conductorCommandBuffer(COMMAND_BUFFER_SZ)
             .receiverCommandBuffer(COMMAND_BUFFER_SZ)
             .receiverNioSelector(new NioSelector())
             .bufferManagement(bufferManagement)
+            .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .rcvFrameHandlerFactory(frameHandlerFactory);
 
-        proxy = new ReceiverProxy(context.receiverCommandBuffer(), context.receiverNioSelector());
-        receiver = new Receiver(context);
+        proxy = new ReceiverProxy(ctx.receiverCommandBuffer(),
+                                  ctx.receiverNioSelector(),
+                                  ctx.newReceiveBufferEventQueue());
+        receiver = new Receiver(ctx);
     }
 
     @Test

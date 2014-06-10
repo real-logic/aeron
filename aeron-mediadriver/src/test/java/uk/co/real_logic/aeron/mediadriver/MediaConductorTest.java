@@ -25,6 +25,7 @@ import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
@@ -87,8 +88,12 @@ public class MediaConductorTest
             .conductorNioSelector(nioSelector)
             .senderFlowControl(UnicastSenderControlStrategy::new)
             .conductorShmBuffers(mockConductorShmBuffers)
+            .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .bufferManagement(mockBufferManagement);
 
+        ctx.receiverProxy(new ReceiverProxy(ctx.receiverCommandBuffer(),
+                                            ctx.conductorNioSelector(),
+                                            ctx.newReceiveBufferEventQueue()));
         sender = new Sender();
         receiver = mock(Receiver.class);
         mediaConductor = new MediaConductor(ctx, receiver, sender);

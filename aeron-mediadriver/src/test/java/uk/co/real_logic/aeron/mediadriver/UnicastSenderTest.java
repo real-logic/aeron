@@ -22,6 +22,7 @@ import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.MessageHandler;
+import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.*;
@@ -115,7 +116,12 @@ public class UnicastSenderTest
             .conductorShmBuffers(buffers.mediaShmBuffers())
             .bufferManagement(bufferManagement)
             .mtuLength(MAX_FRAME_LENGTH)
+            .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .conductorTimerWheel(timerWheel);
+
+        ctx.receiverProxy(new ReceiverProxy(ctx.receiverCommandBuffer(),
+                                            ctx.conductorNioSelector(),
+                                            ctx.newReceiveBufferEventQueue()));
 
         sender = new Sender();
         final Receiver receiver = mock(Receiver.class);

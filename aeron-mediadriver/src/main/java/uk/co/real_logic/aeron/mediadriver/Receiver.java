@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.*;
 import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
-import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import java.util.*;
@@ -38,7 +37,7 @@ public class Receiver extends Agent
     private final MediaConductorProxy conductorProxy;
     private final Map<UdpDestination, DataFrameHandler> rcvDestinationMap = new HashMap<>();
     private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
-    private final Queue<NewReceiveBufferEvent> newBufferEventQueue = new OneToOneConcurrentArrayQueue<>(1024);
+    private final Queue<NewReceiveBufferEvent> newBufferEventQueue;
     private final RcvFrameHandlerFactory frameHandlerFactory;
 
     private final AtomicArray<RcvSessionState> sessionState = new AtomicArray<>();
@@ -51,6 +50,7 @@ public class Receiver extends Agent
         conductorProxy = new MediaConductorProxy(context.mediaCommandBuffer(), context.conductorNioSelector());
         nioSelector = context.receiverNioSelector();
         frameHandlerFactory = context.rcvFrameHandlerFactory();
+        newBufferEventQueue = context.newReceiveBufferEventQueue();
     }
 
     public void process()
@@ -156,11 +156,6 @@ public class Receiver extends Agent
     public NioSelector nioSelector()
     {
         return nioSelector;
-    }
-
-    public boolean onNewReceiveBuffer(final NewReceiveBufferEvent buffer)
-    {
-        return newBufferEventQueue.offer(buffer);
     }
 
     public DataFrameHandler frameHandler(final UdpDestination destination)

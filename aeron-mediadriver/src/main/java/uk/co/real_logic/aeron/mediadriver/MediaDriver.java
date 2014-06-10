@@ -18,12 +18,14 @@ package uk.co.real_logic.aeron.mediadriver;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
 import uk.co.real_logic.aeron.util.*;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.status.StatusBufferCreator;
 
 import java.io.File;
 import java.nio.ByteBuffer;
+import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.function.BiConsumer;
@@ -36,22 +38,22 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescri
 
 /**
  * Main class for JVM-based mediadriver
- *
- *
+ * <p>
+ * <p>
  * Usage:
  * <code>
- *     $ java -jar aeron-mediadriver.jar
- *     $ java -Doption=value -jar aeron-mediadriver.jar
+ * $ java -jar aeron-mediadriver.jar
+ * $ java -Doption=value -jar aeron-mediadriver.jar
  * </code>
  * Properties
  * <ul>
- *     <li><code>aeron.conductor.dir</code>: Use value as directory name for conductor buffers.</li>
- *     <li><code>aeron.data.dir</code>: Use value as directory name for data buffers.</li>
- *     <li><code>aeron.rcv.buffer.size</code>: Use int value as size of buffer for receiving from network.</li>
- *     <li><code>aeron.command.buffer.size</code>: Use int value as size of the command buffers between threads.</li>
- *     <li><code>aeron.conductor.buffer.size</code>: Use int value as size of the conductor buffers between the media
- *          driver and the client.</li>
- *     <li><code>aeron.select.timeout</code>: use int value as default timeout for NIO select calls</li>
+ * <li><code>aeron.conductor.dir</code>: Use value as directory name for conductor buffers.</li>
+ * <li><code>aeron.data.dir</code>: Use value as directory name for data buffers.</li>
+ * <li><code>aeron.rcv.buffer.size</code>: Use int value as size of buffer for receiving from network.</li>
+ * <li><code>aeron.command.buffer.size</code>: Use int value as size of the command buffers between threads.</li>
+ * <li><code>aeron.conductor.buffer.size</code>: Use int value as size of the conductor buffers between the media
+ * driver and the client.</li>
+ * <li><code>aeron.select.timeout</code>: use int value as default timeout for NIO select calls</li>
  * </ul>
  */
 public class MediaDriver implements AutoCloseable
@@ -164,22 +166,28 @@ public class MediaDriver implements AutoCloseable
         bufferManagement = newMappedBufferManager(DATA_DIR_NAME);
         countersCreator = new StatusBufferCreator(DESCRIPTOR_BUFFER_SIZE, COUNTERS_BUFFER_SIZE);
 
-        final Context context = new Context()
-                .conductorCommandBuffer(COMMAND_BUFFER_SZ)
-                .receiverCommandBuffer(COMMAND_BUFFER_SZ)
-                .receiverNioSelector(rcvNioSelector)
-                .conductorNioSelector(new NioSelector())
-                .senderFlowControl(UnicastSenderControlStrategy::new)
-                .conductorShmBuffers(conductorShmBuffers)
-                .bufferManagement(bufferManagement)
-                .mtuLength(CommonConfiguration.MTU_LENGTH);
+        final Context ctx = new Context()
+                                .conductorCommandBuffer(COMMAND_BUFFER_SZ)
+                                .receiverCommandBuffer(COMMAND_BUFFER_SZ)
+                                .receiverNioSelector(rcvNioSelector)
+                                .conductorNioSelector(new NioSelector())
+                                .senderFlowControl(UnicastSenderControlStrategy::new)
+                                .conductorShmBuffers(conductorShmBuffers)
+                                .bufferManagement(bufferManagement)
+                                .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024))
+                                .mtuLength(CommonConfiguration.MTU_LENGTH);
 
-        context.rcvFrameHandlerFactory(new RcvFrameHandlerFactory(rcvNioSelector,
-                                       new MediaConductorProxy(context.mediaCommandBuffer(), rcvNioSelector)));
+        ctx.rcvFrameHandlerFactory(
+            new RcvFrameHandlerFactory(rcvNioSelector,
+                                       new MediaConductorProxy(ctx.mediaCommandBuffer(), rcvNioSelector)));
 
-        receiver = new Receiver(context);
+        ctx.receiverProxy(new ReceiverProxy(ctx.receiverCommandBuffer(),
+                                            ctx.conductorNioSelector(),
+                                            ctx.newReceiveBufferEventQueue()));
+
+        receiver = new Receiver(ctx);
         sender = new Sender();
-        conductor = new MediaConductor(context, receiver, sender);
+        conductor = new MediaConductor(ctx, receiver, sender);
     }
 
     public Receiver receiver()
@@ -245,6 +253,8 @@ public class MediaDriver implements AutoCloseable
         private TimerWheel conductorTimerWheel;
         private int mtuLength;
         private RcvFrameHandlerFactory rcvFrameHandlerFactory;
+        private Queue<NewReceiveBufferEvent> newReceiveBufferEventQueue;
+        private ReceiverProxy receiverProxy;
 
         private RingBuffer createNewCommandBuffer(final int size)
         {
@@ -308,6 +318,24 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
+        public Context rcvFrameHandlerFactory(final RcvFrameHandlerFactory rcvFrameHandlerFactory)
+        {
+            this.rcvFrameHandlerFactory = rcvFrameHandlerFactory;
+            return this;
+        }
+
+        public Context newReceiveBufferEventQueue(final Queue<NewReceiveBufferEvent> newReceiveBufferEventQueue)
+        {
+            this.newReceiveBufferEventQueue = newReceiveBufferEventQueue;
+            return this;
+        }
+
+        public Context receiverProxy(final ReceiverProxy receiverProxy)
+        {
+            this.receiverProxy = receiverProxy;
+            return this;
+        }
+
         public RingBuffer mediaCommandBuffer()
         {
             return mediaCommandBuffer;
@@ -353,15 +381,19 @@ public class MediaDriver implements AutoCloseable
             return rcvFrameHandlerFactory;
         }
 
-        public Context rcvFrameHandlerFactory(final RcvFrameHandlerFactory rcvFrameHandlerFactory)
-        {
-            this.rcvFrameHandlerFactory = rcvFrameHandlerFactory;
-            return this;
-        }
-
         public TimerWheel conductorTimerWheel()
         {
             return conductorTimerWheel;
+        }
+
+        public Queue<NewReceiveBufferEvent> newReceiveBufferEventQueue()
+        {
+            return newReceiveBufferEventQueue;
+        }
+
+        public ReceiverProxy receiverProxy()
+        {
+            return receiverProxy;
         }
     }
 }

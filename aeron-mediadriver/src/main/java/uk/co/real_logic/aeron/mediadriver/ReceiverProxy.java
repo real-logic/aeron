@@ -21,6 +21,7 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import java.nio.ByteBuffer;
+import java.util.Queue;
 
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 
@@ -33,14 +34,18 @@ public class ReceiverProxy
 
     private final RingBuffer commandBuffer;
     private final NioSelector selector;
+    private final Queue<NewReceiveBufferEvent> newBufferEventQueue;
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
     private final SubscriberMessageFlyweight receiverMessage = new SubscriberMessageFlyweight();
     private final QualifiedMessageFlyweight qualifiedMessageFlyweight = new QualifiedMessageFlyweight();
 
-    public ReceiverProxy(final RingBuffer commandBuffer, final NioSelector selector)
+    public ReceiverProxy(final RingBuffer commandBuffer,
+                         final NioSelector selector,
+                         final Queue<NewReceiveBufferEvent> newBufferEventQueue)
     {
         this.commandBuffer = commandBuffer;
         this.selector = selector;
+        this.newBufferEventQueue = newBufferEventQueue;
 
         receiverMessage.wrap(writeBuffer, 0);
         qualifiedMessageFlyweight.wrap(writeBuffer, 0);  // TODO: is this safe on the same buffer???
@@ -75,5 +80,10 @@ public class ReceiverProxy
         qualifiedMessageFlyweight.destination(destination);
         commandBuffer.write(NEW_RECEIVE_BUFFER_NOTIFICATION, writeBuffer, 0, qualifiedMessageFlyweight.length());
         selector.wakeup();
+    }
+
+    public boolean onNewReceiveBuffer(final NewReceiveBufferEvent e)
+    {
+        return newBufferEventQueue.offer(e);
     }
 }

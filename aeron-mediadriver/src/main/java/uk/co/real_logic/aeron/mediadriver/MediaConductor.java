@@ -73,7 +73,7 @@ public class MediaConductor extends Agent
         super(SELECT_TIMEOUT);
 
         this.commandBuffer = ctx.mediaCommandBuffer();
-        this.receiverProxy = new ReceiverProxy(ctx.receiverCommandBuffer(), ctx.receiverNioSelector());
+        this.receiverProxy = ctx.receiverProxy();
         this.bufferManagement = ctx.bufferManagement();
         this.nioSelector = ctx.conductorNioSelector();
         this.mtuLength = ctx.mtuLength();
@@ -405,7 +405,7 @@ public class MediaConductor extends Agent
 
             final NewReceiveBufferEvent event =
                 new NewReceiveBufferEvent(rcvDestination, sessionId, channelId, termId, buffer);
-            while (!receiver.onNewReceiveBuffer(event))
+            while (!receiverProxy.onNewReceiveBuffer(event))
             {
                 // TODO: count errors
                 System.out.println("Error adding to buffer");

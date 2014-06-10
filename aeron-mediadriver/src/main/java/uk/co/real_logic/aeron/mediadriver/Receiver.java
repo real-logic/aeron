@@ -38,7 +38,7 @@ public class Receiver extends Agent
     private final MediaConductorProxy conductorProxy;
     private final Map<UdpDestination, DataFrameHandler> rcvDestinationMap = new HashMap<>();
     private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
-    private final Queue<RcvBufferState> buffers = new OneToOneConcurrentArrayQueue<>(1024);
+    private final Queue<NewReceiveBufferEvent> buffers = new OneToOneConcurrentArrayQueue<>(1024);
     private final RcvFrameHandlerFactory frameHandlerFactory;
 
     private final AtomicArray<RcvSessionState> sessionState = new AtomicArray<>();
@@ -70,7 +70,7 @@ public class Receiver extends Agent
 
     private void processBufferQueue()
     {
-        RcvBufferState state;
+        NewReceiveBufferEvent state;
         while ((state = buffers.poll()) != null)
         {
             attachBufferState(state);
@@ -158,7 +158,7 @@ public class Receiver extends Agent
         return nioSelector;
     }
 
-    public boolean sendBuffer(final RcvBufferState buffer)
+    public boolean onNewReceiveBuffer(final NewReceiveBufferEvent buffer)
     {
         return buffers.offer(buffer);
     }
@@ -202,7 +202,7 @@ public class Receiver extends Agent
         }
     }
 
-    private void attachBufferState(final RcvBufferState buffer)
+    private void attachBufferState(final NewReceiveBufferEvent buffer)
     {
         DataFrameHandler rcv = frameHandler(buffer.destination());
 

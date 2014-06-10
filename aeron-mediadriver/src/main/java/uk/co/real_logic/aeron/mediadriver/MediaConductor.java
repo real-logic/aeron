@@ -403,8 +403,9 @@ public class MediaConductor extends Agent
 
             sendNewBufferNotification(sessionId, channelId, termId, false, destination, buffer);
 
-            final RcvBufferState bufferState = new RcvBufferState(rcvDestination, sessionId, channelId, termId, buffer);
-            while (!receiver.sendBuffer(bufferState))
+            final NewReceiveBufferEvent event =
+                new NewReceiveBufferEvent(rcvDestination, sessionId, channelId, termId, buffer);
+            while (!receiver.onNewReceiveBuffer(event))
             {
                 // TODO: count errors
                 System.out.println("Error adding to buffer");

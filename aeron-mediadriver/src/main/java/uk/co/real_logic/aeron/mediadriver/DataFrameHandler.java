@@ -146,7 +146,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         // this should be on the data channel and shouldn't include Naks, so ignore.
     }
 
-    public void attachBufferState(final RcvBufferState buffer)
+    public void attachBufferState(final NewReceiveBufferEvent buffer)
     {
         final RcvChannelState channelState = channelInterestMap.get(buffer.channelId());
         if (null == channelState)

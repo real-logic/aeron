@@ -34,7 +34,7 @@ public class ClientConductorProxy
     public static final int MSG_BUFFER_CAPACITY = 1024;
 
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(MSG_BUFFER_CAPACITY));
-    private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
+    private final PublisherMessageFlyweight publisherMessage = new PublisherMessageFlyweight();
     private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
     private final QualifiedMessageFlyweight qualifiedMessage = new QualifiedMessageFlyweight();
 
@@ -44,7 +44,7 @@ public class ClientConductorProxy
     {
         this.conductorBuffer = conductorBuffer;
 
-        channelMessage.wrap(writeBuffer, 0);
+        publisherMessage.wrap(writeBuffer, 0);
         subscriberMessage.wrap(writeBuffer, 0);
         qualifiedMessage.wrap(writeBuffer, 0);
     }
@@ -64,10 +64,10 @@ public class ClientConductorProxy
                                     final long channelId,
                                     final int msgTypeId)
     {
-        channelMessage.sessionId(sessionId);
-        channelMessage.channelId(channelId);
-        channelMessage.destination(destination);
-        if (! conductorBuffer.write(msgTypeId, writeBuffer, 0, channelMessage.length()))
+        publisherMessage.sessionId(sessionId);
+        publisherMessage.channelId(channelId);
+        publisherMessage.destination(destination);
+        if (! conductorBuffer.write(msgTypeId, writeBuffer, 0, publisherMessage.length()))
         {
             throw new IllegalStateException("could not write channel message");
         }

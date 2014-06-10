@@ -58,8 +58,8 @@ public class MediaConductor extends Agent
     private final Supplier<SenderControlStrategy> senderFlowControl;
 
     private final ThreadLocalRandom rng = ThreadLocalRandom.current();
-    private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
-    private final SubscriberMessageFlyweight receiverMessage = new SubscriberMessageFlyweight();
+    private final PublisherMessageFlyweight publisherMessage = new PublisherMessageFlyweight();
+    private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
     private final ErrorHeaderFlyweight errorHeader = new ErrorHeaderFlyweight();
     private final QualifiedMessageFlyweight qualifiedMessage = new QualifiedMessageFlyweight();
     private final NewBufferMessageFlyweight newBufferMessage = new NewBufferMessageFlyweight();
@@ -160,34 +160,34 @@ public class MediaConductor extends Agent
         clientCommandBuffer.read(
             (msgTypeId, buffer, index, length) ->
             {
-                Flyweight flyweight = channelMessage;
+                Flyweight flyweight = publisherMessage;
 
                 try
                 {
                     switch (msgTypeId)
                     {
                         case ADD_CHANNEL:
-                            channelMessage.wrap(buffer, index);
-                            flyweight = channelMessage;
-                            onAddChannel(channelMessage);
+                            publisherMessage.wrap(buffer, index);
+                            flyweight = publisherMessage;
+                            onAddChannel(publisherMessage);
                             break;
 
                         case REMOVE_CHANNEL:
-                            channelMessage.wrap(buffer, index);
-                            flyweight = channelMessage;
-                            onRemoveChannel(channelMessage);
+                            publisherMessage.wrap(buffer, index);
+                            flyweight = publisherMessage;
+                            onRemoveChannel(publisherMessage);
                             break;
 
                         case ADD_SUBSCRIBER:
-                            receiverMessage.wrap(buffer, index);
-                            flyweight = receiverMessage;
-                            onAddSubscriber(receiverMessage);
+                            subscriberMessage.wrap(buffer, index);
+                            flyweight = subscriberMessage;
+                            onAddSubscriber(subscriberMessage);
                             break;
 
                         case REMOVE_SUBSCRIBER:
-                            receiverMessage.wrap(buffer, index);
-                            flyweight = receiverMessage;
-                            onRemoveSubscriber(receiverMessage);
+                            subscriberMessage.wrap(buffer, index);
+                            flyweight = subscriberMessage;
+                            onRemoveSubscriber(subscriberMessage);
                             break;
                     }
                 }
@@ -266,11 +266,11 @@ public class MediaConductor extends Agent
         }
     }
 
-    private void onAddChannel(final ChannelMessageFlyweight channelMessage)
+    private void onAddChannel(final PublisherMessageFlyweight publisherMessage)
     {
-        final String destination = channelMessage.destination();
-        final long sessionId = channelMessage.sessionId();
-        final long channelId = channelMessage.channelId();
+        final String destination = publisherMessage.destination();
+        final long sessionId = publisherMessage.sessionId();
+        final long channelId = publisherMessage.channelId();
 
         try
         {
@@ -326,11 +326,11 @@ public class MediaConductor extends Agent
         }
     }
 
-    private void onRemoveChannel(final ChannelMessageFlyweight channelMessage)
+    private void onRemoveChannel(final PublisherMessageFlyweight publisherMessage)
     {
-        final String destination = channelMessage.destination();
-        final long sessionId = channelMessage.sessionId();
-        final long channelId = channelMessage.channelId();
+        final String destination = publisherMessage.destination();
+        final long sessionId = publisherMessage.sessionId();
+        final long channelId = publisherMessage.channelId();
 
         try
         {

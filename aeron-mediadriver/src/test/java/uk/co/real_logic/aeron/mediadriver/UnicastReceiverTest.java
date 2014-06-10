@@ -83,7 +83,7 @@ public class UnicastReceiverTest
 
     private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
     private final ErrorHeaderFlyweight error = new ErrorHeaderFlyweight();
-    private final SubscriberMessageFlyweight receiverMessage = new SubscriberMessageFlyweight();
+    private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
 
     private BufferManagement bufferManagement;
     private Receiver receiver;
@@ -162,9 +162,9 @@ public class UnicastReceiverTest
             assertThat(error.errorCode(), is(INVALID_DESTINATION));
             assertThat(error.errorStringLength(), is(0));
 
-            receiverMessage.wrap(buffer, error.offendingHeaderOffset());
-            assertThat(receiverMessage.channelIds(), is(ONE_CHANNEL));
-            assertThat(receiverMessage.destination(), is(INVALID_URI));
+            subscriberMessage.wrap(buffer, error.offendingHeaderOffset());
+            assertThat(subscriberMessage.channelIds(), is(ONE_CHANNEL));
+            assertThat(subscriberMessage.destination(), is(INVALID_URI));
         });
     }
 
@@ -184,9 +184,9 @@ public class UnicastReceiverTest
             assertThat(error.errorCode(), is(SUBSCRIBER_NOT_REGISTERED));
             assertThat(error.errorStringLength(), is(0));
 
-            receiverMessage.wrap(buffer, error.offendingHeaderOffset());
-            assertThat(receiverMessage.channelIds(), is(ONE_CHANNEL));
-            assertThat(receiverMessage.destination(), is(URI));
+            subscriberMessage.wrap(buffer, error.offendingHeaderOffset());
+            assertThat(subscriberMessage.channelIds(), is(ONE_CHANNEL));
+            assertThat(subscriberMessage.destination(), is(URI));
         });
     }
 
@@ -207,9 +207,9 @@ public class UnicastReceiverTest
             assertThat(error.errorCode(), is(SUBSCRIBER_NOT_REGISTERED));
             assertThat(error.errorStringLength(), is(0));
 
-            receiverMessage.wrap(buffer, error.offendingHeaderOffset());
-            assertThat(receiverMessage.channelIds(), is(ANOTHER_CHANNEL));
-            assertThat(receiverMessage.destination(), is(URI));
+            subscriberMessage.wrap(buffer, error.offendingHeaderOffset());
+            assertThat(subscriberMessage.channelIds(), is(ANOTHER_CHANNEL));
+            assertThat(subscriberMessage.destination(), is(URI));
         });
     }
 
@@ -412,12 +412,12 @@ public class UnicastReceiverTest
     {
         final RingBuffer adminCommands = buffers.mappedToMediaDriver();
 
-        receiverMessage.wrap(writeBuffer, 0);
+        subscriberMessage.wrap(writeBuffer, 0);
 
-        receiverMessage.channelIds(channelIds)
+        subscriberMessage.channelIds(channelIds)
                        .destination(destination);
 
-        adminCommands.write(msgTypeId, writeBuffer, 0, receiverMessage.length());
+        adminCommands.write(msgTypeId, writeBuffer, 0, subscriberMessage.length());
     }
 
     private void sendDataFrame(final UdpDestination destination,

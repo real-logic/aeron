@@ -20,7 +20,7 @@ import uk.co.real_logic.aeron.util.Flyweight;
 import java.nio.ByteOrder;
 
 /**
- * Control message for adding and removing a channel.
+ * Control message for adding and removing a channel for publication
  *
  * <p>
  * 0                   1                   2                   3
@@ -34,7 +34,7 @@ import java.nio.ByteOrder;
  * |                                                             ...
  * +---------------------------------------------------------------+
  */
-public class ChannelMessageFlyweight extends Flyweight
+public class PublisherMessageFlyweight extends Flyweight
 {
     private static final int SESSION_ID_FIELD_OFFSET = 0;
     private static final int CHANNEL_ID_FIELD_OFFSET = 4;
@@ -56,7 +56,7 @@ public class ChannelMessageFlyweight extends Flyweight
      * @param sessionId field value
      * @return flyweight
      */
-    public ChannelMessageFlyweight sessionId(final long sessionId)
+    public PublisherMessageFlyweight sessionId(final long sessionId)
     {
         uint32Put(offset() + SESSION_ID_FIELD_OFFSET, (int)sessionId, ByteOrder.LITTLE_ENDIAN);
         return this;
@@ -78,7 +78,7 @@ public class ChannelMessageFlyweight extends Flyweight
      * @param channelId field value
      * @return flyweight
      */
-    public ChannelMessageFlyweight channelId(final long channelId)
+    public PublisherMessageFlyweight channelId(final long channelId)
     {
         uint32Put(offset() + CHANNEL_ID_FIELD_OFFSET, channelId, ByteOrder.LITTLE_ENDIAN);
         return this;
@@ -100,7 +100,7 @@ public class ChannelMessageFlyweight extends Flyweight
      * @param destination field value
      * @return flyweight
      */
-    public ChannelMessageFlyweight destination(final String destination)
+    public PublisherMessageFlyweight destination(final String destination)
     {
         lengthOfDestination = stringPut(offset() + DESTINATION_OFFSET,
                                         destination,

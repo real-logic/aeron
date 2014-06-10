@@ -22,7 +22,7 @@ import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
 import uk.co.real_logic.aeron.util.ConductorShmBuffers;
 import uk.co.real_logic.aeron.util.ErrorCode;
 import uk.co.real_logic.aeron.util.TimerWheel;
-import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.PublisherMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
@@ -74,7 +74,7 @@ public class MediaConductorTest
     private final RingBuffer conductorCommands = new ManyToOneRingBuffer(new AtomicBuffer(toDriverBuffer));
     private final RingBuffer conductorNotifications = new ManyToOneRingBuffer(new AtomicBuffer(toClientBuffer));
 
-    private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
+    private final PublisherMessageFlyweight publisherMessage = new PublisherMessageFlyweight();
     private final NewBufferMessageFlyweight bufferMessage = new NewBufferMessageFlyweight();
     private final ErrorHeaderFlyweight errorHeader = new ErrorHeaderFlyweight();
     private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
@@ -297,10 +297,10 @@ public class MediaConductorTest
                 assertThat(errorHeader.errorCode(), is(ErrorCode.CHANNEL_ALREADY_EXISTS));
                 assertThat(errorHeader.errorStringLength(), greaterThan(0));
 
-                channelMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
-                assertThat(channelMessage.sessionId(), is(1L));
-                assertThat(channelMessage.channelId(), is(2L));
-                assertThat(channelMessage.destination(), is(DESTINATION_URI + 4000));
+                publisherMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
+                assertThat(publisherMessage.sessionId(), is(1L));
+                assertThat(publisherMessage.channelId(), is(2L));
+                assertThat(publisherMessage.destination(), is(DESTINATION_URI + 4000));
             });
         assertThat(msgs, is(1));
     }
@@ -322,10 +322,10 @@ public class MediaConductorTest
                 assertThat(errorHeader.errorCode(), is(ErrorCode.INVALID_DESTINATION));
                 assertThat(errorHeader.errorStringLength(), greaterThan(0));
 
-                channelMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
-                assertThat(channelMessage.sessionId(), is(1L));
-                assertThat(channelMessage.channelId(), is(2L));
-                assertThat(channelMessage.destination(), is(DESTINATION_URI + 4000));
+                publisherMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
+                assertThat(publisherMessage.sessionId(), is(1L));
+                assertThat(publisherMessage.channelId(), is(2L));
+                assertThat(publisherMessage.destination(), is(DESTINATION_URI + 4000));
             });
         assertThat(msgs, is(1));
     }
@@ -353,10 +353,10 @@ public class MediaConductorTest
                 assertThat(errorHeader.errorCode(), is(ErrorCode.CHANNEL_UNKNOWN));
                 assertThat(errorHeader.errorStringLength(), greaterThan(0));
 
-                channelMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
-                assertThat(channelMessage.sessionId(), is(2L));
-                assertThat(channelMessage.channelId(), is(2L));
-                assertThat(channelMessage.destination(), is(DESTINATION_URI + 4000));
+                publisherMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
+                assertThat(publisherMessage.sessionId(), is(2L));
+                assertThat(publisherMessage.channelId(), is(2L));
+                assertThat(publisherMessage.destination(), is(DESTINATION_URI + 4000));
             });
         assertThat(msgs, is(1));
     }
@@ -384,10 +384,10 @@ public class MediaConductorTest
                 assertThat(errorHeader.errorCode(), is(ErrorCode.CHANNEL_UNKNOWN));
                 assertThat(errorHeader.errorStringLength(), greaterThan(0));
 
-                channelMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
-                assertThat(channelMessage.sessionId(), is(1L));
-                assertThat(channelMessage.channelId(), is(3L));
-                assertThat(channelMessage.destination(), is(DESTINATION_URI + 4000));
+                publisherMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
+                assertThat(publisherMessage.sessionId(), is(1L));
+                assertThat(publisherMessage.channelId(), is(3L));
+                assertThat(publisherMessage.destination(), is(DESTINATION_URI + 4000));
             });
         assertThat(msgs, is(1));
     }
@@ -471,12 +471,12 @@ public class MediaConductorTest
     private void writeChannelMessage(final int msgTypeId, final long sessionId, final long channelId, final int port)
         throws IOException
     {
-        channelMessage.wrap(writeBuffer, 0);
-        channelMessage.channelId(channelId);
-        channelMessage.sessionId(sessionId);
-        channelMessage.destination(DESTINATION_URI + port);
+        publisherMessage.wrap(writeBuffer, 0);
+        publisherMessage.channelId(channelId);
+        publisherMessage.sessionId(sessionId);
+        publisherMessage.destination(DESTINATION_URI + port);
 
-        conductorCommands.write(msgTypeId, writeBuffer, 0, channelMessage.length());
+        conductorCommands.write(msgTypeId, writeBuffer, 0, publisherMessage.length());
     }
 
     private void writeSubscriberMessage(final int msgTypeId, final String destination, final long[] channelIds)

@@ -58,9 +58,9 @@ public final class ClientConductor extends Agent
 
     private final ConductorErrorHandler errorHandler;
 
-    private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
-    private final SubscriberMessageFlyweight receiverMessage = new SubscriberMessageFlyweight();
-    private final NewBufferMessageFlyweight bufferNotificationMessage = new NewBufferMessageFlyweight();
+    private final PublisherMessageFlyweight publisherMessage = new PublisherMessageFlyweight();
+    private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
+    private final NewBufferMessageFlyweight newBufferMessage = new NewBufferMessageFlyweight();
 
     public ClientConductor(final RingBuffer commandBuffer,
                            final RingBuffer toClientBuffer,
@@ -111,10 +111,10 @@ public final class ClientConductor extends Agent
                     case ADD_CHANNEL:
                     case REMOVE_CHANNEL:
                     {
-                        channelMessage.wrap(buffer, index);
-                        final String destination = channelMessage.destination();
-                        final long channelId = channelMessage.channelId();
-                        final long sessionId = channelMessage.sessionId();
+                        publisherMessage.wrap(buffer, index);
+                        final String destination = publisherMessage.destination();
+                        final long channelId = publisherMessage.channelId();
+                        final long sessionId = publisherMessage.sessionId();
 
                         if (msgTypeId == ADD_CHANNEL)
                         {
@@ -132,9 +132,9 @@ public final class ClientConductor extends Agent
                     case ADD_SUBSCRIBER:
                     case REMOVE_SUBSCRIBER:
                     {
-                        receiverMessage.wrap(buffer, index);
-                        final long[] channelIds = receiverMessage.channelIds();
-                        final String destination = receiverMessage.destination();
+                        subscriberMessage.wrap(buffer, index);
+                        final long[] channelIds = subscriberMessage.channelIds();
+                        final String destination = subscriberMessage.destination();
                         if (msgTypeId == ADD_SUBSCRIBER)
                         {
                             addReceiver(destination, channelIds);
@@ -217,12 +217,12 @@ public final class ClientConductor extends Agent
                 {
                     case NEW_RECEIVE_BUFFER_NOTIFICATION:
                     case NEW_SEND_BUFFER_NOTIFICATION:
-                        bufferNotificationMessage.wrap(buffer, index);
+                        newBufferMessage.wrap(buffer, index);
 
-                        final long sessionId = bufferNotificationMessage.sessionId();
-                        final long channelId = bufferNotificationMessage.channelId();
-                        final long termId = bufferNotificationMessage.termId();
-                        final String destination = bufferNotificationMessage.destination();
+                        final long sessionId = newBufferMessage.sessionId();
+                        final long channelId = newBufferMessage.channelId();
+                        final long termId = newBufferMessage.termId();
+                        final String destination = newBufferMessage.destination();
 
                         if (msgTypeId == NEW_SEND_BUFFER_NOTIFICATION)
                         {
@@ -319,16 +319,16 @@ public final class ClientConductor extends Agent
 
     public LogAppender newAppender(final int index) throws IOException
     {
-        final AtomicBuffer logBuffer = bufferUsage.newBuffer(bufferNotificationMessage, index);
-        final AtomicBuffer stateBuffer = bufferUsage.newBuffer(bufferNotificationMessage, index + BUFFER_COUNT);
+        final AtomicBuffer logBuffer = bufferUsage.newBuffer(newBufferMessage, index);
+        final AtomicBuffer stateBuffer = bufferUsage.newBuffer(newBufferMessage, index + BUFFER_COUNT);
 
         return new LogAppender(logBuffer, stateBuffer, DataHeaderFlyweight.DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }
 
     private LogReader newReader(final int index) throws IOException
     {
-        final AtomicBuffer logBuffer = bufferUsage.newBuffer(bufferNotificationMessage, index);
-        final AtomicBuffer stateBuffer = bufferUsage.newBuffer(bufferNotificationMessage, index + BUFFER_COUNT);
+        final AtomicBuffer logBuffer = bufferUsage.newBuffer(newBufferMessage, index);
+        final AtomicBuffer stateBuffer = bufferUsage.newBuffer(newBufferMessage, index + BUFFER_COUNT);
 
         return new LogReader(logBuffer, stateBuffer);
     }

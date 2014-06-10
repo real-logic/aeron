@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.util;
 
 import org.junit.Test;
-import uk.co.real_logic.aeron.util.command.ChannelMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.PublisherMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.*;
@@ -35,8 +35,8 @@ public class FlyweightTest
     private final HeaderFlyweight decodeHeader = new HeaderFlyweight();
     private final DataHeaderFlyweight encodeDataHeader = new DataHeaderFlyweight();
     private final DataHeaderFlyweight decodeDataHeader = new DataHeaderFlyweight();
-    private final ChannelMessageFlyweight encodeChannel = new ChannelMessageFlyweight();
-    private final ChannelMessageFlyweight decodeChannel = new ChannelMessageFlyweight();
+    private final PublisherMessageFlyweight encodePublisher = new PublisherMessageFlyweight();
+    private final PublisherMessageFlyweight decodePublisher = new PublisherMessageFlyweight();
     private final ErrorHeaderFlyweight encodeErrorHeader = new ErrorHeaderFlyweight();
     private final ErrorHeaderFlyweight decodeErrorHeader = new ErrorHeaderFlyweight();
     private final NewBufferMessageFlyweight encodeNewBuffer = new NewBufferMessageFlyweight();
@@ -135,14 +135,14 @@ public class FlyweightTest
     @Test
     public void shouldEncodeAndDecodeStringsCorrectly()
     {
-        encodeChannel.wrap(aBuff, 0);
+        encodePublisher.wrap(aBuff, 0);
 
         String example = "abcç̀漢字仮名交じり文";
-        encodeChannel.destination(example);
+        encodePublisher.destination(example);
 
-        decodeChannel.wrap(aBuff, 0);
+        decodePublisher.wrap(aBuff, 0);
 
-        assertThat(decodeChannel.destination(), is(example));
+        assertThat(decodePublisher.destination(), is(example));
     }
 
     @Test

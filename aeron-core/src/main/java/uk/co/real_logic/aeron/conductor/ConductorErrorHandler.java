@@ -25,14 +25,12 @@ import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
  */
 public class ConductorErrorHandler
 {
-    private final ErrorHeaderFlyweight errorHeader;
-    private final SubscriberMessageFlyweight receiverMessage;
+    private final ErrorHeaderFlyweight errorHeader = new ErrorHeaderFlyweight();
+    private final SubscriberMessageFlyweight subscriberMessage  = new SubscriberMessageFlyweight();
     private final InvalidDestinationHandler invalidDestination;
 
     public ConductorErrorHandler(final InvalidDestinationHandler invalidDestination)
     {
-        errorHeader = new ErrorHeaderFlyweight();
-        receiverMessage = new SubscriberMessageFlyweight();
         this.invalidDestination = invalidDestination;
     }
 
@@ -43,8 +41,8 @@ public class ConductorErrorHandler
         switch (errorHeader.errorCode())
         {
             case INVALID_DESTINATION:
-                receiverMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
-                invalidDestination.onInvalidDestination(receiverMessage.destination());
+                subscriberMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
+                invalidDestination.onInvalidDestination(subscriberMessage.destination());
                 break;
         }
     }

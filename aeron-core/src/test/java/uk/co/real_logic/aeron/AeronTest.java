@@ -80,7 +80,7 @@ public class AeronTest
 
     private DataHandler channel2Handler = emptyDataHandler();
 
-    private final ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
+    private final PublisherMessageFlyweight publisherMessage = new PublisherMessageFlyweight();
     private final NewBufferMessageFlyweight newBufferMessage = new NewBufferMessageFlyweight();
     private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
 
@@ -636,10 +636,10 @@ public class AeronTest
         {
             assertThat(msgTypeId, is(expectedMsgTypeId));
 
-            channelMessage.wrap(buffer, index);
-            assertThat(channelMessage.destination(), is(DESTINATION));
-            assertThat(channelMessage.channelId(), is(CHANNEL_ID));
-            assertThat(channelMessage.sessionId(), is(SESSION_ID));
+            publisherMessage.wrap(buffer, index);
+            assertThat(publisherMessage.destination(), is(DESTINATION));
+            assertThat(publisherMessage.channelId(), is(CHANNEL_ID));
+            assertThat(publisherMessage.sessionId(), is(SESSION_ID));
         });
     }
 }

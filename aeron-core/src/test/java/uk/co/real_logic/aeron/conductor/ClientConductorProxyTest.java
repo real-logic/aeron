@@ -35,20 +35,20 @@ public class ClientConductorProxyTest
 
     private static final long[] CHANNEL_IDS = {1L, 3L, 4L};
     private static final long SESSION_ID = 1L;
-    private final RingBuffer mediaConductorBuffer =
+    private final RingBuffer conductorBuffer =
         new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocateDirect(TRAILER_LENGTH + 1024)));
-    private final ClientConductorProxy mediaConductor = new ClientConductorProxy(mediaConductorBuffer);
+    private final ClientConductorProxy conductor = new ClientConductorProxy(conductorBuffer);
 
     @Test
     public void threadSendsAddChannelMessage()
     {
-        threadSendsChannelMessage(() -> mediaConductor.sendAddChannel(DESTINATION, SESSION_ID, 2), ADD_CHANNEL);
+        threadSendsChannelMessage(() -> conductor.sendAddChannel(DESTINATION, SESSION_ID, 2), ADD_CHANNEL);
     }
 
     @Test
     public void threadSendsRemoveChannelMessage()
     {
-        threadSendsChannelMessage(() -> mediaConductor.sendRemoveChannel(DESTINATION, SESSION_ID, 2), REMOVE_CHANNEL);
+        threadSendsChannelMessage(() -> conductor.sendRemoveChannel(DESTINATION, SESSION_ID, 2), REMOVE_CHANNEL);
     }
 
     private void threadSendsChannelMessage(final Runnable sendMessage, final int expectedMsgTypeId)
@@ -58,13 +58,13 @@ public class ClientConductorProxyTest
         assertReadsOneMessage(
             (msgTypeId, buffer, index, length) ->
             {
-                ChannelMessageFlyweight channelMessage = new ChannelMessageFlyweight();
-                channelMessage.wrap(buffer, index);
+                final PublisherMessageFlyweight publisherMessage = new PublisherMessageFlyweight();
+                publisherMessage.wrap(buffer, index);
 
                 assertThat(msgTypeId, is(expectedMsgTypeId));
-                assertThat(channelMessage.destination(), is(DESTINATION));
-                assertThat(channelMessage.sessionId(), is(1L));
-                assertThat(channelMessage.channelId(), is(2L));
+                assertThat(publisherMessage.destination(), is(DESTINATION));
+                assertThat(publisherMessage.sessionId(), is(1L));
+                assertThat(publisherMessage.channelId(), is(2L));
             }
         );
     }
@@ -72,17 +72,17 @@ public class ClientConductorProxyTest
     @Test
     public void threadSendsRemoveSubscriberMessage()
     {
-        mediaConductor.sendRemoveSubscriber(DESTINATION, CHANNEL_IDS);
+        conductor.sendRemoveSubscriber(DESTINATION, CHANNEL_IDS);
 
         assertReadsOneMessage(
             (msgTypeId, buffer, index, length) ->
             {
-                SubscriberMessageFlyweight removeSubscriberMessage = new SubscriberMessageFlyweight();
-                removeSubscriberMessage.wrap(buffer, index);
+                final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
+                subscriberMessage.wrap(buffer, index);
 
                 assertThat(msgTypeId, is(REMOVE_SUBSCRIBER));
-                assertThat(removeSubscriberMessage.destination(), is(DESTINATION));
-                assertThat(removeSubscriberMessage.channelIds(), is(CHANNEL_IDS));
+                assertThat(subscriberMessage.destination(), is(DESTINATION));
+                assertThat(subscriberMessage.channelIds(), is(CHANNEL_IDS));
             }
         );
     }
@@ -90,26 +90,26 @@ public class ClientConductorProxyTest
     @Test
     public void threadSendsRequestTermBufferMessage()
     {
-        mediaConductor.sendRequestTerm(DESTINATION, SESSION_ID, 2L, 3L);
+        conductor.sendRequestTerm(DESTINATION, SESSION_ID, 2L, 3L);
 
         assertReadsOneMessage(
             (msgTypeId, buffer, index, length) ->
             {
-                QualifiedMessageFlyweight requestTermBuffer = new QualifiedMessageFlyweight();
-                requestTermBuffer.wrap(buffer, index);
+                final QualifiedMessageFlyweight qualifiedMessage = new QualifiedMessageFlyweight();
+                qualifiedMessage.wrap(buffer, index);
 
                 assertThat(msgTypeId, is(REQUEST_CLEANED_TERM));
-                assertThat(requestTermBuffer.sessionId(), is(1L));
-                assertThat(requestTermBuffer.channelId(), is(2L));
-                assertThat(requestTermBuffer.destination(), is(DESTINATION));
-                assertThat(requestTermBuffer.termId(), is(3L));
+                assertThat(qualifiedMessage.sessionId(), is(1L));
+                assertThat(qualifiedMessage.channelId(), is(2L));
+                assertThat(qualifiedMessage.destination(), is(DESTINATION));
+                assertThat(qualifiedMessage.termId(), is(3L));
             }
         );
     }
 
     private void assertReadsOneMessage(final MessageHandler handler)
     {
-        final int messageCount = mediaConductorBuffer.read(handler);
+        final int messageCount = conductorBuffer.read(handler);
         assertThat(messageCount, is(1));
     }
 }

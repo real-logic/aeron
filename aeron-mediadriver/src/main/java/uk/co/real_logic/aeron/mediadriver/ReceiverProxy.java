@@ -36,8 +36,8 @@ public class ReceiverProxy
     private final NioSelector selector;
     private final Queue<NewReceiveBufferEvent> newBufferEventQueue;
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
-    private final SubscriberMessageFlyweight receiverMessage = new SubscriberMessageFlyweight();
-    private final QualifiedMessageFlyweight qualifiedMessageFlyweight = new QualifiedMessageFlyweight();
+    private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
+    private final QualifiedMessageFlyweight qualifiedMessage = new QualifiedMessageFlyweight();
 
     public ReceiverProxy(final RingBuffer commandBuffer,
                          final NioSelector selector,
@@ -47,8 +47,8 @@ public class ReceiverProxy
         this.selector = selector;
         this.newBufferEventQueue = newBufferEventQueue;
 
-        receiverMessage.wrap(writeBuffer, 0);
-        qualifiedMessageFlyweight.wrap(writeBuffer, 0);  // TODO: is this safe on the same buffer???
+        subscriberMessage.wrap(writeBuffer, 0);
+        qualifiedMessage.wrap(writeBuffer, 0);  // TODO: is this safe on the same buffer???
     }
 
     public void newSubscriber(final String destination, final long[] channelIdList)
@@ -63,9 +63,9 @@ public class ReceiverProxy
 
     private void addReceiver(final int msgTypeId, final String destination, final long[] channelIdList)
     {
-        receiverMessage.channelIds(channelIdList);
-        receiverMessage.destination(destination);
-        commandBuffer.write(msgTypeId, writeBuffer, 0, receiverMessage.length());
+        subscriberMessage.channelIds(channelIdList);
+        subscriberMessage.destination(destination);
+        commandBuffer.write(msgTypeId, writeBuffer, 0, subscriberMessage.length());
         selector.wakeup();
     }
 
@@ -74,11 +74,11 @@ public class ReceiverProxy
                                   final long channelId,
                                   final long termId)
     {
-        qualifiedMessageFlyweight.sessionId(sessionId);
-        qualifiedMessageFlyweight.channelId(channelId);
-        qualifiedMessageFlyweight.termId(termId);
-        qualifiedMessageFlyweight.destination(destination);
-        commandBuffer.write(NEW_RECEIVE_BUFFER_NOTIFICATION, writeBuffer, 0, qualifiedMessageFlyweight.length());
+        qualifiedMessage.sessionId(sessionId);
+        qualifiedMessage.channelId(channelId);
+        qualifiedMessage.termId(termId);
+        qualifiedMessage.destination(destination);
+        commandBuffer.write(NEW_RECEIVE_BUFFER_NOTIFICATION, writeBuffer, 0, qualifiedMessage.length());
         selector.wakeup();
     }
 

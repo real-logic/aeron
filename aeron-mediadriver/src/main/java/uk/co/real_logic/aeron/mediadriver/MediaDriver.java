@@ -59,57 +59,95 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescri
  */
 public class MediaDriver implements AutoCloseable
 {
-    /** Byte buffer size (in bytes) for reads */
+    /**
+     * Byte buffer size (in bytes) for reads
+     */
     public static final String READ_BUFFER_SZ_PROP_NAME = "aeron.rcv.buffer.size";
 
-    /** Size (in bytes) of the command buffers between threads */
+    /**
+     * Size (in bytes) of the command buffers between threads
+     */
     public static final String COMMAND_BUFFER_SZ_PROP_NAME = "aeron.command.buffer.size";
 
-    /** Size (in bytes) of the conductor buffers between the media driver and the client */
+    /**
+     * Size (in bytes) of the conductor buffers between the media driver and the client
+     */
     public static final String ADMIN_BUFFER_SZ_PROP_NAME = "aeron.conductor.buffer.size";
 
-    /** Size (in bytes) of the counter storage buffer */
+    /**
+     * Size (in bytes) of the counter storage buffer
+     */
     public static final String COUNTERS_BUFFER_SZ_PROP_NAME = "aeron.counters.buffer.size";
 
-    /** Size (in bytes) of the counter storage buffer */
+    /**
+     * Size (in bytes) of the counter storage buffer
+     */
     public static final String DESCRIPTOR_BUFFER_SZ_PROP_NAME = "aeron.counters.descriptor.size";
 
-    /** Timeout (in msec) for the basic NIO select call */
+    /**
+     * Timeout (in msec) for the basic NIO select call
+     */
     public static final String SELECT_TIMEOUT_PROP_NAME = "aeron.select.timeout";
 
-    /** Default byte buffer size for reads */
+    /**
+     * Default byte buffer size for reads
+     */
     public static final int READ_BYTE_BUFFER_SZ_DEFAULT = 4096;
 
-    /** Default buffer size for command buffers between threads */
+    /**
+     * Default buffer size for command buffers between threads
+     */
     public static final int COMMAND_BUFFER_SZ_DEFAULT = 65536;
 
-    /** Default buffer size for conductor buffers between the media driver and the client */
+    /**
+     * Default buffer size for conductor buffers between the media driver and the client
+     */
     public static final int ADMIN_BUFFER_SZ_DEFAULT = 65536 + TRAILER_LENGTH;
 
-    /** Size (in bytes) of the counter storage buffer */
+    /**
+     * Size (in bytes) of the counter storage buffer
+     */
     public static final int COUNTERS_BUFFER_SZ_DEFAULT = 65536;
 
-    /** Size (in bytes) of the counter storage buffer */
+    /**
+     * Size (in bytes) of the counter storage buffer
+     */
     public static final int DESCRIPTOR_BUFFER_SZ_DEFAULT = 65536;
 
-    /** Default timeout for select */
+    /**
+     * Default timeout for select
+     */
     public static final int SELECT_TIMEOUT_DEFAULT = 10;
 
-    /** Default group size estimate for NAK delay randomization */
+    /**
+     * Default group size estimate for NAK delay randomization
+     */
     public static final int NAK_GROUPSIZE_DEFAULT = 10;
-    /** Default group RTT estimate for NAK delay randomization in msec */
+    /**
+     * Default group RTT estimate for NAK delay randomization in msec
+     */
     public static final int NAK_GRTT_DEFAULT = 10;
-    /** Default max backoff for NAK delay randomization in msec */
+    /**
+     * Default max backoff for NAK delay randomization in msec
+     */
     public static final int NAK_MAX_BACKOFF_DEFAULT = 60;
 
-    /** Default group size estimate for retransmit delay randomization */
+    /**
+     * Default group size estimate for retransmit delay randomization
+     */
     public static final int RETRANS_GROUPSIZE_DEFAULT = 10;
-    /** Default group RTT estimate for retransmit delay randomization in msec */
+    /**
+     * Default group RTT estimate for retransmit delay randomization in msec
+     */
     public static final int RETRANS_GRTT_DEFAULT = 10;
-    /** Default max backoff for retransmit delay randomization in msec */
+    /**
+     * Default max backoff for retransmit delay randomization in msec
+     */
     public static final int RETRANS_MAX_BACKOFF_DEFAULT = 60;
 
-    /** Default max number of active retransmissions per Term */
+    /**
+     * Default max number of active retransmissions per Term
+     */
     public static final int MAX_RETRANSMITS_DEFAULT = 16;
 
     public static final long DESCRIPTOR_BUFFER_SIZE = 1024L;
@@ -123,10 +161,14 @@ public class MediaDriver implements AutoCloseable
     public static final int DESCRIPTOR_BUFFER_SZ = getInteger(DESCRIPTOR_BUFFER_SZ_PROP_NAME,
                                                               DESCRIPTOR_BUFFER_SZ_DEFAULT);
 
-    /** ticksPerWheel for TimerWheel in conductor thread */
+    /**
+     * ticksPerWheel for TimerWheel in conductor thread
+     */
     public static final int MEDIA_CONDUCTOR_TICKS_PER_WHEEL = 1024;
 
-    /** tickDuration (in MICROSECONDS) for TimerWheel in conductor thread */
+    /**
+     * tickDuration (in MICROSECONDS) for TimerWheel in conductor thread
+     */
     public static final int MEDIA_CONDUCTOR_TICK_DURATION_US = 10 * 1000;
 
     private final File adminDirFile;
@@ -167,23 +209,23 @@ public class MediaDriver implements AutoCloseable
         bufferManagement = newMappedBufferManager(DATA_DIR_NAME);
         countersCreator = new StatusBufferCreator(DESCRIPTOR_BUFFER_SIZE, COUNTERS_BUFFER_SIZE);
 
-        final Context ctx = new Context()
-                                .conductorCommandBuffer(COMMAND_BUFFER_SZ)
-                                .receiverCommandBuffer(COMMAND_BUFFER_SZ)
-                                .receiverNioSelector(rcvNioSelector)
-                                .conductorNioSelector(new NioSelector())
-                                .senderFlowControl(UnicastSenderControlStrategy::new)
-                                .conductorShmBuffers(conductorShmBuffers)
-                                .bufferManagement(bufferManagement)
-                                .conductorTimerWheel(new TimerWheel(MEDIA_CONDUCTOR_TICK_DURATION_US,
-                                                                    TimeUnit.MICROSECONDS,
-                                                                    MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
-                                .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024))
-                                .mtuLength(CommonConfiguration.MTU_LENGTH);
+        final Context ctx =
+            new Context().conductorCommandBuffer(COMMAND_BUFFER_SZ)
+                         .receiverCommandBuffer(COMMAND_BUFFER_SZ)
+                         .receiverNioSelector(rcvNioSelector)
+                         .conductorNioSelector(new NioSelector())
+                         .senderFlowControl(UnicastSenderControlStrategy::new)
+                         .conductorShmBuffers(conductorShmBuffers)
+                         .bufferManagement(bufferManagement)
+                         .conductorTimerWheel(new TimerWheel(MEDIA_CONDUCTOR_TICK_DURATION_US,
+                                                             TimeUnit.MICROSECONDS,
+                                                             MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
+                         .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024))
+                         .mtuLength(CommonConfiguration.MTU_LENGTH);
 
         ctx.dataFrameHandlerFactory(
-                                       new DataFrameHandlerFactory(rcvNioSelector,
-                                                                   new MediaConductorProxy(ctx.mediaCommandBuffer(), rcvNioSelector)));
+            new DataFrameHandlerFactory(rcvNioSelector,
+                                        new MediaConductorProxy(ctx.mediaCommandBuffer(), rcvNioSelector)));
 
         ctx.receiverProxy(new ReceiverProxy(ctx.receiverCommandBuffer(),
                                             ctx.conductorNioSelector(),

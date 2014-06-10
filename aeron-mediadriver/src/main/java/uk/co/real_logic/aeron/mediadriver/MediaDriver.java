@@ -181,9 +181,9 @@ public class MediaDriver implements AutoCloseable
                                 .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024))
                                 .mtuLength(CommonConfiguration.MTU_LENGTH);
 
-        ctx.rcvFrameHandlerFactory(
-            new DataFrameHandlerFactory(rcvNioSelector,
-                                       new MediaConductorProxy(ctx.mediaCommandBuffer(), rcvNioSelector)));
+        ctx.dataFrameHandlerFactory(
+                                       new DataFrameHandlerFactory(rcvNioSelector,
+                                                                   new MediaConductorProxy(ctx.mediaCommandBuffer(), rcvNioSelector)));
 
         ctx.receiverProxy(new ReceiverProxy(ctx.receiverCommandBuffer(),
                                             ctx.conductorNioSelector(),
@@ -326,7 +326,7 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context rcvFrameHandlerFactory(final DataFrameHandlerFactory dataFrameHandlerFactory)
+        public Context dataFrameHandlerFactory(final DataFrameHandlerFactory dataFrameHandlerFactory)
         {
             this.dataFrameHandlerFactory = dataFrameHandlerFactory;
             return this;
@@ -390,7 +390,7 @@ public class MediaDriver implements AutoCloseable
             return mtuLength;
         }
 
-        public DataFrameHandlerFactory rcvFrameHandlerFactory()
+        public DataFrameHandlerFactory dataFrameHandlerFactory()
         {
             return dataFrameHandlerFactory;
         }

@@ -49,7 +49,7 @@ public class Receiver extends Agent
         commandBuffer = context.receiverCommandBuffer();
         conductorProxy = context.mediaConductorProxy();
         nioSelector = context.receiverNioSelector();
-        frameHandlerFactory = context.rcvFrameHandlerFactory();
+        frameHandlerFactory = context.dataFrameHandlerFactory();
         newBufferEventQueue = context.newReceiveBufferEventQueue();
     }
 

@@ -107,8 +107,8 @@ public class MediaConductorTest
             .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .bufferManagement(mockBufferManagement);
 
-        ctx.rcvFrameHandlerFactory(
-            new DataFrameHandlerFactory(nioSelector, new MediaConductorProxy(ctx.mediaCommandBuffer(), nioSelector))
+        ctx.dataFrameHandlerFactory(
+                                       new DataFrameHandlerFactory(nioSelector, new MediaConductorProxy(ctx.mediaCommandBuffer(), nioSelector))
         );
 
         ctx.receiverProxy(new ReceiverProxy(ctx.receiverCommandBuffer(),

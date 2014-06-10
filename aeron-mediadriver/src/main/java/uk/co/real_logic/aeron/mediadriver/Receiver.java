@@ -38,7 +38,7 @@ public class Receiver extends Agent
     private final MediaConductorProxy conductorProxy;
     private final Map<UdpDestination, DataFrameHandler> rcvDestinationMap = new HashMap<>();
     private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
-    private final Queue<NewReceiveBufferEvent> buffers = new OneToOneConcurrentArrayQueue<>(1024);
+    private final Queue<NewReceiveBufferEvent> newBufferEventQueue = new OneToOneConcurrentArrayQueue<>(1024);
     private final RcvFrameHandlerFactory frameHandlerFactory;
 
     private final AtomicArray<RcvSessionState> sessionState = new AtomicArray<>();
@@ -71,7 +71,7 @@ public class Receiver extends Agent
     private void processBufferQueue()
     {
         NewReceiveBufferEvent state;
-        while ((state = buffers.poll()) != null)
+        while ((state = newBufferEventQueue.poll()) != null)
         {
             attachBufferState(state);
         }
@@ -160,7 +160,7 @@ public class Receiver extends Agent
 
     public boolean onNewReceiveBuffer(final NewReceiveBufferEvent buffer)
     {
-        return buffers.offer(buffer);
+        return newBufferEventQueue.offer(buffer);
     }
 
     public DataFrameHandler frameHandler(final UdpDestination destination)

@@ -43,13 +43,13 @@ public class MediaConductor extends Agent
     public static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
     public static final int HEARTBEAT_TIMEOUT_MS = 100;
 
-    private final RingBuffer commandBuffer;
+    private final RingBuffer localCommandBuffer;
     private final ReceiverProxy receiverProxy;
     private final NioSelector nioSelector;
     private final Receiver receiver;
     private final Sender sender;
     private final BufferManagement bufferManagement;
-    private final RingBuffer toMediaBuffer;
+    private final RingBuffer clientCommandBuffer;
     private final RingBuffer toClientBuffer;
     private final Long2ObjectHashMap<ControlFrameHandler> srcDestinationMap = new Long2ObjectHashMap<>();
     private final AtomicBuffer msgBuffer = new AtomicBuffer(allocateDirect(MSG_BUFFER_CAPACITY));
@@ -72,7 +72,7 @@ public class MediaConductor extends Agent
     {
         super(SELECT_TIMEOUT);
 
-        this.commandBuffer = ctx.mediaCommandBuffer();
+        this.localCommandBuffer = ctx.mediaCommandBuffer();
         this.receiverProxy = ctx.receiverProxy();
         this.bufferManagement = ctx.bufferManagement();
         this.nioSelector = ctx.conductorNioSelector();
@@ -85,7 +85,7 @@ public class MediaConductor extends Agent
         heartbeatTimer = newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheck);
 
         conductorShmBuffers = ctx.conductorShmBuffers();
-        toMediaBuffer = new ManyToOneRingBuffer(new AtomicBuffer(conductorShmBuffers.toDriver()));
+        clientCommandBuffer = new ManyToOneRingBuffer(new AtomicBuffer(conductorShmBuffers.toDriver()));
         toClientBuffer = new ManyToOneRingBuffer(new AtomicBuffer(conductorShmBuffers.toClient()));
 
         newBufferMessage.wrap(msgBuffer, 0);
@@ -110,14 +110,29 @@ public class MediaConductor extends Agent
 
         sender.processBufferRotation();
         receiver.processBufferRotation();
-        processReceiveBuffer();
-        processCommandBuffer();
+        processClientCommandBuffer();
+        processLocalCommandBuffer();
         processTimers();
     }
 
-    private void processCommandBuffer()
+    public void close()
     {
-        commandBuffer.read(
+        stop();
+        wakeup();
+
+        srcDestinationMap.forEach((hash, frameHandler) -> frameHandler.close());
+
+        conductorShmBuffers.close();
+    }
+
+    public void wakeup()
+    {
+        // TODO
+    }
+
+    private void processLocalCommandBuffer()
+    {
+        localCommandBuffer.read(
             (msgTypeId, buffer, index, length) ->
             {
                 switch (msgTypeId)
@@ -140,9 +155,9 @@ public class MediaConductor extends Agent
             });
     }
 
-    private void processReceiveBuffer()
+    private void processClientCommandBuffer()
     {
-        toMediaBuffer.read(
+        clientCommandBuffer.read(
             (msgTypeId, buffer, index, length) ->
             {
                 Flyweight flyweight = channelMessage;
@@ -197,29 +212,6 @@ public class MediaConductor extends Agent
             });
     }
 
-    public void processTimers()
-    {
-        if (timerWheel.calculateDelayInMs() <= 0)
-        {
-            timerWheel.expireTimers();
-        }
-    }
-
-    public void close()
-    {
-        stop();
-        wakeup();
-
-        srcDestinationMap.forEach((hash, frameHandler) -> frameHandler.close());
-
-        conductorShmBuffers.close();
-    }
-
-    public void wakeup()
-    {
-        // TODO
-    }
-
     /**
      * Return the {@link NioSelector} in use by this conductor thread.
      *
@@ -230,27 +222,35 @@ public class MediaConductor extends Agent
         return nioSelector;
     }
 
-    public TimerWheel.Timer newTimeout(final long delay, final TimeUnit timeUnit, final Runnable task)
-    {
-        return timerWheel.newTimeout(delay, timeUnit, task);
-    }
-
-    public void rescheduleTimeout(final long delay, final TimeUnit timeUnit, final TimerWheel.Timer timer)
-    {
-        timerWheel.rescheduleTimeout(delay, timeUnit, timer);
-    }
-
     public long currentTime()
     {
         return timerWheel.now();
     }
 
-    public void sendNewBufferNotification(final long sessionId,
-                                          final long channelId,
-                                          final long termId,
-                                          final boolean isSender,
-                                          final String destination,
-                                          final BufferRotator buffers)
+    private void processTimers()
+    {
+        if (timerWheel.calculateDelayInMs() <= 0)
+        {
+            timerWheel.expireTimers();
+        }
+    }
+
+    private TimerWheel.Timer newTimeout(final long delay, final TimeUnit timeUnit, final Runnable task)
+    {
+        return timerWheel.newTimeout(delay, timeUnit, task);
+    }
+
+    private void rescheduleTimeout(final long delay, final TimeUnit timeUnit, final TimerWheel.Timer timer)
+    {
+        timerWheel.rescheduleTimeout(delay, timeUnit, timer);
+    }
+
+    private void sendNewBufferNotification(final long sessionId,
+                                           final long channelId,
+                                           final long termId,
+                                           final boolean isSender,
+                                           final String destination,
+                                           final BufferRotator buffers)
     {
         newBufferMessage.sessionId(sessionId)
                         .channelId(channelId)
@@ -266,7 +266,7 @@ public class MediaConductor extends Agent
         }
     }
 
-    public void onAddChannel(final ChannelMessageFlyweight channelMessage)
+    private void onAddChannel(final ChannelMessageFlyweight channelMessage)
     {
         final String destination = channelMessage.destination();
         final long sessionId = channelMessage.sessionId();
@@ -326,7 +326,7 @@ public class MediaConductor extends Agent
         }
     }
 
-    public void onRemoveChannel(final ChannelMessageFlyweight channelMessage)
+    private void onRemoveChannel(final ChannelMessageFlyweight channelMessage)
     {
         final String destination = channelMessage.destination();
         final long sessionId = channelMessage.sessionId();
@@ -370,15 +370,12 @@ public class MediaConductor extends Agent
         }
     }
 
-    public void onAddSubscriber(final SubscriberMessageFlyweight subscriberMessage)
+    private void onAddSubscriber(final SubscriberMessageFlyweight subscriberMessage)
     {
         receiverProxy.newSubscriber(subscriberMessage.destination(), subscriberMessage.channelIds());
-
-        // this thread does not add buffers. The DataFrameHandler handle methods will send an event for this thread
-        // to create buffers as needed
     }
 
-    public void onRemoveSubscriber(final SubscriberMessageFlyweight subscriberMessage)
+    private void onRemoveSubscriber(final SubscriberMessageFlyweight subscriberMessage)
     {
         receiverProxy.removeSubscriber(subscriberMessage.destination(), subscriberMessage.channelIds());
     }

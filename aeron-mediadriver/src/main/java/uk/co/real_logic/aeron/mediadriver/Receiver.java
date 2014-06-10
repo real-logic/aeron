@@ -47,7 +47,7 @@ public class Receiver extends Agent
         super(SELECT_TIMEOUT);
 
         commandBuffer = context.receiverCommandBuffer();
-        conductorProxy = new MediaConductorProxy(context.mediaCommandBuffer(), context.conductorNioSelector());
+        conductorProxy = context.mediaConductorProxy();
         nioSelector = context.receiverNioSelector();
         frameHandlerFactory = context.rcvFrameHandlerFactory();
         newBufferEventQueue = context.newReceiveBufferEventQueue();

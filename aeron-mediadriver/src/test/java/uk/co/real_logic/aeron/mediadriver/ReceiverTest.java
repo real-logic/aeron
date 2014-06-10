@@ -52,9 +52,12 @@ public class ReceiverTest
             .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .rcvFrameHandlerFactory(frameHandlerFactory);
 
+        ctx.mediaConductorProxy(new MediaConductorProxy(ctx.mediaCommandBuffer(), ctx.conductorNioSelector()));
+
         proxy = new ReceiverProxy(ctx.receiverCommandBuffer(),
                                   ctx.receiverNioSelector(),
                                   ctx.newReceiveBufferEventQueue());
+
         receiver = new Receiver(ctx);
     }
 

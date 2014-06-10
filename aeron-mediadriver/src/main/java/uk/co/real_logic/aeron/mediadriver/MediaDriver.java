@@ -189,6 +189,8 @@ public class MediaDriver implements AutoCloseable
                                             ctx.conductorNioSelector(),
                                             ctx.newReceiveBufferEventQueue()));
 
+        ctx.mediaConductorProxy(new MediaConductorProxy(ctx.mediaCommandBuffer(), ctx.conductorNioSelector()));
+
         receiver = new Receiver(ctx);
         sender = new Sender();
         conductor = new MediaConductor(ctx, receiver, sender);
@@ -259,6 +261,7 @@ public class MediaDriver implements AutoCloseable
         private RcvFrameHandlerFactory rcvFrameHandlerFactory;
         private Queue<NewReceiveBufferEvent> newReceiveBufferEventQueue;
         private ReceiverProxy receiverProxy;
+        private MediaConductorProxy mediaConductorProxy;
 
         private RingBuffer createNewCommandBuffer(final int size)
         {
@@ -340,6 +343,12 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
+        public Context mediaConductorProxy(final MediaConductorProxy mediaConductorProxy)
+        {
+            this.mediaConductorProxy = mediaConductorProxy;
+            return this;
+        }
+
         public RingBuffer mediaCommandBuffer()
         {
             return mediaCommandBuffer;
@@ -398,6 +407,11 @@ public class MediaDriver implements AutoCloseable
         public ReceiverProxy receiverProxy()
         {
             return receiverProxy;
+        }
+
+        public MediaConductorProxy mediaConductorProxy()
+        {
+            return mediaConductorProxy;
         }
     }
 }

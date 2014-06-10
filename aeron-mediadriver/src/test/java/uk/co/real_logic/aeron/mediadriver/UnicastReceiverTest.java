@@ -119,6 +119,8 @@ public class UnicastReceiverTest
                                             ctx.conductorNioSelector(),
                                             ctx.newReceiveBufferEventQueue()));
 
+        ctx.mediaConductorProxy(new MediaConductorProxy(ctx.mediaCommandBuffer(), ctx.conductorNioSelector()));
+
         final Sender sender = mock(Sender.class);
         receiver = new Receiver(ctx);
         mediaConductor = new MediaConductor(ctx, receiver, sender);

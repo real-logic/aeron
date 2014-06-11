@@ -63,7 +63,7 @@ public class RetransmitHandlerTest
     private final AtomicBuffer stateBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(STATE_BUFFER_SIZE));
     private final LogReader logReader = new LogReader(logBuffer, stateBuffer);
 
-    private final LogAppender logAppender = new LogAppender(logBuffer, stateBuffer, DataHeaderFlyweight.DEFAULT_HEADER,
+    private final LogAppender logAppender = new LogAppender(logBuffer, stateBuffer, DataHeaderFlyweight.DEFAULT_HEADER_NULL_IDS,
         1024);
     private final LogRebuilder logRebuilder = new LogRebuilder(logBuffer, stateBuffer);
 

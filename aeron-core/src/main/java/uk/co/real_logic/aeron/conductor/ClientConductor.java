@@ -249,6 +249,8 @@ public final class ClientConductor extends Agent
                                      final long channelId, final long termId)
     {
         onNewBuffer(sessionId,
+                    channelId,
+                    termId,
                     rcvNotifiers.get(destination, channelId),
                     this::newReader,
                     LogReader[]::new,
@@ -264,6 +266,8 @@ public final class ClientConductor extends Agent
                                    final long channelId, final long termId)
     {
         onNewBuffer(sessionId,
+                    channelId,
+                    termId,
                     sendNotifiers.get(destination, sessionId, channelId),
                     this::newAppender,
                     LogAppender[]::new,
@@ -277,10 +281,13 @@ public final class ClientConductor extends Agent
 
     private interface LogFactory<L>
     {
-        public L make(int index) throws IOException;
+        public L make(final int index, final long sessionId,
+                      final long channelId, final long termId) throws IOException;
     }
 
     private <C extends ChannelNotifiable, L> void onNewBuffer(final long sessionId,
+                                                              final long channelId,
+                                                              final long termId,
                                                               final C channel,
                                                               final LogFactory<L> logFactory,
                                                               final IntFunction<L[]> logArray,
@@ -300,7 +307,7 @@ public final class ClientConductor extends Agent
                 final L[] logs = logArray.apply(BUFFER_COUNT);
                 for (int i = 0; i < BUFFER_COUNT; i++)
                 {
-                    logs[i] = logFactory.make(i);
+                    logs[i] = logFactory.make(i, sessionId, channelId, termId);
                 }
 
                 notifier.accept(channel, logs);
@@ -317,15 +324,18 @@ public final class ClientConductor extends Agent
         }
     }
 
-    public LogAppender newAppender(final int index) throws IOException
+    public LogAppender newAppender(final int index, final long sessionId,
+                                   final long channelId, final long termId) throws IOException
     {
         final AtomicBuffer logBuffer = bufferUsage.newBuffer(newBufferMessage, index);
         final AtomicBuffer stateBuffer = bufferUsage.newBuffer(newBufferMessage, index + BUFFER_COUNT);
+        final byte[] header = DataHeaderFlyweight.createDefaultHeader(sessionId, channelId, termId);
 
-        return new LogAppender(logBuffer, stateBuffer, DataHeaderFlyweight.DEFAULT_HEADER, MAX_FRAME_LENGTH);
+        return new LogAppender(logBuffer, stateBuffer, header, MAX_FRAME_LENGTH);
     }
 
-    private LogReader newReader(final int index) throws IOException
+    private LogReader newReader(final int index, final long sessionId,
+                                final long channelId, final long termId) throws IOException
     {
         final AtomicBuffer logBuffer = bufferUsage.newBuffer(newBufferMessage, index);
         final AtomicBuffer stateBuffer = bufferUsage.newBuffer(newBufferMessage, index + BUFFER_COUNT);

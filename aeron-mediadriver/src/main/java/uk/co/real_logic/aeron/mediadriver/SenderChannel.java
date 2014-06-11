@@ -154,10 +154,6 @@ public class SenderChannel
 //                System.out.println("send " + length + "@" + offset + " " +
 //                        dataHeader.frameLength() + "@" + dataHeader.termOffset());
 
-                dataHeader.sessionId(sessionId)
-                          .channelId(channelId)
-                          .termId(currentTermId.get());
-
                 sendBuffer.limit(offset + length);
                 sendBuffer.position(offset);
 

@@ -108,6 +108,7 @@ public class Channel extends ChannelNotifiable implements AutoCloseable, Positio
             return false;
         }
 
+        // TODO: must update the logAppender header with new termId!
         final LogAppender logAppender = logAppenders[currentBufferId];
         final boolean hasAppended = logAppender.append(buffer, offset, length);
         if (!hasAppended && currentTermId.get() <= cleanedTermId.get())

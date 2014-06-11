@@ -15,6 +15,10 @@
  */
 package uk.co.real_logic.aeron.util.protocol;
 
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+
+import java.nio.ByteOrder;
+
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 /**
@@ -57,7 +61,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
     public static final short BEGIN_AND_END_FLAGS = (BEGIN_FLAG | END_FLAG);
 
     /** Default header for a Data Frame (for ease of use with LogAppender) */
-    public static final byte[] DEFAULT_HEADER =
+    public static final byte[] DEFAULT_HEADER_NULL_IDS =
         {
             HeaderFlyweight.CURRENT_VERSION, 0, HeaderFlyweight.HDR_TYPE_DATA, 0,
             0, 0, 0, 0,
@@ -169,4 +173,37 @@ public class DataHeaderFlyweight extends HeaderFlyweight
         return offset() + DATA_OFFSET;
     }
 
+    /**
+     * Return a customized default Data Frame Header suitable for use with
+     * {@link uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender}
+     *
+     * @param sessionId for the header
+     * @param channelId for the header
+     * @param termId for the header
+     * @return byte array containing the header
+     */
+    public static byte[] createDefaultHeader(final long sessionId, final long channelId, final long termId)
+    {
+        final byte[] hdr = new byte[HEADER_LENGTH];
+        final AtomicBuffer buffer = new AtomicBuffer(hdr);
+
+        buffer.wrap(hdr);
+        buffer.putBytes(0, DEFAULT_HEADER_NULL_IDS);
+        buffer.putInt(SESSION_ID_FIELD_OFFSET, (int)sessionId, ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(CHANNEL_ID_FIELD_OFFSET, (int)channelId, ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(TERM_ID_FIELD_OFFSET, (int) termId, ByteOrder.LITTLE_ENDIAN);
+
+        return hdr;
+    }
+
+    /**
+     * Update the Term ID field of a header
+     *
+     * @param buffer to use for setting header field (must have already been wrapped)
+     * @param termId for the header
+     */
+    public static void updateDefaultHeaderTermId(final AtomicBuffer buffer, final long termId)
+    {
+        buffer.putInt(TERM_ID_FIELD_OFFSET, (int)termId, ByteOrder.LITTLE_ENDIAN);
+    }
 }

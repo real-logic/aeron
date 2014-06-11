@@ -48,12 +48,15 @@ public class SenderTest
     public static final long INITIAL_TERM_ID = 3L;
     public static final byte[] PAYLOAD = "Payload is here!".getBytes();
 
+    public final byte[] HEADER = DataHeaderFlyweight.createDefaultHeader(SESSION_ID, CHANNEL_ID, INITIAL_TERM_ID);
+
     private final Sender sender = new Sender();
     private final BufferRotator rotator =
         BufferAndFrameUtils.createTestRotator(LOG_BUFFER_SIZE, LogBufferDescriptor.STATE_BUFFER_LENGTH);
-    private final LogAppender[] logAppenders = BufferAndFrameUtils.createLogAppenders(rotator, MAX_FRAME_LENGTH);
 
+    private LogAppender[] logAppenders;
     private SenderChannel channel;
+
     private final ControlFrameHandler mockFrameHandler = mock(ControlFrameHandler.class);
     private final SenderControlStrategy spySenderControlStrategy = spy(new UnicastSenderControlStrategy());
 
@@ -88,8 +91,11 @@ public class SenderTest
 
         when(mockFrameHandler.destination()).thenReturn(destination);
 
+        logAppenders = rotator.buffers().map((log) -> new LogAppender(log.logBuffer(), log.stateBuffer(),
+                HEADER, MAX_FRAME_LENGTH)).toArray(LogAppender[]::new);
+
         channel = new SenderChannel(mockFrameHandler, spySenderControlStrategy, rotator, SESSION_ID,
-                                    CHANNEL_ID, INITIAL_TERM_ID, logAppenders[0].defaultHeaderLength(),
+                                    CHANNEL_ID, INITIAL_TERM_ID, HEADER.length,
                                     MAX_FRAME_LENGTH, sendFunction, timeFunction);
         sender.addChannel(channel);
     }
@@ -229,7 +235,6 @@ public class SenderTest
     }
 
     @Test
-    @Ignore("Does not work currently. SenderChannel needs to use gather sends. DatagramChannel.write(ByteBuffer[])")
     public void shouldBeAbleToSendOnChannelTwiceAsBatch()
     {
         channel.onStatusMessage(INITIAL_TERM_ID, 0, (2 * align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT)));
@@ -256,7 +261,7 @@ public class SenderTest
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
         assertThat(dataHeader.termOffset(), is(offsetOfMessage(1)));
 
-        dataHeader.wrap(receivedBuffer, DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length);  // second frame
+        dataHeader.wrap(receivedBuffer, align(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT));
 
         assertThat(dataHeader.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
         assertThat(dataHeader.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));

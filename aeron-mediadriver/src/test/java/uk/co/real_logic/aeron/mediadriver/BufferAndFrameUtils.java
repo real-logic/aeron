@@ -33,13 +33,6 @@ import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
  */
 public class BufferAndFrameUtils
 {
-    public static LogAppender[] createLogAppenders(final BufferRotator rotator, final int maxFrameLength)
-    {
-        return rotator.buffers().map((buffer) ->
-                new LogAppender(buffer.logBuffer(), buffer.stateBuffer(),
-                        DataHeaderFlyweight.DEFAULT_HEADER, maxFrameLength)).toArray(LogAppender[]::new);
-    }
-
     public static BufferRotator createTestRotator(final long logBufferSize, final long stateBufferSize)
     {
         return new BufferRotator()

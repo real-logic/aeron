@@ -413,7 +413,7 @@ public class AeronTest
 
     private List<LogAppender> createLogAppenders(final List<Buffers> termBuffers)
     {
-        return mapLoggers(termBuffers, DataHeaderFlyweight.DEFAULT_HEADER, MAX_FRAME_LENGTH);
+        return mapLoggers(termBuffers, DataHeaderFlyweight.DEFAULT_HEADER_NULL_IDS, MAX_FRAME_LENGTH);
     }
 
     @Test
@@ -506,7 +506,7 @@ public class AeronTest
 
     private void writePackets(final LogAppender logAppender, final int events)
     {
-        final int bytesToSend = atomicSendBuffer.capacity() - DataHeaderFlyweight.DEFAULT_HEADER.length;
+        final int bytesToSend = atomicSendBuffer.capacity() - DataHeaderFlyweight.DEFAULT_HEADER_NULL_IDS.length;
         IntStream.range(0, events).forEach(
             (i) ->
             {

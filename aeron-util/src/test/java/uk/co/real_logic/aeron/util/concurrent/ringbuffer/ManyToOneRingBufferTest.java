@@ -225,7 +225,6 @@ public class ManyToOneRingBufferTest
         when(buffer.getInt(msgTypeOffset(headIndex))).thenReturn(MSG_TYPE_ID);
         when(buffer.getInt(msgTypeOffset(headIndex + ALIGNMENT))).thenReturn(MSG_TYPE_ID);
 
-
         final int[] times = new int[1];
         final MessageHandler handler = (msgTypeId, buffer, index, length) -> times[0]++;
         final int messagesRead = ringBuffer.read(handler);
@@ -236,6 +235,31 @@ public class ManyToOneRingBufferTest
         final InOrder inOrder = inOrder(buffer);
         inOrder.verify(buffer, times(1)).setMemory(headIndex, ALIGNMENT * 2, (byte)0);
         inOrder.verify(buffer, times(1)).putLongOrdered(HEAD_COUNTER_INDEX, tail);
+    }
+
+    @Test
+    public void shouldLimitReadOfMessages()
+    {
+        final long tail = ALIGNMENT * 2;
+        final long head = 0L;
+        final int headIndex = (int)head;
+
+        when(buffer.getLongVolatile(HEAD_COUNTER_INDEX)).thenReturn(head);
+        when(buffer.getLongVolatile(TAIL_COUNTER_INDEX)).thenReturn(tail);
+        when(buffer.getIntVolatile(lengthOffset(headIndex))).thenReturn(ALIGNMENT);
+        when(buffer.getInt(msgTypeOffset(headIndex))).thenReturn(MSG_TYPE_ID);
+
+        final int[] times = new int[1];
+        final MessageHandler handler = (msgTypeId, buffer, index, length) -> times[0]++;
+        final int limit = 1;
+        final int messagesRead = ringBuffer.read(handler, limit);
+
+        assertThat(messagesRead, is(1));
+        assertThat(times[0], is(1));
+
+        final InOrder inOrder = inOrder(buffer);
+        inOrder.verify(buffer, times(1)).setMemory(headIndex, ALIGNMENT, (byte)0);
+        inOrder.verify(buffer, times(1)).putLongOrdered(HEAD_COUNTER_INDEX, head + ALIGNMENT);
     }
 
     @Test

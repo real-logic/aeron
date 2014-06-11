@@ -92,7 +92,7 @@ public class MediaConductorTest
         when(mockConductorShmBuffers.toClient()).thenReturn(toClientBuffer);
         when(mockBufferManagement.addPublisherChannel(anyObject(), anyLong(), anyLong()))
                 .thenReturn(BufferAndFrameUtils.createTestRotator(65536 + RingBufferDescriptor.TRAILER_LENGTH,
-                        LogBufferDescriptor.STATE_BUFFER_LENGTH));
+                                                                  LogBufferDescriptor.STATE_BUFFER_LENGTH));
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .conductorCommandBuffer(MediaDriver.COMMAND_BUFFER_SZ)
@@ -119,7 +119,7 @@ public class MediaConductorTest
     }
 
     @After
-    public void teardown() throws Exception
+    public void tearDown() throws Exception
     {
         receiver.close();
         receiver.nioSelector().selectNowWithNoProcessing();
@@ -139,7 +139,7 @@ public class MediaConductorTest
         assertThat(sender.channels().get(0).sessionId(), is(1L));
         assertThat(sender.channels().get(0).channelId(), is(2L));
 
-        final int msgs = conductorNotifications.read(
+        final int messagesRead = conductorNotifications.read(
             (msgTypeId, buffer, index, length) ->
             {
                 assertThat(msgTypeId, is(ControlProtocolEvents.NEW_SEND_BUFFER_NOTIFICATION));
@@ -150,7 +150,8 @@ public class MediaConductorTest
                 assertThat(bufferMessage.channelId(), is(2L));
                 assertThat(bufferMessage.destination(), is(DESTINATION_URI + 4000));
             });
-        assertThat(msgs, is(1));
+
+        assertThat(messagesRead, is(1));
     }
 
     @Test
@@ -287,8 +288,9 @@ public class MediaConductorTest
         assertThat(sender.channels().get(0).sessionId(), is(1L));
         assertThat(sender.channels().get(0).channelId(), is(2L));
 
-        conductorNotifications.read((msgTypeId, buffer, index, length) -> {}, 0); // eat new buffer notification
-        final int msgs = conductorNotifications.read(
+        conductorNotifications.read((msgTypeId, buffer, index, length) -> {}, 1); // eat new buffer notification
+
+        final int messagesRead = conductorNotifications.read(
             (msgTypeId, buffer, index, length) ->
             {
                 assertThat(msgTypeId, is(ControlProtocolEvents.ERROR_RESPONSE));
@@ -302,7 +304,8 @@ public class MediaConductorTest
                 assertThat(publisherMessage.channelId(), is(2L));
                 assertThat(publisherMessage.destination(), is(DESTINATION_URI + 4000));
             });
-        assertThat(msgs, is(1));
+
+        assertThat(messagesRead, is(1));
     }
 
     @Test
@@ -313,7 +316,8 @@ public class MediaConductorTest
         mediaConductor.process();
 
         assertThat(sender.channels().length(), is(0));
-        final int msgs = conductorNotifications.read(
+
+        final int messagesRead = conductorNotifications.read(
             (msgTypeId, buffer, index, length) ->
             {
                 assertThat(msgTypeId, is(ControlProtocolEvents.ERROR_RESPONSE));
@@ -327,7 +331,8 @@ public class MediaConductorTest
                 assertThat(publisherMessage.channelId(), is(2L));
                 assertThat(publisherMessage.destination(), is(DESTINATION_URI + 4000));
             });
-        assertThat(msgs, is(1));
+
+        assertThat(messagesRead, is(1));
     }
 
     @Test
@@ -343,8 +348,9 @@ public class MediaConductorTest
         assertThat(sender.channels().get(0).sessionId(), is(1L));
         assertThat(sender.channels().get(0).channelId(), is(2L));
 
-        conductorNotifications.read((msgTypeId, buffer, index, length) -> {}, 0); // eat new buffer notification
-        final int msgs = conductorNotifications.read(
+        conductorNotifications.read((msgTypeId, buffer, index, length) -> {}, 1); // eat new buffer notification
+
+        final int messagesRead = conductorNotifications.read(
             (msgTypeId, buffer, index, length) ->
             {
                 assertThat(msgTypeId, is(ControlProtocolEvents.ERROR_RESPONSE));
@@ -358,7 +364,8 @@ public class MediaConductorTest
                 assertThat(publisherMessage.channelId(), is(2L));
                 assertThat(publisherMessage.destination(), is(DESTINATION_URI + 4000));
             });
-        assertThat(msgs, is(1));
+
+        assertThat(messagesRead, is(1));
     }
 
     @Test
@@ -374,8 +381,9 @@ public class MediaConductorTest
         assertThat(sender.channels().get(0).sessionId(), is(1L));
         assertThat(sender.channels().get(0).channelId(), is(2L));
 
-        conductorNotifications.read((msgTypeId, buffer, index, length) -> {}, 0); // eat new buffer notification
-        final int msgs = conductorNotifications.read(
+        conductorNotifications.read((msgTypeId, buffer, index, length) -> {}, 1); // eat new buffer notification
+
+        final int messagesRead = conductorNotifications.read(
             (msgTypeId, buffer, index, length) ->
             {
                 assertThat(msgTypeId, is(ControlProtocolEvents.ERROR_RESPONSE));
@@ -389,7 +397,8 @@ public class MediaConductorTest
                 assertThat(publisherMessage.channelId(), is(3L));
                 assertThat(publisherMessage.destination(), is(DESTINATION_URI + 4000));
             });
-        assertThat(msgs, is(1));
+
+        assertThat(messagesRead, is(1));
     }
 
     @Test
@@ -401,7 +410,7 @@ public class MediaConductorTest
         receiver.process();
         mediaConductor.process();
 
-        final int msgs = conductorNotifications.read(
+        final int messagesRead = conductorNotifications.read(
             (msgTypeId, buffer, index, length) ->
             {
                 assertThat(msgTypeId, is(ControlProtocolEvents.ERROR_RESPONSE));
@@ -414,7 +423,8 @@ public class MediaConductorTest
                 assertThat(subscriberMessage.channelIds(), is(ONE_CHANNEL));
                 assertThat(subscriberMessage.destination(), is(INVALID_URI));
             });
-        assertThat(msgs, is(1));
+
+        assertThat(messagesRead, is(1));
     }
 
     @Test
@@ -426,7 +436,7 @@ public class MediaConductorTest
         receiver.process();
         mediaConductor.process();
 
-        final int msgs = conductorNotifications.read(
+        final int messagesRead = conductorNotifications.read(
             (msgTypeId, buffer, index, length) ->
             {
                 assertThat(msgTypeId, is(ControlProtocolEvents.ERROR_RESPONSE));
@@ -439,7 +449,8 @@ public class MediaConductorTest
                 assertThat(subscriberMessage.channelIds(), is(ONE_CHANNEL));
                 assertThat(subscriberMessage.destination(), is(DESTINATION_URI + 4000));
             });
-        assertThat(msgs, is(1));
+
+        assertThat(messagesRead, is(1));
     }
 
     @Test
@@ -452,7 +463,7 @@ public class MediaConductorTest
         receiver.process();
         mediaConductor.process();
 
-        final int msgs = conductorNotifications.read(
+        final int messagesRead = conductorNotifications.read(
             (msgTypeId, buffer, index, length) ->
             {
                 assertThat(msgTypeId, is(ControlProtocolEvents.ERROR_RESPONSE));
@@ -465,7 +476,8 @@ public class MediaConductorTest
                 assertThat(subscriberMessage.channelIds(), is(ANOTHER_CHANNEL));
                 assertThat(subscriberMessage.destination(), is(DESTINATION_URI + 4000));
             });
-        assertThat(msgs, is(1));
+
+        assertThat(messagesRead, is(1));
     }
 
     private void writeChannelMessage(final int msgTypeId, final long sessionId, final long channelId, final int port)
@@ -488,5 +500,4 @@ public class MediaConductorTest
 
         conductorCommands.write(msgTypeId, writeBuffer, 0, subscriberMessage.length());
     }
-
 }

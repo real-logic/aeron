@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.*;
 
 import java.net.InetSocketAddress;
@@ -104,22 +105,25 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
         return sessionMap.size();
     }
 
-    public void onStatusMessageFrame(final StatusMessageFlyweight statusMessage, final InetSocketAddress srcAddr)
+    public void onStatusMessageFrame(final StatusMessageFlyweight header, final AtomicBuffer buffer,
+                                     final long length, final InetSocketAddress srcAddr)
     {
-        final SenderChannel channel = findChannel(statusMessage.sessionId(), statusMessage.channelId());
-        channel.onStatusMessage(statusMessage.termId(),
-                                statusMessage.highestContiguousTermOffset(),
-                                statusMessage.receiverWindow());
+        final SenderChannel channel = findChannel(header.sessionId(), header.channelId());
+        channel.onStatusMessage(header.termId(),
+                                header.highestContiguousTermOffset(),
+                                header.receiverWindow());
     }
 
-    public void onNakFrame(final NakFlyweight nak, final InetSocketAddress srcAddr)
+    public void onNakFrame(final NakFlyweight nak, final AtomicBuffer buffer,
+                           final long length, final InetSocketAddress srcAddr)
     {
         final SenderChannel channel = findChannel(nak.sessionId(), nak.channelId());
 
         // TODO: have the sender channel, so look for the term within it
     }
 
-    public void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr)
+    public void onDataFrame(final DataHeaderFlyweight header, final AtomicBuffer buffer,
+                            final long length, final InetSocketAddress srcAddr)
     {
         // ignore data
     }

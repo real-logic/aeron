@@ -87,6 +87,7 @@ public class PubUnicastTest
         producingClient.close();
         source.close();
         driver.close();
+        driver.conductor().nioSelector().selectNowWithNoProcessing();
     }
 
     private void process(final int times) throws Exception

@@ -106,9 +106,10 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         return subscriptionByChannelIdMap.size();
     }
 
-    public void onDataFrame(final DataHeaderFlyweight frameHeader, final InetSocketAddress srcAddr)
+    public void onDataFrame(final DataHeaderFlyweight header, final AtomicBuffer buffer,
+                            final long length, final InetSocketAddress srcAddr)
     {
-        final long channelId = frameHeader.channelId();
+        final long channelId = header.channelId();
 
         final Subscription subscription = subscriptionByChannelIdMap.get(channelId);
         if (null == subscription)
@@ -116,12 +117,12 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
             return;  // not interested in this channel at all
         }
 
-        final long sessionId = frameHeader.sessionId();
-        final long termId = frameHeader.termId();
+        final long sessionId = header.sessionId();
+        final long termId = header.termId();
         final SubscribedSession subscribedSession = subscription.getSubscribedSession(sessionId);
         if (null != subscribedSession)
         {
-            subscribedSession.rebuildBuffer(frameHeader);
+            subscribedSession.rebuildBuffer(header, buffer, length);
             // if we don't know the term, this will drop down and the term buffer will be created.
         }
         else
@@ -135,12 +136,14 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         }
     }
 
-    public void onStatusMessageFrame(final StatusMessageFlyweight statusMessage, final InetSocketAddress srcAddr)
+    public void onStatusMessageFrame(final StatusMessageFlyweight header, final AtomicBuffer buffer,
+                                     final long length, final InetSocketAddress srcAddr)
     {
         // this should be on the data channel and shouldn't include SMs, so ignore.
     }
 
-    public void onNakFrame(final NakFlyweight nak, final InetSocketAddress srcAddr)
+    public void onNakFrame(final NakFlyweight header, final AtomicBuffer buffer,
+                           final long length, final InetSocketAddress srcAddr)
     {
         // this should be on the data channel and shouldn't include Naks, so ignore.
     }

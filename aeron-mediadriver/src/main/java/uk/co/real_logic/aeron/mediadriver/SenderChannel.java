@@ -158,13 +158,13 @@ public class SenderChannel
                           .channelId(channelId)
                           .termId(currentTermId.get());
 
-                sendBuffer.limit(offset + dataHeader.frameLength());
+                sendBuffer.limit(offset + length);
                 sendBuffer.position(offset);
 
                 try
                 {
                     final int bytesSent = sendFunction.sendTo(sendBuffer, destAddr);
-                    if (dataHeader.frameLength() != bytesSent)
+                    if (length != bytesSent)
                     {
                         throw new IllegalStateException("could not send all of message: " + bytesSent + "/" +
                                                         dataHeader.frameLength());
@@ -173,8 +173,9 @@ public class SenderChannel
 
                     timeOfLastSendOrHeartbeat.lazySet(timeFunction.currentTime());
 
-                    nextOffset = align((int)(dataHeader.termOffset() + dataHeader.frameLength()),
-                            FrameDescriptor.FRAME_ALIGNMENT);
+                    nextOffset = align(offset + length, FrameDescriptor.FRAME_ALIGNMENT);
+//                    nextOffset = align((int)(dataHeader.termOffset() + dataHeader.frameLength()),
+//                            FrameDescriptor.FRAME_ALIGNMENT);
                 }
                 catch (final Exception ex)
                 {

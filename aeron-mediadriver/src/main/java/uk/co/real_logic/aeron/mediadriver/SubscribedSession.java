@@ -70,7 +70,7 @@ public class SubscribedSession
         return sessionId;
     }
 
-    public void rebuildBuffer(final DataHeaderFlyweight header)
+    public void rebuildBuffer(final DataHeaderFlyweight header, final AtomicBuffer buffer, final long length)
     {
         final long termId = header.termId();
         final long currentTermId = this.currentTermId.get();
@@ -78,7 +78,7 @@ public class SubscribedSession
         if (termId == currentTermId)
         {
             final TermRebuilder rebuilder = rebuilders[currentBufferId];
-            rebuilder.insert(header);
+            rebuilder.insert(buffer, 0, (int)length);
         }
         else if (termId == (currentTermId + 1))
         {
@@ -91,7 +91,7 @@ public class SubscribedSession
                 Thread.yield();
             }
 
-            rebuilder.insert(header);
+            rebuilder.insert(buffer, 0, (int)length);
         }
         else
         {
@@ -117,9 +117,9 @@ public class SubscribedSession
             return stateViewer.tailVolatile();
         }
 
-        public void insert(final DataHeaderFlyweight header)
+        public void insert(final AtomicBuffer buffer, final int offset, final int length)
         {
-            logRebuilder.insert(header.atomicBuffer(), header.offset(), header.frameLength());
+            logRebuilder.insert(buffer, 0, length);
         }
     }
 

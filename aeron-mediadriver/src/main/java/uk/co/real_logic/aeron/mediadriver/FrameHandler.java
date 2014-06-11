@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.*;
 
 import java.net.InetSocketAddress;
@@ -29,24 +30,33 @@ public interface FrameHandler
     /**
      * Handle a Data Frame.
      *
-     * @param header of the Frame
+     * @param header of the first Data Frame in the message (may be re-wrapped if needed)
+     * @param buffer holding the data (always starts at 0 offset)
+     * @param length of the Frame (may be longer than the header frame length)
      * @param srcAddr of the Frame
      */
-    void onDataFrame(final DataHeaderFlyweight header, final InetSocketAddress srcAddr);
+    void onDataFrame(final DataHeaderFlyweight header, final AtomicBuffer buffer,
+                     final long length, final InetSocketAddress srcAddr);
 
     /**
      * Handle a Status Message Frame
      *
-     * @param statusMessage of the Frame
+     * @param header of the first Status Message Frame in the message (may be re-wrapped if needed)
+     * @param buffer holding the NAK (always starts at 0 offset)
+     * @param length of the Frame (may be longer than the header frame length)
      * @param srcAddr of the Frame
      */
-    void onStatusMessageFrame(final StatusMessageFlyweight statusMessage, final InetSocketAddress srcAddr);
+    void onStatusMessageFrame(final StatusMessageFlyweight header, final AtomicBuffer buffer,
+                              final long length, final InetSocketAddress srcAddr);
 
     /**
      * Handle a Nak Frame
      *
-     * @param nak the nak Frame
+     * @param header the first NAK Frame in the message (may be re-wrapped if needed)
+     * @param buffer holding the Status Message (always starts at 0 offset)
+     * @param length of the Frame (may be longer than the header frame length)
      * @param srcAddr of the Frame
      */
-    void onNakFrame(final NakFlyweight nak, final InetSocketAddress srcAddr);
+    void onNakFrame(final NakFlyweight header, final AtomicBuffer buffer,
+                    final long length, final InetSocketAddress srcAddr);
 }

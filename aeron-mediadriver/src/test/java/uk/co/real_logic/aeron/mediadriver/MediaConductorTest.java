@@ -63,10 +63,10 @@ public class MediaConductorTest
     private static final long[] THREE_CHANNELS = {10, 20, 30};
 
     private final ConductorShmBuffers mockConductorShmBuffers = mock(ConductorShmBuffers.class);
-    private final ByteBuffer toDriverBuffer = ByteBuffer.allocate(MediaDriver.COMMAND_BUFFER_SZ +
-        RingBufferDescriptor.TRAILER_LENGTH);
-    private final ByteBuffer toClientBuffer = ByteBuffer.allocate(MediaDriver.COMMAND_BUFFER_SZ +
-        RingBufferDescriptor.TRAILER_LENGTH);
+    private final ByteBuffer toDriverBuffer =
+        ByteBuffer.allocate(MediaDriver.COMMAND_BUFFER_SZ + RingBufferDescriptor.TRAILER_LENGTH);
+    private final ByteBuffer toClientBuffer =
+        ByteBuffer.allocate(MediaDriver.COMMAND_BUFFER_SZ + RingBufferDescriptor.TRAILER_LENGTH);
 
     private final NioSelector nioSelector = mock(NioSelector.class);
     private final BufferManagement mockBufferManagement = mock(BufferManagement.class);

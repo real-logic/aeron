@@ -40,7 +40,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
     private final DatagramChannel channel = DatagramChannel.open();
     private final HeaderFlyweight header = new HeaderFlyweight();
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
-    private final NakFlyweight nak = new NakFlyweight();
+    private final NakFlyweight nakHeader = new NakFlyweight();
     private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
     private final FrameHandler frameHandler;
     private final NioSelector nioSelector;
@@ -118,49 +118,45 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
             return;
         }
 
-        // parse through buffer for each Frame.
-        while (offset < len)
+        // each datagram only can hold a single frame
+
+        header.wrap(readBuffer, offset);
+
+//        System.out.println("onRead " + header.frameLength() + " offset " + offset + " type " + header.headerType());
+
+        // drop a version we don't know
+        if (header.version() != HeaderFlyweight.CURRENT_VERSION)
         {
-            header.wrap(readBuffer, offset);
+            return;
+        }
 
-//            System.out.println("onRead " + header.frameLength() + " offset " + offset + " type " + header.headerType());
-            // drop a version we don't know
-            if (header.version() != HeaderFlyweight.CURRENT_VERSION)
-            {
-                continue;
-            }
+        // malformed, so log and break out of entire packet
+        if (header.frameLength() <= FrameDescriptor.BASE_HEADER_LENGTH)
+        {
+            System.err.println("received malformed frameLength (" + header.frameLength() + "), dropping");
+            return;
+        }
 
-            // malformed, so log and break out of entire packet
-            if (header.frameLength() <= FrameDescriptor.BASE_HEADER_LENGTH)
-            {
-                System.err.println("received malformed frameLength (" + header.frameLength() + "), dropping");
+        switch (header.headerType())
+        {
+            case HDR_TYPE_DATA:
+                dataHeader.wrap(readBuffer, offset);
+                frameHandler.onDataFrame(dataHeader, readBuffer, len, srcAddr);
                 break;
-            }
 
+            case HDR_TYPE_NAK:
+                nakHeader.wrap(readBuffer, offset);
+                frameHandler.onNakFrame(nakHeader, readBuffer, len, srcAddr);
+                break;
 
-            switch (header.headerType())
-            {
-                case HDR_TYPE_DATA:
-                    dataHeader.wrap(readBuffer, offset);
-                    frameHandler.onDataFrame(dataHeader, srcAddr);
-                    break;
+            case HDR_TYPE_SM:
+                statusMessage.wrap(readBuffer, offset);
+                frameHandler.onStatusMessageFrame(statusMessage, readBuffer, len, srcAddr);
+                break;
 
-                case HDR_TYPE_NAK:
-                    nak.wrap(readBuffer, offset);
-                    frameHandler.onNakFrame(nak, srcAddr);
-                    break;
-
-                case HDR_TYPE_SM:
-                    statusMessage.wrap(readBuffer, offset);
-                    frameHandler.onStatusMessageFrame(statusMessage, srcAddr);
-                    break;
-
-                default:
-                    System.err.println("received unknown type (" + header.headerType() + "), dropping");
-                    break;
-            }
-
-            offset += header.frameLength();
+            default:
+                System.err.println("received unknown header type (" + header.headerType() + "), dropping");
+                break;
         }
     }
 }

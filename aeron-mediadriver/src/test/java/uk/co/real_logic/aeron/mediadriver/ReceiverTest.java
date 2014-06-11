@@ -126,7 +126,7 @@ public class ReceiverTest
 
         fillDataFrame(dataHeader, 0, null);
 
-        frameHandler.onDataFrame(dataHeader, senderAddr);  // 0 length data frame
+        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddr);  // 0 length data frame
 
         final int msgs = toConductorBuffer.read(        // term buffer created
             (msgTypeId, buffer, index, length) ->
@@ -174,7 +174,7 @@ public class ReceiverTest
 
         fillDataFrame(dataHeader, 0, null);
 
-        frameHandler.onDataFrame(dataHeader, senderAddr);  // 0 length data frame
+        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddr);  // 0 length data frame
 
         final int msgs = toConductorBuffer.read(        // term buffer created
                 (msgTypeId, buffer, index, length) ->
@@ -198,7 +198,7 @@ public class ReceiverTest
             }
 
             fillDataFrame(dataHeader, offset, FAKE_PAYLOAD);
-            frameHandler.onDataFrame(dataHeader, senderAddr);
+            frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddr);
             receiver.process();
         }
     }

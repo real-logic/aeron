@@ -119,7 +119,7 @@ public class SubscribedSession
 
         public void insert(final AtomicBuffer buffer, final int offset, final int length)
         {
-            logRebuilder.insert(buffer, 0, length);
+            logRebuilder.insert(buffer, offset, length);
         }
     }
 

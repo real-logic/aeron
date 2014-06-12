@@ -22,7 +22,6 @@ import uk.co.real_logic.aeron.util.status.PositionReporter;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import static uk.co.real_logic.aeron.Subscriber.MessageFlags.NONE;
 import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.CLEAN_WINDOW;
 import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.rotateId;
 import static uk.co.real_logic.aeron.util.ChannelCounters.UNKNOWN_TERM_ID;
@@ -79,7 +78,8 @@ public class SubscriberSession
         }
 
         return logReader.read((buffer, offset, length) ->
-                                  dataHandler.onData(buffer, offset + HEADER_LENGTH, sessionId, NONE));
+                                  dataHandler.onData(buffer, offset + HEADER_LENGTH,
+                                      length - HEADER_LENGTH, sessionId));
     }
 
     private boolean hasBeenCleaned(final LogReader logReader)

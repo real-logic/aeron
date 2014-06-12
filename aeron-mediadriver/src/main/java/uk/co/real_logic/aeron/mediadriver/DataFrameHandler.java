@@ -122,8 +122,11 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         final SubscribedSession subscribedSession = subscription.getSubscribedSession(sessionId);
         if (null != subscribedSession)
         {
-            subscribedSession.rebuildBuffer(header, buffer, length);
-            // if we don't know the term, this will drop down and the term buffer will be created.
+            if (header.frameLength() > DataHeaderFlyweight.HEADER_LENGTH)
+            {
+                subscribedSession.rebuildBuffer(header, buffer, length);
+                // if we don't know the term, this will drop down and the term buffer will be created.
+            }
         }
         else
         {

@@ -26,6 +26,7 @@ import uk.co.real_logic.aeron.util.command.QualifiedMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
@@ -55,7 +56,8 @@ public class ReceiverTest
     private static final long[] ONE_CHANNEL = { CHANNEL_ID };
     private static final long TERM_ID = 3;
     private static final long SESSION_ID = 1;
-    private static final byte[] FAKE_PAYLOAD = new byte[128];
+    private static final byte[] FAKE_PAYLOAD = "Hello thare, message!".getBytes();
+    private static final byte[] NO_PAYLOAD = new byte[0];
 
     private final NioSelector mockNioSelector = mock(NioSelector.class);
     private final BufferManagement mockBufferManagement = mock(BufferManagement.class);
@@ -64,6 +66,8 @@ public class ReceiverTest
 
     private final BufferRotator rotator =
         BufferAndFrameUtils.createTestRotator(LOG_BUFFER_SIZE, LogBufferDescriptor.STATE_BUFFER_LENGTH);
+
+    private LogReader[] logReaders;
 
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final QualifiedMessageFlyweight messageHeader = new QualifiedMessageFlyweight();
@@ -102,7 +106,8 @@ public class ReceiverTest
         senderChannel.bind(senderAddr);
         senderChannel.configureBlocking(false);
 
-        dataHeader.wrap(dataBuffer, 0);  // we will only be using these together
+        logReaders = rotator.buffers().map((log) -> new LogReader(log.logBuffer(), log.stateBuffer()))
+            .toArray(LogReader[]::new);
     }
 
     @After
@@ -124,7 +129,7 @@ public class ReceiverTest
 
         assertNotNull(frameHandler);
 
-        fillDataFrame(dataHeader, 0, null);
+        fillDataFrame(dataHeader, 0, NO_PAYLOAD);
 
         frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddr);  // 0 length data frame
 
@@ -161,6 +166,144 @@ public class ReceiverTest
     }
 
     @Test
+    public void shouldInsertDataIntoLogAfterInitialExchange() throws Exception
+    {
+        receiverProxy.newSubscriber(URI, ONE_CHANNEL);  // ADD_SUBSCRIBER from client
+
+        receiver.process();
+
+        DataFrameHandler frameHandler = receiver.frameHandler(destination);
+
+        assertNotNull(frameHandler);
+
+        fillDataFrame(dataHeader, 0, NO_PAYLOAD);
+
+        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddr);  // 0 length data frame
+
+        int msgs = toConductorBuffer.read(        // term buffer created
+            (msgTypeId, buffer, index, length) ->
+            {
+                assertThat(msgTypeId, is(ControlProtocolEvents.CREATE_TERM_BUFFER));
+                // pass in new term buffer from media conductor, which should trigger SM
+                receiverProxy.newReceiveBuffer(new NewReceiveBufferEvent(destination, SESSION_ID,
+                        CHANNEL_ID, TERM_ID, rotator));
+            });
+        assertThat(msgs, is(1));
+
+        receiver.process();
+
+        fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);
+        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddr);
+
+        msgs = logReaders[0].read(
+            (buffer, offset, length) ->
+            {
+                dataHeader.wrap(buffer, offset);
+                assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
+                assertThat(dataHeader.termId(), is(TERM_ID));
+                assertThat(dataHeader.channelId(), is(CHANNEL_ID));
+                assertThat(dataHeader.sessionId(), is(SESSION_ID));
+                assertThat(dataHeader.termOffset(), is(0L));
+                assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
+            });
+        assertThat(msgs, is(1));
+    }
+
+    @Test
+    public void shouldNotOverwriteDataFrameWithHeartbeat() throws Exception
+    {
+        receiverProxy.newSubscriber(URI, ONE_CHANNEL);  // ADD_SUBSCRIBER from client
+
+        receiver.process();
+
+        DataFrameHandler frameHandler = receiver.frameHandler(destination);
+
+        assertNotNull(frameHandler);
+
+        fillDataFrame(dataHeader, 0, NO_PAYLOAD);
+
+        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddr);  // 0 length data frame
+
+        int msgs = toConductorBuffer.read(        // term buffer created
+            (msgTypeId, buffer, index, length) ->
+            {
+                assertThat(msgTypeId, is(ControlProtocolEvents.CREATE_TERM_BUFFER));
+                // pass in new term buffer from media conductor, which should trigger SM
+                receiverProxy.newReceiveBuffer(new NewReceiveBufferEvent(destination, SESSION_ID,
+                        CHANNEL_ID, TERM_ID, rotator));
+            });
+        assertThat(msgs, is(1));
+
+        receiver.process();
+
+        fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);  // initial data frame
+        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddr);
+
+        fillDataFrame(dataHeader, 0, NO_PAYLOAD);  // heartbeat with same term offset
+        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddr);
+
+        msgs = logReaders[0].read(
+            (buffer, offset, length) ->
+            {
+                dataHeader.wrap(buffer, offset);
+                assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
+                assertThat(dataHeader.termId(), is(TERM_ID));
+                assertThat(dataHeader.channelId(), is(CHANNEL_ID));
+                assertThat(dataHeader.sessionId(), is(SESSION_ID));
+                assertThat(dataHeader.termOffset(), is(0L));
+                assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
+            });
+        assertThat(msgs, is(1));
+    }
+
+    @Test
+    public void shouldOverwriteHeartbeatWithDataFrame() throws Exception
+    {
+        receiverProxy.newSubscriber(URI, ONE_CHANNEL);  // ADD_SUBSCRIBER from client
+
+        receiver.process();
+
+        DataFrameHandler frameHandler = receiver.frameHandler(destination);
+
+        assertNotNull(frameHandler);
+
+        fillDataFrame(dataHeader, 0, NO_PAYLOAD);
+
+        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddr);  // 0 length data frame
+
+        int msgs = toConductorBuffer.read(        // term buffer created
+                (msgTypeId, buffer, index, length) ->
+                {
+                    assertThat(msgTypeId, is(ControlProtocolEvents.CREATE_TERM_BUFFER));
+                    // pass in new term buffer from media conductor, which should trigger SM
+                    receiverProxy.newReceiveBuffer(new NewReceiveBufferEvent(destination, SESSION_ID,
+                            CHANNEL_ID, TERM_ID, rotator));
+                });
+        assertThat(msgs, is(1));
+
+        receiver.process();
+
+        fillDataFrame(dataHeader, 0, NO_PAYLOAD);  // heartbeat with same term offset
+        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddr);
+
+        fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);  // initial data frame
+        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddr);
+
+        msgs = logReaders[0].read(
+                (buffer, offset, length) ->
+                {
+                    dataHeader.wrap(buffer, offset);
+                    assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
+                    assertThat(dataHeader.termId(), is(TERM_ID));
+                    assertThat(dataHeader.channelId(), is(CHANNEL_ID));
+                    assertThat(dataHeader.sessionId(), is(SESSION_ID));
+                    assertThat(dataHeader.termOffset(), is(0L));
+                    assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
+                });
+        assertThat(msgs, is(1));
+    }
+
+    @Test
     @Ignore("does not work correctly yet")
     public void shouldBeAbleToHandleTermBufferRolloverCorrectly() throws Exception
     {
@@ -172,7 +315,7 @@ public class ReceiverTest
 
         assertNotNull(frameHandler);
 
-        fillDataFrame(dataHeader, 0, null);
+        fillDataFrame(dataHeader, 0, NO_PAYLOAD);
 
         frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddr);  // 0 length data frame
 
@@ -205,16 +348,17 @@ public class ReceiverTest
 
     private void fillDataFrame(final DataHeaderFlyweight header, final int termOffset, final byte[] payload)
     {
+        header.wrap(dataBuffer, 0);
         header.termOffset(termOffset)
             .termId(TERM_ID)
             .channelId(CHANNEL_ID)
             .sessionId(SESSION_ID)
-            .frameLength(DataHeaderFlyweight.HEADER_LENGTH + ((null == payload) ? 0 : payload.length))
+            .frameLength(DataHeaderFlyweight.HEADER_LENGTH + payload.length)
             .headerType(HeaderFlyweight.HDR_TYPE_DATA)
             .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
             .version(HeaderFlyweight.CURRENT_VERSION);
 
-        if (null != payload)
+        if (0 < payload.length)
         {
             dataBuffer.putBytes(header.dataOffset(), payload);
         }

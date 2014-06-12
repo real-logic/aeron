@@ -113,7 +113,7 @@ public class PubUnicastTest
     }
 
     @Test
-    public void shouldSendCorrectlyFormedDataFrames() throws Exception
+    public void shouldSendCorrectlyFormedSingleDataFrames() throws Exception
     {
         // let buffers get connected
 

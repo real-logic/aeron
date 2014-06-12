@@ -17,9 +17,11 @@ package uk.co.real_logic.aeron.examples;
 
 import uk.co.real_logic.aeron.*;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
+import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
+import java.nio.ByteOrder;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
@@ -39,7 +41,12 @@ public class ExampleSubscriber
         final Aeron.Context aeronContext = new Aeron.Context().errorHandler(ExampleSubscriber::onError);
         final Subscriber.Context subContext = new Subscriber.Context().destination(DESTINATION);
         final Subscriber.DataHandler messageHandler =
-            (buffer, offset, sessionId, flags) -> System.out.println("Message " + sessionId);
+            (buffer, offset, length, sessionId) ->
+            {
+                final byte[] data = new byte[length];
+                buffer.getBytes(offset, data);
+                System.out.println("Message " + sessionId + " " + data.toString());
+            };
         final Subscriber.NewSourceEventHandler newSourceHandler =
                 (channelId, sessionId) -> System.out.println("new source " + sessionId + " " + channelId);
         final Subscriber.InactiveSourceEventHandler inactiveSourceHandler =
@@ -61,6 +68,7 @@ public class ExampleSubscriber
                 while (true)
                 {
                     rcv.read();
+                    Thread.sleep(10);
                 }
             }
             catch (final Exception ex)
@@ -116,10 +124,13 @@ public class ExampleSubscriber
 
         public void onData(final AtomicBuffer buffer,
                            final int offset,
-                           final long sessionId,
-                           final Subscriber.MessageFlags flags)
+                           final int length,
+                           final long sessionId)
         {
-            System.out.println("ExampleDataHandler Message " + sessionId);
+            final byte[] data = new byte[length];
+            buffer.getBytes(offset, data);
+            System.out.println("Message to channel: " + channelId() + ", from: " + sessionId + ", data (" + length +
+                "@" + offset + ") <<" + new String(data) + ">>");
         }
     }
 }

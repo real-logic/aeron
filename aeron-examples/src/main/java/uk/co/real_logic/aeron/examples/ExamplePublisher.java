@@ -49,11 +49,11 @@ public class ExamplePublisher
 
             for (int i = 0; i < 10; i++)
             {
-                buffer.putString(BitUtil.SIZE_OF_BYTE, "Hello World!", ByteOrder.LITTLE_ENDIAN);
-                buffer.putByte(0, (byte)i);
+                final String message = "Hello World! " + i;
+                buffer.putBytes(0, message.getBytes());
 
                 System.out.print("offering " + i);
-                final boolean result = channel.offer(buffer, 0, 14);
+                final boolean result = channel.offer(buffer, 0, message.getBytes().length);
 
                 if (false == result)
                 {

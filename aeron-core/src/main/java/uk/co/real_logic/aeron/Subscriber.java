@@ -29,11 +29,6 @@ import static java.util.stream.Collectors.toList;
  */
 public class Subscriber implements AutoCloseable
 {
-    public enum MessageFlags
-    {
-        NONE, BEGIN_MESSAGE, END_MESSAGE
-    }
-
     /**
      * Interface for delivery of data to a {@link Subscriber}
      */
@@ -44,10 +39,10 @@ public class Subscriber implements AutoCloseable
          *
          * @param buffer to be delivered
          * @param offset within buffer that data starts
+         * @param length of the data in the buffer
          * @param sessionId for the data source
-         * @param flags for the data
          */
-        void onData(final AtomicBuffer buffer, final int offset, final long sessionId, final MessageFlags flags);
+        void onData(final AtomicBuffer buffer, final int offset, final int length, final long sessionId);
     }
 
     /**

@@ -483,7 +483,7 @@ public class AeronTest
 
     private DataHandler eitherSessionHandler()
     {
-        return (buffer, offset, sessionId, flags) ->
+        return (buffer, offset, length, sessionId) ->
         {
             assertThat(buffer.getInt(offset), is(PACKET_VALUE));
             assertThat(sessionId, anyOf(is(SESSION_ID), is(SESSION_ID_2)));
@@ -492,7 +492,7 @@ public class AeronTest
 
     private DataHandler assertingHandler()
     {
-        return (buffer, offset, sessionId, flags) ->
+        return (buffer, offset, length, sessionId) ->
         {
             assertThat(buffer.getInt(offset), is(PACKET_VALUE));
             assertThat(sessionId, is(SESSION_ID));
@@ -608,7 +608,7 @@ public class AeronTest
 
     private DataHandler emptyDataHandler()
     {
-        return (buffer, offset, sessionId, flags) -> {};
+        return (buffer, offset, length, sessionId) -> {};
     }
 
     private Channel newChannel(final Aeron aeron)

@@ -15,7 +15,10 @@
  */
 package uk.co.real_logic.aeron;
 
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
 import uk.co.real_logic.aeron.util.ConductorShmBuffers;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -32,7 +35,6 @@ import java.util.concurrent.Executors;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertTrue;
 import static uk.co.real_logic.aeron.util.CommonConfiguration.ADMIN_DIR_NAME;
 import static uk.co.real_logic.aeron.util.CommonConfiguration.DIRS_DELETE_ON_EXIT_PROP_NAME;
 

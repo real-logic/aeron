@@ -39,7 +39,6 @@ public class PubAndSubUnicastTest
     private MediaDriver driver;
     private Subscriber subscriber;
     private Source source;
-    private Channel channel;
 
     @Before
     public void setupClients() throws Exception
@@ -61,7 +60,6 @@ public class PubAndSubUnicastTest
         source = producingClient.newSource(new Source.Context().destination(DESTINATION)
                                                                .sessionId(SESSION_ID));
 
-        channel = source.newChannel(CHANNEL_ID);
     }
 
     private Aeron.Context newAeronContext()
@@ -79,35 +77,35 @@ public class PubAndSubUnicastTest
         driver.close();
     }
 
-    private void process(final int times) throws Exception
+    private void doWork(final int times) throws Exception
     {
         for (int i = 0; i < times; i++)
         {
-            process();
+            doWork();
         }
     }
 
-    private void process() throws Exception
+    private void doWork() throws Exception
     {
-        producingClient.conductor().process();
-        driver.conductor().process();
-        driver.sender().process();
-        driver.receiver().process();
-        receivingClient.conductor().process();
+        producingClient.conductor().doWork();
+        driver.conductor().doWork();
+        driver.sender().doWork();
+        driver.receiver().doWork();
+        receivingClient.conductor().doWork();
         subscriber.read();
     }
 
     @Test
     public void clientsSpinUp() throws Exception
     {
-        process(3);
+        doWork(3);
     }
 
     @Test
     @Ignore("isn't finished yet")
     public void publisherMessagesSubscriber() throws Exception
     {
-        process(5);
+        doWork(5);
         // TODO: simple message send/read
     }
 

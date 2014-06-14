@@ -132,7 +132,7 @@ public class MediaConductorTest
     {
         writeChannelMessage(ControlProtocolEvents.ADD_CHANNEL, 1L, 2L, 4000);
 
-        mediaConductor.process();
+        mediaConductor.doWork();
 
         assertThat(sender.channels().length(), is(1));
         assertNotNull(sender.channels().get(0));
@@ -159,8 +159,8 @@ public class MediaConductorTest
     {
         writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIBER, DESTINATION_URI + 4000, ONE_CHANNEL);
 
-        mediaConductor.process();
-        receiver.process();
+        mediaConductor.doWork();
+        receiver.doWork();
 
         assertNotNull(receiver.frameHandler(UdpDestination.parse(DESTINATION_URI + 4000)));
     }
@@ -171,8 +171,8 @@ public class MediaConductorTest
         writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIBER, DESTINATION_URI + 4000, ONE_CHANNEL);
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIBER, DESTINATION_URI + 4000, ONE_CHANNEL);
 
-        mediaConductor.process();
-        receiver.process();
+        mediaConductor.doWork();
+        receiver.doWork();
 
         assertNull(receiver.frameHandler(UdpDestination.parse(DESTINATION_URI + 4000)));
     }
@@ -185,7 +185,7 @@ public class MediaConductorTest
         writeChannelMessage(ControlProtocolEvents.ADD_CHANNEL, 3L, 2L, 4003);
         writeChannelMessage(ControlProtocolEvents.ADD_CHANNEL, 3L, 4L, 4004);
 
-        mediaConductor.process();
+        mediaConductor.doWork();
 
         assertThat(sender.channels().length(), is(4));
     }
@@ -196,7 +196,7 @@ public class MediaConductorTest
         writeChannelMessage(ControlProtocolEvents.ADD_CHANNEL, 1L, 2L, 4005);
         writeChannelMessage(ControlProtocolEvents.REMOVE_CHANNEL, 1L, 2L, 4005);
 
-        mediaConductor.process();
+        mediaConductor.doWork();
 
         assertThat(sender.channels().length(), is(0));
         assertNull(mediaConductor.frameHandler(UdpDestination.parse(DESTINATION_URI + 4005)));
@@ -215,7 +215,7 @@ public class MediaConductorTest
         writeChannelMessage(ControlProtocolEvents.REMOVE_CHANNEL, 3L, 2L, 4008);
         writeChannelMessage(ControlProtocolEvents.REMOVE_CHANNEL, 3L, 4L, 4008);
 
-        mediaConductor.process();
+        mediaConductor.doWork();
 
         assertThat(sender.channels().length(), is(0));
     }
@@ -227,8 +227,8 @@ public class MediaConductorTest
 
         writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIBER, DESTINATION_URI + 4000, THREE_CHANNELS);
 
-        mediaConductor.process();
-        receiver.process();
+        mediaConductor.doWork();
+        receiver.doWork();
 
         final DataFrameHandler frameHandler = receiver.frameHandler(destination);
 
@@ -237,8 +237,8 @@ public class MediaConductorTest
 
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIBER, DESTINATION_URI + 4000, TWO_CHANNELS);
 
-        mediaConductor.process();
-        receiver.process();
+        mediaConductor.doWork();
+        receiver.doWork();
 
         assertNotNull(receiver.frameHandler(destination));
         assertThat(frameHandler.subscriptionMap().size(), is(1));
@@ -251,8 +251,8 @@ public class MediaConductorTest
 
         writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIBER, DESTINATION_URI + 4000, THREE_CHANNELS);
 
-        mediaConductor.process();
-        receiver.process();
+        mediaConductor.doWork();
+        receiver.doWork();
 
         final DataFrameHandler frameHandler = receiver.frameHandler(destination);
 
@@ -261,16 +261,16 @@ public class MediaConductorTest
 
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIBER, DESTINATION_URI + 4000, TWO_CHANNELS);
 
-        mediaConductor.process();
-        receiver.process();
+        mediaConductor.doWork();
+        receiver.doWork();
 
         assertNotNull(receiver.frameHandler(destination));
         assertThat(frameHandler.subscriptionMap().size(), is(1));
 
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIBER, DESTINATION_URI + 4000, ONE_CHANNEL);
 
-        mediaConductor.process();
-        receiver.process();
+        mediaConductor.doWork();
+        receiver.doWork();
 
         assertNull(receiver.frameHandler(destination));
     }
@@ -281,7 +281,7 @@ public class MediaConductorTest
         writeChannelMessage(ControlProtocolEvents.ADD_CHANNEL, 1L, 2L, 4000);
         writeChannelMessage(ControlProtocolEvents.ADD_CHANNEL, 1L, 2L, 4000);
 
-        mediaConductor.process();
+        mediaConductor.doWork();
 
         assertThat(sender.channels().length(), is(1));
         assertNotNull(sender.channels().get(0));
@@ -313,7 +313,7 @@ public class MediaConductorTest
     {
         writeChannelMessage(ControlProtocolEvents.REMOVE_CHANNEL, 1L, 2L, 4000);
 
-        mediaConductor.process();
+        mediaConductor.doWork();
 
         assertThat(sender.channels().length(), is(0));
 
@@ -341,7 +341,7 @@ public class MediaConductorTest
         writeChannelMessage(ControlProtocolEvents.ADD_CHANNEL, 1L, 2L, 4000);
         writeChannelMessage(ControlProtocolEvents.REMOVE_CHANNEL, 2L, 2L, 4000);
 
-        mediaConductor.process();
+        mediaConductor.doWork();
 
         assertThat(sender.channels().length(), is(1));
         assertNotNull(sender.channels().get(0));
@@ -374,7 +374,7 @@ public class MediaConductorTest
         writeChannelMessage(ControlProtocolEvents.ADD_CHANNEL, 1L, 2L, 4000);
         writeChannelMessage(ControlProtocolEvents.REMOVE_CHANNEL, 1L, 3L, 4000);
 
-        mediaConductor.process();
+        mediaConductor.doWork();
 
         assertThat(sender.channels().length(), is(1));
         assertNotNull(sender.channels().get(0));
@@ -406,9 +406,9 @@ public class MediaConductorTest
     {
         writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIBER, INVALID_URI, ONE_CHANNEL);
 
-        mediaConductor.process();
-        receiver.process();
-        mediaConductor.process();
+        mediaConductor.doWork();
+        receiver.doWork();
+        mediaConductor.doWork();
 
         final int messagesRead = conductorNotifications.read(
             (msgTypeId, buffer, index, length) ->
@@ -432,9 +432,9 @@ public class MediaConductorTest
     {
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIBER, DESTINATION_URI + 4000, ONE_CHANNEL);
 
-        mediaConductor.process();
-        receiver.process();
-        mediaConductor.process();
+        mediaConductor.doWork();
+        receiver.doWork();
+        mediaConductor.doWork();
 
         final int messagesRead = conductorNotifications.read(
             (msgTypeId, buffer, index, length) ->
@@ -459,9 +459,9 @@ public class MediaConductorTest
         writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIBER, DESTINATION_URI + 4000, ONE_CHANNEL);
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIBER, DESTINATION_URI + 4000, ANOTHER_CHANNEL);
 
-        mediaConductor.process();
-        receiver.process();
-        mediaConductor.process();
+        mediaConductor.doWork();
+        receiver.doWork();
+        mediaConductor.doWork();
 
         final int messagesRead = conductorNotifications.read(
             (msgTypeId, buffer, index, length) ->

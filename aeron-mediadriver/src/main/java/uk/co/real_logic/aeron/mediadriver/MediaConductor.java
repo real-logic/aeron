@@ -70,7 +70,7 @@ public class MediaConductor extends Agent
 
     public MediaConductor(final Context ctx, final Receiver receiver, final Sender sender)
     {
-        super(SELECT_TIMEOUT);
+        super(AGENT_SLEEP_NANOS);
 
         this.localCommandBuffer = ctx.mediaCommandBuffer();
         this.receiverProxy = ctx.receiverProxy();
@@ -96,11 +96,12 @@ public class MediaConductor extends Agent
         return srcDestinationMap.get(destination.consistentHash());
     }
 
-    public void process()
+    public boolean doWork()
     {
+        boolean hasDoneWork = false;
         try
         {
-            nioSelector.processKeys();
+            nioSelector.processKeys(); // TODO: determine if work has been done
         }
         catch (final Exception ex)
         {
@@ -110,9 +111,12 @@ public class MediaConductor extends Agent
 
         sender.processBufferRotation();
         receiver.processBufferRotation();
-        processClientCommandBuffer();
-        processLocalCommandBuffer();
-        processTimers();
+
+        hasDoneWork |= processClientCommandBuffer();
+        hasDoneWork |= processLocalCommandBuffer();
+        hasDoneWork |= processTimers();
+
+        return hasDoneWork;
     }
 
     public void close()
@@ -130,9 +134,9 @@ public class MediaConductor extends Agent
         // TODO
     }
 
-    private void processLocalCommandBuffer()
+    private boolean processLocalCommandBuffer()
     {
-        localCommandBuffer.read(
+        final int messagesRead = localCommandBuffer.read(
             (msgTypeId, buffer, index, length) ->
             {
                 switch (msgTypeId)
@@ -153,11 +157,13 @@ public class MediaConductor extends Agent
                         break;
                 }
             });
+
+        return messagesRead > 0;
     }
 
-    private void processClientCommandBuffer()
+    private boolean processClientCommandBuffer()
     {
-        clientCommandBuffer.read(
+        final int messagesRead = clientCommandBuffer.read(
             (msgTypeId, buffer, index, length) ->
             {
                 Flyweight flyweight = publisherMessage;
@@ -210,6 +216,8 @@ public class MediaConductor extends Agent
                     ex.printStackTrace();
                 }
             });
+
+        return messagesRead > 0;
     }
 
     /**
@@ -227,12 +235,9 @@ public class MediaConductor extends Agent
         return timerWheel.now();
     }
 
-    private void processTimers()
+    private boolean processTimers()
     {
-        if (timerWheel.calculateDelayInMs() <= 0)
-        {
-            timerWheel.expireTimers();
-        }
+        return timerWheel.calculateDelayInMs() <= 0 && timerWheel.expireTimers();
     }
 
     private TimerWheel.Timer newTimeout(final long delay, final TimeUnit timeUnit, final Runnable task)

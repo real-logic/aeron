@@ -135,9 +135,9 @@ public class SenderChannel
         return new LogScanner(log.logBuffer(), log.stateBuffer(), headerLength);
     }
 
-    public void send()
+    public boolean send()
     {
-        // read from term buffer
+        boolean hasDoneWork = false;
         try
         {
             final int rightEdge = activeFlowControlState.rightEdgeOfWindowVolatile();
@@ -181,7 +181,7 @@ public class SenderChannel
             };
 
             final LogScanner scanner = scanners[currentIndex];
-            scanner.scanNext(maxLength, handler);
+            hasDoneWork = scanner.scanNext(maxLength, handler);
 
             if (scanner.isComplete())
             {
@@ -194,6 +194,8 @@ public class SenderChannel
             // TODO: error logging
             ex.printStackTrace();
         }
+
+        return hasDoneWork;
     }
 
     public long sessionId()

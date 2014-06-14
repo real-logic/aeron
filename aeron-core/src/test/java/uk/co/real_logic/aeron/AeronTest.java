@@ -117,7 +117,7 @@ public class AeronTest
     {
         final Aeron aeron = newAeron();
         newChannel(aeron);
-        aeron.conductor().process();
+        aeron.conductor().doWork();
 
         assertChannelMessage(toMediaDriver(), ADD_CHANNEL);
     }
@@ -144,9 +144,9 @@ public class AeronTest
     {
         final Aeron aeron = newAeron();
         final Channel channel = newChannel(aeron);
-        aeron.conductor().process();
+        aeron.conductor().doWork();
         createTermBuffer(0L, NEW_SEND_BUFFER_NOTIFICATION, directory.senderDir(), SESSION_ID);
-        aeron.conductor().process();
+        aeron.conductor().doWork();
         assertTrue(channel.offer(atomicSendBuffer));
         aeron.conductor().close();
     }
@@ -157,21 +157,21 @@ public class AeronTest
         final RingBuffer toMediaDriver = toMediaDriver();
         final Aeron aeron = newAeron();
         final Channel channel = newChannel(aeron);
-        aeron.conductor().process();
+        aeron.conductor().doWork();
         final List<Buffers> buffers =
             createTermBuffer(0L, NEW_SEND_BUFFER_NOTIFICATION, directory.senderDir(), SESSION_ID);
 
         final int capacity = buffers.get(0).logBuffer().capacity();
         final int msgCount = (4 * capacity) / SEND_BUFFER_CAPACITY;
 
-        aeron.conductor().process();
+        aeron.conductor().doWork();
         skip(toMediaDriver, 1);
         boolean previousAppend = true;
         int bufferId = 0;
         for (int i = 0; i < msgCount; i++)
         {
             final boolean appended = channel.offer(atomicSendBuffer);
-            aeron.conductor().process();
+            aeron.conductor().doWork();
 
             // only two in a row is a failure, because we don't rollover immediately
             assertTrue(previousAppend || appended);
@@ -202,11 +202,11 @@ public class AeronTest
         final Channel channel = newChannel(aeron);
         final ClientConductor adminThread = aeron.conductor();
 
-        adminThread.process();
+        adminThread.doWork();
         skip(toMediaDriver, 1);
 
         channel.close();
-        adminThread.process();
+        adminThread.doWork();
 
         assertChannelMessage(toMediaDriver, REMOVE_CHANNEL);
     }
@@ -222,11 +222,11 @@ public class AeronTest
         source.newChannel(CHANNEL_ID);
         final ClientConductor adminThread = aeron.conductor();
 
-        adminThread.process();
+        adminThread.doWork();
         skip(toMediaDriver(), 1);
 
         source.close();
-        adminThread.process();
+        adminThread.doWork();
 
         assertChannelMessage(toMediaDriver(), REMOVE_CHANNEL);
     }
@@ -245,11 +245,11 @@ public class AeronTest
         source.newChannel(CHANNEL_ID);
         final ClientConductor clientConductor = aeron.conductor();
 
-        clientConductor.process();
+        clientConductor.doWork();
         skip(buffer, 1);
 
         otherSource.close();
-        clientConductor.process();
+        clientConductor.doWork();
 
         skip(buffer, 0);
     }
@@ -265,7 +265,7 @@ public class AeronTest
 
         final Subscriber subscriber = aeron.newSubscriber(context);
 
-        aeron.conductor().process();
+        aeron.conductor().doWork();
 
         assertMsgRead(toMediaDriver(), assertSubscriberMessageOfType(ADD_SUBSCRIBER));
 
@@ -279,11 +279,11 @@ public class AeronTest
         final Aeron aeron = newAeron();
         final Subscriber subscriber = newSubscriber(aeron);
 
-        aeron.conductor().process();
+        aeron.conductor().doWork();
         skip(toMediaDriver, 1);
 
         subscriber.close();
-        aeron.conductor().process();
+        aeron.conductor().doWork();
 
         assertMsgRead(toMediaDriver, assertSubscriberMessageOfType(REMOVE_SUBSCRIBER));
     }
@@ -307,7 +307,7 @@ public class AeronTest
                          subscriberMessage.length(),
                          errorHeader.frameLength());
 
-        aeron.conductor().process();
+        aeron.conductor().doWork();
 
         verify(invalidDestination).onInvalidDestination(INVALID_DESTINATION);
     }
@@ -323,7 +323,7 @@ public class AeronTest
 
         final List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
 
-        aeron.conductor().process();
+        aeron.conductor().doWork();
         skip(toMediaDriver, 1);
 
         writePacket(logAppenders.get(0));
@@ -345,7 +345,7 @@ public class AeronTest
         final List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
         final List<LogAppender> otherLogAppenders = createLogAppenders(SESSION_ID_2);
 
-        aeron.conductor().process();
+        aeron.conductor().doWork();
         skip(toMediaDriver, 1);
 
         writePacket(logAppenders.get(0));
@@ -368,7 +368,7 @@ public class AeronTest
 
         final List<LogAppender> logAppenders = createLogAppenders(termBuffers);
 
-        aeron.conductor().process();
+        aeron.conductor().doWork();
         skip(toMediaDriver, 1);
 
         final LogAppender logAppender = logAppenders.get(0);
@@ -380,19 +380,19 @@ public class AeronTest
         // cleaning is triggered by the subscriber and not the subscriber
         // so we clean two ahead of the current buffer
         cleanBuffer(termBuffers.get(2));
-        aeron.conductor().process();
+        aeron.conductor().doWork();
 
         writePackets(logAppenders.get(1), msgCount);
         assertThat(subscriber.read(), is(msgCount));
 
         cleanBuffer(termBuffers.get(0));
-        aeron.conductor().process();
+        aeron.conductor().doWork();
 
         writePackets(logAppenders.get(2), msgCount);
         assertThat(subscriber.read(), is(msgCount));
 
         cleanBuffer(termBuffers.get(1));
-        aeron.conductor().process();
+        aeron.conductor().doWork();
 
         writePackets(logAppender, msgCount);
         assertThat(subscriber.read(), is(msgCount));
@@ -426,7 +426,7 @@ public class AeronTest
         final Subscriber subscriber = newSubscriber(aeron);
         final List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
 
-        aeron.conductor().process();
+        aeron.conductor().doWork();
         skip(toMediaDriver, 1);
 
         final LogAppender logAppender = logAppenders.get(0);
@@ -463,7 +463,7 @@ public class AeronTest
 
         sendNewBufferNotification(directory.receiverDir(), NEW_RECEIVE_BUFFER_NOTIFICATION, 1L, SESSION_ID);
 
-        aeron.conductor().process();
+        aeron.conductor().doWork();
         skip(toMediaDriver, 1);
 
         final LogAppender logAppender = logAppenders.get(0);

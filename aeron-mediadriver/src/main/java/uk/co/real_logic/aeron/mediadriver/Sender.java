@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.mediadriver;
 import uk.co.real_logic.aeron.util.Agent;
 import uk.co.real_logic.aeron.util.AtomicArray;
 
-import static uk.co.real_logic.aeron.mediadriver.MediaDriver.SELECT_TIMEOUT;
+import static uk.co.real_logic.aeron.mediadriver.MediaDriver.AGENT_SLEEP_NANOS;
 
 /**
  * Agent to take data in sender buffers and demux onto sending sockets
@@ -31,24 +31,28 @@ public class Sender extends Agent
 
     public Sender()
     {
-        super(SELECT_TIMEOUT);
+        super(AGENT_SLEEP_NANOS);
     }
 
-    public void process()
+    public boolean doWork()
     {
+        boolean hasDoneWork = false;
+
         counter++;
         if (counter == channels.length())
         {
             counter = 0;
         }
 
-        channels.forEach(counter, SenderChannel::send);
+        channels.forEach(counter, SenderChannel::send); // TODO: determine if work is done
+
+        return hasDoneWork;
     }
 
     /**
-     * Return the underlying {@link uk.co.real_logic.aeron.util.AtomicArray}
+     * Return the underlying {@link AtomicArray}
      *
-     * @return {@link uk.co.real_logic.aeron.util.AtomicArray} of the channels
+     * @return {@link AtomicArray} of the channels
      */
     public AtomicArray<SenderChannel> channels()
     {

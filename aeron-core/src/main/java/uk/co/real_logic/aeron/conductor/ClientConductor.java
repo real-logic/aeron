@@ -42,7 +42,7 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 public final class ClientConductor extends Agent
 {
     private static final int MAX_FRAME_LENGTH = 1024;
-    private static final int SLEEP_PERIOD_MS = 1;
+    private static final int SLEEP_PERIOD_NANOS = 1;
 
     private final RingBuffer commandBuffer;
     private final RingBuffer toClientBuffer;
@@ -70,7 +70,7 @@ public final class ClientConductor extends Agent
                            final AtomicArray<SubscriberChannel> subscriberChannels,
                            final ConductorErrorHandler errorHandler)
     {
-        super(SLEEP_PERIOD_MS);
+        super(SLEEP_PERIOD_NANOS);
 
         this.commandBuffer = commandBuffer;
         this.toClientBuffer = toClientBuffer;
@@ -81,11 +81,15 @@ public final class ClientConductor extends Agent
         this.errorHandler = errorHandler;
     }
 
-    public void process()
+    public boolean doWork()
     {
-        handleClientCommandBuffer();
-        handleMessagesFromMediaDriver();
-        processBufferCleaningScan();
+        boolean hasDoneWork = false;
+
+        hasDoneWork |= handleClientCommandBuffer();
+        hasDoneWork |= handleMessagesFromMediaDriver();
+        performBufferMaintenance();
+
+        return hasDoneWork;
     }
 
     public void close()
@@ -95,15 +99,15 @@ public final class ClientConductor extends Agent
         statusCounters.close();
     }
 
-    private void processBufferCleaningScan()
+    private void performBufferMaintenance()
     {
         publishers.forEach(Channel::processBufferScan);
         subscriberChannels.forEach(SubscriberChannel::processBufferScan);
     }
 
-    private void handleClientCommandBuffer()
+    private boolean handleClientCommandBuffer()
     {
-        commandBuffer.read(
+        final int messagesRead = commandBuffer.read(
             (msgTypeId, buffer, index, length) ->
             {
                 switch (msgTypeId)
@@ -154,6 +158,8 @@ public final class ClientConductor extends Agent
                 }
             }
         );
+
+        return messagesRead > 0;
     }
 
     private void addReceiver(final String destination, final long[] channelIds)
@@ -208,9 +214,9 @@ public final class ClientConductor extends Agent
         // bufferUsage.releasePublisherBuffers(destination, channelId, sessionId);
     }
 
-    private void handleMessagesFromMediaDriver()
+    private boolean handleMessagesFromMediaDriver()
     {
-        toClientBuffer.read(
+        final int messagesRead = toClientBuffer.read(
             (msgTypeId, buffer, index, length) ->
             {
                 switch (msgTypeId)
@@ -243,6 +249,8 @@ public final class ClientConductor extends Agent
                 }
             }
         );
+
+        return messagesRead > 0;
     }
 
     private void onNewReceiverBuffer(final String destination, final long sessionId,

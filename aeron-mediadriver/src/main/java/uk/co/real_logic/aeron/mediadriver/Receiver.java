@@ -21,7 +21,7 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import java.util.*;
 
-import static uk.co.real_logic.aeron.mediadriver.MediaDriver.SELECT_TIMEOUT;
+import static uk.co.real_logic.aeron.mediadriver.MediaDriver.AGENT_SLEEP_NANOS;
 import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION;
 import static uk.co.real_logic.aeron.util.ErrorCode.SUBSCRIBER_NOT_REGISTERED;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ADD_SUBSCRIBER;
@@ -43,7 +43,7 @@ public class Receiver extends Agent
 
     public Receiver(final MediaDriver.Context context) throws Exception
     {
-        super(SELECT_TIMEOUT);
+        super(AGENT_SLEEP_NANOS);
 
         this.commandBuffer = context.receiverCommandBuffer();
         this.conductorProxy = context.mediaConductorProxy();
@@ -51,33 +51,41 @@ public class Receiver extends Agent
         this.newBufferEventQueue = context.newReceiveBufferEventQueue();
     }
 
-    public void process()
+    public boolean doWork()
     {
+        boolean hasDoneWork = false;
         try
         {
-            nioSelector.processKeys();
-            processCommandBuffer();
-            processNewBufferEventQueue();
+            nioSelector.processKeys(); // TODO: determine if work is done
+            hasDoneWork |= processCommandBuffer();
+            hasDoneWork |= processNewBufferEventQueue();
         }
         catch (final Exception ex)
         {
             ex.printStackTrace();
             // TODO: log
         }
+
+        return hasDoneWork;
     }
 
-    private void processNewBufferEventQueue()
+    private boolean processNewBufferEventQueue()
     {
+        boolean workDone = false;
+
         NewReceiveBufferEvent state;
         while ((state = newBufferEventQueue.poll()) != null)
         {
+            workDone = true;
             onNewReceiveBuffers(state);
         }
+
+        return workDone;
     }
 
-    private void processCommandBuffer()
+    private boolean processCommandBuffer()
     {
-        commandBuffer.read(
+        final int messageRead = commandBuffer.read(
             (msgTypeId, buffer, index, length) ->
             {
                 try
@@ -113,6 +121,8 @@ public class Receiver extends Agent
                     ex.printStackTrace();
                 }
             });
+
+        return messageRead > 0;
     }
 
     private void onError(final ErrorCode errorCode, final int length)
@@ -162,8 +172,7 @@ public class Receiver extends Agent
 
         if (null == frameHandler)
         {
-            frameHandler = new DataFrameHandler(rcvDestination, nioSelector,
-                conductorProxy, globalSubscribedSessions);
+            frameHandler = new DataFrameHandler(rcvDestination, nioSelector, conductorProxy, globalSubscribedSessions);
             frameHandlerByDestinationMap.put(rcvDestination, frameHandler);
         }
 

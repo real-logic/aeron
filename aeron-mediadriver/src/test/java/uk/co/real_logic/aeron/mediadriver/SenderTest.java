@@ -180,7 +180,7 @@ public class SenderTest
         buffer.putBytes(0, PAYLOAD);
 
         assertTrue(logAppenders[0].append(buffer, 0, PAYLOAD.length));
-        sender.process();
+        sender.doWork();
 
         assertThat(receivedFrames.size(), is(1));  // should send now
 
@@ -205,9 +205,9 @@ public class SenderTest
         buffer.putBytes(0, PAYLOAD);
 
         assertTrue(logAppenders[0].append(buffer, 0, PAYLOAD.length));
-        sender.process();
+        sender.doWork();
         assertTrue(logAppenders[0].append(buffer, 0, PAYLOAD.length));
-        sender.process();
+        sender.doWork();
 
         assertThat(receivedFrames.size(), is(2));  // should send now
 
@@ -244,7 +244,7 @@ public class SenderTest
 
         assertTrue(logAppenders[0].append(buffer, 0, PAYLOAD.length));
         assertTrue(logAppenders[0].append(buffer, 0, PAYLOAD.length));
-        sender.process();
+        sender.doWork();
 
         assertThat(receivedFrames.size(), is(1));  // should send now
 
@@ -280,11 +280,11 @@ public class SenderTest
         buffer.putBytes(0, PAYLOAD);
         assertTrue(logAppenders[0].append(buffer, 0, PAYLOAD.length));
 
-        sender.process();
+        sender.doWork();
         assertThat(receivedFrames.size(), is(0));  // should not send as no SM
 
         channel.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT));
-        sender.process();
+        sender.doWork();
 
         assertThat(receivedFrames.size(), is(1));  // should send now
     }
@@ -297,11 +297,11 @@ public class SenderTest
         assertTrue(logAppenders[0].append(buffer, 0, PAYLOAD.length));
         channel.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT));
 
-        sender.process();
+        sender.doWork();
         assertThat(receivedFrames.size(), is(1));  // should send now
 
         assertTrue(logAppenders[0].append(buffer, 0, PAYLOAD.length));
-        sender.process();
+        sender.doWork();
 
         assertThat(receivedFrames.size(), is(1));  // should not send now
     }
@@ -315,7 +315,7 @@ public class SenderTest
         buffer.putBytes(0, PAYLOAD);
 
         assertTrue(logAppenders[0].append(buffer, 0, PAYLOAD.length));
-        sender.process();
+        sender.doWork();
 
         assertThat(receivedFrames.size(), is(1));  // should send now
 
@@ -343,7 +343,7 @@ public class SenderTest
         buffer.putBytes(0, PAYLOAD);
 
         assertTrue(logAppenders[0].append(buffer, 0, PAYLOAD.length));
-        sender.process();
+        sender.doWork();
 
         assertThat(receivedFrames.size(), is(1));  // should send now
 

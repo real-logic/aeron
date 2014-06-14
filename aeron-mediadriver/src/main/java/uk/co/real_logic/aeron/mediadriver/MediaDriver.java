@@ -72,7 +72,7 @@ public class MediaDriver implements AutoCloseable
     /**
      * Size (in bytes) of the conductor buffers between the media driver and the client
      */
-    public static final String ADMIN_BUFFER_SZ_PROP_NAME = "aeron.conductor.buffer.size";
+    public static final String CONDUCTOR_BUFFER_SZ_PROP_NAME = "aeron.conductor.buffer.size";
 
     /**
      * Size (in bytes) of the counter storage buffer
@@ -87,7 +87,7 @@ public class MediaDriver implements AutoCloseable
     /**
      * Timeout (in msec) for the basic NIO select call
      */
-    public static final String SELECT_TIMEOUT_PROP_NAME = "aeron.select.timeout";
+    public static final String AGENT_SLEEP_PROP_NAME = "aeron.select.timeout";
 
     /**
      * Default byte buffer size for reads
@@ -102,7 +102,7 @@ public class MediaDriver implements AutoCloseable
     /**
      * Default buffer size for conductor buffers between the media driver and the client
      */
-    public static final int ADMIN_BUFFER_SZ_DEFAULT = 65536 + TRAILER_LENGTH;
+    public static final int CONDUCTOR_BUFFER_SZ_DEFAULT = 65536 + TRAILER_LENGTH;
 
     /**
      * Size (in bytes) of the counter storage buffer
@@ -117,7 +117,7 @@ public class MediaDriver implements AutoCloseable
     /**
      * Default timeout for select
      */
-    public static final int SELECT_TIMEOUT_DEFAULT = 10;
+    public static final int AGENT_SLEEP_DEFAULT_NANOS = 10;
 
     /**
      * Default group size estimate for NAK delay randomization
@@ -155,8 +155,8 @@ public class MediaDriver implements AutoCloseable
 
     public static final int READ_BYTE_BUFFER_SZ = getInteger(READ_BUFFER_SZ_PROP_NAME, READ_BYTE_BUFFER_SZ_DEFAULT);
     public static final int COMMAND_BUFFER_SZ = getInteger(COMMAND_BUFFER_SZ_PROP_NAME, COMMAND_BUFFER_SZ_DEFAULT);
-    public static final int ADMIN_BUFFER_SZ = getInteger(ADMIN_BUFFER_SZ_PROP_NAME, ADMIN_BUFFER_SZ_DEFAULT);
-    public static final int SELECT_TIMEOUT = getInteger(SELECT_TIMEOUT_PROP_NAME, SELECT_TIMEOUT_DEFAULT);
+    public static final int CONDUCTOR_BUFFER_SZ = getInteger(CONDUCTOR_BUFFER_SZ_PROP_NAME, CONDUCTOR_BUFFER_SZ_DEFAULT);
+    public static final int AGENT_SLEEP_NANOS = getInteger(AGENT_SLEEP_PROP_NAME, AGENT_SLEEP_DEFAULT_NANOS);
     public static final int COUNTERS_BUFFER_SZ = getInteger(COUNTERS_BUFFER_SZ_PROP_NAME, COUNTERS_BUFFER_SZ_DEFAULT);
     public static final int DESCRIPTOR_BUFFER_SZ = getInteger(DESCRIPTOR_BUFFER_SZ_PROP_NAME,
                                                               DESCRIPTOR_BUFFER_SZ_DEFAULT);
@@ -205,7 +205,7 @@ public class MediaDriver implements AutoCloseable
 
         ensureDirectoriesExist();
 
-        conductorShmBuffers = new ConductorShmBuffers(ADMIN_DIR_NAME, ADMIN_BUFFER_SZ);
+        conductorShmBuffers = new ConductorShmBuffers(ADMIN_DIR_NAME, CONDUCTOR_BUFFER_SZ);
         bufferManagement = newMappedBufferManager(DATA_DIR_NAME);
         countersCreator = new StatusBufferCreator(DESCRIPTOR_BUFFER_SIZE, COUNTERS_BUFFER_SIZE);
 

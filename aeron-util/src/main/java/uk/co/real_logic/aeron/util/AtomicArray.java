@@ -29,21 +29,16 @@ public class AtomicArray<T>
     private final AtomicReference<Object[]> arrayRef = new AtomicReference<>(EMPTY_ARRAY);
     private Object[] lastMark = arrayRef.get();
 
-    /**
-     * Marks a point at which to start checking changes from.
-     *
-     * @param consumer of each element in turn.
-     */
-    @SuppressWarnings("unchecked")
-    public void forEachIfChanged(final Runnable init, final Consumer<T> consumer)
-    {
-        Object[] newMark = arrayRef.get();
-        if (lastMark != newMark)
-        {
-            lastMark = newMark;
-            init.run();
-            forEach(0, consumer, (T[])newMark);
-        }
+    @FunctionalInterface
+    public interface ToBooleanFunction<T> {
+
+        /**
+         * Applies this function to the given argument.
+         *
+         * @param value the function argument
+         * @return the function result
+         */
+        boolean applyAsBoolean(T value);
     }
 
     /**
@@ -68,7 +63,10 @@ public class AtomicArray<T>
 
     public void forEach(final Consumer<T> func)
     {
-        forEach(0, func);
+        forEach(0, t -> {
+            func.accept(t);
+            return false;
+        });
     }
 
     /**
@@ -77,19 +75,19 @@ public class AtomicArray<T>
      * @param start the index to start iterating at
      * @param func to call and pass each element to
      */
-    public void forEach(int start, final Consumer<T> func)
+    public boolean forEach(int start, final ToBooleanFunction<T> func)
     {
         @SuppressWarnings("unchecked")
         final T[] array = (T[])arrayRef.get();
 
-        forEach(start, func, array);
+        return forEach(start, func, array);
     }
 
-    private void forEach(int start, final Consumer<T> func, final T[] array)
+    private boolean forEach(int start, final ToBooleanFunction<T> func, final T[] array)
     {
         if (array.length == 0)
         {
-            return;
+            return false;
         }
 
         if (array.length <= start)
@@ -97,13 +95,14 @@ public class AtomicArray<T>
             start = array.length - 1;
         }
 
+        boolean hasDoneWork = false;
         int i = start;
         do
         {
             final T element = array[i];
             if (null != element)
             {
-                func.accept(element);
+                hasDoneWork |= func.applyAsBoolean(element);
             }
 
             i++;
@@ -114,6 +113,8 @@ public class AtomicArray<T>
             }
         }
         while (i != start);
+
+        return hasDoneWork;
     }
 
     /**

@@ -101,7 +101,7 @@ public class MediaConductor extends Agent
         boolean hasDoneWork = false;
         try
         {
-            nioSelector.processKeys(); // TODO: determine if work has been done
+            hasDoneWork |= nioSelector.processKeys();
         }
         catch (final Exception ex)
         {

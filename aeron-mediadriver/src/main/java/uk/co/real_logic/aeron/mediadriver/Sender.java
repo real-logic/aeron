@@ -36,17 +36,13 @@ public class Sender extends Agent
 
     public boolean doWork()
     {
-        boolean hasDoneWork = false;
-
         counter++;
         if (counter == channels.length())
         {
             counter = 0;
         }
 
-        channels.forEach(counter, SenderChannel::send); // TODO: determine if work is done
-
-        return hasDoneWork;
+        return channels.forEach(counter, SenderChannel::send);
     }
 
     /**

@@ -56,7 +56,7 @@ public class Receiver extends Agent
         boolean hasDoneWork = false;
         try
         {
-            nioSelector.processKeys(); // TODO: determine if work is done
+            hasDoneWork |= nioSelector.processKeys();
             hasDoneWork |= processCommandBuffer();
             hasDoneWork |= processNewBufferEventQueue();
         }

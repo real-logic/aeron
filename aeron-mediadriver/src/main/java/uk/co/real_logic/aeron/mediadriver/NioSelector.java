@@ -74,10 +74,10 @@ public class NioSelector implements AutoCloseable
     /**
      * Explicit event loop processing as poll
      */
-    public void processKeys() throws Exception
+    public boolean processKeys() throws Exception
     {
         selector.selectNow();
-        handleSelectedKeys();
+        return handleSelectedKeys();
     }
 
     public void wakeup()
@@ -95,20 +95,22 @@ public class NioSelector implements AutoCloseable
         selector.selectNow();
     }
 
-    private void handleReadable(final SelectionKey key)
+    private boolean handleReadable(final SelectionKey key)
     {
         try
         {
-            ((ReadHandler)key.attachment()).onRead();
+            return ((ReadHandler)key.attachment()).onRead();
         }
         catch (final Exception ex)
         {
             ex.printStackTrace();
+            return false;
         }
     }
 
-    private void handleSelectedKeys() throws Exception
+    private boolean handleSelectedKeys() throws Exception
     {
+        boolean hasDoneWork = false;
         final Set<SelectionKey> selectedKeys = selector.selectedKeys();
         if (!selectedKeys.isEmpty())
         {
@@ -118,10 +120,11 @@ public class NioSelector implements AutoCloseable
                 final SelectionKey key = iter.next();
                 if (key.isReadable())
                 {
-                    handleReadable(key);
+                    hasDoneWork |= handleReadable(key);
                     iter.remove();
                 }
             }
         }
+        return hasDoneWork;
     }
 }

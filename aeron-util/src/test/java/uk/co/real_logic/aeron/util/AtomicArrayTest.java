@@ -150,7 +150,7 @@ public class AtomicArrayTest
             final AtomicArray<Integer> array = new AtomicArray<>();
             values.forEach(array::add);
 
-            array.forEach(start, values::remove);
+            assertThat(array.forEach(start, values::remove), is(true));
 
             assertThat(values, empty());
         }
@@ -163,40 +163,8 @@ public class AtomicArrayTest
         final AtomicArray<Integer> array = new AtomicArray<>();
         values.forEach(array::add);
 
-        array.forEach(4, values::remove);
+        assertThat(array.forEach(4, values::remove), is(true));
 
         assertThat(values, empty());
-    }
-
-    @Test
-    @SuppressWarnings("unchecked")
-    public void arrayInitiallyUnchanged()
-    {
-        final AtomicArray<Integer> array = new AtomicArray<>();
-
-        final Runnable init = mock(Runnable.class);
-        final Consumer<Integer> handler = mock(Consumer.class);
-        array.forEachIfChanged(init, handler);
-
-        verifyNoMoreInteractions(init, handler);
-    }
-
-    @Test
-    @SuppressWarnings("unchecked")
-    public void changesIdentified()
-    {
-        final AtomicArray<Integer> array = new AtomicArray<>();
-        array.add(1);
-        array.add(2);
-
-        final Runnable init = mock(Runnable.class);
-        final Consumer<Integer> handler = mock(Consumer.class);
-        array.forEachIfChanged(init, handler);
-
-        final InOrder inOrder = inOrder(init, handler);
-        inOrder.verify(init).run();
-        inOrder.verify(handler).accept(1);
-        inOrder.verify(handler).accept(2);
-        inOrder.verifyNoMoreInteractions();
     }
 }

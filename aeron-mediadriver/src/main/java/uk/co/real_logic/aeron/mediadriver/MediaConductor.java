@@ -123,16 +123,10 @@ public class MediaConductor extends Agent
     public void close()
     {
         stop();
-        wakeup();
 
         srcDestinationMap.forEach((hash, frameHandler) -> frameHandler.close());
 
         conductorShmBuffers.close();
-    }
-
-    public void wakeup()
-    {
-        // TODO
     }
 
     private boolean processLocalCommandBuffer()

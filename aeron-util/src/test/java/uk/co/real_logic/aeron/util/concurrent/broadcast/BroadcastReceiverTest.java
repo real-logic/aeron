@@ -12,7 +12,7 @@ import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.util.BitUtil.align;
 import static uk.co.real_logic.aeron.util.concurrent.broadcast.RecordDescriptor.*;
 
-public class ReceiverTest
+public class BroadcastReceiverTest
 {
     public static final int MSG_TYPE_ID = 7;
     public static final int CAPACITY = 1024;
@@ -21,20 +21,20 @@ public class ReceiverTest
     public static final int LATEST_COUNTER_INDEX = CAPACITY + BroadcastBufferDescriptor.LATEST_COUNTER_OFFSET;
 
     private final AtomicBuffer buffer = mock(AtomicBuffer.class);
-    private Receiver receiver;
+    private BroadcastReceiver broadcastReceiver;
 
     @Before
     public void setUp()
     {
         when(buffer.capacity()).thenReturn(TOTAL_BUFFER_SIZE);
 
-        receiver = new Receiver(buffer);
+        broadcastReceiver = new BroadcastReceiver(buffer);
     }
 
     @Test
     public void shouldCalculateCapacityForBuffer()
     {
-        assertThat(receiver.capacity(), is(CAPACITY));
+        assertThat(broadcastReceiver.capacity(), is(CAPACITY));
     }
 
     @Test(expected = IllegalStateException.class)
@@ -45,19 +45,19 @@ public class ReceiverTest
 
         when(buffer.capacity()).thenReturn(totalBufferSize);
 
-        new Receiver(buffer);
+        new BroadcastReceiver(buffer);
     }
 
     @Test
     public void shouldNotBeLappedBeforeReception()
     {
-        assertThat(receiver.lappedCount(), is(0L));
+        assertThat(broadcastReceiver.lappedCount(), is(0L));
     }
 
     @Test
     public void shouldNotReceiveFromEmptyBuffer()
     {
-        assertFalse(receiver.receiveNext());
+        assertFalse(broadcastReceiver.receiveNext());
     }
 
     @Test
@@ -76,13 +76,13 @@ public class ReceiverTest
         when(buffer.getInt(msgLengthOffset(recordOffset))).thenReturn(length);
         when(buffer.getInt(msgTypeOffset(recordOffset))).thenReturn(MSG_TYPE_ID);
 
-        assertTrue(receiver.receiveNext());
-        assertThat(receiver.typeId(), is(MSG_TYPE_ID));
-        assertThat(receiver.buffer(), is(buffer));
-        assertThat(receiver.offset(), is(msgOffset(recordOffset)));
-        assertThat(receiver.length(), is(length));
+        assertTrue(broadcastReceiver.receiveNext());
+        assertThat(broadcastReceiver.typeId(), is(MSG_TYPE_ID));
+        assertThat(broadcastReceiver.buffer(), is(buffer));
+        assertThat(broadcastReceiver.offset(), is(msgOffset(recordOffset)));
+        assertThat(broadcastReceiver.length(), is(length));
 
-        assertTrue(receiver.validate());
+        assertTrue(broadcastReceiver.validate());
 
         final InOrder inOrder = inOrder(buffer);
         inOrder.verify(buffer).getLongVolatile(TAIL_COUNTER_INDEX);
@@ -112,21 +112,21 @@ public class ReceiverTest
         when(buffer.getInt(msgLengthOffset(recordOffsetTwo))).thenReturn(length);
         when(buffer.getInt(msgTypeOffset(recordOffsetTwo))).thenReturn(MSG_TYPE_ID);
 
-        assertTrue(receiver.receiveNext());
-        assertThat(receiver.typeId(), is(MSG_TYPE_ID));
-        assertThat(receiver.buffer(), is(buffer));
-        assertThat(receiver.offset(), is(msgOffset(recordOffsetOne)));
-        assertThat(receiver.length(), is(length));
+        assertTrue(broadcastReceiver.receiveNext());
+        assertThat(broadcastReceiver.typeId(), is(MSG_TYPE_ID));
+        assertThat(broadcastReceiver.buffer(), is(buffer));
+        assertThat(broadcastReceiver.offset(), is(msgOffset(recordOffsetOne)));
+        assertThat(broadcastReceiver.length(), is(length));
 
-        assertTrue(receiver.validate());
+        assertTrue(broadcastReceiver.validate());
 
-        assertTrue(receiver.receiveNext());
-        assertThat(receiver.typeId(), is(MSG_TYPE_ID));
-        assertThat(receiver.buffer(), is(buffer));
-        assertThat(receiver.offset(), is(msgOffset(recordOffsetTwo)));
-        assertThat(receiver.length(), is(length));
+        assertTrue(broadcastReceiver.receiveNext());
+        assertThat(broadcastReceiver.typeId(), is(MSG_TYPE_ID));
+        assertThat(broadcastReceiver.buffer(), is(buffer));
+        assertThat(broadcastReceiver.offset(), is(msgOffset(recordOffsetTwo)));
+        assertThat(broadcastReceiver.length(), is(length));
 
-        assertTrue(receiver.validate());
+        assertTrue(broadcastReceiver.validate());
     }
 
     @Test
@@ -148,14 +148,14 @@ public class ReceiverTest
         when(buffer.getInt(msgLengthOffset(recordOffset))).thenReturn(length);
         when(buffer.getInt(msgTypeOffset(recordOffset))).thenReturn(MSG_TYPE_ID);
 
-        assertTrue(receiver.receiveNext());
-        assertThat(receiver.typeId(), is(MSG_TYPE_ID));
-        assertThat(receiver.buffer(), is(buffer));
-        assertThat(receiver.offset(), is(msgOffset(recordOffset)));
-        assertThat(receiver.length(), is(length));
+        assertTrue(broadcastReceiver.receiveNext());
+        assertThat(broadcastReceiver.typeId(), is(MSG_TYPE_ID));
+        assertThat(broadcastReceiver.buffer(), is(buffer));
+        assertThat(broadcastReceiver.offset(), is(msgOffset(recordOffset)));
+        assertThat(broadcastReceiver.length(), is(length));
 
-        assertTrue(receiver.validate());
-        assertThat(receiver.lappedCount(), is(greaterThan(0L)));
+        assertTrue(broadcastReceiver.validate());
+        assertThat(broadcastReceiver.lappedCount(), is(greaterThan(0L)));
     }
 
     @Test
@@ -190,15 +190,15 @@ public class ReceiverTest
         when(buffer.getInt(msgLengthOffset(recordOffset))).thenReturn(length);
         when(buffer.getInt(msgTypeOffset(recordOffset))).thenReturn(MSG_TYPE_ID);
 
-        assertTrue(receiver.receiveNext()); // To catch up to record before padding.
+        assertTrue(broadcastReceiver.receiveNext()); // To catch up to record before padding.
 
-        assertTrue(receiver.receiveNext()); // no skip over the padding and read next record.
-        assertThat(receiver.typeId(), is(MSG_TYPE_ID));
-        assertThat(receiver.buffer(), is(buffer));
-        assertThat(receiver.offset(), is(msgOffset(recordOffset)));
-        assertThat(receiver.length(), is(length));
+        assertTrue(broadcastReceiver.receiveNext()); // no skip over the padding and read next record.
+        assertThat(broadcastReceiver.typeId(), is(MSG_TYPE_ID));
+        assertThat(broadcastReceiver.buffer(), is(buffer));
+        assertThat(broadcastReceiver.offset(), is(msgOffset(recordOffset)));
+        assertThat(broadcastReceiver.length(), is(length));
 
-        assertTrue(receiver.validate());
+        assertTrue(broadcastReceiver.validate());
     }
 
     @Test
@@ -218,13 +218,13 @@ public class ReceiverTest
         when(buffer.getInt(msgLengthOffset(recordOffset))).thenReturn(length);
         when(buffer.getInt(msgTypeOffset(recordOffset))).thenReturn(MSG_TYPE_ID);
 
-        assertTrue(receiver.receiveNext());
-        assertThat(receiver.typeId(), is(MSG_TYPE_ID));
-        assertThat(receiver.buffer(), is(buffer));
-        assertThat(receiver.offset(), is(msgOffset(recordOffset)));
-        assertThat(receiver.length(), is(length));
+        assertTrue(broadcastReceiver.receiveNext());
+        assertThat(broadcastReceiver.typeId(), is(MSG_TYPE_ID));
+        assertThat(broadcastReceiver.buffer(), is(buffer));
+        assertThat(broadcastReceiver.offset(), is(msgOffset(recordOffset)));
+        assertThat(broadcastReceiver.length(), is(length));
 
-        assertFalse(receiver.validate()); // Need to receiveNext() to catch up with transmission again.
+        assertFalse(broadcastReceiver.validate()); // Need to receiveNext() to catch up with transmission again.
 
         final InOrder inOrder = inOrder(buffer);
         inOrder.verify(buffer).getLongVolatile(TAIL_COUNTER_INDEX);

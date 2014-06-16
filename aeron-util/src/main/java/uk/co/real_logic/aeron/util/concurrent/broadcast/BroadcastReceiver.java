@@ -24,7 +24,7 @@ import static uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastBufferDe
 import static uk.co.real_logic.aeron.util.concurrent.broadcast.RecordDescriptor.*;
 
 /**
- * Receive messages broadcast from a {@link Transmitter} via an underlying buffer. Receivers can join
+ * Receive messages broadcast from a {@link BroadcastTransmitter} via an underlying buffer. Receivers can join
  * a transmission stream at any point by consuming the latest message at the point of joining and forward.
  *
  * If a Receiver cannot keep up with the transmission stream then loss will be experienced. Loss is not an
@@ -32,7 +32,7 @@ import static uk.co.real_logic.aeron.util.concurrent.broadcast.RecordDescriptor.
  *
  * <b>Note:</b> Each Receiver is not threadsafe but there can be zero or many receivers to a transmission stream.
  */
-public class Receiver
+public class BroadcastReceiver
 {
     private final AtomicBuffer buffer;
     private final int capacity;
@@ -54,7 +54,7 @@ public class Receiver
      * @throws IllegalStateException if the buffer capacity is not a power of 2
      *                               plus {@link BroadcastBufferDescriptor#TRAILER_LENGTH} in capacity.
      */
-    public Receiver(final AtomicBuffer buffer)
+    public BroadcastReceiver(final AtomicBuffer buffer)
     {
         this.buffer = buffer;
         this.capacity = buffer.capacity() - TRAILER_LENGTH;

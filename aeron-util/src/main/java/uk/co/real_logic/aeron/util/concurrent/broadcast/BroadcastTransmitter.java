@@ -22,11 +22,11 @@ import static uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastBufferDe
 import static uk.co.real_logic.aeron.util.concurrent.broadcast.RecordDescriptor.*;
 
 /**
- * Transmit messages via an underlying broadcast buffer to zero or more {@link Receiver}s.
+ * Transmit messages via an underlying broadcast buffer to zero or more {@link BroadcastReceiver}s.
  *
  * <b>Note:</b> This class is not threadsafe. Only one transmitter is allow per broadcast buffer.
  */
-public class Transmitter
+public class BroadcastTransmitter
 {
     private final AtomicBuffer buffer;
     private final int capacity;
@@ -44,7 +44,7 @@ public class Transmitter
      * @throws IllegalStateException if the buffer capacity is not a power of 2
      *                               plus {@link BroadcastBufferDescriptor#TRAILER_LENGTH} in capacity.
      */
-    public Transmitter(final AtomicBuffer buffer)
+    public BroadcastTransmitter(final AtomicBuffer buffer)
     {
         this.buffer = buffer;
         this.capacity = buffer.capacity() - TRAILER_LENGTH;
@@ -78,7 +78,7 @@ public class Transmitter
     }
 
     /**
-     * Transmit a message to {@link Receiver}s via the broadcast buffer.
+     * Transmit a message to {@link BroadcastReceiver}s via the broadcast buffer.
      *
      * @param msgTypeId type of the message to be transmitted.
      * @param srcBuffer containing the encoded message to be transmitted.

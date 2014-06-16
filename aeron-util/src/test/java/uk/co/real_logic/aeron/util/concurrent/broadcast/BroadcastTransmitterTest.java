@@ -26,7 +26,7 @@ import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.util.BitUtil.align;
 import static uk.co.real_logic.aeron.util.concurrent.broadcast.RecordDescriptor.*;
 
-public class TransmitterTest
+public class BroadcastTransmitterTest
 {
     public static final int MSG_TYPE_ID = 7;
     public static final int CAPACITY = 1024;
@@ -35,20 +35,20 @@ public class TransmitterTest
     public static final int LATEST_COUNTER_INDEX = CAPACITY + BroadcastBufferDescriptor.LATEST_COUNTER_OFFSET;
 
     private final AtomicBuffer buffer = mock(AtomicBuffer.class);
-    private Transmitter transmitter;
+    private BroadcastTransmitter broadcastTransmitter;
 
     @Before
     public void setUp()
     {
         when(buffer.capacity()).thenReturn(TOTAL_BUFFER_SIZE);
 
-        transmitter = new Transmitter(buffer);
+        broadcastTransmitter = new BroadcastTransmitter(buffer);
     }
 
     @Test
     public void shouldCalculateCapacityForBuffer()
     {
-        assertThat(transmitter.capacity(), is(CAPACITY));
+        assertThat(broadcastTransmitter.capacity(), is(CAPACITY));
     }
 
     @Test(expected = IllegalStateException.class)
@@ -59,7 +59,7 @@ public class TransmitterTest
 
         when(buffer.capacity()).thenReturn(totalBufferSize);
 
-        new Transmitter(buffer);
+        new BroadcastTransmitter(buffer);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -67,7 +67,7 @@ public class TransmitterTest
     {
         final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[1024]);
 
-        transmitter.transmit(MSG_TYPE_ID, srcBuffer, 0, transmitter.maxMsgLength() + 1);
+        broadcastTransmitter.transmit(MSG_TYPE_ID, srcBuffer, 0, broadcastTransmitter.maxMsgLength() + 1);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -76,7 +76,7 @@ public class TransmitterTest
         final int invalidMsgId = -1;
         final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[1024]);
 
-        transmitter.transmit(invalidMsgId, srcBuffer, 0, 32);
+        broadcastTransmitter.transmit(invalidMsgId, srcBuffer, 0, 32);
     }
 
     @Test
@@ -90,7 +90,7 @@ public class TransmitterTest
         final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[1024]);
         final int srcIndex = 0;
 
-        transmitter.transmit(MSG_TYPE_ID, srcBuffer, srcIndex, length);
+        broadcastTransmitter.transmit(MSG_TYPE_ID, srcBuffer, srcIndex, length);
 
         final InOrder inOrder = inOrder(buffer);
         inOrder.verify(buffer).getLong(TAIL_COUNTER_INDEX);
@@ -117,7 +117,7 @@ public class TransmitterTest
         final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[1024]);
         final int srcIndex = 0;
 
-        transmitter.transmit(MSG_TYPE_ID, srcBuffer, srcIndex, length);
+        broadcastTransmitter.transmit(MSG_TYPE_ID, srcBuffer, srcIndex, length);
 
         final InOrder inOrder = inOrder(buffer);
         inOrder.verify(buffer).getLong(TAIL_COUNTER_INDEX);
@@ -145,7 +145,7 @@ public class TransmitterTest
         final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[1024]);
         final int srcIndex = 0;
 
-        transmitter.transmit(MSG_TYPE_ID, srcBuffer, srcIndex, length);
+        broadcastTransmitter.transmit(MSG_TYPE_ID, srcBuffer, srcIndex, length);
 
         final InOrder inOrder = inOrder(buffer);
         inOrder.verify(buffer).getLong(TAIL_COUNTER_INDEX);
@@ -173,7 +173,7 @@ public class TransmitterTest
         final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[1024]);
         final int srcIndex = 0;
 
-        transmitter.transmit(MSG_TYPE_ID, srcBuffer, srcIndex, length);
+        broadcastTransmitter.transmit(MSG_TYPE_ID, srcBuffer, srcIndex, length);
 
         final InOrder inOrder = inOrder(buffer);
         inOrder.verify(buffer).getLong(TAIL_COUNTER_INDEX);

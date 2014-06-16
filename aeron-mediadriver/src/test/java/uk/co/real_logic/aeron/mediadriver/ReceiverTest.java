@@ -87,10 +87,9 @@ public class ReceiverTest
             .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024));
 
         toConductorBuffer = ctx.mediaCommandBuffer();
-        ctx.mediaConductorProxy(new MediaConductorProxy(toConductorBuffer, ctx.conductorNioSelector()));
+        ctx.mediaConductorProxy(new MediaConductorProxy(toConductorBuffer));
 
         receiverProxy = new ReceiverProxy(ctx.receiverCommandBuffer(),
-                                          ctx.receiverNioSelector(),
                                           ctx.newReceiveBufferEventQueue());
 
         receiver = new Receiver(ctx);

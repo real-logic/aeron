@@ -226,10 +226,9 @@ public class MediaDriver implements AutoCloseable
                          .mtuLength(CommonConfiguration.MTU_LENGTH);
 
         ctx.receiverProxy(new ReceiverProxy(ctx.receiverCommandBuffer(),
-                                            ctx.conductorNioSelector(),
                                             ctx.newReceiveBufferEventQueue()));
 
-        ctx.mediaConductorProxy(new MediaConductorProxy(ctx.mediaCommandBuffer(), ctx.conductorNioSelector()));
+        ctx.mediaConductorProxy(new MediaConductorProxy(ctx.mediaCommandBuffer()));
 
         this.receiver = new Receiver(ctx);
         this.sender = new Sender();

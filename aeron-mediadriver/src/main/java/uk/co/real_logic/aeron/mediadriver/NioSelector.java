@@ -81,11 +81,6 @@ public class NioSelector implements AutoCloseable
         return handleSelectedKeys() > 0;
     }
 
-    public void wakeup()
-    {
-        // TODO: remove
-    }
-
     /**
      * Explicit call to selectNow but without processing of selected keys.
      */
@@ -122,8 +117,9 @@ public class NioSelector implements AutoCloseable
                 if (key.isReadable())
                 {
                     handledFrames += handleReadable(key);
-                    iter.remove();  // if not readable, then we don't care. Would have to change if we support TCP.
                 }
+
+                iter.remove();  // just remove here. If we ever add TCP, then will be cleaner.
             }
         }
 

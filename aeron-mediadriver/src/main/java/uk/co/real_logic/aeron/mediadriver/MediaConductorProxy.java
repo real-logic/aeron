@@ -35,19 +35,14 @@ public class MediaConductorProxy
     private static final int WRITE_BUFFER_CAPACITY = 1024;
 
     private final RingBuffer commandBuffer;
-    private final NioSelector selector;
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
 
     private final QualifiedMessageFlyweight qualifiedMessage = new QualifiedMessageFlyweight();
     private final ErrorHeaderFlyweight errorHeader = new ErrorHeaderFlyweight();
 
-    public MediaConductorProxy(final RingBuffer commandBuffer, final NioSelector selector)
+    public MediaConductorProxy(final RingBuffer commandBuffer)
     {
         this.commandBuffer = commandBuffer;
-        this.selector = selector;
-
-        qualifiedMessage.wrap(writeBuffer, 0);
-        errorHeader.wrap(writeBuffer, 0);
     }
 
     public void createTermBuffer(final UdpDestination destination,
@@ -71,6 +66,7 @@ public class MediaConductorProxy
                                     final long termId,
                                     final int msgTypeId)
     {
+        qualifiedMessage.wrap(writeBuffer, 0);
         qualifiedMessage.sessionId(sessionId)
                         .channelId(channelId)
                         .termId(termId)
@@ -81,6 +77,7 @@ public class MediaConductorProxy
 
     public void addErrorResponse(final ErrorCode errorCode, final Flyweight flyweight, final int length)
     {
+        errorHeader.wrap(writeBuffer, 0);
         errorHeader.errorCode(errorCode);
         errorHeader.offendingFlyweight(flyweight, length);
         errorHeader.frameLength(HEADER_LENGTH + length);
@@ -90,6 +87,5 @@ public class MediaConductorProxy
     private void write(final int msgTypeId, final int length)
     {
         commandBuffer.write(msgTypeId, writeBuffer, 0, length);
-        selector.wakeup();
     }
 }

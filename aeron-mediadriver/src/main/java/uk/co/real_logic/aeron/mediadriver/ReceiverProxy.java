@@ -33,22 +33,16 @@ public class ReceiverProxy
     private static final int WRITE_BUFFER_CAPACITY = 256;
 
     private final RingBuffer commandBuffer;
-    private final NioSelector selector;
     private final Queue<NewReceiveBufferEvent> newBufferEventQueue;
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
     private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
     private final QualifiedMessageFlyweight qualifiedMessage = new QualifiedMessageFlyweight();
 
     public ReceiverProxy(final RingBuffer commandBuffer,
-                         final NioSelector selector,
                          final Queue<NewReceiveBufferEvent> newBufferEventQueue)
     {
         this.commandBuffer = commandBuffer;
-        this.selector = selector;
         this.newBufferEventQueue = newBufferEventQueue;
-
-        subscriberMessage.wrap(writeBuffer, 0);
-        qualifiedMessage.wrap(writeBuffer, 0);  // TODO: is this safe on the same buffer???
     }
 
     public void newSubscriber(final String destination, final long[] channelIdList)
@@ -63,10 +57,10 @@ public class ReceiverProxy
 
     private void addReceiver(final int msgTypeId, final String destination, final long[] channelIdList)
     {
+        subscriberMessage.wrap(writeBuffer, 0);
         subscriberMessage.channelIds(channelIdList);
         subscriberMessage.destination(destination);
         commandBuffer.write(msgTypeId, writeBuffer, 0, subscriberMessage.length());
-        selector.wakeup();
     }
 
     public void termBufferCreated(final String destination,
@@ -74,12 +68,12 @@ public class ReceiverProxy
                                   final long channelId,
                                   final long termId)
     {
+        qualifiedMessage.wrap(writeBuffer, 0);
         qualifiedMessage.sessionId(sessionId);
         qualifiedMessage.channelId(channelId);
         qualifiedMessage.termId(termId);
         qualifiedMessage.destination(destination);
         commandBuffer.write(NEW_RECEIVE_BUFFER_NOTIFICATION, writeBuffer, 0, qualifiedMessage.length());
-        selector.wakeup();
     }
 
     public boolean newReceiveBuffer(final NewReceiveBufferEvent e)

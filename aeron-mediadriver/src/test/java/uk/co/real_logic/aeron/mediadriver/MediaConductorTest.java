@@ -108,10 +108,9 @@ public class MediaConductorTest
             .bufferManagement(mockBufferManagement);
 
         ctx.receiverProxy(new ReceiverProxy(ctx.receiverCommandBuffer(),
-                                            ctx.conductorNioSelector(),
                                             ctx.newReceiveBufferEventQueue()));
 
-        ctx.mediaConductorProxy(new MediaConductorProxy(ctx.mediaCommandBuffer(), ctx.conductorNioSelector()));
+        ctx.mediaConductorProxy(new MediaConductorProxy(ctx.mediaCommandBuffer()));
 
         sender = new Sender();
         receiver = new Receiver(ctx);

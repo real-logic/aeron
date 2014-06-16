@@ -87,11 +87,9 @@ public class NioSelector implements AutoCloseable
     }
 
     /**
-     * Explicit call to selectNow but with no processing of selected keys.
-     *
-     * @throws Exception
+     * Explicit call to selectNow but without processing of selected keys.
      */
-    public void selectNowWithNoProcessing() throws Exception
+    public void selectNowWithoutProcessing() throws Exception
     {
         selector.selectNow();
     }
@@ -105,6 +103,7 @@ public class NioSelector implements AutoCloseable
         catch (final Exception ex)
         {
             ex.printStackTrace();
+
             return false;
         }
     }

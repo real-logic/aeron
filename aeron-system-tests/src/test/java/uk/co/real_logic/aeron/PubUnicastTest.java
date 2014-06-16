@@ -108,7 +108,7 @@ public class PubUnicastTest
         producingClient.close();
         source.close();
         driver.close();
-        driver.conductor().nioSelector().selectNowWithNoProcessing();
+        driver.conductor().nioSelector().selectNowWithoutProcessing();
         executorService.shutdown();
     }
 

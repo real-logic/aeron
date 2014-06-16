@@ -108,7 +108,7 @@ public class ReceiverTest
     {
         senderChannel.close();
         receiver.close();
-        receiver.nioSelector().selectNowWithNoProcessing();
+        receiver.nioSelector().selectNowWithoutProcessing();
     }
 
     @Test

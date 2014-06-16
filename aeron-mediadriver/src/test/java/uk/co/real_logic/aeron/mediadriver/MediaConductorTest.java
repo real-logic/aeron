@@ -122,9 +122,9 @@ public class MediaConductorTest
     public void tearDown() throws Exception
     {
         receiver.close();
-        receiver.nioSelector().selectNowWithNoProcessing();
+        receiver.nioSelector().selectNowWithoutProcessing();
         mediaConductor.close();
-        mediaConductor.nioSelector().selectNowWithNoProcessing();
+        mediaConductor.nioSelector().selectNowWithoutProcessing();
     }
 
     @Test

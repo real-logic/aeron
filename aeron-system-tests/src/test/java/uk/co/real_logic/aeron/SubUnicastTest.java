@@ -32,6 +32,7 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -126,6 +127,11 @@ public class SubUnicastTest
     @After
     public void closeEverything() throws Exception
     {
+        consumingClient.conductor().stop(1, TimeUnit.SECONDS);
+        driver.conductor().stop(1, TimeUnit.SECONDS);
+        driver.receiver().stop(1, TimeUnit.SECONDS);
+        driver.sender().stop(1, TimeUnit.SECONDS);
+
         senderChannel.close();
         subscriber.close();
         consumingClient.close();

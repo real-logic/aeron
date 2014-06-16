@@ -31,6 +31,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -104,6 +105,11 @@ public class PubUnicastTest
     @After
     public void closeEverything() throws Exception
     {
+        producingClient.conductor().stop(1, TimeUnit.SECONDS);
+        driver.conductor().stop(1, TimeUnit.SECONDS);
+        driver.receiver().stop(1, TimeUnit.SECONDS);
+        driver.sender().stop(1, TimeUnit.SECONDS);
+
         receiverChannel.close();
         producingClient.close();
         source.close();

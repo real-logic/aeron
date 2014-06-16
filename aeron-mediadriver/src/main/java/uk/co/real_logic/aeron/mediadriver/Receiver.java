@@ -18,8 +18,10 @@ package uk.co.real_logic.aeron.mediadriver;
 import uk.co.real_logic.aeron.util.Agent;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.ErrorCode;
+import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.GapScanner;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import java.util.HashMap;
@@ -33,6 +35,7 @@ public class Receiver extends Agent
 {
     private final RingBuffer commandBuffer;
     private final NioSelector nioSelector;
+    private final TimerWheel conductorTimerWheel;
     private final MediaConductorProxy conductorProxy;
     private final Map<UdpDestination, DataFrameHandler> frameHandlerByDestinationMap = new HashMap<>();
     private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
@@ -47,6 +50,7 @@ public class Receiver extends Agent
         this.conductorProxy = context.mediaConductorProxy();
         this.nioSelector = context.receiverNioSelector();
         this.newBufferEventQueue = context.newReceiveBufferEventQueue();
+        this.conductorTimerWheel = context.conductorTimerWheel();
     }
 
     public boolean doWork()
@@ -213,6 +217,13 @@ public class Receiver extends Agent
             return;
         }
 
-        frameHandler.onSubscriptionReady(e);
+        final GapScanner[] scanners = e.buffer().buffers()
+            .map((r) -> new GapScanner(r.logBuffer(), r.stateBuffer()))
+            .toArray(GapScanner[]::new);
+
+        final LossHandler lossHandler = new LossHandler(scanners, conductorTimerWheel,
+            MediaConductor.NAK_UNICAST_DELAY_GENERATOR);
+
+        frameHandler.onSubscriptionReady(e, lossHandler);
     }
 }

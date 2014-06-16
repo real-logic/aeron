@@ -50,8 +50,8 @@ public class LossHandler
     private final GapState[] scanGaps = new GapState[2];
     private final GapState activeGap= new GapState();
     private final FeedbackDelayGenerator delayGenerator;
-    private final SendNakHandler sendNakHandler;
 
+    private SendNakHandler sendNakHandler;
     private TimerWheel.Timer timer;
 
     private int currentIndex = 0;
@@ -61,9 +61,23 @@ public class LossHandler
     private long nakSentTimestamp;
 
     /**
+     * Create a loss handler for a channel with no send NAK handler.
+     *
+     * @param scanners for the gaps attached to LogBuffers
+     * @param wheel for timer management
+     * @param delayGenerator to use for delay determination
+     */
+    public LossHandler(final GapScanner[] scanners,
+                       final TimerWheel wheel,
+                       final FeedbackDelayGenerator delayGenerator)
+    {
+        this(scanners, wheel, delayGenerator, null);
+    }
+
+    /**
      * Create a loss handler for a channel.
      *
-     * @param scanners for the gaps attached to the {@link uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader}
+     * @param scanners for the gaps attached to LogBuffers
      * @param wheel for timer management
      * @param delayGenerator to use for delay determination
      * @param sendNakHandler to call when sending a NAK is indicated
@@ -85,6 +99,16 @@ public class LossHandler
         }
 
         this.currentIndex = 0;
+    }
+
+    /**
+     * Set send NAK handler.
+     *
+     * @param handler to call when NAK is to be sent
+     */
+    public void sendNakHandler(final SendNakHandler handler)
+    {
+        this.sendNakHandler = handler;
     }
 
     /**
@@ -148,13 +172,16 @@ public class LossHandler
         // if no active gap
         if (null == timer || !timer.isActive())
         {
-            activeGap.reset(scanGaps[0].termId, scanGaps[0].termOffset, scanGaps[0].length);
-            scheduleTimer();
-            nakSentTimestamp = wheel.now();
-
-            if (delayGenerator.immediateFeedback())
+            if (scanCursor > 0)
             {
-                sendNakHandler.onSendNak(activeGap.termId, activeGap.termOffset, activeGap.length);
+                activeGap.reset(scanGaps[0].termId, scanGaps[0].termOffset, scanGaps[0].length);
+                scheduleTimer();
+                nakSentTimestamp = wheel.now();
+
+                if (delayGenerator.immediateFeedback())
+                {
+                    sendNakHandler.onSendNak(activeGap.termId, activeGap.termOffset, activeGap.length);
+                }
             }
         }
         else if (scanCursor == 0)

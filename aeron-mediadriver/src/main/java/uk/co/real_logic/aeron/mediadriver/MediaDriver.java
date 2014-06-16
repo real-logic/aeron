@@ -135,6 +135,11 @@ public class MediaDriver implements AutoCloseable
     public static final int NAK_MAX_BACKOFF_DEFAULT = 60;
 
     /**
+     * Default Unicast NAK delay in nanoseconds
+     */
+    public static final long NAK_UNICAST_DELAY_DEFAULT_NANOS = TimeUnit.MILLISECONDS.toNanos(60);
+
+    /**
      * Default group size estimate for retransmit delay randomization
      */
     public static final int RETRANS_GROUPSIZE_DEFAULT = 10;

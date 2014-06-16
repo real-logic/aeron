@@ -21,6 +21,7 @@ import uk.co.real_logic.aeron.util.*;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.command.*;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.GapScanner;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
@@ -42,6 +43,12 @@ public class MediaConductor extends Agent
     public static final int MSG_BUFFER_CAPACITY = 4096;
     public static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
     public static final int HEARTBEAT_TIMEOUT_MS = 100;
+
+    /**
+     * Unicast NAK delay is immediate initial with delayed subsequent delay
+     */
+    public static final StaticDelayGenerator NAK_UNICAST_DELAY_GENERATOR =
+        new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(NAK_UNICAST_DELAY_DEFAULT_NANOS), true);
 
     private final RingBuffer localCommandBuffer;
     private final ReceiverProxy receiverProxy;
@@ -112,6 +119,7 @@ public class MediaConductor extends Agent
 
         hasDoneWork |= sender.processBufferRotation();
         hasDoneWork |= receiver.processBufferRotation();
+        hasDoneWork |= receiver.scanForGaps();
 
         hasDoneWork |= processClientCommandBuffer();
         hasDoneWork |= processLocalCommandBuffer();
@@ -397,6 +405,7 @@ public class MediaConductor extends Agent
 
             final NewReceiveBufferEvent event =
                 new NewReceiveBufferEvent(rcvDestination, sessionId, channelId, termId, buffer);
+
             while (!receiverProxy.newReceiveBuffer(event))
             {
                 // TODO: count errors

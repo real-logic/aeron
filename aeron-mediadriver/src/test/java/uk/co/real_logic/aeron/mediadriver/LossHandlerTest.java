@@ -91,6 +91,14 @@ public class LossHandlerTest
     }
 
     @Test
+    public void shouldNotSendNakWhenBufferIsEmpty()
+    {
+        handler.scan();
+        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
+        verifyZeroInteractions(sendNakHandler);
+    }
+
+    @Test
     public void shouldNakMissingData()
     {
         rcvDataFrame(offsetOfMessage(0));

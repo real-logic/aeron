@@ -21,6 +21,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
+import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.QualifiedMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -36,6 +37,7 @@ import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
+import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
@@ -59,14 +61,14 @@ public class ReceiverTest
     private final ByteBuffer dataFrameBuffer = ByteBuffer.allocate(2 * 1024);
     private final AtomicBuffer dataBuffer = new AtomicBuffer(dataFrameBuffer);
 
+    private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
+    private final QualifiedMessageFlyweight messageHeader = new QualifiedMessageFlyweight();
+    private final StatusMessageFlyweight statusHeader = new StatusMessageFlyweight();
+
     private final BufferRotator rotator =
         BufferAndFrameUtils.createTestRotator(LOG_BUFFER_SIZE, LogBufferDescriptor.STATE_BUFFER_LENGTH);
 
     private LogReader[] logReaders;
-
-    private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
-    private final QualifiedMessageFlyweight messageHeader = new QualifiedMessageFlyweight();
-    private final StatusMessageFlyweight statusHeader = new StatusMessageFlyweight();
 
     private DatagramChannel senderChannel;
     private InetSocketAddress senderAddr = new InetSocketAddress("localhost", 40123);
@@ -84,6 +86,8 @@ public class ReceiverTest
             .receiverNioSelector(mockNioSelector)
             .conductorNioSelector(mockNioSelector)
             .bufferManagement(mockBufferManagement)
+            .conductorTimerWheel(new TimerWheel(MediaDriver.MEDIA_CONDUCTOR_TICK_DURATION_US,
+                    TimeUnit.MICROSECONDS, MediaDriver.MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
             .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024));
 
         toConductorBuffer = ctx.mediaCommandBuffer();

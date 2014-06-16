@@ -36,6 +36,7 @@ public class SubscribedSession
 {
     private final InetSocketAddress srcAddr;
     private final long sessionId;
+    private final long channelId;
 
     private final AtomicLong cleanedTermId = new AtomicLong(UNKNOWN_TERM_ID);
     private final AtomicLong currentTermId = new AtomicLong(UNKNOWN_TERM_ID);
@@ -43,14 +44,16 @@ public class SubscribedSession
 
     private BufferRotator rotator;
     private TermRebuilder[] rebuilders;
+    private LossHandler lossHandler;
 
-    public SubscribedSession(final long sessionId, final InetSocketAddress srcAddr)
+    public SubscribedSession(final long sessionId, final long channelId, final InetSocketAddress srcAddr)
     {
         this.srcAddr = srcAddr;
         this.sessionId = sessionId;
+        this.channelId = channelId;
     }
 
-    public void termBuffer(final long initialTermId, final BufferRotator rotator)
+    public void termBuffer(final long initialTermId, final BufferRotator rotator, final LossHandler lossHandler)
     {
         cleanedTermId.lazySet(initialTermId + CLEAN_WINDOW);
         currentTermId.lazySet(initialTermId);
@@ -58,6 +61,7 @@ public class SubscribedSession
         rebuilders = rotator.buffers()
                             .map(TermRebuilder::new)
                             .toArray(TermRebuilder[]::new);
+        this.lossHandler = lossHandler;
     }
 
     public InetSocketAddress sourceAddress()
@@ -68,6 +72,11 @@ public class SubscribedSession
     public long sessionId()
     {
         return sessionId;
+    }
+
+    public long channelId()
+    {
+        return channelId;
     }
 
     public void rebuildBuffer(final DataHeaderFlyweight header, final AtomicBuffer buffer, final long length)
@@ -123,6 +132,11 @@ public class SubscribedSession
         }
     }
 
+    /**
+     * Called from the MediaConductor.
+     *
+     * @return if work has been done or not
+     */
     public boolean processBufferRotation()
     {
         boolean rotated = false;
@@ -148,8 +162,18 @@ public class SubscribedSession
         return rotated;
     }
 
+    /**
+     * Called from the MediaConductor.
+     *
+     * @return if work has been done or not
+     */
     public boolean scanForGaps()
     {
+        if (null != lossHandler)
+        {
+            lossHandler.scan();
+        }
+        // TODO: change return to indicate whether we want to have service soon - would be OK to scan lazily
         return false;
     }
 }

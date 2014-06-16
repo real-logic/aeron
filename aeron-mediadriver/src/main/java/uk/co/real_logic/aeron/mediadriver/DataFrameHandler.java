@@ -32,10 +32,11 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
     private final UdpDestination destination;
     private final Long2ObjectHashMap<Subscription> subscriptionByChannelIdMap = new Long2ObjectHashMap<>();
     private final MediaConductorProxy conductorProxy;
-    private final ByteBuffer sendBuffer = ByteBuffer.allocateDirect(StatusMessageFlyweight.HEADER_LENGTH);
+    private final AtomicArray<SubscribedSession> globalSubscribedSessions;
+    private final ByteBuffer sendBuffer = ByteBuffer.allocateDirect(128);
     private final AtomicBuffer writeBuffer = new AtomicBuffer(sendBuffer);
     private final StatusMessageFlyweight statusMessageFlyweight = new StatusMessageFlyweight();
-    private final AtomicArray<SubscribedSession> globalSubscribedSessions;
+    private final NakFlyweight nakHeader = new NakFlyweight();
 
     public DataFrameHandler(final UdpDestination destination,
                             final NioSelector nioSelector,
@@ -150,7 +151,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         // this should be on the data channel and shouldn't include Naks, so ignore.
     }
 
-    public void onSubscriptionReady(final NewReceiveBufferEvent event)
+    public void onSubscriptionReady(final NewReceiveBufferEvent event, final LossHandler lossHandler)
     {
         final Subscription subscription = subscriptionByChannelIdMap.get(event.channelId());
         if (null == subscription)
@@ -164,7 +165,11 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
             throw new IllegalStateException("session not found");
         }
 
-        subscriberSession.termBuffer(event.termId(), event.buffer());
+        // for unicast, do the sending of NAKs on the DataFrameHandler
+        lossHandler.sendNakHandler(
+            (termId, termOffset, length) -> sendNak(subscriberSession, (int)termId, termOffset, length));
+
+        subscriberSession.termBuffer(event.termId(), event.buffer(), lossHandler);
 
         // now we are all setup, so send an SM to allow the source to send if it is waiting
         // TODO: grab initial term offset from data and store in subscriberSession somehow (per TermID)
@@ -195,6 +200,34 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         try
         {
             return transport.sendTo(sendBuffer, subscribedSession.sourceAddress());
+        }
+        catch (final Exception ex)
+        {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    public void sendNak(final SubscribedSession session, final int termId, final int termOffset, final int length)
+    {
+        nakHeader.wrap(writeBuffer, 0);
+        nakHeader.channelId(session.channelId())
+                 .sessionId(session.sessionId())
+                 .countOfRanges(1)
+                 .range(termId, termOffset, termId, termOffset + length, 0)
+                 .headerType(HeaderFlyweight.HDR_TYPE_NAK)
+                 .flags((byte)0)
+                 .version(HeaderFlyweight.CURRENT_VERSION);
+
+        sendBuffer.position(0);
+        sendBuffer.limit(nakHeader.frameLength());
+
+        //System.out.println("sendNak " + termId + " " + length + "@" + termOffset + " " + nakHeader.frameLength());
+        try
+        {
+            if (transport.sendTo(sendBuffer, session.sourceAddress()) < nakHeader.frameLength())
+            {
+                throw new IllegalStateException("could not send all of NAK");
+            }
         }
         catch (final Exception ex)
         {

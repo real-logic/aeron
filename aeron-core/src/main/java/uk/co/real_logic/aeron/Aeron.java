@@ -22,6 +22,9 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
@@ -40,6 +43,8 @@ public final class Aeron implements AutoCloseable
     private final AtomicArray<SubscriberChannel> receivers = new AtomicArray<>();
     private final ClientConductor clientConductor;
     private final ConductorShmBuffers conductorShmBuffers;
+
+    private Executor executor;
 
     private Aeron(final Context context)
     {
@@ -64,6 +69,46 @@ public final class Aeron implements AutoCloseable
                                               errorHandler);
     }
 
+    /**
+     * Run Aeron {@link Agent}s from the calling thread.
+     */
+    public void run()
+    {
+        clientConductor.run();
+    }
+
+    /**
+     * Invoke Aeron {@link uk.co.real_logic.aeron.util.Agent}s from the executor.
+     *
+     * @param executor to execute from
+     */
+    public void invoke(final Executor executor)
+    {
+        executor.execute(clientConductor);
+        this.executor = executor;
+    }
+
+    /**
+     * Stop running Aeron {@link Agent}s. Waiting for termination if started from an executor.
+     *
+     * @throws TimeoutException if timeout elapses
+     * @throws InterruptedException if interrupted during wait
+     */
+    public void stop() throws TimeoutException, InterruptedException
+    {
+        if (null != executor)
+        {
+            clientConductor.stop(100, TimeUnit.MILLISECONDS);
+        }
+        else
+        {
+            clientConductor.stop();
+        }
+    }
+
+    /**
+     * Clean up and release all Aeron internal resources
+     */
     public void close()
     {
         conductorShmBuffers.close();

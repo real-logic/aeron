@@ -91,10 +91,8 @@ public class PubUnicastTest
 
         executorService = Executors.newFixedThreadPool(4);
 
-        executorService.execute(driver.conductor());
-        executorService.execute(driver.sender());
-        executorService.execute(driver.receiver());
-        executorService.execute(producingClient.conductor());
+        driver.invoke(executorService);
+        producingClient.invoke(executorService);
     }
 
     private Aeron.Context newAeronContext()
@@ -105,16 +103,13 @@ public class PubUnicastTest
     @After
     public void closeEverything() throws Exception
     {
-        producingClient.conductor().stop(1, TimeUnit.SECONDS);
-        driver.conductor().stop(1, TimeUnit.SECONDS);
-        driver.receiver().stop(1, TimeUnit.SECONDS);
-        driver.sender().stop(1, TimeUnit.SECONDS);
+        producingClient.stop();
+        driver.stop();
 
         receiverChannel.close();
-        producingClient.close();
         source.close();
+        producingClient.close();
         driver.close();
-        driver.conductor().nioSelector().selectNowWithoutProcessing();
         executorService.shutdown();
     }
 

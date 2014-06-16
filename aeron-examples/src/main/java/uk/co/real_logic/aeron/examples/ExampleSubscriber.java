@@ -45,7 +45,7 @@ public class ExampleSubscriber
             {
                 final byte[] data = new byte[length];
                 buffer.getBytes(offset, data);
-                System.out.println("Message " + sessionId + " " + data.toString());
+                System.out.println("Message " + sessionId + " " + new String(data));
             };
         final Subscriber.NewSourceEventHandler newSourceHandler =
                 (channelId, sessionId) -> System.out.println("new source " + sessionId + " " + channelId);
@@ -61,14 +61,14 @@ public class ExampleSubscriber
             .inactiveSourceEvent(inactiveSourceHandler);
 
         // make a reusable, parameterized event loop function
-        final Consumer<Subscriber> loop = (rcv) ->
+        final Consumer<Subscriber> loop = (subscriber) ->
         {
             try
             {
                 while (true)
                 {
-                    rcv.read();
-                    Thread.sleep(10);
+                    subscriber.read();
+                    Thread.sleep(1000);
                 }
             }
             catch (final Exception ex)
@@ -89,7 +89,7 @@ public class ExampleSubscriber
             executor.execute(() -> loop.accept(subscriber2));
 
             // run aeron conductor thread from here
-            aeron.conductor().run();
+            aeron.run();
         }
         catch (final Exception ex)
         {

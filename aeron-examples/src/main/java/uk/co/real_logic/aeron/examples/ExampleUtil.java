@@ -29,9 +29,7 @@ public class ExampleUtil
     {
         final MediaDriver mediaDriver = new MediaDriver();
 
-        executor.execute(mediaDriver.receiver());
-        executor.execute(mediaDriver.sender());
-        executor.execute(mediaDriver.conductor());
+        mediaDriver.invoke(executor);
 
         return mediaDriver;
     }
@@ -40,7 +38,8 @@ public class ExampleUtil
     {
         final Aeron aeron = Aeron.newSingleMediaDriver(context);
 
-        executor.execute(aeron.conductor());
+        aeron.invoke(executor);
+
         return aeron;
     }
 

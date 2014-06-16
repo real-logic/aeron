@@ -113,10 +113,8 @@ public class SubUnicastTest
 
         executorService = Executors.newFixedThreadPool(4);
 
-        executorService.execute(driver.conductor());
-        executorService.execute(driver.sender());
-        executorService.execute(driver.receiver());
-        executorService.execute(consumingClient.conductor());
+        driver.invoke(executorService);
+        consumingClient.invoke(executorService);
     }
 
     private Aeron.Context newAeronContext()
@@ -127,21 +125,18 @@ public class SubUnicastTest
     @After
     public void closeEverything() throws Exception
     {
-        consumingClient.conductor().stop(1, TimeUnit.SECONDS);
-        driver.conductor().stop(1, TimeUnit.SECONDS);
-        driver.receiver().stop(1, TimeUnit.SECONDS);
-        driver.sender().stop(1, TimeUnit.SECONDS);
+        consumingClient.stop();
+        driver.stop();
 
         senderChannel.close();
         subscriber.close();
         consumingClient.close();
         driver.close();
-        driver.conductor().nioSelector().selectNowWithoutProcessing();
         executorService.shutdown();
     }
 
     @Test
-    public void shouldReceiveCorrectlyFormedSingleDataFrames() throws Exception
+    public void shouldReceiveCorrectlyFormedSingleDataFrame() throws Exception
     {
         // let buffers get connected and media driver set things up
         Thread.sleep(100);

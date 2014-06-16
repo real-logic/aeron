@@ -42,10 +42,10 @@ public class ExamplePublisher
         final Aeron.Context context = new Aeron.Context().errorHandler(ExamplePublisher::onError);
 
         try (final MediaDriver driver = ExampleUtil.createEmbeddedMediaDriver(executor);
-             final Aeron aeron = ExampleUtil.createAeron(context, executor);
-             final Source source = aeron.newSource(DESTINATION);
-             final Channel channel = source.newChannel(CHANNEL_ID))
+             final Aeron aeron = ExampleUtil.createAeron(context, executor))
         {
+            final Source source = aeron.newSource(DESTINATION);
+            final Channel channel = source.newChannel(CHANNEL_ID);
 
             for (int i = 0; i < 10; i++)
             {
@@ -66,6 +66,9 @@ public class ExamplePublisher
 
                 Thread.sleep(1000);
             }
+
+            aeron.stop();
+            driver.stop();
         }
         catch (final Exception ex)
         {

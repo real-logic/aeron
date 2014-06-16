@@ -52,12 +52,12 @@ public class SubscribedSession
 
     public void termBuffer(final long initialTermId, final BufferRotator rotator)
     {
+        cleanedTermId.lazySet(initialTermId + CLEAN_WINDOW);
         currentTermId.lazySet(initialTermId);
         this.rotator = rotator;
         rebuilders = rotator.buffers()
                             .map(TermRebuilder::new)
                             .toArray(TermRebuilder[]::new);
-        cleanedTermId.lazySet(initialTermId + CLEAN_WINDOW);
     }
 
     public InetSocketAddress sourceAddress()
@@ -128,7 +128,7 @@ public class SubscribedSession
         final long currentTermId = this.currentTermId.get();
         final long expectedTermId = currentTermId + CLEAN_WINDOW;
         final long cleanedTermId = this.cleanedTermId.get();
-        if (currentTermId != UNKNOWN_TERM_ID && expectedTermId > cleanedTermId)
+        if (currentTermId != UNKNOWN_TERM_ID && cleanedTermId != UNKNOWN_TERM_ID && expectedTermId > cleanedTermId)
         {
             try
             {

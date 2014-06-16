@@ -25,10 +25,12 @@ import uk.co.real_logic.aeron.util.status.StatusBufferCreator;
 
 import java.io.File;
 import java.nio.ByteBuffer;
+import java.sql.Time;
 import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
@@ -175,39 +177,39 @@ public class MediaDriver implements AutoCloseable
     private final File dataDirFile;
     private final File countersDirFile;
 
+    private final ConductorShmBuffers conductorShmBuffers;
+    private final BufferManagement bufferManagement;
+    private final StatusBufferCreator countersCreator;
+
+    private final Receiver receiver;
+    private final Sender sender;
+    private final MediaConductor conductor;
+
+    private Executor executor;
+
     public static void main(final String[] args) throws Exception
     {
         try (final MediaDriver mediaDriver = new MediaDriver())
         {
             final Executor executor = Executors.newFixedThreadPool(3);
 
-            executor.execute(mediaDriver.conductor());
-            executor.execute(mediaDriver.receiver());
-            executor.execute(mediaDriver.sender());
+            mediaDriver.invoke(executor);
         }
     }
-
-    private final Receiver receiver;
-    private final Sender sender;
-    private final MediaConductor conductor;
-
-    private final ConductorShmBuffers conductorShmBuffers;
-    private final BufferManagement bufferManagement;
-    private final StatusBufferCreator countersCreator;
 
     public MediaDriver() throws Exception
     {
         final NioSelector rcvNioSelector = new NioSelector();
 
-        adminDirFile = new File(ADMIN_DIR_NAME);
-        dataDirFile = new File(DATA_DIR_NAME);
-        countersDirFile = new File(COUNTERS_DIR_NAME);
+        this.adminDirFile = new File(ADMIN_DIR_NAME);
+        this.dataDirFile = new File(DATA_DIR_NAME);
+        this.countersDirFile = new File(COUNTERS_DIR_NAME);
 
         ensureDirectoriesExist();
 
-        conductorShmBuffers = new ConductorShmBuffers(ADMIN_DIR_NAME, CONDUCTOR_BUFFER_SZ);
-        bufferManagement = newMappedBufferManager(DATA_DIR_NAME);
-        countersCreator = new StatusBufferCreator(DESCRIPTOR_BUFFER_SIZE, COUNTERS_BUFFER_SIZE);
+        this.conductorShmBuffers = new ConductorShmBuffers(ADMIN_DIR_NAME, CONDUCTOR_BUFFER_SZ);
+        this.bufferManagement = newMappedBufferManager(DATA_DIR_NAME);
+        this.countersCreator = new StatusBufferCreator(DESCRIPTOR_BUFFER_SIZE, COUNTERS_BUFFER_SIZE);
 
         final Context ctx =
             new Context().conductorCommandBuffer(COMMAND_BUFFER_SZ)
@@ -229,9 +231,9 @@ public class MediaDriver implements AutoCloseable
 
         ctx.mediaConductorProxy(new MediaConductorProxy(ctx.mediaCommandBuffer(), ctx.conductorNioSelector()));
 
-        receiver = new Receiver(ctx);
-        sender = new Sender();
-        conductor = new MediaConductor(ctx, receiver, sender);
+        this.receiver = new Receiver(ctx);
+        this.sender = new Sender();
+        this.conductor = new MediaConductor(ctx, receiver, sender);
     }
 
     public Receiver receiver()
@@ -249,6 +251,47 @@ public class MediaDriver implements AutoCloseable
         return conductor;
     }
 
+    /**
+     * Invoke and start all {@link uk.co.real_logic.aeron.util.Agent}s internal to the media driver
+     *
+     * @param executor to use for executing the agents run loop
+     */
+    public void invoke(final Executor executor)
+    {
+        this.executor = executor;
+
+        executor.execute(conductor);
+        executor.execute(sender);
+        executor.execute(receiver);
+    }
+
+    /**
+     * Stop running {@link uk.co.real_logic.aeron.util.Agent}s. Waiting for each to finish.
+     *
+     * @throws TimeoutException if timeout has occurred while waiting
+     * @throws InterruptedException if interrupted while waiting
+     */
+    public void stop() throws TimeoutException, InterruptedException
+    {
+        if (null != executor)
+        {
+            conductor.stop(100, TimeUnit.MILLISECONDS);
+            receiver.stop(100, TimeUnit.MILLISECONDS);
+            sender.stop(100, TimeUnit.MILLISECONDS);
+        }
+        else
+        {
+            conductor.stop();
+            receiver.stop();
+            sender.stop();
+        }
+    }
+
+    /**
+     * Close and cleanup all resources for media driver
+     *
+     * @throws Exception
+     */
     public void close() throws Exception
     {
         receiver.close();

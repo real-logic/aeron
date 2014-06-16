@@ -106,7 +106,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
         return channel;
     }
 
-    public boolean onRead() throws Exception
+    public int onRead() throws Exception
     {
         readByteBuffer.clear();
         final InetSocketAddress srcAddr = (InetSocketAddress)channel.receive(readByteBuffer);
@@ -115,7 +115,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
 
         if (srcAddr == null)
         {
-            return false;
+            return 0;
         }
 
         // each datagram only can hold a single frame
@@ -127,14 +127,14 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
         // drop a version we don't know
         if (header.version() != HeaderFlyweight.CURRENT_VERSION)
         {
-            return false;
+            return 0;
         }
 
         // malformed, so log and break out of entire packet
         if (header.frameLength() <= FrameDescriptor.BASE_HEADER_LENGTH)
         {
             System.err.println("received malformed frameLength (" + header.frameLength() + "), dropping");
-            return false;
+            return 0;
         }
 
         switch (header.headerType())
@@ -158,6 +158,6 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
                 System.err.println("received unknown header type (" + header.headerType() + "), dropping");
                 break;
         }
-        return true;
+        return 1;
     }
 }

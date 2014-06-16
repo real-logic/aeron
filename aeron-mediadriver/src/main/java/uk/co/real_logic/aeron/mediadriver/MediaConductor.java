@@ -99,6 +99,7 @@ public class MediaConductor extends Agent
     public boolean doWork()
     {
         boolean hasDoneWork = false;
+
         try
         {
             hasDoneWork |= nioSelector.processKeys();
@@ -109,8 +110,8 @@ public class MediaConductor extends Agent
             ex.printStackTrace();
         }
 
-        sender.processBufferRotation();
-        receiver.processBufferRotation();
+        hasDoneWork |= sender.processBufferRotation();
+        hasDoneWork |= receiver.processBufferRotation();
 
         hasDoneWork |= processClientCommandBuffer();
         hasDoneWork |= processLocalCommandBuffer();

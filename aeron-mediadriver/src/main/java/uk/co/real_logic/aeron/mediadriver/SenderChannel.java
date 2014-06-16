@@ -261,14 +261,16 @@ public class SenderChannel
         }
     }
 
-    public void heartbeatCheck()
+    public boolean heartbeatCheck()
     {
-        // TODO: now should be cached in TimerWheel to avoid too many calls
+        boolean heartbeatSent = false;
+
         if (statusMessagesSeen > 0)
         {
             if ((timeFunction.currentTime() - timeOfLastSendOrHeartbeat.get()) > HEARTBEAT_TIMEOUT_NS)
             {
                 sendHeartbeat();
+                heartbeatSent = true;
             }
         }
         else
@@ -276,15 +278,19 @@ public class SenderChannel
             if ((timeFunction.currentTime() - timeOfLastSendOrHeartbeat.get()) > INITIAL_HEARTBEAT_TIMEOUT_NS)
             {
                 sendHeartbeat();
+                heartbeatSent = true;
             }
         }
+
+        return heartbeatSent;
     }
 
     /**
      * This is performed on the Media Conductor thread
      */
-    public void processBufferRotation()
+    public boolean processBufferRotation()
     {
+        boolean rotated = false;
         final long requiredCleanTermId = currentTermId.get() + 1;
         if (requiredCleanTermId > cleanedTermId.get())
         {
@@ -292,6 +298,7 @@ public class SenderChannel
             {
                 buffers.rotate();
                 cleanedTermId.lazySet(requiredCleanTermId);
+                rotated = true;
             }
             catch (final IOException ex)
             {
@@ -300,5 +307,7 @@ public class SenderChannel
                 ex.printStackTrace();
             }
         }
+
+        return rotated;
     }
 }

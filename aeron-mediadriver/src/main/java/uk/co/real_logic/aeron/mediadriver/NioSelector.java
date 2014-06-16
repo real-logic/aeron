@@ -78,7 +78,7 @@ public class NioSelector implements AutoCloseable
     {
         selector.selectNow();
 
-        return handleSelectedKeys();
+        return handleSelectedKeys() > 0;
     }
 
     public void wakeup()
@@ -94,7 +94,7 @@ public class NioSelector implements AutoCloseable
         selector.selectNow();
     }
 
-    private boolean handleReadable(final SelectionKey key)
+    private int handleReadable(final SelectionKey key)
     {
         try
         {
@@ -104,13 +104,13 @@ public class NioSelector implements AutoCloseable
         {
             ex.printStackTrace();
 
-            return false;
+            return 0;
         }
     }
 
-    private boolean handleSelectedKeys() throws Exception
+    private int handleSelectedKeys() throws Exception
     {
-        boolean hasDoneWork = false;
+        int handledFrames = 0;
         final Set<SelectionKey> selectedKeys = selector.selectedKeys();
 
         if (!selectedKeys.isEmpty())
@@ -121,12 +121,12 @@ public class NioSelector implements AutoCloseable
                 final SelectionKey key = iter.next();
                 if (key.isReadable())
                 {
-                    hasDoneWork |= handleReadable(key);
-                    iter.remove();  // TODO: should the key not be removed regardless?
+                    handledFrames += handleReadable(key);
+                    iter.remove();  // if not readable, then we don't care. Would have to change if we support TCP.
                 }
             }
         }
 
-        return hasDoneWork;
+        return handledFrames;
     }
 }

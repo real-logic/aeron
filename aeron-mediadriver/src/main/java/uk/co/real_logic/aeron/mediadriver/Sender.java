@@ -78,16 +78,16 @@ public class Sender extends Agent
     /**
      * Called from the conductor thread
      */
-    public void processBufferRotation()
+    public boolean processBufferRotation()
     {
-        channels.forEach(SenderChannel::processBufferRotation);
+        return channels.forEach(0, SenderChannel::processBufferRotation);
     }
 
     /**
      * called from the conductor thread
      */
-    public void heartbeatChecks()
+    public boolean heartbeatChecks()
     {
-        channels.forEach(SenderChannel::heartbeatCheck);
+        return channels.forEach(0, SenderChannel::heartbeatCheck);
     }
 }

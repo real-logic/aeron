@@ -28,8 +28,10 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.status.*;
 
+import javax.sound.midi.Receiver;
 import java.io.IOException;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.IntFunction;
 
 import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;

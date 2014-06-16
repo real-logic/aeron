@@ -15,17 +15,16 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.util.*;
+import uk.co.real_logic.aeron.util.Agent;
+import uk.co.real_logic.aeron.util.AtomicArray;
+import uk.co.real_logic.aeron.util.ErrorCode;
+import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
-import java.util.*;
-
-import static uk.co.real_logic.aeron.mediadriver.MediaDriver.AGENT_SLEEP_NANOS;
-import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION;
-import static uk.co.real_logic.aeron.util.ErrorCode.SUBSCRIBER_NOT_REGISTERED;
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ADD_SUBSCRIBER;
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.REMOVE_SUBSCRIBER;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Queue;
 
 /**
  * Receiver service for JVM based mediadriver, uses an event loop with command buffer
@@ -38,12 +37,11 @@ public class Receiver extends Agent
     private final Map<UdpDestination, DataFrameHandler> frameHandlerByDestinationMap = new HashMap<>();
     private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
     private final Queue<NewReceiveBufferEvent> newBufferEventQueue;
-
     private final AtomicArray<SubscribedSession> globalSubscribedSessions = new AtomicArray<>();
 
     public Receiver(final MediaDriver.Context context) throws Exception
     {
-        super(AGENT_SLEEP_NANOS);
+        super(MediaDriver.AGENT_SLEEP_NANOS);
 
         this.commandBuffer = context.receiverCommandBuffer();
         this.conductorProxy = context.mediaConductorProxy();
@@ -92,13 +90,13 @@ public class Receiver extends Agent
                 {
                     switch (msgTypeId)
                     {
-                        case ADD_SUBSCRIBER:
+                        case ControlProtocolEvents.ADD_SUBSCRIBER:
                             subscriberMessage.wrap(buffer, index);
                             onNewSubscriber(subscriberMessage.destination(),
                                             subscriberMessage.channelIds());
                             break;
 
-                        case REMOVE_SUBSCRIBER:
+                        case ControlProtocolEvents.REMOVE_SUBSCRIBER:
                             subscriberMessage.wrap(buffer, index);
                             onRemoveSubscriber(subscriberMessage.destination(),
                                                subscriberMessage.channelIds());
@@ -108,12 +106,12 @@ public class Receiver extends Agent
                 catch (final InvalidDestinationException ex)
                 {
                     // TODO: log this
-                    onError(INVALID_DESTINATION, length);
+                    onError(ErrorCode.INVALID_DESTINATION, length);
                 }
                 catch (final SubscriptionNotRegisteredException ex)
                 {
                     // TODO: log this
-                    onError(SUBSCRIBER_NOT_REGISTERED, length);
+                    onError(ErrorCode.SUBSCRIBER_NOT_REGISTERED, length);
                 }
                 catch (final Exception ex)
                 {
@@ -125,29 +123,14 @@ public class Receiver extends Agent
         return messageRead > 0;
     }
 
-    private void onError(final ErrorCode errorCode, final int length)
-    {
-        conductorProxy.addErrorResponse(errorCode, subscriberMessage, length);
-    }
-
     /**
      * Close ReceiverThread down. Returns immediately.
      */
     public void close()
     {
         stop();
-        wakeup();
 
         frameHandlerByDestinationMap.forEach((destination, frameHandler) ->frameHandler.close());
-        // TODO: if needed, use a CountdownLatch to sync...
-    }
-
-    /**
-     * Wake up the selector if blocked
-     */
-    public void wakeup()
-    {
-        // TODO
     }
 
     /**
@@ -163,6 +146,27 @@ public class Receiver extends Agent
     public DataFrameHandler frameHandler(final UdpDestination destination)
     {
         return frameHandlerByDestinationMap.get(destination);
+    }
+
+    /**
+     * Called by MediaConductor on its thread.
+     */
+    public boolean processBufferRotation()
+    {
+        return globalSubscribedSessions.forEach(0, SubscribedSession::processBufferRotation);
+    }
+
+    /**
+     * Called by MediaConductor on its thread.
+     */
+    public boolean scanForGaps()
+    {
+        return globalSubscribedSessions.forEach(0, SubscribedSession::scanForGaps);
+    }
+
+    private void onError(final ErrorCode errorCode, final int length)
+    {
+        conductorProxy.addErrorResponse(errorCode, subscriberMessage, length);
     }
 
     private void onNewSubscriber(final String destination, final long[] channelIds) throws Exception
@@ -205,27 +209,10 @@ public class Receiver extends Agent
 
         if (null == frameHandler)
         {
-            // should not happen
-            // TODO: log this
+            System.err.println("onNewReceiverBuffers: could not find frameHandler");
             return;
         }
 
         frameHandler.onSubscriptionReady(e);
-    }
-
-    /**
-     * Called by MediaConductor on its thread, must
-     */
-    public void processBufferRotation()
-    {
-        globalSubscribedSessions.forEach(SubscribedSession::processBufferRotation);
-    }
-
-    /**
-     * Called by MediaConductor on its thread
-     */
-    public void scanForGaps()
-    {
-        globalSubscribedSessions.forEach(SubscribedSession::scanForGaps);
     }
 }

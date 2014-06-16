@@ -123,8 +123,9 @@ public class SubscribedSession
         }
     }
 
-    public void processBufferRotation()
+    public boolean processBufferRotation()
     {
+        boolean rotated = false;
         final long currentTermId = this.currentTermId.get();
         final long expectedTermId = currentTermId + CLEAN_WINDOW;
         final long cleanedTermId = this.cleanedTermId.get();
@@ -135,6 +136,7 @@ public class SubscribedSession
             {
                 rotator.rotate();
                 this.cleanedTermId.lazySet(cleanedTermId + 1);
+                rotated = true;
             }
             catch (final IOException ex)
             {
@@ -142,9 +144,12 @@ public class SubscribedSession
                 ex.printStackTrace();
             }
         }
+
+        return rotated;
     }
 
-    public void scanForGaps()
+    public boolean scanForGaps()
     {
+        return false;
     }
 }

@@ -23,5 +23,5 @@ public interface ReadHandler
     /**
      * Handler method for OP_READs.
      */
-    boolean onRead() throws Exception;
+    int onRead() throws Exception;
 }

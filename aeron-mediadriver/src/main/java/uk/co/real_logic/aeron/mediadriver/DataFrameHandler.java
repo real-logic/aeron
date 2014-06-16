@@ -125,7 +125,6 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
             if (header.frameLength() > DataHeaderFlyweight.HEADER_LENGTH)
             {
                 subscribedSession.rebuildBuffer(header, buffer, length);
-                // if we don't know the term, this will drop down and the term buffer will be created.
             }
         }
         else

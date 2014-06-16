@@ -27,22 +27,22 @@ public class AtomicArray<T>
 {
     private static final Object[] EMPTY_ARRAY = new Object[0];
     private final AtomicReference<Object[]> arrayRef = new AtomicReference<>(EMPTY_ARRAY);
-    private Object[] lastMark = arrayRef.get();
 
     @FunctionalInterface
-    public interface ToBooleanFunction<T> {
-
+    public interface ToBooleanFunction<T>
+    {
         /**
          * Applies this function to the given argument.
          *
          * @param value the function argument
-         * @return the function result
+         * @return the true if side effects have occurred otherwise false.
          */
         boolean applyAsBoolean(T value);
     }
 
     /**
      * Return the length of the {@link java.lang.Object} array
+     *
      * @return the length of the {@link java.lang.Object} array
      */
     public int length()
@@ -52,6 +52,7 @@ public class AtomicArray<T>
 
     /**
      * Return the given element of the array
+     *
      * @param index of the element to return
      * @return the element
      */
@@ -63,17 +64,20 @@ public class AtomicArray<T>
 
     public void forEach(final Consumer<T> func)
     {
-        forEach(0, t -> {
-            func.accept(t);
-            return false;
-        });
+        forEach(0,
+                (t) ->
+                {
+                    func.accept(t);
+                    return false;
+                });
     }
 
     /**
      * For each valid element, call a function passing the element
      *
      * @param start the index to start iterating at
-     * @param func to call and pass each element to
+     * @param func  to call and pass each element to
+     * @return true if side effects have occurred otherwise false.
      */
     public boolean forEach(int start, final ToBooleanFunction<T> func)
     {
@@ -119,6 +123,7 @@ public class AtomicArray<T>
 
     /**
      * Add given element to the array atomically.
+     *
      * @param element to add
      */
     public void add(final T element)
@@ -131,6 +136,7 @@ public class AtomicArray<T>
 
     /**
      * Remove given element from the array atomically.
+     *
      * @param element to remove
      */
     public void remove(final T element)

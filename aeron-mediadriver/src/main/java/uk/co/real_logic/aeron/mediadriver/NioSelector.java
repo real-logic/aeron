@@ -77,6 +77,7 @@ public class NioSelector implements AutoCloseable
     public boolean processKeys() throws Exception
     {
         selector.selectNow();
+
         return handleSelectedKeys();
     }
 
@@ -112,6 +113,7 @@ public class NioSelector implements AutoCloseable
     {
         boolean hasDoneWork = false;
         final Set<SelectionKey> selectedKeys = selector.selectedKeys();
+
         if (!selectedKeys.isEmpty())
         {
             final Iterator<SelectionKey> iter = selectedKeys.iterator();
@@ -121,10 +123,11 @@ public class NioSelector implements AutoCloseable
                 if (key.isReadable())
                 {
                     hasDoneWork |= handleReadable(key);
-                    iter.remove();
+                    iter.remove();  // TODO: should the key not be removed regardless?
                 }
             }
         }
+
         return hasDoneWork;
     }
 }

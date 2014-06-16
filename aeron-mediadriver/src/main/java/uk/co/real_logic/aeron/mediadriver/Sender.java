@@ -27,7 +27,7 @@ public class Sender extends Agent
 {
     private final AtomicArray<SenderChannel> channels = new AtomicArray<>();
 
-    private int counter = 0;
+    private int startingOffset = 0;
 
     public Sender()
     {
@@ -36,13 +36,13 @@ public class Sender extends Agent
 
     public boolean doWork()
     {
-        counter++;
-        if (counter == channels.length())
+        startingOffset++;
+        if (startingOffset == channels.length())
         {
-            counter = 0;
+            startingOffset = 0;
         }
 
-        return channels.forEach(counter, SenderChannel::send);
+        return channels.forEach(startingOffset, SenderChannel::send);
     }
 
     /**

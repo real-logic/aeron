@@ -17,12 +17,12 @@ package uk.co.real_logic.aeron;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
 import uk.co.real_logic.aeron.util.ConductorShmBuffers;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.NakFlyweight;
@@ -35,10 +35,8 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
 import static uk.co.real_logic.aeron.util.BitUtil.align;
@@ -300,6 +298,72 @@ public class SubUnicastTest
         }
 
         assertThat(naksSeen, greaterThanOrEqualTo(1));
+    }
+
+    @Test
+    public void shouldReceiveRetransmitAndDeliver() throws Exception
+    {
+        // let buffers get connected and media driver set things up
+        Thread.sleep(100);
+
+        // send some 0 length data frame
+        sendDataFrame(0, NO_PAYLOAD);
+
+        // sleep so we are sure some 0 length data has been sent
+        Thread.sleep(100);
+
+        final ByteBuffer buffer = ByteBuffer.allocate(128);
+        buffer.clear();
+        final AtomicBuffer atomicBuffer = new AtomicBuffer(buffer);
+        int smsSeen = 0, naksSeen = 0;
+
+        // should receive SM from consumer
+        InetSocketAddress addr;
+        while((addr = (InetSocketAddress) senderChannel.receive(buffer)) != null)
+        {
+            statusMessage.wrap(atomicBuffer, 0);
+            assertThat(statusMessage.headerType(), is(HeaderFlyweight.HDR_TYPE_SM));
+            buffer.clear();
+            smsSeen++;
+        }
+
+        assertThat(smsSeen, greaterThanOrEqualTo(1));
+
+        sendDataFrame(0, PAYLOAD);
+        sendDataFrame(2 * FrameDescriptor.FRAME_ALIGNMENT, PAYLOAD);
+
+        // sleep to make sure that the receiver thread in the media driver has a chance to receive data
+        Thread.sleep(100);
+
+        // now receive data into app
+        subscriber.read();
+
+        // assert the received Data Frames are correct
+        assertThat(receivedFrames.size(), is(1));
+        assertThat(receivedFrames.remove(), is(PAYLOAD));
+
+        buffer.clear();
+        while((addr = (InetSocketAddress) senderChannel.receive(buffer)) != null)
+        {
+            nakHeader.wrap(atomicBuffer, 0);
+            assertThat(nakHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_NAK));
+            assertThat(addr, is(rcvAddr));
+            buffer.clear();
+            naksSeen++;
+        }
+
+        assertThat(naksSeen, greaterThanOrEqualTo(1));
+
+        sendDataFrame(FrameDescriptor.FRAME_ALIGNMENT, PAYLOAD);
+
+        Thread.sleep(100);
+
+        subscriber.read();
+
+        // assert the received Data Frames are correct
+        assertThat(receivedFrames.size(), is(2));
+        assertThat(receivedFrames.remove(), is(PAYLOAD));
+        assertThat(receivedFrames.remove(), is(PAYLOAD));
     }
 
     private void sendDataFrame(final long termOffset, final byte[] payload) throws Exception

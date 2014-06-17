@@ -33,8 +33,10 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
     private final Long2ObjectHashMap<Subscription> subscriptionByChannelIdMap = new Long2ObjectHashMap<>();
     private final MediaConductorProxy conductorProxy;
     private final AtomicArray<SubscribedSession> globalSubscribedSessions;
-    private final ByteBuffer sendBuffer = ByteBuffer.allocateDirect(128);
-    private final AtomicBuffer writeBuffer = new AtomicBuffer(sendBuffer);
+    private final ByteBuffer sendSmBuffer = ByteBuffer.allocateDirect(StatusMessageFlyweight.HEADER_LENGTH);
+    private final AtomicBuffer writeSmBuffer = new AtomicBuffer(sendSmBuffer);
+    private final ByteBuffer sendNakBuffer = ByteBuffer.allocateDirect(128);
+    private final AtomicBuffer writeNakBuffer = new AtomicBuffer(sendNakBuffer);
     private final StatusMessageFlyweight statusMessageFlyweight = new StatusMessageFlyweight();
     private final NakFlyweight nakHeader = new NakFlyweight();
 
@@ -183,7 +185,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
                                   final SubscribedSession subscribedSession,
                                   final Subscription subscription)
     {
-        statusMessageFlyweight.wrap(writeBuffer, 0);
+        statusMessageFlyweight.wrap(writeSmBuffer, 0);
         statusMessageFlyweight.sessionId(subscribedSession.sessionId())
                               .channelId(subscription.channelId())
                               .termId(termId)
@@ -194,12 +196,12 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
                               .flags((byte)0)
                               .version(HeaderFlyweight.CURRENT_VERSION);
 
-        sendBuffer.position(0);
-        sendBuffer.limit(StatusMessageFlyweight.HEADER_LENGTH);
+        sendSmBuffer.position(0);
+        sendSmBuffer.limit(StatusMessageFlyweight.HEADER_LENGTH);
 
         try
         {
-            return transport.sendTo(sendBuffer, subscribedSession.sourceAddress());
+            return transport.sendTo(sendSmBuffer, subscribedSession.sourceAddress());
         }
         catch (final Exception ex)
         {
@@ -209,7 +211,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
 
     public void sendNak(final SubscribedSession session, final int termId, final int termOffset, final int length)
     {
-        nakHeader.wrap(writeBuffer, 0);
+        nakHeader.wrap(writeNakBuffer, 0);
         nakHeader.channelId(session.channelId())
                  .sessionId(session.sessionId())
                  .countOfRanges(1)
@@ -218,13 +220,13 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
                  .flags((byte)0)
                  .version(HeaderFlyweight.CURRENT_VERSION);
 
-        sendBuffer.position(0);
-        sendBuffer.limit(nakHeader.frameLength());
+        sendNakBuffer.position(0);
+        sendNakBuffer.limit(nakHeader.frameLength());
 
-        //System.out.println("sendNak " + termId + " " + length + "@" + termOffset + " " + nakHeader.frameLength());
+        //System.out.println("sendNak " + termId + " " + length + "@" + termOffset + " " + sendNakBuffer.remaining());
         try
         {
-            if (transport.sendTo(sendBuffer, session.sourceAddress()) < nakHeader.frameLength())
+            if (transport.sendTo(sendNakBuffer, session.sourceAddress()) < nakHeader.frameLength())
             {
                 throw new IllegalStateException("could not send all of NAK");
             }

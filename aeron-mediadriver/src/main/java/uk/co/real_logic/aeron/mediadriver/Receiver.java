@@ -224,6 +224,8 @@ public class Receiver extends Agent
         final LossHandler lossHandler = new LossHandler(scanners, conductorTimerWheel,
             MediaConductor.NAK_UNICAST_DELAY_GENERATOR);
 
+        lossHandler.currentTermId(e.termId());
+
         frameHandler.onSubscriptionReady(e, lossHandler);
     }
 }

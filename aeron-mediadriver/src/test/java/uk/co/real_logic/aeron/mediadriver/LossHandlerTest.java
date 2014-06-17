@@ -213,6 +213,21 @@ public class LossHandlerTest
     }
 
     @Test
+    public void shouldOnlySendNaksOnceOnMultipleScans()
+    {
+        handler = new LossHandler(scanners, wheel, delayGeneratorWithImmediate, sendNakHandler);
+        handler.currentTermId(TERM_ID);
+
+        rcvDataFrame(offsetOfMessage(0));
+        rcvDataFrame(offsetOfMessage(2));
+
+        handler.scan();
+        handler.scan();
+
+        verify(sendNakHandler).onSendNak(TERM_ID, offsetOfMessage(1), gapLength());
+    }
+
+    @Test
     @Ignore
     public void shouldRotateToNewTermIdCorrectly()
     {

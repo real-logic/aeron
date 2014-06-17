@@ -23,9 +23,10 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  * <p>
  * @see <a href="https://github.com/real-logic/Aeron/wiki/Protocol-Specification#data-recovery-via-retransmit-request">Data Recovery</a>
  */
-public class NakFlyweight extends HeaderFlyweight
+public class    NakFlyweight extends HeaderFlyweight
 {
     public static final int MAX_RANGES = 16;
+    public static final int HEADER_LENGTH_SINGLE_RANGE = length(1);
 
     private static final int RANGE_SIZE = 16;
     private static final int START_TERM_ID_RELATIVE_OFFSET = 0;
@@ -53,6 +54,11 @@ public class NakFlyweight extends HeaderFlyweight
     public int countOfRanges()
     {
         return (frameLength() - RANGES_FIELDS_OFFSET) / RANGE_SIZE;
+    }
+
+    public static int length(final int countOfRanges)
+    {
+        return RANGES_FIELDS_OFFSET + (countOfRanges * RANGE_SIZE);
     }
 
     /**

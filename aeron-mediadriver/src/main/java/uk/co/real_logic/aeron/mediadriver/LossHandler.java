@@ -186,11 +186,12 @@ public class LossHandler
         }
         else if (scanCursor == 0)
         {
+            // nothing missing, so cancel if running.
             timer.cancel();
         }
-        else
+        else if (!scanGaps[0].isFor(activeGap.termId, activeGap.termOffset))
         {
-            // replace old gap with new gap and reschedule
+            // not the old gap, so replace old gap with new gap and reschedule
             activeGap.reset(scanGaps[0].termId, scanGaps[0].termOffset, scanGaps[0].length);
             scheduleTimer();
             nakSentTimestamp = wheel.now();

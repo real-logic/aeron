@@ -112,7 +112,7 @@ public class MediaConductorTest
 
         ctx.mediaConductorProxy(new MediaConductorProxy(ctx.mediaCommandBuffer()));
 
-        sender = new Sender();
+        sender = new Sender(ctx);
         receiver = new Receiver(ctx);
         mediaConductor = new MediaConductor(ctx, receiver, sender);
     }

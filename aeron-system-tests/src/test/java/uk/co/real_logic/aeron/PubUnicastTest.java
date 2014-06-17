@@ -88,9 +88,9 @@ public class PubUnicastTest
 
         payload.putBytes(0, PAYLOAD);
 
-        executorService = Executors.newFixedThreadPool(4);
+        executorService = Executors.newSingleThreadExecutor();
 
-        driver.invoke(executorService);
+        driver.invokeEmbedded();
         producingClient.invoke(executorService);
     }
 
@@ -102,8 +102,8 @@ public class PubUnicastTest
     @After
     public void closeEverything() throws Exception
     {
-        producingClient.stop();
-        driver.stop();
+        producingClient.shutdown();
+        driver.shutdown();
 
         receiverChannel.close();
         source.close();

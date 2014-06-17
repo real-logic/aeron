@@ -29,7 +29,7 @@ public class Sender extends Agent
 
     private int startingOffset = 0;
 
-    public Sender()
+    public Sender(final MediaDriver.Context ctx)
     {
         super(AGENT_SLEEP_NANOS);
     }

@@ -25,12 +25,8 @@ import uk.co.real_logic.aeron.util.status.StatusBufferCreator;
 
 import java.io.File;
 import java.nio.ByteBuffer;
-import java.sql.Time;
 import java.util.Queue;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
@@ -190,22 +186,32 @@ public class MediaDriver implements AutoCloseable
     private final Sender sender;
     private final MediaConductor conductor;
 
-    private Executor executor;
+    private ExecutorService executor;
 
+    private Thread conductorThread;
+    private Thread senderThread;
+    private Thread receiverThread;
+
+    private Future conductorFuture;
+    private Future senderFuture;
+    private Future receiverFuture;
+
+    /**
+     * Start Media Driver as a stand-alone process.
+     *
+     * @param args command line arguments
+     * @throws Exception
+     */
     public static void main(final String[] args) throws Exception
     {
         try (final MediaDriver mediaDriver = new MediaDriver())
         {
-            final Executor executor = Executors.newFixedThreadPool(3);
-
-            mediaDriver.invoke(executor);
+            mediaDriver.invokeDaemonized();
         }
     }
 
     public MediaDriver() throws Exception
     {
-        final NioSelector rcvNioSelector = new NioSelector();
-
         this.adminDirFile = new File(ADMIN_DIR_NAME);
         this.dataDirFile = new File(DATA_DIR_NAME);
         this.countersDirFile = new File(COUNTERS_DIR_NAME);
@@ -219,7 +225,7 @@ public class MediaDriver implements AutoCloseable
         final Context ctx =
             new Context().conductorCommandBuffer(COMMAND_BUFFER_SZ)
                          .receiverCommandBuffer(COMMAND_BUFFER_SZ)
-                         .receiverNioSelector(rcvNioSelector)
+                         .receiverNioSelector(new NioSelector())
                          .conductorNioSelector(new NioSelector())
                          .senderFlowControl(UnicastSenderControlStrategy::new)
                          .conductorShmBuffers(conductorShmBuffers)
@@ -236,7 +242,7 @@ public class MediaDriver implements AutoCloseable
         ctx.mediaConductorProxy(new MediaConductorProxy(ctx.mediaCommandBuffer()));
 
         this.receiver = new Receiver(ctx);
-        this.sender = new Sender();
+        this.sender = new Sender(ctx);
         this.conductor = new MediaConductor(ctx, receiver, sender);
     }
 
@@ -256,38 +262,71 @@ public class MediaDriver implements AutoCloseable
     }
 
     /**
-     * Invoke and start all {@link uk.co.real_logic.aeron.util.Agent}s internal to the media driver
-     *
-     * @param executor to use for executing the agents run loop
+     * Spin up Agents as Daemon threads.
      */
-    public void invoke(final Executor executor)
+    public void invokeDaemonized()
     {
-        this.executor = executor;
+        conductorThread = new Thread(conductor);
 
-        executor.execute(conductor);
-        executor.execute(sender);
-        executor.execute(receiver);
+        conductorThread.setName("media-driver-conductor");
+        conductorThread.setDaemon(true);
+        conductorThread.start();
+
+        senderThread = new Thread(sender);
+
+        senderThread.setName("media-driver-sender");
+        senderThread.setDaemon(true);
+        senderThread.start();
+
+        receiverThread = new Thread(receiver);
+
+        receiverThread.setName("media-driver-receiver");
+        receiverThread.setDaemon(true);
+        receiverThread.start();
+    }
+
+    /**
+     * Invoke and start all {@link uk.co.real_logic.aeron.util.Agent}s internal to the media driver using
+     * a fixed size thread pool internal to the media driver.
+     */
+    public void invokeEmbedded()
+    {
+        executor = Executors.newFixedThreadPool(3);
+
+        conductorFuture = executor.submit(conductor);
+        senderFuture = executor.submit(sender);
+        receiverFuture = executor.submit(receiver);
     }
 
     /**
      * Stop running {@link uk.co.real_logic.aeron.util.Agent}s. Waiting for each to finish.
      *
-     * @throws TimeoutException if timeout has occurred while waiting
-     * @throws InterruptedException if interrupted while waiting
+     * @throws Exception
      */
-    public void stop() throws TimeoutException, InterruptedException
+    public void shutdown() throws Exception
     {
+        if (null != senderThread)
+        {
+            stopDaemonThread(senderThread, sender);
+        }
+
+        if (null != receiverThread)
+        {
+            stopDaemonThread(receiverThread, receiver);
+        }
+
+        if (null != conductorThread)
+        {
+            stopDaemonThread(conductorThread, conductor);
+        }
+
         if (null != executor)
         {
-            conductor.stop(100, TimeUnit.MILLISECONDS);
-            receiver.stop(100, TimeUnit.MILLISECONDS);
-            sender.stop(100, TimeUnit.MILLISECONDS);
-        }
-        else
-        {
-            conductor.stop();
-            receiver.stop();
-            sender.stop();
+            stopExecutorThread(senderFuture, sender);
+            stopExecutorThread(receiverFuture, receiver);
+            stopExecutorThread(conductorFuture, conductor);
+
+            executor.shutdown();
         }
     }
 
@@ -329,6 +368,48 @@ public class MediaDriver implements AutoCloseable
             IoUtil.delete(adminDirFile, false);
             IoUtil.delete(dataDirFile, false);
             IoUtil.delete(countersDirFile, false);
+        }
+    }
+
+    private void stopDaemonThread(final Thread thread, final Agent agent)
+    {
+        agent.stop();
+        thread.interrupt();
+
+        do
+        {
+            try
+            {
+                thread.join(100);
+
+                if (!thread.isAlive())
+                {
+                    break;
+                }
+            } catch (final InterruptedException ex)
+            {
+                System.err.println("Daemon Thread <" + thread.getName() + "> interrupted stop. Retrying...");
+                thread.interrupt();
+            }
+        }
+        while (true);
+    }
+
+    private void stopExecutorThread(final Future future, final Agent agent)
+    {
+        agent.stop();
+
+        try
+        {
+            future.get(100, TimeUnit.MILLISECONDS);
+        }
+        catch (final TimeoutException ex)
+        {
+            future.cancel(true);
+        }
+        catch (final Exception ex)
+        {
+            ex.printStackTrace();
         }
     }
 

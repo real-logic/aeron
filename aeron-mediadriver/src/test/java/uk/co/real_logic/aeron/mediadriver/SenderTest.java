@@ -50,7 +50,7 @@ public class SenderTest
 
     public final byte[] HEADER = DataHeaderFlyweight.createDefaultHeader(SESSION_ID, CHANNEL_ID, INITIAL_TERM_ID);
 
-    private final Sender sender = new Sender();
+    private final Sender sender = new Sender(null);
     private final BufferRotator rotator =
         BufferAndFrameUtils.createTestRotator(LOG_BUFFER_SIZE, LogBufferDescriptor.STATE_BUFFER_LENGTH);
 

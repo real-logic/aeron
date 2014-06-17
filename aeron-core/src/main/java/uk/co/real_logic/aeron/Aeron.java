@@ -22,9 +22,7 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.function.Consumer;
 
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
@@ -44,7 +42,7 @@ public final class Aeron implements AutoCloseable
     private final ClientConductor clientConductor;
     private final ConductorShmBuffers conductorShmBuffers;
 
-    private Executor executor;
+    private Future conductorFuture;
 
     private Aeron(final Context context)
     {
@@ -82,23 +80,30 @@ public final class Aeron implements AutoCloseable
      *
      * @param executor to execute from
      */
-    public void invoke(final Executor executor)
+    public void invoke(final ExecutorService executor)
     {
-        executor.execute(clientConductor);
-        this.executor = executor;
+        conductorFuture = executor.submit(clientConductor);
     }
 
     /**
      * Stop running Aeron {@link Agent}s. Waiting for termination if started from an executor.
      *
-     * @throws TimeoutException if timeout elapses
-     * @throws InterruptedException if interrupted during wait
+     * @throws Exception
      */
-    public void stop() throws TimeoutException, InterruptedException
+    public void shutdown() throws Exception
     {
-        if (null != executor)
+        if (null != conductorFuture)
         {
-            clientConductor.stop(100, TimeUnit.MILLISECONDS);
+            clientConductor.stop();
+
+            try
+            {
+                conductorFuture.get(100, TimeUnit.MILLISECONDS);
+            }
+            catch (final TimeoutException ex)
+            {
+                conductorFuture.cancel(true);
+            }
         }
         else
         {

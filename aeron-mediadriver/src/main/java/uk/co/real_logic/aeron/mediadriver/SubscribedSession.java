@@ -143,6 +143,7 @@ public class SubscribedSession
         final long currentTermId = this.currentTermId.get();
         final long expectedTermId = currentTermId + CLEAN_WINDOW;
         final long cleanedTermId = this.cleanedTermId.get();
+
         // TODO: I don't think this works like it should be working... + had to add check on cleanedTermId for unknown
         if (currentTermId != UNKNOWN_TERM_ID && cleanedTermId != UNKNOWN_TERM_ID && expectedTermId > cleanedTermId)
         {

@@ -37,7 +37,7 @@ public class ExampleSubscriber
 
     public static void main(final String[] args)
     {
-        final ExecutorService executor = Executors.newFixedThreadPool(6);
+        final ExecutorService executor = Executors.newFixedThreadPool(3);
         final Aeron.Context aeronContext = new Aeron.Context().errorHandler(ExampleSubscriber::onError);
         final Subscriber.Context subContext = new Subscriber.Context().destination(DESTINATION);
         final Subscriber.DataHandler messageHandler =
@@ -77,7 +77,7 @@ public class ExampleSubscriber
             }
         };
 
-        try (final MediaDriver driver = ExampleUtil.createEmbeddedMediaDriver(executor);
+        try (final MediaDriver driver = ExampleUtil.createEmbeddedMediaDriver();
              final Aeron aeron = ExampleUtil.createAeron(aeronContext);
              final Subscriber subscriber1 = aeron.newSubscriber(subContext);
              // create a subscriber using the fluent style lambda expression

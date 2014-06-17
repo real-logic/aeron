@@ -17,12 +17,10 @@ package uk.co.real_logic.aeron.examples;
 
 import uk.co.real_logic.aeron.*;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
-import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -38,10 +36,10 @@ public class ExamplePublisher
 
     public static void main(final String[] args)
     {
-        final ExecutorService executor = Executors.newFixedThreadPool(4);
+        final ExecutorService executor = Executors.newSingleThreadExecutor();
         final Aeron.Context context = new Aeron.Context().errorHandler(ExamplePublisher::onError);
 
-        try (final MediaDriver driver = ExampleUtil.createEmbeddedMediaDriver(executor);
+        try (final MediaDriver driver = ExampleUtil.createEmbeddedMediaDriver();
              final Aeron aeron = ExampleUtil.createAeron(context, executor))
         {
             final Source source = aeron.newSource(DESTINATION);
@@ -67,8 +65,8 @@ public class ExamplePublisher
                 Thread.sleep(1000);
             }
 
-            aeron.stop();
-            driver.stop();
+            aeron.shutdown();
+            driver.shutdown();
         }
         catch (final Exception ex)
         {

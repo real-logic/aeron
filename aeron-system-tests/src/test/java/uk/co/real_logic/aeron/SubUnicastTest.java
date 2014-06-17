@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
 import uk.co.real_logic.aeron.util.ConductorShmBuffers;
@@ -115,9 +114,9 @@ public class SubUnicastTest
 
         payload.putBytes(0, PAYLOAD);
 
-        executorService = Executors.newFixedThreadPool(4);
+        executorService = Executors.newSingleThreadExecutor();
 
-        driver.invoke(executorService);
+        driver.invokeEmbedded();
         consumingClient.invoke(executorService);
     }
 
@@ -129,8 +128,8 @@ public class SubUnicastTest
     @After
     public void closeEverything() throws Exception
     {
-        consumingClient.stop();
-        driver.stop();
+        consumingClient.shutdown();
+        driver.shutdown();
 
         senderChannel.close();
         subscriber.close();

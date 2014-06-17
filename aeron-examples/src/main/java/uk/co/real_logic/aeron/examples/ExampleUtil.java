@@ -18,23 +18,23 @@ package uk.co.real_logic.aeron.examples;
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
 
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 
 /**
  * Utility functions for examples
  */
 public class ExampleUtil
 {
-    public static MediaDriver createEmbeddedMediaDriver(final Executor executor) throws Exception
+    public static MediaDriver createEmbeddedMediaDriver() throws Exception
     {
         final MediaDriver mediaDriver = new MediaDriver();
 
-        mediaDriver.invoke(executor);
+        mediaDriver.invokeEmbedded();
 
         return mediaDriver;
     }
 
-    public static Aeron createAeron(final Aeron.Context context, final Executor executor) throws Exception
+    public static Aeron createAeron(final Aeron.Context context, final ExecutorService executor) throws Exception
     {
         final Aeron aeron = Aeron.newSingleMediaDriver(context);
 

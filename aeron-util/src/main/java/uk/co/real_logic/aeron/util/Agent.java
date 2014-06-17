@@ -15,9 +15,6 @@
  */
 package uk.co.real_logic.aeron.util;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.LockSupport;
 
 /**
@@ -26,13 +23,11 @@ import java.util.concurrent.locks.LockSupport;
 public abstract class Agent implements Runnable, AutoCloseable
 {
     private final long sleepPeriodNanos;
-    private final CountDownLatch stopLatch;
     private volatile boolean running;
 
     public Agent(final long sleepPeriodNanos)
     {
         this.sleepPeriodNanos = sleepPeriodNanos;
-        this.stopLatch = new CountDownLatch(1);
         this.running = true;
     }
 
@@ -47,8 +42,6 @@ public abstract class Agent implements Runnable, AutoCloseable
                 LockSupport.parkNanos(sleepPeriodNanos);
             }
         }
-
-        stopLatch.countDown();
     }
 
     public void close() throws Exception
@@ -62,21 +55,6 @@ public abstract class Agent implements Runnable, AutoCloseable
     public void stop()
     {
         running = false;
-    }
-
-    /**
-     * Stop the running agent and wait for run loop to exit or for a timeout to make sure thread has stopped.
-     *
-     * @param timeout to wait
-     * @param timeUnit of timeout
-     * @throws TimeoutException if timeout has lapsed
-     * @throws InterruptedException if interrupted while waiting
-     */
-    public void stop(final long timeout, final TimeUnit timeUnit)
-        throws TimeoutException, InterruptedException
-    {
-        stop();
-        stopLatch.await(timeout, timeUnit);
     }
 
     /**

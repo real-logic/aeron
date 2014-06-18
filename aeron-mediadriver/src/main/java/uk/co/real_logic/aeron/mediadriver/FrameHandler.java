@@ -33,10 +33,10 @@ public interface FrameHandler
      * @param header of the first Data Frame in the message (may be re-wrapped if needed)
      * @param buffer holding the data (always starts at 0 offset)
      * @param length of the Frame (may be longer than the header frame length)
-     * @param srcAddr of the Frame
+     * @param srcAddress of the Frame
      */
     void onDataFrame(final DataHeaderFlyweight header, final AtomicBuffer buffer,
-                     final long length, final InetSocketAddress srcAddr);
+                     final long length, final InetSocketAddress srcAddress);
 
     /**
      * Handle a Status Message Frame
@@ -44,10 +44,10 @@ public interface FrameHandler
      * @param header of the first Status Message Frame in the message (may be re-wrapped if needed)
      * @param buffer holding the NAK (always starts at 0 offset)
      * @param length of the Frame (may be longer than the header frame length)
-     * @param srcAddr of the Frame
+     * @param srcAddress of the Frame
      */
     void onStatusMessageFrame(final StatusMessageFlyweight header, final AtomicBuffer buffer,
-                              final long length, final InetSocketAddress srcAddr);
+                              final long length, final InetSocketAddress srcAddress);
 
     /**
      * Handle a Nak Frame
@@ -55,8 +55,8 @@ public interface FrameHandler
      * @param header the first NAK Frame in the message (may be re-wrapped if needed)
      * @param buffer holding the Status Message (always starts at 0 offset)
      * @param length of the Frame (may be longer than the header frame length)
-     * @param srcAddr of the Frame
+     * @param srcAddress of the Frame
      */
     void onNakFrame(final NakFlyweight header, final AtomicBuffer buffer,
-                    final long length, final InetSocketAddress srcAddr);
+                    final long length, final InetSocketAddress srcAddress);
 }

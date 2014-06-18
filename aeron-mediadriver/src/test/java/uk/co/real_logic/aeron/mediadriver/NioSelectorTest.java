@@ -33,34 +33,32 @@ public class NioSelectorTest
     private static final long SESSION_ID = 0xdeadbeefL;
     private static final long CHANNEL_ID = 0x44332211L;
     private static final long TERM_ID = 0x99887766L;
-    private static final String SRC_UDP_URI = "udp://localhost:40124@localhost:40123";
-    private static final String RCV_UDP_URI = "udp://localhost:40123";
 
     private final ByteBuffer buffer = ByteBuffer.allocateDirect(256);
     private final AtomicBuffer atomicBuffer = new AtomicBuffer(buffer);
     private final DataHeaderFlyweight encodeDataHeader = new DataHeaderFlyweight();
     private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
-    private final InetSocketAddress rcvRemoteAddr = new InetSocketAddress("localhost", SRC_PORT);
-    private final InetSocketAddress rcvLocalAddr = new InetSocketAddress(RCV_PORT);
-    private final InetSocketAddress srcLocalAddr = new InetSocketAddress(SRC_PORT);
-    private final InetSocketAddress srcRemoteAddr = new InetSocketAddress("localhost", RCV_PORT);
+    private final InetSocketAddress rcvRemoteAddress = new InetSocketAddress("localhost", SRC_PORT);
+    private final InetSocketAddress rcvLocalAddress = new InetSocketAddress(RCV_PORT);
+    private final InetSocketAddress srcLocalAddress = new InetSocketAddress(SRC_PORT);
+    private final InetSocketAddress srcRemoteAddress = new InetSocketAddress("localhost", RCV_PORT);
 
     private final FrameHandler nullHandler = new FrameHandler()
     {
         public void onDataFrame(final DataHeaderFlyweight header, final AtomicBuffer buffer,
-                                final long length, final InetSocketAddress srcAddr) {}
+                                final long length, final InetSocketAddress srcAddress) {}
         public void onStatusMessageFrame(final StatusMessageFlyweight header, final AtomicBuffer buffer,
-                                         final long length, final InetSocketAddress srcAddr) {}
+                                         final long length, final InetSocketAddress srcAddress) {}
         public void onNakFrame(final NakFlyweight header, final AtomicBuffer buffer,
-                               final long length, final InetSocketAddress srcAddr) {}
+                               final long length, final InetSocketAddress srcAddress) {}
     };
 
     @Test(timeout = 1000)
     public void shouldHandleBasicSetupAndTeardown() throws Exception
     {
         final NioSelector nioSelector = new NioSelector();
-        final UdpTransport rcv = new UdpTransport(nullHandler, rcvLocalAddr, nioSelector);
-        final UdpTransport src = new UdpTransport(nullHandler, srcLocalAddr, nioSelector);
+        final UdpTransport rcv = new UdpTransport(nullHandler, rcvLocalAddress, nioSelector);
+        final UdpTransport src = new UdpTransport(nullHandler, srcLocalAddress, nioSelector);
 
         processLoop(nioSelector, 5);
         rcv.close();
@@ -72,13 +70,13 @@ public class NioSelectorTest
     @Test(timeout = 1000)
     public void shouldHandleEmptyDataFrameFromSourceToReceiver() throws Exception
     {
-        final AtomicInteger dataHeadersRcved = new AtomicInteger(0);
+        final AtomicInteger dataHeadersReceived = new AtomicInteger(0);
 
         final NioSelector nioSelector = new NioSelector();
         final UdpTransport rcv = new UdpTransport(new FrameHandler()
         {
             public void onDataFrame(final DataHeaderFlyweight header, final AtomicBuffer buffer,
-                                    final long length, final InetSocketAddress srcAddr)
+                                    final long length, final InetSocketAddress srcAddress)
             {
                 assertThat(header.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
                 assertThat(header.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
@@ -88,15 +86,15 @@ public class NioSelectorTest
                 assertThat(header.channelId(), is(CHANNEL_ID));
                 assertThat(header.termId(), is(TERM_ID));
                 assertThat(header.dataOffset(), is(24));
-                dataHeadersRcved.incrementAndGet();
+                dataHeadersReceived.incrementAndGet();
             }
             public void onStatusMessageFrame(final StatusMessageFlyweight header, final AtomicBuffer buffer,
-                                             final long length, final InetSocketAddress srcAddr) {}
+                                             final long length, final InetSocketAddress srcAddress) {}
             public void onNakFrame(final NakFlyweight header, final AtomicBuffer buffer,
-                                   final long length, final InetSocketAddress src) {}
-        }, rcvLocalAddr, nioSelector);
+                                   final long length, final InetSocketAddress srcAddress) {}
+        }, rcvLocalAddress, nioSelector);
 
-        final UdpTransport src = new UdpTransport(nullHandler, srcLocalAddr, nioSelector);
+        final UdpTransport src = new UdpTransport(nullHandler, srcLocalAddress, nioSelector);
 
         encodeDataHeader.wrap(atomicBuffer, 0);
         encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
@@ -109,8 +107,8 @@ public class NioSelectorTest
         buffer.position(0).limit(24);
 
         processLoop(nioSelector, 5);
-        src.sendTo(buffer, srcRemoteAddr);
-        while (dataHeadersRcved.get() < 1)
+        src.sendTo(buffer, srcRemoteAddress);
+        while (dataHeadersReceived.get() < 1)
         {
             processLoop(nioSelector, 1);
         }
@@ -119,37 +117,37 @@ public class NioSelectorTest
         processLoop(nioSelector, 5);
         nioSelector.close();
 
-        assertThat(dataHeadersRcved.get(), is(1));
+        assertThat(dataHeadersReceived.get(), is(1));
     }
 
     @Test(timeout = 1000)
     public void shouldHandleSmFrameFromSourceToReceiver() throws Exception
     {
-        final AtomicInteger dataHeadersRcved = new AtomicInteger(0);
-        final AtomicInteger cntlHeadersRcved = new AtomicInteger(0);
+        final AtomicInteger dataHeadersReceived = new AtomicInteger(0);
+        final AtomicInteger cntlHeadersReceived = new AtomicInteger(0);
 
         final NioSelector nioSelector = new NioSelector();
         final UdpTransport rcv = new UdpTransport(new FrameHandler()
         {
             public void onDataFrame(final DataHeaderFlyweight header, final AtomicBuffer buffer,
-                                    final long length, final InetSocketAddress srcAddr)
+                                    final long length, final InetSocketAddress srcAddress)
             {
-                dataHeadersRcved.incrementAndGet();
+                dataHeadersReceived.incrementAndGet();
             }
 
             public void onStatusMessageFrame(final StatusMessageFlyweight header, final AtomicBuffer buffer,
-                                             final long length, final InetSocketAddress srcAddr)
+                                             final long length, final InetSocketAddress srcAddress)
             {
                 assertThat(header.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
                 assertThat(header.frameLength(), is(StatusMessageFlyweight.HEADER_LENGTH));
-                cntlHeadersRcved.incrementAndGet();
+                cntlHeadersReceived.incrementAndGet();
             }
 
             public void onNakFrame(final NakFlyweight header, final AtomicBuffer buffer,
-                                   final long length, final InetSocketAddress srcAddr) {}
-        }, rcvLocalAddr, nioSelector);
+                                   final long length, final InetSocketAddress srcAddress) {}
+        }, rcvLocalAddress, nioSelector);
 
-        final UdpTransport src = new UdpTransport(nullHandler, srcLocalAddr, nioSelector);
+        final UdpTransport src = new UdpTransport(nullHandler, srcLocalAddress, nioSelector);
 
         statusMessage.wrap(atomicBuffer, 0);
         statusMessage.channelId(CHANNEL_ID)
@@ -164,8 +162,8 @@ public class NioSelectorTest
         buffer.position(0).limit(statusMessage.frameLength());
 
         processLoop(nioSelector, 5);
-        src.sendTo(buffer, srcRemoteAddr);
-        while (cntlHeadersRcved.get() < 1)
+        src.sendTo(buffer, srcRemoteAddress);
+        while (cntlHeadersReceived.get() < 1)
         {
             processLoop(nioSelector, 1);
         }
@@ -174,21 +172,21 @@ public class NioSelectorTest
         processLoop(nioSelector, 5);
         nioSelector.close();
 
-        assertThat(dataHeadersRcved.get(), is(0));
-        assertThat(cntlHeadersRcved.get(), is(1));
+        assertThat(dataHeadersReceived.get(), is(0));
+        assertThat(cntlHeadersReceived.get(), is(1));
     }
 
     @Test(timeout = 1000)
     public void shouldHandleMultipleFramesPerDatagramFromSourceToReceiver() throws Exception
     {
-        final AtomicInteger dataHeadersRcved = new AtomicInteger(0);
-        final AtomicInteger cntlHeadersRcved = new AtomicInteger(0);
+        final AtomicInteger dataHeadersReceived = new AtomicInteger(0);
+        final AtomicInteger cntlHeadersReceived = new AtomicInteger(0);
 
         final NioSelector nioSelector = new NioSelector();
         final UdpTransport rcv = new UdpTransport(new FrameHandler()
         {
             public void onDataFrame(final DataHeaderFlyweight header, final AtomicBuffer buffer,
-                                    final long length, final InetSocketAddress srcAddr)
+                                    final long length, final InetSocketAddress srcAddress)
             {
                 assertThat(header.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
                 assertThat(header.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
@@ -197,29 +195,29 @@ public class NioSelectorTest
                 assertThat(header.sessionId(), is(SESSION_ID));
                 assertThat(header.channelId(), is(CHANNEL_ID));
                 assertThat(header.termId(), is(TERM_ID));
-                dataHeadersRcved.incrementAndGet();
+                dataHeadersReceived.incrementAndGet();
 
                 // got one Data Frame, but see if there is me in the Datagram...
                 if (header.frameLength() <= length)
                 {
-                    dataHeadersRcved.incrementAndGet();
+                    dataHeadersReceived.incrementAndGet();
                 }
             }
 
             public void onNakFrame(final NakFlyweight header, final AtomicBuffer buffer,
-                                   final long length, final InetSocketAddress srcAddr)
+                                   final long length, final InetSocketAddress srcAddress)
             {
-                cntlHeadersRcved.incrementAndGet();
+                cntlHeadersReceived.incrementAndGet();
             }
 
             public void onStatusMessageFrame(final StatusMessageFlyweight header, final AtomicBuffer buffer,
-                                             final long length, final InetSocketAddress srcAddr)
+                                             final long length, final InetSocketAddress srcAddress)
             {
-                cntlHeadersRcved.incrementAndGet();
+                cntlHeadersReceived.incrementAndGet();
             }
-        }, rcvLocalAddr, nioSelector);
+        }, rcvLocalAddress, nioSelector);
 
-        final UdpTransport src = new UdpTransport(nullHandler, srcLocalAddr, nioSelector);
+        final UdpTransport src = new UdpTransport(nullHandler, srcLocalAddress, nioSelector);
 
         encodeDataHeader.wrap(atomicBuffer, 0);
         encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
@@ -240,8 +238,8 @@ public class NioSelectorTest
         buffer.position(0).limit(48);
 
         processLoop(nioSelector, 5);
-        src.sendTo(buffer, srcRemoteAddr);
-        while (dataHeadersRcved.get() < 1)
+        src.sendTo(buffer, srcRemoteAddress);
+        while (dataHeadersReceived.get() < 1)
         {
             processLoop(nioSelector, 1);
         }
@@ -250,41 +248,41 @@ public class NioSelectorTest
         processLoop(nioSelector, 5);
         nioSelector.close();
 
-        assertThat(dataHeadersRcved.get(), is(2));
-        assertThat(cntlHeadersRcved.get(), is(0));
+        assertThat(dataHeadersReceived.get(), is(2));
+        assertThat(cntlHeadersReceived.get(), is(0));
     }
 
     @Test(timeout = 1000)
     public void shouldHandleSmFrameFromReceiverToSender() throws Exception
     {
-        final AtomicInteger dataHeadersRcved = new AtomicInteger(0);
-        final AtomicInteger cntlHeadersRcved = new AtomicInteger(0);
+        final AtomicInteger dataHeadersReceived = new AtomicInteger(0);
+        final AtomicInteger cntlHeadersReceived = new AtomicInteger(0);
 
         final NioSelector nioSelector = new NioSelector();
         final UdpTransport src = new UdpTransport(new FrameHandler()
         {
             public void onDataFrame(final DataHeaderFlyweight header, final AtomicBuffer buffer,
-                                    final long length, final InetSocketAddress srcAddr)
+                                    final long length, final InetSocketAddress srcAddress)
             {
-                dataHeadersRcved.incrementAndGet();
+                dataHeadersReceived.incrementAndGet();
             }
 
             public void onStatusMessageFrame(final StatusMessageFlyweight header, final AtomicBuffer buffer,
-                                             final long length, final InetSocketAddress src)
+                                             final long length, final InetSocketAddress srcAddress)
             {
                 assertThat(header.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
                 assertThat(header.frameLength(), is(StatusMessageFlyweight.HEADER_LENGTH));
-                cntlHeadersRcved.incrementAndGet();
+                cntlHeadersReceived.incrementAndGet();
             }
 
             public void onNakFrame(final NakFlyweight header, final AtomicBuffer buffer,
-                                   final long length, final InetSocketAddress srcAddr)
+                                   final long length, final InetSocketAddress srcAddress)
             {
-                cntlHeadersRcved.incrementAndGet();
+                cntlHeadersReceived.incrementAndGet();
             }
-        }, srcLocalAddr, nioSelector);
+        }, srcLocalAddress, nioSelector);
 
-        final UdpTransport rcv = new UdpTransport(nullHandler, rcvLocalAddr, nioSelector);
+        final UdpTransport rcv = new UdpTransport(nullHandler, rcvLocalAddress, nioSelector);
 
         statusMessage.wrap(atomicBuffer, 0);
         statusMessage.channelId(CHANNEL_ID)
@@ -299,8 +297,8 @@ public class NioSelectorTest
         buffer.position(0).limit(statusMessage.frameLength());
 
         processLoop(nioSelector, 5);
-        rcv.sendTo(buffer, rcvRemoteAddr);
-        while (cntlHeadersRcved.get() < 1)
+        rcv.sendTo(buffer, rcvRemoteAddress);
+        while (cntlHeadersReceived.get() < 1)
         {
             processLoop(nioSelector, 1);
         }
@@ -310,8 +308,8 @@ public class NioSelectorTest
         processLoop(nioSelector, 5);
         nioSelector.close();
 
-        assertThat(dataHeadersRcved.get(), is(0));
-        assertThat(cntlHeadersRcved.get(), is(1));
+        assertThat(dataHeadersReceived.get(), is(0));
+        assertThat(cntlHeadersReceived.get(), is(1));
     }
 
     private void processLoop(final NioSelector nioSelector, final int iterations) throws Exception

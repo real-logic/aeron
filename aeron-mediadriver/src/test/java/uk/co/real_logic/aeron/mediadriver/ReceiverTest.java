@@ -71,7 +71,7 @@ public class ReceiverTest
     private LogReader[] logReaders;
 
     private DatagramChannel senderChannel;
-    private InetSocketAddress senderAddr = new InetSocketAddress("localhost", 40123);
+    private InetSocketAddress senderAddress = new InetSocketAddress("localhost", 40123);
 
     private Receiver receiver;
     private ReceiverProxy receiverProxy;
@@ -99,7 +99,7 @@ public class ReceiverTest
         receiver = new Receiver(ctx);
 
         senderChannel = DatagramChannel.open();
-        senderChannel.bind(senderAddr);
+        senderChannel.bind(senderAddress);
         senderChannel.configureBlocking(false);
 
         logReaders = rotator.buffers().map((log) -> new LogReader(log.logBuffer(), log.stateBuffer()))
@@ -127,9 +127,9 @@ public class ReceiverTest
 
         fillDataFrame(dataHeader, 0, NO_PAYLOAD);
 
-        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddr);  // 0 length data frame
+        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
-        final int msgs = toConductorBuffer.read(
+        final int messagesRead = toConductorBuffer.read(
             (msgTypeId, buffer, index, length) ->
             {
                 assertThat(msgTypeId, is(ControlProtocolEvents.CREATE_TERM_BUFFER));
@@ -143,17 +143,18 @@ public class ReceiverTest
                 receiverProxy.newReceiveBuffer(new NewReceiveBufferEvent(destination, SESSION_ID,
                                                                          CHANNEL_ID, TERM_ID, rotator));
             });
-        assertThat(msgs, is(1));
+
+        assertThat(messagesRead, is(1));
 
         receiver.doWork();
 
         final ByteBuffer rcvBuffer = ByteBuffer.allocateDirect(256);
-        final InetSocketAddress rcvAddr = (InetSocketAddress)senderChannel.receive(rcvBuffer);
+        final InetSocketAddress rcvAddress = (InetSocketAddress)senderChannel.receive(rcvBuffer);
 
         statusHeader.wrap(rcvBuffer);
 
-        assertNotNull(rcvAddr);
-        assertThat(rcvAddr.getPort(), is(destination.remoteData().getPort()));
+        assertNotNull(rcvAddress);
+        assertThat(rcvAddress.getPort(), is(destination.remoteData().getPort()));
         assertThat(statusHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_SM));
         assertThat(statusHeader.channelId(), is(ONE_CHANNEL[0]));
         assertThat(statusHeader.sessionId(), is(SESSION_ID));
@@ -174,9 +175,9 @@ public class ReceiverTest
 
         fillDataFrame(dataHeader, 0, NO_PAYLOAD);
 
-        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddr);  // 0 length data frame
+        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
-        int msgs = toConductorBuffer.read(
+        int messagesRead = toConductorBuffer.read(
             (msgTypeId, buffer, index, length) ->
             {
               assertThat(msgTypeId, is(ControlProtocolEvents.CREATE_TERM_BUFFER));
@@ -185,14 +186,14 @@ public class ReceiverTest
                                                                        CHANNEL_ID, TERM_ID, rotator));
             });
 
-        assertThat(msgs, is(1));
+        assertThat(messagesRead, is(1));
 
         receiver.doWork();
 
         fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);
-        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddr);
+        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
-        msgs = logReaders[0].read(
+        messagesRead = logReaders[0].read(
             (buffer, offset, length) ->
             {
                 dataHeader.wrap(buffer, offset);
@@ -203,7 +204,8 @@ public class ReceiverTest
                 assertThat(dataHeader.termOffset(), is(0L));
                 assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
             });
-        assertThat(msgs, is(1));
+
+        assertThat(messagesRead, is(1));
     }
 
     @Test
@@ -219,9 +221,9 @@ public class ReceiverTest
 
         fillDataFrame(dataHeader, 0, NO_PAYLOAD);
 
-        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddr);  // 0 length data frame
+        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
-        int msgs = toConductorBuffer.read(
+        int messagesRead = toConductorBuffer.read(
             (msgTypeId, buffer, index, length) ->
             {
               assertThat(msgTypeId, is(ControlProtocolEvents.CREATE_TERM_BUFFER));
@@ -229,17 +231,18 @@ public class ReceiverTest
               receiverProxy.newReceiveBuffer(new NewReceiveBufferEvent(destination, SESSION_ID,
                                                                        CHANNEL_ID, TERM_ID, rotator));
             });
-        assertThat(msgs, is(1));
+
+        assertThat(messagesRead, is(1));
 
         receiver.doWork();
 
         fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);  // initial data frame
-        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddr);
+        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
         fillDataFrame(dataHeader, 0, NO_PAYLOAD);  // heartbeat with same term offset
-        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddr);
+        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
-        msgs = logReaders[0].read(
+        messagesRead = logReaders[0].read(
             (buffer, offset, length) ->
             {
                 dataHeader.wrap(buffer, offset);
@@ -251,7 +254,7 @@ public class ReceiverTest
                 assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
             });
 
-        assertThat(msgs, is(1));
+        assertThat(messagesRead, is(1));
     }
 
     @Test
@@ -267,9 +270,9 @@ public class ReceiverTest
 
         fillDataFrame(dataHeader, 0, NO_PAYLOAD);
 
-        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddr);  // 0 length data frame
+        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
-        int msgs = toConductorBuffer.read(
+        int messagesRead = toConductorBuffer.read(
             (msgTypeId, buffer, index, length) ->
             {
               assertThat(msgTypeId, is(ControlProtocolEvents.CREATE_TERM_BUFFER));
@@ -277,17 +280,18 @@ public class ReceiverTest
               receiverProxy.newReceiveBuffer(new NewReceiveBufferEvent(destination, SESSION_ID,
                                                                        CHANNEL_ID, TERM_ID, rotator));
             });
-        assertThat(msgs, is(1));
+
+        assertThat(messagesRead, is(1));
 
         receiver.doWork();
 
         fillDataFrame(dataHeader, 0, NO_PAYLOAD);  // heartbeat with same term offset
-        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddr);
+        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
         fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);  // initial data frame
-        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddr);
+        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
-        msgs = logReaders[0].read(
+        messagesRead = logReaders[0].read(
             (buffer, offset, length) ->
             {
                 dataHeader.wrap(buffer, offset);
@@ -299,7 +303,7 @@ public class ReceiverTest
                 assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
             });
 
-        assertThat(msgs, is(1));
+        assertThat(messagesRead, is(1));
     }
 
     @Test
@@ -316,14 +320,14 @@ public class ReceiverTest
 
         fillDataFrame(dataHeader, 0, NO_PAYLOAD);
 
-        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddr);  // 0 length data frame
+        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);  // 0 length data frame
 
-        final int msgs = toConductorBuffer.read(
+        final int messagesRead = toConductorBuffer.read(
             (msgTypeId, buffer, index, length) ->
                 receiverProxy.newReceiveBuffer(new NewReceiveBufferEvent(destination, SESSION_ID,
                                                                          CHANNEL_ID, TERM_ID, rotator)));
 
-        assertThat(msgs, is(1));
+        assertThat(messagesRead, is(1));
 
         final int packetsToFillBuffer = MediaDriver.COMMAND_BUFFER_SZ / FAKE_PAYLOAD.length;
         final int iterations = 4 * packetsToFillBuffer;
@@ -332,7 +336,7 @@ public class ReceiverTest
         for (int i = 0; i < iterations; i++)
         {
             fillDataFrame(dataHeader, offset, FAKE_PAYLOAD);
-            frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddr);
+            frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
             receiver.doWork();
         }
     }

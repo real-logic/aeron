@@ -110,7 +110,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
     }
 
     public void onDataFrame(final DataHeaderFlyweight header, final AtomicBuffer buffer,
-                            final long length, final InetSocketAddress srcAddr)
+                            final long length, final InetSocketAddress srcAddress)
     {
         final long channelId = header.channelId();
 
@@ -132,8 +132,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         }
         else
         {
-            // new session, so make it here and save srcAddr
-            subscription.createSubscribedSession(sessionId, srcAddr);
+            subscription.createSubscribedSession(sessionId, srcAddress);
 
             // ask conductor thread to create buffer for destination, sessionId, channelId, and termId
             // NB: this only needs to happen the first time, since we use status to detect rollovers
@@ -142,13 +141,13 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
     }
 
     public void onStatusMessageFrame(final StatusMessageFlyweight header, final AtomicBuffer buffer,
-                                     final long length, final InetSocketAddress srcAddr)
+                                     final long length, final InetSocketAddress srcAddress)
     {
         // this should be on the data channel and shouldn't include SMs, so ignore.
     }
 
     public void onNakFrame(final NakFlyweight header, final AtomicBuffer buffer,
-                           final long length, final InetSocketAddress srcAddr)
+                           final long length, final InetSocketAddress srcAddress)
     {
         // this should be on the data channel and shouldn't include Naks, so ignore.
     }

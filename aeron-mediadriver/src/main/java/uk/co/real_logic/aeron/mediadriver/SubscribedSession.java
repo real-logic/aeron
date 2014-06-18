@@ -34,7 +34,7 @@ import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.UNKNOWN_TERM_
  */
 public class SubscribedSession
 {
-    private final InetSocketAddress srcAddr;
+    private final InetSocketAddress srcAddress;
     private final long sessionId;
     private final long channelId;
 
@@ -46,9 +46,9 @@ public class SubscribedSession
     private TermRebuilder[] rebuilders;
     private LossHandler lossHandler;
 
-    public SubscribedSession(final long sessionId, final long channelId, final InetSocketAddress srcAddr)
+    public SubscribedSession(final long sessionId, final long channelId, final InetSocketAddress srcAddress)
     {
-        this.srcAddr = srcAddr;
+        this.srcAddress = srcAddress;
         this.sessionId = sessionId;
         this.channelId = channelId;
     }
@@ -66,7 +66,7 @@ public class SubscribedSession
 
     public InetSocketAddress sourceAddress()
     {
-        return srcAddr;
+        return srcAddress;
     }
 
     public long sessionId()

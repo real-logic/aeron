@@ -377,8 +377,8 @@ public class SubUnicastTest
 
         dataBuffer.position(0);
         dataBuffer.limit(frameLength);
-        final int byteSent = senderChannel.send(dataBuffer, rcvAddress);
+        final int bytesSent = senderChannel.send(dataBuffer, rcvAddress);
 
-        assertThat(byteSent, is(frameLength));
+        assertThat(bytesSent, is(frameLength));
     }
 }

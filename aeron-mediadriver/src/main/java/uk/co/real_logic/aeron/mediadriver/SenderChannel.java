@@ -45,7 +45,7 @@ public class SenderChannel
      */
     public interface SendFunction
     {
-        int sendTo(final ByteBuffer buffer, final InetSocketAddress addr) throws Exception;
+        int sendTo(final ByteBuffer buffer, final InetSocketAddress address) throws Exception;
     }
 
     /** initial heartbeat timeout (cancelled by SM) */
@@ -55,7 +55,6 @@ public class SenderChannel
     public static final int HEARTBEAT_TIMEOUT_MS = 500;
     public static final long HEARTBEAT_TIMEOUT_NS = MILLISECONDS.toNanos(HEARTBEAT_TIMEOUT_MS);
 
-    private final ControlFrameHandler frameHandler;
     private final SenderControlStrategy controlStrategy;
     private final TimerWheel timerWheel;
 
@@ -89,7 +88,7 @@ public class SenderChannel
     private long nextOffset = 0;
 
     private final SendFunction sendFunction;
-    private final InetSocketAddress destAddr;
+    private final InetSocketAddress dstAddress;
 
     public SenderChannel(final ControlFrameHandler frameHandler,
                          final TimerWheel timerWheel,
@@ -102,8 +101,7 @@ public class SenderChannel
                          final int mtuLength,
                          final SendFunction sendFunction)
     {
-        this.frameHandler = frameHandler;
-        this.destAddr = frameHandler.destination().remoteData();
+        this.dstAddress = frameHandler.destination().remoteData();
         this.controlStrategy = controlStrategy;
         this.timerWheel = timerWheel;
         this.buffers = buffers;
@@ -139,15 +137,12 @@ public class SenderChannel
                 final ByteBuffer sendBuffer = termSendBuffers[currentIndex];
 
                 dataHeader.wrap(sendBuffer, offset);
-//                System.out.println("send " + length + "@" + offset + " " +
-//                        dataHeader.frameLength() + "@" + dataHeader.termOffset());
-
                 sendBuffer.limit(offset + length);
                 sendBuffer.position(offset);
 
                 try
                 {
-                    final int bytesSent = sendFunction.sendTo(sendBuffer, destAddr);
+                    final int bytesSent = sendFunction.sendTo(sendBuffer, dstAddress);
                     if (length != bytesSent)
                     {
                         throw new IllegalStateException("could not send all of message: " + bytesSent + "/" +
@@ -158,8 +153,6 @@ public class SenderChannel
                     timeOfLastSendOrHeartbeat.lazySet(timerWheel.now());
 
                     nextOffset = align(offset + length, FrameDescriptor.FRAME_ALIGNMENT);
-//                    nextOffset = align((int)(dataHeader.termOffset() + dataHeader.frameLength()),
-//                            FrameDescriptor.FRAME_ALIGNMENT);
                 }
                 catch (final Exception ex)
                 {
@@ -219,7 +212,7 @@ public class SenderChannel
 
         if (-1 != index)
         {
-            retransmitHandlers[index].onNak((int) termOffset);
+            retransmitHandlers[index].onNak((int)termOffset);
         }
     }
 
@@ -239,7 +232,7 @@ public class SenderChannel
 
             try
             {
-                final int bytesSent = sendFunction.sendTo(termRetransmitBuffers[index], destAddr);
+                final int bytesSent = sendFunction.sendTo(termRetransmitBuffers[index], dstAddress);
                 if (bytesSent != length)
                 {
                     System.err.println("could not send entire retransmit");
@@ -275,7 +268,7 @@ public class SenderChannel
 
         try
         {
-            final int bytesSent = sendFunction.sendTo(scratchSendBuffer, destAddr);
+            final int bytesSent = sendFunction.sendTo(scratchSendBuffer, dstAddress);
             if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
             {
                 // TODO: log or count error

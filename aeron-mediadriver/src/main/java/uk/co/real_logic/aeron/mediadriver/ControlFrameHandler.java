@@ -45,9 +45,9 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
         return transport.sendTo(buffer, destination.remoteData());
     }
 
-    public int sendTo(final ByteBuffer buffer, final InetSocketAddress addr) throws Exception
+    public int sendTo(final ByteBuffer buffer, final InetSocketAddress address) throws Exception
     {
-        return transport.sendTo(buffer, addr);
+        return transport.sendTo(buffer, address);
     }
 
     public void close()
@@ -78,9 +78,7 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
 
     public void addChannel(final SenderChannel channel)
     {
-        final long sessionId = channel.sessionId();
-        Long2ObjectHashMap<SenderChannel> channelMap = sessionMap.getOrDefault(sessionId, Long2ObjectHashMap::new);
-        channelMap.put(channel.channelId(), channel);
+        sessionMap.getOrDefault(channel.sessionId(), Long2ObjectHashMap::new).put(channel.channelId(), channel);
     }
 
     public SenderChannel removeChannel(final long sessionId, final long channelId)
@@ -106,7 +104,7 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
     }
 
     public void onStatusMessageFrame(final StatusMessageFlyweight header, final AtomicBuffer buffer,
-                                     final long length, final InetSocketAddress srcAddr)
+                                     final long length, final InetSocketAddress srcAddress)
     {
         final SenderChannel channel = findChannel(header.sessionId(), header.channelId());
         channel.onStatusMessage(header.termId(),
@@ -115,7 +113,7 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
     }
 
     public void onNakFrame(final NakFlyweight nak, final AtomicBuffer buffer,
-                           final long length, final InetSocketAddress srcAddr)
+                           final long length, final InetSocketAddress srcAddress)
     {
         final SenderChannel channel = findChannel(nak.sessionId(), nak.channelId());
 
@@ -123,7 +121,7 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
     }
 
     public void onDataFrame(final DataHeaderFlyweight header, final AtomicBuffer buffer,
-                            final long length, final InetSocketAddress srcAddr)
+                            final long length, final InetSocketAddress srcAddress)
     {
         // ignore data
     }

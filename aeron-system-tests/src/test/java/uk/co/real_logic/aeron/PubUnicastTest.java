@@ -49,14 +49,14 @@ public class PubUnicastTest
     private static final int PORT = 54321;
     private static final int SRC_PORT = 54322;
     private static final Destination DESTINATION = new Destination("udp://" + HOST + ":" + SRC_PORT +
-                                                                        "@" + HOST + ":" + PORT);
+                                                                       "@" + HOST + ":" + PORT);
     private static final long CHANNEL_ID = 1L;
     private static final long SESSION_ID = 2L;
     private static final byte[] PAYLOAD = "Payload goes here!".getBytes();
 
     private final AtomicBuffer payload = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
 
-    private final InetSocketAddress srcAddr = new InetSocketAddress(HOST, SRC_PORT);
+    private final InetSocketAddress srcAddress = new InetSocketAddress(HOST, SRC_PORT);
 
     private Aeron producingClient;
     private MediaDriver driver;
@@ -85,7 +85,7 @@ public class PubUnicastTest
         producingClient = Aeron.newSingleMediaDriver(newAeronContext());
 
         source = producingClient.newSource(new Source.Context().destination(DESTINATION)
-                .sessionId(SESSION_ID));
+                                                               .sessionId(SESSION_ID));
 
         channel = source.newChannel(CHANNEL_ID);
 
@@ -136,8 +136,8 @@ public class PubUnicastTest
         int rcvedZeroLengthData = 0, rcvedDataFrames = 0;
 
         // should only see 0 length data until SM is sent
-        InetSocketAddress addr;
-        while((addr = (InetSocketAddress)receiverChannel.receive(rcvBuffer)) != null)
+        InetSocketAddress address;
+        while ((address = (InetSocketAddress)receiverChannel.receive(rcvBuffer)) != null)
         {
             dataHeader.wrap(aBuffer, 0);
             assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
@@ -146,7 +146,7 @@ public class PubUnicastTest
             assertThat(dataHeader.sessionId(), is(SESSION_ID));
             assertThat(rcvBuffer.position(), is(DataHeaderFlyweight.HEADER_LENGTH));
             termId = dataHeader.termId();
-            assertThat(addr, is(srcAddr));
+            assertThat(address, is(srcAddress));
             rcvedZeroLengthData++;
             rcvedDataFrames++;
             rcvBuffer.clear();
@@ -162,7 +162,7 @@ public class PubUnicastTest
 
         // assert the received Data Frames are correctly formed
         rcvBuffer.clear();
-        while((addr = (InetSocketAddress)receiverChannel.receive(rcvBuffer)) != null)
+        while ((address = (InetSocketAddress)receiverChannel.receive(rcvBuffer)) != null)
         {
             dataHeader.wrap(aBuffer, 0);
             assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
@@ -171,7 +171,7 @@ public class PubUnicastTest
             assertThat(dataHeader.sessionId(), is(SESSION_ID));
             assertThat(rcvBuffer.position(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
             assertThat(dataHeader.termId(), is(termId));
-            assertThat(addr, is(srcAddr));
+            assertThat(address, is(srcAddress));
             rcvedDataFrames++;
             rcvBuffer.clear();
         }
@@ -200,8 +200,7 @@ public class PubUnicastTest
         int rcvedZeroLengthData = 0, rcvedDataFrames = 0;
 
         // should only see 0 length data until SM is sent
-        InetSocketAddress addr;
-        while((addr = (InetSocketAddress)receiverChannel.receive(rcvBuffer)) != null)
+        while (receiverChannel.receive(rcvBuffer) != null)
         {
             dataHeader.wrap(aBuffer, 0);
             assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
@@ -222,7 +221,7 @@ public class PubUnicastTest
 
         // assert the received Data Frames are correct
         rcvBuffer.clear();
-        while((addr = (InetSocketAddress)receiverChannel.receive(rcvBuffer)) != null)
+        while (receiverChannel.receive(rcvBuffer) != null)
         {
             dataHeader.wrap(aBuffer, 0);
             assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
@@ -241,7 +240,8 @@ public class PubUnicastTest
 
         // assert the received Data Frames are correct
         rcvBuffer.clear();
-        while((addr = (InetSocketAddress)receiverChannel.receive(rcvBuffer)) != null)
+        InetSocketAddress address;
+        while ((address = (InetSocketAddress)receiverChannel.receive(rcvBuffer)) != null)
         {
             dataHeader.wrap(aBuffer, 0);
             assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
@@ -250,7 +250,7 @@ public class PubUnicastTest
             assertThat(dataHeader.sessionId(), is(SESSION_ID));
             assertThat(rcvBuffer.position(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
             assertThat(dataHeader.termId(), is(termId));
-            assertThat(addr, is(srcAddr));
+            assertThat(address, is(srcAddress));
             rcvedDataFrames++;
             rcvBuffer.clear();
         }
@@ -271,20 +271,20 @@ public class PubUnicastTest
         statusMessage.wrap(new AtomicBuffer(smBuffer), 0);
 
         statusMessage.receiverWindow(1000)
-            .highestContiguousTermOffset(0)
-            .termId(termId)
-            .channelId(CHANNEL_ID)
-            .sessionId(SESSION_ID)
-            .frameLength(StatusMessageFlyweight.HEADER_LENGTH)
-            .headerType(HeaderFlyweight.HDR_TYPE_SM)
-            .flags((short)0)
-            .version(HeaderFlyweight.CURRENT_VERSION);
+                     .highestContiguousTermOffset(0)
+                     .termId(termId)
+                     .channelId(CHANNEL_ID)
+                     .sessionId(SESSION_ID)
+                     .frameLength(StatusMessageFlyweight.HEADER_LENGTH)
+                     .headerType(HeaderFlyweight.HDR_TYPE_SM)
+                     .flags((short)0)
+                     .version(HeaderFlyweight.CURRENT_VERSION);
 
         smBuffer.position(0);
         smBuffer.limit(StatusMessageFlyweight.HEADER_LENGTH);
-        final int byteSent = receiverChannel.send(smBuffer, srcAddr);
+        final int bytesSent = receiverChannel.send(smBuffer, srcAddress);
 
-        assertThat(byteSent, is(StatusMessageFlyweight.HEADER_LENGTH));
+        assertThat(bytesSent, is(StatusMessageFlyweight.HEADER_LENGTH));
     }
 
     private void sendNak(final long termId, final long termOffset, final long length) throws Exception
@@ -293,19 +293,19 @@ public class PubUnicastTest
         nakHeader.wrap(new AtomicBuffer(nakBuffer), 0);
 
         nakHeader.length(length)
-                .termOffset(0)
-                .termId(termId)
-                .channelId(CHANNEL_ID)
-                .sessionId(SESSION_ID)
-                .frameLength(NakFlyweight.HEADER_LENGTH)
-                .headerType(HeaderFlyweight.HDR_TYPE_NAK)
-                .flags((short)0)
-                .version(HeaderFlyweight.CURRENT_VERSION);
+                 .termOffset(0)
+                 .termId(termId)
+                 .channelId(CHANNEL_ID)
+                 .sessionId(SESSION_ID)
+                 .frameLength(NakFlyweight.HEADER_LENGTH)
+                 .headerType(HeaderFlyweight.HDR_TYPE_NAK)
+                 .flags((short)0)
+                 .version(HeaderFlyweight.CURRENT_VERSION);
 
         nakBuffer.position(0);
         nakBuffer.limit(NakFlyweight.HEADER_LENGTH);
-        final int byteSent = receiverChannel.send(nakBuffer, srcAddr);
+        final int bytesSent = receiverChannel.send(nakBuffer, srcAddress);
 
-        assertThat(byteSent, is(NakFlyweight.HEADER_LENGTH));
+        assertThat(bytesSent, is(NakFlyweight.HEADER_LENGTH));
     }
 }

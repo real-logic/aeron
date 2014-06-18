@@ -69,10 +69,10 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
 
         if (destination.isMulticast())
         {
-            final InetAddress endPoint = destination.remoteData().getAddress();
+            final InetAddress endPointAddress = destination.remoteData().getAddress();
             channel.setOption(StandardSocketOptions.SO_REUSEADDR, Boolean.TRUE);
             channel.bind(destination.localData());
-            channel.join(endPoint, destination.localDataInterface());
+            channel.join(endPointAddress, destination.localDataInterface());
         }
         else
         {
@@ -83,9 +83,9 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
         registeredKey = nioSelector.registerForRead(channel, this);
     }
 
-    public int sendTo(final ByteBuffer buffer, final InetSocketAddress remote) throws Exception
+    public int sendTo(final ByteBuffer buffer, final InetSocketAddress remoteAddress) throws Exception
     {
-        return channel.send(buffer, remote);
+        return channel.send(buffer, remoteAddress);
     }
 
     public void close()
@@ -109,11 +109,11 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
     public int onRead() throws Exception
     {
         readByteBuffer.clear();
-        final InetSocketAddress srcAddr = (InetSocketAddress)channel.receive(readByteBuffer);
+        final InetSocketAddress srcAddress = (InetSocketAddress)channel.receive(readByteBuffer);
         final int len = readByteBuffer.position();
         int offset = 0;
 
-        if (srcAddr == null)
+        if (srcAddress == null)
         {
             return 0;
         }
@@ -141,17 +141,17 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
         {
             case HDR_TYPE_DATA:
                 dataHeader.wrap(readBuffer, offset);
-                frameHandler.onDataFrame(dataHeader, readBuffer, len, srcAddr);
+                frameHandler.onDataFrame(dataHeader, readBuffer, len, srcAddress);
                 break;
 
             case HDR_TYPE_NAK:
                 nakHeader.wrap(readBuffer, offset);
-                frameHandler.onNakFrame(nakHeader, readBuffer, len, srcAddr);
+                frameHandler.onNakFrame(nakHeader, readBuffer, len, srcAddress);
                 break;
 
             case HDR_TYPE_SM:
                 statusMessage.wrap(readBuffer, offset);
-                frameHandler.onStatusMessageFrame(statusMessage, readBuffer, len, srcAddr);
+                frameHandler.onStatusMessageFrame(statusMessage, readBuffer, len, srcAddress);
                 break;
 
             default:

@@ -71,14 +71,14 @@ public class SenderTest
     private final Queue<ByteBuffer> receivedFrames = new ArrayDeque<>();
 
     private final UdpDestination destination = UdpDestination.parse("udp://localhost:40123");
-    private final InetSocketAddress recvAddr = destination.remoteData();
+    private final InetSocketAddress rcvAddress = destination.remoteData();
 
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
     private SenderChannel.SendFunction sendFunction =
-        (buffer, addr) ->
+        (buffer, address) ->
         {
-            assertThat(addr, is(recvAddr));
+            assertThat(address, is(rcvAddress));
 
             final int size = buffer.limit() - buffer.position();
             final ByteBuffer savedFrame = ByteBuffer.allocate(size);

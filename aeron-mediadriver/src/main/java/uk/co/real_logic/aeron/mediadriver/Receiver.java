@@ -190,7 +190,7 @@ public class Receiver extends Agent
     private void onRemoveSubscriber(final String destination, final long[] channelIds)
     {
         final UdpDestination rcvDestination = UdpDestination.parse(destination);
-        DataFrameHandler frameHandler = frameHandler(rcvDestination);
+        final DataFrameHandler frameHandler = frameHandler(rcvDestination);
 
         if (null == frameHandler)
         {

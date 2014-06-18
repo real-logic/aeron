@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Tracking and handling of gaps in a channel
- *
+ * <p>
  * This handler only sends a single NAK at a time.
  */
 public class LossHandler
@@ -38,9 +38,9 @@ public class LossHandler
         /**
          * Called when a NAK should be sent
          *
-         * @param termId for the NAK
+         * @param termId     for the NAK
          * @param termOffset for the NAK
-         * @param length for the NAK
+         * @param length     for the NAK
          */
         void onSendNak(final long termId, final int termOffset, final int length);
     }
@@ -63,8 +63,8 @@ public class LossHandler
     /**
      * Create a loss handler for a channel with no send NAK handler.
      *
-     * @param scanners for the gaps attached to LogBuffers
-     * @param wheel for timer management
+     * @param scanners       for the gaps attached to LogBuffers
+     * @param wheel          for timer management
      * @param delayGenerator to use for delay determination
      */
     public LossHandler(final GapScanner[] scanners,
@@ -77,8 +77,8 @@ public class LossHandler
     /**
      * Create a loss handler for a channel.
      *
-     * @param scanners for the gaps attached to LogBuffers
-     * @param wheel for timer management
+     * @param scanners       for the gaps attached to LogBuffers
+     * @param wheel          for timer management
      * @param delayGenerator to use for delay determination
      * @param sendNakHandler to call when sending a NAK is indicated
      */
@@ -123,7 +123,7 @@ public class LossHandler
 
     /**
      * Scan for gaps and handle received data.
-     *
+     * <p>
      * The handler keeps track from scan to scan what is a gap and what must have been repaired.
      */
     public void scan()
@@ -140,17 +140,21 @@ public class LossHandler
     /**
      * Called on reception of a NAK
      *
-     * @param termId in the NAK
+     * @param termId     in the NAK
      * @param termOffset in the NAK
      */
     public void onNak(final long termId, final int termOffset)
     {
-        if (null != timer && timer.isActive() && activeGap.isFor(termId, termOffset))
+        if (null != timer && timer.isActive() && activeGap.matches(termId, termOffset))
         {
-            // suppress sending NAK if it matches what we are waiting on
-            nakSentTimestamp = wheel.now();
-            scheduleTimer();
+            suppressNak();
         }
+    }
+
+    public void suppressNak()
+    {
+        nakSentTimestamp = wheel.now();
+        scheduleTimer();
     }
 
     private boolean onGap(final AtomicBuffer buffer, final int offset, final int length)
@@ -169,11 +173,12 @@ public class LossHandler
 
     private void onScanComplete()
     {
+        final Gap gap = gaps[0];
         if (null == timer || !timer.isActive())
         {
             if (scanCursor > 0)
             {
-                activeGap.reset(gaps[0].termId, gaps[0].termOffset, gaps[0].length);
+                activeGap.reset(gap.termId, gap.termOffset, gap.length);
                 scheduleTimer();
                 nakSentTimestamp = wheel.now();
 
@@ -187,9 +192,9 @@ public class LossHandler
         {
             timer.cancel();
         }
-        else if (!gaps[0].isFor(activeGap.termId, activeGap.termOffset))
+        else if (!gap.matches(activeGap.termId, activeGap.termOffset))
         {
-            activeGap.reset(gaps[0].termId, gaps[0].termOffset, gaps[0].length);
+            activeGap.reset(gap.termId, gap.termOffset, gap.length);
             scheduleTimer();
             nakSentTimestamp = wheel.now();
 
@@ -244,7 +249,7 @@ public class LossHandler
             this.length = length;
         }
 
-        public boolean isFor(final long termId, final int termOffset)
+        public boolean matches(final long termId, final int termOffset)
         {
             return termId == this.termId && termOffset == this.termOffset;
         }

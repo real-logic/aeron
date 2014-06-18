@@ -69,7 +69,6 @@ public class MediaConductor extends Agent
 
     private final Supplier<SenderControlStrategy> senderFlowControl;
 
-    private final ThreadLocalRandom rng = ThreadLocalRandom.current();
     private final PublisherMessageFlyweight publisherMessage = new PublisherMessageFlyweight();
     private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
     private final ErrorHeaderFlyweight errorHeader = new ErrorHeaderFlyweight();
@@ -307,7 +306,7 @@ public class MediaConductor extends Agent
                                                    "channel and session already exist on destination");
             }
 
-            final long initialTermId = rng.nextLong();
+            final long initialTermId = generateTermId();
             final BufferRotator buffers =
                 bufferManagement.addPublisherChannel(srcDestination, sessionId, channelId);
 
@@ -446,5 +445,11 @@ public class MediaConductor extends Agent
         sender.heartbeatChecks();
 
         rescheduleTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, heartbeatTimer);
+    }
+
+    private long generateTermId()
+    {
+        // term Id can be psuedo-random. Doesn't have to be perfect. But must be in the range.
+        return (int)(Math.random() * 0x100000000L);
     }
 }

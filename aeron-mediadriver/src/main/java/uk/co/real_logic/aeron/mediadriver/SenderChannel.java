@@ -82,6 +82,7 @@ public class SenderChannel
     private final SenderFlowControlState activeFlowControlState = new SenderFlowControlState(0);
 
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
+    private final DataHeaderFlyweight retransmitDataHeader = new DataHeaderFlyweight();
 
     private int currentIndex = 0;
     private int statusMessagesSeen = 0;
@@ -214,7 +215,12 @@ public class SenderChannel
      */
     public void onNakFrame(final long termId, final long termOffset, final long length)
     {
-        // TODO: finish. Find retransmitHandler from array and call onNak on it
+        final int index = determineIndexByTermId(termId);
+
+        if (-1 != index)
+        {
+            retransmitHandlers[index].onNak((int) termOffset);
+        }
     }
 
     /**
@@ -222,7 +228,28 @@ public class SenderChannel
      */
     private void onSendRetransmit(final AtomicBuffer buffer, final int offset, final int length)
     {
-        // TODO: finish. Use termRetransmitBuffers, but need to know which one...
+        // use termRetransmitBuffers, but need to know which one... so, use DataHeaderFlyweight to grab it
+        retransmitDataHeader.wrap(buffer, offset);
+        final int index = determineIndexByTermId(retransmitDataHeader.termId());
+
+        if (-1 != index)
+        {
+            termRetransmitBuffers[index].position(offset);
+            termRetransmitBuffers[index].limit(offset + length);
+
+            try
+            {
+                final int bytesSent = sendFunction.sendTo(termRetransmitBuffers[index], destAddr);
+                if (bytesSent != length)
+                {
+                    System.err.println("could not send entire retransmit");
+                }
+            }
+            catch (final Exception ex)
+            {
+                ex.printStackTrace();
+            }
+        }
     }
 
     public void sendHeartbeat()
@@ -332,5 +359,16 @@ public class SenderChannel
         return new RetransmitHandler(new LogReader(log.logBuffer(), log.stateBuffer()),
             timerWheel, MediaConductor.RETRANS_UNICAST_DELAY_GENERATOR,
             MediaConductor.RETRANS_UNICAST_LINGER_GENERATOR, this::onSendRetransmit);
+    }
+
+    private int determineIndexByTermId(final long termId)
+    {
+        if (termId == currentTermId.get())
+        {
+            return currentIndex;
+        }
+
+        // this needs to account for rotation
+        return -1;
     }
 }

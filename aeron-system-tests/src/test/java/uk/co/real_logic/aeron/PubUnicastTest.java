@@ -22,8 +22,10 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
 import uk.co.real_logic.aeron.util.ConductorShmBuffers;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.util.protocol.NakFlyweight;
 import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
 
 import java.net.InetSocketAddress;
@@ -65,6 +67,7 @@ public class PubUnicastTest
 
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
+    private final NakFlyweight nakHeader = new NakFlyweight();
 
     private ExecutorService executorService;
 
@@ -177,10 +180,82 @@ public class PubUnicastTest
     }
 
     @Test
-    @Ignore("isn't finished yet")
-    public void publisherMessagesSubscriber() throws Exception
+    public void shouldHandleNak() throws Exception
     {
-        // TODO: simple message send/read
+        // let buffers get connected
+
+        // this will not be sent yet
+        while (!channel.offer(payload, 0, PAYLOAD.length))
+        {
+            Thread.sleep(10);
+        }
+
+        // sleep so we are sure some 0 length data has been sent
+        Thread.sleep(500);
+
+        final ByteBuffer rcvBuffer = ByteBuffer.allocate(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length);
+        rcvBuffer.clear();
+        final AtomicBuffer aBuffer = new AtomicBuffer(rcvBuffer);
+        long termId = 0;
+        int rcvedZeroLengthData = 0, rcvedDataFrames = 0;
+
+        // should only see 0 length data until SM is sent
+        InetSocketAddress addr;
+        while((addr = (InetSocketAddress)receiverChannel.receive(rcvBuffer)) != null)
+        {
+            dataHeader.wrap(aBuffer, 0);
+            assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
+            assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH));
+            termId = dataHeader.termId();
+            rcvedZeroLengthData++;
+            rcvedDataFrames++;
+            rcvBuffer.clear();
+        }
+
+        assertThat(rcvedZeroLengthData, greaterThanOrEqualTo(1));
+
+        // send SM
+        sendSM(termId);
+
+        // sleep to make sure that the sender thread in the media driver has a chance to send data
+        Thread.sleep(100);
+
+        // assert the received Data Frames are correct
+        rcvBuffer.clear();
+        while((addr = (InetSocketAddress)receiverChannel.receive(rcvBuffer)) != null)
+        {
+            dataHeader.wrap(aBuffer, 0);
+            assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
+            assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
+            rcvedDataFrames++;
+            rcvBuffer.clear();
+        }
+
+        assertThat(rcvedDataFrames - rcvedZeroLengthData, greaterThanOrEqualTo(1));
+
+        // send NAK
+        sendNak(termId, 0, FrameDescriptor.FRAME_ALIGNMENT);
+
+        // sleep to make sure that the sender thread in the media driver has a chance to send data
+        Thread.sleep(100);
+
+        // assert the received Data Frames are correct
+        rcvBuffer.clear();
+        while((addr = (InetSocketAddress)receiverChannel.receive(rcvBuffer)) != null)
+        {
+            dataHeader.wrap(aBuffer, 0);
+            assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
+            assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
+            assertThat(dataHeader.channelId(), is(CHANNEL_ID));
+            assertThat(dataHeader.sessionId(), is(SESSION_ID));
+            assertThat(rcvBuffer.position(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
+            assertThat(dataHeader.termId(), is(termId));
+            assertThat(addr, is(srcAddr));
+            rcvedDataFrames++;
+            rcvBuffer.clear();
+        }
+
+        assertThat(rcvedDataFrames - rcvedZeroLengthData, greaterThanOrEqualTo(2));
     }
 
     @Test
@@ -210,5 +285,27 @@ public class PubUnicastTest
         final int byteSent = receiverChannel.send(smBuffer, srcAddr);
 
         assertThat(byteSent, is(StatusMessageFlyweight.HEADER_LENGTH));
+    }
+
+    private void sendNak(final long termId, final long termOffset, final long length) throws Exception
+    {
+        final ByteBuffer nakBuffer = ByteBuffer.allocate(NakFlyweight.HEADER_LENGTH);
+        nakHeader.wrap(new AtomicBuffer(nakBuffer), 0);
+
+        nakHeader.length(length)
+                .termOffset(0)
+                .termId(termId)
+                .channelId(CHANNEL_ID)
+                .sessionId(SESSION_ID)
+                .frameLength(NakFlyweight.HEADER_LENGTH)
+                .headerType(HeaderFlyweight.HDR_TYPE_NAK)
+                .flags((short)0)
+                .version(HeaderFlyweight.CURRENT_VERSION);
+
+        nakBuffer.position(0);
+        nakBuffer.limit(NakFlyweight.HEADER_LENGTH);
+        final int byteSent = receiverChannel.send(nakBuffer, srcAddr);
+
+        assertThat(byteSent, is(NakFlyweight.HEADER_LENGTH));
     }
 }

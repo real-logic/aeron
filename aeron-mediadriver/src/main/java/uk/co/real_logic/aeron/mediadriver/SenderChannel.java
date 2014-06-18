@@ -18,8 +18,10 @@ package uk.co.real_logic.aeron.mediadriver;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
 import uk.co.real_logic.aeron.mediadriver.buffer.LogBuffers;
 import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
+import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogScanner;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
@@ -46,14 +48,6 @@ public class SenderChannel
         int sendTo(final ByteBuffer buffer, final InetSocketAddress addr) throws Exception;
     }
 
-    /*
-     * interface for changing or redirecting grabbing current time (in nanos) (mostly for testing)
-     */
-    public interface TimeFunction
-    {
-        long currentTime();
-    }
-
     /** initial heartbeat timeout (cancelled by SM) */
     public static final int INITIAL_HEARTBEAT_TIMEOUT_MS = 100;
     public static final long INITIAL_HEARTBEAT_TIMEOUT_NS = MILLISECONDS.toNanos(INITIAL_HEARTBEAT_TIMEOUT_MS);
@@ -63,6 +57,7 @@ public class SenderChannel
 
     private final ControlFrameHandler frameHandler;
     private final SenderControlStrategy controlStrategy;
+    private final TimerWheel timerWheel;
 
     private final BufferRotator buffers;
     private final long sessionId;
@@ -79,9 +74,13 @@ public class SenderChannel
     private final ByteBuffer scratchSendBuffer = ByteBuffer.allocateDirect(DataHeaderFlyweight.HEADER_LENGTH);
     private final AtomicBuffer scratchAtomicBuffer = new AtomicBuffer(scratchSendBuffer);
     private final LogScanner[] scanners;
+    private final RetransmitHandler retransmitHandlers[];
 
     private final ByteBuffer[] termSendBuffers;
+    private final ByteBuffer[] termRetransmitBuffers;
+
     private final SenderFlowControlState activeFlowControlState = new SenderFlowControlState(0);
+
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
     private int currentIndex = 0;
@@ -89,10 +88,10 @@ public class SenderChannel
     private long nextOffset = 0;
 
     private final SendFunction sendFunction;
-    private final TimeFunction timeFunction;
     private final InetSocketAddress destAddr;
 
     public SenderChannel(final ControlFrameHandler frameHandler,
+                         final TimerWheel timerWheel,
                          final SenderControlStrategy controlStrategy,
                          final BufferRotator buffers,
                          final long sessionId,
@@ -100,39 +99,27 @@ public class SenderChannel
                          final long initialTermId,
                          final int headerLength,
                          final int mtuLength,
-                         final SendFunction sendFunction,
-                         final TimeFunction timeFunction)
+                         final SendFunction sendFunction)
     {
         this.frameHandler = frameHandler;
         this.destAddr = frameHandler.destination().remoteData();
         this.controlStrategy = controlStrategy;
+        this.timerWheel = timerWheel;
         this.buffers = buffers;
         this.sessionId = sessionId;
         this.channelId = channelId;
         this.headerLength = headerLength;
         this.mtuLength = mtuLength;
         this.sendFunction = sendFunction;
-        this.timeFunction = timeFunction;
 
         scanners = buffers.buffers().map(this::newScanner).toArray(LogScanner[]::new);
         termSendBuffers = buffers.buffers().map(this::duplicateLogBuffer).toArray(ByteBuffer[]::new);
+        termRetransmitBuffers = buffers.buffers().map(this::duplicateLogBuffer).toArray(ByteBuffer[]::new);
+        retransmitHandlers = buffers.buffers().map(this::newRetransmitHandler).toArray(RetransmitHandler[]::new);
 
         currentTermId = new AtomicLong(initialTermId);
         cleanedTermId = new AtomicLong(initialTermId + 2);
-        timeOfLastSendOrHeartbeat = new AtomicLong(this.timeFunction.currentTime());
-    }
-
-    private ByteBuffer duplicateLogBuffer(final LogBuffers log)
-    {
-        final ByteBuffer buffer = log.logBuffer().duplicateByteBuffer();
-        buffer.clear();
-
-        return buffer;
-    }
-
-    public LogScanner newScanner(final LogBuffers log)
-    {
-        return new LogScanner(log.logBuffer(), log.stateBuffer(), headerLength);
+        timeOfLastSendOrHeartbeat = new AtomicLong(this.timerWheel.now());
     }
 
     public boolean send()
@@ -167,7 +154,7 @@ public class SenderChannel
                         // TODO: error
                     }
 
-                    timeOfLastSendOrHeartbeat.lazySet(timeFunction.currentTime());
+                    timeOfLastSendOrHeartbeat.lazySet(timerWheel.now());
 
                     nextOffset = align(offset + length, FrameDescriptor.FRAME_ALIGNMENT);
 //                    nextOffset = align((int)(dataHeader.termOffset() + dataHeader.frameLength()),
@@ -222,6 +209,22 @@ public class SenderChannel
         statusMessagesSeen++;
     }
 
+    /**
+     * This is performed on the Media Conductor thread
+     */
+    public void onNakFrame(final long termId, final long termOffset, final long length)
+    {
+        // TODO: finish. Find retransmitHandler from array and call onNak on it
+    }
+
+    /**
+     * This is performed on the Media Conductor thread
+     */
+    private void onSendRetransmit(final AtomicBuffer buffer, final int offset, final int length)
+    {
+        // TODO: finish. Use termRetransmitBuffers, but need to know which one...
+    }
+
     public void sendHeartbeat()
     {
         // called from conductor thread on timeout
@@ -252,7 +255,7 @@ public class SenderChannel
                 System.out.println("Error sending heartbeat packet");
             }
 
-            timeOfLastSendOrHeartbeat.lazySet(timeFunction.currentTime());
+            timeOfLastSendOrHeartbeat.lazySet(timerWheel.now());
         }
         catch (final Exception ex)
         {
@@ -267,7 +270,7 @@ public class SenderChannel
 
         if (statusMessagesSeen > 0)
         {
-            if ((timeFunction.currentTime() - timeOfLastSendOrHeartbeat.get()) > HEARTBEAT_TIMEOUT_NS)
+            if ((timerWheel.now() - timeOfLastSendOrHeartbeat.get()) > HEARTBEAT_TIMEOUT_NS)
             {
                 sendHeartbeat();
                 heartbeatSent = true;
@@ -275,7 +278,7 @@ public class SenderChannel
         }
         else
         {
-            if ((timeFunction.currentTime() - timeOfLastSendOrHeartbeat.get()) > INITIAL_HEARTBEAT_TIMEOUT_NS)
+            if ((timerWheel.now() - timeOfLastSendOrHeartbeat.get()) > INITIAL_HEARTBEAT_TIMEOUT_NS)
             {
                 sendHeartbeat();
                 heartbeatSent = true;
@@ -309,5 +312,25 @@ public class SenderChannel
         }
 
         return rotated;
+    }
+
+    private ByteBuffer duplicateLogBuffer(final LogBuffers log)
+    {
+        final ByteBuffer buffer = log.logBuffer().duplicateByteBuffer();
+        buffer.clear();
+
+        return buffer;
+    }
+
+    private LogScanner newScanner(final LogBuffers log)
+    {
+        return new LogScanner(log.logBuffer(), log.stateBuffer(), headerLength);
+    }
+
+    private RetransmitHandler newRetransmitHandler(final LogBuffers log)
+    {
+        return new RetransmitHandler(new LogReader(log.logBuffer(), log.stateBuffer()),
+            timerWheel, MediaConductor.RETRANS_UNICAST_DELAY_GENERATOR,
+            MediaConductor.RETRANS_UNICAST_LINGER_GENERATOR, this::onSendRetransmit);
     }
 }

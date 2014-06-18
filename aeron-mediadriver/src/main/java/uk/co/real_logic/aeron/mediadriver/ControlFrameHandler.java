@@ -119,7 +119,7 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
     {
         final SenderChannel channel = findChannel(nak.sessionId(), nak.channelId());
 
-        // TODO: have the sender channel, so look for the term within it
+        channel.onNakFrame(nak.termId(), nak.termOffset(), nak.length());
     }
 
     public void onDataFrame(final DataHeaderFlyweight header, final AtomicBuffer buffer,

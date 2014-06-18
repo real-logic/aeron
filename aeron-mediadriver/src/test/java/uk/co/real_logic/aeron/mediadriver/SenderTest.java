@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import org.junit.*;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
+import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.*;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
@@ -62,6 +63,11 @@ public class SenderTest
 
     private long currentTimestamp;
 
+    private final TimerWheel wheel = new TimerWheel(() -> currentTimestamp,
+        MediaDriver.MEDIA_CONDUCTOR_TICK_DURATION_US,
+        TimeUnit.MICROSECONDS,
+        MediaDriver.MEDIA_CONDUCTOR_TICKS_PER_WHEEL);
+
     private final Queue<ByteBuffer> receivedFrames = new ArrayDeque<>();
 
     private final UdpDestination destination = UdpDestination.parse("udp://localhost:40123");
@@ -82,8 +88,6 @@ public class SenderTest
             return size;
         };
 
-    private SenderChannel.TimeFunction timeFunction = () -> currentTimestamp;
-
     @Before
     public void setUp()
     {
@@ -94,9 +98,9 @@ public class SenderTest
         logAppenders = rotator.buffers().map((log) -> new LogAppender(log.logBuffer(), log.stateBuffer(),
                 HEADER, MAX_FRAME_LENGTH)).toArray(LogAppender[]::new);
 
-        channel = new SenderChannel(mockFrameHandler, spySenderControlStrategy, rotator, SESSION_ID,
+        channel = new SenderChannel(mockFrameHandler, wheel, spySenderControlStrategy, rotator, SESSION_ID,
                                     CHANNEL_ID, INITIAL_TERM_ID, HEADER.length,
-                                    MAX_FRAME_LENGTH, sendFunction, timeFunction);
+                                    MAX_FRAME_LENGTH, sendFunction);
         sender.addChannel(channel);
     }
 

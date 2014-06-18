@@ -147,6 +147,14 @@ public class MediaDriver implements AutoCloseable
      * Default max backoff for retransmit delay randomization in msec
      */
     public static final int RETRANS_MAX_BACKOFF_DEFAULT = 60;
+    /**
+     * Default delay for retransmission of data for unicast
+     */
+    public static final long RETRANS_UNICAST_DELAY_DEFAULT_NANOS = TimeUnit.NANOSECONDS.toNanos(0);
+    /**
+     * Default delay for linger for unicast
+     */
+    public static final long RETRANS_UNICAST_LINGER_DEFAULT_NANOS = TimeUnit.MILLISECONDS.toNanos(60);
 
     /**
      * Default max number of active retransmissions per Term

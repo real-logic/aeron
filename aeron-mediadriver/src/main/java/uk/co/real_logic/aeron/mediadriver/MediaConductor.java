@@ -50,6 +50,11 @@ public class MediaConductor extends Agent
     public static final StaticDelayGenerator NAK_UNICAST_DELAY_GENERATOR =
         new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(NAK_UNICAST_DELAY_DEFAULT_NANOS), true);
 
+    public static final FeedbackDelayGenerator RETRANS_UNICAST_DELAY_GENERATOR =
+        () -> RETRANS_UNICAST_DELAY_DEFAULT_NANOS;
+    public static final FeedbackDelayGenerator RETRANS_UNICAST_LINGER_GENERATOR =
+        () -> RETRANS_UNICAST_LINGER_DEFAULT_NANOS;
+
     private final RingBuffer localCommandBuffer;
     private final ReceiverProxy receiverProxy;
     private final NioSelector nioSelector;
@@ -307,6 +312,7 @@ public class MediaConductor extends Agent
                 bufferManagement.addPublisherChannel(srcDestination, sessionId, channelId);
 
             channel = new SenderChannel(frameHandler,
+                                        timerWheel,
                                         senderFlowControl.get(),
                                         buffers,
                                         sessionId,
@@ -314,9 +320,7 @@ public class MediaConductor extends Agent
                                         initialTermId,
                                         HEADER_LENGTH,
                                         mtuLength,
-                                        frameHandler::sendTo,
-                                        timerWheel::now
-                    );
+                                        frameHandler::sendTo);
 
             frameHandler.addChannel(channel);
             sendNewBufferNotification(sessionId, channelId, initialTermId, true, destination, buffers);

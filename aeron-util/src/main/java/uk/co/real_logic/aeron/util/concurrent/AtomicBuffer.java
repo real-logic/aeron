@@ -194,6 +194,16 @@ public class AtomicBuffer
         }
     }
 
+    /**
+     * Return the underlying {@link ByteBuffer} if one is attached.
+     *
+     * @return the underlying {@link ByteBuffer} if one is attached.
+     */
+    public ByteBuffer byteBuffer()
+    {
+        return byteBuffer;
+    }
+
     ///////////////////////////////////////////////////////////////////////////
 
     /**

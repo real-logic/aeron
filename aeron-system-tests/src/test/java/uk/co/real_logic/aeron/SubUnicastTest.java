@@ -282,15 +282,13 @@ public class SubUnicastTest
         {
             nakHeader.wrap(atomicBuffer, 0);
             assertThat(nakHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_NAK));
-            assertThat(nakHeader.frameLength(), is(NakFlyweight.HEADER_LENGTH_SINGLE_RANGE));
+            assertThat(nakHeader.frameLength(), is(NakFlyweight.HEADER_LENGTH));
             assertThat(buffer.position(), is(nakHeader.frameLength()));
             assertThat(nakHeader.channelId(), is(CHANNEL_ID));
             assertThat(nakHeader.sessionId(), is(SESSION_ID));
-            assertThat(nakHeader.countOfRanges(), is(1));
-            assertThat(nakHeader.startTermId(0), is(TERM_ID));
-            assertThat(nakHeader.endTermId(0), is(TERM_ID));
-            assertThat(nakHeader.startTermOffset(0), is((long)FrameDescriptor.FRAME_ALIGNMENT));
-            assertThat(nakHeader.endTermOffset(0), is((long)(2 * FrameDescriptor.FRAME_ALIGNMENT)));
+            assertThat(nakHeader.termId(), is(TERM_ID));
+            assertThat(nakHeader.termOffset(), is((long)FrameDescriptor.FRAME_ALIGNMENT));
+            assertThat(nakHeader.length(), is((long)FrameDescriptor.FRAME_ALIGNMENT));
             assertThat(addr, is(rcvAddr));
             buffer.clear();
             naksSeen++;

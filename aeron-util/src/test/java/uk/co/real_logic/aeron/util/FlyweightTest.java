@@ -30,6 +30,7 @@ import static org.junit.Assert.assertThat;
 public class FlyweightTest
 {
     private final ByteBuffer buffer = ByteBuffer.allocateDirect(512);
+
     private final AtomicBuffer aBuff = new AtomicBuffer(buffer);
     private final HeaderFlyweight encodeHeader = new HeaderFlyweight();
     private final HeaderFlyweight decodeHeader = new HeaderFlyweight();
@@ -41,6 +42,8 @@ public class FlyweightTest
     private final ErrorHeaderFlyweight decodeErrorHeader = new ErrorHeaderFlyweight();
     private final NewBufferMessageFlyweight encodeNewBuffer = new NewBufferMessageFlyweight();
     private final NewBufferMessageFlyweight decodeNewBuffer = new NewBufferMessageFlyweight();
+    private final NakFlyweight encodeNakHeader = new NakFlyweight();
+    private final NakFlyweight decodeNakHeader = new NakFlyweight();
 
     @Test
     public void shouldWriteCorrectValuesForGenericHeaderFields()
@@ -130,6 +133,32 @@ public class FlyweightTest
         assertThat(decodeDataHeader.channelId(), is(0x44332211L));
         assertThat(decodeDataHeader.termId(), is(0x99887766L));
         assertThat(decodeDataHeader.dataOffset(), is(DataHeaderFlyweight.HEADER_LENGTH));
+    }
+
+    @Test
+    public void shouldEncodeAndDecodeNakCorrectly()
+    {
+        encodeNakHeader.wrap(aBuff, 0);
+        encodeNakHeader.version((short) 1);
+        encodeNakHeader.flags((byte) 0);
+        encodeNakHeader.headerType(HeaderFlyweight.HDR_TYPE_NAK);
+        encodeNakHeader.frameLength(NakFlyweight.HEADER_LENGTH);
+        encodeNakHeader.sessionId(0xdeadbeefL);
+        encodeNakHeader.channelId(0x44332211L);
+        encodeNakHeader.termId(0x99887766L);
+        encodeNakHeader.termOffset(0x22334L);
+        encodeNakHeader.length(512L);
+
+        decodeNakHeader.wrap(aBuff, 0);
+        assertThat(decodeNakHeader.version(), is((short) 1));
+        assertThat(decodeNakHeader.flags(), is((short)0));
+        assertThat(decodeNakHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_NAK));
+        assertThat(decodeNakHeader.frameLength(), is(NakFlyweight.HEADER_LENGTH));
+        assertThat(decodeNakHeader.sessionId(), is(0xdeadbeefL));
+        assertThat(decodeNakHeader.channelId(), is(0x44332211L));
+        assertThat(decodeNakHeader.termId(), is(0x99887766L));
+        assertThat(decodeNakHeader.termOffset(), is(0x22334L));
+        assertThat(decodeNakHeader.length(), is(512L));
     }
 
     @Test

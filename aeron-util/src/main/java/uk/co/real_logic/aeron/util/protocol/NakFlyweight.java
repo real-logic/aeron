@@ -25,41 +25,13 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  */
 public class    NakFlyweight extends HeaderFlyweight
 {
-    public static final int MAX_RANGES = 16;
-    public static final int HEADER_LENGTH_SINGLE_RANGE = length(1);
-
-    private static final int RANGE_SIZE = 16;
-    private static final int START_TERM_ID_RELATIVE_OFFSET = 0;
-    private static final int START_TERM_OFFSET_RELATIVE_OFFSET = 4;
-    private static final int END_TERM_ID_RELATIVE_OFFSET = 8;
-    private static final int END_TERM_OFFSET_RELATIVE_OFFSET = 12;
+    public static final int HEADER_LENGTH = 28;
 
     private static final int SESSION_ID_FIELD_OFFSET = 8;
     private static final int CHANNEL_ID_FIELD_OFFSET = 12;
-    private static final int RANGES_FIELDS_OFFSET = 16;
-
-    public NakFlyweight countOfRanges(int countOfRanges)
-    {
-        if (countOfRanges > MAX_RANGES)
-        {
-            String message = String.format("You may request up to %d sequence number ranges, not %d",
-                    MAX_RANGES, countOfRanges);
-            throw new IllegalArgumentException(message);
-        }
-
-        frameLength(RANGES_FIELDS_OFFSET + countOfRanges * RANGE_SIZE);
-        return this;
-    }
-
-    public int countOfRanges()
-    {
-        return (frameLength() - RANGES_FIELDS_OFFSET) / RANGE_SIZE;
-    }
-
-    public static int length(final int countOfRanges)
-    {
-        return RANGES_FIELDS_OFFSET + (countOfRanges * RANGE_SIZE);
-    }
+    private static final int TERM_ID_FIELD_OFFSET = 16;
+    private static final int TERM_OFFSET_FIELD_OFFSET = 20;
+    private static final int LENGTH_FIELD_OFFSET = 24;
 
     /**
      * return session id field
@@ -104,47 +76,62 @@ public class    NakFlyweight extends HeaderFlyweight
     }
 
     /**
-     * set a loss range
-     *
+     * return term id field
+     * @return term id field
+     */
+    public long termId()
+    {
+        return uint32Get(offset() + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+    }
+
+    /**
+     * set term id field
+     * @param termId field value
      * @return flyweight
      */
-    public NakFlyweight range(final long startTermId,
-                              final long startTermOffset,
-                              final long endTermId,
-                              final long endTermOffset,
-                              final int index)
+    public NakFlyweight termId(final long termId)
     {
-        final int offset = rangeOffset(index);
-        uint32Put(offset + START_TERM_ID_RELATIVE_OFFSET, startTermId, LITTLE_ENDIAN);
-        uint32Put(offset + START_TERM_OFFSET_RELATIVE_OFFSET, startTermOffset, LITTLE_ENDIAN);
-        uint32Put(offset + END_TERM_ID_RELATIVE_OFFSET, endTermId, LITTLE_ENDIAN);
-        uint32Put(offset + END_TERM_OFFSET_RELATIVE_OFFSET, endTermOffset, LITTLE_ENDIAN);
+        uint32Put(offset() + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
         return this;
     }
 
-    public long startTermId(final int index)
+    /**
+     * return term offset field
+     * @return term offset field
+     */
+    public long termOffset()
     {
-        return uint32Get(rangeOffset(index) + START_TERM_ID_RELATIVE_OFFSET, LITTLE_ENDIAN);
+        return uint32Get(offset() + TERM_OFFSET_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
-    public long startTermOffset(final int index)
+    /**
+     * set term offset field
+     * @param termOffset field value
+     * @return flyweight
+     */
+    public NakFlyweight termOffset(final long termOffset)
     {
-        return uint32Get(rangeOffset(index) + START_TERM_OFFSET_RELATIVE_OFFSET, LITTLE_ENDIAN);
+        uint32Put(offset() + TERM_OFFSET_FIELD_OFFSET, termOffset, LITTLE_ENDIAN);
+        return this;
     }
 
-    public long endTermId(final int index)
+    /**
+     * return length field
+     * @return length field
+     */
+    public long length()
     {
-        return uint32Get(rangeOffset(index) + END_TERM_ID_RELATIVE_OFFSET, LITTLE_ENDIAN);
+        return uint32Get(offset() + LENGTH_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
-    public long endTermOffset(final int index)
+    /**
+     * set length field
+     * @param length field value
+     * @return flyweight
+     */
+    public NakFlyweight length(final long length)
     {
-        return uint32Get(rangeOffset(index) + END_TERM_OFFSET_RELATIVE_OFFSET, LITTLE_ENDIAN);
+        uint32Put(offset() + LENGTH_FIELD_OFFSET, length, LITTLE_ENDIAN);
+        return this;
     }
-
-    private int rangeOffset(final int index)
-    {
-        return offset() + RANGES_FIELDS_OFFSET + (RANGE_SIZE * index);
-    }
-
 }

@@ -214,8 +214,10 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         nakHeader.wrap(writeNakBuffer, 0);
         nakHeader.channelId(session.channelId())
                  .sessionId(session.sessionId())
-                 .countOfRanges(1)
-                 .range(termId, termOffset, termId, termOffset + length, 0)
+                 .termId(termId)
+                 .termOffset(termOffset)
+                 .length(length)
+                 .frameLength(NakFlyweight.HEADER_LENGTH)
                  .headerType(HeaderFlyweight.HDR_TYPE_NAK)
                  .flags((byte)0)
                  .version(HeaderFlyweight.CURRENT_VERSION);
@@ -223,7 +225,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         sendNakBuffer.position(0);
         sendNakBuffer.limit(nakHeader.frameLength());
 
-        //System.out.println("sendNak " + termId + " " + length + "@" + termOffset + " " + sendNakBuffer.remaining());
+//        System.out.println("sendNak " + termId + " " + length + "@" + termOffset + " " + sendNakBuffer.remaining());
         try
         {
             if (transport.sendTo(sendNakBuffer, session.sourceAddress()) < nakHeader.frameLength())

@@ -59,9 +59,9 @@ public class Subscription
         return subscribedSessionBySessionIdMap.get(sessionId);
     }
 
-    public SubscribedSession createSubscribedSession(final long sessionId, final InetSocketAddress srcAddr)
+    public SubscribedSession createSubscribedSession(final long sessionId, final InetSocketAddress srcAddress)
     {
-        final SubscribedSession subscribedSession = new SubscribedSession(sessionId, channelId, srcAddr);
+        final SubscribedSession subscribedSession = new SubscribedSession(sessionId, channelId, srcAddress);
         globallySubscribedSessions.add(subscribedSession);
 
         return subscribedSessionBySessionIdMap.put(sessionId, subscribedSession);

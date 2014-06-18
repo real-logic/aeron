@@ -200,7 +200,7 @@ public class Receiver extends Agent
         frameHandler.removeChannels(channelIds);
 
         // if all channels gone, then take care of removing everything and closing the framehandler
-        if (0 == frameHandler.channelCount())
+        if (0 == frameHandler.subscribedChannelCount())
         {
             frameHandlerByDestinationMap.remove(rcvDestination);
             frameHandler.close();

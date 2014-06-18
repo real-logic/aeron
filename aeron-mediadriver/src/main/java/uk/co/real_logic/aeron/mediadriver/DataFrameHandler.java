@@ -102,44 +102,44 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         }
     }
 
-    public int channelCount()
+    public int subscribedChannelCount()
     {
         return subscriptionByChannelIdMap.size();
     }
 
-    public void onDataFrame(final DataHeaderFlyweight header, final AtomicBuffer buffer,
-                            final long length, final InetSocketAddress srcAddress)
+    public void onDataFrame(final DataHeaderFlyweight header,
+                            final AtomicBuffer buffer,
+                            final long length,
+                            final InetSocketAddress srcAddress)
     {
         final long channelId = header.channelId();
-
         final Subscription subscription = subscriptionByChannelIdMap.get(channelId);
-        if (null == subscription)
-        {
-            return;  // not interested in this channel at all
-        }
 
-        final long sessionId = header.sessionId();
-        final long termId = header.termId();
-        final SubscribedSession subscribedSession = subscription.getSubscribedSession(sessionId);
-        if (null != subscribedSession)
+        if (null != subscription)
         {
-            if (header.frameLength() > DataHeaderFlyweight.HEADER_LENGTH)
+            final long sessionId = header.sessionId();
+            final long termId = header.termId();
+            final SubscribedSession subscribedSession = subscription.getSubscribedSession(sessionId);
+
+            if (null != subscribedSession)
             {
-                subscribedSession.rebuildBuffer(header, buffer, length);
+                if (header.frameLength() > DataHeaderFlyweight.HEADER_LENGTH)
+                {
+                    subscribedSession.rebuildBuffer(header, buffer, length);
+                }
             }
-        }
-        else
-        {
-            subscription.createSubscribedSession(sessionId, srcAddress);
-
-            // ask conductor thread to create buffer for destination, sessionId, channelId, and termId
-            // NB: this only needs to happen the first time, since we use status to detect rollovers
-            conductorProxy.createTermBuffer(destination(), sessionId, channelId, termId);
+            else
+            {
+                subscription.createSubscribedSession(sessionId, srcAddress);
+                conductorProxy.createTermBuffer(destination(), sessionId, channelId, termId);
+            }
         }
     }
 
-    public void onStatusMessageFrame(final StatusMessageFlyweight header, final AtomicBuffer buffer,
-                                     final long length, final InetSocketAddress srcAddress)
+    public void onStatusMessageFrame(final StatusMessageFlyweight header,
+                                     final AtomicBuffer buffer,
+                                     final long length,
+                                     final InetSocketAddress srcAddress)
     {
         // this should be on the data channel and shouldn't include SMs, so ignore.
     }
@@ -164,7 +164,6 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
             throw new IllegalStateException("session not found");
         }
 
-        // for unicast, do the sending of NAKs on the DataFrameHandler
         lossHandler.sendNakHandler(
             (termId, termOffset, length) -> sendNak(subscriberSession, (int)termId, termOffset, length));
 
@@ -222,7 +221,6 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         sendNakBuffer.position(0);
         sendNakBuffer.limit(nakHeader.frameLength());
 
-//        System.out.println("sendNak " + termId + " " + length + "@" + termOffset + " " + sendNakBuffer.remaining());
         try
         {
             if (transport.sendTo(sendNakBuffer, session.sourceAddress()) < nakHeader.frameLength())

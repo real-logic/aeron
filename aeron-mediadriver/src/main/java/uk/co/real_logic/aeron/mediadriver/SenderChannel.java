@@ -40,8 +40,8 @@ import static uk.co.real_logic.aeron.util.BitUtil.align;
  */
 public class SenderChannel
 {
-    /*
-     * interface for changing or redirecting sending (mostly testing)
+    /**
+     * Interface for changing or redirecting sending (mostly testing)
      */
     public interface SendFunction
     {

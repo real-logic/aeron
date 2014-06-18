@@ -178,26 +178,6 @@ public final class Aeron implements AutoCloseable
     }
 
     /**
-     * Create an array of sources.
-     * <p>
-     * Convenience function to make it easier to create a number of Sources easier.
-     *
-     * @param contexts for the source options, etc.
-     * @return array of new sources.
-     */
-    public Source[] newSources(final Source.Context[] contexts)
-    {
-        final Source[] sources = new Source[contexts.length];
-
-        for (int i = 0, max = contexts.length; i < max; i++)
-        {
-            sources[i] = newSource(contexts[i]);
-        }
-
-        return sources;
-    }
-
-    /**
      * Create a new receiver that will listen on {@link Destination}
      *
      * @param context context for receiver options.

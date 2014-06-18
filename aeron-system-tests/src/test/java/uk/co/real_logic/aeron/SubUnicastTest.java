@@ -59,8 +59,8 @@ public class SubUnicastTest
 
     private final AtomicBuffer payload = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
 
-    private final InetSocketAddress rcvAddr = new InetSocketAddress(HOST, PORT);
-    private final InetSocketAddress srcAddr = new InetSocketAddress(HOST, SRC_PORT);
+    private final InetSocketAddress rcvAddress = new InetSocketAddress(HOST, PORT);
+    private final InetSocketAddress srcAddress = new InetSocketAddress(HOST, SRC_PORT);
 
     private Aeron consumingClient;
     private MediaDriver driver;
@@ -71,21 +71,14 @@ public class SubUnicastTest
     private final Subscriber.DataHandler saveFrames =
         (buffer, offset, length, sessionId) ->
         {
-//            System.out.println("saveFrame " + sessionId + " " + length + "@" + offset);
             final byte[] data = new byte[length];
             buffer.getBytes(offset, data);
             receivedFrames.add(data);
         };
     private final Subscriber.NewSourceEventHandler newSource =
-        (channelId, sessionId) ->
-        {
-            System.out.println("newSource " + sessionId + " " + channelId);
-        };
+        (channelId, sessionId) -> System.out.println("newSource " + sessionId + " " + channelId);
     private final Subscriber.InactiveSourceEventHandler inactiveSource =
-        (channelId, sessionId) ->
-        {
-            System.out.println("inactiveSource " + sessionId + " " + channelId);
-        };
+        (channelId, sessionId) -> System.out.println("inactiveSource " + sessionId + " " + channelId);
 
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
@@ -100,17 +93,17 @@ public class SubUnicastTest
 
         senderChannel = DatagramChannel.open();
         senderChannel.configureBlocking(false);
-        senderChannel.bind(srcAddr);
+        senderChannel.bind(srcAddress);
 
         driver = new MediaDriver();
 
         consumingClient = Aeron.newSingleMediaDriver(newAeronContext());
 
         subscriber = consumingClient.newSubscriber(new Subscriber.Context()
-                .destination(DESTINATION)
-                .channel(CHANNEL_ID, saveFrames)
-                .newSourceEvent(newSource)
-                .inactiveSourceEvent(inactiveSource));
+                                                       .destination(DESTINATION)
+                                                       .channel(CHANNEL_ID, saveFrames)
+                                                       .newSourceEvent(newSource)
+                                                       .inactiveSourceEvent(inactiveSource));
 
         payload.putBytes(0, PAYLOAD);
 
@@ -156,8 +149,8 @@ public class SubUnicastTest
         int smsSeen = 0;
 
         // should receive SM from consumer
-        InetSocketAddress addr;
-        while((addr = (InetSocketAddress) senderChannel.receive(buffer)) != null)
+        InetSocketAddress address;
+        while ((address = (InetSocketAddress)senderChannel.receive(buffer)) != null)
         {
             statusMessage.wrap(atomicBuffer, 0);
             assertThat(statusMessage.headerType(), is(HeaderFlyweight.HDR_TYPE_SM));
@@ -166,7 +159,7 @@ public class SubUnicastTest
             assertThat(statusMessage.sessionId(), is(SESSION_ID));
             assertThat(statusMessage.termId(), is(TERM_ID));
             assertThat(buffer.position(), is(StatusMessageFlyweight.HEADER_LENGTH));
-            assertThat(addr, is(rcvAddr));
+            assertThat(address, is(rcvAddress));
             buffer.clear();
             smsSeen++;
         }
@@ -204,9 +197,7 @@ public class SubUnicastTest
         final AtomicBuffer atomicBuffer = new AtomicBuffer(buffer);
         int smsSeen = 0;
 
-        // should receive SM from consumer
-        InetSocketAddress addr;
-        while((addr = (InetSocketAddress) senderChannel.receive(buffer)) != null)
+        while (senderChannel.receive(buffer) != null)
         {
             statusMessage.wrap(atomicBuffer, 0);
             assertThat(statusMessage.headerType(), is(HeaderFlyweight.HDR_TYPE_SM));
@@ -252,9 +243,7 @@ public class SubUnicastTest
         final AtomicBuffer atomicBuffer = new AtomicBuffer(buffer);
         int smsSeen = 0, naksSeen = 0;
 
-        // should receive SM from consumer
-        InetSocketAddress addr;
-        while((addr = (InetSocketAddress) senderChannel.receive(buffer)) != null)
+        while (senderChannel.receive(buffer) != null)
         {
             statusMessage.wrap(atomicBuffer, 0);
             assertThat(statusMessage.headerType(), is(HeaderFlyweight.HDR_TYPE_SM));
@@ -278,7 +267,8 @@ public class SubUnicastTest
         assertThat(receivedFrames.remove(), is(PAYLOAD));
 
         buffer.clear();
-        while((addr = (InetSocketAddress) senderChannel.receive(buffer)) != null)
+        InetSocketAddress address;
+        while ((address = (InetSocketAddress)senderChannel.receive(buffer)) != null)
         {
             nakHeader.wrap(atomicBuffer, 0);
             assertThat(nakHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_NAK));
@@ -289,7 +279,7 @@ public class SubUnicastTest
             assertThat(nakHeader.termId(), is(TERM_ID));
             assertThat(nakHeader.termOffset(), is((long)FrameDescriptor.FRAME_ALIGNMENT));
             assertThat(nakHeader.length(), is((long)FrameDescriptor.FRAME_ALIGNMENT));
-            assertThat(addr, is(rcvAddr));
+            assertThat(address, is(rcvAddress));
             buffer.clear();
             naksSeen++;
         }
@@ -315,8 +305,7 @@ public class SubUnicastTest
         int smsSeen = 0, naksSeen = 0;
 
         // should receive SM from consumer
-        InetSocketAddress addr;
-        while((addr = (InetSocketAddress) senderChannel.receive(buffer)) != null)
+        while (senderChannel.receive(buffer) != null)
         {
             statusMessage.wrap(atomicBuffer, 0);
             assertThat(statusMessage.headerType(), is(HeaderFlyweight.HDR_TYPE_SM));
@@ -340,11 +329,12 @@ public class SubUnicastTest
         assertThat(receivedFrames.remove(), is(PAYLOAD));
 
         buffer.clear();
-        while((addr = (InetSocketAddress) senderChannel.receive(buffer)) != null)
+        InetSocketAddress address;
+        while ((address = (InetSocketAddress)senderChannel.receive(buffer)) != null)
         {
             nakHeader.wrap(atomicBuffer, 0);
             assertThat(nakHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_NAK));
-            assertThat(addr, is(rcvAddr));
+            assertThat(address, is(rcvAddress));
             buffer.clear();
             naksSeen++;
         }
@@ -366,7 +356,7 @@ public class SubUnicastTest
     private void sendDataFrame(final long termOffset, final byte[] payload) throws Exception
     {
         final int frameLength = align(DataHeaderFlyweight.HEADER_LENGTH + payload.length,
-                FrameDescriptor.FRAME_ALIGNMENT);
+                                      FrameDescriptor.FRAME_ALIGNMENT);
         final ByteBuffer dataBuffer = ByteBuffer.allocate(frameLength);
         final AtomicBuffer dataAtomicBuffer = new AtomicBuffer(dataBuffer);
 
@@ -387,7 +377,7 @@ public class SubUnicastTest
 
         dataBuffer.position(0);
         dataBuffer.limit(frameLength);
-        final int byteSent = senderChannel.send(dataBuffer, rcvAddr);
+        final int byteSent = senderChannel.send(dataBuffer, rcvAddress);
 
         assertThat(byteSent, is(frameLength));
     }

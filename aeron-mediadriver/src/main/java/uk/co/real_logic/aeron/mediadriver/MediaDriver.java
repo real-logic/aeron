@@ -315,24 +315,24 @@ public class MediaDriver implements AutoCloseable
     {
         if (null != senderThread)
         {
-            stopDaemonThread(senderThread, sender);
+            shutdown(senderThread, sender);
         }
 
         if (null != receiverThread)
         {
-            stopDaemonThread(receiverThread, receiver);
+            shutdown(receiverThread, receiver);
         }
 
         if (null != conductorThread)
         {
-            stopDaemonThread(conductorThread, conductor);
+            shutdown(conductorThread, conductor);
         }
 
         if (null != executor)
         {
-            stopExecutorThread(senderFuture, sender);
-            stopExecutorThread(receiverFuture, receiver);
-            stopExecutorThread(conductorFuture, conductor);
+            shutdownExecutorThread(senderFuture, sender);
+            shutdownExecutorThread(receiverFuture, receiver);
+            shutdownExecutorThread(conductorFuture, conductor);
 
             executor.shutdown();
         }
@@ -379,7 +379,7 @@ public class MediaDriver implements AutoCloseable
         }
     }
 
-    private void stopDaemonThread(final Thread thread, final Agent agent)
+    private void shutdown(final Thread thread, final Agent agent)
     {
         agent.stop();
         thread.interrupt();
@@ -394,7 +394,8 @@ public class MediaDriver implements AutoCloseable
                 {
                     break;
                 }
-            } catch (final InterruptedException ex)
+            }
+            catch (final InterruptedException ex)
             {
                 System.err.println("Daemon Thread <" + thread.getName() + "> interrupted stop. Retrying...");
                 thread.interrupt();
@@ -403,7 +404,7 @@ public class MediaDriver implements AutoCloseable
         while (true);
     }
 
-    private void stopExecutorThread(final Future future, final Agent agent)
+    private void shutdownExecutorThread(final Future future, final Agent agent)
     {
         agent.stop();
 

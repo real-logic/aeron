@@ -31,7 +31,7 @@ public class Subscription
     private final AtomicArray<SubscribedSession> globallySubscribedSessions;
     private final Long2ObjectHashMap<SubscribedSession> subscribedSessionBySessionIdMap = new Long2ObjectHashMap<>();
 
-    private int refCount = 1;
+    private int refCount = 0;
 
     public Subscription(final UdpDestination destination,
                         final long channelId,

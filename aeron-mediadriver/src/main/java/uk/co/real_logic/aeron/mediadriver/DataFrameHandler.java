@@ -67,21 +67,19 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         return subscriptionByChannelIdMap;
     }
 
-    public void addChannels(final long[] channelIdList)
+    public void addChannels(final long[] channelIds)
     {
-        for (final long channelId : channelIdList)
+        for (final long channelId : channelIds)
         {
             Subscription subscription = subscriptionByChannelIdMap.get(channelId);
 
-            if (null != subscription)
-            {
-                subscription.incRef();
-            }
-            else
+            if (null == subscription)
             {
                 subscription = new Subscription(destination, channelId, conductorProxy, globalSubscribedSessions);
                 subscriptionByChannelIdMap.put(channelId, subscription);
             }
+
+            subscription.incRef();
         }
     }
 

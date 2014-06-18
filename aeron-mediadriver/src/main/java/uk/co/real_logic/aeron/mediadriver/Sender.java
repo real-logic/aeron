@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.mediadriver;
 import uk.co.real_logic.aeron.util.Agent;
 import uk.co.real_logic.aeron.util.AtomicArray;
 
-import static uk.co.real_logic.aeron.mediadriver.MediaDriver.AGENT_SLEEP_NANOS;
+import static uk.co.real_logic.aeron.mediadriver.MediaDriver.AGENT_SLEEP_NS;
 
 /**
  * Agent to take data in sender buffers and demux onto sending sockets
@@ -31,7 +31,7 @@ public class Sender extends Agent
 
     public Sender(final MediaDriver.Context ctx)
     {
-        super(AGENT_SLEEP_NANOS);
+        super(AGENT_SLEEP_NS);
     }
 
     public boolean doWork()

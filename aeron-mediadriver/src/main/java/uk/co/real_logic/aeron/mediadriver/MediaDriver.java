@@ -115,7 +115,7 @@ public class MediaDriver implements AutoCloseable
     /**
      * Default timeout for select
      */
-    public static final int AGENT_SLEEP_DEFAULT_NANOS = 10;
+    public static final int AGENT_SLEEP_DEFAULT_NS = 10;
 
     /**
      * Default group size estimate for NAK delay randomization
@@ -133,7 +133,7 @@ public class MediaDriver implements AutoCloseable
     /**
      * Default Unicast NAK delay in nanoseconds
      */
-    public static final long NAK_UNICAST_DELAY_DEFAULT_NANOS = TimeUnit.MILLISECONDS.toNanos(60);
+    public static final long NAK_UNICAST_DELAY_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(60);
 
     /**
      * Default group size estimate for retransmit delay randomization
@@ -150,11 +150,11 @@ public class MediaDriver implements AutoCloseable
     /**
      * Default delay for retransmission of data for unicast
      */
-    public static final long RETRANS_UNICAST_DELAY_DEFAULT_NANOS = TimeUnit.NANOSECONDS.toNanos(0);
+    public static final long RETRANS_UNICAST_DELAY_DEFAULT_NS = TimeUnit.NANOSECONDS.toNanos(0);
     /**
      * Default delay for linger for unicast
      */
-    public static final long RETRANS_UNICAST_LINGER_DEFAULT_NANOS = TimeUnit.MILLISECONDS.toNanos(60);
+    public static final long RETRANS_UNICAST_LINGER_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(60);
 
     /**
      * Default max number of active retransmissions per Term
@@ -167,7 +167,7 @@ public class MediaDriver implements AutoCloseable
     public static final int READ_BYTE_BUFFER_SZ = getInteger(READ_BUFFER_SZ_PROP_NAME, READ_BYTE_BUFFER_SZ_DEFAULT);
     public static final int COMMAND_BUFFER_SZ = getInteger(COMMAND_BUFFER_SZ_PROP_NAME, COMMAND_BUFFER_SZ_DEFAULT);
     public static final int CONDUCTOR_BUFFER_SZ = getInteger(CONDUCTOR_BUFFER_SZ_PROP_NAME, CONDUCTOR_BUFFER_SZ_DEFAULT);
-    public static final int AGENT_SLEEP_NANOS = getInteger(AGENT_SLEEP_PROP_NAME, AGENT_SLEEP_DEFAULT_NANOS);
+    public static final int AGENT_SLEEP_NS = getInteger(AGENT_SLEEP_PROP_NAME, AGENT_SLEEP_DEFAULT_NS);
     public static final int COUNTERS_BUFFER_SZ = getInteger(COUNTERS_BUFFER_SZ_PROP_NAME, COUNTERS_BUFFER_SZ_DEFAULT);
     public static final int DESCRIPTOR_BUFFER_SZ = getInteger(DESCRIPTOR_BUFFER_SZ_PROP_NAME,
                                                               DESCRIPTOR_BUFFER_SZ_DEFAULT);

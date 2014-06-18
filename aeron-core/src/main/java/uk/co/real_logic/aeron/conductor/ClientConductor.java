@@ -28,10 +28,8 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.status.*;
 
-import javax.sound.midi.Receiver;
 import java.io.IOException;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.IntFunction;
 
 import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
@@ -44,7 +42,7 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 public final class ClientConductor extends Agent
 {
     private static final int MAX_FRAME_LENGTH = 1024;
-    private static final int SLEEP_PERIOD_NANOS = 1;
+    private static final int SLEEP_PERIOD_NS = 1;
 
     private final RingBuffer commandBuffer;
     private final RingBuffer toClientBuffer;
@@ -72,7 +70,7 @@ public final class ClientConductor extends Agent
                            final AtomicArray<SubscriberChannel> subscriberChannels,
                            final ConductorErrorHandler errorHandler)
     {
-        super(SLEEP_PERIOD_NANOS);
+        super(SLEEP_PERIOD_NS);
 
         this.commandBuffer = commandBuffer;
         this.toClientBuffer = toClientBuffer;
@@ -85,9 +83,7 @@ public final class ClientConductor extends Agent
 
     public boolean doWork()
     {
-        boolean hasDoneWork = false;
-
-        hasDoneWork |= handleClientCommandBuffer();
+        boolean hasDoneWork = handleClientCommandBuffer();
         hasDoneWork |= handleMessagesFromMediaDriver();
         performBufferMaintenance();
 

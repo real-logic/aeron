@@ -21,13 +21,11 @@ import uk.co.real_logic.aeron.util.*;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.command.*;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.GapScanner;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -48,12 +46,12 @@ public class MediaConductor extends Agent
      * Unicast NAK delay is immediate initial with delayed subsequent delay
      */
     public static final StaticDelayGenerator NAK_UNICAST_DELAY_GENERATOR =
-        new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(NAK_UNICAST_DELAY_DEFAULT_NANOS), true);
+        new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(NAK_UNICAST_DELAY_DEFAULT_NS), true);
 
     public static final FeedbackDelayGenerator RETRANS_UNICAST_DELAY_GENERATOR =
-        () -> RETRANS_UNICAST_DELAY_DEFAULT_NANOS;
+        () -> RETRANS_UNICAST_DELAY_DEFAULT_NS;
     public static final FeedbackDelayGenerator RETRANS_UNICAST_LINGER_GENERATOR =
-        () -> RETRANS_UNICAST_LINGER_DEFAULT_NANOS;
+        () -> RETRANS_UNICAST_LINGER_DEFAULT_NS;
 
     private final RingBuffer localCommandBuffer;
     private final ReceiverProxy receiverProxy;
@@ -81,7 +79,7 @@ public class MediaConductor extends Agent
 
     public MediaConductor(final Context ctx, final Receiver receiver, final Sender sender)
     {
-        super(AGENT_SLEEP_NANOS);
+        super(AGENT_SLEEP_NS);
 
         this.localCommandBuffer = ctx.mediaCommandBuffer();
         this.receiverProxy = ctx.receiverProxy();
@@ -113,7 +111,7 @@ public class MediaConductor extends Agent
 
         try
         {
-            hasDoneWork |= nioSelector.processKeys();
+            hasDoneWork = nioSelector.processKeys();
         }
         catch (final Exception ex)
         {

@@ -44,7 +44,7 @@ public class Receiver extends Agent
 
     public Receiver(final MediaDriver.Context context) throws Exception
     {
-        super(MediaDriver.AGENT_SLEEP_NANOS);
+        super(MediaDriver.AGENT_SLEEP_NS);
 
         this.commandBuffer = context.receiverCommandBuffer();
         this.conductorProxy = context.mediaConductorProxy();
@@ -58,7 +58,7 @@ public class Receiver extends Agent
         boolean hasDoneWork = false;
         try
         {
-            hasDoneWork |= nioSelector.processKeys();
+            hasDoneWork = nioSelector.processKeys();
             hasDoneWork |= processCommandBuffer();
             hasDoneWork |= processNewBufferEventQueue();
         }

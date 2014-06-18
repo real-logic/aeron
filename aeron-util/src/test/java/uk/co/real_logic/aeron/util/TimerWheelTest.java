@@ -28,7 +28,7 @@ import static org.junit.Assert.assertTrue;
 
 public class TimerWheelTest
 {
-    private static final long ONE_MSEC_OF_NANOS = TimeUnit.MILLISECONDS.toNanos(1);
+    private static final long ONE_MS_OF_NS = TimeUnit.MILLISECONDS.toNanos(1);
 
     private long controlTimestamp;
 
@@ -70,7 +70,7 @@ public class TimerWheelTest
 
         wheel.newTimeout(5000, TimeUnit.MICROSECONDS, task);
 
-        processTimersUntil(wheel, ONE_MSEC_OF_NANOS, () -> firedTimestamp.get() != -1);
+        processTimersUntil(wheel, ONE_MS_OF_NS, () -> firedTimestamp.get() != -1);
 
         // this is the first tick after the timer, so it should be on this edge
         assertThat(firedTimestamp.get(), is(TimeUnit.MILLISECONDS.toNanos(6)));
@@ -86,7 +86,7 @@ public class TimerWheelTest
 
         wheel.newTimeout(5000, TimeUnit.MICROSECONDS, task);
 
-        processTimersUntil(wheel, ONE_MSEC_OF_NANOS, () -> firedTimestamp.get() != -1);
+        processTimersUntil(wheel, ONE_MS_OF_NS, () -> firedTimestamp.get() != -1);
 
         // this is the first tick after the timer, so it should be on this edge
         assertThat(firedTimestamp.get(), is(TimeUnit.MILLISECONDS.toNanos(6)));  // relative to start time
@@ -102,7 +102,7 @@ public class TimerWheelTest
 
         wheel.newTimeout(5000001, TimeUnit.NANOSECONDS, task);
 
-        processTimersUntil(wheel, ONE_MSEC_OF_NANOS, () -> firedTimestamp.get() != -1);
+        processTimersUntil(wheel, ONE_MS_OF_NS, () -> firedTimestamp.get() != -1);
 
         // this is the first tick after the timer, so it should be on this edge
         assertThat(firedTimestamp.get(), is(TimeUnit.MILLISECONDS.toNanos(6)));
@@ -118,7 +118,7 @@ public class TimerWheelTest
 
         wheel.newTimeout(63, TimeUnit.MILLISECONDS, task);
 
-        processTimersUntil(wheel, ONE_MSEC_OF_NANOS, () -> firedTimestamp.get() != -1);
+        processTimersUntil(wheel, ONE_MS_OF_NS, () -> firedTimestamp.get() != -1);
 
         // this is the first tick after the timer, so it should be on this edge
         assertThat(firedTimestamp.get(), is(TimeUnit.MILLISECONDS.toNanos(64)));  // relative to start time
@@ -134,11 +134,11 @@ public class TimerWheelTest
 
         final TimerWheel.Timer timeout = wheel.newTimeout(63, TimeUnit.MILLISECONDS, task);
 
-        processTimersUntil(wheel, ONE_MSEC_OF_NANOS, () -> wheel.now() > TimeUnit.MILLISECONDS.toNanos(16));
+        processTimersUntil(wheel, ONE_MS_OF_NS, () -> wheel.now() > TimeUnit.MILLISECONDS.toNanos(16));
 
         timeout.cancel();
 
-        processTimersUntil(wheel, ONE_MSEC_OF_NANOS, () -> wheel.now() > TimeUnit.MILLISECONDS.toNanos(128));
+        processTimersUntil(wheel, ONE_MS_OF_NS, () -> wheel.now() > TimeUnit.MILLISECONDS.toNanos(128));
 
         assertThat(firedTimestamp.get(), is(-1L));
     }
@@ -155,7 +155,7 @@ public class TimerWheelTest
 
         controlTimestamp += TimeUnit.MILLISECONDS.toNanos(32);
 
-        processTimersUntil(wheel, ONE_MSEC_OF_NANOS, () -> wheel.now() > TimeUnit.MILLISECONDS.toNanos(128));
+        processTimersUntil(wheel, ONE_MS_OF_NS, () -> wheel.now() > TimeUnit.MILLISECONDS.toNanos(128));
 
         assertThat(firedTimestamp.get(), is(TimeUnit.MILLISECONDS.toNanos(32))); // time of first expireTimers call
     }
@@ -173,7 +173,7 @@ public class TimerWheelTest
         wheel.newTimeout(15, TimeUnit.MILLISECONDS, task1);
         wheel.newTimeout(23, TimeUnit.MILLISECONDS, task2);
 
-        processTimersUntil(wheel, ONE_MSEC_OF_NANOS, () -> wheel.now() > TimeUnit.MILLISECONDS.toNanos(128));
+        processTimersUntil(wheel, ONE_MS_OF_NS, () -> wheel.now() > TimeUnit.MILLISECONDS.toNanos(128));
 
         assertThat(firedTimestamp1.get(), is(TimeUnit.MILLISECONDS.toNanos(16)));
         assertThat(firedTimestamp2.get(), is(TimeUnit.MILLISECONDS.toNanos(24)));
@@ -192,7 +192,7 @@ public class TimerWheelTest
         wheel.newTimeout(15, TimeUnit.MILLISECONDS, task1);
         wheel.newTimeout(15, TimeUnit.MILLISECONDS, task2);
 
-        processTimersUntil(wheel, ONE_MSEC_OF_NANOS, () -> wheel.now() > TimeUnit.MILLISECONDS.toNanos(128));
+        processTimersUntil(wheel, ONE_MS_OF_NS, () -> wheel.now() > TimeUnit.MILLISECONDS.toNanos(128));
 
         assertThat(firedTimestamp1.get(), is(TimeUnit.MILLISECONDS.toNanos(16)));
         assertThat(firedTimestamp2.get(), is(TimeUnit.MILLISECONDS.toNanos(16)));
@@ -211,7 +211,7 @@ public class TimerWheelTest
         wheel.newTimeout(15, TimeUnit.MILLISECONDS, task1);
         wheel.newTimeout(23, TimeUnit.MILLISECONDS, task2);
 
-        processTimersUntil(wheel, ONE_MSEC_OF_NANOS, () -> wheel.now() > TimeUnit.MILLISECONDS.toNanos(128));
+        processTimersUntil(wheel, ONE_MS_OF_NS, () -> wheel.now() > TimeUnit.MILLISECONDS.toNanos(128));
 
         assertThat(firedTimestamp1.get(), is(TimeUnit.MILLISECONDS.toNanos(16)));
         assertThat(firedTimestamp2.get(), is(TimeUnit.MILLISECONDS.toNanos(24)));
@@ -229,7 +229,7 @@ public class TimerWheelTest
 
         TimerWheel.Timer timer = wheel.newTimeout(15, TimeUnit.MILLISECONDS, task1);
 
-        processTimersUntil(wheel, ONE_MSEC_OF_NANOS, () -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(50));
+        processTimersUntil(wheel, ONE_MS_OF_NS, () -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(50));
 
         assertTrue(timer.isExpired());
         assertFalse(timer.isActive());
@@ -239,7 +239,7 @@ public class TimerWheelTest
 
         wheel.rescheduleTimeout(23, TimeUnit.MILLISECONDS, timer, task2);
 
-        processTimersUntil(wheel, ONE_MSEC_OF_NANOS, () -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(50 + 50));
+        processTimersUntil(wheel, ONE_MS_OF_NS, () -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(50 + 50));
 
         assertTrue(timer.isExpired());
         assertFalse(timer.isActive());
@@ -253,7 +253,7 @@ public class TimerWheelTest
     {
         controlTimestamp = 0;
         final TimerWheel wheel = new TimerWheel(this::getControlTimestamp, 1, TimeUnit.MILLISECONDS, 8);
-        final Runnable task = () -> wheel.now();
+        final Runnable task = wheel::now;
 
         TimerWheel.Timer timer = wheel.newTimeout(15, TimeUnit.MILLISECONDS, task);
         wheel.rescheduleTimeout(23, TimeUnit.MILLISECONDS, timer);

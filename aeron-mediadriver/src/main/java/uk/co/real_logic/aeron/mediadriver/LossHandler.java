@@ -173,12 +173,12 @@ public class LossHandler
 
     private void onScanComplete()
     {
-        final Gap gap = gaps[0];
+        final Gap firstGap = gaps[0];
         if (null == timer || !timer.isActive())
         {
             if (scanCursor > 0)
             {
-                activeGap.reset(gap.termId, gap.termOffset, gap.length);
+                activeGap.reset(firstGap.termId, firstGap.termOffset, firstGap.length);
                 scheduleTimer();
                 nakSentTimestamp = wheel.now();
 
@@ -192,9 +192,9 @@ public class LossHandler
         {
             timer.cancel();
         }
-        else if (!gap.matches(activeGap.termId, activeGap.termOffset))
+        else if (!firstGap.matches(activeGap.termId, activeGap.termOffset))
         {
-            activeGap.reset(gap.termId, gap.termOffset, gap.length);
+            activeGap.reset(firstGap.termId, firstGap.termOffset, firstGap.length);
             scheduleTimer();
             nakSentTimestamp = wheel.now();
 

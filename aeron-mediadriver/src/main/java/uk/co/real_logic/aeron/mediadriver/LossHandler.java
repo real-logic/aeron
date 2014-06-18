@@ -47,8 +47,8 @@ public class LossHandler
 
     private final GapScanner[] scanners;
     private final TimerWheel wheel;
-    private final GapState[] scanGaps = new GapState[2];
-    private final GapState activeGap= new GapState();
+    private final Gap[] gaps = new Gap[2];
+    private final Gap activeGap = new Gap();
     private final FeedbackDelayGenerator delayGenerator;
 
     private SendNakHandler sendNakHandler;
@@ -93,9 +93,9 @@ public class LossHandler
         this.sendNakHandler = sendNakHandler;
         this.nakSentTimestamp = wheel.now();
 
-        for (int i = 0, max = scanGaps.length; i < max; i++)
+        for (int i = 0, max = gaps.length; i < max; i++)
         {
-            this.scanGaps[i] = new GapState();
+            this.gaps[i] = new Gap();
         }
 
         this.currentIndex = 0;
@@ -155,13 +155,13 @@ public class LossHandler
 
     private boolean onGap(final AtomicBuffer buffer, final int offset, final int length)
     {
-        if (scanCursor < scanGaps.length)
+        if (scanCursor < gaps.length)
         {
-            scanGaps[scanCursor].reset(currentTermId, offset, length);
+            gaps[scanCursor].reset(currentTermId, offset, length);
 
             scanCursor++;
 
-            return scanCursor == scanGaps.length;
+            return scanCursor == gaps.length;
         }
 
         return false;
@@ -169,12 +169,11 @@ public class LossHandler
 
     private void onScanComplete()
     {
-        // if no active gap
         if (null == timer || !timer.isActive())
         {
             if (scanCursor > 0)
             {
-                activeGap.reset(scanGaps[0].termId, scanGaps[0].termOffset, scanGaps[0].length);
+                activeGap.reset(gaps[0].termId, gaps[0].termOffset, gaps[0].length);
                 scheduleTimer();
                 nakSentTimestamp = wheel.now();
 
@@ -186,13 +185,11 @@ public class LossHandler
         }
         else if (scanCursor == 0)
         {
-            // nothing missing, so cancel if running.
             timer.cancel();
         }
-        else if (!scanGaps[0].isFor(activeGap.termId, activeGap.termOffset))
+        else if (!gaps[0].isFor(activeGap.termId, activeGap.termOffset))
         {
-            // not the old gap, so replace old gap with new gap and reschedule
-            activeGap.reset(scanGaps[0].termId, scanGaps[0].termOffset, scanGaps[0].length);
+            activeGap.reset(gaps[0].termId, gaps[0].termOffset, gaps[0].length);
             scheduleTimer();
             nakSentTimestamp = wheel.now();
 
@@ -212,7 +209,6 @@ public class LossHandler
 
     private long determineNakDelay()
     {
-        // this should be 0 for unicast and use OptimalMcastDelayGenerator for multicast situations.
         return delayGenerator.generateDelay();
     }
 
@@ -235,7 +231,7 @@ public class LossHandler
         }
     }
 
-    public static class GapState
+    public static class Gap
     {
         private long termId;
         private int termOffset;

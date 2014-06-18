@@ -29,7 +29,7 @@ public class AtomicArray<T>
     private final AtomicReference<Object[]> arrayRef = new AtomicReference<>(EMPTY_ARRAY);
 
     @FunctionalInterface
-    public interface ToBooleanFunction<T>
+    public interface BooleanFunction<T>
     {
         /**
          * Applies this function to the given argument.
@@ -37,13 +37,13 @@ public class AtomicArray<T>
          * @param value the function argument
          * @return the true if side effects have occurred otherwise false.
          */
-        boolean applyAsBoolean(T value);
+        boolean apply(T value);
     }
 
     /**
-     * Return the length of the {@link java.lang.Object} array
+     * Return the length of the {@link Object} array
      *
-     * @return the length of the {@link java.lang.Object} array
+     * @return the length of the {@link Object} array
      */
     public int length()
     {
@@ -79,7 +79,7 @@ public class AtomicArray<T>
      * @param func  to call and pass each element to
      * @return true if side effects have occurred otherwise false.
      */
-    public boolean forEach(int start, final ToBooleanFunction<T> func)
+    public boolean forEach(int start, final BooleanFunction<T> func)
     {
         @SuppressWarnings("unchecked")
         final T[] array = (T[])arrayRef.get();
@@ -87,7 +87,7 @@ public class AtomicArray<T>
         return forEach(start, func, array);
     }
 
-    private boolean forEach(int start, final ToBooleanFunction<T> func, final T[] array)
+    private boolean forEach(int start, final BooleanFunction<T> func, final T[] array)
     {
         if (array.length == 0)
         {
@@ -99,14 +99,14 @@ public class AtomicArray<T>
             start = array.length - 1;
         }
 
-        boolean hasDoneWork = false;
+        boolean hasSideEffects = false;
         int i = start;
         do
         {
             final T element = array[i];
             if (null != element)
             {
-                hasDoneWork |= func.applyAsBoolean(element);
+                hasSideEffects |= func.apply(element);
             }
 
             i++;
@@ -118,7 +118,7 @@ public class AtomicArray<T>
         }
         while (i != start);
 
-        return hasDoneWork;
+        return hasSideEffects;
     }
 
     /**

@@ -23,19 +23,25 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
  */
 public enum EventCode
 {
-    FRAME_IN(1, EventCodec::decodeAsFrame),
-    FRAME_OUT(2, EventCodec::decodeAsFrame);
+    FRAME_IN(1, EventCodec::dissectAsFrame),
+    FRAME_OUT(2, EventCodec::dissectAsFrame),
+    CMD_IN_ADD_CHANNEL(3, EventCodec::dissectAsCommand),
+    CMD_IN_REMOVE_CHANNEL(4, EventCodec::dissectAsCommand),
+    CMD_IN_ADD_SUBSCRIBER(5, EventCodec::dissectAsCommand),
+    CMD_IN_REMOVE_SUBSCRIBER(6, EventCodec::dissectAsCommand),
+    CMD_OUT_NEW_SEND_BUFFER_NOTIFICATION(7, EventCodec::dissectAsCommand),
+    CMD_OUT_NEW_RECEIVE_BUFFER_NOTIFICATION(8, EventCodec::dissectAsCommand);
 
     private final static Int2ObjectHashMap<EventCode> mapOfIdToEventCode = new Int2ObjectHashMap<>();
 
     @FunctionalInterface
-    private interface DecodeFunction
+    private interface DissectFunction
     {
-        String decode(final EventCode code, final AtomicBuffer buffer, final int offset, final int length);
+        String dissect(final EventCode code, final AtomicBuffer buffer, final int offset, final int length);
     }
 
     private final int id;
-    private final DecodeFunction decoder;
+    private final DissectFunction dissector;
 
     static
     {
@@ -45,10 +51,10 @@ public enum EventCode
         }
     }
 
-    EventCode(final int id, final DecodeFunction decoder)
+    EventCode(final int id, final DissectFunction dissector)
     {
         this.id = id;
-        this.decoder = decoder;
+        this.dissector = dissector;
     }
 
     public int id()
@@ -70,6 +76,6 @@ public enum EventCode
 
     public String decode(final AtomicBuffer buffer, final int offset, final int length)
     {
-        return decoder.decode(this, buffer, offset, length);
+        return dissector.dissect(this, buffer, offset, length);
     }
 }

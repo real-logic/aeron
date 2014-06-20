@@ -16,6 +16,9 @@
 package uk.co.real_logic.aeron.util.event;
 
 import uk.co.real_logic.aeron.util.BitUtil;
+import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.PublisherMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
@@ -24,9 +27,12 @@ import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
- * Encoding/Decoding of event types
+ * Encoding/Dissecting of event types
  */
 public class EventCodec
 {
@@ -38,6 +44,13 @@ public class EventCodec
             ThreadLocal.withInitial(StatusMessageFlyweight::new);
     private final static ThreadLocal<NakFlyweight> nakHeader =
             ThreadLocal.withInitial(NakFlyweight::new);
+
+    private final static ThreadLocal<PublisherMessageFlyweight> pubMessage =
+            ThreadLocal.withInitial(PublisherMessageFlyweight::new);
+    private final static ThreadLocal<SubscriberMessageFlyweight> subMessage =
+            ThreadLocal.withInitial(SubscriberMessageFlyweight::new);
+    private final static ThreadLocal<NewBufferMessageFlyweight> newBufferMessage =
+            ThreadLocal.withInitial(NewBufferMessageFlyweight::new);
 
     private final static int HEADER_LENGTH = 16;
 
@@ -75,10 +88,10 @@ public class EventCodec
         return relativeOffset;
     }
 
-    public static String decodeAsFrame(final EventCode code, final AtomicBuffer buffer,
-                                       final int offset, final int length)
+    public static String dissectAsFrame(final EventCode code, final AtomicBuffer buffer,
+                                        final int offset, final int length)
     {
-        final String logHeader = formatLogHeader(code, buffer, offset);
+        final String logHeader = dissectLogHeader(code, buffer, offset);
         final HeaderFlyweight frame = headerFlyweight.get();
         String logBody;
 
@@ -89,21 +102,21 @@ public class EventCodec
                 final DataHeaderFlyweight dataFrame = dataHeader.get();
 
                 dataFrame.wrap(buffer, offset + HEADER_LENGTH);
-                logBody = format(dataFrame);
+                logBody = dissect(dataFrame);
                 break;
 
             case HeaderFlyweight.HDR_TYPE_SM:
                 final StatusMessageFlyweight smFrame = smHeader.get();
 
                 smFrame.wrap(buffer, offset + HEADER_LENGTH);
-                logBody = format(smFrame);
+                logBody = dissect(smFrame);
                 break;
 
             case HeaderFlyweight.HDR_TYPE_NAK:
                 final NakFlyweight nakFrame = nakHeader.get();
 
                 nakFrame.wrap(buffer, offset + HEADER_LENGTH);
-                logBody = format(nakFrame);
+                logBody = dissect(nakFrame);
                 break;
 
             default:
@@ -111,7 +124,44 @@ public class EventCodec
                 break;
         }
 
-        return String.format("%s:%s", logHeader, logBody);
+        return String.format("%s: %s", logHeader, logBody);
+    }
+
+    public static String dissectAsCommand(final EventCode code, final AtomicBuffer buffer,
+                                          final int offset, final int length)
+    {
+        final String logHeader = dissectLogHeader(code, buffer, offset);
+        String logBody;
+
+        switch (code)
+        {
+            case CMD_IN_ADD_CHANNEL:
+            case CMD_IN_REMOVE_CHANNEL:
+                final PublisherMessageFlyweight pubCommand = pubMessage.get();
+
+                pubCommand.wrap(buffer, offset + HEADER_LENGTH);
+                logBody = dissect(pubCommand);
+                break;
+            case CMD_IN_ADD_SUBSCRIBER:
+            case CMD_IN_REMOVE_SUBSCRIBER:
+                final SubscriberMessageFlyweight subCommand = subMessage.get();
+
+                subCommand.wrap(buffer, offset + HEADER_LENGTH);
+                logBody = dissect(subCommand);
+                break;
+            case CMD_OUT_NEW_SEND_BUFFER_NOTIFICATION:
+            case CMD_OUT_NEW_RECEIVE_BUFFER_NOTIFICATION:
+                final NewBufferMessageFlyweight newBuffer = newBufferMessage.get();
+
+                newBuffer.wrap(buffer, offset + HEADER_LENGTH);
+                logBody = dissect(newBuffer);
+                break;
+            default:
+                logBody = "COMMAND_UNKNOWN";
+                break;
+        }
+
+        return String.format("%s: %s", logHeader, logBody);
     }
 
     private static int encodeLogHeader(final AtomicBuffer encodingBuffer, final int captureLength,
@@ -143,7 +193,7 @@ public class EventCodec
         return Math.min(bufferLength, EventConfiguration.MAX_EVENT_LENGTH - HEADER_LENGTH);
     }
 
-    private static String formatLogHeader(final EventCode code, final AtomicBuffer buffer, final int offset)
+    private static String dissectLogHeader(final EventCode code, final AtomicBuffer buffer, final int offset)
     {
         int relativeOffset = 0;
 
@@ -159,22 +209,46 @@ public class EventCodec
                 captureLength, bufferLength);
     }
 
-    private static String format(final DataHeaderFlyweight header)
+    private static String dissect(final DataHeaderFlyweight header)
     {
         return String.format("DATA %x len %d %x:%x:%x @%x", header.flags(), header.frameLength(),
                 header.sessionId(), header.channelId(), header.termId(), header.termOffset());
     }
 
-    private static String format(final StatusMessageFlyweight header)
+    private static String dissect(final StatusMessageFlyweight header)
     {
         return String.format("SM %x len %d %x:%x:%x @%x %d", header.flags(), header.frameLength(),
                 header.sessionId(), header.channelId(), header.termId(), header.highestContiguousTermOffset(),
                 header.receiverWindow());
     }
 
-    private static String format(final NakFlyweight header)
+    private static String dissect(final NakFlyweight header)
     {
         return String.format("NAK %x len %d %x:%x:%x @%x %d", header.flags(), header.frameLength(),
                 header.sessionId(), header.channelId(), header.termId(), header.termOffset(), header.length());
+    }
+
+    private static String dissect(final PublisherMessageFlyweight command)
+    {
+        return String.format("%3$s %1$x:%2$x", command.sessionId(), command.channelId(), command.destination());
+    }
+
+    private static String dissect(final SubscriberMessageFlyweight command)
+    {
+        final String ids = Arrays.stream(command.channelIds())
+                .mapToObj(Long::toString)
+                .collect(Collectors.joining(","));
+
+        return String.format("%s %s", command.destination(), ids);
+    }
+
+    private static String dissect(final NewBufferMessageFlyweight command)
+    {
+        final String locations = IntStream.range(0, 6)
+                .mapToObj((i) -> String.format("{%s, %d, %d}", command.location(i),
+                        command.bufferLength(i), command.bufferOffset(i)))
+                .collect(Collectors.joining("\n    "));
+
+        return String.format("%x:%x:%x\n    %s", command.sessionId(), command.channelId(), command.termId(), locations);
     }
 }

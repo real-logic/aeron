@@ -23,6 +23,8 @@ import uk.co.real_logic.aeron.util.command.*;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.aeron.util.event.EventCode;
+import uk.co.real_logic.aeron.util.event.EventLogger;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 
@@ -38,6 +40,8 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
  */
 public class MediaConductor extends Agent
 {
+    public static final EventLogger logger = new EventLogger(MediaConductor.class);
+
     public static final int MSG_BUFFER_CAPACITY = 4096;
     public static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
     public static final int HEARTBEAT_TIMEOUT_MS = 100;
@@ -179,24 +183,28 @@ public class MediaConductor extends Agent
                     {
                         case ADD_CHANNEL:
                             publisherMessage.wrap(buffer, index);
+                            logger.emit(EventCode.CMD_IN_ADD_CHANNEL, buffer, index, length);
                             flyweight = publisherMessage;
                             onAddChannel(publisherMessage);
                             break;
 
                         case REMOVE_CHANNEL:
                             publisherMessage.wrap(buffer, index);
+                            logger.emit(EventCode.CMD_IN_REMOVE_CHANNEL, buffer, index, length);
                             flyweight = publisherMessage;
                             onRemoveChannel(publisherMessage);
                             break;
 
                         case ADD_SUBSCRIBER:
                             subscriberMessage.wrap(buffer, index);
+                            logger.emit(EventCode.CMD_IN_ADD_SUBSCRIBER, buffer, index, length);
                             flyweight = subscriberMessage;
                             onAddSubscriber(subscriberMessage);
                             break;
 
                         case REMOVE_SUBSCRIBER:
                             subscriberMessage.wrap(buffer, index);
+                            logger.emit(EventCode.CMD_IN_REMOVE_SUBSCRIBER, buffer, index, length);
                             flyweight = subscriberMessage;
                             onRemoveSubscriber(subscriberMessage);
                             break;
@@ -269,6 +277,10 @@ public class MediaConductor extends Agent
         newBufferMessage.destination(destination);
 
         final int msgTypeId = isSender ? NEW_SEND_BUFFER_NOTIFICATION : NEW_RECEIVE_BUFFER_NOTIFICATION;
+
+        logger.emit((isSender ? EventCode.CMD_OUT_NEW_SEND_BUFFER_NOTIFICATION :
+                        EventCode.CMD_OUT_NEW_RECEIVE_BUFFER_NOTIFICATION),
+                msgBuffer, 0, newBufferMessage.length());
 
         if (!toClientBuffer.write(msgTypeId, msgBuffer, 0, newBufferMessage.length()))
         {

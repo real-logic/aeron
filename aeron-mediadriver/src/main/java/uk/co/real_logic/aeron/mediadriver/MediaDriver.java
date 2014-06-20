@@ -215,6 +215,11 @@ public class MediaDriver implements AutoCloseable
         try (final MediaDriver mediaDriver = new MediaDriver())
         {
             mediaDriver.invokeDaemonized();
+
+            while (true)
+            {
+                Thread.sleep(1000);
+            }
         }
     }
 
@@ -270,27 +275,31 @@ public class MediaDriver implements AutoCloseable
     }
 
     /**
-     * Spin up Agents as Daemon threads.
+     * Spin up all {@link Agent}s as Daemon threads.
      */
     public void invokeDaemonized()
     {
         conductorThread = new Thread(conductor);
-
-        conductorThread.setName("media-driver-conductor");
-        conductorThread.setDaemon(true);
-        conductorThread.start();
+        invokeDaemonized(conductorThread, "media-driver-conductor");
 
         senderThread = new Thread(sender);
-
-        senderThread.setName("media-driver-sender");
-        senderThread.setDaemon(true);
-        senderThread.start();
+        invokeDaemonized(senderThread, "media-driver-sender");
 
         receiverThread = new Thread(receiver);
+        invokeDaemonized(receiverThread, "media-driver-receiver");
+    }
 
-        receiverThread.setName("media-driver-receiver");
-        receiverThread.setDaemon(true);
-        receiverThread.start();
+    /**
+     * Spin up specific thread as a Daemon thread.
+     *
+     * @param agentThread thread to Daemonize
+     * @param name to associate with thread
+     */
+    public void invokeDaemonized(final Thread agentThread, final String name)
+    {
+        agentThread.setName(name);
+        agentThread.setDaemon(true);
+        agentThread.start();
     }
 
     /**

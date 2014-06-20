@@ -17,8 +17,6 @@ package uk.co.real_logic.aeron.util;
 
 import java.io.File;
 
-import static java.lang.System.getProperty;
-
 /**
  * Location of configuration that is common between the client and the media driver.
  */
@@ -46,9 +44,9 @@ public class CommonConfiguration
     /** Attempt to delete directories on exit */
     public static final String DIRS_DELETE_ON_EXIT_PROP_NAME = "aeron.dir.delete.on.exit";
 
-    public static final String DATA_DIR_NAME = getProperty(DATA_DIR_PROP_NAME, DATA_DIR_PROP_DEFAULT);
-    public static final String ADMIN_DIR_NAME = getProperty(ADMIN_DIR_PROP_NAME, ADMIN_DIR_PROP_DEFAULT);
-    public static final String COUNTERS_DIR_NAME = getProperty(COUNTERS_DIR_PROP_NAME, COUNTERS_DIR_PROP_DEFAULT);
+    public static final String DATA_DIR_NAME = System.getProperty(DATA_DIR_PROP_NAME, DATA_DIR_PROP_DEFAULT);
+    public static final String ADMIN_DIR_NAME = System.getProperty(ADMIN_DIR_PROP_NAME, ADMIN_DIR_PROP_DEFAULT);
+    public static final String COUNTERS_DIR_NAME = System.getProperty(COUNTERS_DIR_PROP_NAME, COUNTERS_DIR_PROP_DEFAULT);
     public static final int MTU_LENGTH = Integer.getInteger(MTU_LENGTH_NAME, MTU_LENGTH_DEFAULT);
     public static final boolean DIRS_DELETE_ON_EXIT = Boolean.getBoolean(DIRS_DELETE_ON_EXIT_PROP_NAME);
 }

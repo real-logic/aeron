@@ -141,8 +141,18 @@ project(':aeron-core') {
 }
 
 project(':aeron-examples') {
+    apply plugin: 'shadow'
+
     dependencies {
         compile project(':aeron-core'), project(':aeron-mediadriver')
+    }
+
+    shadow {
+        outputFile = new File('aeron-examples/build/libs/examples.jar')
+    }
+
+    build.doLast {
+        tasks.shadowJar.execute()
     }
 
     def pubBaseDir = System.properties['java.io.tmpdir'] + "pub"
@@ -196,6 +206,12 @@ project(':aeron-system-tests') {
     dependencies {
         compile project(':aeron-core'), project(':aeron-mediadriver')
         testCompile project(path: ':aeron-util', configuration: 'tests')
+    }
+
+    test {
+        if (project.hasProperty('aeron.event.log')) {
+            jvmArgs '-Daeron.event.log=true'
+        }
     }
 }
 

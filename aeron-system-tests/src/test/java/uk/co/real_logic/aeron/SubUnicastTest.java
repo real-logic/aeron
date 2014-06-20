@@ -15,13 +15,12 @@
  */
 package uk.co.real_logic.aeron;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
 import uk.co.real_logic.aeron.util.ConductorShmBuffers;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
+import uk.co.real_logic.aeron.util.event.EventReader;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.NakFlyweight;
@@ -47,6 +46,8 @@ import static uk.co.real_logic.aeron.util.CommonConfiguration.DIRS_DELETE_ON_EXI
  */
 public class SubUnicastTest
 {
+    public static final EventReader eventReader = new EventReader(new EventReader.Context().deleteOnExit(true));
+
     private static final String HOST = "localhost";
     private static final int PORT = 54321;
     private static final int SRC_PORT = 54322;
@@ -129,6 +130,8 @@ public class SubUnicastTest
         consumingClient.close();
         driver.close();
         executorService.shutdown();
+
+        eventReader.read(System.out::println);
     }
 
     @Test

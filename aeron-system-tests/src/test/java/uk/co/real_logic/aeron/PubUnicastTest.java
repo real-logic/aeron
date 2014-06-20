@@ -23,6 +23,7 @@ import uk.co.real_logic.aeron.mediadriver.MediaDriver;
 import uk.co.real_logic.aeron.util.ConductorShmBuffers;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
+import uk.co.real_logic.aeron.util.event.EventReader;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.NakFlyweight;
@@ -45,6 +46,8 @@ import static uk.co.real_logic.aeron.util.CommonConfiguration.DIRS_DELETE_ON_EXI
  */
 public class PubUnicastTest
 {
+    public static final EventReader eventReader = new EventReader(new EventReader.Context().deleteOnExit(true));
+
     private static final String HOST = "localhost";
     private static final int PORT = 54321;
     private static final int SRC_PORT = 54322;
@@ -113,6 +116,8 @@ public class PubUnicastTest
         producingClient.close();
         driver.close();
         executorService.shutdown();
+
+        eventReader.read(System.out::println);
     }
 
     @Test
@@ -277,7 +282,7 @@ public class PubUnicastTest
                      .sessionId(SESSION_ID)
                      .frameLength(StatusMessageFlyweight.HEADER_LENGTH)
                      .headerType(HeaderFlyweight.HDR_TYPE_SM)
-                     .flags((short)0)
+                     .flags((short) 0)
                      .version(HeaderFlyweight.CURRENT_VERSION);
 
         smBuffer.position(0);
@@ -299,7 +304,7 @@ public class PubUnicastTest
                  .sessionId(SESSION_ID)
                  .frameLength(NakFlyweight.HEADER_LENGTH)
                  .headerType(HeaderFlyweight.HDR_TYPE_NAK)
-                 .flags((short)0)
+                 .flags((short) 0)
                  .version(HeaderFlyweight.CURRENT_VERSION);
 
         nakBuffer.position(0);

@@ -23,6 +23,8 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogScanner;
+import uk.co.real_logic.aeron.util.event.EventCode;
+import uk.co.real_logic.aeron.util.event.EventLogger;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
@@ -55,6 +57,8 @@ public class SenderChannel
     public static final int HEARTBEAT_TIMEOUT_MS = 500;
     public static final long HEARTBEAT_TIMEOUT_NS = MILLISECONDS.toNanos(HEARTBEAT_TIMEOUT_MS);
 
+    private static final EventLogger logger = new EventLogger(SenderChannel.class);
+
     private final SenderControlStrategy controlStrategy;
     private final TimerWheel timerWheel;
 
@@ -73,7 +77,7 @@ public class SenderChannel
     private final ByteBuffer scratchSendBuffer = ByteBuffer.allocateDirect(DataHeaderFlyweight.HEADER_LENGTH);
     private final AtomicBuffer scratchAtomicBuffer = new AtomicBuffer(scratchSendBuffer);
     private final LogScanner[] scanners;
-    private final RetransmitHandler retransmitHandlers[];
+    private final RetransmitHandler[] retransmitHandlers;
 
     private final ByteBuffer[] termSendBuffers;
     private final ByteBuffer[] termRetransmitBuffers;
@@ -139,6 +143,8 @@ public class SenderChannel
                 dataHeader.wrap(sendBuffer, offset);
                 sendBuffer.limit(offset + length);
                 sendBuffer.position(offset);
+
+                logger.emit(EventCode.FRAME_OUT, sendBuffer, length);
 
                 try
                 {
@@ -230,6 +236,8 @@ public class SenderChannel
             termRetransmitBuffers[index].position(offset);
             termRetransmitBuffers[index].limit(offset + length);
 
+            logger.emit(EventCode.FRAME_OUT, termRetransmitBuffers[index], length);
+
             try
             {
                 final int bytesSent = sendFunction.sendTo(termRetransmitBuffers[index], dstAddress);
@@ -265,6 +273,8 @@ public class SenderChannel
 
         scratchSendBuffer.position(0);
         scratchSendBuffer.limit(DataHeaderFlyweight.HEADER_LENGTH);
+
+        logger.emit(EventCode.FRAME_OUT, scratchAtomicBuffer, scratchSendBuffer.position(), scratchSendBuffer.remaining());
 
         try
         {

@@ -448,6 +448,6 @@ public class MediaConductor extends Agent
     private long generateTermId()
     {
         // term Id can be psuedo-random. Doesn't have to be perfect. But must be in the range.
-        return (int)(Math.random() * 0x100000000L);
+        return (int)(Math.random() * (double)0x7FFFFFFF);
     }
 }

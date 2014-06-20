@@ -437,6 +437,11 @@ public class MediaDriver implements AutoCloseable
         private ReceiverProxy receiverProxy;
         private MediaConductorProxy mediaConductorProxy;
 
+        private void initializeWithSystemProperties()
+        {
+            // TODO: grab system properties and fill with defaults
+        }
+
         private RingBuffer createNewCommandBuffer(final int size)
         {
             final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(size + TRAILER_LENGTH);

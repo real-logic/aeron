@@ -18,6 +18,8 @@ package uk.co.real_logic.aeron.mediadriver;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.event.EventCode;
+import uk.co.real_logic.aeron.util.event.EventLogger;
 import uk.co.real_logic.aeron.util.protocol.*;
 
 import java.net.InetSocketAddress;
@@ -28,6 +30,8 @@ import java.nio.ByteBuffer;
  */
 public class DataFrameHandler implements FrameHandler, AutoCloseable
 {
+    private static final EventLogger logger = new EventLogger(DataFrameHandler.class);
+
     private final UdpTransport transport;
     private final UdpDestination destination;
     private final Long2ObjectHashMap<Subscription> subscriptionByChannelIdMap = new Long2ObjectHashMap<>();
@@ -165,7 +169,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         }
 
         lossHandler.sendNakHandler(
-            (termId, termOffset, length) -> sendNak(subscriberSession, (int)termId, termOffset, length));
+                (termId, termOffset, length) -> sendNak(subscriberSession, (int) termId, termOffset, length));
 
         subscriberSession.termBuffer(event.termId(), event.buffer(), lossHandler);
 
@@ -220,6 +224,8 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
 
         sendNakBuffer.position(0);
         sendNakBuffer.limit(nakHeader.frameLength());
+
+        logger.emit(EventCode.FRAME_OUT, writeNakBuffer, 0,length);
 
         try
         {

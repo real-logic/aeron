@@ -17,6 +17,8 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
+import uk.co.real_logic.aeron.util.event.EventCode;
+import uk.co.real_logic.aeron.util.event.EventLogger;
 import uk.co.real_logic.aeron.util.protocol.*;
 
 import java.net.*;
@@ -35,6 +37,8 @@ import static uk.co.real_logic.aeron.util.protocol.HeaderFlyweight.*;
  */
 public final class UdpTransport implements ReadHandler, AutoCloseable
 {
+    private static final EventLogger logger = new EventLogger(UdpTransport.class);
+
     private final ByteBuffer readByteBuffer = ByteBuffer.allocateDirect(MediaDriver.READ_BYTE_BUFFER_SZ);
     private final AtomicBuffer readBuffer;
     private final DatagramChannel channel = DatagramChannel.open();
@@ -122,7 +126,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
 
         header.wrap(readBuffer, offset);
 
-//        System.out.println("onRead " + header.frameLength() + " offset " + offset + " type " + header.headerType());
+        logger.emit(EventCode.FRAME_IN, readBuffer, offset, len);
 
         // drop a version we don't know
         if (header.version() != HeaderFlyweight.CURRENT_VERSION)

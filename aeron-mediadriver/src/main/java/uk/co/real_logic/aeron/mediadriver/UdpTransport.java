@@ -37,7 +37,7 @@ import static uk.co.real_logic.aeron.util.protocol.HeaderFlyweight.*;
  */
 public final class UdpTransport implements ReadHandler, AutoCloseable
 {
-    private static final EventLogger logger = new EventLogger(UdpTransport.class);
+    private static final EventLogger LOGGER = new EventLogger(UdpTransport.class);
 
     private final ByteBuffer readByteBuffer = ByteBuffer.allocateDirect(MediaDriver.READ_BYTE_BUFFER_SZ);
     private final AtomicBuffer readBuffer;
@@ -152,7 +152,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
 
         header.wrap(readBuffer, offset);
 
-        logger.emit(EventCode.FRAME_IN, readBuffer, offset, len);
+        LOGGER.emit(EventCode.FRAME_IN, readBuffer, offset, len);
 
         // drop a version we don't know
         if (header.version() != HeaderFlyweight.CURRENT_VERSION)

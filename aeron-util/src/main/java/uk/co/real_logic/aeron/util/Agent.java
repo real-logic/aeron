@@ -15,8 +15,6 @@
  */
 package uk.co.real_logic.aeron.util;
 
-import java.util.concurrent.locks.LockSupport;
-
 /**
  * Base agent that is responsible for an ongoing activity.
  */

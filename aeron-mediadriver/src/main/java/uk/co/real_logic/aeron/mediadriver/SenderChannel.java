@@ -31,6 +31,7 @@ import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -57,9 +58,8 @@ public class SenderChannel
     public static final int HEARTBEAT_TIMEOUT_MS = 500;
     public static final long HEARTBEAT_TIMEOUT_NS = MILLISECONDS.toNanos(HEARTBEAT_TIMEOUT_MS);
 
-    private static final EventLogger logger = new EventLogger(SenderChannel.class);
+    private static final EventLogger LOGGER = new EventLogger(SenderChannel.class);
 
-    private final SenderControlStrategy controlStrategy;
     private final TimerWheel timerWheel;
 
     private final BufferRotator buffers;
@@ -81,8 +81,9 @@ public class SenderChannel
 
     private final ByteBuffer[] termSendBuffers;
     private final ByteBuffer[] termRetransmitBuffers;
+    private final AtomicInteger[] rightEdges = new AtomicInteger[BufferRotationDescriptor.BUFFER_COUNT];
 
-    private final SenderFlowControlState activeFlowControlState = new SenderFlowControlState(0);
+    private final SenderControlStrategy controlStrategy;
 
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final DataHeaderFlyweight retransmitDataHeader = new DataHeaderFlyweight();
@@ -120,6 +121,11 @@ public class SenderChannel
         termRetransmitBuffers = buffers.buffers().map(this::duplicateLogBuffer).toArray(ByteBuffer[]::new);
         retransmitHandlers = buffers.buffers().map(this::newRetransmitHandler).toArray(RetransmitHandler[]::new);
 
+        for (int i = 0; i < BufferRotationDescriptor.BUFFER_COUNT; i++)
+        {
+            rightEdges[i] = new AtomicInteger(controlStrategy.initialWindow());
+        }
+
         currentTermId = new AtomicLong(initialTermId);
         cleanedTermId = new AtomicLong(initialTermId + 2);
         timeOfLastSendOrHeartbeat = new AtomicLong(this.timerWheel.now());
@@ -130,45 +136,11 @@ public class SenderChannel
         boolean hasDoneWork = false;
         try
         {
-            final int rightEdge = activeFlowControlState.rightEdgeOfWindowVolatile();
-            final int availableBuffer = rightEdge - (int)nextOffset;
-            final int maxLength = Math.min(availableBuffer, mtuLength);
-
-            final LogScanner.AvailabilityHandler handler = (offset, length) ->
-            {
-                // at this point sendBuffer wraps the same underlying
-                // ByteBuffer as the buffer parameter
-                final ByteBuffer sendBuffer = termSendBuffers[currentIndex];
-
-                dataHeader.wrap(sendBuffer, offset);
-                sendBuffer.limit(offset + length);
-                sendBuffer.position(offset);
-
-                logger.emit(EventCode.FRAME_OUT, sendBuffer, length);
-
-                try
-                {
-                    final int bytesSent = sendFunction.sendTo(sendBuffer, dstAddress);
-                    if (length != bytesSent)
-                    {
-                        throw new IllegalStateException("could not send all of message: " + bytesSent + "/" +
-                                                        dataHeader.frameLength());
-                        // TODO: error
-                    }
-
-                    timeOfLastSendOrHeartbeat.lazySet(timerWheel.now());
-
-                    nextOffset = align(offset + length, FrameDescriptor.FRAME_ALIGNMENT);
-                }
-                catch (final Exception ex)
-                {
-                    //TODO: errors
-                    ex.printStackTrace();
-                }
-            };
+            final int rightEdge = rightEdges[currentIndex].get();
+            final int maxLength = Math.min(rightEdge - (int)nextOffset, mtuLength);
 
             final LogScanner scanner = scanners[currentIndex];
-            hasDoneWork = scanner.scanNext(maxLength, handler);
+            hasDoneWork = scanner.scanNext(maxLength, this::onSendFrame);
 
             if (scanner.isComplete())
             {
@@ -178,7 +150,6 @@ public class SenderChannel
         }
         catch (final Exception ex)
         {
-            // TODO: error logging
             ex.printStackTrace();
         }
 
@@ -200,12 +171,14 @@ public class SenderChannel
      */
     public void onStatusMessage(final long termId,
                                 final long highestContiguousSequenceNumber,
-                                final long receiverWindow)
+                                final long receiverWindow,
+                                final InetSocketAddress address)
     {
-        final int rightEdge = controlStrategy.onStatusMessage(termId,
-                                                              highestContiguousSequenceNumber,
-                                                              receiverWindow);
-        activeFlowControlState.rightEdgeOfWindowOrdered(rightEdge);
+        final int rightEdge = controlStrategy.onStatusMessage(termId, highestContiguousSequenceNumber,
+                receiverWindow, address);
+
+        rightEdges[determineIndexByTermId(termId)].lazySet(rightEdge);
+
         statusMessagesSeen++;
     }
 
@@ -218,82 +191,13 @@ public class SenderChannel
 
         if (-1 != index)
         {
-            retransmitHandlers[index].onNak((int)termOffset);
+            retransmitHandlers[index].onNak((int) termOffset);
         }
     }
 
     /**
      * This is performed on the Media Conductor thread
      */
-    private void onSendRetransmit(final AtomicBuffer buffer, final int offset, final int length)
-    {
-        // use termRetransmitBuffers, but need to know which one... so, use DataHeaderFlyweight to grab it
-        retransmitDataHeader.wrap(buffer, offset);
-        final int index = determineIndexByTermId(retransmitDataHeader.termId());
-
-        if (-1 != index)
-        {
-            termRetransmitBuffers[index].position(offset);
-            termRetransmitBuffers[index].limit(offset + length);
-
-            logger.emit(EventCode.FRAME_OUT, termRetransmitBuffers[index], length);
-
-            try
-            {
-                final int bytesSent = sendFunction.sendTo(termRetransmitBuffers[index], dstAddress);
-                if (bytesSent != length)
-                {
-                    System.err.println("could not send entire retransmit");
-                }
-            }
-            catch (final Exception ex)
-            {
-                ex.printStackTrace();
-            }
-        }
-    }
-
-    public void sendHeartbeat()
-    {
-        // called from conductor thread on timeout
-
-        // used for both initial setup 0 length data as well as heartbeats
-
-        // send 0 length data frame with current termOffset
-        dataHeader.wrap(scratchAtomicBuffer, 0);
-
-        dataHeader.sessionId(sessionId)
-                  .channelId(channelId)
-                  .termId(currentTermId.get())
-                  .termOffset(nextOffset)
-                  .frameLength(DataHeaderFlyweight.HEADER_LENGTH)
-                  .headerType(HeaderFlyweight.HDR_TYPE_DATA)
-                  .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
-                  .version(HeaderFlyweight.CURRENT_VERSION);
-
-        scratchSendBuffer.position(0);
-        scratchSendBuffer.limit(DataHeaderFlyweight.HEADER_LENGTH);
-
-        logger.emit(EventCode.FRAME_OUT, scratchAtomicBuffer, scratchSendBuffer.position(), scratchSendBuffer.remaining());
-
-        try
-        {
-            final int bytesSent = sendFunction.sendTo(scratchSendBuffer, dstAddress);
-            if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
-            {
-                // TODO: log or count error
-                System.out.println("Error sending heartbeat packet");
-            }
-
-            timeOfLastSendOrHeartbeat.lazySet(timerWheel.now());
-        }
-        catch (final Exception ex)
-        {
-            //TODO: errors
-            ex.printStackTrace();
-        }
-    }
-
     public boolean heartbeatCheck()
     {
         boolean heartbeatSent = false;
@@ -373,5 +277,108 @@ public class SenderChannel
 
         // this needs to account for rotation
         return -1;
+    }
+
+    /*
+     * function used as a lambda for LogScanner.AvailabilityHandler
+     */
+    private void onSendFrame(final int offset, final int length)
+    {
+        // at this point sendBuffer wraps the same underlying
+        // ByteBuffer as the buffer parameter
+        final ByteBuffer sendBuffer = termSendBuffers[currentIndex];
+
+        // could wrap and use DataHeader to grab specific fields, e.g. dataHeader.wrap(sendBuffer, offset);
+        sendBuffer.limit(offset + length);
+        sendBuffer.position(offset);
+
+        LOGGER.emit(EventCode.FRAME_OUT, sendBuffer, length);
+
+        try
+        {
+            final int bytesSent = sendFunction.sendTo(sendBuffer, dstAddress);
+            if (length != bytesSent)
+            {
+                throw new IllegalStateException("could not send all of message: " + bytesSent + "/" + length);
+            }
+
+            timeOfLastSendOrHeartbeat.lazySet(timerWheel.now());
+
+            nextOffset = align(offset + length, FrameDescriptor.FRAME_ALIGNMENT);
+        }
+        catch (final Exception ex)
+        {
+            ex.printStackTrace();
+        }
+    }
+
+    /**
+     * This is performed on the Media Conductor thread via the RetransmitHandler
+     */
+    private void onSendRetransmit(final AtomicBuffer buffer, final int offset, final int length)
+    {
+        // use termRetransmitBuffers, but need to know which one... so, use DataHeaderFlyweight to grab it
+        retransmitDataHeader.wrap(buffer, offset);
+        final int index = determineIndexByTermId(retransmitDataHeader.termId());
+
+        if (-1 != index)
+        {
+            termRetransmitBuffers[index].position(offset);
+            termRetransmitBuffers[index].limit(offset + length);
+
+            LOGGER.emit(EventCode.FRAME_OUT, termRetransmitBuffers[index], length);
+
+            try
+            {
+                final int bytesSent = sendFunction.sendTo(termRetransmitBuffers[index], dstAddress);
+                if (bytesSent != length)
+                {
+                    System.err.println("could not send entire retransmit");
+                }
+            }
+            catch (final Exception ex)
+            {
+                ex.printStackTrace();
+            }
+        }
+    }
+
+    private void sendHeartbeat()
+    {
+        // called from conductor thread on timeout
+
+        // used for both initial setup 0 length data as well as heartbeats
+
+        // send 0 length data frame with current termOffset
+        dataHeader.wrap(scratchAtomicBuffer, 0);
+
+        dataHeader.sessionId(sessionId)
+                .channelId(channelId)
+                .termId(currentTermId.get())
+                .termOffset(nextOffset)
+                .frameLength(DataHeaderFlyweight.HEADER_LENGTH)
+                .headerType(HeaderFlyweight.HDR_TYPE_DATA)
+                .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
+                .version(HeaderFlyweight.CURRENT_VERSION);
+
+        scratchSendBuffer.position(0);
+        scratchSendBuffer.limit(DataHeaderFlyweight.HEADER_LENGTH);
+
+        LOGGER.emit(EventCode.FRAME_OUT, scratchAtomicBuffer, scratchSendBuffer.position(), scratchSendBuffer.remaining());
+
+        try
+        {
+            final int bytesSent = sendFunction.sendTo(scratchSendBuffer, dstAddress);
+            if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
+            {
+                System.out.println("Error sending heartbeat packet");
+            }
+
+            timeOfLastSendOrHeartbeat.lazySet(timerWheel.now());
+        }
+        catch (final Exception ex)
+        {
+            ex.printStackTrace();
+        }
     }
 }

@@ -170,7 +170,7 @@ public class SenderTest
     public void shouldNotSendZeroLengthDataFrameAfterReceivingStatusMessage()
     {
         currentTimestamp += TimeUnit.MILLISECONDS.toNanos(SenderChannel.HEARTBEAT_TIMEOUT_MS);
-        channel.onStatusMessage(INITIAL_TERM_ID, 0, 0);
+        channel.onStatusMessage(INITIAL_TERM_ID, 0, 0, rcvAddress);
         sender.heartbeatChecks();
         assertThat(receivedFrames.size(), is(0));
     }
@@ -178,7 +178,7 @@ public class SenderTest
     @Test
     public void shouldBeAbleToSendOnChannel()
     {
-        channel.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT));
+        channel.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT), rcvAddress);
 
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -203,7 +203,8 @@ public class SenderTest
     @Test
     public void shouldBeAbleToSendOnChannelTwice()
     {
-        channel.onStatusMessage(INITIAL_TERM_ID, 0, (2 * align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT)));
+        channel.onStatusMessage(INITIAL_TERM_ID, 0, (2 * align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT)),
+                rcvAddress);
 
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -241,7 +242,8 @@ public class SenderTest
     @Test
     public void shouldBeAbleToSendOnChannelTwiceAsBatch()
     {
-        channel.onStatusMessage(INITIAL_TERM_ID, 0, (2 * align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT)));
+        channel.onStatusMessage(INITIAL_TERM_ID, 0, (2 * align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT)),
+                rcvAddress);
 
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -287,7 +289,7 @@ public class SenderTest
         sender.doWork();
         assertThat(receivedFrames.size(), is(0));  // should not send as no SM
 
-        channel.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT));
+        channel.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT), rcvAddress);
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(1));  // should send now
@@ -299,7 +301,7 @@ public class SenderTest
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
         assertTrue(logAppenders[0].append(buffer, 0, PAYLOAD.length));
-        channel.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT));
+        channel.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT), rcvAddress);
 
         sender.doWork();
         assertThat(receivedFrames.size(), is(1));  // should send now
@@ -313,7 +315,7 @@ public class SenderTest
     @Test
     public void shouldSend0LengthDataFrameAsHeartbeatWhenIdle()
     {
-        channel.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT));
+        channel.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT), rcvAddress);
 
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -341,7 +343,7 @@ public class SenderTest
     @Test
     public void shouldSendMultiple0LengthDataFrameAsHeartbeatsWhenIdle()
     {
-        channel.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT));
+        channel.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT), rcvAddress);
 
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);

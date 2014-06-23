@@ -15,6 +15,8 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import java.net.InetSocketAddress;
+
 public class UnicastSenderControlStrategy implements SenderControlStrategy
 {
     private int rightEdgeOfWindow;
@@ -25,12 +27,19 @@ public class UnicastSenderControlStrategy implements SenderControlStrategy
     }
 
     /** {@inheritDoc} */
-    public int onStatusMessage(final long termId, final long highestContiguousSequenceNumber, final long receiverWindow)
+    public int onStatusMessage(final long termId, final long highestContiguousSequenceNumber,
+                               final long receiverWindow, final InetSocketAddress address)
     {
         // TODO: review this logic
         final int newRightEdgeOfWindow = (int) (highestContiguousSequenceNumber + receiverWindow);
         rightEdgeOfWindow = Math.max(rightEdgeOfWindow, newRightEdgeOfWindow);
 
         return rightEdgeOfWindow;
+    }
+
+    /** {@inheritDoc} */
+    public int initialWindow()
+    {
+        return 0;
     }
 }

@@ -40,7 +40,7 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
  */
 public class MediaConductor extends Agent
 {
-    public static final EventLogger logger = new EventLogger(MediaConductor.class);
+    public static final EventLogger LOGGER = new EventLogger(MediaConductor.class);
 
     public static final int MSG_BUFFER_CAPACITY = 4096;
     public static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
@@ -119,7 +119,6 @@ public class MediaConductor extends Agent
         }
         catch (final Exception ex)
         {
-            // TODO: error
             ex.printStackTrace();
         }
 
@@ -141,6 +140,16 @@ public class MediaConductor extends Agent
         srcDestinationMap.forEach((hash, frameHandler) -> frameHandler.close());
 
         conductorShmBuffers.close();
+    }
+
+    /**
+     * Return the {@link NioSelector} in use by this conductor thread.
+     *
+     * @return the {@link NioSelector} in use by this conductor thread
+     */
+    public NioSelector nioSelector()
+    {
+        return nioSelector;
     }
 
     private boolean processLocalCommandBuffer()
@@ -183,28 +192,28 @@ public class MediaConductor extends Agent
                     {
                         case ADD_CHANNEL:
                             publisherMessage.wrap(buffer, index);
-                            logger.emit(EventCode.CMD_IN_ADD_CHANNEL, buffer, index, length);
+                            LOGGER.emit(EventCode.CMD_IN_ADD_CHANNEL, buffer, index, length);
                             flyweight = publisherMessage;
                             onAddChannel(publisherMessage);
                             break;
 
                         case REMOVE_CHANNEL:
                             publisherMessage.wrap(buffer, index);
-                            logger.emit(EventCode.CMD_IN_REMOVE_CHANNEL, buffer, index, length);
+                            LOGGER.emit(EventCode.CMD_IN_REMOVE_CHANNEL, buffer, index, length);
                             flyweight = publisherMessage;
                             onRemoveChannel(publisherMessage);
                             break;
 
                         case ADD_SUBSCRIBER:
                             subscriberMessage.wrap(buffer, index);
-                            logger.emit(EventCode.CMD_IN_ADD_SUBSCRIBER, buffer, index, length);
+                            LOGGER.emit(EventCode.CMD_IN_ADD_SUBSCRIBER, buffer, index, length);
                             flyweight = subscriberMessage;
                             onAddSubscriber(subscriberMessage);
                             break;
 
                         case REMOVE_SUBSCRIBER:
                             subscriberMessage.wrap(buffer, index);
-                            logger.emit(EventCode.CMD_IN_REMOVE_SUBSCRIBER, buffer, index, length);
+                            LOGGER.emit(EventCode.CMD_IN_REMOVE_SUBSCRIBER, buffer, index, length);
                             flyweight = subscriberMessage;
                             onRemoveSubscriber(subscriberMessage);
                             break;
@@ -225,27 +234,11 @@ public class MediaConductor extends Agent
                 }
                 catch (final Exception ex)
                 {
-                    // TODO: log this instead
                     ex.printStackTrace();
                 }
             });
 
         return messagesRead > 0;
-    }
-
-    /**
-     * Return the {@link NioSelector} in use by this conductor thread.
-     *
-     * @return the {@link NioSelector} in use by this conductor thread
-     */
-    public NioSelector nioSelector()
-    {
-        return nioSelector;
-    }
-
-    public long currentTime()
-    {
-        return timerWheel.now();
     }
 
     private boolean processTimers()
@@ -278,7 +271,7 @@ public class MediaConductor extends Agent
 
         final int msgTypeId = isSender ? NEW_SEND_BUFFER_NOTIFICATION : NEW_RECEIVE_BUFFER_NOTIFICATION;
 
-        logger.emit((isSender ? EventCode.CMD_OUT_NEW_SEND_BUFFER_NOTIFICATION :
+        LOGGER.emit((isSender ? EventCode.CMD_OUT_NEW_SEND_BUFFER_NOTIFICATION :
                         EventCode.CMD_OUT_NEW_RECEIVE_BUFFER_NOTIFICATION),
                 msgBuffer, 0, newBufferMessage.length());
 
@@ -341,7 +334,6 @@ public class MediaConductor extends Agent
         }
         catch (final Exception ex)
         {
-            // TODO: log this
             ex.printStackTrace();
             throw new ControlProtocolException(ErrorCode.GENERIC_ERROR_CHANNEL_MESSAGE, ex.getMessage());
         }
@@ -385,7 +377,6 @@ public class MediaConductor extends Agent
         }
         catch (final Exception ex)
         {
-            // TODO: log this
             ex.printStackTrace();
             throw new ControlProtocolException(ErrorCode.GENERIC_ERROR_CHANNEL_MESSAGE, ex.getMessage());
         }
@@ -428,7 +419,6 @@ public class MediaConductor extends Agent
         catch (final Exception ex)
         {
             ex.printStackTrace();
-            // TODO: handle errors by logging
         }
     }
 
@@ -446,7 +436,6 @@ public class MediaConductor extends Agent
         catch (final Exception ex)
         {
             ex.printStackTrace();
-            // TODO: handle errors by logging
         }
     }
 
@@ -459,7 +448,7 @@ public class MediaConductor extends Agent
 
     private long generateTermId()
     {
-        // term Id can be psuedo-random. Doesn't have to be perfect. But must be in the range.
+        // term Id can be psuedo-random. Doesn't have to be perfect. But must be in the range [0, 0x7FFFFFFF]
         return (int)(Math.random() * (double)0x7FFFFFFF);
     }
 }

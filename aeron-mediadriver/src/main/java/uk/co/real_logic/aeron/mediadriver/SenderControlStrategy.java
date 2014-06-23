@@ -15,6 +15,8 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import java.net.InetSocketAddress;
+
 public interface SenderControlStrategy
 {
     /**
@@ -24,6 +26,13 @@ public interface SenderControlStrategy
      */
     int onStatusMessage(final long termId,
                         final long highestContiguousSequenceNumber,
-                        final long receiverWindow);
+                        final long receiverWindow,
+                        final InetSocketAddress address);
 
+    /**
+     * Initial receiver window value
+     *
+     * @return receiver window
+     */
+    int initialWindow();
 }

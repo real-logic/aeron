@@ -102,7 +102,8 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
         final SenderChannel channel = findChannel(header.sessionId(), header.channelId());
         channel.onStatusMessage(header.termId(),
                                 header.highestContiguousTermOffset(),
-                                header.receiverWindow());
+                                header.receiverWindow(),
+                                srcAddress);
     }
 
     public void onNakFrame(final NakFlyweight nak, final AtomicBuffer buffer,

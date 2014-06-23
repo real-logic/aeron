@@ -154,29 +154,6 @@ project(':aeron-examples') {
     build.doLast {
         tasks.shadowJar.execute()
     }
-
-    def pubBaseDir = System.properties['java.io.tmpdir'] + "pub"
-    def subBaseDir = System.properties['java.io.tmpdir'] + "sub"
-
-    task(pub, dependsOn: 'build', type: JavaExec) {
-        description 'Runs ExamplePublisher'
-        main = 'uk.co.real_logic.aeron.examples.ExamplePublisher'
-        classpath = sourceSets.main.runtimeClasspath
-        systemProperties("aeron.dir.data": pubBaseDir + 'data',
-                         "aeron.dir.conductor": pubBaseDir + 'conductor',
-                         "aeron.dir.counters": pubBaseDir + 'counters',
-                         "aeron.dir.delete.on.exit": System.properties['aeron.dir.delete.on.exit']);
-    }
-
-    task(sub, dependsOn: 'build', type: JavaExec) {
-        description 'Runs ExampleSubscriber'
-        main = 'uk.co.real_logic.aeron.examples.ExampleSubscriber'
-        classpath = sourceSets.main.runtimeClasspath
-        systemProperties("aeron.dir.data": subBaseDir + 'data',
-                         "aeron.dir.conductor": subBaseDir + 'conductor',
-                         "aeron.dir.counters": subBaseDir + 'counters',
-                         "aeron.dir.delete.on.exit": System.properties['aeron.dir.delete.on.exit']);
-    }
 }
 
 project(':aeron-benchmark') {
@@ -209,10 +186,25 @@ project(':aeron-system-tests') {
     }
 
     test {
-        if (project.hasProperty('aeron.event.log')) {
-            jvmArgs '-Daeron.event.log=true'
-        }
+        systemProperties('aeron.event.log': System.properties['aeron.event.log']);
     }
+}
+
+task(runEx, dependsOn: project(':aeron-examples').'build', type: JavaExec) {
+    if (!project.hasProperty('mainClass'))
+    {
+        ext.mainClass = ''
+    }
+
+    def baseDir = System.properties['java.io.tmpdir'] + mainClass
+
+    main = 'uk.co.real_logic.aeron.examples.' + mainClass
+    classpath = project(':aeron-examples').sourceSets.main.runtimeClasspath
+    systemProperties('aeron.dir.data': baseDir + '-data',
+            'aeron.dir.conductor': baseDir + '-conductor',
+            'aeron.dir.counters': baseDir + '-counters',
+            'aeron.dir.delete.on.exit': System.properties['aeron.dir.delete.on.exit'],
+            'aeron.event.log': System.properties['aeron.event.log']);
 }
 
 task wrapper(type: Wrapper) {

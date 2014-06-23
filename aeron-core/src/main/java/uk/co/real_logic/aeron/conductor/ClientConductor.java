@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.conductor;
 import uk.co.real_logic.aeron.Channel;
 import uk.co.real_logic.aeron.SubscriberChannel;
 import uk.co.real_logic.aeron.util.Agent;
+import uk.co.real_logic.aeron.util.AgentIdleStrategy;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.collections.ChannelMap;
 import uk.co.real_logic.aeron.util.command.*;
@@ -29,6 +30,7 @@ import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.status.*;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.IntFunction;
 
@@ -42,7 +44,11 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 public final class ClientConductor extends Agent
 {
     private static final int MAX_FRAME_LENGTH = 1024;
-    private static final int SLEEP_PERIOD_NS = 1;
+
+    public static final long AGENT_IDLE_MAX_SPINS = 5000;
+    public static final long AGENT_IDLE_MAX_YIELDS = 100;
+    public static final long AGENT_IDLE_MIN_PARK_NANOS = TimeUnit.NANOSECONDS.toNanos(10);
+    public static final long AGENT_IDLE_MAX_PARK_NANOS = TimeUnit.MICROSECONDS.toNanos(100);
 
     private final RingBuffer commandBuffer;
     private final RingBuffer toClientBuffer;
@@ -70,7 +76,8 @@ public final class ClientConductor extends Agent
                            final AtomicArray<SubscriberChannel> subscriberChannels,
                            final ConductorErrorHandler errorHandler)
     {
-        super(SLEEP_PERIOD_NS);
+        super(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
+                AGENT_IDLE_MIN_PARK_NANOS, AGENT_IDLE_MAX_PARK_NANOS));
 
         this.commandBuffer = commandBuffer;
         this.toClientBuffer = toClientBuffer;

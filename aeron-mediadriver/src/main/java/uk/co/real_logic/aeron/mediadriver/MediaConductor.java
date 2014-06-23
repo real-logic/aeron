@@ -83,7 +83,7 @@ public class MediaConductor extends Agent
 
     public MediaConductor(final Context ctx, final Receiver receiver, final Sender sender)
     {
-        super(AGENT_SLEEP_NS);
+        super(ctx.conductorIdleStrategy());
 
         this.localCommandBuffer = ctx.mediaCommandBuffer();
         this.receiverProxy = ctx.receiverProxy();

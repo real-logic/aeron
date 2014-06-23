@@ -44,7 +44,7 @@ public class Receiver extends Agent
 
     public Receiver(final MediaDriver.Context context) throws Exception
     {
-        super(MediaDriver.AGENT_SLEEP_NS);
+        super(context.receiverIdleStrategy());
 
         this.commandBuffer = context.receiverCommandBuffer();
         this.conductorProxy = context.mediaConductorProxy();

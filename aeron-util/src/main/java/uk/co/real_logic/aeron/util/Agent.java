@@ -18,32 +18,42 @@ package uk.co.real_logic.aeron.util;
 import java.util.concurrent.locks.LockSupport;
 
 /**
- * Base agent that is responsible for an ongoing activity which runs in its own thread.
+ * Base agent that is responsible for an ongoing activity.
  */
 public abstract class Agent implements Runnable, AutoCloseable
 {
-    private final long sleepPeriodNanos;
+    private final AgentIdleStrategy idleStrategy;
     private volatile boolean running;
 
-    public Agent(final long sleepPeriodNanos)
+    /**
+     * Create an agent passing in {@link AgentIdleStrategy}
+     *
+     * @param idleStrategy to use for Agent run loop
+     */
+    public Agent(final AgentIdleStrategy idleStrategy)
     {
-        this.sleepPeriodNanos = sleepPeriodNanos;
+        this.idleStrategy = idleStrategy;
         this.running = true;
     }
 
+    /**
+     * Run the Agent logic
+     *
+     * This method does not return until the run loop is stopped via {@link #stop()} or {@link #close()}.
+     */
     public void run()
     {
         while (running)
         {
             final boolean hasDoneWork = doWork();
 
-            if (!hasDoneWork)
-            {
-                LockSupport.parkNanos(sleepPeriodNanos);
-            }
+            idleStrategy.idle(hasDoneWork);
         }
     }
 
+    /**
+     * Stop the running Agent and cleanup. Not waiting for the agent run loop to stop before returning.
+     */
     public void close() throws Exception
     {
         running = false;

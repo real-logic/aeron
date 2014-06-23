@@ -52,7 +52,6 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescri
  * <li><code>aeron.command.buffer.size</code>: Use int value as size of the command buffers between threads.</li>
  * <li><code>aeron.conductor.buffer.size</code>: Use int value as size of the conductor buffers between the media
  * driver and the client.</li>
- * <li><code>aeron.select.timeout</code>: use int value as default timeout for NIO select calls</li>
  * </ul>
  */
 public class MediaDriver implements AutoCloseable
@@ -83,11 +82,6 @@ public class MediaDriver implements AutoCloseable
     public static final String DESCRIPTOR_BUFFER_SZ_PROP_NAME = "aeron.counters.descriptor.size";
 
     /**
-     * Timeout (in msec) for the basic NIO select call
-     */
-    public static final String AGENT_SLEEP_PROP_NAME = "aeron.select.timeout";
-
-    /**
      * Default byte buffer size for reads
      */
     public static final int READ_BYTE_BUFFER_SZ_DEFAULT = 4096;
@@ -111,11 +105,6 @@ public class MediaDriver implements AutoCloseable
      * Size (in bytes) of the counter storage buffer
      */
     public static final int DESCRIPTOR_BUFFER_SZ_DEFAULT = 65536;
-
-    /**
-     * Default timeout for select
-     */
-    public static final int AGENT_SLEEP_DEFAULT_NS = 10;
 
     /**
      * Default group size estimate for NAK delay randomization
@@ -167,7 +156,6 @@ public class MediaDriver implements AutoCloseable
     public static final int READ_BYTE_BUFFER_SZ = getInteger(READ_BUFFER_SZ_PROP_NAME, READ_BYTE_BUFFER_SZ_DEFAULT);
     public static final int COMMAND_BUFFER_SZ = getInteger(COMMAND_BUFFER_SZ_PROP_NAME, COMMAND_BUFFER_SZ_DEFAULT);
     public static final int CONDUCTOR_BUFFER_SZ = getInteger(CONDUCTOR_BUFFER_SZ_PROP_NAME, CONDUCTOR_BUFFER_SZ_DEFAULT);
-    public static final int AGENT_SLEEP_NS = getInteger(AGENT_SLEEP_PROP_NAME, AGENT_SLEEP_DEFAULT_NS);
     public static final int COUNTERS_BUFFER_SZ = getInteger(COUNTERS_BUFFER_SZ_PROP_NAME, COUNTERS_BUFFER_SZ_DEFAULT);
     public static final int DESCRIPTOR_BUFFER_SZ = getInteger(DESCRIPTOR_BUFFER_SZ_PROP_NAME,
                                                               DESCRIPTOR_BUFFER_SZ_DEFAULT);
@@ -181,6 +169,11 @@ public class MediaDriver implements AutoCloseable
      * tickDuration (in MICROSECONDS) for TimerWheel in conductor thread
      */
     public static final int MEDIA_CONDUCTOR_TICK_DURATION_US = 10 * 1000;
+
+    public static final long AGENT_IDLE_MAX_SPINS = 5000;
+    public static final long AGENT_IDLE_MAX_YIELDS = 100;
+    public static final long AGENT_IDLE_MIN_PARK_NANOS = TimeUnit.NANOSECONDS.toNanos(10);
+    public static final long AGENT_IDLE_MAX_PARK_NANOS = TimeUnit.MICROSECONDS.toNanos(100);
 
     private final File adminDirFile;
     private final File dataDirFile;
@@ -247,7 +240,13 @@ public class MediaDriver implements AutoCloseable
                                                              TimeUnit.MICROSECONDS,
                                                              MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
                          .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024))
-                         .mtuLength(CommonConfiguration.MTU_LENGTH);
+                         .mtuLength(CommonConfiguration.MTU_LENGTH)
+                         .conductorIdleStrategy(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
+                                 AGENT_IDLE_MIN_PARK_NANOS, AGENT_IDLE_MAX_PARK_NANOS))
+                         .senderIdleStrategy(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
+                                 AGENT_IDLE_MIN_PARK_NANOS, AGENT_IDLE_MAX_PARK_NANOS))
+                         .receiverIdleStrategy(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
+                                 AGENT_IDLE_MIN_PARK_NANOS, AGENT_IDLE_MAX_PARK_NANOS));
 
         ctx.receiverProxy(new ReceiverProxy(ctx.receiverCommandBuffer(),
                                             ctx.newReceiveBufferEventQueue()));
@@ -445,6 +444,9 @@ public class MediaDriver implements AutoCloseable
         private Queue<NewReceiveBufferEvent> newReceiveBufferEventQueue;
         private ReceiverProxy receiverProxy;
         private MediaConductorProxy mediaConductorProxy;
+        private AgentIdleStrategy conductorIdleStrategy;
+        private AgentIdleStrategy senderIdleStrategy;
+        private AgentIdleStrategy receiverIdleStrategy;
 
         private void initializeWithSystemProperties()
         {
@@ -531,6 +533,24 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
+        public Context conductorIdleStrategy(final AgentIdleStrategy strategy)
+        {
+            this.conductorIdleStrategy = strategy;
+            return this;
+        }
+
+        public Context senderIdleStrategy(final AgentIdleStrategy strategy)
+        {
+            this.senderIdleStrategy = strategy;
+            return this;
+        }
+
+        public Context receiverIdleStrategy(final AgentIdleStrategy strategy)
+        {
+            this.receiverIdleStrategy = strategy;
+            return this;
+        }
+
         public RingBuffer mediaCommandBuffer()
         {
             return mediaCommandBuffer;
@@ -589,6 +609,21 @@ public class MediaDriver implements AutoCloseable
         public MediaConductorProxy mediaConductorProxy()
         {
             return mediaConductorProxy;
+        }
+
+        public AgentIdleStrategy conductorIdleStrategy()
+        {
+            return conductorIdleStrategy;
+        }
+
+        public AgentIdleStrategy senderIdleStrategy()
+        {
+            return senderIdleStrategy;
+        }
+
+        public AgentIdleStrategy receiverIdleStrategy()
+        {
+            return receiverIdleStrategy;
         }
     }
 }

@@ -232,6 +232,11 @@ public class UdpDestination
         return NetworkInterface.getByInetAddress(localData.getAddress());
     }
 
+    public NetworkInterface localControlInterface() throws SocketException
+    {
+        return NetworkInterface.getByInetAddress(localControl.getAddress());
+    }
+
     /**
      * Clients use the destination as part of the path for the buffer, and they are only aware
      * of the destination uri they used.

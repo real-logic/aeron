@@ -50,6 +50,9 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
     private final NioSelector nioSelector;
     private final SelectionKey registeredKey;
 
+    /*
+     * Generic constructor. Used mainly for selector testing.
+     */
     public UdpTransport(final FrameHandler frameHandler,
                         final InetSocketAddress local,
                         final NioSelector nioSelector) throws Exception
@@ -59,6 +62,29 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
         this.nioSelector = nioSelector;
 
         channel.bind(local);
+        channel.configureBlocking(false);
+        registeredKey = nioSelector.registerForRead(channel, this);
+    }
+
+    public UdpTransport(final ControlFrameHandler frameHandler,
+                        final UdpDestination destination,
+                        final NioSelector nioSelector) throws Exception
+    {
+        this.readBuffer = new AtomicBuffer(this.readByteBuffer);
+        this.frameHandler = frameHandler;
+        this.nioSelector = nioSelector;
+
+        if (destination.isMulticast())
+        {
+            final InetAddress endPointAddress = destination.remoteControl().getAddress();
+            channel.setOption(StandardSocketOptions.SO_REUSEADDR, Boolean.TRUE);
+            channel.bind(destination.localControl());
+            channel.join(endPointAddress, destination.localControlInterface());
+        }
+        else
+        {
+            channel.bind(destination.localControl());
+        }
         channel.configureBlocking(false);
         registeredKey = nioSelector.registerForRead(channel, this);
     }

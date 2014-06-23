@@ -300,7 +300,7 @@ public class MediaConductor extends Agent
             ControlFrameHandler frameHandler = srcDestinationMap.get(srcDestination.consistentHash());
             if (null == frameHandler)
             {
-                frameHandler = new ControlFrameHandler(srcDestination, this);
+                frameHandler = new ControlFrameHandler(srcDestination, nioSelector);
                 srcDestinationMap.put(srcDestination.consistentHash(), frameHandler);
             }
             else if (!frameHandler.destination().equals(srcDestination))

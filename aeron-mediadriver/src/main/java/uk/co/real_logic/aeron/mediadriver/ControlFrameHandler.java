@@ -29,15 +29,13 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
 {
     private final UdpTransport transport;
     private final UdpDestination destination;
-    private final MediaConductor mediaConductor;
     private final Long2ObjectHashMap<Long2ObjectHashMap<SenderChannel>> sessionMap = new Long2ObjectHashMap<>();
 
     public ControlFrameHandler(final UdpDestination destination,
-                               final MediaConductor mediaConductor) throws Exception
+                               final NioSelector nioSelector) throws Exception
     {
-        this.transport = new UdpTransport(this, destination.localControl(), mediaConductor.nioSelector());
+        this.transport = new UdpTransport(this, destination, nioSelector);
         this.destination = destination;
-        this.mediaConductor = mediaConductor;
     }
 
     public int send(final ByteBuffer buffer) throws Exception
@@ -58,11 +56,6 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
     public UdpDestination destination()
     {
         return destination;
-    }
-
-    public UdpTransport transport()
-    {
-        return transport;
     }
 
     public SenderChannel findChannel(final long sessionId, final long channelId)
@@ -124,10 +117,5 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
                             final long length, final InetSocketAddress srcAddress)
     {
         // ignore data
-    }
-
-    public long currentTime()
-    {
-        return mediaConductor.currentTime();
     }
 }

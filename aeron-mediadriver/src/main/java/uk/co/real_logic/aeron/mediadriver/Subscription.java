@@ -28,7 +28,7 @@ public class Subscription
     private final UdpDestination destination;
     private final long channelId;
     private final MediaConductorProxy conductorProxy;
-    private final AtomicArray<SubscribedSession> globallySubscribedSessions;
+    private final AtomicArray<SubscribedSession> subscribedSessions;
     private final Long2ObjectHashMap<SubscribedSession> subscribedSessionBySessionIdMap = new Long2ObjectHashMap<>();
 
     private int refCount = 0;
@@ -36,12 +36,12 @@ public class Subscription
     public Subscription(final UdpDestination destination,
                         final long channelId,
                         final MediaConductorProxy conductorProxy,
-                        final AtomicArray<SubscribedSession> globallySubscribedSessions)
+                        final AtomicArray<SubscribedSession> subscribedSessions)
     {
         this.destination = destination;
         this.channelId = channelId;
         this.conductorProxy = conductorProxy;
-        this.globallySubscribedSessions = globallySubscribedSessions;
+        this.subscribedSessions = subscribedSessions;
     }
 
     public int decRef()
@@ -62,7 +62,7 @@ public class Subscription
     public SubscribedSession createSubscribedSession(final long sessionId, final InetSocketAddress srcAddress)
     {
         final SubscribedSession subscribedSession = new SubscribedSession(sessionId, channelId, srcAddress);
-        globallySubscribedSessions.add(subscribedSession);
+        subscribedSessions.add(subscribedSession);
 
         return subscribedSessionBySessionIdMap.put(sessionId, subscribedSession);
     }

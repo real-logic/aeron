@@ -32,7 +32,7 @@ public class ControlProtocolEvents
     /** Remove Subscriber */
     public static final int REMOVE_SUBSCRIPTION = 0x05;
     /** Request Term */
-    public static final int REQUEST_CLEANED_TERM = 0x06;
+    public static final int CLEAN_TERM_BUFFER = 0x06;
 
     // Media Driver to Library
 

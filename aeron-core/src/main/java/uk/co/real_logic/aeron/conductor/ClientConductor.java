@@ -157,7 +157,7 @@ public final class ClientConductor extends Agent
                         break;
                     }
 
-                    case REQUEST_CLEANED_TERM:
+                    case CLEAN_TERM_BUFFER:
                         toDriverBuffer.write(msgTypeId, buffer, index, length);
                         break;
                 }

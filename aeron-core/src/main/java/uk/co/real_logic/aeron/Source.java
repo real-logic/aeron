@@ -57,7 +57,7 @@ public class Source implements AutoCloseable
                                             channels,
                                             pauseButton);
         channels.add(channel);
-        clientConductorProxy.sendAddChannel(destination.destination(), sessionId, channelId);
+        clientConductorProxy.addPublication(destination.destination(), sessionId, channelId);
 
         return channel;
     }

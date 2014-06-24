@@ -42,13 +42,13 @@ public class ClientConductorProxyTest
     @Test
     public void threadSendsAddChannelMessage()
     {
-        threadSendsChannelMessage(() -> conductor.sendAddChannel(DESTINATION, SESSION_ID, 2), ADD_PUBLICATION);
+        threadSendsChannelMessage(() -> conductor.addPublication(DESTINATION, SESSION_ID, 2), ADD_PUBLICATION);
     }
 
     @Test
     public void threadSendsRemoveChannelMessage()
     {
-        threadSendsChannelMessage(() -> conductor.sendRemoveChannel(DESTINATION, SESSION_ID, 2), REMOVE_PUBLICATION);
+        threadSendsChannelMessage(() -> conductor.removePublication(DESTINATION, SESSION_ID, 2), REMOVE_PUBLICATION);
     }
 
     private void threadSendsChannelMessage(final Runnable sendMessage, final int expectedMsgTypeId)
@@ -72,7 +72,7 @@ public class ClientConductorProxyTest
     @Test
     public void threadSendsRemoveSubscriberMessage()
     {
-        conductor.sendRemoveSubscription(DESTINATION, CHANNEL_IDS);
+        conductor.removeSubscription(DESTINATION, CHANNEL_IDS);
 
         assertReadsOneMessage(
             (msgTypeId, buffer, index, length) ->
@@ -98,7 +98,7 @@ public class ClientConductorProxyTest
                 final QualifiedMessageFlyweight qualifiedMessage = new QualifiedMessageFlyweight();
                 qualifiedMessage.wrap(buffer, index);
 
-                assertThat(msgTypeId, is(REQUEST_CLEANED_TERM));
+                assertThat(msgTypeId, is(CLEAN_TERM_BUFFER));
                 assertThat(qualifiedMessage.sessionId(), is(1L));
                 assertThat(qualifiedMessage.channelId(), is(2L));
                 assertThat(qualifiedMessage.destination(), is(DESTINATION));

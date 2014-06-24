@@ -49,47 +49,49 @@ public class ClientConductorProxy
         qualifiedMessage.wrap(writeBuffer, 0);
     }
 
-    public void sendAddChannel(final String destination, final long sessionId, final long channelId)
+    public void addPublication(final String destination, final long sessionId, final long channelId)
     {
-        sendChannelMessage(destination, sessionId, channelId, ADD_PUBLICATION);
+        sendPublicationMessage(destination, sessionId, channelId, ADD_PUBLICATION);
     }
 
-    public void sendRemoveChannel(final String destination, final long sessionId, final long channelId)
+    public void removePublication(final String destination, final long sessionId, final long channelId)
     {
-        sendChannelMessage(destination, sessionId, channelId, REMOVE_PUBLICATION);
+        sendPublicationMessage(destination, sessionId, channelId, REMOVE_PUBLICATION);
     }
 
-    private void sendChannelMessage(final String destination,
-                                    final long sessionId,
-                                    final long channelId,
-                                    final int msgTypeId)
-    {
-        publicationMessage.sessionId(sessionId);
-        publicationMessage.channelId(channelId);
-        publicationMessage.destination(destination);
-        if (! conductorBuffer.write(msgTypeId, writeBuffer, 0, publicationMessage.length()))
-        {
-            throw new IllegalStateException("could not write channel message");
-        }
-    }
-
-    public void sendAddSubscription(final String destination, final long[] channelIds)
+    public void addSubscription(final String destination, final long[] channelIds)
     {
         sendSubscriptionMessage(ADD_SUBSCRIPTION, destination, channelIds);
     }
 
-    public void sendRemoveSubscription(final String destination, final long[] channelIds)
+    public void removeSubscription(final String destination, final long[] channelIds)
     {
         sendSubscriptionMessage(REMOVE_SUBSCRIPTION, destination, channelIds);
+    }
+
+    private void sendPublicationMessage(final String destination,
+                                        final long sessionId,
+                                        final long channelId,
+                                        final int msgTypeId)
+    {
+        publicationMessage.sessionId(sessionId);
+        publicationMessage.channelId(channelId);
+        publicationMessage.destination(destination);
+
+        if (!conductorBuffer.write(msgTypeId, writeBuffer, 0, publicationMessage.length()))
+        {
+            throw new IllegalStateException("could not write channel message");
+        }
     }
 
     private void sendSubscriptionMessage(final int msgTypeId, final String destination, final long[] channelIds)
     {
         subscriptionMessage.channelIds(channelIds);
         subscriptionMessage.destination(destination);
+
         if (!conductorBuffer.write(msgTypeId, writeBuffer, 0, subscriptionMessage.length()))
         {
-            throw new IllegalStateException("could not write receiver message");
+            throw new IllegalStateException("could not write subscription message");
         }
     }
 
@@ -99,6 +101,10 @@ public class ClientConductorProxy
         qualifiedMessage.channelId(channelId);
         qualifiedMessage.termId(termId);
         qualifiedMessage.destination(destination);
-        conductorBuffer.write(REQUEST_CLEANED_TERM, writeBuffer, 0, qualifiedMessage.length());
+
+        if (!conductorBuffer.write(CLEAN_TERM_BUFFER, writeBuffer, 0, qualifiedMessage.length()))
+        {
+            throw new IllegalStateException("could not write subscription message");
+        }
     }
 }

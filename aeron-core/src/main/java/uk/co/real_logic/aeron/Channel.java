@@ -143,7 +143,7 @@ public class Channel extends ChannelNotifiable implements AutoCloseable, Positio
     public void close() throws Exception
     {
         channels.remove(this);
-        clientConductorProxy.sendRemoveChannel(destination, sessionId, channelId);
+        clientConductorProxy.removePublication(destination, sessionId, channelId);
     }
 
     public boolean matches(final String destination, final long sessionId, final long channelId)

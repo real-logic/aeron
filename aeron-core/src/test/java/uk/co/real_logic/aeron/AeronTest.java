@@ -191,7 +191,7 @@ public class AeronTest
     private void assertCleanTermRequested(final RingBuffer toMediaDriver)
     {
         assertMsgRead(toMediaDriver,
-                      (msgTypeId, buffer, index, length) -> assertThat(msgTypeId, is(REQUEST_CLEANED_TERM)));
+                      (msgTypeId, buffer, index, length) -> assertThat(msgTypeId, is(CLEAN_TERM_BUFFER)));
     }
 
     @Test

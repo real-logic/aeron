@@ -202,7 +202,7 @@ public class Receiver extends Agent
             return;
         }
 
-        final GapScanner[] scanners = e.buffer().buffers()
+        final GapScanner[] scanners = e.bufferRotator().buffers()
             .map((r) -> new GapScanner(r.logBuffer(), r.stateBuffer()))
             .toArray(GapScanner[]::new);
 

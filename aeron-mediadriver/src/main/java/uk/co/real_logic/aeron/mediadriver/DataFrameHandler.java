@@ -171,7 +171,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         lossHandler.sendNakHandler(
                 (termId, termOffset, length) -> sendNak(subscriberSession, (int)termId, termOffset, length));
 
-        subscriberSession.termBuffer(event.termId(), event.buffer(), lossHandler);
+        subscriberSession.termBuffer(event.termId(), event.bufferRotator(), lossHandler);
 
         // now we are all setup, so send an SM to allow the source to send if it is waiting
         // TODO: grab initial term offset from data and store in subscriberSession somehow (per TermID)

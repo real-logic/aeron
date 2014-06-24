@@ -25,7 +25,7 @@ public class NewReceiveBufferEvent
     private final long sessionId;
     private final long channelId;
     private final long termId;
-    private final BufferRotator buffer;
+    private final BufferRotator bufferRotator;
     private final UdpDestination destination;
     private int state;
 
@@ -33,12 +33,12 @@ public class NewReceiveBufferEvent
                                  final long sessionId,
                                  final long channelId,
                                  final long termId,
-                                 final BufferRotator buffer)
+                                 final BufferRotator bufferRotator)
     {
         this.sessionId = sessionId;
         this.channelId = channelId;
         this.termId = termId;
-        this.buffer = buffer;
+        this.bufferRotator = bufferRotator;
         this.destination = destination;
         this.state = STATE_PENDING;
     }
@@ -73,8 +73,8 @@ public class NewReceiveBufferEvent
         this.state = state;
     }
 
-    public BufferRotator buffer()
+    public BufferRotator bufferRotator()
     {
-        return buffer;
+        return bufferRotator;
     }
 }

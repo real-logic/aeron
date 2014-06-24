@@ -117,6 +117,7 @@ public class SenderTest
     {
         currentTimestamp += TimeUnit.MILLISECONDS.toNanos(SenderChannel.INITIAL_HEARTBEAT_TIMEOUT_MS) - 1;
         sender.heartbeatChecks();
+        receiveAndSaveAllFrames();
         assertThat(receivedFrames.size(), is(0));  // should not send yet
         currentTimestamp += 10;
         sender.heartbeatChecks();

@@ -190,28 +190,28 @@ public class MediaConductor extends Agent
                     {
                         case ADD_CHANNEL:
                             publisherMessage.wrap(buffer, index);
-                            LOGGER.emit(EventCode.CMD_IN_ADD_CHANNEL, buffer, index, length);
+                            LOGGER.log(EventCode.CMD_IN_ADD_CHANNEL, buffer, index, length);
                             flyweight = publisherMessage;
                             onAddChannel(publisherMessage);
                             break;
 
                         case REMOVE_CHANNEL:
                             publisherMessage.wrap(buffer, index);
-                            LOGGER.emit(EventCode.CMD_IN_REMOVE_CHANNEL, buffer, index, length);
+                            LOGGER.log(EventCode.CMD_IN_REMOVE_CHANNEL, buffer, index, length);
                             flyweight = publisherMessage;
                             onRemoveChannel(publisherMessage);
                             break;
 
                         case ADD_SUBSCRIBER:
                             subscriberMessage.wrap(buffer, index);
-                            LOGGER.emit(EventCode.CMD_IN_ADD_SUBSCRIBER, buffer, index, length);
+                            LOGGER.log(EventCode.CMD_IN_ADD_SUBSCRIBER, buffer, index, length);
                             flyweight = subscriberMessage;
                             onAddSubscriber(subscriberMessage);
                             break;
 
                         case REMOVE_SUBSCRIBER:
                             subscriberMessage.wrap(buffer, index);
-                            LOGGER.emit(EventCode.CMD_IN_REMOVE_SUBSCRIBER, buffer, index, length);
+                            LOGGER.log(EventCode.CMD_IN_REMOVE_SUBSCRIBER, buffer, index, length);
                             flyweight = subscriberMessage;
                             onRemoveSubscriber(subscriberMessage);
                             break;
@@ -269,9 +269,9 @@ public class MediaConductor extends Agent
 
         final int msgTypeId = isSender ? NEW_SEND_BUFFER_NOTIFICATION : NEW_RECEIVE_BUFFER_NOTIFICATION;
 
-        LOGGER.emit(isSender ? EventCode.CMD_OUT_NEW_SEND_BUFFER_NOTIFICATION :
-                               EventCode.CMD_OUT_NEW_RECEIVE_BUFFER_NOTIFICATION,
-                    msgBuffer, 0, newBufferMessage.length());
+        LOGGER.log(isSender ? EventCode.CMD_OUT_NEW_SEND_BUFFER_NOTIFICATION :
+                       EventCode.CMD_OUT_NEW_RECEIVE_BUFFER_NOTIFICATION,
+                   msgBuffer, 0, newBufferMessage.length());
 
         if (!toClientBuffer.write(msgTypeId, msgBuffer, 0, newBufferMessage.length()))
         {

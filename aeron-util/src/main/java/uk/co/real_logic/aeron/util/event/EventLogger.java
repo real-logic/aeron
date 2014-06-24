@@ -29,51 +29,39 @@ import java.nio.MappedByteBuffer;
 public class EventLogger
 {
     private final static boolean ON;
-    private final static ManyToOneRingBuffer mpsc;
-    private final static MappedByteBuffer buffer;
+    private final static ManyToOneRingBuffer ringBuffer;
     private final static ThreadLocal<AtomicBuffer> encodingBuffer;
 
     private byte[] className;
 
     static
     {
-        ManyToOneRingBuffer tmpMpsc;
+        ManyToOneRingBuffer tmpRingBuffer;
         MappedByteBuffer tmpBuffer;
         ThreadLocal<AtomicBuffer> tmpEncodingBuffer;
         final File bufferLocation = new File(System.getProperty(EventConfiguration.LOCATION_PROPERTY_NAME,
-            EventConfiguration.LOCATION_DEFAULT));
+                                                                EventConfiguration.LOCATION_DEFAULT));
 
         // if can't map existing file, then turn logging off
 
         try
         {
             tmpBuffer = IoUtil.mapExistingFile(bufferLocation, "event-buffer");
-            tmpMpsc = new ManyToOneRingBuffer(new AtomicBuffer(tmpBuffer));
+            tmpRingBuffer = new ManyToOneRingBuffer(new AtomicBuffer(tmpBuffer));
             tmpEncodingBuffer = ThreadLocal.withInitial(
-                    () -> new AtomicBuffer(ByteBuffer.allocateDirect(EventConfiguration.MAX_EVENT_LENGTH)));
+                () -> new AtomicBuffer(ByteBuffer.allocateDirect(EventConfiguration.MAX_EVENT_LENGTH)));
         }
         catch (final Exception ex)
         {
-            tmpBuffer = null;
-            tmpMpsc = null;
+            tmpRingBuffer = null;
             tmpEncodingBuffer = null;
         }
 
-        buffer = tmpBuffer;
-        mpsc = tmpMpsc;
+        ringBuffer = tmpRingBuffer;
         encodingBuffer = tmpEncodingBuffer;
 
-//        System.out.println("logger " + buffer + " " + mpsc + " " + encodingBuffer + " " + System.getProperty(EventConfiguration.LOGGER_ON_PROPERTY_NAME));
-
-        if (Boolean.getBoolean(EventConfiguration.LOGGER_ON_PROPERTY_NAME) && null != tmpMpsc)
-        {
-            ON = true;
-            // TODO: other config - like snaplen (tcpdump style)
-        }
-        else
-        {
-            ON = false;
-        }
+        // TODO: other config - like snaplen (tcpdump style)
+        ON = Boolean.getBoolean(EventConfiguration.LOGGER_ON_PROPERTY_NAME) && null != tmpRingBuffer;
     }
 
     public EventLogger(final Class clazz)
@@ -81,18 +69,18 @@ public class EventLogger
         className = clazz.getName().getBytes();
     }
 
-    public void emit(final EventCode code, final AtomicBuffer buffer, final int offset, final int length)
+    public void log(final EventCode code, final AtomicBuffer buffer, final int offset, final int length)
     {
         if (ON)
         {
             final AtomicBuffer encodedBuffer = encodingBuffer.get();
             final int encodedLength = EventCodec.encode(encodedBuffer, buffer, offset, length);
 
-            mpsc.write(code.id(), encodedBuffer, 0, encodedLength);
+            ringBuffer.write(code.id(), encodedBuffer, 0, encodedLength);
         }
     }
 
-    public void emit(final EventCode code, final ByteBuffer buffer, final int length)
+    public void log(final EventCode code, final ByteBuffer buffer, final int length)
     {
         if (ON)
         {
@@ -101,7 +89,7 @@ public class EventLogger
             final int encodedLength = EventCodec.encode(encodedBuffer, buffer, length);
             buffer.position(pos);
 
-            mpsc.write(code.id(), encodedBuffer, 0, encodedLength);
+            ringBuffer.write(code.id(), encodedBuffer, 0, encodedLength);
         }
     }
 }

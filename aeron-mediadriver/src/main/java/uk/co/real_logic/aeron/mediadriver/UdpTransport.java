@@ -152,7 +152,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
 
         header.wrap(readBuffer, offset);
 
-        LOGGER.emit(EventCode.FRAME_IN, readBuffer, offset, len);
+        LOGGER.log(EventCode.FRAME_IN, readBuffer, offset, len);
 
         // drop a version we don't know
         if (header.version() != HeaderFlyweight.CURRENT_VERSION)

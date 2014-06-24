@@ -282,7 +282,7 @@ public class Publication
         sendBuffer.limit(offset + length);
         sendBuffer.position(offset);
 
-        LOGGER.emit(EventCode.FRAME_OUT, sendBuffer, length);
+        LOGGER.log(EventCode.FRAME_OUT, sendBuffer, length);
 
         try
         {
@@ -316,7 +316,7 @@ public class Publication
             termRetransmitBuffers[index].position(offset);
             termRetransmitBuffers[index].limit(offset + length);
 
-            LOGGER.emit(EventCode.FRAME_OUT, termRetransmitBuffers[index], length);
+            LOGGER.log(EventCode.FRAME_OUT, termRetransmitBuffers[index], length);
 
             try
             {
@@ -354,7 +354,7 @@ public class Publication
         scratchSendBuffer.position(0);
         scratchSendBuffer.limit(DataHeaderFlyweight.HEADER_LENGTH);
 
-        LOGGER.emit(EventCode.FRAME_OUT, scratchAtomicBuffer, scratchSendBuffer.position(), scratchSendBuffer.remaining());
+        LOGGER.log(EventCode.FRAME_OUT, scratchAtomicBuffer, scratchSendBuffer.position(), scratchSendBuffer.remaining());
 
         try
         {

@@ -225,7 +225,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         sendNakBuffer.position(0);
         sendNakBuffer.limit(nakHeader.frameLength());
 
-        logger.emit(EventCode.FRAME_OUT, writeNakBuffer, 0,length);
+        logger.log(EventCode.FRAME_OUT, writeNakBuffer, 0, length);
 
         try
         {

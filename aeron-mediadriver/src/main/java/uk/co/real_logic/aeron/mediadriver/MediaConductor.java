@@ -60,7 +60,6 @@ public class MediaConductor extends Agent
     private final RingBuffer localCommandBuffer;
     private final ReceiverProxy receiverProxy;
     private final NioSelector nioSelector;
-    private final Receiver receiver;
     private final Sender sender;
     private final BufferManagement bufferManagement;
     private final RingBuffer clientCommandBuffer;
@@ -68,6 +67,7 @@ public class MediaConductor extends Agent
     private final Long2ObjectHashMap<ControlFrameHandler> srcDestinationMap = new Long2ObjectHashMap<>();
     private final AtomicBuffer msgBuffer = new AtomicBuffer(allocateDirect(MSG_BUFFER_CAPACITY));
     private final TimerWheel timerWheel;
+    private final AtomicArray<SubscribedSession> subscribedSessions;
 
     private final Supplier<SenderControlStrategy> senderFlowControl;
 
@@ -81,7 +81,7 @@ public class MediaConductor extends Agent
     private final ConductorShmBuffers conductorShmBuffers;
     private final TimerWheel.Timer heartbeatTimer;
 
-    public MediaConductor(final Context ctx, final Receiver receiver, final Sender sender)
+    public MediaConductor(final Context ctx, final Sender sender)
     {
         super(ctx.conductorIdleStrategy());
 
@@ -90,13 +90,13 @@ public class MediaConductor extends Agent
         this.bufferManagement = ctx.bufferManagement();
         this.nioSelector = ctx.conductorNioSelector();
         this.mtuLength = ctx.mtuLength();
-        this.receiver = receiver;
         this.sender = sender;
         this.senderFlowControl = ctx.senderFlowControl();
 
         timerWheel = ctx.conductorTimerWheel();
         heartbeatTimer = newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheck);
 
+        subscribedSessions = ctx.subscribedSessions();
         conductorShmBuffers = ctx.conductorShmBuffers();
         clientCommandBuffer = new ManyToOneRingBuffer(new AtomicBuffer(conductorShmBuffers.toDriver()));
         toClientBuffer = new ManyToOneRingBuffer(new AtomicBuffer(conductorShmBuffers.toClient()));
@@ -123,8 +123,8 @@ public class MediaConductor extends Agent
         }
 
         hasDoneWork |= sender.processBufferRotation();
-        hasDoneWork |= receiver.processBufferRotation();
-        hasDoneWork |= receiver.scanForGaps();
+        hasDoneWork |= subscribedSessions.forEach(0, SubscribedSession::processBufferRotation);
+        hasDoneWork |= subscribedSessions.forEach(0, SubscribedSession::scanForGaps);
 
         hasDoneWork |= processClientCommandBuffer();
         hasDoneWork |= processLocalCommandBuffer();

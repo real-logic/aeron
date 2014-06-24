@@ -172,8 +172,8 @@ public class MediaDriver implements AutoCloseable
 
     public static final long AGENT_IDLE_MAX_SPINS = 5000;
     public static final long AGENT_IDLE_MAX_YIELDS = 100;
-    public static final long AGENT_IDLE_MIN_PARK_NANOS = TimeUnit.NANOSECONDS.toNanos(10);
-    public static final long AGENT_IDLE_MAX_PARK_NANOS = TimeUnit.MICROSECONDS.toNanos(100);
+    public static final long AGENT_IDLE_MIN_PARK_NS = TimeUnit.NANOSECONDS.toNanos(10);
+    public static final long AGENT_IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(100);
 
     private final File adminDirFile;
     private final File dataDirFile;
@@ -228,34 +228,33 @@ public class MediaDriver implements AutoCloseable
         this.bufferManagement = newMappedBufferManager(DATA_DIR_NAME);
         this.countersCreator = new StatusBufferCreator(DESCRIPTOR_BUFFER_SIZE, COUNTERS_BUFFER_SIZE);
 
-        final Context ctx =
-            new Context().conductorCommandBuffer(COMMAND_BUFFER_SZ)
-                         .receiverCommandBuffer(COMMAND_BUFFER_SZ)
-                         .receiverNioSelector(new NioSelector())
-                         .conductorNioSelector(new NioSelector())
-                         .senderFlowControl(UnicastSenderControlStrategy::new)
-                         .conductorShmBuffers(conductorShmBuffers)
-                         .bufferManagement(bufferManagement)
-                         .conductorTimerWheel(new TimerWheel(MEDIA_CONDUCTOR_TICK_DURATION_US,
-                                                             TimeUnit.MICROSECONDS,
-                                                             MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
-                         .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024))
-                         .mtuLength(CommonConfiguration.MTU_LENGTH)
-                         .conductorIdleStrategy(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                                 AGENT_IDLE_MIN_PARK_NANOS, AGENT_IDLE_MAX_PARK_NANOS))
-                         .senderIdleStrategy(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                                 AGENT_IDLE_MIN_PARK_NANOS, AGENT_IDLE_MAX_PARK_NANOS))
-                         .receiverIdleStrategy(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                                 AGENT_IDLE_MIN_PARK_NANOS, AGENT_IDLE_MAX_PARK_NANOS));
+        final Context ctx = new Context()
+            .conductorCommandBuffer(COMMAND_BUFFER_SZ)
+            .receiverCommandBuffer(COMMAND_BUFFER_SZ)
+            .receiverNioSelector(new NioSelector())
+            .conductorNioSelector(new NioSelector())
+            .senderFlowControl(UnicastSenderControlStrategy::new)
+            .conductorShmBuffers(conductorShmBuffers)
+            .bufferManagement(bufferManagement)
+            .subscribedSessions(new AtomicArray<>())
+            .conductorTimerWheel(new TimerWheel(MEDIA_CONDUCTOR_TICK_DURATION_US,
+                                                TimeUnit.MICROSECONDS,
+                                                MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
+            .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024))
+            .mtuLength(CommonConfiguration.MTU_LENGTH)
+            .conductorIdleStrategy(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
+                                                         AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
+            .senderIdleStrategy(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
+                                                      AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
+            .receiverIdleStrategy(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
+                                                        AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS));
 
-        ctx.receiverProxy(new ReceiverProxy(ctx.receiverCommandBuffer(),
-                                            ctx.newReceiveBufferEventQueue()));
-
+        ctx.receiverProxy(new ReceiverProxy(ctx.receiverCommandBuffer(), ctx.newReceiveBufferEventQueue()));
         ctx.mediaConductorProxy(new MediaConductorProxy(ctx.mediaCommandBuffer()));
 
         this.receiver = new Receiver(ctx);
         this.sender = new Sender(ctx);
-        this.conductor = new MediaConductor(ctx, receiver, sender);
+        this.conductor = new MediaConductor(ctx, sender);
     }
 
     public Receiver receiver()
@@ -292,7 +291,7 @@ public class MediaDriver implements AutoCloseable
      * Spin up specific thread as a Daemon thread.
      *
      * @param agentThread thread to Daemonize
-     * @param name to associate with thread
+     * @param name        to associate with thread
      */
     public void invokeDaemonized(final Thread agentThread, final String name)
     {
@@ -447,6 +446,7 @@ public class MediaDriver implements AutoCloseable
         private AgentIdleStrategy conductorIdleStrategy;
         private AgentIdleStrategy senderIdleStrategy;
         private AgentIdleStrategy receiverIdleStrategy;
+        private AtomicArray<SubscribedSession> subscribedSessions;
 
         private void initializeWithSystemProperties()
         {
@@ -551,6 +551,12 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
+        public Context subscribedSessions(final AtomicArray<SubscribedSession> subscribedSessions)
+        {
+            this.subscribedSessions = subscribedSessions;
+            return this;
+        }
+
         public RingBuffer mediaCommandBuffer()
         {
             return mediaCommandBuffer;
@@ -624,6 +630,11 @@ public class MediaDriver implements AutoCloseable
         public AgentIdleStrategy receiverIdleStrategy()
         {
             return receiverIdleStrategy;
+        }
+
+        public AtomicArray<SubscribedSession> subscribedSessions()
+        {
+            return subscribedSessions;
         }
     }
 }

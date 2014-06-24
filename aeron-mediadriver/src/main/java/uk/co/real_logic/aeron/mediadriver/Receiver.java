@@ -40,17 +40,18 @@ public class Receiver extends Agent
     private final Map<UdpDestination, DataFrameHandler> frameHandlerByDestinationMap = new HashMap<>();
     private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
     private final Queue<NewReceiveBufferEvent> newBufferEventQueue;
-    private final AtomicArray<SubscribedSession> globalSubscribedSessions = new AtomicArray<>();
+    private final AtomicArray<SubscribedSession> subscribedSessions;
 
-    public Receiver(final MediaDriver.Context context) throws Exception
+    public Receiver(final MediaDriver.Context ctx) throws Exception
     {
-        super(context.receiverIdleStrategy());
+        super(ctx.receiverIdleStrategy());
 
-        this.commandBuffer = context.receiverCommandBuffer();
-        this.conductorProxy = context.mediaConductorProxy();
-        this.nioSelector = context.receiverNioSelector();
-        this.newBufferEventQueue = context.newReceiveBufferEventQueue();
-        this.conductorTimerWheel = context.conductorTimerWheel();
+        this.commandBuffer = ctx.receiverCommandBuffer();
+        this.conductorProxy = ctx.mediaConductorProxy();
+        this.nioSelector = ctx.receiverNioSelector();
+        this.newBufferEventQueue = ctx.newReceiveBufferEventQueue();
+        this.conductorTimerWheel = ctx.conductorTimerWheel();
+        this.subscribedSessions = ctx.subscribedSessions();
     }
 
     public boolean doWork()
@@ -152,22 +153,6 @@ public class Receiver extends Agent
         return frameHandlerByDestinationMap.get(destination);
     }
 
-    /**
-     * Called by MediaConductor on its thread.
-     */
-    public boolean processBufferRotation()
-    {
-        return globalSubscribedSessions.forEach(0, SubscribedSession::processBufferRotation);
-    }
-
-    /**
-     * Called by MediaConductor on its thread.
-     */
-    public boolean scanForGaps()
-    {
-        return globalSubscribedSessions.forEach(0, SubscribedSession::scanForGaps);
-    }
-
     private void onError(final ErrorCode errorCode, final int length)
     {
         conductorProxy.addErrorResponse(errorCode, subscriberMessage, length);
@@ -180,7 +165,7 @@ public class Receiver extends Agent
 
         if (null == frameHandler)
         {
-            frameHandler = new DataFrameHandler(rcvDestination, nioSelector, conductorProxy, globalSubscribedSessions);
+            frameHandler = new DataFrameHandler(rcvDestination, nioSelector, conductorProxy, subscribedSessions);
             frameHandlerByDestinationMap.put(rcvDestination, frameHandler);
         }
 

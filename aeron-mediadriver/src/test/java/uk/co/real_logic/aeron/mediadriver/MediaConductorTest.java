@@ -19,6 +19,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
+import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.ConductorShmBuffers;
 import uk.co.real_logic.aeron.util.ErrorCode;
 import uk.co.real_logic.aeron.util.TimerWheel;
@@ -105,16 +106,15 @@ public class MediaConductorTest
                                                 TimeUnit.MICROSECONDS,
                                                 MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
             .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024))
+            .subscribedSessions(new AtomicArray<>())
             .bufferManagement(mockBufferManagement);
 
-        ctx.receiverProxy(new ReceiverProxy(ctx.receiverCommandBuffer(),
-                                            ctx.newReceiveBufferEventQueue()));
-
+        ctx.receiverProxy(new ReceiverProxy(ctx.receiverCommandBuffer(), ctx.newReceiveBufferEventQueue()));
         ctx.mediaConductorProxy(new MediaConductorProxy(ctx.mediaCommandBuffer()));
 
         sender = new Sender(ctx);
         receiver = new Receiver(ctx);
-        mediaConductor = new MediaConductor(ctx, receiver, sender);
+        mediaConductor = new MediaConductor(ctx, sender);
     }
 
     @After

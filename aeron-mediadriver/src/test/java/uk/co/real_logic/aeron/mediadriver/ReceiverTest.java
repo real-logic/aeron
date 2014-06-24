@@ -21,6 +21,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
+import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.QualifiedMessageFlyweight;
@@ -87,14 +88,15 @@ public class ReceiverTest
             .conductorNioSelector(mockNioSelector)
             .bufferManagement(mockBufferManagement)
             .conductorTimerWheel(new TimerWheel(MediaDriver.MEDIA_CONDUCTOR_TICK_DURATION_US,
-                    TimeUnit.MICROSECONDS, MediaDriver.MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
+                                 TimeUnit.MICROSECONDS,
+                                 MediaDriver.MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
+            .subscribedSessions(new AtomicArray<>())
             .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024));
 
         toConductorBuffer = ctx.mediaCommandBuffer();
         ctx.mediaConductorProxy(new MediaConductorProxy(toConductorBuffer));
 
-        receiverProxy = new ReceiverProxy(ctx.receiverCommandBuffer(),
-                                          ctx.newReceiveBufferEventQueue());
+        receiverProxy = new ReceiverProxy(ctx.receiverCommandBuffer(), ctx.newReceiveBufferEventQueue());
 
         receiver = new Receiver(ctx);
 
@@ -103,7 +105,7 @@ public class ReceiverTest
         senderChannel.configureBlocking(false);
 
         logReaders = rotator.buffers().map((log) -> new LogReader(log.logBuffer(), log.stateBuffer()))
-                            .toArray(LogReader[]::new);
+                                      .toArray(LogReader[]::new);
     }
 
     @After
@@ -320,7 +322,7 @@ public class ReceiverTest
 
         fillDataFrame(dataHeader, 0, NO_PAYLOAD);
 
-        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);  // 0 length data frame
+        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
         final int messagesRead = toConductorBuffer.read(
             (msgTypeId, buffer, index, length) ->

@@ -321,8 +321,7 @@ public class MediaConductor extends Agent
                                         channelId,
                                         initialTermId,
                                         HEADER_LENGTH,
-                                        mtuLength,
-                                        frameHandler::sendTo);
+                                        mtuLength);
 
             frameHandler.addChannel(channel);
             sendNewBufferNotification(sessionId, channelId, initialTermId, true, destination, buffers);

@@ -43,14 +43,6 @@ import static uk.co.real_logic.aeron.util.BitUtil.align;
  */
 public class SenderChannel
 {
-    /**
-     * Interface for changing or redirecting sending (mostly testing)
-     */
-    public interface SendFunction
-    {
-        int sendTo(final ByteBuffer buffer, final InetSocketAddress address) throws Exception;
-    }
-
     /** initial heartbeat timeout (cancelled by SM) */
     public static final int INITIAL_HEARTBEAT_TIMEOUT_MS = 100;
     public static final long INITIAL_HEARTBEAT_TIMEOUT_NS = MILLISECONDS.toNanos(INITIAL_HEARTBEAT_TIMEOUT_MS);
@@ -84,6 +76,7 @@ public class SenderChannel
     private final AtomicInteger[] rightEdges = new AtomicInteger[BufferRotationDescriptor.BUFFER_COUNT];
 
     private final SenderControlStrategy controlStrategy;
+    private final ControlFrameHandler frameHandler;
 
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final DataHeaderFlyweight retransmitDataHeader = new DataHeaderFlyweight();
@@ -92,7 +85,6 @@ public class SenderChannel
     private int statusMessagesSeen = 0;
     private long nextOffset = 0;
 
-    private final SendFunction sendFunction;
     private final InetSocketAddress dstAddress;
 
     public SenderChannel(final ControlFrameHandler frameHandler,
@@ -103,9 +95,9 @@ public class SenderChannel
                          final long channelId,
                          final long initialTermId,
                          final int headerLength,
-                         final int mtuLength,
-                         final SendFunction sendFunction)
+                         final int mtuLength)
     {
+        this.frameHandler = frameHandler;
         this.dstAddress = frameHandler.destination().remoteData();
         this.controlStrategy = controlStrategy;
         this.timerWheel = timerWheel;
@@ -114,7 +106,6 @@ public class SenderChannel
         this.channelId = channelId;
         this.headerLength = headerLength;
         this.mtuLength = mtuLength;
-        this.sendFunction = sendFunction;
 
         scanners = buffers.buffers().map(this::newScanner).toArray(LogScanner[]::new);
         termSendBuffers = buffers.buffers().map(this::duplicateLogBuffer).toArray(ByteBuffer[]::new);
@@ -296,7 +287,7 @@ public class SenderChannel
 
         try
         {
-            final int bytesSent = sendFunction.sendTo(sendBuffer, dstAddress);
+            final int bytesSent = frameHandler.sendTo(sendBuffer, dstAddress);
             if (length != bytesSent)
             {
                 throw new IllegalStateException("could not send all of message: " + bytesSent + "/" + length);
@@ -330,7 +321,7 @@ public class SenderChannel
 
             try
             {
-                final int bytesSent = sendFunction.sendTo(termRetransmitBuffers[index], dstAddress);
+                final int bytesSent = frameHandler.sendTo(termRetransmitBuffers[index], dstAddress);
                 if (bytesSent != length)
                 {
                     System.err.println("could not send entire retransmit");
@@ -368,7 +359,7 @@ public class SenderChannel
 
         try
         {
-            final int bytesSent = sendFunction.sendTo(scratchSendBuffer, dstAddress);
+            final int bytesSent = frameHandler.sendTo(scratchSendBuffer, dstAddress);
             if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
             {
                 System.out.println("Error sending heartbeat packet");

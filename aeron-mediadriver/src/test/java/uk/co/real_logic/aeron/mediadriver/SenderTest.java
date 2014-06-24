@@ -21,11 +21,13 @@ import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.*;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
+import uk.co.real_logic.aeron.util.event.EventReader;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
@@ -58,7 +60,8 @@ public class SenderTest
     private LogAppender[] logAppenders;
     private SenderChannel channel;
 
-    private final ControlFrameHandler mockFrameHandler = mock(ControlFrameHandler.class);
+    private ControlFrameHandler controlFrameHandler;
+
     private final SenderControlStrategy spySenderControlStrategy = spy(new UnicastSenderControlStrategy());
 
     private long currentTimestamp;
@@ -75,33 +78,32 @@ public class SenderTest
 
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
-    private SenderChannel.SendFunction sendFunction =
-        (buffer, address) ->
-        {
-            assertThat(address, is(rcvAddress));
-
-            final int size = buffer.limit() - buffer.position();
-            final ByteBuffer savedFrame = ByteBuffer.allocate(size);
-            savedFrame.put(buffer);
-            receivedFrames.add(savedFrame);
-
-            return size;
-        };
+    private DatagramChannel receiverChannel;
 
     @Before
-    public void setUp()
+    public void setUp() throws Exception
     {
         currentTimestamp = 0;
 
-        when(mockFrameHandler.destination()).thenReturn(destination);
+        receiverChannel = DatagramChannel.open();
+        receiverChannel.bind(rcvAddress);
+        receiverChannel.configureBlocking(false);
+
+        controlFrameHandler = new ControlFrameHandler(destination, mock(NioSelector.class));
 
         logAppenders = rotator.buffers().map((log) -> new LogAppender(log.logBuffer(), log.stateBuffer(),
                 HEADER, MAX_FRAME_LENGTH)).toArray(LogAppender[]::new);
 
-        channel = new SenderChannel(mockFrameHandler, wheel, spySenderControlStrategy, rotator, SESSION_ID,
-                                    CHANNEL_ID, INITIAL_TERM_ID, HEADER.length,
-                                    MAX_FRAME_LENGTH, sendFunction);
+        channel = new SenderChannel(controlFrameHandler, wheel, spySenderControlStrategy, rotator, SESSION_ID,
+                                    CHANNEL_ID, INITIAL_TERM_ID, HEADER.length, MAX_FRAME_LENGTH);
         sender.addChannel(channel);
+    }
+
+    @After
+    public void tearDown() throws Exception
+    {
+        receiverChannel.close();
+        sender.close();
     }
 
     @Test
@@ -118,6 +120,7 @@ public class SenderTest
         assertThat(receivedFrames.size(), is(0));  // should not send yet
         currentTimestamp += 10;
         sender.heartbeatChecks();
+        receiveAndSaveAllFrames();
         assertThat(receivedFrames.size(), greaterThanOrEqualTo(1));  // should send now
 
         dataHeader.wrap(new AtomicBuffer(receivedFrames.remove()), 0);
@@ -137,9 +140,11 @@ public class SenderTest
     {
         currentTimestamp += TimeUnit.MILLISECONDS.toNanos(SenderChannel.INITIAL_HEARTBEAT_TIMEOUT_MS) - 1;
         sender.heartbeatChecks();
+        receiveAndSaveAllFrames();
         assertThat(receivedFrames.size(), is(0));  // should not send yet
         currentTimestamp += 10;
         sender.heartbeatChecks();
+        receiveAndSaveAllFrames();
         assertThat(receivedFrames.size(), greaterThanOrEqualTo(1));  // should send now
 
         dataHeader.wrap(new AtomicBuffer(receivedFrames.remove()), 0);
@@ -155,9 +160,11 @@ public class SenderTest
 
         currentTimestamp += TimeUnit.MILLISECONDS.toNanos(SenderChannel.INITIAL_HEARTBEAT_TIMEOUT_MS) - 1;
         sender.heartbeatChecks();
+        receiveAndSaveAllFrames();
         assertThat(receivedFrames.size(), is(0));  // should not send yet
         currentTimestamp += 10;
         sender.heartbeatChecks();
+        receiveAndSaveAllFrames();
         assertThat(receivedFrames.size(), greaterThanOrEqualTo(1));  // should send now
 
         dataHeader.wrap(new AtomicBuffer(receivedFrames.remove()), 0);
@@ -172,6 +179,7 @@ public class SenderTest
         currentTimestamp += TimeUnit.MILLISECONDS.toNanos(SenderChannel.HEARTBEAT_TIMEOUT_MS);
         channel.onStatusMessage(INITIAL_TERM_ID, 0, 0, rcvAddress);
         sender.heartbeatChecks();
+        receiveAndSaveAllFrames();
         assertThat(receivedFrames.size(), is(0));
     }
 
@@ -186,6 +194,7 @@ public class SenderTest
         assertTrue(logAppenders[0].append(buffer, 0, PAYLOAD.length));
         sender.doWork();
 
+        receiveAndSaveAllFrames();
         assertThat(receivedFrames.size(), is(1));  // should send now
 
         dataHeader.wrap(new AtomicBuffer(receivedFrames.remove()), 0);
@@ -214,6 +223,7 @@ public class SenderTest
         assertTrue(logAppenders[0].append(buffer, 0, PAYLOAD.length));
         sender.doWork();
 
+        receiveAndSaveAllFrames();
         assertThat(receivedFrames.size(), is(2));  // should send now
 
         dataHeader.wrap(new AtomicBuffer(receivedFrames.remove()), 0);  // first frame
@@ -252,6 +262,7 @@ public class SenderTest
         assertTrue(logAppenders[0].append(buffer, 0, PAYLOAD.length));
         sender.doWork();
 
+        receiveAndSaveAllFrames();
         assertThat(receivedFrames.size(), is(1));  // should send now
 
         final AtomicBuffer receivedBuffer = new AtomicBuffer(receivedFrames.remove());
@@ -287,11 +298,13 @@ public class SenderTest
         assertTrue(logAppenders[0].append(buffer, 0, PAYLOAD.length));
 
         sender.doWork();
+        receiveAndSaveAllFrames();
         assertThat(receivedFrames.size(), is(0));  // should not send as no SM
 
         channel.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT), rcvAddress);
         sender.doWork();
 
+        receiveAndSaveAllFrames();
         assertThat(receivedFrames.size(), is(1));  // should send now
     }
 
@@ -304,11 +317,13 @@ public class SenderTest
         channel.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT), rcvAddress);
 
         sender.doWork();
+        receiveAndSaveAllFrames();
         assertThat(receivedFrames.size(), is(1));  // should send now
 
         assertTrue(logAppenders[0].append(buffer, 0, PAYLOAD.length));
         sender.doWork();
 
+        receiveAndSaveAllFrames();
         assertThat(receivedFrames.size(), is(1));  // should not send now
     }
 
@@ -323,15 +338,18 @@ public class SenderTest
         assertTrue(logAppenders[0].append(buffer, 0, PAYLOAD.length));
         sender.doWork();
 
+        receiveAndSaveAllFrames();
         assertThat(receivedFrames.size(), is(1));  // should send now
 
         receivedFrames.remove();                   // skip data frame
 
         currentTimestamp += TimeUnit.MILLISECONDS.toNanos(SenderChannel.HEARTBEAT_TIMEOUT_MS) - 1;
         sender.heartbeatChecks();
+        receiveAndSaveAllFrames();
         assertThat(receivedFrames.size(), is(0));  // should not send yet
         currentTimestamp += 10;
         sender.heartbeatChecks();
+        receiveAndSaveAllFrames();
         assertThat(receivedFrames.size(), greaterThanOrEqualTo(1));  // should send now
 
         dataHeader.wrap(new AtomicBuffer(receivedFrames.remove()), 0);
@@ -351,15 +369,18 @@ public class SenderTest
         assertTrue(logAppenders[0].append(buffer, 0, PAYLOAD.length));
         sender.doWork();
 
+        receiveAndSaveAllFrames();
         assertThat(receivedFrames.size(), is(1));  // should send now
 
         receivedFrames.remove();                   // skip data frame
 
         currentTimestamp += TimeUnit.MILLISECONDS.toNanos(SenderChannel.HEARTBEAT_TIMEOUT_MS) - 1;
         sender.heartbeatChecks();
+        receiveAndSaveAllFrames();
         assertThat(receivedFrames.size(), is(0));  // should not send yet
         currentTimestamp += 10;
         sender.heartbeatChecks();
+        receiveAndSaveAllFrames();
         assertThat(receivedFrames.size(), greaterThanOrEqualTo(1));  // should send now
 
         dataHeader.wrap(new AtomicBuffer(receivedFrames.remove()), 0);
@@ -369,9 +390,11 @@ public class SenderTest
 
         currentTimestamp += TimeUnit.MILLISECONDS.toNanos(SenderChannel.HEARTBEAT_TIMEOUT_MS) - 1;
         sender.heartbeatChecks();
+        receiveAndSaveAllFrames();
         assertThat(receivedFrames.size(), is(0));  // should not send yet
         currentTimestamp += 10;
         sender.heartbeatChecks();
+        receiveAndSaveAllFrames();
         assertThat(receivedFrames.size(), greaterThanOrEqualTo(1));  // should send now
 
         dataHeader.wrap(new AtomicBuffer(receivedFrames.remove()), 0);
@@ -383,5 +406,28 @@ public class SenderTest
     private long offsetOfMessage(final int num)
     {
         return (num - 1) * align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT);
+    }
+
+    private void receiveAndSaveAllFrames()
+    {
+        try
+        {
+            final ByteBuffer buffer = ByteBuffer.allocate(MAX_FRAME_LENGTH);
+            InetSocketAddress address;
+
+            while (null != (address = (InetSocketAddress) receiverChannel.receive(buffer)))
+            {
+                dataHeader.wrap(buffer, 0);
+
+                final int size = buffer.position();
+                buffer.position(0).limit(size);
+                receivedFrames.add(ByteBuffer.allocate(size).put(buffer));
+                buffer.clear();
+            }
+        }
+        catch (final Exception ex)
+        {
+            ex.printStackTrace();
+        }
     }
 }

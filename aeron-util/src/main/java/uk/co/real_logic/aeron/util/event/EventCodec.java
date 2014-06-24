@@ -27,6 +27,7 @@ import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -157,6 +158,17 @@ public class EventCodec
                 logBody = "COMMAND_UNKNOWN";
                 break;
         }
+
+        return String.format("%s: %s", logHeader, logBody);
+    }
+
+    public static String dissectAsString(final EventCode code, final AtomicBuffer buffer,
+                                         final int offset, final int length)
+    {
+        final String logHeader = dissectLogHeader(code, buffer, offset);
+        final byte[] stringInBytes = new byte[length];
+        buffer.getBytes(offset + HEADER_LENGTH, stringInBytes);
+        final String logBody = new String(stringInBytes, StandardCharsets.UTF_8);
 
         return String.format("%s: %s", logHeader, logBody);
     }

@@ -22,6 +22,7 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Even logger interface for applications/libraries
@@ -66,7 +67,12 @@ public class EventLogger
 
     public EventLogger(final Class clazz)
     {
-        className = clazz.getName().getBytes();
+        className = clazz.getName().getBytes(StandardCharsets.UTF_8);
+    }
+
+    public byte[] classNameAsBytes()
+    {
+        return className;
     }
 
     public void log(final EventCode code, final AtomicBuffer buffer, final int offset, final int length)
@@ -90,6 +96,17 @@ public class EventLogger
             buffer.position(pos);
 
             ringBuffer.write(code.id(), encodedBuffer, 0, encodedLength);
+        }
+    }
+
+    public void log(final EventCode code, final byte[] buffer, int offset, int length)
+    {
+        if (ON)
+        {
+            final AtomicBuffer encodedBuffer = encodingBuffer.get();
+            final int encodingLength = EventCodec.encode(encodedBuffer, buffer, offset, length);
+
+            ringBuffer.write(code.id(), encodedBuffer, 0, encodingLength);
         }
     }
 }

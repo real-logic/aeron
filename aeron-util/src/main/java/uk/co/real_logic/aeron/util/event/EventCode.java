@@ -30,7 +30,8 @@ public enum EventCode
     CMD_IN_ADD_SUBSCRIPTION(5, EventCodec::dissectAsCommand),
     CMD_IN_REMOVE_SUBSCRIPTION(6, EventCodec::dissectAsCommand),
     CMD_OUT_NEW_PUBLICATION_BUFFER_NOTIFICATION(7, EventCodec::dissectAsCommand),
-    CMD_OUT_NEW_SUBSCRIPTION_BUFFER_NOTIFICATION(8, EventCodec::dissectAsCommand);
+    CMD_OUT_NEW_SUBSCRIPTION_BUFFER_NOTIFICATION(8, EventCodec::dissectAsCommand),
+    STRING(9, EventCodec::dissectAsString);
 
     private final static Int2ObjectHashMap<EventCode> mapOfIdToEventCode = new Int2ObjectHashMap<>();
 

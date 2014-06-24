@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.util;
 
 import org.junit.Test;
-import uk.co.real_logic.aeron.util.command.PublisherMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.*;
@@ -36,10 +36,10 @@ public class FlyweightTest
     private final HeaderFlyweight decodeHeader = new HeaderFlyweight();
     private final DataHeaderFlyweight encodeDataHeader = new DataHeaderFlyweight();
     private final DataHeaderFlyweight decodeDataHeader = new DataHeaderFlyweight();
-    private final PublisherMessageFlyweight encodePublisher = new PublisherMessageFlyweight();
-    private final PublisherMessageFlyweight decodePublisher = new PublisherMessageFlyweight();
-    private final ErrorFlyweight encodeErrorHeader = new ErrorFlyweight();
-    private final ErrorFlyweight decodeErrorHeader = new ErrorFlyweight();
+    private final PublicationMessageFlyweight encodePublication = new PublicationMessageFlyweight();
+    private final PublicationMessageFlyweight decodePublication = new PublicationMessageFlyweight();
+    private final ErrorFlyweight encodeError = new ErrorFlyweight();
+    private final ErrorFlyweight decodeError = new ErrorFlyweight();
     private final NewBufferMessageFlyweight encodeNewBuffer = new NewBufferMessageFlyweight();
     private final NewBufferMessageFlyweight decodeNewBuffer = new NewBufferMessageFlyweight();
     private final NakFlyweight encodeNakHeader = new NakFlyweight();
@@ -164,14 +164,14 @@ public class FlyweightTest
     @Test
     public void shouldEncodeAndDecodeStringsCorrectly()
     {
-        encodePublisher.wrap(aBuff, 0);
+        encodePublication.wrap(aBuff, 0);
 
         String example = "abcç̀漢字仮名交じり文";
-        encodePublisher.destination(example);
+        encodePublication.destination(example);
 
-        decodePublisher.wrap(aBuff, 0);
+        decodePublication.wrap(aBuff, 0);
 
-        assertThat(decodePublisher.destination(), is(example));
+        assertThat(decodePublication.destination(), is(example));
     }
 
     @Test
@@ -189,21 +189,21 @@ public class FlyweightTest
         encodeDataHeader.channelId(0x44332211L);
         encodeDataHeader.termId(0x99887766L);
 
-        encodeErrorHeader.wrap(aBuff, 0);
-        encodeErrorHeader.version((short) 1);
-        encodeErrorHeader.flags((short) 0);
-        encodeErrorHeader.headerType(HeaderFlyweight.HDR_TYPE_ERR);
-        encodeErrorHeader.frameLength(encodeDataHeader.frameLength() + 12);
-        encodeErrorHeader.offendingHeader(encodeDataHeader, encodeDataHeader.frameLength());
+        encodeError.wrap(aBuff, 0);
+        encodeError.version((short)1);
+        encodeError.flags((short)0);
+        encodeError.headerType(HeaderFlyweight.HDR_TYPE_ERR);
+        encodeError.frameLength(encodeDataHeader.frameLength() + 12);
+        encodeError.offendingHeader(encodeDataHeader, encodeDataHeader.frameLength());
 
-        decodeErrorHeader.wrap(aBuff, 0);
-        assertThat(decodeErrorHeader.version(), is((short) 1));
-        assertThat(decodeErrorHeader.flags(), is((short) 0));
-        assertThat(decodeErrorHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_ERR));
-        assertThat(decodeErrorHeader.frameLength(), is(encodeDataHeader.frameLength() +
+        decodeError.wrap(aBuff, 0);
+        assertThat(decodeError.version(), is((short) 1));
+        assertThat(decodeError.flags(), is((short) 0));
+        assertThat(decodeError.headerType(), is(HeaderFlyweight.HDR_TYPE_ERR));
+        assertThat(decodeError.frameLength(), is(encodeDataHeader.frameLength() +
                                                        ErrorFlyweight.HEADER_LENGTH));
 
-        decodeDataHeader.wrap(aBuff, decodeErrorHeader.offendingHeaderOffset());
+        decodeDataHeader.wrap(aBuff, decodeError.offendingHeaderOffset());
         assertThat(decodeDataHeader.version(), is((short) 1));
         assertThat(decodeDataHeader.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
         assertThat(decodeDataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
@@ -231,25 +231,25 @@ public class FlyweightTest
         encodeDataHeader.channelId(0x44332211L);
         encodeDataHeader.termId(0x99887766L);
 
-        encodeErrorHeader.wrap(aBuff, 0);
-        encodeErrorHeader.version((short) 1);
-        encodeErrorHeader.flags((short) 0);
-        encodeErrorHeader.headerType(HeaderFlyweight.HDR_TYPE_ERR);
-        encodeErrorHeader.frameLength(encodeDataHeader.frameLength() +
-                                      ErrorFlyweight.HEADER_LENGTH +
-                                      errorString.length());
-        encodeErrorHeader.offendingHeader(encodeDataHeader, encodeDataHeader.frameLength());
-        encodeErrorHeader.errorMessage(errorString.getBytes());
+        encodeError.wrap(aBuff, 0);
+        encodeError.version((short)1);
+        encodeError.flags((short)0);
+        encodeError.headerType(HeaderFlyweight.HDR_TYPE_ERR);
+        encodeError.frameLength(encodeDataHeader.frameLength() +
+                                          ErrorFlyweight.HEADER_LENGTH +
+                                          errorString.length());
+        encodeError.offendingHeader(encodeDataHeader, encodeDataHeader.frameLength());
+        encodeError.errorMessage(errorString.getBytes());
 
-        decodeErrorHeader.wrap(aBuff, 0);
-        assertThat(decodeErrorHeader.version(), is((short) 1));
-        assertThat(decodeErrorHeader.flags(), is((short) 0));
-        assertThat(decodeErrorHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_ERR));
-        assertThat(decodeErrorHeader.frameLength(), is(encodeDataHeader.frameLength() +
+        decodeError.wrap(aBuff, 0);
+        assertThat(decodeError.version(), is((short) 1));
+        assertThat(decodeError.flags(), is((short) 0));
+        assertThat(decodeError.headerType(), is(HeaderFlyweight.HDR_TYPE_ERR));
+        assertThat(decodeError.frameLength(), is(encodeDataHeader.frameLength() +
                                                        ErrorFlyweight.HEADER_LENGTH +
                                                        errorString.length()));
 
-        decodeDataHeader.wrap(aBuff, decodeErrorHeader.offendingHeaderOffset());
+        decodeDataHeader.wrap(aBuff, decodeError.offendingHeaderOffset());
         assertThat(decodeDataHeader.version(), is((short) 1));
         assertThat(decodeDataHeader.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
         assertThat(decodeDataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
@@ -260,10 +260,10 @@ public class FlyweightTest
         assertThat(decodeDataHeader.dataOffset(), is(encodeDataHeader.frameLength() +
                                                      ErrorFlyweight.HEADER_LENGTH));
 
-        assertThat(decodeErrorHeader.errorMessageOffset(), is(encodeDataHeader.frameLength() +
+        assertThat(decodeError.errorMessageOffset(), is(encodeDataHeader.frameLength() +
                                                              ErrorFlyweight.HEADER_LENGTH));
-        assertThat(decodeErrorHeader.errorStringLength(), is(errorString.length()));
-        assertThat(decodeErrorHeader.errorMessageAsBytes(), is(errorString.getBytes()));
+        assertThat(decodeError.errorStringLength(), is(errorString.length()));
+        assertThat(decodeError.errorMessageAsBytes(), is(errorString.getBytes()));
     }
 
     @Test

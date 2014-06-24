@@ -20,7 +20,7 @@ import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.ErrorCode;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
-import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.GapScanner;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
@@ -40,7 +40,7 @@ public class Receiver extends Agent
     private final TimerWheel conductorTimerWheel;
     private final MediaConductorProxy conductorProxy;
     private final Map<UdpDestination, DataFrameHandler> frameHandlerByDestinationMap = new HashMap<>();
-    private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
+    private final SubscriptionMessageFlyweight subscriberMessage = new SubscriptionMessageFlyweight();
     private final Queue<NewReceiveBufferEvent> newBufferEventQueue;
     private final AtomicArray<SubscribedSession> subscribedSessions;
 

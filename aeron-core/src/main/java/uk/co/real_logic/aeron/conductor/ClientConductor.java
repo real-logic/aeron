@@ -64,8 +64,8 @@ public final class ClientConductor extends Agent
 
     private final ConductorErrorHandler errorHandler;
 
-    private final PublisherMessageFlyweight publisherMessage = new PublisherMessageFlyweight();
-    private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
+    private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
+    private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
     private final NewBufferMessageFlyweight newBufferMessage = new NewBufferMessageFlyweight();
 
     public ClientConductor(final RingBuffer commandBuffer,
@@ -120,10 +120,10 @@ public final class ClientConductor extends Agent
                     case ADD_PUBLICATION:
                     case REMOVE_PUBLICATION:
                     {
-                        publisherMessage.wrap(buffer, index);
-                        final String destination = publisherMessage.destination();
-                        final long channelId = publisherMessage.channelId();
-                        final long sessionId = publisherMessage.sessionId();
+                        publicationMessage.wrap(buffer, index);
+                        final String destination = publicationMessage.destination();
+                        final long channelId = publicationMessage.channelId();
+                        final long sessionId = publicationMessage.sessionId();
 
                         if (msgTypeId == ADD_PUBLICATION)
                         {
@@ -141,9 +141,9 @@ public final class ClientConductor extends Agent
                     case ADD_SUBSCRIPTION:
                     case REMOVE_SUBSCRIPTION:
                     {
-                        subscriberMessage.wrap(buffer, index);
-                        final long[] channelIds = subscriberMessage.channelIds();
-                        final String destination = subscriberMessage.destination();
+                        subscriptionMessage.wrap(buffer, index);
+                        final long[] channelIds = subscriptionMessage.channelIds();
+                        final String destination = subscriptionMessage.destination();
                         if (msgTypeId == ADD_SUBSCRIPTION)
                         {
                             addReceiver(destination, channelIds);

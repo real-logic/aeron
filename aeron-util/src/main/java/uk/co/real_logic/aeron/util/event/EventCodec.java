@@ -17,8 +17,8 @@ package uk.co.real_logic.aeron.util.event;
 
 import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.PublisherMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.PublicationMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
@@ -45,10 +45,10 @@ public class EventCodec
     private final static ThreadLocal<NakFlyweight> nakHeader =
             ThreadLocal.withInitial(NakFlyweight::new);
 
-    private final static ThreadLocal<PublisherMessageFlyweight> pubMessage =
-            ThreadLocal.withInitial(PublisherMessageFlyweight::new);
-    private final static ThreadLocal<SubscriberMessageFlyweight> subMessage =
-            ThreadLocal.withInitial(SubscriberMessageFlyweight::new);
+    private final static ThreadLocal<PublicationMessageFlyweight> pubMessage =
+            ThreadLocal.withInitial(PublicationMessageFlyweight::new);
+    private final static ThreadLocal<SubscriptionMessageFlyweight> subMessage =
+            ThreadLocal.withInitial(SubscriptionMessageFlyweight::new);
     private final static ThreadLocal<NewBufferMessageFlyweight> newBufferMessage =
             ThreadLocal.withInitial(NewBufferMessageFlyweight::new);
 
@@ -134,14 +134,14 @@ public class EventCodec
         {
             case CMD_IN_ADD_PUBLICATION:
             case CMD_IN_REMOVE_PUBLICATION:
-                final PublisherMessageFlyweight pubCommand = pubMessage.get();
+                final PublicationMessageFlyweight pubCommand = pubMessage.get();
                 pubCommand.wrap(buffer, offset + HEADER_LENGTH);
                 logBody = dissect(pubCommand);
                 break;
 
             case CMD_IN_ADD_SUBSCRIPTION:
             case CMD_IN_REMOVE_SUBSCRIPTION:
-                final SubscriberMessageFlyweight subCommand = subMessage.get();
+                final SubscriptionMessageFlyweight subCommand = subMessage.get();
                 subCommand.wrap(buffer, offset + HEADER_LENGTH);
                 logBody = dissect(subCommand);
                 break;
@@ -225,12 +225,12 @@ public class EventCodec
                 header.sessionId(), header.channelId(), header.termId(), header.termOffset(), header.length());
     }
 
-    private static String dissect(final PublisherMessageFlyweight command)
+    private static String dissect(final PublicationMessageFlyweight command)
     {
         return String.format("%3$s %1$x:%2$x", command.sessionId(), command.channelId(), command.destination());
     }
 
-    private static String dissect(final SubscriberMessageFlyweight command)
+    private static String dissect(final SubscriptionMessageFlyweight command)
     {
         final String ids = Arrays.stream(command.channelIds())
                 .mapToObj(Long::toString)

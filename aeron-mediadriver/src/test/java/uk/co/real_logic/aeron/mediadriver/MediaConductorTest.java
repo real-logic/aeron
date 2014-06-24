@@ -23,10 +23,10 @@ import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.ConductorShmBuffers;
 import uk.co.real_logic.aeron.util.ErrorCode;
 import uk.co.real_logic.aeron.util.TimerWheel;
-import uk.co.real_logic.aeron.util.command.PublisherMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
@@ -75,10 +75,10 @@ public class MediaConductorTest
     private final RingBuffer conductorCommands = new ManyToOneRingBuffer(new AtomicBuffer(toDriverBuffer));
     private final RingBuffer conductorNotifications = new ManyToOneRingBuffer(new AtomicBuffer(toClientBuffer));
 
-    private final PublisherMessageFlyweight publisherMessage = new PublisherMessageFlyweight();
+    private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
     private final NewBufferMessageFlyweight bufferMessage = new NewBufferMessageFlyweight();
     private final ErrorFlyweight errorHeader = new ErrorFlyweight();
-    private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
+    private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
 
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(256));
     private final AtomicArray<Publication> publications = new AtomicArray<>();
@@ -298,10 +298,10 @@ public class MediaConductorTest
                 assertThat(errorHeader.errorCode(), is(ErrorCode.CHANNEL_ALREADY_EXISTS));
                 assertThat(errorHeader.errorStringLength(), greaterThan(0));
 
-                publisherMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
-                assertThat(publisherMessage.sessionId(), is(1L));
-                assertThat(publisherMessage.channelId(), is(2L));
-                assertThat(publisherMessage.destination(), is(DESTINATION_URI + 4000));
+                publicationMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
+                assertThat(publicationMessage.sessionId(), is(1L));
+                assertThat(publicationMessage.channelId(), is(2L));
+                assertThat(publicationMessage.destination(), is(DESTINATION_URI + 4000));
             });
 
         assertThat(messagesRead, is(1));
@@ -325,10 +325,10 @@ public class MediaConductorTest
                 assertThat(errorHeader.errorCode(), is(ErrorCode.INVALID_DESTINATION));
                 assertThat(errorHeader.errorStringLength(), greaterThan(0));
 
-                publisherMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
-                assertThat(publisherMessage.sessionId(), is(1L));
-                assertThat(publisherMessage.channelId(), is(2L));
-                assertThat(publisherMessage.destination(), is(DESTINATION_URI + 4000));
+                publicationMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
+                assertThat(publicationMessage.sessionId(), is(1L));
+                assertThat(publicationMessage.channelId(), is(2L));
+                assertThat(publicationMessage.destination(), is(DESTINATION_URI + 4000));
             });
 
         assertThat(messagesRead, is(1));
@@ -358,10 +358,10 @@ public class MediaConductorTest
                 assertThat(errorHeader.errorCode(), is(ErrorCode.CHANNEL_UNKNOWN));
                 assertThat(errorHeader.errorStringLength(), greaterThan(0));
 
-                publisherMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
-                assertThat(publisherMessage.sessionId(), is(2L));
-                assertThat(publisherMessage.channelId(), is(2L));
-                assertThat(publisherMessage.destination(), is(DESTINATION_URI + 4000));
+                publicationMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
+                assertThat(publicationMessage.sessionId(), is(2L));
+                assertThat(publicationMessage.channelId(), is(2L));
+                assertThat(publicationMessage.destination(), is(DESTINATION_URI + 4000));
             });
 
         assertThat(messagesRead, is(1));
@@ -391,10 +391,10 @@ public class MediaConductorTest
                 assertThat(errorHeader.errorCode(), is(ErrorCode.CHANNEL_UNKNOWN));
                 assertThat(errorHeader.errorStringLength(), greaterThan(0));
 
-                publisherMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
-                assertThat(publisherMessage.sessionId(), is(1L));
-                assertThat(publisherMessage.channelId(), is(3L));
-                assertThat(publisherMessage.destination(), is(DESTINATION_URI + 4000));
+                publicationMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
+                assertThat(publicationMessage.sessionId(), is(1L));
+                assertThat(publicationMessage.channelId(), is(3L));
+                assertThat(publicationMessage.destination(), is(DESTINATION_URI + 4000));
             });
 
         assertThat(messagesRead, is(1));
@@ -418,9 +418,9 @@ public class MediaConductorTest
                 assertThat(errorHeader.errorCode(), is(ErrorCode.INVALID_DESTINATION));
                 assertThat(errorHeader.errorStringLength(), is(0));
 
-                subscriberMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
-                assertThat(subscriberMessage.channelIds(), is(ONE_CHANNEL));
-                assertThat(subscriberMessage.destination(), is(INVALID_URI));
+                subscriptionMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
+                assertThat(subscriptionMessage.channelIds(), is(ONE_CHANNEL));
+                assertThat(subscriptionMessage.destination(), is(INVALID_URI));
             });
 
         assertThat(messagesRead, is(1));
@@ -444,9 +444,9 @@ public class MediaConductorTest
                 assertThat(errorHeader.errorCode(), is(ErrorCode.SUBSCRIBER_NOT_REGISTERED));
                 assertThat(errorHeader.errorStringLength(), is(0));
 
-                subscriberMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
-                assertThat(subscriberMessage.channelIds(), is(ONE_CHANNEL));
-                assertThat(subscriberMessage.destination(), is(DESTINATION_URI + 4000));
+                subscriptionMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
+                assertThat(subscriptionMessage.channelIds(), is(ONE_CHANNEL));
+                assertThat(subscriptionMessage.destination(), is(DESTINATION_URI + 4000));
             });
 
         assertThat(messagesRead, is(1));
@@ -471,9 +471,9 @@ public class MediaConductorTest
                 assertThat(errorHeader.errorCode(), is(ErrorCode.SUBSCRIBER_NOT_REGISTERED));
                 assertThat(errorHeader.errorStringLength(), is(0));
 
-                subscriberMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
-                assertThat(subscriberMessage.channelIds(), is(ANOTHER_CHANNEL));
-                assertThat(subscriberMessage.destination(), is(DESTINATION_URI + 4000));
+                subscriptionMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
+                assertThat(subscriptionMessage.channelIds(), is(ANOTHER_CHANNEL));
+                assertThat(subscriptionMessage.destination(), is(DESTINATION_URI + 4000));
             });
 
         assertThat(messagesRead, is(1));
@@ -482,21 +482,21 @@ public class MediaConductorTest
     private void writeChannelMessage(final int msgTypeId, final long sessionId, final long channelId, final int port)
         throws IOException
     {
-        publisherMessage.wrap(writeBuffer, 0);
-        publisherMessage.channelId(channelId);
-        publisherMessage.sessionId(sessionId);
-        publisherMessage.destination(DESTINATION_URI + port);
+        publicationMessage.wrap(writeBuffer, 0);
+        publicationMessage.channelId(channelId);
+        publicationMessage.sessionId(sessionId);
+        publicationMessage.destination(DESTINATION_URI + port);
 
-        conductorCommands.write(msgTypeId, writeBuffer, 0, publisherMessage.length());
+        conductorCommands.write(msgTypeId, writeBuffer, 0, publicationMessage.length());
     }
 
     private void writeSubscriberMessage(final int msgTypeId, final String destination, final long[] channelIds)
             throws IOException
     {
-        subscriberMessage.wrap(writeBuffer, 0);
-        subscriberMessage.channelIds(channelIds)
+        subscriptionMessage.wrap(writeBuffer, 0);
+        subscriptionMessage.channelIds(channelIds)
                          .destination(destination);
 
-        conductorCommands.write(msgTypeId, writeBuffer, 0, subscriberMessage.length());
+        conductorCommands.write(msgTypeId, writeBuffer, 0, subscriptionMessage.length());
     }
 }

@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
@@ -34,7 +34,7 @@ public class ReceiverProxy
     private final RingBuffer commandBuffer;
     private final Queue<NewReceiveBufferEvent> newBufferEventQueue;
     private final AtomicBuffer tmpBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
-    private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
+    private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
 
     public ReceiverProxy(final RingBuffer commandBuffer,
                          final Queue<NewReceiveBufferEvent> newBufferEventQueue)
@@ -43,23 +43,23 @@ public class ReceiverProxy
         this.newBufferEventQueue = newBufferEventQueue;
     }
 
-    public boolean newSubscriber(final String destination, final long[] channelIdList)
+    public boolean newSubscription(final String destination, final long[] channelIdList)
     {
         return send(ADD_SUBSCRIPTION, destination, channelIdList);
     }
 
-    public boolean removeSubscriber(final String destination, final long[] channelIdList)
+    public boolean removeSubscription(final String destination, final long[] channelIdList)
     {
         return send(REMOVE_SUBSCRIPTION, destination, channelIdList);
     }
 
     private boolean send(final int msgTypeId, final String destination, final long[] channelIdList)
     {
-        subscriberMessage.wrap(tmpBuffer, 0);
-        subscriberMessage.channelIds(channelIdList);
-        subscriberMessage.destination(destination);
+        subscriptionMessage.wrap(tmpBuffer, 0);
+        subscriptionMessage.channelIds(channelIdList);
+        subscriptionMessage.destination(destination);
 
-        return commandBuffer.write(msgTypeId, tmpBuffer, 0, subscriberMessage.length());
+        return commandBuffer.write(msgTypeId, tmpBuffer, 0, subscriptionMessage.length());
     }
 
     public boolean newReceiveBuffer(final NewReceiveBufferEvent e)

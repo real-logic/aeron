@@ -51,7 +51,7 @@ public class MediaConductor extends Agent
     public static final FeedbackDelayGenerator RETRANS_UNICAST_LINGER_GENERATOR =
         () -> RETRANS_UNICAST_LINGER_DEFAULT_NS;
 
-    private final RingBuffer localCommandBuffer;
+    private final RingBuffer mediaCommandBuffer;
     private final ReceiverProxy receiverProxy;
     private final ClientProxy clientProxy;
     private final NioSelector nioSelector;
@@ -64,8 +64,8 @@ public class MediaConductor extends Agent
 
     private final Supplier<SenderControlStrategy> senderFlowControl;
 
-    private final PublisherMessageFlyweight publisherMessage = new PublisherMessageFlyweight();
-    private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
+    private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
+    private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
     private final QualifiedMessageFlyweight qualifiedMessage = new QualifiedMessageFlyweight();
 
     private final int mtuLength;
@@ -76,7 +76,7 @@ public class MediaConductor extends Agent
     {
         super(ctx.conductorIdleStrategy());
 
-        this.localCommandBuffer = ctx.mediaCommandBuffer();
+        this.mediaCommandBuffer = ctx.mediaCommandBuffer();
         this.receiverProxy = ctx.receiverProxy();
         this.bufferManagement = ctx.bufferManagement();
         this.nioSelector = ctx.conductorNioSelector();
@@ -116,7 +116,7 @@ public class MediaConductor extends Agent
         hasDoneWork |= subscribedSessions.forEach(0, SubscribedSession::scanForGaps);
 
         hasDoneWork |= processClientCommandBuffer();
-        hasDoneWork |= processLocalCommandBuffer();
+        hasDoneWork |= mediaCommandBuffer();
         hasDoneWork |= processTimers();
 
         return hasDoneWork;
@@ -141,9 +141,9 @@ public class MediaConductor extends Agent
         return nioSelector;
     }
 
-    private boolean processLocalCommandBuffer()
+    private boolean mediaCommandBuffer()
     {
-        final int messagesRead = localCommandBuffer.read(
+        final int messagesRead = mediaCommandBuffer.read(
             (msgTypeId, buffer, index, length) ->
             {
                 switch (msgTypeId)
@@ -172,38 +172,38 @@ public class MediaConductor extends Agent
         final int messagesRead = fromClientCommands.read(
             (msgTypeId, buffer, index, length) ->
             {
-                Flyweight flyweight = publisherMessage;
+                Flyweight flyweight = publicationMessage;
 
                 try
                 {
                     switch (msgTypeId)
                     {
                         case ADD_PUBLICATION:
-                            publisherMessage.wrap(buffer, index);
+                            publicationMessage.wrap(buffer, index);
                             LOGGER.log(EventCode.CMD_IN_ADD_PUBLICATION, buffer, index, length);
-                            flyweight = publisherMessage;
-                            onAddPublication(publisherMessage);
+                            flyweight = publicationMessage;
+                            onAddPublication(publicationMessage);
                             break;
 
                         case REMOVE_PUBLICATION:
-                            publisherMessage.wrap(buffer, index);
+                            publicationMessage.wrap(buffer, index);
                             LOGGER.log(EventCode.CMD_IN_REMOVE_PUBLICATION, buffer, index, length);
-                            flyweight = publisherMessage;
-                            onRemovePublication(publisherMessage);
+                            flyweight = publicationMessage;
+                            onRemovePublication(publicationMessage);
                             break;
 
                         case ADD_SUBSCRIPTION:
-                            subscriberMessage.wrap(buffer, index);
+                            subscriptionMessage.wrap(buffer, index);
                             LOGGER.log(EventCode.CMD_IN_ADD_SUBSCRIPTION, buffer, index, length);
-                            flyweight = subscriberMessage;
-                            onAddSubscription(subscriberMessage);
+                            flyweight = subscriptionMessage;
+                            onAddSubscription(subscriptionMessage);
                             break;
 
                         case REMOVE_SUBSCRIPTION:
-                            subscriberMessage.wrap(buffer, index);
+                            subscriptionMessage.wrap(buffer, index);
                             LOGGER.log(EventCode.CMD_IN_REMOVE_SUBSCRIPTION, buffer, index, length);
-                            flyweight = subscriberMessage;
-                            onRemoveSubscription(subscriberMessage);
+                            flyweight = subscriptionMessage;
+                            onRemoveSubscription(subscriptionMessage);
                             break;
                     }
                 }
@@ -248,11 +248,11 @@ public class MediaConductor extends Agent
         }
     }
 
-    private void onAddPublication(final PublisherMessageFlyweight publisherMessage)
+    private void onAddPublication(final PublicationMessageFlyweight publicationMessage)
     {
-        final String destination = publisherMessage.destination();
-        final long sessionId = publisherMessage.sessionId();
-        final long channelId = publisherMessage.channelId();
+        final String destination = publicationMessage.destination();
+        final long sessionId = publicationMessage.sessionId();
+        final long channelId = publicationMessage.channelId();
 
         try
         {
@@ -305,11 +305,11 @@ public class MediaConductor extends Agent
         }
     }
 
-    private void onRemovePublication(final PublisherMessageFlyweight publisherMessage)
+    private void onRemovePublication(final PublicationMessageFlyweight publicationMessage)
     {
-        final String destination = publisherMessage.destination();
-        final long sessionId = publisherMessage.sessionId();
-        final long channelId = publisherMessage.channelId();
+        final String destination = publicationMessage.destination();
+        final long sessionId = publicationMessage.sessionId();
+        final long channelId = publicationMessage.channelId();
 
         try
         {
@@ -347,14 +347,14 @@ public class MediaConductor extends Agent
         }
     }
 
-    private void onAddSubscription(final SubscriberMessageFlyweight subscriberMessage)
+    private void onAddSubscription(final SubscriptionMessageFlyweight subscriberMessage)
     {
-        receiverProxy.newSubscriber(subscriberMessage.destination(), subscriberMessage.channelIds());
+        receiverProxy.newSubscription(subscriberMessage.destination(), subscriberMessage.channelIds());
     }
 
-    private void onRemoveSubscription(final SubscriberMessageFlyweight subscriberMessage)
+    private void onRemoveSubscription(final SubscriptionMessageFlyweight subscriberMessage)
     {
-        receiverProxy.removeSubscriber(subscriberMessage.destination(), subscriberMessage.channelIds());
+        receiverProxy.removeSubscription(subscriberMessage.destination(), subscriberMessage.channelIds());
     }
 
     private void onCreateSubscriptionTermBuffer(final QualifiedMessageFlyweight qualifiedMessage)

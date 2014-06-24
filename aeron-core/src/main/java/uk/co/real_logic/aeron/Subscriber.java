@@ -98,13 +98,13 @@ public class Subscriber implements AutoCloseable
                                   .map(entry -> new SubscriberChannel(destination, entry.getKey(), entry.getValue()))
                                   .collect(toList());
         subscriberChannels.addAll(channels);
-        clientConductorProxy.sendAddSubscriber(destination.destination(), channelIds);
+        clientConductorProxy.sendAddSubscription(destination.destination(), channelIds);
     }
 
     public void close()
     {
         subscriberChannels.removeAll(channels);
-        clientConductorProxy.sendRemoveSubscriber(destination.destination(), channelIds);
+        clientConductorProxy.sendRemoveSubscription(destination.destination(), channelIds);
     }
 
     /**

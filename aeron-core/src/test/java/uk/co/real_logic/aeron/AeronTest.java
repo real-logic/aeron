@@ -80,9 +80,9 @@ public class AeronTest
 
     private DataHandler channel2Handler = emptyDataHandler();
 
-    private final PublisherMessageFlyweight publisherMessage = new PublisherMessageFlyweight();
+    private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
     private final NewBufferMessageFlyweight newBufferMessage = new NewBufferMessageFlyweight();
-    private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
+    private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
 
     private final ErrorFlyweight errorHeader = new ErrorFlyweight();
 
@@ -293,18 +293,18 @@ public class AeronTest
     {
         final Aeron aeron = newAeron();
 
-        subscriberMessage.wrap(atomicSendBuffer, 0);
-        subscriberMessage.channelIds(CHANNEL_IDs);
-        subscriberMessage.destination(INVALID_DESTINATION);
+        subscriptionMessage.wrap(atomicSendBuffer, 0);
+        subscriptionMessage.channelIds(CHANNEL_IDs);
+        subscriptionMessage.destination(INVALID_DESTINATION);
 
-        errorHeader.wrap(atomicSendBuffer, subscriberMessage.length());
+        errorHeader.wrap(atomicSendBuffer, subscriptionMessage.length());
         errorHeader.errorCode(ErrorCode.INVALID_DESTINATION);
-        errorHeader.offendingFlyweight(subscriberMessage, subscriberMessage.length());
-        errorHeader.frameLength(ErrorFlyweight.HEADER_LENGTH + subscriberMessage.length());
+        errorHeader.offendingFlyweight(subscriptionMessage, subscriptionMessage.length());
+        errorHeader.frameLength(ErrorFlyweight.HEADER_LENGTH + subscriptionMessage.length());
 
         toClient().write(ERROR_RESPONSE,
                          atomicSendBuffer,
-                         subscriberMessage.length(),
+                         subscriptionMessage.length(),
                          errorHeader.frameLength());
 
         aeron.conductor().doWork();
@@ -600,9 +600,9 @@ public class AeronTest
         {
             assertThat(msgTypeId, is(expectedMsgTypeId));
 
-            subscriberMessage.wrap(buffer, index);
-            assertThat(subscriberMessage.channelIds(), is(CHANNEL_IDs));
-            assertThat(subscriberMessage.destination(), is(DESTINATION));
+            subscriptionMessage.wrap(buffer, index);
+            assertThat(subscriptionMessage.channelIds(), is(CHANNEL_IDs));
+            assertThat(subscriptionMessage.destination(), is(DESTINATION));
         };
     }
 
@@ -636,10 +636,10 @@ public class AeronTest
         {
             assertThat(msgTypeId, is(expectedMsgTypeId));
 
-            publisherMessage.wrap(buffer, index);
-            assertThat(publisherMessage.destination(), is(DESTINATION));
-            assertThat(publisherMessage.channelId(), is(CHANNEL_ID));
-            assertThat(publisherMessage.sessionId(), is(SESSION_ID));
+            publicationMessage.wrap(buffer, index);
+            assertThat(publicationMessage.destination(), is(DESTINATION));
+            assertThat(publicationMessage.channelId(), is(CHANNEL_ID));
+            assertThat(publicationMessage.sessionId(), is(SESSION_ID));
         });
     }
 }

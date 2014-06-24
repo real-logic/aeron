@@ -58,13 +58,13 @@ public class ClientConductorProxyTest
         assertReadsOneMessage(
             (msgTypeId, buffer, index, length) ->
             {
-                final PublisherMessageFlyweight publisherMessage = new PublisherMessageFlyweight();
-                publisherMessage.wrap(buffer, index);
+                final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
+                publicationMessage.wrap(buffer, index);
 
                 assertThat(msgTypeId, is(expectedMsgTypeId));
-                assertThat(publisherMessage.destination(), is(DESTINATION));
-                assertThat(publisherMessage.sessionId(), is(1L));
-                assertThat(publisherMessage.channelId(), is(2L));
+                assertThat(publicationMessage.destination(), is(DESTINATION));
+                assertThat(publicationMessage.sessionId(), is(1L));
+                assertThat(publicationMessage.channelId(), is(2L));
             }
         );
     }
@@ -72,12 +72,12 @@ public class ClientConductorProxyTest
     @Test
     public void threadSendsRemoveSubscriberMessage()
     {
-        conductor.sendRemoveSubscriber(DESTINATION, CHANNEL_IDS);
+        conductor.sendRemoveSubscription(DESTINATION, CHANNEL_IDS);
 
         assertReadsOneMessage(
             (msgTypeId, buffer, index, length) ->
             {
-                final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
+                final SubscriptionMessageFlyweight subscriberMessage = new SubscriptionMessageFlyweight();
                 subscriberMessage.wrap(buffer, index);
 
                 assertThat(msgTypeId, is(REMOVE_SUBSCRIPTION));

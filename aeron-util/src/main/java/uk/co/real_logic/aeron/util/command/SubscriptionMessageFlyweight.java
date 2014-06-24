@@ -22,7 +22,7 @@ import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_LONG;
 
 /**
- * Control message for adding or removing a subscriber.
+ * Control message for adding or removing a subscription.
  *
  * Must write channels ids before destination.
  *
@@ -37,7 +37,7 @@ import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_LONG;
  * |                                                             ...
  * +---------------------------------------------------------------+
  */
-public class SubscriberMessageFlyweight extends Flyweight
+public class SubscriptionMessageFlyweight extends Flyweight
 {
     private static final int CHANNEL_IDS_OFFSET = 0;
 
@@ -59,7 +59,7 @@ public class SubscriberMessageFlyweight extends Flyweight
      *
      * @param value the channel id list
      */
-    public SubscriberMessageFlyweight channelIds(long[] value)
+    public SubscriptionMessageFlyweight channelIds(long[] value)
     {
         lengthOfChannelIds = uint32ArrayPut(offset() + CHANNEL_IDS_OFFSET, value, LITTLE_ENDIAN);
         return this;
@@ -88,7 +88,7 @@ public class SubscriberMessageFlyweight extends Flyweight
      * @param destination field value
      * @return flyweight
      */
-    public SubscriberMessageFlyweight destination(final String destination)
+    public SubscriptionMessageFlyweight destination(final String destination)
     {
         lengthOfDestination = stringPut(offset() + lengthOfChannelIds, destination, LITTLE_ENDIAN);
         return this;

@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.mediadriver;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Encapsulate the flow control status of a sender channel
+ * Encapsulate the flow control status of a publication
  */
 public class SenderFlowControlState
 {

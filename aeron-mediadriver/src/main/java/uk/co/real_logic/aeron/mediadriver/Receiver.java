@@ -28,8 +28,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 
+import static uk.co.real_logic.aeron.mediadriver.MediaConductor.NAK_UNICAST_DELAY_GENERATOR;
+
 /**
- * Receiver service for JVM based mediadriver, uses an event loop with command buffer
+ * Receiver service for JVM based media driver, uses an event loop with command buffer
  */
 public class Receiver extends Agent
 {
@@ -168,7 +170,7 @@ public class Receiver extends Agent
             frameHandlerByDestinationMap.put(rcvDestination, frameHandler);
         }
 
-        frameHandler.addChannels(channelIds);
+        frameHandler.addSubscriptions(channelIds);
     }
 
     private void onRemoveSubscriber(final String destination, final long[] channelIds)
@@ -181,9 +183,8 @@ public class Receiver extends Agent
             throw new SubscriptionNotRegisteredException("destination unknown for receiver remove: " + destination);
         }
 
-        frameHandler.removeChannels(channelIds);
+        frameHandler.removeSubscriptions(channelIds);
 
-        // if all channels gone, then take care of removing everything and closing the framehandler
         if (0 == frameHandler.subscribedChannelCount())
         {
             frameHandlerByDestinationMap.remove(rcvDestination);
@@ -205,8 +206,7 @@ public class Receiver extends Agent
             .map((r) -> new GapScanner(r.logBuffer(), r.stateBuffer()))
             .toArray(GapScanner[]::new);
 
-        final LossHandler lossHandler = new LossHandler(scanners, conductorTimerWheel,
-                                                        MediaConductor.NAK_UNICAST_DELAY_GENERATOR);
+        final LossHandler lossHandler = new LossHandler(scanners, conductorTimerWheel, NAK_UNICAST_DELAY_GENERATOR);
 
         lossHandler.currentTermId(e.termId());
         frameHandler.onSubscriptionReady(e, lossHandler);

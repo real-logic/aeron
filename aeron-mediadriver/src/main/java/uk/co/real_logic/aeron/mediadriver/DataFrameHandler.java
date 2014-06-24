@@ -36,7 +36,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
     private final UdpDestination destination;
     private final Long2ObjectHashMap<Subscription> subscriptionByChannelIdMap = new Long2ObjectHashMap<>();
     private final MediaConductorProxy conductorProxy;
-    private final AtomicArray<SubscribedSession> globalSubscribedSessions;
+    private final AtomicArray<SubscribedSession> subscribedSessions;
     private final ByteBuffer sendSmBuffer = ByteBuffer.allocateDirect(StatusMessageFlyweight.HEADER_LENGTH);
     private final AtomicBuffer writeSmBuffer = new AtomicBuffer(sendSmBuffer);
     private final ByteBuffer sendNakBuffer = ByteBuffer.allocateDirect(128);
@@ -47,10 +47,10 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
     public DataFrameHandler(final UdpDestination destination,
                             final NioSelector nioSelector,
                             final MediaConductorProxy conductorProxy,
-                            final AtomicArray<SubscribedSession> globalSubscribedSessions)
+                            final AtomicArray<SubscribedSession> subscribedSessions)
         throws Exception
     {
-        this.globalSubscribedSessions = globalSubscribedSessions;
+        this.subscribedSessions = subscribedSessions;
         this.transport = new UdpTransport(this, destination, nioSelector);
         this.destination = destination;
         this.conductorProxy = conductorProxy;
@@ -71,7 +71,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         return subscriptionByChannelIdMap;
     }
 
-    public void addChannels(final long[] channelIds)
+    public void addSubscriptions(final long[] channelIds)
     {
         for (final long channelId : channelIds)
         {
@@ -79,7 +79,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
 
             if (null == subscription)
             {
-                subscription = new Subscription(destination, channelId, conductorProxy, globalSubscribedSessions);
+                subscription = new Subscription(destination, channelId, conductorProxy, subscribedSessions);
                 subscriptionByChannelIdMap.put(channelId, subscription);
             }
 
@@ -87,7 +87,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         }
     }
 
-    public void removeChannels(final long[] channelIds)
+    public void removeSubscriptions(final long[] channelIds)
     {
         for (final long channelId : channelIds)
         {
@@ -169,7 +169,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         }
 
         lossHandler.sendNakHandler(
-                (termId, termOffset, length) -> sendNak(subscriberSession, (int) termId, termOffset, length));
+                (termId, termOffset, length) -> sendNak(subscriberSession, (int)termId, termOffset, length));
 
         subscriberSession.termBuffer(event.termId(), event.buffer(), lossHandler);
 

@@ -21,7 +21,7 @@ import uk.co.real_logic.aeron.util.protocol.*;
 import java.net.InetSocketAddress;
 
 /**
- * Callback interface for various Frame types. For mediadriver, specifically, this is Data or Control.
+ * Callback interface for various Frame types. For media driver, specifically, this is Data or Control.
  *
  * Subclasses must explicitly handle all cases for clarity.
  */
@@ -50,7 +50,7 @@ public interface FrameHandler
                               final long length, final InetSocketAddress srcAddress);
 
     /**
-     * Handle a Nak Frame
+     * Handle a NAK Frame
      *
      * @param header the first NAK Frame in the message (may be re-wrapped if needed)
      * @param buffer holding the Status Message (always starts at 0 offset)

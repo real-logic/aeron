@@ -116,7 +116,7 @@ public class MediaConductor extends Agent
         hasDoneWork |= subscribedSessions.forEach(0, SubscribedSession::scanForGaps);
 
         hasDoneWork |= processClientCommandBuffer();
-        hasDoneWork |= mediaCommandBuffer();
+        hasDoneWork |= processMediaCommandBuffer();
         hasDoneWork |= processTimers();
 
         return hasDoneWork;
@@ -141,7 +141,7 @@ public class MediaConductor extends Agent
         return nioSelector;
     }
 
-    private boolean mediaCommandBuffer()
+    private boolean processMediaCommandBuffer()
     {
         final int messagesRead = mediaCommandBuffer.read(
             (msgTypeId, buffer, index, length) ->

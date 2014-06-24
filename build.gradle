@@ -126,6 +126,10 @@ project(':aeron-mediadriver') {
         testCompile project(path: ':aeron-util', configuration: 'tests')
     }
 
+    test {
+        systemProperties('aeron.event.log': System.properties['aeron.event.log']);
+    }
+
     build.doLast {
         tasks.startScripts.execute()
         tasks.installApp.execute()

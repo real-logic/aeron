@@ -38,8 +38,8 @@ public class FlyweightTest
     private final DataHeaderFlyweight decodeDataHeader = new DataHeaderFlyweight();
     private final PublisherMessageFlyweight encodePublisher = new PublisherMessageFlyweight();
     private final PublisherMessageFlyweight decodePublisher = new PublisherMessageFlyweight();
-    private final ErrorHeaderFlyweight encodeErrorHeader = new ErrorHeaderFlyweight();
-    private final ErrorHeaderFlyweight decodeErrorHeader = new ErrorHeaderFlyweight();
+    private final ErrorFlyweight encodeErrorHeader = new ErrorFlyweight();
+    private final ErrorFlyweight decodeErrorHeader = new ErrorFlyweight();
     private final NewBufferMessageFlyweight encodeNewBuffer = new NewBufferMessageFlyweight();
     private final NewBufferMessageFlyweight decodeNewBuffer = new NewBufferMessageFlyweight();
     private final NakFlyweight encodeNakHeader = new NakFlyweight();
@@ -201,7 +201,7 @@ public class FlyweightTest
         assertThat(decodeErrorHeader.flags(), is((short) 0));
         assertThat(decodeErrorHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_ERR));
         assertThat(decodeErrorHeader.frameLength(), is(encodeDataHeader.frameLength() +
-                                                       ErrorHeaderFlyweight.HEADER_LENGTH));
+                                                       ErrorFlyweight.HEADER_LENGTH));
 
         decodeDataHeader.wrap(aBuff, decodeErrorHeader.offendingHeaderOffset());
         assertThat(decodeDataHeader.version(), is((short) 1));
@@ -212,7 +212,7 @@ public class FlyweightTest
         assertThat(decodeDataHeader.channelId(), is(0x44332211L));
         assertThat(decodeDataHeader.termId(), is(0x99887766L));
         assertThat(decodeDataHeader.dataOffset(), is(encodeDataHeader.frameLength() +
-                                                     ErrorHeaderFlyweight.HEADER_LENGTH));
+                                                     ErrorFlyweight.HEADER_LENGTH));
     }
 
     @Test
@@ -236,17 +236,17 @@ public class FlyweightTest
         encodeErrorHeader.flags((short) 0);
         encodeErrorHeader.headerType(HeaderFlyweight.HDR_TYPE_ERR);
         encodeErrorHeader.frameLength(encodeDataHeader.frameLength() +
-                                      ErrorHeaderFlyweight.HEADER_LENGTH +
+                                      ErrorFlyweight.HEADER_LENGTH +
                                       errorString.length());
         encodeErrorHeader.offendingHeader(encodeDataHeader, encodeDataHeader.frameLength());
-        encodeErrorHeader.errorString(errorString.getBytes());
+        encodeErrorHeader.errorMessage(errorString.getBytes());
 
         decodeErrorHeader.wrap(aBuff, 0);
         assertThat(decodeErrorHeader.version(), is((short) 1));
         assertThat(decodeErrorHeader.flags(), is((short) 0));
         assertThat(decodeErrorHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_ERR));
         assertThat(decodeErrorHeader.frameLength(), is(encodeDataHeader.frameLength() +
-                                                       ErrorHeaderFlyweight.HEADER_LENGTH +
+                                                       ErrorFlyweight.HEADER_LENGTH +
                                                        errorString.length()));
 
         decodeDataHeader.wrap(aBuff, decodeErrorHeader.offendingHeaderOffset());
@@ -258,12 +258,12 @@ public class FlyweightTest
         assertThat(decodeDataHeader.channelId(), is(0x44332211L));
         assertThat(decodeDataHeader.termId(), is(0x99887766L));
         assertThat(decodeDataHeader.dataOffset(), is(encodeDataHeader.frameLength() +
-                                                     ErrorHeaderFlyweight.HEADER_LENGTH));
+                                                     ErrorFlyweight.HEADER_LENGTH));
 
-        assertThat(decodeErrorHeader.errorStringOffset(), is(encodeDataHeader.frameLength() +
-                                                             ErrorHeaderFlyweight.HEADER_LENGTH));
+        assertThat(decodeErrorHeader.errorMessageOffset(), is(encodeDataHeader.frameLength() +
+                                                             ErrorFlyweight.HEADER_LENGTH));
         assertThat(decodeErrorHeader.errorStringLength(), is(errorString.length()));
-        assertThat(decodeErrorHeader.errorStringAsBytes(), is(errorString.getBytes()));
+        assertThat(decodeErrorHeader.errorMessageAsBytes(), is(errorString.getBytes()));
     }
 
     @Test

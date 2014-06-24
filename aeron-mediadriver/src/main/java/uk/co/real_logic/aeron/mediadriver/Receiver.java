@@ -97,13 +97,13 @@ public class Receiver extends Agent
                 {
                     switch (msgTypeId)
                     {
-                        case ControlProtocolEvents.ADD_SUBSCRIBER:
+                        case ControlProtocolEvents.ADD_SUBSCRIPTION:
                             subscriberMessage.wrap(buffer, index);
                             onNewSubscriber(subscriberMessage.destination(),
                                             subscriberMessage.channelIds());
                             break;
 
-                        case ControlProtocolEvents.REMOVE_SUBSCRIBER:
+                        case ControlProtocolEvents.REMOVE_SUBSCRIPTION:
                             subscriberMessage.wrap(buffer, index);
                             onRemoveSubscriber(subscriberMessage.destination(),
                                                subscriberMessage.channelIds());

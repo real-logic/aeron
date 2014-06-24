@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.util;
 
 /**
- * Error codes between mediadriver and library and the on-wire protocol.
+ * Error codes between media driver and library and the on-wire protocol.
  */
 public enum ErrorCode
 {
@@ -24,8 +24,8 @@ public enum ErrorCode
     INVALID_DESTINATION(1),
     SUBSCRIBER_NOT_REGISTERED(2),
     CHANNEL_ALREADY_EXISTS(3),
-    GENERIC_ERROR_CHANNEL_MESSAGE(4),
-    GENERIC_ERROR_RECEIVER_MESSAGE(5),
+    GENERIC_ERROR_PUBLICATION_MESSAGE(4),
+    GENERIC_ERROR_SUBSCRIPTION_MESSAGE(5),
     CHANNEL_UNKNOWN(6);
 
     private final short value;

@@ -100,21 +100,18 @@ public class EventCodec
         {
             case HeaderFlyweight.HDR_TYPE_DATA:
                 final DataHeaderFlyweight dataFrame = dataHeader.get();
-
                 dataFrame.wrap(buffer, offset + HEADER_LENGTH);
                 logBody = dissect(dataFrame);
                 break;
 
             case HeaderFlyweight.HDR_TYPE_SM:
                 final StatusMessageFlyweight smFrame = smHeader.get();
-
                 smFrame.wrap(buffer, offset + HEADER_LENGTH);
                 logBody = dissect(smFrame);
                 break;
 
             case HeaderFlyweight.HDR_TYPE_NAK:
                 final NakFlyweight nakFrame = nakHeader.get();
-
                 nakFrame.wrap(buffer, offset + HEADER_LENGTH);
                 logBody = dissect(nakFrame);
                 break;
@@ -135,27 +132,27 @@ public class EventCodec
 
         switch (code)
         {
-            case CMD_IN_ADD_CHANNEL:
-            case CMD_IN_REMOVE_CHANNEL:
+            case CMD_IN_ADD_PUBLICATION:
+            case CMD_IN_REMOVE_PUBLICATION:
                 final PublisherMessageFlyweight pubCommand = pubMessage.get();
-
                 pubCommand.wrap(buffer, offset + HEADER_LENGTH);
                 logBody = dissect(pubCommand);
                 break;
-            case CMD_IN_ADD_SUBSCRIBER:
-            case CMD_IN_REMOVE_SUBSCRIBER:
-                final SubscriberMessageFlyweight subCommand = subMessage.get();
 
+            case CMD_IN_ADD_SUBSCRIPTION:
+            case CMD_IN_REMOVE_SUBSCRIPTION:
+                final SubscriberMessageFlyweight subCommand = subMessage.get();
                 subCommand.wrap(buffer, offset + HEADER_LENGTH);
                 logBody = dissect(subCommand);
                 break;
-            case CMD_OUT_NEW_SEND_BUFFER_NOTIFICATION:
-            case CMD_OUT_NEW_RECEIVE_BUFFER_NOTIFICATION:
-                final NewBufferMessageFlyweight newBuffer = newBufferMessage.get();
 
+            case CMD_OUT_NEW_PUBLICATION_BUFFER_NOTIFICATION:
+            case CMD_OUT_NEW_SUBSCRIPTION_BUFFER_NOTIFICATION:
+                final NewBufferMessageFlyweight newBuffer = newBufferMessage.get();
                 newBuffer.wrap(buffer, offset + HEADER_LENGTH);
                 logBody = dissect(newBuffer);
                 break;
+
             default:
                 logBody = "COMMAND_UNKNOWN";
                 break;

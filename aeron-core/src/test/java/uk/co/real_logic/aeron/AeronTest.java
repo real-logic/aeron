@@ -24,7 +24,7 @@ import uk.co.real_logic.aeron.util.concurrent.MessageHandler;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.*;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
+import uk.co.real_logic.aeron.util.protocol.ErrorFlyweight;
 
 import java.io.File;
 import java.io.IOException;
@@ -84,7 +84,7 @@ public class AeronTest
     private final NewBufferMessageFlyweight newBufferMessage = new NewBufferMessageFlyweight();
     private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
 
-    private final ErrorHeaderFlyweight errorHeader = new ErrorHeaderFlyweight();
+    private final ErrorFlyweight errorHeader = new ErrorFlyweight();
 
     private final ByteBuffer sendBuffer = ByteBuffer.allocate(SEND_BUFFER_CAPACITY);
     private final AtomicBuffer atomicSendBuffer = new AtomicBuffer(sendBuffer);
@@ -119,7 +119,7 @@ public class AeronTest
         newChannel(aeron);
         aeron.conductor().doWork();
 
-        assertChannelMessage(toMediaDriver(), ADD_CHANNEL);
+        assertChannelMessage(toMediaDriver(), ADD_PUBLICATION);
     }
 
     @Test
@@ -145,7 +145,7 @@ public class AeronTest
         final Aeron aeron = newAeron();
         final Channel channel = newChannel(aeron);
         aeron.conductor().doWork();
-        createTermBuffer(0L, NEW_SEND_BUFFER_NOTIFICATION, directory.senderDir(), SESSION_ID);
+        createTermBuffer(0L, NEW_PUBLICATION_BUFFER_NOTIFICATION, directory.senderDir(), SESSION_ID);
         aeron.conductor().doWork();
         assertTrue(channel.offer(atomicSendBuffer));
         aeron.conductor().close();
@@ -159,7 +159,7 @@ public class AeronTest
         final Channel channel = newChannel(aeron);
         aeron.conductor().doWork();
         final List<Buffers> buffers =
-            createTermBuffer(0L, NEW_SEND_BUFFER_NOTIFICATION, directory.senderDir(), SESSION_ID);
+            createTermBuffer(0L, NEW_PUBLICATION_BUFFER_NOTIFICATION, directory.senderDir(), SESSION_ID);
 
         final int capacity = buffers.get(0).logBuffer().capacity();
         final int msgCount = (4 * capacity) / SEND_BUFFER_CAPACITY;
@@ -208,7 +208,7 @@ public class AeronTest
         channel.close();
         adminThread.doWork();
 
-        assertChannelMessage(toMediaDriver, REMOVE_CHANNEL);
+        assertChannelMessage(toMediaDriver, REMOVE_PUBLICATION);
     }
 
     @Test
@@ -228,7 +228,7 @@ public class AeronTest
         source.close();
         adminThread.doWork();
 
-        assertChannelMessage(toMediaDriver(), REMOVE_CHANNEL);
+        assertChannelMessage(toMediaDriver(), REMOVE_PUBLICATION);
     }
 
     @Test
@@ -267,7 +267,7 @@ public class AeronTest
 
         aeron.conductor().doWork();
 
-        assertMsgRead(toMediaDriver(), assertSubscriberMessageOfType(ADD_SUBSCRIBER));
+        assertMsgRead(toMediaDriver(), assertSubscriberMessageOfType(ADD_SUBSCRIPTION));
 
         assertThat(subscriber.read(), is(0));
     }
@@ -285,7 +285,7 @@ public class AeronTest
         subscriber.close();
         aeron.conductor().doWork();
 
-        assertMsgRead(toMediaDriver, assertSubscriberMessageOfType(REMOVE_SUBSCRIBER));
+        assertMsgRead(toMediaDriver, assertSubscriberMessageOfType(REMOVE_SUBSCRIPTION));
     }
 
     @Test
@@ -300,7 +300,7 @@ public class AeronTest
         errorHeader.wrap(atomicSendBuffer, subscriberMessage.length());
         errorHeader.errorCode(ErrorCode.INVALID_DESTINATION);
         errorHeader.offendingFlyweight(subscriberMessage, subscriberMessage.length());
-        errorHeader.frameLength(ErrorHeaderFlyweight.HEADER_LENGTH + subscriberMessage.length());
+        errorHeader.frameLength(ErrorFlyweight.HEADER_LENGTH + subscriberMessage.length());
 
         toClient().write(ERROR_RESPONSE,
                          atomicSendBuffer,
@@ -364,7 +364,7 @@ public class AeronTest
         final Aeron aeron = newAeron();
         final Subscriber subscriber = newSubscriber(aeron);
         final List<Buffers> termBuffers =
-            createTermBuffer(0L, NEW_RECEIVE_BUFFER_NOTIFICATION, directory.receiverDir(), SESSION_ID);
+            createTermBuffer(0L, NEW_SUBSCRIPTION_BUFFER_NOTIFICATION, directory.receiverDir(), SESSION_ID);
 
         final List<LogAppender> logAppenders = createLogAppenders(termBuffers);
 
@@ -461,7 +461,7 @@ public class AeronTest
         final List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
         final List<LogAppender> otherLogAppenders = createLogAppenders(SESSION_ID_2);
 
-        sendNewBufferNotification(directory.receiverDir(), NEW_RECEIVE_BUFFER_NOTIFICATION, 1L, SESSION_ID);
+        sendNewBufferNotification(directory.receiverDir(), NEW_SUBSCRIPTION_BUFFER_NOTIFICATION, 1L, SESSION_ID);
 
         aeron.conductor().doWork();
         skip(toMediaDriver, 1);
@@ -519,7 +519,7 @@ public class AeronTest
     private List<LogAppender> createLogAppenders(final long sessionId) throws IOException
     {
         final List<Buffers> termBuffers =
-            createTermBuffer(0L, NEW_RECEIVE_BUFFER_NOTIFICATION, directory.receiverDir(), sessionId);
+            createTermBuffer(0L, NEW_SUBSCRIPTION_BUFFER_NOTIFICATION, directory.receiverDir(), sessionId);
 
         return createLogAppenders(termBuffers);
     }

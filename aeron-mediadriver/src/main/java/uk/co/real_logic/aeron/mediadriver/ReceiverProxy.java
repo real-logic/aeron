@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.util.command.QualifiedMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
@@ -30,13 +29,12 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
  */
 public class ReceiverProxy
 {
-    private static final int WRITE_BUFFER_CAPACITY = 256;
+    private static final int WRITE_BUFFER_CAPACITY = 1024;
 
     private final RingBuffer commandBuffer;
     private final Queue<NewReceiveBufferEvent> newBufferEventQueue;
-    private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
+    private final AtomicBuffer tmpBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
     private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
-    private final QualifiedMessageFlyweight qualifiedMessage = new QualifiedMessageFlyweight();
 
     public ReceiverProxy(final RingBuffer commandBuffer,
                          final Queue<NewReceiveBufferEvent> newBufferEventQueue)
@@ -45,35 +43,23 @@ public class ReceiverProxy
         this.newBufferEventQueue = newBufferEventQueue;
     }
 
-    public void newSubscriber(final String destination, final long[] channelIdList)
+    public boolean newSubscriber(final String destination, final long[] channelIdList)
     {
-        addReceiver(ADD_SUBSCRIBER, destination, channelIdList);
+        return send(ADD_SUBSCRIPTION, destination, channelIdList);
     }
 
-    public void removeSubscriber(final String destination, final long[] channelIdList)
+    public boolean removeSubscriber(final String destination, final long[] channelIdList)
     {
-        addReceiver(REMOVE_SUBSCRIBER, destination, channelIdList);
+        return send(REMOVE_SUBSCRIPTION, destination, channelIdList);
     }
 
-    private void addReceiver(final int msgTypeId, final String destination, final long[] channelIdList)
+    private boolean send(final int msgTypeId, final String destination, final long[] channelIdList)
     {
-        subscriberMessage.wrap(writeBuffer, 0);
+        subscriberMessage.wrap(tmpBuffer, 0);
         subscriberMessage.channelIds(channelIdList);
         subscriberMessage.destination(destination);
-        commandBuffer.write(msgTypeId, writeBuffer, 0, subscriberMessage.length());
-    }
 
-    public void termBufferCreated(final String destination,
-                                  final long sessionId,
-                                  final long channelId,
-                                  final long termId)
-    {
-        qualifiedMessage.wrap(writeBuffer, 0);
-        qualifiedMessage.sessionId(sessionId);
-        qualifiedMessage.channelId(channelId);
-        qualifiedMessage.termId(termId);
-        qualifiedMessage.destination(destination);
-        commandBuffer.write(NEW_RECEIVE_BUFFER_NOTIFICATION, writeBuffer, 0, qualifiedMessage.length());
+        return commandBuffer.write(msgTypeId, tmpBuffer, 0, subscriberMessage.length());
     }
 
     public boolean newReceiveBuffer(final NewReceiveBufferEvent e)

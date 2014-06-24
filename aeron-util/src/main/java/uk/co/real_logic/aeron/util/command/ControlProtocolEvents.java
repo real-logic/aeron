@@ -24,15 +24,15 @@ public class ControlProtocolEvents
     // Library to Media Driver
 
     /** Add Channel */
-    public static final int ADD_CHANNEL = 0x01;
+    public static final int ADD_PUBLICATION = 0x01;
     /** Remove Channel */
-    public static final int REMOVE_CHANNEL = 0x02;
+    public static final int REMOVE_PUBLICATION = 0x02;
     /** Remove Term */
     public static final int REMOVE_TERM = 0x03;
     /** Add Subscriber */
-    public static final int ADD_SUBSCRIBER = 0x04;
+    public static final int ADD_SUBSCRIPTION = 0x04;
     /** Remove Subscriber */
-    public static final int REMOVE_SUBSCRIBER = 0x05;
+    public static final int REMOVE_SUBSCRIPTION = 0x05;
     /** Request Term */
     public static final int REQUEST_CLEANED_TERM = 0x06;
 
@@ -43,9 +43,9 @@ public class ControlProtocolEvents
     /** Error Notification */
     public static final int ERROR_NOTIFICATION = 0x08;
     /** New Receive Buffer Notification */
-    public static final int NEW_RECEIVE_BUFFER_NOTIFICATION = 0x09;
+    public static final int NEW_SUBSCRIPTION_BUFFER_NOTIFICATION = 0x09;
     /** New Send Buffer Notification */
-    public static final int NEW_SEND_BUFFER_NOTIFICATION = 0x0A;
+    public static final int NEW_PUBLICATION_BUFFER_NOTIFICATION = 0x0A;
 
     // Within Media Driver between threads
 

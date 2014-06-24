@@ -38,7 +38,7 @@ public class BufferAndFrameUtils
             private LogBuffers clean = createTestLogBuffers(logBufferSize, stateBufferSize);
             private LogBuffers dirty = createTestLogBuffers(logBufferSize, stateBufferSize);
             private LogBuffers current = createTestLogBuffers(logBufferSize, stateBufferSize);
-            private LogBuffers[] buffers = new LogBuffers[]{ current, clean, dirty };
+            private LogBuffers[] buffers = new LogBuffers[]{current, clean, dirty};
 
             public Stream<LogBuffers> buffers()
             {
@@ -57,14 +57,14 @@ public class BufferAndFrameUtils
 
             public void bufferInformation(final NewBufferMessageFlyweight newBufferMessage)
             {
-                for(int i = 0; i < BUFFER_COUNT; i++)
+                for (int i = 0; i < BUFFER_COUNT; i++)
                 {
                     newBufferMessage.bufferOffset(i, 0);
                     newBufferMessage.bufferLength(i, (int)logBufferSize);
                     newBufferMessage.location(i, "logBuffer-" + i);
                 }
 
-                for(int i = 0; i < BUFFER_COUNT; i++)
+                for (int i = 0; i < BUFFER_COUNT; i++)
                 {
                     newBufferMessage.bufferOffset(i + BUFFER_COUNT, 0);
                     newBufferMessage.bufferLength(i + BUFFER_COUNT, (int)stateBufferSize);
@@ -93,7 +93,6 @@ public class BufferAndFrameUtils
 
             public void close() throws Exception
             {
-
             }
         };
     }

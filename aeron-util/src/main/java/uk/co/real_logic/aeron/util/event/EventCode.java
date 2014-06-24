@@ -25,12 +25,12 @@ public enum EventCode
 {
     FRAME_IN(1, EventCodec::dissectAsFrame),
     FRAME_OUT(2, EventCodec::dissectAsFrame),
-    CMD_IN_ADD_CHANNEL(3, EventCodec::dissectAsCommand),
-    CMD_IN_REMOVE_CHANNEL(4, EventCodec::dissectAsCommand),
-    CMD_IN_ADD_SUBSCRIBER(5, EventCodec::dissectAsCommand),
-    CMD_IN_REMOVE_SUBSCRIBER(6, EventCodec::dissectAsCommand),
-    CMD_OUT_NEW_SEND_BUFFER_NOTIFICATION(7, EventCodec::dissectAsCommand),
-    CMD_OUT_NEW_RECEIVE_BUFFER_NOTIFICATION(8, EventCodec::dissectAsCommand);
+    CMD_IN_ADD_PUBLICATION(3, EventCodec::dissectAsCommand),
+    CMD_IN_REMOVE_PUBLICATION(4, EventCodec::dissectAsCommand),
+    CMD_IN_ADD_SUBSCRIPTION(5, EventCodec::dissectAsCommand),
+    CMD_IN_REMOVE_SUBSCRIPTION(6, EventCodec::dissectAsCommand),
+    CMD_OUT_NEW_PUBLICATION_BUFFER_NOTIFICATION(7, EventCodec::dissectAsCommand),
+    CMD_OUT_NEW_SUBSCRIPTION_BUFFER_NOTIFICATION(8, EventCodec::dissectAsCommand);
 
     private final static Int2ObjectHashMap<EventCode> mapOfIdToEventCode = new Int2ObjectHashMap<>();
 

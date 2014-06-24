@@ -21,9 +21,9 @@ import uk.co.real_logic.aeron.util.Flyweight;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 /**
- * Flyweight for Error Header codec.
+ * Flyweight for Error codec.
  */
-public class ErrorHeaderFlyweight extends HeaderFlyweight
+public class ErrorFlyweight extends HeaderFlyweight
 {
     /** Size of the Error Header */
     public static final int HEADER_LENGTH = 12;
@@ -33,7 +33,7 @@ public class ErrorHeaderFlyweight extends HeaderFlyweight
     private static final int OFFENDING_HDR_OFFSET = 12;
 
     /**
-     * return error code field
+     * The error code field
      *
      * @return error code field
      */
@@ -43,19 +43,19 @@ public class ErrorHeaderFlyweight extends HeaderFlyweight
     }
 
     /**
-     * set error code field
+     * Set error code field
      *
      * @param code field value
      * @return flyweight
      */
-    public ErrorHeaderFlyweight errorCode(final ErrorCode code)
+    public ErrorFlyweight errorCode(final ErrorCode code)
     {
         uint8Put(offset() + ERROR_CODE_FIELD_OFFSET, code.value());
         return this;
     }
 
     /**
-     * return offending header frame length field
+     * The offending header frame length field
      *
      * @return offending header frame length field
      */
@@ -65,12 +65,12 @@ public class ErrorHeaderFlyweight extends HeaderFlyweight
     }
 
     /**
-     * set offending header frame length field
+     * Set offending header frame length field
      *
      * @param length of offending header frame
      * @return flyweight
      */
-    public ErrorHeaderFlyweight offendingHeaderFrameLength(final int length)
+    public ErrorFlyweight offendingHeaderFrameLength(final int length)
     {
         uint32Put(offset() + OFFENDING_HDR_FRAME_LENGTH_FIELD_OFFSET, length, LITTLE_ENDIAN);
         return this;
@@ -87,7 +87,7 @@ public class ErrorHeaderFlyweight extends HeaderFlyweight
     }
 
     /**
-     * copy the offending header into this error header
+     * Copy the offending header into this error header
      *
      * sets offending header frame length
      *
@@ -95,14 +95,14 @@ public class ErrorHeaderFlyweight extends HeaderFlyweight
      * @param maxLength of the offending header to include
      * @return flyweight
      */
-    public ErrorHeaderFlyweight offendingHeader(final HeaderFlyweight header, final int maxLength)
+    public ErrorFlyweight offendingHeader(final HeaderFlyweight header, final int maxLength)
     {
         final int length = Math.min(header.frameLength(), maxLength);
         return offendingFlyweight(header, length);
     }
 
     /**
-     * copy the offending flyweight into this error header. If you are using a HeaderFlyweight
+     * Copy the offending action from a flyweight into this error header. If you are using a HeaderFlyweight
      * then {@see offendingHeader(HeaderFlyweight, int)}, this is for inter-thread messaging
      *
      * sets offending flyweight frame length
@@ -111,7 +111,7 @@ public class ErrorHeaderFlyweight extends HeaderFlyweight
      * @param length of the offending flyweight to include
      * @return flyweight
      */
-    public ErrorHeaderFlyweight offendingFlyweight(final Flyweight offendingFlyweight, final int length)
+    public ErrorFlyweight offendingFlyweight(final Flyweight offendingFlyweight, final int length)
     {
         offendingHeaderFrameLength(length);
         copyFlyweight(offendingFlyweight, offendingHeaderOffset(), length);
@@ -119,52 +119,52 @@ public class ErrorHeaderFlyweight extends HeaderFlyweight
     }
 
     /**
-     * return offset in buffer for error string
+     * The offset in buffer for the error message
      *
      * Requires that offending header frame length field already be set
      *
      * @return offset of error string in the buffer
      */
-    public int errorStringOffset()
+    public int errorMessageOffset()
     {
         return offendingHeaderOffset() + offendingHeaderFrameLength();
     }
 
     /**
-     * copy the error string into the header
+     * Copy the error string into the header
      *
      * Requires the offending header to have already been set
      *
-     * @param errorString bytes to include
-     * @return flyweight
+     * @param errorMessage bytes to include
+     * @return this flyweight
      */
-    public ErrorHeaderFlyweight errorString(final byte[] errorString)
+    public ErrorFlyweight errorMessage(final byte[] errorMessage)
     {
-        atomicBuffer().putBytes(errorStringOffset(), errorString, 0, errorString.length);
+        atomicBuffer().putBytes(errorMessageOffset(), errorMessage, 0, errorMessage.length);
         return this;
     }
 
     /**
-     * return the length of the error string in the header in bytes
+     * The length of the error string in the header in bytes
      *
      * @return length of error string in bytes
      */
     public int errorStringLength()
     {
-        return frameLength() - offendingHeaderFrameLength() - ErrorHeaderFlyweight.HEADER_LENGTH;
+        return frameLength() - offendingHeaderFrameLength() - ErrorFlyweight.HEADER_LENGTH;
     }
 
     /**
-     * return the error string as a byte array
+     * The error string as a byte array
      *
      * @return byte array representation of the error string
      */
-    public byte[] errorStringAsBytes()
+    public byte[] errorMessageAsBytes()
     {
         final int len = errorStringLength();
         final byte[] bytes = new byte[len];
 
-        atomicBuffer().getBytes(errorStringOffset(), bytes, 0, len);
+        atomicBuffer().getBytes(errorMessageOffset(), bytes, 0, len);
         return bytes;
     }
 }

@@ -18,14 +18,14 @@ package uk.co.real_logic.aeron.conductor;
 import uk.co.real_logic.aeron.InvalidDestinationHandler;
 import uk.co.real_logic.aeron.util.command.SubscriberMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
+import uk.co.real_logic.aeron.util.protocol.ErrorFlyweight;
 
 /**
  * Maps the error messages that come back from the conductor protocol into different error handling interfaces.
  */
 public class ConductorErrorHandler
 {
-    private final ErrorHeaderFlyweight errorHeader = new ErrorHeaderFlyweight();
+    private final ErrorFlyweight errorHeader = new ErrorFlyweight();
     private final SubscriberMessageFlyweight subscriberMessage  = new SubscriberMessageFlyweight();
     private final InvalidDestinationHandler invalidDestination;
 

@@ -42,13 +42,13 @@ public class ClientConductorProxyTest
     @Test
     public void threadSendsAddChannelMessage()
     {
-        threadSendsChannelMessage(() -> conductor.sendAddChannel(DESTINATION, SESSION_ID, 2), ADD_CHANNEL);
+        threadSendsChannelMessage(() -> conductor.sendAddChannel(DESTINATION, SESSION_ID, 2), ADD_PUBLICATION);
     }
 
     @Test
     public void threadSendsRemoveChannelMessage()
     {
-        threadSendsChannelMessage(() -> conductor.sendRemoveChannel(DESTINATION, SESSION_ID, 2), REMOVE_CHANNEL);
+        threadSendsChannelMessage(() -> conductor.sendRemoveChannel(DESTINATION, SESSION_ID, 2), REMOVE_PUBLICATION);
     }
 
     private void threadSendsChannelMessage(final Runnable sendMessage, final int expectedMsgTypeId)
@@ -80,7 +80,7 @@ public class ClientConductorProxyTest
                 final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
                 subscriberMessage.wrap(buffer, index);
 
-                assertThat(msgTypeId, is(REMOVE_SUBSCRIBER));
+                assertThat(msgTypeId, is(REMOVE_SUBSCRIPTION));
                 assertThat(subscriberMessage.destination(), is(DESTINATION));
                 assertThat(subscriberMessage.channelIds(), is(CHANNEL_IDS));
             }

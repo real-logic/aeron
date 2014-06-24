@@ -29,7 +29,7 @@ import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
 /**
  * Encapsulates responsibility for rotating and reusing memory mapped files used by
  * the buffers.
- *
+ * <p>
  * Keeps 3 buffers on hold at any one time.
  */
 class MappedBufferRotator implements BufferRotator, AutoCloseable
@@ -42,7 +42,6 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
     private final long logBufferSize;
     private final long stateBufferSize;
     private final MappedLogBuffers[] buffers;
-    private final File directory;
 
     private MappedLogBuffers current;
     private MappedLogBuffers clean;
@@ -54,7 +53,6 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
                         final FileChannel stateTemplate,
                         final long stateBufferSize)
     {
-        this.directory = directory;
         IoUtil.ensureDirectoryExists(directory, "buffer directory");
 
         this.logTemplate = logTemplate;
@@ -75,7 +73,7 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
             throw new IllegalStateException(e);
         }
 
-        buffers = new MappedLogBuffers[]{ current, clean, dirty };
+        buffers = new MappedLogBuffers[]{current, clean, dirty};
     }
 
     public void close()
@@ -100,19 +98,19 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
 
     public void bufferInformation(final NewBufferMessageFlyweight newBufferMessage)
     {
-        for(int i = 0; i < BUFFER_COUNT; i++)
+        for (int i = 0; i < BUFFER_COUNT; i++)
         {
             buffers[i].logBufferInformation(i, newBufferMessage);
         }
 
-        for(int i = 0; i < BUFFER_COUNT; i++)
+        for (int i = 0; i < BUFFER_COUNT; i++)
         {
             buffers[i].stateBufferInformation(i, newBufferMessage);
         }
     }
 
     public static void reset(final FileChannel channel, final FileChannel template, final long bufferSize)
-            throws IOException
+        throws IOException
     {
         channel.position(0);
         template.transferTo(0, bufferSize, channel);

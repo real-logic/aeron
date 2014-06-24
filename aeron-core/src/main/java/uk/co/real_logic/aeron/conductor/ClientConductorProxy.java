@@ -51,12 +51,12 @@ public class ClientConductorProxy
 
     public void sendAddChannel(final String destination, final long sessionId, final long channelId)
     {
-        sendChannelMessage(destination, sessionId, channelId, ADD_CHANNEL);
+        sendChannelMessage(destination, sessionId, channelId, ADD_PUBLICATION);
     }
 
     public void sendRemoveChannel(final String destination, final long sessionId, final long channelId)
     {
-        sendChannelMessage(destination, sessionId, channelId, REMOVE_CHANNEL);
+        sendChannelMessage(destination, sessionId, channelId, REMOVE_PUBLICATION);
     }
 
     private void sendChannelMessage(final String destination,
@@ -75,12 +75,12 @@ public class ClientConductorProxy
 
     public void sendAddSubscriber(final String destination, final long[] channelIds)
     {
-        sendReceiverMessage(ADD_SUBSCRIBER, destination, channelIds);
+        sendReceiverMessage(ADD_SUBSCRIPTION, destination, channelIds);
     }
 
     public void sendRemoveSubscriber(final String destination, final long[] channelIds)
     {
-        sendReceiverMessage(REMOVE_SUBSCRIBER, destination, channelIds);
+        sendReceiverMessage(REMOVE_SUBSCRIPTION, destination, channelIds);
     }
 
     private void sendReceiverMessage(final int msgTypeId, final String destination, final long[] channelIds)

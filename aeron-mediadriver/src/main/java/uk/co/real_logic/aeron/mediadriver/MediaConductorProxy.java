@@ -20,12 +20,12 @@ import uk.co.real_logic.aeron.util.Flyweight;
 import uk.co.real_logic.aeron.util.command.QualifiedMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
-import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
+import uk.co.real_logic.aeron.util.protocol.ErrorFlyweight;
 
 import java.nio.ByteBuffer;
 
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
-import static uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight.HEADER_LENGTH;
+import static uk.co.real_logic.aeron.util.protocol.ErrorFlyweight.HEADER_LENGTH;
 
 /**
  * Proxy for writing into the media driver conductor command buffer
@@ -38,7 +38,7 @@ public class MediaConductorProxy
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
 
     private final QualifiedMessageFlyweight qualifiedMessage = new QualifiedMessageFlyweight();
-    private final ErrorHeaderFlyweight errorHeader = new ErrorHeaderFlyweight();
+    private final ErrorFlyweight errorHeader = new ErrorFlyweight();
 
     public MediaConductorProxy(final RingBuffer commandBuffer)
     {

@@ -26,12 +26,10 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.event.EventCode;
 import uk.co.real_logic.aeron.util.event.EventLogger;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.util.protocol.ErrorHeaderFlyweight;
 
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import static java.nio.ByteBuffer.allocateDirect;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.*;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 
@@ -40,9 +38,7 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
  */
 public class MediaConductor extends Agent
 {
-    public static final EventLogger LOGGER = new EventLogger(MediaConductor.class);
-
-    public static final int MSG_BUFFER_CAPACITY = 4096;
+    private static final EventLogger LOGGER = new EventLogger(MediaConductor.class);
     public static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
     public static final int HEARTBEAT_TIMEOUT_MS = 100;
 
@@ -57,12 +53,11 @@ public class MediaConductor extends Agent
 
     private final RingBuffer localCommandBuffer;
     private final ReceiverProxy receiverProxy;
+    private final ClientProxy clientProxy;
     private final NioSelector nioSelector;
     private final BufferManagement bufferManagement;
-    private final RingBuffer clientCommandBuffer;
-    private final RingBuffer toClientBuffer;
+    private final RingBuffer fromClientCommands;
     private final Long2ObjectHashMap<ControlFrameHandler> srcDestinationMap = new Long2ObjectHashMap<>();
-    private final AtomicBuffer msgBuffer = new AtomicBuffer(allocateDirect(MSG_BUFFER_CAPACITY));
     private final TimerWheel timerWheel;
     private final AtomicArray<SubscribedSession> subscribedSessions;
     private final AtomicArray<Publication> publications;
@@ -71,9 +66,7 @@ public class MediaConductor extends Agent
 
     private final PublisherMessageFlyweight publisherMessage = new PublisherMessageFlyweight();
     private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
-    private final ErrorHeaderFlyweight errorHeader = new ErrorHeaderFlyweight();
     private final QualifiedMessageFlyweight qualifiedMessage = new QualifiedMessageFlyweight();
-    private final NewBufferMessageFlyweight newBufferMessage = new NewBufferMessageFlyweight();
 
     private final int mtuLength;
     private final ConductorShmBuffers conductorShmBuffers;
@@ -96,10 +89,8 @@ public class MediaConductor extends Agent
         subscribedSessions = ctx.subscribedSessions();
         publications = ctx.publications();
         conductorShmBuffers = ctx.conductorShmBuffers();
-        clientCommandBuffer = new ManyToOneRingBuffer(new AtomicBuffer(conductorShmBuffers.toDriver()));
-        toClientBuffer = new ManyToOneRingBuffer(new AtomicBuffer(conductorShmBuffers.toClient()));
-
-        newBufferMessage.wrap(msgBuffer, 0);
+        fromClientCommands = new ManyToOneRingBuffer(new AtomicBuffer(conductorShmBuffers.toDriver()));
+        clientProxy = new ClientProxy(new ManyToOneRingBuffer(new AtomicBuffer(conductorShmBuffers.toClient())));
     }
 
     public ControlFrameHandler frameHandler(final UdpDestination destination)
@@ -159,17 +150,16 @@ public class MediaConductor extends Agent
                 {
                     case CREATE_TERM_BUFFER:
                         qualifiedMessage.wrap(buffer, index);
-                        onCreateSubscriberTermBuffer(qualifiedMessage);
+                        onCreateSubscriptionTermBuffer(qualifiedMessage);
                         break;
 
                     case REMOVE_TERM_BUFFER:
                         qualifiedMessage.wrap(buffer, index);
-                        onRemoveSubscriberTermBuffer(qualifiedMessage);
+                        onRemoveSubscriptionTermBuffer(qualifiedMessage);
                         break;
 
                     case ERROR_RESPONSE:
-                        errorHeader.wrap(buffer, index);
-                        toClientBuffer.write(msgTypeId, buffer, index, length);
+                        clientProxy.onError(msgTypeId, buffer, index, length);
                         break;
                 }
             });
@@ -179,7 +169,7 @@ public class MediaConductor extends Agent
 
     private boolean processClientCommandBuffer()
     {
-        final int messagesRead = clientCommandBuffer.read(
+        final int messagesRead = fromClientCommands.read(
             (msgTypeId, buffer, index, length) ->
             {
                 Flyweight flyweight = publisherMessage;
@@ -188,47 +178,38 @@ public class MediaConductor extends Agent
                 {
                     switch (msgTypeId)
                     {
-                        case ADD_CHANNEL:
+                        case ADD_PUBLICATION:
                             publisherMessage.wrap(buffer, index);
-                            LOGGER.log(EventCode.CMD_IN_ADD_CHANNEL, buffer, index, length);
+                            LOGGER.log(EventCode.CMD_IN_ADD_PUBLICATION, buffer, index, length);
                             flyweight = publisherMessage;
-                            onAddChannel(publisherMessage);
+                            onAddPublication(publisherMessage);
                             break;
 
-                        case REMOVE_CHANNEL:
+                        case REMOVE_PUBLICATION:
                             publisherMessage.wrap(buffer, index);
-                            LOGGER.log(EventCode.CMD_IN_REMOVE_CHANNEL, buffer, index, length);
+                            LOGGER.log(EventCode.CMD_IN_REMOVE_PUBLICATION, buffer, index, length);
                             flyweight = publisherMessage;
-                            onRemoveChannel(publisherMessage);
+                            onRemovePublication(publisherMessage);
                             break;
 
-                        case ADD_SUBSCRIBER:
+                        case ADD_SUBSCRIPTION:
                             subscriberMessage.wrap(buffer, index);
-                            LOGGER.log(EventCode.CMD_IN_ADD_SUBSCRIBER, buffer, index, length);
+                            LOGGER.log(EventCode.CMD_IN_ADD_SUBSCRIPTION, buffer, index, length);
                             flyweight = subscriberMessage;
-                            onAddSubscriber(subscriberMessage);
+                            onAddSubscription(subscriberMessage);
                             break;
 
-                        case REMOVE_SUBSCRIBER:
+                        case REMOVE_SUBSCRIPTION:
                             subscriberMessage.wrap(buffer, index);
-                            LOGGER.log(EventCode.CMD_IN_REMOVE_SUBSCRIBER, buffer, index, length);
+                            LOGGER.log(EventCode.CMD_IN_REMOVE_SUBSCRIPTION, buffer, index, length);
                             flyweight = subscriberMessage;
-                            onRemoveSubscriber(subscriberMessage);
+                            onRemoveSubscription(subscriberMessage);
                             break;
                     }
                 }
                 catch (final ControlProtocolException ex)
                 {
-                    final byte[] err = ex.getMessage().getBytes();
-                    final int len = ErrorHeaderFlyweight.HEADER_LENGTH + length + err.length;
-
-                    errorHeader.wrap(msgBuffer, 0);
-                    errorHeader.errorCode(ex.errorCode())
-                               .offendingFlyweight(flyweight, length)
-                               .errorString(err)
-                               .frameLength(len);
-
-                    toClientBuffer.write(ERROR_RESPONSE, msgBuffer, 0, errorHeader.frameLength());
+                    clientProxy.onError(ex.errorCode(), ex.getMessage(), flyweight, length);
                 }
                 catch (final Exception ex)
                 {
@@ -257,29 +238,17 @@ public class MediaConductor extends Agent
     private void sendNewBufferNotification(final long sessionId,
                                            final long channelId,
                                            final long termId,
-                                           final boolean isSender,
+                                           final int msgTypeId,
                                            final String destination,
-                                           final BufferRotator buffers)
+                                           final BufferRotator bufferRotator)
     {
-        newBufferMessage.sessionId(sessionId)
-                        .channelId(channelId)
-                        .termId(termId);
-        buffers.bufferInformation(newBufferMessage);
-        newBufferMessage.destination(destination);
-
-        final int msgTypeId = isSender ? NEW_SEND_BUFFER_NOTIFICATION : NEW_RECEIVE_BUFFER_NOTIFICATION;
-
-        LOGGER.log(isSender ? EventCode.CMD_OUT_NEW_SEND_BUFFER_NOTIFICATION :
-                       EventCode.CMD_OUT_NEW_RECEIVE_BUFFER_NOTIFICATION,
-                   msgBuffer, 0, newBufferMessage.length());
-
-        if (!toClientBuffer.write(msgTypeId, msgBuffer, 0, newBufferMessage.length()))
+        if (!clientProxy.newBufferNotification(msgTypeId, sessionId, channelId, termId, destination, bufferRotator))
         {
             System.err.println("Error occurred writing new buffer notification");
         }
     }
 
-    private void onAddChannel(final PublisherMessageFlyweight publisherMessage)
+    private void onAddPublication(final PublisherMessageFlyweight publisherMessage)
     {
         final String destination = publisherMessage.destination();
         final long sessionId = publisherMessage.sessionId();
@@ -308,13 +277,12 @@ public class MediaConductor extends Agent
             }
 
             final long initialTermId = generateTermId();
-            final BufferRotator buffers =
-                bufferManagement.addPublication(srcDestination, sessionId, channelId);
+            final BufferRotator bufferRotator = bufferManagement.addPublication(srcDestination, sessionId, channelId);
 
             publication = new Publication(frameHandler,
                                           timerWheel,
                                           senderFlowControl.get(),
-                                          buffers,
+                                          bufferRotator,
                                           sessionId,
                                           channelId,
                                           initialTermId,
@@ -322,7 +290,8 @@ public class MediaConductor extends Agent
                                           mtuLength);
 
             frameHandler.addPublication(publication);
-            sendNewBufferNotification(sessionId, channelId, initialTermId, true, destination, buffers);
+            sendNewBufferNotification(sessionId, channelId, initialTermId, NEW_PUBLICATION_BUFFER_NOTIFICATION,
+                                      destination, bufferRotator);
             publications.add(publication);
         }
         catch (final ControlProtocolException ex)
@@ -332,11 +301,11 @@ public class MediaConductor extends Agent
         catch (final Exception ex)
         {
             ex.printStackTrace();
-            throw new ControlProtocolException(ErrorCode.GENERIC_ERROR_CHANNEL_MESSAGE, ex.getMessage());
+            throw new ControlProtocolException(ErrorCode.GENERIC_ERROR_PUBLICATION_MESSAGE, ex.getMessage());
         }
     }
 
-    private void onRemoveChannel(final PublisherMessageFlyweight publisherMessage)
+    private void onRemovePublication(final PublisherMessageFlyweight publisherMessage)
     {
         final String destination = publisherMessage.destination();
         final long sessionId = publisherMessage.sessionId();
@@ -374,21 +343,21 @@ public class MediaConductor extends Agent
         catch (final Exception ex)
         {
             ex.printStackTrace();
-            throw new ControlProtocolException(ErrorCode.GENERIC_ERROR_CHANNEL_MESSAGE, ex.getMessage());
+            throw new ControlProtocolException(ErrorCode.GENERIC_ERROR_PUBLICATION_MESSAGE, ex.getMessage());
         }
     }
 
-    private void onAddSubscriber(final SubscriberMessageFlyweight subscriberMessage)
+    private void onAddSubscription(final SubscriberMessageFlyweight subscriberMessage)
     {
         receiverProxy.newSubscriber(subscriberMessage.destination(), subscriberMessage.channelIds());
     }
 
-    private void onRemoveSubscriber(final SubscriberMessageFlyweight subscriberMessage)
+    private void onRemoveSubscription(final SubscriberMessageFlyweight subscriberMessage)
     {
         receiverProxy.removeSubscriber(subscriberMessage.destination(), subscriberMessage.channelIds());
     }
 
-    private void onCreateSubscriberTermBuffer(final QualifiedMessageFlyweight qualifiedMessage)
+    private void onCreateSubscriptionTermBuffer(final QualifiedMessageFlyweight qualifiedMessage)
     {
         final String destination = qualifiedMessage.destination();
         final long sessionId = qualifiedMessage.sessionId();
@@ -398,18 +367,19 @@ public class MediaConductor extends Agent
         try
         {
             final UdpDestination rcvDestination = UdpDestination.parse(destination);
-            final BufferRotator buffer =
+            final BufferRotator bufferRotator =
                 bufferManagement.addSubscriberChannel(rcvDestination, sessionId, channelId);
 
-            sendNewBufferNotification(sessionId, channelId, termId, false, destination, buffer);
+            sendNewBufferNotification(sessionId, channelId, termId, NEW_SUBSCRIPTION_BUFFER_NOTIFICATION, destination,
+                                      bufferRotator);
 
             final NewReceiveBufferEvent event =
-                new NewReceiveBufferEvent(rcvDestination, sessionId, channelId, termId, buffer);
+                new NewReceiveBufferEvent(rcvDestination, sessionId, channelId, termId, bufferRotator);
 
             while (!receiverProxy.newReceiveBuffer(event))
             {
                 // TODO: count errors
-                System.out.println("Error adding to buffer");
+                System.out.println("Error adding to bufferRotator");
             }
         }
         catch (final Exception ex)
@@ -418,7 +388,7 @@ public class MediaConductor extends Agent
         }
     }
 
-    private void onRemoveSubscriberTermBuffer(final QualifiedMessageFlyweight qualifiedMessage)
+    private void onRemoveSubscriptionTermBuffer(final QualifiedMessageFlyweight qualifiedMessage)
     {
         final String destination = qualifiedMessage.destination();
         final long sessionId = qualifiedMessage.sessionId();

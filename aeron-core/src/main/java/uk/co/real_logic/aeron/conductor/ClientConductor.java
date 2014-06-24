@@ -117,15 +117,15 @@ public final class ClientConductor extends Agent
             {
                 switch (msgTypeId)
                 {
-                    case ADD_CHANNEL:
-                    case REMOVE_CHANNEL:
+                    case ADD_PUBLICATION:
+                    case REMOVE_PUBLICATION:
                     {
                         publisherMessage.wrap(buffer, index);
                         final String destination = publisherMessage.destination();
                         final long channelId = publisherMessage.channelId();
                         final long sessionId = publisherMessage.sessionId();
 
-                        if (msgTypeId == ADD_CHANNEL)
+                        if (msgTypeId == ADD_PUBLICATION)
                         {
                             addPublisher(destination, channelId, sessionId);
                         }
@@ -138,13 +138,13 @@ public final class ClientConductor extends Agent
                         break;
                     }
 
-                    case ADD_SUBSCRIBER:
-                    case REMOVE_SUBSCRIBER:
+                    case ADD_SUBSCRIPTION:
+                    case REMOVE_SUBSCRIPTION:
                     {
                         subscriberMessage.wrap(buffer, index);
                         final long[] channelIds = subscriberMessage.channelIds();
                         final String destination = subscriberMessage.destination();
-                        if (msgTypeId == ADD_SUBSCRIBER)
+                        if (msgTypeId == ADD_SUBSCRIPTION)
                         {
                             addReceiver(destination, channelIds);
                         }
@@ -226,8 +226,8 @@ public final class ClientConductor extends Agent
             {
                 switch (msgTypeId)
                 {
-                    case NEW_RECEIVE_BUFFER_NOTIFICATION:
-                    case NEW_SEND_BUFFER_NOTIFICATION:
+                    case NEW_SUBSCRIPTION_BUFFER_NOTIFICATION:
+                    case NEW_PUBLICATION_BUFFER_NOTIFICATION:
                         newBufferMessage.wrap(buffer, index);
 
                         final long sessionId = newBufferMessage.sessionId();
@@ -235,7 +235,7 @@ public final class ClientConductor extends Agent
                         final long termId = newBufferMessage.termId();
                         final String destination = newBufferMessage.destination();
 
-                        if (msgTypeId == NEW_SEND_BUFFER_NOTIFICATION)
+                        if (msgTypeId == NEW_PUBLICATION_BUFFER_NOTIFICATION)
                         {
                             onNewSenderBuffer(destination, sessionId, channelId, termId);
                         }

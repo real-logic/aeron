@@ -119,7 +119,7 @@ public class ReceiverTest
     @Test
     public void shouldCreateRcvTermAndSendSmOnZeroLengthData() throws Exception
     {
-        receiverProxy.newSubscriber(URI, ONE_CHANNEL);  // ADD_SUBSCRIBER from client
+        receiverProxy.newSubscriber(URI, ONE_CHANNEL);  // ADD_SUBSCRIPTION from client
 
         receiver.doWork();
 
@@ -167,7 +167,7 @@ public class ReceiverTest
     @Test
     public void shouldInsertDataIntoLogAfterInitialExchange() throws Exception
     {
-        receiverProxy.newSubscriber(URI, ONE_CHANNEL);  // ADD_SUBSCRIBER from client
+        receiverProxy.newSubscriber(URI, ONE_CHANNEL);  // ADD_SUBSCRIPTION from client
 
         receiver.doWork();
 
@@ -213,7 +213,7 @@ public class ReceiverTest
     @Test
     public void shouldNotOverwriteDataFrameWithHeartbeat() throws Exception
     {
-        receiverProxy.newSubscriber(URI, ONE_CHANNEL);  // ADD_SUBSCRIBER from client
+        receiverProxy.newSubscriber(URI, ONE_CHANNEL);  // ADD_SUBSCRIPTION from client
 
         receiver.doWork();
 
@@ -262,7 +262,7 @@ public class ReceiverTest
     @Test
     public void shouldOverwriteHeartbeatWithDataFrame() throws Exception
     {
-        receiverProxy.newSubscriber(URI, ONE_CHANNEL);  // ADD_SUBSCRIBER from client
+        receiverProxy.newSubscriber(URI, ONE_CHANNEL);  // ADD_SUBSCRIPTION from client
 
         receiver.doWork();
 
@@ -312,7 +312,7 @@ public class ReceiverTest
     @Ignore("does not work correctly yet")
     public void shouldBeAbleToHandleTermBufferRolloverCorrectly() throws Exception
     {
-        receiverProxy.newSubscriber(URI, ONE_CHANNEL);  // ADD_SUBSCRIBER from client
+        receiverProxy.newSubscriber(URI, ONE_CHANNEL);  // ADD_SUBSCRIPTION from client
 
         receiver.doWork();
 

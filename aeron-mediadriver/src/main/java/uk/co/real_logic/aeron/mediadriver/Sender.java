@@ -19,73 +19,28 @@ import uk.co.real_logic.aeron.util.Agent;
 import uk.co.real_logic.aeron.util.AtomicArray;
 
 /**
- * Agent to take data in sender buffers and demux onto sending sockets
+ * Agent that iterates over publications for sending them to registered subscribers.
  */
 public class Sender extends Agent
 {
-    private final AtomicArray<SenderChannel> channels = new AtomicArray<>();
-
+    private final AtomicArray<Publication> publications;
     private int startingOffset = 0;
 
-    public Sender(final MediaDriver.Context context)
+    public Sender(final MediaDriver.Context ctx)
     {
-        super(context.senderIdleStrategy());
+        super(ctx.senderIdleStrategy());
+
+        publications = ctx.publications();
     }
 
     public boolean doWork()
     {
         startingOffset++;
-        if (startingOffset == channels.length())
+        if (startingOffset == publications.length())
         {
             startingOffset = 0;
         }
 
-        return channels.forEach(startingOffset, SenderChannel::send);
-    }
-
-    /**
-     * Return the underlying {@link AtomicArray}
-     *
-     * @return {@link AtomicArray} of the channels
-     */
-    public AtomicArray<SenderChannel> channels()
-    {
-        return channels;
-    }
-
-    /**
-     * Add channel to channels Sender must manage.
-     *
-     * @param channel to add
-     */
-    public void addChannel(final SenderChannel channel)
-    {
-        channels.add(channel);
-    }
-
-    /**
-     * Remove channel from channels Sender must manage.
-     *
-     * @param channel to remove
-     */
-    public void removeChannel(final SenderChannel channel)
-    {
-        channels.remove(channel);
-    }
-
-    /**
-     * Called from the conductor thread
-     */
-    public boolean processBufferRotation()
-    {
-        return channels.forEach(0, SenderChannel::processBufferRotation);
-    }
-
-    /**
-     * called from the conductor thread
-     */
-    public boolean heartbeatChecks()
-    {
-        return channels.forEach(0, SenderChannel::heartbeatCheck);
+        return publications.forEach(startingOffset, Publication::send);
     }
 }

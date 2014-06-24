@@ -108,15 +108,15 @@ class MappedBufferManagement implements BufferManagement
         }
     }
 
-    public BufferRotator addPublisherChannel(final UdpDestination destination,
-                                             final long sessionId,
-                                             final long channelId)
+    public BufferRotator addPublication(final UdpDestination destination,
+                                        final long sessionId,
+                                        final long channelId)
         throws Exception
     {
         return addChannel(destination, sessionId, channelId, senderDir, srcTermMap);
     }
 
-    public void removePublisherChannel(final UdpDestination destination, final long sessionId, final long channelId)
+    public void removePublication(final UdpDestination destination, final long sessionId, final long channelId)
         throws IllegalArgumentException
     {
         removeChannel(destination, sessionId, channelId, srcTermMap);

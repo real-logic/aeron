@@ -27,13 +27,13 @@ public interface BufferManagement extends AutoCloseable
         return new MappedBufferManagement(dataDir);
     }
 
-    BufferRotator addPublisherChannel(final UdpDestination destination,
-                                      final long sessionId,
-                                      final long channelId) throws Exception;
+    BufferRotator addPublication(final UdpDestination destination,
+                                 final long sessionId,
+                                 final long channelId) throws Exception;
 
-    void removePublisherChannel(final UdpDestination destination,
-                                final long sessionId,
-                                final long channelId) throws IllegalArgumentException;
+    void removePublication(final UdpDestination destination,
+                           final long sessionId,
+                           final long channelId) throws IllegalArgumentException;
 
     BufferRotator addSubscriberChannel(final UdpDestination destination,
                                        final long sessionId,

@@ -29,7 +29,8 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
 {
     private final UdpTransport transport;
     private final UdpDestination destination;
-    private final Long2ObjectHashMap<Long2ObjectHashMap<SenderChannel>> sessionMap = new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<Long2ObjectHashMap<Publication>> publicationBySessionIdMap
+        = new Long2ObjectHashMap<>();
 
     public ControlFrameHandler(final UdpDestination destination,
                                final NioSelector nioSelector) throws Exception
@@ -58,48 +59,49 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
         return destination;
     }
 
-    public SenderChannel findChannel(final long sessionId, final long channelId)
+    public Publication findPublication(final long sessionId, final long channelId)
     {
-        final Long2ObjectHashMap<SenderChannel> channelMap = sessionMap.get(sessionId);
-        if (null == channelMap)
+        final Long2ObjectHashMap<Publication> publicationMap = publicationBySessionIdMap.get(sessionId);
+        if (null == publicationMap)
         {
             return null;
         }
 
-        return channelMap.get(channelId);
+        return publicationMap.get(channelId);
     }
 
-    public void addChannel(final SenderChannel channel)
+    public void addPublication(final Publication publication)
     {
-        sessionMap.getOrDefault(channel.sessionId(), Long2ObjectHashMap::new).put(channel.channelId(), channel);
+        publicationBySessionIdMap.getOrDefault(publication.sessionId(), Long2ObjectHashMap::new)
+                                 .put(publication.channelId(), publication);
     }
 
-    public SenderChannel removeChannel(final long sessionId, final long channelId)
+    public Publication removePublication(final long sessionId, final long channelId)
     {
-        final Long2ObjectHashMap<SenderChannel> channelMap = sessionMap.get(sessionId);
-        if (null == channelMap)
+        final Long2ObjectHashMap<Publication> publicationMap = publicationBySessionIdMap.get(sessionId);
+        if (null == publicationMap)
         {
             return null;
         }
 
-        final SenderChannel channel = channelMap.remove(channelId);
-        if (channelMap.isEmpty())
+        final Publication channel = publicationMap.remove(channelId);
+        if (publicationMap.isEmpty())
         {
-            sessionMap.remove(sessionId);
+            publicationBySessionIdMap.remove(sessionId);
         }
 
         return channel;
     }
 
-    public int numSessions()
+    public int sessionCount()
     {
-        return sessionMap.size();
+        return publicationBySessionIdMap.size();
     }
 
     public void onStatusMessageFrame(final StatusMessageFlyweight header, final AtomicBuffer buffer,
                                      final long length, final InetSocketAddress srcAddress)
     {
-        final SenderChannel channel = findChannel(header.sessionId(), header.channelId());
+        final Publication channel = findPublication(header.sessionId(), header.channelId());
         channel.onStatusMessage(header.termId(),
                                 header.highestContiguousTermOffset(),
                                 header.receiverWindow(),
@@ -109,9 +111,9 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
     public void onNakFrame(final NakFlyweight nak, final AtomicBuffer buffer,
                            final long length, final InetSocketAddress srcAddress)
     {
-        final SenderChannel channel = findChannel(nak.sessionId(), nak.channelId());
+        final Publication publication = findPublication(nak.sessionId(), nak.channelId());
 
-        channel.onNakFrame(nak.termId(), nak.termOffset(), nak.length());
+        publication.onNakFrame(nak.termId(), nak.termOffset(), nak.length());
     }
 
     public void onDataFrame(final DataHeaderFlyweight header, final AtomicBuffer buffer,

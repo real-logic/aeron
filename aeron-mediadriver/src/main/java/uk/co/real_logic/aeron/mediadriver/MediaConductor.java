@@ -46,9 +46,7 @@ public class MediaConductor extends Agent
     public static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
     public static final int HEARTBEAT_TIMEOUT_MS = 100;
 
-    /**
-     * Unicast NAK delay is immediate initial with delayed subsequent delay
-     */
+    /** Unicast NAK delay is immediate initial with delayed subsequent delay */
     public static final StaticDelayGenerator NAK_UNICAST_DELAY_GENERATOR =
         new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(NAK_UNICAST_DELAY_DEFAULT_NS), true);
 
@@ -60,7 +58,6 @@ public class MediaConductor extends Agent
     private final RingBuffer localCommandBuffer;
     private final ReceiverProxy receiverProxy;
     private final NioSelector nioSelector;
-    private final Sender sender;
     private final BufferManagement bufferManagement;
     private final RingBuffer clientCommandBuffer;
     private final RingBuffer toClientBuffer;
@@ -68,6 +65,7 @@ public class MediaConductor extends Agent
     private final AtomicBuffer msgBuffer = new AtomicBuffer(allocateDirect(MSG_BUFFER_CAPACITY));
     private final TimerWheel timerWheel;
     private final AtomicArray<SubscribedSession> subscribedSessions;
+    private final AtomicArray<Publication> publications;
 
     private final Supplier<SenderControlStrategy> senderFlowControl;
 
@@ -81,7 +79,7 @@ public class MediaConductor extends Agent
     private final ConductorShmBuffers conductorShmBuffers;
     private final TimerWheel.Timer heartbeatTimer;
 
-    public MediaConductor(final Context ctx, final Sender sender)
+    public MediaConductor(final Context ctx)
     {
         super(ctx.conductorIdleStrategy());
 
@@ -90,13 +88,13 @@ public class MediaConductor extends Agent
         this.bufferManagement = ctx.bufferManagement();
         this.nioSelector = ctx.conductorNioSelector();
         this.mtuLength = ctx.mtuLength();
-        this.sender = sender;
         this.senderFlowControl = ctx.senderFlowControl();
 
         timerWheel = ctx.conductorTimerWheel();
         heartbeatTimer = newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheck);
 
         subscribedSessions = ctx.subscribedSessions();
+        publications = ctx.publications();
         conductorShmBuffers = ctx.conductorShmBuffers();
         clientCommandBuffer = new ManyToOneRingBuffer(new AtomicBuffer(conductorShmBuffers.toDriver()));
         toClientBuffer = new ManyToOneRingBuffer(new AtomicBuffer(conductorShmBuffers.toClient()));
@@ -122,7 +120,7 @@ public class MediaConductor extends Agent
             ex.printStackTrace();
         }
 
-        hasDoneWork |= sender.processBufferRotation();
+        hasDoneWork |= publications.forEach(0, Publication::processBufferRotation);
         hasDoneWork |= subscribedSessions.forEach(0, SubscribedSession::processBufferRotation);
         hasDoneWork |= subscribedSessions.forEach(0, SubscribedSession::scanForGaps);
 
@@ -302,30 +300,30 @@ public class MediaConductor extends Agent
                                                    "destinations hash same, but destinations different");
             }
 
-            SenderChannel channel = frameHandler.findChannel(sessionId, channelId);
-            if (null != channel)
+            Publication publication = frameHandler.findPublication(sessionId, channelId);
+            if (null != publication)
             {
                 throw new ControlProtocolException(ErrorCode.CHANNEL_ALREADY_EXISTS,
-                                                   "channel and session already exist on destination");
+                                                   "publication and session already exist on destination");
             }
 
             final long initialTermId = generateTermId();
             final BufferRotator buffers =
-                bufferManagement.addPublisherChannel(srcDestination, sessionId, channelId);
+                bufferManagement.addPublication(srcDestination, sessionId, channelId);
 
-            channel = new SenderChannel(frameHandler,
-                                        timerWheel,
-                                        senderFlowControl.get(),
-                                        buffers,
-                                        sessionId,
-                                        channelId,
-                                        initialTermId,
-                                        HEADER_LENGTH,
-                                        mtuLength);
+            publication = new Publication(frameHandler,
+                                          timerWheel,
+                                          senderFlowControl.get(),
+                                          buffers,
+                                          sessionId,
+                                          channelId,
+                                          initialTermId,
+                                          HEADER_LENGTH,
+                                          mtuLength);
 
-            frameHandler.addChannel(channel);
+            frameHandler.addPublication(publication);
             sendNewBufferNotification(sessionId, channelId, initialTermId, true, destination, buffers);
-            sender.addChannel(channel);
+            publications.add(publication);
         }
         catch (final ControlProtocolException ex)
         {
@@ -353,18 +351,17 @@ public class MediaConductor extends Agent
                 throw new ControlProtocolException(ErrorCode.INVALID_DESTINATION, "destination unknown");
             }
 
-            final SenderChannel channel = frameHandler.removeChannel(sessionId, channelId);
-            if (null == channel)
+            final Publication publication = frameHandler.removePublication(sessionId, channelId);
+            if (null == publication)
             {
                 throw new ControlProtocolException(ErrorCode.CHANNEL_UNKNOWN,
-                                                   "session and channel unknown for destination");
+                                                   "session and publication unknown for destination");
             }
 
-            bufferManagement.removePublisherChannel(srcDestination, sessionId, channelId);
+            bufferManagement.removePublication(srcDestination, sessionId, channelId);
+            publications.remove(publication);
 
-            sender.removeChannel(channel);
-
-            if (frameHandler.numSessions() == 0)
+            if (frameHandler.sessionCount() == 0)
             {
                 srcDestinationMap.remove(srcDestination.consistentHash());
                 frameHandler.close();
@@ -440,8 +437,7 @@ public class MediaConductor extends Agent
 
     private void onHeartbeatCheck()
     {
-        sender.heartbeatChecks();
-
+        publications.forEach(0, Publication::heartbeatCheck);
         rescheduleTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, heartbeatTimer);
     }
 

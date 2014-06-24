@@ -237,6 +237,7 @@ public class MediaDriver implements AutoCloseable
             .conductorShmBuffers(conductorShmBuffers)
             .bufferManagement(bufferManagement)
             .subscribedSessions(new AtomicArray<>())
+            .publications(new AtomicArray<>())
             .conductorTimerWheel(new TimerWheel(MEDIA_CONDUCTOR_TICK_DURATION_US,
                                                 TimeUnit.MICROSECONDS,
                                                 MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
@@ -254,7 +255,7 @@ public class MediaDriver implements AutoCloseable
 
         this.receiver = new Receiver(ctx);
         this.sender = new Sender(ctx);
-        this.conductor = new MediaConductor(ctx, sender);
+        this.conductor = new MediaConductor(ctx);
     }
 
     public Receiver receiver()
@@ -447,6 +448,7 @@ public class MediaDriver implements AutoCloseable
         private AgentIdleStrategy senderIdleStrategy;
         private AgentIdleStrategy receiverIdleStrategy;
         private AtomicArray<SubscribedSession> subscribedSessions;
+        private AtomicArray<Publication> publications;
 
         private void initializeWithSystemProperties()
         {
@@ -557,6 +559,12 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
+        public Context publications(final AtomicArray<Publication> publications)
+        {
+            this.publications = publications;
+            return this;
+        }
+
         public RingBuffer mediaCommandBuffer()
         {
             return mediaCommandBuffer;
@@ -635,6 +643,11 @@ public class MediaDriver implements AutoCloseable
         public AtomicArray<SubscribedSession> subscribedSessions()
         {
             return subscribedSessions;
+        }
+
+        public AtomicArray<Publication> publications()
+        {
+            return publications;
         }
     }
 }

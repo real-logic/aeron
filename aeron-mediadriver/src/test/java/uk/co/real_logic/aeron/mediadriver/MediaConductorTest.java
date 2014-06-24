@@ -81,9 +81,9 @@ public class MediaConductorTest
     private final SubscriberMessageFlyweight subscriberMessage = new SubscriberMessageFlyweight();
 
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(256));
+    private final AtomicArray<Publication> publications = new AtomicArray<>();
 
     private MediaConductor mediaConductor;
-    private Sender sender;
     private Receiver receiver;
 
     @Before
@@ -91,7 +91,7 @@ public class MediaConductorTest
     {
         when(mockConductorShmBuffers.toDriver()).thenReturn(toDriverBuffer);
         when(mockConductorShmBuffers.toClient()).thenReturn(toClientBuffer);
-        when(mockBufferManagement.addPublisherChannel(anyObject(), anyLong(), anyLong()))
+        when(mockBufferManagement.addPublication(anyObject(), anyLong(), anyLong()))
                 .thenReturn(BufferAndFrameUtils.createTestRotator(65536 + RingBufferDescriptor.TRAILER_LENGTH,
                                                                   LogBufferDescriptor.STATE_BUFFER_LENGTH));
 
@@ -107,14 +107,14 @@ public class MediaConductorTest
                                                 MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
             .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .subscribedSessions(new AtomicArray<>())
+            .publications(publications)
             .bufferManagement(mockBufferManagement);
 
         ctx.receiverProxy(new ReceiverProxy(ctx.receiverCommandBuffer(), ctx.newReceiveBufferEventQueue()));
         ctx.mediaConductorProxy(new MediaConductorProxy(ctx.mediaCommandBuffer()));
 
-        sender = new Sender(ctx);
         receiver = new Receiver(ctx);
-        mediaConductor = new MediaConductor(ctx, sender);
+        mediaConductor = new MediaConductor(ctx);
     }
 
     @After
@@ -133,10 +133,10 @@ public class MediaConductorTest
 
         mediaConductor.doWork();
 
-        assertThat(sender.channels().length(), is(1));
-        assertNotNull(sender.channels().get(0));
-        assertThat(sender.channels().get(0).sessionId(), is(1L));
-        assertThat(sender.channels().get(0).channelId(), is(2L));
+        assertThat(publications.length(), is(1));
+        assertNotNull(publications.get(0));
+        assertThat(publications.get(0).sessionId(), is(1L));
+        assertThat(publications.get(0).channelId(), is(2L));
 
         final int messagesRead = conductorNotifications.read(
             (msgTypeId, buffer, index, length) ->
@@ -186,7 +186,7 @@ public class MediaConductorTest
 
         mediaConductor.doWork();
 
-        assertThat(sender.channels().length(), is(4));
+        assertThat(publications.length(), is(4));
     }
 
     @Test
@@ -197,7 +197,7 @@ public class MediaConductorTest
 
         mediaConductor.doWork();
 
-        assertThat(sender.channels().length(), is(0));
+        assertThat(publications.length(), is(0));
         assertNull(mediaConductor.frameHandler(UdpDestination.parse(DESTINATION_URI + 4005)));
     }
 
@@ -216,7 +216,7 @@ public class MediaConductorTest
 
         mediaConductor.doWork();
 
-        assertThat(sender.channels().length(), is(0));
+        assertThat(publications.length(), is(0));
     }
 
     @Test
@@ -282,10 +282,10 @@ public class MediaConductorTest
 
         mediaConductor.doWork();
 
-        assertThat(sender.channels().length(), is(1));
-        assertNotNull(sender.channels().get(0));
-        assertThat(sender.channels().get(0).sessionId(), is(1L));
-        assertThat(sender.channels().get(0).channelId(), is(2L));
+        assertThat(publications.length(), is(1));
+        assertNotNull(publications.get(0));
+        assertThat(publications.get(0).sessionId(), is(1L));
+        assertThat(publications.get(0).channelId(), is(2L));
 
         conductorNotifications.read((msgTypeId, buffer, index, length) -> {}, 1); // eat new buffer notification
 
@@ -314,7 +314,7 @@ public class MediaConductorTest
 
         mediaConductor.doWork();
 
-        assertThat(sender.channels().length(), is(0));
+        assertThat(publications.length(), is(0));
 
         final int messagesRead = conductorNotifications.read(
             (msgTypeId, buffer, index, length) ->
@@ -342,10 +342,10 @@ public class MediaConductorTest
 
         mediaConductor.doWork();
 
-        assertThat(sender.channels().length(), is(1));
-        assertNotNull(sender.channels().get(0));
-        assertThat(sender.channels().get(0).sessionId(), is(1L));
-        assertThat(sender.channels().get(0).channelId(), is(2L));
+        assertThat(publications.length(), is(1));
+        assertNotNull(publications.get(0));
+        assertThat(publications.get(0).sessionId(), is(1L));
+        assertThat(publications.get(0).channelId(), is(2L));
 
         conductorNotifications.read((msgTypeId, buffer, index, length) -> {}, 1); // eat new buffer notification
 
@@ -375,10 +375,10 @@ public class MediaConductorTest
 
         mediaConductor.doWork();
 
-        assertThat(sender.channels().length(), is(1));
-        assertNotNull(sender.channels().get(0));
-        assertThat(sender.channels().get(0).sessionId(), is(1L));
-        assertThat(sender.channels().get(0).channelId(), is(2L));
+        assertThat(publications.length(), is(1));
+        assertNotNull(publications.get(0));
+        assertThat(publications.get(0).sessionId(), is(1L));
+        assertThat(publications.get(0).channelId(), is(2L));
 
         conductorNotifications.read((msgTypeId, buffer, index, length) -> {}, 1); // eat new buffer notification
 

@@ -53,7 +53,7 @@ public class MappedBufferManagementTest
     @Test
     public void mappedFilesAreCorrectSizeAndZeroed() throws Exception
     {
-        final BufferRotator rotator = strategy.addPublisherChannel(destination, SESSION_ID, CHANNEL_ID);
+        final BufferRotator rotator = strategy.addPublication(destination, SESSION_ID, CHANNEL_ID);
 
         rotator.buffers().forEach(
             (logBuffer) ->
@@ -76,7 +76,7 @@ public class MappedBufferManagementTest
     @Test(expected = IllegalArgumentException.class)
     public void shouldExceptionWhenRemovingUnknownPublisherChannel() throws Exception
     {
-        strategy.removePublisherChannel(destination, SESSION_ID, CHANNEL_ID);
+        strategy.removePublication(destination, SESSION_ID, CHANNEL_ID);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -88,8 +88,8 @@ public class MappedBufferManagementTest
     @Test
     public void shouldBeAbleToAddAndRemovePublisherChannel() throws Exception
     {
-        strategy.addPublisherChannel(destination, SESSION_ID, CHANNEL_ID);
-        strategy.removePublisherChannel(destination, SESSION_ID, CHANNEL_ID);
+        strategy.addPublication(destination, SESSION_ID, CHANNEL_ID);
+        strategy.removePublication(destination, SESSION_ID, CHANNEL_ID);
     }
 
     @Test

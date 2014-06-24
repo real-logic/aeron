@@ -205,4 +205,11 @@ public class AtomicArray<T>
         // TODO: make this less ludicrously inefficient
         values.forEach(this::remove);
     }
+
+    public String toString()
+    {
+        return "AtomicArray{" +
+            "arrayRef=" + Arrays.toString(arrayRef.get()) +
+            '}';
+    }
 }

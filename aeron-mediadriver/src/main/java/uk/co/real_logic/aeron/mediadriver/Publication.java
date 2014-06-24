@@ -38,19 +38,18 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static uk.co.real_logic.aeron.util.BitUtil.align;
 
 /**
- * Encapsulates the information associated with a channel
- * to send on. Processed in the SenderThread.
+ * Publication to be sent to registered subscribers.
  */
-public class SenderChannel
+public class Publication
 {
-    /** initial heartbeat timeout (cancelled by SM) */
+    /** Initial heartbeat timeout (cancelled by SM) */
     public static final int INITIAL_HEARTBEAT_TIMEOUT_MS = 100;
     public static final long INITIAL_HEARTBEAT_TIMEOUT_NS = MILLISECONDS.toNanos(INITIAL_HEARTBEAT_TIMEOUT_MS);
-    /** heartbeat after data sent */
+    /** Heartbeat after data sent */
     public static final int HEARTBEAT_TIMEOUT_MS = 500;
     public static final long HEARTBEAT_TIMEOUT_NS = MILLISECONDS.toNanos(HEARTBEAT_TIMEOUT_MS);
 
-    private static final EventLogger LOGGER = new EventLogger(SenderChannel.class);
+    private static final EventLogger LOGGER = new EventLogger(Publication.class);
 
     private final TimerWheel timerWheel;
 
@@ -87,15 +86,15 @@ public class SenderChannel
 
     private final InetSocketAddress dstAddress;
 
-    public SenderChannel(final ControlFrameHandler frameHandler,
-                         final TimerWheel timerWheel,
-                         final SenderControlStrategy controlStrategy,
-                         final BufferRotator buffers,
-                         final long sessionId,
-                         final long channelId,
-                         final long initialTermId,
-                         final int headerLength,
-                         final int mtuLength)
+    public Publication(final ControlFrameHandler frameHandler,
+                       final TimerWheel timerWheel,
+                       final SenderControlStrategy controlStrategy,
+                       final BufferRotator buffers,
+                       final long sessionId,
+                       final long channelId,
+                       final long initialTermId,
+                       final int headerLength,
+                       final int mtuLength)
     {
         this.frameHandler = frameHandler;
         this.dstAddress = frameHandler.destination().remoteData();
@@ -166,7 +165,7 @@ public class SenderChannel
                                 final InetSocketAddress address)
     {
         final int rightEdge = controlStrategy.onStatusMessage(termId, highestContiguousSequenceNumber,
-                receiverWindow, address);
+                                                              receiverWindow, address);
 
         rightEdges[determineIndexByTermId(termId)].lazySet(rightEdge);
 
@@ -182,7 +181,7 @@ public class SenderChannel
 
         if (-1 != index)
         {
-            retransmitHandlers[index].onNak((int) termOffset);
+            retransmitHandlers[index].onNak((int)termOffset);
         }
     }
 
@@ -255,8 +254,8 @@ public class SenderChannel
     private RetransmitHandler newRetransmitHandler(final LogBuffers log)
     {
         return new RetransmitHandler(new LogReader(log.logBuffer(), log.stateBuffer()),
-            timerWheel, MediaConductor.RETRANS_UNICAST_DELAY_GENERATOR,
-            MediaConductor.RETRANS_UNICAST_LINGER_GENERATOR, this::onSendRetransmit);
+                                     timerWheel, MediaConductor.RETRANS_UNICAST_DELAY_GENERATOR,
+                                     MediaConductor.RETRANS_UNICAST_LINGER_GENERATOR, this::onSendRetransmit);
     }
 
     private int determineIndexByTermId(final long termId)
@@ -344,13 +343,13 @@ public class SenderChannel
         dataHeader.wrap(scratchAtomicBuffer, 0);
 
         dataHeader.sessionId(sessionId)
-                .channelId(channelId)
-                .termId(currentTermId.get())
-                .termOffset(nextOffset)
-                .frameLength(DataHeaderFlyweight.HEADER_LENGTH)
-                .headerType(HeaderFlyweight.HDR_TYPE_DATA)
-                .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
-                .version(HeaderFlyweight.CURRENT_VERSION);
+                  .channelId(channelId)
+                  .termId(currentTermId.get())
+                  .termOffset(nextOffset)
+                  .frameLength(DataHeaderFlyweight.HEADER_LENGTH)
+                  .headerType(HeaderFlyweight.HDR_TYPE_DATA)
+                  .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
+                  .version(HeaderFlyweight.CURRENT_VERSION);
 
         scratchSendBuffer.position(0);
         scratchSendBuffer.limit(DataHeaderFlyweight.HEADER_LENGTH);

@@ -29,5 +29,5 @@ public interface BufferRotator
 
     void rotate() throws IOException;
 
-    void bufferInformation(final NewBufferMessageFlyweight newBufferMessage); // TODO: what does this do?
+    void appendBufferLocationsTo(final NewBufferMessageFlyweight newBufferMessage);
 }

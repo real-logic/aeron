@@ -83,7 +83,7 @@ public class ClientProxy
         newBufferMessage.sessionId(sessionId)
                         .channelId(channelId)
                         .termId(termId);
-        bufferRotator.bufferInformation(newBufferMessage);
+        bufferRotator.appendBufferLocationsTo(newBufferMessage);
         newBufferMessage.destination(destination);
 
         LOGGER.log(msgTypeId == NEW_PUBLICATION_BUFFER_NOTIFICATION ?

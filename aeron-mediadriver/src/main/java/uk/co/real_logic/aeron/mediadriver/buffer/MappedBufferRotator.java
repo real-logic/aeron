@@ -96,7 +96,7 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
         current = newBuffer;
     }
 
-    public void bufferInformation(final NewBufferMessageFlyweight newBufferMessage)
+    public void appendBufferLocationsTo(final NewBufferMessageFlyweight newBufferMessage)
     {
         for (int i = 0; i < BUFFER_COUNT; i++)
         {

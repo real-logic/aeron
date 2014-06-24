@@ -235,14 +235,14 @@ public class MediaConductor extends Agent
         timerWheel.rescheduleTimeout(delay, timeUnit, timer);
     }
 
-    private void sendNewBufferNotification(final long sessionId,
-                                           final long channelId,
-                                           final long termId,
-                                           final int msgTypeId,
-                                           final String destination,
-                                           final BufferRotator bufferRotator)
+    private void notifyClientOfBuffers(final long sessionId,
+                                       final long channelId,
+                                       final long termId,
+                                       final int msgTypeId,
+                                       final String destination,
+                                       final BufferRotator bufferRotator)
     {
-        if (!clientProxy.newBufferNotification(msgTypeId, sessionId, channelId, termId, destination, bufferRotator))
+        if (!clientProxy.onNewBuffers(msgTypeId, sessionId, channelId, termId, destination, bufferRotator))
         {
             System.err.println("Error occurred writing new buffer notification");
         }
@@ -290,8 +290,8 @@ public class MediaConductor extends Agent
                                           mtuLength);
 
             frameHandler.addPublication(publication);
-            sendNewBufferNotification(sessionId, channelId, initialTermId, NEW_PUBLICATION_BUFFER_NOTIFICATION,
-                                      destination, bufferRotator);
+            notifyClientOfBuffers(sessionId, channelId, initialTermId, NEW_PUBLICATION_BUFFER_NOTIFICATION,
+                                  destination, bufferRotator);
             publications.add(publication);
         }
         catch (final ControlProtocolException ex)
@@ -370,8 +370,8 @@ public class MediaConductor extends Agent
             final BufferRotator bufferRotator =
                 bufferManagement.addSubscriberChannel(rcvDestination, sessionId, channelId);
 
-            sendNewBufferNotification(sessionId, channelId, termId, NEW_SUBSCRIPTION_BUFFER_NOTIFICATION, destination,
-                                      bufferRotator);
+            notifyClientOfBuffers(sessionId, channelId, termId, NEW_SUBSCRIPTION_BUFFER_NOTIFICATION, destination,
+                                  bufferRotator);
 
             final NewReceiveBufferEvent event =
                 new NewReceiveBufferEvent(rcvDestination, sessionId, channelId, termId, bufferRotator);

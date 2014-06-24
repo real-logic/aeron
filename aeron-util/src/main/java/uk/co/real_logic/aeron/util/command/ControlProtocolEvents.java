@@ -23,12 +23,10 @@ public class ControlProtocolEvents
 {
     // Library to Media Driver
 
-    /** Add Channel */
+    /** Add Publication */
     public static final int ADD_PUBLICATION = 0x01;
-    /** Remove Channel */
+    /** Remove Publication */
     public static final int REMOVE_PUBLICATION = 0x02;
-    /** Remove Term */
-    public static final int REMOVE_TERM = 0x03;
     /** Add Subscriber */
     public static final int ADD_SUBSCRIPTION = 0x04;
     /** Remove Subscriber */
@@ -42,9 +40,9 @@ public class ControlProtocolEvents
     public static final int ERROR_RESPONSE = 0x07;
     /** Error Notification */
     public static final int ERROR_NOTIFICATION = 0x08;
-    /** New Receive Buffer Notification */
+    /** New subscription Buffer Notification */
     public static final int NEW_SUBSCRIPTION_BUFFER_NOTIFICATION = 0x09;
-    /** New Send Buffer Notification */
+    /** New publication Buffer Notification */
     public static final int NEW_PUBLICATION_BUFFER_NOTIFICATION = 0x0A;
 
     // Within Media Driver between threads
@@ -54,5 +52,4 @@ public class ControlProtocolEvents
 
     /** Receiver thread tells media driver it wants to remove a term buffer */
     public static final int REMOVE_TERM_BUFFER = 0xF1;
-
 }

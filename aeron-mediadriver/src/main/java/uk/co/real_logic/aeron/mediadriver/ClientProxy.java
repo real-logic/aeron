@@ -71,12 +71,13 @@ public class ClientProxy
         return msgBuffer.write(msgTypeId, buffer, index, length);
     }
 
-    public boolean newBufferNotification(final int msgTypeId,
-                                         final long sessionId,
-                                         final long channelId,
-                                         final long termId,
-                                         final String destination,
-                                         final BufferRotator bufferRotator)
+    // TODO: is this a single buffer or the trio of log buffers for a subscription/publication?
+    public boolean onNewBuffers(final int msgTypeId,
+                                final long sessionId,
+                                final long channelId,
+                                final long termId,
+                                final String destination,
+                                final BufferRotator bufferRotator)
     {
         newBufferMessage.wrap(tmpBuffer, 0);
         newBufferMessage.sessionId(sessionId)

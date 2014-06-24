@@ -269,9 +269,9 @@ public class MediaConductor extends Agent
 
         final int msgTypeId = isSender ? NEW_SEND_BUFFER_NOTIFICATION : NEW_RECEIVE_BUFFER_NOTIFICATION;
 
-        LOGGER.emit((isSender ? EventCode.CMD_OUT_NEW_SEND_BUFFER_NOTIFICATION :
-                        EventCode.CMD_OUT_NEW_RECEIVE_BUFFER_NOTIFICATION),
-                msgBuffer, 0, newBufferMessage.length());
+        LOGGER.emit(isSender ? EventCode.CMD_OUT_NEW_SEND_BUFFER_NOTIFICATION :
+                               EventCode.CMD_OUT_NEW_RECEIVE_BUFFER_NOTIFICATION,
+                    msgBuffer, 0, newBufferMessage.length());
 
         if (!toClientBuffer.write(msgTypeId, msgBuffer, 0, newBufferMessage.length()))
         {

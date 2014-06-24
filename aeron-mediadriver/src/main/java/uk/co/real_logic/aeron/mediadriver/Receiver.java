@@ -88,7 +88,7 @@ public class Receiver extends Agent
 
     private boolean processCommandBuffer()
     {
-        final int messageRead = commandBuffer.read(
+        final int messagesRead = commandBuffer.read(
             (msgTypeId, buffer, index, length) ->
             {
                 try
@@ -125,7 +125,7 @@ public class Receiver extends Agent
                 }
             });
 
-        return messageRead > 0;
+        return messagesRead > 0;
     }
 
     /**
@@ -134,7 +134,6 @@ public class Receiver extends Agent
     public void close()
     {
         stop();
-
         frameHandlerByDestinationMap.forEach((destination, frameHandler) ->frameHandler.close());
     }
 
@@ -207,10 +206,9 @@ public class Receiver extends Agent
             .toArray(GapScanner[]::new);
 
         final LossHandler lossHandler = new LossHandler(scanners, conductorTimerWheel,
-            MediaConductor.NAK_UNICAST_DELAY_GENERATOR);
+                                                        MediaConductor.NAK_UNICAST_DELAY_GENERATOR);
 
         lossHandler.currentTermId(e.termId());
-
         frameHandler.onSubscriptionReady(e, lossHandler);
     }
 }

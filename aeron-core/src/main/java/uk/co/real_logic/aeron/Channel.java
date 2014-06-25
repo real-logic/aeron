@@ -28,6 +28,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.CLEAN_WINDOW;
 import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.rotateId;
 import static uk.co.real_logic.aeron.util.ChannelCounters.UNKNOWN_TERM_ID;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.SUCCESS;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.TRIPPED;
 
 /**
  * Aeron Channel
@@ -110,15 +113,16 @@ public class Channel extends ChannelNotifiable implements AutoCloseable, Positio
 
         // TODO: must update the logAppender header with new termId!
         final LogAppender logAppender = logAppenders[currentBufferId];
-        final boolean hasAppended = logAppender.append(buffer, offset, length);
-        if (!hasAppended && currentTermId.get() <= cleanedTermId.get())
+        final AppendStatus status = logAppender.append(buffer, offset, length);
+        final long currentTermid = this.currentTermId.get();
+        if (status == TRIPPED && currentTermid <= cleanedTermId.get())
         {
             requestTermRoll();
             currentBufferId = rotateId(currentBufferId);
-            currentTermId.incrementAndGet();
+            currentTermId.lazySet(currentTermid + 1);
         }
 
-        return hasAppended;
+        return status == SUCCESS;
     }
 
     public void send(final AtomicBuffer buffer) throws BufferExhaustedException
@@ -184,12 +188,13 @@ public class Channel extends ChannelNotifiable implements AutoCloseable, Positio
         }
 
         final long requiredCleanTermId = currentTermId + 1;
-        if (requiredCleanTermId > cleanedTermId.get())
+        final long currentCleanedTermId = cleanedTermId.get();
+        if (requiredCleanTermId > currentCleanedTermId)
         {
             final LogAppender requiredBuffer = logAppenders[rotateId(currentBufferId)];
             if (hasBeenCleaned(requiredBuffer))
             {
-                cleanedTermId.incrementAndGet();
+                cleanedTermId.lazySet(currentCleanedTermId + 1);
             }
         }
     }

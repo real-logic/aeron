@@ -29,7 +29,7 @@ public class AtomicArray<T>
     private final AtomicReference<Object[]> arrayRef = new AtomicReference<>(EMPTY_ARRAY);
 
     @FunctionalInterface
-    public interface BooleanFunction<T>
+    public interface ToBooleanFunction<T>
     {
         /**
          * Applies this function to the given argument.
@@ -79,7 +79,7 @@ public class AtomicArray<T>
      * @param func  to call and pass each element to
      * @return true if side effects have occurred otherwise false.
      */
-    public boolean forEach(int start, final BooleanFunction<T> func)
+    public boolean forEach(int start, final ToBooleanFunction<T> func)
     {
         @SuppressWarnings("unchecked")
         final T[] array = (T[])arrayRef.get();
@@ -87,7 +87,7 @@ public class AtomicArray<T>
         return forEach(start, func, array);
     }
 
-    private boolean forEach(int start, final BooleanFunction<T> func, final T[] array)
+    private boolean forEach(int start, final ToBooleanFunction<T> func, final T[] array)
     {
         if (array.length == 0)
         {

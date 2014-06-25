@@ -49,6 +49,13 @@ public class LogAppender
     private final int headerLength;
     private final int maxPayload;
 
+    public enum AppendStatus
+    {
+        SUCCESS,
+        FAILURE,
+        TRIPPED
+    }
+
     /**
      * Construct a view over a log buffer and state buffer for appending frames.
      *
@@ -144,10 +151,10 @@ public class LogAppender
      * @param srcBuffer containing the encoded message.
      * @param srcOffset at which the encoded message begins.
      * @param length of the message in bytes.
-     * @return true if appended in the log otherwise false if the capacity is exhausted.
+     * @return SUCCESS if appended in the log, FAILURE if not appended in the log, TRIPPED if first failure.
      * @throws IllegalArgumentException if the length is greater than {@link #maxMessageLength()}
      */
-    public boolean append(final AtomicBuffer srcBuffer, final int srcOffset, final int length)
+    public AppendStatus append(final AtomicBuffer srcBuffer, final int srcOffset, final int length)
     {
         checkMessageLength(length);
 
@@ -159,7 +166,7 @@ public class LogAppender
         return appendFragmentedMessage(srcBuffer, srcOffset, length);
     }
 
-    private boolean appendUnfragmentedMessage(final AtomicBuffer srcBuffer, final int srcOffset, final int length)
+    private AppendStatus appendUnfragmentedMessage(final AtomicBuffer srcBuffer, final int srcOffset, final int length)
     {
         final int frameLength = length + headerLength;
         final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
@@ -170,9 +177,14 @@ public class LogAppender
             if (frameOffset < capacity)
             {
                 appendPaddingFrame(frameOffset);
+                return AppendStatus.TRIPPED;
+            }
+            else if (frameOffset == capacity)
+            {
+                return AppendStatus.TRIPPED;
             }
 
-            return false;
+            return AppendStatus.FAILURE;
         }
 
         logBuffer.putBytes(frameOffset, defaultHeader, 0, headerLength);
@@ -182,10 +194,10 @@ public class LogAppender
         putTermOffset(frameOffset, frameOffset);
         putLengthOrdered(frameOffset, frameLength);
 
-        return true;
+        return AppendStatus.SUCCESS;
     }
 
-    private boolean appendFragmentedMessage(final AtomicBuffer srcBuffer, final int srcOffset, final int length)
+    private AppendStatus appendFragmentedMessage(final AtomicBuffer srcBuffer, final int srcOffset, final int length)
     {
         final int numMaxPayloads = length / maxPayload;
         final int remainingPayload = length % maxPayload;
@@ -198,9 +210,14 @@ public class LogAppender
             if (frameOffset < capacity)
             {
                 appendPaddingFrame(frameOffset);
+                return AppendStatus.TRIPPED;
+            }
+            else if (frameOffset == capacity)
+            {
+                return AppendStatus.TRIPPED;
             }
 
-            return false;
+            return AppendStatus.FAILURE;
         }
 
         byte flags = BEGIN_FRAG;
@@ -232,7 +249,7 @@ public class LogAppender
         }
         while (remaining > 0);
 
-        return true;
+        return AppendStatus.SUCCESS;
     }
 
     private void appendPaddingFrame(final int frameOffset)

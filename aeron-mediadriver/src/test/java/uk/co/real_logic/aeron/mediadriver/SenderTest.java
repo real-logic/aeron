@@ -19,6 +19,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
+import org.omg.PortableInterceptor.SUCCESSFUL;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.TimerWheel;
@@ -43,6 +44,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.util.BitUtil.align;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.SUCCESS;
 
 public class SenderTest
 {
@@ -191,7 +193,7 @@ public class SenderTest
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
 
-        assertTrue(logAppenders[0].append(buffer, 0, PAYLOAD.length));
+        assertThat(logAppenders[0].append(buffer, 0, PAYLOAD.length), is(SUCCESS));
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(1));
@@ -217,9 +219,9 @@ public class SenderTest
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
 
-        assertTrue(logAppenders[0].append(buffer, 0, PAYLOAD.length));
+        assertThat(logAppenders[0].append(buffer, 0, PAYLOAD.length), is(SUCCESS));
         sender.doWork();
-        assertTrue(logAppenders[0].append(buffer, 0, PAYLOAD.length));
+        assertThat(logAppenders[0].append(buffer, 0, PAYLOAD.length), is(SUCCESS));
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(2));
@@ -256,8 +258,8 @@ public class SenderTest
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
 
-        assertTrue(logAppenders[0].append(buffer, 0, PAYLOAD.length));
-        assertTrue(logAppenders[0].append(buffer, 0, PAYLOAD.length));
+        assertThat(logAppenders[0].append(buffer, 0, PAYLOAD.length), is(SUCCESS));
+        assertThat(logAppenders[0].append(buffer, 0, PAYLOAD.length), is(SUCCESS));
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(1));
@@ -291,7 +293,7 @@ public class SenderTest
 
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
-        assertTrue(logAppenders[0].append(buffer, 0, PAYLOAD.length));
+        assertThat(logAppenders[0].append(buffer, 0, PAYLOAD.length), is(SUCCESS));
 
         sender.doWork();
         assertThat(receivedFrames.size(), is(0));
@@ -318,7 +320,7 @@ public class SenderTest
 
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
-        assertTrue(logAppenders[0].append(buffer, 0, PAYLOAD.length));
+        assertThat(logAppenders[0].append(buffer, 0, PAYLOAD.length), is(SUCCESS));
         publication.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT), rcvAddress);
 
         sender.doWork();
@@ -334,7 +336,7 @@ public class SenderTest
         assertThat(dataHeader.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
         assertThat(dataHeader.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
 
-        assertTrue(logAppenders[0].append(buffer, 0, PAYLOAD.length));
+        assertThat(logAppenders[0].append(buffer, 0, PAYLOAD.length), is(SUCCESS));
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(0));
@@ -350,7 +352,7 @@ public class SenderTest
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
 
-        assertTrue(logAppenders[0].append(buffer, 0, PAYLOAD.length));
+        assertThat(logAppenders[0].append(buffer, 0, PAYLOAD.length), is(SUCCESS));
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(1));  // should send now
@@ -378,7 +380,7 @@ public class SenderTest
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
 
-        assertTrue(logAppenders[0].append(buffer, 0, PAYLOAD.length));
+        assertThat(logAppenders[0].append(buffer, 0, PAYLOAD.length), is(SUCCESS));
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(1));  // should send now

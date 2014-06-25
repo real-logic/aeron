@@ -58,6 +58,7 @@ import static uk.co.real_logic.aeron.util.SharedDirectoriesExternalResource.Buff
 import static uk.co.real_logic.aeron.util.SharedDirectoriesExternalResource.mapLoggers;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight.PAYLOAD_BUFFER_COUNT;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.SUCCESS;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.LOG_MIN_SIZE;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertMsgRead;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.skip;
@@ -507,7 +508,7 @@ public class AeronTest
             (i) ->
             {
                 atomicSendBuffer.putInt(0, PACKET_VALUE);
-                assertTrue(logAppender.append(atomicSendBuffer, 0, bytesToSend));
+                assertThat(logAppender.append(atomicSendBuffer, 0, bytesToSend), is(SUCCESS));
             }
         );
     }

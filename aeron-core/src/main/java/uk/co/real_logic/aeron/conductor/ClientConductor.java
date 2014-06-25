@@ -248,7 +248,8 @@ public final class ClientConductor extends Agent
                             if (msgTypeId == NEW_PUBLICATION_BUFFER_NOTIFICATION)
                             {
                                 onNewSenderBuffer(destination, sessionId, channelId, termId);
-                            } else
+                            }
+                            else
                             {
                                 onNewReceiverBuffer(destination, sessionId, channelId, termId);
                             }

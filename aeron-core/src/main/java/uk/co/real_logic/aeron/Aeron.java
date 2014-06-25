@@ -30,11 +30,14 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+import java.util.Comparator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.IntFunction;
 
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
 
@@ -74,7 +77,8 @@ public final class Aeron implements AutoCloseable
                                               toClientBuffer,
                                               toDriverBuffer,
                                               bufferUsage,
-                                              channels, receivers,
+                                              channels,
+                                              receivers,
                                               errorHandler,
                                               ctx);
     }

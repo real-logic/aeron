@@ -26,6 +26,10 @@ import uk.co.real_logic.aeron.util.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.MessageHandler;
+import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastBufferDescriptor;
+import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastReceiver;
+import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastTransmitter;
+import uk.co.real_logic.aeron.util.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
@@ -73,7 +77,9 @@ public class AeronTest
     private static final int PACKET_VALUE = 37;
     private static final int SEND_BUFFER_CAPACITY = 1024;
     private static final int CONDUCTOR_BUFFER_SIZE = (16 * 1024) + RingBufferDescriptor.TRAILER_LENGTH;
-    public static final int BUFFER_SZ = 4096 + RingBufferDescriptor.TRAILER_LENGTH;
+
+    public static final int RING_BUFFER_SZ = 4096 + RingBufferDescriptor.TRAILER_LENGTH;
+    public static final int BROADCAST_BUFFER_SZ = 4096 + BroadcastBufferDescriptor.TRAILER_LENGTH;
 
     @ClassRule
     public static SharedDirectoriesExternalResource directory = new SharedDirectoriesExternalResource();
@@ -93,8 +99,13 @@ public class AeronTest
 
     private final ByteBuffer sendBuffer = ByteBuffer.allocate(SEND_BUFFER_CAPACITY);
     private final AtomicBuffer atomicSendBuffer = new AtomicBuffer(sendBuffer);
-    private final RingBuffer toClientBuffer = new ManyToOneRingBuffer(new AtomicBuffer(new byte[BUFFER_SZ]));
-    private final RingBuffer toDriverBuffer = new ManyToOneRingBuffer(new AtomicBuffer(new byte[BUFFER_SZ]));
+
+    private final AtomicBuffer toClientBuffer = new AtomicBuffer(new byte[BROADCAST_BUFFER_SZ]);
+    private final CopyBroadcastReceiver toClientReceiver = new CopyBroadcastReceiver(
+            new BroadcastReceiver(toClientBuffer));
+    private final BroadcastTransmitter toClientTransmitter = new BroadcastTransmitter(toClientBuffer);
+
+    private final RingBuffer toDriverBuffer = new ManyToOneRingBuffer(new AtomicBuffer(new byte[RING_BUFFER_SZ]));
 
     public AeronTest()
     {
@@ -291,7 +302,7 @@ public class AeronTest
         errorHeader.offendingFlyweight(subscriptionMessage, subscriptionMessage.length());
         errorHeader.frameLength(ErrorFlyweight.HEADER_LENGTH + subscriptionMessage.length());
 
-        toClientBuffer.write(ERROR_RESPONSE,
+        toClientTransmitter.transmit(ERROR_RESPONSE,
                 atomicSendBuffer,
                 subscriptionMessage.length(),
                 errorHeader.frameLength());
@@ -525,23 +536,22 @@ public class AeronTest
                                            final long termId,
                                            final long sessionId)
     {
-        final RingBuffer apiBuffer = toClientBuffer;
         newBufferMessage.channelId(CHANNEL_ID)
                         .sessionId(sessionId)
                         .termId(termId);
 
         IntStream.range(0, PAYLOAD_BUFFER_COUNT).forEach(
-            (i) ->
-            {
-                newBufferMessage.bufferOffset(i, 0);
-                newBufferMessage.bufferLength(i, LOG_MIN_SIZE);
-            }
+                (i) ->
+                {
+                    newBufferMessage.bufferOffset(i, 0);
+                    newBufferMessage.bufferLength(i, LOG_MIN_SIZE);
+                }
         );
         addBufferLocation(rootDir, termId, sessionId, LOG, 0);
         addBufferLocation(rootDir, termId, sessionId, STATE, BUFFER_COUNT);
         newBufferMessage.destination(DESTINATION);
 
-        assertTrue(apiBuffer.write(msgTypeId, atomicSendBuffer, 0, newBufferMessage.length()));
+        toClientTransmitter.transmit(msgTypeId, atomicSendBuffer, 0, newBufferMessage.length());
     }
 
     private void addBufferLocation(final File dir,
@@ -599,7 +609,7 @@ public class AeronTest
     private Aeron newAeron()
     {
         final Aeron.Context context = new Aeron.Context()
-            .toClientBuffer(toClientBuffer)
+            .toClientBuffer(toClientReceiver)
             .toDriverBuffer(toDriverBuffer)
             .invalidDestinationHandler(invalidDestination);
 

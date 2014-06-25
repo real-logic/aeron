@@ -19,6 +19,8 @@ import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
 import uk.co.real_logic.aeron.util.*;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastBufferDescriptor;
+import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
@@ -105,7 +107,7 @@ public class MediaDriver implements AutoCloseable
     /**
      * Default buffer size for broadcast buffers from the media driver to the clients
      */
-    public static final int TO_CLIENTS_BUFFER_SZ_DEFAULT = 65536 + RingBufferDescriptor.TRAILER_LENGTH;
+    public static final int TO_CLIENTS_BUFFER_SZ_DEFAULT = 65536 + BroadcastBufferDescriptor.TRAILER_LENGTH;
 
     /**
      * Size (in bytes) of the counter storage buffer
@@ -259,7 +261,7 @@ public class MediaDriver implements AutoCloseable
             .receiverIdleStrategy(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
                                                         AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS));
 
-        ctx.clientProxy(new ClientProxy(new ManyToOneRingBuffer(
+        ctx.clientProxy(new ClientProxy(new BroadcastTransmitter(
                 new AtomicBuffer(mapNewFile(TO_CLIENTS_PATH, TO_CLIENTS_FILE, TO_CLIENTS_BUFFER_SZ)))));
 
         ctx.fromClientCommands(new ManyToOneRingBuffer(

@@ -20,7 +20,7 @@ import uk.co.real_logic.aeron.util.ErrorCode;
 import uk.co.real_logic.aeron.util.Flyweight;
 import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.aeron.util.event.EventCode;
 import uk.co.real_logic.aeron.util.event.EventLogger;
 import uk.co.real_logic.aeron.util.protocol.ErrorFlyweight;
@@ -38,21 +38,22 @@ public class ClientProxy
     private static final EventLogger LOGGER = new EventLogger(ClientProxy.class);
 
     private static final int WRITE_BUFFER_CAPACITY = 1024;
+
     private final AtomicBuffer tmpBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
-    private final RingBuffer msgBuffer;
+    private final BroadcastTransmitter transmitter;
 
     private final ErrorFlyweight errorFlyweight = new ErrorFlyweight();
     private final NewBufferMessageFlyweight newBufferMessage = new NewBufferMessageFlyweight();
 
-    public ClientProxy(final RingBuffer msgBuffer)
+    public ClientProxy(final BroadcastTransmitter transmitter)
     {
-        this.msgBuffer = msgBuffer;
+        this.transmitter = transmitter;
     }
 
-    public boolean onError(final ErrorCode errorCode,
-                           final String errorMessage,
-                           final Flyweight offendingFlyweight,
-                           final int offendingFlyweightLength)
+    public void onError(final ErrorCode errorCode,
+                        final String errorMessage,
+                        final Flyweight offendingFlyweight,
+                        final int offendingFlyweightLength)
     {
         final byte[] errorBytes = errorMessage.getBytes();
         final int frameLength = ErrorFlyweight.HEADER_LENGTH + offendingFlyweightLength + errorBytes.length;
@@ -63,16 +64,16 @@ public class ClientProxy
                       .errorMessage(errorBytes)
                       .frameLength(frameLength);
 
-        return msgBuffer.write(ERROR_RESPONSE, tmpBuffer, 0, errorFlyweight.frameLength());
+        transmitter.transmit(ERROR_RESPONSE, tmpBuffer, 0, errorFlyweight.frameLength());
     }
 
-    public boolean onError(final int msgTypeId, final AtomicBuffer buffer, final int index, final int length)
+    public void onError(final int msgTypeId, final AtomicBuffer buffer, final int index, final int length)
     {
-        return msgBuffer.write(msgTypeId, buffer, index, length);
+        transmitter.transmit(msgTypeId, buffer, index, length);
     }
 
     // TODO: is this a single buffer or the trio of log buffers for a subscription/publication?
-    public boolean onNewBuffers(final int msgTypeId,
+    public void onNewBuffers(final int msgTypeId,
                                 final long sessionId,
                                 final long channelId,
                                 final long termId,
@@ -91,6 +92,6 @@ public class ClientProxy
                        EventCode.CMD_OUT_NEW_SUBSCRIPTION_BUFFER_NOTIFICATION,
                    tmpBuffer, 0, newBufferMessage.length());
 
-        return msgBuffer.write(msgTypeId, tmpBuffer, 0, newBufferMessage.length());
+        transmitter.transmit(msgTypeId, tmpBuffer, 0, newBufferMessage.length());
     }
 }

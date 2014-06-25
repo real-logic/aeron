@@ -20,6 +20,8 @@ import uk.co.real_logic.aeron.util.Agent;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastReceiver;
+import uk.co.real_logic.aeron.util.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
@@ -54,13 +56,14 @@ public final class Aeron implements AutoCloseable
     private Aeron(final Context context)
     {
         context.initialiseDefaults();
-        final RingBuffer toClientBuffer = context.toClientBuffer;
+        final CopyBroadcastReceiver toClientBuffer = context.toClientBuffer;
         final RingBuffer toDriverBuffer = context.toDriverBuffer;
         final BufferUsageStrategy bufferUsage = new MappingBufferUsageStrategy();
         final ConductorErrorHandler errorHandler = new ConductorErrorHandler(context.invalidDestinationHandler);
 
         clientConductor = new ClientConductor(clientConductorCommandBuffer,
-                                              toClientBuffer, toDriverBuffer,
+                                              toClientBuffer,
+                                              toDriverBuffer,
                                               bufferUsage,
                                               channels, receivers,
                                               errorHandler);
@@ -212,7 +215,7 @@ public final class Aeron implements AutoCloseable
         private ErrorHandler errorHandler = new DummyErrorHandler();
         private InvalidDestinationHandler invalidDestinationHandler;
 
-        private RingBuffer toClientBuffer;
+        private CopyBroadcastReceiver toClientBuffer;
         private RingBuffer toDriverBuffer;
 
         private MappedByteBuffer defaultToClientBuffer;
@@ -225,7 +228,7 @@ public final class Aeron implements AutoCloseable
                 if (toClientBuffer == null)
                 {
                     defaultToClientBuffer = IoUtil.mapExistingFile(TO_CLIENTS_PATH, TO_CLIENTS_FILE);
-                    toClientBuffer = new ManyToOneRingBuffer(new AtomicBuffer(defaultToClientBuffer));
+                    toClientBuffer = new CopyBroadcastReceiver(new BroadcastReceiver(new AtomicBuffer(defaultToClientBuffer)));
                 }
                 if (toDriverBuffer == null)
                 {
@@ -250,7 +253,7 @@ public final class Aeron implements AutoCloseable
             return this;
         }
 
-        public Context toClientBuffer(final RingBuffer toClientBuffer)
+        public Context toClientBuffer(final CopyBroadcastReceiver toClientBuffer)
         {
             this.toClientBuffer = toClientBuffer;
             return this;

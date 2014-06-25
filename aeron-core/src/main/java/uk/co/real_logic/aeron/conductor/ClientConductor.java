@@ -25,6 +25,8 @@ import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastReceiver;
+import uk.co.real_logic.aeron.util.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
@@ -55,7 +57,7 @@ public final class ClientConductor extends Agent
     public static final long AGENT_IDLE_MAX_PARK_NANOS = TimeUnit.MICROSECONDS.toNanos(100);
 
     private final RingBuffer commandBuffer;
-    private final RingBuffer toClientBuffer;
+    private final CopyBroadcastReceiver toClientBuffer;
     private final RingBuffer toDriverBuffer;
 
     private final BufferUsageStrategy bufferUsage;
@@ -73,7 +75,7 @@ public final class ClientConductor extends Agent
     private final NewBufferMessageFlyweight newBufferMessage = new NewBufferMessageFlyweight();
 
     public ClientConductor(final RingBuffer commandBuffer,
-                           final RingBuffer toClientBuffer,
+                           final CopyBroadcastReceiver toClientBuffer,
                            final RingBuffer toDriverBuffer,
                            final BufferUsageStrategy bufferUsage,
                            final AtomicArray<Channel> publishers,
@@ -225,7 +227,8 @@ public final class ClientConductor extends Agent
 
     private boolean handleMessagesFromMediaDriver()
     {
-        final int messagesRead = toClientBuffer.read(
+
+        final int messagesRead = toClientBuffer.receive(
             (msgTypeId, buffer, index, length) ->
             {
                 switch (msgTypeId)

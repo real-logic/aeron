@@ -31,8 +31,6 @@ import static uk.co.real_logic.aeron.util.CommonConfiguration.DIRS_DELETE_ON_EXI
  */
 public class PubAndSubUnicastTest
 {
-    public static final EventReader eventReader = new EventReader(new EventReader.Context().deleteOnExit(true));
-
     private static final Destination DESTINATION = new Destination("udp://localhost:54321");
     private static final long CHANNEL_ID = 1L;
     private static final long SESSION_ID = 2L;
@@ -78,8 +76,6 @@ public class PubAndSubUnicastTest
         receivingClient.close();
         source.close();
         driver.close();
-
-        eventReader.read(System.out::println);
     }
 
     private void doWork(final int times) throws Exception

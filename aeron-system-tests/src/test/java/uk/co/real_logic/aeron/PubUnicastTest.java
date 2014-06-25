@@ -23,6 +23,7 @@ import uk.co.real_logic.aeron.mediadriver.MediaDriver;
 import uk.co.real_logic.aeron.util.ConductorShmBuffers;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
+import uk.co.real_logic.aeron.util.event.EventLogger;
 import uk.co.real_logic.aeron.util.event.EventReader;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
@@ -46,7 +47,7 @@ import static uk.co.real_logic.aeron.util.CommonConfiguration.DIRS_DELETE_ON_EXI
  */
 public class PubUnicastTest
 {
-    public static final EventReader eventReader = new EventReader(new EventReader.Context().deleteOnExit(true));
+    public static final EventLogger LOGGER = new EventLogger(PubUnicastTest.class);
 
     private static final String HOST = "localhost";
     private static final int PORT = 54321;
@@ -116,13 +117,13 @@ public class PubUnicastTest
         producingClient.close();
         driver.close();
         executorService.shutdown();
-
-        eventReader.read(System.out::println);
     }
 
     @Test
     public void shouldSendCorrectlyFormedSingleDataFrames() throws Exception
     {
+        LOGGER.logInvocation();
+
         // let buffers get connected
 
         // this will not be sent yet
@@ -187,6 +188,8 @@ public class PubUnicastTest
     @Test
     public void shouldHandleNak() throws Exception
     {
+        LOGGER.logInvocation();
+
         // let buffers get connected
 
         // this will not be sent yet
@@ -267,6 +270,8 @@ public class PubUnicastTest
     @Ignore("isn't finished yet")
     public void messagesShouldContinueAfterBufferRollover()
     {
+        LOGGER.logInvocation();
+
         // TODO: send enough data to rollover a buffer
     }
 

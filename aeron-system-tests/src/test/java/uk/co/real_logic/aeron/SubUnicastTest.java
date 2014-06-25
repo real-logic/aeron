@@ -15,12 +15,14 @@
  */
 package uk.co.real_logic.aeron;
 
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
 import uk.co.real_logic.aeron.util.ConductorShmBuffers;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
-import uk.co.real_logic.aeron.util.event.EventReader;
+import uk.co.real_logic.aeron.util.event.EventLogger;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.NakFlyweight;
@@ -46,7 +48,7 @@ import static uk.co.real_logic.aeron.util.CommonConfiguration.DIRS_DELETE_ON_EXI
  */
 public class SubUnicastTest
 {
-    public static final EventReader eventReader = new EventReader(new EventReader.Context().deleteOnExit(true));
+    public static final EventLogger LOGGER = new EventLogger(SubUnicastTest.class);
 
     private static final String HOST = "localhost";
     private static final int PORT = 54321;
@@ -130,13 +132,13 @@ public class SubUnicastTest
         consumingClient.close();
         driver.close();
         executorService.shutdown();
-
-        eventReader.read(System.out::println);
     }
 
     @Test
     public void shouldReceiveCorrectlyFormedSingleDataFrame() throws Exception
     {
+        LOGGER.logInvocation();
+
         // let buffers get connected and media driver set things up
         Thread.sleep(100);
 
@@ -186,6 +188,8 @@ public class SubUnicastTest
     @Test
     public void shouldReceiveMultipleDataFrames() throws Exception
     {
+        LOGGER.logInvocation();
+
         // let buffers get connected and media driver set things up
         Thread.sleep(100);
 
@@ -232,6 +236,8 @@ public class SubUnicastTest
     @Test
     public void shouldSendNaksForMissingData() throws Exception
     {
+        LOGGER.logInvocation();
+
         // let buffers get connected and media driver set things up
         Thread.sleep(100);
 
@@ -293,6 +299,8 @@ public class SubUnicastTest
     @Test
     public void shouldReceiveRetransmitAndDeliver() throws Exception
     {
+        LOGGER.logInvocation();
+
         // let buffers get connected and media driver set things up
         Thread.sleep(100);
 

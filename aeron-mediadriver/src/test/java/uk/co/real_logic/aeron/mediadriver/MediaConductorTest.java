@@ -33,6 +33,7 @@ import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
+import uk.co.real_logic.aeron.util.event.EventLogger;
 import uk.co.real_logic.aeron.util.protocol.ErrorFlyweight;
 
 import java.io.IOException;
@@ -56,6 +57,8 @@ import static uk.co.real_logic.aeron.mediadriver.MediaDriver.MEDIA_CONDUCTOR_TIC
  */
 public class MediaConductorTest
 {
+    public static final EventLogger LOGGER = new EventLogger(MediaConductorTest.class);
+
     private static final String DESTINATION_URI = "udp://localhost:";
     private static final String INVALID_URI = "udp://";
     private static final long[] ONE_CHANNEL = {10};
@@ -129,6 +132,8 @@ public class MediaConductorTest
     @Test
     public void shouldBeAbleToAddSingleChannel() throws Exception
     {
+        LOGGER.logInvocation();
+
         writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 2L, 4000);
 
         mediaConductor.doWork();
@@ -156,6 +161,8 @@ public class MediaConductorTest
     @Test
     public void shouldBeAbleToAddSingleSubscriber() throws Exception
     {
+        LOGGER.logInvocation();
+
         writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, DESTINATION_URI + 4000, ONE_CHANNEL);
 
         mediaConductor.doWork();
@@ -167,6 +174,8 @@ public class MediaConductorTest
     @Test
     public void shouldBeAbleToAddAndRemoveSingleSubscriber() throws Exception
     {
+        LOGGER.logInvocation();
+
         writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, DESTINATION_URI + 4000, ONE_CHANNEL);
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, ONE_CHANNEL);
 
@@ -179,6 +188,8 @@ public class MediaConductorTest
     @Test
     public void shouldBeAbleToAddMultipleChannels() throws Exception
     {
+        LOGGER.logInvocation();
+
         writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 2L, 4001);
         writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 3L, 4002);
         writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 3L, 2L, 4003);
@@ -192,6 +203,8 @@ public class MediaConductorTest
     @Test
     public void shouldBeAbleToRemoveSingleChannel() throws Exception
     {
+        LOGGER.logInvocation();
+
         writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 2L, 4005);
         writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1L, 2L, 4005);
 
@@ -204,6 +217,8 @@ public class MediaConductorTest
     @Test
     public void shouldBeAbleToRemoveMultipleChannels() throws IOException
     {
+        LOGGER.logInvocation();
+
         writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 2L, 4006);
         writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 3L, 4007);
         writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 3L, 2L, 4008);
@@ -222,6 +237,8 @@ public class MediaConductorTest
     @Test
     public void shouldKeepFrameHandlerUponRemovalOfAllButOneSubscriber() throws Exception
     {
+        LOGGER.logInvocation();
+
         final UdpDestination destination = UdpDestination.parse(DESTINATION_URI + 4000);
 
         writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, DESTINATION_URI + 4000, THREE_CHANNELS);
@@ -246,6 +263,8 @@ public class MediaConductorTest
     @Test
     public void shouldOnlyRemoveFrameHandlerUponRemovalOfAllSubscribers() throws Exception
     {
+        LOGGER.logInvocation();
+
         final UdpDestination destination = UdpDestination.parse(DESTINATION_URI + 4000);
 
         writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, DESTINATION_URI + 4000, THREE_CHANNELS);
@@ -277,6 +296,8 @@ public class MediaConductorTest
     @Test
     public void shouldErrorOnAddDuplicateChannelOnExistingSession() throws Exception
     {
+        LOGGER.logInvocation();
+
         writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 2L, 4000);
         writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 2L, 4000);
 
@@ -310,6 +331,8 @@ public class MediaConductorTest
     @Test
     public void shouldErrorOnRemoveChannelOnUnknownDestination() throws Exception
     {
+        LOGGER.logInvocation();
+
         writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1L, 2L, 4000);
 
         mediaConductor.doWork();
@@ -337,6 +360,8 @@ public class MediaConductorTest
     @Test
     public void shouldErrorOnRemoveChannelOnUnknownSessionId() throws Exception
     {
+        LOGGER.logInvocation();
+
         writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 2L, 4000);
         writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 2L, 2L, 4000);
 
@@ -370,6 +395,8 @@ public class MediaConductorTest
     @Test
     public void shouldErrorOnRemoveChannelOnUnknownChannelId() throws Exception
     {
+        LOGGER.logInvocation();
+
         writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 2L, 4000);
         writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1L, 3L, 4000);
 
@@ -403,6 +430,8 @@ public class MediaConductorTest
     @Test
     public void shouldErrorOnAddSubscriberWithInvalidUri() throws Exception
     {
+        LOGGER.logInvocation();
+
         writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, INVALID_URI, ONE_CHANNEL);
 
         mediaConductor.doWork();
@@ -429,6 +458,8 @@ public class MediaConductorTest
     @Test
     public void shouldSendErrorOnRemoveSubscriberWithNonExistentDestination() throws Exception
     {
+        LOGGER.logInvocation();
+
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, ONE_CHANNEL);
 
         mediaConductor.doWork();
@@ -455,6 +486,8 @@ public class MediaConductorTest
     @Test
     public void shouldSendErrorOnRemoveSubscriberFromWrongChannels() throws Exception
     {
+        LOGGER.logInvocation();
+
         writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, DESTINATION_URI + 4000, ONE_CHANNEL);
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, ANOTHER_CHANNEL);
 

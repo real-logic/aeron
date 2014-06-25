@@ -31,6 +31,7 @@ import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
+import uk.co.real_logic.aeron.util.event.EventLogger;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
@@ -47,6 +48,8 @@ import static org.mockito.Mockito.mock;
 
 public class ReceiverTest
 {
+    public static final EventLogger LOGGER = new EventLogger(ReceiverTest.class);
+
     public static final long LOG_BUFFER_SIZE = (64 * 1024) + RingBufferDescriptor.TRAILER_LENGTH;
     private static final String URI = "udp://localhost:45678";
     private static final UdpDestination destination = UdpDestination.parse(URI);
@@ -119,6 +122,8 @@ public class ReceiverTest
     @Test
     public void shouldCreateRcvTermAndSendSmOnZeroLengthData() throws Exception
     {
+        LOGGER.logInvocation();
+
         receiverProxy.newSubscription(URI, ONE_CHANNEL);  // ADD_SUBSCRIPTION from client
 
         receiver.doWork();
@@ -167,6 +172,8 @@ public class ReceiverTest
     @Test
     public void shouldInsertDataIntoLogAfterInitialExchange() throws Exception
     {
+        LOGGER.logInvocation();
+
         receiverProxy.newSubscription(URI, ONE_CHANNEL);  // ADD_SUBSCRIPTION from client
 
         receiver.doWork();
@@ -213,6 +220,8 @@ public class ReceiverTest
     @Test
     public void shouldNotOverwriteDataFrameWithHeartbeat() throws Exception
     {
+        LOGGER.logInvocation();
+
         receiverProxy.newSubscription(URI, ONE_CHANNEL);  // ADD_SUBSCRIPTION from client
 
         receiver.doWork();
@@ -262,6 +271,8 @@ public class ReceiverTest
     @Test
     public void shouldOverwriteHeartbeatWithDataFrame() throws Exception
     {
+        LOGGER.logInvocation();
+
         receiverProxy.newSubscription(URI, ONE_CHANNEL);  // ADD_SUBSCRIPTION from client
 
         receiver.doWork();
@@ -312,6 +323,8 @@ public class ReceiverTest
     @Ignore("does not work correctly yet")
     public void shouldBeAbleToHandleTermBufferRolloverCorrectly() throws Exception
     {
+        LOGGER.logInvocation();
+
         receiverProxy.newSubscription(URI, ONE_CHANNEL);  // ADD_SUBSCRIPTION from client
 
         receiver.doWork();

@@ -123,12 +123,16 @@ public class SenderTest
     @Test
     public void shouldAddAndRemovePublication()
     {
+        LOGGER.logInvocation();
+
         publications.remove(publication);
     }
 
     @Test
     public void shouldSendZeroLengthDataFrameOnChannelWhenTimeoutWithoutStatusMessage() throws Exception
     {
+        LOGGER.logInvocation();
+
         currentTimestamp += TimeUnit.MILLISECONDS.toNanos(Publication.INITIAL_HEARTBEAT_TIMEOUT_MS) - 1;
         publications.forEach(0, Publication::heartbeatCheck);
         assertThat(receivedFrames.size(), is(0));
@@ -150,6 +154,8 @@ public class SenderTest
     @Test
     public void shouldSendMultipleZeroLengthDataFrameOnChannelWhenTimeoutWithoutStatusMessage() throws Exception
     {
+        LOGGER.logInvocation();
+
         currentTimestamp += TimeUnit.MILLISECONDS.toNanos(Publication.INITIAL_HEARTBEAT_TIMEOUT_MS) - 1;
         publications.forEach(0, Publication::heartbeatCheck);
         assertThat(receivedFrames.size(), is(0));
@@ -167,6 +173,8 @@ public class SenderTest
     @Test
     public void shouldNotSendZeroLengthDataFrameAfterReceivingStatusMessage() throws Exception
     {
+        LOGGER.logInvocation();
+
         currentTimestamp += TimeUnit.MILLISECONDS.toNanos(Publication.HEARTBEAT_TIMEOUT_MS);
         publication.onStatusMessage(INITIAL_TERM_ID, 0, 0, rcvAddress);
         publications.forEach(0, Publication::heartbeatCheck);
@@ -176,6 +184,8 @@ public class SenderTest
     @Test
     public void shouldBeAbleToSendOnChannel() throws Exception
     {
+        LOGGER.logInvocation();
+
         publication.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT), rcvAddress);
 
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
@@ -199,6 +209,8 @@ public class SenderTest
     @Test
     public void shouldBeAbleToSendOnChannelTwice() throws Exception
     {
+        LOGGER.logInvocation();
+
         publication.onStatusMessage(INITIAL_TERM_ID, 0, (2 * align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT)),
                                     rcvAddress);
 
@@ -236,6 +248,8 @@ public class SenderTest
     @Test
     public void shouldBeAbleToSendOnChannelTwiceAsBatch() throws Exception
     {
+        LOGGER.logInvocation();
+
         publication.onStatusMessage(INITIAL_TERM_ID, 0, (2 * align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT)),
                                     rcvAddress);
 
@@ -273,6 +287,8 @@ public class SenderTest
     @Test
     public void shouldNotSendUntilStatusMessageReceived() throws Exception
     {
+        LOGGER.logInvocation();
+
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
         assertTrue(logAppenders[0].append(buffer, 0, PAYLOAD.length));
@@ -298,6 +314,8 @@ public class SenderTest
     @Test
     public void shouldNotBeAbleToSendAfterUsingUpYourWindow() throws Exception
     {
+        LOGGER.logInvocation();
+
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
         assertTrue(logAppenders[0].append(buffer, 0, PAYLOAD.length));
@@ -325,6 +343,8 @@ public class SenderTest
     @Test
     public void shouldSend0LengthDataFrameAsHeartbeatWhenIdle() throws Exception
     {
+        LOGGER.logInvocation();
+
         publication.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT), rcvAddress);
 
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
@@ -351,6 +371,8 @@ public class SenderTest
     @Test
     public void shouldSendMultiple0LengthDataFrameAsHeartbeatsWhenIdle()
     {
+        LOGGER.logInvocation();
+
         publication.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT), rcvAddress);
 
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));

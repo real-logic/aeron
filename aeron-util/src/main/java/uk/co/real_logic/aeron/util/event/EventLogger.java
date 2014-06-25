@@ -109,4 +109,16 @@ public class EventLogger
             ringBuffer.write(code.id(), encodedBuffer, 0, encodingLength);
         }
     }
+
+    public void logInvocation()
+    {
+        if (ON)
+        {
+            final StackTraceElement[] stack = Thread.currentThread().getStackTrace();
+            final AtomicBuffer encodedBuffer = encodingBuffer.get();
+            final int encodedLength = EventCodec.encode(encodedBuffer, className, stack[2]);
+
+            ringBuffer.write(EventCode.INVOCATION.id(), encodedBuffer, 0, encodedLength);
+        }
+    }
 }

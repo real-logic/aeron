@@ -29,6 +29,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -85,6 +86,24 @@ public class EventCodec
         int relativeOffset = encodeLogHeader(encodingBuffer, captureLength, bufferLength);
 
         relativeOffset += encodingBuffer.putBytes(relativeOffset, buffer, offset, captureLength);
+
+        return relativeOffset;
+    }
+
+    public static int encode(final AtomicBuffer encodingBuffer, final byte[] classname,
+                             final StackTraceElement stack)
+    {
+        final byte[] method = stack.getMethodName().getBytes(StandardCharsets.UTF_8);
+        final byte[] filename = stack.getFileName().getBytes(StandardCharsets.UTF_8);
+        final int linenumber = stack.getLineNumber();
+        final int captureLength = classname.length + method.length + filename.length + 4 * BitUtil.SIZE_OF_INT;
+        int relativeOffset = encodeLogHeader(encodingBuffer, captureLength, captureLength);
+
+        encodingBuffer.putInt(relativeOffset, linenumber, ByteOrder.LITTLE_ENDIAN);
+        relativeOffset += BitUtil.SIZE_OF_INT;
+        relativeOffset += encodingBuffer.putString(relativeOffset, stack.getClassName(), ByteOrder.LITTLE_ENDIAN);
+        relativeOffset += encodingBuffer.putString(relativeOffset, stack.getMethodName(), ByteOrder.LITTLE_ENDIAN);
+        relativeOffset += encodingBuffer.putString(relativeOffset, stack.getFileName(), ByteOrder.LITTLE_ENDIAN);
 
         return relativeOffset;
     }
@@ -162,15 +181,32 @@ public class EventCodec
         return String.format("%s: %s", logHeader, logBody);
     }
 
-    public static String dissectAsString(final EventCode code, final AtomicBuffer buffer,
-                                         final int offset, final int length)
+    public static String dissectAsInvocation(final EventCode code, final AtomicBuffer buffer,
+                                             final int offset, final int length)
     {
         final String logHeader = dissectLogHeader(code, buffer, offset);
-        final byte[] stringInBytes = new byte[length];
-        buffer.getBytes(offset + HEADER_LENGTH, stringInBytes);
-        final String logBody = new String(stringInBytes, StandardCharsets.UTF_8);
+        int relativeOffset = offset + HEADER_LENGTH;
+        byte[] workingBuffer;
 
-        return String.format("%s: %s", logHeader, logBody);
+        final int linenumber = buffer.getInt(relativeOffset, ByteOrder.LITTLE_ENDIAN);
+        relativeOffset += BitUtil.SIZE_OF_INT;
+
+        workingBuffer = new byte[buffer.getInt(relativeOffset)];
+        buffer.getBytes(relativeOffset + BitUtil.SIZE_OF_INT, workingBuffer);
+        final String classname = new String(workingBuffer, StandardCharsets.UTF_8);
+        relativeOffset += BitUtil.SIZE_OF_INT + workingBuffer.length;
+
+        workingBuffer = new byte[buffer.getInt(relativeOffset)];
+        buffer.getBytes(relativeOffset + BitUtil.SIZE_OF_INT, workingBuffer);
+        final String methodname = new String(workingBuffer, StandardCharsets.UTF_8);
+        relativeOffset += BitUtil.SIZE_OF_INT + workingBuffer.length;
+
+        workingBuffer = new byte[buffer.getInt(relativeOffset)];
+        buffer.getBytes(relativeOffset + BitUtil.SIZE_OF_INT, workingBuffer);
+        final String filename = new String(workingBuffer, StandardCharsets.UTF_8);
+        relativeOffset += BitUtil.SIZE_OF_INT + workingBuffer.length;
+
+        return String.format("%s: %s.%s %s:%d", logHeader, classname, methodname, filename, linenumber);
     }
 
     private static int encodeLogHeader(final AtomicBuffer encodingBuffer, final int captureLength,

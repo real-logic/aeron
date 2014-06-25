@@ -37,7 +37,7 @@ import java.util.concurrent.Executors;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
-import static uk.co.real_logic.aeron.util.CommonConfiguration.DIRS_DELETE_ON_EXIT_PROP_NAME;
+import static uk.co.real_logic.aeron.util.CommonContext.DIRS_DELETE_ON_EXIT_PROP_NAME;
 
 /**
  * Test that has a publisher and single media driver for unicast cases. Uses socket as receiver/consumer endpoint.
@@ -98,9 +98,9 @@ public class PubUnicastTest
         producingClient.invoke(executorService);
     }
 
-    private Aeron.Context newAeronContext()
+    private Aeron.ClientContext newAeronContext()
     {
-        return new Aeron.Context();
+        return new Aeron.ClientContext();
     }
 
     @After

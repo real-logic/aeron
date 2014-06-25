@@ -22,9 +22,11 @@ import static uk.co.real_logic.aeron.util.IoUtil.mapNewFile;
  */
 public class StatusBufferCreator extends BufferMapper
 {
-    public StatusBufferCreator(final long descriptorBufferSize, final long countersBufferSize)
+    public StatusBufferCreator(final long descriptorBufferSize,
+                               final long countersBufferSize,
+                               final String countersDirName)
     {
         super((dir, file) -> mapNewFile(dir, file, descriptorBufferSize),
-              (dir, file) -> mapNewFile(dir, file, countersBufferSize));
+              (dir, file) -> mapNewFile(dir, file, countersBufferSize), countersDirName);
     }
 }

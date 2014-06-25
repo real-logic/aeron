@@ -44,7 +44,7 @@ public class Receiver extends Agent
     private final Queue<NewReceiveBufferEvent> newBufferEventQueue;
     private final AtomicArray<SubscribedSession> subscribedSessions;
 
-    public Receiver(final MediaDriver.Context ctx) throws Exception
+    public Receiver(final MediaDriver.MediaDriverContext ctx) throws Exception
     {
         super(ctx.receiverIdleStrategy());
 

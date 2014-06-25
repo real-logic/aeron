@@ -41,7 +41,7 @@ public class FileMappingConvention
     public FileMappingConvention(final String dataDirName)
     {
         dataDir = new File(dataDirName);
-        IoUtil.checkDirectoryExists(dataDir, "data directory");
+        IoUtil.ensureDirectoryExists(dataDir, "data directory");
         senderDir = new File(dataDir, "sender");
         receiverDir = new File(dataDir, "receiver");
     }

@@ -22,8 +22,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
 
-import static uk.co.real_logic.aeron.util.CommonConfiguration.COUNTERS_DIR_NAME;
-
 public class BufferMapper
 {
     private final MappedByteBuffer descriptor;
@@ -37,9 +35,9 @@ public class BufferMapper
         MappedByteBuffer map(final File directory, final String file) throws IOException;
     }
 
-    public BufferMapper(final Mapper descriptorMapper, final Mapper counterMapper)
+    public BufferMapper(final Mapper descriptorMapper, final Mapper counterMapper, final String countersDirName)
     {
-        final File directory = new File(COUNTERS_DIR_NAME);
+        final File directory = new File(countersDirName);
         try
         {
             descriptor = descriptorMapper.map(new File(directory, "descriptor"), "descriptor");

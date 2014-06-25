@@ -34,7 +34,7 @@ public class MappedBufferManagementTest
     private static final String DESTINATION_URI = "udp://localhost:4321";
     private static final long SESSION_ID = 100;
     private static final long CHANNEL_ID = 100;
-    private static final File DATA_DIR = new File(IoUtil.tmpDirName(), "DATA_DIR_NAME");
+    private static final File DATA_DIR = new File(IoUtil.tmpDirName(), "dataDirName");
     private MappedBufferManagement strategy;
     private UdpDestination destination = UdpDestination.parse(DESTINATION_URI);
 

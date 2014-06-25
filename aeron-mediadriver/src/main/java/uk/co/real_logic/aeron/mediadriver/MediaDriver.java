@@ -27,6 +27,7 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
 import uk.co.real_logic.aeron.util.status.StatusBufferCreator;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Queue;
 import java.util.concurrent.*;
@@ -35,7 +36,6 @@ import java.util.function.Supplier;
 
 import static java.lang.Integer.getInteger;
 import static uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement.newMappedBufferManager;
-import static uk.co.real_logic.aeron.util.CommonConfiguration.*;
 import static uk.co.real_logic.aeron.util.IoUtil.mapNewFile;
 
 /**
@@ -199,6 +199,7 @@ public class MediaDriver implements AutoCloseable
     private final Receiver receiver;
     private final Sender sender;
     private final MediaConductor conductor;
+    private final MediaDriverContext ctx;
 
     private ExecutorService executor;
 
@@ -231,45 +232,34 @@ public class MediaDriver implements AutoCloseable
 
     public MediaDriver() throws Exception
     {
-        this.adminDirFile = new File(ADMIN_DIR_NAME);
-        this.dataDirFile = new File(DATA_DIR_NAME);
-        this.countersDirFile = new File(COUNTERS_DIR_NAME);
-
-        ensureDirectoriesExist();
-
-        this.bufferManagement = newMappedBufferManager(DATA_DIR_NAME);
-        this.countersCreator = new StatusBufferCreator(DESCRIPTOR_BUFFER_SIZE, COUNTERS_BUFFER_SIZE);
-
-        final Context ctx = new Context()
+        ctx = new MediaDriverContext()
             .conductorCommandBuffer(COMMAND_BUFFER_SZ)
             .receiverCommandBuffer(COMMAND_BUFFER_SZ)
             .receiverNioSelector(new NioSelector())
             .conductorNioSelector(new NioSelector())
             .senderFlowControl(UnicastSenderControlStrategy::new)
-            .bufferManagement(bufferManagement)
             .subscribedSessions(new AtomicArray<>())
             .publications(new AtomicArray<>())
             .conductorTimerWheel(new TimerWheel(MEDIA_CONDUCTOR_TICK_DURATION_US,
                                                 TimeUnit.MICROSECONDS,
                                                 MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
             .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024))
-            .mtuLength(CommonConfiguration.MTU_LENGTH)
             .conductorIdleStrategy(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
                                                          AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
             .senderIdleStrategy(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
                                                       AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
             .receiverIdleStrategy(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                                                        AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS));
+                                                        AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
+            .init();
 
-        ctx.clientProxy(new ClientProxy(new BroadcastTransmitter(
-                new AtomicBuffer(mapNewFile(TO_CLIENTS_PATH, TO_CLIENTS_FILE, TO_CLIENTS_BUFFER_SZ)))));
+        this.adminDirFile = new File(ctx.adminDirName());
+        this.dataDirFile = new File(ctx.dataDirName());
+        this.countersDirFile = new File(ctx.countersDirName());
 
-        ctx.fromClientCommands(new ManyToOneRingBuffer(
-                new AtomicBuffer(mapNewFile(TO_DRIVER_PATH, TO_DRIVER_FILE, CONDUCTOR_BUFFER_SZ))));
+        ensureDirectoriesExist();
 
-        ctx.receiverProxy(new ReceiverProxy(ctx.receiverCommandBuffer(), ctx.newReceiveBufferEventQueue()));
-        ctx.mediaConductorProxy(new MediaConductorProxy(ctx.mediaCommandBuffer()));
-
+        this.bufferManagement = ctx.bufferManagement;
+        this.countersCreator = new StatusBufferCreator(DESCRIPTOR_BUFFER_SIZE, COUNTERS_BUFFER_SIZE, ctx.countersDirName());
         this.receiver = new Receiver(ctx);
         this.sender = new Sender(ctx);
         this.conductor = new MediaConductor(ctx);
@@ -395,7 +385,7 @@ public class MediaDriver implements AutoCloseable
 
     public void deleteDirectories() throws Exception
     {
-        if (DIRS_DELETE_ON_EXIT)
+        if (ctx.dirsDeleteOnExit())
         {
             IoUtil.delete(adminDirFile, false);
             IoUtil.delete(dataDirFile, false);
@@ -446,7 +436,7 @@ public class MediaDriver implements AutoCloseable
         }
     }
 
-    public static class Context
+    public static class MediaDriverContext extends CommonContext
     {
         private RingBuffer mediaCommandBuffer;
         private RingBuffer receiverCommandBuffer;
@@ -455,7 +445,6 @@ public class MediaDriver implements AutoCloseable
         private NioSelector conductorNioSelector;
         private Supplier<SenderControlStrategy> senderFlowControl;
         private TimerWheel conductorTimerWheel;
-        private int mtuLength;
         private Queue<NewReceiveBufferEvent> newReceiveBufferEventQueue;
         private ReceiverProxy receiverProxy;
         private MediaConductorProxy mediaConductorProxy;
@@ -467,9 +456,22 @@ public class MediaDriver implements AutoCloseable
         private ClientProxy clientProxy;
         private RingBuffer fromClientCommands;
 
-        private void initializeWithSystemProperties()
+        public MediaDriverContext init() throws IOException
         {
-            // TODO: grab system properties and fill with defaults
+            super.init();
+
+            clientProxy(new ClientProxy(new BroadcastTransmitter(
+                    new AtomicBuffer(mapNewFile(toClientsPath(), TO_CLIENTS_FILE, TO_CLIENTS_BUFFER_SZ)))));
+
+            fromClientCommands(new ManyToOneRingBuffer(
+                    new AtomicBuffer(mapNewFile(toDriverPath(), TO_DRIVER_FILE, CONDUCTOR_BUFFER_SZ))));
+
+            receiverProxy(new ReceiverProxy(receiverCommandBuffer(), newReceiveBufferEventQueue()));
+            mediaConductorProxy(new MediaConductorProxy(mediaCommandBuffer()));
+
+            bufferManagement(newMappedBufferManager(dataDirName()));
+
+            return this;
         }
 
         private RingBuffer createNewCommandBuffer(final int size)
@@ -480,109 +482,103 @@ public class MediaDriver implements AutoCloseable
             return new ManyToOneRingBuffer(atomicBuffer);
         }
 
-        public Context conductorCommandBuffer(final int size)
+        public MediaDriverContext conductorCommandBuffer(final int size)
         {
             this.mediaCommandBuffer = createNewCommandBuffer(size);
             return this;
         }
 
-        public Context receiverCommandBuffer(final int size)
+        public MediaDriverContext receiverCommandBuffer(final int size)
         {
             this.receiverCommandBuffer = createNewCommandBuffer(size);
             return this;
         }
 
-        public Context bufferManagement(final BufferManagement bufferManagement)
+        public MediaDriverContext bufferManagement(final BufferManagement bufferManagement)
         {
             this.bufferManagement = bufferManagement;
             return this;
         }
 
-        public Context receiverNioSelector(final NioSelector nioSelector)
+        public MediaDriverContext receiverNioSelector(final NioSelector nioSelector)
         {
             this.receiverNioSelector = nioSelector;
             return this;
         }
 
-        public Context conductorNioSelector(final NioSelector nioSelector)
+        public MediaDriverContext conductorNioSelector(final NioSelector nioSelector)
         {
             this.conductorNioSelector = nioSelector;
             return this;
         }
 
-        public Context senderFlowControl(final Supplier<SenderControlStrategy> senderFlowControl)
+        public MediaDriverContext senderFlowControl(final Supplier<SenderControlStrategy> senderFlowControl)
         {
             this.senderFlowControl = senderFlowControl;
             return this;
         }
 
-        public Context mtuLength(final int mtuLength)
-        {
-            this.mtuLength = mtuLength;
-            return this;
-        }
-
-        public Context conductorTimerWheel(final TimerWheel wheel)
+        public MediaDriverContext conductorTimerWheel(final TimerWheel wheel)
         {
             this.conductorTimerWheel = wheel;
             return this;
         }
 
-        public Context newReceiveBufferEventQueue(final Queue<NewReceiveBufferEvent> newReceiveBufferEventQueue)
+        public MediaDriverContext newReceiveBufferEventQueue(final Queue<NewReceiveBufferEvent> newReceiveBufferEventQueue)
         {
             this.newReceiveBufferEventQueue = newReceiveBufferEventQueue;
             return this;
         }
 
-        public Context receiverProxy(final ReceiverProxy receiverProxy)
+        public MediaDriverContext receiverProxy(final ReceiverProxy receiverProxy)
         {
             this.receiverProxy = receiverProxy;
             return this;
         }
 
-        public Context mediaConductorProxy(final MediaConductorProxy mediaConductorProxy)
+        public MediaDriverContext mediaConductorProxy(final MediaConductorProxy mediaConductorProxy)
         {
             this.mediaConductorProxy = mediaConductorProxy;
             return this;
         }
 
-        public Context conductorIdleStrategy(final AgentIdleStrategy strategy)
+        public MediaDriverContext conductorIdleStrategy(final AgentIdleStrategy strategy)
         {
             this.conductorIdleStrategy = strategy;
             return this;
         }
 
-        public Context senderIdleStrategy(final AgentIdleStrategy strategy)
+        public MediaDriverContext senderIdleStrategy(final AgentIdleStrategy strategy)
         {
             this.senderIdleStrategy = strategy;
             return this;
         }
 
-        public Context receiverIdleStrategy(final AgentIdleStrategy strategy)
+        public MediaDriverContext receiverIdleStrategy(final AgentIdleStrategy strategy)
         {
             this.receiverIdleStrategy = strategy;
             return this;
         }
 
-        public Context subscribedSessions(final AtomicArray<SubscribedSession> subscribedSessions)
+        public MediaDriverContext subscribedSessions(final AtomicArray<SubscribedSession> subscribedSessions)
         {
             this.subscribedSessions = subscribedSessions;
             return this;
         }
 
-        public Context publications(final AtomicArray<Publication> publications)
+        public MediaDriverContext publications(final AtomicArray<Publication> publications)
         {
             this.publications = publications;
             return this;
         }
 
-        public Context clientProxy(final ClientProxy clientProxy)
+        public MediaDriverContext clientProxy(final ClientProxy clientProxy)
         {
             this.clientProxy = clientProxy;
             return this;
         }
 
-        public Context fromClientCommands(final RingBuffer fromClientCommands)
+        public MediaDriverContext fromClientCommands(final RingBuffer fromClientCommands)
         {
             this.fromClientCommands = fromClientCommands;
             return this;
@@ -616,11 +612,6 @@ public class MediaDriver implements AutoCloseable
         public Supplier<SenderControlStrategy> senderFlowControl()
         {
             return senderFlowControl;
-        }
-
-        public int mtuLength()
-        {
-            return mtuLength;
         }
 
         public TimerWheel conductorTimerWheel()
@@ -676,6 +667,13 @@ public class MediaDriver implements AutoCloseable
         public RingBuffer fromClientCommands()
         {
             return fromClientCommands;
+        }
+
+        public void close() throws Exception
+        {
+            // TODO: closing needs to happen here
+
+            super.close();
         }
     }
 }

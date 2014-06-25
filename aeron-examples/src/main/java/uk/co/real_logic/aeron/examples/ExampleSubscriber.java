@@ -38,7 +38,7 @@ public class ExampleSubscriber
     public static void main(final String[] args)
     {
         final ExecutorService executor = Executors.newFixedThreadPool(3);
-        final Aeron.Context aeronContext = new Aeron.Context().errorHandler(ExampleSubscriber::onError);
+        final Aeron.ClientContext aeronContext = new Aeron.ClientContext().errorHandler(ExampleSubscriber::onError);
         final Subscriber.Context subContext = new Subscriber.Context().destination(DESTINATION);
         final Subscriber.DataHandler messageHandler =
             (buffer, offset, length, sessionId) ->

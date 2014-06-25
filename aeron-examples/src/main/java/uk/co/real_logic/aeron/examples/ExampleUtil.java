@@ -34,7 +34,7 @@ public class ExampleUtil
         return mediaDriver;
     }
 
-    public static Aeron createAeron(final Aeron.Context context, final ExecutorService executor) throws Exception
+    public static Aeron createAeron(final Aeron.ClientContext context, final ExecutorService executor) throws Exception
     {
         final Aeron aeron = Aeron.newSingleMediaDriver(context);
 
@@ -43,7 +43,7 @@ public class ExampleUtil
         return aeron;
     }
 
-    public static Aeron createAeron(final Aeron.Context context) throws Exception
+    public static Aeron createAeron(final Aeron.ClientContext context) throws Exception
     {
         final Aeron aeron = Aeron.newSingleMediaDriver(context);
 

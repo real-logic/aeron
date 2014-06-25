@@ -40,7 +40,7 @@ public class ExamplePublisher
     public static void main(final String[] args)
     {
         final ExecutorService executor = Executors.newSingleThreadExecutor();
-        final Aeron.Context context = new Aeron.Context().errorHandler(ExamplePublisher::onError);
+        final Aeron.ClientContext context = new Aeron.ClientContext().errorHandler(ExamplePublisher::onError);
 
         try (final MediaDriver driver = ExampleUtil.createEmbeddedMediaDriver();
              final Aeron aeron = ExampleUtil.createAeron(context, executor))

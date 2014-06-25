@@ -101,7 +101,7 @@ public class MediaConductorTest
                 .thenReturn(BufferAndFrameUtils.createTestRotator(65536 + RingBufferDescriptor.TRAILER_LENGTH,
                         LogBufferDescriptor.STATE_BUFFER_LENGTH));
 
-        final MediaDriver.Context ctx = new MediaDriver.Context()
+        final MediaDriver.MediaDriverContext ctx = new MediaDriver.MediaDriverContext()
             .conductorCommandBuffer(MediaDriver.COMMAND_BUFFER_SZ)
             .receiverCommandBuffer(MediaDriver.COMMAND_BUFFER_SZ)
             .receiverNioSelector(nioSelector)

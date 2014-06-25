@@ -54,7 +54,7 @@ public class SharedDirectoriesExternalResource extends ExternalResource
 
     protected void before() throws Throwable
     {
-        dataDir = ensureDirectory(CommonConfiguration.DATA_DIR_NAME);
+        dataDir = ensureDirectory(CommonContext.DATA_DIR_PROP_DEFAULT);
         mapping = new FileMappingConvention(dataDir.getAbsolutePath());
         buffers = new ArrayList<>(3);
     }

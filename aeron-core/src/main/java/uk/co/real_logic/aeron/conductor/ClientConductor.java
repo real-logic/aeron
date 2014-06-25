@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.conductor;
 
+import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Channel;
 import uk.co.real_logic.aeron.SubscriberChannel;
 import uk.co.real_logic.aeron.util.Agent;
@@ -66,7 +67,7 @@ public final class ClientConductor extends Agent
 
     private final ChannelMap<String, Channel> sendNotifiers = new ChannelMap<>();
     private final SubscriberMap rcvNotifiers = new SubscriberMap();
-    private final StatusBufferMapper statusCounters = new StatusBufferMapper();
+    private final StatusBufferMapper statusCounters;
 
     private final ConductorErrorHandler errorHandler;
 
@@ -80,11 +81,13 @@ public final class ClientConductor extends Agent
                            final BufferUsageStrategy bufferUsage,
                            final AtomicArray<Channel> publishers,
                            final AtomicArray<SubscriberChannel> subscriberChannels,
-                           final ConductorErrorHandler errorHandler)
+                           final ConductorErrorHandler errorHandler,
+                           final Aeron.ClientContext ctx)
     {
         super(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
                 AGENT_IDLE_MIN_PARK_NANOS, AGENT_IDLE_MAX_PARK_NANOS));
 
+        statusCounters = new StatusBufferMapper(ctx.countersDirName());
         this.commandBuffer = commandBuffer;
         this.toClientBuffer = toClientBuffer;
         this.toDriverBuffer = toDriverBuffer;
@@ -229,37 +232,36 @@ public final class ClientConductor extends Agent
     {
 
         final int messagesRead = toClientBuffer.receive(
-            (msgTypeId, buffer, index, length) ->
-            {
-                switch (msgTypeId)
+                (msgTypeId, buffer, index, length) ->
                 {
-                    case NEW_SUBSCRIPTION_BUFFER_NOTIFICATION:
-                    case NEW_PUBLICATION_BUFFER_NOTIFICATION:
-                        newBufferMessage.wrap(buffer, index);
+                    switch (msgTypeId)
+                    {
+                        case NEW_SUBSCRIPTION_BUFFER_NOTIFICATION:
+                        case NEW_PUBLICATION_BUFFER_NOTIFICATION:
+                            newBufferMessage.wrap(buffer, index);
 
-                        final long sessionId = newBufferMessage.sessionId();
-                        final long channelId = newBufferMessage.channelId();
-                        final long termId = newBufferMessage.termId();
-                        final String destination = newBufferMessage.destination();
+                            final long sessionId = newBufferMessage.sessionId();
+                            final long channelId = newBufferMessage.channelId();
+                            final long termId = newBufferMessage.termId();
+                            final String destination = newBufferMessage.destination();
 
-                        if (msgTypeId == NEW_PUBLICATION_BUFFER_NOTIFICATION)
-                        {
-                            onNewSenderBuffer(destination, sessionId, channelId, termId);
-                        }
-                        else
-                        {
-                            onNewReceiverBuffer(destination, sessionId, channelId, termId);
-                        }
-                        break;
+                            if (msgTypeId == NEW_PUBLICATION_BUFFER_NOTIFICATION)
+                            {
+                                onNewSenderBuffer(destination, sessionId, channelId, termId);
+                            } else
+                            {
+                                onNewReceiverBuffer(destination, sessionId, channelId, termId);
+                            }
+                            break;
 
-                    case ERROR_RESPONSE:
-                        errorHandler.onErrorResponse(buffer, index, length);
-                        break;
+                        case ERROR_RESPONSE:
+                            errorHandler.onErrorResponse(buffer, index, length);
+                            break;
 
-                    default:
-                        break;
+                        default:
+                            break;
+                    }
                 }
-            }
         );
 
         return messagesRead > 0;

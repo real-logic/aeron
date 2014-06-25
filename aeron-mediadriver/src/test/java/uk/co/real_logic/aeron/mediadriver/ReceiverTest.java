@@ -84,7 +84,7 @@ public class ReceiverTest
     @Before
     public void setUp() throws Exception
     {
-        final MediaDriver.Context ctx = new MediaDriver.Context()
+        final MediaDriver.MediaDriverContext ctx = new MediaDriver.MediaDriverContext()
             .conductorCommandBuffer(MediaDriver.COMMAND_BUFFER_SZ)
             .receiverCommandBuffer(MediaDriver.COMMAND_BUFFER_SZ)
             .receiverNioSelector(mockNioSelector)

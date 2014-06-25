@@ -169,6 +169,8 @@ public class IoUtil
      */
     public static FileChannel createEmptyFile(final File file, final long size) throws IOException
     {
+        ensureDirectoryExists(file.getParentFile(), file.getParent());
+
         final RandomAccessFile randomAccessFile = new RandomAccessFile(file, "rw");
         final FileChannel templateFile = randomAccessFile.getChannel();
         fill(templateFile, 0, size, (byte)0);

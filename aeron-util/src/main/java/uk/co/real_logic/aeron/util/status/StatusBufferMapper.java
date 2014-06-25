@@ -22,8 +22,8 @@ import uk.co.real_logic.aeron.util.IoUtil;
  */
 public class StatusBufferMapper extends BufferMapper
 {
-    public StatusBufferMapper()
+    public StatusBufferMapper(final String countersDirName)
     {
-        super(IoUtil::mapExistingFile, IoUtil::mapExistingFile);
+        super(IoUtil::mapExistingFile, IoUtil::mapExistingFile, countersDirName);
     }
 }

@@ -71,7 +71,7 @@ public class MediaConductor extends Agent
     private final int mtuLength;
     private final TimerWheel.Timer heartbeatTimer;
 
-    public MediaConductor(final Context ctx)
+    public MediaConductor(final MediaDriverContext ctx)
     {
         super(ctx.conductorIdleStrategy());
 

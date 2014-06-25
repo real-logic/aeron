@@ -608,7 +608,7 @@ public class AeronTest
 
     private Aeron newAeron()
     {
-        final Aeron.Context context = new Aeron.Context()
+        final Aeron.ClientContext context = new Aeron.ClientContext()
             .toClientBuffer(toClientReceiver)
             .toDriverBuffer(toDriverBuffer)
             .invalidDestinationHandler(invalidDestination);

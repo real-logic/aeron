@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.aeron.conductor.*;
 import uk.co.real_logic.aeron.util.Agent;
 import uk.co.real_logic.aeron.util.AtomicArray;
+import uk.co.real_logic.aeron.util.CommonContext;
 import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastReceiver;
@@ -34,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
-import static uk.co.real_logic.aeron.util.CommonConfiguration.*;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
 
 /**
@@ -53,20 +53,29 @@ public final class Aeron implements AutoCloseable
 
     private Future conductorFuture;
 
-    private Aeron(final Context context)
+    private Aeron(final ClientContext ctx)
     {
-        context.initialiseDefaults();
-        final CopyBroadcastReceiver toClientBuffer = context.toClientBuffer;
-        final RingBuffer toDriverBuffer = context.toDriverBuffer;
+        try
+        {
+            ctx.init();
+        }
+        catch (IOException e)
+        {
+            throw new IllegalStateException("Unable to start Aeron", e);
+        }
+
+        final CopyBroadcastReceiver toClientBuffer = ctx.toClientBuffer;
+        final RingBuffer toDriverBuffer = ctx.toDriverBuffer;
         final BufferUsageStrategy bufferUsage = new MappingBufferUsageStrategy();
-        final ConductorErrorHandler errorHandler = new ConductorErrorHandler(context.invalidDestinationHandler);
+        final ConductorErrorHandler errorHandler = new ConductorErrorHandler(ctx.invalidDestinationHandler);
 
         clientConductor = new ClientConductor(clientConductorCommandBuffer,
                                               toClientBuffer,
                                               toDriverBuffer,
                                               bufferUsage,
                                               channels, receivers,
-                                              errorHandler);
+                                              errorHandler,
+                                              ctx);
     }
 
     /**
@@ -124,12 +133,12 @@ public final class Aeron implements AutoCloseable
     /**
      * Creates an media driver associated with this Aeron instance that can be used to create sources and receivers on.
      *
-     * @param context of the media driver and Aeron configuration or null for default configuration
+     * @param ctx of the media driver and Aeron configuration or null for default configuration
      * @return Aeron instance
      */
-    public static Aeron newSingleMediaDriver(final Context context)
+    public static Aeron newSingleMediaDriver(final ClientContext ctx)
     {
-        return new Aeron(context);
+        return new Aeron(ctx);
     }
 
     /**
@@ -139,7 +148,7 @@ public final class Aeron implements AutoCloseable
      * @param contexts of the media drivers
      * @return array of Aeron instances
      */
-    public static Aeron[] newMultipleMediaDrivers(final Context[] contexts)
+    public static Aeron[] newMultipleMediaDrivers(final ClientContext[] contexts)
     {
         final Aeron[] aerons = new Aeron[contexts.length];
 
@@ -154,17 +163,17 @@ public final class Aeron implements AutoCloseable
     /**
      * Create a new source that is to send to {@link Destination}.
      * <p>
-     * A unique, random, session ID will be generated for the source if the context does not
-     * set it. If the context sets the Session ID, then it will be checked for conflicting with existing session Ids.
+     * A unique, random, session ID will be generated for the source if the ctx does not
+     * set it. If the ctx sets the Session ID, then it will be checked for conflicting with existing session Ids.
      *
-     * @param context for source options, etc.
+     * @param ctx for source options, etc.
      * @return new source
      */
-    public Source newSource(final Source.Context context)
+    public Source newSource(final Source.Context ctx)
     {
-        context.clientConductorProxy(new ClientConductorProxy(clientConductorCommandBuffer));
+        ctx.clientConductorProxy(new ClientConductorProxy(clientConductorCommandBuffer));
 
-        return new Source(channels, context);
+        return new Source(channels, ctx);
     }
 
     /**
@@ -181,14 +190,14 @@ public final class Aeron implements AutoCloseable
     /**
      * Create a new receiver that will listen on {@link Destination}
      *
-     * @param context context for receiver options.
+     * @param ctx ctx for receiver options.
      * @return new receiver
      */
-    public Subscriber newSubscriber(final Subscriber.Context context)
+    public Subscriber newSubscriber(final Subscriber.Context ctx)
     {
         final ClientConductorProxy clientConductorProxy = new ClientConductorProxy(clientConductorCommandBuffer);
 
-        return new Subscriber(clientConductorProxy, context, receivers);
+        return new Subscriber(clientConductorProxy, ctx, receivers);
     }
 
     /**
@@ -199,10 +208,10 @@ public final class Aeron implements AutoCloseable
      */
     public Subscriber newSubscriber(final Consumer<Subscriber.Context> block)
     {
-        final Subscriber.Context context = new Subscriber.Context();
-        block.accept(context);
+        final Subscriber.Context ctx = new Subscriber.Context();
+        block.accept(ctx);
 
-        return newSubscriber(context);
+        return newSubscriber(ctx);
     }
 
     public ClientConductor conductor()
@@ -210,7 +219,7 @@ public final class Aeron implements AutoCloseable
         return clientConductor;
     }
 
-    public static class Context
+    public static class ClientContext extends CommonContext
     {
         private ErrorHandler errorHandler = new DummyErrorHandler();
         private InvalidDestinationHandler invalidDestinationHandler;
@@ -221,45 +230,50 @@ public final class Aeron implements AutoCloseable
         private MappedByteBuffer defaultToClientBuffer;
         private MappedByteBuffer defaultToDriverBuffer;
 
-        public void initialiseDefaults()
+        public ClientContext init() throws IOException
         {
+            super.init();
+
             try
             {
                 if (toClientBuffer == null)
                 {
-                    defaultToClientBuffer = IoUtil.mapExistingFile(TO_CLIENTS_PATH, TO_CLIENTS_FILE);
+                    defaultToClientBuffer = IoUtil.mapExistingFile(toClientsPath(), TO_CLIENTS_FILE);
                     toClientBuffer = new CopyBroadcastReceiver(new BroadcastReceiver(new AtomicBuffer(defaultToClientBuffer)));
                 }
                 if (toDriverBuffer == null)
                 {
-                    defaultToDriverBuffer = IoUtil.mapExistingFile(TO_DRIVER_PATH, TO_DRIVER_FILE);
+                    defaultToDriverBuffer = IoUtil.mapExistingFile(toDriverPath(), TO_DRIVER_FILE);
                     toDriverBuffer = new ManyToOneRingBuffer(new AtomicBuffer(defaultToDriverBuffer));
                 }
-            } catch (IOException e)
+            }
+            catch (IOException e)
             {
                 throw new IllegalStateException("Could not initialise buffers", e);
             }
+
+            return this;
         }
 
-        public Context errorHandler(ErrorHandler errorHandler)
+        public ClientContext errorHandler(ErrorHandler errorHandler)
         {
             this.errorHandler = errorHandler;
             return this;
         }
 
-        public Context invalidDestinationHandler(final InvalidDestinationHandler invalidDestinationHandler)
+        public ClientContext invalidDestinationHandler(final InvalidDestinationHandler invalidDestinationHandler)
         {
             this.invalidDestinationHandler = invalidDestinationHandler;
             return this;
         }
 
-        public Context toClientBuffer(final CopyBroadcastReceiver toClientBuffer)
+        public ClientContext toClientBuffer(final CopyBroadcastReceiver toClientBuffer)
         {
             this.toClientBuffer = toClientBuffer;
             return this;
         }
 
-        public Context toDriverBuffer(final RingBuffer toDriverBuffer)
+        public ClientContext toDriverBuffer(final RingBuffer toDriverBuffer)
         {
             this.toDriverBuffer = toDriverBuffer;
             return this;
@@ -267,7 +281,8 @@ public final class Aeron implements AutoCloseable
 
         public void close()
         {
-
+            IoUtil.unmap(defaultToDriverBuffer);
+            IoUtil.unmap(defaultToClientBuffer);
         }
     }
 }

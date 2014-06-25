@@ -24,7 +24,7 @@ import uk.co.real_logic.aeron.mediadriver.MediaDriver;
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.Subscriber.DataHandler;
 import static uk.co.real_logic.aeron.Subscriber.NewSourceEventHandler;
-import static uk.co.real_logic.aeron.util.CommonConfiguration.DIRS_DELETE_ON_EXIT_PROP_NAME;
+import static uk.co.real_logic.aeron.util.CommonContext.DIRS_DELETE_ON_EXIT_PROP_NAME;
 
 /**
  * Test that has a publisher and subscriber and single media driver for unicast cases
@@ -63,9 +63,9 @@ public class PubAndSubUnicastTest
 
     }
 
-    private Aeron.Context newAeronContext()
+    private Aeron.ClientContext newAeronContext()
     {
-        return new Aeron.Context();
+        return new Aeron.ClientContext();
     }
 
     @After

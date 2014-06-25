@@ -26,7 +26,7 @@ public class Sender extends Agent
     private final AtomicArray<Publication> publications;
     private int startingOffset = 0;
 
-    public Sender(final MediaDriver.Context ctx)
+    public Sender(final MediaDriver.MediaDriverContext ctx)
     {
         super(ctx.senderIdleStrategy());
 

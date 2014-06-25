@@ -4,7 +4,7 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.MessageHandler;
 
 /**
- * .
+ * Receiver that copies messages that have been broadcast to enable a simpler API for the client.
  */
 public class CopyBroadcastReceiver
 {
@@ -13,17 +13,29 @@ public class CopyBroadcastReceiver
     private final BroadcastReceiver receiver;
     private final AtomicBuffer scratchBuffer;
 
+    /**
+     * Wrap a {@link BroadcastReceiver} to simplify the API for receiving messages.
+     *
+     * @param receiver to be wrapped.
+     */
     public CopyBroadcastReceiver(final BroadcastReceiver receiver)
     {
         this.receiver = receiver;
         scratchBuffer = new AtomicBuffer(new byte[SCRATCH_BUFFER_SIZE]);
     }
 
+    /**
+     * Receive all messages in the broadcast buffer until it is drained.
+     *
+     * @param handler to be called for each message received.
+     * @return the number of messages that have been received.
+     */
     public int receive(final MessageHandler handler)
     {
         int messagesReceived = 0;
         final long lastSeenLappedCount = receiver.lappedCount();
-        while(receiver.receiveNext())
+
+        while (receiver.receiveNext())
         {
             if (lastSeenLappedCount != receiver.lappedCount())
             {
@@ -50,7 +62,7 @@ public class CopyBroadcastReceiver
 
             messagesReceived++;
         }
+
         return messagesReceived;
     }
-
 }

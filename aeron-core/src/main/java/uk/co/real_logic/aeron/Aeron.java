@@ -21,10 +21,13 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
 
+import static uk.co.real_logic.aeron.util.CommonConfiguration.*;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
 
 /**
@@ -40,23 +43,14 @@ public final class Aeron implements AutoCloseable
     private final AtomicArray<Channel> channels = new AtomicArray<>();
     private final AtomicArray<SubscriberChannel> receivers = new AtomicArray<>();
     private final ClientConductor clientConductor;
-    private final ConductorShmBuffers conductorShmBuffers;
 
     private Future conductorFuture;
 
     private Aeron(final Context context)
     {
-        if (null == context.conductorShmBuffers)
-        {
-            conductorShmBuffers = new ConductorShmBuffers(CommonConfiguration.ADMIN_DIR_NAME);
-        }
-        else
-        {
-            conductorShmBuffers = context.conductorShmBuffers;
-        }
-
-        final RingBuffer toClientBuffer = new ManyToOneRingBuffer(new AtomicBuffer(conductorShmBuffers.toClient()));
-        final RingBuffer toDriverBuffer = new ManyToOneRingBuffer(new AtomicBuffer(conductorShmBuffers.toDriver()));
+        context.initialiseDefaults();
+        final RingBuffer toClientBuffer = context.toClientBuffer;
+        final RingBuffer toDriverBuffer = context.toDriverBuffer;
         final BufferUsageStrategy bufferUsage = new MappingBufferUsageStrategy();
         final ConductorErrorHandler errorHandler = new ConductorErrorHandler(context.invalidDestinationHandler);
 
@@ -116,7 +110,6 @@ public final class Aeron implements AutoCloseable
      */
     public void close()
     {
-        conductorShmBuffers.close();
         clientConductor.close();
     }
 
@@ -215,6 +208,32 @@ public final class Aeron implements AutoCloseable
         private ConductorShmBuffers conductorShmBuffers;
         private InvalidDestinationHandler invalidDestinationHandler;
 
+        private RingBuffer toClientBuffer;
+        private RingBuffer toDriverBuffer;
+
+        private MappedByteBuffer defaultToClientBuffer;
+        private MappedByteBuffer defaultToDriverBuffer;
+
+        public void initialiseDefaults()
+        {
+            try
+            {
+                if (toClientBuffer == null)
+                {
+                    defaultToClientBuffer = IoUtil.mapExistingFile(TO_CLIENTS_PATH, TO_CLIENTS_FILE);
+                    toClientBuffer = new ManyToOneRingBuffer(new AtomicBuffer(defaultToClientBuffer));
+                }
+                if (toDriverBuffer == null)
+                {
+                    defaultToDriverBuffer = IoUtil.mapExistingFile(TO_DRIVER_PATH, TO_DRIVER_FILE);
+                    toDriverBuffer = new ManyToOneRingBuffer(new AtomicBuffer(defaultToDriverBuffer));
+                }
+            } catch (IOException e)
+            {
+                throw new IllegalStateException("Could not initialise buffers", e);
+            }
+        }
+
         public Context errorHandler(ErrorHandler errorHandler)
         {
             this.errorHandler = errorHandler;
@@ -231,6 +250,23 @@ public final class Aeron implements AutoCloseable
         {
             this.invalidDestinationHandler = invalidDestinationHandler;
             return this;
+        }
+
+        public Context toClientBuffer(final RingBuffer toClientBuffer)
+        {
+            this.toClientBuffer = toClientBuffer;
+            return this;
+        }
+
+        public Context toDriverBuffer(final RingBuffer toDriverBuffer)
+        {
+            this.toDriverBuffer = toDriverBuffer;
+            return this;
+        }
+
+        public void close()
+        {
+
         }
     }
 }

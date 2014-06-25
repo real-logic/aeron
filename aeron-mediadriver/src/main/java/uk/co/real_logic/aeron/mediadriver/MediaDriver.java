@@ -21,6 +21,7 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
 import uk.co.real_logic.aeron.util.status.StatusBufferCreator;
 
 import java.io.File;
@@ -33,7 +34,7 @@ import java.util.function.Supplier;
 import static java.lang.Integer.getInteger;
 import static uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement.newMappedBufferManager;
 import static uk.co.real_logic.aeron.util.CommonConfiguration.*;
-import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
+import static uk.co.real_logic.aeron.util.IoUtil.mapNewFile;
 
 /**
  * Main class for JVM-based mediadriver
@@ -72,6 +73,11 @@ public class MediaDriver implements AutoCloseable
     public static final String CONDUCTOR_BUFFER_SZ_PROP_NAME = "aeron.conductor.buffer.size";
 
     /**
+     * Size (in bytes) of the broadcast buffers from the media driver to the clients
+     */
+    public static final String TO_CLIENTS_BUFFER_SZ_PROP_NAME = "aeron.clients.buffer.size";
+
+    /**
      * Size (in bytes) of the counter storage buffer
      */
     public static final String COUNTERS_BUFFER_SZ_PROP_NAME = "aeron.counters.buffer.size";
@@ -94,7 +100,12 @@ public class MediaDriver implements AutoCloseable
     /**
      * Default buffer size for conductor buffers between the media driver and the client
      */
-    public static final int CONDUCTOR_BUFFER_SZ_DEFAULT = 65536 + TRAILER_LENGTH;
+    public static final int CONDUCTOR_BUFFER_SZ_DEFAULT = 65536 + RingBufferDescriptor.TRAILER_LENGTH;
+
+    /**
+     * Default buffer size for broadcast buffers from the media driver to the clients
+     */
+    public static final int TO_CLIENTS_BUFFER_SZ_DEFAULT = 65536 + RingBufferDescriptor.TRAILER_LENGTH;
 
     /**
      * Size (in bytes) of the counter storage buffer
@@ -156,6 +167,7 @@ public class MediaDriver implements AutoCloseable
     public static final int READ_BYTE_BUFFER_SZ = getInteger(READ_BUFFER_SZ_PROP_NAME, READ_BYTE_BUFFER_SZ_DEFAULT);
     public static final int COMMAND_BUFFER_SZ = getInteger(COMMAND_BUFFER_SZ_PROP_NAME, COMMAND_BUFFER_SZ_DEFAULT);
     public static final int CONDUCTOR_BUFFER_SZ = getInteger(CONDUCTOR_BUFFER_SZ_PROP_NAME, CONDUCTOR_BUFFER_SZ_DEFAULT);
+    public static final int TO_CLIENTS_BUFFER_SZ = getInteger(TO_CLIENTS_BUFFER_SZ_PROP_NAME, TO_CLIENTS_BUFFER_SZ_DEFAULT);
     public static final int COUNTERS_BUFFER_SZ = getInteger(COUNTERS_BUFFER_SZ_PROP_NAME, COUNTERS_BUFFER_SZ_DEFAULT);
     public static final int DESCRIPTOR_BUFFER_SZ = getInteger(DESCRIPTOR_BUFFER_SZ_PROP_NAME,
                                                               DESCRIPTOR_BUFFER_SZ_DEFAULT);
@@ -249,6 +261,12 @@ public class MediaDriver implements AutoCloseable
                                                       AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
             .receiverIdleStrategy(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
                                                         AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS));
+
+        ctx.clientProxy(new ClientProxy(new ManyToOneRingBuffer(
+                new AtomicBuffer(mapNewFile(TO_CLIENTS_PATH, TO_CLIENTS_FILE, TO_CLIENTS_BUFFER_SZ)))));
+
+        ctx.fromClientCommands(new ManyToOneRingBuffer(
+                new AtomicBuffer(mapNewFile(TO_DRIVER_PATH, TO_DRIVER_FILE, CONDUCTOR_BUFFER_SZ))));
 
         ctx.receiverProxy(new ReceiverProxy(ctx.receiverCommandBuffer(), ctx.newReceiveBufferEventQueue()));
         ctx.mediaConductorProxy(new MediaConductorProxy(ctx.mediaCommandBuffer()));
@@ -449,6 +467,8 @@ public class MediaDriver implements AutoCloseable
         private AgentIdleStrategy receiverIdleStrategy;
         private AtomicArray<SubscribedSession> subscribedSessions;
         private AtomicArray<Publication> publications;
+        private ClientProxy clientProxy;
+        private RingBuffer fromClientCommands;
 
         private void initializeWithSystemProperties()
         {
@@ -457,7 +477,7 @@ public class MediaDriver implements AutoCloseable
 
         private RingBuffer createNewCommandBuffer(final int size)
         {
-            final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(size + TRAILER_LENGTH);
+            final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(size + RingBufferDescriptor.TRAILER_LENGTH);
             final AtomicBuffer atomicBuffer = new AtomicBuffer(byteBuffer);
 
             return new ManyToOneRingBuffer(atomicBuffer);
@@ -565,6 +585,18 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
+        public Context clientProxy(final ClientProxy clientProxy)
+        {
+            this.clientProxy = clientProxy;
+            return this;
+        }
+
+        public Context fromClientCommands(final RingBuffer fromClientCommands)
+        {
+            this.fromClientCommands = fromClientCommands;
+            return this;
+        }
+
         public RingBuffer mediaCommandBuffer()
         {
             return mediaCommandBuffer;
@@ -648,6 +680,16 @@ public class MediaDriver implements AutoCloseable
         public AtomicArray<Publication> publications()
         {
             return publications;
+        }
+
+        public ClientProxy clientProxy()
+        {
+            return clientProxy;
+        }
+
+        public RingBuffer fromClientCommands()
+        {
+            return fromClientCommands;
         }
     }
 }

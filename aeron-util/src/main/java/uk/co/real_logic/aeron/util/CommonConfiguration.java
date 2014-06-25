@@ -51,4 +51,17 @@ public class CommonConfiguration
     public static final String COUNTERS_DIR_NAME = getProperty(COUNTERS_DIR_PROP_NAME, COUNTERS_DIR_PROP_DEFAULT);
     public static final int MTU_LENGTH = Integer.getInteger(MTU_LENGTH_NAME, MTU_LENGTH_DEFAULT);
     public static final boolean DIRS_DELETE_ON_EXIT = Boolean.getBoolean(DIRS_DELETE_ON_EXIT_PROP_NAME);
+
+    public static final String TO_DRIVER_FILE = "to-driver";
+    public static final String TO_CLIENTS_FILE = "to-client";
+
+    public static final File TO_DRIVER_PATH = new File(ADMIN_DIR_NAME, TO_DRIVER_FILE);
+    public static final File TO_CLIENTS_PATH = new File(ADMIN_DIR_NAME, TO_CLIENTS_FILE);
+
+    static
+    {
+        // TODO: re-add validation
+        //IoUtil.checkDirectoryExists(new File(ADMIN_DIR_NAME), "adminDir");
+    }
+
 }

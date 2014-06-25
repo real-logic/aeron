@@ -69,7 +69,6 @@ public class MediaConductor extends Agent
     private final QualifiedMessageFlyweight qualifiedMessage = new QualifiedMessageFlyweight();
 
     private final int mtuLength;
-    private final ConductorShmBuffers conductorShmBuffers;
     private final TimerWheel.Timer heartbeatTimer;
 
     public MediaConductor(final Context ctx)
@@ -88,9 +87,8 @@ public class MediaConductor extends Agent
 
         subscribedSessions = ctx.subscribedSessions();
         publications = ctx.publications();
-        conductorShmBuffers = ctx.conductorShmBuffers();
-        fromClientCommands = new ManyToOneRingBuffer(new AtomicBuffer(conductorShmBuffers.toDriver()));
-        clientProxy = new ClientProxy(new ManyToOneRingBuffer(new AtomicBuffer(conductorShmBuffers.toClient())));
+        fromClientCommands = ctx.fromClientCommands();
+        clientProxy = ctx.clientProxy();
     }
 
     public ControlFrameHandler frameHandler(final UdpDestination destination)
@@ -127,8 +125,6 @@ public class MediaConductor extends Agent
         stop();
 
         srcDestinationMap.forEach((hash, frameHandler) -> frameHandler.close());
-
-        conductorShmBuffers.close();
     }
 
     /**

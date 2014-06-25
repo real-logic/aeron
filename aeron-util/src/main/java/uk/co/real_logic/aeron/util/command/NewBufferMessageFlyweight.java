@@ -271,5 +271,4 @@ public class NewBufferMessageFlyweight extends Flyweight
     {
         return locationPointer(DESTINATION_INDEX + 1);
     }
-
 }

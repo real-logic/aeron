@@ -77,10 +77,8 @@ public class AeronTest
     private static final long SESSION_ID_2 = 5L;
     private static final int PACKET_VALUE = 37;
     private static final int SEND_BUFFER_CAPACITY = 1024;
-    private static final int CONDUCTOR_BUFFER_SIZE = (16 * 1024) + RingBufferDescriptor.TRAILER_LENGTH;
-
-    public static final int RING_BUFFER_SZ = 4096 + RingBufferDescriptor.TRAILER_LENGTH;
-    public static final int BROADCAST_BUFFER_SZ = 4096 + BroadcastBufferDescriptor.TRAILER_LENGTH;
+    public static final int RING_BUFFER_SZ = (16 * 1024) + RingBufferDescriptor.TRAILER_LENGTH;
+    public static final int BROADCAST_BUFFER_SZ = (16 * 1024) + BroadcastBufferDescriptor.TRAILER_LENGTH;
 
     @ClassRule
     public static SharedDirectoriesExternalResource directory = new SharedDirectoriesExternalResource();
@@ -99,8 +97,8 @@ public class AeronTest
     private final AtomicBuffer atomicSendBuffer = new AtomicBuffer(sendBuffer);
 
     private final AtomicBuffer toClientBuffer = new AtomicBuffer(new byte[BROADCAST_BUFFER_SZ]);
-    private final CopyBroadcastReceiver toClientReceiver = new CopyBroadcastReceiver(
-            new BroadcastReceiver(toClientBuffer));
+    private final CopyBroadcastReceiver toClientReceiver =
+        new CopyBroadcastReceiver(new BroadcastReceiver(toClientBuffer));
     private final BroadcastTransmitter toClientTransmitter = new BroadcastTransmitter(toClientBuffer);
 
     private final RingBuffer toDriverBuffer = new ManyToOneRingBuffer(new AtomicBuffer(new byte[RING_BUFFER_SZ]));
@@ -216,9 +214,10 @@ public class AeronTest
     public void closingASourceRemovesItsAssociatedChannels() throws Exception
     {
         final Aeron aeron = newAeron();
-        final Source.Context sourceContext = new Source.Context()
-            .sessionId(SESSION_ID)
-            .destination(new Destination(DESTINATION));
+        final Source.Context sourceContext =
+            new Source.Context()
+                      .sessionId(SESSION_ID)
+                      .destination(new Destination(DESTINATION));
         final Source source = aeron.newSource(sourceContext);
         source.newChannel(CHANNEL_ID);
         final ClientConductor adminThread = aeron.conductor();
@@ -236,12 +235,10 @@ public class AeronTest
     public void closingASourceDoesNotRemoveOtherChannels() throws Exception
     {
         final Aeron aeron = newAeron();
-        final Source source = aeron.newSource(new Source.Context()
-                                                  .sessionId(SESSION_ID)
-                                                  .destination(new Destination(DESTINATION)));
-        final Source otherSource = aeron.newSource(new Source.Context()
-                                                       .sessionId(SESSION_ID + 1)
-                                                       .destination(new Destination(DESTINATION)));
+        final Source source = aeron.newSource(
+            new Source.Context().sessionId(SESSION_ID).destination(new Destination(DESTINATION)));
+        final Source otherSource = aeron.newSource(
+            new Source.Context().sessionId(SESSION_ID + 1).destination(new Destination(DESTINATION)));
         source.newChannel(CHANNEL_ID);
         final ClientConductor clientConductor = aeron.conductor();
 
@@ -258,10 +255,11 @@ public class AeronTest
     public void registeringSubscriberNotifiesMediaDriver() throws Exception
     {
         final Aeron aeron = newAeron();
-        final Subscriber.Context context = new Subscriber.Context()
-            .destination(new Destination(DESTINATION))
-            .channel(CHANNEL_ID, emptyDataHandler())
-            .channel(CHANNEL_ID_2, emptyDataHandler());
+        final Subscriber.Context context =
+            new Subscriber.Context()
+                          .destination(new Destination(DESTINATION))
+                          .channel(CHANNEL_ID, emptyDataHandler())
+                          .channel(CHANNEL_ID_2, emptyDataHandler());
 
         final Subscriber subscriber = aeron.newSubscriber(context);
 
@@ -303,9 +301,9 @@ public class AeronTest
         errorHeader.frameLength(ErrorFlyweight.HEADER_LENGTH + subscriptionMessage.length());
 
         toClientTransmitter.transmit(ERROR_RESPONSE,
-                atomicSendBuffer,
-                subscriptionMessage.length(),
-                errorHeader.frameLength());
+                                     atomicSendBuffer,
+                                     subscriptionMessage.length(),
+                                     errorHeader.frameLength());
 
         aeron.conductor().doWork();
 
@@ -541,11 +539,11 @@ public class AeronTest
                         .termId(termId);
 
         IntStream.range(0, PAYLOAD_BUFFER_COUNT).forEach(
-                (i) ->
-                {
-                    newBufferMessage.bufferOffset(i, 0);
-                    newBufferMessage.bufferLength(i, LOG_MIN_SIZE);
-                }
+            (i) ->
+            {
+                newBufferMessage.bufferOffset(i, 0);
+                newBufferMessage.bufferLength(i, LOG_MIN_SIZE);
+            }
         );
         addBufferLocation(rootDir, termId, sessionId, LOG, 0);
         addBufferLocation(rootDir, termId, sessionId, STATE, BUFFER_COUNT);
@@ -563,7 +561,7 @@ public class AeronTest
         IntStream.range(0, BUFFER_COUNT).forEach(
             (i) ->
             {
-                File term = termLocation(dir, sessionId, CHANNEL_ID, termId + i, true, DESTINATION, type);
+                final File term = termLocation(dir, sessionId, CHANNEL_ID, termId + i, true, DESTINATION, type);
                 newBufferMessage.location(i + start, term.getAbsolutePath());
             }
         );
@@ -571,10 +569,11 @@ public class AeronTest
 
     private Subscriber newSubscriber(final Aeron aeron)
     {
-        final Subscriber.Context context = new Subscriber.Context()
-            .destination(new Destination(DESTINATION))
-            .channel(CHANNEL_ID, channel2Handler)
-            .channel(CHANNEL_ID_2, emptyDataHandler());
+        final Subscriber.Context context =
+            new Subscriber.Context()
+                          .destination(new Destination(DESTINATION))
+                          .channel(CHANNEL_ID, channel2Handler)
+                          .channel(CHANNEL_ID_2, emptyDataHandler());
 
         return aeron.newSubscriber(context);
     }
@@ -598,9 +597,10 @@ public class AeronTest
 
     private Channel newChannel(final Aeron aeron)
     {
-        final Source.Context sourceContext = new Source.Context()
-            .sessionId(SESSION_ID)
-            .destination(new Destination(DESTINATION));
+        final Source.Context sourceContext =
+            new Source.Context()
+                      .sessionId(SESSION_ID)
+                      .destination(new Destination(DESTINATION));
         final Source source = aeron.newSource(sourceContext);
 
         return source.newChannel(CHANNEL_ID);
@@ -608,10 +608,11 @@ public class AeronTest
 
     private Aeron newAeron()
     {
-        final Aeron.ClientContext context = new Aeron.ClientContext()
-            .toClientBuffer(toClientReceiver)
-            .toDriverBuffer(toDriverBuffer)
-            .invalidDestinationHandler(invalidDestination);
+        final Aeron.ClientContext context =
+            new Aeron.ClientContext()
+                     .toClientBuffer(toClientReceiver)
+                     .toDriverBuffer(toDriverBuffer)
+                     .invalidDestinationHandler(invalidDestination);
 
         context.counterLabelsBuffer(counterLabelsBuffer)
                .counterValuesBuffer(counterValuesBuffer);

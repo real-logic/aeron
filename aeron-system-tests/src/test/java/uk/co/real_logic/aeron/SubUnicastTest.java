@@ -57,6 +57,10 @@ public class SubUnicastTest
     private static final long TERM_ID = 3L;
     private static final byte[] PAYLOAD = "Payload goes here!".getBytes();
     private static final byte[] NO_PAYLOAD = {};
+    private static final int COUNTER_BUFFER_SZ = 1024;
+
+    private final AtomicBuffer counterValuesBuffer = new AtomicBuffer(new byte[COUNTER_BUFFER_SZ]);
+    private final AtomicBuffer counterLabelsBuffer = new AtomicBuffer(new byte[COUNTER_BUFFER_SZ]);
 
     private final AtomicBuffer payload = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
 
@@ -116,7 +120,13 @@ public class SubUnicastTest
 
     private Aeron.ClientContext newAeronContext()
     {
-        return new Aeron.ClientContext();
+        Aeron.ClientContext ctx = new Aeron.ClientContext();
+
+
+        ctx.counterLabelsBuffer(counterLabelsBuffer)
+           .counterValuesBuffer(counterValuesBuffer);
+
+        return ctx;
     }
 
     @After

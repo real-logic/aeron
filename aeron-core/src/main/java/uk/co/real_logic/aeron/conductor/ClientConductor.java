@@ -26,15 +26,13 @@ import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastReceiver;
 import uk.co.real_logic.aeron.util.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.util.status.PositionIndicator;
-import uk.co.real_logic.aeron.util.status.PositionReporter;
-import uk.co.real_logic.aeron.util.status.StatusBufferMapper;
+import uk.co.real_logic.aeron.util.status.BufferPositionIndicator;
+import uk.co.real_logic.aeron.util.status.BufferPositionReporter;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -67,13 +65,14 @@ public final class ClientConductor extends Agent
 
     private final ChannelMap<String, Channel> sendNotifiers = new ChannelMap<>();
     private final SubscriberMap rcvNotifiers = new SubscriberMap();
-    private final StatusBufferMapper statusCounters;
 
     private final ConductorErrorHandler errorHandler;
 
     private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
     private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
     private final NewBufferMessageFlyweight newBufferMessage = new NewBufferMessageFlyweight();
+    private final AtomicBuffer counterLabelsBuffer;
+    private final AtomicBuffer counterValuesBuffer;
 
     public ClientConductor(final RingBuffer commandBuffer,
                            final CopyBroadcastReceiver toClientBuffer,
@@ -87,7 +86,9 @@ public final class ClientConductor extends Agent
         super(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
                 AGENT_IDLE_MIN_PARK_NANOS, AGENT_IDLE_MAX_PARK_NANOS));
 
-        statusCounters = new StatusBufferMapper(ctx.countersDirName());
+        counterLabelsBuffer = ctx.counterLabelsBuffer();
+        counterValuesBuffer = ctx.counterValuesBuffer();
+
         this.commandBuffer = commandBuffer;
         this.toClientBuffer = toClientBuffer;
         this.toDriverBuffer = toDriverBuffer;
@@ -110,7 +111,6 @@ public final class ClientConductor extends Agent
     {
         stop();
         bufferUsage.close();
-        statusCounters.close();
     }
 
     private void performBufferMaintenance()
@@ -279,8 +279,7 @@ public final class ClientConductor extends Agent
                     (chan, buffers) ->
                     {
                         // TODO: get the counter id
-                        final PositionReporter reporter = statusCounters.reporter(0);
-                        chan.onBuffersMapped(sessionId, termId, buffers, reporter);
+                        chan.onBuffersMapped(sessionId, termId, buffers, new BufferPositionReporter(counterValuesBuffer, 0));
                     });
     }
 
@@ -296,8 +295,7 @@ public final class ClientConductor extends Agent
                     (chan, buffers) ->
                     {
                         // TODO: get the counter id
-                        final PositionIndicator indicator = statusCounters.indicator(0);
-                        chan.onBuffersMapped(termId, buffers, indicator);
+                        chan.onBuffersMapped(termId, buffers, new BufferPositionIndicator(counterValuesBuffer, 0));
                     });
     }
 

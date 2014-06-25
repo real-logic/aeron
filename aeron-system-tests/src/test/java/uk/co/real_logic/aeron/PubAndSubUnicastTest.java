@@ -20,6 +20,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.Subscriber.DataHandler;
@@ -34,6 +35,10 @@ public class PubAndSubUnicastTest
     private static final Destination DESTINATION = new Destination("udp://localhost:54321");
     private static final long CHANNEL_ID = 1L;
     private static final long SESSION_ID = 2L;
+    private static final int COUNTER_BUFFER_SZ = 1024;
+
+    private final AtomicBuffer counterValuesBuffer = new AtomicBuffer(new byte[COUNTER_BUFFER_SZ]);
+    private final AtomicBuffer counterLabelsBuffer = new AtomicBuffer(new byte[COUNTER_BUFFER_SZ]);
 
     private Aeron producingClient;
     private Aeron receivingClient;
@@ -65,7 +70,12 @@ public class PubAndSubUnicastTest
 
     private Aeron.ClientContext newAeronContext()
     {
-        return new Aeron.ClientContext();
+        Aeron.ClientContext ctx = new Aeron.ClientContext();
+
+        ctx.counterLabelsBuffer(counterLabelsBuffer)
+           .counterValuesBuffer(counterValuesBuffer);
+
+        return ctx;
     }
 
     @After

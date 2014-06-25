@@ -15,6 +15,8 @@
  */
 package uk.co.real_logic.aeron.util;
 
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -59,6 +61,8 @@ public class CommonContext implements AutoCloseable
     private boolean dirsDeleteOnExit;
     private File toDriverPath;
     private File toClientsPath;
+    private AtomicBuffer counterLabelsBuffer;
+    private AtomicBuffer counterValuesBuffer;
 
     public CommonContext init() throws IOException
     {
@@ -153,6 +157,28 @@ public class CommonContext implements AutoCloseable
     public String adminDirName()
     {
         return adminDirName;
+    }
+
+    public AtomicBuffer counterLabelsBuffer()
+    {
+        return counterLabelsBuffer;
+    }
+
+    public CommonContext counterLabelsBuffer(AtomicBuffer counterLabelsBuffer)
+    {
+        this.counterLabelsBuffer = counterLabelsBuffer;
+        return this;
+    }
+
+    public AtomicBuffer counterValuesBuffer()
+    {
+        return counterValuesBuffer;
+    }
+
+    public CommonContext counterValuesBuffer(AtomicBuffer counterValuesBuffer)
+    {
+        this.counterValuesBuffer = counterValuesBuffer;
+        return this;
     }
 
     public void close() throws Exception

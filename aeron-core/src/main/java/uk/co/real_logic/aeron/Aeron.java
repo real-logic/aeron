@@ -26,6 +26,7 @@ import uk.co.real_logic.aeron.util.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
@@ -229,6 +230,8 @@ public final class Aeron implements AutoCloseable
 
         private MappedByteBuffer defaultToClientBuffer;
         private MappedByteBuffer defaultToDriverBuffer;
+        private MappedByteBuffer defaultCounterLabelsBuffer;
+        private MappedByteBuffer defaultCounterValuesBuffer;
 
         public ClientContext init() throws IOException
         {
@@ -241,10 +244,23 @@ public final class Aeron implements AutoCloseable
                     defaultToClientBuffer = IoUtil.mapExistingFile(toClientsPath(), TO_CLIENTS_FILE);
                     toClientBuffer = new CopyBroadcastReceiver(new BroadcastReceiver(new AtomicBuffer(defaultToClientBuffer)));
                 }
+
                 if (toDriverBuffer == null)
                 {
                     defaultToDriverBuffer = IoUtil.mapExistingFile(toDriverPath(), TO_DRIVER_FILE);
                     toDriverBuffer = new ManyToOneRingBuffer(new AtomicBuffer(defaultToDriverBuffer));
+                }
+
+                if (counterLabelsBuffer() == null)
+                {
+                    defaultCounterLabelsBuffer = IoUtil.mapExistingFile(new File(countersDirName(), "labels"), "labels");
+                    counterLabelsBuffer(new AtomicBuffer(defaultCounterLabelsBuffer));
+                }
+
+                if (counterValuesBuffer() == null)
+                {
+                    defaultCounterValuesBuffer = IoUtil.mapExistingFile(new File(countersDirName(), "values"), "values");
+                    counterValuesBuffer(new AtomicBuffer(defaultCounterValuesBuffer));
                 }
             }
             catch (IOException e)
@@ -283,6 +299,8 @@ public final class Aeron implements AutoCloseable
         {
             IoUtil.unmap(defaultToDriverBuffer);
             IoUtil.unmap(defaultToClientBuffer);
+            IoUtil.unmap(defaultCounterLabelsBuffer);
+            IoUtil.unmap(defaultCounterValuesBuffer);
         }
     }
 }

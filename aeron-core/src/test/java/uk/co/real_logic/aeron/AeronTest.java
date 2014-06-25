@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron;
 import org.junit.ClassRule;
 import org.junit.Test;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
-import uk.co.real_logic.aeron.util.CountersFileExternalResource;
 import uk.co.real_logic.aeron.util.ErrorCode;
 import uk.co.real_logic.aeron.util.SharedDirectoriesExternalResource;
 import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
@@ -66,6 +65,7 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUt
 public class AeronTest
 {
     private static final int MAX_FRAME_LENGTH = 1024;
+    private static final int COUNTER_BUFFER_SZ = 1024;
 
     private static final String DESTINATION = "udp://localhost:40124";
     private static final String INVALID_DESTINATION = "udp://lo124";
@@ -83,9 +83,6 @@ public class AeronTest
 
     @ClassRule
     public static SharedDirectoriesExternalResource directory = new SharedDirectoriesExternalResource();
-
-    @ClassRule
-    public static CountersFileExternalResource counters = new CountersFileExternalResource();
 
     private final InvalidDestinationHandler invalidDestination = mock(InvalidDestinationHandler.class);
 
@@ -106,6 +103,9 @@ public class AeronTest
     private final BroadcastTransmitter toClientTransmitter = new BroadcastTransmitter(toClientBuffer);
 
     private final RingBuffer toDriverBuffer = new ManyToOneRingBuffer(new AtomicBuffer(new byte[RING_BUFFER_SZ]));
+
+    private final AtomicBuffer counterValuesBuffer = new AtomicBuffer(new byte[COUNTER_BUFFER_SZ]);
+    private final AtomicBuffer counterLabelsBuffer = new AtomicBuffer(new byte[COUNTER_BUFFER_SZ]);
 
     public AeronTest()
     {
@@ -612,6 +612,9 @@ public class AeronTest
             .toClientBuffer(toClientReceiver)
             .toDriverBuffer(toDriverBuffer)
             .invalidDestinationHandler(invalidDestination);
+
+        context.counterLabelsBuffer(counterLabelsBuffer)
+               .counterValuesBuffer(counterValuesBuffer);
 
         return Aeron.newSingleMediaDriver(context);
     }

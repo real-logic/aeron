@@ -55,6 +55,10 @@ public class PubUnicastTest
     private static final long SESSION_ID = 2L;
     private static final byte[] PAYLOAD = "Payload goes here!".getBytes();
 
+    private static final int COUNTER_BUFFER_SZ = 1024;
+
+    private final AtomicBuffer counterValuesBuffer = new AtomicBuffer(new byte[COUNTER_BUFFER_SZ]);
+    private final AtomicBuffer counterLabelsBuffer = new AtomicBuffer(new byte[COUNTER_BUFFER_SZ]);
     private final AtomicBuffer payload = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
 
     private final InetSocketAddress srcAddress = new InetSocketAddress(HOST, SRC_PORT);
@@ -100,7 +104,12 @@ public class PubUnicastTest
 
     private Aeron.ClientContext newAeronContext()
     {
-        return new Aeron.ClientContext();
+        Aeron.ClientContext ctx = new Aeron.ClientContext();
+
+        ctx.counterLabelsBuffer(counterLabelsBuffer)
+           .counterValuesBuffer(counterValuesBuffer);
+
+        return ctx;
     }
 
     @After

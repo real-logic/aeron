@@ -24,7 +24,6 @@ import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
-import uk.co.real_logic.aeron.util.status.StatusBufferCreator;
 
 import java.io.File;
 import java.io.IOException;
@@ -194,7 +193,6 @@ public class MediaDriver implements AutoCloseable
     private final File countersDirFile;
 
     private final BufferManagement bufferManagement;
-    private final StatusBufferCreator countersCreator;
 
     private final Receiver receiver;
     private final Sender sender;
@@ -259,7 +257,6 @@ public class MediaDriver implements AutoCloseable
         ensureDirectoriesExist();
 
         this.bufferManagement = ctx.bufferManagement;
-        this.countersCreator = new StatusBufferCreator(DESCRIPTOR_BUFFER_SIZE, COUNTERS_BUFFER_SIZE, ctx.countersDirName());
         this.receiver = new Receiver(ctx);
         this.sender = new Sender(ctx);
         this.conductor = new MediaConductor(ctx);
@@ -366,7 +363,6 @@ public class MediaDriver implements AutoCloseable
         conductor.close();
         conductor.nioSelector().selectNowWithoutProcessing();
         bufferManagement.close();
-        countersCreator.close();
         deleteDirectories();
     }
 

@@ -49,8 +49,6 @@ public class Publication
     public static final int HEARTBEAT_TIMEOUT_MS = 500;
     public static final long HEARTBEAT_TIMEOUT_NS = MILLISECONDS.toNanos(HEARTBEAT_TIMEOUT_MS);
 
-    private static final EventLogger LOGGER = new EventLogger(Publication.class);
-
     private final TimerWheel timerWheel;
 
     private final BufferRotator buffers;
@@ -282,8 +280,6 @@ public class Publication
         sendBuffer.limit(offset + length);
         sendBuffer.position(offset);
 
-        LOGGER.log(EventCode.FRAME_OUT, sendBuffer, length);
-
         try
         {
             final int bytesSent = frameHandler.sendTo(sendBuffer, dstAddress);
@@ -315,8 +311,6 @@ public class Publication
         {
             termRetransmitBuffers[index].position(offset);
             termRetransmitBuffers[index].limit(offset + length);
-
-            LOGGER.log(EventCode.FRAME_OUT, termRetransmitBuffers[index], length);
 
             try
             {
@@ -353,8 +347,6 @@ public class Publication
 
         scratchSendBuffer.position(0);
         scratchSendBuffer.limit(DataHeaderFlyweight.HEADER_LENGTH);
-
-        LOGGER.log(EventCode.FRAME_OUT, scratchAtomicBuffer, scratchSendBuffer.position(), scratchSendBuffer.remaining());
 
         try
         {

@@ -33,8 +33,6 @@ import java.nio.ByteBuffer;
  */
 public class DataFrameHandler implements FrameHandler, AutoCloseable
 {
-    private static final EventLogger LOGGER = new EventLogger(DataFrameHandler.class);
-
     private final UdpTransport transport;
     private final UdpDestination destination;
     private final Long2ObjectHashMap<Subscription> subscriptionByChannelIdMap = new Long2ObjectHashMap<>();
@@ -197,8 +195,6 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         smBuffer.position(0);
         smBuffer.limit(smHeader.frameLength());
 
-        LOGGER.log(EventCode.FRAME_OUT, smBuffer, smHeader.frameLength());
-
         try
         {
             if (transport.sendTo(smBuffer, controlAddress(session)) < smHeader.frameLength())
@@ -227,8 +223,6 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
 
         nakBuffer.position(0);
         nakBuffer.limit(nakHeader.frameLength());
-
-        LOGGER.log(EventCode.FRAME_OUT, nakBuffer, nakHeader.frameLength());
 
         try
         {

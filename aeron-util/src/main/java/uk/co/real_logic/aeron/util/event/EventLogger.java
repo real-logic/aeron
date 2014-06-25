@@ -20,6 +20,7 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 
 import java.io.File;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -86,13 +87,13 @@ public class EventLogger
         }
     }
 
-    public void log(final EventCode code, final ByteBuffer buffer, final int length)
+    public void log(final EventCode code, final ByteBuffer buffer, final int length, final InetSocketAddress dstAddr)
     {
         if (ON)
         {
             final AtomicBuffer encodedBuffer = encodingBuffer.get();
             final int pos = buffer.position();
-            final int encodedLength = EventCodec.encode(encodedBuffer, buffer, length);
+            final int encodedLength = EventCodec.encode(encodedBuffer, buffer, length, dstAddr);
             buffer.position(pos);
 
             ringBuffer.write(code.id(), encodedBuffer, 0, encodedLength);

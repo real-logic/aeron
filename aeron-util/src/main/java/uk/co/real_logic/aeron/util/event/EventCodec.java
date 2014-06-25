@@ -77,7 +77,7 @@ public class EventCodec
         int relativeOffset = encodeLogHeader(encodingBuffer, captureLength, bufferLength);
 
         relativeOffset += encodeSocketAddress(encodingBuffer, relativeOffset, dstAddr);
-        encodingBuffer.putBytes(relativeOffset, buffer, captureLength);
+        encodingBuffer.putBytes(relativeOffset, buffer, 0, captureLength);
         relativeOffset += captureLength;
 
         return relativeOffset;

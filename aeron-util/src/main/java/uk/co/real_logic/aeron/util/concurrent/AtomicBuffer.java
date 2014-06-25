@@ -811,16 +811,34 @@ public class AtomicBuffer
      */
     public int putBytes(final int index, final ByteBuffer srcBuffer, final int length)
     {
-        int count = Math.min(srcBuffer.remaining(), capacity - index);
-        count = Math.min(count, length);
+        int count = Math.min(srcBuffer.remaining(), length);
 
-        final int srcOffset = srcBuffer.position();
+        count = putBytes(index, srcBuffer, srcBuffer.position(), count);
+        srcBuffer.position(srcBuffer.position() + count);
+
+        return count;
+    }
+
+    /**
+     * Put bytes into the underlying buffer for the view. Bytes will be copied from the buffer index to
+     * the buffer index + length.
+     *
+     * @param index     in the underlying buffer to start from.
+     * @param srcBuffer to copy the bytes from (does not change position).
+     * @param srcIndex  in the source buffer from which the copy will begin.
+     * @param length    of the bytes to be copied.
+     * @return count of bytes copied.
+     */
+    public int putBytes(final int index, final ByteBuffer srcBuffer, final int srcIndex, final int length)
+    {
+        int count = Math.min(length, capacity - index);
+
         final byte[] srcByteArray;
         final long srcBaseOffset;
         if (srcBuffer.hasArray())
         {
             srcByteArray = srcBuffer.array();
-            srcBaseOffset = ARRAY_BASE_OFFSET + srcBuffer.arrayOffset();
+            srcBaseOffset = ARRAY_BASE_OFFSET + srcBuffer.arrayOffset() + srcIndex;
         }
         else
         {
@@ -828,8 +846,7 @@ public class AtomicBuffer
             srcBaseOffset = ((sun.nio.ch.DirectBuffer)srcBuffer).address();
         }
 
-        UNSAFE.copyMemory(srcByteArray, srcBaseOffset + srcOffset, byteArray, addressOffset + index,  count);
-        srcBuffer.position(srcBuffer.position() + count);
+        UNSAFE.copyMemory(srcByteArray, srcBaseOffset + srcIndex, byteArray, addressOffset + index, count);
 
         return count;
     }
@@ -837,10 +854,10 @@ public class AtomicBuffer
     /**
      * Put bytes from a source {@link AtomicBuffer} into this {@link AtomicBuffer} at given indices.
      *
-     * @param index in this buffer to begin putting the bytes.
+     * @param index     in this buffer to begin putting the bytes.
      * @param srcBuffer from which the bytes will be copied.
-     * @param srcIndex in the source buffer from which the byte copy will begin.
-     * @param length of the bytes to be copied.
+     * @param srcIndex  in the source buffer from which the byte copy will begin.
+     * @param length    of the bytes to be copied.
      */
     public void putBytes(final int index, final AtomicBuffer srcBuffer, final int srcIndex, final int length)
     {

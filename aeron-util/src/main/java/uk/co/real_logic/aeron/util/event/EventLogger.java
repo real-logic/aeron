@@ -92,9 +92,7 @@ public class EventLogger
         if (ON)
         {
             final AtomicBuffer encodedBuffer = encodingBuffer.get();
-            final int pos = buffer.position();
             final int encodedLength = EventCodec.encode(encodedBuffer, buffer, length, dstAddr);
-            buffer.position(pos);
 
             ringBuffer.write(code.id(), encodedBuffer, 0, encodedLength);
         }

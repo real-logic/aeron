@@ -191,7 +191,6 @@ public class MediaDriver implements AutoCloseable
     private final File dataDirFile;
     private final File countersDirFile;
 
-    private final ConductorShmBuffers conductorShmBuffers;
     private final BufferManagement bufferManagement;
     private final StatusBufferCreator countersCreator;
 
@@ -236,7 +235,6 @@ public class MediaDriver implements AutoCloseable
 
         ensureDirectoriesExist();
 
-        this.conductorShmBuffers = new ConductorShmBuffers(ADMIN_DIR_NAME, CONDUCTOR_BUFFER_SZ);
         this.bufferManagement = newMappedBufferManager(DATA_DIR_NAME);
         this.countersCreator = new StatusBufferCreator(DESCRIPTOR_BUFFER_SIZE, COUNTERS_BUFFER_SIZE);
 
@@ -246,7 +244,6 @@ public class MediaDriver implements AutoCloseable
             .receiverNioSelector(new NioSelector())
             .conductorNioSelector(new NioSelector())
             .senderFlowControl(UnicastSenderControlStrategy::new)
-            .conductorShmBuffers(conductorShmBuffers)
             .bufferManagement(bufferManagement)
             .subscribedSessions(new AtomicArray<>())
             .publications(new AtomicArray<>())
@@ -376,7 +373,6 @@ public class MediaDriver implements AutoCloseable
         sender.close();
         conductor.close();
         conductor.nioSelector().selectNowWithoutProcessing();
-        conductorShmBuffers.close();
         bufferManagement.close();
         countersCreator.close();
         deleteDirectories();
@@ -453,7 +449,6 @@ public class MediaDriver implements AutoCloseable
         private RingBuffer mediaCommandBuffer;
         private RingBuffer receiverCommandBuffer;
         private BufferManagement bufferManagement;
-        private ConductorShmBuffers conductorShmBuffers;
         private NioSelector receiverNioSelector;
         private NioSelector conductorNioSelector;
         private Supplier<SenderControlStrategy> senderFlowControl;
@@ -498,12 +493,6 @@ public class MediaDriver implements AutoCloseable
         public Context bufferManagement(final BufferManagement bufferManagement)
         {
             this.bufferManagement = bufferManagement;
-            return this;
-        }
-
-        public Context conductorShmBuffers(final ConductorShmBuffers conductorShmBuffers)
-        {
-            this.conductorShmBuffers = conductorShmBuffers;
             return this;
         }
 
@@ -610,11 +599,6 @@ public class MediaDriver implements AutoCloseable
         public BufferManagement bufferManagement()
         {
             return bufferManagement;
-        }
-
-        public ConductorShmBuffers conductorShmBuffers()
-        {
-            return conductorShmBuffers;
         }
 
         public NioSelector receiverNioSelector()

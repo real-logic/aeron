@@ -205,7 +205,6 @@ public final class Aeron implements AutoCloseable
     public static class Context
     {
         private ErrorHandler errorHandler = new DummyErrorHandler();
-        private ConductorShmBuffers conductorShmBuffers;
         private InvalidDestinationHandler invalidDestinationHandler;
 
         private RingBuffer toClientBuffer;
@@ -237,12 +236,6 @@ public final class Aeron implements AutoCloseable
         public Context errorHandler(ErrorHandler errorHandler)
         {
             this.errorHandler = errorHandler;
-            return this;
-        }
-
-        public Context conductorShmBuffers(final ConductorShmBuffers conductorShmBuffers)
-        {
-            this.conductorShmBuffers = conductorShmBuffers;
             return this;
         }
 

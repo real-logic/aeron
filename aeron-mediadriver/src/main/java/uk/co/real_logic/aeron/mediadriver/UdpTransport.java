@@ -49,6 +49,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
     private final FrameHandler frameHandler;
     private final NioSelector nioSelector;
     private final SelectionKey registeredKey;
+    private final boolean multicast;
 
     /*
      * Generic constructor. Used mainly for selector testing.
@@ -64,6 +65,8 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
         channel.bind(local);
         channel.configureBlocking(false);
         registeredKey = nioSelector.registerForRead(channel, this);
+
+        multicast = false;
     }
 
     public UdpTransport(final ControlFrameHandler frameHandler,
@@ -80,10 +83,12 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
             channel.setOption(StandardSocketOptions.SO_REUSEADDR, Boolean.TRUE);
             channel.bind(destination.localControl());
             channel.join(endPointAddress, destination.localControlInterface());
+            multicast = true;
         }
         else
         {
             channel.bind(destination.localControl());
+            multicast = false;
         }
         channel.configureBlocking(false);
         registeredKey = nioSelector.registerForRead(channel, this);
@@ -103,10 +108,12 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
             channel.setOption(StandardSocketOptions.SO_REUSEADDR, Boolean.TRUE);
             channel.bind(destination.localData());
             channel.join(endPointAddress, destination.localDataInterface());
+            multicast = true;
         }
         else
         {
             channel.bind(destination.remoteData());
+            multicast = false;
         }
 
         channel.configureBlocking(false);
@@ -134,6 +141,11 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
     public DatagramChannel channel()
     {
         return channel;
+    }
+
+    public boolean isMulticast()
+    {
+        return multicast;
     }
 
     public int onRead() throws Exception

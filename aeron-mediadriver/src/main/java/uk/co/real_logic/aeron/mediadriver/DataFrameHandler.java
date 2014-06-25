@@ -30,18 +30,16 @@ import java.nio.ByteBuffer;
  */
 public class DataFrameHandler implements FrameHandler, AutoCloseable
 {
-    private static final EventLogger logger = new EventLogger(DataFrameHandler.class);
+    private static final EventLogger LOGGER = new EventLogger(DataFrameHandler.class);
 
     private final UdpTransport transport;
     private final UdpDestination destination;
     private final Long2ObjectHashMap<Subscription> subscriptionByChannelIdMap = new Long2ObjectHashMap<>();
     private final MediaConductorProxy conductorProxy;
     private final AtomicArray<SubscribedSession> subscribedSessions;
-    private final ByteBuffer sendSmBuffer = ByteBuffer.allocateDirect(StatusMessageFlyweight.HEADER_LENGTH);
-    private final AtomicBuffer writeSmBuffer = new AtomicBuffer(sendSmBuffer);
-    private final ByteBuffer sendNakBuffer = ByteBuffer.allocateDirect(128);
-    private final AtomicBuffer writeNakBuffer = new AtomicBuffer(sendNakBuffer);
-    private final StatusMessageFlyweight statusMessageFlyweight = new StatusMessageFlyweight();
+    private final ByteBuffer smBuffer = ByteBuffer.allocateDirect(StatusMessageFlyweight.HEADER_LENGTH);
+    private final ByteBuffer nakBuffer = ByteBuffer.allocateDirect(NakFlyweight.HEADER_LENGTH);
+    private final StatusMessageFlyweight smHeader = new StatusMessageFlyweight();
     private final NakFlyweight nakHeader = new NakFlyweight();
 
     public DataFrameHandler(final UdpDestination destination,
@@ -176,32 +174,34 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         // now we are all setup, so send an SM to allow the source to send if it is waiting
         // TODO: grab initial term offset from data and store in subscriberSession somehow (per TermID)
         // TODO: need a strategy object to track the initial receiver window to send in the SMs.
-        sendStatusMessage(0, 1000, event.termId(), subscriberSession, subscription);
+        sendStatusMessage(subscriberSession, event.termId(), 0, 1000);
     }
 
-    private int sendStatusMessage(final int termOffset,
-                                  final int window,
-                                  final long termId,
-                                  final SubscribedSession subscribedSession,
-                                  final Subscription subscription)
+    private void sendStatusMessage(final SubscribedSession session, final long termId,
+                                   final int termOffset, final int window)
     {
-        statusMessageFlyweight.wrap(writeSmBuffer, 0);
-        statusMessageFlyweight.sessionId(subscribedSession.sessionId())
-                              .channelId(subscription.channelId())
-                              .termId(termId)
-                              .highestContiguousTermOffset(termOffset)
-                              .receiverWindow(window)
-                              .headerType(HeaderFlyweight.HDR_TYPE_SM)
-                              .frameLength(StatusMessageFlyweight.HEADER_LENGTH)
-                              .flags((byte)0)
-                              .version(HeaderFlyweight.CURRENT_VERSION);
+        smHeader.wrap(smBuffer, 0);
+        smHeader.sessionId(session.sessionId())
+                .channelId(session.channelId())
+                .termId(termId)
+                .highestContiguousTermOffset(termOffset)
+                .receiverWindow(window)
+                .headerType(HeaderFlyweight.HDR_TYPE_SM)
+                .frameLength(StatusMessageFlyweight.HEADER_LENGTH)
+                .flags((byte) 0)
+                .version(HeaderFlyweight.CURRENT_VERSION);
 
-        sendSmBuffer.position(0);
-        sendSmBuffer.limit(StatusMessageFlyweight.HEADER_LENGTH);
+        smBuffer.position(0);
+        smBuffer.limit(smHeader.frameLength());
+
+        LOGGER.log(EventCode.FRAME_OUT, smBuffer, smHeader.frameLength());
 
         try
         {
-            return transport.sendTo(sendSmBuffer, subscribedSession.sourceAddress());
+            if (transport.sendTo(smBuffer, controlAddress(session)) < smHeader.frameLength())
+            {
+                throw new IllegalStateException("could not send all of SM");
+            }
         }
         catch (final Exception ex)
         {
@@ -209,9 +209,9 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         }
     }
 
-    public void sendNak(final SubscribedSession session, final int termId, final int termOffset, final int length)
+    private void sendNak(final SubscribedSession session, final int termId, final int termOffset, final int length)
     {
-        nakHeader.wrap(writeNakBuffer, 0);
+        nakHeader.wrap(nakBuffer, 0);
         nakHeader.channelId(session.channelId())
                  .sessionId(session.sessionId())
                  .termId(termId)
@@ -222,14 +222,14 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
                  .flags((byte)0)
                  .version(HeaderFlyweight.CURRENT_VERSION);
 
-        sendNakBuffer.position(0);
-        sendNakBuffer.limit(nakHeader.frameLength());
+        nakBuffer.position(0);
+        nakBuffer.limit(nakHeader.frameLength());
 
-        logger.log(EventCode.FRAME_OUT, writeNakBuffer, 0, length);
+        LOGGER.log(EventCode.FRAME_OUT, nakBuffer, nakHeader.frameLength());
 
         try
         {
-            if (transport.sendTo(sendNakBuffer, session.sourceAddress()) < nakHeader.frameLength())
+            if (transport.sendTo(nakBuffer, controlAddress(session)) < nakHeader.frameLength())
             {
                 throw new IllegalStateException("could not send all of NAK");
             }
@@ -238,5 +238,15 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         {
             throw new RuntimeException(ex);
         }
+    }
+
+    private InetSocketAddress controlAddress(final SubscribedSession session)
+    {
+        if (transport.isMulticast())
+        {
+            return destination().remoteControl();
+        }
+
+        return session.sourceAddress();
     }
 }

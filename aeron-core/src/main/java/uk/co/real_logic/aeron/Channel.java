@@ -46,7 +46,6 @@ public class Channel extends ChannelNotifiable implements AutoCloseable, Positio
     private PositionIndicator positionIndicator;
 
     private final AtomicLong currentTermId = new AtomicLong(UNKNOWN_TERM_ID);
-    private final AtomicLong cleanedTermId = new AtomicLong(UNKNOWN_TERM_ID);
 
     private int currentBufferId = 0;
 
@@ -82,7 +81,6 @@ public class Channel extends ChannelNotifiable implements AutoCloseable, Positio
         this.logAppenders = logAppenders;
         this.positionIndicator = positionIndicator;
         currentTermId.set(termId);
-        cleanedTermId.set(termId + CLEAN_WINDOW);
     }
 
     /**
@@ -115,11 +113,12 @@ public class Channel extends ChannelNotifiable implements AutoCloseable, Positio
         final LogAppender logAppender = logAppenders[currentBufferId];
         final AppendStatus status = logAppender.append(buffer, offset, length);
         final long currentTermid = this.currentTermId.get();
-        if (status == TRIPPED && currentTermid <= cleanedTermId.get())
+        if (status == TRIPPED)
         {
             requestTermRoll();
             currentBufferId = rotateId(currentBufferId);
             currentTermId.lazySet(currentTermid + 1);
+            return offer(buffer, offset, length);
         }
 
         return status == SUCCESS;
@@ -173,30 +172,6 @@ public class Channel extends ChannelNotifiable implements AutoCloseable, Positio
     public boolean hasSessionId(final long sessionId)
     {
         return this.sessionId == sessionId;
-    }
-
-    /**
-     * This is performed on the Client Conductor's thread
-     */
-    public void processBufferScan()
-    {
-        long currentTermId = this.currentTermId.get();
-        if (currentTermId == UNKNOWN_TERM_ID)
-        {
-            // Doesn't have any buffers yet
-            return;
-        }
-
-        final long requiredCleanTermId = currentTermId + 1;
-        final long currentCleanedTermId = cleanedTermId.get();
-        if (requiredCleanTermId > currentCleanedTermId)
-        {
-            final LogAppender requiredBuffer = logAppenders[rotateId(currentBufferId)];
-            if (hasBeenCleaned(requiredBuffer))
-            {
-                cleanedTermId.lazySet(currentCleanedTermId + 1);
-            }
-        }
     }
 
     private boolean hasBeenCleaned(final LogAppender appender)

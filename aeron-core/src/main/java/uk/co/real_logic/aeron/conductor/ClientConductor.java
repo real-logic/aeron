@@ -115,7 +115,6 @@ public final class ClientConductor extends Agent
 
     private void performBufferMaintenance()
     {
-        publishers.forEach(Channel::processBufferScan);
         subscriberChannels.forEach(SubscriberChannel::processBufferScan);
     }
 

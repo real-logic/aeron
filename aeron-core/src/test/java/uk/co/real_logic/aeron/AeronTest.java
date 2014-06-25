@@ -175,7 +175,6 @@ public class AeronTest
             final boolean appended = channel.offer(atomicSendBuffer);
             aeron.conductor().doWork();
 
-            // only two in a row is a failure, because we don't rollover immediately
             assertTrue(previousAppend || appended);
             previousAppend = appended;
 

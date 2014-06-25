@@ -15,7 +15,10 @@
  */
 package uk.co.real_logic.aeron.examples;
 
-import uk.co.real_logic.aeron.*;
+import uk.co.real_logic.aeron.Aeron;
+import uk.co.real_logic.aeron.Channel;
+import uk.co.real_logic.aeron.Destination;
+import uk.co.real_logic.aeron.Source;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;

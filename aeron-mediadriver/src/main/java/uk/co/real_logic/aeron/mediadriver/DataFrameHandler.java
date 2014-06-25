@@ -20,7 +20,10 @@ import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.event.EventCode;
 import uk.co.real_logic.aeron.util.event.EventLogger;
-import uk.co.real_logic.aeron.util.protocol.*;
+import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.util.protocol.NakFlyweight;
+import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;

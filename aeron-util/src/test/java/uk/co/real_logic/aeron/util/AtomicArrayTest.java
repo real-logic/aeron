@@ -16,17 +16,14 @@
 package uk.co.real_logic.aeron.util;
 
 import org.junit.Test;
-import org.mockito.InOrder;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Consumer;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.core.Is.is;
-import static org.mockito.Mockito.*;
 
 public class AtomicArrayTest
 {

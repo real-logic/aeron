@@ -19,9 +19,14 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.util.event.EventCode;
 import uk.co.real_logic.aeron.util.event.EventLogger;
-import uk.co.real_logic.aeron.util.protocol.*;
+import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.util.protocol.NakFlyweight;
+import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
 
-import java.net.*;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;

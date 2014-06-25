@@ -16,10 +16,13 @@
 package uk.co.real_logic.aeron.util;
 
 import org.junit.Test;
-import uk.co.real_logic.aeron.util.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.protocol.*;
+import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.util.protocol.ErrorFlyweight;
+import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.util.protocol.NakFlyweight;
 
 import java.nio.ByteBuffer;
 import java.util.stream.IntStream;

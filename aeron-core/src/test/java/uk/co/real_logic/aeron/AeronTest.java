@@ -15,14 +15,21 @@
  */
 package uk.co.real_logic.aeron;
 
-import org.junit.*;
+import org.junit.ClassRule;
+import org.junit.Test;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
-import uk.co.real_logic.aeron.util.*;
-import uk.co.real_logic.aeron.util.command.*;
+import uk.co.real_logic.aeron.util.CountersFileExternalResource;
+import uk.co.real_logic.aeron.util.ErrorCode;
+import uk.co.real_logic.aeron.util.SharedDirectoriesExternalResource;
+import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.PublicationMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.MessageHandler;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.*;
+import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
+import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.ErrorFlyweight;
 

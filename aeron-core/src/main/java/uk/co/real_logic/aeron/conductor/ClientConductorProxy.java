@@ -15,7 +15,9 @@
  */
 package uk.co.real_logic.aeron.conductor;
 
-import uk.co.real_logic.aeron.util.command.*;
+import uk.co.real_logic.aeron.util.command.PublicationMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.QualifiedMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 

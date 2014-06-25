@@ -22,7 +22,8 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import java.nio.ByteBuffer;
 import java.util.Queue;
 
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
+import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ADD_SUBSCRIPTION;
+import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.REMOVE_SUBSCRIPTION;
 
 /**
  * Proxy for writing into the Receiver Thread's command buffer.

@@ -21,7 +21,9 @@ import uk.co.real_logic.aeron.mediadriver.TemplateFileResource;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 

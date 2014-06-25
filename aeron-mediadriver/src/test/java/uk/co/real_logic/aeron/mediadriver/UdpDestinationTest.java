@@ -18,7 +18,9 @@ package uk.co.real_logic.aeron.mediadriver;
 import org.hamcrest.Matcher;
 import org.junit.Test;
 
-import java.net.*;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 

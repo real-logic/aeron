@@ -15,13 +15,13 @@
  */
 package uk.co.real_logic.aeron.examples;
 
-import uk.co.real_logic.aeron.*;
+import uk.co.real_logic.aeron.Aeron;
+import uk.co.real_logic.aeron.Destination;
+import uk.co.real_logic.aeron.Subscriber;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
-import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
-import java.nio.ByteOrder;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;

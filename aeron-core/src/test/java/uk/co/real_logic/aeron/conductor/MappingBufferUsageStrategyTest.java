@@ -15,7 +15,9 @@
  */
 package uk.co.real_logic.aeron.conductor;
 
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import uk.co.real_logic.aeron.util.IoUtil;
 
 import java.io.File;

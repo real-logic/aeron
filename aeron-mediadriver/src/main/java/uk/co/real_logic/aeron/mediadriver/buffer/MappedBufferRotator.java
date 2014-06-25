@@ -18,7 +18,10 @@ package uk.co.real_logic.aeron.mediadriver.buffer;
 import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.stream.Stream;

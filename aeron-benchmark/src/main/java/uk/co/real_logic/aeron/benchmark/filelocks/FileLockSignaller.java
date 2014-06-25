@@ -15,7 +15,9 @@
  */
 package uk.co.real_logic.aeron.benchmark.filelocks;
 
-import java.io.*;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 

@@ -344,8 +344,8 @@ public final class ClientConductor extends Agent
         }
     }
 
-    public LogAppender newAppender(final int index, final long sessionId,
-                                   final long channelId, final long termId) throws IOException
+    private LogAppender newAppender(final int index, final long sessionId,
+                                    final long channelId, final long termId) throws IOException
     {
         final AtomicBuffer logBuffer = bufferUsage.newBuffer(newBufferMessage, index);
         final AtomicBuffer stateBuffer = bufferUsage.newBuffer(newBufferMessage, index + BUFFER_COUNT);

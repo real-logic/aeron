@@ -45,6 +45,59 @@ public class UdpDestination
     private final long consistentHash;
     private final NetworkInterface localInterface;
 
+    private final static NetworkInterface defaultMulticastInterface;
+
+    static
+    {
+        NetworkInterface savedIfc = null;
+
+        try
+        {
+            final String ifcName = System.getProperty(MediaDriver.MULTICAST_DEFAULT_INTERFACE_PROP_NAME);
+
+            if (null != ifcName)
+            {
+                savedIfc = NetworkInterface.getByName(ifcName);
+
+                if (null == savedIfc)
+                {
+                    System.err.println("WARNING: " + MediaDriver.MULTICAST_DEFAULT_INTERFACE_PROP_NAME +
+                            " not set. Could not find interface: " + ifcName);
+                }
+            }
+            else
+            {
+                final Enumeration<NetworkInterface> ifcs = NetworkInterface.getNetworkInterfaces();
+
+                while (ifcs.hasMoreElements())
+                {
+                    final NetworkInterface ifc = ifcs.nextElement();
+
+                    // search for UP, MULTICAST interface. Preferring non-loopback. But settle for loopback. Break
+                    // once we find one.
+                    if (ifc.isUp() && ifc.supportsMulticast())
+                    {
+                        savedIfc = ifc;
+
+                        if (ifc.isLoopback())
+                        {
+                            continue;
+                        }
+
+                        break;
+                    }
+                }
+            }
+        }
+        catch (final Exception ex)
+        {
+            ex.printStackTrace();
+        }
+
+        defaultMulticastInterface = savedIfc;
+        System.setProperty("aeron.multicast.default.interface", savedIfc.getName());
+    }
+
     public static UdpDestination parse(final String destinationUri)
     {
         try
@@ -79,6 +132,7 @@ public class UdpDestination
 
                 final NetworkInterface localInterface = NetworkInterface.getByInetAddress(localAddress.getAddress());
 
+                // TODO: replace with default interface
                 if (null == localInterface)
                 {
                     throw new IllegalArgumentException("Interface not specified");

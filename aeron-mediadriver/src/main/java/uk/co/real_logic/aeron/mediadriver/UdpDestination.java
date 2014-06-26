@@ -51,6 +51,12 @@ public class UdpDestination
     {
         NetworkInterface savedIfc = null;
 
+        /*
+         * Try to set the default multicast interface.
+         * If the system property is set, try to find the interface by name and use it.
+         * If not set, then scan interfaces and pick one that is UP and MULTICAST. Prefer non-loopback, but settle
+         * for loopback if nothing else.
+         */
         try
         {
             final String ifcName = System.getProperty(MediaDriver.MULTICAST_DEFAULT_INTERFACE_PROP_NAME);
@@ -62,7 +68,7 @@ public class UdpDestination
                 if (null == savedIfc)
                 {
                     System.err.println("WARNING: " + MediaDriver.MULTICAST_DEFAULT_INTERFACE_PROP_NAME +
-                            " not set. Could not find interface: " + ifcName);
+                            " not set correctly. Could not find interface: " + ifcName);
                 }
             }
             else
@@ -98,7 +104,7 @@ public class UdpDestination
 
         if (null != savedIfc)
         {
-            System.setProperty("aeron.multicast.default.interface", savedIfc.getName());
+            System.setProperty(MediaDriver.MULTICAST_DEFAULT_INTERFACE_PROP_NAME, savedIfc.getName());
         }
     }
 
@@ -125,7 +131,7 @@ public class UdpDestination
                 final byte[] addressAsBytes = hostAddress.getAddress();
                 if (BitUtil.isEven(addressAsBytes[LAST_MULTICAST_DIGIT]))
                 {
-                    throw new IllegalArgumentException("Multicast data addresses must be odd");
+                    throw new IllegalArgumentException("Multicast data address must be odd");
                 }
 
                 addressAsBytes[LAST_MULTICAST_DIGIT]++;
@@ -134,12 +140,16 @@ public class UdpDestination
 
                 final InetSocketAddress localAddress = determineLocalAddressFromUserInfo(userInfo);
 
-                final NetworkInterface localInterface = NetworkInterface.getByInetAddress(localAddress.getAddress());
+                NetworkInterface localInterface = NetworkInterface.getByInetAddress(localAddress.getAddress());
 
-                // TODO: replace with default interface
                 if (null == localInterface)
                 {
-                    throw new IllegalArgumentException("Interface not specified");
+                    if (null == defaultMulticastInterface)
+                    {
+                        throw new IllegalArgumentException("Interface not specified and default not set");
+                    }
+
+                    localInterface = defaultMulticastInterface;
                 }
 
                 context.localControlAddress(localAddress)

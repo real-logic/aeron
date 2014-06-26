@@ -116,7 +116,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
             final InetAddress endPointAddress = destination.remoteData().getAddress();
             final NetworkInterface localInterface = destination.localInterface();
             channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
-            channel.bind(destination.localData());
+            channel.bind(new InetSocketAddress(destination.localData().getPort()));
             channel.join(endPointAddress, localInterface);
             channel.setOption(StandardSocketOptions.IP_MULTICAST_IF, localInterface);
             multicast = true;

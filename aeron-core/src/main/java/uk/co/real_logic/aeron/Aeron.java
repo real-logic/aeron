@@ -203,6 +203,7 @@ public final class Aeron implements AutoCloseable
 
     public static class ClientContext extends CommonContext
     {
+        private ErrorHandler errorHandler = new DummyErrorHandler();
         private InvalidDestinationHandler invalidDestinationHandler;
 
         private CopyBroadcastReceiver toClientBuffer;
@@ -248,6 +249,12 @@ public final class Aeron implements AutoCloseable
                 throw new IllegalStateException("Could not initialise buffers", e);
             }
 
+            return this;
+        }
+
+        public ClientContext errorHandler(ErrorHandler errorHandler)
+        {
+            this.errorHandler = errorHandler;
             return this;
         }
 

@@ -19,12 +19,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
-import org.omg.PortableInterceptor.SUCCESSFUL;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
@@ -41,9 +39,9 @@ import java.util.concurrent.TimeUnit;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.util.BitUtil.align;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.SUCCESS;
 
 public class SenderTest
@@ -61,7 +59,7 @@ public class SenderTest
 
     private final AtomicArray<Publication> publications = new AtomicArray<>();
     private final Sender sender = new Sender(new MediaDriver.MediaDriverContext().publications(publications));
-    private final BufferRotator rotator =
+    private final BufferRotator bufferRotator =
         BufferAndFrameUtils.createTestRotator(LOG_BUFFER_SIZE, LogBufferDescriptor.STATE_BUFFER_LENGTH);
 
     private LogAppender[] logAppenders;
@@ -80,39 +78,36 @@ public class SenderTest
 
     private final UdpDestination destination = UdpDestination.parse("udp://localhost:40123");
     private final InetSocketAddress rcvAddress = destination.remoteData();
-
-    private ControlFrameHandler mockControlFrameHandler;
-
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
     private Answer<Integer> saveByteBufferAnswer =
-            (invocation) ->
-            {
-                Object args[] = invocation.getArguments();
+        (invocation) ->
+        {
+            Object args[] = invocation.getArguments();
 
-                final ByteBuffer buffer = (ByteBuffer)args[0];
+            final ByteBuffer buffer = (ByteBuffer)args[0];
 
-                final int size = buffer.limit() - buffer.position();
-                receivedFrames.add(ByteBuffer.allocate(size).put(buffer));
-                // we don't pass on the args, so don't reset buffer.position() back
-                return size;
-            };
+            final int size = buffer.limit() - buffer.position();
+            receivedFrames.add(ByteBuffer.allocate(size).put(buffer));
+            // we don't pass on the args, so don't reset buffer.position() back
+            return size;
+        };
 
     @Before
     public void setUp() throws Exception
     {
         currentTimestamp = 0;
 
-        logAppenders = rotator.buffers()
+        logAppenders = bufferRotator.buffers()
                               .map((log) -> new LogAppender(log.logBuffer(), log.stateBuffer(),
                                                             HEADER, MAX_FRAME_LENGTH)).toArray(LogAppender[]::new);
 
-        mockControlFrameHandler = mock(ControlFrameHandler.class);
+        final ControlFrameHandler mockControlFrameHandler = mock(ControlFrameHandler.class);
         when(mockControlFrameHandler.destination()).thenReturn(destination);
         when(mockControlFrameHandler.sendTo(anyObject(), anyObject())).thenAnswer(saveByteBufferAnswer);
 
-        publication = new Publication(mockControlFrameHandler, wheel, spySenderControlStrategy, rotator, SESSION_ID,
-                                      CHANNEL_ID, INITIAL_TERM_ID, HEADER.length, MAX_FRAME_LENGTH);
+        publication = new Publication(mockControlFrameHandler, wheel, spySenderControlStrategy, bufferRotator,
+                                      SESSION_ID, CHANNEL_ID, INITIAL_TERM_ID, HEADER.length, MAX_FRAME_LENGTH);
         publications.add(publication);
     }
 
@@ -188,7 +183,7 @@ public class SenderTest
     {
         LOGGER.logInvocation();
 
-        publication.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT), rcvAddress);
+        publication.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FRAME_ALIGNMENT), rcvAddress);
 
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -213,7 +208,7 @@ public class SenderTest
     {
         LOGGER.logInvocation();
 
-        publication.onStatusMessage(INITIAL_TERM_ID, 0, (2 * align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT)),
+        publication.onStatusMessage(INITIAL_TERM_ID, 0, (2 * align(PAYLOAD.length, FRAME_ALIGNMENT)),
                                     rcvAddress);
 
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
@@ -252,8 +247,7 @@ public class SenderTest
     {
         LOGGER.logInvocation();
 
-        publication.onStatusMessage(INITIAL_TERM_ID, 0, (2 * align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT)),
-                                    rcvAddress);
+        publication.onStatusMessage(INITIAL_TERM_ID, 0, (2 * align(PAYLOAD.length, FRAME_ALIGNMENT)), rcvAddress);
 
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -298,7 +292,7 @@ public class SenderTest
         sender.doWork();
         assertThat(receivedFrames.size(), is(0));
 
-        publication.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT), rcvAddress);
+        publication.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FRAME_ALIGNMENT), rcvAddress);
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(1));
@@ -321,7 +315,7 @@ public class SenderTest
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
         assertThat(logAppenders[0].append(buffer, 0, PAYLOAD.length), is(SUCCESS));
-        publication.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT), rcvAddress);
+        publication.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FRAME_ALIGNMENT), rcvAddress);
 
         sender.doWork();
 
@@ -347,7 +341,7 @@ public class SenderTest
     {
         LOGGER.logInvocation();
 
-        publication.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT), rcvAddress);
+        publication.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FRAME_ALIGNMENT), rcvAddress);
 
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -375,7 +369,7 @@ public class SenderTest
     {
         LOGGER.logInvocation();
 
-        publication.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT), rcvAddress);
+        publication.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FRAME_ALIGNMENT), rcvAddress);
 
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -411,6 +405,6 @@ public class SenderTest
 
     private long offsetOfMessage(final int num)
     {
-        return (num - 1) * align(PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT);
+        return (num - 1) * align(PAYLOAD.length, FRAME_ALIGNMENT);
     }
 }

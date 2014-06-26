@@ -33,10 +33,4 @@ public class RingBufferTestUtil
     {
         ringBuffer.read((msgTypeId, buffer, index, length) -> {}, count);
     }
-
-    public static void assertNoMessages(final RingBuffer ringBuffer)
-    {
-        final int messages = ringBuffer.read((msgTypeId, buffer, index, length) -> {});
-        assertThat(messages, is(0));
-    }
 }

@@ -95,7 +95,11 @@ public class UdpDestination
         }
 
         defaultMulticastInterface = savedIfc;
-        System.setProperty("aeron.multicast.default.interface", savedIfc.getName());
+
+        if (null != savedIfc)
+        {
+            System.setProperty("aeron.multicast.default.interface", savedIfc.getName());
+        }
     }
 
     public static UdpDestination parse(final String destinationUri)

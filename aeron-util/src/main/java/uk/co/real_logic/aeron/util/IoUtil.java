@@ -210,10 +210,13 @@ public class IoUtil
      * @return          {@link java.nio.MappedByteBuffer} for the file
      * @throws IOException for any errors
      */
-    public static MappedByteBuffer mapExistingFile(final File location, final String name,
-                                                   final int offset, final int size) throws IOException
+    public static MappedByteBuffer mapExistingFile(final File location,
+                                                   final String name,
+                                                   final int offset,
+                                                   final int size) throws IOException
     {
         checkFileExists(location, name);
+
         try (final RandomAccessFile file = new RandomAccessFile(location, "rw"))
         {
             final FileChannel channel = file.getChannel();
@@ -231,7 +234,7 @@ public class IoUtil
      * @return {@link java.nio.MappedByteBuffer} for the file
      * @throws IOException for any errors
      */
-    public static MappedByteBuffer mapNewFile(final File location, final String name, final long size)
+    public static MappedByteBuffer mapNewFile(final File location, final long size)
         throws IOException
     {
         try (final FileChannel channel = createEmptyFile(location, size))

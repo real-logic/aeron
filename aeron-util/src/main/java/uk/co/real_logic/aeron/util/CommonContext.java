@@ -59,8 +59,8 @@ public class CommonContext implements AutoCloseable
     private String countersDirName;
     private int mtuLength;
     private boolean dirsDeleteOnExit;
-    private File toDriverPath;
-    private File toClientsPath;
+    private File toDriverFile;
+    private File toClientsFile;
     private AtomicBuffer counterLabelsBuffer;
     private AtomicBuffer counterValuesBuffer;
 
@@ -71,8 +71,8 @@ public class CommonContext implements AutoCloseable
         countersDirName(getProperty(COUNTERS_DIR_PROP_NAME, COUNTERS_DIR_PROP_DEFAULT));
         mtuLength(getInteger(MTU_LENGTH_NAME, MTU_LENGTH_DEFAULT));
         dirsDeleteOnExit(getBoolean(DIRS_DELETE_ON_EXIT_PROP_NAME));
-        toDriverPath(new File(adminDirName(), TO_DRIVER_FILE));
-        toClientsPath(new File(adminDirName(), TO_CLIENTS_FILE));
+        toDriverFile(new File(adminDirName(), TO_DRIVER_FILE));
+        toClientsFile(new File(adminDirName(), TO_CLIENTS_FILE));
 
         return this;
     }
@@ -126,25 +126,25 @@ public class CommonContext implements AutoCloseable
         return this;
     }
 
-    public File toDriverPath()
+    public File toDriverFile()
     {
-        return toDriverPath;
+        return toDriverFile;
     }
 
-    public CommonContext toDriverPath(final File toDriverPath)
+    public CommonContext toDriverFile(final File toDriverFile)
     {
-        this.toDriverPath = toDriverPath;
+        this.toDriverFile = toDriverFile;
         return this;
     }
 
-    public File toClientsPath()
+    public File toClientsFile()
     {
-        return toClientsPath;
+        return toClientsFile;
     }
 
-    public CommonContext toClientsPath(final File toClientsPath)
+    public CommonContext toClientsFile(final File toClientsFile)
     {
-        this.toClientsPath = toClientsPath;
+        this.toClientsFile = toClientsFile;
         return this;
     }
 
@@ -183,6 +183,5 @@ public class CommonContext implements AutoCloseable
 
     public void close() throws Exception
     {
-
     }
 }

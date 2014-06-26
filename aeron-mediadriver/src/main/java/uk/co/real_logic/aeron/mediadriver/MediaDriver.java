@@ -462,10 +462,10 @@ public class MediaDriver implements AutoCloseable
             super.init();
 
             clientProxy(new ClientProxy(new BroadcastTransmitter(
-                    new AtomicBuffer(mapNewFile(toClientsPath(), TO_CLIENTS_FILE, TO_CLIENTS_BUFFER_SZ)))));
+                    new AtomicBuffer(mapNewFile(toClientsFile(), TO_CLIENTS_BUFFER_SZ)))));
 
             fromClientCommands(new ManyToOneRingBuffer(
-                    new AtomicBuffer(mapNewFile(toDriverPath(), TO_DRIVER_FILE, CONDUCTOR_BUFFER_SZ))));
+                    new AtomicBuffer(mapNewFile(toDriverFile(), CONDUCTOR_BUFFER_SZ))));
 
             receiverProxy(new ReceiverProxy(receiverCommandBuffer(), newReceiveBufferEventQueue()));
             mediaConductorProxy(new MediaConductorProxy(mediaCommandBuffer()));

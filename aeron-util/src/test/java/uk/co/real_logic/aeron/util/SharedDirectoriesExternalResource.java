@@ -149,7 +149,7 @@ public class SharedDirectoriesExternalResource extends ExternalResource
         final File termLocation = termLocation(rootDir, sessionId, channelId, termId, true, destination, type);
         IoUtil.delete(termLocation, true);
 
-        final MappedByteBuffer buffer = mapNewFile(termLocation, "Term Buffer", LogBufferDescriptor.LOG_MIN_SIZE);
+        final MappedByteBuffer buffer = mapNewFile(termLocation, LogBufferDescriptor.LOG_MIN_SIZE);
         mappedByteBuffers.add(buffer);
 
         return new AtomicBuffer(buffer);

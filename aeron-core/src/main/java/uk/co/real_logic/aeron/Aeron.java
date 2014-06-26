@@ -222,13 +222,13 @@ public final class Aeron implements AutoCloseable
             {
                 if (toClientBuffer == null)
                 {
-                    defaultToClientBuffer = IoUtil.mapExistingFile(toClientsPath(), TO_CLIENTS_FILE);
+                    defaultToClientBuffer = IoUtil.mapExistingFile(toClientsFile(), TO_CLIENTS_FILE);
                     toClientBuffer = new CopyBroadcastReceiver(new BroadcastReceiver(new AtomicBuffer(defaultToClientBuffer)));
                 }
 
                 if (toDriverBuffer == null)
                 {
-                    defaultToDriverBuffer = IoUtil.mapExistingFile(toDriverPath(), TO_DRIVER_FILE);
+                    defaultToDriverBuffer = IoUtil.mapExistingFile(toDriverFile(), TO_DRIVER_FILE);
                     toDriverBuffer = new ManyToOneRingBuffer(new AtomicBuffer(defaultToDriverBuffer));
                 }
 

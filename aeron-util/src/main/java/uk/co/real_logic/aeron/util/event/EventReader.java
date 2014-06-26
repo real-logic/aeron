@@ -29,7 +29,7 @@ import java.util.function.Consumer;
  */
 public class EventReader implements AutoCloseable
 {
-    private File location;
+    private File eventsFile;
     private MappedByteBuffer buffer;
     private ManyToOneRingBuffer ringBuffer;
 
@@ -37,20 +37,21 @@ public class EventReader implements AutoCloseable
     {
         try
         {
-            location = context.location();
+            eventsFile = context.eventsFile();
 
-            if (location.exists())
+            if (eventsFile.exists())
             {
-                System.err.println("WARNING: using existing event buffer at: " + location);
-                buffer = IoUtil.mapExistingFile(location, "event-buffer");
-            } else
+                System.err.println("WARNING: using existing event buffer at: " + eventsFile);
+                buffer = IoUtil.mapExistingFile(eventsFile, "event-buffer");
+            }
+            else
             {
-                buffer = IoUtil.mapNewFile(location, "event-buffer", context.size());
+                buffer = IoUtil.mapNewFile(eventsFile, context.size());
             }
 
             if (context.deleteOnExit())
             {
-                location.deleteOnExit();
+                eventsFile.deleteOnExit();
             }
 
             ringBuffer = new ManyToOneRingBuffer(new AtomicBuffer(buffer));
@@ -80,15 +81,15 @@ public class EventReader implements AutoCloseable
 
     public static class Context
     {
-        private File location = new File(System.getProperty(EventConfiguration.LOCATION_PROPERTY_NAME,
+        private File eventsFile = new File(System.getProperty(EventConfiguration.LOCATION_PROPERTY_NAME,
             EventConfiguration.LOCATION_DEFAULT));
         private long bufferSize = Long.getLong(EventConfiguration.BUFFER_SIZE_PROPERTY_NAME,
             EventConfiguration.BUFFER_SIZE_DEFAULT) + RingBufferDescriptor.TRAILER_LENGTH;
         private boolean deleteOnExit = Boolean.getBoolean(EventConfiguration.DELETE_ON_EXIT_PROPERTY_NAME);
 
-        public Context location(final File location)
+        public Context eventsFile(final File eventsFile)
         {
-            this.location = location;
+            this.eventsFile = eventsFile;
             return this;
         }
 
@@ -104,9 +105,9 @@ public class EventReader implements AutoCloseable
             return this;
         }
 
-        public File location()
+        public File eventsFile()
         {
-            return location;
+            return eventsFile;
         }
 
         public long size()

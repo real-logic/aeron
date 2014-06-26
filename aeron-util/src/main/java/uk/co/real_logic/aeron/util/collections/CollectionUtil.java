@@ -23,9 +23,8 @@ import java.util.function.Function;
  */
 public class CollectionUtil
 {
-
     /**
-     * A getOrDefault that doesn't create garbage if its suppler is noncapturing.
+     * A getOrDefault that doesn't create garbage if its suppler is non-capturing.
      */
     public static <K, V> V getOrDefault(Map<K, V> map, K key, Function<K, V> supplier)
     {
@@ -37,5 +36,4 @@ public class CollectionUtil
         }
         return value;
     }
-
 }

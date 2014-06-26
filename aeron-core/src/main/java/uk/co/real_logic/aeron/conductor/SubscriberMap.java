@@ -45,9 +45,7 @@ public class SubscriberMap
 
     public void put(final String destination, final long channelId, final SubscriberChannel value)
     {
-        final Long2ObjectHashMap<SubscriberChannel> channelMap
-                = getOrDefault(map, destination, ignore -> new Long2ObjectHashMap<>());
-        channelMap.put(channelId, value);
+        getOrDefault(map, destination, (ignore) -> new Long2ObjectHashMap<>()).put(channelId, value);
     }
 
     public SubscriberChannel remove(final String destination, final long channelId)
@@ -71,10 +69,4 @@ public class SubscriberMap
 
         return value;
     }
-
-    public boolean isEmpty(final String destination)
-    {
-        return !map.containsKey(destination);
-    }
-
 }

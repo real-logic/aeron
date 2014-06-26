@@ -71,7 +71,6 @@ public final class ClientConductor extends Agent
     private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
     private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
     private final NewBufferMessageFlyweight newBufferMessage = new NewBufferMessageFlyweight();
-    private final AtomicBuffer counterLabelsBuffer;
     private final AtomicBuffer counterValuesBuffer;
 
     public ClientConductor(final RingBuffer commandBuffer,
@@ -86,7 +85,6 @@ public final class ClientConductor extends Agent
         super(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
                                     AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS));
 
-        counterLabelsBuffer = ctx.counterLabelsBuffer();
         counterValuesBuffer = ctx.counterValuesBuffer();
 
         this.commandBuffer = commandBuffer;
@@ -229,7 +227,6 @@ public final class ClientConductor extends Agent
 
     private boolean handleMessagesFromMediaDriver()
     {
-
         final int messagesRead = toClientBuffer.receive(
                 (msgTypeId, buffer, index, length) ->
                 {
@@ -270,33 +267,33 @@ public final class ClientConductor extends Agent
     private void onNewSubscriptionBuffers(final String destination, final long sessionId,
                                           final long channelId, final long termId)
     {
-        onNewBuffer(sessionId,
-                    channelId,
-                    termId,
-                    rcvNotifiers.get(destination, channelId),
-                    this::newReader,
-                    LogReader[]::new,
-                    (chan, buffers) ->
-                    {
-                        // TODO: get the counter id
-                        chan.onBuffersMapped(sessionId, termId, buffers, new BufferPositionReporter(counterValuesBuffer, 0));
-                    });
+        onNewBuffers(sessionId,
+                     channelId,
+                     termId,
+                     rcvNotifiers.get(destination, channelId),
+                     this::newReader,
+                     LogReader[]::new,
+                     (chan, buffers) ->
+                     {
+                         // TODO: get the counter id
+                         chan.onBuffersMapped(sessionId, termId, buffers, new BufferPositionReporter(counterValuesBuffer, 0));
+                     });
     }
 
     private void onNewPublicationBuffers(final String destination, final long sessionId,
                                          final long channelId, final long termId)
     {
-        onNewBuffer(sessionId,
-                    channelId,
-                    termId,
-                    sendNotifiers.get(destination, sessionId, channelId),
-                    this::newAppender,
-                    LogAppender[]::new,
-                    (chan, buffers) ->
-                    {
-                        // TODO: get the counter id
-                        chan.onBuffersMapped(termId, buffers, new BufferPositionIndicator(counterValuesBuffer, 0));
-                    });
+        onNewBuffers(sessionId,
+                     channelId,
+                     termId,
+                     sendNotifiers.get(destination, sessionId, channelId),
+                     this::newAppender,
+                     LogAppender[]::new,
+                     (chan, buffers) ->
+                     {
+                         // TODO: get the counter id
+                         chan.onBuffersMapped(termId, buffers, new BufferPositionIndicator(counterValuesBuffer, 0));
+                     });
     }
 
     private interface LogFactory<L>
@@ -305,13 +302,13 @@ public final class ClientConductor extends Agent
                       final long channelId, final long termId) throws IOException;
     }
 
-    private <C extends ChannelNotifiable, L> void onNewBuffer(final long sessionId,
-                                                              final long channelId,
-                                                              final long termId,
-                                                              final C channel,
-                                                              final LogFactory<L> logFactory,
-                                                              final IntFunction<L[]> logArray,
-                                                              final BiConsumer<C, L[]> notifier)
+    private <C extends ChannelNotifiable, L> void onNewBuffers(final long sessionId,
+                                                               final long channelId,
+                                                               final long termId,
+                                                               final C channel,
+                                                               final LogFactory<L> logFactory,
+                                                               final IntFunction<L[]> logArray,
+                                                               final BiConsumer<C, L[]> notifier)
     {
         try
         {

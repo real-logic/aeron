@@ -30,14 +30,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
-import java.util.Comparator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.IntFunction;
 
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
 
@@ -54,7 +51,6 @@ public final class Aeron implements AutoCloseable
     private final AtomicArray<Channel> channels = new AtomicArray<>();
     private final AtomicArray<SubscriberChannel> receivers = new AtomicArray<>();
     private final ClientConductor clientConductor;
-
     private Future conductorFuture;
 
     private Aeron(final ClientContext ctx)
@@ -147,25 +143,6 @@ public final class Aeron implements AutoCloseable
     }
 
     /**
-     * Creates multiple media drivers associated with multiple Aeron instances that can be used to create sources
-     * and receivers.
-     *
-     * @param contexts of the media drivers
-     * @return array of Aeron instances
-     */
-    public static Aeron[] newMultipleMediaDrivers(final ClientContext[] contexts)
-    {
-        final Aeron[] aerons = new Aeron[contexts.length];
-
-        for (int i = 0, max = contexts.length; i < max; i++)
-        {
-            aerons[i] = new Aeron(contexts[i]);
-        }
-
-        return aerons;
-    }
-
-    /**
      * Create a new source that is to send to {@link Destination}.
      * <p>
      * A unique, random, session ID will be generated for the source if the ctx does not
@@ -226,7 +203,6 @@ public final class Aeron implements AutoCloseable
 
     public static class ClientContext extends CommonContext
     {
-        private ErrorHandler errorHandler = new DummyErrorHandler();
         private InvalidDestinationHandler invalidDestinationHandler;
 
         private CopyBroadcastReceiver toClientBuffer;
@@ -275,12 +251,6 @@ public final class Aeron implements AutoCloseable
             return this;
         }
 
-        public ClientContext errorHandler(ErrorHandler errorHandler)
-        {
-            this.errorHandler = errorHandler;
-            return this;
-        }
-
         public ClientContext invalidDestinationHandler(final InvalidDestinationHandler invalidDestinationHandler)
         {
             this.invalidDestinationHandler = invalidDestinationHandler;
@@ -305,6 +275,15 @@ public final class Aeron implements AutoCloseable
             IoUtil.unmap(defaultToClientBuffer);
             IoUtil.unmap(defaultCounterLabelsBuffer);
             IoUtil.unmap(defaultCounterValuesBuffer);
+
+            try
+            {
+                super.close();
+            }
+            catch (final Exception ex)
+            {
+                throw new RuntimeException(ex);
+            }
         }
     }
 }

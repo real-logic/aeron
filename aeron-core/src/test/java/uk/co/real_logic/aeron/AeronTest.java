@@ -15,6 +15,8 @@
  */
 package uk.co.real_logic.aeron;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
@@ -106,16 +108,35 @@ public class AeronTest
     private final AtomicBuffer counterValuesBuffer = new AtomicBuffer(new byte[COUNTER_BUFFER_SZ]);
     private final AtomicBuffer counterLabelsBuffer = new AtomicBuffer(new byte[COUNTER_BUFFER_SZ]);
 
-    public AeronTest()
+    private Aeron aeron;
+
+    @Before
+    public void setUp()
     {
+        final Aeron.ClientContext ctx =
+            new Aeron.ClientContext()
+                     .toClientBuffer(toClientReceiver)
+                     .toDriverBuffer(toDriverBuffer)
+                     .invalidDestinationHandler(invalidDestination);
+
+        ctx.counterLabelsBuffer(counterLabelsBuffer)
+           .counterValuesBuffer(counterValuesBuffer);
+
+        aeron = Aeron.newSingleMediaDriver(ctx);
+
         newBufferMessage.wrap(atomicSendBuffer, 0);
         errorHeader.wrap(atomicSendBuffer, 0);
+    }
+
+    @After
+    public void tearDown()
+    {
+        aeron.close();
     }
 
     @Test
     public void creatingChannelsShouldNotifyMediaDriver() throws Exception
     {
-        final Aeron aeron = newAeron();
         newChannel(aeron);
         aeron.conductor().doWork();
 
@@ -125,7 +146,6 @@ public class AeronTest
     @Test
     public void cannotOfferOnChannelUntilBuffersMapped() throws Exception
     {
-        final Aeron aeron = newAeron();
         final Channel channel = newChannel(aeron);
         assertFalse(channel.offer(atomicSendBuffer));
         assertFalse(channel.offer(atomicSendBuffer, 0, 1));
@@ -134,7 +154,6 @@ public class AeronTest
     @Test(expected = BufferExhaustedException.class)
     public void cannotSendOnChannelUntilBuffersMapped() throws Exception
     {
-        final Aeron aeron = newAeron();
         final Channel channel = newChannel(aeron);
         channel.send(atomicSendBuffer);
     }
@@ -142,20 +161,17 @@ public class AeronTest
     @Test
     public void canOfferAMessageOnceBuffersHaveBeenMapped() throws Exception
     {
-        final Aeron aeron = newAeron();
         final Channel channel = newChannel(aeron);
         aeron.conductor().doWork();
         createTermBuffer(0L, NEW_PUBLICATION_BUFFER_NOTIFICATION, directory.senderDir(), SESSION_ID);
         aeron.conductor().doWork();
         assertTrue(channel.offer(atomicSendBuffer));
-        aeron.conductor().close();
     }
 
     @Test
     public void shouldRotateBuffersOnceFull() throws Exception
     {
         final RingBuffer toMediaDriver = toDriverBuffer;
-        final Aeron aeron = newAeron();
         final Channel channel = newChannel(aeron);
         aeron.conductor().doWork();
         final List<Buffers> buffers =
@@ -183,8 +199,6 @@ public class AeronTest
                 bufferId = rotateId(bufferId);
             }
         }
-
-        aeron.conductor().close();
     }
 
     private void assertCleanTermRequested(final RingBuffer toMediaDriver)
@@ -197,7 +211,6 @@ public class AeronTest
     public void removingChannelsShouldNotifyMediaDriver() throws Exception
     {
         final RingBuffer toMediaDriver = toDriverBuffer;
-        final Aeron aeron = newAeron();
         final Channel channel = newChannel(aeron);
         final ClientConductor adminThread = aeron.conductor();
 
@@ -213,7 +226,6 @@ public class AeronTest
     @Test
     public void closingASourceRemovesItsAssociatedChannels() throws Exception
     {
-        final Aeron aeron = newAeron();
         final Source.Context sourceContext =
             new Source.Context()
                       .sessionId(SESSION_ID)
@@ -234,7 +246,6 @@ public class AeronTest
     @Test
     public void closingASourceDoesNotRemoveOtherChannels() throws Exception
     {
-        final Aeron aeron = newAeron();
         final Source source = aeron.newSource(
             new Source.Context().sessionId(SESSION_ID).destination(new Destination(DESTINATION)));
         final Source otherSource = aeron.newSource(
@@ -254,7 +265,6 @@ public class AeronTest
     @Test
     public void registeringSubscriberNotifiesMediaDriver() throws Exception
     {
-        final Aeron aeron = newAeron();
         final Subscriber.Context context =
             new Subscriber.Context()
                           .destination(new Destination(DESTINATION))
@@ -274,7 +284,6 @@ public class AeronTest
     public void removingSubscriberNotifiesMediaDriver()
     {
         final RingBuffer toMediaDriver = toDriverBuffer;
-        final Aeron aeron = newAeron();
         final Subscriber subscriber = newSubscriber(aeron);
 
         aeron.conductor().doWork();
@@ -289,8 +298,6 @@ public class AeronTest
     @Test
     public void clientCodeNotifiedOfAnInvalidDestination()
     {
-        final Aeron aeron = newAeron();
-
         subscriptionMessage.wrap(atomicSendBuffer, 0);
         subscriptionMessage.channelIds(CHANNEL_IDs);
         subscriptionMessage.destination(INVALID_DESTINATION);
@@ -315,7 +322,6 @@ public class AeronTest
     {
         channel2Handler = assertingHandler();
 
-        final Aeron aeron = newAeron();
         final Subscriber subscriber = newSubscriber(aeron);
 
         final List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
@@ -326,8 +332,6 @@ public class AeronTest
         writePacket(logAppenders.get(0));
 
         assertThat(subscriber.read(), is(1));
-
-        aeron.conductor().close();
     }
 
     @Test
@@ -335,7 +339,6 @@ public class AeronTest
     {
         channel2Handler = eitherSessionHandler();
 
-        final Aeron aeron = newAeron();
         final Subscriber subscriber = newSubscriber(aeron);
 
         final List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
@@ -347,8 +350,6 @@ public class AeronTest
         writePacket(logAppenders.get(0));
         writePacket(otherLogAppenders.get(0));
         assertThat(subscriber.read(), is(2));
-
-        aeron.conductor().close();
     }
 
     @Test
@@ -356,7 +357,6 @@ public class AeronTest
     {
         channel2Handler = assertingHandler();
 
-        final Aeron aeron = newAeron();
         final Subscriber subscriber = newSubscriber(aeron);
         final List<Buffers> termBuffers =
             createTermBuffer(0L, NEW_SUBSCRIPTION_BUFFER_NOTIFICATION, directory.receiverDir(), SESSION_ID);
@@ -391,8 +391,6 @@ public class AeronTest
 
         writePackets(logAppender, msgCount);
         assertThat(subscriber.read(), is(msgCount));
-
-        aeron.conductor().close();
     }
 
     private void cleanBuffer(final Buffers buffers)
@@ -416,7 +414,6 @@ public class AeronTest
     {
         channel2Handler = assertingHandler();
 
-        final Aeron aeron = newAeron();
         final Subscriber subscriber = newSubscriber(aeron);
         final List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
 
@@ -440,8 +437,6 @@ public class AeronTest
 
         // Now you've hit an unclean buffer and can't proceed
         assertThat(subscriber.read(), is(0));
-
-        aeron.conductor().close();
     }
 
     @Test
@@ -450,7 +445,6 @@ public class AeronTest
         channel2Handler = eitherSessionHandler();
 
         final RingBuffer toMediaDriver = toDriverBuffer;
-        final Aeron aeron = newAeron();
         final Subscriber subscriber = newSubscriber(aeron);
         final List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
         final List<LogAppender> otherLogAppenders = createLogAppenders(SESSION_ID_2);
@@ -471,8 +465,6 @@ public class AeronTest
 
         writePackets(otherLogAppenders.get(0), 5);
         assertThat(subscriber.read(), is(5));
-
-        aeron.conductor().close();
     }
 
     private DataHandler eitherSessionHandler()
@@ -569,13 +561,13 @@ public class AeronTest
 
     private Subscriber newSubscriber(final Aeron aeron)
     {
-        final Subscriber.Context context =
+        final Subscriber.Context ctx =
             new Subscriber.Context()
                           .destination(new Destination(DESTINATION))
                           .channel(CHANNEL_ID, channel2Handler)
                           .channel(CHANNEL_ID_2, emptyDataHandler());
 
-        return aeron.newSubscriber(context);
+        return aeron.newSubscriber(ctx);
     }
 
     private MessageHandler assertSubscriberMessageOfType(final int expectedMsgTypeId)
@@ -597,27 +589,14 @@ public class AeronTest
 
     private Channel newChannel(final Aeron aeron)
     {
-        final Source.Context sourceContext =
+        final Source.Context ctx =
             new Source.Context()
                       .sessionId(SESSION_ID)
                       .destination(new Destination(DESTINATION));
-        final Source source = aeron.newSource(sourceContext);
+
+        final Source source = aeron.newSource(ctx);
 
         return source.newChannel(CHANNEL_ID);
-    }
-
-    private Aeron newAeron()
-    {
-        final Aeron.ClientContext context =
-            new Aeron.ClientContext()
-                     .toClientBuffer(toClientReceiver)
-                     .toDriverBuffer(toDriverBuffer)
-                     .invalidDestinationHandler(invalidDestination);
-
-        context.counterLabelsBuffer(counterLabelsBuffer)
-               .counterValuesBuffer(counterValuesBuffer);
-
-        return Aeron.newSingleMediaDriver(context);
     }
 
     private void assertChannelMessage(final RingBuffer mediaDriverBuffer, final int expectedMsgTypeId)

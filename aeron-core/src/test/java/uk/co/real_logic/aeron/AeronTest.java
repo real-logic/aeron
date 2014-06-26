@@ -75,8 +75,8 @@ public class AeronTest
     private static final long CHANNEL_ID = 2L;
     private static final long CHANNEL_ID_2 = 4L;
     private static final long[] CHANNEL_IDs = {CHANNEL_ID, CHANNEL_ID_2};
-    private static final long SESSION_ID = 3L;
-    private static final long SESSION_ID_2 = 5L;
+    private static final long SESSION_ID = 13L;
+    private static final long SESSION_ID_2 = 15L;
     private static final int PACKET_VALUE = 37;
     private static final int SEND_BUFFER_CAPACITY = 1024;
     public static final int RING_BUFFER_SZ = (16 * 1024) + RingBufferDescriptor.TRAILER_LENGTH;

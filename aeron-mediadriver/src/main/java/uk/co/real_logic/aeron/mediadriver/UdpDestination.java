@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron.mediadriver;
 import uk.co.real_logic.aeron.util.BitUtil;
 
 import java.net.*;
-import java.util.Collections;
 import java.util.Enumeration;
 
 import static java.net.InetAddress.getByAddress;
@@ -45,7 +44,7 @@ public class UdpDestination
     private final long consistentHash;
     private final NetworkInterface localInterface;
 
-    private final static NetworkInterface defaultMulticastInterface;
+    private static final NetworkInterface DEFAULT_MULTICAST_INTERFACE;
 
     static
     {
@@ -100,7 +99,7 @@ public class UdpDestination
             ex.printStackTrace();
         }
 
-        defaultMulticastInterface = savedIfc;
+        DEFAULT_MULTICAST_INTERFACE = savedIfc;
 
         if (null != savedIfc)
         {
@@ -144,12 +143,12 @@ public class UdpDestination
 
                 if (null == localInterface)
                 {
-                    if (null == defaultMulticastInterface)
+                    if (null == DEFAULT_MULTICAST_INTERFACE)
                     {
                         throw new IllegalArgumentException("Interface not specified and default not set");
                     }
 
-                    localInterface = defaultMulticastInterface;
+                    localInterface = DEFAULT_MULTICAST_INTERFACE;
                 }
 
                 context.localControlAddress(localAddress)
@@ -293,13 +292,13 @@ public class UdpDestination
      */
     public static String generateCanonicalRepresentation(final InetSocketAddress localData,
                                                          final InetSocketAddress remoteData)
-            throws Exception
+        throws Exception
     {
         return String.format("UDP-%1$s-%2$d-%3$s-%4$d",
                              BitUtil.toHex(localData.getAddress().getAddress()),
-                             Integer.valueOf(localData.getPort()),
+                             localData.getPort(),
                              BitUtil.toHex(remoteData.getAddress().getAddress()),
-                             Integer.valueOf(remoteData.getPort()));
+                             remoteData.getPort());
     }
 
     public boolean isMulticast()
@@ -370,9 +369,9 @@ public class UdpDestination
             return this;
         }
 
-        public Context canonicalRepresentation(final String rep)
+        public Context canonicalRepresentation(final String canonicalRepresentation)
         {
-            this.canonicalRepresentation = rep;
+            this.canonicalRepresentation = canonicalRepresentation;
             return this;
         }
 

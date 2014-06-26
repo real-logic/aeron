@@ -111,7 +111,7 @@ public class AeronTest
     private Aeron aeron;
 
     @Before
-    public void setUp()
+    public void before()
     {
         final Aeron.ClientContext ctx =
             new Aeron.ClientContext()
@@ -129,7 +129,7 @@ public class AeronTest
     }
 
     @After
-    public void tearDown()
+    public void after()
     {
         aeron.close();
     }
@@ -163,7 +163,7 @@ public class AeronTest
     {
         final Channel channel = newChannel(aeron);
         aeron.conductor().doWork();
-        createTermBuffer(0L, NEW_PUBLICATION_BUFFER_NOTIFICATION, directory.senderDir(), SESSION_ID);
+        createTermBuffer(0L, NEW_PUBLICATION_BUFFER_NOTIFICATION, directory.publicationsDir(), SESSION_ID);
         aeron.conductor().doWork();
         assertTrue(channel.offer(atomicSendBuffer));
     }
@@ -175,7 +175,7 @@ public class AeronTest
         final Channel channel = newChannel(aeron);
         aeron.conductor().doWork();
         final List<Buffers> buffers =
-            createTermBuffer(0L, NEW_PUBLICATION_BUFFER_NOTIFICATION, directory.senderDir(), SESSION_ID);
+            createTermBuffer(0L, NEW_PUBLICATION_BUFFER_NOTIFICATION, directory.publicationsDir(), SESSION_ID);
 
         final int capacity = buffers.get(0).logBuffer().capacity();
         final int msgCount = (4 * capacity) / SEND_BUFFER_CAPACITY;
@@ -359,7 +359,7 @@ public class AeronTest
 
         final Subscriber subscriber = newSubscriber(aeron);
         final List<Buffers> termBuffers =
-            createTermBuffer(0L, NEW_SUBSCRIPTION_BUFFER_NOTIFICATION, directory.receiverDir(), SESSION_ID);
+            createTermBuffer(0L, NEW_SUBSCRIPTION_BUFFER_NOTIFICATION, directory.subscriptionsDir(), SESSION_ID);
 
         final List<LogAppender> logAppenders = createLogAppenders(termBuffers);
 
@@ -449,7 +449,7 @@ public class AeronTest
         final List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
         final List<LogAppender> otherLogAppenders = createLogAppenders(SESSION_ID_2);
 
-        sendNewBufferNotification(directory.receiverDir(), NEW_SUBSCRIPTION_BUFFER_NOTIFICATION, 1L, SESSION_ID);
+        sendNewBufferNotification(directory.subscriptionsDir(), NEW_SUBSCRIPTION_BUFFER_NOTIFICATION, 1L, SESSION_ID);
 
         aeron.conductor().doWork();
         skip(toMediaDriver, 1);
@@ -505,7 +505,7 @@ public class AeronTest
     private List<LogAppender> createLogAppenders(final long sessionId) throws IOException
     {
         final List<Buffers> termBuffers =
-            createTermBuffer(0L, NEW_SUBSCRIPTION_BUFFER_NOTIFICATION, directory.receiverDir(), sessionId);
+            createTermBuffer(0L, NEW_SUBSCRIPTION_BUFFER_NOTIFICATION, directory.subscriptionsDir(), sessionId);
 
         return createLogAppenders(termBuffers);
     }

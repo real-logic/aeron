@@ -21,10 +21,10 @@ import java.io.File;
  * Encodes the file mapping convention used by both the client and the media driver for exchanging buffer files.
  *
  * Root directory is the "aeron.data.dir"
- * Senders are under "${aeron.data.dir}/sender"
- * Receivers are under "${aeron.data.dir}/receiver"
+ * Senders are under "${aeron.data.dir}/publications"
+ * Receivers are under "${aeron.data.dir}/subscriptions"
  *
- * Both sources and receivers share the same structure of "sessionId/channelId/termId".
+ * Both publications and subscriptions share the same structure of "sessionId/channelId/termId".
  */
 public class FileMappingConvention
 {
@@ -34,16 +34,16 @@ public class FileMappingConvention
         STATE
     }
 
-    private final File receiverDir;
-    private final File senderDir;
+    private final File subscriptionsDir;
+    private final File publicationsDir;
     private final File dataDir;
 
     public FileMappingConvention(final String dataDirName)
     {
         dataDir = new File(dataDirName);
         IoUtil.ensureDirectoryExists(dataDir, "data directory");
-        senderDir = new File(dataDir, "sender");
-        receiverDir = new File(dataDir, "receiver");
+        publicationsDir = new File(dataDir, "publications");
+        subscriptionsDir = new File(dataDir, "subscriptions");
     }
 
     /**
@@ -51,9 +51,9 @@ public class FileMappingConvention
      *
      * @return the directory used for sender files
      */
-    public File senderDir()
+    public File publicationsDir()
     {
-        return senderDir;
+        return publicationsDir;
     }
 
     /**
@@ -61,9 +61,9 @@ public class FileMappingConvention
      *
      * @return the directory used for receiver files
      */
-    public File receiverDir()
+    public File subscriptionsDir()
     {
-        return receiverDir;
+        return subscriptionsDir;
     }
 
     public File dataDir()

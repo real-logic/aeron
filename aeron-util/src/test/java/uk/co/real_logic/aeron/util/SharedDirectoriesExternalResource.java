@@ -38,7 +38,7 @@ public class SharedDirectoriesExternalResource extends ExternalResource
 {
     private File dataDir;
     private FileMappingConvention mapping;
-    private List<MappedByteBuffer> buffers;
+    private List<MappedByteBuffer> mappedByteBuffers;
 
     public static List<LogAppender> mapLoggers(final List<Buffers> termBuffers,
                                                final byte[] defaultHeader,
@@ -46,9 +46,9 @@ public class SharedDirectoriesExternalResource extends ExternalResource
     {
         return termBuffers.stream()
                           .map(buffer -> new LogAppender(buffer.logBuffer(),
-                                  buffer.stateBuffer(),
-                                  defaultHeader,
-                                  maxFrameLength))
+                                                         buffer.stateBuffer(),
+                                                         defaultHeader,
+                                                         maxFrameLength))
                           .collect(toList());
     }
 
@@ -56,15 +56,14 @@ public class SharedDirectoriesExternalResource extends ExternalResource
     {
         dataDir = ensureDirectory(CommonContext.DATA_DIR_PROP_DEFAULT);
         mapping = new FileMappingConvention(dataDir.getAbsolutePath());
-        buffers = new ArrayList<>(3);
+        mappedByteBuffers = new ArrayList<>(3);
     }
 
     protected void after()
     {
         try
         {
-            // delete the dirs here so that if they error, we know the test that failed to unmap/close
-            unmapBuffers();
+            unMapBuffers();
             IoUtil.delete(dataDir, false);
         }
         catch (final Exception ex)
@@ -73,10 +72,10 @@ public class SharedDirectoriesExternalResource extends ExternalResource
         }
     }
 
-    private void unmapBuffers()
+    private void unMapBuffers()
     {
-        buffers.forEach(IoUtil::unmap);
-        buffers.clear();
+        mappedByteBuffers.forEach(IoUtil::unmap);
+        mappedByteBuffers.clear();
     }
 
     private File ensureDirectory(final String path) throws IOException
@@ -86,6 +85,7 @@ public class SharedDirectoriesExternalResource extends ExternalResource
         {
             IoUtil.delete(dir, false);
         }
+
         IoUtil.ensureDirectoryExists(dir, "data dir");
 
         return dir;
@@ -113,14 +113,14 @@ public class SharedDirectoriesExternalResource extends ExternalResource
         }
     }
 
-    public File senderDir()
+    public File publicationsDir()
     {
-        return mapping.senderDir();
+        return mapping.publicationsDir();
     }
 
-    public File receiverDir()
+    public File subscriptionsDir()
     {
-        return mapping.receiverDir();
+        return mapping.subscriptionsDir();
     }
 
     public List<Buffers> createTermFile(final File rootDir,
@@ -128,7 +128,7 @@ public class SharedDirectoriesExternalResource extends ExternalResource
                                         final long sessionId,
                                         final long channelId) throws IOException
     {
-        final List<Buffers> buffers = new ArrayList<>();
+        final List<Buffers> buffers = new ArrayList<>(BUFFER_COUNT);
         for (int i = 0; i < BUFFER_COUNT; i++)
         {
             final AtomicBuffer logBuffer = createTermFile(rootDir, destination, sessionId, channelId, i, LOG);
@@ -150,7 +150,7 @@ public class SharedDirectoriesExternalResource extends ExternalResource
         IoUtil.delete(termLocation, true);
 
         final MappedByteBuffer buffer = mapNewFile(termLocation, "Term Buffer", LogBufferDescriptor.LOG_MIN_SIZE);
-        buffers.add(buffer);
+        mappedByteBuffers.add(buffer);
 
         return new AtomicBuffer(buffer);
     }

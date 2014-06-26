@@ -51,8 +51,8 @@ class MappedBufferManagement implements BufferManagement
     MappedBufferManagement(final String dataDir)
     {
         fileConvention = new FileMappingConvention(dataDir);
-        senderDir = fileConvention.senderDir();
-        receiverDir = fileConvention.receiverDir();
+        senderDir = fileConvention.publicationsDir();
+        receiverDir = fileConvention.subscriptionsDir();
         srcTermMap = new UdpChannelMap<>();
         rcvTermMap = new UdpChannelMap<>();
         IoUtil.ensureDirectoryExists(senderDir, "sender");

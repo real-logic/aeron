@@ -86,10 +86,10 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
         if (destination.isMulticast())
         {
             final InetAddress endPointAddress = destination.remoteControl().getAddress();
+            final int dstPort = destination.remoteControl().getPort();
             final NetworkInterface localInterface = destination.localInterface();
             channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
-            channel.bind(new InetSocketAddress(destination.localControl().getPort()));
-            System.out.println(endPointAddress + " " + destination.localControl() + " " + localInterface);
+            channel.bind(new InetSocketAddress(dstPort));
             channel.join(endPointAddress, localInterface);
             channel.setOption(StandardSocketOptions.IP_MULTICAST_IF, localInterface);
             multicast = true;
@@ -114,9 +114,10 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
         if (destination.isMulticast())
         {
             final InetAddress endPointAddress = destination.remoteData().getAddress();
+            final int dstPort = destination.remoteData().getPort();
             final NetworkInterface localInterface = destination.localInterface();
             channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
-            channel.bind(new InetSocketAddress(destination.localData().getPort()));
+            channel.bind(new InetSocketAddress(dstPort));
             channel.join(endPointAddress, localInterface);
             channel.setOption(StandardSocketOptions.IP_MULTICAST_IF, localInterface);
             multicast = true;

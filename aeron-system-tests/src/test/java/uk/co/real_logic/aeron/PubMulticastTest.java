@@ -83,12 +83,13 @@ public class PubMulticastTest
     {
         System.setProperty(DIRS_DELETE_ON_EXIT_PROP_NAME, "true");
 
+        final NetworkInterface ifc = NetworkInterface.getByInetAddress(InetAddress.getByName("localhost"));
         receiverChannel = DatagramChannel.open();
         receiverChannel.configureBlocking(false);
         receiverChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
         receiverChannel.bind(new InetSocketAddress(DST_PORT));
-        receiverChannel.join(InetAddress.getByName(DATA_ADDRESS),
-                NetworkInterface.getByInetAddress(InetAddress.getByName("localhost")));
+        receiverChannel.join(InetAddress.getByName(DATA_ADDRESS), ifc);
+        receiverChannel.setOption(StandardSocketOptions.IP_MULTICAST_IF, ifc);
 
         driver = new MediaDriver();
 
@@ -131,7 +132,6 @@ public class PubMulticastTest
     }
 
     @Test(timeout = 1000)
-    @Ignore("isn't working yet")
     public void shouldSendCorrectlyFormedSingleDataFrames() throws Exception
     {
         LOGGER.logInvocation();
@@ -196,11 +196,10 @@ public class PubMulticastTest
             rcvBuffer.clear();
         }
 
-        assertThat(rcvedDataFrames, is(1));
+        assertThat(rcvedDataFrames, is(1L));
     }
 
     @Test(timeout = 1000)
-    @Ignore("isn't working yet")
     public void shouldHandleNak() throws Exception
     {
         LOGGER.logInvocation();

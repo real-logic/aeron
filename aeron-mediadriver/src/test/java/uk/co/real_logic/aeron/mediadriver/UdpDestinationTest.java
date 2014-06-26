@@ -20,6 +20,7 @@ import org.junit.Test;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
@@ -79,6 +80,7 @@ public class UdpDestinationTest
         assertThat(dst.remoteControl(), isMulticastAddress("224.10.9.10", 40124));
         assertThat(dst.localData(), is(new InetSocketAddress("localhost", 0)));
         assertThat(dst.remoteData(), isMulticastAddress("224.10.9.9", 40124));
+        assertThat(dst.localInterface(), is(NetworkInterface.getByInetAddress(InetAddress.getByName("localhost"))));
     }
 
     private Matcher<InetSocketAddress> isMulticastAddress(String addressName, int port) throws UnknownHostException

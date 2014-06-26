@@ -154,40 +154,4 @@ public class SharedDirectoriesExternalResource extends ExternalResource
 
         return new AtomicBuffer(buffer);
     }
-
-    public String dataDir()
-    {
-        return dataDir.getAbsolutePath();
-    }
-
-    public List<Buffers> mapTermFile(final File rootDir,
-                                     final String destination,
-                                     final long sessionId,
-                                     final long channelId) throws IOException
-    {
-        final List<Buffers> buffers = new ArrayList<>();
-        for (int i = 0; i < BUFFER_COUNT; i++)
-        {
-            final AtomicBuffer logBuffer = mapTermFile(rootDir, destination, sessionId, channelId, i, LOG);
-            final AtomicBuffer stateBuffer = mapTermFile(rootDir, destination, sessionId, channelId, i, STATE);
-            buffers.add(new Buffers(stateBuffer, logBuffer));
-        }
-
-        return buffers;
-    }
-
-    private AtomicBuffer mapTermFile(final File rootDir,
-                                     final String destination,
-                                     final long sessionId,
-                                     final long channelId,
-                                     final long termId,
-                                     final Type type) throws IOException
-    {
-        final File termLocation = termLocation(rootDir, sessionId, channelId, termId, false, destination, type);
-
-        final MappedByteBuffer buffer = IoUtil.mapExistingFile(termLocation, "Term Buffer");
-        buffers.add(buffer);
-
-        return new AtomicBuffer(buffer);
-    }
 }

@@ -16,11 +16,16 @@
 package uk.co.real_logic.aeron;
 
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.experimental.theories.DataPoint;
+import org.junit.experimental.theories.Theories;
+import org.junit.experimental.theories.Theory;
+import org.junit.runner.RunWith;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.Subscriber.DataHandler;
@@ -28,11 +33,17 @@ import static uk.co.real_logic.aeron.Subscriber.NewSourceEventHandler;
 import static uk.co.real_logic.aeron.util.CommonContext.DIRS_DELETE_ON_EXIT_PROP_NAME;
 
 /**
- * Test that has a publisher and subscriber and single media driver for unicast cases
+ * Test that has a publisher and subscriber and single media driver for unicast and multicast cases
  */
-public class PubAndSubUnicastTest
+@RunWith(Theories.class)
+public class PubAndSubTest
 {
-    private static final Destination DESTINATION = new Destination("udp://localhost:54321");
+    @DataPoint
+    public static final Destination UNICAST_DESTINATION = new Destination("udp://localhost:54321");
+
+    @DataPoint
+    public static final Destination MULTICAST_DESTINATION = new Destination("udp://localhost@224.20.30.39:54321");
+
     private static final long CHANNEL_ID = 1L;
     private static final long SESSION_ID = 2L;
     private static final int COUNTER_BUFFER_SZ = 1024;
@@ -40,32 +51,38 @@ public class PubAndSubUnicastTest
     private final AtomicBuffer counterValuesBuffer = new AtomicBuffer(new byte[COUNTER_BUFFER_SZ]);
     private final AtomicBuffer counterLabelsBuffer = new AtomicBuffer(new byte[COUNTER_BUFFER_SZ]);
 
-    private Aeron producingClient;
-    private Aeron receivingClient;
+    private Aeron publishingClient;
+    private Aeron consumingClient;
     private MediaDriver driver;
     private Subscriber subscriber;
     private Source source;
 
-    @Before
-    public void setupClients() throws Exception
+    private ExecutorService executorService;
+
+    private void setup(final Destination destination) throws Exception
     {
         System.setProperty(DIRS_DELETE_ON_EXIT_PROP_NAME, "true");
+
         driver = new MediaDriver();
 
         final DataHandler dataHandler = mock(DataHandler.class);
         final NewSourceEventHandler sourceHandler = mock(NewSourceEventHandler.class);
 
-        producingClient = Aeron.newSingleMediaDriver(newAeronContext());
-        receivingClient = Aeron.newSingleMediaDriver(newAeronContext());
+        publishingClient = Aeron.newSingleMediaDriver(newAeronContext());
+        consumingClient = Aeron.newSingleMediaDriver(newAeronContext());
 
-        subscriber = receivingClient.newSubscriber(new Subscriber.Context()
-                                                       .destination(DESTINATION)
+        subscriber = consumingClient.newSubscriber(new Subscriber.Context()
+                                                       .destination(destination)
                                                        .channel(CHANNEL_ID, dataHandler)
                                                        .newSourceEvent(sourceHandler));
 
-        source = producingClient.newSource(new Source.Context().destination(DESTINATION)
-                                                               .sessionId(SESSION_ID));
+        source = publishingClient.newSource(new Source.Context().destination(destination)
+                                                                .sessionId(SESSION_ID));
 
+        executorService = Executors.newSingleThreadExecutor();
+
+        driver.invokeEmbedded();
+        consumingClient.invoke(executorService);
     }
 
     private Aeron.ClientContext newAeronContext()
@@ -81,56 +98,41 @@ public class PubAndSubUnicastTest
     @After
     public void closeEverything() throws Exception
     {
+        consumingClient.shutdown();
+        publishingClient.shutdown();
+        driver.shutdown();
+
         subscriber.close();
-        producingClient.close();
-        receivingClient.close();
         source.close();
+        consumingClient.close();
+        publishingClient.close();
         driver.close();
+        executorService.shutdown();
     }
 
-    private void doWork(final int times) throws Exception
+    @Theory
+    public void shouldSpinUpAndShutdown(final Destination destination) throws Exception
     {
-        for (int i = 0; i < times; i++)
-        {
-            doWork();
-        }
+        setup(destination);
+
+        Thread.sleep(100);
     }
 
-    private void doWork() throws Exception
+    @Theory
+    @Ignore("isn't finished yet - simple message send/read")
+    public void shouldReceivePublishedMessage(final Destination destination) throws Exception
     {
-        producingClient.conductor().doWork();
-        driver.conductor().doWork();
-        driver.sender().doWork();
-        driver.receiver().doWork();
-        receivingClient.conductor().doWork();
-        subscriber.read();
+        setup(destination);
+
+        Thread.sleep(100);
     }
 
-    @Test
-    public void clientsSpinUp() throws Exception
+    @Theory
+    @Ignore("isn't finished yet = send enough data to rollover a buffer")
+    public void shouldContinueAfterBufferRollover(final Destination destination) throws Exception
     {
-        doWork(3);
-    }
+        setup(destination);
 
-    @Test
-    @Ignore("isn't finished yet")
-    public void publisherMessagesSubscriber() throws Exception
-    {
-        doWork(5);
-        // TODO: simple message send/read
-    }
-
-    @Ignore
-    @Test
-    public void messagesShouldContinueAfterBufferRollover()
-    {
-        // TODO: send enough data to rollover a buffer
-    }
-
-    @Ignore
-    @Test
-    public void receiverShouldNakMissingData()
-    {
-        // TODO: throw away some packets, check they are delivered
+        Thread.sleep(100);
     }
 }

@@ -18,6 +18,8 @@ package uk.co.real_logic.aeron.mediadriver;
 import uk.co.real_logic.aeron.util.BitUtil;
 
 import java.net.*;
+import java.util.Collections;
+import java.util.Enumeration;
 
 import static java.net.InetAddress.getByAddress;
 
@@ -41,6 +43,7 @@ public class UdpDestination
     private final String uriStr;
     private final String canonicalRepresentation;
     private final long consistentHash;
+    private final NetworkInterface localInterface;
 
     public static UdpDestination parse(final String destinationUri)
     {
@@ -74,10 +77,18 @@ public class UdpDestination
 
                 final InetSocketAddress localAddress = determineLocalAddressFromUserInfo(userInfo);
 
-                context.localControlAddress(controlAddress)
+                final NetworkInterface localInterface = NetworkInterface.getByInetAddress(localAddress.getAddress());
+
+                if (null == localInterface)
+                {
+                    throw new IllegalArgumentException("Interface not specified");
+                }
+
+                context.localControlAddress(localAddress)
                        .remoteControlAddress(controlAddress)
-                       .localDataAddress(dataAddress)
+                       .localDataAddress(localAddress)
                        .remoteDataAddress(dataAddress)
+                       .localInterface(localInterface)
                        .canonicalRepresentation(generateCanonicalRepresentation(localAddress, dataAddress));
             }
             else
@@ -162,6 +173,7 @@ public class UdpDestination
         this.uriStr = context.uriStr;
         this.consistentHash = context.consistentHash;
         this.canonicalRepresentation = context.canonicalRepresentation;
+        this.localInterface = context.localInterface;
     }
 
     public long consistentHash()
@@ -227,14 +239,9 @@ public class UdpDestination
         return remoteData.getAddress().isMulticastAddress();
     }
 
-    public NetworkInterface localDataInterface() throws SocketException
+    public NetworkInterface localInterface() throws SocketException
     {
-        return NetworkInterface.getByInetAddress(localData.getAddress());
-    }
-
-    public NetworkInterface localControlInterface() throws SocketException
-    {
-        return NetworkInterface.getByInetAddress(localControl.getAddress());
+        return localInterface;
     }
 
     /**
@@ -257,6 +264,7 @@ public class UdpDestination
         private String uriStr;
         private String canonicalRepresentation;
         private long consistentHash;
+        private NetworkInterface localInterface;
 
         public Context uriStr(final String uri)
         {
@@ -297,6 +305,12 @@ public class UdpDestination
         public Context canonicalRepresentation(final String rep)
         {
             this.canonicalRepresentation = rep;
+            return this;
+        }
+
+        public Context localInterface(final NetworkInterface ifc)
+        {
+            this.localInterface = ifc;
             return this;
         }
     }

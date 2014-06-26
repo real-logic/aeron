@@ -26,6 +26,7 @@ import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
@@ -85,9 +86,12 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
         if (destination.isMulticast())
         {
             final InetAddress endPointAddress = destination.remoteControl().getAddress();
-            channel.setOption(StandardSocketOptions.SO_REUSEADDR, Boolean.TRUE);
-            channel.bind(destination.localControl());
-            channel.join(endPointAddress, destination.localControlInterface());
+            final NetworkInterface localInterface = destination.localInterface();
+            channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
+            channel.bind(new InetSocketAddress(destination.localControl().getPort()));
+            System.out.println(endPointAddress + " " + destination.localControl() + " " + localInterface);
+            channel.join(endPointAddress, localInterface);
+            channel.setOption(StandardSocketOptions.IP_MULTICAST_IF, localInterface);
             multicast = true;
         }
         else
@@ -110,9 +114,11 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
         if (destination.isMulticast())
         {
             final InetAddress endPointAddress = destination.remoteData().getAddress();
-            channel.setOption(StandardSocketOptions.SO_REUSEADDR, Boolean.TRUE);
+            final NetworkInterface localInterface = destination.localInterface();
+            channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
             channel.bind(destination.localData());
-            channel.join(endPointAddress, destination.localDataInterface());
+            channel.join(endPointAddress, localInterface);
+            channel.setOption(StandardSocketOptions.IP_MULTICAST_IF, localInterface);
             multicast = true;
         }
         else

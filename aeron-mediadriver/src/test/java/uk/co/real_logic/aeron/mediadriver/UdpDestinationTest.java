@@ -73,11 +73,11 @@ public class UdpDestinationTest
     @Test
     public void shouldParseValidMulticastAddress() throws Exception
     {
-        final UdpDestination dst = UdpDestination.parse("udp://224.10.9.9:40124");
+        final UdpDestination dst = UdpDestination.parse("udp://localhost@224.10.9.9:40124");
 
-        assertThat(dst.localControl(), isMulticastAddress("224.10.9.10", 40124));
+        assertThat(dst.localControl(), is(new InetSocketAddress("localhost", 0)));
         assertThat(dst.remoteControl(), isMulticastAddress("224.10.9.10", 40124));
-        assertThat(dst.localData(), isMulticastAddress("224.10.9.9", 40124));
+        assertThat(dst.localData(), is(new InetSocketAddress("localhost", 0)));
         assertThat(dst.remoteData(), isMulticastAddress("224.10.9.9", 40124));
     }
 
@@ -156,14 +156,14 @@ public class UdpDestinationTest
     @Test
     public void shouldHandleCanonicalRepresentationForMulticastCorrectly() throws Exception
     {
-        final UdpDestination dst = UdpDestination.parse("udp://224.0.1.1:40456");
+        final UdpDestination dst = UdpDestination.parse("udp://localhost@224.0.1.1:40456");
         final UdpDestination dstLocal = UdpDestination.parse("udp://127.0.0.1@224.0.1.1:40456");
         final UdpDestination dstLocalPort = UdpDestination.parse("udp://127.0.0.1:40455@224.0.1.1:40456");
-        final UdpDestination dstAllSystems = UdpDestination.parse("udp://all-systems.mcast.net:40456");
+        final UdpDestination dstAllSystems = UdpDestination.parse("udp://localhost@all-systems.mcast.net:40456");
 
-        assertThat(dst.canonicalRepresentation(), is("UDP-00000000-0-e0000101-40456"));
+        assertThat(dst.canonicalRepresentation(), is("UDP-7f000001-0-e0000101-40456"));
         assertThat(dstLocal.canonicalRepresentation(), is("UDP-7f000001-0-e0000101-40456"));
         assertThat(dstLocalPort.canonicalRepresentation(), is("UDP-7f000001-40455-e0000101-40456"));
-        assertThat(dstAllSystems.canonicalRepresentation(), is("UDP-00000000-0-e0000001-40456"));
+        assertThat(dstAllSystems.canonicalRepresentation(), is("UDP-7f000001-0-e0000001-40456"));
     }
 }

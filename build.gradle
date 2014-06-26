@@ -127,7 +127,7 @@ project(':aeron-mediadriver') {
     }
 
     test {
-        systemProperties('aeron.event.log': System.properties['aeron.event.log']);
+        systemProperties('aeron.event.log': System.properties['aeron.event.log'])
     }
 
     build.doLast {
@@ -190,7 +190,8 @@ project(':aeron-system-tests') {
     }
 
     test {
-        systemProperties('aeron.event.log': System.properties['aeron.event.log']);
+        systemProperties('java.net.preferIPv4Stack': true)
+        systemProperties('aeron.event.log': System.properties['aeron.event.log'])
     }
 }
 
@@ -208,7 +209,7 @@ task(runEx, dependsOn: project(':aeron-examples').'build', type: JavaExec) {
             'aeron.dir.conductor': baseDir + '-conductor',
             'aeron.dir.counters': baseDir + '-counters',
             'aeron.dir.delete.on.exit': System.properties['aeron.dir.delete.on.exit'],
-            'aeron.event.log': System.properties['aeron.event.log']);
+            'aeron.event.log': System.properties['aeron.event.log'])
 }
 
 task wrapper(type: Wrapper) {

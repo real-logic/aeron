@@ -43,7 +43,7 @@ import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 
 /**
- * Client conductor takes responses and notifications from media driver and acts on them. As well as pass commands
+ * Client conductor takes responses and notifications from media driver and acts on them. As well as passes commands
  * to the media driver.
  */
 public final class ClientConductor extends Agent
@@ -52,8 +52,8 @@ public final class ClientConductor extends Agent
 
     public static final long AGENT_IDLE_MAX_SPINS = 5000;
     public static final long AGENT_IDLE_MAX_YIELDS = 100;
-    public static final long AGENT_IDLE_MIN_PARK_NANOS = TimeUnit.NANOSECONDS.toNanos(10);
-    public static final long AGENT_IDLE_MAX_PARK_NANOS = TimeUnit.MICROSECONDS.toNanos(100);
+    public static final long AGENT_IDLE_MIN_PARK_NS = TimeUnit.NANOSECONDS.toNanos(10);
+    public static final long AGENT_IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(100);
 
     private final RingBuffer commandBuffer;
     private final CopyBroadcastReceiver toClientBuffer;
@@ -84,7 +84,7 @@ public final class ClientConductor extends Agent
                            final Aeron.ClientContext ctx)
     {
         super(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                AGENT_IDLE_MIN_PARK_NANOS, AGENT_IDLE_MAX_PARK_NANOS));
+                                    AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS));
 
         counterLabelsBuffer = ctx.counterLabelsBuffer();
         counterValuesBuffer = ctx.counterValuesBuffer();
@@ -154,11 +154,11 @@ public final class ClientConductor extends Agent
                         final String destination = subscriptionMessage.destination();
                         if (msgTypeId == ADD_SUBSCRIPTION)
                         {
-                            addReceiver(destination, channelIds);
+                            addSubscription(destination, channelIds);
                         }
                         else
                         {
-                            removeReceiver(destination, channelIds);
+                            removeSubscription(destination, channelIds);
                         }
 
                         toDriverBuffer.write(msgTypeId, buffer, index, length);
@@ -175,25 +175,25 @@ public final class ClientConductor extends Agent
         return messagesRead > 0;
     }
 
-    private void addReceiver(final String destination, final long[] channelIds)
+    private void addSubscription(final String destination, final long[] channelIds)
     {
         // Not efficient but only happens once per channel ever
         // and is during setup and not a latency critical path
         for (final long channelId : channelIds)
         {
             subscriberChannels.forEach(
-                (receiver) ->
+                (subscription) ->
                 {
-                    if (receiver.matches(destination, channelId))
+                    if (subscription.matches(destination, channelId))
                     {
-                        rcvNotifiers.put(destination, channelId, receiver);
+                        rcvNotifiers.put(destination, channelId, subscription);
                     }
                 }
             );
         }
     }
 
-    private void removeReceiver(final String destination, final long[] channelIds)
+    private void removeSubscription(final String destination, final long[] channelIds)
     {
         for (final long channelId : channelIds)
         {
@@ -204,7 +204,7 @@ public final class ClientConductor extends Agent
 
     private void addPublisher(final String destination, final long channelId, final long sessionId)
     {
-        // see addReceiver re efficiency
+        // see addSubscription re efficiency
         publishers.forEach(
             (channel) ->
             {
@@ -246,11 +246,11 @@ public final class ClientConductor extends Agent
 
                             if (msgTypeId == NEW_PUBLICATION_BUFFER_NOTIFICATION)
                             {
-                                onNewSenderBuffer(destination, sessionId, channelId, termId);
+                                onNewPublicationBuffers(destination, sessionId, channelId, termId);
                             }
                             else
                             {
-                                onNewReceiverBuffer(destination, sessionId, channelId, termId);
+                                onNewSubscriptionBuffers(destination, sessionId, channelId, termId);
                             }
                             break;
 
@@ -267,8 +267,8 @@ public final class ClientConductor extends Agent
         return messagesRead > 0;
     }
 
-    private void onNewReceiverBuffer(final String destination, final long sessionId,
-                                     final long channelId, final long termId)
+    private void onNewSubscriptionBuffers(final String destination, final long sessionId,
+                                          final long channelId, final long termId)
     {
         onNewBuffer(sessionId,
                     channelId,
@@ -283,8 +283,8 @@ public final class ClientConductor extends Agent
                     });
     }
 
-    private void onNewSenderBuffer(final String destination, final long sessionId,
-                                   final long channelId, final long termId)
+    private void onNewPublicationBuffers(final String destination, final long sessionId,
+                                         final long channelId, final long termId)
     {
         onNewBuffer(sessionId,
                     channelId,

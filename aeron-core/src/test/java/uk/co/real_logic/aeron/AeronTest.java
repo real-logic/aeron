@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
 import uk.co.real_logic.aeron.util.ErrorCode;
@@ -82,8 +82,8 @@ public class AeronTest
     public static final int RING_BUFFER_SZ = (16 * 1024) + RingBufferDescriptor.TRAILER_LENGTH;
     public static final int BROADCAST_BUFFER_SZ = (16 * 1024) + BroadcastBufferDescriptor.TRAILER_LENGTH;
 
-    @ClassRule
-    public static SharedDirectoriesExternalResource directory = new SharedDirectoriesExternalResource();
+    @Rule
+    public SharedDirectoriesExternalResource directory = new SharedDirectoriesExternalResource();
 
     private final InvalidDestinationHandler invalidDestination = mock(InvalidDestinationHandler.class);
 

@@ -46,6 +46,11 @@ public class MediaConductor extends Agent
     public static final StaticDelayGenerator NAK_UNICAST_DELAY_GENERATOR =
         new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(NAK_UNICAST_DELAY_DEFAULT_NS), true);
 
+    public static final OptimalMulticastDelayGenerator NAK_MULTICAST_DELAY_GENERATOR =
+        new OptimalMulticastDelayGenerator(MediaDriver.NAK_MAX_BACKOFF_DEFAULT, MediaDriver.NAK_GROUPSIZE_DEFAULT,
+                MediaDriver.NAK_GRTT_DEFAULT);
+
+    /** Source uses same for unicast and multicast. For now. */
     public static final FeedbackDelayGenerator RETRANS_UNICAST_DELAY_GENERATOR =
         () -> RETRANS_UNICAST_DELAY_DEFAULT_NS;
     public static final FeedbackDelayGenerator RETRANS_UNICAST_LINGER_GENERATOR =
@@ -274,7 +279,7 @@ public class MediaConductor extends Agent
 
             frameHandler.addPublication(publication);
             clientProxy.onNewBuffers(NEW_PUBLICATION_BUFFER_NOTIFICATION, sessionId, channelId,
-                                     initialTermId, destination, bufferRotator);
+                    initialTermId, destination, bufferRotator);
             publications.add(publication);
         }
         catch (final ControlProtocolException ex)
@@ -354,7 +359,7 @@ public class MediaConductor extends Agent
                 bufferManagement.addSubscriberChannel(rcvDestination, sessionId, channelId);
 
             clientProxy.onNewBuffers(NEW_SUBSCRIPTION_BUFFER_NOTIFICATION, sessionId, channelId, termId,
-                                     destination, bufferRotator);
+                    destination, bufferRotator);
 
             final NewReceiveBufferEvent event =
                 new NewReceiveBufferEvent(rcvDestination, sessionId, channelId, termId, bufferRotator);

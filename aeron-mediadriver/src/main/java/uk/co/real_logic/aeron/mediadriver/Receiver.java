@@ -15,10 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.util.Agent;
-import uk.co.real_logic.aeron.util.AtomicArray;
-import uk.co.real_logic.aeron.util.ErrorCode;
-import uk.co.real_logic.aeron.util.TimerWheel;
+import uk.co.real_logic.aeron.util.*;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.GapScanner;
@@ -28,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 
+import static uk.co.real_logic.aeron.mediadriver.MediaConductor.NAK_MULTICAST_DELAY_GENERATOR;
 import static uk.co.real_logic.aeron.mediadriver.MediaConductor.NAK_UNICAST_DELAY_GENERATOR;
 
 /**
@@ -195,6 +193,7 @@ public class Receiver extends Agent
     private void onNewReceiveBuffers(final NewReceiveBufferEvent e)
     {
         final DataFrameHandler frameHandler = frameHandler(e.destination());
+        FeedbackDelayGenerator delayGenerator;
 
         if (null == frameHandler)
         {
@@ -206,7 +205,16 @@ public class Receiver extends Agent
             .map((r) -> new GapScanner(r.logBuffer(), r.stateBuffer()))
             .toArray(GapScanner[]::new);
 
-        final LossHandler lossHandler = new LossHandler(scanners, conductorTimerWheel, NAK_UNICAST_DELAY_GENERATOR);
+        if (e.destination().isMulticast())
+        {
+            delayGenerator = NAK_MULTICAST_DELAY_GENERATOR;
+        }
+        else
+        {
+            delayGenerator = NAK_UNICAST_DELAY_GENERATOR;
+        }
+
+        final LossHandler lossHandler = new LossHandler(scanners, conductorTimerWheel, delayGenerator);
 
         lossHandler.currentTermId(e.termId());
         frameHandler.onSubscriptionReady(e, lossHandler);

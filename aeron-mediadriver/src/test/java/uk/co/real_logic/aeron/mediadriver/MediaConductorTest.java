@@ -106,7 +106,8 @@ public class MediaConductorTest
             .receiverCommandBuffer(MediaDriver.COMMAND_BUFFER_SZ)
             .receiverNioSelector(nioSelector)
             .conductorNioSelector(nioSelector)
-            .senderFlowControl(UnicastSenderControlStrategy::new)
+            .unicastSenderFlowControl(UnicastSenderControlStrategy::new)
+            .multicastSenderFlowControl(DefaultMulticastSenderControlStrategy::new)
             .conductorTimerWheel(new TimerWheel(MEDIA_CONDUCTOR_TICK_DURATION_US,
                                                 TimeUnit.MICROSECONDS,
                                                 MEDIA_CONDUCTOR_TICKS_PER_WHEEL))

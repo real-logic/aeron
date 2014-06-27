@@ -67,7 +67,8 @@ public class MediaConductor extends Agent
     private final AtomicArray<SubscribedSession> subscribedSessions;
     private final AtomicArray<Publication> publications;
 
-    private final Supplier<SenderControlStrategy> senderFlowControl;
+    private final Supplier<SenderControlStrategy> unicastSenderFlowControl;
+    private final Supplier<SenderControlStrategy> multicastSenderFlowControl;
 
     private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
     private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
@@ -85,7 +86,8 @@ public class MediaConductor extends Agent
         this.bufferManagement = ctx.bufferManagement();
         this.nioSelector = ctx.conductorNioSelector();
         this.mtuLength = ctx.mtuLength();
-        this.senderFlowControl = ctx.senderFlowControl();
+        this.unicastSenderFlowControl = ctx.unicastSenderFlowControl();
+        this.multicastSenderFlowControl = ctx.multicastSenderFlowControl();
 
         timerWheel = ctx.conductorTimerWheel();
         heartbeatTimer = newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheck);
@@ -266,10 +268,12 @@ public class MediaConductor extends Agent
 
             final long initialTermId = generateTermId();
             final BufferRotator bufferRotator = bufferManagement.addPublication(srcDestination, sessionId, channelId);
+            final SenderControlStrategy flowControlStrategy = srcDestination.isMulticast() ?
+                    multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
 
             publication = new Publication(frameHandler,
                                           timerWheel,
-                                          senderFlowControl.get(),
+                                          flowControlStrategy,
                                           bufferRotator,
                                           sessionId,
                                           channelId,

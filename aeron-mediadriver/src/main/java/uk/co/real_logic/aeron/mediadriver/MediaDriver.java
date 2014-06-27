@@ -240,7 +240,8 @@ public class MediaDriver implements AutoCloseable
             .receiverCommandBuffer(COMMAND_BUFFER_SZ)
             .receiverNioSelector(new NioSelector())
             .conductorNioSelector(new NioSelector())
-            .senderFlowControl(UnicastSenderControlStrategy::new)
+            .unicastSenderFlowControl(UnicastSenderControlStrategy::new)
+            .multicastSenderFlowControl(UnicastSenderControlStrategy::new)
             .subscribedSessions(new AtomicArray<>())
             .publications(new AtomicArray<>())
             .conductorTimerWheel(new TimerWheel(MEDIA_CONDUCTOR_TICK_DURATION_US,
@@ -444,7 +445,8 @@ public class MediaDriver implements AutoCloseable
         private BufferManagement bufferManagement;
         private NioSelector receiverNioSelector;
         private NioSelector conductorNioSelector;
-        private Supplier<SenderControlStrategy> senderFlowControl;
+        private Supplier<SenderControlStrategy> unicastSenderFlowControl;
+        private Supplier<SenderControlStrategy> multicastSenderFlowControl;
         private TimerWheel conductorTimerWheel;
         private Queue<NewReceiveBufferEvent> newReceiveBufferEventQueue;
         private ReceiverProxy receiverProxy;
@@ -513,9 +515,15 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public MediaDriverContext senderFlowControl(final Supplier<SenderControlStrategy> senderFlowControl)
+        public MediaDriverContext unicastSenderFlowControl(final Supplier<SenderControlStrategy> senderFlowControl)
         {
-            this.senderFlowControl = senderFlowControl;
+            this.unicastSenderFlowControl = senderFlowControl;
+            return this;
+        }
+
+        public MediaDriverContext multicastSenderFlowControl(final Supplier<SenderControlStrategy> senderFlowControl)
+        {
+            this.multicastSenderFlowControl = senderFlowControl;
             return this;
         }
 
@@ -610,9 +618,14 @@ public class MediaDriver implements AutoCloseable
             return conductorNioSelector;
         }
 
-        public Supplier<SenderControlStrategy> senderFlowControl()
+        public Supplier<SenderControlStrategy> unicastSenderFlowControl()
         {
-            return senderFlowControl;
+            return unicastSenderFlowControl;
+        }
+
+        public Supplier<SenderControlStrategy> multicastSenderFlowControl()
+        {
+            return multicastSenderFlowControl;
         }
 
         public TimerWheel conductorTimerWheel()

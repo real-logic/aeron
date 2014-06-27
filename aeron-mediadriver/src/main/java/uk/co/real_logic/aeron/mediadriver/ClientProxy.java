@@ -28,7 +28,7 @@ import uk.co.real_logic.aeron.util.protocol.ErrorFlyweight;
 import java.nio.ByteBuffer;
 
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ERROR_RESPONSE;
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.NEW_PUBLICATION_BUFFER_NOTIFICATION;
+import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.NEW_PUBLICATION_BUFFER_EVENT;
 
 /**
  * Proxy for communicating from the media driver to the client conductor.
@@ -87,7 +87,7 @@ public class ClientProxy
         bufferRotator.appendBufferLocationsTo(newBufferMessage);
         newBufferMessage.destination(destination);
 
-        LOGGER.log(msgTypeId == NEW_PUBLICATION_BUFFER_NOTIFICATION ?
+        LOGGER.log(msgTypeId == NEW_PUBLICATION_BUFFER_EVENT ?
                        EventCode.CMD_OUT_NEW_PUBLICATION_BUFFER_NOTIFICATION :
                        EventCode.CMD_OUT_NEW_SUBSCRIPTION_BUFFER_NOTIFICATION,
                    tmpBuffer, 0, newBufferMessage.length());

@@ -81,6 +81,7 @@ public class AeronTest
     private static final int SEND_BUFFER_CAPACITY = 1024;
     public static final int RING_BUFFER_SZ = (16 * 1024) + RingBufferDescriptor.TRAILER_LENGTH;
     public static final int BROADCAST_BUFFER_SZ = (16 * 1024) + BroadcastBufferDescriptor.TRAILER_LENGTH;
+    public static final long TERM_ID = 1L;
 
     @Rule
     public SharedDirectoriesExternalResource directory = new SharedDirectoriesExternalResource();
@@ -163,7 +164,7 @@ public class AeronTest
     {
         final Channel channel = newChannel(aeron);
         aeron.conductor().doWork();
-        createTermBuffer(0L, NEW_PUBLICATION_BUFFER_NOTIFICATION, directory.publicationsDir(), SESSION_ID);
+        createTermBuffer(0L, NEW_PUBLICATION_BUFFER_EVENT, directory.publicationsDir(), SESSION_ID);
         aeron.conductor().doWork();
         assertTrue(channel.offer(atomicSendBuffer));
     }
@@ -175,7 +176,7 @@ public class AeronTest
         final Channel channel = newChannel(aeron);
         aeron.conductor().doWork();
         final List<Buffers> buffers =
-            createTermBuffer(0L, NEW_PUBLICATION_BUFFER_NOTIFICATION, directory.publicationsDir(), SESSION_ID);
+            createTermBuffer(0L, NEW_PUBLICATION_BUFFER_EVENT, directory.publicationsDir(), SESSION_ID);
 
         final int capacity = buffers.get(0).logBuffer().capacity();
         final int msgCount = (4 * capacity) / SEND_BUFFER_CAPACITY;
@@ -359,7 +360,7 @@ public class AeronTest
 
         final Subscriber subscriber = newSubscriber(aeron);
         final List<Buffers> termBuffers =
-            createTermBuffer(0L, NEW_SUBSCRIPTION_BUFFER_NOTIFICATION, directory.subscriptionsDir(), SESSION_ID);
+            createTermBuffer(0L, NEW_SUBSCRIPTION_BUFFER_EVENT, directory.subscriptionsDir(), SESSION_ID);
 
         final List<LogAppender> logAppenders = createLogAppenders(termBuffers);
 
@@ -449,7 +450,7 @@ public class AeronTest
         final List<LogAppender> logAppenders = createLogAppenders(SESSION_ID);
         final List<LogAppender> otherLogAppenders = createLogAppenders(SESSION_ID_2);
 
-        sendNewBufferNotification(directory.subscriptionsDir(), NEW_SUBSCRIPTION_BUFFER_NOTIFICATION, 1L, SESSION_ID);
+        sendNewBufferNotification(directory.subscriptionsDir(), NEW_SUBSCRIPTION_BUFFER_EVENT, TERM_ID, SESSION_ID);
 
         aeron.conductor().doWork();
         skip(toMediaDriver, 1);
@@ -505,7 +506,7 @@ public class AeronTest
     private List<LogAppender> createLogAppenders(final long sessionId) throws IOException
     {
         final List<Buffers> termBuffers =
-            createTermBuffer(0L, NEW_SUBSCRIPTION_BUFFER_NOTIFICATION, directory.subscriptionsDir(), sessionId);
+            createTermBuffer(0L, NEW_SUBSCRIPTION_BUFFER_EVENT, directory.subscriptionsDir(), sessionId);
 
         return createLogAppenders(termBuffers);
     }
@@ -537,15 +538,15 @@ public class AeronTest
                 newBufferMessage.bufferLength(i, LOG_MIN_SIZE);
             }
         );
-        addBufferLocation(rootDir, termId, sessionId, LOG, 0);
-        addBufferLocation(rootDir, termId, sessionId, STATE, BUFFER_COUNT);
+
+        addBufferLocation(rootDir, sessionId, LOG, 0);
+        addBufferLocation(rootDir, sessionId, STATE, BUFFER_COUNT);
         newBufferMessage.destination(DESTINATION);
 
         toClientTransmitter.transmit(msgTypeId, atomicSendBuffer, 0, newBufferMessage.length());
     }
 
     private void addBufferLocation(final File dir,
-                                   final long termId,
                                    final long sessionId,
                                    final Type type,
                                    final int start)
@@ -553,8 +554,8 @@ public class AeronTest
         IntStream.range(0, BUFFER_COUNT).forEach(
             (i) ->
             {
-                final File term = termLocation(dir, sessionId, CHANNEL_ID, termId + i, true, DESTINATION, type);
-                newBufferMessage.location(i + start, term.getAbsolutePath());
+                final File termFile = termLocation(dir, sessionId, CHANNEL_ID, i, true, DESTINATION, type);
+                newBufferMessage.location(i + start, termFile.getAbsolutePath());
             }
         );
     }

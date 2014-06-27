@@ -232,8 +232,8 @@ public final class ClientConductor extends Agent
                 {
                     switch (msgTypeId)
                     {
-                        case NEW_SUBSCRIPTION_BUFFER_NOTIFICATION:
-                        case NEW_PUBLICATION_BUFFER_NOTIFICATION:
+                        case NEW_SUBSCRIPTION_BUFFER_EVENT:
+                        case NEW_PUBLICATION_BUFFER_EVENT:
                             newBufferMessage.wrap(buffer, index);
 
                             final long sessionId = newBufferMessage.sessionId();
@@ -241,7 +241,7 @@ public final class ClientConductor extends Agent
                             final long termId = newBufferMessage.termId();
                             final String destination = newBufferMessage.destination();
 
-                            if (msgTypeId == NEW_PUBLICATION_BUFFER_NOTIFICATION)
+                            if (msgTypeId == NEW_PUBLICATION_BUFFER_EVENT)
                             {
                                 onNewPublicationBuffers(destination, sessionId, channelId, termId);
                             }

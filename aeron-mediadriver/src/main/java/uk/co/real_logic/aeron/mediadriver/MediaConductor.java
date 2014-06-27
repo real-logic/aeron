@@ -278,7 +278,7 @@ public class MediaConductor extends Agent
                                           mtuLength);
 
             frameHandler.addPublication(publication);
-            clientProxy.onNewBuffers(NEW_PUBLICATION_BUFFER_NOTIFICATION, sessionId, channelId,
+            clientProxy.onNewBuffers(NEW_PUBLICATION_BUFFER_EVENT, sessionId, channelId,
                     initialTermId, destination, bufferRotator);
             publications.add(publication);
         }
@@ -358,7 +358,7 @@ public class MediaConductor extends Agent
             final BufferRotator bufferRotator =
                 bufferManagement.addSubscriberChannel(rcvDestination, sessionId, channelId);
 
-            clientProxy.onNewBuffers(NEW_SUBSCRIPTION_BUFFER_NOTIFICATION, sessionId, channelId, termId,
+            clientProxy.onNewBuffers(NEW_SUBSCRIPTION_BUFFER_EVENT, sessionId, channelId, termId,
                     destination, bufferRotator);
 
             final NewReceiveBufferEvent event =

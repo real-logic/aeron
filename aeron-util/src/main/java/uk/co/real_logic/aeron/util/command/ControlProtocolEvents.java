@@ -39,11 +39,11 @@ public class ControlProtocolEvents
     /** Error Response */
     public static final int ERROR_RESPONSE = 0x07;
     /** Error Notification */
-    public static final int ERROR_NOTIFICATION = 0x08;
+    public static final int ERROR_EVENT = 0x08;
     /** New subscription Buffer Notification */
-    public static final int NEW_SUBSCRIPTION_BUFFER_NOTIFICATION = 0x09;
+    public static final int NEW_SUBSCRIPTION_BUFFER_EVENT = 0x09;
     /** New publication Buffer Notification */
-    public static final int NEW_PUBLICATION_BUFFER_NOTIFICATION = 0x0A;
+    public static final int NEW_PUBLICATION_BUFFER_EVENT = 0x0A;
 
     // Within Media Driver between threads
 

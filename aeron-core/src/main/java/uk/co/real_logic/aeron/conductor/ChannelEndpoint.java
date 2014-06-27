@@ -15,18 +15,23 @@
  */
 package uk.co.real_logic.aeron.conductor;
 
-public abstract class ChannelNotifiable
+public abstract class ChannelEndpoint
 {
-    protected final String destination;
-    protected final long channelId;
+    private final String destination;
+    private final long channelId;
 
-    public ChannelNotifiable(final String destination, final long channelId)
+    public ChannelEndpoint(final String destination, final long channelId)
     {
         this.destination = destination;
         this.channelId = channelId;
     }
 
     protected abstract boolean hasTerm(final long sessionId);
+
+    public String destination()
+    {
+        return destination;
+    }
 
     public long channelId()
     {

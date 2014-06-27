@@ -15,14 +15,13 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.conductor.ChannelNotifiable;
+import uk.co.real_logic.aeron.conductor.ChannelEndpoint;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
-import uk.co.real_logic.aeron.util.status.PositionReporter;
 
 import static uk.co.real_logic.aeron.Subscriber.DataHandler;
 
-public class SubscriberChannel extends ChannelNotifiable
+public class SubscriberChannel extends ChannelEndpoint
 {
     private final Long2ObjectHashMap<SubscriberSession> subscriberSessionBySessionIdMap = new Long2ObjectHashMap<>();
     private final DataHandler dataHandler;
@@ -36,7 +35,7 @@ public class SubscriberChannel extends ChannelNotifiable
 
     public boolean matches(final String destination, final long channelId)
     {
-        return this.destination.equals(destination) && this.channelId == channelId;
+        return this.destination().equals(destination) && this.channelId() == channelId;
     }
 
     public int receive()

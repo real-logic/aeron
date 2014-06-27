@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.conductor.ChannelNotifiable;
+import uk.co.real_logic.aeron.conductor.ChannelEndpoint;
 import uk.co.real_logic.aeron.conductor.ClientConductorProxy;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -36,7 +36,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.Appen
 /**
  * Aeron Channel
  */
-public class Channel extends ChannelNotifiable implements AutoCloseable, PositionIndicator
+public class Channel extends ChannelEndpoint implements AutoCloseable, PositionIndicator
 {
     private final ClientConductorProxy clientConductorProxy;
     private final long sessionId;
@@ -62,11 +62,6 @@ public class Channel extends ChannelNotifiable implements AutoCloseable, Positio
         this.sessionId = sessionId;
         this.channels = channels;
         this.paused = paused;
-    }
-
-    public long channelId()
-    {
-        return channelId;
     }
 
     private boolean canAppend()
@@ -150,17 +145,17 @@ public class Channel extends ChannelNotifiable implements AutoCloseable, Positio
     public void close() throws Exception
     {
         channels.remove(this);
-        clientConductorProxy.removePublication(destination, sessionId, channelId);
+        clientConductorProxy.removePublication(destination(), sessionId, channelId());
     }
 
     public boolean matches(final String destination, final long sessionId, final long channelId)
     {
-        return destination.equals(this.destination) && this.sessionId == sessionId && this.channelId == channelId;
+        return destination.equals(this.destination()) && this.sessionId == sessionId && this.channelId() == channelId;
     }
 
     private void requestTerm(final long termId)
     {
-        clientConductorProxy.sendRequestTerm(destination, sessionId, channelId, termId);
+        clientConductorProxy.sendRequestTerm(destination(), sessionId, channelId(), termId);
     }
 
     protected boolean hasTerm(final long sessionId)

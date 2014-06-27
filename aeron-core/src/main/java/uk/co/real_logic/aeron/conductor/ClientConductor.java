@@ -224,37 +224,37 @@ public final class ClientConductor extends Agent
     private boolean handleMessagesFromMediaDriver()
     {
         final int messagesRead = toClientBuffer.receive(
-                (msgTypeId, buffer, index, length) ->
+            (msgTypeId, buffer, index, length) ->
+            {
+                switch (msgTypeId)
                 {
-                    switch (msgTypeId)
-                    {
-                        case NEW_SUBSCRIPTION_BUFFER_EVENT:
-                        case NEW_PUBLICATION_BUFFER_EVENT:
-                            newBufferMessage.wrap(buffer, index);
+                    case NEW_SUBSCRIPTION_BUFFER_EVENT:
+                    case NEW_PUBLICATION_BUFFER_EVENT:
+                        newBufferMessage.wrap(buffer, index);
 
-                            final long sessionId = newBufferMessage.sessionId();
-                            final long channelId = newBufferMessage.channelId();
-                            final long termId = newBufferMessage.termId();
-                            final String destination = newBufferMessage.destination();
+                        final long sessionId = newBufferMessage.sessionId();
+                        final long channelId = newBufferMessage.channelId();
+                        final long termId = newBufferMessage.termId();
+                        final String destination = newBufferMessage.destination();
 
-                            if (msgTypeId == NEW_PUBLICATION_BUFFER_EVENT)
-                            {
-                                onNewPublicationBuffers(destination, sessionId, channelId, termId);
-                            }
-                            else
-                            {
-                                onNewSubscriptionBuffers(destination, sessionId, channelId, termId);
-                            }
-                            break;
+                        if (msgTypeId == NEW_PUBLICATION_BUFFER_EVENT)
+                        {
+                            onNewPublicationBuffers(destination, sessionId, channelId, termId);
+                        }
+                        else
+                        {
+                            onNewSubscriptionBuffers(destination, sessionId, channelId, termId);
+                        }
+                        break;
 
-                        case ERROR_RESPONSE:
-                            errorHandler.onErrorResponse(buffer, index, length);
-                            break;
+                    case ERROR_RESPONSE:
+                        errorHandler.onErrorResponse(buffer, index, length);
+                        break;
 
-                        default:
-                            break;
-                    }
+                    default:
+                        break;
                 }
+            }
         );
 
         return messagesRead > 0;
@@ -298,23 +298,23 @@ public final class ClientConductor extends Agent
                       final long channelId, final long termId) throws IOException;
     }
 
-    private <C extends ChannelNotifiable, L> void onNewBuffers(final long sessionId,
-                                                               final long channelId,
-                                                               final long termId,
-                                                               final C channel,
-                                                               final LogFactory<L> logFactory,
-                                                               final IntFunction<L[]> logArray,
-                                                               final BiConsumer<C, L[]> notifier)
+    private <C extends ChannelEndpoint, L> void onNewBuffers(final long sessionId,
+                                                             final long channelId,
+                                                             final long termId,
+                                                             final C channelEndpoint,
+                                                             final LogFactory<L> logFactory,
+                                                             final IntFunction<L[]> logArray,
+                                                             final BiConsumer<C, L[]> notifier)
     {
         try
         {
-            if (channel == null)
+            if (channelEndpoint == null)
             {
                 // The new buffer refers to another client process, we can safely ignore it
                 return;
             }
 
-            if (!channel.hasTerm(sessionId))
+            if (!channelEndpoint.hasTerm(sessionId))
             {
                 final L[] logs = logArray.apply(BUFFER_COUNT);
                 for (int i = 0; i < BUFFER_COUNT; i++)
@@ -322,7 +322,7 @@ public final class ClientConductor extends Agent
                     logs[i] = logFactory.make(i, sessionId, channelId, termId);
                 }
 
-                notifier.accept(channel, logs);
+                notifier.accept(channelEndpoint, logs);
             }
             else
             {

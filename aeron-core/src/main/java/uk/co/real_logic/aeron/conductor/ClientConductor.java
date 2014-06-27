@@ -32,7 +32,6 @@ import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.status.BufferPositionIndicator;
-import uk.co.real_logic.aeron.util.status.BufferPositionReporter;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -175,8 +174,6 @@ public final class ClientConductor extends Agent
 
     private void addSubscription(final String destination, final long[] channelIds)
     {
-        // Not efficient but only happens once per channel ever
-        // and is during setup and not a latency critical path
         for (final long channelId : channelIds)
         {
             subscriberChannels.forEach(
@@ -197,12 +194,11 @@ public final class ClientConductor extends Agent
         {
             rcvNotifiers.remove(destination, channelId);
         }
-        // TOOD: release buffers
+        // TODO: release buffers
     }
 
     private void addPublisher(final String destination, final long channelId, final long sessionId)
     {
-        // see addSubscription re efficiency
         publishers.forEach(
             (channel) ->
             {
@@ -221,7 +217,7 @@ public final class ClientConductor extends Agent
             // TODO: log an error
         }
 
-        // TODO
+        // TODO:
         // bufferUsage.releasePublisherBuffers(destination, channelId, sessionId);
     }
 
@@ -276,7 +272,7 @@ public final class ClientConductor extends Agent
                      (chan, buffers) ->
                      {
                          // TODO: get the counter id
-                         chan.onBuffersMapped(sessionId, termId, buffers, new BufferPositionReporter(counterValuesBuffer, 0));
+                         chan.onBuffersMapped(sessionId, termId, buffers);
                      });
     }
 
@@ -314,8 +310,7 @@ public final class ClientConductor extends Agent
         {
             if (channel == null)
             {
-                // The new buffer refers to another client process,
-                // We can safely ignore it
+                // The new buffer refers to another client process, we can safely ignore it
                 return;
             }
 

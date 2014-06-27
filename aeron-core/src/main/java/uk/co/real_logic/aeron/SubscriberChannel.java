@@ -24,7 +24,7 @@ import static uk.co.real_logic.aeron.Subscriber.DataHandler;
 
 public class SubscriberChannel extends ChannelNotifiable
 {
-    private final Long2ObjectHashMap<SubscriberSession> sessionByIdMap = new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<SubscriberSession> subscriberSessionBySessionIdMap = new Long2ObjectHashMap<>();
     private final DataHandler dataHandler;
 
     public SubscriberChannel(final Destination destination, final long channelId, final DataHandler dataHandler)
@@ -42,7 +42,7 @@ public class SubscriberChannel extends ChannelNotifiable
     public int receive()
     {
         int count = 0;
-        for (final SubscriberSession subscriberSession : sessionByIdMap.values())
+        for (final SubscriberSession subscriberSession : subscriberSessionBySessionIdMap.values())
         {
             count += subscriberSession.read();
         }
@@ -52,21 +52,20 @@ public class SubscriberChannel extends ChannelNotifiable
 
     protected boolean hasTerm(final long sessionId)
     {
-        final SubscriberSession subscriberSession = sessionByIdMap.get(sessionId);
+        final SubscriberSession subscriberSession = subscriberSessionBySessionIdMap.get(sessionId);
         return subscriberSession != null && subscriberSession.hasTerm();
     }
 
     public void onBuffersMapped(final long sessionId,
                                 final long termId,
-                                final LogReader[] logReaders,
-                                final PositionReporter positionReporter)
+                                final LogReader[] logReaders)
     {
-        SubscriberSession session = new SubscriberSession(logReaders, sessionId, termId, dataHandler, positionReporter);
-        this.sessionByIdMap.put(sessionId, session);
+        final SubscriberSession session = new SubscriberSession(logReaders, sessionId, termId, dataHandler);
+        subscriberSessionBySessionIdMap.put(sessionId, session);
     }
 
     public void processBufferScan()
     {
-        sessionByIdMap.values().forEach(SubscriberSession::processBufferScan);
+        subscriberSessionBySessionIdMap.values().forEach(SubscriberSession::processBufferScan);
     }
 }

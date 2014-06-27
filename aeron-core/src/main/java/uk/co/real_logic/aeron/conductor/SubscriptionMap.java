@@ -26,9 +26,10 @@ import static uk.co.real_logic.aeron.util.collections.CollectionUtil.getOrDefaul
 
 public class SubscriptionMap
 {
-    private final Map<String, Long2ObjectHashMap<SubscriberChannel>> channelMapByDestinationMap = new HashMap<>();
-    private final Function<String, Long2ObjectHashMap<SubscriberChannel>> supplier =
+    private static final Function<String, Long2ObjectHashMap<SubscriberChannel>> SUPPLIER =
         (ignore) -> new Long2ObjectHashMap<>();
+
+    private final Map<String, Long2ObjectHashMap<SubscriberChannel>> channelMapByDestinationMap = new HashMap<>();
 
     public SubscriberChannel get(final String destination, final long channelId)
     {
@@ -43,7 +44,7 @@ public class SubscriptionMap
 
     public void put(final String destination, final long channelId, final SubscriberChannel value)
     {
-        getOrDefault(channelMapByDestinationMap, destination, supplier).put(channelId, value);
+        getOrDefault(channelMapByDestinationMap, destination, SUPPLIER).put(channelId, value);
     }
 
     public SubscriberChannel remove(final String destination, final long channelId)

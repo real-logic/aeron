@@ -35,6 +35,22 @@ import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.UNKNOWN_TERM_
  */
 public class SubscribedSession
 {
+    /**
+     * Handler for sending Status Messages (SMs)
+     */
+    @FunctionalInterface
+    public interface SendSmHandler
+    {
+        /**
+         * Called when an SM should be sent.
+         *
+         * @param termId     for the SM
+         * @param termOffset for the SM
+         * @param window     for the SM
+         */
+        void sendSm(final long termId, final int termOffset, final int window);
+    }
+
     private final InetSocketAddress srcAddress;
     private final long sessionId;
     private final long channelId;
@@ -47,6 +63,8 @@ public class SubscribedSession
     private TermRebuilder[] rebuilders;
     private LossHandler lossHandler;
 
+    private SendSmHandler sendSmHandler;
+
     public SubscribedSession(final long sessionId, final long channelId, final InetSocketAddress srcAddress)
     {
         this.srcAddress = srcAddress;
@@ -54,7 +72,8 @@ public class SubscribedSession
         this.channelId = channelId;
     }
 
-    public void termBuffer(final long initialTermId, final BufferRotator rotator, final LossHandler lossHandler)
+    public void termBuffer(final long initialTermId, final BufferRotator rotator, final LossHandler lossHandler,
+                           final SendSmHandler sendSmHandler)
     {
         cleanedTermId.lazySet(initialTermId + CLEAN_WINDOW);
         currentTermId.lazySet(initialTermId);
@@ -63,6 +82,7 @@ public class SubscribedSession
                             .map(TermRebuilder::new)
                             .toArray(TermRebuilder[]::new);
         this.lossHandler = lossHandler;
+        this.sendSmHandler = sendSmHandler;
     }
 
     public InetSocketAddress sourceAddress()
@@ -176,6 +196,29 @@ public class SubscribedSession
             lossHandler.scan();
         }
         // TODO: change return to indicate whether we want to have service soon - would be OK to scan lazily
+        return false;
+    }
+
+    /**
+     * Called form the MediaConductor.
+     *
+     * @return if work has been done or not
+     */
+    public boolean sendAnyPendingSMs()
+    {
+        /*
+         * General approach is to check tail and see if it has moved enough to warrant sending an SM.
+         * - send SM when termId has moved (i.e. buffer rotation of LossHandler - i.e. term completed)
+         * - send SM when (currentTail - lastTail) > X% of window
+         * - send SM when currentTail > lastTail && timeOfLastSM too long
+         */
+
+        if (null != lossHandler && null != sendSmHandler)
+        {
+            // TODO: determine if sending an SM and call sendSmHandler.sendSm()
+            // TODO: if SM sent, then return true, else fall through and return false
+        }
+
         return false;
     }
 }

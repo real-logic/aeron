@@ -268,21 +268,6 @@ public class MediaDriver implements AutoCloseable
         this.conductor = new MediaConductor(ctx);
     }
 
-    public Receiver receiver()
-    {
-        return receiver;
-    }
-
-    public Sender sender()
-    {
-        return sender;
-    }
-
-    public MediaConductor conductor()
-    {
-        return conductor;
-    }
-
     /**
      * Spin up all {@link Agent}s as Daemon threads.
      */
@@ -369,6 +354,7 @@ public class MediaDriver implements AutoCloseable
         conductor.close();
         conductor.nioSelector().selectNowWithoutProcessing();
         bufferManagement.close();
+        ctx.close();
         deleteDirectories();
     }
 

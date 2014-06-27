@@ -151,7 +151,27 @@ public class LossHandler
         }
     }
 
-    public void suppressNak()
+    /**
+     * Return the tail of the current GapScanner
+     *
+     * @return tail of the current buffer being scanned
+     */
+    public int tailVolatile()
+    {
+        return scanners[currentIndex].tailVolatile();
+    }
+
+    /**
+     * Return the current Term Id being used.
+     *
+     * @return current Term Id
+     */
+    public long currentTermId()
+    {
+        return currentTermId;
+    }
+
+    private void suppressNak()
     {
         nakSentTimestamp = wheel.now();
         scheduleTimer();
@@ -236,7 +256,7 @@ public class LossHandler
         }
     }
 
-    public static class Gap
+    private static class Gap
     {
         private long termId;
         private int termOffset;

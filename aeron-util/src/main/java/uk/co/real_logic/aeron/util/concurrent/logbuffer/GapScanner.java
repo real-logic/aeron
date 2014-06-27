@@ -96,6 +96,16 @@ public class GapScanner
         return count;
     }
 
+    /**
+     * Return the current tail value.
+     *
+     * @return current tail value.
+     */
+    public int tailVolatile()
+    {
+        return stateViewer.tailVolatile();
+    }
+
     private int scanGap(final GapHandler handler, final int offset, final int highWaterMark)
     {
         int gapLength = 0;

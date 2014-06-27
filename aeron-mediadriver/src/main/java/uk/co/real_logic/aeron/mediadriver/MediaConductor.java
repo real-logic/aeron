@@ -119,6 +119,7 @@ public class MediaConductor extends Agent
         hasDoneWork |= publications.forEach(0, Publication::processBufferRotation);
         hasDoneWork |= subscribedSessions.forEach(0, SubscribedSession::processBufferRotation);
         hasDoneWork |= subscribedSessions.forEach(0, SubscribedSession::scanForGaps);
+        hasDoneWork |= subscribedSessions.forEach(0, SubscribedSession::sendAnyPendingSMs);
 
         hasDoneWork |= processClientCommandBuffer();
         hasDoneWork |= processMediaCommandBuffer();

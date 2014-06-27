@@ -161,21 +161,24 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
             throw new IllegalStateException("channel not found");
         }
 
-        final SubscribedSession subscriberSession = subscription.getSubscribedSession(event.sessionId());
-        if (null == subscriberSession)
+        final SubscribedSession subscribedSession = subscription.getSubscribedSession(event.sessionId());
+        if (null == subscribedSession)
         {
             throw new IllegalStateException("session not found");
         }
 
-        lossHandler.sendNakHandler(
-                (termId, termOffset, length) -> sendNak(subscriberSession, (int)termId, termOffset, length));
+        final SubscribedSession.SendSmHandler sendSm =
+                (termId, termOffset, window) -> sendStatusMessage(subscribedSession, termId, termOffset, window);
 
-        subscriberSession.termBuffer(event.termId(), event.bufferRotator(), lossHandler);
+        lossHandler.sendNakHandler(
+                (termId, termOffset, length) -> sendNak(subscribedSession, (int)termId, termOffset, length));
+
+
+        subscribedSession.termBuffer(event.termId(), event.bufferRotator(), lossHandler, sendSm);
 
         // now we are all setup, so send an SM to allow the source to send if it is waiting
         // TODO: grab initial term offset from data and store in subscriberSession somehow (per TermID)
-        // TODO: need a strategy object to track the initial receiver window to send in the SMs.
-        sendStatusMessage(subscriberSession, event.termId(), 0, 1000);
+        sendStatusMessage(subscribedSession, event.termId(), 0, 1000);
     }
 
     private void sendStatusMessage(final SubscribedSession session, final long termId,

@@ -112,12 +112,15 @@ public class Channel extends ChannelNotifiable implements AutoCloseable, Positio
         // TODO: must update the logAppender header with new termId!
         final LogAppender logAppender = logAppenders[currentBufferId];
         final AppendStatus status = logAppender.append(buffer, offset, length);
-        final long currentTermid = this.currentTermId.get();
+        final long currentTermId = this.currentTermId.get();
+
         if (status == TRIPPED)
         {
-            requestTermRoll();
             currentBufferId = rotateId(currentBufferId);
-            currentTermId.lazySet(currentTermid + 1);
+            this.currentTermId.lazySet(currentTermId + 1);
+
+            requestTermRoll(currentTermId);
+
             return offer(buffer, offset, length);
         }
 
@@ -164,19 +167,14 @@ public class Channel extends ChannelNotifiable implements AutoCloseable, Positio
         return currentTermId.get() != UNKNOWN_TERM_ID;
     }
 
-    protected void requestTermRoll()
+    protected void requestTermRoll(final long currentTermId)
     {
-        requestTerm(currentTermId.get() + CLEAN_WINDOW);
+        requestTerm(currentTermId + CLEAN_WINDOW);
     }
 
     public boolean hasSessionId(final long sessionId)
     {
         return this.sessionId == sessionId;
-    }
-
-    private boolean hasBeenCleaned(final LogAppender appender)
-    {
-        return appender.tailVolatile() == 0;
     }
 
     public long position()

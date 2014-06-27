@@ -20,21 +20,19 @@ import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 import static uk.co.real_logic.aeron.util.collections.CollectionUtil.getOrDefault;
 
-public class SubscriberMap
+public class SubscriptionMap
 {
-    private final Map<String, Long2ObjectHashMap<SubscriberChannel>> map;
-
-    public SubscriberMap()
-    {
-        map = new HashMap<>();
-    }
+    private final Map<String, Long2ObjectHashMap<SubscriberChannel>> channelMapByDestinationMap = new HashMap<>();
+    private final Function<String, Long2ObjectHashMap<SubscriberChannel>> supplier =
+        (ignore) -> new Long2ObjectHashMap<>();
 
     public SubscriberChannel get(final String destination, final long channelId)
     {
-        final Long2ObjectHashMap<SubscriberChannel> channelMap = map.get(destination);
+        final Long2ObjectHashMap<SubscriberChannel> channelMap = channelMapByDestinationMap.get(destination);
         if (channelMap == null)
         {
             return null;
@@ -45,25 +43,25 @@ public class SubscriberMap
 
     public void put(final String destination, final long channelId, final SubscriberChannel value)
     {
-        getOrDefault(map, destination, (ignore) -> new Long2ObjectHashMap<>()).put(channelId, value);
+        getOrDefault(channelMapByDestinationMap, destination, supplier).put(channelId, value);
     }
 
     public SubscriberChannel remove(final String destination, final long channelId)
     {
-        final Long2ObjectHashMap<SubscriberChannel> channelMap = map.get(destination);
+        final Long2ObjectHashMap<SubscriberChannel> channelMap = channelMapByDestinationMap.get(destination);
         if (channelMap == null)
         {
             return null;
         }
 
-        SubscriberChannel value = channelMap.remove(channelId);
+        final SubscriberChannel value = channelMap.remove(channelId);
 
         if (channelMap.isEmpty())
         {
             channelMap.remove(channelId);
             if (channelMap.isEmpty())
             {
-                map.remove(destination);
+                channelMapByDestinationMap.remove(destination);
             }
         }
 

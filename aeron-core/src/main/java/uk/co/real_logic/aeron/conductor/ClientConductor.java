@@ -63,7 +63,7 @@ public final class ClientConductor extends Agent
     private final AtomicArray<SubscriberChannel> subscriberChannels;
 
     private final ChannelMap<String, Channel> sendNotifiers = new ChannelMap<>();
-    private final SubscriberMap rcvNotifiers = new SubscriberMap();
+    private final SubscriptionMap subscriptionMap = new SubscriptionMap();
 
     private final ConductorErrorHandler errorHandler;
 
@@ -181,7 +181,7 @@ public final class ClientConductor extends Agent
                 {
                     if (subscription.matches(destination, channelId))
                     {
-                        rcvNotifiers.put(destination, channelId, subscription);
+                        subscriptionMap.put(destination, channelId, subscription);
                     }
                 }
             );
@@ -192,7 +192,7 @@ public final class ClientConductor extends Agent
     {
         for (final long channelId : channelIds)
         {
-            rcvNotifiers.remove(destination, channelId);
+            subscriptionMap.remove(destination, channelId);
         }
         // TODO: release buffers
     }
@@ -266,7 +266,7 @@ public final class ClientConductor extends Agent
         onNewBuffers(sessionId,
                      channelId,
                      termId,
-                     rcvNotifiers.get(destination, channelId),
+                     subscriptionMap.get(destination, channelId),
                      this::newReader,
                      LogReader[]::new,
                      (chan, buffers) ->

@@ -56,7 +56,7 @@ public class Subscriber implements AutoCloseable
          * @param channelId for the event
          * @param sessionId of the new source
          */
-        void handleNewSource(final long channelId, final long sessionId);
+        void onNewSource(final long channelId, final long sessionId);
     }
 
     /**
@@ -70,7 +70,7 @@ public class Subscriber implements AutoCloseable
          * @param channelId for the event
          * @param sessionId of the inactive source
          */
-        void handleInactiveSource(final long channelId, final long sessionId);
+        void onInactiveSource(final long channelId, final long sessionId);
     }
 
     private final Destination destination;

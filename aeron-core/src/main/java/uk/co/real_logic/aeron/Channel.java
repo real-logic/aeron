@@ -23,6 +23,7 @@ import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.status.PositionIndicator;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.CLEAN_WINDOW;
@@ -46,8 +47,7 @@ public class Channel extends ChannelNotifiable implements AutoCloseable, Positio
     private PositionIndicator positionIndicator;
 
     private final AtomicLong currentTermId = new AtomicLong(UNKNOWN_TERM_ID);
-
-    private int currentBufferId = 0;
+    private final AtomicInteger currentBufferIndex = new AtomicInteger(0);
 
     public Channel(final String destination,
                    final ClientConductorProxy clientConductorProxy,
@@ -110,13 +110,14 @@ public class Channel extends ChannelNotifiable implements AutoCloseable, Positio
         }
 
         // TODO: must update the logAppender header with new termId!
-        final LogAppender logAppender = logAppenders[currentBufferId];
+        final int bufferIndex = currentBufferIndex.get();
+        final LogAppender logAppender = logAppenders[bufferIndex];
         final AppendStatus status = logAppender.append(buffer, offset, length);
-        final long currentTermId = this.currentTermId.get();
 
         if (status == TRIPPED)
         {
-            currentBufferId = rotateId(currentBufferId);
+            currentBufferIndex.lazySet(rotateId(bufferIndex));
+            final long currentTermId = this.currentTermId.get();
             this.currentTermId.lazySet(currentTermId + 1);
 
             requestTermRoll(currentTermId);
@@ -179,7 +180,7 @@ public class Channel extends ChannelNotifiable implements AutoCloseable, Positio
 
     public long position()
     {
-        logAppenders[currentBufferId].tailVolatile();
+        logAppenders[currentBufferIndex.get()].tailVolatile();
 
         return 0;
     }

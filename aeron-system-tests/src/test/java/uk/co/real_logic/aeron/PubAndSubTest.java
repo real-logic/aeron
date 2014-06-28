@@ -39,10 +39,10 @@ import static uk.co.real_logic.aeron.util.CommonContext.DIRS_DELETE_ON_EXIT_PROP
 public class PubAndSubTest
 {
     @DataPoint
-    public static final Destination UNICAST_DESTINATION = new Destination("udp://localhost:54321");
+    public static final Destination UNICAST_DESTINATION = new Destination("udp://localhost:54325");
 
     @DataPoint
-    public static final Destination MULTICAST_DESTINATION = new Destination("udp://localhost@224.20.30.39:54321");
+    public static final Destination MULTICAST_DESTINATION = new Destination("udp://localhost@224.20.30.39:54326");
 
     private static final long CHANNEL_ID = 1L;
     private static final long SESSION_ID = 2L;

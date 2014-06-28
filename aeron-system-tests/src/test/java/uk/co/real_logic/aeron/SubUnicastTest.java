@@ -49,8 +49,8 @@ public class SubUnicastTest
     public static final EventLogger LOGGER = new EventLogger(SubUnicastTest.class);
 
     private static final String HOST = "localhost";
-    private static final int PORT = 54321;
-    private static final int SRC_PORT = 54322;
+    private static final int PORT = 54323;
+    private static final int SRC_PORT = 54324;
     private static final Destination DESTINATION = new Destination("udp://" + HOST + ":" + PORT);
     private static final long CHANNEL_ID = 1L;
     private static final long SESSION_ID = 2L;

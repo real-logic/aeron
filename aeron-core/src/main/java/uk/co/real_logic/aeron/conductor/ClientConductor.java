@@ -21,6 +21,7 @@ import uk.co.real_logic.aeron.SubscriberChannel;
 import uk.co.real_logic.aeron.util.Agent;
 import uk.co.real_logic.aeron.util.AgentIdleStrategy;
 import uk.co.real_logic.aeron.util.AtomicArray;
+import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.collections.ChannelMap;
 import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.PublicationMessageFlyweight;
@@ -75,7 +76,6 @@ public final class ClientConductor extends Agent
     public ClientConductor(final RingBuffer commandBuffer,
                            final CopyBroadcastReceiver toClientBuffer,
                            final RingBuffer toDriverBuffer,
-                           final BufferUsageStrategy bufferUsage,
                            final AtomicArray<Channel> publishers,
                            final AtomicArray<SubscriberChannel> subscriberChannels,
                            final ConductorErrorHandler errorHandler,
@@ -89,7 +89,7 @@ public final class ClientConductor extends Agent
         this.commandBuffer = commandBuffer;
         this.toClientBuffer = toClientBuffer;
         this.toDriverBuffer = toDriverBuffer;
-        this.bufferUsage = bufferUsage;
+        this.bufferUsage = ctx.bufferUsageStrategy();
         this.publishers = publishers;
         this.subscriberChannels = subscriberChannels;
         this.errorHandler = errorHandler;
@@ -310,7 +310,7 @@ public final class ClientConductor extends Agent
         {
             if (channelEndpoint == null)
             {
-                // The new buffer refers to another client process, we can safely ignore it
+                // The new newBuffer refers to another client process, we can safely ignore it
                 return;
             }
 
@@ -336,11 +336,20 @@ public final class ClientConductor extends Agent
         }
     }
 
+    private AtomicBuffer newBuffer(final NewBufferMessageFlyweight newBufferMessage, int index) throws IOException
+    {
+        final String location = newBufferMessage.location(index);
+        final int offset = newBufferMessage.bufferOffset(index);
+        final int length = newBufferMessage.bufferLength(index);
+
+        return bufferUsage.newBuffer(location, offset, length);
+    }
+
     private LogAppender newAppender(final int index, final long sessionId,
                                     final long channelId, final long termId) throws IOException
     {
-        final AtomicBuffer logBuffer = bufferUsage.newBuffer(newBufferMessage, index);
-        final AtomicBuffer stateBuffer = bufferUsage.newBuffer(newBufferMessage, index + BUFFER_COUNT);
+        final AtomicBuffer logBuffer = newBuffer(newBufferMessage, index);
+        final AtomicBuffer stateBuffer = newBuffer(newBufferMessage, index + BufferRotationDescriptor.BUFFER_COUNT);
         final byte[] header = DataHeaderFlyweight.createDefaultHeader(sessionId, channelId, termId);
 
         return new LogAppender(logBuffer, stateBuffer, header, MAX_FRAME_LENGTH);
@@ -349,8 +358,8 @@ public final class ClientConductor extends Agent
     private LogReader newReader(final int index, final long sessionId,
                                 final long channelId, final long termId) throws IOException
     {
-        final AtomicBuffer logBuffer = bufferUsage.newBuffer(newBufferMessage, index);
-        final AtomicBuffer stateBuffer = bufferUsage.newBuffer(newBufferMessage, index + BUFFER_COUNT);
+        final AtomicBuffer logBuffer = newBuffer(newBufferMessage, index);
+        final AtomicBuffer stateBuffer = newBuffer(newBufferMessage, index + BufferRotationDescriptor.BUFFER_COUNT);
 
         return new LogReader(logBuffer, stateBuffer);
     }

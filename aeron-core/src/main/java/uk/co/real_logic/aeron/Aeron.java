@@ -28,6 +28,7 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.util.concurrent.ExecutorService;
@@ -66,13 +67,11 @@ public final class Aeron implements AutoCloseable
 
         final CopyBroadcastReceiver toClientBuffer = ctx.toClientBuffer;
         final RingBuffer toDriverBuffer = ctx.toDriverBuffer;
-        final BufferUsageStrategy bufferUsage = new MappingBufferUsageStrategy();
         final ConductorErrorHandler errorHandler = new ConductorErrorHandler(ctx.invalidDestinationHandler);
 
         clientConductor = new ClientConductor(clientConductorCommandBuffer,
                                               toClientBuffer,
                                               toDriverBuffer,
-                                              bufferUsage,
                                               channels,
                                               receivers,
                                               errorHandler,
@@ -214,6 +213,8 @@ public final class Aeron implements AutoCloseable
         private MappedByteBuffer defaultCounterLabelsBuffer;
         private MappedByteBuffer defaultCounterValuesBuffer;
 
+        private BufferUsageStrategy bufferUsageStrategy;
+
         public ClientContext init() throws IOException
         {
             super.init();
@@ -242,6 +243,11 @@ public final class Aeron implements AutoCloseable
                 {
                     defaultCounterValuesBuffer = IoUtil.mapExistingFile(new File(countersDirName(), "values"), "values");
                     counterValuesBuffer(new AtomicBuffer(defaultCounterValuesBuffer));
+                }
+
+                if (null == bufferUsageStrategy)
+                {
+                    bufferUsageStrategy = new MappingBufferUsageStrategy();
                 }
             }
             catch (IOException e)
@@ -274,6 +280,17 @@ public final class Aeron implements AutoCloseable
         {
             this.toDriverBuffer = toDriverBuffer;
             return this;
+        }
+
+        public ClientContext bufferUsageStrategy(final BufferUsageStrategy strategy)
+        {
+            this.bufferUsageStrategy = strategy;
+            return this;
+        }
+
+        public BufferUsageStrategy bufferUsageStrategy()
+        {
+            return bufferUsageStrategy;
         }
 
         public void close()

@@ -29,15 +29,6 @@ import java.io.IOException;
 public interface BufferUsageStrategy
 {
 
-    default AtomicBuffer newBuffer(final NewBufferMessageFlyweight newBufferMessage, final int index)
-            throws IOException
-    {
-        final String location = newBufferMessage.location(index);
-        final int offset = newBufferMessage.bufferOffset(index);
-        final int length = newBufferMessage.bufferLength(index);
-        return newBuffer(location, offset, length);
-    }
-
     AtomicBuffer newBuffer(final String location,
                            final int offset,
                            final int length) throws IOException;

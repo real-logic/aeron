@@ -204,7 +204,7 @@ public class SubscribedSession
      *
      * @return if work has been done or not
      */
-    public boolean sendAnyPendingSMs()
+    public boolean sendAnyPendingSm()
     {
         /*
          * General approach is to check tail and see if it has moved enough to warrant sending an SM.

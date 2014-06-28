@@ -28,6 +28,7 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.util.Queue;
 import java.util.concurrent.*;
 import java.util.function.BiConsumer;
@@ -445,15 +446,20 @@ public class MediaDriver implements AutoCloseable
         private ClientProxy clientProxy;
         private RingBuffer fromClientCommands;
 
+        private MappedByteBuffer toClientsBuffer;
+        private MappedByteBuffer toDriverBuffer;
+
         public MediaDriverContext init() throws IOException
         {
             super.init();
 
-            clientProxy(new ClientProxy(new BroadcastTransmitter(
-                    new AtomicBuffer(mapNewFile(toClientsFile(), TO_CLIENTS_BUFFER_SZ)))));
+            toClientsBuffer = mapNewFile(toClientsFile(), TO_CLIENTS_BUFFER_SZ);
 
-            fromClientCommands(new ManyToOneRingBuffer(
-                    new AtomicBuffer(mapNewFile(toDriverFile(), CONDUCTOR_BUFFER_SZ))));
+            clientProxy(new ClientProxy(new BroadcastTransmitter(new AtomicBuffer(toClientsBuffer))));
+
+            toDriverBuffer = mapNewFile(toDriverFile(), CONDUCTOR_BUFFER_SZ);
+
+            fromClientCommands(new ManyToOneRingBuffer(new AtomicBuffer(toDriverBuffer)));
 
             receiverProxy(new ReceiverProxy(receiverCommandBuffer(), newReceiveBufferEventQueue()));
             mediaConductorProxy(new MediaConductorProxy(mediaCommandBuffer()));
@@ -671,9 +677,24 @@ public class MediaDriver implements AutoCloseable
 
         public void close() throws Exception
         {
-            // TODO: closing needs to happen here
+            if (null != toClientsBuffer)
+            {
+                IoUtil.unmap(toClientsBuffer);
+            }
 
-            super.close();
+            if (null != toDriverBuffer)
+            {
+                IoUtil.unmap(toDriverBuffer);
+            }
+
+            try
+            {
+                super.close();
+            }
+            catch (final Exception ex)
+            {
+                throw new RuntimeException(ex);
+            }
         }
     }
 }

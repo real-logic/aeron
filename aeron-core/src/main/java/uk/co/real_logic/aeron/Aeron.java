@@ -52,6 +52,7 @@ public final class Aeron implements AutoCloseable
     private final AtomicArray<Channel> channels = new AtomicArray<>();
     private final AtomicArray<SubscriberChannel> receivers = new AtomicArray<>();
     private final ClientConductor clientConductor;
+    private final ClientContext savedCtx;
     private Future conductorFuture;
 
     private Aeron(final ClientContext ctx)
@@ -75,7 +76,10 @@ public final class Aeron implements AutoCloseable
                                               channels,
                                               receivers,
                                               errorHandler,
+                                              ctx.bufferUsageStrategy,
                                               ctx);
+
+        this.savedCtx = ctx;
     }
 
     /**
@@ -128,6 +132,7 @@ public final class Aeron implements AutoCloseable
     public void close()
     {
         clientConductor.close();
+        savedCtx.close();
     }
 
     /**
@@ -288,17 +293,27 @@ public final class Aeron implements AutoCloseable
             return this;
         }
 
-        public BufferUsageStrategy bufferUsageStrategy()
-        {
-            return bufferUsageStrategy;
-        }
-
         public void close()
         {
-            IoUtil.unmap(defaultToDriverBuffer);
-            IoUtil.unmap(defaultToClientBuffer);
-            IoUtil.unmap(defaultCounterLabelsBuffer);
-            IoUtil.unmap(defaultCounterValuesBuffer);
+            if (null != defaultToDriverBuffer)
+            {
+                IoUtil.unmap(defaultToDriverBuffer);
+            }
+
+            if (null != defaultToClientBuffer)
+            {
+                IoUtil.unmap(defaultToClientBuffer);
+            }
+
+            if (null != defaultCounterLabelsBuffer)
+            {
+                IoUtil.unmap(defaultCounterLabelsBuffer);
+            }
+
+            if (null != defaultCounterValuesBuffer)
+            {
+                IoUtil.unmap(defaultCounterValuesBuffer);
+            }
 
             try
             {

@@ -79,6 +79,7 @@ public final class ClientConductor extends Agent
                            final AtomicArray<Channel> publishers,
                            final AtomicArray<SubscriberChannel> subscriberChannels,
                            final ConductorErrorHandler errorHandler,
+                           final BufferUsageStrategy bufferUsageStrategy,
                            final Aeron.ClientContext ctx)
     {
         super(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
@@ -89,7 +90,7 @@ public final class ClientConductor extends Agent
         this.commandBuffer = commandBuffer;
         this.toClientBuffer = toClientBuffer;
         this.toDriverBuffer = toDriverBuffer;
-        this.bufferUsage = ctx.bufferUsageStrategy();
+        this.bufferUsage = bufferUsageStrategy;
         this.publishers = publishers;
         this.subscriberChannels = subscriberChannels;
         this.errorHandler = errorHandler;

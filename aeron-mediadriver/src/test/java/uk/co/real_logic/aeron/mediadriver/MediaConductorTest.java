@@ -23,7 +23,6 @@ import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.ErrorCode;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
-import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -33,7 +32,6 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
 import uk.co.real_logic.aeron.util.event.EventLogger;
-import uk.co.real_logic.aeron.util.protocol.ErrorFlyweight;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -73,8 +71,6 @@ public class MediaConductorTest
 
     private final ByteBuffer toDriverBuffer =
         ByteBuffer.allocate(MediaDriver.COMMAND_BUFFER_SZ + RingBufferDescriptor.TRAILER_LENGTH);
-    private final ByteBuffer toClientBuffer =
-        ByteBuffer.allocate(MediaDriver.COMMAND_BUFFER_SZ + RingBufferDescriptor.TRAILER_LENGTH);
 
     private final NioSelector nioSelector = mock(NioSelector.class);
     private final BufferManagement mockBufferManagement = mock(BufferManagement.class);
@@ -83,8 +79,6 @@ public class MediaConductorTest
     private final ClientProxy mockClientProxy = mock(ClientProxy.class);
 
     private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
-    private final NewBufferMessageFlyweight bufferMessage = new NewBufferMessageFlyweight();
-    private final ErrorFlyweight errorHeader = new ErrorFlyweight();
 
     private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(256));

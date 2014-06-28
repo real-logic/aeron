@@ -45,7 +45,7 @@ public class CommonContext implements AutoCloseable
     public static final String COUNTERS_DIR_PROP_DEFAULT = IoUtil.tmpDirName() + "aeron" + File.separator + "counters";
 
     /** Length of the maximum transport unit of the media driver's protocol */
-    private static final String MTU_LENGTH_NAME = "aeron.mtu.length";
+    private static final String MTU_LENGTH_PROP_NAME = "aeron.mtu.length";
     private static final int MTU_LENGTH_DEFAULT = 1280;
 
     public static final String TO_DRIVER_FILE = "to-driver";
@@ -64,13 +64,20 @@ public class CommonContext implements AutoCloseable
     private AtomicBuffer counterLabelsBuffer;
     private AtomicBuffer counterValuesBuffer;
 
-    public CommonContext init() throws IOException
+    public CommonContext initializeFromProperties()
     {
         dataDirName(getProperty(DATA_DIR_PROP_NAME, DATA_DIR_PROP_DEFAULT));
         adminDirName(getProperty(ADMIN_DIR_PROP_NAME, ADMIN_DIR_PROP_DEFAULT));
         countersDirName(getProperty(COUNTERS_DIR_PROP_NAME, COUNTERS_DIR_PROP_DEFAULT));
-        mtuLength(getInteger(MTU_LENGTH_NAME, MTU_LENGTH_DEFAULT));
+        mtuLength(getInteger(MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT));
         dirsDeleteOnExit(getBoolean(DIRS_DELETE_ON_EXIT_PROP_NAME));
+        return this;
+    }
+
+    public CommonContext init() throws IOException
+    {
+        initializeFromProperties();
+
         toDriverFile(new File(adminDirName(), TO_DRIVER_FILE));
         toClientsFile(new File(adminDirName(), TO_CLIENTS_FILE));
 

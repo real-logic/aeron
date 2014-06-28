@@ -26,6 +26,12 @@ import static java.lang.System.getProperty;
 
 /**
  * Location of context that is common between the client and the media driver.
+ *
+ * Properties
+ * <ul>
+ * <li><code>aeron.dir.conductor</code>: Use value as directory name for conductor buffers.</li>
+ * <li><code>aeron.dir.data</code>: Use value as directory name for data buffers.</li>
+ * </ul>
  */
 public class CommonContext implements AutoCloseable
 {

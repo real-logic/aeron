@@ -45,6 +45,8 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescri
 public final class Aeron implements AutoCloseable
 {
     private static final int COMMAND_BUFFER_SIZE = 4096 + TRAILER_LENGTH;
+    private static final int DEFAULT_COUNTERS_LABELS_BUFFER_SIZE = 1024;
+    private static final int DEFAULT_COUNTERS_VALUES_BUFFER_SIZE = 1024;
 
     private final ManyToOneRingBuffer clientConductorCommandBuffer =
         new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocateDirect(COMMAND_BUFFER_SIZE)));
@@ -66,13 +68,11 @@ public final class Aeron implements AutoCloseable
             throw new IllegalStateException("Unable to start Aeron", e);
         }
 
-        final CopyBroadcastReceiver toClientBuffer = ctx.toClientBuffer;
-        final RingBuffer toDriverBuffer = ctx.toDriverBuffer;
         final ConductorErrorHandler errorHandler = new ConductorErrorHandler(ctx.invalidDestinationHandler);
 
         clientConductor = new ClientConductor(clientConductorCommandBuffer,
-                                              toClientBuffer,
-                                              toDriverBuffer,
+                                              ctx.toClientBuffer,
+                                              ctx.toDriverBuffer,
                                               channels,
                                               receivers,
                                               errorHandler,
@@ -215,8 +215,6 @@ public final class Aeron implements AutoCloseable
 
         private MappedByteBuffer defaultToClientBuffer;
         private MappedByteBuffer defaultToDriverBuffer;
-        private MappedByteBuffer defaultCounterLabelsBuffer;
-        private MappedByteBuffer defaultCounterValuesBuffer;
 
         private BufferUsageStrategy bufferUsageStrategy;
 
@@ -226,13 +224,13 @@ public final class Aeron implements AutoCloseable
 
             try
             {
-                if (toClientBuffer == null)
+                if (null == toClientBuffer)
                 {
                     defaultToClientBuffer = IoUtil.mapExistingFile(toClientsFile(), TO_CLIENTS_FILE);
                     toClientBuffer = new CopyBroadcastReceiver(new BroadcastReceiver(new AtomicBuffer(defaultToClientBuffer)));
                 }
 
-                if (toDriverBuffer == null)
+                if (null == toDriverBuffer)
                 {
                     defaultToDriverBuffer = IoUtil.mapExistingFile(toDriverFile(), TO_DRIVER_FILE);
                     toDriverBuffer = new ManyToOneRingBuffer(new AtomicBuffer(defaultToDriverBuffer));
@@ -240,14 +238,12 @@ public final class Aeron implements AutoCloseable
 
                 if (counterLabelsBuffer() == null)
                 {
-                    defaultCounterLabelsBuffer = IoUtil.mapExistingFile(new File(countersDirName(), "labels"), "labels");
-                    counterLabelsBuffer(new AtomicBuffer(defaultCounterLabelsBuffer));
+                    counterLabelsBuffer(new AtomicBuffer(ByteBuffer.allocateDirect(DEFAULT_COUNTERS_LABELS_BUFFER_SIZE)));
                 }
 
                 if (counterValuesBuffer() == null)
                 {
-                    defaultCounterValuesBuffer = IoUtil.mapExistingFile(new File(countersDirName(), "values"), "values");
-                    counterValuesBuffer(new AtomicBuffer(defaultCounterValuesBuffer));
+                    counterValuesBuffer(new AtomicBuffer(ByteBuffer.allocateDirect(DEFAULT_COUNTERS_VALUES_BUFFER_SIZE)));
                 }
 
                 if (null == bufferUsageStrategy)
@@ -303,16 +299,6 @@ public final class Aeron implements AutoCloseable
             if (null != defaultToClientBuffer)
             {
                 IoUtil.unmap(defaultToClientBuffer);
-            }
-
-            if (null != defaultCounterLabelsBuffer)
-            {
-                IoUtil.unmap(defaultCounterLabelsBuffer);
-            }
-
-            if (null != defaultCounterValuesBuffer)
-            {
-                IoUtil.unmap(defaultCounterValuesBuffer);
             }
 
             try

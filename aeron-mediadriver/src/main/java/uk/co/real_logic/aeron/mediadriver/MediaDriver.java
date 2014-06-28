@@ -39,7 +39,7 @@ import static uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement.newMapp
 import static uk.co.real_logic.aeron.util.IoUtil.mapNewFile;
 
 /**
- * Main class for JVM-based mediadriver
+ * Main class for JVM-based media driver
  * <p>
  * <p>
  * Usage:
@@ -49,8 +49,6 @@ import static uk.co.real_logic.aeron.util.IoUtil.mapNewFile;
  * </code>
  * Properties
  * <ul>
- * <li><code>aeron.conductor.dir</code>: Use value as directory name for conductor buffers.</li>
- * <li><code>aeron.data.dir</code>: Use value as directory name for data buffers.</li>
  * <li><code>aeron.rcv.buffer.size</code>: Use int value as size of buffer for receiving from network.</li>
  * <li><code>aeron.command.buffer.size</code>: Use int value as size of the command buffers between threads.</li>
  * <li><code>aeron.conductor.buffer.size</code>: Use int value as size of the conductor buffers between the media
@@ -80,16 +78,6 @@ public class MediaDriver implements AutoCloseable
     public static final String TO_CLIENTS_BUFFER_SZ_PROP_NAME = "aeron.clients.buffer.size";
 
     /**
-     * Size (in bytes) of the counter storage buffer
-     */
-    public static final String COUNTERS_BUFFER_SZ_PROP_NAME = "aeron.counters.buffer.size";
-
-    /**
-     * Size (in bytes) of the counter storage buffer
-     */
-    public static final String DESCRIPTOR_BUFFER_SZ_PROP_NAME = "aeron.counters.descriptor.size";
-
-    /**
      * Name of the default multicast interface
      */
     public static final String MULTICAST_DEFAULT_INTERFACE_PROP_NAME = "aeron.multicast.default.interface";
@@ -113,16 +101,6 @@ public class MediaDriver implements AutoCloseable
      * Default buffer size for broadcast buffers from the media driver to the clients
      */
     public static final int TO_CLIENTS_BUFFER_SZ_DEFAULT = 65536 + BroadcastBufferDescriptor.TRAILER_LENGTH;
-
-    /**
-     * Size (in bytes) of the counter storage buffer
-     */
-    public static final int COUNTERS_BUFFER_SZ_DEFAULT = 65536;
-
-    /**
-     * Size (in bytes) of the counter storage buffer
-     */
-    public static final int DESCRIPTOR_BUFFER_SZ_DEFAULT = 65536;
 
     /**
      * Default group size estimate for NAK delay randomization
@@ -168,16 +146,10 @@ public class MediaDriver implements AutoCloseable
      */
     public static final int MAX_RETRANSMITS_DEFAULT = 16;
 
-    public static final long DESCRIPTOR_BUFFER_SIZE = 1024L;
-    public static final long COUNTERS_BUFFER_SIZE = 1024L;
-
     public static final int READ_BYTE_BUFFER_SZ = getInteger(READ_BUFFER_SZ_PROP_NAME, READ_BYTE_BUFFER_SZ_DEFAULT);
     public static final int COMMAND_BUFFER_SZ = getInteger(COMMAND_BUFFER_SZ_PROP_NAME, COMMAND_BUFFER_SZ_DEFAULT);
     public static final int CONDUCTOR_BUFFER_SZ = getInteger(CONDUCTOR_BUFFER_SZ_PROP_NAME, CONDUCTOR_BUFFER_SZ_DEFAULT);
     public static final int TO_CLIENTS_BUFFER_SZ = getInteger(TO_CLIENTS_BUFFER_SZ_PROP_NAME, TO_CLIENTS_BUFFER_SZ_DEFAULT);
-    public static final int COUNTERS_BUFFER_SZ = getInteger(COUNTERS_BUFFER_SZ_PROP_NAME, COUNTERS_BUFFER_SZ_DEFAULT);
-    public static final int DESCRIPTOR_BUFFER_SZ = getInteger(DESCRIPTOR_BUFFER_SZ_PROP_NAME,
-                                                              DESCRIPTOR_BUFFER_SZ_DEFAULT);
 
     /**
      * ticksPerWheel for TimerWheel in conductor thread
@@ -196,7 +168,6 @@ public class MediaDriver implements AutoCloseable
 
     private final File adminDirFile;
     private final File dataDirFile;
-    private final File countersDirFile;
 
     private final BufferManagement bufferManagement;
 
@@ -259,7 +230,6 @@ public class MediaDriver implements AutoCloseable
 
         this.adminDirFile = new File(ctx.adminDirName());
         this.dataDirFile = new File(ctx.dataDirName());
-        this.countersDirFile = new File(ctx.countersDirName());
 
         ensureDirectoriesExist();
 
@@ -369,7 +339,6 @@ public class MediaDriver implements AutoCloseable
 
         IoUtil.ensureDirectoryExists(adminDirFile, "conductor", callback);
         IoUtil.ensureDirectoryExists(dataDirFile, "data", callback);
-        IoUtil.ensureDirectoryExists(countersDirFile, "counter", callback);
     }
 
     public void deleteDirectories() throws Exception
@@ -378,7 +347,6 @@ public class MediaDriver implements AutoCloseable
         {
             IoUtil.delete(adminDirFile, false);
             IoUtil.delete(dataDirFile, false);
-            IoUtil.delete(countersDirFile, false);
         }
     }
 

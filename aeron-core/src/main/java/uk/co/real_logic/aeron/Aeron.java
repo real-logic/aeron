@@ -26,9 +26,7 @@ import uk.co.real_logic.aeron.util.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.util.concurrent.ExecutorService;
@@ -61,7 +59,7 @@ public final class Aeron implements AutoCloseable
     {
         try
         {
-            ctx.init();
+            ctx.conclude();
         }
         catch (IOException e)
         {
@@ -218,9 +216,9 @@ public final class Aeron implements AutoCloseable
 
         private BufferUsageStrategy bufferUsageStrategy;
 
-        public ClientContext init() throws IOException
+        public ClientContext conclude() throws IOException
         {
-            super.init();
+            super.conclude();
 
             try
             {

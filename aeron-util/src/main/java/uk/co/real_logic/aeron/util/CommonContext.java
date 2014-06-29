@@ -70,29 +70,21 @@ public class CommonContext implements AutoCloseable
     private AtomicBuffer counterLabelsBuffer;
     private AtomicBuffer counterValuesBuffer;
 
-    public CommonContext initializeFromProperties()
+    public CommonContext()
     {
         dataDirName(getProperty(DATA_DIR_PROP_NAME, DATA_DIR_PROP_DEFAULT));
         adminDirName(getProperty(ADMIN_DIR_PROP_NAME, ADMIN_DIR_PROP_DEFAULT));
         countersDirName(getProperty(COUNTERS_DIR_PROP_NAME, COUNTERS_DIR_PROP_DEFAULT));
         mtuLength(getInteger(MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT));
         dirsDeleteOnExit(getBoolean(DIRS_DELETE_ON_EXIT_PROP_NAME));
-        return this;
     }
 
-    public CommonContext init() throws IOException
+    public CommonContext conclude() throws IOException
     {
-        initializeFromProperties();
-
         toDriverFile(new File(adminDirName(), TO_DRIVER_FILE));
         toClientsFile(new File(adminDirName(), TO_CLIENTS_FILE));
 
         return this;
-    }
-
-    public void validateConfiguration()
-    {
-        IoUtil.checkDirectoryExists(new File(adminDirName), "adminDir");
     }
 
     public String dataDirName()

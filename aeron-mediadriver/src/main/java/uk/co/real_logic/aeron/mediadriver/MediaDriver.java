@@ -205,9 +205,25 @@ public class MediaDriver implements AutoCloseable
         }
     }
 
+    /**
+     * Initiatlize a media driver with default parameters.
+     *
+     * @throws Exception
+     */
     public MediaDriver() throws Exception
     {
-        ctx = new MediaDriverContext()
+        this(new MediaDriverContext());
+    }
+
+    /**
+     * Initialize a media driver with the given paramters.
+     *
+     * @param context for the media driver parameters
+     * @throws Exception
+     */
+    public MediaDriver(final MediaDriverContext context) throws Exception
+    {
+        ctx = context
             .conductorCommandBuffer(COMMAND_BUFFER_SZ)
             .receiverCommandBuffer(COMMAND_BUFFER_SZ)
             .receiverNioSelector(new NioSelector())
@@ -226,7 +242,7 @@ public class MediaDriver implements AutoCloseable
                                                       AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
             .receiverIdleStrategy(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
                                                         AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
-            .init();
+            .conclude();
 
         this.adminDirFile = new File(ctx.adminDirName());
         this.dataDirFile = new File(ctx.dataDirName());
@@ -329,7 +345,7 @@ public class MediaDriver implements AutoCloseable
         deleteDirectories();
     }
 
-    public void ensureDirectoriesExist() throws Exception
+    private void ensureDirectoriesExist() throws Exception
     {
         final BiConsumer<String, String> callback = (path, name) ->
         {
@@ -341,7 +357,7 @@ public class MediaDriver implements AutoCloseable
         IoUtil.ensureDirectoryExists(dataDirFile, "data", callback);
     }
 
-    public void deleteDirectories() throws Exception
+    private void deleteDirectories() throws Exception
     {
         if (ctx.dirsDeleteOnExit())
         {
@@ -417,9 +433,13 @@ public class MediaDriver implements AutoCloseable
         private MappedByteBuffer toClientsBuffer;
         private MappedByteBuffer toDriverBuffer;
 
-        public MediaDriverContext init() throws IOException
+        public MediaDriverContext()
         {
-            super.init();
+        }
+
+        public MediaDriverContext conclude() throws IOException
+        {
+            super.conclude();
 
             toClientsBuffer = mapNewFile(toClientsFile(), TO_CLIENTS_BUFFER_SZ);
 

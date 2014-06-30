@@ -59,7 +59,8 @@ public class AeronTest
     private static final int MAX_FRAME_LENGTH = 1024;
     private static final int COUNTER_BUFFER_SZ = 1024;
 
-    private static final String DESTINATION = "udp://localhost:40124";
+    private static final String DESTINATION_URL = "udp://localhost:40124";
+    private static final Destination DESTINATION = new Destination(DESTINATION_URL);
     private static final String INVALID_DESTINATION = "udp://lo124";
     private static final long CHANNEL_ID_1 = 2L;
     private static final long CHANNEL_ID_2 = 4L;
@@ -158,7 +159,7 @@ public class AeronTest
     @Test
     public void creatingChannelsShouldNotifyMediaDriver() throws Exception
     {
-        newChannel(aeron);
+        newPublication(aeron);
         aeron.conductor().doWork();
 
         assertChannelMessage(toDriverBuffer, ADD_PUBLICATION);
@@ -167,7 +168,7 @@ public class AeronTest
     @Test
     public void cannotOfferOnChannelUntilBuffersMapped() throws Exception
     {
-        final Publication publication = newChannel(aeron);
+        final Publication publication = newPublication(aeron);
         assertFalse(publication.offer(atomicSendBuffer));
         assertFalse(publication.offer(atomicSendBuffer, 0, 1));
     }
@@ -175,14 +176,14 @@ public class AeronTest
     @Test(expected = BufferExhaustedException.class)
     public void cannotSendOnChannelUntilBuffersMapped() throws Exception
     {
-        final Publication publication = newChannel(aeron);
+        final Publication publication = newPublication(aeron);
         publication.send(atomicSendBuffer);
     }
 
     @Test
     public void canOfferAMessageOnceBuffersHaveBeenMapped() throws Exception
     {
-        final Publication publication = newChannel(aeron);
+        final Publication publication = newPublication(aeron);
         aeron.conductor().doWork();
         sendNewBufferNotification(NEW_PUBLICATION_BUFFER_EVENT, SESSION_ID_1, TERM_ID_1);
         aeron.conductor().doWork();
@@ -193,7 +194,7 @@ public class AeronTest
     public void shouldRotateBuffersOnceFull() throws Exception
     {
         final RingBuffer toMediaDriver = toDriverBuffer;
-        final Publication publication = newChannel(aeron);
+        final Publication publication = newPublication(aeron);
         aeron.conductor().doWork();
 
         sendNewBufferNotification(NEW_PUBLICATION_BUFFER_EVENT, SESSION_ID_1, TERM_ID_1);
@@ -227,7 +228,7 @@ public class AeronTest
     public void removingChannelsShouldNotifyMediaDriver() throws Exception
     {
         final RingBuffer toMediaDriver = toDriverBuffer;
-        final Publication publication = newChannel(aeron);
+        final Publication publication = newPublication(aeron);
         final ClientConductor adminThread = aeron.conductor();
 
         adminThread.doWork();
@@ -242,18 +243,13 @@ public class AeronTest
     @Test
     public void closingASourceRemovesItsAssociatedChannels() throws Exception
     {
-        final Source.Context sourceContext =
-            new Source.Context()
-                      .sessionId(SESSION_ID_1)
-                      .destination(new Destination(DESTINATION));
-        final Source source = aeron.newSource(sourceContext);
-        source.newChannel(CHANNEL_ID_1);
+        final Publication publication = aeron.newPublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
         final ClientConductor adminThread = aeron.conductor();
 
         adminThread.doWork();
         skip(toDriverBuffer, 1);
 
-        source.close();
+        publication.close();
         adminThread.doWork();
 
         assertChannelMessage(toDriverBuffer, REMOVE_PUBLICATION);
@@ -262,17 +258,14 @@ public class AeronTest
     @Test
     public void closingASourceDoesNotRemoveOtherChannels() throws Exception
     {
-        final Source source = aeron.newSource(
-                new Source.Context().sessionId(SESSION_ID_1).destination(new Destination(DESTINATION)));
-        final Source otherSource = aeron.newSource(
-                new Source.Context().sessionId(SESSION_ID_1 + 1).destination(new Destination(DESTINATION)));
-        source.newChannel(CHANNEL_ID_1);
+        aeron.newPublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
+        final Publication otherPublication = aeron.newPublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1 + 1);
         final ClientConductor clientConductor = aeron.conductor();
 
         clientConductor.doWork();
         skip(toDriverBuffer, 1);
 
-        otherSource.close();
+        otherPublication.close();
         clientConductor.doWork();
 
         skip(toDriverBuffer, 0);
@@ -283,7 +276,7 @@ public class AeronTest
     {
         final Subscription.Context context =
             new Subscription.Context()
-                          .destination(new Destination(DESTINATION))
+                          .destination(DESTINATION)
                           .channel(CHANNEL_ID_1, EMPTY_DATA_HANDLER)
                           .channel(CHANNEL_ID_2, EMPTY_DATA_HANDLER);
 
@@ -522,7 +515,7 @@ public class AeronTest
             }
         );
 
-        newBufferMessage.destination(DESTINATION);
+        newBufferMessage.destination(DESTINATION.destination());
 
         toClientTransmitter.transmit(msgTypeId, atomicSendBuffer, 0, newBufferMessage.length());
     }
@@ -542,7 +535,7 @@ public class AeronTest
     {
         final Subscription.Context ctx =
             new Subscription.Context()
-                          .destination(new Destination(DESTINATION))
+                          .destination(DESTINATION)
                           .channel(CHANNEL_ID_1, channel2Handler)
                           .channel(CHANNEL_ID_2, EMPTY_DATA_HANDLER);
 
@@ -557,20 +550,13 @@ public class AeronTest
 
             subscriptionMessage.wrap(buffer, index);
             assertThat(subscriptionMessage.channelIds(), is(CHANNEL_IDS));
-            assertThat(subscriptionMessage.destination(), is(DESTINATION));
+            assertThat(subscriptionMessage.destination(), is(DESTINATION_URL));
         };
     }
 
-    private Publication newChannel(final Aeron aeron)
+    private Publication newPublication(final Aeron aeron)
     {
-        final Source.Context ctx =
-            new Source.Context()
-                      .sessionId(SESSION_ID_1)
-                      .destination(new Destination(DESTINATION));
-
-        final Source source = aeron.newSource(ctx);
-
-        return source.newChannel(CHANNEL_ID_1);
+        return aeron.newPublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
     }
 
     private void assertChannelMessage(final RingBuffer mediaDriverBuffer, final int expectedMsgTypeId)
@@ -580,7 +566,7 @@ public class AeronTest
             assertThat(msgTypeId, is(expectedMsgTypeId));
 
             publicationMessage.wrap(buffer, index);
-            assertThat(publicationMessage.destination(), is(DESTINATION));
+            assertThat(publicationMessage.destination(), is(DESTINATION_URL));
             assertThat(publicationMessage.channelId(), is(CHANNEL_ID_1));
             assertThat(publicationMessage.sessionId(), is(SESSION_ID_1));
         });

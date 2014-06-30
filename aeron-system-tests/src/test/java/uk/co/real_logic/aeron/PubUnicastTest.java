@@ -65,7 +65,6 @@ public class PubUnicastTest
 
     private Aeron producingClient;
     private MediaDriver driver;
-    private Source source;
     private Publication publication;
 
     private DatagramChannel receiverChannel;
@@ -89,10 +88,7 @@ public class PubUnicastTest
 
         producingClient = Aeron.newSingleMediaDriver(newAeronContext());
 
-        source = producingClient.newSource(new Source.Context().destination(DESTINATION)
-                                                               .sessionId(SESSION_ID));
-
-        publication = source.newChannel(CHANNEL_ID);
+        publication = producingClient.newPublication(DESTINATION, CHANNEL_ID, SESSION_ID);
 
         payload.putBytes(0, PAYLOAD);
 
@@ -119,7 +115,7 @@ public class PubUnicastTest
         driver.shutdown();
 
         receiverChannel.close();
-        source.close();
+        publication.close();
         producingClient.close();
         driver.close();
         executorService.shutdown();

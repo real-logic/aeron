@@ -51,7 +51,7 @@ public class ClientConductorProxy
         qualifiedMessage.wrap(writeBuffer, 0);
     }
 
-    public void addPublication(final String destination, final long sessionId, final long channelId)
+    public void addPublication(final String destination, final long channelId, final long sessionId)
     {
         sendPublicationMessage(destination, sessionId, channelId, ADD_PUBLICATION);
     }

@@ -44,7 +44,7 @@ public class ClientConductorProxyTest
     @Test
     public void threadSendsAddChannelMessage()
     {
-        threadSendsChannelMessage(() -> conductor.addPublication(DESTINATION, SESSION_ID, 2), ADD_PUBLICATION);
+        threadSendsChannelMessage(() -> conductor.addPublication(DESTINATION, 2, SESSION_ID), ADD_PUBLICATION);
     }
 
     @Test

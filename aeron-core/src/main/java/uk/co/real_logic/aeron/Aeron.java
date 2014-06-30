@@ -33,7 +33,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
 
@@ -145,30 +145,31 @@ public final class Aeron implements AutoCloseable
     }
 
     /**
-     * Create a new source that is to send to {@link Destination}.
-     * <p>
-     * A unique, random, session ID will be generated for the source if the ctx does not
-     * set it. If the ctx sets the Session ID, then it will be checked for conflicting with existing session Ids.
-     *
-     * @param ctx for source options, etc.
-     * @return new source
-     */
-    public Source newSource(final Source.Context ctx)
-    {
-        ctx.clientConductorProxy(new ClientConductorProxy(clientConductorCommandBuffer));
-
-        return new Source(channels, ctx);
-    }
-
-    /**
      * Create a new source that is to send to {@link Destination}
      *
      * @param destination address to send all data to
+     * @param channelId
+     * @param sessionId
      * @return new source
      */
-    public Source newSource(final Destination destination)
+    public Publication newPublication(
+            final Destination destination,
+            final long channelId,
+            final long sessionId)
     {
-        return newSource(new Source.Context().destination(destination));
+        ClientConductorProxy proxy = new ClientConductorProxy(clientConductorCommandBuffer);
+
+        final AtomicBoolean pauseButton = new AtomicBoolean(false);
+        final Publication publication = new Publication(destination.destination(),
+                proxy,
+                channelId,
+                sessionId,
+                channels,
+                pauseButton);
+        channels.add(publication);
+        proxy.addPublication(destination.destination(), channelId, sessionId);
+
+        return publication;
     }
 
     /**

@@ -52,10 +52,10 @@ public class PubAndSubTest
     private final AtomicBuffer counterLabelsBuffer = new AtomicBuffer(new byte[COUNTER_BUFFER_SZ]);
 
     private Aeron publishingClient;
-    private Aeron consumingClient;
+    private Aeron subscribingClient;
     private MediaDriver driver;
     private Subscription subscription;
-    private Source source;
+    private Publication publication;
 
     private ExecutorService executorService;
 
@@ -69,20 +69,19 @@ public class PubAndSubTest
         final NewSourceEventHandler sourceHandler = mock(NewSourceEventHandler.class);
 
         publishingClient = Aeron.newSingleMediaDriver(newAeronContext());
-        consumingClient = Aeron.newSingleMediaDriver(newAeronContext());
+        subscribingClient = Aeron.newSingleMediaDriver(newAeronContext());
 
-        subscription = consumingClient.newSubscription(new Subscription.Context()
+        subscription = subscribingClient.newSubscription(new Subscription.Context()
                 .destination(destination)
                 .channel(CHANNEL_ID, dataHandler)
                 .newSourceEvent(sourceHandler));
 
-        source = publishingClient.newSource(new Source.Context().destination(destination)
-                                                                .sessionId(SESSION_ID));
+        publication = publishingClient.newPublication(destination, CHANNEL_ID, SESSION_ID);
 
         executorService = Executors.newSingleThreadExecutor();
 
         driver.invokeEmbedded();
-        consumingClient.invoke(executorService);
+        subscribingClient.invoke(executorService);
     }
 
     private Aeron.ClientContext newAeronContext()
@@ -98,13 +97,13 @@ public class PubAndSubTest
     @After
     public void closeEverything() throws Exception
     {
-        consumingClient.shutdown();
+        subscribingClient.shutdown();
         publishingClient.shutdown();
         driver.shutdown();
 
         subscription.close();
-        source.close();
-        consumingClient.close();
+        publication.close();
+        subscribingClient.close();
         publishingClient.close();
         driver.close();
         executorService.shutdown();

@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron.examples;
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Destination;
-import uk.co.real_logic.aeron.Source;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
@@ -45,8 +44,7 @@ public class ExamplePublisher
         try (final MediaDriver driver = ExampleUtil.createEmbeddedMediaDriver();
              final Aeron aeron = ExampleUtil.createAeron(context, executor))
         {
-            final Source source = aeron.newSource(DESTINATION);
-            final Publication publication = source.newChannel(CHANNEL_ID);
+            final Publication publication = aeron.newPublication(DESTINATION, CHANNEL_ID, 0);
 
             for (int i = 0; i < 10; i++)
             {
@@ -56,7 +54,7 @@ public class ExamplePublisher
                 System.out.print("offering " + i);
                 final boolean result = publication.offer(buffer, 0, message.getBytes().length);
 
-                if (false == result)
+                if (!result)
                 {
                     System.out.println(" ah?!");
                 }

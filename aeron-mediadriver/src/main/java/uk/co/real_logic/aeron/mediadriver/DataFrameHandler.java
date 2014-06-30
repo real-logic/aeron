@@ -18,8 +18,6 @@ package uk.co.real_logic.aeron.mediadriver;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.event.EventCode;
-import uk.co.real_logic.aeron.util.event.EventLogger;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.NakFlyweight;
@@ -35,7 +33,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
 {
     private final UdpTransport transport;
     private final UdpDestination destination;
-    private final Long2ObjectHashMap<Subscription> subscriptionByChannelIdMap = new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<DriverSubscription> subscriptionByChannelIdMap = new Long2ObjectHashMap<>();
     private final MediaConductorProxy conductorProxy;
     private final AtomicArray<SubscribedSession> subscribedSessions;
     private final ByteBuffer smBuffer = ByteBuffer.allocateDirect(StatusMessageFlyweight.HEADER_LENGTH);
@@ -65,7 +63,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         return destination;
     }
 
-    public Long2ObjectHashMap<Subscription> subscriptionMap()
+    public Long2ObjectHashMap<DriverSubscription> subscriptionMap()
     {
         return subscriptionByChannelIdMap;
     }
@@ -74,11 +72,11 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
     {
         for (final long channelId : channelIds)
         {
-            Subscription subscription = subscriptionByChannelIdMap.get(channelId);
+            DriverSubscription subscription = subscriptionByChannelIdMap.get(channelId);
 
             if (null == subscription)
             {
-                subscription = new Subscription(destination, channelId, conductorProxy, subscribedSessions);
+                subscription = new DriverSubscription(destination, channelId, conductorProxy, subscribedSessions);
                 subscriptionByChannelIdMap.put(channelId, subscription);
             }
 
@@ -90,7 +88,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
     {
         for (final long channelId : channelIds)
         {
-            final Subscription subscription = subscriptionByChannelIdMap.get(channelId);
+            final DriverSubscription subscription = subscriptionByChannelIdMap.get(channelId);
 
             if (subscription == null)
             {
@@ -116,7 +114,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
                             final InetSocketAddress srcAddress)
     {
         final long channelId = header.channelId();
-        final Subscription subscription = subscriptionByChannelIdMap.get(channelId);
+        final DriverSubscription subscription = subscriptionByChannelIdMap.get(channelId);
 
         if (null != subscription)
         {
@@ -155,7 +153,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
 
     public void onSubscriptionReady(final NewReceiveBufferEvent event, final LossHandler lossHandler)
     {
-        final Subscription subscription = subscriptionByChannelIdMap.get(event.channelId());
+        final DriverSubscription subscription = subscriptionByChannelIdMap.get(event.channelId());
         if (null == subscription)
         {
             throw new IllegalStateException("channel not found");
@@ -171,7 +169,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
                 (termId, termOffset, window) -> sendStatusMessage(subscribedSession, termId, termOffset, window);
 
         lossHandler.sendNakHandler(
-                (termId, termOffset, length) -> sendNak(subscribedSession, (int)termId, termOffset, length));
+                (termId, termOffset, length) -> sendNak(subscribedSession, (int) termId, termOffset, length));
 
 
         subscribedSession.termBuffer(event.termId(), event.bufferRotator(), lossHandler, sendSm);

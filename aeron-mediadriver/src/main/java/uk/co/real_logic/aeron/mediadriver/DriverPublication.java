@@ -40,7 +40,7 @@ import static uk.co.real_logic.aeron.util.BitUtil.align;
 /**
  * Publication to be sent to registered subscribers.
  */
-public class Publication
+public class DriverPublication
 {
     /** Initial heartbeat timeout (cancelled by SM) */
     public static final int INITIAL_HEARTBEAT_TIMEOUT_MS = 100;
@@ -84,15 +84,15 @@ public class Publication
 
     private final InetSocketAddress dstAddress;
 
-    public Publication(final ControlFrameHandler frameHandler,
-                       final TimerWheel timerWheel,
-                       final SenderControlStrategy controlStrategy,
-                       final BufferRotator buffers,
-                       final long sessionId,
-                       final long channelId,
-                       final long initialTermId,
-                       final int headerLength,
-                       final int mtuLength)
+    public DriverPublication(final ControlFrameHandler frameHandler,
+                             final TimerWheel timerWheel,
+                             final SenderControlStrategy controlStrategy,
+                             final BufferRotator buffers,
+                             final long sessionId,
+                             final long channelId,
+                             final long initialTermId,
+                             final int headerLength,
+                             final int mtuLength)
     {
         this.frameHandler = frameHandler;
         this.dstAddress = frameHandler.destination().remoteData();

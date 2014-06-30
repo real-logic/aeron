@@ -23,7 +23,7 @@ import java.net.InetSocketAddress;
 /**
  * Subscriptions maintained per channel for receiver processing
  */
-public class Subscription
+public class DriverSubscription
 {
     private final UdpDestination destination;
     private final long channelId;
@@ -33,10 +33,10 @@ public class Subscription
 
     private int refCount = 0;
 
-    public Subscription(final UdpDestination destination,
-                        final long channelId,
-                        final MediaConductorProxy conductorProxy,
-                        final AtomicArray<SubscribedSession> subscribedSessions)
+    public DriverSubscription(final UdpDestination destination,
+                              final long channelId,
+                              final MediaConductorProxy conductorProxy,
+                              final AtomicArray<SubscribedSession> subscribedSessions)
     {
         this.destination = destination;
         this.channelId = channelId;

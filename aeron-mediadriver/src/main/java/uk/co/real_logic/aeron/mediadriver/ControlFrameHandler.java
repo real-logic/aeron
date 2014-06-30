@@ -31,7 +31,7 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
 {
     private final UdpTransport transport;
     private final UdpDestination destination;
-    private final Long2ObjectHashMap<Long2ObjectHashMap<Publication>> publicationsBySessionIdMap
+    private final Long2ObjectHashMap<Long2ObjectHashMap<DriverPublication>> publicationsBySessionIdMap
         = new Long2ObjectHashMap<>();
 
     public ControlFrameHandler(final UdpDestination destination,
@@ -61,9 +61,9 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
         return destination;
     }
 
-    public Publication findPublication(final long sessionId, final long channelId)
+    public DriverPublication findPublication(final long sessionId, final long channelId)
     {
-        final Long2ObjectHashMap<Publication> publicationByChannelIdMap = publicationsBySessionIdMap.get(sessionId);
+        final Long2ObjectHashMap<DriverPublication> publicationByChannelIdMap = publicationsBySessionIdMap.get(sessionId);
         if (null == publicationByChannelIdMap)
         {
             return null;
@@ -72,21 +72,21 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
         return publicationByChannelIdMap.get(channelId);
     }
 
-    public void addPublication(final Publication publication)
+    public void addPublication(final DriverPublication publication)
     {
         publicationsBySessionIdMap.getOrDefault(publication.sessionId(), Long2ObjectHashMap::new)
                                   .put(publication.channelId(), publication);
     }
 
-    public Publication removePublication(final long sessionId, final long channelId)
+    public DriverPublication removePublication(final long sessionId, final long channelId)
     {
-        final Long2ObjectHashMap<Publication> publicationByChannelIdMap = publicationsBySessionIdMap.get(sessionId);
+        final Long2ObjectHashMap<DriverPublication> publicationByChannelIdMap = publicationsBySessionIdMap.get(sessionId);
         if (null == publicationByChannelIdMap)
         {
             return null;
         }
 
-        final Publication publication = publicationByChannelIdMap.remove(channelId);
+        final DriverPublication publication = publicationByChannelIdMap.remove(channelId);
         if (publicationByChannelIdMap.isEmpty())
         {
             publicationsBySessionIdMap.remove(sessionId);
@@ -103,7 +103,7 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
     public void onStatusMessageFrame(final StatusMessageFlyweight header, final AtomicBuffer buffer,
                                      final long length, final InetSocketAddress srcAddress)
     {
-        final Publication publication = findPublication(header.sessionId(), header.channelId());
+        final DriverPublication publication = findPublication(header.sessionId(), header.channelId());
         publication.onStatusMessage(header.termId(),
                                     header.highestContiguousTermOffset(),
                                     header.receiverWindow(),
@@ -113,7 +113,7 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
     public void onNakFrame(final NakFlyweight nak, final AtomicBuffer buffer,
                            final long length, final InetSocketAddress srcAddress)
     {
-        final Publication publication = findPublication(nak.sessionId(), nak.channelId());
+        final DriverPublication publication = findPublication(nak.sessionId(), nak.channelId());
         publication.onNakFrame(nak.termId(), nak.termOffset(), nak.length());
     }
 

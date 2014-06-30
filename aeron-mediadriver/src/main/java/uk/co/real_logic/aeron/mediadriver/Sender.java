@@ -23,7 +23,7 @@ import uk.co.real_logic.aeron.util.AtomicArray;
  */
 public class Sender extends Agent
 {
-    private final AtomicArray<Publication> publications;
+    private final AtomicArray<DriverPublication> publications;
     private int startingOffset = 0;
 
     public Sender(final MediaDriver.MediaDriverContext ctx)
@@ -41,6 +41,6 @@ public class Sender extends Agent
             startingOffset = 0;
         }
 
-        return publications.forEach(startingOffset, Publication::send);
+        return publications.forEach(startingOffset, DriverPublication::send);
     }
 }

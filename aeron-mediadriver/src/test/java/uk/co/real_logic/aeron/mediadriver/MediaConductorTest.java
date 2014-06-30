@@ -83,7 +83,7 @@ public class MediaConductorTest
     private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(256));
 
-    private final AtomicArray<Publication> publications = new AtomicArray<>();
+    private final AtomicArray<DriverPublication> publications = new AtomicArray<>();
 
     private MediaConductor mediaConductor;
     private Receiver receiver;

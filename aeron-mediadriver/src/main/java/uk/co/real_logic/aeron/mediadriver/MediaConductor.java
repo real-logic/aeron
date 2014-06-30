@@ -65,7 +65,7 @@ public class MediaConductor extends Agent
     private final Long2ObjectHashMap<ControlFrameHandler> srcDestinationMap = new Long2ObjectHashMap<>();
     private final TimerWheel timerWheel;
     private final AtomicArray<SubscribedSession> subscribedSessions;
-    private final AtomicArray<Publication> publications;
+    private final AtomicArray<DriverPublication> publications;
 
     private final Supplier<SenderControlStrategy> unicastSenderFlowControl;
     private final Supplier<SenderControlStrategy> multicastSenderFlowControl;
@@ -116,7 +116,7 @@ public class MediaConductor extends Agent
             ex.printStackTrace();
         }
 
-        hasDoneWork |= publications.forEach(0, Publication::processBufferRotation);
+        hasDoneWork |= publications.forEach(0, DriverPublication::processBufferRotation);
         hasDoneWork |= subscribedSessions.forEach(0, SubscribedSession::processBufferRotation);
         hasDoneWork |= subscribedSessions.forEach(0, SubscribedSession::scanForGaps);
         hasDoneWork |= subscribedSessions.forEach(0, SubscribedSession::sendAnyPendingSm);
@@ -260,7 +260,7 @@ public class MediaConductor extends Agent
                                                    "destinations hash same, but destinations different");
             }
 
-            Publication publication = frameHandler.findPublication(sessionId, channelId);
+            DriverPublication publication = frameHandler.findPublication(sessionId, channelId);
             if (null != publication)
             {
                 throw new ControlProtocolException(ErrorCode.CHANNEL_ALREADY_EXISTS,
@@ -272,7 +272,7 @@ public class MediaConductor extends Agent
             final SenderControlStrategy flowControlStrategy = srcDestination.isMulticast() ?
                     multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
 
-            publication = new Publication(frameHandler,
+            publication = new DriverPublication(frameHandler,
                                           timerWheel,
                                           flowControlStrategy,
                                           bufferRotator,
@@ -313,7 +313,7 @@ public class MediaConductor extends Agent
                 throw new ControlProtocolException(ErrorCode.INVALID_DESTINATION, "destination unknown");
             }
 
-            final Publication publication = frameHandler.removePublication(sessionId, channelId);
+            final DriverPublication publication = frameHandler.removePublication(sessionId, channelId);
             if (null == publication)
             {
                 throw new ControlProtocolException(ErrorCode.CHANNEL_UNKNOWN,
@@ -400,7 +400,7 @@ public class MediaConductor extends Agent
 
     private void onHeartbeatCheck()
     {
-        publications.forEach(0, Publication::heartbeatCheck);
+        publications.forEach(0, DriverPublication::heartbeatCheck);
         rescheduleTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, heartbeatTimer);
     }
 

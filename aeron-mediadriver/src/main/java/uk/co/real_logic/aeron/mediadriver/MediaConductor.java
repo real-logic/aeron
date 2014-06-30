@@ -64,7 +64,7 @@ public class MediaConductor extends Agent
     private final RingBuffer fromClientCommands;
     private final Long2ObjectHashMap<ControlFrameHandler> srcDestinationMap = new Long2ObjectHashMap<>();
     private final TimerWheel timerWheel;
-    private final AtomicArray<SubscribedSession> subscribedSessions;
+    private final AtomicArray<DriverSubscribedSession> subscribedSessions;
     private final AtomicArray<DriverPublication> publications;
 
     private final Supplier<SenderControlStrategy> unicastSenderFlowControl;
@@ -117,9 +117,9 @@ public class MediaConductor extends Agent
         }
 
         hasDoneWork |= publications.forEach(0, DriverPublication::processBufferRotation);
-        hasDoneWork |= subscribedSessions.forEach(0, SubscribedSession::processBufferRotation);
-        hasDoneWork |= subscribedSessions.forEach(0, SubscribedSession::scanForGaps);
-        hasDoneWork |= subscribedSessions.forEach(0, SubscribedSession::sendAnyPendingSm);
+        hasDoneWork |= subscribedSessions.forEach(0, DriverSubscribedSession::processBufferRotation);
+        hasDoneWork |= subscribedSessions.forEach(0, DriverSubscribedSession::scanForGaps);
+        hasDoneWork |= subscribedSessions.forEach(0, DriverSubscribedSession::sendAnyPendingSm);
 
         hasDoneWork |= processClientCommandBuffer();
         hasDoneWork |= processMediaCommandBuffer();

@@ -425,7 +425,7 @@ public class MediaDriver implements AutoCloseable
         private AgentIdleStrategy conductorIdleStrategy;
         private AgentIdleStrategy senderIdleStrategy;
         private AgentIdleStrategy receiverIdleStrategy;
-        private AtomicArray<SubscribedSession> subscribedSessions;
+        private AtomicArray<DriverSubscribedSession> subscribedSessions;
         private AtomicArray<DriverPublication> publications;
         private ClientProxy clientProxy;
         private RingBuffer fromClientCommands;
@@ -549,7 +549,7 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public MediaDriverContext subscribedSessions(final AtomicArray<SubscribedSession> subscribedSessions)
+        public MediaDriverContext subscribedSessions(final AtomicArray<DriverSubscribedSession> subscribedSessions)
         {
             this.subscribedSessions = subscribedSessions;
             return this;
@@ -643,7 +643,7 @@ public class MediaDriver implements AutoCloseable
             return receiverIdleStrategy;
         }
 
-        public AtomicArray<SubscribedSession> subscribedSessions()
+        public AtomicArray<DriverSubscribedSession> subscribedSessions()
         {
             return subscribedSessions;
         }

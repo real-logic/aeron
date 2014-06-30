@@ -28,15 +28,15 @@ public class DriverSubscription
     private final UdpDestination destination;
     private final long channelId;
     private final MediaConductorProxy conductorProxy;
-    private final AtomicArray<SubscribedSession> subscribedSessions;
-    private final Long2ObjectHashMap<SubscribedSession> subscribedSessionBySessionIdMap = new Long2ObjectHashMap<>();
+    private final AtomicArray<DriverSubscribedSession> subscribedSessions;
+    private final Long2ObjectHashMap<DriverSubscribedSession> subscribedSessionBySessionIdMap = new Long2ObjectHashMap<>();
 
     private int refCount = 0;
 
     public DriverSubscription(final UdpDestination destination,
                               final long channelId,
                               final MediaConductorProxy conductorProxy,
-                              final AtomicArray<SubscribedSession> subscribedSessions)
+                              final AtomicArray<DriverSubscribedSession> subscribedSessions)
     {
         this.destination = destination;
         this.channelId = channelId;
@@ -54,17 +54,17 @@ public class DriverSubscription
         return ++refCount;
     }
 
-    public SubscribedSession getSubscribedSession(final long sessionId)
+    public DriverSubscribedSession getSubscribedSession(final long sessionId)
     {
         return subscribedSessionBySessionIdMap.get(sessionId);
     }
 
-    public SubscribedSession createSubscribedSession(final long sessionId, final InetSocketAddress srcAddress)
+    public DriverSubscribedSession createSubscribedSession(final long sessionId, final InetSocketAddress srcAddress)
     {
-        final SubscribedSession subscribedSession = new SubscribedSession(sessionId, channelId, srcAddress);
-        subscribedSessions.add(subscribedSession);
+        final DriverSubscribedSession driverSubscribedSession = new DriverSubscribedSession(sessionId, channelId, srcAddress);
+        subscribedSessions.add(driverSubscribedSession);
 
-        return subscribedSessionBySessionIdMap.put(sessionId, subscribedSession);
+        return subscribedSessionBySessionIdMap.put(sessionId, driverSubscribedSession);
     }
 
     public long channelId()

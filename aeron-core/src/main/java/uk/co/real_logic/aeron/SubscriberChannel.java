@@ -23,7 +23,7 @@ import static uk.co.real_logic.aeron.Subscription.DataHandler;
 
 public class SubscriberChannel extends ChannelEndpoint
 {
-    private final Long2ObjectHashMap<SubscriberSession> subscriberSessionBySessionIdMap = new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<SubscribedSession> subscriberSessionBySessionIdMap = new Long2ObjectHashMap<>();
     private final DataHandler dataHandler;
 
     public SubscriberChannel(final Destination destination, final long channelId, final DataHandler dataHandler)
@@ -41,9 +41,9 @@ public class SubscriberChannel extends ChannelEndpoint
     public int receive()
     {
         int count = 0;
-        for (final SubscriberSession subscriberSession : subscriberSessionBySessionIdMap.values())
+        for (final SubscribedSession subscribedSession : subscriberSessionBySessionIdMap.values())
         {
-            count += subscriberSession.read();
+            count += subscribedSession.read();
         }
 
         return count;
@@ -51,20 +51,20 @@ public class SubscriberChannel extends ChannelEndpoint
 
     protected boolean hasTerm(final long sessionId)
     {
-        final SubscriberSession subscriberSession = subscriberSessionBySessionIdMap.get(sessionId);
-        return subscriberSession != null && subscriberSession.hasTerm();
+        final SubscribedSession subscribedSession = subscriberSessionBySessionIdMap.get(sessionId);
+        return subscribedSession != null && subscribedSession.hasTerm();
     }
 
     public void onBuffersMapped(final long sessionId,
                                 final long termId,
                                 final LogReader[] logReaders)
     {
-        final SubscriberSession session = new SubscriberSession(logReaders, sessionId, termId, dataHandler);
+        final SubscribedSession session = new SubscribedSession(logReaders, sessionId, termId, dataHandler);
         subscriberSessionBySessionIdMap.put(sessionId, session);
     }
 
     public void processBufferScan()
     {
-        subscriberSessionBySessionIdMap.values().forEach(SubscriberSession::processBufferScan);
+        subscriberSessionBySessionIdMap.values().forEach(SubscribedSession::processBufferScan);
     }
 }

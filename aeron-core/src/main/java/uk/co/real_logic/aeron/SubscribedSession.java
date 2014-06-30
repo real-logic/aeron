@@ -29,7 +29,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.W
 /**
  * .
  */
-public class SubscriberSession
+public class SubscribedSession
 {
     private static final int HEADER_LENGTH = BitUtil.align(DataHeaderFlyweight.HEADER_LENGTH, WORD_ALIGNMENT);
 
@@ -41,7 +41,7 @@ public class SubscriberSession
 
     private int currentBufferId = 0;
 
-    public SubscriberSession(final LogReader[] readers,
+    public SubscribedSession(final LogReader[] readers,
                              final long sessionId,
                              final long termId,
                              final Subscription.DataHandler dataHandler)

@@ -40,7 +40,7 @@ public class Receiver extends Agent
     private final Map<UdpDestination, DataFrameHandler> frameHandlerByDestinationMap = new HashMap<>();
     private final SubscriptionMessageFlyweight subscriberMessage = new SubscriptionMessageFlyweight();
     private final Queue<NewReceiveBufferEvent> newBufferEventQueue;
-    private final AtomicArray<SubscribedSession> subscribedSessions;
+    private final AtomicArray<DriverSubscribedSession> subscribedSessions;
 
     public Receiver(final MediaDriver.MediaDriverContext ctx) throws Exception
     {

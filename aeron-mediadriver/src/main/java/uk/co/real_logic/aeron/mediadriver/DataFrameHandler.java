@@ -35,7 +35,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
     private final UdpDestination destination;
     private final Long2ObjectHashMap<DriverSubscription> subscriptionByChannelIdMap = new Long2ObjectHashMap<>();
     private final MediaConductorProxy conductorProxy;
-    private final AtomicArray<SubscribedSession> subscribedSessions;
+    private final AtomicArray<DriverSubscribedSession> subscribedSessions;
     private final ByteBuffer smBuffer = ByteBuffer.allocateDirect(StatusMessageFlyweight.HEADER_LENGTH);
     private final ByteBuffer nakBuffer = ByteBuffer.allocateDirect(NakFlyweight.HEADER_LENGTH);
     private final StatusMessageFlyweight smHeader = new StatusMessageFlyweight();
@@ -44,7 +44,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
     public DataFrameHandler(final UdpDestination destination,
                             final NioSelector nioSelector,
                             final MediaConductorProxy conductorProxy,
-                            final AtomicArray<SubscribedSession> subscribedSessions)
+                            final AtomicArray<DriverSubscribedSession> subscribedSessions)
         throws Exception
     {
         this.subscribedSessions = subscribedSessions;
@@ -120,13 +120,13 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         {
             final long sessionId = header.sessionId();
             final long termId = header.termId();
-            final SubscribedSession subscribedSession = subscription.getSubscribedSession(sessionId);
+            final DriverSubscribedSession driverSubscribedSession = subscription.getSubscribedSession(sessionId);
 
-            if (null != subscribedSession)
+            if (null != driverSubscribedSession)
             {
                 if (header.frameLength() > DataHeaderFlyweight.HEADER_LENGTH)
                 {
-                    subscribedSession.rebuildBuffer(header, buffer, length);
+                    driverSubscribedSession.rebuildBuffer(header, buffer, length);
                 }
             }
             else
@@ -159,27 +159,27 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
             throw new IllegalStateException("channel not found");
         }
 
-        final SubscribedSession subscribedSession = subscription.getSubscribedSession(event.sessionId());
-        if (null == subscribedSession)
+        final DriverSubscribedSession driverSubscribedSession = subscription.getSubscribedSession(event.sessionId());
+        if (null == driverSubscribedSession)
         {
             throw new IllegalStateException("session not found");
         }
 
-        final SubscribedSession.SendSmHandler sendSm =
-                (termId, termOffset, window) -> sendStatusMessage(subscribedSession, termId, termOffset, window);
+        final DriverSubscribedSession.SendSmHandler sendSm =
+                (termId, termOffset, window) -> sendStatusMessage(driverSubscribedSession, termId, termOffset, window);
 
         lossHandler.sendNakHandler(
-                (termId, termOffset, length) -> sendNak(subscribedSession, (int) termId, termOffset, length));
+                (termId, termOffset, length) -> sendNak(driverSubscribedSession, (int) termId, termOffset, length));
 
 
-        subscribedSession.termBuffer(event.termId(), event.bufferRotator(), lossHandler, sendSm);
+        driverSubscribedSession.termBuffer(event.termId(), event.bufferRotator(), lossHandler, sendSm);
 
         // now we are all setup, so send an SM to allow the source to send if it is waiting
         // TODO: grab initial term offset from data and store in subscriberSession somehow (per TermID)
-        sendStatusMessage(subscribedSession, event.termId(), 0, 1000);
+        sendStatusMessage(driverSubscribedSession, event.termId(), 0, 1000);
     }
 
-    private void sendStatusMessage(final SubscribedSession session, final long termId,
+    private void sendStatusMessage(final DriverSubscribedSession session, final long termId,
                                    final int termOffset, final int window)
     {
         smHeader.wrap(smBuffer, 0);
@@ -209,7 +209,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         }
     }
 
-    private void sendNak(final SubscribedSession session, final int termId, final int termOffset, final int length)
+    private void sendNak(final DriverSubscribedSession session, final int termId, final int termOffset, final int length)
     {
         nakHeader.wrap(nakBuffer, 0);
         nakHeader.channelId(session.channelId())
@@ -238,7 +238,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         }
     }
 
-    private InetSocketAddress controlAddress(final SubscribedSession session)
+    private InetSocketAddress controlAddress(final DriverSubscribedSession session)
     {
         if (transport.isMulticast())
         {

@@ -74,15 +74,17 @@ public class ClientProxy
 
     // TODO: is this a single buffer or the trio of log buffers for a subscription/publication?
     public void onNewBuffers(final int msgTypeId,
-                                final long sessionId,
-                                final long channelId,
-                                final long termId,
-                                final String destination,
-                                final BufferRotator bufferRotator)
+                             final long sessionId,
+                             final long channelId,
+                             final long termId,
+                             final String destination,
+                             final BufferRotator bufferRotator,
+                             final long correlationId)
     {
         newBufferMessage.wrap(tmpBuffer, 0);
         newBufferMessage.sessionId(sessionId)
                         .channelId(channelId)
+                        .correlationId(correlationId)
                         .termId(termId);
         bufferRotator.appendBufferLocationsTo(newBufferMessage);
         newBufferMessage.destination(destination);

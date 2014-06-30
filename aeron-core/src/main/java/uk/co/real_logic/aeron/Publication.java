@@ -16,14 +16,11 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.conductor.ChannelEndpoint;
-import uk.co.real_logic.aeron.conductor.ClientConductorProxy;
-import uk.co.real_logic.aeron.util.AtomicArray;
+import uk.co.real_logic.aeron.conductor.ClientConductor;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.status.PositionIndicator;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.CLEAN_WINDOW;
@@ -34,48 +31,36 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.Appen
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.TRIPPED;
 
 /**
- * Aeron Channel
+ * Aeron Publication
  */
 public class Publication extends ChannelEndpoint implements AutoCloseable, PositionIndicator
 {
-    private final ClientConductorProxy clientConductorProxy;
+    public static final long NO_DIRTY_TERM = -1L;
+
+    private final ClientConductor conductor;
+
     private final long sessionId;
-    private final AtomicArray<Publication> channels;
-    private final AtomicBoolean paused;
+    private final LogAppender[] logAppenders;
+    private final PositionIndicator positionIndicator;
+    private final AtomicLong currentTermId;
+    private volatile long dirtyTermId = NO_DIRTY_TERM;
 
-    private volatile LogAppender[] logAppenders;
-    private PositionIndicator positionIndicator;
-
-    private final AtomicLong currentTermId = new AtomicLong(UNKNOWN_TERM_ID);
-    private final AtomicInteger currentBufferIndex = new AtomicInteger(0);
-
-    public Publication(final String destination,
-                       final ClientConductorProxy clientConductorProxy,
+    private int currentBufferIndex = 0;
+    public Publication(final ClientConductor conductor,
+                       final String destination,
                        final long channelId,
                        final long sessionId,
-                       final AtomicArray<Publication> channels,
-                       final AtomicBoolean paused)
+                       final long initialTermId,
+                       final LogAppender[] logAppenders,
+                       final PositionIndicator positionIndicator)
     {
         super(destination, channelId);
+        this.conductor = conductor;
 
-        this.clientConductorProxy = clientConductorProxy;
+        currentTermId = new AtomicLong(initialTermId);
         this.sessionId = sessionId;
-        this.channels = channels;
-        this.paused = paused;
-    }
-
-    private boolean canAppend()
-    {
-        return logAppenders != null && !paused.get();
-    }
-
-    public void onBuffersMapped(final long termId,
-                                final LogAppender[] logAppenders,
-                                final PositionIndicator positionIndicator)
-    {
         this.logAppenders = logAppenders;
         this.positionIndicator = positionIndicator;
-        currentTermId.set(termId);
     }
 
     /**
@@ -99,19 +84,13 @@ public class Publication extends ChannelEndpoint implements AutoCloseable, Posit
      */
     public boolean offer(final AtomicBuffer buffer, final int offset, final int length)
     {
-        if (!canAppend())
-        {
-            return false;
-        }
-
         // TODO: must update the logAppender header with new termId!
-        final int bufferIndex = currentBufferIndex.get();
-        final LogAppender logAppender = logAppenders[bufferIndex];
+        final LogAppender logAppender = logAppenders[currentBufferIndex];
         final AppendStatus status = logAppender.append(buffer, offset, length);
 
         if (status == TRIPPED)
         {
-            currentBufferIndex.lazySet(rotateId(bufferIndex));
+            currentBufferIndex = rotateId(currentBufferIndex);
             final long currentTermId = this.currentTermId.get();
             this.currentTermId.lazySet(currentTermId + 1);
 
@@ -144,8 +123,7 @@ public class Publication extends ChannelEndpoint implements AutoCloseable, Posit
 
     public void close() throws Exception
     {
-        channels.remove(this);
-        clientConductorProxy.removePublication(destination(), sessionId, channelId());
+        conductor.close(this);
     }
 
     public boolean matches(final String destination, final long sessionId, final long channelId)
@@ -155,7 +133,7 @@ public class Publication extends ChannelEndpoint implements AutoCloseable, Posit
 
     private void requestTerm(final long termId)
     {
-        clientConductorProxy.sendRequestTerm(destination(), sessionId, channelId(), termId);
+        // TODO
     }
 
     protected boolean hasTerm(final long sessionId)
@@ -168,15 +146,25 @@ public class Publication extends ChannelEndpoint implements AutoCloseable, Posit
         requestTerm(currentTermId + CLEAN_WINDOW);
     }
 
-    public boolean hasSessionId(final long sessionId)
-    {
-        return this.sessionId == sessionId;
-    }
-
     public long position()
     {
-        logAppenders[currentBufferIndex.get()].tailVolatile();
+        logAppenders[currentBufferIndex].tailVolatile();
 
         return 0;
+    }
+
+    public long sessionId()
+    {
+        return sessionId;
+    }
+
+    public long dirtyTermId()
+    {
+        return dirtyTermId;
+    }
+
+    public void resetDirtyTermId()
+    {
+        dirtyTermId = NO_DIRTY_TERM;
     }
 }

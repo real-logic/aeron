@@ -15,17 +15,12 @@
  */
 package uk.co.real_logic.aeron;
 
-import com.sun.org.apache.xpath.internal.axes.SubContextList;
 import uk.co.real_logic.aeron.conductor.ChannelEndpoint;
-import uk.co.real_logic.aeron.conductor.ClientConductorProxy;
+import uk.co.real_logic.aeron.conductor.MediaDriverProxy;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
-
-import java.util.List;
-
-import static java.util.stream.Collectors.toList;
 
 /**
  * Aeron Subscriber API
@@ -82,29 +77,29 @@ public class Subscription extends ChannelEndpoint implements AutoCloseable
     private final Destination destination;
     private final DataHandler handler;
     private final long channelId;
-    private final ClientConductorProxy clientConductorProxy;
+    private final MediaDriverProxy mediaDriverProxy;
     private final AtomicArray<Subscription> subscriberChannels;
 
-    public Subscription(final ClientConductorProxy clientConductorProxy,
+    public Subscription(final MediaDriverProxy mediaDriverProxy,
                         final DataHandler handler,
                         final Destination destination,
                         final long channelId,
                         final AtomicArray<Subscription> subscriberChannels)
     {
         super(destination.destination(), channelId);
-        this.clientConductorProxy = clientConductorProxy;
+        this.mediaDriverProxy = mediaDriverProxy;
         this.handler = handler;
         this.destination = destination;
         this.channelId = channelId;
         this.subscriberChannels = subscriberChannels;
         subscriberChannels.add(this);
-        clientConductorProxy.addSubscription(destination.destination(), channelId);
+        mediaDriverProxy.addSubscription(destination.destination(), channelId);
     }
 
     public void close()
     {
         subscriberChannels.remove(this);
-        clientConductorProxy.removeSubscription(destination.destination(), channelId);
+        mediaDriverProxy.removeSubscription(destination.destination(), channelId);
     }
 
     public boolean matches(final String destination, final long channelId)

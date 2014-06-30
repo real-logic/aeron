@@ -15,9 +15,13 @@
  */
 package uk.co.real_logic.aeron.util.command;
 
+import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.Flyweight;
 
 import java.nio.ByteOrder;
+
+import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
+import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_LONG;
 
 /**
  * Control message for adding and removing a publication
@@ -26,6 +30,9 @@ import java.nio.ByteOrder;
  * 0                   1                   2                   3
  * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ * |                         Correlation ID                        |
+ * |                                                               |
+ * +---------------------------------------------------------------+
  * |                          Session ID                           |
  * +---------------------------------------------------------------+
  * |                          Channel ID                           |
@@ -36,9 +43,10 @@ import java.nio.ByteOrder;
  */
 public class PublicationMessageFlyweight extends Flyweight
 {
-    private static final int SESSION_ID_FIELD_OFFSET = 0;
-    private static final int CHANNEL_ID_FIELD_OFFSET = 4;
-    private static final int DESTINATION_OFFSET = 8;
+    private static final int CORRELATION_ID_FIELD_OFFSET = 0;
+    private static final int SESSION_ID_FIELD_OFFSET = CORRELATION_ID_FIELD_OFFSET + SIZE_OF_LONG;
+    private static final int CHANNEL_ID_FIELD_OFFSET = SESSION_ID_FIELD_OFFSET + SIZE_OF_INT;
+    private static final int DESTINATION_OFFSET = CHANNEL_ID_FIELD_OFFSET + SIZE_OF_INT;
 
     private int lengthOfDestination;
 
@@ -59,6 +67,28 @@ public class PublicationMessageFlyweight extends Flyweight
     public PublicationMessageFlyweight sessionId(final long sessionId)
     {
         uint32Put(offset() + SESSION_ID_FIELD_OFFSET, (int)sessionId, ByteOrder.LITTLE_ENDIAN);
+        return this;
+    }
+
+    /**
+     * return correlation id field
+     *
+     * @return correlation id field
+     */
+    public long correlationId()
+    {
+        return atomicBuffer().getLong(offset() + CORRELATION_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+    }
+
+    /**
+     * set correlation id field
+     *
+     * @param correlationId field value
+     * @return flyweight
+     */
+    public PublicationMessageFlyweight correlationId(final long correlationId)
+    {
+        atomicBuffer().putLong(offset() + CORRELATION_ID_FIELD_OFFSET, correlationId, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 

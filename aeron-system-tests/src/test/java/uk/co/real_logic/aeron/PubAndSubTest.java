@@ -63,6 +63,8 @@ public class PubAndSubTest
     {
         System.setProperty(DIRS_DELETE_ON_EXIT_PROP_NAME, "true");
 
+        executorService = Executors.newFixedThreadPool(2);
+
         driver = new MediaDriver();
 
         final DataHandler dataHandler = mock(DataHandler.class);
@@ -73,12 +75,11 @@ public class PubAndSubTest
 
         subscription = subscribingClient.newSubscription(destination, CHANNEL_ID, dataHandler);
 
-        publication = publishingClient.newPublication(destination, CHANNEL_ID, SESSION_ID);
-
-        executorService = Executors.newSingleThreadExecutor();
-
         driver.invokeEmbedded();
+        publishingClient.invoke(executorService);
         subscribingClient.invoke(executorService);
+
+        publication = publishingClient.newPublication(destination, CHANNEL_ID, SESSION_ID);
     }
 
     private Aeron.ClientContext newAeronContext()

@@ -94,14 +94,14 @@ public class PubMulticastTest
 
         producingClient = Aeron.newSingleMediaDriver(newAeronContext());
 
-        publication = producingClient.newPublication(DESTINATION, CHANNEL_ID, SESSION_ID);
-
         payload.putBytes(0, PAYLOAD);
 
         executorService = Executors.newSingleThreadExecutor();
 
         driver.invokeEmbedded();
         producingClient.invoke(executorService);
+
+        publication = producingClient.newPublication(DESTINATION, CHANNEL_ID, SESSION_ID);
     }
 
     private Aeron.ClientContext newAeronContext()

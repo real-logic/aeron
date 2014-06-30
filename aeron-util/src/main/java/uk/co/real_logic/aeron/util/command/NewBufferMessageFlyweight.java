@@ -18,8 +18,11 @@ package uk.co.real_logic.aeron.util.command;
 import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.Flyweight;
 
+import java.nio.ByteOrder;
+
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
+import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_LONG;
 
 /**
  * Message to denote that new buffers have been added for a subscription.
@@ -29,6 +32,9 @@ import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
  * 0                   1                   2                   3
  * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ * |                         Correlation ID                        |
+ * |                                                               |
+ * +---------------------------------------------------------------+
  * |                          Session ID                           |
  * +---------------------------------------------------------------+
  * |                          Channel ID                           |
@@ -97,13 +103,16 @@ import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
  */
 public class NewBufferMessageFlyweight extends Flyweight
 {
-    private static final int SESSION_ID_OFFSET = 0;
-    private static final int CHANNEL_ID_FIELD_OFFSET = 4;
-    private static final int TERM_ID_FIELD_OFFSET = 8;
-    private static final int FILE_OFFSETS_FIELDS_OFFSET = 12;
-    private static final int BUFFER_LENGTHS_FIELDS_OFFSET = 36;
-    private static final int LOCATION_POINTER_FIELDS_OFFSET = 60;
-    private static final int LOCATION_0_FIELD_OFFSET = 92;
+    private static final int NUMBER_OF_FILES = 6;
+
+    private static final int CORRELATION_ID_OFFSET = 0;
+    private static final int SESSION_ID_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
+    private static final int CHANNEL_ID_FIELD_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
+    private static final int TERM_ID_FIELD_OFFSET = CHANNEL_ID_FIELD_OFFSET + SIZE_OF_INT;
+    private static final int FILE_OFFSETS_FIELDS_OFFSET = TERM_ID_FIELD_OFFSET + SIZE_OF_INT;
+    private static final int BUFFER_LENGTHS_FIELDS_OFFSET = FILE_OFFSETS_FIELDS_OFFSET + (NUMBER_OF_FILES * SIZE_OF_INT);
+    private static final int LOCATION_POINTER_FIELDS_OFFSET = BUFFER_LENGTHS_FIELDS_OFFSET + (NUMBER_OF_FILES * SIZE_OF_INT);
+    private static final int LOCATION_0_FIELD_OFFSET = LOCATION_POINTER_FIELDS_OFFSET + (8 * SIZE_OF_INT);
 
     /**
      * Contains both log buffers and state buffers
@@ -134,6 +143,28 @@ public class NewBufferMessageFlyweight extends Flyweight
     public NewBufferMessageFlyweight bufferLength(final int index, final int value)
     {
         return relativeIntField(index, value, BUFFER_LENGTHS_FIELDS_OFFSET);
+    }
+
+    /**
+     * return correlation id field
+     *
+     * @return correlation id field
+     */
+    public long correlationId()
+    {
+        return atomicBuffer().getLong(offset() + CORRELATION_ID_OFFSET, ByteOrder.LITTLE_ENDIAN);
+    }
+
+    /**
+     * set correlation id field
+     *
+     * @param correlationId field value
+     * @return flyweight
+     */
+    public NewBufferMessageFlyweight correlationId(final long correlationId)
+    {
+        atomicBuffer().putLong(offset() + CORRELATION_ID_OFFSET, correlationId, ByteOrder.LITTLE_ENDIAN);
+        return this;
     }
 
     /**

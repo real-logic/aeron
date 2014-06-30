@@ -244,6 +244,7 @@ public class MediaConductor extends Agent
         final String destination = publicationMessage.destination();
         final long sessionId = publicationMessage.sessionId();
         final long channelId = publicationMessage.channelId();
+        final long correlationId = publicationMessage.correlationId();
 
         try
         {
@@ -284,7 +285,7 @@ public class MediaConductor extends Agent
 
             frameHandler.addPublication(publication);
             clientProxy.onNewBuffers(NEW_PUBLICATION_BUFFER_EVENT, sessionId, channelId,
-                    initialTermId, destination, bufferRotator);
+                    initialTermId, destination, bufferRotator, correlationId);
             publications.add(publication);
         }
         catch (final ControlProtocolException ex)
@@ -364,7 +365,7 @@ public class MediaConductor extends Agent
                 bufferManagement.addSubscriberChannel(rcvDestination, sessionId, channelId);
 
             clientProxy.onNewBuffers(NEW_SUBSCRIPTION_BUFFER_EVENT, sessionId, channelId, termId,
-                    destination, bufferRotator);
+                    destination, bufferRotator, 0);
 
             final NewReceiveBufferEvent event =
                 new NewReceiveBufferEvent(rcvDestination, sessionId, channelId, termId, bufferRotator);

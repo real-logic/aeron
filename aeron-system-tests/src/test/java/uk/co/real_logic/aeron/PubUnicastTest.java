@@ -80,6 +80,8 @@ public class PubUnicastTest
     {
         System.setProperty(DIRS_DELETE_ON_EXIT_PROP_NAME, "true");
 
+        executorService = Executors.newFixedThreadPool(2);
+
         receiverChannel = DatagramChannel.open();
         receiverChannel.configureBlocking(false);
         receiverChannel.bind(new InetSocketAddress(HOST, PORT));
@@ -88,14 +90,12 @@ public class PubUnicastTest
 
         producingClient = Aeron.newSingleMediaDriver(newAeronContext());
 
-        publication = producingClient.newPublication(DESTINATION, CHANNEL_ID, SESSION_ID);
-
         payload.putBytes(0, PAYLOAD);
-
-        executorService = Executors.newSingleThreadExecutor();
 
         driver.invokeEmbedded();
         producingClient.invoke(executorService);
+
+        publication = producingClient.newPublication(DESTINATION, CHANNEL_ID, SESSION_ID);
     }
 
     private Aeron.ClientContext newAeronContext()

@@ -30,7 +30,7 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
  *
  * Writes messages into the client conductor buffer.
  */
-public class ClientConductorProxy
+public class MediaDriverProxy
 {
     /** Maximum size of the write buffer */
     public static final int MSG_BUFFER_CAPACITY = 1024;
@@ -42,7 +42,7 @@ public class ClientConductorProxy
 
     private final RingBuffer conductorBuffer;
 
-    public ClientConductorProxy(final RingBuffer conductorBuffer)
+    public MediaDriverProxy(final RingBuffer conductorBuffer)
     {
         this.conductorBuffer = conductorBuffer;
 
@@ -51,9 +51,9 @@ public class ClientConductorProxy
         qualifiedMessage.wrap(writeBuffer, 0);
     }
 
-    public void addPublication(final String destination, final long channelId, final long sessionId)
+    public long addPublication(final String destination, final long channelId, final long sessionId)
     {
-        sendPublicationMessage(destination, sessionId, channelId, ADD_PUBLICATION);
+        return sendPublicationMessage(destination, sessionId, channelId, ADD_PUBLICATION);
     }
 
     public void removePublication(final String destination, final long sessionId, final long channelId)
@@ -71,11 +71,14 @@ public class ClientConductorProxy
         sendSubscriptionMessage(REMOVE_SUBSCRIPTION, destination, channelId);
     }
 
-    private void sendPublicationMessage(final String destination,
+    private long sendPublicationMessage(final String destination,
                                         final long sessionId,
                                         final long channelId,
                                         final int msgTypeId)
     {
+        final long correlationId = conductorBuffer.nextCorrelationId();
+
+        publicationMessage.correlationId(correlationId);
         publicationMessage.sessionId(sessionId);
         publicationMessage.channelId(channelId);
         publicationMessage.destination(destination);
@@ -84,6 +87,8 @@ public class ClientConductorProxy
         {
             throw new IllegalStateException("could not write channel message");
         }
+
+        return correlationId;
     }
 
     private void sendSubscriptionMessage(final int msgTypeId, final String destination, final long channelId)

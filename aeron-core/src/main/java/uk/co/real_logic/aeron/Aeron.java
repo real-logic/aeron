@@ -33,7 +33,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
 
@@ -51,8 +50,9 @@ public final class Aeron implements AutoCloseable
 
     private final AtomicArray<Publication> channels = new AtomicArray<>();
     private final AtomicArray<Subscription> receivers = new AtomicArray<>();
-    private final ClientConductor clientConductor;
+    private final ClientConductor conductor;
     private final ClientContext savedCtx;
+
     private Future conductorFuture;
 
     private Aeron(final ClientContext ctx)
@@ -67,15 +67,19 @@ public final class Aeron implements AutoCloseable
         }
 
         final ConductorErrorHandler errorHandler = new ConductorErrorHandler(ctx.invalidDestinationHandler);
+        final MediaDriverProxy mediaDriverProxy = new MediaDriverProxy(ctx.toDriverBuffer);
+        final Signal correlationSignal = new Signal();
 
-        clientConductor = new ClientConductor(clientConductorCommandBuffer,
-                                              ctx.toClientBuffer,
-                                              ctx.toDriverBuffer,
-                                              channels,
-                                              receivers,
-                                              errorHandler,
-                                              ctx.bufferUsageStrategy,
-                                              ctx);
+        conductor = new ClientConductor(
+                  clientConductorCommandBuffer,
+                  ctx.toClientBuffer,
+                  ctx.toDriverBuffer,
+                  receivers,
+                  errorHandler,
+                  ctx.bufferUsageStrategy,
+                  ctx.counterValuesBuffer(),
+                  mediaDriverProxy,
+                  correlationSignal);
 
         this.savedCtx = ctx;
     }
@@ -85,7 +89,7 @@ public final class Aeron implements AutoCloseable
      */
     public void run()
     {
-        clientConductor.run();
+        conductor.run();
     }
 
     /**
@@ -95,7 +99,7 @@ public final class Aeron implements AutoCloseable
      */
     public void invoke(final ExecutorService executor)
     {
-        conductorFuture = executor.submit(clientConductor);
+        conductorFuture = executor.submit(conductor);
     }
 
     /**
@@ -107,7 +111,7 @@ public final class Aeron implements AutoCloseable
     {
         if (null != conductorFuture)
         {
-            clientConductor.stop();
+            conductor.stop();
 
             try
             {
@@ -120,7 +124,7 @@ public final class Aeron implements AutoCloseable
         }
         else
         {
-            clientConductor.stop();
+            conductor.stop();
         }
     }
 
@@ -129,7 +133,7 @@ public final class Aeron implements AutoCloseable
      */
     public void close()
     {
-        clientConductor.close();
+        conductor.close();
         savedCtx.close();
     }
 
@@ -157,19 +161,7 @@ public final class Aeron implements AutoCloseable
             final long channelId,
             final long sessionId)
     {
-        ClientConductorProxy proxy = new ClientConductorProxy(clientConductorCommandBuffer);
-
-        final AtomicBoolean pauseButton = new AtomicBoolean(false);
-        final Publication publication = new Publication(destination.destination(),
-                proxy,
-                channelId,
-                sessionId,
-                channels,
-                pauseButton);
-        channels.add(publication);
-        proxy.addPublication(destination.destination(), channelId, sessionId);
-
-        return publication;
+        return conductor.newPublication(destination, channelId, sessionId);
     }
 
     /**
@@ -182,14 +174,14 @@ public final class Aeron implements AutoCloseable
             final long channelId,
             final Subscription.DataHandler handler)
     {
-        final ClientConductorProxy clientConductorProxy = new ClientConductorProxy(clientConductorCommandBuffer);
+        final MediaDriverProxy mediaDriverProxy = new MediaDriverProxy(clientConductorCommandBuffer);
 
-        return new Subscription(clientConductorProxy, handler, destination, channelId, receivers);
+        return new Subscription(mediaDriverProxy, handler, destination, channelId, receivers);
     }
 
     public ClientConductor conductor()
     {
-        return clientConductor;
+        return conductor;
     }
 
     public static class ClientContext extends CommonContext

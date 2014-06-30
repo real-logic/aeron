@@ -17,7 +17,21 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.StateViewer;
 
-public interface PublisherControlStrategy
+import java.util.concurrent.atomic.AtomicBoolean;
+
+public class DefaultPublicationFlowControlStrategy implements PublicationFlowControlStrategy
 {
-    void onRotate(final StateViewer currentBuffer);
+    private final AtomicBoolean pauseButton;
+
+    private StateViewer currentBuffer; // TODO: should this be volatile???
+
+    public DefaultPublicationFlowControlStrategy(final AtomicBoolean pauseButton)
+    {
+        this.pauseButton = pauseButton;
+    }
+
+    public void onRotate(final StateViewer currentBuffer)
+    {
+        this.currentBuffer = currentBuffer;
+    }
 }

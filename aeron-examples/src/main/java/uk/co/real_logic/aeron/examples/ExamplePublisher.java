@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.examples;
 
 import uk.co.real_logic.aeron.Aeron;
-import uk.co.real_logic.aeron.Channel;
+import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Destination;
 import uk.co.real_logic.aeron.Source;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
@@ -46,7 +46,7 @@ public class ExamplePublisher
              final Aeron aeron = ExampleUtil.createAeron(context, executor))
         {
             final Source source = aeron.newSource(DESTINATION);
-            final Channel channel = source.newChannel(CHANNEL_ID);
+            final Publication publication = source.newChannel(CHANNEL_ID);
 
             for (int i = 0; i < 10; i++)
             {
@@ -54,7 +54,7 @@ public class ExamplePublisher
                 buffer.putBytes(0, message.getBytes());
 
                 System.out.print("offering " + i);
-                final boolean result = channel.offer(buffer, 0, message.getBytes().length);
+                final boolean result = publication.offer(buffer, 0, message.getBytes().length);
 
                 if (false == result)
                 {

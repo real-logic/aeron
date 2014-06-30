@@ -36,11 +36,11 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.Appen
 /**
  * Aeron Channel
  */
-public class Channel extends ChannelEndpoint implements AutoCloseable, PositionIndicator
+public class Publication extends ChannelEndpoint implements AutoCloseable, PositionIndicator
 {
     private final ClientConductorProxy clientConductorProxy;
     private final long sessionId;
-    private final AtomicArray<Channel> channels;
+    private final AtomicArray<Publication> channels;
     private final AtomicBoolean paused;
 
     private volatile LogAppender[] logAppenders;
@@ -49,12 +49,12 @@ public class Channel extends ChannelEndpoint implements AutoCloseable, PositionI
     private final AtomicLong currentTermId = new AtomicLong(UNKNOWN_TERM_ID);
     private final AtomicInteger currentBufferIndex = new AtomicInteger(0);
 
-    public Channel(final String destination,
-                   final ClientConductorProxy clientConductorProxy,
-                   final long channelId,
-                   final long sessionId,
-                   final AtomicArray<Channel> channels,
-                   final AtomicBoolean paused)
+    public Publication(final String destination,
+                       final ClientConductorProxy clientConductorProxy,
+                       final long channelId,
+                       final long sessionId,
+                       final AtomicArray<Publication> channels,
+                       final AtomicBoolean paused)
     {
         super(destination, channelId);
 

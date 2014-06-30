@@ -69,20 +69,20 @@ public class SubUnicastTest
 
     private Aeron consumingClient;
     private MediaDriver driver;
-    private Subscriber subscriber;
+    private Subscription subscription;
     private DatagramChannel senderChannel;
 
     private final Queue<byte[]> receivedFrames = new ArrayDeque<>();
-    private final Subscriber.DataHandler saveFrames =
+    private final Subscription.DataHandler saveFrames =
         (buffer, offset, length, sessionId) ->
         {
             final byte[] data = new byte[length];
             buffer.getBytes(offset, data);
             receivedFrames.add(data);
         };
-    private final Subscriber.NewSourceEventHandler newSource =
+    private final Subscription.NewSourceEventHandler newSource =
         (channelId, sessionId) -> System.out.println("newSource " + sessionId + " " + channelId);
-    private final Subscriber.InactiveSourceEventHandler inactiveSource =
+    private final Subscription.InactiveSourceEventHandler inactiveSource =
         (channelId, sessionId) -> System.out.println("inactiveSource " + sessionId + " " + channelId);
 
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
@@ -104,11 +104,11 @@ public class SubUnicastTest
 
         consumingClient = Aeron.newSingleMediaDriver(newAeronContext());
 
-        subscriber = consumingClient.newSubscriber(new Subscriber.Context()
-                                                       .destination(DESTINATION)
-                                                       .channel(CHANNEL_ID, saveFrames)
-                                                       .newSourceEvent(newSource)
-                                                       .inactiveSourceEvent(inactiveSource));
+        subscription = consumingClient.newSubscription(new Subscription.Context()
+                .destination(DESTINATION)
+                .channel(CHANNEL_ID, saveFrames)
+                .newSourceEvent(newSource)
+                .inactiveSourceEvent(inactiveSource));
 
         payload.putBytes(0, PAYLOAD);
 
@@ -136,7 +136,7 @@ public class SubUnicastTest
         driver.shutdown();
 
         senderChannel.close();
-        subscriber.close();
+        subscription.close();
         consumingClient.close();
         driver.close();
         executorService.shutdown();
@@ -184,7 +184,7 @@ public class SubUnicastTest
         Thread.sleep(100);
 
         // now receive data into app
-        subscriber.read();
+        subscription.read();
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(1));
@@ -228,7 +228,7 @@ public class SubUnicastTest
         }
 
         // now receive data into app
-        subscriber.read();
+        subscription.read();
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(3));
@@ -271,7 +271,7 @@ public class SubUnicastTest
         Thread.sleep(100);
 
         // now receive data into app
-        subscriber.read();
+        subscription.read();
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(1));
@@ -332,7 +332,7 @@ public class SubUnicastTest
         Thread.sleep(100);
 
         // now receive data into app
-        subscriber.read();
+        subscription.read();
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(1));
@@ -354,7 +354,7 @@ public class SubUnicastTest
 
         Thread.sleep(100);
 
-        subscriber.read();
+        subscription.read();
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(2));

@@ -66,7 +66,7 @@ public class PubUnicastTest
     private Aeron producingClient;
     private MediaDriver driver;
     private Source source;
-    private Channel channel;
+    private Publication publication;
 
     private DatagramChannel receiverChannel;
 
@@ -92,7 +92,7 @@ public class PubUnicastTest
         source = producingClient.newSource(new Source.Context().destination(DESTINATION)
                                                                .sessionId(SESSION_ID));
 
-        channel = source.newChannel(CHANNEL_ID);
+        publication = source.newChannel(CHANNEL_ID);
 
         payload.putBytes(0, PAYLOAD);
 
@@ -133,7 +133,7 @@ public class PubUnicastTest
         // let buffers get connected
 
         // this will not be sent yet
-        while (!channel.offer(payload, 0, PAYLOAD.length))
+        while (!publication.offer(payload, 0, PAYLOAD.length))
         {
             Thread.sleep(10);
         }
@@ -203,7 +203,7 @@ public class PubUnicastTest
         // let buffers get connected
 
         // this will not be sent yet
-        while (!channel.offer(payload, 0, PAYLOAD.length))
+        while (!publication.offer(payload, 0, PAYLOAD.length))
         {
             Thread.sleep(10);
         }

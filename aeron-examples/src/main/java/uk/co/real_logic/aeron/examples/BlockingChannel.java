@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.examples;
 
 import uk.co.real_logic.aeron.BufferExhaustedException;
-import uk.co.real_logic.aeron.Channel;
+import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 /**
@@ -29,12 +29,12 @@ public class BlockingChannel
         long backOff(final long previousBackOff);
     }
 
-    private final Channel channel;
+    private final Publication publication;
     private final BackOffStrategy backOffStrategy;
 
-    public BlockingChannel(final Channel channel, final BackOffStrategy backOffStrategy)
+    public BlockingChannel(final Publication publication, final BackOffStrategy backOffStrategy)
     {
-        this.channel = channel;
+        this.publication = publication;
         this.backOffStrategy = backOffStrategy;
     }
 
@@ -46,7 +46,7 @@ public class BlockingChannel
     public void send(final AtomicBuffer buffer, final int offset, final int length) throws BufferExhaustedException
     {
         long backOff = 0L;
-        while (!channel.offer(buffer, offset, length))
+        while (!publication.offer(buffer, offset, length))
         {
             backOff = backOffStrategy.backOff(backOff);
             if (backOff != 0L)

@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.util.status.PositionReporter;
 
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -36,7 +35,7 @@ public class SubscriberSession
 
     private final LogReader[] logReaders;
     private final long sessionId;
-    private final Subscriber.DataHandler dataHandler;
+    private final Subscription.DataHandler dataHandler;
     private final AtomicLong currentTermId;
     private final AtomicLong cleanedTermId;
 
@@ -45,7 +44,7 @@ public class SubscriberSession
     public SubscriberSession(final LogReader[] readers,
                              final long sessionId,
                              final long termId,
-                             final Subscriber.DataHandler dataHandler)
+                             final Subscription.DataHandler dataHandler)
     {
         this.logReaders = readers;
         this.sessionId = sessionId;

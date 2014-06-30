@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.examples;
 
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Destination;
-import uk.co.real_logic.aeron.Subscriber;
+import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
@@ -39,17 +39,17 @@ public class ExampleSubscriber
     {
         final ExecutorService executor = Executors.newFixedThreadPool(3);
         final Aeron.ClientContext aeronContext = new Aeron.ClientContext().errorHandler(ExampleSubscriber::onError);
-        final Subscriber.Context subContext = new Subscriber.Context().destination(DESTINATION);
-        final Subscriber.DataHandler messageHandler =
+        final Subscription.Context subContext = new Subscription.Context().destination(DESTINATION);
+        final Subscription.DataHandler messageHandler =
             (buffer, offset, length, sessionId) ->
             {
                 final byte[] data = new byte[length];
                 buffer.getBytes(offset, data);
                 System.out.println("Message " + sessionId + " " + new String(data));
             };
-        final Subscriber.NewSourceEventHandler newSourceHandler =
+        final Subscription.NewSourceEventHandler newSourceHandler =
                 (channelId, sessionId) -> System.out.println("new source " + sessionId + " " + channelId);
-        final Subscriber.InactiveSourceEventHandler inactiveSourceHandler =
+        final Subscription.InactiveSourceEventHandler inactiveSourceHandler =
                 (channelId, sessionId) -> System.out.println("inactive source " + sessionId + " " + channelId);
 
         // register some channels that use stateful objects
@@ -61,7 +61,7 @@ public class ExampleSubscriber
             .inactiveSourceEvent(inactiveSourceHandler);
 
         // make a reusable, parameterized event loop function
-        final Consumer<Subscriber> loop = (subscriber) ->
+        final Consumer<Subscription> loop = (subscriber) ->
         {
             try
             {
@@ -77,16 +77,18 @@ public class ExampleSubscriber
             }
         };
 
+        final Subscription.Context context2 = new Subscription.Context()
+                .destination(DESTINATION).channel(100, messageHandler).newSourceEvent(newSourceHandler);
+
         try (final MediaDriver driver = ExampleUtil.createEmbeddedMediaDriver();
              final Aeron aeron = ExampleUtil.createAeron(aeronContext);
-             final Subscriber subscriber1 = aeron.newSubscriber(subContext);
+             final Subscription subscription1 = aeron.newSubscription(subContext);
              // create a subscriber using the fluent style lambda expression
-             final Subscriber subscriber2 = aeron.newSubscriber((ctx) ->
-                 ctx.destination(DESTINATION).channel(100, messageHandler).newSourceEvent(newSourceHandler)))
+             final Subscription subscription2 = aeron.newSubscription(context2))
         {
             // spin off the two subscriber threads
-            executor.execute(() -> loop.accept(subscriber1));
-            executor.execute(() -> loop.accept(subscriber2));
+            executor.execute(() -> loop.accept(subscription1));
+            executor.execute(() -> loop.accept(subscription2));
 
             // run aeron conductor thread from here
             aeron.run();
@@ -108,7 +110,7 @@ public class ExampleSubscriber
         System.err.println(message);
     }
 
-    public static class ExampleDataHandler implements Subscriber.DataHandler
+    public static class ExampleDataHandler implements Subscription.DataHandler
     {
         private final long channelId;
 

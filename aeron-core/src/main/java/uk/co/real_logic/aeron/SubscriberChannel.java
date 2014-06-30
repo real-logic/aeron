@@ -19,7 +19,7 @@ import uk.co.real_logic.aeron.conductor.ChannelEndpoint;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 
-import static uk.co.real_logic.aeron.Subscriber.DataHandler;
+import static uk.co.real_logic.aeron.Subscription.DataHandler;
 
 public class SubscriberChannel extends ChannelEndpoint
 {

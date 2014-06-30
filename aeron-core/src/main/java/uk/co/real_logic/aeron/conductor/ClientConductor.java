@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.conductor;
 
 import uk.co.real_logic.aeron.Aeron;
-import uk.co.real_logic.aeron.Channel;
+import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.SubscriberChannel;
 import uk.co.real_logic.aeron.util.Agent;
 import uk.co.real_logic.aeron.util.AgentIdleStrategy;
@@ -60,10 +60,10 @@ public final class ClientConductor extends Agent
     private final RingBuffer toDriverBuffer;
 
     private final BufferUsageStrategy bufferUsage;
-    private final AtomicArray<Channel> publishers;
+    private final AtomicArray<Publication> publishers;
     private final AtomicArray<SubscriberChannel> subscriberChannels;
 
-    private final ChannelMap<String, Channel> sendNotifiers = new ChannelMap<>();
+    private final ChannelMap<String, Publication> sendNotifiers = new ChannelMap<>();
     private final SubscriptionMap subscriptionMap = new SubscriptionMap();
 
     private final ConductorErrorHandler errorHandler;
@@ -76,7 +76,7 @@ public final class ClientConductor extends Agent
     public ClientConductor(final RingBuffer commandBuffer,
                            final CopyBroadcastReceiver toClientBuffer,
                            final RingBuffer toDriverBuffer,
-                           final AtomicArray<Channel> publishers,
+                           final AtomicArray<Publication> publishers,
                            final AtomicArray<SubscriberChannel> subscriberChannels,
                            final ConductorErrorHandler errorHandler,
                            final BufferUsageStrategy bufferUsageStrategy,

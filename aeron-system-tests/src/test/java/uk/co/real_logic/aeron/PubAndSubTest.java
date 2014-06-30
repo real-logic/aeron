@@ -28,8 +28,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static org.mockito.Mockito.mock;
-import static uk.co.real_logic.aeron.Subscriber.DataHandler;
-import static uk.co.real_logic.aeron.Subscriber.NewSourceEventHandler;
+import static uk.co.real_logic.aeron.Subscription.DataHandler;
+import static uk.co.real_logic.aeron.Subscription.NewSourceEventHandler;
 import static uk.co.real_logic.aeron.util.CommonContext.DIRS_DELETE_ON_EXIT_PROP_NAME;
 
 /**
@@ -54,7 +54,7 @@ public class PubAndSubTest
     private Aeron publishingClient;
     private Aeron consumingClient;
     private MediaDriver driver;
-    private Subscriber subscriber;
+    private Subscription subscription;
     private Source source;
 
     private ExecutorService executorService;
@@ -71,10 +71,10 @@ public class PubAndSubTest
         publishingClient = Aeron.newSingleMediaDriver(newAeronContext());
         consumingClient = Aeron.newSingleMediaDriver(newAeronContext());
 
-        subscriber = consumingClient.newSubscriber(new Subscriber.Context()
-                                                       .destination(destination)
-                                                       .channel(CHANNEL_ID, dataHandler)
-                                                       .newSourceEvent(sourceHandler));
+        subscription = consumingClient.newSubscription(new Subscription.Context()
+                .destination(destination)
+                .channel(CHANNEL_ID, dataHandler)
+                .newSourceEvent(sourceHandler));
 
         source = publishingClient.newSource(new Source.Context().destination(destination)
                                                                 .sessionId(SESSION_ID));
@@ -102,7 +102,7 @@ public class PubAndSubTest
         publishingClient.shutdown();
         driver.shutdown();
 
-        subscriber.close();
+        subscription.close();
         source.close();
         consumingClient.close();
         publishingClient.close();

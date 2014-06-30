@@ -30,10 +30,10 @@ public class Source implements AutoCloseable
     private final long sessionId;
     private final Destination destination;
     private final ClientConductorProxy clientConductorProxy;
-    private final AtomicArray<Channel> channels;
+    private final AtomicArray<Publication> channels;
 
     // called by Aeron to create new sessions
-    public Source(final AtomicArray<Channel> channels, final Context context)
+    public Source(final AtomicArray<Publication> channels, final Context context)
     {
         this.channels = channels;
         this.sessionId = context.sessionId;
@@ -47,19 +47,19 @@ public class Source implements AutoCloseable
      * @param channelId for the Channel
      * @return channel
      */
-    public Channel newChannel(final long channelId)
+    public Publication newChannel(final long channelId)
     {
         final AtomicBoolean pauseButton = new AtomicBoolean(false);
-        final Channel channel = new Channel(destination.destination(),
+        final Publication publication = new Publication(destination.destination(),
                                             clientConductorProxy,
                                             channelId,
                                             sessionId,
                                             channels,
                                             pauseButton);
-        channels.add(channel);
+        channels.add(publication);
         clientConductorProxy.addPublication(destination.destination(), sessionId, channelId);
 
-        return channel;
+        return publication;
     }
 
     /**
@@ -70,16 +70,16 @@ public class Source implements AutoCloseable
      * @param channelIds for the channels
      * @return array of channels
      */
-    public Channel[] newChannels(final long... channelIds)
+    public Publication[] newChannels(final long... channelIds)
     {
-        final Channel[] channels = new Channel[channelIds.length];
+        final Publication[] publications = new Publication[channelIds.length];
 
         for (int i = 0, max = channelIds.length; i < max; i++)
         {
-            channels[i] = newChannel(channelIds[i]);
+            publications[i] = newChannel(channelIds[i]);
         }
 
-        return channels;
+        return publications;
     }
 
     public void close()

@@ -27,15 +27,15 @@ import static java.util.stream.Collectors.toList;
 /**
  * Aeron Subscriber API
  */
-public class Subscriber implements AutoCloseable
+public class Subscription implements AutoCloseable
 {
     /**
-     * Interface for delivery of data to a {@link Subscriber}
+     * Interface for delivery of data to a {@link Subscription}
      */
     public interface DataHandler
     {
         /**
-         * Method called by Aeron to deliver data to a {@link Subscriber}
+         * Method called by Aeron to deliver data to a {@link Subscription}
          *
          * @param buffer to be delivered
          * @param offset within buffer that data starts
@@ -46,7 +46,7 @@ public class Subscriber implements AutoCloseable
     }
 
     /**
-     * Interface for delivery of new source events to a {@link Subscriber}
+     * Interface for delivery of new source events to a {@link Subscription}
      */
     public interface NewSourceEventHandler
     {
@@ -60,7 +60,7 @@ public class Subscriber implements AutoCloseable
     }
 
     /**
-     * Interface for delivery of inactive source events to a {@link Subscriber}
+     * Interface for delivery of inactive source events to a {@link Subscription}
      */
     public interface InactiveSourceEventHandler
     {
@@ -82,9 +82,9 @@ public class Subscriber implements AutoCloseable
     private final AtomicArray<SubscriberChannel> subscriberChannels;
     private final List<SubscriberChannel> channels;
 
-    public Subscriber(final ClientConductorProxy clientConductorProxy,
-                      final Context context,
-                      final AtomicArray<SubscriberChannel> subscriberChannels)
+    public Subscription(final ClientConductorProxy clientConductorProxy,
+                        final Context context,
+                        final AtomicArray<SubscriberChannel> subscriberChannels)
     {
         this.clientConductorProxy = clientConductorProxy;
         this.subscriberChannels = subscriberChannels;
@@ -108,7 +108,7 @@ public class Subscriber implements AutoCloseable
     }
 
     /**
-     * Read waiting data or event and deliver to {@link Subscriber.DataHandler}s and/or event handlers.
+     * Read waiting data or event and deliver to {@link Subscription.DataHandler}s and/or event handlers.
      *
      * Returns after handling a single data item and/or event.
      *

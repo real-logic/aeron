@@ -71,10 +71,7 @@ public class PubAndSubTest
         publishingClient = Aeron.newSingleMediaDriver(newAeronContext());
         subscribingClient = Aeron.newSingleMediaDriver(newAeronContext());
 
-        subscription = subscribingClient.newSubscription(new Subscription.Context()
-                .destination(destination)
-                .channel(CHANNEL_ID, dataHandler)
-                .newSourceEvent(sourceHandler));
+        subscription = subscribingClient.newSubscription(destination, CHANNEL_ID, dataHandler);
 
         publication = publishingClient.newPublication(destination, CHANNEL_ID, SESSION_ID);
 

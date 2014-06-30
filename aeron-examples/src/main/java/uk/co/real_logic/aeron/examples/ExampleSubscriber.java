@@ -33,13 +33,11 @@ import java.util.stream.IntStream;
 public class ExampleSubscriber
 {
     public static final Destination DESTINATION = new Destination("udp://localhost:40123");
-    private static final ExampleDataHandler[] CHANNELS = {new ExampleDataHandler(10), new ExampleDataHandler(20)};
 
     public static void main(final String[] args)
     {
         final ExecutorService executor = Executors.newFixedThreadPool(3);
         final Aeron.ClientContext aeronContext = new Aeron.ClientContext().errorHandler(ExampleSubscriber::onError);
-        final Subscription.Context subContext = new Subscription.Context().destination(DESTINATION);
         final Subscription.DataHandler messageHandler =
             (buffer, offset, length, sessionId) ->
             {
@@ -51,14 +49,6 @@ public class ExampleSubscriber
                 (channelId, sessionId) -> System.out.println("new source " + sessionId + " " + channelId);
         final Subscription.InactiveSourceEventHandler inactiveSourceHandler =
                 (channelId, sessionId) -> System.out.println("inactive source " + sessionId + " " + channelId);
-
-        // register some channels that use stateful objects
-        IntStream.range(0, CHANNELS.length).forEach(i -> subContext.channel(CHANNELS[i].channelId(), CHANNELS[i]));
-
-        // register a channel that uses a lambda
-        subContext.channel(30, messageHandler)
-            .newSourceEvent(newSourceHandler)
-            .inactiveSourceEvent(inactiveSourceHandler);
 
         // make a reusable, parameterized event loop function
         final Consumer<Subscription> loop = (subscriber) ->
@@ -77,14 +67,11 @@ public class ExampleSubscriber
             }
         };
 
-        final Subscription.Context context2 = new Subscription.Context()
-                .destination(DESTINATION).channel(100, messageHandler).newSourceEvent(newSourceHandler);
-
         try (final MediaDriver driver = ExampleUtil.createEmbeddedMediaDriver();
              final Aeron aeron = ExampleUtil.createAeron(aeronContext);
-             final Subscription subscription1 = aeron.newSubscription(subContext);
+             final Subscription subscription1 = aeron.newSubscription(DESTINATION, 30, messageHandler);
              // create a subscriber using the fluent style lambda expression
-             final Subscription subscription2 = aeron.newSubscription(context2))
+             final Subscription subscription2 = aeron.newSubscription(DESTINATION, 100, messageHandler))
         {
             // spin off the two subscriber threads
             executor.execute(() -> loop.accept(subscription1));

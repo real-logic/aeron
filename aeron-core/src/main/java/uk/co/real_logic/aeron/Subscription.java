@@ -15,10 +15,13 @@
  */
 package uk.co.real_logic.aeron;
 
+import com.sun.org.apache.xpath.internal.axes.SubContextList;
+import uk.co.real_logic.aeron.conductor.ChannelEndpoint;
 import uk.co.real_logic.aeron.conductor.ClientConductorProxy;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 
 import java.util.List;
 
@@ -27,8 +30,10 @@ import static java.util.stream.Collectors.toList;
 /**
  * Aeron Subscriber API
  */
-public class Subscription implements AutoCloseable
+public class Subscription extends ChannelEndpoint implements AutoCloseable
 {
+
+
     /**
      * Interface for delivery of data to a {@link Subscription}
      */
@@ -73,38 +78,38 @@ public class Subscription implements AutoCloseable
         void onInactiveSource(final long channelId, final long sessionId);
     }
 
+    private final Long2ObjectHashMap<SubscribedSession> subscriberSessionBySessionIdMap = new Long2ObjectHashMap<>();
     private final Destination destination;
-    private final NewSourceEventHandler newSourceEventHandler;
-    private final InactiveSourceEventHandler inactiveSourceEventHandler;
-    private final Long2ObjectHashMap<DataHandler> channelMap;
-    private final long[] channelIds;
+    private final DataHandler handler;
+    private final long channelId;
     private final ClientConductorProxy clientConductorProxy;
-    private final AtomicArray<SubscriberChannel> subscriberChannels;
-    private final List<SubscriberChannel> channels;
+    private final AtomicArray<Subscription> subscriberChannels;
 
     public Subscription(final ClientConductorProxy clientConductorProxy,
-                        final Context context,
-                        final AtomicArray<SubscriberChannel> subscriberChannels)
+                        final DataHandler handler,
+                        final Destination destination,
+                        final long channelId,
+                        final AtomicArray<Subscription> subscriberChannels)
     {
+        super(destination.destination(), channelId);
         this.clientConductorProxy = clientConductorProxy;
+        this.handler = handler;
+        this.destination = destination;
+        this.channelId = channelId;
         this.subscriberChannels = subscriberChannels;
-        this.destination = context.destination;
-        this.channelMap = context.channelMap;
-        this.newSourceEventHandler = context.newSourceEventHandler;
-        this.inactiveSourceEventHandler = context.inactiveSourceEventHandler;
-        this.channelIds = channelMap.keySet().stream().mapToLong(i -> i).toArray();
-        this.channels = channelMap.entrySet()
-                                  .stream()
-                                  .map(entry -> new SubscriberChannel(destination, entry.getKey(), entry.getValue()))
-                                  .collect(toList());
-        subscriberChannels.addAll(channels);
-        clientConductorProxy.addSubscription(destination.destination(), channelIds);
+        subscriberChannels.add(this);
+        clientConductorProxy.addSubscription(destination.destination(), channelId);
     }
 
     public void close()
     {
-        subscriberChannels.removeAll(channels);
-        clientConductorProxy.removeSubscription(destination.destination(), channelIds);
+        subscriberChannels.remove(this);
+        clientConductorProxy.removeSubscription(destination.destination(), channelId);
+    }
+
+    public boolean matches(final String destination, final long channelId)
+    {
+        return this.destination().equals(destination) && this.channelId() == channelId;
     }
 
     /**
@@ -116,44 +121,32 @@ public class Subscription implements AutoCloseable
      */
     public int read()
     {
-        int messageCount = 0;
-        for (final SubscriberChannel channel : channels)
+        int count = 0;
+        for (final SubscribedSession subscribedSession : subscriberSessionBySessionIdMap.values())
         {
-            messageCount += channel.receive();
+            count += subscribedSession.read();
         }
 
-        return messageCount;
+        return count;
     }
 
-    public static class Context
+    protected boolean hasTerm(final long sessionId)
     {
-        private Destination destination;
-        private Long2ObjectHashMap<DataHandler> channelMap = new Long2ObjectHashMap<>();
-        private NewSourceEventHandler newSourceEventHandler;
-        private InactiveSourceEventHandler inactiveSourceEventHandler;
-
-        public Context destination(final Destination destination)
-        {
-            this.destination = destination;
-            return this;
-        }
-
-        public Context channel(final long channelId, final DataHandler handler)
-        {
-            channelMap.put(channelId, handler);
-            return this;
-        }
-
-        public Context newSourceEvent(final NewSourceEventHandler handler)
-        {
-            this.newSourceEventHandler = handler;
-            return this;
-        }
-
-        public Context inactiveSourceEvent(final InactiveSourceEventHandler handler)
-        {
-            inactiveSourceEventHandler = handler;
-            return this;
-        }
+        final SubscribedSession subscribedSession = subscriberSessionBySessionIdMap.get(sessionId);
+        return subscribedSession != null && subscribedSession.hasTerm();
     }
+
+    public void onBuffersMapped(final long sessionId,
+                                final long termId,
+                                final LogReader[] logReaders)
+    {
+        final SubscribedSession session = new SubscribedSession(logReaders, sessionId, termId, handler);
+        subscriberSessionBySessionIdMap.put(sessionId, session);
+    }
+
+    public void processBufferScan()
+    {
+        subscriberSessionBySessionIdMap.values().forEach(SubscribedSession::processBufferScan);
+    }
+
 }

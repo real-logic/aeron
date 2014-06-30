@@ -79,7 +79,7 @@ public class AeronTest
 
     private final InvalidDestinationHandler invalidDestination = mock(InvalidDestinationHandler.class);
 
-    private DataHandler channel2Handler = EMPTY_DATA_HANDLER;
+    private DataHandler channel1Handler = EMPTY_DATA_HANDLER;
 
     private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
     private final NewBufferMessageFlyweight newBufferMessage = new NewBufferMessageFlyweight();
@@ -274,17 +274,11 @@ public class AeronTest
     @Test
     public void registeringSubscriberNotifiesMediaDriver() throws Exception
     {
-        final Subscription.Context context =
-            new Subscription.Context()
-                          .destination(DESTINATION)
-                          .channel(CHANNEL_ID_1, EMPTY_DATA_HANDLER)
-                          .channel(CHANNEL_ID_2, EMPTY_DATA_HANDLER);
-
-        final Subscription subscription = aeron.newSubscription(context);
+        final Subscription subscription = aeron.newSubscription(DESTINATION, CHANNEL_ID_1, EMPTY_DATA_HANDLER);
 
         aeron.conductor().doWork();
 
-        assertMsgRead(toDriverBuffer, assertSubscriberMessageOfType(ADD_SUBSCRIPTION));
+        assertMsgRead(toDriverBuffer, assertSubscriberMessageOfType(ADD_SUBSCRIPTION, CHANNEL_ID_1));
 
         assertThat(subscription.read(), is(0));
     }
@@ -301,7 +295,7 @@ public class AeronTest
         subscription.close();
         aeron.conductor().doWork();
 
-        assertMsgRead(toMediaDriver, assertSubscriberMessageOfType(REMOVE_SUBSCRIPTION));
+        assertMsgRead(toMediaDriver, assertSubscriberMessageOfType(REMOVE_SUBSCRIPTION, CHANNEL_ID_1));
     }
 
     @Test
@@ -329,7 +323,7 @@ public class AeronTest
     @Test
     public void subscriberCanReceiveAMessage() throws Exception
     {
-        channel2Handler = sessionAssertingHandler();
+        channel1Handler = sessionAssertingHandler();
 
         final Subscription subscription = newSubscriber(aeron);
 
@@ -346,7 +340,7 @@ public class AeronTest
     @Test
     public void subscriberCanReceivePacketsFromMultipleSessions() throws Exception
     {
-        channel2Handler = eitherSessionAssertingHandler();
+        channel1Handler = eitherSessionAssertingHandler();
 
         final Subscription subscription = newSubscriber(aeron);
 
@@ -364,7 +358,7 @@ public class AeronTest
     @Test
     public void receivingEnoughPacketsCausesSubscriberBufferRoll() throws Exception
     {
-        channel2Handler = sessionAssertingHandler();
+        channel1Handler = sessionAssertingHandler();
 
         final Subscription subscription = newSubscriber(aeron);
 
@@ -403,7 +397,7 @@ public class AeronTest
     @Test
     public void subscriberBufferRollsDoNotOverflowTheCleanedBuffer() throws Exception
     {
-        channel2Handler = sessionAssertingHandler();
+        channel1Handler = sessionAssertingHandler();
 
         final Subscription subscription = newSubscriber(aeron);
 
@@ -434,7 +428,7 @@ public class AeronTest
     @Test
     public void subscriberBufferRollsShouldNotAffectOtherSessions() throws Exception
     {
-        channel2Handler = eitherSessionAssertingHandler();
+        channel1Handler = eitherSessionAssertingHandler();
 
         final RingBuffer toMediaDriver = toDriverBuffer;
         final Subscription subscription = newSubscriber(aeron);
@@ -533,23 +527,17 @@ public class AeronTest
 
     private Subscription newSubscriber(final Aeron aeron)
     {
-        final Subscription.Context ctx =
-            new Subscription.Context()
-                          .destination(DESTINATION)
-                          .channel(CHANNEL_ID_1, channel2Handler)
-                          .channel(CHANNEL_ID_2, EMPTY_DATA_HANDLER);
-
-        return aeron.newSubscription(ctx);
+        return aeron.newSubscription(DESTINATION, CHANNEL_ID_1, channel1Handler);
     }
 
-    private MessageHandler assertSubscriberMessageOfType(final int expectedMsgTypeId)
+    private MessageHandler assertSubscriberMessageOfType(final int expectedMsgTypeId, final long ... channelIds)
     {
         return (msgTypeId, buffer, index, length) ->
         {
             assertThat(msgTypeId, is(expectedMsgTypeId));
 
             subscriptionMessage.wrap(buffer, index);
-            assertThat(subscriptionMessage.channelIds(), is(CHANNEL_IDS));
+            assertThat(subscriptionMessage.channelIds(), is(channelIds));
             assertThat(subscriptionMessage.destination(), is(DESTINATION_URL));
         };
     }

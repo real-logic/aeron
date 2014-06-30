@@ -61,14 +61,14 @@ public class ClientConductorProxy
         sendPublicationMessage(destination, sessionId, channelId, REMOVE_PUBLICATION);
     }
 
-    public void addSubscription(final String destination, final long[] channelIds)
+    public void addSubscription(final String destination, final long channelId)
     {
-        sendSubscriptionMessage(ADD_SUBSCRIPTION, destination, channelIds);
+        sendSubscriptionMessage(ADD_SUBSCRIPTION, destination, channelId);
     }
 
-    public void removeSubscription(final String destination, final long[] channelIds)
+    public void removeSubscription(final String destination, final long channelId)
     {
-        sendSubscriptionMessage(REMOVE_SUBSCRIPTION, destination, channelIds);
+        sendSubscriptionMessage(REMOVE_SUBSCRIPTION, destination, channelId);
     }
 
     private void sendPublicationMessage(final String destination,
@@ -86,9 +86,10 @@ public class ClientConductorProxy
         }
     }
 
-    private void sendSubscriptionMessage(final int msgTypeId, final String destination, final long[] channelIds)
+    private void sendSubscriptionMessage(final int msgTypeId, final String destination, final long channelId)
     {
-        subscriptionMessage.channelIds(channelIds);
+        // TODO: remove array from the protocol
+        subscriptionMessage.channelIds(new long[] { channelId});
         subscriptionMessage.destination(destination);
 
         if (!conductorBuffer.write(msgTypeId, writeBuffer, 0, subscriptionMessage.length()))

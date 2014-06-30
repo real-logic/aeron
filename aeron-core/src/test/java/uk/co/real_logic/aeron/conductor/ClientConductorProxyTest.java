@@ -35,7 +35,7 @@ public class ClientConductorProxyTest
 {
     public static final String DESTINATION = "udp://localhost:40123@localhost:40124";
 
-    private static final long[] CHANNEL_IDS = {1L, 3L, 4L};
+    private static final long CHANNEL_ID = 1L;
     private static final long SESSION_ID = 1L;
     private final RingBuffer conductorBuffer =
         new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocateDirect(TRAILER_LENGTH + 1024)));
@@ -74,7 +74,7 @@ public class ClientConductorProxyTest
     @Test
     public void threadSendsRemoveSubscriberMessage()
     {
-        conductor.removeSubscription(DESTINATION, CHANNEL_IDS);
+        conductor.removeSubscription(DESTINATION, CHANNEL_ID);
 
         assertReadsOneMessage(
             (msgTypeId, buffer, index, length) ->
@@ -84,7 +84,7 @@ public class ClientConductorProxyTest
 
                 assertThat(msgTypeId, is(REMOVE_SUBSCRIPTION));
                 assertThat(subscriberMessage.destination(), is(DESTINATION));
-                assertThat(subscriberMessage.channelIds(), is(CHANNEL_IDS));
+                assertThat(subscriberMessage.channelIds(), is(new long[] {CHANNEL_ID}));
             }
         );
     }

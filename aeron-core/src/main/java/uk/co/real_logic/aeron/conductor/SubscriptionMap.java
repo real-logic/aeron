@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.conductor;
 
-import uk.co.real_logic.aeron.SubscriberChannel;
+import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 
 import java.util.HashMap;
@@ -26,14 +26,14 @@ import static uk.co.real_logic.aeron.util.collections.CollectionUtil.getOrDefaul
 
 public class SubscriptionMap
 {
-    private static final Function<String, Long2ObjectHashMap<SubscriberChannel>> SUPPLIER =
+    private static final Function<String, Long2ObjectHashMap<Subscription>> SUPPLIER =
         (ignore) -> new Long2ObjectHashMap<>();
 
-    private final Map<String, Long2ObjectHashMap<SubscriberChannel>> channelMapByDestinationMap = new HashMap<>();
+    private final Map<String, Long2ObjectHashMap<Subscription>> channelMapByDestinationMap = new HashMap<>();
 
-    public SubscriberChannel get(final String destination, final long channelId)
+    public Subscription get(final String destination, final long channelId)
     {
-        final Long2ObjectHashMap<SubscriberChannel> channelMap = channelMapByDestinationMap.get(destination);
+        final Long2ObjectHashMap<Subscription> channelMap = channelMapByDestinationMap.get(destination);
         if (channelMap == null)
         {
             return null;
@@ -42,20 +42,20 @@ public class SubscriptionMap
         return channelMap.get(channelId);
     }
 
-    public void put(final String destination, final long channelId, final SubscriberChannel value)
+    public void put(final String destination, final long channelId, final Subscription value)
     {
         getOrDefault(channelMapByDestinationMap, destination, SUPPLIER).put(channelId, value);
     }
 
-    public SubscriberChannel remove(final String destination, final long channelId)
+    public Subscription remove(final String destination, final long channelId)
     {
-        final Long2ObjectHashMap<SubscriberChannel> channelMap = channelMapByDestinationMap.get(destination);
+        final Long2ObjectHashMap<Subscription> channelMap = channelMapByDestinationMap.get(destination);
         if (channelMap == null)
         {
             return null;
         }
 
-        final SubscriberChannel value = channelMap.remove(channelId);
+        final Subscription value = channelMap.remove(channelId);
 
         if (channelMap.isEmpty())
         {

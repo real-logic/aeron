@@ -50,7 +50,7 @@ public final class Aeron implements AutoCloseable
         new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocateDirect(COMMAND_BUFFER_SIZE)));
 
     private final AtomicArray<Publication> channels = new AtomicArray<>();
-    private final AtomicArray<SubscriberChannel> receivers = new AtomicArray<>();
+    private final AtomicArray<Subscription> receivers = new AtomicArray<>();
     private final ClientConductor clientConductor;
     private final ClientContext savedCtx;
     private Future conductorFuture;
@@ -175,14 +175,16 @@ public final class Aeron implements AutoCloseable
     /**
      * Create a new subscription that will listen on {@link Destination}
      *
-     * @param ctx ctx for subscription options.
      * @return new receiver
      */
-    public Subscription newSubscription(final Subscription.Context ctx)
+    public Subscription newSubscription(
+            final Destination destination,
+            final long channelId,
+            final Subscription.DataHandler handler)
     {
         final ClientConductorProxy clientConductorProxy = new ClientConductorProxy(clientConductorCommandBuffer);
 
-        return new Subscription(clientConductorProxy, ctx, receivers);
+        return new Subscription(clientConductorProxy, handler, destination, channelId, receivers);
     }
 
     public ClientConductor conductor()

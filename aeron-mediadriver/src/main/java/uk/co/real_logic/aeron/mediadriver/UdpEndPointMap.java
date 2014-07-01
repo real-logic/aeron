@@ -15,9 +15,9 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.util.collections.ChannelMap;
+import uk.co.real_logic.aeron.util.collections.EndPointMap;
 
-public class UdpChannelMap<T> extends ChannelMap<UdpDestination, T>
+public class UdpEndPointMap<T> extends EndPointMap<UdpDestination, T>
 {
 
 }

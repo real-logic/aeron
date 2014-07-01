@@ -153,11 +153,11 @@ public final class Aeron implements AutoCloseable
     }
 
     /**
-     * Create a new {@link Publication} for sending messages via.
+     * Add a {@link Publication} for publishing messages to subscribers.
      *
-     * @param destination address to send all data to
-     * @param channelId for the publication
-     * @param sessionId to scope the publication
+     * @param destination for receiving the messages know to the media layer.
+     * @param channelId within the destination scope.
+     * @param sessionId to scope the source of the Publication.
      * @return the new Publication.
      */
     public Publication addPublication(final String destination, final long channelId, final long sessionId)
@@ -165,12 +165,16 @@ public final class Aeron implements AutoCloseable
         return conductor.addPublication(destination, channelId, sessionId);
     }
 
+
     /**
-     * Create a new {@link Subscription} for a destination and channel pairing.
-     *
-     * @return the new Subscription.
+     * Add a new {@link Subscription} for subscribing to messages from publishers.
+
+     * @param destination for receiving the messages know to the media layer.
+     * @param channelId within the destination scope.
+     * @param handler to be called back for each message received.
+     * @return the {@link Subscription} for the destination and channelId pair.
      */
-    public Subscription newSubscription(final String destination,
+    public Subscription addSubscription(final String destination,
                                         final long channelId,
                                         final Subscription.DataHandler handler)
     {

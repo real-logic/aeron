@@ -157,7 +157,7 @@ public class AeronTest
     @Test
     public void registeringSubscriberNotifiesMediaDriver() throws Exception
     {
-        final Subscription subscription = aeron.newSubscription(DESTINATION, CHANNEL_ID_1, EMPTY_DATA_HANDLER);
+        final Subscription subscription = aeron.addSubscription(DESTINATION, CHANNEL_ID_1, EMPTY_DATA_HANDLER);
 
         aeron.conductor().doWork();
 
@@ -412,7 +412,7 @@ public class AeronTest
 
     private Subscription newSubscriber(final Aeron aeron)
     {
-        return aeron.newSubscription(DESTINATION, CHANNEL_ID_1, channel1Handler);
+        return aeron.addSubscription(DESTINATION, CHANNEL_ID_1, channel1Handler);
     }
 
     private MessageHandler assertSubscriberMessageOfType(final int expectedMsgTypeId, final long ... channelIds)

@@ -33,6 +33,8 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.Appen
 
 /**
  * Publication end of a channel for publishing messages to subscribers.
+ *
+ * Publication instances are threadsafe and can be shared between publishers.
  */
 public class Publication extends ChannelEndpoint implements PositionIndicator
 {
@@ -68,7 +70,7 @@ public class Publication extends ChannelEndpoint implements PositionIndicator
     }
 
     /**
-     * Non blocking publish of a message.
+     * Non-blocking publish of a buffer containing a message.
      *
      * @param buffer containing message.
      * @return true if buffer is sent otherwise false.

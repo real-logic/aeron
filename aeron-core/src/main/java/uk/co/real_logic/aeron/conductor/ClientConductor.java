@@ -328,7 +328,7 @@ public class ClientConductor extends Agent
     private void checkMediaDriverTimeout(final long startTime)
         throws MediaDriverTimeoutException
     {
-        if (System.currentTimeMillis() - startTime > awaitTimeout)
+        if ((System.currentTimeMillis() - startTime) > awaitTimeout)
         {
             String msg = String.format("No response from media driver within %d ms", awaitTimeout);
             throw new MediaDriverTimeoutException(msg);

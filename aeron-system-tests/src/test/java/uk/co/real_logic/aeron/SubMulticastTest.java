@@ -106,7 +106,7 @@ public class SubMulticastTest
 
         consumingClient = Aeron.newSingleMediaDriver(newAeronContext());
 
-        subscription = consumingClient.newSubscription(DESTINATION, CHANNEL_ID, saveFrames);
+        subscription = consumingClient.addSubscription(DESTINATION, CHANNEL_ID, saveFrames);
 
         payload.putBytes(0, PAYLOAD);
 

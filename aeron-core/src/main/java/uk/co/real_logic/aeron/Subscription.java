@@ -23,7 +23,9 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 
 /**
- * Aeron Subscriber API
+ * Aeron Subscriber API for receiving messages from publishers on a given destination and channelId pair.
+ *
+ * Subscriptions are not threadsafe and should not be shared between subscribers.
  */
 public class Subscription extends ChannelEndpoint
 {

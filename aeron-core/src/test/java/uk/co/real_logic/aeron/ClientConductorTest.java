@@ -42,7 +42,6 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.*;
-import static uk.co.real_logic.aeron.Subscription.DataHandler;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.NEW_PUBLICATION_BUFFER_EVENT;
 
 public class ClientConductorTest
@@ -57,15 +56,12 @@ public class ClientConductorTest
     private static final long SESSION_ID_2 = 15L;
     public static final long TERM_ID_1 = 1L;
     private static final int SEND_BUFFER_CAPACITY = 1024;
-    private static final DataHandler EMPTY_DATA_HANDLER = (buffer, offset, length, sessionId) -> {};
 
     public static final int RING_BUFFER_SZ = (16 * 1024) + RingBufferDescriptor.TRAILER_LENGTH;
     public static final int BROADCAST_BUFFER_SZ = (16 * 1024) + BroadcastBufferDescriptor.TRAILER_LENGTH;
     public static final int LOG_BUFFER_SIZE = LogBufferDescriptor.LOG_MIN_SIZE;
     private static final long CORRELATION_ID = 2000;
     public static final int AWAIT_TIMEOUT = 100;
-
-    private DataHandler channel1Handler = EMPTY_DATA_HANDLER;
 
     private final NewBufferMessageFlyweight newBufferMessage = new NewBufferMessageFlyweight();
     private final ErrorFlyweight errorHeader = new ErrorFlyweight();
@@ -81,7 +77,6 @@ public class ClientConductorTest
     private final RingBuffer toDriverBuffer = new ManyToOneRingBuffer(new AtomicBuffer(new byte[RING_BUFFER_SZ]));
 
     private final AtomicBuffer counterValuesBuffer = new AtomicBuffer(new byte[COUNTER_BUFFER_SZ]);
-    private final AtomicBuffer counterLabelsBuffer = new AtomicBuffer(new byte[COUNTER_BUFFER_SZ]);
 
     private AtomicBuffer[] logBuffersSession1 = new AtomicBuffer[BufferRotationDescriptor.BUFFER_COUNT];
     private AtomicBuffer[] logBuffersSession2 = new AtomicBuffer[BufferRotationDescriptor.BUFFER_COUNT];

@@ -317,11 +317,11 @@ public final class ClientConductor extends Agent
         // TODO
     }
 
-    public synchronized Publication newPublication(final Destination destination,
+    public synchronized Publication newPublication(final String destination,
                                                    final long channelId,
                                                    final long sessionId)
     {
-        activeCorrelationId = mediaDriverProxy.addPublication(destination.destination(), channelId, sessionId);
+        activeCorrelationId = mediaDriverProxy.addPublication(destination, channelId, sessionId);
 
         final long startTime = System.currentTimeMillis();
         while (addedPublication == null)

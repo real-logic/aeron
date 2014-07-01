@@ -48,8 +48,7 @@ public final class Aeron implements AutoCloseable
     private final ManyToOneRingBuffer clientConductorCommandBuffer =
         new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocateDirect(COMMAND_BUFFER_SIZE)));
 
-    private final AtomicArray<Publication> channels = new AtomicArray<>();
-    private final AtomicArray<Subscription> receivers = new AtomicArray<>();
+    private final AtomicArray<Subscription> subscriptions = new AtomicArray<>();
     private final ClientConductor conductor;
     private final ClientContext savedCtx;
 
@@ -71,15 +70,15 @@ public final class Aeron implements AutoCloseable
         final Signal correlationSignal = new Signal();
 
         conductor = new ClientConductor(
-                  clientConductorCommandBuffer,
-                  ctx.toClientBuffer,
-                  ctx.toDriverBuffer,
-                  receivers,
-                  errorHandler,
-                  ctx.bufferUsageStrategy,
-                  ctx.counterValuesBuffer(),
-                  mediaDriverProxy,
-                  correlationSignal);
+            clientConductorCommandBuffer,
+            ctx.toClientBuffer,
+            ctx.toDriverBuffer,
+            subscriptions,
+            errorHandler,
+            ctx.bufferUsageStrategy,
+            ctx.counterValuesBuffer(),
+            mediaDriverProxy,
+            correlationSignal);
 
         this.savedCtx = ctx;
     }
@@ -138,7 +137,7 @@ public final class Aeron implements AutoCloseable
     }
 
     /**
-     * Creates an media driver associated with this Aeron instance that can be used to create sources and receivers on.
+     * Creates an media driver associated with this Aeron instance that can be used to create sources and subscriptions on.
      *
      * @param ctx of the media driver and Aeron configuration or null for default configuration
      * @return Aeron instance
@@ -156,10 +155,9 @@ public final class Aeron implements AutoCloseable
      * @param sessionId
      * @return new source
      */
-    public Publication newPublication(
-            final Destination destination,
-            final long channelId,
-            final long sessionId)
+    public Publication newPublication(final String destination,
+                                      final long channelId,
+                                      final long sessionId)
     {
         return conductor.newPublication(destination, channelId, sessionId);
     }
@@ -169,14 +167,13 @@ public final class Aeron implements AutoCloseable
      *
      * @return new receiver
      */
-    public Subscription newSubscription(
-            final Destination destination,
-            final long channelId,
-            final Subscription.DataHandler handler)
+    public Subscription newSubscription(final String destination,
+                                        final long channelId,
+                                        final Subscription.DataHandler handler)
     {
         final MediaDriverProxy mediaDriverProxy = new MediaDriverProxy(clientConductorCommandBuffer);
 
-        return new Subscription(mediaDriverProxy, handler, destination, channelId, receivers);
+        return new Subscription(mediaDriverProxy, handler, destination, channelId, subscriptions);
     }
 
     public ClientConductor conductor()

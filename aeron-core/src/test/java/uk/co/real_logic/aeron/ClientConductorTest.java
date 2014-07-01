@@ -22,7 +22,6 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.conductor.*;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
-import uk.co.real_logic.aeron.util.ErrorCode;
 import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.SubscriptionMessageFlyweight;
@@ -61,8 +60,7 @@ public class ClientConductorTest
     private static final int MAX_FRAME_LENGTH = 1024;
     private static final int COUNTER_BUFFER_SZ = 1024;
 
-    private static final String DESTINATION_URL = "udp://localhost:40124";
-    private static final Destination DESTINATION = new Destination(DESTINATION_URL);
+    private static final String DESTINATION = "udp://localhost:40124";
     private static final String INVALID_DESTINATION = "udp://lo124";
     private static final long CHANNEL_ID_1 = 2L;
     private static final long CHANNEL_ID_2 = 4L;
@@ -184,7 +182,7 @@ public class ClientConductorTest
     {
         newPublication(aeron);
 
-        verify(mediaDriverProxy).addPublication(DESTINATION_URL, CHANNEL_ID_1, SESSION_ID_1);
+        verify(mediaDriverProxy).addPublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
     }
 
     @Ignore
@@ -348,7 +346,7 @@ public class ClientConductorTest
             }
         );
 
-        newBufferMessage.destination(DESTINATION.destination());
+        newBufferMessage.destination(DESTINATION);
 
         toClientTransmitter.transmit(msgTypeId, atomicSendBuffer, 0, newBufferMessage.length());
     }
@@ -377,7 +375,7 @@ public class ClientConductorTest
 
             subscriptionMessage.wrap(buffer, index);
             assertThat(subscriptionMessage.channelIds(), is(channelIds));
-            assertThat(subscriptionMessage.destination(), is(DESTINATION_URL));
+            assertThat(subscriptionMessage.destination(), is(DESTINATION));
         };
     }
 
@@ -393,7 +391,7 @@ public class ClientConductorTest
             assertThat(msgTypeId, is(expectedMsgTypeId));
 
             publicationMessage.wrap(buffer, index);
-            assertThat(publicationMessage.destination(), is(DESTINATION_URL));
+            assertThat(publicationMessage.destination(), is(DESTINATION));
             assertThat(publicationMessage.channelId(), is(CHANNEL_ID_1));
             assertThat(publicationMessage.sessionId(), is(SESSION_ID_1));
         });

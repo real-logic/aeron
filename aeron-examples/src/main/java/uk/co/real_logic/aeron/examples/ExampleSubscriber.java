@@ -16,7 +16,6 @@
 package uk.co.real_logic.aeron.examples;
 
 import uk.co.real_logic.aeron.Aeron;
-import uk.co.real_logic.aeron.Destination;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -25,14 +24,13 @@ import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
-import java.util.stream.IntStream;
 
 /**
  * Example Aeron subscriber application
  */
 public class ExampleSubscriber
 {
-    public static final Destination DESTINATION = new Destination("udp://localhost:40123");
+    public static final String DESTINATION = "udp://localhost:40123";
 
     public static void main(final String[] args)
     {
@@ -45,27 +43,25 @@ public class ExampleSubscriber
                 buffer.getBytes(offset, data);
                 System.out.println("Message " + sessionId + " " + new String(data));
             };
-        final Subscription.NewSourceEventHandler newSourceHandler =
-                (channelId, sessionId) -> System.out.println("new source " + sessionId + " " + channelId);
-        final Subscription.InactiveSourceEventHandler inactiveSourceHandler =
-                (channelId, sessionId) -> System.out.println("inactive source " + sessionId + " " + channelId);
+
 
         // make a reusable, parameterized event loop function
-        final Consumer<Subscription> loop = (subscriber) ->
-        {
-            try
+        final Consumer<Subscription> loop =
+            (subscriber) ->
             {
-                while (true)
+                try
                 {
-                    subscriber.read();
-                    Thread.sleep(1000);
+                    while (true)
+                    {
+                        subscriber.read();
+                        Thread.sleep(1000);
+                    }
                 }
-            }
-            catch (final Exception ex)
-            {
-                ex.printStackTrace();
-            }
-        };
+                catch (final Exception ex)
+                {
+                    ex.printStackTrace();
+                }
+            };
 
         try (final MediaDriver driver = ExampleUtil.createEmbeddedMediaDriver();
              final Aeron aeron = ExampleUtil.createAeron(aeronContext);
@@ -119,7 +115,7 @@ public class ExampleSubscriber
             final byte[] data = new byte[length];
             buffer.getBytes(offset, data);
             System.out.println("Message to channel: " + channelId() + ", from: " + sessionId + ", data (" + length +
-                "@" + offset + ") <<" + new String(data) + ">>");
+                                   "@" + offset + ") <<" + new String(data) + ">>");
         }
     }
 }

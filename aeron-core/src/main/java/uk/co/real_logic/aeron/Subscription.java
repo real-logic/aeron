@@ -27,8 +27,6 @@ import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
  */
 public class Subscription extends ChannelEndpoint implements AutoCloseable
 {
-
-
     /**
      * Interface for delivery of data to a {@link Subscription}
      */
@@ -74,7 +72,7 @@ public class Subscription extends ChannelEndpoint implements AutoCloseable
     }
 
     private final Long2ObjectHashMap<SubscribedSession> subscriberSessionBySessionIdMap = new Long2ObjectHashMap<>();
-    private final Destination destination;
+    private final String destination;
     private final DataHandler handler;
     private final long channelId;
     private final MediaDriverProxy mediaDriverProxy;
@@ -82,24 +80,24 @@ public class Subscription extends ChannelEndpoint implements AutoCloseable
 
     public Subscription(final MediaDriverProxy mediaDriverProxy,
                         final DataHandler handler,
-                        final Destination destination,
+                        final String destination,
                         final long channelId,
                         final AtomicArray<Subscription> subscriberChannels)
     {
-        super(destination.destination(), channelId);
+        super(destination, channelId);
         this.mediaDriverProxy = mediaDriverProxy;
         this.handler = handler;
         this.destination = destination;
         this.channelId = channelId;
         this.subscriberChannels = subscriberChannels;
         subscriberChannels.add(this);
-        mediaDriverProxy.addSubscription(destination.destination(), channelId);
+        mediaDriverProxy.addSubscription(destination, channelId);
     }
 
     public void close()
     {
         subscriberChannels.remove(this);
-        mediaDriverProxy.removeSubscription(destination.destination(), channelId);
+        mediaDriverProxy.removeSubscription(destination, channelId);
     }
 
     public boolean matches(final String destination, final long channelId)
@@ -143,5 +141,4 @@ public class Subscription extends ChannelEndpoint implements AutoCloseable
     {
         subscriberSessionBySessionIdMap.values().forEach(SubscribedSession::processBufferScan);
     }
-
 }

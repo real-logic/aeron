@@ -51,7 +51,7 @@ public class SubUnicastTest
     private static final String HOST = "localhost";
     private static final int PORT = 54323;
     private static final int SRC_PORT = 54324;
-    private static final Destination DESTINATION = new Destination("udp://" + HOST + ":" + PORT);
+    private static final String DESTINATION = "udp://" + HOST + ":" + PORT;
     private static final long CHANNEL_ID = 1L;
     private static final long SESSION_ID = 2L;
     private static final long TERM_ID = 3L;
@@ -80,10 +80,7 @@ public class SubUnicastTest
             buffer.getBytes(offset, data);
             receivedFrames.add(data);
         };
-    private final Subscription.NewSourceEventHandler newSource =
-        (channelId, sessionId) -> System.out.println("newSource " + sessionId + " " + channelId);
-    private final Subscription.InactiveSourceEventHandler inactiveSource =
-        (channelId, sessionId) -> System.out.println("inactiveSource " + sessionId + " " + channelId);
+
 
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();

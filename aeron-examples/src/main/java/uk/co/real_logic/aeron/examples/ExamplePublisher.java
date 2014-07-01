@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron.examples;
 
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Publication;
-import uk.co.real_logic.aeron.Destination;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
@@ -32,7 +31,7 @@ import java.util.concurrent.Executors;
 public class ExamplePublisher
 {
     public static final int CHANNEL_ID = 10;
-    public static final Destination DESTINATION = new Destination("udp://localhost:40123");
+    public static final String DESTINATION = "udp://localhost:40123";
 
     private static final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocateDirect(256));
 

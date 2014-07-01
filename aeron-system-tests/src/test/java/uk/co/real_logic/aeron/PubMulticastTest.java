@@ -52,7 +52,7 @@ public class PubMulticastTest
     private static final String DATA_ADDRESS = "224.20.30.39";
     private static final String CONTROL_ADDRESS = "224.20.30.40";
     private static final int DST_PORT = 54321;
-    private static final Destination DESTINATION = new Destination("udp://localhost@" + DATA_ADDRESS + ":" + DST_PORT);
+    private static final String DESTINATION = "udp://localhost@" + DATA_ADDRESS + ":" + DST_PORT;
     private static final long CHANNEL_ID = 1L;
     private static final long SESSION_ID = 2L;
     private static final byte[] PAYLOAD = "Payload goes here!".getBytes();

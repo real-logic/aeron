@@ -54,7 +54,7 @@ public class SubMulticastTest
     private static final String DATA_ADDRESS = "224.20.30.39";
     private static final String CONTROL_ADDRESS = "224.20.30.40";
     private static final int DST_PORT = 54322;
-    private static final Destination DESTINATION = new Destination("udp://localhost@" + DATA_ADDRESS + ":" + DST_PORT);
+    private static final String DESTINATION = "udp://localhost@" + DATA_ADDRESS + ":" + DST_PORT;
     private static final long CHANNEL_ID = 1L;
     private static final long SESSION_ID = 2L;
     private static final long TERM_ID = 3L;
@@ -76,16 +76,12 @@ public class SubMulticastTest
 
     private final Queue<byte[]> receivedFrames = new ArrayDeque<>();
     private final Subscription.DataHandler saveFrames =
-            (buffer, offset, length, sessionId) ->
-            {
-                final byte[] data = new byte[length];
-                buffer.getBytes(offset, data);
-                receivedFrames.add(data);
-            };
-    private final Subscription.NewSourceEventHandler newSource =
-            (channelId, sessionId) -> System.out.println("newSource " + sessionId + " " + channelId);
-    private final Subscription.InactiveSourceEventHandler inactiveSource =
-            (channelId, sessionId) -> System.out.println("inactiveSource " + sessionId + " " + channelId);
+        (buffer, offset, length, sessionId) ->
+        {
+            final byte[] data = new byte[length];
+            buffer.getBytes(offset, data);
+            receivedFrames.add(data);
+        };
 
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
@@ -126,7 +122,7 @@ public class SubMulticastTest
 
 
         ctx.counterLabelsBuffer(counterLabelsBuffer)
-                .counterValuesBuffer(counterValuesBuffer);
+           .counterValuesBuffer(counterValuesBuffer);
 
         return ctx;
     }
@@ -361,19 +357,19 @@ public class SubMulticastTest
     private void sendDataFrame(final long termOffset, final byte[] payload) throws Exception
     {
         final int frameLength = align(DataHeaderFlyweight.HEADER_LENGTH + payload.length,
-                FrameDescriptor.FRAME_ALIGNMENT);
+                                      FrameDescriptor.FRAME_ALIGNMENT);
         final ByteBuffer dataBuffer = ByteBuffer.allocate(frameLength);
         final AtomicBuffer dataAtomicBuffer = new AtomicBuffer(dataBuffer);
 
         dataHeader.wrap(dataAtomicBuffer, 0);
         dataHeader.termId(TERM_ID)
-                .channelId(CHANNEL_ID)
-                .sessionId(SESSION_ID)
-                .termOffset(termOffset)
-                .frameLength(DataHeaderFlyweight.HEADER_LENGTH + payload.length)
-                .headerType(HeaderFlyweight.HDR_TYPE_DATA)
-                .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
-                .version(HeaderFlyweight.CURRENT_VERSION);
+                  .channelId(CHANNEL_ID)
+                  .sessionId(SESSION_ID)
+                  .termOffset(termOffset)
+                  .frameLength(DataHeaderFlyweight.HEADER_LENGTH + payload.length)
+                  .headerType(HeaderFlyweight.HDR_TYPE_DATA)
+                  .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
+                  .version(HeaderFlyweight.CURRENT_VERSION);
 
         if (payload.length > 0)
         {

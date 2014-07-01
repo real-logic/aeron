@@ -29,7 +29,6 @@ import java.util.concurrent.Executors;
 
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.Subscription.DataHandler;
-import static uk.co.real_logic.aeron.Subscription.NewSourceEventHandler;
 import static uk.co.real_logic.aeron.util.CommonContext.DIRS_DELETE_ON_EXIT_PROP_NAME;
 
 /**
@@ -39,10 +38,10 @@ import static uk.co.real_logic.aeron.util.CommonContext.DIRS_DELETE_ON_EXIT_PROP
 public class PubAndSubTest
 {
     @DataPoint
-    public static final Destination UNICAST_DESTINATION = new Destination("udp://localhost:54325");
+    public static final String UNICAST_DESTINATION = "udp://localhost:54325";
 
     @DataPoint
-    public static final Destination MULTICAST_DESTINATION = new Destination("udp://localhost@224.20.30.39:54326");
+    public static final String MULTICAST_DESTINATION = "udp://localhost@224.20.30.39:54326";
 
     private static final long CHANNEL_ID = 1L;
     private static final long SESSION_ID = 2L;
@@ -59,7 +58,7 @@ public class PubAndSubTest
 
     private ExecutorService executorService;
 
-    private void setup(final Destination destination) throws Exception
+    private void setup(final String destination) throws Exception
     {
         System.setProperty(DIRS_DELETE_ON_EXIT_PROP_NAME, "true");
 
@@ -68,7 +67,6 @@ public class PubAndSubTest
         driver = new MediaDriver();
 
         final DataHandler dataHandler = mock(DataHandler.class);
-        final NewSourceEventHandler sourceHandler = mock(NewSourceEventHandler.class);
 
         publishingClient = Aeron.newSingleMediaDriver(newAeronContext());
         subscribingClient = Aeron.newSingleMediaDriver(newAeronContext());
@@ -108,7 +106,7 @@ public class PubAndSubTest
     }
 
     @Theory
-    public void shouldSpinUpAndShutdown(final Destination destination) throws Exception
+    public void shouldSpinUpAndShutdown(final String destination) throws Exception
     {
         setup(destination);
 
@@ -117,7 +115,7 @@ public class PubAndSubTest
 
     @Theory
     @Ignore("isn't finished yet - simple message send/read")
-    public void shouldReceivePublishedMessage(final Destination destination) throws Exception
+    public void shouldReceivePublishedMessage(final String destination) throws Exception
     {
         setup(destination);
 
@@ -126,7 +124,7 @@ public class PubAndSubTest
 
     @Theory
     @Ignore("isn't finished yet = send enough data to rollover a buffer")
-    public void shouldContinueAfterBufferRollover(final Destination destination) throws Exception
+    public void shouldContinueAfterBufferRollover(final String destination) throws Exception
     {
         setup(destination);
 

@@ -49,8 +49,7 @@ public class PubUnicastTest
     private static final String HOST = "localhost";
     private static final int PORT = 54321;
     private static final int SRC_PORT = 54322;
-    private static final Destination DESTINATION = new Destination("udp://" + HOST + ":" + SRC_PORT +
-                                                                       "@" + HOST + ":" + PORT);
+    private static final String DESTINATION = "udp://" + HOST + ":" + SRC_PORT + "@" + HOST + ":" + PORT;
     private static final long CHANNEL_ID = 1L;
     private static final long SESSION_ID = 2L;
     private static final byte[] PAYLOAD = "Payload goes here!".getBytes();

@@ -133,9 +133,9 @@ public class ClientConductor extends Agent
     private void performBufferMaintenance()
     {
         publications.forEach(
-            publication ->
+            (publication) ->
             {
-                long dirtyTermId = publication.dirtyTermId();
+                final long dirtyTermId = publication.dirtyTermId();
                 if (dirtyTermId != Publication.NO_DIRTY_TERM)
                 {
                     mediaDriverProxy.sendRequestTerm(
@@ -192,8 +192,7 @@ public class ClientConductor extends Agent
                     {
                         subscriptionMap.put(destination, channelId, subscription);
                     }
-                }
-            );
+                });
         }
     }
 
@@ -412,8 +411,10 @@ public class ClientConductor extends Agent
         return new LogAppender(logBuffer, stateBuffer, header, MAX_FRAME_LENGTH);
     }
 
-    private LogReader newReader(final int index, final long sessionId,
-                                final long channelId, final long termId) throws IOException
+    private LogReader newReader(final int index,
+                                final long sessionId,
+                                final long channelId,
+                                final long termId) throws IOException
     {
         final AtomicBuffer logBuffer = newBuffer(newBufferMessage, index);
         final AtomicBuffer stateBuffer = newBuffer(newBufferMessage, index + BufferRotationDescriptor.BUFFER_COUNT);

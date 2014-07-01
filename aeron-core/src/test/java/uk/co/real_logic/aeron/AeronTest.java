@@ -20,7 +20,6 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import uk.co.real_logic.aeron.conductor.BufferUsageStrategy;
-import uk.co.real_logic.aeron.conductor.ClientConductor;
 import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.ErrorCode;
 import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
@@ -45,11 +44,10 @@ import java.util.stream.IntStream;
 
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.Subscription.DataHandler;
-import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.rotateId;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.SUCCESS;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertMsgRead;
@@ -154,102 +152,6 @@ public class AeronTest
     public void tearDown()
     {
         aeron.close();
-    }
-
-    @Ignore
-    @Test
-    public void canOfferAMessageOnceBuffersHaveBeenMapped() throws Exception
-    {
-        final Publication publication = newPublication(aeron);
-        aeron.conductor().doWork();
-        sendNewBufferNotification(NEW_PUBLICATION_BUFFER_EVENT, SESSION_ID_1, TERM_ID_1);
-        aeron.conductor().doWork();
-        assertTrue(publication.offer(atomicSendBuffer));
-    }
-
-    @Ignore
-    @Test
-    public void shouldRotateBuffersOnceFull() throws Exception
-    {
-        final RingBuffer toMediaDriver = toDriverBuffer;
-        final Publication publication = newPublication(aeron);
-        aeron.conductor().doWork();
-
-        sendNewBufferNotification(NEW_PUBLICATION_BUFFER_EVENT, SESSION_ID_1, TERM_ID_1);
-
-        final int capacity = logBuffersSession1[0].capacity();
-        final int msgCount = (4 * capacity) / SEND_BUFFER_CAPACITY;
-
-        aeron.conductor().doWork();
-        skip(toMediaDriver, 1);
-        boolean previousAppend = true;
-        int bufferId = 0;
-        for (int i = 0; i < msgCount; i++)
-        {
-            final boolean appended = publication.offer(atomicSendBuffer);
-            aeron.conductor().doWork();
-
-            assertTrue(previousAppend || appended);
-            previousAppend = appended;
-
-            if (!appended)
-            {
-                assertCleanTermRequested(toMediaDriver);
-                cleanBuffer(logBuffersSession1[bufferId]);
-                cleanBuffer(stateBuffersSession1[bufferId]);
-                bufferId = rotateId(bufferId);
-            }
-        }
-    }
-
-    @Ignore
-    @Test
-    public void removingChannelsShouldNotifyMediaDriver() throws Exception
-    {
-        final RingBuffer toMediaDriver = toDriverBuffer;
-        final Publication publication = newPublication(aeron);
-        final ClientConductor adminThread = aeron.conductor();
-
-        adminThread.doWork();
-        skip(toMediaDriver, 1);
-
-        publication.close();
-        adminThread.doWork();
-
-        assertChannelMessage(toMediaDriver, REMOVE_PUBLICATION);
-    }
-
-    @Ignore
-    @Test
-    public void closingASourceRemovesItsAssociatedChannels() throws Exception
-    {
-        final Publication publication = aeron.newPublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
-        final ClientConductor adminThread = aeron.conductor();
-
-        adminThread.doWork();
-        skip(toDriverBuffer, 1);
-
-        publication.close();
-        adminThread.doWork();
-
-        assertChannelMessage(toDriverBuffer, REMOVE_PUBLICATION);
-    }
-
-    @Ignore
-    @Test
-    public void closingASourceDoesNotRemoveOtherChannels() throws Exception
-    {
-        aeron.newPublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
-        final Publication otherPublication = aeron.newPublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1 + 1);
-        final ClientConductor clientConductor = aeron.conductor();
-
-        clientConductor.doWork();
-        skip(toDriverBuffer, 1);
-
-        otherPublication.close();
-        clientConductor.doWork();
-
-        skip(toDriverBuffer, 0);
     }
 
     @Test

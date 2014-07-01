@@ -167,6 +167,34 @@ public class ManyToOneRingBufferTest
     }
 
     @Test
+    public void shouldInsertPaddingRecordPlusMessageOnBufferWrapWithHeadEqualToTail()
+    {
+        final int length = 200;
+        final int recordLength = align(length + HEADER_LENGTH, ALIGNMENT);
+        final long tail = CAPACITY - ALIGNMENT;
+        final long head = tail;
+
+        when(buffer.getLongVolatile(HEAD_COUNTER_INDEX)).thenReturn(head);
+        when(buffer.getLongVolatile(TAIL_COUNTER_INDEX)).thenReturn(tail);
+        when(buffer.compareAndSetLong(TAIL_COUNTER_INDEX, tail, tail + recordLength + ALIGNMENT))
+            .thenReturn(Boolean.TRUE);
+
+        final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[1024]);
+
+        final int srcIndex = 0;
+        assertTrue(ringBuffer.write(MSG_TYPE_ID, srcBuffer, srcIndex, length));
+
+        final InOrder inOrder = inOrder(buffer);
+        inOrder.verify(buffer).putInt(msgTypeOffset((int)tail), PADDING_MSG_TYPE_ID);
+        inOrder.verify(buffer).putIntOrdered(lengthOffset((int)tail), ALIGNMENT);
+
+        inOrder.verify(buffer).putInt(msgLengthOffset(0), length);
+        inOrder.verify(buffer).putInt(msgTypeOffset(0), MSG_TYPE_ID);
+        inOrder.verify(buffer).putBytes(encodedMsgOffset(0), srcBuffer, srcIndex, length);
+        inOrder.verify(buffer).putIntOrdered(lengthOffset(0), recordLength);
+    }
+
+    @Test
     public void shouldReadNothingFromEmptyBuffer()
     {
         final long tail = 0L;

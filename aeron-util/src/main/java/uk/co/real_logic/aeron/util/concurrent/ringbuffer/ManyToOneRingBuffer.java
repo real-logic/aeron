@@ -197,7 +197,7 @@ public class ManyToOneRingBuffer implements RingBuffer
             padding = 0;
             tailIndex = (int)tail & mask;
 
-            if (tailIndex > headIndex)
+            if (tailIndex >= headIndex)
             {
                 final int bufferEndSize = capacity - tailIndex;
                 if (requiredCapacity > bufferEndSize)

@@ -63,9 +63,9 @@ public final class Aeron implements AutoCloseable
         {
             ctx.conclude();
         }
-        catch (IOException e)
+        catch (final IOException ex)
         {
-            throw new IllegalStateException("Unable to start Aeron", e);
+            throw new IllegalStateException("Unable to start Aeron", ex);
         }
 
         final ConductorErrorHandler errorHandler = new ConductorErrorHandler(ctx.invalidDestinationHandler);
@@ -141,7 +141,8 @@ public final class Aeron implements AutoCloseable
     }
 
     /**
-     * Creates an media driver associated with this Aeron instance that can be used to create sources and subscriptions on.
+     * Creates an media driver associated with this Aeron instance that can be used to create sources and
+     * subscriptions on.
      *
      * @param ctx of the media driver and Aeron configuration or null for default configuration
      * @return Aeron instance
@@ -152,24 +153,22 @@ public final class Aeron implements AutoCloseable
     }
 
     /**
-     * Create a new source that is to send to {@link Destination}
+     * Create a new {@link Publication} for sending messages via.
      *
      * @param destination address to send all data to
-     * @param channelId
-     * @param sessionId
-     * @return new source
+     * @param channelId for the publication
+     * @param sessionId to scope the publication
+     * @return the new Publication.
      */
-    public Publication newPublication(final String destination,
-                                      final long channelId,
-                                      final long sessionId)
+    public Publication newPublication(final String destination, final long channelId, final long sessionId)
     {
         return conductor.newPublication(destination, channelId, sessionId);
     }
 
     /**
-     * Create a new subscription that will listen on {@link Destination}
+     * Create a new {@link Subscription} for a destination and channel pairing.
      *
-     * @return new receiver
+     * @return the new Subscription.
      */
     public Subscription newSubscription(final String destination,
                                         final long channelId,
@@ -207,7 +206,8 @@ public final class Aeron implements AutoCloseable
                 if (null == toClientBuffer)
                 {
                     defaultToClientBuffer = IoUtil.mapExistingFile(toClientsFile(), TO_CLIENTS_FILE);
-                    toClientBuffer = new CopyBroadcastReceiver(new BroadcastReceiver(new AtomicBuffer(defaultToClientBuffer)));
+                    final BroadcastReceiver receiver = new BroadcastReceiver(new AtomicBuffer(defaultToClientBuffer));
+                    toClientBuffer = new CopyBroadcastReceiver(receiver);
                 }
 
                 if (null == toDriverBuffer)

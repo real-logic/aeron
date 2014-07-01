@@ -100,8 +100,6 @@ public class ClientConductorTest
     private final AtomicBuffer counterValuesBuffer = new AtomicBuffer(new byte[COUNTER_BUFFER_SZ]);
     private final AtomicBuffer counterLabelsBuffer = new AtomicBuffer(new byte[COUNTER_BUFFER_SZ]);
 
-    private Aeron aeron;
-
     private AtomicBuffer[] logBuffersSession1 = new AtomicBuffer[BufferRotationDescriptor.BUFFER_COUNT];
     private AtomicBuffer[] logBuffersSession2 = new AtomicBuffer[BufferRotationDescriptor.BUFFER_COUNT];
     private AtomicBuffer[] stateBuffersSession1 = new AtomicBuffer[BufferRotationDescriptor.BUFFER_COUNT];
@@ -230,27 +228,39 @@ public class ClientConductorTest
         verify(mediaDriverProxy).removePublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
     }
 
+    @Test
+    public void closingAPublicationDoesntRemoveOtherPublications() throws Exception
+    {
+        Publication publication = conductor.addPublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
+        conductor.addPublication(DESTINATION, CHANNEL_ID_2, SESSION_ID_2);
+
+        publication.release();
+
+        verify(mediaDriverProxy).removePublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
+        verify(mediaDriverProxy, never()).removePublication(DESTINATION, CHANNEL_ID_2, SESSION_ID_2);
+    }
+
     @Ignore
     @Test
     public void shouldRotateBuffersOnceFull() throws Exception
     {
         final RingBuffer toMediaDriver = toDriverBuffer;
         final Publication publication = addPublication();
-        aeron.conductor().doWork();
+        conductor.doWork();
 
         sendNewBufferNotification(NEW_PUBLICATION_BUFFER_EVENT, SESSION_ID_1, TERM_ID_1);
 
         final int capacity = logBuffersSession1[0].capacity();
         final int msgCount = (4 * capacity) / SEND_BUFFER_CAPACITY;
 
-        aeron.conductor().doWork();
+        conductor.doWork();
         skip(toMediaDriver, 1);
         boolean previousAppend = true;
         int bufferId = 0;
         for (int i = 0; i < msgCount; i++)
         {
             final boolean appended = publication.offer(atomicSendBuffer);
-            aeron.conductor().doWork();
+            conductor.doWork();
 
             assertTrue(previousAppend || appended);
             previousAppend = appended;
@@ -263,39 +273,6 @@ public class ClientConductorTest
                 bufferId = rotateId(bufferId);
             }
         }
-    }
-
-    @Ignore
-    @Test
-    public void closingASourceRemovesItsAssociatedChannels() throws Exception
-    {
-        final Publication publication = aeron.addPublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
-        final ClientConductor adminThread = aeron.conductor();
-
-        adminThread.doWork();
-        skip(toDriverBuffer, 1);
-
-        publication.release();
-        adminThread.doWork();
-
-        assertChannelMessage(toDriverBuffer, REMOVE_PUBLICATION);
-    }
-
-    @Ignore
-    @Test
-    public void closingASourceDoesNotRemoveOtherChannels() throws Exception
-    {
-        aeron.addPublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
-        final Publication otherPublication = aeron.addPublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1 + 1);
-        final ClientConductor clientConductor = aeron.conductor();
-
-        clientConductor.doWork();
-        skip(toDriverBuffer, 1);
-
-        otherPublication.release();
-        clientConductor.doWork();
-
-        skip(toDriverBuffer, 0);
     }
 
     private DataHandler eitherSessionAssertingHandler()

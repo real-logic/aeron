@@ -175,7 +175,7 @@ public class AeronTest
         aeron.conductor().doWork();
         skip(toMediaDriver, 1);
 
-        subscription.close();
+        subscription.release();
         aeron.conductor().doWork();
 
         assertMsgRead(toMediaDriver, assertSubscriberMessageOfType(REMOVE_SUBSCRIPTION, CHANNEL_ID_1));

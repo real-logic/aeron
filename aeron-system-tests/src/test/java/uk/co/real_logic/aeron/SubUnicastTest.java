@@ -129,7 +129,7 @@ public class SubUnicastTest
         driver.shutdown();
 
         senderChannel.close();
-        subscription.close();
+        subscription.release();
         consumingClient.close();
         driver.close();
         executorService.shutdown();

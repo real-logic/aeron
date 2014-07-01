@@ -25,7 +25,7 @@ import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 /**
  * Aeron Subscriber API
  */
-public class Subscription extends ChannelEndpoint implements AutoCloseable
+public class Subscription extends ChannelEndpoint
 {
     /**
      * Interface for delivery of data to a {@link Subscription}
@@ -72,9 +72,7 @@ public class Subscription extends ChannelEndpoint implements AutoCloseable
     }
 
     private final Long2ObjectHashMap<SubscribedSession> subscriberSessionBySessionIdMap = new Long2ObjectHashMap<>();
-    private final String destination;
     private final DataHandler handler;
-    private final long channelId;
     private final MediaDriverProxy mediaDriverProxy;
     private final AtomicArray<Subscription> subscriberChannels;
 
@@ -87,22 +85,23 @@ public class Subscription extends ChannelEndpoint implements AutoCloseable
         super(destination, channelId);
         this.mediaDriverProxy = mediaDriverProxy;
         this.handler = handler;
-        this.destination = destination;
-        this.channelId = channelId;
         this.subscriberChannels = subscriberChannels;
         subscriberChannels.add(this);
         mediaDriverProxy.addSubscription(destination, channelId);
     }
 
-    public void close()
+    /**
+     * Release the Subscription so that associated buffers can be released.
+     */
+    public void release()
     {
         subscriberChannels.remove(this);
-        mediaDriverProxy.removeSubscription(destination, channelId);
+        mediaDriverProxy.removeSubscription(destination(), channelId());
     }
 
     public boolean matches(final String destination, final long channelId)
     {
-        return this.destination().equals(destination) && this.channelId() == channelId;
+        return destination().equals(destination) && channelId() == channelId;
     }
 
     /**

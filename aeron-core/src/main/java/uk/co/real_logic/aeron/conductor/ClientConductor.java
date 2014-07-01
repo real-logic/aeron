@@ -77,14 +77,9 @@ public class ClientConductor extends Agent
     private final MediaDriverProxy mediaDriverProxy;
     private final Signal correlationSignal;
 
-    // Guarded by this
-    private Publication addedPublication;
-
-    // Guarded by this
-    private long activeCorrelationId;
-
-    // Guarded by this
-    private boolean hasRemovedPublication;
+    private long activeCorrelationId; // Guarded by this
+    private Publication addedPublication; // Guarded by this
+    private boolean hasRemovedPublication; // Guarded by this
 
     public ClientConductor(final RingBuffer commandBuffer,
                            final CopyBroadcastReceiver toClientBuffer,
@@ -164,11 +159,11 @@ public class ClientConductor extends Agent
                         final String destination = subscriptionMessage.destination();
                         if (msgTypeId == ADD_SUBSCRIPTION)
                         {
-                            addSubscription(destination, channelIds);
+                            addSubscription(destination, channelIds[0]);
                         }
                         else
                         {
-                            removeSubscription(destination, channelIds);
+                            removeSubscription(destination, channelIds[0]);
                         }
 
                         toDriverBuffer.write(msgTypeId, buffer, index, length);
@@ -181,27 +176,22 @@ public class ClientConductor extends Agent
         return messagesRead > 0;
     }
 
-    private void addSubscription(final String destination, final long[] channelIds)
+    private void addSubscription(final String destination, final long channelId)
     {
-        for (final long channelId : channelIds)
-        {
-            subscriptions.forEach(
-                (subscription) ->
+        subscriptions.forEach(
+            (subscription) ->
+            {
+                if (subscription.matches(destination, channelId))
                 {
-                    if (subscription.matches(destination, channelId))
-                    {
-                        subscriptionMap.put(destination, channelId, subscription);
-                    }
-                });
-        }
+                    subscriptionMap.put(destination, channelId, subscription);
+                }
+            });
     }
 
-    private void removeSubscription(final String destination, final long[] channelIds)
+    private void removeSubscription(final String destination, final long channelId)
     {
-        for (final long channelId : channelIds)
-        {
-            subscriptionMap.remove(destination, channelId);
-        }
+        subscriptionMap.remove(destination, channelId);
+
         // TODO: release buffers
     }
 

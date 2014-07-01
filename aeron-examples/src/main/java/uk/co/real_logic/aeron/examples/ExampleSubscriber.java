@@ -70,10 +70,11 @@ public class ExampleSubscriber
             };
 
         try (final MediaDriver driver = ExampleUtil.createEmbeddedMediaDriver();
-             final Aeron aeron = ExampleUtil.createAeron(aeronContext);
-             final Subscription subscription1 = aeron.newSubscription(DESTINATION, CHANNEL_ID_1, messageHandler);
-             final Subscription subscription2 = aeron.newSubscription(DESTINATION, CHANNEL_ID_2, messageHandler))
+             final Aeron aeron = ExampleUtil.createAeron(aeronContext))
         {
+            final Subscription subscription1 = aeron.newSubscription(DESTINATION, CHANNEL_ID_1, messageHandler);
+            final Subscription subscription2 = aeron.newSubscription(DESTINATION, CHANNEL_ID_2, messageHandler);
+
             // spin off the two subscriber threads if you want them to be independent
             executor.execute(() -> loop.accept(subscription1));
             executor.execute(() -> loop.accept(subscription2));

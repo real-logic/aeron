@@ -50,6 +50,7 @@ public class ConnectionMap<D, C>
         final Long2ObjectHashMap<Long2ObjectHashMap<C>> endPointMap
             = getOrDefault(destinationMap, destination, ignore -> new Long2ObjectHashMap<>());
         final Long2ObjectHashMap<C> channelMap = endPointMap.getOrDefault(sessionId, Long2ObjectHashMap::new);
+
         return channelMap.put(channelId, value);
     }
 
@@ -67,7 +68,7 @@ public class ConnectionMap<D, C>
             return null;
         }
 
-        C value = channelMap.remove(channelId);
+        final C value = channelMap.remove(channelId);
 
         if (channelMap.isEmpty())
         {

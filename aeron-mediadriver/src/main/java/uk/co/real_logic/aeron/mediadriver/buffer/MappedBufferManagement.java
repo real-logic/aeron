@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.mediadriver.buffer;
 
-import uk.co.real_logic.aeron.mediadriver.UdpConnectionMap;
 import uk.co.real_logic.aeron.mediadriver.UdpDestination;
 import uk.co.real_logic.aeron.util.FileMappingConvention;
 import uk.co.real_logic.aeron.util.IoUtil;
@@ -44,8 +43,8 @@ class MappedBufferManagement implements BufferManagement
     private final File publicationsDir;
     private final File subscriptionsDir;
 
-    private final UdpConnectionMap<MappedBufferRotator> publicationsRotatorByConnectionMap = new UdpConnectionMap<>();
-    private final UdpConnectionMap<MappedBufferRotator> subscriptionsRotatorByConnectionMap = new UdpConnectionMap<>();
+    private final ConnectionMap<UdpDestination, MappedBufferRotator> publicationsRotatorMap = new ConnectionMap<>();
+    private final ConnectionMap<UdpDestination, MappedBufferRotator> subscriptionsRotatorMap = new ConnectionMap<>();
 
     MappedBufferManagement(final String dataDir)
     {
@@ -67,14 +66,14 @@ class MappedBufferManagement implements BufferManagement
             logTemplate.close();
             stateTemplate.close();
 
-            publicationsRotatorByConnectionMap.forEach(
+            publicationsRotatorMap.forEach(
                 (ConnectionMap.ConnectionHandler<UdpDestination, MappedBufferRotator>)
                     (final UdpDestination destination,
                      final Long sessionId,
                      final Long channelId,
                      final MappedBufferRotator bufferRotator) -> bufferRotator.close());
 
-            subscriptionsRotatorByConnectionMap.forEach(
+            subscriptionsRotatorMap.forEach(
                 (ConnectionMap.ConnectionHandler<UdpDestination, MappedBufferRotator>)
                     (final UdpDestination destination,
                      final Long sessionId,
@@ -112,30 +111,30 @@ class MappedBufferManagement implements BufferManagement
     public BufferRotator addPublication(final UdpDestination destination, final long sessionId, final long channelId)
         throws Exception
     {
-        return addPublication(destination, sessionId, channelId, publicationsDir, publicationsRotatorByConnectionMap);
+        return addPublication(destination, sessionId, channelId, publicationsDir, publicationsRotatorMap);
     }
 
     public void removePublication(final UdpDestination destination, final long sessionId, final long channelId)
         throws IllegalArgumentException
     {
-        removePublication(destination, sessionId, channelId, publicationsRotatorByConnectionMap);
+        removePublication(destination, sessionId, channelId, publicationsRotatorMap);
     }
 
     public void removeSubscription(final UdpDestination destination, final long sessionId, final long channelId)
     {
-        removePublication(destination, sessionId, channelId, subscriptionsRotatorByConnectionMap);
+        removePublication(destination, sessionId, channelId, subscriptionsRotatorMap);
     }
 
     public BufferRotator addSubscription(final UdpDestination destination, final long sessionId, final long channelId)
         throws Exception
     {
-        return addPublication(destination, sessionId, channelId, subscriptionsDir, subscriptionsRotatorByConnectionMap);
+        return addPublication(destination, sessionId, channelId, subscriptionsDir, subscriptionsRotatorMap);
     }
 
     private void removePublication(final UdpDestination destination,
                                    final long sessionId,
                                    final long channelId,
-                                   final UdpConnectionMap<MappedBufferRotator> termMap)
+                                   final ConnectionMap<UdpDestination, MappedBufferRotator> termMap)
     {
         final MappedBufferRotator bufferRotator = termMap.remove(destination, sessionId, channelId);
         if (bufferRotator == null)
@@ -152,7 +151,7 @@ class MappedBufferManagement implements BufferManagement
                                                final long sessionId,
                                                final long channelId,
                                                final File rootDir,
-                                               final UdpConnectionMap<MappedBufferRotator> termMap)
+                                               final ConnectionMap<UdpDestination, MappedBufferRotator> termMap)
     {
         MappedBufferRotator bufferRotator = termMap.get(destination, sessionId, channelId);
         if (bufferRotator == null)

@@ -173,7 +173,7 @@ public class MediaDriver implements AutoCloseable
      */
     public static final int MEDIA_CONDUCTOR_TICK_DURATION_US = 10 * 1000;
 
-    public static final long AGENT_IDLE_MAX_SPINS = 5000;
+    public static final long AGENT_IDLE_MAX_SPINS = 100;
     public static final long AGENT_IDLE_MAX_YIELDS = 100;
     public static final long AGENT_IDLE_MIN_PARK_NS = TimeUnit.NANOSECONDS.toNanos(10);
     public static final long AGENT_IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(100);

@@ -31,6 +31,8 @@ import java.util.function.Consumer;
 public class ExampleSubscriber
 {
     public static final String DESTINATION = "udp://localhost:40123";
+    public static final int CHANNEL_ID_1 = 30;
+    public static final int CHANNEL_ID_2 = 100;
 
     public static void main(final String[] args)
     {
@@ -41,20 +43,24 @@ public class ExampleSubscriber
             {
                 final byte[] data = new byte[length];
                 buffer.getBytes(offset, data);
+
                 System.out.println("Message " + sessionId + " " + new String(data));
             };
 
 
         // make a reusable, parameterized event loop function
         final Consumer<Subscription> loop =
-            (subscriber) ->
+            (subscription) ->
             {
                 try
                 {
                     while (true)
                     {
-                        subscriber.read();
-                        Thread.sleep(1000);
+                        final int messagesRead = subscription.read();
+                        if (messagesRead == 0)
+                        {
+                            Thread.sleep(1000); // Do some other work if nothing is read.
+                        }
                     }
                 }
                 catch (final Exception ex)
@@ -65,15 +71,14 @@ public class ExampleSubscriber
 
         try (final MediaDriver driver = ExampleUtil.createEmbeddedMediaDriver();
              final Aeron aeron = ExampleUtil.createAeron(aeronContext);
-             final Subscription subscription1 = aeron.newSubscription(DESTINATION, 30, messageHandler);
-             // create a subscriber using the fluent style lambda expression
-             final Subscription subscription2 = aeron.newSubscription(DESTINATION, 100, messageHandler))
+             final Subscription subscription1 = aeron.newSubscription(DESTINATION, CHANNEL_ID_1, messageHandler);
+             final Subscription subscription2 = aeron.newSubscription(DESTINATION, CHANNEL_ID_2, messageHandler))
         {
-            // spin off the two subscriber threads
+            // spin off the two subscriber threads if you want them to be independent
             executor.execute(() -> loop.accept(subscription1));
             executor.execute(() -> loop.accept(subscription2));
 
-            // run aeron conductor thread from here
+            // run aeron client conductor thread from here
             aeron.run();
         }
         catch (final Exception ex)
@@ -114,8 +119,12 @@ public class ExampleSubscriber
         {
             final byte[] data = new byte[length];
             buffer.getBytes(offset, data);
-            System.out.println("Message to channel: " + channelId() + ", from: " + sessionId + ", data (" + length +
-                                   "@" + offset + ") <<" + new String(data) + ">>");
+
+            System.out.println("Message to channel: " + channelId() +
+                               ", from: " + sessionId +
+                               ", data (" + length +
+                               "@" + offset +
+                               ") <<" + new String(data) + ">>");
         }
     }
 }

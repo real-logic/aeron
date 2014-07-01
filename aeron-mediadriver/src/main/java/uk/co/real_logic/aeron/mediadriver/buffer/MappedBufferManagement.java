@@ -15,11 +15,11 @@
  */
 package uk.co.real_logic.aeron.mediadriver.buffer;
 
-import uk.co.real_logic.aeron.mediadriver.UdpChannelMap;
+import uk.co.real_logic.aeron.mediadriver.UdpEndPointMap;
 import uk.co.real_logic.aeron.mediadriver.UdpDestination;
 import uk.co.real_logic.aeron.util.FileMappingConvention;
 import uk.co.real_logic.aeron.util.IoUtil;
-import uk.co.real_logic.aeron.util.collections.ChannelMap;
+import uk.co.real_logic.aeron.util.collections.EndPointMap;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,8 +44,8 @@ class MappedBufferManagement implements BufferManagement
     private final File senderDir;
     private final File receiverDir;
 
-    private final UdpChannelMap<MappedBufferRotator> srcTermMap;
-    private final UdpChannelMap<MappedBufferRotator> rcvTermMap;
+    private final UdpEndPointMap<MappedBufferRotator> srcTermMap;
+    private final UdpEndPointMap<MappedBufferRotator> rcvTermMap;
     private final FileMappingConvention fileConvention;
 
     MappedBufferManagement(final String dataDir)
@@ -53,8 +53,8 @@ class MappedBufferManagement implements BufferManagement
         fileConvention = new FileMappingConvention(dataDir);
         senderDir = fileConvention.publicationsDir();
         receiverDir = fileConvention.subscriptionsDir();
-        srcTermMap = new UdpChannelMap<>();
-        rcvTermMap = new UdpChannelMap<>();
+        srcTermMap = new UdpEndPointMap<>();
+        rcvTermMap = new UdpEndPointMap<>();
         IoUtil.ensureDirectoryExists(senderDir, "sender");
         IoUtil.ensureDirectoryExists(receiverDir, "receiver");
         logTemplate = createTemplateFile(dataDir, "logTemplate", LOG_BUFFER_SIZE);
@@ -68,13 +68,13 @@ class MappedBufferManagement implements BufferManagement
             logTemplate.close();
             stateTemplate.close();
 
-            srcTermMap.forEach((ChannelMap.ChannelHandler<UdpDestination, MappedBufferRotator>)
+            srcTermMap.forEach((EndPointMap.EndPointHandler<UdpDestination, MappedBufferRotator>)
                                    (final UdpDestination destination,
                                     final Long sessionId,
                                     final Long channelId,
                                     final MappedBufferRotator buffer) -> buffer.close());
 
-            rcvTermMap.forEach((ChannelMap.ChannelHandler<UdpDestination, MappedBufferRotator>)
+            rcvTermMap.forEach((EndPointMap.EndPointHandler<UdpDestination, MappedBufferRotator>)
                                    (final UdpDestination destination,
                                     final Long sessionId,
                                     final Long channelId,
@@ -137,7 +137,7 @@ class MappedBufferManagement implements BufferManagement
     private void removeChannel(final UdpDestination destination,
                                final long sessionId,
                                final long channelId,
-                               final UdpChannelMap<MappedBufferRotator> termMap)
+                               final UdpEndPointMap<MappedBufferRotator> termMap)
     {
         final MappedBufferRotator rotator = termMap.remove(destination, sessionId, channelId);
         if (rotator == null)
@@ -153,7 +153,7 @@ class MappedBufferManagement implements BufferManagement
                                            final long sessionId,
                                            final long channelId,
                                            final File rootDir,
-                                           final UdpChannelMap<MappedBufferRotator> termMap)
+                                           final UdpEndPointMap<MappedBufferRotator> termMap)
     {
         MappedBufferRotator channelBuffer = termMap.get(destination, sessionId, channelId);
         if (channelBuffer == null)

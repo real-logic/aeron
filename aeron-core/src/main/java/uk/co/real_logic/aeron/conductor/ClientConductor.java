@@ -20,7 +20,7 @@ import uk.co.real_logic.aeron.util.Agent;
 import uk.co.real_logic.aeron.util.AgentIdleStrategy;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
-import uk.co.real_logic.aeron.util.collections.ChannelMap;
+import uk.co.real_logic.aeron.util.collections.EndPointMap;
 import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -64,7 +64,7 @@ public class ClientConductor extends Agent
     private final AtomicArray<Subscription> subscriptions;
 
     // Guarded by this
-    private final ChannelMap<String, Publication> publicationMap = new ChannelMap<>();
+    private final EndPointMap<String, Publication> publicationMap = new EndPointMap<>();
 
     private final SubscriptionMap subscriptionMap = new SubscriptionMap();
 
@@ -295,9 +295,7 @@ public class ClientConductor extends Agent
         correlationSignal.signal();
     }
 
-    public synchronized Publication addPublication(final String destination,
-                                                   final long channelId,
-                                                   final long sessionId)
+    public synchronized Publication addPublication(final String destination, final long channelId, final long sessionId)
     {
         Publication publication = publicationMap.get(destination, sessionId, channelId);
 
@@ -318,10 +316,8 @@ public class ClientConductor extends Agent
             addedPublication = null;
             activeCorrelationId = NO_CORRELATION_ID;
         }
-        else
-        {
-            publication.incrementReferenceCount();
-        }
+
+        publication.incRef();
 
         return publication;
     }

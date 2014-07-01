@@ -26,6 +26,7 @@ import uk.co.real_logic.aeron.util.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
@@ -34,6 +35,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static uk.co.real_logic.aeron.util.IoUtil.mapExistingFile;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
 
 /**
@@ -42,8 +44,6 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescri
 public final class Aeron implements AutoCloseable
 {
     private static final int COMMAND_BUFFER_SIZE = 4096 + TRAILER_LENGTH;
-    private static final int DEFAULT_COUNTERS_LABELS_BUFFER_SIZE = 1024;
-    private static final int DEFAULT_COUNTERS_VALUES_BUFFER_SIZE = 1024;
 
     // TODO: make configurable
     public static final long AWAIT_TIMEOUT = 10_000;
@@ -205,25 +205,27 @@ public final class Aeron implements AutoCloseable
             {
                 if (null == toClientBuffer)
                 {
-                    defaultToClientBuffer = IoUtil.mapExistingFile(toClientsFile(), TO_CLIENTS_FILE);
+                    defaultToClientBuffer = mapExistingFile(toClientsFile(), TO_CLIENTS_FILE);
                     final BroadcastReceiver receiver = new BroadcastReceiver(new AtomicBuffer(defaultToClientBuffer));
                     toClientBuffer = new CopyBroadcastReceiver(receiver);
                 }
 
                 if (null == toDriverBuffer)
                 {
-                    defaultToDriverBuffer = IoUtil.mapExistingFile(toDriverFile(), TO_DRIVER_FILE);
+                    defaultToDriverBuffer = mapExistingFile(toDriverFile(), TO_DRIVER_FILE);
                     toDriverBuffer = new ManyToOneRingBuffer(new AtomicBuffer(defaultToDriverBuffer));
                 }
 
                 if (counterLabelsBuffer() == null)
                 {
-                    counterLabelsBuffer(new AtomicBuffer(ByteBuffer.allocateDirect(DEFAULT_COUNTERS_LABELS_BUFFER_SIZE)));
+                    final MappedByteBuffer labels = mapExistingFile(new File(countersDirName(), LABELS_FILE), LABELS_FILE);
+                    counterLabelsBuffer(new AtomicBuffer(labels));
                 }
 
                 if (counterValuesBuffer() == null)
                 {
-                    counterValuesBuffer(new AtomicBuffer(ByteBuffer.allocateDirect(DEFAULT_COUNTERS_VALUES_BUFFER_SIZE)));
+                    final MappedByteBuffer values = mapExistingFile(new File(countersDirName(), VALUES_FILE), VALUES_FILE);
+                    counterValuesBuffer(new AtomicBuffer(values));
                 }
 
                 if (null == bufferUsageStrategy)

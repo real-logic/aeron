@@ -132,11 +132,6 @@ public class Publication extends ChannelEndpoint implements PositionIndicator
         }
     }
 
-    public boolean matches(final String destination, final long sessionId, final long channelId)
-    {
-        return destination.equals(this.destination()) && this.sessionId == sessionId && this.channelId() == channelId;
-    }
-
     private void requestTerm(final long termId)
     {
         // TODO

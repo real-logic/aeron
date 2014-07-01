@@ -223,16 +223,16 @@ public class ClientConductor extends Agent
                             final long sessionId = newBufferMessage.sessionId();
                             final long channelId = newBufferMessage.channelId();
                             final long termId = newBufferMessage.termId();
+                            final int positionIndicatorId = newBufferMessage.positionIndicatorId();
 
                             if (msgTypeId == NEW_PUBLICATION_BUFFER_EVENT)
                             {
-                                long correlationId = newBufferMessage.correlationId();
-                                if (correlationId != activeCorrelationId)
+                                if (newBufferMessage.correlationId() != activeCorrelationId)
                                 {
                                     break;
                                 }
 
-                                onNewPublicationBuffers(destination, sessionId, channelId, termId);
+                                onNewPublicationBuffers(destination, sessionId, channelId, termId, positionIndicatorId);
                             }
                             else
                             {
@@ -277,7 +277,8 @@ public class ClientConductor extends Agent
     private void onNewPublicationBuffers(final String destination,
                                          final long sessionId,
                                          final long channelId,
-                                         final long termId) throws IOException
+                                         final long termId,
+                                         final int positionIndicatorId) throws IOException
     {
         final LogAppender[] logs = new LogAppender[BUFFER_COUNT];
         for (int i = 0; i < BUFFER_COUNT; i++)
@@ -285,9 +286,7 @@ public class ClientConductor extends Agent
             logs[i] = newAppender(i, sessionId, channelId, termId);
         }
 
-        // TODO: get the counter id
-        final PositionIndicator positionIndicator = new BufferPositionIndicator(counterValuesBuffer, 0);
-
+        final PositionIndicator positionIndicator = new BufferPositionIndicator(counterValuesBuffer, positionIndicatorId);
         final Publication publication = new Publication(
             this, destination, channelId, sessionId, termId, logs, positionIndicator);
         publications.add(publication);

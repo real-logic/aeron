@@ -41,6 +41,8 @@ import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_LONG;
  * +---------------------------------------------------------------+
  * |                           Term ID                             |
  * +---------------------------------------------------------------+
+ * |                      Position Indicator Id                    |
+ * +---------------------------------------------------------------+
  * |                          File Offset 0                        |
  * +---------------------------------------------------------------+
  * |                          File Offset 1                        |
@@ -109,7 +111,8 @@ public class NewBufferMessageFlyweight extends Flyweight
     private static final int SESSION_ID_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
     private static final int CHANNEL_ID_FIELD_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
     private static final int TERM_ID_FIELD_OFFSET = CHANNEL_ID_FIELD_OFFSET + SIZE_OF_INT;
-    private static final int FILE_OFFSETS_FIELDS_OFFSET = TERM_ID_FIELD_OFFSET + SIZE_OF_INT;
+    private static final int POSITION_INDICATOR_ID_OFFSET = TERM_ID_FIELD_OFFSET + SIZE_OF_INT;
+    private static final int FILE_OFFSETS_FIELDS_OFFSET = POSITION_INDICATOR_ID_OFFSET + SIZE_OF_INT;
     private static final int BUFFER_LENGTHS_FIELDS_OFFSET = FILE_OFFSETS_FIELDS_OFFSET + (NUMBER_OF_FILES * SIZE_OF_INT);
     private static final int LOCATION_POINTER_FIELDS_OFFSET = BUFFER_LENGTHS_FIELDS_OFFSET + (NUMBER_OF_FILES * SIZE_OF_INT);
     private static final int LOCATION_0_FIELD_OFFSET = LOCATION_POINTER_FIELDS_OFFSET + (8 * SIZE_OF_INT);
@@ -228,6 +231,28 @@ public class NewBufferMessageFlyweight extends Flyweight
     public NewBufferMessageFlyweight termId(final long termId)
     {
         uint32Put(offset() + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
+        return this;
+    }
+
+    /**
+     * return position indicator id field
+     *
+     * @return position indicator id field
+     */
+    public int positionIndicatorId()
+    {
+        return atomicBuffer().getInt(offset() + POSITION_INDICATOR_ID_OFFSET, LITTLE_ENDIAN);
+    }
+
+    /**
+     * set position indicator id field
+     *
+     * @param positionIndicatorId field value
+     * @return flyweight
+     */
+    public NewBufferMessageFlyweight positionIndicatorId(final int positionIndicatorId)
+    {
+        atomicBuffer().putInt(offset() + POSITION_INDICATOR_ID_OFFSET, positionIndicatorId, LITTLE_ENDIAN);
         return this;
     }
 

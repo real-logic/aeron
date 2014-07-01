@@ -23,8 +23,6 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogScanner;
-import uk.co.real_logic.aeron.util.event.EventCode;
-import uk.co.real_logic.aeron.util.event.EventLogger;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
@@ -133,7 +131,7 @@ public class DriverPublication
             if (scanner.isComplete())
             {
                 currentIndex = BufferRotationDescriptor.rotateId(currentIndex);
-                currentTermId.incrementAndGet();
+                currentTermId.lazySet(currentTermId.get() + 1);
             }
         }
         catch (final Exception ex)
@@ -162,8 +160,8 @@ public class DriverPublication
                                 final long receiverWindow,
                                 final InetSocketAddress address)
     {
-        final int rightEdge = controlStrategy.onStatusMessage(termId, highestContiguousSequenceNumber,
-                                                              receiverWindow, address);
+        final int rightEdge = controlStrategy.onStatusMessage(
+            termId, highestContiguousSequenceNumber, receiverWindow, address);
 
         rightEdges[determineIndexByTermId(termId)].lazySet(rightEdge);
 

@@ -160,9 +160,9 @@ public final class Aeron implements AutoCloseable
      * @param sessionId to scope the publication
      * @return the new Publication.
      */
-    public Publication newPublication(final String destination, final long channelId, final long sessionId)
+    public Publication addPublication(final String destination, final long channelId, final long sessionId)
     {
-        return conductor.newPublication(destination, channelId, sessionId);
+        return conductor.addPublication(destination, channelId, sessionId);
     }
 
     /**

@@ -43,7 +43,7 @@ public class ExamplePublisher
         try (final MediaDriver driver = ExampleUtil.createEmbeddedMediaDriver();
              final Aeron aeron = ExampleUtil.createAeron(context, executor))
         {
-            final Publication publication = aeron.newPublication(DESTINATION, CHANNEL_ID, 0);
+            final Publication publication = aeron.addPublication(DESTINATION, CHANNEL_ID, 0);
 
             for (int i = 0; i < 10; i++)
             {

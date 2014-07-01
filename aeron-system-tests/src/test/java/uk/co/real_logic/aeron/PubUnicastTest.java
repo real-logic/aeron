@@ -94,7 +94,7 @@ public class PubUnicastTest
         driver.invokeEmbedded();
         producingClient.invoke(executorService);
 
-        publication = producingClient.newPublication(DESTINATION, CHANNEL_ID, SESSION_ID);
+        publication = producingClient.addPublication(DESTINATION, CHANNEL_ID, SESSION_ID);
     }
 
     private Aeron.ClientContext newAeronContext()
@@ -114,7 +114,7 @@ public class PubUnicastTest
         driver.shutdown();
 
         receiverChannel.close();
-        publication.close();
+        publication.release();
         producingClient.close();
         driver.close();
         executorService.shutdown();

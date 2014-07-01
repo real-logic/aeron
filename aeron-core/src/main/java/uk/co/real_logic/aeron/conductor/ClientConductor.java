@@ -81,6 +81,9 @@ public class ClientConductor extends Agent
     // Guarded by this
     private long activeCorrelationId;
 
+    // Guarded by this
+    private boolean hasRemovedPublication;
+
     public ClientConductor(final RingBuffer commandBuffer,
                            final CopyBroadcastReceiver toClientBuffer,
                            final RingBuffer toDriverBuffer,
@@ -106,6 +109,8 @@ public class ClientConductor extends Agent
         this.subscriptions = subscriptions;
         this.errorHandler = errorHandler;
         this.awaitTimeout = awaitTimeout;
+
+        hasRemovedPublication = false;
     }
 
     public boolean doWork()
@@ -199,7 +204,8 @@ public class ClientConductor extends Agent
         // TODO: release buffers
     }
 
-    private void addPublication(final String destination, final long channelId, final long sessionId)
+    // TODO: does this need removing?
+    private void addPublicationLegacy(final String destination, final long channelId, final long sessionId)
     {
         publications.forEach(
             (channel) ->
@@ -313,12 +319,18 @@ public class ClientConductor extends Agent
         correlationSignal.signal();
     }
 
-    public void close(final Publication publication)
+    public synchronized void release(final Publication publication)
     {
-        // TODO
+        final String destination = publication.destination();
+        final long channelId = publication.channelId();
+        final long sessionId = publication.sessionId();
+        activeCorrelationId = mediaDriverProxy.removePublication(destination, channelId, sessionId);
+
+        // TODO: wait for response from media driver
+        // TODO: reference count the instance
     }
 
-    public synchronized Publication newPublication(final String destination,
+    public synchronized Publication addPublication(final String destination,
                                                    final long channelId,
                                                    final long sessionId)
     {
@@ -329,11 +341,7 @@ public class ClientConductor extends Agent
         {
             correlationSignal.await(awaitTimeout);
 
-            if (System.currentTimeMillis() - startTime > awaitTimeout)
-            {
-                String msg = String.format("No response from media driver within %d ms", awaitTimeout);
-                throw new MediaDriverTimeoutException(msg);
-            }
+            checkMediaDriverTimeout(startTime);
         }
 
         final Publication publication = addedPublication;
@@ -341,6 +349,16 @@ public class ClientConductor extends Agent
         activeCorrelationId = NO_CORRELATION_ID;
 
         return publication;
+    }
+
+    private void checkMediaDriverTimeout(final long startTime)
+        throws MediaDriverTimeoutException
+    {
+        if (System.currentTimeMillis() - startTime > awaitTimeout)
+        {
+            String msg = String.format("No response from media driver within %d ms", awaitTimeout);
+            throw new MediaDriverTimeoutException(msg);
+        }
     }
 
     private interface LogFactory<L>

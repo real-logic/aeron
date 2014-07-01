@@ -180,7 +180,7 @@ public class ClientConductorTest
     @Test
     public void creatingChannelsShouldNotifyMediaDriver() throws Exception
     {
-        newPublication(aeron);
+        addPublication();
 
         verify(mediaDriverProxy).addPublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
     }
@@ -194,7 +194,24 @@ public class ClientConductorTest
             return null;
         }).when(signal).await(anyLong());
 
-        newPublication(aeron);
+        addPublication();
+    }
+
+    @Ignore
+    @Test
+    public void conductorCachesPublicationInstances() throws Exception
+    {
+        // TODO
+    }
+
+    @Test
+    public void removingChannelsShouldNotifyMediaDriver() throws Exception
+    {
+        Publication publication = addPublication();
+
+        publication.release();
+
+        verify(mediaDriverProxy).removePublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
     }
 
     @Ignore
@@ -202,7 +219,7 @@ public class ClientConductorTest
     public void shouldRotateBuffersOnceFull() throws Exception
     {
         final RingBuffer toMediaDriver = toDriverBuffer;
-        final Publication publication = newPublication(aeron);
+        final Publication publication = addPublication();
         aeron.conductor().doWork();
 
         sendNewBufferNotification(NEW_PUBLICATION_BUFFER_EVENT, SESSION_ID_1, TERM_ID_1);
@@ -234,32 +251,15 @@ public class ClientConductorTest
 
     @Ignore
     @Test
-    public void removingChannelsShouldNotifyMediaDriver() throws Exception
-    {
-        final RingBuffer toMediaDriver = toDriverBuffer;
-        final Publication publication = newPublication(aeron);
-        final ClientConductor adminThread = aeron.conductor();
-
-        adminThread.doWork();
-        skip(toMediaDriver, 1);
-
-        publication.close();
-        adminThread.doWork();
-
-        assertChannelMessage(toMediaDriver, REMOVE_PUBLICATION);
-    }
-
-    @Ignore
-    @Test
     public void closingASourceRemovesItsAssociatedChannels() throws Exception
     {
-        final Publication publication = aeron.newPublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
+        final Publication publication = aeron.addPublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
         final ClientConductor adminThread = aeron.conductor();
 
         adminThread.doWork();
         skip(toDriverBuffer, 1);
 
-        publication.close();
+        publication.release();
         adminThread.doWork();
 
         assertChannelMessage(toDriverBuffer, REMOVE_PUBLICATION);
@@ -269,14 +269,14 @@ public class ClientConductorTest
     @Test
     public void closingASourceDoesNotRemoveOtherChannels() throws Exception
     {
-        aeron.newPublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
-        final Publication otherPublication = aeron.newPublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1 + 1);
+        aeron.addPublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
+        final Publication otherPublication = aeron.addPublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1 + 1);
         final ClientConductor clientConductor = aeron.conductor();
 
         clientConductor.doWork();
         skip(toDriverBuffer, 1);
 
-        otherPublication.close();
+        otherPublication.release();
         clientConductor.doWork();
 
         skip(toDriverBuffer, 0);
@@ -373,9 +373,9 @@ public class ClientConductorTest
         };
     }
 
-    private Publication newPublication(final Aeron aeron)
+    private Publication addPublication()
     {
-        return conductor.newPublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
+        return conductor.addPublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
     }
 
     private void assertChannelMessage(final RingBuffer mediaDriverBuffer, final int expectedMsgTypeId)

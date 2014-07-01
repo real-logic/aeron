@@ -56,9 +56,9 @@ public class MediaDriverProxy
         return sendPublicationMessage(destination, sessionId, channelId, ADD_PUBLICATION);
     }
 
-    public void removePublication(final String destination, final long sessionId, final long channelId)
+    public long removePublication(final String destination, final long sessionId, final long channelId)
     {
-        sendPublicationMessage(destination, sessionId, channelId, REMOVE_PUBLICATION);
+        return sendPublicationMessage(destination, sessionId, channelId, REMOVE_PUBLICATION);
     }
 
     public void addSubscription(final String destination, final long channelId)

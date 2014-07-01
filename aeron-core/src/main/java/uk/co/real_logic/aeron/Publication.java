@@ -33,7 +33,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.Appen
 /**
  * Aeron Publication
  */
-public class Publication extends ChannelEndpoint implements AutoCloseable, PositionIndicator
+public class Publication extends ChannelEndpoint implements PositionIndicator
 {
     public static final long NO_DIRTY_TERM = -1L;
 
@@ -121,9 +121,9 @@ public class Publication extends ChannelEndpoint implements AutoCloseable, Posit
         throw new BufferExhaustedException("Unable to send: no space in buffer");
     }
 
-    public void close() throws Exception
+    public void release() throws Exception
     {
-        conductor.close(this);
+        conductor.release(this);
     }
 
     public boolean matches(final String destination, final long sessionId, final long channelId)

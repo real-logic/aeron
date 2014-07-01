@@ -77,7 +77,7 @@ public class PubAndSubTest
         publishingClient.invoke(executorService);
         subscribingClient.invoke(executorService);
 
-        publication = publishingClient.newPublication(destination, CHANNEL_ID, SESSION_ID);
+        publication = publishingClient.addPublication(destination, CHANNEL_ID, SESSION_ID);
     }
 
     private Aeron.ClientContext newAeronContext()
@@ -98,7 +98,7 @@ public class PubAndSubTest
         driver.shutdown();
 
         subscription.close();
-        publication.close();
+        publication.release();
         subscribingClient.close();
         publishingClient.close();
         driver.close();

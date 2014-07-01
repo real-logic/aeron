@@ -429,7 +429,7 @@ public class AeronTest
 
     private Publication newPublication(final Aeron aeron)
     {
-        return aeron.newPublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
+        return aeron.addPublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
     }
 
     private void assertChannelMessage(final RingBuffer mediaDriverBuffer, final int expectedMsgTypeId)

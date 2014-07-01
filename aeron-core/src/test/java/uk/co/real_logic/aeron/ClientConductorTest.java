@@ -46,21 +46,21 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.NEW_PUBL
 
 public class ClientConductorTest
 {
-    private static final int MAX_FRAME_LENGTH = 1024;
-    private static final int COUNTER_BUFFER_SZ = 1024;
+    public static final int MAX_FRAME_LENGTH = 1024;
+    public static final int COUNTER_BUFFER_SZ = 1024;
 
-    private static final String DESTINATION = "udp://localhost:40124";
-    private static final long CHANNEL_ID_1 = 2L;
-    private static final long CHANNEL_ID_2 = 4L;
-    private static final long SESSION_ID_1 = 13L;
-    private static final long SESSION_ID_2 = 15L;
+    public static final String DESTINATION = "udp://localhost:40124";
+    public static final long CHANNEL_ID_1 = 2L;
+    public static final long CHANNEL_ID_2 = 4L;
+    public static final long SESSION_ID_1 = 13L;
+    public static final long SESSION_ID_2 = 15L;
     public static final long TERM_ID_1 = 1L;
-    private static final int SEND_BUFFER_CAPACITY = 1024;
+    public static final int SEND_BUFFER_CAPACITY = 1024;
 
     public static final int RING_BUFFER_SZ = (16 * 1024) + RingBufferDescriptor.TRAILER_LENGTH;
     public static final int BROADCAST_BUFFER_SZ = (16 * 1024) + BroadcastBufferDescriptor.TRAILER_LENGTH;
     public static final int LOG_BUFFER_SIZE = LogBufferDescriptor.LOG_MIN_SIZE;
-    private static final long CORRELATION_ID = 2000;
+    public static final long CORRELATION_ID = 2000;
     public static final int AWAIT_TIMEOUT = 100;
 
     private final NewBufferMessageFlyweight newBufferMessage = new NewBufferMessageFlyweight();
@@ -104,18 +104,18 @@ public class ClientConductorTest
             stateBuffersSession2[i] = new AtomicBuffer(new byte[LogBufferDescriptor.STATE_BUFFER_LENGTH]);
 
             when(mockBufferUsage.newBuffer(eq(SESSION_ID_1 + "-log-" + i), anyInt(), anyInt()))
-                    .thenReturn(logBuffersSession1[i]);
+                .thenReturn(logBuffersSession1[i]);
             when(mockBufferUsage.newBuffer(eq(SESSION_ID_1 + "-state-" + i), anyInt(), anyInt()))
-                    .thenReturn(stateBuffersSession1[i]);
+                .thenReturn(stateBuffersSession1[i]);
             when(mockBufferUsage.newBuffer(eq(SESSION_ID_2 + "-log-" + i), anyInt(), anyInt()))
-                    .thenReturn(logBuffersSession2[i]);
+                .thenReturn(logBuffersSession2[i]);
             when(mockBufferUsage.newBuffer(eq(SESSION_ID_2 + "-state-" + i), anyInt(), anyInt()))
-                    .thenReturn(stateBuffersSession2[i]);
+                .thenReturn(stateBuffersSession2[i]);
 
             appendersSession1[i] = new LogAppender(logBuffersSession1[i], stateBuffersSession1[i],
-                    DataHeaderFlyweight.DEFAULT_HEADER_NULL_IDS, MAX_FRAME_LENGTH);
+                                                   DataHeaderFlyweight.DEFAULT_HEADER_NULL_IDS, MAX_FRAME_LENGTH);
             appendersSession2[i] = new LogAppender(logBuffersSession2[i], stateBuffersSession2[i],
-                    DataHeaderFlyweight.DEFAULT_HEADER_NULL_IDS, MAX_FRAME_LENGTH);
+                                                   DataHeaderFlyweight.DEFAULT_HEADER_NULL_IDS, MAX_FRAME_LENGTH);
         }
 
         mediaDriverProxy = mock(MediaDriverProxy.class);
@@ -125,24 +125,25 @@ public class ClientConductorTest
 
         when(mediaDriverProxy.addPublication(any(), anyLong(), anyLong())).thenReturn(CORRELATION_ID);
 
-        doAnswer(invocation ->
-        {
-            sendNewBufferNotification(NEW_PUBLICATION_BUFFER_EVENT, SESSION_ID_1, TERM_ID_1);
-            conductor.doWork();
-            return null;
-        }).when(signal).await(anyLong());
+        doAnswer(
+            invocation ->
+            {
+                sendNewBufferNotification(NEW_PUBLICATION_BUFFER_EVENT, SESSION_ID_1, TERM_ID_1);
+                conductor.doWork();
+                return null;
+            }).when(signal).await(anyLong());
 
         conductor = new ClientConductor(
-                mock(RingBuffer.class),
-                toClientReceiver,
-                toDriverBuffer,
-                subscriberChannels,
-                errorHandler,
-                mockBufferUsage,
-                counterValuesBuffer,
-                mediaDriverProxy,
-                signal,
-                AWAIT_TIMEOUT);
+            mock(RingBuffer.class),
+            toClientReceiver,
+            toDriverBuffer,
+            subscriberChannels,
+            errorHandler,
+            mockBufferUsage,
+            counterValuesBuffer,
+            mediaDriverProxy,
+            signal,
+            AWAIT_TIMEOUT);
 
         newBufferMessage.wrap(atomicSendBuffer, 0);
         errorHeader.wrap(atomicSendBuffer, 0);
@@ -165,11 +166,12 @@ public class ClientConductorTest
     @Test(expected = MediaDriverTimeoutException.class)
     public void cannotCreatePublisherUntilBuffersMapped()
     {
-        doAnswer(invocation ->
-        {
-            Thread.sleep(AWAIT_TIMEOUT + 1);
-            return null;
-        }).when(signal).await(anyLong());
+        doAnswer(
+            (invocation) ->
+            {
+                Thread.sleep(AWAIT_TIMEOUT + 1);
+                return null;
+            }).when(signal).await(anyLong());
 
         addPublication();
     }
@@ -242,7 +244,7 @@ public class ClientConductorTest
                 newBufferMessage.location(i + BufferRotationDescriptor.BUFFER_COUNT, sessionId + "-state-" + i);
                 newBufferMessage.bufferOffset(i + BufferRotationDescriptor.BUFFER_COUNT, 0);
                 newBufferMessage.bufferLength(i + BufferRotationDescriptor.BUFFER_COUNT,
-                        LogBufferDescriptor.STATE_BUFFER_LENGTH);
+                                              LogBufferDescriptor.STATE_BUFFER_LENGTH);
             }
         );
 

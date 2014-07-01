@@ -35,27 +35,27 @@ public class MappedBufferManagementTest
     private static final long SESSION_ID = 100;
     private static final long CHANNEL_ID = 100;
     private static final File DATA_DIR = new File(IoUtil.tmpDirName(), "dataDirName");
-    private MappedBufferManagement strategy;
+    private MappedBufferManagement bufferManagement;
     private UdpDestination destination = UdpDestination.parse(DESTINATION_URI);
 
     @Before
     public void createDataDir()
     {
         IoUtil.ensureDirectoryExists(DATA_DIR, "data");
-        strategy = new MappedBufferManagement(DATA_DIR.getAbsolutePath());
+        bufferManagement = new MappedBufferManagement(DATA_DIR.getAbsolutePath());
     }
 
     @After
     public void cleanupFiles() throws IOException
     {
-        strategy.close();
+        bufferManagement.close();
         IoUtil.delete(DATA_DIR, true);
     }
 
     @Test
     public void mappedFilesAreCorrectSizeAndZeroed() throws Exception
     {
-        final BufferRotator rotator = strategy.addPublication(destination, SESSION_ID, CHANNEL_ID);
+        final BufferRotator rotator = bufferManagement.addPublication(destination, SESSION_ID, CHANNEL_ID);
 
         rotator.buffers().forEach(
             (logBuffer) ->
@@ -78,26 +78,26 @@ public class MappedBufferManagementTest
     @Test(expected = IllegalArgumentException.class)
     public void shouldExceptionWhenRemovingUnknownPublisherChannel() throws Exception
     {
-        strategy.removePublication(destination, SESSION_ID, CHANNEL_ID);
+        bufferManagement.removePublication(destination, SESSION_ID, CHANNEL_ID);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldExceptionWhenRemovingUnknownSubscriberChannel() throws Exception
     {
-        strategy.removeSubscriberChannel(destination, SESSION_ID, CHANNEL_ID);
+        bufferManagement.removeSubscription(destination, SESSION_ID, CHANNEL_ID);
     }
 
     @Test
     public void shouldBeAbleToAddAndRemovePublisherChannel() throws Exception
     {
-        strategy.addPublication(destination, SESSION_ID, CHANNEL_ID);
-        strategy.removePublication(destination, SESSION_ID, CHANNEL_ID);
+        bufferManagement.addPublication(destination, SESSION_ID, CHANNEL_ID);
+        bufferManagement.removePublication(destination, SESSION_ID, CHANNEL_ID);
     }
 
     @Test
     public void shouldBeAbleToAddAndRemoveSubscriberChannel() throws Exception
     {
-        strategy.addSubscriberChannel(destination, SESSION_ID, CHANNEL_ID);
-        strategy.removeSubscriberChannel(destination, SESSION_ID, CHANNEL_ID);
+        bufferManagement.addSubscription(destination, SESSION_ID, CHANNEL_ID);
+        bufferManagement.removeSubscription(destination, SESSION_ID, CHANNEL_ID);
     }
 }

@@ -28,6 +28,9 @@ import java.io.File;
  */
 public class FileMappingConvention
 {
+    public static final String PUBLICATIONS = "publications";
+    public static final String SUBSCRIPTIONS = "subscriptions";
+
     public enum Type
     {
         LOG,
@@ -36,14 +39,13 @@ public class FileMappingConvention
 
     private final File subscriptionsDir;
     private final File publicationsDir;
-    private final File dataDir;
 
     public FileMappingConvention(final String dataDirName)
     {
-        dataDir = new File(dataDirName);
+        final File dataDir = new File(dataDirName);
         IoUtil.ensureDirectoryExists(dataDir, "data directory");
-        publicationsDir = new File(dataDir, "publications");
-        subscriptionsDir = new File(dataDir, "subscriptions");
+        publicationsDir = new File(dataDir, PUBLICATIONS);
+        subscriptionsDir = new File(dataDir, SUBSCRIPTIONS);
     }
 
     /**
@@ -64,11 +66,6 @@ public class FileMappingConvention
     public File subscriptionsDir()
     {
         return subscriptionsDir;
-    }
-
-    public File dataDir()
-    {
-        return dataDir;
     }
 
     /**

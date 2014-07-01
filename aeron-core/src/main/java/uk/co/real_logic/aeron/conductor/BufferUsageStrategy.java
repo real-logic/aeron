@@ -15,27 +15,18 @@
  */
 package uk.co.real_logic.aeron.conductor;
 
-import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import java.io.IOException;
 
 /**
  * Interface for encapsulating the strategy of mapping ByteBuffers for Session, Channel, and Term.
- *
- * This corresponds to BufferManagementStrategy, but doesn't deal with creating the files
- * which need to be mapped.
  */
 public interface BufferUsageStrategy
 {
+    AtomicBuffer newBuffer(final String location, final int offset, final int length) throws IOException;
 
-    AtomicBuffer newBuffer(final String location,
-                           final int offset,
-                           final int length) throws IOException;
-
-    int releaseBuffers(final String location,
-                       final int offset,
-                       final int length);
+    int releaseBuffers(final String location, final int offset, final int length);
 
     void close();
 }

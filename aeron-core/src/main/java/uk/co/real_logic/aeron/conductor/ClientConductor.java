@@ -335,11 +335,10 @@ public class ClientConductor extends Agent
             final long channelId = publication.channelId();
             final long sessionId = publication.sessionId();
 
-            // TODO: reference count the instance
             activeCorrelationId = mediaDriverProxy.removePublication(destination, channelId, sessionId);
 
             // TODO: wait for response from media driver
-
+            
             // TODO:
             // bufferUsage.releasePublisherBuffers(destination, channelId, sessionId);
         }

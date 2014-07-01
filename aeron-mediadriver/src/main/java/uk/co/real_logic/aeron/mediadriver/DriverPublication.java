@@ -261,7 +261,7 @@ public class DriverPublication
             return currentIndex;
         }
 
-        // this needs to account for rotation
+        // TODO: this needs to account for rotation
         return -1;
     }
 

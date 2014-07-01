@@ -158,23 +158,6 @@ public class AeronTest
 
     @Ignore
     @Test
-    public void creatingChannelsShouldNotifyMediaDriver() throws Exception
-    {
-        newPublication(aeron);
-        aeron.conductor().doWork();
-
-        assertChannelMessage(toDriverBuffer, ADD_PUBLICATION);
-    }
-
-    @Ignore
-    @Test(expected = MediaDriverTimeoutException.class)
-    public void cannotUsePublisherUntilBuffersMapped() throws Exception
-    {
-        newPublication(aeron);
-    }
-
-    @Ignore
-    @Test
     public void canOfferAMessageOnceBuffersHaveBeenMapped() throws Exception
     {
         final Publication publication = newPublication(aeron);

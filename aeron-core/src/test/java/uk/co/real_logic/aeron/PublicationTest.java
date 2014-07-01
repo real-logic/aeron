@@ -1,6 +1,7 @@
 package uk.co.real_logic.aeron;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -57,6 +58,42 @@ public class PublicationTest
     public void canOfferAMessageUponConstruction()
     {
         assertTrue(publication.offer(atomicSendBuffer));
+    }
+
+    @Ignore
+    @Test
+    public void shouldRotateBuffersOnceFull() throws Exception
+    {
+        // TODO: port test
+        /*final RingBuffer toMediaDriver = toDriverBuffer;
+        final Publication publication = addPublication();
+        conductor.doWork();
+
+        sendNewBufferNotification(NEW_PUBLICATION_BUFFER_EVENT, SESSION_ID_1, TERM_ID_1);
+
+        final int capacity = logBuffersSession1[0].capacity();
+        final int msgCount = (4 * capacity) / SEND_BUFFER_CAPACITY;
+
+        conductor.doWork();
+        skip(toMediaDriver, 1);
+        boolean previousAppend = true;
+        int bufferId = 0;
+        for (int i = 0; i < msgCount; i++)
+        {
+            final boolean appended = publication.offer(atomicSendBuffer);
+            conductor.doWork();
+
+            assertTrue(previousAppend || appended);
+            previousAppend = appended;
+
+            if (!appended)
+            {
+                assertCleanTermRequested(toMediaDriver);
+                cleanBuffer(logBuffersSession1[bufferId]);
+                cleanBuffer(stateBuffersSession1[bufferId]);
+                bufferId = rotateId(bufferId);
+            }
+        }*/
     }
 
 }

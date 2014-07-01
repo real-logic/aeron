@@ -140,9 +140,7 @@ public class RecordDescriptor
     {
         if (msgTypeId < 1)
         {
-            final String msg = String.format("Message type id must be greater than zero, msgTypeId=%d",
-                                             msgTypeId);
-
+            final String msg = String.format("Message type id must be greater than zero, msgTypeId=%d", msgTypeId);
             throw new IllegalArgumentException(msg);
         }
     }

@@ -201,17 +201,6 @@ public class ClientConductorTest
 
     @Ignore
     @Test
-    public void canOfferAMessageOnceBuffersHaveBeenMapped() throws Exception
-    {
-        final Publication publication = newPublication(aeron);
-        aeron.conductor().doWork();
-        sendNewBufferNotification(NEW_PUBLICATION_BUFFER_EVENT, SESSION_ID_1, TERM_ID_1);
-        aeron.conductor().doWork();
-        assertTrue(publication.offer(atomicSendBuffer));
-    }
-
-    @Ignore
-    @Test
     public void shouldRotateBuffersOnceFull() throws Exception
     {
         final RingBuffer toMediaDriver = toDriverBuffer;

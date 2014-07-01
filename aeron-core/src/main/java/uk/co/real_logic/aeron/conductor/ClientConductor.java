@@ -44,7 +44,7 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
  * Client conductor takes responses and notifications from media driver and acts on them. As well as passes commands
  * to the media driver.
  */
-public final class ClientConductor extends Agent
+public class ClientConductor extends Agent
 {
     private static final int MAX_FRAME_LENGTH = 1024;
 

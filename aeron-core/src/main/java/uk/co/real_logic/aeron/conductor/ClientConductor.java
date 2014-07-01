@@ -338,7 +338,7 @@ public class ClientConductor extends Agent
             activeCorrelationId = mediaDriverProxy.removePublication(destination, channelId, sessionId);
 
             // TODO: wait for response from media driver
-            
+
             // TODO:
             // bufferUsage.releasePublisherBuffers(destination, channelId, sessionId);
         }

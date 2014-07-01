@@ -107,25 +107,6 @@ public class Publication extends ChannelEndpoint implements PositionIndicator
         return status == SUCCESS;
     }
 
-    public void send(final AtomicBuffer buffer) throws BufferExhaustedException
-    {
-        send(buffer, 0, buffer.capacity());
-    }
-
-    public void send(final AtomicBuffer buffer, final int offset, final int length)
-        throws BufferExhaustedException
-    {
-        if (!offer(buffer, offset, length))
-        {
-            bufferExhausted();
-        }
-    }
-
-    private void bufferExhausted() throws BufferExhaustedException
-    {
-        throw new BufferExhaustedException("Unable to send: no space in buffer");
-    }
-
     public void release() throws Exception
     {
         conductor.releasePublication(this);

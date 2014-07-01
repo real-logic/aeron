@@ -46,8 +46,7 @@ public class Publication extends ChannelEndpoint implements PositionIndicator
 
     private volatile long dirtyTermId = NO_DIRTY_TERM;
 
-    // Guarded by conductor
-    private int referenceCount = 1;
+    private volatile int referenceCount = 1;
 
     private int currentBufferIndex = 0;
 
@@ -109,27 +108,18 @@ public class Publication extends ChannelEndpoint implements PositionIndicator
 
     public void release()
     {
-        if (decrementReferenceCount() == 0)
+        if (--referenceCount == 0)
         {
             conductor.releasePublication(this);
         }
     }
 
     /**
-     * Accessed by the client conductor, whose lock protects
-     * referenceCount from concurrent modification.
+     * Accessed by the client conductor.
      */
     public void incrementReferenceCount()
     {
         referenceCount++;
-    }
-
-    private int decrementReferenceCount()
-    {
-        synchronized (conductor)
-        {
-            return --referenceCount;
-        }
     }
 
     private void requestTerm(final long termId)

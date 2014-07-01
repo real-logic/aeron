@@ -98,7 +98,7 @@ public class ClientConductor extends Agent
                            final long awaitTimeout)
     {
         super(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS));
+                                    AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS));
 
         this.counterValuesBuffer = counterValuesBuffer;
 
@@ -248,9 +248,9 @@ public class ClientConductor extends Agent
                             break;
                     }
                 }
-                catch (IOException e)
+                catch (final IOException ex)
                 {
-                    e.printStackTrace();
+                    ex.printStackTrace();
                 }
             }
         );

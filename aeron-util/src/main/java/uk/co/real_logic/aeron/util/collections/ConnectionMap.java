@@ -21,82 +21,82 @@ import java.util.Map;
 import static uk.co.real_logic.aeron.util.collections.CollectionUtil.getOrDefault;
 
 /**
- * Map for storing information about channel endpoints. These are keyed
+ * Map for storing information about Aeron connections. These are keyed
  * by a triple of destination/session/channel.
  */
-public class EndPointMap<D, E>
+public class ConnectionMap<D, C>
 {
-    private final Map<D, Long2ObjectHashMap<Long2ObjectHashMap<E>>> endPointByDestinationMap = new HashMap<>();
+    private final Map<D, Long2ObjectHashMap<Long2ObjectHashMap<C>>> destinationMap = new HashMap<>();
 
-    public E get(final D destination, final long sessionId, final long channelId)
+    public C get(final D destination, final long sessionId, final long channelId)
     {
-        final Long2ObjectHashMap<Long2ObjectHashMap<E>> sessionMap = endPointByDestinationMap.get(destination);
+        final Long2ObjectHashMap<Long2ObjectHashMap<C>> sessionMap = destinationMap.get(destination);
         if (sessionMap == null)
         {
             return null;
         }
 
-        final Long2ObjectHashMap<E> endPointMap = sessionMap.get(sessionId);
-        if (endPointMap == null)
+        final Long2ObjectHashMap<C> channelMap = sessionMap.get(sessionId);
+        if (channelMap == null)
         {
             return null;
         }
 
-        return endPointMap.get(channelId);
+        return channelMap.get(channelId);
     }
 
-    public E put(final D destination, final long sessionId, final long channelId, final E value)
+    public C put(final D destination, final long sessionId, final long channelId, final C value)
     {
-        final Long2ObjectHashMap<Long2ObjectHashMap<E>> endPointMap
-            = getOrDefault(endPointByDestinationMap, destination, ignore -> new Long2ObjectHashMap<>());
-        final Long2ObjectHashMap<E> channelMap = endPointMap.getOrDefault(sessionId, Long2ObjectHashMap::new);
+        final Long2ObjectHashMap<Long2ObjectHashMap<C>> endPointMap
+            = getOrDefault(destinationMap, destination, ignore -> new Long2ObjectHashMap<>());
+        final Long2ObjectHashMap<C> channelMap = endPointMap.getOrDefault(sessionId, Long2ObjectHashMap::new);
         return channelMap.put(channelId, value);
     }
 
-    public E remove(final D destination, final long sessionId, final long channelId)
+    public C remove(final D destination, final long sessionId, final long channelId)
     {
-        final Long2ObjectHashMap<Long2ObjectHashMap<E>> sessionMap = endPointByDestinationMap.get(destination);
+        final Long2ObjectHashMap<Long2ObjectHashMap<C>> sessionMap = destinationMap.get(destination);
         if (sessionMap == null)
         {
             return null;
         }
 
-        final Long2ObjectHashMap<E> endPointMap = sessionMap.get(sessionId);
-        if (endPointMap == null)
+        final Long2ObjectHashMap<C> channelMap = sessionMap.get(sessionId);
+        if (channelMap == null)
         {
             return null;
         }
 
-        E value = endPointMap.remove(channelId);
+        C value = channelMap.remove(channelId);
 
-        if (endPointMap.isEmpty())
+        if (channelMap.isEmpty())
         {
             sessionMap.remove(sessionId);
             if (sessionMap.isEmpty())
             {
-                endPointByDestinationMap.remove(destination);
+                destinationMap.remove(destination);
             }
         }
 
         return value;
     }
 
-    public interface EndPointHandler<D, T>
+    public interface ConnectionHandler<D, T>
     {
         void accept(final D destination, final Long sessionId, final Long channelId, final T value);
     }
 
     @SuppressWarnings("unchecked")
-    public void forEach(final EndPointHandler endPoint)
+    public void forEach(final ConnectionHandler connection)
     {
-        endPointByDestinationMap.forEach(
+        destinationMap.forEach(
             (destination, sessionMap) ->
             {
                 sessionMap.forEach(
                     (sessionId, channelMap) ->
                     {
                         channelMap.forEach(
-                            (channelId, value) -> endPoint.accept(destination, sessionId, channelId, value));
+                            (channelId, value) -> connection.accept(destination, sessionId, channelId, value));
                     });
             });
     }

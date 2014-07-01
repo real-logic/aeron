@@ -378,7 +378,7 @@ public class MediaConductor extends Agent
         {
             final UdpDestination rcvDestination = UdpDestination.parse(destination);
             final BufferRotator bufferRotator =
-                bufferManagement.addSubscriberChannel(rcvDestination, sessionId, channelId);
+                bufferManagement.addSubscription(rcvDestination, sessionId, channelId);
 
             clientProxy.onNewBuffers(NEW_SUBSCRIPTION_BUFFER_EVENT, sessionId, channelId, termId,
                     destination, bufferRotator, 0, 0);
@@ -407,7 +407,7 @@ public class MediaConductor extends Agent
         try
         {
             final UdpDestination rcvDestination = UdpDestination.parse(destination);
-            bufferManagement.removeSubscriberChannel(rcvDestination, sessionId, channelId);
+            bufferManagement.removeSubscription(rcvDestination, sessionId, channelId);
         }
         catch (final Exception ex)
         {

@@ -20,7 +20,7 @@ import uk.co.real_logic.aeron.util.Agent;
 import uk.co.real_logic.aeron.util.AgentIdleStrategy;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
-import uk.co.real_logic.aeron.util.collections.EndPointMap;
+import uk.co.real_logic.aeron.util.collections.ConnectionMap;
 import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -64,7 +64,7 @@ public class ClientConductor extends Agent
     private final AtomicArray<Subscription> subscriptions;
 
     // Guarded by this
-    private final EndPointMap<String, Publication> publicationMap = new EndPointMap<>();
+    private final ConnectionMap<String, Publication> publicationMap = new ConnectionMap<>();
 
     private final SubscriptionMap subscriptionMap = new SubscriptionMap();
 

@@ -21,6 +21,7 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.status.PositionIndicator;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.CLEAN_WINDOW;
@@ -31,7 +32,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.Appen
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.TRIPPED;
 
 /**
- * Aeron Publication
+ * Publication end of a channel for publishing messages to subscribers.
  */
 public class Publication extends ChannelEndpoint implements PositionIndicator
 {
@@ -46,8 +47,7 @@ public class Publication extends ChannelEndpoint implements PositionIndicator
 
     private volatile long dirtyTermId = NO_DIRTY_TERM;
 
-    private volatile int referenceCount = 1;
-
+    private int refCount = 0;
     private int currentBufferIndex = 0;
 
     public Publication(final ClientConductor conductor,
@@ -68,7 +68,7 @@ public class Publication extends ChannelEndpoint implements PositionIndicator
     }
 
     /**
-     * Non blocking message send
+     * Non blocking publish of a message.
      *
      * @param buffer containing message.
      * @return true if buffer is sent otherwise false.
@@ -79,12 +79,12 @@ public class Publication extends ChannelEndpoint implements PositionIndicator
     }
 
     /**
-     * Non-blocking send of a partial buffer.
+     * Non-blocking publish of a partial buffer containing a message.
      *
      * @param buffer containing message.
      * @param offset offset in the buffer at which the encoded message begins.
      * @param length in bytes of the encoded message.
-     * @return true if he message can be sent otherwise false.
+     * @return true if the message can be published otherwise false.
      */
     public boolean offer(final AtomicBuffer buffer, final int offset, final int length)
     {
@@ -106,20 +106,30 @@ public class Publication extends ChannelEndpoint implements PositionIndicator
         return status == SUCCESS;
     }
 
+    /**
+     * Release this reference to the {@link Publication}. If all references are released then the associated
+     * buffers can be released.
+     */
     public void release()
     {
-        if (--referenceCount == 0)
+        synchronized (conductor)
         {
-            conductor.releasePublication(this);
+            if (--refCount == 0)
+            {
+                conductor.releasePublication(this);
+            }
         }
     }
 
     /**
      * Accessed by the client conductor.
      */
-    public void incrementReferenceCount()
+    public void incRef()
     {
-        referenceCount++;
+        synchronized (conductor)
+        {
+            ++refCount;
+        }
     }
 
     private void requestTerm(final long termId)
@@ -139,6 +149,7 @@ public class Publication extends ChannelEndpoint implements PositionIndicator
 
     public long position()
     {
+        // TODO: calculate position
         logAppenders[currentBufferIndex].tailVolatile();
 
         return 0;

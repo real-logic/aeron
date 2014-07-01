@@ -295,9 +295,7 @@ public class ClientConductor extends Agent
         correlationSignal.signal();
     }
 
-    public synchronized Publication addPublication(final String destination,
-                                                   final long channelId,
-                                                   final long sessionId)
+    public synchronized Publication addPublication(final String destination, final long channelId, final long sessionId)
     {
         Publication publication = publicationMap.get(destination, sessionId, channelId);
 
@@ -318,10 +316,8 @@ public class ClientConductor extends Agent
             addedPublication = null;
             activeCorrelationId = NO_CORRELATION_ID;
         }
-        else
-        {
-            publication.incrementReferenceCount();
-        }
+
+        publication.incRef();
 
         return publication;
     }

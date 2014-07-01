@@ -329,19 +329,16 @@ public class ClientConductor extends Agent
 
     public synchronized void releasePublication(final Publication publication)
     {
-        if (publication.decrementReferenceCount() == 0)
-        {
-            final String destination = publication.destination();
-            final long channelId = publication.channelId();
-            final long sessionId = publication.sessionId();
+        final String destination = publication.destination();
+        final long channelId = publication.channelId();
+        final long sessionId = publication.sessionId();
 
-            activeCorrelationId = mediaDriverProxy.removePublication(destination, channelId, sessionId);
+        activeCorrelationId = mediaDriverProxy.removePublication(destination, channelId, sessionId);
 
-            // TODO: wait for response from media driver
+        // TODO: wait for response from media driver
 
-            // TODO:
-            // bufferUsage.releasePublisherBuffers(destination, channelId, sessionId);
-        }
+        // TODO:
+        // bufferUsage.releasePublisherBuffers(destination, channelId, sessionId);
     }
 
     private void checkMediaDriverTimeout(final long startTime)

@@ -223,7 +223,7 @@ public class ClientConductor extends Agent
                             final long sessionId = newBufferMessage.sessionId();
                             final long channelId = newBufferMessage.channelId();
                             final long termId = newBufferMessage.termId();
-                            final int positionIndicatorId = newBufferMessage.positionIndicatorId();
+                            final int positionIndicatorId = newBufferMessage.positionCounterId();
 
                             if (msgTypeId == NEW_PUBLICATION_BUFFER_EVENT)
                             {

@@ -111,8 +111,8 @@ public class NewBufferMessageFlyweight extends Flyweight
     private static final int SESSION_ID_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
     private static final int CHANNEL_ID_FIELD_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
     private static final int TERM_ID_FIELD_OFFSET = CHANNEL_ID_FIELD_OFFSET + SIZE_OF_INT;
-    private static final int POSITION_INDICATOR_ID_OFFSET = TERM_ID_FIELD_OFFSET + SIZE_OF_INT;
-    private static final int FILE_OFFSETS_FIELDS_OFFSET = POSITION_INDICATOR_ID_OFFSET + SIZE_OF_INT;
+    private static final int POSITION_COUNTER_ID_OFFSET = TERM_ID_FIELD_OFFSET + SIZE_OF_INT;
+    private static final int FILE_OFFSETS_FIELDS_OFFSET = POSITION_COUNTER_ID_OFFSET + SIZE_OF_INT;
     private static final int BUFFER_LENGTHS_FIELDS_OFFSET = FILE_OFFSETS_FIELDS_OFFSET + (NUMBER_OF_FILES * SIZE_OF_INT);
     private static final int LOCATION_POINTER_FIELDS_OFFSET = BUFFER_LENGTHS_FIELDS_OFFSET + (NUMBER_OF_FILES * SIZE_OF_INT);
     private static final int LOCATION_0_FIELD_OFFSET = LOCATION_POINTER_FIELDS_OFFSET + (8 * SIZE_OF_INT);
@@ -235,24 +235,24 @@ public class NewBufferMessageFlyweight extends Flyweight
     }
 
     /**
-     * return position indicator id field
+     * return position counter id field
      *
-     * @return position indicator id field
+     * @return position counter id field
      */
-    public int positionIndicatorId()
+    public int positionCounterId()
     {
-        return atomicBuffer().getInt(offset() + POSITION_INDICATOR_ID_OFFSET, LITTLE_ENDIAN);
+        return atomicBuffer().getInt(offset() + POSITION_COUNTER_ID_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
-     * set position indicator id field
+     * set position counter id field
      *
-     * @param positionIndicatorId field value
+     * @param positionCounterId field value
      * @return flyweight
      */
-    public NewBufferMessageFlyweight positionIndicatorId(final int positionIndicatorId)
+    public NewBufferMessageFlyweight positionCounterId(final int positionCounterId)
     {
-        atomicBuffer().putInt(offset() + POSITION_INDICATOR_ID_OFFSET, positionIndicatorId, LITTLE_ENDIAN);
+        atomicBuffer().putInt(offset() + POSITION_COUNTER_ID_OFFSET, positionCounterId, LITTLE_ENDIAN);
         return this;
     }
 

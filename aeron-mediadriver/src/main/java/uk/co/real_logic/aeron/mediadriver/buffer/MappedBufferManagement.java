@@ -24,7 +24,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 
-import static java.lang.String.format;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.COMMAND_BUFFER_SZ;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.channelLocation;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
@@ -48,7 +47,7 @@ class MappedBufferManagement implements BufferManagement
 
     MappedBufferManagement(final String dataDir)
     {
-        FileMappingConvention fileConvention = new FileMappingConvention(dataDir);
+        final FileMappingConvention fileConvention = new FileMappingConvention(dataDir);
         publicationsDir = fileConvention.publicationsDir();
         subscriptionsDir = fileConvention.subscriptionsDir();
 
@@ -139,8 +138,8 @@ class MappedBufferManagement implements BufferManagement
         final MappedBufferRotator bufferRotator = termMap.remove(destination, sessionId, channelId);
         if (bufferRotator == null)
         {
-            final String msg = format("No buffers for %s, sessionId = %d, channelId = %d",
-                                      destination, sessionId, channelId);
+            final String msg = String.format("No buffers for %s, sessionId = %d, channelId = %d",
+                                             destination, sessionId, channelId);
             throw new IllegalArgumentException(msg);
         }
 
@@ -151,9 +150,9 @@ class MappedBufferManagement implements BufferManagement
                                                final long sessionId,
                                                final long channelId,
                                                final File rootDir,
-                                               final ConnectionMap<UdpDestination, MappedBufferRotator> termMap)
+                                               final ConnectionMap<UdpDestination, MappedBufferRotator> rotatorMap)
     {
-        MappedBufferRotator bufferRotator = termMap.get(destination, sessionId, channelId);
+        MappedBufferRotator bufferRotator = rotatorMap.get(destination, sessionId, channelId);
         if (bufferRotator == null)
         {
             final File dir = channelLocation(rootDir, sessionId, channelId, true, destination.clientAwareUri());
@@ -162,7 +161,7 @@ class MappedBufferManagement implements BufferManagement
                                                     LOG_BUFFER_SIZE,
                                                     stateTemplate,
                                                     STATE_BUFFER_LENGTH);
-            termMap.put(destination, sessionId, channelId, bufferRotator);
+            rotatorMap.put(destination, sessionId, channelId, bufferRotator);
         }
 
         return bufferRotator;

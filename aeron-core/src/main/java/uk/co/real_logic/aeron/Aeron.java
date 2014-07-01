@@ -45,6 +45,9 @@ public final class Aeron implements AutoCloseable
     private static final int DEFAULT_COUNTERS_LABELS_BUFFER_SIZE = 1024;
     private static final int DEFAULT_COUNTERS_VALUES_BUFFER_SIZE = 1024;
 
+    // TODO: make configurable
+    public static final long AWAIT_TIMEOUT = 1000_000;
+
     private final ManyToOneRingBuffer clientConductorCommandBuffer =
         new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocateDirect(COMMAND_BUFFER_SIZE)));
 
@@ -78,7 +81,8 @@ public final class Aeron implements AutoCloseable
             ctx.bufferUsageStrategy,
             ctx.counterValuesBuffer(),
             mediaDriverProxy,
-            correlationSignal);
+            correlationSignal,
+            AWAIT_TIMEOUT);
 
         this.savedCtx = ctx;
     }

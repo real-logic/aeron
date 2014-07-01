@@ -77,6 +77,7 @@ public class ClientConductorTest
     public static final int BROADCAST_BUFFER_SZ = (16 * 1024) + BroadcastBufferDescriptor.TRAILER_LENGTH;
     public static final int LOG_BUFFER_SIZE = LogBufferDescriptor.LOG_MIN_SIZE;
     private static final long CORRELATION_ID = 2000;
+    public static final int AWAIT_TIMEOUT = 100;
 
     private final InvalidDestinationHandler invalidDestination = mock(InvalidDestinationHandler.class);
 
@@ -154,7 +155,7 @@ public class ClientConductorTest
             sendNewBufferNotification(NEW_PUBLICATION_BUFFER_EVENT, SESSION_ID_1, TERM_ID_1);
             conductor.doWork();
             return null;
-        }).when(signal).await(ClientConductor.AWAIT_TIMEOUT);
+        }).when(signal).await(anyLong());
 
         conductor = new ClientConductor(
                 mock(RingBuffer.class),
@@ -165,7 +166,8 @@ public class ClientConductorTest
                 mockBufferUsage,
                 counterValuesBuffer,
                 mediaDriverProxy,
-                signal);
+                signal,
+                AWAIT_TIMEOUT);
 
         newBufferMessage.wrap(atomicSendBuffer, 0);
         errorHeader.wrap(atomicSendBuffer, 0);
@@ -185,10 +187,15 @@ public class ClientConductorTest
         verify(mediaDriverProxy).addPublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
     }
 
-    @Ignore
     @Test(expected = MediaDriverTimeoutException.class)
-    public void cannotUsePublisherUntilBuffersMapped() throws Exception
+    public void cannotCreatePublisherUntilBuffersMapped() throws Exception
     {
+        doAnswer(invocation ->
+        {
+            Thread.sleep(AWAIT_TIMEOUT + 1);
+            return null;
+        }).when(signal).await(anyLong());
+
         newPublication(aeron);
     }
 

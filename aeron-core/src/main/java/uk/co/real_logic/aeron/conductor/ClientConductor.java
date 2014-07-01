@@ -53,8 +53,6 @@ public final class ClientConductor extends Agent
     public static final long AGENT_IDLE_MIN_PARK_NS = TimeUnit.NANOSECONDS.toNanos(10);
     public static final long AGENT_IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(100);
 
-    // TODO: make configurable
-    public static final long AWAIT_TIMEOUT = 1000_000;
     private static final long NO_CORRELATION_ID = -1;
 
     private final RingBuffer commandBuffer;
@@ -69,6 +67,7 @@ public final class ClientConductor extends Agent
     private final SubscriptionMap subscriptionMap = new SubscriptionMap();
 
     private final ConductorErrorHandler errorHandler;
+    private final long awaitTimeout;
 
     private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
     private final NewBufferMessageFlyweight newBufferMessage = new NewBufferMessageFlyweight();
@@ -90,7 +89,8 @@ public final class ClientConductor extends Agent
                            final BufferUsageStrategy bufferUsageStrategy,
                            final AtomicBuffer counterValuesBuffer,
                            final MediaDriverProxy mediaDriverProxy,
-                           final Signal correlationSignal)
+                           final Signal correlationSignal,
+                           final long awaitTimeout)
     {
         super(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
                                     AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS));
@@ -105,6 +105,7 @@ public final class ClientConductor extends Agent
         this.bufferUsage = bufferUsageStrategy;
         this.subscriptions = subscriptions;
         this.errorHandler = errorHandler;
+        this.awaitTimeout = awaitTimeout;
     }
 
     public boolean doWork()
@@ -326,11 +327,11 @@ public final class ClientConductor extends Agent
         final long startTime = System.currentTimeMillis();
         while (addedPublication == null)
         {
-            correlationSignal.await(AWAIT_TIMEOUT);
+            correlationSignal.await(awaitTimeout);
 
-            if (System.currentTimeMillis() - startTime > AWAIT_TIMEOUT)
+            if (System.currentTimeMillis() - startTime > awaitTimeout)
             {
-                String msg = String.format("No response from media driver within %d ms", AWAIT_TIMEOUT);
+                String msg = String.format("No response from media driver within %d ms", awaitTimeout);
                 throw new MediaDriverTimeoutException(msg);
             }
         }

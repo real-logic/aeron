@@ -54,7 +54,7 @@ public class PublicationTest
     }
 
     @Test
-    public void canOfferAMessageUponConstruction() throws Exception
+    public void canOfferAMessageUponConstruction()
     {
         assertTrue(publication.offer(atomicSendBuffer));
     }

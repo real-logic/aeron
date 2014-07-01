@@ -61,10 +61,8 @@ public class ClientConductorTest
     private static final int COUNTER_BUFFER_SZ = 1024;
 
     private static final String DESTINATION = "udp://localhost:40124";
-    private static final String INVALID_DESTINATION = "udp://lo124";
     private static final long CHANNEL_ID_1 = 2L;
     private static final long CHANNEL_ID_2 = 4L;
-    private static final long[] CHANNEL_IDS = {CHANNEL_ID_1, CHANNEL_ID_2};
     private static final long SESSION_ID_1 = 13L;
     private static final long SESSION_ID_2 = 15L;
     public static final long TERM_ID_1 = 1L;

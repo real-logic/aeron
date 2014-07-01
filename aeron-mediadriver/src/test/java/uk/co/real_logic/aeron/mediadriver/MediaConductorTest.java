@@ -32,6 +32,7 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
 import uk.co.real_logic.aeron.util.event.EventLogger;
+import uk.co.real_logic.aeron.util.status.StatusBufferManager;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -85,6 +86,8 @@ public class MediaConductorTest
 
     private final AtomicArray<DriverPublication> publications = new AtomicArray<>();
 
+    private StatusBufferManager statusBufferManager;
+
     private MediaConductor mediaConductor;
     private Receiver receiver;
 
@@ -94,6 +97,8 @@ public class MediaConductorTest
         when(mockBufferManagement.addPublication(anyObject(), anyLong(), anyLong()))
                 .thenReturn(BufferAndFrameUtils.createTestRotator(65536 + RingBufferDescriptor.TRAILER_LENGTH,
                         LogBufferDescriptor.STATE_BUFFER_LENGTH));
+
+        statusBufferManager = mock(StatusBufferManager.class);
 
         final MediaDriver.MediaDriverContext ctx = new MediaDriver.MediaDriverContext()
             .conductorCommandBuffer(MediaDriver.COMMAND_BUFFER_SZ)
@@ -108,7 +113,8 @@ public class MediaConductorTest
             .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .subscribedSessions(new AtomicArray<>())
             .publications(publications)
-            .bufferManagement(mockBufferManagement);
+            .bufferManagement(mockBufferManagement)
+            .statusBufferManager(statusBufferManager);
 
         ctx.fromClientCommands(fromClientCommands);
         ctx.clientProxy(mockClientProxy);
@@ -144,7 +150,7 @@ public class MediaConductorTest
         assertThat(publications.get(0).channelId(), is(2L));
 
         verify(mockClientProxy).onNewBuffers(eq(ControlProtocolEvents.NEW_PUBLICATION_BUFFER_EVENT),
-                eq(1L), eq(2L), anyLong(), eq(DESTINATION_URI + 4000), any(), anyLong());
+                eq(1L), eq(2L), anyLong(), eq(DESTINATION_URI + 4000), any(), anyLong(), anyInt());
 
     }
 

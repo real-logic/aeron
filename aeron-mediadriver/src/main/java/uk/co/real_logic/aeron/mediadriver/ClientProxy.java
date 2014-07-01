@@ -79,13 +79,15 @@ public class ClientProxy
                              final long termId,
                              final String destination,
                              final BufferRotator bufferRotator,
-                             final long correlationId)
+                             final long correlationId,
+                             final int positionCounterId)
     {
         newBufferMessage.wrap(tmpBuffer, 0);
         newBufferMessage.sessionId(sessionId)
                         .channelId(channelId)
                         .correlationId(correlationId)
-                        .termId(termId);
+                        .termId(termId)
+                        .positionCounterId(positionCounterId);
         bufferRotator.appendBufferLocationsTo(newBufferMessage);
         newBufferMessage.destination(destination);
 

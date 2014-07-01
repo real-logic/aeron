@@ -24,6 +24,7 @@ import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
+import uk.co.real_logic.aeron.util.status.StatusBufferManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -83,6 +84,11 @@ public class MediaDriver implements AutoCloseable
     public static final String MULTICAST_DEFAULT_INTERFACE_PROP_NAME = "aeron.multicast.default.interface";
 
     /**
+     * Property name for size of the memory mapped buffers for the counters file
+     */
+    public static final String COUNTER_BUFFERS_SZ_PROP_NAME = "aeron.dir.counters.size";
+
+    /**
      * Default byte buffer size for reads
      */
     public static final int READ_BYTE_BUFFER_SZ_DEFAULT = 4096;
@@ -101,6 +107,11 @@ public class MediaDriver implements AutoCloseable
      * Default buffer size for broadcast buffers from the media driver to the clients
      */
     public static final int TO_CLIENTS_BUFFER_SZ_DEFAULT = 65536 + BroadcastBufferDescriptor.TRAILER_LENGTH;
+
+    /**
+     * Size of the memory mapped buffers for the counters file
+     */
+    public static final int COUNTERS_BUFFER_SZ_DEFAULT = 65536;
 
     /**
      * Default group size estimate for NAK delay randomization
@@ -150,6 +161,7 @@ public class MediaDriver implements AutoCloseable
     public static final int COMMAND_BUFFER_SZ = getInteger(COMMAND_BUFFER_SZ_PROP_NAME, COMMAND_BUFFER_SZ_DEFAULT);
     public static final int CONDUCTOR_BUFFER_SZ = getInteger(CONDUCTOR_BUFFER_SZ_PROP_NAME, CONDUCTOR_BUFFER_SZ_DEFAULT);
     public static final int TO_CLIENTS_BUFFER_SZ = getInteger(TO_CLIENTS_BUFFER_SZ_PROP_NAME, TO_CLIENTS_BUFFER_SZ_DEFAULT);
+    public static final int COUNTER_BUFFERS_SZ = getInteger(COUNTER_BUFFERS_SZ_PROP_NAME, COUNTERS_BUFFER_SZ_DEFAULT);
 
     /**
      * ticksPerWheel for TimerWheel in conductor thread
@@ -233,15 +245,15 @@ public class MediaDriver implements AutoCloseable
             .subscribedSessions(new AtomicArray<>())
             .publications(new AtomicArray<>())
             .conductorTimerWheel(new TimerWheel(MEDIA_CONDUCTOR_TICK_DURATION_US,
-                                                TimeUnit.MICROSECONDS,
-                                                MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
+                    TimeUnit.MICROSECONDS,
+                    MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
             .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .conductorIdleStrategy(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                                                         AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
+                    AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
             .senderIdleStrategy(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                                                      AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
+                    AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
             .receiverIdleStrategy(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                                                        AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
+                    AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
             .conclude();
 
         this.adminDirFile = new File(ctx.adminDirName());
@@ -432,6 +444,7 @@ public class MediaDriver implements AutoCloseable
 
         private MappedByteBuffer toClientsBuffer;
         private MappedByteBuffer toDriverBuffer;
+        private StatusBufferManager statusBufferManager;
 
         public MediaDriverContext()
         {
@@ -453,6 +466,23 @@ public class MediaDriver implements AutoCloseable
             mediaConductorProxy(new MediaConductorProxy(mediaCommandBuffer()));
 
             bufferManagement(newMappedBufferManager(dataDirName()));
+
+            if (statusBufferManager() == null)
+            {
+                if (counterLabelsBuffer() == null)
+                {
+                    final MappedByteBuffer buffer = mapNewFile(new File(countersDirName(), LABELS_FILE), COUNTER_BUFFERS_SZ);
+                    counterLabelsBuffer(new AtomicBuffer(buffer));
+                }
+
+                if (counterValuesBuffer() == null)
+                {
+                    final MappedByteBuffer buffer = mapNewFile(new File(countersDirName(), VALUES_FILE), COUNTER_BUFFERS_SZ);
+                    counterValuesBuffer(new AtomicBuffer(buffer));
+                }
+
+                statusBufferManager(new StatusBufferManager(counterLabelsBuffer(), counterValuesBuffer()));
+            }
 
             return this;
         }
@@ -573,6 +603,12 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
+        public MediaDriverContext statusBufferManager(final StatusBufferManager statusBufferManager)
+        {
+            this.statusBufferManager = statusBufferManager;
+            return this;
+        }
+
         public RingBuffer mediaCommandBuffer()
         {
             return mediaCommandBuffer;
@@ -661,6 +697,11 @@ public class MediaDriver implements AutoCloseable
         public RingBuffer fromClientCommands()
         {
             return fromClientCommands;
+        }
+
+        public StatusBufferManager statusBufferManager()
+        {
+            return statusBufferManager;
         }
 
         public void close() throws Exception

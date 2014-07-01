@@ -78,7 +78,7 @@ public class StatusBufferTest
         manager.registerCounter("def");
 
         int id = manager.registerCounter("abc");
-        int offset = manager.counterOffset(id);
+        int offset = StatusBufferManager.counterOffset(id);
         BufferPositionIndicator reader = new BufferPositionIndicator(counterBuffer, offset);
         BufferPositionReporter writer = new BufferPositionReporter(counterBuffer, offset);
         writer.position(0xFFFFFFFFFL);

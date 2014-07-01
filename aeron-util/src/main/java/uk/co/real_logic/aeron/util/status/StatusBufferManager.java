@@ -58,7 +58,7 @@ public class StatusBufferManager
         return idCounter++;
     }
 
-    public int counterOffset(int id)
+    public static int counterOffset(int id)
     {
         // ids start at 1
         return (id - 1) * SIZE_OF_LONG;

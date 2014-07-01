@@ -26,6 +26,7 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.event.EventCode;
 import uk.co.real_logic.aeron.util.event.EventLogger;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.util.status.StatusBufferManager;
 
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -76,6 +77,7 @@ public class MediaConductor extends Agent
 
     private final int mtuLength;
     private final TimerWheel.Timer heartbeatTimer;
+    private final StatusBufferManager statusBufferManager;
 
     public MediaConductor(final MediaDriverContext ctx)
     {
@@ -88,6 +90,7 @@ public class MediaConductor extends Agent
         this.mtuLength = ctx.mtuLength();
         this.unicastSenderFlowControl = ctx.unicastSenderFlowControl();
         this.multicastSenderFlowControl = ctx.multicastSenderFlowControl();
+        this.statusBufferManager = ctx.statusBufferManager();
 
         timerWheel = ctx.conductorTimerWheel();
         heartbeatTimer = newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheck);
@@ -284,8 +287,10 @@ public class MediaConductor extends Agent
                                           mtuLength);
 
             frameHandler.addPublication(publication);
+            final int positionCounterId = positionCounterId("publication", destination, sessionId, channelId);
+
             clientProxy.onNewBuffers(NEW_PUBLICATION_BUFFER_EVENT, sessionId, channelId,
-                    initialTermId, destination, bufferRotator, correlationId);
+                    initialTermId, destination, bufferRotator, correlationId, positionCounterId);
             publications.add(publication);
         }
         catch (final ControlProtocolException ex)
@@ -297,6 +302,17 @@ public class MediaConductor extends Agent
             ex.printStackTrace();
             throw new ControlProtocolException(ErrorCode.GENERIC_ERROR_PUBLICATION_MESSAGE, ex.getMessage());
         }
+    }
+
+    private int positionCounterId(
+            final String type,
+            final String destination,
+            final long sessionId,
+            final long channelId)
+    {
+        final String label = String.format("%s: %s %d %d", type, destination, sessionId, channelId);
+        final int id = statusBufferManager.registerCounter(label);
+        return StatusBufferManager.counterOffset(id);
     }
 
     private void onRemovePublication(final PublicationMessageFlyweight publicationMessage)
@@ -365,7 +381,7 @@ public class MediaConductor extends Agent
                 bufferManagement.addSubscriberChannel(rcvDestination, sessionId, channelId);
 
             clientProxy.onNewBuffers(NEW_SUBSCRIPTION_BUFFER_EVENT, sessionId, channelId, termId,
-                    destination, bufferRotator, 0);
+                    destination, bufferRotator, 0, 0);
 
             final NewReceiveBufferEvent event =
                 new NewReceiveBufferEvent(rcvDestination, sessionId, channelId, termId, bufferRotator);

@@ -57,6 +57,9 @@ public class CommonContext implements AutoCloseable
     public static final String TO_DRIVER_FILE = "to-driver";
     public static final String TO_CLIENTS_FILE = "to-clients";
 
+    public static final String LABELS_FILE = "labels";
+    public static final String VALUES_FILE = "values";
+
     /** Attempt to delete directories on exit */
     public static final String DIRS_DELETE_ON_EXIT_PROP_NAME = "aeron.dir.delete.on.exit";
 

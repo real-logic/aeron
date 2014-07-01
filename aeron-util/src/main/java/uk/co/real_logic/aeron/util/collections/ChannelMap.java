@@ -24,24 +24,24 @@ import static uk.co.real_logic.aeron.util.collections.CollectionUtil.getOrDefaul
  * Map for storing information about channels. These are keyed
  * by a triple of destination/session/channel.
  */
-public class ChannelMap<D, T>
+public class ChannelMap<D, C>
 {
-    private final Map<D, Long2ObjectHashMap<Long2ObjectHashMap<T>>> map;
+    private final Map<D, Long2ObjectHashMap<Long2ObjectHashMap<C>>> map;
 
     public ChannelMap()
     {
         map = new HashMap<>();
     }
 
-    public T get(final D destination, final long sessionId, final long channelId)
+    public C get(final D destination, final long sessionId, final long channelId)
     {
-        final Long2ObjectHashMap<Long2ObjectHashMap<T>> sessionMap = map.get(destination);
+        final Long2ObjectHashMap<Long2ObjectHashMap<C>> sessionMap = map.get(destination);
         if (sessionMap == null)
         {
             return null;
         }
 
-        final Long2ObjectHashMap<T> channelMap = sessionMap.get(sessionId);
+        final Long2ObjectHashMap<C> channelMap = sessionMap.get(sessionId);
         if (channelMap == null)
         {
             return null;
@@ -50,29 +50,29 @@ public class ChannelMap<D, T>
         return channelMap.get(channelId);
     }
 
-    public T put(final D destination, final long sessionId, final long channelId, final T value)
+    public C put(final D destination, final long sessionId, final long channelId, final C value)
     {
-        final Long2ObjectHashMap<Long2ObjectHashMap<T>> sessionMap
+        final Long2ObjectHashMap<Long2ObjectHashMap<C>> sessionMap
             = getOrDefault(map, destination, ignore -> new Long2ObjectHashMap<>());
-        final Long2ObjectHashMap<T> channelMap = sessionMap.getOrDefault(sessionId, Long2ObjectHashMap::new);
+        final Long2ObjectHashMap<C> channelMap = sessionMap.getOrDefault(sessionId, Long2ObjectHashMap::new);
         return channelMap.put(channelId, value);
     }
 
-    public T remove(final D destination, final long sessionId, final long channelId)
+    public C remove(final D destination, final long sessionId, final long channelId)
     {
-        final Long2ObjectHashMap<Long2ObjectHashMap<T>> sessionMap = map.get(destination);
+        final Long2ObjectHashMap<Long2ObjectHashMap<C>> sessionMap = map.get(destination);
         if (sessionMap == null)
         {
             return null;
         }
 
-        final Long2ObjectHashMap<T> channelMap = sessionMap.get(sessionId);
+        final Long2ObjectHashMap<C> channelMap = sessionMap.get(sessionId);
         if (channelMap == null)
         {
             return null;
         }
 
-        T value = channelMap.remove(channelId);
+        C value = channelMap.remove(channelId);
 
         if (channelMap.isEmpty())
         {

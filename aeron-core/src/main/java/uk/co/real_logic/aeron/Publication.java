@@ -43,9 +43,14 @@ public class Publication extends ChannelEndpoint implements PositionIndicator
     private final LogAppender[] logAppenders;
     private final PositionIndicator positionIndicator;
     private final AtomicLong currentTermId;
+
     private volatile long dirtyTermId = NO_DIRTY_TERM;
 
+    // Guarded by ClientConductor
+    private int referenceCount = 1;
+
     private int currentBufferIndex = 0;
+
     public Publication(final ClientConductor conductor,
                        final String destination,
                        final long channelId,
@@ -123,7 +128,27 @@ public class Publication extends ChannelEndpoint implements PositionIndicator
 
     public void release() throws Exception
     {
-        conductor.release(this);
+        conductor.releasePublication(this);
+    }
+
+    /**
+     * Accessed by the client conductor, whose lock protects
+     * referenceCount from concurrent modification.
+     */
+    public void incrementReferenceCount()
+    {
+        referenceCount++;
+    }
+
+    /**
+     * Accessed by the client conductor, whose lock protects
+     * referenceCount from concurrent modification.
+     *
+     * @return the reference count after being decrement
+     */
+    public int decrementReferenceCount()
+    {
+        return --referenceCount;
     }
 
     public boolean matches(final String destination, final long sessionId, final long channelId)

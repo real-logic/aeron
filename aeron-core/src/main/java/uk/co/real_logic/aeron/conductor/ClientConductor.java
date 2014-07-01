@@ -63,7 +63,9 @@ public class ClientConductor extends Agent
     private final AtomicArray<Publication> publications = new AtomicArray<>();
     private final AtomicArray<Subscription> subscriptions;
 
-    private final ChannelMap<String, Publication> sendNotifiers = new ChannelMap<>();
+    // Guarded by this
+    private final ChannelMap<String, Publication> publicationMap = new ChannelMap<>();
+
     private final SubscriptionMap subscriptionMap = new SubscriptionMap();
 
     private final ConductorErrorHandler errorHandler;
@@ -96,7 +98,7 @@ public class ClientConductor extends Agent
                            final long awaitTimeout)
     {
         super(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                                    AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS));
+                AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS));
 
         this.counterValuesBuffer = counterValuesBuffer;
 
@@ -204,31 +206,6 @@ public class ClientConductor extends Agent
         // TODO: release buffers
     }
 
-    // TODO: does this need removing?
-    private void addPublicationLegacy(final String destination, final long channelId, final long sessionId)
-    {
-        publications.forEach(
-            (channel) ->
-            {
-                if (channel.matches(destination, sessionId, channelId))
-                {
-                    sendNotifiers.put(destination, sessionId, channelId, channel);
-                }
-            }
-        );
-    }
-
-    private void removePublication(final String destination, final long channelId, final long sessionId)
-    {
-        if (sendNotifiers.remove(destination, channelId, sessionId) == null)
-        {
-            // TODO: log an error
-        }
-
-        // TODO:
-        // bufferUsage.releasePublisherBuffers(destination, channelId, sessionId);
-    }
-
     private boolean handleMessagesFromMediaDriver()
     {
         final int messagesRead = toClientBuffer.receive(
@@ -319,36 +296,53 @@ public class ClientConductor extends Agent
         correlationSignal.signal();
     }
 
-    public synchronized void release(final Publication publication)
-    {
-        final String destination = publication.destination();
-        final long channelId = publication.channelId();
-        final long sessionId = publication.sessionId();
-        activeCorrelationId = mediaDriverProxy.removePublication(destination, channelId, sessionId);
-
-        // TODO: wait for response from media driver
-        // TODO: reference count the instance
-    }
-
     public synchronized Publication addPublication(final String destination,
                                                    final long channelId,
                                                    final long sessionId)
     {
-        activeCorrelationId = mediaDriverProxy.addPublication(destination, channelId, sessionId);
+        Publication publication = publicationMap.get(destination, sessionId, channelId);
 
-        final long startTime = System.currentTimeMillis();
-        while (addedPublication == null)
+        if (publication == null)
         {
-            correlationSignal.await(awaitTimeout);
+            activeCorrelationId = mediaDriverProxy.addPublication(destination, channelId, sessionId);
 
-            checkMediaDriverTimeout(startTime);
+            final long startTime = System.currentTimeMillis();
+            while (addedPublication == null)
+            {
+                correlationSignal.await(awaitTimeout);
+
+                checkMediaDriverTimeout(startTime);
+            }
+
+            publication = addedPublication;
+            publicationMap.put(destination, sessionId, channelId, publication);
+            addedPublication = null;
+            activeCorrelationId = NO_CORRELATION_ID;
+        }
+        else
+        {
+            publication.incrementReferenceCount();
         }
 
-        final Publication publication = addedPublication;
-        addedPublication = null;
-        activeCorrelationId = NO_CORRELATION_ID;
-
         return publication;
+    }
+
+    public synchronized void releasePublication(final Publication publication)
+    {
+        if (publication.decrementReferenceCount() == 0)
+        {
+            final String destination = publication.destination();
+            final long channelId = publication.channelId();
+            final long sessionId = publication.sessionId();
+
+            // TODO: reference count the instance
+            activeCorrelationId = mediaDriverProxy.removePublication(destination, channelId, sessionId);
+
+            // TODO: wait for response from media driver
+
+            // TODO:
+            // bufferUsage.releasePublisherBuffers(destination, channelId, sessionId);
+        }
     }
 
     private void checkMediaDriverTimeout(final long startTime)

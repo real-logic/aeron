@@ -44,6 +44,7 @@ import java.util.stream.IntStream;
 
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyInt;
@@ -186,7 +187,7 @@ public class ClientConductorTest
     }
 
     @Test(expected = MediaDriverTimeoutException.class)
-    public void cannotCreatePublisherUntilBuffersMapped() throws Exception
+    public void cannotCreatePublisherUntilBuffersMapped()
     {
         doAnswer(invocation ->
         {
@@ -197,20 +198,35 @@ public class ClientConductorTest
         addPublication();
     }
 
-    @Ignore
     @Test
-    public void conductorCachesPublicationInstances() throws Exception
+    public void conductorCachesPublicationInstances()
     {
-        // TODO
+        Publication firstPublication = addPublication();
+        Publication secondPublication = addPublication();
+
+        assertThat(firstPublication, sameInstance(secondPublication));
     }
 
     @Test
-    public void removingChannelsShouldNotifyMediaDriver() throws Exception
+    public void closingPublicationShouldNotifyMediaDriver() throws Exception
     {
         Publication publication = addPublication();
 
         publication.release();
 
+        verify(mediaDriverProxy).removePublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
+    }
+
+    @Test
+    public void publicationsOnlyClosedOnLastRelease() throws Exception
+    {
+        Publication publication = addPublication();
+        addPublication();
+
+        publication.release();
+        verify(mediaDriverProxy, never()).removePublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
+
+        publication.release();
         verify(mediaDriverProxy).removePublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
     }
 

@@ -93,7 +93,7 @@ public class ReceiverTest
             .conductorTimerWheel(new TimerWheel(MediaDriver.MEDIA_CONDUCTOR_TICK_DURATION_US,
                                  TimeUnit.MICROSECONDS,
                                  MediaDriver.MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
-            .subscribedSessions(new AtomicArray<>())
+            .connectedSubscriptions(new AtomicArray<>())
             .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024));
 
         toConductorBuffer = ctx.mediaCommandBuffer();

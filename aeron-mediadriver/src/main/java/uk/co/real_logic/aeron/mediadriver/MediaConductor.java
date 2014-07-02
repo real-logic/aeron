@@ -65,7 +65,7 @@ public class MediaConductor extends Agent
     private final RingBuffer fromClientCommands;
     private final Long2ObjectHashMap<ControlFrameHandler> srcDestinationMap = new Long2ObjectHashMap<>();
     private final TimerWheel timerWheel;
-    private final AtomicArray<DriverSubscribedSession> subscribedSessions;
+    private final AtomicArray<DriverConnectedSubscription> connectedSubscriptions;
     private final AtomicArray<DriverPublication> publications;
 
     private final Supplier<SenderControlStrategy> unicastSenderFlowControl;
@@ -95,7 +95,7 @@ public class MediaConductor extends Agent
         timerWheel = ctx.conductorTimerWheel();
         heartbeatTimer = newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheck);
 
-        subscribedSessions = ctx.subscribedSessions();
+        connectedSubscriptions = ctx.connectedSubscriptions();
         publications = ctx.publications();
         fromClientCommands = ctx.fromClientCommands();
         clientProxy = ctx.clientProxy();
@@ -120,9 +120,9 @@ public class MediaConductor extends Agent
         }
 
         hasDoneWork |= publications.forEach(0, DriverPublication::processBufferRotation);
-        hasDoneWork |= subscribedSessions.forEach(0, DriverSubscribedSession::processBufferRotation);
-        hasDoneWork |= subscribedSessions.forEach(0, DriverSubscribedSession::scanForGaps);
-        hasDoneWork |= subscribedSessions.forEach(0, DriverSubscribedSession::sendAnyPendingSm);
+        hasDoneWork |= connectedSubscriptions.forEach(0, DriverConnectedSubscription::processBufferRotation);
+        hasDoneWork |= connectedSubscriptions.forEach(0, DriverConnectedSubscription::scanForGaps);
+        hasDoneWork |= connectedSubscriptions.forEach(0, DriverConnectedSubscription::sendAnyPendingSm);
 
         hasDoneWork |= processClientCommandBuffer();
         hasDoneWork |= processMediaCommandBuffer();

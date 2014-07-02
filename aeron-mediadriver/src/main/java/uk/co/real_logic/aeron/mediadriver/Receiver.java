@@ -40,7 +40,7 @@ public class Receiver extends Agent
     private final Map<UdpDestination, DataFrameHandler> frameHandlerByDestinationMap = new HashMap<>();
     private final SubscriptionMessageFlyweight subscriberMessage = new SubscriptionMessageFlyweight();
     private final Queue<NewReceiveBufferEvent> newBufferEventQueue;
-    private final AtomicArray<DriverSubscribedSession> subscribedSessions;
+    private final AtomicArray<DriverConnectedSubscription> connectedSubscriptions;
 
     public Receiver(final MediaDriver.MediaDriverContext ctx) throws Exception
     {
@@ -51,7 +51,7 @@ public class Receiver extends Agent
         this.nioSelector = ctx.receiverNioSelector();
         this.newBufferEventQueue = ctx.newReceiveBufferEventQueue();
         this.conductorTimerWheel = ctx.conductorTimerWheel();
-        this.subscribedSessions = ctx.subscribedSessions();
+        this.connectedSubscriptions = ctx.connectedSubscriptions();
     }
 
     public boolean doWork()
@@ -164,7 +164,7 @@ public class Receiver extends Agent
 
         if (null == frameHandler)
         {
-            frameHandler = new DataFrameHandler(rcvDestination, nioSelector, conductorProxy, subscribedSessions);
+            frameHandler = new DataFrameHandler(rcvDestination, nioSelector, conductorProxy, connectedSubscriptions);
             frameHandlerByDestinationMap.put(rcvDestination, frameHandler);
         }
 

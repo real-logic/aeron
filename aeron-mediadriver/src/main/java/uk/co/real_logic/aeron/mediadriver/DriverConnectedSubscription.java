@@ -33,7 +33,7 @@ import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.UNKNOWN_TERM_
 /**
  * State maintained for active sessionIds within a channel for receiver processing
  */
-public class DriverSubscribedSession
+public class DriverConnectedSubscription
 {
     /**
      * Handler for sending Status Messages (SMs)
@@ -65,7 +65,7 @@ public class DriverSubscribedSession
 
     private SendSmHandler sendSmHandler;
 
-    public DriverSubscribedSession(final long sessionId, final long channelId, final InetSocketAddress srcAddress)
+    public DriverConnectedSubscription(final long sessionId, final long channelId, final InetSocketAddress srcAddress)
     {
         this.srcAddress = srcAddress;
         this.sessionId = sessionId;

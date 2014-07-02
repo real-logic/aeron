@@ -111,7 +111,7 @@ public class MediaConductorTest
                                                 TimeUnit.MICROSECONDS,
                                                 MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
             .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024))
-            .subscribedSessions(new AtomicArray<>())
+            .connectedSubscriptions(new AtomicArray<>())
             .publications(publications)
             .bufferManagement(mockBufferManagement)
             .statusBufferManager(statusBufferManager);

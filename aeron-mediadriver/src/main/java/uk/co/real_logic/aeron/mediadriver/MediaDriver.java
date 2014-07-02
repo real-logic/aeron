@@ -242,7 +242,7 @@ public class MediaDriver implements AutoCloseable
             .conductorNioSelector(new NioSelector())
             .unicastSenderFlowControl(UnicastSenderControlStrategy::new)
             .multicastSenderFlowControl(UnicastSenderControlStrategy::new)
-            .subscribedSessions(new AtomicArray<>())
+            .connectedSubscriptions(new AtomicArray<>())
             .publications(new AtomicArray<>())
             .conductorTimerWheel(new TimerWheel(MEDIA_CONDUCTOR_TICK_DURATION_US,
                     TimeUnit.MICROSECONDS,
@@ -437,7 +437,7 @@ public class MediaDriver implements AutoCloseable
         private AgentIdleStrategy conductorIdleStrategy;
         private AgentIdleStrategy senderIdleStrategy;
         private AgentIdleStrategy receiverIdleStrategy;
-        private AtomicArray<DriverSubscribedSession> subscribedSessions;
+        private AtomicArray<DriverConnectedSubscription> connectedSubscriptions;
         private AtomicArray<DriverPublication> publications;
         private ClientProxy clientProxy;
         private RingBuffer fromClientCommands;
@@ -579,9 +579,10 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public MediaDriverContext subscribedSessions(final AtomicArray<DriverSubscribedSession> subscribedSessions)
+        public MediaDriverContext connectedSubscriptions(
+            final AtomicArray<DriverConnectedSubscription> connectedSubscriptions)
         {
-            this.subscribedSessions = subscribedSessions;
+            this.connectedSubscriptions = connectedSubscriptions;
             return this;
         }
 
@@ -679,9 +680,9 @@ public class MediaDriver implements AutoCloseable
             return receiverIdleStrategy;
         }
 
-        public AtomicArray<DriverSubscribedSession> subscribedSessions()
+        public AtomicArray<DriverConnectedSubscription> connectedSubscriptions()
         {
-            return subscribedSessions;
+            return connectedSubscriptions;
         }
 
         public AtomicArray<DriverPublication> publications()

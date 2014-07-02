@@ -72,7 +72,7 @@ public class Subscription extends ChannelEndpoint
         void onInactiveSource(final long channelId, final long sessionId);
     }
 
-    private final Long2ObjectHashMap<SubscribedSession> subscriberSessionBySessionIdMap = new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<ConnectedSubscription> connectionBySessionIdMap = new Long2ObjectHashMap<>();
     private final DataHandler handler;
     private final ClientConductor conductor;
 
@@ -110,9 +110,9 @@ public class Subscription extends ChannelEndpoint
     public int read()
     {
         int count = 0;
-        for (final SubscribedSession subscribedSession : subscriberSessionBySessionIdMap.values())
+        for (final ConnectedSubscription connectedSubscription : connectionBySessionIdMap.values())
         {
-            count += subscribedSession.read();
+            count += connectedSubscription.read();
         }
 
         return count;
@@ -120,20 +120,21 @@ public class Subscription extends ChannelEndpoint
 
     protected boolean hasTerm(final long sessionId)
     {
-        final SubscribedSession subscribedSession = subscriberSessionBySessionIdMap.get(sessionId);
-        return subscribedSession != null && subscribedSession.hasTerm();
+        final ConnectedSubscription connectedSubscription = connectionBySessionIdMap.get(sessionId);
+        return connectedSubscription != null && connectedSubscription.hasTerm();
     }
 
     public void onBuffersMapped(final long sessionId,
                                 final long termId,
                                 final LogReader[] logReaders)
     {
-        final SubscribedSession session = new SubscribedSession(logReaders, sessionId, termId, handler);
-        subscriberSessionBySessionIdMap.put(sessionId, session);
+        final ConnectedSubscription connectedSubscription =
+            new ConnectedSubscription(logReaders, sessionId, termId, handler);
+        connectionBySessionIdMap.put(sessionId, connectedSubscription);
     }
 
     public void processBufferScan()
     {
-        subscriberSessionBySessionIdMap.values().forEach(SubscribedSession::processBufferScan);
+        connectionBySessionIdMap.values().forEach(ConnectedSubscription::processBufferScan);
     }
 }

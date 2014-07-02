@@ -54,19 +54,15 @@ public class ClientConductor extends Agent
 
     private static final long NO_CORRELATION_ID = -1;
 
-    private final CopyBroadcastReceiver toClientBuffer;
-
+    private final CopyBroadcastReceiver driverBroadcastReceiver;
     private final BufferUsageStrategy bufferUsage;
     private final AtomicArray<Publication> publications = new AtomicArray<>();
     private final AtomicArray<Subscription> subscriptions = new AtomicArray<>();
-
-    private final ConnectionMap<String, Publication> publicationMap = new ConnectionMap<>(); // Guarded by this
-    private final SubscriptionMap subscriptionMap = new SubscriptionMap();
-
     private final ConductorErrorHandler errorHandler;
     private final long awaitTimeout;
     private final long publicationWindow;
-
+    private final ConnectionMap<String, Publication> publicationMap = new ConnectionMap<>(); // Guarded by this
+    private final SubscriptionMap subscriptionMap = new SubscriptionMap();
     private final NewBufferMessageFlyweight newBufferMessage = new NewBufferMessageFlyweight();
     private final AtomicBuffer counterValuesBuffer;
     private final MediaDriverProxy mediaDriverProxy;
@@ -75,7 +71,7 @@ public class ClientConductor extends Agent
     private long activeCorrelationId; // Guarded by this
     private Publication addedPublication; // Guarded by this
 
-    public ClientConductor(final CopyBroadcastReceiver toClientBuffer,
+    public ClientConductor(final CopyBroadcastReceiver driverBroadcastReceiver,
                            final ConductorErrorHandler errorHandler,
                            final BufferUsageStrategy bufferUsageStrategy,
                            final AtomicBuffer counterValuesBuffer,
@@ -91,7 +87,7 @@ public class ClientConductor extends Agent
 
         this.correlationSignal = correlationSignal;
         this.mediaDriverProxy = mediaDriverProxy;
-        this.toClientBuffer = toClientBuffer;
+        this.driverBroadcastReceiver = driverBroadcastReceiver;
         this.bufferUsage = bufferUsageStrategy;
         this.errorHandler = errorHandler;
         this.awaitTimeout = awaitTimeout;
@@ -110,82 +106,6 @@ public class ClientConductor extends Agent
     {
         stop();
         bufferUsage.close();
-    }
-
-    private void performBufferMaintenance()
-    {
-        publications.forEach(
-            (publication) ->
-            {
-                final long dirtyTermId = publication.dirtyTermId();
-                if (dirtyTermId != Publication.NO_DIRTY_TERM)
-                {
-                    mediaDriverProxy.requestTerm(publication.destination(),
-                                                 publication.sessionId(),
-                                                 publication.channelId(),
-                                                 dirtyTermId);
-                }
-            });
-
-        subscriptions.forEach(Subscription::processBufferScan);
-    }
-
-    private boolean handleMessagesFromMediaDriver()
-    {
-        final int messagesRead = toClientBuffer.receive(
-            (msgTypeId, buffer, index, length) ->
-            {
-                try
-                {
-                    switch (msgTypeId)
-                    {
-                        case NEW_SUBSCRIPTION_BUFFER_EVENT:
-                        case NEW_PUBLICATION_BUFFER_EVENT:
-                            newBufferMessage.wrap(buffer, index);
-
-                            final String destination = newBufferMessage.destination();
-                            final long sessionId = newBufferMessage.sessionId();
-                            final long channelId = newBufferMessage.channelId();
-                            final long termId = newBufferMessage.termId();
-                            final int positionIndicatorId = newBufferMessage.positionCounterId();
-
-                            if (msgTypeId == NEW_PUBLICATION_BUFFER_EVENT)
-                            {
-                                if (newBufferMessage.correlationId() != activeCorrelationId)
-                                {
-                                    break;
-                                }
-
-                                onNewPublicationBuffers(destination, sessionId, channelId, termId, positionIndicatorId);
-                            }
-                            else
-                            {
-                                onNewSubscriptionBuffers(destination, sessionId, channelId, termId);
-                            }
-                            break;
-
-                        case ERROR_RESPONSE:
-                            errorHandler.onErrorResponse(buffer, index, length);
-                            break;
-
-                        default:
-                            break;
-                    }
-                }
-                catch (final IOException ex)
-                {
-                    ex.printStackTrace();
-                }
-            }
-        );
-
-        return messagesRead > 0;
-    }
-
-    private LimitBarrier limitBarrier(final int positionIndicatorId)
-    {
-        final BufferPositionIndicator indicator = new BufferPositionIndicator(counterValuesBuffer, positionIndicatorId);
-        return new WindowedLimitBarrier(indicator, publicationWindow);
     }
 
     public synchronized Publication addPublication(final String destination, final long channelId, final long sessionId)
@@ -259,6 +179,76 @@ public class ClientConductor extends Agent
         // TODO: clean up logs
     }
 
+    private void performBufferMaintenance()
+    {
+        publications.forEach(
+            (publication) ->
+            {
+                final long dirtyTermId = publication.dirtyTermId();
+                if (dirtyTermId != Publication.NO_DIRTY_TERM)
+                {
+                    mediaDriverProxy.requestTerm(publication.destination(),
+                                                 publication.sessionId(),
+                                                 publication.channelId(),
+                                                 dirtyTermId);
+                }
+            });
+
+        subscriptions.forEach(Subscription::processBufferScan);
+    }
+
+    private boolean handleMessagesFromMediaDriver()
+    {
+        final int messagesRead = driverBroadcastReceiver.receive(
+            (msgTypeId, buffer, index, length) ->
+            {
+                try
+                {
+                    switch (msgTypeId)
+                    {
+                        case NEW_SUBSCRIPTION_BUFFER_EVENT:
+                        case NEW_PUBLICATION_BUFFER_EVENT:
+                            newBufferMessage.wrap(buffer, index);
+
+                            final String destination = newBufferMessage.destination();
+                            final long sessionId = newBufferMessage.sessionId();
+                            final long channelId = newBufferMessage.channelId();
+                            final long termId = newBufferMessage.termId();
+                            final int positionIndicatorId = newBufferMessage.positionCounterId();
+
+                            if (msgTypeId == NEW_PUBLICATION_BUFFER_EVENT)
+                            {
+                                if (newBufferMessage.correlationId() != activeCorrelationId)
+                                {
+                                    break;
+                                }
+
+                                onNewPublicationBuffers(destination, sessionId, channelId, termId, positionIndicatorId);
+                            }
+                            else
+                            {
+                                onNewSubscriptionBuffers(destination, sessionId, channelId, termId);
+                            }
+                            break;
+
+                        case ERROR_RESPONSE:
+                            errorHandler.onErrorResponse(buffer, index, length);
+                            break;
+
+                        default:
+                            break;
+                    }
+                }
+                catch (final IOException ex)
+                {
+                    ex.printStackTrace();
+                }
+            }
+        );
+
+        return messagesRead > 0;
+    }
+
     private void onNewPublicationBuffers(final String destination,
                                          final long sessionId,
                                          final long channelId,
@@ -307,16 +297,6 @@ public class ClientConductor extends Agent
         }
     }
 
-    private AtomicBuffer newBuffer(final NewBufferMessageFlyweight newBufferMessage, final int index)
-        throws IOException
-    {
-        final String location = newBufferMessage.location(index);
-        final int offset = newBufferMessage.bufferOffset(index);
-        final int length = newBufferMessage.bufferLength(index);
-
-        return bufferUsage.newBuffer(location, offset, length);
-    }
-
     private LogAppender newAppender(final int index, final long sessionId, final long channelId, final long termId)
         throws IOException
     {
@@ -333,5 +313,21 @@ public class ClientConductor extends Agent
         final AtomicBuffer stateBuffer = newBuffer(newBufferMessage, index + BufferRotationDescriptor.BUFFER_COUNT);
 
         return new LogReader(logBuffer, stateBuffer);
+    }
+
+    private AtomicBuffer newBuffer(final NewBufferMessageFlyweight newBufferMessage, final int index)
+        throws IOException
+    {
+        final String location = newBufferMessage.location(index);
+        final int offset = newBufferMessage.bufferOffset(index);
+        final int length = newBufferMessage.bufferLength(index);
+
+        return bufferUsage.newBuffer(location, offset, length);
+    }
+
+    private LimitBarrier limitBarrier(final int positionIndicatorId)
+    {
+        final BufferPositionIndicator indicator = new BufferPositionIndicator(counterValuesBuffer, positionIndicatorId);
+        return new WindowedLimitBarrier(indicator, publicationWindow);
     }
 }

@@ -118,23 +118,18 @@ public class Subscription extends ChannelEndpoint
         return count;
     }
 
-    protected boolean hasTerm(final long sessionId)
+    public void onBuffersMapped(final long sessionId, final long termId, final LogReader[] logReaders)
     {
-        final ConnectedSubscription connectedSubscription = connectionBySessionIdMap.get(sessionId);
-        return connectedSubscription != null && connectedSubscription.hasTerm();
-    }
-
-    public void onBuffersMapped(final long sessionId,
-                                final long termId,
-                                final LogReader[] logReaders)
-    {
-        final ConnectedSubscription connectedSubscription =
-            new ConnectedSubscription(logReaders, sessionId, termId, handler);
-        connectionBySessionIdMap.put(sessionId, connectedSubscription);
+        connectionBySessionIdMap.put(sessionId, new ConnectedSubscription(logReaders, sessionId, termId, handler));
     }
 
     public void processBufferScan()
     {
         connectionBySessionIdMap.values().forEach(ConnectedSubscription::processBufferScan);
+    }
+
+    public boolean isConnected(final long sessionId)
+    {
+        return null != connectionBySessionIdMap.get(sessionId);
     }
 }

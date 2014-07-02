@@ -143,12 +143,6 @@ public class Publication extends ChannelEndpoint
         }
     }
 
-    protected boolean hasTerm(final long sessionId)
-    {
-        // TODO: remove this one ClientConductor.onNewBuffers has been refactored
-        return currentTermId.get() != UNKNOWN_TERM_ID;
-    }
-
     private void requestTermClean(final long currentTermId)
     {
         dirtyTermId = currentTermId + CLEAN_WINDOW;

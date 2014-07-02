@@ -35,8 +35,6 @@ import uk.co.real_logic.aeron.util.status.WindowedLimitBarrier;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiConsumer;
-import java.util.function.IntFunction;
 
 import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
@@ -255,24 +253,6 @@ public class ClientConductor extends Agent
         // TODO: clean up logs
     }
 
-    private void onNewSubscriptionBuffers(final String destination,
-                                          final long sessionId,
-                                          final long channelId,
-                                          final long termId)
-    {
-        onNewBuffers(sessionId,
-                     channelId,
-                     termId,
-                     subscriptionMap.get(destination, channelId),
-                     this::newReader,
-                     LogReader[]::new,
-                     (chan, buffers) ->
-                     {
-                         // TODO: get the counter id
-                         chan.onBuffersMapped(sessionId, termId, buffers);
-                     });
-    }
-
     private void onNewPublicationBuffers(final String destination,
                                          final long sessionId,
                                          final long channelId,
@@ -286,12 +266,29 @@ public class ClientConductor extends Agent
         }
 
         final LimitBarrier limit = limitBarrier(positionIndicatorId);
-        final Publication publication =
-            new Publication(this, destination, channelId, sessionId, termId, logs, limit);
+        final Publication publication = new Publication(this, destination, channelId, sessionId, termId, logs, limit);
         publications.add(publication);
         addedPublication = publication;
 
         correlationSignal.signal();
+    }
+
+    private void onNewSubscriptionBuffers(final String destination,
+                                          final long sessionId,
+                                          final long channelId,
+                                          final long currentTermId) throws IOException
+    {
+        final Subscription subscription = subscriptionMap.get(destination, channelId);
+        if (null != subscription && !subscription.isConnected(sessionId))
+        {
+            final LogReader[] logs = new LogReader[BUFFER_COUNT];
+            for (int i = 0; i < BUFFER_COUNT; i++)
+            {
+                logs[i] = newReader(i);
+            }
+
+            subscription.onBuffersMapped(sessionId, currentTermId, logs);
+        }
     }
 
     private void checkMediaDriverTimeout(final long startTime)
@@ -301,50 +298,6 @@ public class ClientConductor extends Agent
         {
             String msg = String.format("No response from media driver within %d ms", awaitTimeout);
             throw new MediaDriverTimeoutException(msg);
-        }
-    }
-
-    private interface LogFactory<L>
-    {
-        public L make(final int index, final long sessionId,
-                      final long channelId, final long termId) throws IOException;
-    }
-
-    private <C extends ChannelEndpoint, L> void onNewBuffers(final long sessionId,
-                                                             final long channelId,
-                                                             final long termId,
-                                                             final C channelEndpoint,
-                                                             final LogFactory<L> logFactory,
-                                                             final IntFunction<L[]> logArray,
-                                                             final BiConsumer<C, L[]> notifier)
-    {
-        try
-        {
-            if (channelEndpoint == null)
-            {
-                // The new newBuffer refers to another client process, we can safely ignore it
-                return;
-            }
-
-            if (!channelEndpoint.hasTerm(sessionId))
-            {
-                final L[] logs = logArray.apply(BUFFER_COUNT);
-                for (int i = 0; i < BUFFER_COUNT; i++)
-                {
-                    logs[i] = logFactory.make(i, sessionId, channelId, termId);
-                }
-
-                notifier.accept(channelEndpoint, logs);
-            }
-            else
-            {
-                // TODO is this an error, or a reasonable case?
-            }
-        }
-        catch (final Exception ex)
-        {
-            // TODO: establish correct client error handling strategy
-            ex.printStackTrace();
         }
     }
 
@@ -358,10 +311,8 @@ public class ClientConductor extends Agent
         return bufferUsage.newBuffer(location, offset, length);
     }
 
-    private LogAppender newAppender(final int index,
-                                    final long sessionId,
-                                    final long channelId,
-                                    final long termId) throws IOException
+    private LogAppender newAppender(final int index, final long sessionId, final long channelId, final long termId)
+        throws IOException
     {
         final AtomicBuffer logBuffer = newBuffer(newBufferMessage, index);
         final AtomicBuffer stateBuffer = newBuffer(newBufferMessage, index + BufferRotationDescriptor.BUFFER_COUNT);
@@ -370,10 +321,7 @@ public class ClientConductor extends Agent
         return new LogAppender(logBuffer, stateBuffer, header, MAX_FRAME_LENGTH);
     }
 
-    private LogReader newReader(final int index,
-                                final long sessionId,
-                                final long channelId,
-                                final long termId) throws IOException
+    private LogReader newReader(final int index) throws IOException
     {
         final AtomicBuffer logBuffer = newBuffer(newBufferMessage, index);
         final AtomicBuffer stateBuffer = newBuffer(newBufferMessage, index + BufferRotationDescriptor.BUFFER_COUNT);

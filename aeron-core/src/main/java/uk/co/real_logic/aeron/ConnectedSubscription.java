@@ -43,14 +43,14 @@ public class ConnectedSubscription
 
     public ConnectedSubscription(final LogReader[] readers,
                                  final long sessionId,
-                                 final long termId,
+                                 final long currentTermId,
                                  final Subscription.DataHandler dataHandler)
     {
         this.logReaders = readers;
         this.sessionId = sessionId;
         this.dataHandler = dataHandler;
-        currentTermId = new AtomicLong(termId);
-        cleanedTermId = new AtomicLong(termId + CLEAN_WINDOW);
+        this.currentTermId = new AtomicLong(currentTermId);
+        cleanedTermId = new AtomicLong(currentTermId + CLEAN_WINDOW);
     }
 
     public int read()
@@ -102,10 +102,5 @@ public class ConnectedSubscription
                 cleanedTermId.incrementAndGet();
             }
         }
-    }
-
-    public boolean hasTerm()
-    {
-        return currentTermId.get() != UNKNOWN_TERM_ID;
     }
 }

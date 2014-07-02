@@ -26,8 +26,6 @@ public abstract class ChannelEndpoint
         this.channelId = channelId;
     }
 
-    protected abstract boolean hasTerm(final long sessionId);
-
     public String destination()
     {
         return destination;

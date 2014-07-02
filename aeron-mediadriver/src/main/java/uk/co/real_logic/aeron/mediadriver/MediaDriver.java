@@ -236,7 +236,7 @@ public class MediaDriver implements AutoCloseable
     public MediaDriver(final MediaDriverContext context) throws Exception
     {
         ctx = context
-            .conductorCommandBuffer(COMMAND_BUFFER_SZ)
+            .driverCommandBuffer(COMMAND_BUFFER_SZ)
             .receiverCommandBuffer(COMMAND_BUFFER_SZ)
             .receiverNioSelector(new NioSelector())
             .conductorNioSelector(new NioSelector())
@@ -423,7 +423,7 @@ public class MediaDriver implements AutoCloseable
 
     public static class MediaDriverContext extends CommonContext
     {
-        private RingBuffer mediaCommandBuffer;
+        private RingBuffer driverCommandBuffer;
         private RingBuffer receiverCommandBuffer;
         private BufferManagement bufferManagement;
         private NioSelector receiverNioSelector;
@@ -463,7 +463,7 @@ public class MediaDriver implements AutoCloseable
             fromClientCommands(new ManyToOneRingBuffer(new AtomicBuffer(toDriverBuffer)));
 
             receiverProxy(new ReceiverProxy(receiverCommandBuffer(), newReceiveBufferEventQueue()));
-            mediaConductorProxy(new MediaConductorProxy(mediaCommandBuffer()));
+            mediaConductorProxy(new MediaConductorProxy(driverCommandBuffer()));
 
             bufferManagement(newMappedBufferManager(dataDirName()));
 
@@ -495,9 +495,9 @@ public class MediaDriver implements AutoCloseable
             return new ManyToOneRingBuffer(atomicBuffer);
         }
 
-        public MediaDriverContext conductorCommandBuffer(final int size)
+        public MediaDriverContext driverCommandBuffer(final int size)
         {
-            this.mediaCommandBuffer = createNewCommandBuffer(size);
+            this.driverCommandBuffer = createNewCommandBuffer(size);
             return this;
         }
 
@@ -610,9 +610,9 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public RingBuffer mediaCommandBuffer()
+        public RingBuffer driverCommandBuffer()
         {
-            return mediaCommandBuffer;
+            return driverCommandBuffer;
         }
 
         public RingBuffer receiverCommandBuffer()

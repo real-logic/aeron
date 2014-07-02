@@ -85,7 +85,7 @@ public class ReceiverTest
     public void setUp() throws Exception
     {
         final MediaDriver.MediaDriverContext ctx = new MediaDriver.MediaDriverContext()
-            .conductorCommandBuffer(MediaDriver.COMMAND_BUFFER_SZ)
+            .driverCommandBuffer(MediaDriver.COMMAND_BUFFER_SZ)
             .receiverCommandBuffer(MediaDriver.COMMAND_BUFFER_SZ)
             .receiverNioSelector(mockNioSelector)
             .conductorNioSelector(mockNioSelector)
@@ -96,7 +96,7 @@ public class ReceiverTest
             .connectedSubscriptions(new AtomicArray<>())
             .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024));
 
-        toConductorBuffer = ctx.mediaCommandBuffer();
+        toConductorBuffer = ctx.driverCommandBuffer();
         ctx.mediaConductorProxy(new MediaConductorProxy(toConductorBuffer));
 
         receiverProxy = new ReceiverProxy(ctx.receiverCommandBuffer(), ctx.newReceiveBufferEventQueue());

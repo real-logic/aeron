@@ -57,7 +57,7 @@ public class MediaConductor extends Agent
     public static final FeedbackDelayGenerator RETRANS_UNICAST_LINGER_GENERATOR =
         () -> RETRANS_UNICAST_LINGER_DEFAULT_NS;
 
-    private final RingBuffer mediaCommandBuffer;
+    private final RingBuffer driverCommandBuffer;
     private final ReceiverProxy receiverProxy;
     private final ClientProxy clientProxy;
     private final NioSelector nioSelector;
@@ -83,7 +83,7 @@ public class MediaConductor extends Agent
     {
         super(ctx.conductorIdleStrategy());
 
-        this.mediaCommandBuffer = ctx.mediaCommandBuffer();
+        this.driverCommandBuffer = ctx.driverCommandBuffer();
         this.receiverProxy = ctx.receiverProxy();
         this.bufferManagement = ctx.bufferManagement();
         this.nioSelector = ctx.conductorNioSelector();
@@ -150,7 +150,7 @@ public class MediaConductor extends Agent
 
     private boolean processMediaCommandBuffer()
     {
-        final int messagesRead = mediaCommandBuffer.read(
+        final int messagesRead = driverCommandBuffer.read(
             (msgTypeId, buffer, index, length) ->
             {
                 switch (msgTypeId)

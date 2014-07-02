@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.conductor.ChannelEndpoint;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -26,7 +25,7 @@ import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
  *
  * Subscriptions are not threadsafe and should not be shared between subscribers.
  */
-public class Subscription extends ChannelEndpoint
+public class Subscription
 {
     /**
      * Interface for delivery of data to a {@link Subscription}
@@ -72,6 +71,8 @@ public class Subscription extends ChannelEndpoint
         void onInactiveSource(final long channelId, final long sessionId);
     }
 
+    private final String destination;
+    private final long channelId;
     private final Long2ObjectHashMap<ConnectedSubscription> connectionBySessionIdMap = new Long2ObjectHashMap<>();
     private final DataHandler handler;
     private final ClientConductor conductor;
@@ -81,10 +82,20 @@ public class Subscription extends ChannelEndpoint
                         final String destination,
                         final long channelId)
     {
-        super(destination, channelId);
-
         this.conductor = conductor;
         this.handler = handler;
+        this.destination = destination;
+        this.channelId = channelId;
+    }
+
+    public String destination()
+    {
+        return destination;
+    }
+
+    public long channelId()
+    {
+        return channelId;
     }
 
     /**
@@ -97,7 +108,7 @@ public class Subscription extends ChannelEndpoint
 
     public boolean matches(final String destination, final long channelId)
     {
-        return destination().equals(destination) && channelId() == channelId;
+        return this.destination.equals(destination) && this.channelId == channelId;
     }
 
     /**

@@ -22,12 +22,10 @@ import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.collections.ConnectionMap;
 import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.status.BufferPositionIndicator;
 import uk.co.real_logic.aeron.util.status.PositionIndicator;
@@ -55,23 +53,18 @@ public class ClientConductor extends Agent
 
     private static final long NO_CORRELATION_ID = -1;
 
-    private final RingBuffer commandBuffer;
     private final CopyBroadcastReceiver toClientBuffer;
-    private final RingBuffer toDriverBuffer;
 
     private final BufferUsageStrategy bufferUsage;
     private final AtomicArray<Publication> publications = new AtomicArray<>();
-    private final AtomicArray<Subscription> subscriptions;
+    private final AtomicArray<Subscription> subscriptions = new AtomicArray<>();
 
-    // Guarded by this
-    private final ConnectionMap<String, Publication> publicationMap = new ConnectionMap<>();
-
+    private final ConnectionMap<String, Publication> publicationMap = new ConnectionMap<>(); // Guarded by this
     private final SubscriptionMap subscriptionMap = new SubscriptionMap();
 
     private final ConductorErrorHandler errorHandler;
     private final long awaitTimeout;
 
-    private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
     private final NewBufferMessageFlyweight newBufferMessage = new NewBufferMessageFlyweight();
     private final AtomicBuffer counterValuesBuffer;
     private final MediaDriverProxy mediaDriverProxy;
@@ -80,10 +73,7 @@ public class ClientConductor extends Agent
     private long activeCorrelationId; // Guarded by this
     private Publication addedPublication; // Guarded by this
 
-    public ClientConductor(final RingBuffer commandBuffer,
-                           final CopyBroadcastReceiver toClientBuffer,
-                           final RingBuffer toDriverBuffer,
-                           final AtomicArray<Subscription> subscriptions,
+    public ClientConductor(final CopyBroadcastReceiver toClientBuffer,
                            final ConductorErrorHandler errorHandler,
                            final BufferUsageStrategy bufferUsageStrategy,
                            final AtomicBuffer counterValuesBuffer,
@@ -98,19 +88,15 @@ public class ClientConductor extends Agent
 
         this.correlationSignal = correlationSignal;
         this.mediaDriverProxy = mediaDriverProxy;
-        this.commandBuffer = commandBuffer;
         this.toClientBuffer = toClientBuffer;
-        this.toDriverBuffer = toDriverBuffer;
         this.bufferUsage = bufferUsageStrategy;
-        this.subscriptions = subscriptions;
         this.errorHandler = errorHandler;
         this.awaitTimeout = awaitTimeout;
     }
 
     public boolean doWork()
     {
-        boolean hasDoneWork = handleClientCommandBuffer();
-        hasDoneWork |= handleMessagesFromMediaDriver();
+        boolean hasDoneWork = handleMessagesFromMediaDriver();
         performBufferMaintenance();
 
         return hasDoneWork;
@@ -130,66 +116,14 @@ public class ClientConductor extends Agent
                 final long dirtyTermId = publication.dirtyTermId();
                 if (dirtyTermId != Publication.NO_DIRTY_TERM)
                 {
-                    mediaDriverProxy.requestTerm(
-                        publication.destination(),
-                        publication.sessionId(),
-                        publication.channelId(),
-                        dirtyTermId);
+                    mediaDriverProxy.requestTerm(publication.destination(),
+                                                 publication.sessionId(),
+                                                 publication.channelId(),
+                                                 dirtyTermId);
                 }
             });
 
         subscriptions.forEach(Subscription::processBufferScan);
-    }
-
-    private boolean handleClientCommandBuffer()
-    {
-        final int messagesRead = commandBuffer.read(
-            (msgTypeId, buffer, index, length) ->
-            {
-                switch (msgTypeId)
-                {
-                    case ADD_SUBSCRIPTION:
-                    case REMOVE_SUBSCRIPTION:
-                    {
-                        subscriptionMessage.wrap(buffer, index);
-                        final long[] channelIds = subscriptionMessage.channelIds();
-                        final String destination = subscriptionMessage.destination();
-                        if (msgTypeId == ADD_SUBSCRIPTION)
-                        {
-                            addSubscription(destination, channelIds[0]);
-                        }
-                        else
-                        {
-                            removeSubscription(destination, channelIds[0]);
-                        }
-
-                        toDriverBuffer.write(msgTypeId, buffer, index, length);
-                        break;
-                    }
-                }
-            }
-        );
-
-        return messagesRead > 0;
-    }
-
-    private void addSubscription(final String destination, final long channelId)
-    {
-        subscriptions.forEach(
-            (subscription) ->
-            {
-                if (subscription.matches(destination, channelId))
-                {
-                    subscriptionMap.put(destination, channelId, subscription);
-                }
-            });
-    }
-
-    private void removeSubscription(final String destination, final long channelId)
-    {
-        subscriptionMap.remove(destination, channelId);
-
-        // TODO: release buffers
     }
 
     private boolean handleMessagesFromMediaDriver()
@@ -244,43 +178,6 @@ public class ClientConductor extends Agent
         return messagesRead > 0;
     }
 
-    private void onNewSubscriptionBuffers(final String destination, final long sessionId,
-                                          final long channelId, final long termId)
-    {
-        onNewBuffers(sessionId,
-                     channelId,
-                     termId,
-                     subscriptionMap.get(destination, channelId),
-                     this::newReader,
-                     LogReader[]::new,
-                     (chan, buffers) ->
-                     {
-                         // TODO: get the counter id
-                         chan.onBuffersMapped(sessionId, termId, buffers);
-                     });
-    }
-
-    private void onNewPublicationBuffers(final String destination,
-                                         final long sessionId,
-                                         final long channelId,
-                                         final long termId,
-                                         final int positionIndicatorId) throws IOException
-    {
-        final LogAppender[] logs = new LogAppender[BUFFER_COUNT];
-        for (int i = 0; i < BUFFER_COUNT; i++)
-        {
-            logs[i] = newAppender(i, sessionId, channelId, termId);
-        }
-
-        final PositionIndicator positionIndicator = new BufferPositionIndicator(counterValuesBuffer, positionIndicatorId);
-        final Publication publication = new Publication(
-            this, destination, channelId, sessionId, termId, logs, positionIndicator);
-        publications.add(publication);
-        addedPublication = publication;
-
-        correlationSignal.signal();
-    }
-
     public synchronized Publication addPublication(final String destination, final long channelId, final long sessionId)
     {
         Publication publication = publicationMap.get(destination, sessionId, channelId);
@@ -320,6 +217,69 @@ public class ClientConductor extends Agent
 
         // TODO:
         // bufferUsage.releasePublisherBuffers(destination, channelId, sessionId);
+    }
+
+    public synchronized Subscription addSubscription(final String destination,
+                                                     final long channelId,
+                                                     final Subscription.DataHandler handler)
+    {
+        final Subscription subscription = new Subscription(this, handler, destination, channelId);
+
+        subscriptions.add(subscription);
+        subscriptionMap.put(destination, channelId, subscription);
+
+        mediaDriverProxy.addSubscription(destination, channelId);
+
+        return subscription;
+    }
+
+    public synchronized void releaseSubscription(final Subscription subscription)
+    {
+        mediaDriverProxy.removeSubscription(subscription.destination(), subscription.channelId());
+
+        subscriptionMap.remove(subscription.destination(), subscription.channelId());
+        subscriptions.remove(subscription);
+
+        // TODO: clean up logs
+    }
+
+    private void onNewSubscriptionBuffers(final String destination,
+                                          final long sessionId,
+                                          final long channelId,
+                                          final long termId)
+    {
+        onNewBuffers(sessionId,
+                     channelId,
+                     termId,
+                     subscriptionMap.get(destination, channelId),
+                     this::newReader,
+                     LogReader[]::new,
+                     (chan, buffers) ->
+                     {
+                         // TODO: get the counter id
+                         chan.onBuffersMapped(sessionId, termId, buffers);
+                     });
+    }
+
+    private void onNewPublicationBuffers(final String destination,
+                                         final long sessionId,
+                                         final long channelId,
+                                         final long termId,
+                                         final int positionIndicatorId) throws IOException
+    {
+        final LogAppender[] logs = new LogAppender[BUFFER_COUNT];
+        for (int i = 0; i < BUFFER_COUNT; i++)
+        {
+            logs[i] = newAppender(i, sessionId, channelId, termId);
+        }
+
+        final PositionIndicator posIndicator = new BufferPositionIndicator(counterValuesBuffer, positionIndicatorId);
+        final Publication publication =
+            new Publication(this, destination, channelId, sessionId, termId, logs, posIndicator);
+        publications.add(publication);
+        addedPublication = publication;
+
+        correlationSignal.signal();
     }
 
     private void checkMediaDriverTimeout(final long startTime)

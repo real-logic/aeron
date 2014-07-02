@@ -16,8 +16,7 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.conductor.ChannelEndpoint;
-import uk.co.real_logic.aeron.conductor.MediaDriverProxy;
-import uk.co.real_logic.aeron.util.AtomicArray;
+import uk.co.real_logic.aeron.conductor.ClientConductor;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
@@ -75,21 +74,17 @@ public class Subscription extends ChannelEndpoint
 
     private final Long2ObjectHashMap<SubscribedSession> subscriberSessionBySessionIdMap = new Long2ObjectHashMap<>();
     private final DataHandler handler;
-    private final MediaDriverProxy mediaDriverProxy;
-    private final AtomicArray<Subscription> subscriberChannels;
+    private final ClientConductor conductor;
 
-    public Subscription(final MediaDriverProxy mediaDriverProxy,
+    public Subscription(final ClientConductor conductor,
                         final DataHandler handler,
                         final String destination,
-                        final long channelId,
-                        final AtomicArray<Subscription> subscriberChannels)
+                        final long channelId)
     {
         super(destination, channelId);
-        this.mediaDriverProxy = mediaDriverProxy;
+
+        this.conductor = conductor;
         this.handler = handler;
-        this.subscriberChannels = subscriberChannels;
-        subscriberChannels.add(this);
-        mediaDriverProxy.addSubscription(destination, channelId);
     }
 
     /**
@@ -97,8 +92,7 @@ public class Subscription extends ChannelEndpoint
      */
     public void release()
     {
-        subscriberChannels.remove(this);
-        mediaDriverProxy.removeSubscription(destination(), channelId());
+        conductor.releaseSubscription(this);
     }
 
     public boolean matches(final String destination, final long channelId)

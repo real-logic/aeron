@@ -108,7 +108,7 @@ public class Subscription
 
     public boolean matches(final String destination, final long channelId)
     {
-        return this.destination.equals(destination) && this.channelId == channelId;
+        return this.channelId == channelId && this.destination.equals(destination);
     }
 
     /**

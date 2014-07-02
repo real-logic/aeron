@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.conductor.*;
 import uk.co.real_logic.aeron.util.Agent;
-import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.CommonContext;
 import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -28,7 +27,6 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -49,10 +47,6 @@ public final class Aeron implements AutoCloseable
     // TODO: make configurable
     public static final long AWAIT_TIMEOUT = 10_000;
 
-    private final ManyToOneRingBuffer clientConductorCommandBuffer =
-        new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocateDirect(COMMAND_BUFFER_SIZE)));
-
-    private final AtomicArray<Subscription> subscriptions = new AtomicArray<>();
     private final ClientConductor conductor;
     private final ClientContext savedCtx;
 
@@ -74,10 +68,7 @@ public final class Aeron implements AutoCloseable
         final Signal correlationSignal = new Signal();
 
         conductor = new ClientConductor(
-            clientConductorCommandBuffer,
             ctx.toClientBuffer,
-            ctx.toDriverBuffer,
-            subscriptions,
             errorHandler,
             ctx.bufferUsageStrategy,
             ctx.counterValuesBuffer(),
@@ -167,7 +158,6 @@ public final class Aeron implements AutoCloseable
         return conductor.addPublication(destination, channelId, sessionId);
     }
 
-
     /**
      * Add a new {@link Subscription} for subscribing to messages from publishers.
 
@@ -180,9 +170,7 @@ public final class Aeron implements AutoCloseable
                                         final long channelId,
                                         final Subscription.DataHandler handler)
     {
-        final MediaDriverProxy mediaDriverProxy = new MediaDriverProxy(clientConductorCommandBuffer);
-
-        return new Subscription(mediaDriverProxy, handler, destination, channelId, subscriptions);
+        return conductor.addSubscription(destination, channelId, handler);
     }
 
     public ClientConductor conductor()

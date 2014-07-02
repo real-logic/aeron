@@ -135,10 +135,7 @@ public class ClientConductorTest
             }).when(signal).await(anyLong());
 
         conductor = new ClientConductor(
-            mock(RingBuffer.class),
             toClientReceiver,
-            toDriverBuffer,
-            subscriberChannels,
             errorHandler,
             mockBufferUsage,
             counterValuesBuffer,

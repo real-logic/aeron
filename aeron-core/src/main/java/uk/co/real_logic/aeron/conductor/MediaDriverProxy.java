@@ -40,11 +40,11 @@ public class MediaDriverProxy
     private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
     private final QualifiedMessageFlyweight qualifiedMessage = new QualifiedMessageFlyweight();
 
-    private final RingBuffer conductorBuffer;
+    private final RingBuffer mediaDriverCommandBuffer;
 
-    public MediaDriverProxy(final RingBuffer conductorBuffer)
+    public MediaDriverProxy(final RingBuffer mediaDriverCommandBuffer)
     {
-        this.conductorBuffer = conductorBuffer;
+        this.mediaDriverCommandBuffer = mediaDriverCommandBuffer;
 
         publicationMessage.wrap(writeBuffer, 0);
         subscriptionMessage.wrap(writeBuffer, 0);
@@ -76,14 +76,14 @@ public class MediaDriverProxy
                                         final long channelId,
                                         final int msgTypeId)
     {
-        final long correlationId = conductorBuffer.nextCorrelationId();
+        final long correlationId = mediaDriverCommandBuffer.nextCorrelationId();
 
         publicationMessage.correlationId(correlationId);
         publicationMessage.sessionId(sessionId);
         publicationMessage.channelId(channelId);
         publicationMessage.destination(destination);
 
-        if (!conductorBuffer.write(msgTypeId, writeBuffer, 0, publicationMessage.length()))
+        if (!mediaDriverCommandBuffer.write(msgTypeId, writeBuffer, 0, publicationMessage.length()))
         {
             throw new IllegalStateException("could not write channel message");
         }
@@ -97,22 +97,22 @@ public class MediaDriverProxy
         subscriptionMessage.channelIds(new long[] { channelId});
         subscriptionMessage.destination(destination);
 
-        if (!conductorBuffer.write(msgTypeId, writeBuffer, 0, subscriptionMessage.length()))
+        if (!mediaDriverCommandBuffer.write(msgTypeId, writeBuffer, 0, subscriptionMessage.length()))
         {
             throw new IllegalStateException("could not write subscription message");
         }
     }
 
-    public void sendRequestTerm(final String destination, final long sessionId, final long channelId, final long termId)
+    public void requestTerm(final String destination, final long sessionId, final long channelId, final long termId)
     {
         qualifiedMessage.sessionId(sessionId);
         qualifiedMessage.channelId(channelId);
         qualifiedMessage.termId(termId);
         qualifiedMessage.destination(destination);
 
-        if (!conductorBuffer.write(CLEAN_TERM_BUFFER, writeBuffer, 0, qualifiedMessage.length()))
+        if (!mediaDriverCommandBuffer.write(CLEAN_TERM_BUFFER, writeBuffer, 0, qualifiedMessage.length()))
         {
-            throw new IllegalStateException("could not write subscription message");
+            throw new IllegalStateException("could not write request terms message");
         }
     }
 }

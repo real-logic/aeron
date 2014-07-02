@@ -35,6 +35,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static java.lang.Long.getLong;
 import static uk.co.real_logic.aeron.util.IoUtil.mapExistingFile;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
 
@@ -82,7 +83,8 @@ public final class Aeron implements AutoCloseable
             ctx.counterValuesBuffer(),
             mediaDriverProxy,
             correlationSignal,
-            AWAIT_TIMEOUT);
+            AWAIT_TIMEOUT,
+            ctx.publicationWindow);
 
         this.savedCtx = ctx;
     }
@@ -190,6 +192,9 @@ public final class Aeron implements AutoCloseable
 
     public static class ClientContext extends CommonContext
     {
+        public static final long PUBLICATION_WINDOW_DEFAULT = 1024;
+        public static final String PUBLICATION_WINDOW_NAME = "aeron.client.publication.window";
+
         private ErrorHandler errorHandler = new DummyErrorHandler();
         private InvalidDestinationHandler invalidDestinationHandler;
 
@@ -200,10 +205,13 @@ public final class Aeron implements AutoCloseable
         private MappedByteBuffer defaultToDriverBuffer;
 
         private BufferUsageStrategy bufferUsageStrategy;
+        private long publicationWindow;
 
         public ClientContext conclude() throws IOException
         {
             super.conclude();
+
+            publicationWindow(getLong(PUBLICATION_WINDOW_NAME, PUBLICATION_WINDOW_DEFAULT));
 
             try
             {
@@ -272,6 +280,12 @@ public final class Aeron implements AutoCloseable
         public ClientContext bufferUsageStrategy(final BufferUsageStrategy strategy)
         {
             this.bufferUsageStrategy = strategy;
+            return this;
+        }
+
+        public ClientContext publicationWindow(final long publicationWindow)
+        {
+            this.publicationWindow = publicationWindow;
             return this;
         }
 

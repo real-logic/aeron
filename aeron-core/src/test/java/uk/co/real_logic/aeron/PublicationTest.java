@@ -6,7 +6,7 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
-import uk.co.real_logic.aeron.util.status.PositionIndicator;
+import uk.co.real_logic.aeron.util.status.LimitBarrier;
 
 import java.nio.ByteBuffer;
 
@@ -33,14 +33,14 @@ public class PublicationTest
 
     private ClientConductor conductor;
     private Publication publication;
-    private PositionIndicator indicator;
+    private LimitBarrier limit;
     private LogAppender[] appenders;
 
     @Before
     public void setup()
     {
         conductor = mock(ClientConductor.class);
-        indicator = mock(PositionIndicator.class);
+        limit = mock(LimitBarrier.class);
 
         appenders = new LogAppender[BUFFER_COUNT];
         for (int i = 0; i < BUFFER_COUNT; i++)
@@ -51,7 +51,7 @@ public class PublicationTest
 
         publication = new Publication(
                 conductor, DESTINATION, CHANNEL_ID_1,
-                SESSION_ID_1, TERM_ID_1, appenders, indicator);
+                SESSION_ID_1, TERM_ID_1, appenders, limit);
     }
 
     @Test

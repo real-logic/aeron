@@ -19,9 +19,8 @@ import uk.co.real_logic.aeron.conductor.ChannelEndpoint;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
-import uk.co.real_logic.aeron.util.status.PositionIndicator;
+import uk.co.real_logic.aeron.util.status.LimitBarrier;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.CLEAN_WINDOW;
@@ -36,7 +35,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.Appen
  *
  * Publication instances are threadsafe and can be shared between publishers.
  */
-public class Publication extends ChannelEndpoint implements PositionIndicator
+public class Publication extends ChannelEndpoint
 {
     public static final long NO_DIRTY_TERM = -1L;
 
@@ -44,7 +43,7 @@ public class Publication extends ChannelEndpoint implements PositionIndicator
 
     private final long sessionId;
     private final LogAppender[] logAppenders;
-    private final PositionIndicator positionIndicator;
+    private final LimitBarrier limit;
     private final AtomicLong currentTermId;
 
     private volatile long dirtyTermId = NO_DIRTY_TERM;
@@ -58,7 +57,7 @@ public class Publication extends ChannelEndpoint implements PositionIndicator
                        final long sessionId,
                        final long initialTermId,
                        final LogAppender[] logAppenders,
-                       final PositionIndicator positionIndicator)
+                       final LimitBarrier limit)
     {
         super(destination, channelId);
         this.conductor = conductor;
@@ -66,7 +65,7 @@ public class Publication extends ChannelEndpoint implements PositionIndicator
         currentTermId = new AtomicLong(initialTermId);
         this.sessionId = sessionId;
         this.logAppenders = logAppenders;
-        this.positionIndicator = positionIndicator;
+        this.limit = limit;
     }
 
     /**
@@ -92,6 +91,11 @@ public class Publication extends ChannelEndpoint implements PositionIndicator
     {
         // TODO: must update the logAppender header with new termId!
         final LogAppender logAppender = logAppenders[currentBufferIndex];
+        if (isPausedDueToFlowControl(logAppender))
+        {
+            return false;
+        }
+
         final AppendStatus status = logAppender.append(buffer, offset, length);
 
         if (status == TRIPPED)
@@ -100,12 +104,17 @@ public class Publication extends ChannelEndpoint implements PositionIndicator
             final long currentTermId = this.currentTermId.get();
             this.currentTermId.lazySet(currentTermId + 1);
 
-            requestTermRoll(currentTermId);
+            requestTermClean(currentTermId);
 
             return offer(buffer, offset, length);
         }
 
         return status == SUCCESS;
+    }
+
+    private boolean isPausedDueToFlowControl(final LogAppender logAppender)
+    {
+        return limit.limit() < logAppender.tailVolatile();
     }
 
     /**
@@ -134,27 +143,15 @@ public class Publication extends ChannelEndpoint implements PositionIndicator
         }
     }
 
-    private void requestTerm(final long termId)
-    {
-        // TODO
-    }
-
     protected boolean hasTerm(final long sessionId)
     {
+        // TODO: remove this one ClientConductor.onNewBuffers has been refactored
         return currentTermId.get() != UNKNOWN_TERM_ID;
     }
 
-    protected void requestTermRoll(final long currentTermId)
+    private void requestTermClean(final long currentTermId)
     {
-        requestTerm(currentTermId + CLEAN_WINDOW);
-    }
-
-    public long position()
-    {
-        // TODO: calculate position
-        logAppenders[currentBufferIndex].tailVolatile();
-
-        return 0;
+        dirtyTermId = currentTermId + CLEAN_WINDOW;
     }
 
     public long sessionId()
@@ -171,4 +168,5 @@ public class Publication extends ChannelEndpoint implements PositionIndicator
     {
         dirtyTermId = NO_DIRTY_TERM;
     }
+
 }

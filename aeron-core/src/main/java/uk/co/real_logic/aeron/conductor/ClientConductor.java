@@ -15,7 +15,9 @@
  */
 package uk.co.real_logic.aeron.conductor;
 
-import uk.co.real_logic.aeron.*;
+import uk.co.real_logic.aeron.MediaDriverTimeoutException;
+import uk.co.real_logic.aeron.Publication;
+import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.util.Agent;
 import uk.co.real_logic.aeron.util.AgentIdleStrategy;
 import uk.co.real_logic.aeron.util.AtomicArray;
@@ -30,7 +32,8 @@ import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.status.BufferPositionIndicator;
-import uk.co.real_logic.aeron.util.status.PositionIndicator;
+import uk.co.real_logic.aeron.util.status.LimitBarrier;
+import uk.co.real_logic.aeron.util.status.WindowedLimitBarrier;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -70,6 +73,7 @@ public class ClientConductor extends Agent
 
     private final ConductorErrorHandler errorHandler;
     private final long awaitTimeout;
+    private final long publicationWindow;
 
     private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
     private final NewBufferMessageFlyweight newBufferMessage = new NewBufferMessageFlyweight();
@@ -90,7 +94,8 @@ public class ClientConductor extends Agent
                            final AtomicBuffer counterValuesBuffer,
                            final MediaDriverProxy mediaDriverProxy,
                            final Signal correlationSignal,
-                           final long awaitTimeout)
+                           final long awaitTimeout,
+                           final long publicationWindow)
     {
         super(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
                                     AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS));
@@ -106,6 +111,7 @@ public class ClientConductor extends Agent
         this.subscriptions = subscriptions;
         this.errorHandler = errorHandler;
         this.awaitTimeout = awaitTimeout;
+        this.publicationWindow = publicationWindow;
 
         hasRemovedPublication = false;
     }
@@ -275,13 +281,19 @@ public class ClientConductor extends Agent
             logs[i] = newAppender(i, sessionId, channelId, termId);
         }
 
-        final PositionIndicator positionIndicator = new BufferPositionIndicator(counterValuesBuffer, positionIndicatorId);
+        final LimitBarrier limit = limitBarrier(positionIndicatorId);
         final Publication publication = new Publication(
-            this, destination, channelId, sessionId, termId, logs, positionIndicator);
+            this, destination, channelId, sessionId, termId, logs, limit);
         publications.add(publication);
         addedPublication = publication;
 
         correlationSignal.signal();
+    }
+
+    private LimitBarrier limitBarrier(final int positionIndicatorId)
+    {
+        final BufferPositionIndicator indicator = new BufferPositionIndicator(counterValuesBuffer, positionIndicatorId);
+        return new WindowedLimitBarrier(indicator, publicationWindow);
     }
 
     public synchronized Publication addPublication(final String destination, final long channelId, final long sessionId)

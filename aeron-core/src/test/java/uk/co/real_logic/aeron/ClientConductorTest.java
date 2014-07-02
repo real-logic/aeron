@@ -62,6 +62,7 @@ public class ClientConductorTest
     public static final int LOG_BUFFER_SIZE = LogBufferDescriptor.LOG_MIN_SIZE;
     public static final long CORRELATION_ID = 2000;
     public static final int AWAIT_TIMEOUT = 100;
+    public static final long PUBLICATION_WINDOW = 1024;
 
     private final NewBufferMessageFlyweight newBufferMessage = new NewBufferMessageFlyweight();
     private final ErrorFlyweight errorHeader = new ErrorFlyweight();
@@ -143,7 +144,8 @@ public class ClientConductorTest
             counterValuesBuffer,
             mediaDriverProxy,
             signal,
-            AWAIT_TIMEOUT);
+            AWAIT_TIMEOUT,
+            PUBLICATION_WINDOW);
 
         newBufferMessage.wrap(atomicSendBuffer, 0);
         errorHeader.wrap(atomicSendBuffer, 0);

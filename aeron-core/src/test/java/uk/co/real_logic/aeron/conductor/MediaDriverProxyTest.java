@@ -92,7 +92,7 @@ public class MediaDriverProxyTest
     @Test
     public void threadSendsRequestTermBufferMessage()
     {
-        conductor.sendRequestTerm(DESTINATION, SESSION_ID, 2L, 3L);
+        conductor.requestTerm(DESTINATION, SESSION_ID, 2L, 3L);
 
         assertReadsOneMessage(
             (msgTypeId, buffer, index, length) ->

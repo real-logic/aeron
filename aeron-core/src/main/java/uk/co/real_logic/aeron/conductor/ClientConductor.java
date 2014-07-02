@@ -79,7 +79,6 @@ public class ClientConductor extends Agent
 
     private long activeCorrelationId; // Guarded by this
     private Publication addedPublication; // Guarded by this
-    private boolean hasRemovedPublication; // Guarded by this
 
     public ClientConductor(final RingBuffer commandBuffer,
                            final CopyBroadcastReceiver toClientBuffer,
@@ -106,8 +105,6 @@ public class ClientConductor extends Agent
         this.subscriptions = subscriptions;
         this.errorHandler = errorHandler;
         this.awaitTimeout = awaitTimeout;
-
-        hasRemovedPublication = false;
     }
 
     public boolean doWork()
@@ -133,7 +130,7 @@ public class ClientConductor extends Agent
                 final long dirtyTermId = publication.dirtyTermId();
                 if (dirtyTermId != Publication.NO_DIRTY_TERM)
                 {
-                    mediaDriverProxy.sendRequestTerm(
+                    mediaDriverProxy.requestTerm(
                         publication.destination(),
                         publication.sessionId(),
                         publication.channelId(),

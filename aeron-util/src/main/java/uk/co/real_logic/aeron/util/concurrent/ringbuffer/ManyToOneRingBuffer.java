@@ -187,8 +187,8 @@ public class ManyToOneRingBuffer implements RingBuffer
         do
         {
             tail = getTailVolatile();
-
             final int availableCapacity = capacity - (int)(tail - head);
+
             if (requiredCapacity > availableCapacity)
             {
                 return INSUFFICIENT_CAPACITY;
@@ -196,19 +196,16 @@ public class ManyToOneRingBuffer implements RingBuffer
 
             padding = 0;
             tailIndex = (int)tail & mask;
+            final int bufferEndSize = capacity - tailIndex;
 
-            if (tailIndex >= headIndex)
+            if (requiredCapacity > bufferEndSize)
             {
-                final int bufferEndSize = capacity - tailIndex;
-                if (requiredCapacity > bufferEndSize)
+                if (requiredCapacity > headIndex)
                 {
-                    if (requiredCapacity > headIndex)
-                    {
-                        return INSUFFICIENT_CAPACITY;
-                    }
-
-                    padding = bufferEndSize;
+                    return INSUFFICIENT_CAPACITY;
                 }
+
+                padding = bufferEndSize;
             }
         }
         while (!buffer.compareAndSetLong(tailCounterIndex, tail, tail + requiredCapacity + padding));

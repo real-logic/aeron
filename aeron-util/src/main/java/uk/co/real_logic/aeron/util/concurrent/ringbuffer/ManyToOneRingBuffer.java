@@ -27,7 +27,7 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescri
  */
 public class ManyToOneRingBuffer implements RingBuffer
 {
-    /** Event type is padding to prevent fragmentation in the buffer. */
+    /** Record type is padding to prevent fragmentation in the buffer. */
     public static final int PADDING_MSG_TYPE_ID = -1;
 
     /** Buffer has insufficient capacity to record a message. */

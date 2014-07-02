@@ -233,12 +233,18 @@ public class ClientConductor extends Agent
                                                      final long channelId,
                                                      final Subscription.DataHandler handler)
     {
-        final Subscription subscription = new Subscription(this, handler, destination, channelId);
 
-        subscriptions.add(subscription);
-        subscriptionMap.put(destination, channelId, subscription);
+        Subscription subscription = subscriptionMap.get(destination, channelId);
 
-        mediaDriverProxy.addSubscription(destination, channelId);
+        if (null == subscription)
+        {
+            subscription = new Subscription(this, handler, destination, channelId);
+
+            subscriptions.add(subscription);
+            subscriptionMap.put(destination, channelId, subscription);
+
+            mediaDriverProxy.addSubscription(destination, channelId);
+        }
 
         return subscription;
     }

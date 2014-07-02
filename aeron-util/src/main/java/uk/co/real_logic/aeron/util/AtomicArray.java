@@ -16,7 +16,6 @@
 package uk.co.real_logic.aeron.util;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 

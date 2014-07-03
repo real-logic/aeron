@@ -113,7 +113,7 @@ public class BroadcastTransmitter
         buffer.putBytes(msgOffset(recordOffset), srcBuffer, srcIndex, length);
 
         putLatestCounter(tail);
-        putTailOrdered(tail, recordLength);
+        incrementTailOrdered(tail, recordLength);
     }
 
     private void putLatestCounter(final long tail)
@@ -121,14 +121,12 @@ public class BroadcastTransmitter
         buffer.putLong(latestCounterIndex, tail);
     }
 
-    private void putTailOrdered(final long tail, final int recordLength)
+    private void incrementTailOrdered(final long tail, final int recordLength)
     {
         buffer.putLongOrdered(tailCounterIndex, tail + recordLength);
     }
 
-    private void insertPaddingRecord(final long tail,
-                                     final int recordOffset,
-                                     final int remainingBuffer)
+    private void insertPaddingRecord(final long tail, final int recordOffset, final int remainingBuffer)
     {
         buffer.putLongOrdered(tailSequenceOffset(recordOffset), tail);
         buffer.putInt(recLengthOffset(recordOffset), remainingBuffer);

@@ -280,14 +280,21 @@ public class ClientConductor extends Agent
                                          final int positionIndicatorId) throws IOException
     {
         final LogAppender[] logs = new LogAppender[BUFFER_COUNT];
+        final AtomicBuffer[] headers = new AtomicBuffer[BUFFER_COUNT];
         for (int i = 0; i < BUFFER_COUNT; i++)
         {
-            logs[i] = newAppender(i, sessionId, channelId, termId);
+            final AtomicBuffer logBuffer = newBuffer(newBufferMessage, i);
+            final AtomicBuffer stateBuffer = newBuffer(newBufferMessage, i + BufferRotationDescriptor.BUFFER_COUNT);
+            final byte[] header = DataHeaderFlyweight.createDefaultHeader(sessionId, channelId, termId);
+
+            headers[i] = new AtomicBuffer(header);
+            logs[i] = new LogAppender(logBuffer, stateBuffer, header, MAX_FRAME_LENGTH);
         }
 
         final LimitBarrier limit = limitBarrier(positionIndicatorId);
         final Publication publication =
-            new Publication(this, destination, channelId, sessionId, termId, logs, limit);
+            new Publication(this, destination, channelId, sessionId, termId, headers, logs, limit);
+
         publications.add(publication);
         addedPublication = publication;
 
@@ -356,18 +363,6 @@ public class ClientConductor extends Agent
         final int length = newBufferMessage.bufferLength(index);
 
         return bufferUsage.newBuffer(location, offset, length);
-    }
-
-    private LogAppender newAppender(final int index,
-                                    final long sessionId,
-                                    final long channelId,
-                                    final long termId) throws IOException
-    {
-        final AtomicBuffer logBuffer = newBuffer(newBufferMessage, index);
-        final AtomicBuffer stateBuffer = newBuffer(newBufferMessage, index + BufferRotationDescriptor.BUFFER_COUNT);
-        final byte[] header = DataHeaderFlyweight.createDefaultHeader(sessionId, channelId, termId);
-
-        return new LogAppender(logBuffer, stateBuffer, header, MAX_FRAME_LENGTH);
     }
 
     private LogReader newReader(final int index,

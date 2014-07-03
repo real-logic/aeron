@@ -1,22 +1,24 @@
 package uk.co.real_logic.aeron;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
+import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.status.LimitBarrier;
 
 import java.nio.ByteBuffer;
 
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
+import static uk.co.real_logic.aeron.Publication.NO_DIRTY_TERM;
 import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.SUCCESS;
+import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.CLEAN_WINDOW;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.*;
 
 public class PublicationTest
 {
@@ -30,70 +32,72 @@ public class PublicationTest
 
     private final ByteBuffer sendBuffer = ByteBuffer.allocate(SEND_BUFFER_CAPACITY);
     private final AtomicBuffer atomicSendBuffer = new AtomicBuffer(sendBuffer);
+    private final DataHeaderFlyweight dataHeaderFlyweight = new DataHeaderFlyweight();
 
     private ClientConductor conductor;
     private Publication publication;
     private LimitBarrier limit;
     private LogAppender[] appenders;
+    private AtomicBuffer[] headers;
 
     @Before
     public void setup()
     {
         conductor = mock(ClientConductor.class);
         limit = mock(LimitBarrier.class);
+        when(limit.limit()).thenReturn(2L * SEND_BUFFER_CAPACITY);
 
         appenders = new LogAppender[BUFFER_COUNT];
+        headers = new AtomicBuffer[BUFFER_COUNT];
         for (int i = 0; i < BUFFER_COUNT; i++)
         {
             appenders[i] = mock(LogAppender.class);
+            headers[i] = new AtomicBuffer(new byte[DataHeaderFlyweight.HEADER_LENGTH]);
             when(appenders[i].append(any(), anyInt(), anyInt())).thenReturn(SUCCESS);
         }
 
         publication = new Publication(
                 conductor, DESTINATION, CHANNEL_ID_1,
-                SESSION_ID_1, TERM_ID_1, appenders, limit);
+                SESSION_ID_1, TERM_ID_1, headers, appenders, limit);
     }
 
     @Test
-    public void canOfferAMessageUponConstruction()
+    public void shouldOfferAMessageUponConstruction()
     {
         assertTrue(publication.offer(atomicSendBuffer));
     }
 
-    @Ignore
     @Test
-    public void shouldRotateBuffersOnceFull() throws Exception
+    public void shouldFailToOfferAMessageWhenLimited()
     {
-        // TODO: port test
-        /*final RingBuffer toMediaDriver = toDriverBuffer;
-        final Publication publication = addPublication();
-        conductor.doWork();
+        when(limit.limit()).thenReturn(SEND_BUFFER_CAPACITY - 1L);
+        assertFalse(publication.offer(atomicSendBuffer));
+    }
 
-        sendNewBufferNotification(NEW_PUBLICATION_BUFFER_EVENT, SESSION_ID_1, TERM_ID_1);
+    @Test
+    public void shouldFailToOfferWhenAppendFails()
+    {
+        when(appenders[0].append(any(), anyInt(), anyInt())).thenReturn(FAILURE);
+        assertFalse(publication.offer(atomicSendBuffer));
+        assertThat(publication.dirtyTermId(), is(NO_DIRTY_TERM));
+    }
 
-        final int capacity = logBuffersSession1[0].capacity();
-        final int msgCount = (4 * capacity) / SEND_BUFFER_CAPACITY;
+    @Test
+    public void shouldRotateWhenAppendTrips()
+    {
+        when(appenders[0].append(any(), anyInt(), anyInt())).thenReturn(TRIPPED);
 
-        conductor.doWork();
-        skip(toMediaDriver, 1);
-        boolean previousAppend = true;
-        int bufferId = 0;
-        for (int i = 0; i < msgCount; i++)
-        {
-            final boolean appended = publication.offer(atomicSendBuffer);
-            conductor.doWork();
+        assertTrue(publication.offer(atomicSendBuffer));
 
-            assertTrue(previousAppend || appended);
-            previousAppend = appended;
+        // recorded the dirty term id
+        assertThat(publication.dirtyTermId(), is(TERM_ID_1 + CLEAN_WINDOW));
 
-            if (!appended)
-            {
-                assertCleanTermRequested(toMediaDriver);
-                cleanBuffer(logBuffersSession1[bufferId]);
-                cleanBuffer(stateBuffersSession1[bufferId]);
-                bufferId = rotateId(bufferId);
-            }
-        }*/
+        // written data to the next record
+        verify(appenders[1]).append(atomicSendBuffer, 0, atomicSendBuffer.capacity());
+
+        // updated the term id in the header
+        dataHeaderFlyweight.wrap(headers[1], 0);
+        assertThat(dataHeaderFlyweight.termId(), is(TERM_ID_1 + 1));
     }
 
 }

@@ -19,6 +19,7 @@ import uk.co.real_logic.aeron.conductor.ChannelEndpoint;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
+import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.status.LimitBarrier;
 
 import java.util.concurrent.atomic.AtomicLong;
@@ -43,24 +44,29 @@ public class Publication extends ChannelEndpoint
 
     private final long sessionId;
     private final LogAppender[] logAppenders;
+    private final AtomicBuffer[] headers;
     private final LimitBarrier limit;
     private final AtomicLong currentTermId;
+    private final DataHeaderFlyweight dataHeaderFlyweight = new DataHeaderFlyweight();
 
     private volatile long dirtyTermId = NO_DIRTY_TERM;
 
     private int refCount = 0;
     private int currentBufferIndex = 0;
 
+
     public Publication(final ClientConductor conductor,
                        final String destination,
                        final long channelId,
                        final long sessionId,
                        final long initialTermId,
+                       final AtomicBuffer[] headers,
                        final LogAppender[] logAppenders,
                        final LimitBarrier limit)
     {
         super(destination, channelId);
         this.conductor = conductor;
+        this.headers = headers;
 
         currentTermId = new AtomicLong(initialTermId);
         this.sessionId = sessionId;
@@ -89,9 +95,8 @@ public class Publication extends ChannelEndpoint
      */
     public boolean offer(final AtomicBuffer buffer, final int offset, final int length)
     {
-        // TODO: must update the logAppender header with new termId!
         final LogAppender logAppender = logAppenders[currentBufferIndex];
-        if (isPausedDueToFlowControl(logAppender))
+        if (isPausedDueToFlowControl(logAppender, length))
         {
             return false;
         }
@@ -102,7 +107,11 @@ public class Publication extends ChannelEndpoint
         {
             currentBufferIndex = rotateId(currentBufferIndex);
             final long currentTermId = this.currentTermId.get();
-            this.currentTermId.lazySet(currentTermId + 1);
+            final long newTermId = currentTermId + 1;
+            this.currentTermId.lazySet(newTermId);
+
+            dataHeaderFlyweight.wrap(headers[currentBufferIndex], 0);
+            dataHeaderFlyweight.termId(newTermId);
 
             requestTermClean(currentTermId);
 
@@ -112,9 +121,10 @@ public class Publication extends ChannelEndpoint
         return status == SUCCESS;
     }
 
-    private boolean isPausedDueToFlowControl(final LogAppender logAppender)
+    private boolean isPausedDueToFlowControl(final LogAppender logAppender, final int length)
     {
-        return limit.limit() < logAppender.tailVolatile();
+        int requiredPosition = logAppender.tailVolatile() + length;
+        return limit.limit() < requiredPosition;
     }
 
     /**
@@ -143,12 +153,6 @@ public class Publication extends ChannelEndpoint
         }
     }
 
-    protected boolean hasTerm(final long sessionId)
-    {
-        // TODO: remove this one ClientConductor.onNewBuffers has been refactored
-        return currentTermId.get() != UNKNOWN_TERM_ID;
-    }
-
     private void requestTermClean(final long currentTermId)
     {
         dirtyTermId = currentTermId + CLEAN_WINDOW;
@@ -167,6 +171,12 @@ public class Publication extends ChannelEndpoint
     public void resetDirtyTermId()
     {
         dirtyTermId = NO_DIRTY_TERM;
+    }
+
+    protected boolean hasTerm(final long sessionId)
+    {
+        // TODO: remove this one ClientConductor.onNewBuffers has been refactored
+        return currentTermId.get() != UNKNOWN_TERM_ID;
     }
 
 }

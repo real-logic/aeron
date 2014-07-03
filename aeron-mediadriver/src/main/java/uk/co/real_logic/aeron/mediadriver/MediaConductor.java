@@ -57,7 +57,7 @@ public class MediaConductor extends Agent
     public static final FeedbackDelayGenerator RETRANS_UNICAST_LINGER_GENERATOR =
         () -> RETRANS_UNICAST_LINGER_DEFAULT_NS;
 
-    private final RingBuffer mediaCommandBuffer;
+    private final RingBuffer driverCommandBuffer;
     private final ReceiverProxy receiverProxy;
     private final ClientProxy clientProxy;
     private final NioSelector nioSelector;
@@ -65,7 +65,7 @@ public class MediaConductor extends Agent
     private final RingBuffer fromClientCommands;
     private final Long2ObjectHashMap<ControlFrameHandler> srcDestinationMap = new Long2ObjectHashMap<>();
     private final TimerWheel timerWheel;
-    private final AtomicArray<DriverSubscribedSession> subscribedSessions;
+    private final AtomicArray<DriverConnectedSubscription> connectedSubscriptions;
     private final AtomicArray<DriverPublication> publications;
 
     private final Supplier<SenderControlStrategy> unicastSenderFlowControl;
@@ -83,7 +83,7 @@ public class MediaConductor extends Agent
     {
         super(ctx.conductorIdleStrategy());
 
-        this.mediaCommandBuffer = ctx.mediaCommandBuffer();
+        this.driverCommandBuffer = ctx.driverCommandBuffer();
         this.receiverProxy = ctx.receiverProxy();
         this.bufferManagement = ctx.bufferManagement();
         this.nioSelector = ctx.conductorNioSelector();
@@ -95,7 +95,7 @@ public class MediaConductor extends Agent
         timerWheel = ctx.conductorTimerWheel();
         heartbeatTimer = newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheck);
 
-        subscribedSessions = ctx.subscribedSessions();
+        connectedSubscriptions = ctx.connectedSubscriptions();
         publications = ctx.publications();
         fromClientCommands = ctx.fromClientCommands();
         clientProxy = ctx.clientProxy();
@@ -120,9 +120,9 @@ public class MediaConductor extends Agent
         }
 
         hasDoneWork |= publications.forEach(0, DriverPublication::processBufferRotation);
-        hasDoneWork |= subscribedSessions.forEach(0, DriverSubscribedSession::processBufferRotation);
-        hasDoneWork |= subscribedSessions.forEach(0, DriverSubscribedSession::scanForGaps);
-        hasDoneWork |= subscribedSessions.forEach(0, DriverSubscribedSession::sendAnyPendingSm);
+        hasDoneWork |= connectedSubscriptions.forEach(0, DriverConnectedSubscription::processBufferRotation);
+        hasDoneWork |= connectedSubscriptions.forEach(0, DriverConnectedSubscription::scanForGaps);
+        hasDoneWork |= connectedSubscriptions.forEach(0, DriverConnectedSubscription::sendAnyPendingSm);
 
         hasDoneWork |= processClientCommandBuffer();
         hasDoneWork |= processMediaCommandBuffer();
@@ -150,7 +150,7 @@ public class MediaConductor extends Agent
 
     private boolean processMediaCommandBuffer()
     {
-        final int messagesRead = mediaCommandBuffer.read(
+        final int messagesRead = driverCommandBuffer.read(
             (msgTypeId, buffer, index, length) ->
             {
                 switch (msgTypeId)

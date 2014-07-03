@@ -27,9 +27,9 @@ import static uk.co.real_logic.aeron.util.ChannelCounters.UNKNOWN_TERM_ID;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.WORD_ALIGNMENT;
 
 /**
- * .
+ * A subscription that has been connected to from a publisher session.
  */
-public class SubscribedSession
+public class ConnectedSubscription
 {
     private static final int HEADER_LENGTH = BitUtil.align(DataHeaderFlyweight.HEADER_LENGTH, WORD_ALIGNMENT);
 
@@ -41,16 +41,16 @@ public class SubscribedSession
 
     private int currentBufferId = 0;
 
-    public SubscribedSession(final LogReader[] readers,
-                             final long sessionId,
-                             final long termId,
-                             final Subscription.DataHandler dataHandler)
+    public ConnectedSubscription(final LogReader[] readers,
+                                 final long sessionId,
+                                 final long currentTermId,
+                                 final Subscription.DataHandler dataHandler)
     {
         this.logReaders = readers;
         this.sessionId = sessionId;
         this.dataHandler = dataHandler;
-        currentTermId = new AtomicLong(termId);
-        cleanedTermId = new AtomicLong(termId + CLEAN_WINDOW);
+        this.currentTermId = new AtomicLong(currentTermId);
+        cleanedTermId = new AtomicLong(currentTermId + CLEAN_WINDOW);
     }
 
     public int read()
@@ -102,10 +102,5 @@ public class SubscribedSession
                 cleanedTermId.incrementAndGet();
             }
         }
-    }
-
-    public boolean hasTerm()
-    {
-        return currentTermId.get() != UNKNOWN_TERM_ID;
     }
 }

@@ -101,7 +101,7 @@ public class MediaConductorTest
         statusBufferManager = mock(StatusBufferManager.class);
 
         final MediaDriver.MediaDriverContext ctx = new MediaDriver.MediaDriverContext()
-            .conductorCommandBuffer(MediaDriver.COMMAND_BUFFER_SZ)
+            .driverCommandBuffer(MediaDriver.COMMAND_BUFFER_SZ)
             .receiverCommandBuffer(MediaDriver.COMMAND_BUFFER_SZ)
             .receiverNioSelector(nioSelector)
             .conductorNioSelector(nioSelector)
@@ -111,7 +111,7 @@ public class MediaConductorTest
                                                 TimeUnit.MICROSECONDS,
                                                 MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
             .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024))
-            .subscribedSessions(new AtomicArray<>())
+            .connectedSubscriptions(new AtomicArray<>())
             .publications(publications)
             .bufferManagement(mockBufferManagement)
             .statusBufferManager(statusBufferManager);
@@ -120,7 +120,7 @@ public class MediaConductorTest
         ctx.clientProxy(mockClientProxy);
 
         ctx.receiverProxy(new ReceiverProxy(ctx.receiverCommandBuffer(), ctx.newReceiveBufferEventQueue()));
-        ctx.mediaConductorProxy(new MediaConductorProxy(ctx.mediaCommandBuffer()));
+        ctx.mediaConductorProxy(new MediaConductorProxy(ctx.driverCommandBuffer()));
 
         receiver = new Receiver(ctx);
         mediaConductor = new MediaConductor(ctx);

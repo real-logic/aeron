@@ -28,20 +28,20 @@ public class DriverSubscription
     private final UdpDestination destination;
     private final long channelId;
     private final MediaConductorProxy conductorProxy;
-    private final AtomicArray<DriverSubscribedSession> subscribedSessions;
-    private final Long2ObjectHashMap<DriverSubscribedSession> subscribedSessionBySessionIdMap = new Long2ObjectHashMap<>();
+    private final AtomicArray<DriverConnectedSubscription> connectedSubscriptions;
+    private final Long2ObjectHashMap<DriverConnectedSubscription> connectionBySessionIdMap = new Long2ObjectHashMap<>();
 
     private int refCount = 0;
 
     public DriverSubscription(final UdpDestination destination,
                               final long channelId,
                               final MediaConductorProxy conductorProxy,
-                              final AtomicArray<DriverSubscribedSession> subscribedSessions)
+                              final AtomicArray<DriverConnectedSubscription> connectedSubscriptions)
     {
         this.destination = destination;
         this.channelId = channelId;
         this.conductorProxy = conductorProxy;
-        this.subscribedSessions = subscribedSessions;
+        this.connectedSubscriptions = connectedSubscriptions;
     }
 
     public int decRef()
@@ -54,17 +54,18 @@ public class DriverSubscription
         return ++refCount;
     }
 
-    public DriverSubscribedSession getSubscribedSession(final long sessionId)
+    public DriverConnectedSubscription getConnectedSubscription(final long sessionId)
     {
-        return subscribedSessionBySessionIdMap.get(sessionId);
+        return connectionBySessionIdMap.get(sessionId);
     }
 
-    public DriverSubscribedSession createSubscribedSession(final long sessionId, final InetSocketAddress srcAddress)
+    public DriverConnectedSubscription newConnectedSubscription(final long sessionId, final InetSocketAddress srcAddress)
     {
-        final DriverSubscribedSession driverSubscribedSession = new DriverSubscribedSession(sessionId, channelId, srcAddress);
-        subscribedSessions.add(driverSubscribedSession);
+        final DriverConnectedSubscription connectedSubscription
+            = new DriverConnectedSubscription(sessionId, channelId, srcAddress);
+        connectedSubscriptions.add(connectedSubscription);
 
-        return subscribedSessionBySessionIdMap.put(sessionId, driverSubscribedSession);
+        return connectionBySessionIdMap.put(sessionId, connectedSubscription);
     }
 
     public long channelId()
@@ -74,7 +75,7 @@ public class DriverSubscription
 
     public void close()
     {
-        subscribedSessionBySessionIdMap.forEach(
+        connectionBySessionIdMap.forEach(
             (sessionId, session) -> conductorProxy.removeTermBuffer(destination, sessionId, channelId)
         );
     }

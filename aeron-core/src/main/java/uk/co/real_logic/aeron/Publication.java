@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.conductor.ChannelEndpoint;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
@@ -24,9 +23,7 @@ import uk.co.real_logic.aeron.util.status.LimitBarrier;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.CLEAN_WINDOW;
-import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.rotateId;
-import static uk.co.real_logic.aeron.util.ChannelCounters.UNKNOWN_TERM_ID;
+import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.SUCCESS;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.TRIPPED;
@@ -36,12 +33,14 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.Appen
  *
  * Publication instances are threadsafe and can be shared between publishers.
  */
-public class Publication extends ChannelEndpoint
+public class Publication
 {
     public static final long NO_DIRTY_TERM = -1L;
 
     private final ClientConductor conductor;
 
+    private final String destination;
+    private final long channelId;
     private final long sessionId;
     private final LogAppender[] logAppenders;
     private final AtomicBuffer[] headers;
@@ -64,14 +63,25 @@ public class Publication extends ChannelEndpoint
                        final LogAppender[] logAppenders,
                        final LimitBarrier limit)
     {
-        super(destination, channelId);
         this.conductor = conductor;
         this.headers = headers;
 
-        currentTermId = new AtomicLong(initialTermId);
+        this.destination = destination;
+        this.channelId = channelId;
         this.sessionId = sessionId;
+        this.currentTermId = new AtomicLong(initialTermId);
         this.logAppenders = logAppenders;
         this.limit = limit;
+    }
+
+    public String destination()
+    {
+        return destination;
+    }
+
+    public long channelId()
+    {
+        return channelId;
     }
 
     /**

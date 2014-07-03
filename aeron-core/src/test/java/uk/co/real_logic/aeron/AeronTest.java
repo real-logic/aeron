@@ -20,10 +20,8 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import uk.co.real_logic.aeron.conductor.BufferUsageStrategy;
-import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.ErrorCode;
 import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.MessageHandler;
@@ -40,7 +38,6 @@ import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.ErrorFlyweight;
 
 import java.nio.ByteBuffer;
-import java.util.stream.IntStream;
 
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.is;
@@ -48,6 +45,7 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.Subscription.DataHandler;
+import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.SUCCESS;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertMsgRead;
@@ -69,6 +67,7 @@ public class AeronTest
     public static final long TERM_ID_2 = 11L;
     private static final int PACKET_VALUE = 37;
     private static final int SEND_BUFFER_CAPACITY = 1024;
+    private static final int SCRATCH_BUFFER_CAPACITY = 1024;
     private static final DataHandler EMPTY_DATA_HANDLER = (buffer, offset, length, sessionId) -> {};
 
     public static final int RING_BUFFER_SZ = (16 * 1024) + RingBufferDescriptor.TRAILER_LENGTH;
@@ -79,13 +78,15 @@ public class AeronTest
 
     private DataHandler channel1Handler = EMPTY_DATA_HANDLER;
 
-    private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
     private final NewBufferMessageFlyweight newBufferMessage = new NewBufferMessageFlyweight();
     private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
     private final ErrorFlyweight errorHeader = new ErrorFlyweight();
 
     private final ByteBuffer sendBuffer = ByteBuffer.allocate(SEND_BUFFER_CAPACITY);
     private final AtomicBuffer atomicSendBuffer = new AtomicBuffer(sendBuffer);
+
+    private final ByteBuffer scratchBuffer = ByteBuffer.allocate(SCRATCH_BUFFER_CAPACITY);
+    private final AtomicBuffer atomicScratchBuffer = new AtomicBuffer(scratchBuffer);
 
     private final AtomicBuffer toClientBuffer = new AtomicBuffer(new byte[BROADCAST_BUFFER_SZ]);
     private final CopyBroadcastReceiver toClientReceiver =
@@ -99,18 +100,18 @@ public class AeronTest
 
     private Aeron aeron;
 
-    private AtomicBuffer[] logBuffersSession1 = new AtomicBuffer[BufferRotationDescriptor.BUFFER_COUNT];
-    private AtomicBuffer[] logBuffersSession2 = new AtomicBuffer[BufferRotationDescriptor.BUFFER_COUNT];
-    private AtomicBuffer[] stateBuffersSession1 = new AtomicBuffer[BufferRotationDescriptor.BUFFER_COUNT];
-    private AtomicBuffer[] stateBuffersSession2 = new AtomicBuffer[BufferRotationDescriptor.BUFFER_COUNT];
-    private LogAppender[] appendersSession1 = new LogAppender[BufferRotationDescriptor.BUFFER_COUNT];
-    private LogAppender[] appendersSession2 = new LogAppender[BufferRotationDescriptor.BUFFER_COUNT];
+    private AtomicBuffer[] logBuffersSession1 = new AtomicBuffer[BUFFER_COUNT];
+    private AtomicBuffer[] logBuffersSession2 = new AtomicBuffer[BUFFER_COUNT];
+    private AtomicBuffer[] stateBuffersSession1 = new AtomicBuffer[BUFFER_COUNT];
+    private AtomicBuffer[] stateBuffersSession2 = new AtomicBuffer[BUFFER_COUNT];
+    private LogAppender[] appendersSession1 = new LogAppender[BUFFER_COUNT];
+    private LogAppender[] appendersSession2 = new LogAppender[BUFFER_COUNT];
     private BufferUsageStrategy mockBufferUsage = mock(BufferUsageStrategy.class);
 
     @Before
     public void setUp() throws Exception
     {
-        for (int i = 0; i < BufferRotationDescriptor.BUFFER_COUNT; i++)
+        for (int i = 0; i < BUFFER_COUNT; i++)
         {
             logBuffersSession1[i] = new AtomicBuffer(new byte[LOG_BUFFER_SIZE]);
             stateBuffersSession1[i] = new AtomicBuffer(new byte[LogBufferDescriptor.STATE_BUFFER_LENGTH]);
@@ -118,34 +119,34 @@ public class AeronTest
             stateBuffersSession2[i] = new AtomicBuffer(new byte[LogBufferDescriptor.STATE_BUFFER_LENGTH]);
 
             when(mockBufferUsage.newBuffer(eq(SESSION_ID_1 + "-log-" + i), anyInt(), anyInt()))
-                    .thenReturn(logBuffersSession1[i]);
+                .thenReturn(logBuffersSession1[i]);
             when(mockBufferUsage.newBuffer(eq(SESSION_ID_1 + "-state-" + i), anyInt(), anyInt()))
-                    .thenReturn(stateBuffersSession1[i]);
+                .thenReturn(stateBuffersSession1[i]);
             when(mockBufferUsage.newBuffer(eq(SESSION_ID_2 + "-log-" + i), anyInt(), anyInt()))
-                    .thenReturn(logBuffersSession2[i]);
+                .thenReturn(logBuffersSession2[i]);
             when(mockBufferUsage.newBuffer(eq(SESSION_ID_2 + "-state-" + i), anyInt(), anyInt()))
-                    .thenReturn(stateBuffersSession2[i]);
+                .thenReturn(stateBuffersSession2[i]);
 
             appendersSession1[i] = new LogAppender(logBuffersSession1[i], stateBuffersSession1[i],
-                    DataHeaderFlyweight.DEFAULT_HEADER_NULL_IDS, MAX_FRAME_LENGTH);
+                                                   DataHeaderFlyweight.DEFAULT_HEADER_NULL_IDS, MAX_FRAME_LENGTH);
             appendersSession2[i] = new LogAppender(logBuffersSession2[i], stateBuffersSession2[i],
-                    DataHeaderFlyweight.DEFAULT_HEADER_NULL_IDS, MAX_FRAME_LENGTH);
+                                                   DataHeaderFlyweight.DEFAULT_HEADER_NULL_IDS, MAX_FRAME_LENGTH);
         }
 
         final Aeron.ClientContext ctx =
             new Aeron.ClientContext()
-                     .toClientBuffer(toClientReceiver)
-                     .toDriverBuffer(toDriverBuffer)
-                     .bufferUsageStrategy(mockBufferUsage)
-                     .invalidDestinationHandler(invalidDestination);
+                .toClientBuffer(toClientReceiver)
+                .toDriverBuffer(toDriverBuffer)
+                .bufferUsageStrategy(mockBufferUsage)
+                .invalidDestinationHandler(invalidDestination);
 
         ctx.counterLabelsBuffer(counterLabelsBuffer)
            .counterValuesBuffer(counterValuesBuffer);
 
         aeron = Aeron.newSingleMediaDriver(ctx);
 
-        newBufferMessage.wrap(atomicSendBuffer, 0);
-        errorHeader.wrap(atomicSendBuffer, 0);
+        newBufferMessage.wrap(atomicScratchBuffer, 0);
+        errorHeader.wrap(atomicScratchBuffer, 0);
     }
 
     @After
@@ -170,7 +171,7 @@ public class AeronTest
     public void removingSubscriberNotifiesMediaDriver()
     {
         final RingBuffer toMediaDriver = toDriverBuffer;
-        final Subscription subscription = newSubscriber(aeron);
+        final Subscription subscription = aeron.addSubscription(DESTINATION, CHANNEL_ID_1, channel1Handler);
 
         aeron.conductor().doWork();
         skip(toMediaDriver, 1);
@@ -194,9 +195,9 @@ public class AeronTest
         errorHeader.frameLength(ErrorFlyweight.HEADER_LENGTH + subscriptionMessage.length());
 
         toClientTransmitter.transmit(ERROR_RESPONSE,
-                atomicSendBuffer,
-                subscriptionMessage.length(),
-                errorHeader.frameLength());
+                                     atomicSendBuffer,
+                                     subscriptionMessage.length(),
+                                     errorHeader.frameLength());
 
         aeron.conductor().doWork();
 
@@ -208,7 +209,7 @@ public class AeronTest
     {
         channel1Handler = sessionAssertingHandler();
 
-        final Subscription subscription = newSubscriber(aeron);
+        final Subscription subscription = aeron.addSubscription(DESTINATION, CHANNEL_ID_1, channel1Handler);
 
         sendNewBufferNotification(NEW_SUBSCRIPTION_BUFFER_EVENT, SESSION_ID_1, TERM_ID_1);
 
@@ -226,7 +227,7 @@ public class AeronTest
     {
         channel1Handler = eitherSessionAssertingHandler();
 
-        final Subscription subscription = newSubscriber(aeron);
+        final Subscription subscription = aeron.addSubscription(DESTINATION, CHANNEL_ID_1, channel1Handler);
 
         sendNewBufferNotification(NEW_SUBSCRIPTION_BUFFER_EVENT, SESSION_ID_1, TERM_ID_1);
         sendNewBufferNotification(NEW_SUBSCRIPTION_BUFFER_EVENT, SESSION_ID_2, TERM_ID_2);
@@ -244,7 +245,7 @@ public class AeronTest
     {
         channel1Handler = sessionAssertingHandler();
 
-        final Subscription subscription = newSubscriber(aeron);
+        final Subscription subscription = aeron.addSubscription(DESTINATION, CHANNEL_ID_1, channel1Handler);
 
         sendNewBufferNotification(NEW_SUBSCRIPTION_BUFFER_EVENT, SESSION_ID_1, TERM_ID_1);
 
@@ -283,7 +284,7 @@ public class AeronTest
     {
         channel1Handler = sessionAssertingHandler();
 
-        final Subscription subscription = newSubscriber(aeron);
+        final Subscription subscription = aeron.addSubscription(DESTINATION, CHANNEL_ID_1, channel1Handler);
 
         sendNewBufferNotification(NEW_SUBSCRIPTION_BUFFER_EVENT, SESSION_ID_1, TERM_ID_1);
 
@@ -316,7 +317,7 @@ public class AeronTest
         channel1Handler = eitherSessionAssertingHandler();
 
         final RingBuffer toMediaDriver = toDriverBuffer;
-        final Subscription subscription = newSubscriber(aeron);
+        final Subscription subscription = aeron.addSubscription(DESTINATION, CHANNEL_ID_1, channel1Handler);
 
         sendNewBufferNotification(NEW_SUBSCRIPTION_BUFFER_EVENT, SESSION_ID_1, TERM_ID_1);
         sendNewBufferNotification(NEW_SUBSCRIPTION_BUFFER_EVENT, SESSION_ID_2, TERM_ID_2);
@@ -358,45 +359,36 @@ public class AeronTest
     private void writePackets(final LogAppender logAppender, final int events)
     {
         final int bytesToSend = atomicSendBuffer.capacity() - DataHeaderFlyweight.DEFAULT_HEADER_NULL_IDS.length;
-        IntStream.range(0, events).forEach(
-            (i) ->
-            {
-                atomicSendBuffer.putInt(0, PACKET_VALUE);
-                assertThat(logAppender.append(atomicSendBuffer, 0, bytesToSend), is(SUCCESS));
-            }
-        );
+        for (int i = 0; i < events; i++)
+        {
+            atomicSendBuffer.putInt(0, PACKET_VALUE);
+            assertThat(logAppender.append(atomicSendBuffer, 0, bytesToSend), is(SUCCESS));
+        }
     }
 
-    private void sendNewBufferNotification(final int msgTypeId,
-                                           final long sessionId,
-                                           final long termId)
+    private void sendNewBufferNotification(final int msgTypeId, final long sessionId, final long termId)
     {
         newBufferMessage.channelId(CHANNEL_ID_1)
                         .sessionId(sessionId)
                         .termId(termId);
 
-        IntStream.range(0, BufferRotationDescriptor.BUFFER_COUNT).forEach(
-            (i) ->
-            {
-                newBufferMessage.location(i, sessionId + "-log-" + i);
-                newBufferMessage.bufferOffset(i, 0);
-                newBufferMessage.bufferLength(i, LOG_BUFFER_SIZE);
-            }
-        );
+        for (int i = 0; i < BUFFER_COUNT; i++)
+        {
+            newBufferMessage.location(i, sessionId + "-log-" + i);
+            newBufferMessage.bufferOffset(i, 0);
+            newBufferMessage.bufferLength(i, LOG_BUFFER_SIZE);
+        }
 
-        IntStream.range(0, BufferRotationDescriptor.BUFFER_COUNT).forEach(
-            (i) ->
-            {
-                newBufferMessage.location(i + BufferRotationDescriptor.BUFFER_COUNT, sessionId + "-state-" + i);
-                newBufferMessage.bufferOffset(i + BufferRotationDescriptor.BUFFER_COUNT, 0);
-                newBufferMessage.bufferLength(i + BufferRotationDescriptor.BUFFER_COUNT,
-                        LogBufferDescriptor.STATE_BUFFER_LENGTH);
-            }
-        );
+        for (int i = 0; i < BUFFER_COUNT; i++)
+        {
+            newBufferMessage.location(i + BUFFER_COUNT, sessionId + "-state-" + i);
+            newBufferMessage.bufferOffset(i + BUFFER_COUNT, 0);
+            newBufferMessage.bufferLength(i + BUFFER_COUNT, LogBufferDescriptor.STATE_BUFFER_LENGTH);
+        }
 
         newBufferMessage.destination(DESTINATION);
 
-        toClientTransmitter.transmit(msgTypeId, atomicSendBuffer, 0, newBufferMessage.length());
+        toClientTransmitter.transmit(msgTypeId, atomicScratchBuffer, 0, newBufferMessage.length());
     }
 
     private void cleanBuffer(final AtomicBuffer buffer)
@@ -410,12 +402,7 @@ public class AeronTest
         cleanBuffer(stateBuffersSession1[index]);
     }
 
-    private Subscription newSubscriber(final Aeron aeron)
-    {
-        return aeron.addSubscription(DESTINATION, CHANNEL_ID_1, channel1Handler);
-    }
-
-    private MessageHandler assertSubscriberMessageOfType(final int expectedMsgTypeId, final long ... channelIds)
+    private MessageHandler assertSubscriberMessageOfType(final int expectedMsgTypeId, final long... channelIds)
     {
         return (msgTypeId, buffer, index, length) ->
         {
@@ -425,29 +412,5 @@ public class AeronTest
             assertThat(subscriptionMessage.channelIds(), is(channelIds));
             assertThat(subscriptionMessage.destination(), is(DESTINATION));
         };
-    }
-
-    private Publication newPublication(final Aeron aeron)
-    {
-        return aeron.addPublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
-    }
-
-    private void assertChannelMessage(final RingBuffer mediaDriverBuffer, final int expectedMsgTypeId)
-    {
-        assertMsgRead(mediaDriverBuffer, (msgTypeId, buffer, index, length) ->
-        {
-            assertThat(msgTypeId, is(expectedMsgTypeId));
-
-            publicationMessage.wrap(buffer, index);
-            assertThat(publicationMessage.destination(), is(DESTINATION));
-            assertThat(publicationMessage.channelId(), is(CHANNEL_ID_1));
-            assertThat(publicationMessage.sessionId(), is(SESSION_ID_1));
-        });
-    }
-
-    private void assertCleanTermRequested(final RingBuffer toMediaDriver)
-    {
-        assertMsgRead(toMediaDriver,
-                (msgTypeId, buffer, index, length) -> assertThat(msgTypeId, is(CLEAN_TERM_BUFFER)));
     }
 }

@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.conductor.ChannelEndpoint;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -26,7 +25,7 @@ import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
  *
  * Subscriptions are not threadsafe and should not be shared between subscribers.
  */
-public class Subscription extends ChannelEndpoint
+public class Subscription
 {
     /**
      * Interface for delivery of data to a {@link Subscription}
@@ -72,7 +71,9 @@ public class Subscription extends ChannelEndpoint
         void onInactiveSource(final long channelId, final long sessionId);
     }
 
-    private final Long2ObjectHashMap<SubscribedSession> subscriberSessionBySessionIdMap = new Long2ObjectHashMap<>();
+    private final String destination;
+    private final long channelId;
+    private final Long2ObjectHashMap<ConnectedSubscription> connectionBySessionIdMap = new Long2ObjectHashMap<>();
     private final DataHandler handler;
     private final ClientConductor conductor;
 
@@ -81,10 +82,20 @@ public class Subscription extends ChannelEndpoint
                         final String destination,
                         final long channelId)
     {
-        super(destination, channelId);
-
         this.conductor = conductor;
         this.handler = handler;
+        this.destination = destination;
+        this.channelId = channelId;
+    }
+
+    public String destination()
+    {
+        return destination;
+    }
+
+    public long channelId()
+    {
+        return channelId;
     }
 
     /**
@@ -97,7 +108,7 @@ public class Subscription extends ChannelEndpoint
 
     public boolean matches(final String destination, final long channelId)
     {
-        return destination().equals(destination) && channelId() == channelId;
+        return this.channelId == channelId && this.destination.equals(destination);
     }
 
     /**
@@ -110,30 +121,26 @@ public class Subscription extends ChannelEndpoint
     public int read()
     {
         int count = 0;
-        for (final SubscribedSession subscribedSession : subscriberSessionBySessionIdMap.values())
+        for (final ConnectedSubscription connectedSubscription : connectionBySessionIdMap.values())
         {
-            count += subscribedSession.read();
+            count += connectedSubscription.read();
         }
 
         return count;
     }
 
-    protected boolean hasTerm(final long sessionId)
+    public void onBuffersMapped(final long sessionId, final long termId, final LogReader[] logReaders)
     {
-        final SubscribedSession subscribedSession = subscriberSessionBySessionIdMap.get(sessionId);
-        return subscribedSession != null && subscribedSession.hasTerm();
-    }
-
-    public void onBuffersMapped(final long sessionId,
-                                final long termId,
-                                final LogReader[] logReaders)
-    {
-        final SubscribedSession session = new SubscribedSession(logReaders, sessionId, termId, handler);
-        subscriberSessionBySessionIdMap.put(sessionId, session);
+        connectionBySessionIdMap.put(sessionId, new ConnectedSubscription(logReaders, sessionId, termId, handler));
     }
 
     public void processBufferScan()
     {
-        subscriberSessionBySessionIdMap.values().forEach(SubscribedSession::processBufferScan);
+        connectionBySessionIdMap.values().forEach(ConnectedSubscription::processBufferScan);
+    }
+
+    public boolean isConnected(final long sessionId)
+    {
+        return null != connectionBySessionIdMap.get(sessionId);
     }
 }

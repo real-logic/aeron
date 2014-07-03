@@ -82,12 +82,12 @@ public class BroadcastTransmitter
      *
      * @param msgTypeId type of the message to be transmitted.
      * @param srcBuffer containing the encoded message to be transmitted.
-     * @param index index in the source buffer at which the encoded message begins.
+     * @param srcIndex srcIndex in the source buffer at which the encoded message begins.
      * @param length in bytes of the encoded message.
      * @throws IllegalArgumentException of the msgTypeId is not valid,
      *                                  or if the message length is greater than {@link #maxMsgLength()}.
      */
-    public void transmit(final int msgTypeId, final AtomicBuffer srcBuffer, final int index, final int length)
+    public void transmit(final int msgTypeId, final AtomicBuffer srcBuffer, final int srcIndex, final int length)
     {
         checkMsgTypeId(msgTypeId);
         checkMessageLength(length);
@@ -110,7 +110,7 @@ public class BroadcastTransmitter
         buffer.putInt(msgLengthOffset(recordOffset), length);
         buffer.putInt(msgTypeOffset(recordOffset), msgTypeId);
 
-        buffer.putBytes(msgOffset(recordOffset), srcBuffer, index, length);
+        buffer.putBytes(msgOffset(recordOffset), srcBuffer, srcIndex, length);
 
         buffer.putLong(latestCounterIndex, tail);
         buffer.putLongOrdered(tailCounterIndex, tail + recordLength);

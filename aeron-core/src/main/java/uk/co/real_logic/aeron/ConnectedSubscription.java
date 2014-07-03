@@ -53,6 +53,11 @@ public class ConnectedSubscription
         cleanedTermId = new AtomicLong(currentTermId + CLEAN_WINDOW);
     }
 
+    public long sessionId()
+    {
+        return sessionId;
+    }
+
     public int read()
     {
         LogReader logReader = logReaders[currentBufferId];

@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.conductor.ClientConductor;
+import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
@@ -73,7 +74,7 @@ public class Subscription
 
     private final String destination;
     private final long channelId;
-    private final Long2ObjectHashMap<ConnectedSubscription> connectionBySessionIdMap = new Long2ObjectHashMap<>();
+    private final AtomicArray<ConnectedSubscription> connectedSubscriptions = new AtomicArray<>();
     private final DataHandler handler;
     private final ClientConductor conductor;
 
@@ -106,41 +107,28 @@ public class Subscription
         conductor.releaseSubscription(this);
     }
 
-    public boolean matches(final String destination, final long channelId)
-    {
-        return this.channelId == channelId && this.destination.equals(destination);
-    }
-
     /**
-     * Read waiting data or event and deliver to {@link Subscription.DataHandler}s and/or event handlers.
-     *
-     * Returns after handling a single data item and/or event.
+     * Read waiting data and deliver to {@link Subscription.DataHandler}s.
      *
      * @return the number of messages read
      */
     public int read()
     {
-        int count = 0;
-        for (final ConnectedSubscription connectedSubscription : connectionBySessionIdMap.values())
-        {
-            count += connectedSubscription.read();
-        }
-
-        return count;
+        return connectedSubscriptions.forEach(0, ConnectedSubscription::read);
     }
 
     public void onBuffersMapped(final long sessionId, final long termId, final LogReader[] logReaders)
     {
-        connectionBySessionIdMap.put(sessionId, new ConnectedSubscription(logReaders, sessionId, termId, handler));
+        connectedSubscriptions.add(new ConnectedSubscription(logReaders, sessionId, termId, handler));
     }
 
     public void processBufferScan()
     {
-        connectionBySessionIdMap.values().forEach(ConnectedSubscription::processBufferScan);
+        connectedSubscriptions.forEach(ConnectedSubscription::processBufferScan);
     }
 
     public boolean isConnected(final long sessionId)
     {
-        return null != connectionBySessionIdMap.get(sessionId);
+        return null != connectedSubscriptions.findFirst((e) -> e.sessionId() == sessionId);
     }
 }

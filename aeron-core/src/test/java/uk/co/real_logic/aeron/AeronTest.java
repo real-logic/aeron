@@ -366,9 +366,7 @@ public class AeronTest
         }
     }
 
-    private void sendNewBufferNotification(final int msgTypeId,
-                                           final long sessionId,
-                                           final long termId)
+    private void sendNewBufferNotification(final int msgTypeId, final long sessionId, final long termId)
     {
         newBufferMessage.channelId(CHANNEL_ID_1)
                         .sessionId(sessionId)

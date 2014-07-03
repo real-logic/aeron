@@ -39,6 +39,18 @@ public class AtomicArray<T>
         boolean apply(T value);
     }
 
+    @FunctionalInterface
+    public interface MatchFunction<T>
+    {
+        /**
+         * Does an element match the supplied match function?
+         *
+         * @param value to be checked for a match.
+         * @return true if the value matches otherwise false.
+         */
+        boolean matches(T value);
+    }
+
     /**
      * Return the length of the {@link Object} array
      *
@@ -61,12 +73,40 @@ public class AtomicArray<T>
         return (T)arrayRef.get()[index];
     }
 
-    public void forEach(final Consumer<T> func)
+    /**
+     * Find the first element that matches via a supplied {@link MatchFunction} function.
+     *
+     * @param function to match on.
+     * @return the first element to match or null if no matches.
+     */
+    public T findFirst(final MatchFunction<T> function)
+    {
+        @SuppressWarnings("unchecked")
+        final T[] array = (T[])arrayRef.get();
+
+        for (final T e : array)
+        {
+            if (function.matches(e))
+            {
+                return e;
+            }
+        }
+
+        return null;
+    }
+
+
+    /**
+     * Iterate over each element applying a supplied function.
+     *
+     * @param function to be applied to each element.
+     */
+    public void forEach(final Consumer<T> function)
     {
         forEach(0,
                 (t) ->
                 {
-                    func.accept(t);
+                    function.accept(t);
                     return false;
                 });
     }

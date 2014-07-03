@@ -24,14 +24,15 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertNull;
 
 public class AtomicArrayTest
 {
+    private final AtomicArray<Integer> array = new AtomicArray<>();
+
     @Test
     public void shouldHandleAddToEmptyArray()
     {
-        final AtomicArray<Integer> array = new AtomicArray<>();
-
         array.add(10);
         assertThat(array.length(), is(1));
         assertThat(array.get(0), is(10));
@@ -40,8 +41,6 @@ public class AtomicArrayTest
     @Test
     public void shouldHandleAddToNonEmptyArray()
     {
-        final AtomicArray<Integer> array = new AtomicArray<>();
-
         array.add(10);
         array.add(20);
 
@@ -53,8 +52,6 @@ public class AtomicArrayTest
     @Test
     public void shouldHandleRemoveFromEmptyArray()
     {
-        final AtomicArray<Integer> array = new AtomicArray<>();
-
         array.remove(10);
 
         assertThat(array.length(), is(0));
@@ -63,8 +60,6 @@ public class AtomicArrayTest
     @Test
     public void shouldHandleRemoveFromOneElementArray()
     {
-        final AtomicArray<Integer> array = new AtomicArray<>();
-
         array.add(10);
         array.remove(10);
 
@@ -74,8 +69,6 @@ public class AtomicArrayTest
     @Test
     public void shouldHandleRemoveOfNonExistentElementFromOneElementArray()
     {
-        final AtomicArray<Integer> array = new AtomicArray<>();
-
         array.add(10);
         array.remove(20);
 
@@ -86,8 +79,6 @@ public class AtomicArrayTest
     @Test
     public void shouldHandleRemoveOfNonExistentElementFromArray()
     {
-        final AtomicArray<Integer> array = new AtomicArray<>();
-
         array.add(10);
         array.add(20);
         array.remove(30);
@@ -100,8 +91,6 @@ public class AtomicArrayTest
     @Test
     public void shouldHandleRemoveElementFromArrayEnd()
     {
-        final AtomicArray<Integer> array = new AtomicArray<>();
-
         array.add(10);
         array.add(20);
         array.remove(20);
@@ -113,8 +102,6 @@ public class AtomicArrayTest
     @Test
     public void shouldHandleRemoveElementFromArrayBegin()
     {
-        final AtomicArray<Integer> array = new AtomicArray<>();
-
         array.add(10);
         array.add(20);
         array.remove(10);
@@ -126,8 +113,6 @@ public class AtomicArrayTest
     @Test
     public void shouldHandleRemoveElementFromArrayMiddle()
     {
-        final AtomicArray<Integer> array = new AtomicArray<>();
-
         array.add(10);
         array.add(20);
         array.add(30);
@@ -139,7 +124,7 @@ public class AtomicArrayTest
     }
 
     @Test
-    public void forEachShouldIterateOverValuesInTheArray()
+    public void shouldIterateOverValuesInTheArray()
     {
         for (int start : new int[]{0, 1})
         {
@@ -148,7 +133,6 @@ public class AtomicArrayTest
             values.forEach(array::add);
 
             assertThat(array.forEach(start, values::remove), is(true));
-
             assertThat(values, empty());
         }
     }
@@ -157,11 +141,28 @@ public class AtomicArrayTest
     public void shouldHandleStartTooLargeTransparently()
     {
         final Set<Integer> values = new HashSet<>(asList(10, 20, 30));
-        final AtomicArray<Integer> array = new AtomicArray<>();
         values.forEach(array::add);
 
         assertThat(array.forEach(4, values::remove), is(true));
-
         assertThat(values, empty());
+    }
+
+    @Test
+    public void shouldNotFindInEmptyArray()
+    {
+        final Integer found = array.findFirst((e) -> e.equals(7));
+
+        assertNull(found);
+    }
+
+    @Test
+    public void shouldFindInArray()
+    {
+        final Integer matchItem = 3;
+        asList(1, 2, 3, 4, 5).forEach(array::add);
+
+        final Integer found = array.findFirst((e) -> e.equals(matchItem));
+
+        assertThat(found, is(matchItem));
     }
 }

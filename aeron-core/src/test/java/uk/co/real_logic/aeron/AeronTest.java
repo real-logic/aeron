@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import uk.co.real_logic.aeron.conductor.BufferUsageStrategy;
 import uk.co.real_logic.aeron.util.ErrorCode;
@@ -309,7 +308,6 @@ public class AeronTest
         assertThat(subscription.read(), is(0));
     }
 
-    @Ignore
     @Test
     public void subscriberBufferRollsShouldNotAffectOtherSessions() throws Exception
     {

@@ -15,14 +15,14 @@
  */
 package uk.co.real_logic.aeron.util;
 
-import java.util.Arrays;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 /**
- * Array with an atomic reference
+ * A dynamic array that can be used concurrently with a single writer and many readers. All operations are lock-free.
  */
-public class AtomicArray<T>
+public class AtomicArray<T> implements Collection<T>
 {
     private static final Object[] EMPTY_ARRAY = new Object[0];
     private final AtomicReference<Object[]> arrayRef = new AtomicReference<>(EMPTY_ARRAY);
@@ -49,16 +49,6 @@ public class AtomicArray<T>
          * @return true if the value matches otherwise false.
          */
         boolean matches(T value);
-    }
-
-    /**
-     * Return the length of the {@link Object} array
-     *
-     * @return the length of the {@link Object} array
-     */
-    public int length()
-    {
-        return arrayRef.get().length;
     }
 
     /**
@@ -100,7 +90,7 @@ public class AtomicArray<T>
      *
      * @param function to be applied to each element.
      */
-    public void forEach(final Consumer<T> function)
+    public void forEach(final Consumer<? super T> function)
     {
         forEach(0, (t) -> { function.accept(t); return 0; });
     }
@@ -109,18 +99,18 @@ public class AtomicArray<T>
      * For each valid element, call a function passing the element
      *
      * @param start the index to start iterating at
-     * @param func  to call and pass each element to
+     * @param function  to call and pass each element to
      * @return true if side effects have occurred otherwise false.
      */
-    public int forEach(int start, final ToIntFunction<T> func)
+    public int forEach(int start, final ToIntFunction<? super T> function)
     {
         @SuppressWarnings("unchecked")
         final T[] array = (T[])arrayRef.get();
 
-        return forEach(start, func, array);
+        return forEach(start, function, array);
     }
 
-    private int forEach(int start, final ToIntFunction<T> func, final T[] array)
+    private int forEach(int start, final ToIntFunction<? super T> function, final T[] array)
     {
         if (array.length == 0)
         {
@@ -139,7 +129,7 @@ public class AtomicArray<T>
             final T element = array[i];
             if (null != element)
             {
-                actionsCount += func.apply(element);
+                actionsCount += function.apply(element);
             }
 
             i++;
@@ -159,12 +149,19 @@ public class AtomicArray<T>
      *
      * @param element to add
      */
-    public void add(final T element)
+    public boolean add(final T element)
     {
+        if (null == element)
+        {
+            throw new NullPointerException("element cannot be null");
+        }
+
         final Object[] oldArray = arrayRef.get();
         final Object[] newArray = append(oldArray, element);
 
         arrayRef.lazySet(newArray);
+
+        return true;
     }
 
     /**
@@ -172,12 +169,129 @@ public class AtomicArray<T>
      *
      * @param element to remove
      */
-    public void remove(final T element)
+    public boolean remove(final Object element)
     {
         final Object[] oldArray = arrayRef.get();
         final Object[] newArray = remove(oldArray, element);
 
         arrayRef.lazySet(newArray);
+
+        return oldArray != newArray;
+    }
+
+
+    public int size()
+    {
+        return arrayRef.get().length;
+    }
+
+    public Iterator<T> iterator()
+    {
+        return new ArrayIterator<>(arrayRef.get());
+    }
+
+    private final static class ArrayIterator<T> implements Iterator<T>
+    {
+        private final Object[] array;
+        private int index;
+
+        private ArrayIterator(final Object[] array)
+        {
+            this.array = array;
+        }
+
+        public boolean hasNext()
+        {
+            return index < array.length;
+        }
+
+        @SuppressWarnings("unchecked")
+        public T next()
+        {
+            if (!hasNext())
+            {
+                throw new NoSuchElementException();
+            }
+
+            return (T)array[index++];
+        }
+
+        public void remove()
+        {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    public boolean isEmpty()
+    {
+        return arrayRef.get().length == 0;
+    }
+
+    public boolean contains(final Object o)
+    {
+        return -1 != find(arrayRef.get(), o);
+    }
+
+    public Object[] toArray()
+    {
+        final Object[] theArray = arrayRef.get();
+
+        return Arrays.copyOf(theArray, theArray.length);
+    }
+
+    public <T> T[] toArray(final T[] a)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    public boolean containsAll(final Collection<?> c)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    public boolean addAll(final Collection<? extends T> c)
+    {
+        for (final T item : c)
+        {
+            add(item);
+        }
+
+        return true;
+    }
+
+    public boolean removeAll(final Collection<?> c)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    public boolean retainAll(final Collection<?> c)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    public void clear()
+    {
+        arrayRef.set(EMPTY_ARRAY);
+    }
+
+    public String toString()
+    {
+        return "AtomicArray{" +
+            "arrayRef=" + Arrays.toString(arrayRef.get()) +
+            '}';
+    }
+
+    private static int find(final Object[] array, final Object item)
+    {
+        for (int i = 0; i < array.length; i++)
+        {
+            if (item.equals(array[i]))
+            {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     private static Object[] append(final Object[] oldArray, final Object newElement)
@@ -195,15 +309,7 @@ public class AtomicArray<T>
             return EMPTY_ARRAY;
         }
 
-        int index = -1;
-
-        for (int i = 0; i < oldArray.length; i++)
-        {
-            if (oldArray[i].equals(oldElement))
-            {
-                index = i;
-            }
-        }
+        int index = find(oldArray, oldElement);
 
         if (-1 == index)
         {
@@ -215,12 +321,5 @@ public class AtomicArray<T>
         System.arraycopy(oldArray, index + 1, newArray, index, newArray.length - index);
 
         return newArray;
-    }
-
-    public String toString()
-    {
-        return "AtomicArray{" +
-            "arrayRef=" + Arrays.toString(arrayRef.get()) +
-            '}';
     }
 }

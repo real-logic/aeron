@@ -36,7 +36,7 @@ public class Sender extends Agent
     public int doWork()
     {
         startingOffset++;
-        if (startingOffset == publications.length())
+        if (startingOffset == publications.size())
         {
             startingOffset = 0;
         }

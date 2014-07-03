@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static java.util.Arrays.asList;
+import static junit.framework.Assert.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.core.Is.is;
@@ -34,7 +35,7 @@ public class AtomicArrayTest
     public void shouldHandleAddToEmptyArray()
     {
         array.add(10);
-        assertThat(array.length(), is(1));
+        assertThat(array.size(), is(1));
         assertThat(array.get(0), is(10));
     }
 
@@ -44,7 +45,7 @@ public class AtomicArrayTest
         array.add(10);
         array.add(20);
 
-        assertThat(array.length(), is(2));
+        assertThat(array.size(), is(2));
         assertThat(array.get(0), is(10));
         assertThat(array.get(1), is(20));
     }
@@ -54,7 +55,7 @@ public class AtomicArrayTest
     {
         array.remove(10);
 
-        assertThat(array.length(), is(0));
+        assertThat(array.size(), is(0));
     }
 
     @Test
@@ -63,7 +64,7 @@ public class AtomicArrayTest
         array.add(10);
         array.remove(10);
 
-        assertThat(array.length(), is(0));
+        assertThat(array.size(), is(0));
     }
 
     @Test
@@ -72,7 +73,7 @@ public class AtomicArrayTest
         array.add(10);
         array.remove(20);
 
-        assertThat(array.length(), is(1));
+        assertThat(array.size(), is(1));
         assertThat(array.get(0), is(10));
     }
 
@@ -83,7 +84,7 @@ public class AtomicArrayTest
         array.add(20);
         array.remove(30);
 
-        assertThat(array.length(), is(2));
+        assertThat(array.size(), is(2));
         assertThat(array.get(0), is(10));
         assertThat(array.get(1), is(20));
     }
@@ -95,7 +96,7 @@ public class AtomicArrayTest
         array.add(20);
         array.remove(20);
 
-        assertThat(array.length(), is(1));
+        assertThat(array.size(), is(1));
         assertThat(array.get(0), is(10));
     }
 
@@ -106,7 +107,7 @@ public class AtomicArrayTest
         array.add(20);
         array.remove(10);
 
-        assertThat(array.length(), is(1));
+        assertThat(array.size(), is(1));
         assertThat(array.get(0), is(20));
     }
 
@@ -118,7 +119,7 @@ public class AtomicArrayTest
         array.add(30);
         array.remove(20);
 
-        assertThat(array.length(), is(2));
+        assertThat(array.size(), is(2));
         assertThat(array.get(0), is(10));
         assertThat(array.get(1), is(30));
     }
@@ -164,5 +165,23 @@ public class AtomicArrayTest
         final Integer found = array.findFirst((e) -> e.equals(matchItem));
 
         assertThat(found, is(matchItem));
+    }
+
+    @Test
+    public void shouldIterateValues()
+    {
+        asList(1, 2, 3, 4, 5).forEach(array::add);
+
+        int i = 1;
+        for (final int v : array)
+        {
+            assertThat(v, is(i++));
+        }
+    }
+
+    @Test
+    public void shouldReportEmpty()
+    {
+        assertTrue(array.isEmpty());
     }
 }

@@ -66,7 +66,6 @@ public class MediaConductorTest
     private static final String DESTINATION_URI = "udp://localhost:";
     private static final String INVALID_URI = "udp://";
     private static final long[] ONE_CHANNEL = {10};
-    private static final long[] ANOTHER_CHANNEL = {20};
     private static final long[] TWO_CHANNELS = {20, 30};
     private static final long[] THREE_CHANNELS = {10, 20, 30};
 
@@ -86,7 +85,6 @@ public class MediaConductorTest
 
     private final AtomicArray<DriverPublication> publications = new AtomicArray<>();
 
-    private StatusBufferManager statusBufferManager;
 
     private MediaConductor mediaConductor;
     private Receiver receiver;
@@ -95,10 +93,8 @@ public class MediaConductorTest
     public void setUp() throws Exception
     {
         when(mockBufferManagement.addPublication(anyObject(), anyLong(), anyLong()))
-                .thenReturn(BufferAndFrameUtils.createTestRotator(65536 + RingBufferDescriptor.TRAILER_LENGTH,
-                        LogBufferDescriptor.STATE_BUFFER_LENGTH));
-
-        statusBufferManager = mock(StatusBufferManager.class);
+            .thenReturn(BufferAndFrameUtils.createTestRotator(65536 + RingBufferDescriptor.TRAILER_LENGTH,
+                                                              LogBufferDescriptor.STATE_BUFFER_LENGTH));
 
         final MediaDriver.MediaDriverContext ctx = new MediaDriver.MediaDriverContext()
             .driverCommandBuffer(MediaDriver.COMMAND_BUFFER_SZ)
@@ -114,7 +110,7 @@ public class MediaConductorTest
             .connectedSubscriptions(new AtomicArray<>())
             .publications(publications)
             .bufferManagement(mockBufferManagement)
-            .statusBufferManager(statusBufferManager);
+            .statusBufferManager(mock(StatusBufferManager.class));
 
         ctx.fromClientCommands(fromClientCommands);
         ctx.clientProxy(mockClientProxy);
@@ -144,14 +140,13 @@ public class MediaConductorTest
 
         mediaConductor.doWork();
 
-        assertThat(publications.length(), is(1));
+        assertThat(publications.size(), is(1));
         assertNotNull(publications.get(0));
         assertThat(publications.get(0).sessionId(), is(1L));
         assertThat(publications.get(0).channelId(), is(2L));
 
         verify(mockClientProxy).onNewBuffers(eq(ControlProtocolEvents.NEW_PUBLICATION_BUFFER_EVENT),
                 eq(1L), eq(2L), anyLong(), eq(DESTINATION_URI + 4000), any(), anyLong(), anyInt());
-
     }
 
     @Test
@@ -193,7 +188,7 @@ public class MediaConductorTest
 
         mediaConductor.doWork();
 
-        assertThat(publications.length(), is(4));
+        assertThat(publications.size(), is(4));
     }
 
     @Test
@@ -206,7 +201,7 @@ public class MediaConductorTest
 
         mediaConductor.doWork();
 
-        assertThat(publications.length(), is(0));
+        assertThat(publications.size(), is(0));
         assertNull(mediaConductor.frameHandler(UdpDestination.parse(DESTINATION_URI + 4005)));
     }
 
@@ -227,7 +222,7 @@ public class MediaConductorTest
 
         mediaConductor.doWork();
 
-        assertThat(publications.length(), is(0));
+        assertThat(publications.size(), is(0));
     }
 
     @Test
@@ -299,7 +294,7 @@ public class MediaConductorTest
 
         mediaConductor.doWork();
 
-        assertThat(publications.length(), is(1));
+        assertThat(publications.size(), is(1));
         assertNotNull(publications.get(0));
         assertThat(publications.get(0).sessionId(), is(1L));
         assertThat(publications.get(0).channelId(), is(2L));
@@ -316,7 +311,7 @@ public class MediaConductorTest
 
         mediaConductor.doWork();
 
-        assertThat(publications.length(), is(0));
+        assertThat(publications.size(), is(0));
 
         mockClientProxy.onError(eq(INVALID_DESTINATION), argThat(not(isEmptyOrNullString())), any(), anyInt());
     }
@@ -331,7 +326,7 @@ public class MediaConductorTest
 
         mediaConductor.doWork();
 
-        assertThat(publications.length(), is(1));
+        assertThat(publications.size(), is(1));
         assertNotNull(publications.get(0));
         assertThat(publications.get(0).sessionId(), is(1L));
         assertThat(publications.get(0).channelId(), is(2L));
@@ -349,7 +344,7 @@ public class MediaConductorTest
 
         mediaConductor.doWork();
 
-        assertThat(publications.length(), is(1));
+        assertThat(publications.size(), is(1));
         assertNotNull(publications.get(0));
         assertThat(publications.get(0).sessionId(), is(1L));
         assertThat(publications.get(0).channelId(), is(2L));
@@ -383,11 +378,11 @@ public class MediaConductorTest
     }
 
     private void writeSubscriberMessage(final int msgTypeId, final String destination, final long[] channelIds)
-            throws IOException
+        throws IOException
     {
         subscriptionMessage.wrap(writeBuffer, 0);
         subscriptionMessage.channelIds(channelIds)
-                         .destination(destination);
+                           .destination(destination);
 
         fromClientCommands.write(msgTypeId, writeBuffer, 0, subscriptionMessage.length());
     }

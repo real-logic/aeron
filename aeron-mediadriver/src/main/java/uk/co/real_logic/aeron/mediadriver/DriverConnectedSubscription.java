@@ -72,7 +72,9 @@ public class DriverConnectedSubscription
         this.channelId = channelId;
     }
 
-    public void termBuffer(final long initialTermId, final BufferRotator rotator, final LossHandler lossHandler,
+    public void termBuffer(final long initialTermId,
+                           final BufferRotator rotator,
+                           final LossHandler lossHandler,
                            final SendSmHandler sendSmHandler)
     {
         cleanedTermId.lazySet(initialTermId + CLEAN_WINDOW);

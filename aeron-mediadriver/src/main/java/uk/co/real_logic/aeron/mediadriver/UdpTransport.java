@@ -99,6 +99,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
             channel.bind(destination.localControl());
             multicast = false;
         }
+
         channel.configureBlocking(false);
         registeredKey = nioSelector.registerForRead(channel, this);
     }
@@ -215,6 +216,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
                 System.err.println("received unknown header type (" + header.headerType() + "), dropping");
                 break;
         }
+
         return 1;
     }
 }

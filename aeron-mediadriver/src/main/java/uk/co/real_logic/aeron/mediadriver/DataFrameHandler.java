@@ -159,7 +159,8 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
             throw new IllegalStateException("channel not found");
         }
 
-        final DriverConnectedSubscription connectedSubscription = subscription.getConnectedSubscription(event.sessionId());
+        final DriverConnectedSubscription connectedSubscription =
+            subscription.getConnectedSubscription(event.sessionId());
         if (null == connectedSubscription)
         {
             throw new IllegalStateException("session not found");

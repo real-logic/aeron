@@ -97,14 +97,12 @@ public class Receiver extends Agent
                     {
                         case ControlProtocolEvents.ADD_SUBSCRIPTION:
                             subscriberMessage.wrap(buffer, index);
-                            onNewSubscriber(subscriberMessage.destination(),
-                                            subscriberMessage.channelIds());
+                            onNewSubscriber(subscriberMessage.destination(), subscriberMessage.channelIds());
                             break;
 
                         case ControlProtocolEvents.REMOVE_SUBSCRIPTION:
                             subscriberMessage.wrap(buffer, index);
-                            onRemoveSubscriber(subscriberMessage.destination(),
-                                               subscriberMessage.channelIds());
+                            onRemoveSubscriber(subscriberMessage.destination(), subscriberMessage.channelIds());
                             break;
                     }
                 }
@@ -132,7 +130,7 @@ public class Receiver extends Agent
     public void close()
     {
         stop();
-        frameHandlerByDestinationMap.forEach((destination, frameHandler) ->frameHandler.close());
+        frameHandlerByDestinationMap.forEach((destination, frameHandler) -> frameHandler.close());
     }
 
     /**

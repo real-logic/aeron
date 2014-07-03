@@ -211,6 +211,7 @@ public class ClientConductor extends Agent
                             newBufferMessage.wrap(buffer, index);
 
                             final String destination = newBufferMessage.destination();
+
                             final long sessionId = newBufferMessage.sessionId();
                             final long channelId = newBufferMessage.channelId();
                             final long termId = newBufferMessage.termId();

@@ -94,7 +94,7 @@ public class BroadcastTransmitter
 
         long tail = buffer.getLong(tailCounterIndex);
         int recordOffset = (int)tail & mask;
-        final int recordLength = BitUtil.align(length, RECORD_ALIGNMENT);
+        final int recordLength = BitUtil.align(length + HEADER_LENGTH, RECORD_ALIGNMENT);
 
         final int remainingBuffer = capacity - recordOffset;
         if (remainingBuffer < recordLength)
@@ -112,7 +112,17 @@ public class BroadcastTransmitter
 
         buffer.putBytes(msgOffset(recordOffset), srcBuffer, srcIndex, length);
 
+        putLatestCounter(tail);
+        putTailOrdered(tail, recordLength);
+    }
+
+    private void putLatestCounter(final long tail)
+    {
         buffer.putLong(latestCounterIndex, tail);
+    }
+
+    private void putTailOrdered(final long tail, final int recordLength)
+    {
         buffer.putLongOrdered(tailCounterIndex, tail + recordLength);
     }
 

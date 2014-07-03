@@ -48,6 +48,7 @@ import static uk.co.real_logic.aeron.Subscription.DataHandler;
 import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.SUCCESS;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertMsgRead;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.skip;
 
@@ -114,9 +115,9 @@ public class AeronTest
         for (int i = 0; i < BUFFER_COUNT; i++)
         {
             logBuffersSession1[i] = new AtomicBuffer(new byte[LOG_BUFFER_SIZE]);
-            stateBuffersSession1[i] = new AtomicBuffer(new byte[LogBufferDescriptor.STATE_BUFFER_LENGTH]);
+            stateBuffersSession1[i] = new AtomicBuffer(new byte[STATE_BUFFER_LENGTH]);
             logBuffersSession2[i] = new AtomicBuffer(new byte[LOG_BUFFER_SIZE]);
-            stateBuffersSession2[i] = new AtomicBuffer(new byte[LogBufferDescriptor.STATE_BUFFER_LENGTH]);
+            stateBuffersSession2[i] = new AtomicBuffer(new byte[STATE_BUFFER_LENGTH]);
 
             when(mockBufferUsage.newBuffer(eq(SESSION_ID_1 + "-log-" + i), anyInt(), anyInt()))
                 .thenReturn(logBuffersSession1[i]);
@@ -145,7 +146,6 @@ public class AeronTest
 
         aeron = Aeron.newSingleMediaDriver(ctx);
 
-        newBufferMessage.wrap(atomicScratchBuffer, 0);
         errorHeader.wrap(atomicScratchBuffer, 0);
     }
 
@@ -195,9 +195,9 @@ public class AeronTest
         errorHeader.frameLength(ErrorFlyweight.HEADER_LENGTH + subscriptionMessage.length());
 
         toClientTransmitter.transmit(ERROR_RESPONSE,
-                                     atomicSendBuffer,
-                                     subscriptionMessage.length(),
-                                     errorHeader.frameLength());
+                atomicSendBuffer,
+                subscriptionMessage.length(),
+                errorHeader.frameLength());
 
         aeron.conductor().doWork();
 
@@ -221,7 +221,6 @@ public class AeronTest
         assertThat(subscription.read(), is(1));
     }
 
-    @Ignore
     @Test
     public void subscriberCanReceivePacketsFromMultipleSessions() throws Exception
     {
@@ -368,6 +367,7 @@ public class AeronTest
 
     private void sendNewBufferNotification(final int msgTypeId, final long sessionId, final long termId)
     {
+        newBufferMessage.wrap(atomicScratchBuffer, 0);
         newBufferMessage.channelId(CHANNEL_ID_1)
                         .sessionId(sessionId)
                         .termId(termId);
@@ -383,7 +383,7 @@ public class AeronTest
         {
             newBufferMessage.location(i + BUFFER_COUNT, sessionId + "-state-" + i);
             newBufferMessage.bufferOffset(i + BUFFER_COUNT, 0);
-            newBufferMessage.bufferLength(i + BUFFER_COUNT, LogBufferDescriptor.STATE_BUFFER_LENGTH);
+            newBufferMessage.bufferLength(i + BUFFER_COUNT, STATE_BUFFER_LENGTH);
         }
 
         newBufferMessage.destination(DESTINATION);

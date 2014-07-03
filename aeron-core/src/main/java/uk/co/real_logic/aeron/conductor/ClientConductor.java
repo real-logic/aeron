@@ -257,6 +257,7 @@ public class ClientConductor extends Agent
     {
         final LogAppender[] logs = new LogAppender[BUFFER_COUNT];
         final AtomicBuffer[] headers = new AtomicBuffer[BUFFER_COUNT];
+
         for (int i = 0; i < BUFFER_COUNT; i++)
         {
             final AtomicBuffer logBuffer = newBuffer(newBufferMessage, i);
@@ -299,19 +300,9 @@ public class ClientConductor extends Agent
     {
         if ((System.currentTimeMillis() - startTime) > awaitTimeout)
         {
-            String msg = String.format("No response from media driver within %d ms", awaitTimeout);
+            final String msg = String.format("No response from media driver within %d ms", awaitTimeout);
             throw new MediaDriverTimeoutException(msg);
         }
-    }
-
-    private LogAppender newAppender(final int index, final long sessionId, final long channelId, final long termId)
-        throws IOException
-    {
-        final AtomicBuffer logBuffer = newBuffer(newBufferMessage, index);
-        final AtomicBuffer stateBuffer = newBuffer(newBufferMessage, index + BufferRotationDescriptor.BUFFER_COUNT);
-        final byte[] header = DataHeaderFlyweight.createDefaultHeader(sessionId, channelId, termId);
-
-        return new LogAppender(logBuffer, stateBuffer, header, MAX_FRAME_LENGTH);
     }
 
     private LogReader newReader(final int index) throws IOException

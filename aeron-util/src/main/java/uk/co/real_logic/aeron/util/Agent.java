@@ -43,9 +43,9 @@ public abstract class Agent implements Runnable, AutoCloseable
     {
         while (running)
         {
-            final boolean hasDoneWork = doWork();
+            final int workCount = doWork();
 
-            idleStrategy.idle(hasDoneWork);
+            idleStrategy.idle(workCount);
         }
     }
 
@@ -73,5 +73,5 @@ public abstract class Agent implements Runnable, AutoCloseable
      *
      * @return true if work has been done otherwise false to indicate no work was currently available.
      */
-    public abstract boolean doWork();
+    public abstract int doWork();
 }

@@ -22,7 +22,7 @@ import java.util.concurrent.locks.LockSupport;
  *
  * Spin for maxSpins
  * {@link Thread#yield()} for maxYields
- * {@link LockSupport#parkNanos(long)} on an exponential backoff to maxParkPeriodNanos
+ * {@link LockSupport#parkNanos(long)} on an exponential backoff to maxParkPeriodNs
  */
 public class AgentIdleStrategy
 {
@@ -33,30 +33,32 @@ public class AgentIdleStrategy
 
     private final long maxSpins;
     private final long maxYields;
-    private final long minParkPeriodNanos;
-    private final long maxParkPeriodNanos;
+    private final long minParkPeriodNs;
+    private final long maxParkPeriodNs;
 
     private State state;
 
     private long spins;
     private long yields;
-    private long parkPeriodNanos;
+    private long parkPeriodNs;
 
     /**
      * Create a set of state tracking idle behavior
      *
      * @param maxSpins to perform before moving to {@link Thread#yield()}
      * @param maxYields to perform before moving to {@link LockSupport#parkNanos(long)}
-     * @param minParkPeriodNanos to use when initiating parking
-     * @param maxParkPeriodNanos to use when parking
+     * @param minParkPeriodNs to use when initiating parking
+     * @param maxParkPeriodNs to use when parking
      */
-    public AgentIdleStrategy(final long maxSpins, final long maxYields,
-                             final long minParkPeriodNanos, final long maxParkPeriodNanos)
+    public AgentIdleStrategy(final long maxSpins,
+                             final long maxYields,
+                             final long minParkPeriodNs,
+                             final long maxParkPeriodNs)
     {
         this.maxSpins = maxSpins;
         this.maxYields = maxYields;
-        this.minParkPeriodNanos = minParkPeriodNanos;
-        this.maxParkPeriodNanos = maxParkPeriodNanos;
+        this.minParkPeriodNs = minParkPeriodNs;
+        this.maxParkPeriodNs = maxParkPeriodNs;
 
         this.spins = 0;
         this.yields = 0;
@@ -66,11 +68,11 @@ public class AgentIdleStrategy
     /**
      * Perform current idle strategy (or not) depending on whether work has been done or not
      *
-     * @param hasDoneWork or not
+     * @param workCount performed in last duty cycle.
      */
-    public void idle(final boolean hasDoneWork)
+    public void idle(final int workCount)
     {
-        if (hasDoneWork)
+        if (workCount > 0)
         {
             spins = 0;
             yields = 0;
@@ -97,7 +99,7 @@ public class AgentIdleStrategy
                 if (++yields > maxYields)
                 {
                     state = State.PARKING;
-                    parkPeriodNanos = minParkPeriodNanos;
+                    parkPeriodNs = minParkPeriodNs;
                 }
                 else
                 {
@@ -106,8 +108,8 @@ public class AgentIdleStrategy
                 break;
 
             case PARKING:
-                LockSupport.parkNanos(parkPeriodNanos);
-                parkPeriodNanos = Math.min(parkPeriodNanos << 1, maxParkPeriodNanos);
+                LockSupport.parkNanos(parkPeriodNs);
+                parkPeriodNs = Math.min(parkPeriodNs << 1, maxParkPeriodNs);
                 break;
         }
     }

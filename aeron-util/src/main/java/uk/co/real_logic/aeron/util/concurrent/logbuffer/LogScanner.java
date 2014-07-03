@@ -105,11 +105,11 @@ public class LogScanner
      *
      * @param maxLength in bytes to scan.
      * @param handler called back if a frame is available.
-     * @return true if data is available otherwise false.
+     * @return number of frames available
      */
-    public boolean scanNext(final int maxLength, final AvailabilityHandler handler)
+    public int scanNext(final int maxLength, final AvailabilityHandler handler)
     {
-        boolean available = false;
+        int frameCount = 0;
 
         if (!isComplete())
         {
@@ -137,19 +137,20 @@ public class LogScanner
                         length -= alignedFrameLength;
                         break;
                     }
+
+                    ++frameCount;
                 }
                 while ((offset + length + padding) < tail);
 
                 if (length > 0)
                 {
-                    available = true;
                     this.offset += (length + padding);
                     handler.onAvailable(offset, length);
                 }
             }
         }
 
-        return available;
+        return frameCount;
     }
 
     /**

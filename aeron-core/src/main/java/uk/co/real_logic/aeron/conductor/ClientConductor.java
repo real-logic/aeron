@@ -94,12 +94,12 @@ public class ClientConductor extends Agent
         this.publicationWindow = publicationWindow;
     }
 
-    public boolean doWork()
+    public int doWork()
     {
-        boolean hasDoneWork = handleMessagesFromMediaDriver();
+        int workCount = handleMessagesFromMediaDriver();
         performBufferMaintenance();
 
-        return hasDoneWork;
+        return workCount;
     }
 
     public void close()
@@ -197,9 +197,9 @@ public class ClientConductor extends Agent
         subscriptions.forEach(Subscription::processBufferScan);
     }
 
-    private boolean handleMessagesFromMediaDriver()
+    private int handleMessagesFromMediaDriver()
     {
-        final int messagesRead = driverBroadcastReceiver.receive(
+        return driverBroadcastReceiver.receive(
             (msgTypeId, buffer, index, length) ->
             {
                 try
@@ -246,8 +246,6 @@ public class ClientConductor extends Agent
                 }
             }
         );
-
-        return messagesRead > 0;
     }
 
     private void onNewPublicationBuffers(final String destination,

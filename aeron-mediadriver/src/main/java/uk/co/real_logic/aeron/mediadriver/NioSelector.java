@@ -76,11 +76,11 @@ public class NioSelector implements AutoCloseable
     /**
      * Explicit event loop processing as poll
      */
-    public boolean processKeys() throws Exception
+    public int processKeys() throws Exception
     {
         selector.selectNow();
 
-        return handleSelectedKeys() > 0;
+        return handleSelectedKeys();
     }
 
     /**

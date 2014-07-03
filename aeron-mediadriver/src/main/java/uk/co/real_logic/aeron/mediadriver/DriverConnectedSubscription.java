@@ -158,9 +158,9 @@ public class DriverConnectedSubscription
      *
      * @return if work has been done or not
      */
-    public boolean processBufferRotation()
+    public int processBufferRotation()
     {
-        boolean rotated = false;
+        int workCount = 0;
         final long currentTermId = this.currentTermId.get();
         final long expectedTermId = currentTermId + CLEAN_WINDOW;
         final long cleanedTermId = this.cleanedTermId.get();
@@ -172,7 +172,7 @@ public class DriverConnectedSubscription
             {
                 rotator.rotate();
                 this.cleanedTermId.lazySet(cleanedTermId + 1);
-                rotated = true;
+                ++workCount;
             }
             catch (final IOException ex)
             {
@@ -181,7 +181,7 @@ public class DriverConnectedSubscription
             }
         }
 
-        return rotated;
+        return workCount;
     }
 
     /**
@@ -189,22 +189,23 @@ public class DriverConnectedSubscription
      *
      * @return if work has been done or not
      */
-    public boolean scanForGaps()
+    public int scanForGaps()
     {
         if (null != lossHandler)
         {
             lossHandler.scan();
         }
+
         // TODO: change return to indicate whether we want to have service soon - would be OK to scan lazily
-        return false;
+        return 0;
     }
 
     /**
      * Called form the MediaConductor.
      *
-     * @return if work has been done or not
+     * @return number of work items processed.
      */
-    public boolean sendAnyPendingSm()
+    public int sendAnyPendingSm()
     {
         /*
          * General approach is to check tail and see if it has moved enough to warrant sending an SM.
@@ -219,6 +220,6 @@ public class DriverConnectedSubscription
             // TODO: if SM sent, then return true, else fall through and return false
         }
 
-        return false;
+        return 0;
     }
 }

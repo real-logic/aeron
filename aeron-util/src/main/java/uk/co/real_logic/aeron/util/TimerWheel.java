@@ -195,11 +195,11 @@ public class TimerWheel
     /**
      * Process timers and execute any expired timers.
      *
-     * @return true if any timers have expired.
+     * @return number of timers expired.
      */
-    public boolean expireTimers()
+    public int expireTimers()
     {
-        boolean timersExpired = false;
+        int timersExpired = 0;
         final long now = now();
 
         for (final Timer timer : wheel[(int)(currentTick & mask)])
@@ -216,7 +216,7 @@ public class TimerWheel
 
                 if (now >= timer.deadline)
                 {
-                    timersExpired = true;
+                    ++timersExpired;
                     timer.task.run();
                 }
             }

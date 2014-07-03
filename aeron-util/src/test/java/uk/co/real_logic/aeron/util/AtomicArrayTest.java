@@ -132,7 +132,7 @@ public class AtomicArrayTest
             final AtomicArray<Integer> array = new AtomicArray<>();
             values.forEach(array::add);
 
-            assertThat(array.forEach(start, values::remove), is(true));
+            assertThat(array.forEach(start, (e) -> values.remove(e) ?  1 : 0), is(3));
             assertThat(values, empty());
         }
     }
@@ -143,7 +143,7 @@ public class AtomicArrayTest
         final Set<Integer> values = new HashSet<>(asList(10, 20, 30));
         values.forEach(array::add);
 
-        assertThat(array.forEach(4, values::remove), is(true));
+        assertThat(array.forEach(4, (e) -> values.remove(e) ?  1 : 0), is(3));
         assertThat(values, empty());
     }
 

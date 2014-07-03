@@ -117,16 +117,16 @@ public class DriverPublication
         timeOfLastSendOrHeartbeat = new AtomicLong(this.timerWheel.now());
     }
 
-    public boolean send()
+    public int send()
     {
-        boolean hasDoneWork = false;
+        int workCount = 0;
         try
         {
             final int rightEdge = rightEdges[currentIndex].get();
             final int maxLength = Math.min(rightEdge - (int)nextOffset, mtuLength);
 
             final LogScanner scanner = scanners[currentIndex];
-            hasDoneWork = scanner.scanNext(maxLength, this::onSendFrame);
+            workCount += scanner.scanNext(maxLength, this::onSendFrame);
 
             if (scanner.isComplete())
             {
@@ -139,7 +139,7 @@ public class DriverPublication
             ex.printStackTrace();
         }
 
-        return hasDoneWork;
+        return workCount;
     }
 
     public long sessionId()
@@ -211,17 +211,18 @@ public class DriverPublication
     /**
      * This is performed on the Media Conductor thread
      */
-    public boolean processBufferRotation()
+    public int processBufferRotation()
     {
-        boolean rotated = false;
+        int workCount = 0;
         final long requiredCleanTermId = currentTermId.get() + 1;
+
         if (requiredCleanTermId > cleanedTermId.get())
         {
             try
             {
                 buffers.rotate();
                 cleanedTermId.lazySet(requiredCleanTermId);
-                rotated = true;
+                ++workCount;
             }
             catch (final IOException ex)
             {
@@ -231,7 +232,7 @@ public class DriverPublication
             }
         }
 
-        return rotated;
+        return workCount;
     }
 
     private ByteBuffer duplicateLogBuffer(final LogBuffers log)

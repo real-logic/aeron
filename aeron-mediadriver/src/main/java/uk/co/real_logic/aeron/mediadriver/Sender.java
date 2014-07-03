@@ -33,7 +33,7 @@ public class Sender extends Agent
         publications = ctx.publications();
     }
 
-    public boolean doWork()
+    public int doWork()
     {
         startingOffset++;
         if (startingOffset == publications.length())

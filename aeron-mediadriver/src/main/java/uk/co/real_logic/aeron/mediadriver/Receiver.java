@@ -54,14 +54,14 @@ public class Receiver extends Agent
         this.connectedSubscriptions = ctx.connectedSubscriptions();
     }
 
-    public boolean doWork()
+    public int doWork()
     {
-        boolean hasDoneWork = false;
+        int workCount = 0;
         try
         {
-            hasDoneWork = nioSelector.processKeys();
-            hasDoneWork |= processCommandBuffer();
-            hasDoneWork |= processNewBufferEventQueue();
+            workCount += nioSelector.processKeys();
+            workCount += processCommandBuffer();
+            workCount += processNewBufferEventQueue();
         }
         catch (final Exception ex)
         {
@@ -69,26 +69,26 @@ public class Receiver extends Agent
             // TODO: log
         }
 
-        return hasDoneWork;
+        return workCount;
     }
 
-    private boolean processNewBufferEventQueue()
+    private int processNewBufferEventQueue()
     {
-        boolean workDone = false;
+        int workCount = 0;
 
         NewReceiveBufferEvent state;
         while ((state = newBufferEventQueue.poll()) != null)
         {
-            workDone = true;
+            ++workCount;
             onNewReceiveBuffers(state);
         }
 
-        return workDone;
+        return workCount;
     }
 
-    private boolean processCommandBuffer()
+    private int processCommandBuffer()
     {
-        final int messagesRead = commandBuffer.read(
+        return commandBuffer.read(
             (msgTypeId, buffer, index, length) ->
             {
                 try
@@ -124,8 +124,6 @@ public class Receiver extends Agent
                     ex.printStackTrace();
                 }
             });
-
-        return messagesRead > 0;
     }
 
     /**

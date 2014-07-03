@@ -28,15 +28,15 @@ public class AtomicArray<T>
     private final AtomicReference<Object[]> arrayRef = new AtomicReference<>(EMPTY_ARRAY);
 
     @FunctionalInterface
-    public interface ToBooleanFunction<T>
+    public interface ToIntFunction<T>
     {
         /**
          * Applies this function to the given argument.
          *
          * @param value the function argument
-         * @return the true if side effects have occurred otherwise false.
+         * @return a value to indicate the number of actions that have occurred.
          */
-        boolean apply(T value);
+        int apply(T value);
     }
 
     @FunctionalInterface
@@ -95,7 +95,6 @@ public class AtomicArray<T>
         return null;
     }
 
-
     /**
      * Iterate over each element applying a supplied function.
      *
@@ -103,12 +102,7 @@ public class AtomicArray<T>
      */
     public void forEach(final Consumer<T> function)
     {
-        forEach(0,
-                (t) ->
-                {
-                    function.accept(t);
-                    return false;
-                });
+        forEach(0, (t) -> { function.accept(t); return 0; });
     }
 
     /**
@@ -118,7 +112,7 @@ public class AtomicArray<T>
      * @param func  to call and pass each element to
      * @return true if side effects have occurred otherwise false.
      */
-    public boolean forEach(int start, final ToBooleanFunction<T> func)
+    public int forEach(int start, final ToIntFunction<T> func)
     {
         @SuppressWarnings("unchecked")
         final T[] array = (T[])arrayRef.get();
@@ -126,11 +120,11 @@ public class AtomicArray<T>
         return forEach(start, func, array);
     }
 
-    private boolean forEach(int start, final ToBooleanFunction<T> func, final T[] array)
+    private int forEach(int start, final ToIntFunction<T> func, final T[] array)
     {
         if (array.length == 0)
         {
-            return false;
+            return 0;
         }
 
         if (array.length <= start)
@@ -138,14 +132,14 @@ public class AtomicArray<T>
             start = array.length - 1;
         }
 
-        boolean hasSideEffects = false;
+        int actionsCount = 0;
         int i = start;
         do
         {
             final T element = array[i];
             if (null != element)
             {
-                hasSideEffects |= func.apply(element);
+                actionsCount += func.apply(element);
             }
 
             i++;
@@ -157,7 +151,7 @@ public class AtomicArray<T>
         }
         while (i != start);
 
-        return hasSideEffects;
+        return actionsCount;
     }
 
     /**

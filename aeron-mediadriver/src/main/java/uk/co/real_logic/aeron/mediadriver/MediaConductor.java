@@ -106,29 +106,29 @@ public class MediaConductor extends Agent
         return srcDestinationMap.get(destination.consistentHash());
     }
 
-    public boolean doWork()
+    public int doWork()
     {
-        boolean hasDoneWork = false;
+        int workCount = 0;
 
         try
         {
-            hasDoneWork = nioSelector.processKeys();
+            workCount += nioSelector.processKeys();
         }
         catch (final Exception ex)
         {
             ex.printStackTrace();
         }
 
-        hasDoneWork |= publications.forEach(0, DriverPublication::processBufferRotation);
-        hasDoneWork |= connectedSubscriptions.forEach(0, DriverConnectedSubscription::processBufferRotation);
-        hasDoneWork |= connectedSubscriptions.forEach(0, DriverConnectedSubscription::scanForGaps);
-        hasDoneWork |= connectedSubscriptions.forEach(0, DriverConnectedSubscription::sendAnyPendingSm);
+        workCount += publications.forEach(0, DriverPublication::processBufferRotation);
+        workCount += connectedSubscriptions.forEach(0, DriverConnectedSubscription::processBufferRotation);
+        workCount += connectedSubscriptions.forEach(0, DriverConnectedSubscription::scanForGaps);
+        workCount += connectedSubscriptions.forEach(0, DriverConnectedSubscription::sendAnyPendingSm);
 
-        hasDoneWork |= processClientCommandBuffer();
-        hasDoneWork |= processMediaCommandBuffer();
-        hasDoneWork |= processTimers();
+        workCount += processClientCommandBuffer();
+        workCount += processMediaCommandBuffer();
+        workCount += processTimers();
 
-        return hasDoneWork;
+        return workCount;
     }
 
     public void close()
@@ -148,9 +148,9 @@ public class MediaConductor extends Agent
         return nioSelector;
     }
 
-    private boolean processMediaCommandBuffer()
+    private int processMediaCommandBuffer()
     {
-        final int messagesRead = driverCommandBuffer.read(
+        return driverCommandBuffer.read(
             (msgTypeId, buffer, index, length) ->
             {
                 switch (msgTypeId)
@@ -170,13 +170,11 @@ public class MediaConductor extends Agent
                         break;
                 }
             });
-
-        return messagesRead > 0;
     }
 
-    private boolean processClientCommandBuffer()
+    private int processClientCommandBuffer()
     {
-        final int messagesRead = fromClientCommands.read(
+        return fromClientCommands.read(
             (msgTypeId, buffer, index, length) ->
             {
                 Flyweight flyweight = publicationMessage;
@@ -223,13 +221,18 @@ public class MediaConductor extends Agent
                     ex.printStackTrace();
                 }
             });
-
-        return messagesRead > 0;
     }
 
-    private boolean processTimers()
+    private int processTimers()
     {
-        return timerWheel.calculateDelayInMs() <= 0 && timerWheel.expireTimers();
+        int workCount = 0;
+
+        if (timerWheel.calculateDelayInMs() <= 0)
+        {
+            workCount = timerWheel.expireTimers();
+        }
+
+        return workCount;
     }
 
     private TimerWheel.Timer newTimeout(final long delay, final TimeUnit timeUnit, final Runnable task)
@@ -417,7 +420,7 @@ public class MediaConductor extends Agent
 
     private void onHeartbeatCheck()
     {
-        publications.forEach(0, DriverPublication::heartbeatCheck);
+        publications.forEach(DriverPublication::heartbeatCheck);
         rescheduleTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, heartbeatTimer);
     }
 

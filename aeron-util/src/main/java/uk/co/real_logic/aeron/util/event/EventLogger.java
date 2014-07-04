@@ -26,7 +26,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Even logger interface for applications/libraries
+ * Event logger interface for applications/libraries
  */
 public class EventLogger
 {

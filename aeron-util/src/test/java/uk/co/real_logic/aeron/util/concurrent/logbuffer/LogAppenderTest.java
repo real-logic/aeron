@@ -23,12 +23,12 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.BitUtil.align;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.*;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.SUCCESS;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.TRIPPED;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.*;
 
 public class LogAppenderTest
@@ -200,7 +200,7 @@ public class LogAppenderTest
     }
 
     @Test
-    public void shouldFailToAppendToLogAtCapacity()
+    public void shouldTripWhenAppendingToLogAtCapacity()
     {
         final AtomicBuffer buffer = new AtomicBuffer(new byte[128]);
         final int msgLength = 20;
@@ -216,7 +216,24 @@ public class LogAppenderTest
     }
 
     @Test
-    public void shouldPadLogAndFailAppendOnInsufficientRemainingCapacity()
+    public void shouldFailWhenTheLogIsAlreadyTripped()
+    {
+        final AtomicBuffer buffer = new AtomicBuffer(new byte[128]);
+        final int msgLength = 20;
+
+        when(stateBuffer.getAndAddInt(TAIL_COUNTER_OFFSET, FRAME_ALIGNMENT))
+                .thenReturn(logAppender.capacity(),
+                            logAppender.capacity() + FRAME_ALIGNMENT);
+
+        assertThat(logAppender.append(buffer, 0, msgLength), is(TRIPPED));
+
+        assertThat(logAppender.append(buffer, 0, msgLength), is(FAILURE));
+
+        verify(logBuffer, never()).putBytes(anyInt(), eq(buffer), eq(0), eq(msgLength));
+    }
+
+    @Test
+    public void shouldPadLogAndTripWhenAppendingWithInsufficientRemainingCapacity()
     {
         final int msgLength = 120;
         final int headerLength = DEFAULT_HEADER.length;
@@ -269,4 +286,5 @@ public class LogAppenderTest
         inOrder.verify(logBuffer, times(1)).putInt(termOffsetOffset(tail), tail, LITTLE_ENDIAN);
         inOrder.verify(logBuffer, times(1)).putIntOrdered(lengthOffset(tail), frameLength);
     }
+
 }

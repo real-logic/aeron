@@ -349,7 +349,6 @@ public class MediaConductor extends Agent
                                                    "session and publication unknown for destination");
             }
 
-            bufferManagement.removePublication(srcDestination, sessionId, channelId);
             publications.remove(publication);
 
             if (frameHandler.sessionCount() == 0)
@@ -357,6 +356,8 @@ public class MediaConductor extends Agent
                 srcDestinationMap.remove(srcDestination.consistentHash());
                 frameHandler.close();
             }
+
+            bufferManagement.removePublication(srcDestination, sessionId, channelId);
 
             clientProxy.operationSucceeded(publicationMessage.correlationId());
         }

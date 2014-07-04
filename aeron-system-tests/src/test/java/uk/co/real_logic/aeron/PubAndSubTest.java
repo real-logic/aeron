@@ -93,12 +93,13 @@ public class PubAndSubTest
     @After
     public void closeEverything() throws Exception
     {
+        publication.release();
+
         subscribingClient.shutdown();
         publishingClient.shutdown();
         driver.shutdown();
 
         subscription.release();
-        // TODO: publication.release();
         subscribingClient.close();
         publishingClient.close();
         driver.close();

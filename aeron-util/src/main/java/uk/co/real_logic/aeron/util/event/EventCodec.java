@@ -28,11 +28,12 @@ import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 /**
  * Encoding/Dissecting of event types
@@ -97,28 +98,20 @@ public class EventCodec
     public static int encode(final AtomicBuffer encodingBuffer, final byte[] classname,
                              final StackTraceElement stack)
     {
-        // TODO: stop decoding Strings twice
         // TODO: check that the classname shouldn't be encoded
-        final byte[] method = stack.getMethodName().getBytes(StandardCharsets.UTF_8);
-        final byte[] filename = stack.getFileName().getBytes(StandardCharsets.UTF_8);
-        final int linenumber = stack.getLineNumber();
-        final int captureLength = classname.length + method.length + filename.length + 4 * BitUtil.SIZE_OF_INT;
-        int relativeOffset = encodeLogHeader(encodingBuffer, captureLength, captureLength);
-
-        relativeOffset = putStrackTraceElement(encodingBuffer, stack, relativeOffset);
-
+        final int relativeOffset = putStrackTraceElement(encodingBuffer, stack, LOG_HEADER_LENGTH);
+        final int captureLength = relativeOffset - LOG_HEADER_LENGTH;
+        encodeLogHeader(encodingBuffer, captureLength, captureLength);
         return relativeOffset;
     }
 
-    public static int encode(
-            final AtomicBuffer encodingBuffer,
-            final Exception ex)
+    public static int encode(final AtomicBuffer encodingBuffer, final Exception ex)
     {
         final StackTraceElement stack = ex.getStackTrace()[0];
 
         int relativeOffset = LOG_HEADER_LENGTH;
-        relativeOffset += encodingBuffer.putString(relativeOffset, ex.getClass().getName(), ByteOrder.LITTLE_ENDIAN);
-        relativeOffset += encodingBuffer.putString(relativeOffset, ex.getMessage(), ByteOrder.LITTLE_ENDIAN);
+        relativeOffset += encodingBuffer.putString(relativeOffset, ex.getClass().getName(), LITTLE_ENDIAN);
+        relativeOffset += encodingBuffer.putString(relativeOffset, ex.getMessage(), LITTLE_ENDIAN);
         relativeOffset = putStrackTraceElement(encodingBuffer, stack, relativeOffset);
 
         final int recordLength = relativeOffset - LOG_HEADER_LENGTH;
@@ -128,11 +121,11 @@ public class EventCodec
 
     private static int putStrackTraceElement(final AtomicBuffer encodingBuffer, final StackTraceElement stack, int relativeOffset)
     {
-        encodingBuffer.putInt(relativeOffset, stack.getLineNumber(), ByteOrder.LITTLE_ENDIAN);
+        encodingBuffer.putInt(relativeOffset, stack.getLineNumber(), LITTLE_ENDIAN);
         relativeOffset += BitUtil.SIZE_OF_INT;
-        relativeOffset += encodingBuffer.putString(relativeOffset, stack.getClassName(), ByteOrder.LITTLE_ENDIAN);
-        relativeOffset += encodingBuffer.putString(relativeOffset, stack.getMethodName(), ByteOrder.LITTLE_ENDIAN);
-        relativeOffset += encodingBuffer.putString(relativeOffset, stack.getFileName(), ByteOrder.LITTLE_ENDIAN);
+        relativeOffset += encodingBuffer.putString(relativeOffset, stack.getClassName(), LITTLE_ENDIAN);
+        relativeOffset += encodingBuffer.putString(relativeOffset, stack.getMethodName(), LITTLE_ENDIAN);
+        relativeOffset += encodingBuffer.putString(relativeOffset, stack.getFileName(), LITTLE_ENDIAN);
         return relativeOffset;
     }
 
@@ -222,11 +215,46 @@ public class EventCodec
     {
         final StringBuilder builder = new StringBuilder();
         int relativeOffset = dissectLogHeader(code, buffer, offset, builder);
-        byte[] workingBuffer;
-
         builder.append(": ");
 
-        final int linenumber = buffer.getInt(offset + relativeOffset, ByteOrder.LITTLE_ENDIAN);
+        readStackTraceElement(buffer, offset, builder, relativeOffset);
+
+        return builder.toString();
+    }
+
+    public static String dissectAsException(
+            final EventCode code,
+            final AtomicBuffer buffer,
+            final int offset,
+            final int length)
+    {
+        final StringBuilder builder = new StringBuilder();
+        int relativeOffset = dissectLogHeader(code, buffer, offset, builder);
+        builder.append(": ");
+
+        int strLength = buffer.getInt(offset + relativeOffset, LITTLE_ENDIAN);
+        builder.append(buffer.getString(offset + relativeOffset, strLength));
+        relativeOffset += strLength;
+
+        builder.append("(");
+        strLength = buffer.getInt(offset + relativeOffset, LITTLE_ENDIAN);
+        builder.append(buffer.getString(offset + relativeOffset, strLength));
+        relativeOffset += strLength;
+        builder.append(")");
+
+        readStackTraceElement(buffer, offset, builder, relativeOffset);
+
+        return builder.toString();
+    }
+
+    private static void readStackTraceElement(
+            final AtomicBuffer buffer,
+            final int offset,
+            final StringBuilder builder,
+            int relativeOffset)
+    {
+        byte[] workingBuffer;
+        final int linenumber = buffer.getInt(offset + relativeOffset, LITTLE_ENDIAN);
         relativeOffset += BitUtil.SIZE_OF_INT;
 
         workingBuffer = new byte[buffer.getInt(offset + relativeOffset)];
@@ -245,18 +273,6 @@ public class EventCodec
         relativeOffset += BitUtil.SIZE_OF_INT + workingBuffer.length;
 
         builder.append(String.format("%s.%s %s:%d", classname, methodname, filename, linenumber));
-
-        return builder.toString();
-    }
-
-    public static String dissectAsException(
-            final EventCode eventCode,
-            final AtomicBuffer atomicBuffer,
-            final int offset,
-            final int length)
-    {
-        // TODO
-        return "";
     }
 
     private static int encodeLogHeader(
@@ -273,13 +289,13 @@ public class EventCodec
          * - buffer (until end)
          */
 
-        encodingBuffer.putInt(relativeOffset, captureLength, ByteOrder.LITTLE_ENDIAN);
+        encodingBuffer.putInt(relativeOffset, captureLength, LITTLE_ENDIAN);
         relativeOffset += BitUtil.SIZE_OF_INT;
 
-        encodingBuffer.putInt(relativeOffset, bufferLength, ByteOrder.LITTLE_ENDIAN);
+        encodingBuffer.putInt(relativeOffset, bufferLength, LITTLE_ENDIAN);
         relativeOffset += BitUtil.SIZE_OF_INT;
 
-        encodingBuffer.putLong(relativeOffset, System.nanoTime(), ByteOrder.LITTLE_ENDIAN);
+        encodingBuffer.putLong(relativeOffset, System.nanoTime(), LITTLE_ENDIAN);
         relativeOffset += BitUtil.SIZE_OF_LONG;
 
         return relativeOffset;
@@ -296,11 +312,11 @@ public class EventCodec
          * - IP address (4 or 16 bytes)
          */
 
-        encodingBuffer.putInt(offset + relativeOffset, dstAddr.getPort(), ByteOrder.LITTLE_ENDIAN);
+        encodingBuffer.putInt(offset + relativeOffset, dstAddr.getPort(), LITTLE_ENDIAN);
         relativeOffset += BitUtil.SIZE_OF_INT;
 
         final byte[] addrBuffer = dstAddr.getAddress().getAddress();
-        encodingBuffer.putInt(offset + relativeOffset, addrBuffer.length, ByteOrder.LITTLE_ENDIAN);
+        encodingBuffer.putInt(offset + relativeOffset, addrBuffer.length, LITTLE_ENDIAN);
         relativeOffset += BitUtil.SIZE_OF_INT;
 
         relativeOffset += encodingBuffer.putBytes(offset + relativeOffset, addrBuffer);
@@ -318,13 +334,13 @@ public class EventCodec
     {
         int relativeOffset = 0;
 
-        final int captureLength = buffer.getInt(offset + relativeOffset, ByteOrder.LITTLE_ENDIAN);
+        final int captureLength = buffer.getInt(offset + relativeOffset, LITTLE_ENDIAN);
         relativeOffset += BitUtil.SIZE_OF_INT;
 
-        final int bufferLength = buffer.getInt(offset + relativeOffset, ByteOrder.LITTLE_ENDIAN);
+        final int bufferLength = buffer.getInt(offset + relativeOffset, LITTLE_ENDIAN);
         relativeOffset += BitUtil.SIZE_OF_INT;
 
-        final long timestamp = buffer.getLong(offset + relativeOffset, ByteOrder.LITTLE_ENDIAN);
+        final long timestamp = buffer.getLong(offset + relativeOffset, LITTLE_ENDIAN);
         relativeOffset += BitUtil.SIZE_OF_LONG;
 
         builder.append(String.format("[%1$f] %2$s [%3$d/%4$d]", (double)timestamp / 1000000000.0, code.name(),
@@ -337,7 +353,7 @@ public class EventCodec
     {
         int relativeOffset = 0;
 
-        final int port = buffer.getInt(offset + relativeOffset, ByteOrder.LITTLE_ENDIAN);
+        final int port = buffer.getInt(offset + relativeOffset, LITTLE_ENDIAN);
         relativeOffset += BitUtil.SIZE_OF_INT;
 
         final byte[] addrBuffer = new byte[buffer.getInt(offset + relativeOffset)];

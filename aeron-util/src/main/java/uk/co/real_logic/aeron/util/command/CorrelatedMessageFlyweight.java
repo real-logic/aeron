@@ -1,6 +1,5 @@
 package uk.co.real_logic.aeron.util.command;
 
-import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.Flyweight;
 
 import java.nio.ByteOrder;

@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron.mediadriver;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
 import uk.co.real_logic.aeron.util.ErrorCode;
 import uk.co.real_logic.aeron.util.Flyweight;
-import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.CorrelatedMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -29,9 +28,7 @@ import uk.co.real_logic.aeron.util.protocol.ErrorFlyweight;
 
 import java.nio.ByteBuffer;
 
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ERROR_RESPONSE;
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ON_NEW_PUBLICATION;
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.OPERATION_SUCCEEDED;
+import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 
 /**
  * Proxy for communicating from the media driver to the client conductor.

@@ -34,6 +34,14 @@ public class EventLogger
     private final static ManyToOneRingBuffer ringBuffer;
     private final static ThreadLocal<AtomicBuffer> encodingBuffer;
 
+    /**
+     *  The index in the stack trace of the method that called logException().
+     *
+     *  NB: stack[0] is Thread.currentThread().getStackTrace() and
+     *  stack[1] is logException().
+     */
+    private static final int INVOKING_METHOD_INDEX = 2;
+
     private byte[] className;
 
     static
@@ -114,10 +122,22 @@ public class EventLogger
         if (ON)
         {
             final StackTraceElement[] stack = Thread.currentThread().getStackTrace();
+
             final AtomicBuffer encodedBuffer = encodingBuffer.get();
-            final int encodedLength = EventCodec.encode(encodedBuffer, className, stack[2]);
+            final int encodedLength = EventCodec.encode(encodedBuffer, className, stack[INVOKING_METHOD_INDEX]);
 
             ringBuffer.write(EventCode.INVOCATION.id(), encodedBuffer, 0, encodedLength);
+        }
+    }
+
+    public void logException(final Exception ex)
+    {
+        if (ON)
+        {
+            final AtomicBuffer encodedBuffer = encodingBuffer.get();
+            final int encodedLength = EventCodec.encode(encodedBuffer, ex);
+
+            ringBuffer.write(EventCode.EXCEPTION.id(), encodedBuffer, 0, encodedLength);
         }
     }
 }

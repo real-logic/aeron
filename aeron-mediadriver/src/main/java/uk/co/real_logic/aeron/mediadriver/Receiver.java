@@ -20,6 +20,7 @@ import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.GapScanner;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.aeron.util.event.EventLogger;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -27,12 +28,15 @@ import java.util.Queue;
 
 import static uk.co.real_logic.aeron.mediadriver.MediaConductor.NAK_MULTICAST_DELAY_GENERATOR;
 import static uk.co.real_logic.aeron.mediadriver.MediaConductor.NAK_UNICAST_DELAY_GENERATOR;
+import static uk.co.real_logic.aeron.util.ErrorCode.*;
 
 /**
  * Receiver service for JVM based media driver, uses an event loop with command buffer
  */
 public class Receiver extends Agent
 {
+    private static final EventLogger LOGGER = new EventLogger(Receiver.class);
+
     private final RingBuffer commandBuffer;
     private final NioSelector nioSelector;
     private final TimerWheel conductorTimerWheel;
@@ -65,8 +69,7 @@ public class Receiver extends Agent
         }
         catch (final Exception ex)
         {
-            ex.printStackTrace();
-            // TODO: log
+            LOGGER.logException(ex);
         }
 
         return workCount;
@@ -108,18 +111,18 @@ public class Receiver extends Agent
                 }
                 catch (final InvalidDestinationException ex)
                 {
-                    // TODO: log this
-                    onError(ErrorCode.INVALID_DESTINATION_IN_PUBLICATION, length);
+                    onError(INVALID_DESTINATION_IN_PUBLICATION, length);
+                    LOGGER.logException(ex);
                 }
                 catch (final SubscriptionNotRegisteredException ex)
                 {
-                    // TODO: log this
-                    onError(ErrorCode.SUBSCRIBER_NOT_REGISTERED, length);
+                    onError(SUBSCRIBER_NOT_REGISTERED, length);
+                    LOGGER.logException(ex);
                 }
                 catch (final Exception ex)
                 {
-                    // TODO: log this as well as send the error response
-                    ex.printStackTrace();
+                    onError(GENERIC_ERROR, length);
+                    LOGGER.logException(ex);
                 }
             });
     }

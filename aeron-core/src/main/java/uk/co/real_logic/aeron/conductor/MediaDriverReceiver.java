@@ -8,8 +8,6 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.aeron.util.protocol.ErrorFlyweight;
 
-import java.io.IOException;
-
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 
 /**

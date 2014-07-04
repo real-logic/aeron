@@ -32,9 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.*;
-import static uk.co.real_logic.aeron.util.ErrorCode.GENERIC_ERROR_MESSAGE;
-import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION_IN_PUBLICATION;
-import static uk.co.real_logic.aeron.util.ErrorCode.PUBLICATION_CHANNEL_UNKNOWN;
+import static uk.co.real_logic.aeron.util.ErrorCode.*;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 
 /**
@@ -43,6 +41,7 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 public class MediaConductor extends Agent
 {
     private static final EventLogger LOGGER = new EventLogger(MediaConductor.class);
+
     public static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
     public static final int HEARTBEAT_TIMEOUT_MS = 100;
 
@@ -123,8 +122,7 @@ public class MediaConductor extends Agent
         }
         catch (final Exception ex)
         {
-            // TODO: log
-            ex.printStackTrace();
+            LOGGER.logException(ex);
         }
 
         workCount += publications.forEach(0, DriverPublication::processBufferRotation);
@@ -223,11 +221,11 @@ public class MediaConductor extends Agent
                 catch (final ControlProtocolException ex)
                 {
                     clientProxy.onError(ex.errorCode(), ex.getMessage(), flyweight, length);
+                    LOGGER.logException(ex);
                 }
                 catch (final Exception ex)
                 {
-                    // TODO: log
-                    ex.printStackTrace();
+                    LOGGER.logException(ex);
                 }
             });
     }
@@ -311,8 +309,6 @@ public class MediaConductor extends Agent
         }
         catch (final Exception ex)
         {
-            // TODO: log
-            ex.printStackTrace();
             throw new ControlProtocolException(GENERIC_ERROR_MESSAGE, ex.getMessage());
         }
     }
@@ -367,8 +363,6 @@ public class MediaConductor extends Agent
         }
         catch (final Exception ex)
         {
-            // TODO: log
-            ex.printStackTrace();
             throw new ControlProtocolException(GENERIC_ERROR_MESSAGE, ex.getMessage());
         }
     }
@@ -410,8 +404,7 @@ public class MediaConductor extends Agent
         }
         catch (final Exception ex)
         {
-            // TODO: log
-            ex.printStackTrace();
+            LOGGER.logException(ex);
         }
     }
 
@@ -428,8 +421,7 @@ public class MediaConductor extends Agent
         }
         catch (final Exception ex)
         {
-            // TODO: log
-            ex.printStackTrace();
+            LOGGER.logException(ex);
         }
     }
 

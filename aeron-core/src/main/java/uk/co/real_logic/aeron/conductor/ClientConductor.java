@@ -23,7 +23,6 @@ import uk.co.real_logic.aeron.util.*;
 import uk.co.real_logic.aeron.util.collections.ConnectionMap;
 import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
@@ -35,7 +34,6 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 
 /**
  * Client conductor takes responses and notifications from media driver and acts on them. As well as passes commands
@@ -189,18 +187,18 @@ public class ClientConductor extends Agent implements MediaDriverListener
     private int performBufferMaintenance()
     {
         int publicationWork = publications.forEach(0,
-                (publication) ->
+            (publication) ->
+            {
+                final long dirtyTermId = publication.dirtyTermId();
+                if (dirtyTermId != Publication.NO_DIRTY_TERM)
                 {
-                    final long dirtyTermId = publication.dirtyTermId();
-                    if (dirtyTermId != Publication.NO_DIRTY_TERM)
-                    {
-                        mediaDriverProxy.requestTerm(publication.destination(),
-                                publication.sessionId(),
-                                publication.channelId(),
-                                dirtyTermId);
-                    }
-                    return 1;
-                });
+                    mediaDriverProxy.requestTerm(publication.destination(),
+                            publication.sessionId(),
+                            publication.channelId(),
+                            dirtyTermId);
+                }
+                return 1;
+            });
 
         return publicationWork + subscriptions.forEach(0, Subscription::processBufferScan);
     }

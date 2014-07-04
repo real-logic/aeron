@@ -97,18 +97,42 @@ public class EventCodec
     public static int encode(final AtomicBuffer encodingBuffer, final byte[] classname,
                              final StackTraceElement stack)
     {
+        // TODO: stop decoding Strings twice
+        // TODO: check that the classname shouldn't be encoded
         final byte[] method = stack.getMethodName().getBytes(StandardCharsets.UTF_8);
         final byte[] filename = stack.getFileName().getBytes(StandardCharsets.UTF_8);
         final int linenumber = stack.getLineNumber();
         final int captureLength = classname.length + method.length + filename.length + 4 * BitUtil.SIZE_OF_INT;
         int relativeOffset = encodeLogHeader(encodingBuffer, captureLength, captureLength);
 
-        encodingBuffer.putInt(relativeOffset, linenumber, ByteOrder.LITTLE_ENDIAN);
+        relativeOffset = putStrackTraceElement(encodingBuffer, stack, relativeOffset);
+
+        return relativeOffset;
+    }
+
+    public static int encode(
+            final AtomicBuffer encodingBuffer,
+            final Exception ex)
+    {
+        final StackTraceElement stack = ex.getStackTrace()[0];
+
+        int relativeOffset = LOG_HEADER_LENGTH;
+        relativeOffset += encodingBuffer.putString(relativeOffset, ex.getClass().getName(), ByteOrder.LITTLE_ENDIAN);
+        relativeOffset += encodingBuffer.putString(relativeOffset, ex.getMessage(), ByteOrder.LITTLE_ENDIAN);
+        relativeOffset = putStrackTraceElement(encodingBuffer, stack, relativeOffset);
+
+        final int recordLength = relativeOffset - LOG_HEADER_LENGTH;
+        encodeLogHeader(encodingBuffer, recordLength, recordLength);
+        return relativeOffset;
+    }
+
+    private static int putStrackTraceElement(final AtomicBuffer encodingBuffer, final StackTraceElement stack, int relativeOffset)
+    {
+        encodingBuffer.putInt(relativeOffset, stack.getLineNumber(), ByteOrder.LITTLE_ENDIAN);
         relativeOffset += BitUtil.SIZE_OF_INT;
         relativeOffset += encodingBuffer.putString(relativeOffset, stack.getClassName(), ByteOrder.LITTLE_ENDIAN);
         relativeOffset += encodingBuffer.putString(relativeOffset, stack.getMethodName(), ByteOrder.LITTLE_ENDIAN);
         relativeOffset += encodingBuffer.putString(relativeOffset, stack.getFileName(), ByteOrder.LITTLE_ENDIAN);
-
         return relativeOffset;
     }
 
@@ -225,8 +249,20 @@ public class EventCodec
         return builder.toString();
     }
 
-    private static int encodeLogHeader(final AtomicBuffer encodingBuffer, final int captureLength,
-                                       final int bufferLength)
+    public static String dissectAsException(
+            final EventCode eventCode,
+            final AtomicBuffer atomicBuffer,
+            final int offset,
+            final int length)
+    {
+        // TODO
+        return "";
+    }
+
+    private static int encodeLogHeader(
+            final AtomicBuffer encodingBuffer,
+            final int captureLength,
+            final int bufferLength)
     {
         int relativeOffset = 0;
         /*

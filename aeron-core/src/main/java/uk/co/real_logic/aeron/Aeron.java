@@ -34,7 +34,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static java.lang.Long.getLong;
-import static uk.co.real_logic.aeron.util.IoUtil.fill;
 import static uk.co.real_logic.aeron.util.IoUtil.mapExistingFile;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
 

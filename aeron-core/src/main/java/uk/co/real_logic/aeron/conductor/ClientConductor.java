@@ -274,7 +274,7 @@ public class ClientConductor extends Agent
             // Publication errors
             case PUBLICATION_CHANNEL_ALREADY_EXISTS:
             case GENERIC_ERROR_MESSAGE:
-            case INVALID_DESTINATION_IN_PUBLICATION:
+            //case INVALID_DESTINATION_IN_PUBLICATION:
             case PUBLICATION_CHANNEL_UNKNOWN:
                 if (correlationId(buffer, errorHeader.offendingHeaderOffset()) == activeCorrelationId)
                 {

@@ -120,6 +120,7 @@ public class MediaConductor extends Agent
         }
         catch (final Exception ex)
         {
+            // TODO: log
             ex.printStackTrace();
         }
 
@@ -222,6 +223,7 @@ public class MediaConductor extends Agent
                 }
                 catch (final Exception ex)
                 {
+                    // TODO: log
                     ex.printStackTrace();
                 }
             });
@@ -306,6 +308,7 @@ public class MediaConductor extends Agent
         }
         catch (final Exception ex)
         {
+            // TODO: log
             ex.printStackTrace();
             throw new ControlProtocolException(ErrorCode.GENERIC_ERROR_PUBLICATION_MESSAGE, ex.getMessage());
         }
@@ -359,6 +362,7 @@ public class MediaConductor extends Agent
         }
         catch (final Exception ex)
         {
+            // TODO: log
             ex.printStackTrace();
             throw new ControlProtocolException(ErrorCode.GENERIC_ERROR_PUBLICATION_MESSAGE, ex.getMessage());
         }
@@ -401,6 +405,7 @@ public class MediaConductor extends Agent
         }
         catch (final Exception ex)
         {
+            // TODO: log
             ex.printStackTrace();
         }
     }
@@ -418,6 +423,7 @@ public class MediaConductor extends Agent
         }
         catch (final Exception ex)
         {
+            // TODO: log
             ex.printStackTrace();
         }
     }

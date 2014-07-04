@@ -49,7 +49,7 @@ public class DriverPublication
 
     private final TimerWheel timerWheel;
 
-    private final BufferRotator buffers;
+    private final BufferRotator bufferRotator;
     private final long sessionId;
     private final long channelId;
 
@@ -85,7 +85,7 @@ public class DriverPublication
     public DriverPublication(final ControlFrameHandler frameHandler,
                              final TimerWheel timerWheel,
                              final SenderControlStrategy controlStrategy,
-                             final BufferRotator buffers,
+                             final BufferRotator bufferRotator,
                              final long sessionId,
                              final long channelId,
                              final long initialTermId,
@@ -96,16 +96,16 @@ public class DriverPublication
         this.dstAddress = frameHandler.destination().remoteData();
         this.controlStrategy = controlStrategy;
         this.timerWheel = timerWheel;
-        this.buffers = buffers;
+        this.bufferRotator = bufferRotator;
         this.sessionId = sessionId;
         this.channelId = channelId;
         this.headerLength = headerLength;
         this.mtuLength = mtuLength;
 
-        scanners = buffers.buffers().map(this::newScanner).toArray(LogScanner[]::new);
-        termSendBuffers = buffers.buffers().map(this::duplicateLogBuffer).toArray(ByteBuffer[]::new);
-        termRetransmitBuffers = buffers.buffers().map(this::duplicateLogBuffer).toArray(ByteBuffer[]::new);
-        retransmitHandlers = buffers.buffers().map(this::newRetransmitHandler).toArray(RetransmitHandler[]::new);
+        scanners = bufferRotator.buffers().map(this::newScanner).toArray(LogScanner[]::new);
+        termSendBuffers = bufferRotator.buffers().map(this::duplicateLogBuffer).toArray(ByteBuffer[]::new);
+        termRetransmitBuffers = bufferRotator.buffers().map(this::duplicateLogBuffer).toArray(ByteBuffer[]::new);
+        retransmitHandlers = bufferRotator.buffers().map(this::newRetransmitHandler).toArray(RetransmitHandler[]::new);
 
         for (int i = 0; i < BufferRotationDescriptor.BUFFER_COUNT; i++)
         {
@@ -220,7 +220,7 @@ public class DriverPublication
         {
             try
             {
-                buffers.rotate();
+                bufferRotator.rotate();
                 cleanedTermId.lazySet(requiredCleanTermId);
                 ++workCount;
             }

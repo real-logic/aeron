@@ -30,8 +30,7 @@ import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
 
 /**
- * Encapsulates responsibility for rotating and reusing memory mapped files used by
- * the buffers.
+ * Encapsulates responsibility for rotating and reusing memory mapped files used by the log buffers.
  * <p>
  * Keeps 3 buffers on hold at any one time.
  */

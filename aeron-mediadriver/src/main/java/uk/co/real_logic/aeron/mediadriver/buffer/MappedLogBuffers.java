@@ -113,5 +113,4 @@ class MappedLogBuffers implements LogBuffers
         newBufferMessage.bufferLength(index, buffer.position() - offset);
         newBufferMessage.location(index, file.getAbsolutePath());
     }
-
 }

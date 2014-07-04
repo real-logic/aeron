@@ -21,7 +21,7 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.conductor.*;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
-import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastBufferDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastReceiver;
@@ -42,7 +42,7 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.*;
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.NEW_PUBLICATION_BUFFER_EVENT;
+import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ON_NEW_PUBLICATION;
 
 public class ClientConductorTest
 {
@@ -64,7 +64,7 @@ public class ClientConductorTest
     public static final int AWAIT_TIMEOUT = 100;
     public static final long PUBLICATION_WINDOW = 1024;
 
-    private final NewBufferMessageFlyweight newBufferMessage = new NewBufferMessageFlyweight();
+    private final LogBuffersMessageFlyweight newBufferMessage = new LogBuffersMessageFlyweight();
     private final ErrorFlyweight errorHeader = new ErrorFlyweight();
 
     private final ByteBuffer sendBuffer = ByteBuffer.allocate(SEND_BUFFER_CAPACITY);
@@ -129,7 +129,7 @@ public class ClientConductorTest
         doAnswer(
             invocation ->
             {
-                sendNewBufferNotification(NEW_PUBLICATION_BUFFER_EVENT, SESSION_ID_1, TERM_ID_1);
+                sendNewBufferNotification(ON_NEW_PUBLICATION, SESSION_ID_1, TERM_ID_1);
                 conductor.doWork();
                 return null;
             }).when(signal).await(anyLong());

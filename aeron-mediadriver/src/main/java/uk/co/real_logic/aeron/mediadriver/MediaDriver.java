@@ -247,7 +247,7 @@ public class MediaDriver implements AutoCloseable
             .conductorTimerWheel(new TimerWheel(MEDIA_CONDUCTOR_TICK_DURATION_US,
                     TimeUnit.MICROSECONDS,
                     MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
-            .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024))
+            .newConnectedSubscriptionEventQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .conductorIdleStrategy(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
                     AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
             .senderIdleStrategy(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
@@ -431,7 +431,7 @@ public class MediaDriver implements AutoCloseable
         private Supplier<SenderControlStrategy> unicastSenderFlowControl;
         private Supplier<SenderControlStrategy> multicastSenderFlowControl;
         private TimerWheel conductorTimerWheel;
-        private Queue<NewReceiveBufferEvent> newReceiveBufferEventQueue;
+        private Queue<NewConnectedSubscriptionEvent> newConnectedSubscriptionEventQueue;
         private ReceiverProxy receiverProxy;
         private MediaConductorProxy mediaConductorProxy;
         private AgentIdleStrategy conductorIdleStrategy;
@@ -462,7 +462,7 @@ public class MediaDriver implements AutoCloseable
 
             fromClientCommands(new ManyToOneRingBuffer(new AtomicBuffer(toDriverBuffer)));
 
-            receiverProxy(new ReceiverProxy(receiverCommandBuffer(), newReceiveBufferEventQueue()));
+            receiverProxy(new ReceiverProxy(receiverCommandBuffer(), newConnectedSubscriptionEventQueue()));
             mediaConductorProxy(new MediaConductorProxy(driverCommandBuffer()));
 
             bufferManagement(newMappedBufferManager(dataDirName()));
@@ -543,9 +543,10 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public MediaDriverContext newReceiveBufferEventQueue(final Queue<NewReceiveBufferEvent> newReceiveBufferEventQueue)
+        public MediaDriverContext newConnectedSubscriptionEventQueue(
+            final Queue<NewConnectedSubscriptionEvent> newConnectedSubscriptionEventQueue)
         {
-            this.newReceiveBufferEventQueue = newReceiveBufferEventQueue;
+            this.newConnectedSubscriptionEventQueue = newConnectedSubscriptionEventQueue;
             return this;
         }
 
@@ -650,9 +651,9 @@ public class MediaDriver implements AutoCloseable
             return conductorTimerWheel;
         }
 
-        public Queue<NewReceiveBufferEvent> newReceiveBufferEventQueue()
+        public Queue<NewConnectedSubscriptionEvent> newConnectedSubscriptionEventQueue()
         {
-            return newReceiveBufferEventQueue;
+            return newConnectedSubscriptionEventQueue;
         }
 
         public ReceiverProxy receiverProxy()

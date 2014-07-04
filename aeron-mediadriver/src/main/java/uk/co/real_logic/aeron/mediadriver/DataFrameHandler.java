@@ -151,7 +151,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         // this should be on the data channel and shouldn't include Naks, so ignore.
     }
 
-    public void onSubscriptionReady(final NewReceiveBufferEvent event, final LossHandler lossHandler)
+    public void onSubscriptionReady(final NewConnectedSubscriptionEvent event, final LossHandler lossHandler)
     {
         final DriverSubscription subscription = subscriptionByChannelIdMap.get(event.channelId());
         if (null == subscription)

@@ -106,7 +106,7 @@ public class MediaConductorTest
             .conductorTimerWheel(new TimerWheel(MEDIA_CONDUCTOR_TICK_DURATION_US,
                                                 TimeUnit.MICROSECONDS,
                                                 MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
-            .newReceiveBufferEventQueue(new OneToOneConcurrentArrayQueue<>(1024))
+            .newConnectedSubscriptionEventQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .connectedSubscriptions(new AtomicArray<>())
             .publications(publications)
             .bufferManagement(mockBufferManagement)
@@ -115,7 +115,7 @@ public class MediaConductorTest
         ctx.fromClientCommands(fromClientCommands);
         ctx.clientProxy(mockClientProxy);
 
-        ctx.receiverProxy(new ReceiverProxy(ctx.receiverCommandBuffer(), ctx.newReceiveBufferEventQueue()));
+        ctx.receiverProxy(new ReceiverProxy(ctx.receiverCommandBuffer(), ctx.newConnectedSubscriptionEventQueue()));
         ctx.mediaConductorProxy(new MediaConductorProxy(ctx.driverCommandBuffer()));
 
         receiver = new Receiver(ctx);
@@ -145,8 +145,8 @@ public class MediaConductorTest
         assertThat(publications.get(0).sessionId(), is(1L));
         assertThat(publications.get(0).channelId(), is(2L));
 
-        verify(mockClientProxy).onNewBuffers(eq(ControlProtocolEvents.NEW_PUBLICATION_BUFFER_EVENT),
-                eq(1L), eq(2L), anyLong(), eq(DESTINATION_URI + 4000), any(), anyLong(), anyInt());
+        verify(mockClientProxy).onNewBuffers(eq(ControlProtocolEvents.ON_NEW_PUBLICATION),
+                                             eq(1L), eq(2L), anyLong(), eq(DESTINATION_URI + 4000), any(), anyLong(), anyInt());
     }
 
     @Test

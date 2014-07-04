@@ -43,15 +43,19 @@ public class MediaConductor extends Agent
     public static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
     public static final int HEARTBEAT_TIMEOUT_MS = 100;
 
-    /** Unicast NAK delay is immediate initial with delayed subsequent delay */
+    /**
+     * Unicast NAK delay is immediate initial with delayed subsequent delay
+     */
     public static final StaticDelayGenerator NAK_UNICAST_DELAY_GENERATOR =
         new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(NAK_UNICAST_DELAY_DEFAULT_NS), true);
 
     public static final OptimalMulticastDelayGenerator NAK_MULTICAST_DELAY_GENERATOR =
         new OptimalMulticastDelayGenerator(MediaDriver.NAK_MAX_BACKOFF_DEFAULT, MediaDriver.NAK_GROUPSIZE_DEFAULT,
-                MediaDriver.NAK_GRTT_DEFAULT);
+                                           MediaDriver.NAK_GRTT_DEFAULT);
 
-    /** Source uses same for unicast and multicast. For now. */
+    /**
+     * Source uses same for unicast and multicast. For now.
+     */
     public static final FeedbackDelayGenerator RETRANS_UNICAST_DELAY_GENERATOR =
         () -> RETRANS_UNICAST_DELAY_DEFAULT_NS;
     public static final FeedbackDelayGenerator RETRANS_UNICAST_LINGER_GENERATOR =
@@ -124,7 +128,7 @@ public class MediaConductor extends Agent
         workCount += connectedSubscriptions.forEach(0, DriverConnectedSubscription::scanForGaps);
         workCount += connectedSubscriptions.forEach(0, DriverConnectedSubscription::sendAnyPendingSm);
 
-        workCount += processClientCommandBuffer();
+        workCount += processFromClientCommandBuffer();
         workCount += processMediaCommandBuffer();
         workCount += processTimers();
 
@@ -155,14 +159,14 @@ public class MediaConductor extends Agent
             {
                 switch (msgTypeId)
                 {
-                    case CREATE_TERM_BUFFER:
+                    case CREATE_CONNECTED_SUBSCRIPTION:
                         qualifiedMessage.wrap(buffer, index);
-                        onCreateSubscriptionTermBuffer(qualifiedMessage);
+                        onCreateConnectedSubscription(qualifiedMessage);
                         break;
 
-                    case REMOVE_TERM_BUFFER:
+                    case REMOVE_CONNECTED_SUBSCRIPTION:
                         qualifiedMessage.wrap(buffer, index);
-                        onRemoveSubscriptionTermBuffer(qualifiedMessage);
+                        onRemoveConnectedSubscription(qualifiedMessage);
                         break;
 
                     case ERROR_RESPONSE:
@@ -172,7 +176,7 @@ public class MediaConductor extends Agent
             });
     }
 
-    private int processClientCommandBuffer()
+    private int processFromClientCommandBuffer()
     {
         return fromClientCommands.read(
             (msgTypeId, buffer, index, length) ->
@@ -276,24 +280,24 @@ public class MediaConductor extends Agent
 
             final long initialTermId = generateTermId();
             final BufferRotator bufferRotator = bufferManagement.addPublication(srcDestination, sessionId, channelId);
-            final SenderControlStrategy flowControlStrategy = srcDestination.isMulticast() ?
-                    multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
+            final SenderControlStrategy flowControlStrategy =
+                srcDestination.isMulticast() ? multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
 
             publication = new DriverPublication(frameHandler,
-                                          timerWheel,
-                                          flowControlStrategy,
-                                          bufferRotator,
-                                          sessionId,
-                                          channelId,
-                                          initialTermId,
-                                          HEADER_LENGTH,
-                                          mtuLength);
+                                                timerWheel,
+                                                flowControlStrategy,
+                                                bufferRotator,
+                                                sessionId,
+                                                channelId,
+                                                initialTermId,
+                                                HEADER_LENGTH,
+                                                mtuLength);
 
             frameHandler.addPublication(publication);
             final int positionCounterId = positionCounterId("publication", destination, sessionId, channelId);
 
-            clientProxy.onNewBuffers(NEW_PUBLICATION_BUFFER_EVENT, sessionId, channelId,
-                    initialTermId, destination, bufferRotator, correlationId, positionCounterId);
+            clientProxy.onNewBuffers(ON_NEW_PUBLICATION, sessionId, channelId,
+                                     initialTermId, destination, bufferRotator, correlationId, positionCounterId);
             publications.add(publication);
         }
         catch (final ControlProtocolException ex)
@@ -307,14 +311,14 @@ public class MediaConductor extends Agent
         }
     }
 
-    private int positionCounterId(
-            final String type,
-            final String destination,
-            final long sessionId,
-            final long channelId)
+    private int positionCounterId(final String type,
+                                  final String destination,
+                                  final long sessionId,
+                                  final long channelId)
     {
         final String label = String.format("%s: %s %d %d", type, destination, sessionId, channelId);
         final int id = statusBufferManager.registerCounter(label);
+
         return StatusBufferManager.counterOffset(id);
     }
 
@@ -370,7 +374,7 @@ public class MediaConductor extends Agent
         receiverProxy.removeSubscription(subscriberMessage.destination(), subscriberMessage.channelIds());
     }
 
-    private void onCreateSubscriptionTermBuffer(final QualifiedMessageFlyweight qualifiedMessage)
+    private void onCreateConnectedSubscription(final QualifiedMessageFlyweight qualifiedMessage)
     {
         final String destination = qualifiedMessage.destination();
         final long sessionId = qualifiedMessage.sessionId();
@@ -381,15 +385,15 @@ public class MediaConductor extends Agent
         {
             final UdpDestination rcvDestination = UdpDestination.parse(destination);
             final BufferRotator bufferRotator =
-                bufferManagement.addSubscription(rcvDestination, sessionId, channelId);
+                bufferManagement.addConnectedSubscription(rcvDestination, sessionId, channelId);
 
-            clientProxy.onNewBuffers(NEW_SUBSCRIPTION_BUFFER_EVENT, sessionId, channelId, termId,
-                    destination, bufferRotator, 0, 0);
+            clientProxy.onNewBuffers(ON_NEW_CONNECTED_SUBSCRIPTION, sessionId, channelId, termId,
+                                     destination, bufferRotator, 0, 0);
 
-            final NewReceiveBufferEvent event =
-                new NewReceiveBufferEvent(rcvDestination, sessionId, channelId, termId, bufferRotator);
+            final NewConnectedSubscriptionEvent event =
+                new NewConnectedSubscriptionEvent(rcvDestination, sessionId, channelId, termId, bufferRotator);
 
-            while (!receiverProxy.newReceiveBuffer(event))
+            while (!receiverProxy.newConnectedSubscription(event))
             {
                 // TODO: count errors
                 System.out.println("Error adding to bufferRotator");
@@ -401,7 +405,7 @@ public class MediaConductor extends Agent
         }
     }
 
-    private void onRemoveSubscriptionTermBuffer(final QualifiedMessageFlyweight qualifiedMessage)
+    private void onRemoveConnectedSubscription(final QualifiedMessageFlyweight qualifiedMessage)
     {
         final String destination = qualifiedMessage.destination();
         final long sessionId = qualifiedMessage.sessionId();
@@ -410,7 +414,7 @@ public class MediaConductor extends Agent
         try
         {
             final UdpDestination rcvDestination = UdpDestination.parse(destination);
-            bufferManagement.removeSubscription(rcvDestination, sessionId, channelId);
+            bufferManagement.removeConnectedSubscription(rcvDestination, sessionId, channelId);
         }
         catch (final Exception ex)
         {

@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.util.event;
 
 import uk.co.real_logic.aeron.util.BitUtil;
-import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -52,8 +52,8 @@ public class EventCodec
             ThreadLocal.withInitial(PublicationMessageFlyweight::new);
     private final static ThreadLocal<SubscriptionMessageFlyweight> subMessage =
             ThreadLocal.withInitial(SubscriptionMessageFlyweight::new);
-    private final static ThreadLocal<NewBufferMessageFlyweight> newBufferMessage =
-            ThreadLocal.withInitial(NewBufferMessageFlyweight::new);
+    private final static ThreadLocal<LogBuffersMessageFlyweight> newBufferMessage =
+            ThreadLocal.withInitial(LogBuffersMessageFlyweight::new);
 
     private final static int LOG_HEADER_LENGTH = 16;
     private final static int SOCKET_ADDRESS_MAX_LENGTH = 24;
@@ -180,7 +180,7 @@ public class EventCodec
 
             case CMD_OUT_NEW_PUBLICATION_BUFFER_NOTIFICATION:
             case CMD_OUT_NEW_SUBSCRIPTION_BUFFER_NOTIFICATION:
-                final NewBufferMessageFlyweight newBuffer = newBufferMessage.get();
+                final LogBuffersMessageFlyweight newBuffer = newBufferMessage.get();
                 newBuffer.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(newBuffer));
                 break;
@@ -354,7 +354,7 @@ public class EventCodec
         return String.format("%s %s", command.destination(), ids);
     }
 
-    private static String dissect(final NewBufferMessageFlyweight command)
+    private static String dissect(final LogBuffersMessageFlyweight command)
     {
         final String locations = IntStream.range(0, 6)
                 .mapToObj((i) -> String.format("{%s, %d, %d}", command.location(i),

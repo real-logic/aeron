@@ -35,12 +35,12 @@ public interface BufferManagement extends AutoCloseable
                            final long sessionId,
                            final long channelId) throws IllegalArgumentException;
 
-    BufferRotator addSubscription(final UdpDestination destination,
-                                  final long sessionId,
-                                  final long channelId) throws Exception;
+    BufferRotator addConnectedSubscription(final UdpDestination destination,
+                                           final long sessionId,
+                                           final long channelId) throws Exception;
 
-    void removeSubscription(final UdpDestination destination,
-                            final long sessionId,
-                            final long channelId) throws IllegalArgumentException;
+    void removeConnectedSubscription(final UdpDestination destination,
+                                     final long sessionId,
+                                     final long channelId) throws IllegalArgumentException;
 
 }

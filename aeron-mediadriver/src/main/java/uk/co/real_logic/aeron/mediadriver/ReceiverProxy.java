@@ -33,15 +33,15 @@ public class ReceiverProxy
     private static final int WRITE_BUFFER_CAPACITY = 1024;
 
     private final RingBuffer commandBuffer;
-    private final Queue<NewReceiveBufferEvent> newBufferEventQueue;
+    private final Queue<NewConnectedSubscriptionEvent> newConnectedSubscriptionEventQueue;
     private final AtomicBuffer tmpBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
     private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
 
     public ReceiverProxy(final RingBuffer commandBuffer,
-                         final Queue<NewReceiveBufferEvent> newBufferEventQueue)
+                         final Queue<NewConnectedSubscriptionEvent> newConnectedSubscriptionEventQueue)
     {
         this.commandBuffer = commandBuffer;
-        this.newBufferEventQueue = newBufferEventQueue;
+        this.newConnectedSubscriptionEventQueue = newConnectedSubscriptionEventQueue;
     }
 
     public boolean newSubscription(final String destination, final long[] channelIdList)
@@ -63,8 +63,8 @@ public class ReceiverProxy
         return commandBuffer.write(msgTypeId, tmpBuffer, 0, subscriptionMessage.length());
     }
 
-    public boolean newReceiveBuffer(final NewReceiveBufferEvent e)
+    public boolean newConnectedSubscription(final NewConnectedSubscriptionEvent e)
     {
-        return newBufferEventQueue.offer(e);
+        return newConnectedSubscriptionEventQueue.offer(e);
     }
 }

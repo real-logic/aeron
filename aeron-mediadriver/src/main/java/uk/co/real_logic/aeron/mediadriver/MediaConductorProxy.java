@@ -50,14 +50,14 @@ public class MediaConductorProxy
                                   final long channelId,
                                   final long termId)
     {
-        writeTermBuffersMsg(destination, sessionId, channelId, termId, CREATE_TERM_BUFFER);
+        writeTermBuffersMsg(destination, sessionId, channelId, termId, CREATE_CONNECTED_SUBSCRIPTION);
     }
 
     public void removeTermBuffers(final UdpDestination destination,
                                   final long sessionId,
                                   final long channelId)
     {
-        writeTermBuffersMsg(destination, sessionId, channelId, 0L, REMOVE_TERM_BUFFER);
+        writeTermBuffersMsg(destination, sessionId, channelId, 0L, REMOVE_CONNECTED_SUBSCRIPTION);
     }
 
     private void writeTermBuffersMsg(final UdpDestination destination,

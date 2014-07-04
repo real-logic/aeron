@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
 
-public class NewReceiveBufferEvent
+public class NewConnectedSubscriptionEvent
 {
     public static final int STATE_PENDING = 1;
     public static final int STATE_READY = 2;
@@ -29,11 +29,11 @@ public class NewReceiveBufferEvent
     private final UdpDestination destination;
     private int state;
 
-    public NewReceiveBufferEvent(final UdpDestination destination,
-                                 final long sessionId,
-                                 final long channelId,
-                                 final long termId,
-                                 final BufferRotator bufferRotator)
+    public NewConnectedSubscriptionEvent(final UdpDestination destination,
+                                         final long sessionId,
+                                         final long channelId,
+                                         final long termId,
+                                         final BufferRotator bufferRotator)
     {
         this.sessionId = sessionId;
         this.channelId = channelId;

@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.mediadriver.buffer;
 
 import uk.co.real_logic.aeron.util.IoUtil;
-import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -98,7 +98,7 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
         current = newBuffer;
     }
 
-    public void appendBufferLocationsTo(final NewBufferMessageFlyweight newBufferMessage)
+    public void appendBufferLocationsTo(final LogBuffersMessageFlyweight newBufferMessage)
     {
         for (int i = 0; i < BUFFER_COUNT; i++)
         {

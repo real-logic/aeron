@@ -84,7 +84,7 @@ public class MappedBufferManagementTest
     @Test(expected = IllegalArgumentException.class)
     public void shouldExceptionWhenRemovingUnknownSubscriberChannel() throws Exception
     {
-        bufferManagement.removeSubscription(destination, SESSION_ID, CHANNEL_ID);
+        bufferManagement.removeConnectedSubscription(destination, SESSION_ID, CHANNEL_ID);
     }
 
     @Test
@@ -97,7 +97,7 @@ public class MappedBufferManagementTest
     @Test
     public void shouldBeAbleToAddAndRemoveSubscriberChannel() throws Exception
     {
-        bufferManagement.addSubscription(destination, SESSION_ID, CHANNEL_ID);
-        bufferManagement.removeSubscription(destination, SESSION_ID, CHANNEL_ID);
+        bufferManagement.addConnectedSubscription(destination, SESSION_ID, CHANNEL_ID);
+        bufferManagement.removeConnectedSubscription(destination, SESSION_ID, CHANNEL_ID);
     }
 }

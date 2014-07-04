@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
 import uk.co.real_logic.aeron.mediadriver.buffer.LogBuffers;
-import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import java.io.IOException;
@@ -55,7 +55,7 @@ public class BufferAndFrameUtils
                 current = newBuffer;
             }
 
-            public void appendBufferLocationsTo(final NewBufferMessageFlyweight newBufferMessage)
+            public void appendBufferLocationsTo(final LogBuffersMessageFlyweight newBufferMessage)
             {
                 for (int i = 0; i < BUFFER_COUNT; i++)
                 {

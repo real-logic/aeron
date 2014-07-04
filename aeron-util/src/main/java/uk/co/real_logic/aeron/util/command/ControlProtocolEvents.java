@@ -39,17 +39,17 @@ public class ControlProtocolEvents
     /** Error Response */
     public static final int ERROR_RESPONSE = 0x07;
     /** Error Notification */
-    public static final int ERROR_EVENT = 0x08;
+    public static final int ON_ERROR = 0x08;
     /** New subscription Buffer Notification */
-    public static final int NEW_SUBSCRIPTION_BUFFER_EVENT = 0x09;
+    public static final int ON_NEW_CONNECTED_SUBSCRIPTION = 0x09;
     /** New publication Buffer Notification */
-    public static final int NEW_PUBLICATION_BUFFER_EVENT = 0x0A;
+    public static final int ON_NEW_PUBLICATION = 0x0A;
 
     // Within Media Driver between threads
 
-    /** Receiver thread tells media driver it wants to create a term buffer */
-    public static final int CREATE_TERM_BUFFER = 0xF0;
+    /** Receiver thread tells media driver it wants to create a connection */
+    public static final int CREATE_CONNECTED_SUBSCRIPTION = 0xF0;
 
-    /** Receiver thread tells media driver it wants to remove a term buffer */
-    public static final int REMOVE_TERM_BUFFER = 0xF1;
+    /** Receiver thread tells media driver it wants to remove a connection */
+    public static final int REMOVE_CONNECTED_SUBSCRIPTION = 0xF1;
 }

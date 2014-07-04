@@ -20,7 +20,7 @@ import org.junit.Before;
 import org.junit.Test;
 import uk.co.real_logic.aeron.conductor.BufferUsageStrategy;
 import uk.co.real_logic.aeron.util.ErrorCode;
-import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.MessageHandler;
@@ -78,7 +78,7 @@ public class AeronTest
 
     private DataHandler channel1Handler = EMPTY_DATA_HANDLER;
 
-    private final NewBufferMessageFlyweight newBufferMessage = new NewBufferMessageFlyweight();
+    private final LogBuffersMessageFlyweight newBufferMessage = new LogBuffersMessageFlyweight();
     private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
     private final ErrorFlyweight errorHeader = new ErrorFlyweight();
 
@@ -194,9 +194,9 @@ public class AeronTest
         errorHeader.frameLength(ErrorFlyweight.HEADER_LENGTH + subscriptionMessage.length());
 
         toClientTransmitter.transmit(ERROR_RESPONSE,
-                atomicSendBuffer,
-                subscriptionMessage.length(),
-                errorHeader.frameLength());
+                                     atomicSendBuffer,
+                                     subscriptionMessage.length(),
+                                     errorHeader.frameLength());
 
         aeron.conductor().doWork();
 
@@ -210,7 +210,7 @@ public class AeronTest
 
         final Subscription subscription = aeron.addSubscription(DESTINATION, CHANNEL_ID_1, channel1Handler);
 
-        sendNewBufferNotification(NEW_SUBSCRIPTION_BUFFER_EVENT, SESSION_ID_1, TERM_ID_1);
+        sendNewBufferNotification(ON_NEW_CONNECTED_SUBSCRIPTION, SESSION_ID_1, TERM_ID_1);
 
         aeron.conductor().doWork();
         skip(toDriverBuffer, 1);
@@ -227,8 +227,8 @@ public class AeronTest
 
         final Subscription subscription = aeron.addSubscription(DESTINATION, CHANNEL_ID_1, channel1Handler);
 
-        sendNewBufferNotification(NEW_SUBSCRIPTION_BUFFER_EVENT, SESSION_ID_1, TERM_ID_1);
-        sendNewBufferNotification(NEW_SUBSCRIPTION_BUFFER_EVENT, SESSION_ID_2, TERM_ID_2);
+        sendNewBufferNotification(ON_NEW_CONNECTED_SUBSCRIPTION, SESSION_ID_1, TERM_ID_1);
+        sendNewBufferNotification(ON_NEW_CONNECTED_SUBSCRIPTION, SESSION_ID_2, TERM_ID_2);
 
         aeron.conductor().doWork();
         skip(toDriverBuffer, 1);
@@ -245,7 +245,7 @@ public class AeronTest
 
         final Subscription subscription = aeron.addSubscription(DESTINATION, CHANNEL_ID_1, channel1Handler);
 
-        sendNewBufferNotification(NEW_SUBSCRIPTION_BUFFER_EVENT, SESSION_ID_1, TERM_ID_1);
+        sendNewBufferNotification(ON_NEW_CONNECTED_SUBSCRIPTION, SESSION_ID_1, TERM_ID_1);
 
         aeron.conductor().doWork();
         skip(toDriverBuffer, 1);
@@ -284,7 +284,7 @@ public class AeronTest
 
         final Subscription subscription = aeron.addSubscription(DESTINATION, CHANNEL_ID_1, channel1Handler);
 
-        sendNewBufferNotification(NEW_SUBSCRIPTION_BUFFER_EVENT, SESSION_ID_1, TERM_ID_1);
+        sendNewBufferNotification(ON_NEW_CONNECTED_SUBSCRIPTION, SESSION_ID_1, TERM_ID_1);
 
         aeron.conductor().doWork();
         skip(toDriverBuffer, 1);
@@ -316,8 +316,8 @@ public class AeronTest
         final RingBuffer toMediaDriver = toDriverBuffer;
         final Subscription subscription = aeron.addSubscription(DESTINATION, CHANNEL_ID_1, channel1Handler);
 
-        sendNewBufferNotification(NEW_SUBSCRIPTION_BUFFER_EVENT, SESSION_ID_1, TERM_ID_1);
-        sendNewBufferNotification(NEW_SUBSCRIPTION_BUFFER_EVENT, SESSION_ID_2, TERM_ID_2);
+        sendNewBufferNotification(ON_NEW_CONNECTED_SUBSCRIPTION, SESSION_ID_1, TERM_ID_1);
+        sendNewBufferNotification(ON_NEW_CONNECTED_SUBSCRIPTION, SESSION_ID_2, TERM_ID_2);
 
         aeron.conductor().doWork();
         skip(toMediaDriver, 1);

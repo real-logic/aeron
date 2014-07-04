@@ -119,12 +119,12 @@ class MappedBufferManagement implements BufferManagement
         removePublication(destination, sessionId, channelId, publicationsRotatorMap);
     }
 
-    public void removeSubscription(final UdpDestination destination, final long sessionId, final long channelId)
+    public void removeConnectedSubscription(final UdpDestination destination, final long sessionId, final long channelId)
     {
         removePublication(destination, sessionId, channelId, subscriptionsRotatorMap);
     }
 
-    public BufferRotator addSubscription(final UdpDestination destination, final long sessionId, final long channelId)
+    public BufferRotator addConnectedSubscription(final UdpDestination destination, final long sessionId, final long channelId)
         throws Exception
     {
         return addPublication(destination, sessionId, channelId, subscriptionsDir, subscriptionsRotatorMap);

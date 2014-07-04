@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver.buffer;
 
-import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
 
 import java.io.IOException;
 import java.util.stream.Stream;
@@ -29,5 +29,5 @@ public interface BufferRotator
 
     void rotate() throws IOException;
 
-    void appendBufferLocationsTo(final NewBufferMessageFlyweight newBufferMessage);
+    void appendBufferLocationsTo(final LogBuffersMessageFlyweight newBufferMessage);
 }

@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.mediadriver;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
 import uk.co.real_logic.aeron.util.ErrorCode;
 import uk.co.real_logic.aeron.util.Flyweight;
-import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.aeron.util.event.EventCode;
@@ -28,7 +28,7 @@ import uk.co.real_logic.aeron.util.protocol.ErrorFlyweight;
 import java.nio.ByteBuffer;
 
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ERROR_RESPONSE;
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.NEW_PUBLICATION_BUFFER_EVENT;
+import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ON_NEW_PUBLICATION;
 
 /**
  * Proxy for communicating from the media driver to the client conductor.
@@ -43,7 +43,7 @@ public class ClientProxy
     private final BroadcastTransmitter transmitter;
 
     private final ErrorFlyweight errorFlyweight = new ErrorFlyweight();
-    private final NewBufferMessageFlyweight newBufferMessage = new NewBufferMessageFlyweight();
+    private final LogBuffersMessageFlyweight logBuffersMessage = new LogBuffersMessageFlyweight();
 
     public ClientProxy(final BroadcastTransmitter transmitter)
     {
@@ -72,7 +72,6 @@ public class ClientProxy
         transmitter.transmit(msgTypeId, buffer, index, length);
     }
 
-    // TODO: is this a single buffer or the trio of log buffers for a subscription/publication?
     public void onNewBuffers(final int msgTypeId,
                              final long sessionId,
                              final long channelId,
@@ -82,20 +81,20 @@ public class ClientProxy
                              final long correlationId,
                              final int positionCounterId)
     {
-        newBufferMessage.wrap(tmpBuffer, 0);
-        newBufferMessage.sessionId(sessionId)
-                        .channelId(channelId)
-                        .correlationId(correlationId)
-                        .termId(termId)
-                        .positionCounterId(positionCounterId);
-        bufferRotator.appendBufferLocationsTo(newBufferMessage);
-        newBufferMessage.destination(destination);
+        logBuffersMessage.wrap(tmpBuffer, 0);
+        logBuffersMessage.sessionId(sessionId)
+                         .channelId(channelId)
+                         .correlationId(correlationId)
+                         .termId(termId)
+                         .positionCounterId(positionCounterId);
+        bufferRotator.appendBufferLocationsTo(logBuffersMessage);
+        logBuffersMessage.destination(destination);
 
-        LOGGER.log(msgTypeId == NEW_PUBLICATION_BUFFER_EVENT ?
+        LOGGER.log(msgTypeId == ON_NEW_PUBLICATION ?
                        EventCode.CMD_OUT_NEW_PUBLICATION_BUFFER_NOTIFICATION :
                        EventCode.CMD_OUT_NEW_SUBSCRIPTION_BUFFER_NOTIFICATION,
-                   tmpBuffer, 0, newBufferMessage.length());
+                   tmpBuffer, 0, logBuffersMessage.length());
 
-        transmitter.transmit(msgTypeId, tmpBuffer, 0, newBufferMessage.length());
+        transmitter.transmit(msgTypeId, tmpBuffer, 0, logBuffersMessage.length());
     }
 }

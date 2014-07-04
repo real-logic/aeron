@@ -103,9 +103,9 @@ import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_LONG;
  * |                                                             ...
  * +---------------------------------------------------------------+
  */
-public class NewBufferMessageFlyweight extends Flyweight
+public class LogBuffersMessageFlyweight extends Flyweight
 {
-    private static final int NUMBER_OF_FILES = 6;
+    private static final int NUM_FILES = 6;
 
     private static final int CORRELATION_ID_OFFSET = 0;
     private static final int SESSION_ID_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
@@ -113,8 +113,8 @@ public class NewBufferMessageFlyweight extends Flyweight
     private static final int TERM_ID_FIELD_OFFSET = CHANNEL_ID_FIELD_OFFSET + SIZE_OF_INT;
     private static final int POSITION_COUNTER_ID_OFFSET = TERM_ID_FIELD_OFFSET + SIZE_OF_INT;
     private static final int FILE_OFFSETS_FIELDS_OFFSET = POSITION_COUNTER_ID_OFFSET + SIZE_OF_INT;
-    private static final int BUFFER_LENGTHS_FIELDS_OFFSET = FILE_OFFSETS_FIELDS_OFFSET + (NUMBER_OF_FILES * SIZE_OF_INT);
-    private static final int LOCATION_POINTER_FIELDS_OFFSET = BUFFER_LENGTHS_FIELDS_OFFSET + (NUMBER_OF_FILES * SIZE_OF_INT);
+    private static final int BUFFER_LENGTHS_FIELDS_OFFSET = FILE_OFFSETS_FIELDS_OFFSET + (NUM_FILES * SIZE_OF_INT);
+    private static final int LOCATION_POINTER_FIELDS_OFFSET = BUFFER_LENGTHS_FIELDS_OFFSET + (NUM_FILES * SIZE_OF_INT);
     private static final int LOCATION_0_FIELD_OFFSET = LOCATION_POINTER_FIELDS_OFFSET + (8 * SIZE_OF_INT);
 
     /**
@@ -133,7 +133,7 @@ public class NewBufferMessageFlyweight extends Flyweight
         return relativeIntField(index, FILE_OFFSETS_FIELDS_OFFSET);
     }
 
-    public NewBufferMessageFlyweight bufferOffset(final int index, final int value)
+    public LogBuffersMessageFlyweight bufferOffset(final int index, final int value)
     {
         return relativeIntField(index, value, FILE_OFFSETS_FIELDS_OFFSET);
     }
@@ -143,7 +143,7 @@ public class NewBufferMessageFlyweight extends Flyweight
         return relativeIntField(index, BUFFER_LENGTHS_FIELDS_OFFSET);
     }
 
-    public NewBufferMessageFlyweight bufferLength(final int index, final int value)
+    public LogBuffersMessageFlyweight bufferLength(final int index, final int value)
     {
         return relativeIntField(index, value, BUFFER_LENGTHS_FIELDS_OFFSET);
     }
@@ -164,7 +164,7 @@ public class NewBufferMessageFlyweight extends Flyweight
      * @param correlationId field value
      * @return flyweight
      */
-    public NewBufferMessageFlyweight correlationId(final long correlationId)
+    public LogBuffersMessageFlyweight correlationId(final long correlationId)
     {
         atomicBuffer().putLong(offset() + CORRELATION_ID_OFFSET, correlationId, ByteOrder.LITTLE_ENDIAN);
         return this;
@@ -184,7 +184,7 @@ public class NewBufferMessageFlyweight extends Flyweight
      * @param sessionId field value
      * @return flyweight
      */
-    public NewBufferMessageFlyweight sessionId(final long sessionId)
+    public LogBuffersMessageFlyweight sessionId(final long sessionId)
     {
         uint32Put(offset() + SESSION_ID_OFFSET, (int)sessionId, LITTLE_ENDIAN);
         return this;
@@ -206,7 +206,7 @@ public class NewBufferMessageFlyweight extends Flyweight
      * @param channelId field value
      * @return flyweight
      */
-    public NewBufferMessageFlyweight channelId(final long channelId)
+    public LogBuffersMessageFlyweight channelId(final long channelId)
     {
         uint32Put(offset() + CHANNEL_ID_FIELD_OFFSET, channelId, LITTLE_ENDIAN);
         return this;
@@ -228,7 +228,7 @@ public class NewBufferMessageFlyweight extends Flyweight
      * @param termId field value
      * @return flyweight
      */
-    public NewBufferMessageFlyweight termId(final long termId)
+    public LogBuffersMessageFlyweight termId(final long termId)
     {
         uint32Put(offset() + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
         return this;
@@ -250,7 +250,7 @@ public class NewBufferMessageFlyweight extends Flyweight
      * @param positionCounterId field value
      * @return flyweight
      */
-    public NewBufferMessageFlyweight positionCounterId(final int positionCounterId)
+    public LogBuffersMessageFlyweight positionCounterId(final int positionCounterId)
     {
         atomicBuffer().putInt(offset() + POSITION_COUNTER_ID_OFFSET, positionCounterId, LITTLE_ENDIAN);
         return this;
@@ -261,7 +261,7 @@ public class NewBufferMessageFlyweight extends Flyweight
         return atomicBuffer().getInt(relativeOffset(index, fieldOffset), LITTLE_ENDIAN);
     }
 
-    private NewBufferMessageFlyweight relativeIntField(final int index, final int value, final int fieldOffset)
+    private LogBuffersMessageFlyweight relativeIntField(final int index, final int value, final int fieldOffset)
     {
         atomicBuffer().putInt(relativeOffset(index, fieldOffset), value, LITTLE_ENDIAN);
         return this;
@@ -282,7 +282,7 @@ public class NewBufferMessageFlyweight extends Flyweight
         return relativeIntField(index, LOCATION_POINTER_FIELDS_OFFSET);
     }
 
-    private NewBufferMessageFlyweight locationPointer(final int index, final int value)
+    private LogBuffersMessageFlyweight locationPointer(final int index, final int value)
     {
         return relativeIntField(index, value, LOCATION_POINTER_FIELDS_OFFSET);
     }
@@ -294,7 +294,7 @@ public class NewBufferMessageFlyweight extends Flyweight
         return atomicBuffer().getStringWithoutLength(offset() + start, length);
     }
 
-    public NewBufferMessageFlyweight location(final int index, final String value)
+    public LogBuffersMessageFlyweight location(final int index, final String value)
     {
         final int start = locationPointer(index);
         if (start == 0)
@@ -311,7 +311,7 @@ public class NewBufferMessageFlyweight extends Flyweight
         return location(DESTINATION_INDEX);
     }
 
-    public NewBufferMessageFlyweight destination(final String value)
+    public LogBuffersMessageFlyweight destination(final String value)
     {
         return location(DESTINATION_INDEX, value);
     }

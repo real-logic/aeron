@@ -23,7 +23,7 @@ import uk.co.real_logic.aeron.util.AgentIdleStrategy;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.collections.ConnectionMap;
-import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
@@ -63,7 +63,7 @@ public class ClientConductor extends Agent
     private final long publicationWindow;
     private final ConnectionMap<String, Publication> publicationMap = new ConnectionMap<>(); // Guarded by this
     private final SubscriptionMap subscriptionMap = new SubscriptionMap();
-    private final NewBufferMessageFlyweight newBufferMessage = new NewBufferMessageFlyweight();
+    private final LogBuffersMessageFlyweight logBuffersMessage = new LogBuffersMessageFlyweight();
     private final AtomicBuffer counterValuesBuffer;
     private final MediaDriverProxy mediaDriverProxy;
     private final Signal correlationSignal;
@@ -206,29 +206,29 @@ public class ClientConductor extends Agent
                 {
                     switch (msgTypeId)
                     {
-                        case NEW_SUBSCRIPTION_BUFFER_EVENT:
-                        case NEW_PUBLICATION_BUFFER_EVENT:
-                            newBufferMessage.wrap(buffer, index);
+                        case ON_NEW_CONNECTED_SUBSCRIPTION:
+                        case ON_NEW_PUBLICATION:
+                            logBuffersMessage.wrap(buffer, index);
 
-                            final String destination = newBufferMessage.destination();
+                            final String destination = logBuffersMessage.destination();
 
-                            final long sessionId = newBufferMessage.sessionId();
-                            final long channelId = newBufferMessage.channelId();
-                            final long termId = newBufferMessage.termId();
-                            final int positionIndicatorId = newBufferMessage.positionCounterId();
+                            final long sessionId = logBuffersMessage.sessionId();
+                            final long channelId = logBuffersMessage.channelId();
+                            final long termId = logBuffersMessage.termId();
+                            final int positionIndicatorId = logBuffersMessage.positionCounterId();
 
-                            if (msgTypeId == NEW_PUBLICATION_BUFFER_EVENT)
+                            if (msgTypeId == ON_NEW_PUBLICATION)
                             {
-                                if (newBufferMessage.correlationId() != activeCorrelationId)
+                                if (logBuffersMessage.correlationId() != activeCorrelationId)
                                 {
                                     break;
                                 }
 
-                                onNewPublicationBuffers(destination, sessionId, channelId, termId, positionIndicatorId);
+                                onNewPublication(destination, sessionId, channelId, termId, positionIndicatorId);
                             }
                             else
                             {
-                                onNewSubscriptionBuffers(destination, sessionId, channelId, termId);
+                                onNewConnectedSubscription(destination, sessionId, channelId, termId);
                             }
                             break;
 
@@ -248,19 +248,19 @@ public class ClientConductor extends Agent
         );
     }
 
-    private void onNewPublicationBuffers(final String destination,
-                                         final long sessionId,
-                                         final long channelId,
-                                         final long termId,
-                                         final int positionIndicatorId) throws IOException
+    private void onNewPublication(final String destination,
+                                  final long sessionId,
+                                  final long channelId,
+                                  final long termId,
+                                  final int positionIndicatorId) throws IOException
     {
         final LogAppender[] logs = new LogAppender[BUFFER_COUNT];
         final AtomicBuffer[] headers = new AtomicBuffer[BUFFER_COUNT];
 
         for (int i = 0; i < BUFFER_COUNT; i++)
         {
-            final AtomicBuffer logBuffer = newBuffer(newBufferMessage, i);
-            final AtomicBuffer stateBuffer = newBuffer(newBufferMessage, i + BufferRotationDescriptor.BUFFER_COUNT);
+            final AtomicBuffer logBuffer = newBuffer(logBuffersMessage, i);
+            final AtomicBuffer stateBuffer = newBuffer(logBuffersMessage, i + BufferRotationDescriptor.BUFFER_COUNT);
             final byte[] header = DataHeaderFlyweight.createDefaultHeader(sessionId, channelId, termId);
 
             headers[i] = new AtomicBuffer(header);
@@ -276,10 +276,10 @@ public class ClientConductor extends Agent
         correlationSignal.signal();
     }
 
-    private void onNewSubscriptionBuffers(final String destination,
-                                          final long sessionId,
-                                          final long channelId,
-                                          final long currentTermId) throws IOException
+    private void onNewConnectedSubscription(final String destination,
+                                            final long sessionId,
+                                            final long channelId,
+                                            final long currentTermId) throws IOException
     {
         final Subscription subscription = subscriptionMap.get(destination, channelId);
         if (null != subscription && !subscription.isConnected(sessionId))
@@ -306,13 +306,13 @@ public class ClientConductor extends Agent
 
     private LogReader newReader(final int index) throws IOException
     {
-        final AtomicBuffer logBuffer = newBuffer(newBufferMessage, index);
-        final AtomicBuffer stateBuffer = newBuffer(newBufferMessage, index + BufferRotationDescriptor.BUFFER_COUNT);
+        final AtomicBuffer logBuffer = newBuffer(logBuffersMessage, index);
+        final AtomicBuffer stateBuffer = newBuffer(logBuffersMessage, index + BufferRotationDescriptor.BUFFER_COUNT);
 
         return new LogReader(logBuffer, stateBuffer);
     }
 
-    private AtomicBuffer newBuffer(final NewBufferMessageFlyweight newBufferMessage, final int index)
+    private AtomicBuffer newBuffer(final LogBuffersMessageFlyweight newBufferMessage, final int index)
         throws IOException
     {
         final String location = newBufferMessage.location(index);
@@ -325,6 +325,7 @@ public class ClientConductor extends Agent
     private LimitBarrier limitBarrier(final int positionIndicatorId)
     {
         final BufferPositionIndicator indicator = new BufferPositionIndicator(counterValuesBuffer, positionIndicatorId);
+
         return new WindowedLimitBarrier(indicator, publicationWindow);
     }
 }

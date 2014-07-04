@@ -39,7 +39,7 @@ public class Receiver extends Agent
     private final MediaConductorProxy conductorProxy;
     private final Map<UdpDestination, DataFrameHandler> frameHandlerByDestinationMap = new HashMap<>();
     private final SubscriptionMessageFlyweight subscriberMessage = new SubscriptionMessageFlyweight();
-    private final Queue<NewReceiveBufferEvent> newBufferEventQueue;
+    private final Queue<NewConnectedSubscriptionEvent> newConnectedSubscriptionEventQueue;
     private final AtomicArray<DriverConnectedSubscription> connectedSubscriptions;
 
     public Receiver(final MediaDriver.MediaDriverContext ctx) throws Exception
@@ -49,7 +49,7 @@ public class Receiver extends Agent
         this.commandBuffer = ctx.receiverCommandBuffer();
         this.conductorProxy = ctx.mediaConductorProxy();
         this.nioSelector = ctx.receiverNioSelector();
-        this.newBufferEventQueue = ctx.newReceiveBufferEventQueue();
+        this.newConnectedSubscriptionEventQueue = ctx.newConnectedSubscriptionEventQueue();
         this.conductorTimerWheel = ctx.conductorTimerWheel();
         this.connectedSubscriptions = ctx.connectedSubscriptions();
     }
@@ -61,7 +61,7 @@ public class Receiver extends Agent
         {
             workCount += nioSelector.processKeys();
             workCount += processCommandBuffer();
-            workCount += processNewBufferEventQueue();
+            workCount += processConnectedSubscriptionEventQueue();
         }
         catch (final Exception ex)
         {
@@ -72,15 +72,15 @@ public class Receiver extends Agent
         return workCount;
     }
 
-    private int processNewBufferEventQueue()
+    private int processConnectedSubscriptionEventQueue()
     {
         int workCount = 0;
 
-        NewReceiveBufferEvent state;
-        while ((state = newBufferEventQueue.poll()) != null)
+        NewConnectedSubscriptionEvent state;
+        while ((state = newConnectedSubscriptionEventQueue.poll()) != null)
         {
             ++workCount;
-            onNewReceiveBuffers(state);
+            onNewConnectedSubscription(state);
         }
 
         return workCount;
@@ -97,12 +97,12 @@ public class Receiver extends Agent
                     {
                         case ControlProtocolEvents.ADD_SUBSCRIPTION:
                             subscriberMessage.wrap(buffer, index);
-                            onNewSubscriber(subscriberMessage.destination(), subscriberMessage.channelIds());
+                            onAddSubscription(subscriberMessage.destination(), subscriberMessage.channelIds());
                             break;
 
                         case ControlProtocolEvents.REMOVE_SUBSCRIPTION:
                             subscriberMessage.wrap(buffer, index);
-                            onRemoveSubscriber(subscriberMessage.destination(), subscriberMessage.channelIds());
+                            onRemoveSubscription(subscriberMessage.destination(), subscriberMessage.channelIds());
                             break;
                     }
                 }
@@ -153,7 +153,7 @@ public class Receiver extends Agent
         conductorProxy.addErrorResponse(errorCode, subscriberMessage, length);
     }
 
-    private void onNewSubscriber(final String destination, final long[] channelIds) throws Exception
+    private void onAddSubscription(final String destination, final long[] channelIds) throws Exception
     {
         final UdpDestination rcvDestination = UdpDestination.parse(destination);
         DataFrameHandler frameHandler = frameHandler(rcvDestination);
@@ -167,7 +167,7 @@ public class Receiver extends Agent
         frameHandler.addSubscriptions(channelIds);
     }
 
-    private void onRemoveSubscriber(final String destination, final long[] channelIds)
+    private void onRemoveSubscription(final String destination, final long[] channelIds)
     {
         final UdpDestination rcvDestination = UdpDestination.parse(destination);
         final DataFrameHandler frameHandler = frameHandler(rcvDestination);
@@ -186,14 +186,14 @@ public class Receiver extends Agent
         }
     }
 
-    private void onNewReceiveBuffers(final NewReceiveBufferEvent e)
+    private void onNewConnectedSubscription(final NewConnectedSubscriptionEvent e)
     {
         final DataFrameHandler frameHandler = frameHandler(e.destination());
         FeedbackDelayGenerator delayGenerator;
 
         if (null == frameHandler)
         {
-            System.err.println("onNewReceiverBuffers: could not find frameHandler");
+            System.err.println("onNewConnectedSubscription: could not find frameHandler");
             return;
         }
 

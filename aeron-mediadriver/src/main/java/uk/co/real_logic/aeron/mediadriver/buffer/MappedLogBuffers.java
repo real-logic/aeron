@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.mediadriver.buffer;
 
 import uk.co.real_logic.aeron.util.IoUtil;
-import uk.co.real_logic.aeron.util.command.NewBufferMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import java.io.File;
@@ -93,18 +93,18 @@ class MappedLogBuffers implements LogBuffers
         IoUtil.unmap(mappedStateBuffer);
     }
 
-    public void logBufferInformation(final int index, final NewBufferMessageFlyweight newBufferMessage)
+    public void logBufferInformation(final int index, final LogBuffersMessageFlyweight newBufferMessage)
     {
         bufferInformation(index, newBufferMessage, mappedLogBuffer, logFile);
     }
 
-    public void stateBufferInformation(final int index, final NewBufferMessageFlyweight newBufferMessage)
+    public void stateBufferInformation(final int index, final LogBuffersMessageFlyweight newBufferMessage)
     {
         bufferInformation(index + BUFFER_COUNT, newBufferMessage, mappedStateBuffer, stateFile);
     }
 
     private void bufferInformation(final int index,
-                                   final NewBufferMessageFlyweight newBufferMessage,
+                                   final LogBuffersMessageFlyweight newBufferMessage,
                                    final MappedByteBuffer buffer,
                                    final File file)
     {

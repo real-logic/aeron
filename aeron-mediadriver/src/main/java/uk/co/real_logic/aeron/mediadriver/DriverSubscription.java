@@ -76,7 +76,7 @@ public class DriverSubscription
     public void close()
     {
         connectionBySessionIdMap.forEach(
-            (sessionId, session) -> conductorProxy.removeTermBuffer(destination, sessionId, channelId)
+            (sessionId, session) -> conductorProxy.removeTermBuffers(destination, sessionId, channelId)
         );
     }
 }

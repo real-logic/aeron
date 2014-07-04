@@ -263,6 +263,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
     public void operationSucceeded()
     {
         operationSucceeded = true;
+        correlationSignal.signal();
     }
 
     private void checkRegistrationException()

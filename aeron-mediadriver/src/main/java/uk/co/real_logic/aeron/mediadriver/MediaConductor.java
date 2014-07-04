@@ -358,7 +358,6 @@ public class MediaConductor extends Agent
                 frameHandler.close();
             }
 
-            System.out.println("ACK");
             clientProxy.operationSucceeded(publicationMessage.correlationId());
         }
         catch (final ControlProtocolException ex)

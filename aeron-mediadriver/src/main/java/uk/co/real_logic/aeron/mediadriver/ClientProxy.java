@@ -31,6 +31,7 @@ import java.nio.ByteBuffer;
 
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ERROR_RESPONSE;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ON_NEW_PUBLICATION;
+import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.OPERATION_SUCCEEDED;
 
 /**
  * Proxy for communicating from the media driver to the client conductor.
@@ -105,6 +106,6 @@ public class ClientProxy
     {
         correlatedMessage.wrap(tmpBuffer, 0);
         correlatedMessage.correlationId(correlationId);
-        transmitter.transmit(ControlProtocolEvents.OPERATION_SUCCEEDED, tmpBuffer, 0, CorrelatedMessageFlyweight.length);
+        transmitter.transmit(OPERATION_SUCCEEDED, tmpBuffer, 0, CorrelatedMessageFlyweight.length);
     }
 }

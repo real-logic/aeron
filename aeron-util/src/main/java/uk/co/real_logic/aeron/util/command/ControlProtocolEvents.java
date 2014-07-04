@@ -44,6 +44,8 @@ public class ControlProtocolEvents
     public static final int ON_NEW_CONNECTED_SUBSCRIPTION = 0x09;
     /** New publication Buffer Notification */
     public static final int ON_NEW_PUBLICATION = 0x0A;
+    /** Operation Succeeded */
+    public static final int OPERATION_SUCCEEDED = 0x0B;
 
     // Within Media Driver between threads
 

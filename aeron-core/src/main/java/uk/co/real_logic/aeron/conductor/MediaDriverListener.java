@@ -29,4 +29,7 @@ public interface MediaDriverListener
 
 
     void onError(ErrorCode errorCode, String message);
+
+    void operationSucceeded();
+
 }

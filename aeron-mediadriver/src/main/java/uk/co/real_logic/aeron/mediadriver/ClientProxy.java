@@ -18,6 +18,8 @@ package uk.co.real_logic.aeron.mediadriver;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
 import uk.co.real_logic.aeron.util.ErrorCode;
 import uk.co.real_logic.aeron.util.Flyweight;
+import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
+import uk.co.real_logic.aeron.util.command.CorrelatedMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastTransmitter;
@@ -44,6 +46,7 @@ public class ClientProxy
 
     private final ErrorFlyweight errorFlyweight = new ErrorFlyweight();
     private final LogBuffersMessageFlyweight logBuffersMessage = new LogBuffersMessageFlyweight();
+    private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
 
     public ClientProxy(final BroadcastTransmitter transmitter)
     {
@@ -96,5 +99,12 @@ public class ClientProxy
                    tmpBuffer, 0, logBuffersMessage.length());
 
         transmitter.transmit(msgTypeId, tmpBuffer, 0, logBuffersMessage.length());
+    }
+
+    public void operationSucceeded(final long correlationId)
+    {
+        correlatedMessage.wrap(tmpBuffer, 0);
+        correlatedMessage.correlationId(correlationId);
+        transmitter.transmit(ControlProtocolEvents.OPERATION_SUCCEEDED, tmpBuffer, 0, CorrelatedMessageFlyweight.length);
     }
 }

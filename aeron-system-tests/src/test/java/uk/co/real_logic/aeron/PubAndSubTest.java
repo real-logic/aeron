@@ -98,7 +98,7 @@ public class PubAndSubTest
         driver.shutdown();
 
         subscription.release();
-        publication.release();
+        // TODO: publication.release();
         subscribingClient.close();
         publishingClient.close();
         driver.close();

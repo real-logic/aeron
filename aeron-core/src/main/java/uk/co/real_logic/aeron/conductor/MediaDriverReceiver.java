@@ -1,6 +1,7 @@
 package uk.co.real_logic.aeron.conductor;
 
 import uk.co.real_logic.aeron.util.ErrorCode;
+import uk.co.real_logic.aeron.util.command.CorrelatedMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -9,9 +10,7 @@ import uk.co.real_logic.aeron.util.protocol.ErrorFlyweight;
 
 import java.io.IOException;
 
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ERROR_RESPONSE;
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ON_NEW_CONNECTED_SUBSCRIPTION;
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ON_NEW_PUBLICATION;
+import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 
 /**
  * Analogue of {@see MediaDriverProxy} on the receive side
@@ -23,6 +22,7 @@ public class MediaDriverReceiver
     private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
     private final ErrorFlyweight errorHeader = new ErrorFlyweight();
     private final LogBuffersMessageFlyweight logBuffersMessage = new LogBuffersMessageFlyweight();
+    private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
 
     public MediaDriverReceiver(final CopyBroadcastReceiver broadcastReceiver)
     {
@@ -64,6 +64,13 @@ public class MediaDriverReceiver
                             }
                             break;
 
+                        case OPERATION_SUCCEEDED:
+                            correlatedMessage.wrap(buffer, index);
+                            if (correlatedMessage.correlationId() == activeCorrelationId)
+                            {
+                                listener.operationSucceeded();
+                            }
+
                         case ERROR_RESPONSE:
                             handleErrorResponse(buffer, index, listener, activeCorrelationId);
                             break;
@@ -96,7 +103,8 @@ public class MediaDriverReceiver
             case GENERIC_ERROR_MESSAGE:
             case INVALID_DESTINATION_IN_PUBLICATION:
             case PUBLICATION_CHANNEL_UNKNOWN:
-                if (correlationId(buffer, errorHeader.offendingHeaderOffset()) == activeCorrelationId)
+                final long correlationId = correlationId(buffer, errorHeader.offendingHeaderOffset());
+                if (correlationId == activeCorrelationId)
                 {
                     listener.onError(errorCode, errorHeader.errorMessage());
                 }

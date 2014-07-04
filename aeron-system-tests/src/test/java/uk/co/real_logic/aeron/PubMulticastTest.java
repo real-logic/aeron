@@ -117,11 +117,12 @@ public class PubMulticastTest
     @After
     public void closeEverything() throws Exception
     {
+        // TODO: publication.release();
+
         producingClient.shutdown();
         driver.shutdown();
 
         receiverChannel.close();
-        publication.release();
         producingClient.close();
         driver.close();
         executorService.shutdown();

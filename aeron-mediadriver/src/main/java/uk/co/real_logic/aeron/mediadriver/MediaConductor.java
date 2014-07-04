@@ -32,6 +32,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.*;
+import static uk.co.real_logic.aeron.util.ErrorCode.GENERIC_ERROR_MESSAGE;
+import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION_IN_PUBLICATION;
+import static uk.co.real_logic.aeron.util.ErrorCode.PUBLICATION_CHANNEL_UNKNOWN;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 
 /**
@@ -310,7 +313,7 @@ public class MediaConductor extends Agent
         {
             // TODO: log
             ex.printStackTrace();
-            throw new ControlProtocolException(ErrorCode.GENERIC_ERROR_MESSAGE, ex.getMessage());
+            throw new ControlProtocolException(GENERIC_ERROR_MESSAGE, ex.getMessage());
         }
     }
 
@@ -330,20 +333,19 @@ public class MediaConductor extends Agent
         final String destination = publicationMessage.destination();
         final long sessionId = publicationMessage.sessionId();
         final long channelId = publicationMessage.channelId();
-
         try
         {
             final UdpDestination srcDestination = UdpDestination.parse(destination);
             final ControlFrameHandler frameHandler = srcDestinationMap.get(srcDestination.consistentHash());
             if (null == frameHandler)
             {
-                throw new ControlProtocolException(ErrorCode.INVALID_DESTINATION_IN_PUBLICATION, "destination unknown");
+                throw new ControlProtocolException(INVALID_DESTINATION_IN_PUBLICATION, "destination unknown");
             }
 
             final DriverPublication publication = frameHandler.removePublication(sessionId, channelId);
             if (null == publication)
             {
-                throw new ControlProtocolException(ErrorCode.PUBLICATION_CHANNEL_UNKNOWN,
+                throw new ControlProtocolException(PUBLICATION_CHANNEL_UNKNOWN,
                                                    "session and publication unknown for destination");
             }
 
@@ -355,6 +357,9 @@ public class MediaConductor extends Agent
                 srcDestinationMap.remove(srcDestination.consistentHash());
                 frameHandler.close();
             }
+
+            System.out.println("ACK");
+            clientProxy.operationSucceeded(publicationMessage.correlationId());
         }
         catch (final ControlProtocolException ex)
         {
@@ -364,7 +369,7 @@ public class MediaConductor extends Agent
         {
             // TODO: log
             ex.printStackTrace();
-            throw new ControlProtocolException(ErrorCode.GENERIC_ERROR_MESSAGE, ex.getMessage());
+            throw new ControlProtocolException(GENERIC_ERROR_MESSAGE, ex.getMessage());
         }
     }
 

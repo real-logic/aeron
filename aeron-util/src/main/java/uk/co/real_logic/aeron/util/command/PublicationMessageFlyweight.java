@@ -15,8 +15,6 @@
  */
 package uk.co.real_logic.aeron.util.command;
 
-import uk.co.real_logic.aeron.util.Flyweight;
-
 import java.nio.ByteOrder;
 
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
@@ -40,9 +38,8 @@ import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_LONG;
  * |                                                             ...
  * +---------------------------------------------------------------+
  */
-public class PublicationMessageFlyweight extends Flyweight
+public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
 {
-    private static final int CORRELATION_ID_FIELD_OFFSET = 0;
     private static final int SESSION_ID_FIELD_OFFSET = CORRELATION_ID_FIELD_OFFSET + SIZE_OF_LONG;
     private static final int CHANNEL_ID_FIELD_OFFSET = SESSION_ID_FIELD_OFFSET + SIZE_OF_INT;
     private static final int DESTINATION_OFFSET = CHANNEL_ID_FIELD_OFFSET + SIZE_OF_INT;
@@ -66,28 +63,6 @@ public class PublicationMessageFlyweight extends Flyweight
     public PublicationMessageFlyweight sessionId(final long sessionId)
     {
         uint32Put(offset() + SESSION_ID_FIELD_OFFSET, (int)sessionId, ByteOrder.LITTLE_ENDIAN);
-        return this;
-    }
-
-    /**
-     * return correlation id field
-     *
-     * @return correlation id field
-     */
-    public long correlationId()
-    {
-        return atomicBuffer().getLong(offset() + CORRELATION_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
-    }
-
-    /**
-     * set correlation id field
-     *
-     * @param correlationId field value
-     * @return flyweight
-     */
-    public PublicationMessageFlyweight correlationId(final long correlationId)
-    {
-        atomicBuffer().putLong(offset() + CORRELATION_ID_FIELD_OFFSET, correlationId, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 

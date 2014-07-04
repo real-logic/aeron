@@ -21,6 +21,7 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.conductor.*;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
+import uk.co.real_logic.aeron.util.ErrorCode;
 import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastBufferDescriptor;
@@ -42,6 +43,8 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.*;
+import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION_IN_PUBLICATION;
+import static uk.co.real_logic.aeron.util.ErrorCode.PUBLICATION_CHANNEL_ALREADY_EXISTS;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ON_NEW_PUBLICATION;
 
 public class ClientConductorTest
@@ -178,6 +181,20 @@ public class ClientConductorTest
         addPublication();
     }
 
+    @Test(expected = RegistrationException.class)
+    public void shouldFailToAddOnMediaDriverError()
+    {
+        doAnswer(
+                (invocation) ->
+                {
+                    conductor.onError(PUBLICATION_CHANNEL_ALREADY_EXISTS,
+                        "publication and session already exist on destination");
+                    return null;
+                }).when(signal).await(anyLong());
+
+        addPublication();
+    }
+
     @Test
     public void conductorCachesPublicationInstances()
     {
@@ -192,9 +209,27 @@ public class ClientConductorTest
     {
         Publication publication = addPublication();
 
+        notifyOperationSucceeded();
+
         publication.release();
 
-        verify(mediaDriverProxy).removePublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
+        verify(mediaDriverProxy).removePublication(DESTINATION, SESSION_ID_1, CHANNEL_ID_1);
+    }
+
+    @Test(expected = RegistrationException.class)
+    public void shouldFailToRemoveOnMediaDriverError()
+    {
+
+        Publication publication = addPublication();
+
+        doAnswer(
+            (invocation) ->
+            {
+                conductor.onError(INVALID_DESTINATION_IN_PUBLICATION, "destination unknown");
+                return null;
+            }).when(signal).await(anyLong());
+
+        publication.release();
     }
 
     @Test
@@ -204,10 +239,12 @@ public class ClientConductorTest
         addPublication();
 
         publication.release();
-        verify(mediaDriverProxy, never()).removePublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
+        verify(mediaDriverProxy, never()).removePublication(DESTINATION, SESSION_ID_1, CHANNEL_ID_1);
+
+        notifyOperationSucceeded();
 
         publication.release();
-        verify(mediaDriverProxy).removePublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
+        verify(mediaDriverProxy).removePublication(DESTINATION, SESSION_ID_1, CHANNEL_ID_1);
     }
 
     @Test
@@ -216,10 +253,12 @@ public class ClientConductorTest
         Publication publication = conductor.addPublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
         conductor.addPublication(DESTINATION, CHANNEL_ID_2, SESSION_ID_2);
 
+        notifyOperationSucceeded();
+
         publication.release();
 
-        verify(mediaDriverProxy).removePublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
-        verify(mediaDriverProxy, never()).removePublication(DESTINATION, CHANNEL_ID_2, SESSION_ID_2);
+        verify(mediaDriverProxy).removePublication(DESTINATION, SESSION_ID_1, CHANNEL_ID_1);
+        verify(mediaDriverProxy, never()).removePublication(DESTINATION, SESSION_ID_2, CHANNEL_ID_2);
     }
 
     private void sendNewBufferNotification(final int msgTypeId,
@@ -253,6 +292,16 @@ public class ClientConductorTest
         newBufferMessage.destination(DESTINATION);
 
         toClientTransmitter.transmit(msgTypeId, atomicSendBuffer, 0, newBufferMessage.length());
+    }
+
+    private void notifyOperationSucceeded()
+    {
+        doAnswer(
+                (invocation) ->
+                {
+                    conductor.operationSucceeded();
+                    return null;
+                }).when(signal).await(anyLong());
     }
 
     private Publication addPublication()

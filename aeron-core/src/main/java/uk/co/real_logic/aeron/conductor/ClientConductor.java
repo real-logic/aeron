@@ -67,6 +67,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
 
     private long activeCorrelationId; // Guarded by this
     private Publication addedPublication; // Guarded by this
+    private boolean operationSucceeded = false; // Guarded by this
     private RegistrationException registrationException; // Guarded by this
 
     public ClientConductor(final MediaDriverReceiver receiver,
@@ -113,10 +114,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
             final long startTime = System.currentTimeMillis();
             while (addedPublication == null)
             {
-                correlationSignal.await(awaitTimeout);
-
-                checkMediaDriverTimeout(startTime);
-                checkRegistrationException();
+                await(startTime);
             }
 
             publication = addedPublication;
@@ -130,15 +128,29 @@ public class ClientConductor extends Agent implements MediaDriverListener
         return publication;
     }
 
+    private void await(final long startTime)
+    {
+        correlationSignal.await(awaitTimeout);
+        checkMediaDriverTimeout(startTime);
+        checkRegistrationException();
+    }
+
     public synchronized void releasePublication(final Publication publication)
     {
         final String destination = publication.destination();
         final long channelId = publication.channelId();
         final long sessionId = publication.sessionId();
 
-        activeCorrelationId = mediaDriverProxy.removePublication(destination, channelId, sessionId);
+        activeCorrelationId = mediaDriverProxy.removePublication(destination, sessionId, channelId);
 
         // TODO: wait for response from media driver
+        final long startTime = System.currentTimeMillis();
+        while (!operationSucceeded)
+        {
+            await(startTime);
+        }
+
+        operationSucceeded = false;
 
         // TODO:
         // bufferUsage.releasePublisherBuffers(destination, channelId, sessionId);
@@ -246,6 +258,11 @@ public class ClientConductor extends Agent implements MediaDriverListener
     {
         registrationException = new RegistrationException(errorCode, message);
         correlationSignal.signal();
+    }
+
+    public void operationSucceeded()
+    {
+        operationSucceeded = true;
     }
 
     private void checkRegistrationException()

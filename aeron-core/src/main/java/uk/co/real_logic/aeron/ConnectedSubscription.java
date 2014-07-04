@@ -88,13 +88,13 @@ public class ConnectedSubscription
         return logReader.tailVolatile() == 0;
     }
 
-    public void processBufferScan()
+    public int processBufferScan()
     {
         final long currentTermId = this.currentTermId.get();
         if (currentTermId == UNKNOWN_TERM_ID)
         {
             // Doesn't have any buffers yet
-            return;
+            return 0;
         }
 
         final long expectedCleanTermId = currentTermId + CLEAN_WINDOW;
@@ -106,6 +106,9 @@ public class ConnectedSubscription
             {
                 cleanedTermId.incrementAndGet();
             }
+
+            return 1;
         }
+        return 0;
     }
 }

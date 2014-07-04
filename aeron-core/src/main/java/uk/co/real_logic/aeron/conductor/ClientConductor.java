@@ -96,10 +96,8 @@ public class ClientConductor extends Agent
 
     public int doWork()
     {
-        int workCount = handleMessagesFromMediaDriver();
-        performBufferMaintenance();
-
-        return workCount;
+        int messageWorkCount = handleMessagesFromMediaDriver();
+        return messageWorkCount + performBufferMaintenance();
     }
 
     public void close()
@@ -179,9 +177,9 @@ public class ClientConductor extends Agent
         // TODO: clean up logs
     }
 
-    private void performBufferMaintenance()
+    private int performBufferMaintenance()
     {
-        publications.forEach(
+        int publicationWork = publications.forEach(0,
             (publication) ->
             {
                 final long dirtyTermId = publication.dirtyTermId();
@@ -192,9 +190,10 @@ public class ClientConductor extends Agent
                                                  publication.channelId(),
                                                  dirtyTermId);
                 }
+                return 1;
             });
 
-        subscriptions.forEach(Subscription::processBufferScan);
+        return publicationWork + subscriptions.forEach(0, Subscription::processBufferScan);
     }
 
     private int handleMessagesFromMediaDriver()
@@ -325,7 +324,6 @@ public class ClientConductor extends Agent
     private LimitBarrier limitBarrier(final int positionIndicatorId)
     {
         final BufferPositionIndicator indicator = new BufferPositionIndicator(counterValuesBuffer, positionIndicatorId);
-
         return new WindowedLimitBarrier(indicator, publicationWindow);
     }
 }

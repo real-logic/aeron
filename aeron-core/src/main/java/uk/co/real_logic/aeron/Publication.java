@@ -53,7 +53,6 @@ public class Publication
     private int refCount = 0;
     private int currentBufferIndex = 0;
 
-
     public Publication(final ClientConductor conductor,
                        final String destination,
                        final long channelId,
@@ -133,6 +132,7 @@ public class Publication
 
     private boolean isPausedDueToFlowControl(final LogAppender logAppender, final int length)
     {
+        // TODO: need to take account of bytes in previous terms.
         int requiredPosition = logAppender.tailVolatile() + length;
         return limit.limit() < requiredPosition;
     }

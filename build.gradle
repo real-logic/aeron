@@ -42,7 +42,7 @@ subprojects {
     plugins.withType(org.gradle.api.plugins.JavaBasePlugin) {
         eclipse.classpath.file.whenMerged { org.gradle.plugins.ide.eclipse.model.Classpath path ->
             path.entries.findAll { it.path.contains('JRE_CONTAINER') }.each {
-                it.path += "/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JDK1.8"
+                it.path += "/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"
             }
         }
     }

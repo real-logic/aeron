@@ -40,7 +40,7 @@ public class ConductorErrorHandler
 
         switch (errorHeader.errorCode())
         {
-            case INVALID_DESTINATION:
+            case INVALID_DESTINATION_IN_PUBLICATION:
                 subscriberMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
                 invalidDestination.onInvalidDestination(subscriberMessage.destination());
                 break;

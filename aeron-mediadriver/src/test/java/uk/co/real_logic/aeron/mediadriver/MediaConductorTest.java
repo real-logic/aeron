@@ -49,8 +49,8 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.MEDIA_CONDUCTOR_TICKS_PER_WHEEL;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.MEDIA_CONDUCTOR_TICK_DURATION_US;
-import static uk.co.real_logic.aeron.util.ErrorCode.CHANNEL_UNKNOWN;
-import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION;
+import static uk.co.real_logic.aeron.util.ErrorCode.PUBLICATION_CHANNEL_UNKNOWN;
+import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION_IN_PUBLICATION;
 
 /**
  * Test the Media Driver Conductor in isolation
@@ -299,7 +299,7 @@ public class MediaConductorTest
         assertThat(publications.get(0).sessionId(), is(1L));
         assertThat(publications.get(0).channelId(), is(2L));
 
-        mockClientProxy.onError(eq(ErrorCode.CHANNEL_ALREADY_EXISTS), argThat(not(isEmptyOrNullString())), any(), anyInt());
+        mockClientProxy.onError(eq(ErrorCode.PUBLICATION_CHANNEL_ALREADY_EXISTS), argThat(not(isEmptyOrNullString())), any(), anyInt());
     }
 
     @Test
@@ -313,7 +313,7 @@ public class MediaConductorTest
 
         assertThat(publications.size(), is(0));
 
-        mockClientProxy.onError(eq(INVALID_DESTINATION), argThat(not(isEmptyOrNullString())), any(), anyInt());
+        mockClientProxy.onError(eq(INVALID_DESTINATION_IN_PUBLICATION), argThat(not(isEmptyOrNullString())), any(), anyInt());
     }
 
     @Test
@@ -331,7 +331,7 @@ public class MediaConductorTest
         assertThat(publications.get(0).sessionId(), is(1L));
         assertThat(publications.get(0).channelId(), is(2L));
 
-        mockClientProxy.onError(eq(CHANNEL_UNKNOWN), argThat(not(isEmptyOrNullString())), any(), anyInt());
+        mockClientProxy.onError(eq(PUBLICATION_CHANNEL_UNKNOWN), argThat(not(isEmptyOrNullString())), any(), anyInt());
     }
 
     @Test
@@ -349,7 +349,7 @@ public class MediaConductorTest
         assertThat(publications.get(0).sessionId(), is(1L));
         assertThat(publications.get(0).channelId(), is(2L));
 
-        mockClientProxy.onError(eq(CHANNEL_UNKNOWN), argThat(not(isEmptyOrNullString())), any(), anyInt());
+        mockClientProxy.onError(eq(PUBLICATION_CHANNEL_UNKNOWN), argThat(not(isEmptyOrNullString())), any(), anyInt());
     }
 
     @Test
@@ -363,7 +363,7 @@ public class MediaConductorTest
         receiver.doWork();
         mediaConductor.doWork();
 
-        mockClientProxy.onError(eq(INVALID_DESTINATION), argThat(not(isEmptyOrNullString())), any(), anyInt());
+        mockClientProxy.onError(eq(INVALID_DESTINATION_IN_PUBLICATION), argThat(not(isEmptyOrNullString())), any(), anyInt());
     }
 
     private void writeChannelMessage(final int msgTypeId, final long sessionId, final long channelId, final int port)

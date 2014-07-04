@@ -167,4 +167,15 @@ public class ErrorFlyweight extends HeaderFlyweight
         atomicBuffer().getBytes(errorMessageOffset(), bytes, 0, len);
         return bytes;
     }
+
+    /**
+     * returns The error String.
+     *
+     * @return the error String
+     */
+    public String errorMessage()
+    {
+        return new String(errorMessageAsBytes());
+    }
+
 }

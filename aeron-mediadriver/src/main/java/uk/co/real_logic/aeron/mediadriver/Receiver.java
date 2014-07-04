@@ -109,7 +109,7 @@ public class Receiver extends Agent
                 catch (final InvalidDestinationException ex)
                 {
                     // TODO: log this
-                    onError(ErrorCode.INVALID_DESTINATION, length);
+                    onError(ErrorCode.INVALID_DESTINATION_IN_PUBLICATION, length);
                 }
                 catch (final SubscriptionNotRegisteredException ex)
                 {

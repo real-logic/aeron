@@ -17,18 +17,18 @@ package uk.co.real_logic.aeron.conductor;
 
 import uk.co.real_logic.aeron.MediaDriverTimeoutException;
 import uk.co.real_logic.aeron.Publication;
+import uk.co.real_logic.aeron.RegistrationException;
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.aeron.util.Agent;
-import uk.co.real_logic.aeron.util.AgentIdleStrategy;
-import uk.co.real_logic.aeron.util.AtomicArray;
-import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
+import uk.co.real_logic.aeron.util.*;
 import uk.co.real_logic.aeron.util.collections.ConnectionMap;
 import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
+import uk.co.real_logic.aeron.util.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.util.protocol.ErrorFlyweight;
 import uk.co.real_logic.aeron.util.status.BufferPositionIndicator;
 import uk.co.real_logic.aeron.util.status.LimitBarrier;
 import uk.co.real_logic.aeron.util.status.WindowedLimitBarrier;
@@ -63,13 +63,19 @@ public class ClientConductor extends Agent
     private final long publicationWindow;
     private final ConnectionMap<String, Publication> publicationMap = new ConnectionMap<>(); // Guarded by this
     private final SubscriptionMap subscriptionMap = new SubscriptionMap();
+
     private final LogBuffersMessageFlyweight logBuffersMessage = new LogBuffersMessageFlyweight();
+
+    private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
+    private final ErrorFlyweight errorHeader = new ErrorFlyweight();
+
     private final AtomicBuffer counterValuesBuffer;
     private final MediaDriverProxy mediaDriverProxy;
     private final Signal correlationSignal;
 
     private long activeCorrelationId; // Guarded by this
     private Publication addedPublication; // Guarded by this
+    private RegistrationException registrationException; // Guarded by this
 
     public ClientConductor(final CopyBroadcastReceiver driverBroadcastReceiver,
                            final ConductorErrorHandler errorHandler,
@@ -120,6 +126,7 @@ public class ClientConductor extends Agent
                 correlationSignal.await(awaitTimeout);
 
                 checkMediaDriverTimeout(startTime);
+                checkRegistrationException();
             }
 
             publication = addedPublication;
@@ -131,6 +138,16 @@ public class ClientConductor extends Agent
         publication.incRef();
 
         return publication;
+    }
+
+    private void checkRegistrationException()
+    {
+        if (registrationException != null)
+        {
+            final RegistrationException exception = registrationException;
+            registrationException = null;
+            throw exception;
+        }
     }
 
     public synchronized void releasePublication(final Publication publication)
@@ -232,7 +249,7 @@ public class ClientConductor extends Agent
                             break;
 
                         case ERROR_RESPONSE:
-                            errorHandler.onErrorResponse(buffer, index, length);
+                            handleErrorResponse(buffer, index, length);
                             break;
 
                         default:
@@ -241,10 +258,40 @@ public class ClientConductor extends Agent
                 }
                 catch (final IOException ex)
                 {
+                    // TODO: log
                     ex.printStackTrace();
                 }
             }
         );
+    }
+
+    private void handleErrorResponse(final AtomicBuffer buffer, final int index, final int length)
+    {
+        errorHeader.wrap(buffer, index);
+        final ErrorCode errorCode = errorHeader.errorCode();
+        switch (errorCode)
+        {
+            // Publication errors
+            case PUBLICATION_CHANNEL_ALREADY_EXISTS:
+            case GENERIC_ERROR_MESSAGE:
+            case INVALID_DESTINATION_IN_PUBLICATION:
+            case PUBLICATION_CHANNEL_UNKNOWN:
+                if (correlationId(buffer, errorHeader.offendingHeaderOffset()) == activeCorrelationId)
+                {
+                    registrationException = new RegistrationException(errorCode, errorHeader.errorMessage());
+                }
+                break;
+
+            default:
+                errorHandler.onErrorResponse(buffer, index, length);
+                break;
+        }
+    }
+
+    private long correlationId(final AtomicBuffer buffer, final int offset)
+    {
+        publicationMessage.wrap(buffer, offset);
+        return publicationMessage.correlationId();
     }
 
     private void onNewPublication(final String destination,

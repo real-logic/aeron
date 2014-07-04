@@ -269,14 +269,14 @@ public class MediaConductor extends Agent
             }
             else if (!frameHandler.destination().equals(srcDestination))
             {
-                throw new ControlProtocolException(ErrorCode.CHANNEL_ALREADY_EXISTS,
+                throw new ControlProtocolException(ErrorCode.PUBLICATION_CHANNEL_ALREADY_EXISTS,
                                                    "destinations hash same, but destinations different");
             }
 
             DriverPublication publication = frameHandler.findPublication(sessionId, channelId);
             if (null != publication)
             {
-                throw new ControlProtocolException(ErrorCode.CHANNEL_ALREADY_EXISTS,
+                throw new ControlProtocolException(ErrorCode.PUBLICATION_CHANNEL_ALREADY_EXISTS,
                                                    "publication and session already exist on destination");
             }
 
@@ -310,7 +310,7 @@ public class MediaConductor extends Agent
         {
             // TODO: log
             ex.printStackTrace();
-            throw new ControlProtocolException(ErrorCode.GENERIC_ERROR_PUBLICATION_MESSAGE, ex.getMessage());
+            throw new ControlProtocolException(ErrorCode.GENERIC_ERROR_MESSAGE, ex.getMessage());
         }
     }
 
@@ -337,13 +337,13 @@ public class MediaConductor extends Agent
             final ControlFrameHandler frameHandler = srcDestinationMap.get(srcDestination.consistentHash());
             if (null == frameHandler)
             {
-                throw new ControlProtocolException(ErrorCode.INVALID_DESTINATION, "destination unknown");
+                throw new ControlProtocolException(ErrorCode.INVALID_DESTINATION_IN_PUBLICATION, "destination unknown");
             }
 
             final DriverPublication publication = frameHandler.removePublication(sessionId, channelId);
             if (null == publication)
             {
-                throw new ControlProtocolException(ErrorCode.CHANNEL_UNKNOWN,
+                throw new ControlProtocolException(ErrorCode.PUBLICATION_CHANNEL_UNKNOWN,
                                                    "session and publication unknown for destination");
             }
 
@@ -364,7 +364,7 @@ public class MediaConductor extends Agent
         {
             // TODO: log
             ex.printStackTrace();
-            throw new ControlProtocolException(ErrorCode.GENERIC_ERROR_PUBLICATION_MESSAGE, ex.getMessage());
+            throw new ControlProtocolException(ErrorCode.GENERIC_ERROR_MESSAGE, ex.getMessage());
         }
     }
 

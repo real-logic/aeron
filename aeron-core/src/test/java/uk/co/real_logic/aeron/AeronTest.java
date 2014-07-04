@@ -189,7 +189,7 @@ public class AeronTest
         subscriptionMessage.destination(INVALID_DESTINATION);
 
         errorHeader.wrap(atomicSendBuffer, subscriptionMessage.length());
-        errorHeader.errorCode(ErrorCode.INVALID_DESTINATION);
+        errorHeader.errorCode(ErrorCode.INVALID_DESTINATION_IN_PUBLICATION);
         errorHeader.offendingFlyweight(subscriptionMessage, subscriptionMessage.length());
         errorHeader.frameLength(ErrorFlyweight.HEADER_LENGTH + subscriptionMessage.length());
 

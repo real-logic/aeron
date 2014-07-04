@@ -182,28 +182,6 @@ public class AeronTest
     }
 
     @Test
-    public void clientCodeNotifiedOfAnInvalidDestination()
-    {
-        subscriptionMessage.wrap(atomicSendBuffer, 0);
-        subscriptionMessage.channelIds(CHANNEL_IDS);
-        subscriptionMessage.destination(INVALID_DESTINATION);
-
-        errorHeader.wrap(atomicSendBuffer, subscriptionMessage.length());
-        errorHeader.errorCode(ErrorCode.INVALID_DESTINATION_IN_PUBLICATION);
-        errorHeader.offendingFlyweight(subscriptionMessage, subscriptionMessage.length());
-        errorHeader.frameLength(ErrorFlyweight.HEADER_LENGTH + subscriptionMessage.length());
-
-        toClientTransmitter.transmit(ERROR_RESPONSE,
-                                     atomicSendBuffer,
-                                     subscriptionMessage.length(),
-                                     errorHeader.frameLength());
-
-        aeron.conductor().doWork();
-
-        verify(invalidDestination).onInvalidDestination(INVALID_DESTINATION);
-    }
-
-    @Test
     public void subscriberCanReceiveAMessage() throws Exception
     {
         channel1Handler = sessionAssertingHandler();

@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static java.lang.Long.getLong;
+import static uk.co.real_logic.aeron.util.IoUtil.fill;
 import static uk.co.real_logic.aeron.util.IoUtil.mapExistingFile;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
 
@@ -66,9 +67,10 @@ public final class Aeron implements AutoCloseable
         final ConductorErrorHandler errorHandler = new ConductorErrorHandler(ctx.invalidDestinationHandler);
         final MediaDriverProxy mediaDriverProxy = new MediaDriverProxy(ctx.toDriverBuffer);
         final Signal correlationSignal = new Signal();
+        final MediaDriverReceiver receiver = new MediaDriverReceiver(ctx.toClientBuffer);
 
         conductor = new ClientConductor(
-            ctx.toClientBuffer,
+            receiver,
             errorHandler,
             ctx.bufferUsageStrategy,
             ctx.counterValuesBuffer(),

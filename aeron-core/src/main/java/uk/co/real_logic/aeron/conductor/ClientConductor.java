@@ -22,13 +22,11 @@ import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.util.*;
 import uk.co.real_logic.aeron.util.collections.ConnectionMap;
 import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.util.protocol.ErrorFlyweight;
 import uk.co.real_logic.aeron.util.status.BufferPositionIndicator;
 import uk.co.real_logic.aeron.util.status.LimitBarrier;
 import uk.co.real_logic.aeron.util.status.WindowedLimitBarrier;
@@ -43,7 +41,7 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
  * Client conductor takes responses and notifications from media driver and acts on them. As well as passes commands
  * to the media driver.
  */
-public class ClientConductor extends Agent
+public class ClientConductor extends Agent implements MediaDriverListener
 {
     private static final int MAX_FRAME_LENGTH = 1024;
 
@@ -54,20 +52,14 @@ public class ClientConductor extends Agent
 
     private static final long NO_CORRELATION_ID = -1;
 
-    private final CopyBroadcastReceiver driverBroadcastReceiver;
+    private final MediaDriverReceiver receiver;
     private final BufferUsageStrategy bufferUsage;
     private final AtomicArray<Publication> publications = new AtomicArray<>();
     private final AtomicArray<Subscription> subscriptions = new AtomicArray<>();
-    private final ConductorErrorHandler errorHandler;
     private final long awaitTimeout;
     private final long publicationWindow;
     private final ConnectionMap<String, Publication> publicationMap = new ConnectionMap<>(); // Guarded by this
     private final SubscriptionMap subscriptionMap = new SubscriptionMap();
-
-    private final LogBuffersMessageFlyweight logBuffersMessage = new LogBuffersMessageFlyweight();
-
-    private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
-    private final ErrorFlyweight errorHeader = new ErrorFlyweight();
 
     private final AtomicBuffer counterValuesBuffer;
     private final MediaDriverProxy mediaDriverProxy;
@@ -77,7 +69,7 @@ public class ClientConductor extends Agent
     private Publication addedPublication; // Guarded by this
     private RegistrationException registrationException; // Guarded by this
 
-    public ClientConductor(final CopyBroadcastReceiver driverBroadcastReceiver,
+    public ClientConductor(final MediaDriverReceiver receiver,
                            final ConductorErrorHandler errorHandler,
                            final BufferUsageStrategy bufferUsageStrategy,
                            final AtomicBuffer counterValuesBuffer,
@@ -90,19 +82,17 @@ public class ClientConductor extends Agent
                                     AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS));
 
         this.counterValuesBuffer = counterValuesBuffer;
-
         this.correlationSignal = correlationSignal;
         this.mediaDriverProxy = mediaDriverProxy;
-        this.driverBroadcastReceiver = driverBroadcastReceiver;
+        this.receiver = receiver;
         this.bufferUsage = bufferUsageStrategy;
-        this.errorHandler = errorHandler;
         this.awaitTimeout = awaitTimeout;
         this.publicationWindow = publicationWindow;
     }
 
     public int doWork()
     {
-        int messageWorkCount = handleMessagesFromMediaDriver();
+        int messageWorkCount = receiver.receive(this, activeCorrelationId);
         return messageWorkCount + performBufferMaintenance();
     }
 
@@ -138,16 +128,6 @@ public class ClientConductor extends Agent
         publication.incRef();
 
         return publication;
-    }
-
-    private void checkRegistrationException()
-    {
-        if (registrationException != null)
-        {
-            final RegistrationException exception = registrationException;
-            registrationException = null;
-            throw exception;
-        }
     }
 
     public synchronized void releasePublication(final Publication publication)
@@ -197,108 +177,29 @@ public class ClientConductor extends Agent
     private int performBufferMaintenance()
     {
         int publicationWork = publications.forEach(0,
-            (publication) ->
-            {
-                final long dirtyTermId = publication.dirtyTermId();
-                if (dirtyTermId != Publication.NO_DIRTY_TERM)
+                (publication) ->
                 {
-                    mediaDriverProxy.requestTerm(publication.destination(),
-                                                 publication.sessionId(),
-                                                 publication.channelId(),
-                                                 dirtyTermId);
-                }
-                return 1;
-            });
+                    final long dirtyTermId = publication.dirtyTermId();
+                    if (dirtyTermId != Publication.NO_DIRTY_TERM)
+                    {
+                        mediaDriverProxy.requestTerm(publication.destination(),
+                                publication.sessionId(),
+                                publication.channelId(),
+                                dirtyTermId);
+                    }
+                    return 1;
+                });
 
         return publicationWork + subscriptions.forEach(0, Subscription::processBufferScan);
     }
 
-    private int handleMessagesFromMediaDriver()
-    {
-        return driverBroadcastReceiver.receive(
-            (msgTypeId, buffer, index, length) ->
-            {
-                try
-                {
-                    switch (msgTypeId)
-                    {
-                        case ON_NEW_CONNECTED_SUBSCRIPTION:
-                        case ON_NEW_PUBLICATION:
-                            logBuffersMessage.wrap(buffer, index);
-
-                            final String destination = logBuffersMessage.destination();
-
-                            final long sessionId = logBuffersMessage.sessionId();
-                            final long channelId = logBuffersMessage.channelId();
-                            final long termId = logBuffersMessage.termId();
-                            final int positionIndicatorId = logBuffersMessage.positionCounterId();
-
-                            if (msgTypeId == ON_NEW_PUBLICATION)
-                            {
-                                if (logBuffersMessage.correlationId() != activeCorrelationId)
-                                {
-                                    break;
-                                }
-
-                                onNewPublication(destination, sessionId, channelId, termId, positionIndicatorId);
-                            }
-                            else
-                            {
-                                onNewConnectedSubscription(destination, sessionId, channelId, termId);
-                            }
-                            break;
-
-                        case ERROR_RESPONSE:
-                            handleErrorResponse(buffer, index, length);
-                            break;
-
-                        default:
-                            break;
-                    }
-                }
-                catch (final IOException ex)
-                {
-                    // TODO: log
-                    ex.printStackTrace();
-                }
-            }
-        );
-    }
-
-    private void handleErrorResponse(final AtomicBuffer buffer, final int index, final int length)
-    {
-        errorHeader.wrap(buffer, index);
-        final ErrorCode errorCode = errorHeader.errorCode();
-        switch (errorCode)
-        {
-            // Publication errors
-            case PUBLICATION_CHANNEL_ALREADY_EXISTS:
-            case GENERIC_ERROR_MESSAGE:
-            //case INVALID_DESTINATION_IN_PUBLICATION:
-            case PUBLICATION_CHANNEL_UNKNOWN:
-                if (correlationId(buffer, errorHeader.offendingHeaderOffset()) == activeCorrelationId)
-                {
-                    registrationException = new RegistrationException(errorCode, errorHeader.errorMessage());
-                }
-                break;
-
-            default:
-                errorHandler.onErrorResponse(buffer, index, length);
-                break;
-        }
-    }
-
-    private long correlationId(final AtomicBuffer buffer, final int offset)
-    {
-        publicationMessage.wrap(buffer, offset);
-        return publicationMessage.correlationId();
-    }
-
-    private void onNewPublication(final String destination,
-                                  final long sessionId,
-                                  final long channelId,
-                                  final long termId,
-                                  final int positionIndicatorId) throws IOException
+    public void onNewPublication(
+            final String destination,
+            final long sessionId,
+            final long channelId,
+            final long termId,
+            final int positionIndicatorId,
+            final LogBuffersMessageFlyweight logBuffersMessage) throws IOException
     {
         final LogAppender[] logs = new LogAppender[BUFFER_COUNT];
         final AtomicBuffer[] headers = new AtomicBuffer[BUFFER_COUNT];
@@ -322,10 +223,11 @@ public class ClientConductor extends Agent
         correlationSignal.signal();
     }
 
-    private void onNewConnectedSubscription(final String destination,
+    public void onNewConnectedSubscription(final String destination,
                                             final long sessionId,
                                             final long channelId,
-                                            final long currentTermId) throws IOException
+                                            final long currentTermId,
+                                            final LogBuffersMessageFlyweight message) throws IOException
     {
         final Subscription subscription = subscriptionMap.get(destination, channelId);
         if (null != subscription && !subscription.isConnected(sessionId))
@@ -333,10 +235,26 @@ public class ClientConductor extends Agent
             final LogReader[] logs = new LogReader[BUFFER_COUNT];
             for (int i = 0; i < BUFFER_COUNT; i++)
             {
-                logs[i] = newReader(i);
+                logs[i] = newReader(message, i);
             }
 
             subscription.onBuffersMapped(sessionId, currentTermId, logs);
+        }
+    }
+
+    public void onError(final ErrorCode errorCode, final String message)
+    {
+        registrationException = new RegistrationException(errorCode, message);
+        correlationSignal.signal();
+    }
+
+    private void checkRegistrationException()
+    {
+        if (registrationException != null)
+        {
+            final RegistrationException exception = registrationException;
+            registrationException = null;
+            throw exception;
         }
     }
 
@@ -350,7 +268,7 @@ public class ClientConductor extends Agent
         }
     }
 
-    private LogReader newReader(final int index) throws IOException
+    private LogReader newReader(final LogBuffersMessageFlyweight logBuffersMessage, final int index) throws IOException
     {
         final AtomicBuffer logBuffer = newBuffer(logBuffersMessage, index);
         final AtomicBuffer stateBuffer = newBuffer(logBuffersMessage, index + BufferRotationDescriptor.BUFFER_COUNT);

@@ -157,6 +157,16 @@ public class MediaDriver implements AutoCloseable
      */
     public static final int MAX_RETRANSMITS_DEFAULT = 16;
 
+    /**
+     * Estimated RTT in nanoseconds.
+     */
+    public static final long ESTIMATED_RTT_NS = TimeUnit.MICROSECONDS.toNanos(100);
+
+    /**
+     * Estimated max throughput in bytes.
+     */
+    public static final long ESTIMATED_MAX_THROUGHPUT_IN_BYTES = 10 * 1000 * 1000 * 1000; // 10 Gbps
+
     public static final int READ_BYTE_BUFFER_SZ = getInteger(READ_BUFFER_SZ_PROP_NAME, READ_BYTE_BUFFER_SZ_DEFAULT);
     public static final int COMMAND_BUFFER_SZ = getInteger(COMMAND_BUFFER_SZ_PROP_NAME, COMMAND_BUFFER_SZ_DEFAULT);
     public static final int CONDUCTOR_BUFFER_SZ = getInteger(CONDUCTOR_BUFFER_SZ_PROP_NAME, CONDUCTOR_BUFFER_SZ_DEFAULT);

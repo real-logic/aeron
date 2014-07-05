@@ -156,7 +156,7 @@ public class LossHandler
      *
      * @return tail of the current buffer being scanned
      */
-    public int tailVolatile()
+    public int highestContiguousOffset()
     {
         return scanners[currentIndex].tailVolatile();
     }
@@ -169,6 +169,16 @@ public class LossHandler
     public long currentTermId()
     {
         return currentTermId;
+    }
+
+    /**
+     * Return the {@link TimerWheel} used by the loss handler
+     *
+     * @return {@link TimerWheel} used by the loss handler
+     */
+    public TimerWheel timerWheel()
+    {
+        return wheel;
     }
 
     private void suppressNak()

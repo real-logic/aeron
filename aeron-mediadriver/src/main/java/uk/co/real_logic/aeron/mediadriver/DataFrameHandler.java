@@ -25,7 +25,6 @@ import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Frame processing for data

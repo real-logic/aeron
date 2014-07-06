@@ -17,6 +17,8 @@ package uk.co.real_logic.aeron.mediadriver.buffer;
 
 import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
+import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -41,8 +43,8 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
 
     private final FileChannel logTemplate;
     private final FileChannel stateTemplate;
-    private final long logBufferSize;
-    private final long stateBufferSize;
+    private final int logBufferSize;
+    private final int stateBufferSize;
     private final MappedLogBuffers[] buffers;
 
     private MappedLogBuffers current;
@@ -51,9 +53,9 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
 
     MappedBufferRotator(final File directory,
                         final FileChannel logTemplate,
-                        final long logBufferSize,
+                        final int logBufferSize,
                         final FileChannel stateTemplate,
-                        final long stateBufferSize)
+                        final int stateBufferSize)
     {
         IoUtil.ensureDirectoryExists(directory, "buffer directory");
 
@@ -86,6 +88,11 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
     public Stream<MappedLogBuffers> buffers()
     {
         return Stream.of(buffers);
+    }
+
+    public int sizeOfTermBuffer()
+    {
+        return logBufferSize - RingBufferDescriptor.TRAILER_LENGTH;
     }
 
     public void rotate() throws IOException

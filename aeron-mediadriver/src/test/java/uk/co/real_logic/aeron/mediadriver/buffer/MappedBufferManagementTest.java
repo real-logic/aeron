@@ -62,7 +62,7 @@ public class MappedBufferManagementTest
             {
                 final AtomicBuffer log = logBuffer.logBuffer();
 
-                assertThat((long)log.capacity(), is(MappedBufferManagement.LOG_BUFFER_SIZE));
+                assertThat(log.capacity(), is(MappedBufferManagement.LOG_BUFFER_SIZE));
                 assertThat(log.getByte(0), is((byte)0));
                 assertThat(log.getByte((int)MappedBufferManagement.LOG_BUFFER_SIZE - 1), is((byte)0));
 

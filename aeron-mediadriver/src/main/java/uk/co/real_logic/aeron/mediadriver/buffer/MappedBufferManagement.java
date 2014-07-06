@@ -34,7 +34,7 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescri
  */
 class MappedBufferManagement implements BufferManagement
 {
-    public static final long LOG_BUFFER_SIZE = COMMAND_BUFFER_SZ + TRAILER_LENGTH;
+    public static final int LOG_BUFFER_SIZE = COMMAND_BUFFER_SZ + TRAILER_LENGTH;
 
     private final FileChannel logTemplate;
     private final FileChannel stateTemplate;

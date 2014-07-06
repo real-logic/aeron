@@ -26,7 +26,8 @@ import java.net.InetSocketAddress;
  */
 public class DefaultMulticastSenderControlStrategy implements SenderControlStrategy
 {
-    private int rightEdgeOfWindow;
+    private long rightEdgeOfWindow;
+    private int shiftsForTermId;
 
     public DefaultMulticastSenderControlStrategy()
     {
@@ -34,19 +35,21 @@ public class DefaultMulticastSenderControlStrategy implements SenderControlStrat
     }
 
     /** {@inheritDoc} */
-    public int onStatusMessage(final long termId, final long highestContiguousSequenceNumber,
-                               final long receiverWindow, final InetSocketAddress address)
+    public long onStatusMessage(final long termId, final long highestContiguousSequenceNumber,
+                                final long receiverWindow, final InetSocketAddress address)
     {
-        // TODO: review this logic
-        final int newRightEdgeOfWindow = (int) (highestContiguousSequenceNumber + receiverWindow);
+        final long newRightEdgeOfWindow = (termId << shiftsForTermId) + receiverWindow;
         rightEdgeOfWindow = Math.max(rightEdgeOfWindow, newRightEdgeOfWindow);
 
         return rightEdgeOfWindow;
     }
 
     /** {@inheritDoc} */
-    public int initialWindow()
+    public long initialRightEdge(final long initialTermId, final int sizeOfTermBuffer)
     {
-        return 0;
+        shiftsForTermId = Long.numberOfTrailingZeros(sizeOfTermBuffer);
+        rightEdgeOfWindow = (initialTermId << shiftsForTermId);
+
+        return rightEdgeOfWindow;
     }
 }

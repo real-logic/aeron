@@ -27,6 +27,8 @@ public interface BufferRotator
 {
     Stream<? extends LogBuffers> buffers();
 
+    int sizeOfTermBuffer();
+
     void rotate() throws IOException;
 
     void appendBufferLocationsTo(final LogBuffersMessageFlyweight newBufferMessage);

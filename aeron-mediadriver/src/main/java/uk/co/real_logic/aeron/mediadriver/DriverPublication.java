@@ -68,17 +68,20 @@ public class DriverPublication
 
     private final ByteBuffer[] termSendBuffers;
     private final ByteBuffer[] termRetransmitBuffers;
+
     private final AtomicInteger[] rightEdges = new AtomicInteger[BufferRotationDescriptor.BUFFER_COUNT];
 
     private final SenderControlStrategy controlStrategy;
+    private final AtomicLong rightEdge;
     private final ControlFrameHandler frameHandler;
 
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final DataHeaderFlyweight retransmitDataHeader = new DataHeaderFlyweight();
 
+    private int nextTermOffset = 0;
     private int currentIndex = 0;
     private int statusMessagesSeen = 0;
-    private long nextOffset = 0;
+    private int shiftsForTermId;
 
     private final InetSocketAddress dstAddress;
 
@@ -107,10 +110,10 @@ public class DriverPublication
         termRetransmitBuffers = bufferRotator.buffers().map(this::duplicateLogBuffer).toArray(ByteBuffer[]::new);
         retransmitHandlers = bufferRotator.buffers().map(this::newRetransmitHandler).toArray(RetransmitHandler[]::new);
 
-        for (int i = 0; i < BufferRotationDescriptor.BUFFER_COUNT; i++)
-        {
-            rightEdges[i] = new AtomicInteger(controlStrategy.initialWindow());
-        }
+        this.rightEdge = new AtomicLong(controlStrategy.initialRightEdge(initialTermId,
+                bufferRotator.sizeOfTermBuffer()));
+
+        this.shiftsForTermId = Long.numberOfTrailingZeros(bufferRotator.sizeOfTermBuffer());
 
         currentTermId = new AtomicLong(initialTermId);
         cleanedTermId = new AtomicLong(initialTermId + 2);
@@ -122,8 +125,9 @@ public class DriverPublication
         int workCount = 0;
         try
         {
-            final int rightEdge = rightEdges[currentIndex].get();
-            final int maxLength = Math.min(rightEdge - (int)nextOffset, mtuLength);
+            final long nextOffset = (currentTermId.get() << shiftsForTermId) + nextTermOffset;
+            final int availableWindow = (int)(rightEdge.get() - nextOffset);
+            final int maxLength = Math.min(availableWindow, mtuLength);
 
             final LogScanner scanner = scanners[currentIndex];
             workCount += scanner.scanNext(maxLength, this::onSendFrame);
@@ -160,10 +164,10 @@ public class DriverPublication
                                 final long receiverWindow,
                                 final InetSocketAddress address)
     {
-        final int rightEdge = controlStrategy.onStatusMessage(
-            termId, highestContiguousSequenceNumber, receiverWindow, address);
+        final long newRightEdge = controlStrategy.onStatusMessage(termId, highestContiguousSequenceNumber,
+                receiverWindow, address);
 
-        rightEdges[determineIndexByTermId(termId)].lazySet(rightEdge);
+        rightEdge.lazySet(newRightEdge);
 
         statusMessagesSeen++;
     }
@@ -289,7 +293,7 @@ public class DriverPublication
 
             timeOfLastSendOrHeartbeat.lazySet(timerWheel.now());
 
-            nextOffset = align(offset + length, FrameDescriptor.FRAME_ALIGNMENT);
+            nextTermOffset = align(offset + length, FrameDescriptor.FRAME_ALIGNMENT);
         }
         catch (final Exception ex)
         {
@@ -338,7 +342,7 @@ public class DriverPublication
         dataHeader.sessionId(sessionId)
                   .channelId(channelId)
                   .termId(currentTermId.get())
-                  .termOffset(nextOffset)
+                  .termOffset(nextTermOffset)
                   .frameLength(DataHeaderFlyweight.HEADER_LENGTH)
                   .headerType(HeaderFlyweight.HDR_TYPE_DATA)
                   .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)

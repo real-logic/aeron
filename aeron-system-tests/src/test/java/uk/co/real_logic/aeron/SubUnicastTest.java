@@ -177,7 +177,7 @@ public class SubUnicastTest
         Thread.sleep(100);
 
         // now receive data into app
-        subscription.read();
+        subscription.receive();
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(1));
@@ -221,7 +221,7 @@ public class SubUnicastTest
         }
 
         // now receive data into app
-        subscription.read();
+        subscription.receive();
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(3));
@@ -264,7 +264,7 @@ public class SubUnicastTest
         Thread.sleep(100);
 
         // now receive data into app
-        subscription.read();
+        subscription.receive();
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(1));
@@ -325,7 +325,7 @@ public class SubUnicastTest
         Thread.sleep(100);
 
         // now receive data into app
-        subscription.read();
+        subscription.receive();
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(1));
@@ -347,7 +347,7 @@ public class SubUnicastTest
 
         Thread.sleep(100);
 
-        subscription.read();
+        subscription.receive();
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(2));

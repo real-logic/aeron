@@ -59,7 +59,7 @@ public class ConnectedSubscription
         return sessionId;
     }
 
-    public int read()
+    public int recieve()
     {
         LogReader logReader = logReaders[currentBufferId];
         if (logReader.isComplete())

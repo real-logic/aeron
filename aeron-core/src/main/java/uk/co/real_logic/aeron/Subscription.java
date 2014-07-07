@@ -109,11 +109,11 @@ public class Subscription
     /**
      * Read waiting data and deliver to {@link Subscription.DataHandler}s.
      *
-     * @return the number of messages read
+     * @return the number of messages recieve
      */
-    public int read()
+    public int receive()
     {
-        return connectedSubscriptions.forEach(0, ConnectedSubscription::read);
+        return connectedSubscriptions.forEach(0, ConnectedSubscription::recieve);
     }
 
     public void onBuffersMapped(final long sessionId, final long termId, final LogReader[] logReaders)

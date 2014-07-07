@@ -159,7 +159,7 @@ public class AeronTest
 
         assertMsgRead(toDriverBuffer, assertSubscriberMessageOfType(ADD_SUBSCRIPTION, CHANNEL_ID_1));
 
-        assertThat(subscription.read(), is(0));
+        assertThat(subscription.receive(), is(0));
     }
 
     @Test
@@ -191,7 +191,7 @@ public class AeronTest
 
         writePackets(appendersSession1[0], 1);
 
-        assertThat(subscription.read(), is(1));
+        assertThat(subscription.receive(), is(1));
     }
 
     @Test
@@ -209,7 +209,7 @@ public class AeronTest
 
         writePackets(appendersSession1[0], 1);
         writePackets(appendersSession2[0], 1);
-        assertThat(subscription.read(), is(2));
+        assertThat(subscription.receive(), is(2));
     }
 
     @Test
@@ -228,7 +228,7 @@ public class AeronTest
         final int msgCount = logAppender.capacity() / sendBuffer.capacity();
 
         writePackets(logAppender, msgCount);
-        assertThat(subscription.read(), is(msgCount));
+        assertThat(subscription.receive(), is(msgCount));
 
         // cleaning is triggered by the subscriber and not the subscriber
         // so we clean two ahead of the current buffer
@@ -236,19 +236,19 @@ public class AeronTest
         aeron.conductor().doWork();
 
         writePackets(appendersSession1[1], msgCount);
-        assertThat(subscription.read(), is(msgCount));
+        assertThat(subscription.receive(), is(msgCount));
 
         cleanBuffers(0);
         aeron.conductor().doWork();
 
         writePackets(appendersSession1[2], msgCount);
-        assertThat(subscription.read(), is(msgCount));
+        assertThat(subscription.receive(), is(msgCount));
 
         cleanBuffers(1);
         aeron.conductor().doWork();
 
         writePackets(logAppender, msgCount);
-        assertThat(subscription.read(), is(msgCount));
+        assertThat(subscription.receive(), is(msgCount));
     }
 
     @Test
@@ -267,19 +267,19 @@ public class AeronTest
         final int msgCount = logAppender.capacity() / SEND_BUFFER_CAPACITY;
 
         writePackets(logAppender, msgCount);
-        assertThat(subscription.read(), is(msgCount));
+        assertThat(subscription.receive(), is(msgCount));
 
         writePackets(appendersSession1[1], msgCount);
-        assertThat(subscription.read(), is(msgCount));
+        assertThat(subscription.receive(), is(msgCount));
 
         writePackets(appendersSession1[2], msgCount);
-        assertThat(subscription.read(), is(msgCount));
+        assertThat(subscription.receive(), is(msgCount));
 
         // force the roll
-        assertThat(subscription.read(), is(msgCount));
+        assertThat(subscription.receive(), is(msgCount));
 
         // Now you've hit an unclean buffer and can't proceed
-        assertThat(subscription.read(), is(0));
+        assertThat(subscription.receive(), is(0));
     }
 
     @Test
@@ -300,13 +300,13 @@ public class AeronTest
         final int msgCount = logAppender.capacity() / sendBuffer.capacity();
 
         writePackets(logAppender, msgCount);
-        assertThat(subscription.read(), is(msgCount));
+        assertThat(subscription.receive(), is(msgCount));
 
         writePackets(appendersSession1[1], msgCount);
-        assertThat(subscription.read(), is(msgCount));
+        assertThat(subscription.receive(), is(msgCount));
 
         writePackets(appendersSession2[0], 5);
-        assertThat(subscription.read(), is(5));
+        assertThat(subscription.receive(), is(5));
     }
 
     private DataHandler eitherSessionAssertingHandler()

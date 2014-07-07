@@ -115,7 +115,7 @@ public class PubAndSubTest
     }
 
     @Theory
-    @Ignore("isn't finished yet - simple message send/read")
+    @Ignore("isn't finished yet - simple message send/recieve")
     public void shouldReceivePublishedMessage(final String destination) throws Exception
     {
         setup(destination);

@@ -56,10 +56,10 @@ public class ExampleSubscriber
                 {
                     while (true)
                     {
-                        final int messagesRead = subscription.read();
+                        final int messagesRead = subscription.receive();
                         if (messagesRead == 0)
                         {
-                            Thread.sleep(1000); // Do some other work if nothing is read.
+                            Thread.sleep(1000); // Do some other work if nothing is recieve.
                         }
                     }
                 }

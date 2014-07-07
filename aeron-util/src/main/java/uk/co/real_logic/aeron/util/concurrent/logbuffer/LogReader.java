@@ -68,15 +68,16 @@ public class LogReader
     /**
      * Reads data from the log buffer.
      *
+     * @param limit the number of frames read.
      * @param handler the handler for data that has been read
      * @return the number of frames read
      */
-    public int read(final FrameHandler handler)
+    public int read(final int limit, final FrameHandler handler)
     {
         int counter = 0;
         final int tail = stateViewer.tailVolatile();
 
-        while (tail > cursor)
+        while (tail > cursor && counter < limit)
         {
             final int frameLength = waitForFrameLength(logBuffer, cursor);
             try
@@ -85,6 +86,7 @@ public class LogReader
                 {
                     ++counter;
                     handler.onFrame(logBuffer, cursor, frameLength);
+
                 }
             }
             finally

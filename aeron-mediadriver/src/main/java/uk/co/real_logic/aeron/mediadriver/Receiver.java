@@ -20,6 +20,7 @@ import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.util.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.GapScanner;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.aeron.util.event.EventCode;
 import uk.co.real_logic.aeron.util.event.EventLogger;
 
 import java.util.HashMap;
@@ -196,7 +197,8 @@ public class Receiver extends Agent
 
         if (null == frameHandler)
         {
-            System.err.println("onNewConnectedSubscription: could not find frameHandler");
+            final String destination = e.destination().toString();
+            LOGGER.log(EventCode.COULD_NOT_FIND_FRAME_HANDLER_FOR_NEW_CONNECTED_SUBSCRIPTION, destination);
             return;
         }
 

@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.util.BitUtil;
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 
@@ -78,9 +79,7 @@ public class ConnectedSubscription
             }
         }
 
-        return logReader.read((buffer, offset, length) ->
-                                  dataHandler.onData(buffer, offset + HEADER_LENGTH,
-                                      length - HEADER_LENGTH, sessionId));
+        return logReader.read(Integer.MAX_VALUE, this::onFrame);
     }
 
     private boolean hasBeenCleaned(final LogReader logReader)
@@ -109,6 +108,12 @@ public class ConnectedSubscription
 
             return 1;
         }
+
         return 0;
+    }
+
+    private void onFrame(final AtomicBuffer buffer, final int offset, final int length)
+    {
+        dataHandler.onData(buffer, offset + HEADER_LENGTH, length - HEADER_LENGTH, sessionId);
     }
 }

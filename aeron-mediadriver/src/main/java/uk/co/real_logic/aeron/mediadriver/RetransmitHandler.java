@@ -36,7 +36,7 @@ public class RetransmitHandler
     /** Maximum number of concurrent retransmits */
     public static final int MAX_RETRANSMITS = MediaDriver.MAX_RETRANSMITS_DEFAULT;
 
-    private final LogReader reader;
+    private final LogReader reader; // TODO: Should be using LogScanner to be more efficient and deal with padding
     private final TimerWheel timerWheel;
     private final LogReader.FrameHandler sendRetransmitHandler;
     private final Queue<RetransmitAction> retransmitActionPool = new OneToOneConcurrentArrayQueue<>(MAX_RETRANSMITS);
@@ -129,7 +129,7 @@ public class RetransmitHandler
     private void perform(final RetransmitAction retransmitAction)
     {
         reader.seek(retransmitAction.termOffset);
-        reader.read(sendRetransmitHandler);
+        reader.read(Integer.MAX_VALUE, sendRetransmitHandler);
     }
 
     private enum State

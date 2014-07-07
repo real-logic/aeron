@@ -203,6 +203,7 @@ public class ReceiverTest
         frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
         messagesRead = logReaders[0].read(
+            Integer.MAX_VALUE,
             (buffer, offset, length) ->
             {
                 dataHeader.wrap(buffer, offset);
@@ -254,6 +255,7 @@ public class ReceiverTest
         frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
         messagesRead = logReaders[0].read(
+            Integer.MAX_VALUE,
             (buffer, offset, length) ->
             {
                 dataHeader.wrap(buffer, offset);
@@ -305,6 +307,7 @@ public class ReceiverTest
         frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
         messagesRead = logReaders[0].read(
+            Integer.MAX_VALUE,
             (buffer, offset, length) ->
             {
                 dataHeader.wrap(buffer, offset);

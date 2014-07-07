@@ -77,6 +77,8 @@ public class Subscription
     private final DataHandler handler;
     private final ClientConductor conductor;
 
+    private int connectionIndex = 0;
+
     public Subscription(final ClientConductor conductor,
                         final DataHandler handler,
                         final String destination,
@@ -109,11 +111,11 @@ public class Subscription
     /**
      * Read waiting data and deliver to {@link Subscription.DataHandler}s.
      *
-     * @return the number of messages recieve
+     * @return the number of messages received
      */
     public int receive()
     {
-        return connectedSubscriptions.forEach(0, ConnectedSubscription::recieve);
+        return connectedSubscriptions.forEachFrom(0, ConnectedSubscription::recieve);
     }
 
     public void onBuffersMapped(final long sessionId, final long termId, final LogReader[] logReaders)
@@ -123,7 +125,7 @@ public class Subscription
 
     public int processBufferScan()
     {
-        return connectedSubscriptions.forEach(0, ConnectedSubscription::processBufferScan);
+        return connectedSubscriptions.forEachFrom(0, ConnectedSubscription::processBufferScan);
     }
 
     public boolean isConnected(final long sessionId)

@@ -185,7 +185,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
 
     private int performBufferMaintenance()
     {
-        final int publicationWork = publications.forEach(
+        final int publicationWork = publications.forEachFrom(
             0,
             (publication) ->
             {
@@ -201,7 +201,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
                 return 1;
             });
 
-        return publicationWork + subscriptions.forEach(0, Subscription::processBufferScan);
+        return publicationWork + subscriptions.forEachFrom(0, Subscription::processBufferScan);
     }
 
     public void onNewPublication(final String destination,

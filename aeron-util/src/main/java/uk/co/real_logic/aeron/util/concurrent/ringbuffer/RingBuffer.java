@@ -54,10 +54,10 @@ public interface RingBuffer
      * Read as many messages as are available from the ring buffer to up a supplied maximum.
      *
      * @param handler to be called for processing each message in turn.
-     * @param limit the number of messages will be read in a single invocation.
+     * @param messageCountLimit the number of messages will be read in a single invocation.
      * @return the number of messages that have been processed.
      */
-    int read(final MessageHandler handler, final int limit);
+    int read(final MessageHandler handler, final int messageCountLimit);
 
     /**
      * The maximum message length in bytes supported by the underlying ring buffer.

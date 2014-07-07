@@ -68,23 +68,23 @@ public class LogReader
     /**
      * Reads data from the log buffer.
      *
-     * @param limit the number of frames read.
      * @param handler the handler for data that has been read
+     * @param framesCountLimit the number of frames read.
      * @return the number of frames read
      */
-    public int read(final int limit, final FrameHandler handler)
+    public int read(final FrameHandler handler, final int framesCountLimit)
     {
-        int counter = 0;
+        int framesCounter = 0;
         final int tail = stateViewer.tailVolatile();
 
-        while (tail > cursor && counter < limit)
+        while (tail > cursor && framesCounter < framesCountLimit)
         {
             final int frameLength = waitForFrameLength(logBuffer, cursor);
             try
             {
                 if (frameType(cursor) != PADDING_FRAME_TYPE)
                 {
-                    ++counter;
+                    ++framesCounter;
                     handler.onFrame(logBuffer, cursor, frameLength);
 
                 }
@@ -95,7 +95,7 @@ public class LogReader
             }
         }
 
-        return counter;
+        return framesCounter;
     }
 
     /**

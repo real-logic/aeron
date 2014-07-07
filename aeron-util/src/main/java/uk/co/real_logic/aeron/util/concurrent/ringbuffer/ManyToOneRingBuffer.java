@@ -107,12 +107,12 @@ public class ManyToOneRingBuffer implements RingBuffer
     /**
      * {@inheritDoc}
      */
-    public int read(final MessageHandler handler, final int limit)
+    public int read(final MessageHandler handler, final int messageCountLimit)
     {
         final long tail = getTailVolatile();
         final long head = getHeadVolatile();
         final int available = (int)(tail - head);
-        int recordsRead = 0;
+        int messagesRead = 0;
 
         if (available > 0)
         {
@@ -122,7 +122,7 @@ public class ManyToOneRingBuffer implements RingBuffer
 
             try
             {
-                while ((bytesRead < contiguousBlockSize) && (recordsRead < limit))
+                while ((bytesRead < contiguousBlockSize) && (messagesRead < messageCountLimit))
                 {
                     final int recordIndex = headIndex + bytesRead;
                     final int recordLength = waitForRecordLengthVolatile(recordIndex);
@@ -134,7 +134,7 @@ public class ManyToOneRingBuffer implements RingBuffer
 
                     if (msgTypeId != PADDING_MSG_TYPE_ID)
                     {
-                        ++recordsRead;
+                        ++messagesRead;
                         handler.onMessage(msgTypeId, buffer, encodedMsgOffset(recordIndex), msgLength);
                     }
                 }
@@ -146,7 +146,7 @@ public class ManyToOneRingBuffer implements RingBuffer
             }
         }
 
-        return recordsRead;
+        return messagesRead;
     }
 
     /**

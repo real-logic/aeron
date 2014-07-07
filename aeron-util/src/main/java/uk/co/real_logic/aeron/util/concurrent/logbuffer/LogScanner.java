@@ -101,13 +101,13 @@ public class LogScanner
     }
 
     /**
-     * Scan forward in the buffer for available frames limited by what will fit in maxLength.
+     * Scan forward in the buffer for available frames limited by what will fit in limit.
      *
-     * @param maxLength in bytes to scan.
+     * @param limit in bytes to scan.
      * @param handler called back if a frame is available.
      * @return number of frames available
      */
-    public int scanNext(final int maxLength, final AvailabilityHandler handler)
+    public int scanNext(final int limit, final AvailabilityHandler handler)
     {
         int frameCount = 0;
 
@@ -132,7 +132,7 @@ public class LogScanner
 
                     length += alignedFrameLength;
 
-                    if (length > maxLength)
+                    if (length > limit)
                     {
                         length -= alignedFrameLength;
                         break;

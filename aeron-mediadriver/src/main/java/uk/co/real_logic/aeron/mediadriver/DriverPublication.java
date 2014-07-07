@@ -113,10 +113,9 @@ public class DriverPublication
         termRetransmitBuffers = bufferRotator.buffers().map(this::duplicateLogBuffer).toArray(ByteBuffer[]::new);
         retransmitHandlers = bufferRotator.buffers().map(this::newRetransmitHandler).toArray(RetransmitHandler[]::new);
 
-        this.rightEdge = new AtomicLong(controlStrategy.initialRightEdge(initialTermId,
-                bufferRotator.sizeOfTermBuffer()));
+        rightEdge = new AtomicLong(controlStrategy.initialRightEdge(initialTermId, bufferRotator.sizeOfTermBuffer()));
 
-        this.shiftsForTermId = Long.numberOfTrailingZeros(bufferRotator.sizeOfTermBuffer());
+        shiftsForTermId = Long.numberOfTrailingZeros(bufferRotator.sizeOfTermBuffer());
 
         currentTermId = new AtomicLong(initialTermId);
         cleanedTermId = new AtomicLong(initialTermId + 2);
@@ -130,10 +129,10 @@ public class DriverPublication
         {
             final long nextOffset = (currentTermId.get() << shiftsForTermId) + nextTermOffset;
             final int availableWindow = (int)(rightEdge.get() - nextOffset);
-            final int maxLength = Math.min(availableWindow, mtuLength);
+            final int scanLimit = Math.min(availableWindow, mtuLength);
 
             final LogScanner scanner = scanners[currentIndex];
-            workCount += scanner.scanNext(maxLength, this::onSendFrame);
+            workCount += scanner.scanNext(scanLimit, this::onSendFrame);
 
             if (scanner.isComplete())
             {
@@ -167,8 +166,8 @@ public class DriverPublication
                                 final long receiverWindow,
                                 final InetSocketAddress address)
     {
-        final long newRightEdge = controlStrategy.onStatusMessage(termId, highestContiguousSequenceNumber,
-                receiverWindow, address);
+        final long newRightEdge =
+            controlStrategy.onStatusMessage(termId, highestContiguousSequenceNumber, receiverWindow, address);
 
         rightEdge.lazySet(newRightEdge);
 
@@ -257,8 +256,10 @@ public class DriverPublication
     private RetransmitHandler newRetransmitHandler(final LogBuffers log)
     {
         return new RetransmitHandler(new LogReader(log.logBuffer(), log.stateBuffer()),
-                                     timerWheel, MediaConductor.RETRANS_UNICAST_DELAY_GENERATOR,
-                                     MediaConductor.RETRANS_UNICAST_LINGER_GENERATOR, this::onSendRetransmit);
+                                     timerWheel,
+                                     MediaConductor.RETRANS_UNICAST_DELAY_GENERATOR,
+                                     MediaConductor.RETRANS_UNICAST_LINGER_GENERATOR,
+                                     this::onSendRetransmit);
     }
 
     private int determineIndexByTermId(final long termId)

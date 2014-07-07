@@ -34,7 +34,10 @@ public enum EventCode
     INVOCATION(9, EventCodec::dissectAsInvocation),
     EXCEPTION(10, EventCodec::dissectAsException),
     MALFORMED_FRAME_LENGTH(11, EventCodec::dissectAsCommand),
-    UNKNOWN_HEADER_TYPE(12, EventCodec::dissectAsCommand);
+    UNKNOWN_HEADER_TYPE(12, EventCodec::dissectAsCommand),
+
+    /** Probably means MULTICAST_DEFAULT_INTERFACE_PROP_NAME wasn't set properly */
+    COULD_NOT_FIND_INTERFACE(13, EventCodec::dissectAsString);
 
     private final static Int2ObjectHashMap<EventCode> mapOfIdToEventCode = new Int2ObjectHashMap<>();
 

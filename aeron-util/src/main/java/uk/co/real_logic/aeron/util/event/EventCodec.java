@@ -95,6 +95,14 @@ public class EventCodec
         return relativeOffset;
     }
 
+    public static int encode(final AtomicBuffer encodingBuffer, final String value)
+    {
+        final int length = encodingBuffer.putString(LOG_HEADER_LENGTH, value, LITTLE_ENDIAN);
+        final int recordLength = LOG_HEADER_LENGTH + length;
+        encodeLogHeader(encodingBuffer, recordLength, recordLength);
+        return recordLength;
+    }
+
     public static int encode(final AtomicBuffer encodingBuffer, final StackTraceElement stack)
     {
         final int relativeOffset = putStackTraceElement(encodingBuffer, stack, LOG_HEADER_LENGTH);
@@ -242,6 +250,19 @@ public class EventCodec
 
         readStackTraceElement(buffer, offset, builder);
 
+        return builder.toString();
+    }
+
+    public static String dissectAsString(
+            final EventCode code,
+            final AtomicBuffer buffer,
+            final int offset,
+            final int length)
+    {
+        final StringBuilder builder = new StringBuilder();
+        final int relativeOffset = dissectLogHeader(code, buffer, offset, builder);
+        builder.append(": ");
+        builder.append(buffer.getString(offset + relativeOffset, LITTLE_ENDIAN));
         return builder.toString();
     }
 

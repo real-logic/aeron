@@ -48,4 +48,13 @@ public class EventCodecTest
         assertThat(written, containsString(FILE));
         assertThat(written, containsString(":" + LINE_NUMBER));
     }
+
+    @Test
+    public void dissectAsStringShouldContainTheValuesEncoded()
+    {
+        final int size = EventCodec.encode(buffer, MESSAGE);
+        final String written = EventCodec.dissectAsString(EventCode.COULD_NOT_FIND_INTERFACE, buffer, 0, size);
+
+        assertThat(written, containsString(MESSAGE));
+    }
 }

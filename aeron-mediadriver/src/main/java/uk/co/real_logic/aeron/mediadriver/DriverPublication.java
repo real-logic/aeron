@@ -132,7 +132,7 @@ public class DriverPublication
             final int scanLimit = Math.min(availableWindow, mtuLength);
 
             final LogScanner scanner = scanners[currentIndex];
-            workCount += scanner.scanNext(scanLimit, this::onSendFrame);
+            workCount += scanner.scanNext(this::onSendFrame, scanLimit);
 
             if (scanner.isComplete())
             {

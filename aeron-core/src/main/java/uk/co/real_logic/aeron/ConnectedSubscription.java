@@ -79,7 +79,7 @@ public class ConnectedSubscription
             }
         }
 
-        return logReader.read(Integer.MAX_VALUE, this::onFrame);
+        return logReader.read(this::onFrame, Integer.MAX_VALUE);
     }
 
     private boolean hasBeenCleaned(final LogReader logReader)

@@ -203,7 +203,6 @@ public class ReceiverTest
         frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
         messagesRead = logReaders[0].read(
-            Integer.MAX_VALUE,
             (buffer, offset, length) ->
             {
                 dataHeader.wrap(buffer, offset);
@@ -213,7 +212,8 @@ public class ReceiverTest
                 assertThat(dataHeader.sessionId(), is(SESSION_ID));
                 assertThat(dataHeader.termOffset(), is(0L));
                 assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
-            });
+            }, Integer.MAX_VALUE
+        );
 
         assertThat(messagesRead, is(1));
     }
@@ -255,7 +255,6 @@ public class ReceiverTest
         frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
         messagesRead = logReaders[0].read(
-            Integer.MAX_VALUE,
             (buffer, offset, length) ->
             {
                 dataHeader.wrap(buffer, offset);
@@ -265,7 +264,8 @@ public class ReceiverTest
                 assertThat(dataHeader.sessionId(), is(SESSION_ID));
                 assertThat(dataHeader.termOffset(), is(0L));
                 assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
-            });
+            }, Integer.MAX_VALUE
+        );
 
         assertThat(messagesRead, is(1));
     }
@@ -307,7 +307,6 @@ public class ReceiverTest
         frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
         messagesRead = logReaders[0].read(
-            Integer.MAX_VALUE,
             (buffer, offset, length) ->
             {
                 dataHeader.wrap(buffer, offset);
@@ -317,7 +316,8 @@ public class ReceiverTest
                 assertThat(dataHeader.sessionId(), is(SESSION_ID));
                 assertThat(dataHeader.termOffset(), is(0L));
                 assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
-            });
+            }, Integer.MAX_VALUE
+        );
 
         assertThat(messagesRead, is(1));
     }

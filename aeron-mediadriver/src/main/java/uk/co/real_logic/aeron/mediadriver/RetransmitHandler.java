@@ -129,7 +129,7 @@ public class RetransmitHandler
     private void perform(final RetransmitAction retransmitAction)
     {
         reader.seek(retransmitAction.termOffset);
-        reader.read(Integer.MAX_VALUE, sendRetransmitHandler);
+        reader.read(sendRetransmitHandler, Integer.MAX_VALUE);
     }
 
     private enum State

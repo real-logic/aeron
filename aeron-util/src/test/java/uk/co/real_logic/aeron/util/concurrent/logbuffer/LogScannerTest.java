@@ -62,7 +62,7 @@ public class LogScannerTest
     @Test
     public void shouldReturnZeroOnEmptyLog()
     {
-        assertThat(scanner.scanNext(MTU_LENGTH, handler), is(0));
+        assertThat(scanner.scanNext(handler, MTU_LENGTH), is(0));
     }
 
     @Test
@@ -80,7 +80,7 @@ public class LogScannerTest
         when(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN))
             .thenReturn((short)HDR_TYPE_DATA);
 
-        assertThat(scanner.scanNext(MTU_LENGTH, handler), greaterThan(0));
+        assertThat(scanner.scanNext(handler, MTU_LENGTH), greaterThan(0));
         assertFalse(scanner.isComplete());
 
         final InOrder inOrder = inOrder(stateBuffer, logBuffer, handler);
@@ -106,7 +106,7 @@ public class LogScannerTest
         when(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN))
             .thenReturn((short)HDR_TYPE_DATA);
 
-        assertThat(scanner.scanNext(maxLength, handler), is(0));
+        assertThat(scanner.scanNext(handler, maxLength), is(0));
         assertFalse(scanner.isComplete());
 
         final InOrder inOrder = inOrder(stateBuffer, logBuffer, handler);
@@ -132,7 +132,7 @@ public class LogScannerTest
         when(logBuffer.getShort(typeOffset(frameOffset + FRAME_ALIGNMENT), LITTLE_ENDIAN))
             .thenReturn((short)HDR_TYPE_DATA);
 
-        assertThat(scanner.scanNext(MTU_LENGTH, handler), greaterThan(0));
+        assertThat(scanner.scanNext(handler, MTU_LENGTH), greaterThan(0));
         assertFalse(scanner.isComplete());
 
         final InOrder inOrder = inOrder(stateBuffer, logBuffer, handler);
@@ -165,7 +165,7 @@ public class LogScannerTest
         when(logBuffer.getShort(typeOffset(frameOffset + frameOneLength), LITTLE_ENDIAN))
             .thenReturn((short)HDR_TYPE_DATA);
 
-        assertThat(scanner.scanNext(MTU_LENGTH, handler), greaterThan(0));
+        assertThat(scanner.scanNext(handler, MTU_LENGTH), greaterThan(0));
         assertFalse(scanner.isComplete());
 
         final InOrder inOrder = inOrder(stateBuffer, logBuffer, handler);
@@ -198,7 +198,7 @@ public class LogScannerTest
         when(logBuffer.getShort(typeOffset(frameOffset + frameOneLength), LITTLE_ENDIAN))
             .thenReturn((short)HDR_TYPE_DATA);
 
-        assertThat(scanner.scanNext(MTU_LENGTH, handler), greaterThan(0));
+        assertThat(scanner.scanNext(handler, MTU_LENGTH), greaterThan(0));
         assertFalse(scanner.isComplete());
 
         final InOrder inOrder = inOrder(stateBuffer, logBuffer, handler);
@@ -227,9 +227,9 @@ public class LogScannerTest
 
         scanner.seek(frameOffset);
 
-        assertThat(scanner.scanNext(MTU_LENGTH, handler), greaterThan(0));
+        assertThat(scanner.scanNext(handler, MTU_LENGTH), greaterThan(0));
         assertTrue(scanner.isComplete());
-        assertThat(scanner.scanNext(MTU_LENGTH, handler), is(0));
+        assertThat(scanner.scanNext(handler, MTU_LENGTH), is(0));
 
         verify(handler).onAvailable(frameOffset, FRAME_ALIGNMENT);
     }
@@ -252,9 +252,9 @@ public class LogScannerTest
 
         scanner.seek(frameOffset);
 
-        assertThat(scanner.scanNext(MTU_LENGTH, handler), greaterThan(0));
+        assertThat(scanner.scanNext(handler, MTU_LENGTH), greaterThan(0));
         assertTrue(scanner.isComplete());
-        assertThat(scanner.scanNext(MTU_LENGTH, handler), is(0));
+        assertThat(scanner.scanNext(handler, MTU_LENGTH), is(0));
 
         verify(handler, times(1)).onAvailable(frameOffset, FRAME_ALIGNMENT * 2);
     }

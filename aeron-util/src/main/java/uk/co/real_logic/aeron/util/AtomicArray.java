@@ -95,20 +95,20 @@ public class AtomicArray<T> implements Collection<T>
      */
     public void forEach(final Consumer<? super T> function)
     {
-        forEachFrom(
-            0,
-            (t) ->
-            {
-                function.accept(t);
-                return 0;
-            });
+        @SuppressWarnings("unchecked")
+        final T[] array = (T[])arrayRef.get();
+
+        for (final T e : array)
+        {
+            function.accept(e);
+        }
     }
 
     /**
      * For each valid element, call a function passing the element
      *
-     * @param fromIndex    the index to fromIndex iterating at
-     * @param function to call and pass each element to
+     * @param fromIndex the index to fromIndex iterating at
+     * @param function  to call and pass each element to
      * @return true if side effects have occurred otherwise false.
      */
     public int forEachFrom(int fromIndex, final ToIntFunction<? super T> function)
@@ -116,11 +116,6 @@ public class AtomicArray<T> implements Collection<T>
         @SuppressWarnings("unchecked")
         final T[] array = (T[])arrayRef.get();
 
-        return forEachFrom(fromIndex, function, array);
-    }
-
-    private int forEachFrom(int fromIndex, final ToIntFunction<? super T> function, final T[] array)
-    {
         if (array.length == 0)
         {
             return 0;

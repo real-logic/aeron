@@ -28,7 +28,6 @@ import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -98,7 +97,7 @@ public class EventCodec
 
     public static int encode(final AtomicBuffer encodingBuffer, final StackTraceElement stack)
     {
-        final int relativeOffset = putStrackTraceElement(encodingBuffer, stack, LOG_HEADER_LENGTH);
+        final int relativeOffset = putStackTraceElement(encodingBuffer, stack, LOG_HEADER_LENGTH);
         final int captureLength = relativeOffset - LOG_HEADER_LENGTH;
         encodeLogHeader(encodingBuffer, captureLength, captureLength);
         return relativeOffset;
@@ -111,14 +110,14 @@ public class EventCodec
         int relativeOffset = LOG_HEADER_LENGTH;
         relativeOffset += encodingBuffer.putString(relativeOffset, ex.getClass().getName(), LITTLE_ENDIAN);
         relativeOffset += encodingBuffer.putString(relativeOffset, ex.getMessage(), LITTLE_ENDIAN);
-        relativeOffset = putStrackTraceElement(encodingBuffer, stack, relativeOffset);
+        relativeOffset = putStackTraceElement(encodingBuffer, stack, relativeOffset);
 
         final int recordLength = relativeOffset - LOG_HEADER_LENGTH;
         encodeLogHeader(encodingBuffer, recordLength, recordLength);
         return relativeOffset;
     }
 
-    private static int putStrackTraceElement(final AtomicBuffer encodingBuffer, final StackTraceElement stack, int relativeOffset)
+    private static int putStackTraceElement(final AtomicBuffer encodingBuffer, final StackTraceElement stack, int relativeOffset)
     {
         encodingBuffer.putInt(relativeOffset, stack.getLineNumber(), LITTLE_ENDIAN);
         relativeOffset += SIZE_OF_INT;
@@ -251,26 +250,22 @@ public class EventCodec
             int offset,
             final StringBuilder builder)
     {
-        byte[] workingBuffer;
-        final int linenumber = buffer.getInt(offset, LITTLE_ENDIAN);
+        final int lineNumber = buffer.getInt(offset, LITTLE_ENDIAN);
         offset += SIZE_OF_INT;
 
-        workingBuffer = new byte[buffer.getInt(offset)];
-        buffer.getBytes(offset + SIZE_OF_INT, workingBuffer);
-        final String classname = new String(workingBuffer, StandardCharsets.UTF_8);
-        offset += SIZE_OF_INT + workingBuffer.length;
+        int length = buffer.getInt(offset);
+        final String className = buffer.getString(offset, length);
+        offset += SIZE_OF_INT + length;
 
-        workingBuffer = new byte[buffer.getInt(offset)];
-        buffer.getBytes(offset + SIZE_OF_INT, workingBuffer);
-        final String methodname = new String(workingBuffer, StandardCharsets.UTF_8);
-        offset += SIZE_OF_INT + workingBuffer.length;
+        length = buffer.getInt(offset);
+        final String methodName = buffer.getString(offset, length);
+        offset += SIZE_OF_INT + length;
 
-        workingBuffer = new byte[buffer.getInt(offset)];
-        buffer.getBytes(offset + SIZE_OF_INT, workingBuffer);
-        final String filename = new String(workingBuffer, StandardCharsets.UTF_8);
-        offset += SIZE_OF_INT + workingBuffer.length;
+        length = buffer.getInt(offset);
+        final String fileName = buffer.getString(offset, length);
+        offset += SIZE_OF_INT + length;
 
-        builder.append(String.format("%s.%s %s:%d", classname, methodname, filename, linenumber));
+        builder.append(String.format("%s.%s %s:%d", className, methodName, fileName, lineNumber));
 
         return offset;
     }

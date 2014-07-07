@@ -125,10 +125,10 @@ public class MediaConductor extends Agent
             LOGGER.logException(ex);
         }
 
-        workCount += publications.forEachFrom(0, DriverPublication::processBufferRotation);
-        workCount += connectedSubscriptions.forEachFrom(0, DriverConnectedSubscription::processBufferRotation);
-        workCount += connectedSubscriptions.forEachFrom(0, DriverConnectedSubscription::scanForGaps);
-        workCount += connectedSubscriptions.forEachFrom(0, (subscription) -> subscription.sendAnyPendingSm(timerWheel.now()));
+        workCount += publications.doAction(DriverPublication::processBufferRotation);
+        workCount += connectedSubscriptions.doAction(DriverConnectedSubscription::processBufferRotation);
+        workCount += connectedSubscriptions.doAction(DriverConnectedSubscription::scanForGaps);
+        workCount += connectedSubscriptions.doAction((subscription) -> subscription.sendAnyPendingSm(timerWheel.now()));
 
         workCount += processFromClientCommandBuffer();
         workCount += processMediaCommandBuffer();

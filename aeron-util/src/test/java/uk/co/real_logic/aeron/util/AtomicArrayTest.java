@@ -17,7 +17,9 @@ package uk.co.real_logic.aeron.util;
 
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static java.util.Arrays.asList;
@@ -133,7 +135,7 @@ public class AtomicArrayTest
             final AtomicArray<Integer> array = new AtomicArray<>();
             values.forEach(array::add);
 
-            assertThat(array.forEachFrom(start, (e) -> values.remove(e) ? 1 : 0), is(3));
+            assertThat(array.doAction(start, (e) -> values.remove(e) ? 1 : 0), is(3));
             assertThat(values, empty());
         }
     }
@@ -144,7 +146,7 @@ public class AtomicArrayTest
         final Set<Integer> values = new HashSet<>(asList(10, 20, 30));
         values.forEach(array::add);
 
-        assertThat(array.forEachFrom(4, (e) -> values.remove(e) ? 1 : 0), is(3));
+        assertThat(array.doAction(4, (e) -> values.remove(e) ? 1 : 0), is(3));
         assertThat(values, empty());
     }
 
@@ -183,5 +185,30 @@ public class AtomicArrayTest
     public void shouldReportEmpty()
     {
         assertTrue(array.isEmpty());
+    }
+
+    @Test
+    public void shouldLimitedAction()
+    {
+        asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).forEach(array::add);
+        final List<Integer> values = new ArrayList<>();
+
+        final AtomicArray.ToIntLimitedFunction<Integer> action =
+            (e, limit) ->
+            {
+                final int actionCount = Math.min(e, limit);
+
+                for (int i = 0; i < actionCount; i++)
+                {
+                    values.add(e);
+                }
+
+                return actionCount;
+            };
+
+        final int actionCount = array.doLimitedAction(0, 10, action);
+
+        assertThat(actionCount, is(10));
+        assertThat(values, is(asList(1, 2, 2, 3, 3, 3, 4, 4, 4, 4)));
     }
 }

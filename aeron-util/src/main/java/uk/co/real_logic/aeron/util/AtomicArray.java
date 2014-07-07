@@ -43,6 +43,19 @@ public class AtomicArray<T> implements Collection<T>
     }
 
     @FunctionalInterface
+    public interface ToIntLimitedFunction<T>
+    {
+        /**
+         * Applies this function to the given argument.
+         *
+         * @param value the function argument
+         * @param limit to the number of sub actions that can be performed.
+         * @return a value to indicate the number of actions that have occurred.
+         */
+        int apply(T value, int limit);
+    }
+
+    @FunctionalInterface
     public interface MatchFunction<T>
     {
         /**
@@ -89,29 +102,46 @@ public class AtomicArray<T> implements Collection<T>
     }
 
     /**
-     * Iterate over each element applying a supplied function.
+     * Iterate over each element applying a supplied action.
      *
-     * @param function to be applied to each element.
+     * @param action to be applied to each element.
      */
-    public void forEach(final Consumer<? super T> function)
+    public void forEach(final Consumer<? super T> action)
     {
         @SuppressWarnings("unchecked")
         final T[] array = (T[])arrayRef.get();
 
         for (final T e : array)
         {
-            function.accept(e);
+            action.accept(e);
         }
     }
 
     /**
-     * For each valid element, call a function passing the element
+     * For each element, call a function to perform an action passing the element.
+     * <p>
+     * The count of resulting changes is returned, which can be greater than the number of elements if actions
+     * are recursive.
+     *
+     * @param action to call and pass each element to
+     * @return the number of actions that have been applied.
+     */
+    public int doAction(final ToIntFunction<? super T> action)
+    {
+        return doAction(0, action);
+    }
+
+    /**
+     * For each element from an index, call a function an action on an element.
+     * <p>
+     * The count of resulting changes is returned, which can be greater than the number of elements if actions
+     * are recursive.
      *
      * @param fromIndex the index to fromIndex iterating at
-     * @param function  to call and pass each element to
-     * @return true if side effects have occurred otherwise false.
+     * @param action    to call and pass each element to
+     * @return the number of actions that have been applied.
      */
-    public int forEachFrom(int fromIndex, final ToIntFunction<? super T> function)
+    public int doAction(int fromIndex, final ToIntFunction<? super T> action)
     {
         @SuppressWarnings("unchecked")
         final T[] array = (T[])arrayRef.get();
@@ -121,16 +151,13 @@ public class AtomicArray<T> implements Collection<T>
             return 0;
         }
 
-        if (array.length <= fromIndex)
-        {
-            fromIndex = array.length - 1;
-        }
+        fromIndex = adjustForOverrun(fromIndex, array.length);
 
-        int actionsCount = 0;
+        int actionCount = 0;
         int i = fromIndex;
         do
         {
-            actionsCount += function.apply(array[i]);
+            actionCount += action.apply(array[i]);
 
             if (++i == array.length)
             {
@@ -139,13 +166,58 @@ public class AtomicArray<T> implements Collection<T>
         }
         while (i != fromIndex);
 
-        return actionsCount;
+        return actionCount;
+    }
+
+    /**
+     * For each element from an index, call a function to perform an action on the element.
+     * <p>
+     * The count of resulting changes is returned, which can be greater than the number of elements if actions
+     * are recursive.
+     *
+     * @param fromIndex        the index to fromIndex iterating at
+     * @param actionCountLimit up to which processing should occur then stop.
+     * @param action           to be applied to each element
+     * @return the number of actions that have been applied.
+     */
+    public int doLimitedAction(int fromIndex, final int actionCountLimit, final ToIntLimitedFunction<? super T> action)
+    {
+        @SuppressWarnings("unchecked")
+        final T[] array = (T[])arrayRef.get();
+
+        if (array.length == 0)
+        {
+            return 0;
+        }
+
+        fromIndex = adjustForOverrun(fromIndex, array.length);
+
+        int actionCount = 0;
+        int i = fromIndex;
+        do
+        {
+            if (actionCount >= actionCountLimit)
+            {
+                break;
+            }
+
+            actionCount += action.apply(array[i], actionCountLimit - actionCount);
+
+            if (++i == array.length)
+            {
+                i = 0;
+            }
+        }
+        while (i != fromIndex);
+
+        return actionCount;
     }
 
     /**
      * Add given element to the array atomically.
      *
-     * @param element to add
+     * @param element to be added
+     * @throws NullPointerException if the element is null
      */
     public boolean add(final T element)
     {
@@ -165,7 +237,7 @@ public class AtomicArray<T> implements Collection<T>
     /**
      * Remove given element from the array atomically.
      *
-     * @param element to remove
+     * @param element to be removed
      */
     public boolean remove(final Object element)
     {
@@ -176,7 +248,6 @@ public class AtomicArray<T> implements Collection<T>
 
         return oldArray != newArray;
     }
-
 
     public int size()
     {
@@ -190,9 +261,9 @@ public class AtomicArray<T> implements Collection<T>
 
     private final static class ArrayIterator<T> implements Iterator<T>
     {
+
         private final Object[] array;
         private int index;
-
         private ArrayIterator(final Object[] array)
         {
             this.array = array;
@@ -218,8 +289,8 @@ public class AtomicArray<T> implements Collection<T>
         {
             throw new UnsupportedOperationException();
         }
-    }
 
+    }
     public boolean isEmpty()
     {
         return arrayRef.get().length == 0;
@@ -277,6 +348,16 @@ public class AtomicArray<T> implements Collection<T>
         return "AtomicArray{" +
             "arrayRef=" + Arrays.toString(arrayRef.get()) +
             '}';
+    }
+
+    private static int adjustForOverrun(int index, final int length)
+    {
+        if (index >= length)
+        {
+            index = length - 1;
+        }
+
+        return index;
     }
 
     private static int find(final Object[] array, final Object item)

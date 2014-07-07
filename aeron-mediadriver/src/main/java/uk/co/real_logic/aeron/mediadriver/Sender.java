@@ -41,6 +41,6 @@ public class Sender extends Agent
             startingOffset = 0;
         }
 
-        return publications.forEachFrom(startingOffset, DriverPublication::send);
+        return publications.doAction(startingOffset, DriverPublication::send);
     }
 }

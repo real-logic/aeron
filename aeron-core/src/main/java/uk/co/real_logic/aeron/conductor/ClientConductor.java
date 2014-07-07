@@ -185,8 +185,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
 
     private int performBufferMaintenance()
     {
-        final int publicationWork = publications.forEachFrom(
-            0,
+        final int publicationWork = publications.doAction(
             (publication) ->
             {
                 final long dirtyTermId = publication.dirtyTermId();
@@ -201,7 +200,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
                 return 1;
             });
 
-        return publicationWork + subscriptions.forEachFrom(0, Subscription::processBufferScan);
+        return publicationWork + subscriptions.doAction(Subscription::processBufferScan);
     }
 
     public void onNewPublication(final String destination,

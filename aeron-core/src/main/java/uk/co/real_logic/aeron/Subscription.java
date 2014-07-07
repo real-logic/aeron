@@ -115,18 +115,13 @@ public class Subscription
      */
     public int receive(final int frameCountLimit)
     {
-        int frameCount = 0;
-        for (final ConnectedSubscription connectedSubscription : connectedSubscriptions)
+        int index = connectionIndex++;
+        if (connectedSubscriptions.size() == connectionIndex)
         {
-            frameCount += connectedSubscription.receive(frameCountLimit - frameCount);
-
-            if (frameCount >= frameCountLimit)
-            {
-                break;
-            }
+            connectionIndex = 0;
         }
 
-        return frameCount;
+        return connectedSubscriptions.doLimitedAction(index, frameCountLimit, ConnectedSubscription::receive);
     }
 
     public void onBuffersMapped(final long sessionId, final long termId, final LogReader[] logReaders)
@@ -136,7 +131,7 @@ public class Subscription
 
     public int processBufferScan()
     {
-        return connectedSubscriptions.forEachFrom(0, ConnectedSubscription::processBufferScan);
+        return connectedSubscriptions.doAction(ConnectedSubscription::processBufferScan);
     }
 
     public boolean isConnected(final long sessionId)

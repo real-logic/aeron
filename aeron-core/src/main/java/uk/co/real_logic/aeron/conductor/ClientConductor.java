@@ -186,30 +186,31 @@ public class ClientConductor extends Agent implements MediaDriverListener
 
     private int performBufferMaintenance()
     {
-        int publicationWork = publications.forEach(0,
+        final int publicationWork = publications.forEach(
+            0,
             (publication) ->
             {
                 final long dirtyTermId = publication.dirtyTermId();
                 if (dirtyTermId != Publication.NO_DIRTY_TERM)
                 {
                     mediaDriverProxy.requestTerm(publication.destination(),
-                            publication.sessionId(),
-                            publication.channelId(),
-                            dirtyTermId);
+                                                 publication.sessionId(),
+                                                 publication.channelId(),
+                                                 dirtyTermId);
                 }
+
                 return 1;
             });
 
         return publicationWork + subscriptions.forEach(0, Subscription::processBufferScan);
     }
 
-    public void onNewPublication(
-            final String destination,
-            final long sessionId,
-            final long channelId,
-            final long termId,
-            final int positionIndicatorId,
-            final LogBuffersMessageFlyweight logBuffersMessage) throws IOException
+    public void onNewPublication(final String destination,
+                                 final long sessionId,
+                                 final long channelId,
+                                 final long termId,
+                                 final int positionIndicatorId,
+                                 final LogBuffersMessageFlyweight logBuffersMessage) throws IOException
     {
         final LogAppender[] logs = new LogAppender[BUFFER_COUNT];
         final AtomicBuffer[] headers = new AtomicBuffer[BUFFER_COUNT];
@@ -234,10 +235,10 @@ public class ClientConductor extends Agent implements MediaDriverListener
     }
 
     public void onNewConnectedSubscription(final String destination,
-                                            final long sessionId,
-                                            final long channelId,
-                                            final long currentTermId,
-                                            final LogBuffersMessageFlyweight message) throws IOException
+                                           final long sessionId,
+                                           final long channelId,
+                                           final long currentTermId,
+                                           final LogBuffersMessageFlyweight message) throws IOException
     {
         final Subscription subscription = subscriptionMap.get(destination, channelId);
         if (null != subscription && !subscription.isConnected(sessionId))
@@ -305,6 +306,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
     private LimitBarrier limitBarrier(final int positionIndicatorId)
     {
         final BufferPositionIndicator indicator = new BufferPositionIndicator(counterValuesBuffer, positionIndicatorId);
+
         return new WindowedLimitBarrier(indicator, publicationWindow);
     }
 }

@@ -113,9 +113,20 @@ public class Subscription
      *
      * @return the number of messages received
      */
-    public int receive()
+    public int receive(final int frameCountLimit)
     {
-        return connectedSubscriptions.forEachFrom(0, ConnectedSubscription::recieve);
+        int frameCount = 0;
+        for (final ConnectedSubscription connectedSubscription : connectedSubscriptions)
+        {
+            frameCount += connectedSubscription.receive(frameCountLimit - frameCount);
+
+            if (frameCount >= frameCountLimit)
+            {
+                break;
+            }
+        }
+
+        return frameCount;
     }
 
     public void onBuffersMapped(final long sessionId, final long termId, final LogReader[] logReaders)

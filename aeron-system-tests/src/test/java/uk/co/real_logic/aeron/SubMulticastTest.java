@@ -61,6 +61,7 @@ public class SubMulticastTest
     private static final byte[] PAYLOAD = "Payload goes here!".getBytes();
     private static final byte[] NO_PAYLOAD = {};
     private static final int COUNTER_BUFFER_SZ = 1024;
+    private static final int FRAME_COUNT_LIMIT = Integer.MAX_VALUE;
 
     private final AtomicBuffer counterValuesBuffer = new AtomicBuffer(new byte[COUNTER_BUFFER_SZ]);
     private final AtomicBuffer counterLabelsBuffer = new AtomicBuffer(new byte[COUNTER_BUFFER_SZ]);
@@ -180,7 +181,7 @@ public class SubMulticastTest
         Thread.sleep(100);
 
         // now receive data into app
-        subscription.receive();
+        subscription.receive(FRAME_COUNT_LIMIT);
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(1));
@@ -224,7 +225,7 @@ public class SubMulticastTest
         }
 
         // now receive data into app
-        subscription.receive();
+        subscription.receive(FRAME_COUNT_LIMIT);
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(3));
@@ -267,7 +268,7 @@ public class SubMulticastTest
         Thread.sleep(100);
 
         // now receive data into app
-        subscription.receive();
+        subscription.receive(FRAME_COUNT_LIMIT);
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(1));
@@ -326,7 +327,7 @@ public class SubMulticastTest
         Thread.sleep(100);
 
         // now receive data into app
-        subscription.receive();
+        subscription.receive(FRAME_COUNT_LIMIT);
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(1));
@@ -346,7 +347,7 @@ public class SubMulticastTest
 
         Thread.sleep(100);
 
-        subscription.receive();
+        subscription.receive(FRAME_COUNT_LIMIT);
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(2));

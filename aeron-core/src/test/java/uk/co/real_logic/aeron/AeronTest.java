@@ -52,23 +52,24 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUt
 
 public class AeronTest
 {
-    private static final int MAX_FRAME_LENGTH = 1024;
-    private static final int COUNTER_BUFFER_SZ = 1024;
+    public static final int MAX_FRAME_LENGTH = 1024;
+    public static final int COUNTER_BUFFER_SZ = 1024;
 
-    private static final String DESTINATION = "udp://localhost:40124";
-    private static final long CHANNEL_ID_1 = 2L;
-    private static final long SESSION_ID_1 = 13L;
-    private static final long SESSION_ID_2 = 15L;
+    public static final String DESTINATION = "udp://localhost:40124";
+    public static final long CHANNEL_ID_1 = 2L;
+    public static final long SESSION_ID_1 = 13L;
+    public static final long SESSION_ID_2 = 15L;
     public static final long TERM_ID_1 = 1L;
     public static final long TERM_ID_2 = 11L;
-    private static final int PACKET_VALUE = 37;
-    private static final int SEND_BUFFER_CAPACITY = 1024;
-    private static final int SCRATCH_BUFFER_CAPACITY = 1024;
-    private static final DataHandler EMPTY_DATA_HANDLER = (buffer, offset, length, sessionId) -> {};
+    public static final int PACKET_VALUE = 37;
+    public static final int SEND_BUFFER_CAPACITY = 1024;
+    public static final int SCRATCH_BUFFER_CAPACITY = 1024;
+    public static final DataHandler EMPTY_DATA_HANDLER = (buffer, offset, length, sessionId) -> {};
 
     public static final int RING_BUFFER_SZ = (16 * 1024) + RingBufferDescriptor.TRAILER_LENGTH;
     public static final int BROADCAST_BUFFER_SZ = (16 * 1024) + BroadcastBufferDescriptor.TRAILER_LENGTH;
     public static final int LOG_BUFFER_SIZE = LogBufferDescriptor.LOG_MIN_SIZE;
+    public static final int FRAME_COUNT_LIMIT = Integer.MAX_VALUE;
 
     private final InvalidDestinationHandler invalidDestination = mock(InvalidDestinationHandler.class);
 
@@ -159,7 +160,7 @@ public class AeronTest
 
         assertMsgRead(toDriverBuffer, assertSubscriberMessageOfType(ADD_SUBSCRIPTION, CHANNEL_ID_1));
 
-        assertThat(subscription.receive(), is(0));
+        assertThat(subscription.receive(FRAME_COUNT_LIMIT), is(0));
     }
 
     @Test
@@ -191,7 +192,7 @@ public class AeronTest
 
         writePackets(appendersSession1[0], 1);
 
-        assertThat(subscription.receive(), is(1));
+        assertThat(subscription.receive(FRAME_COUNT_LIMIT), is(1));
     }
 
     @Test
@@ -209,7 +210,7 @@ public class AeronTest
 
         writePackets(appendersSession1[0], 1);
         writePackets(appendersSession2[0], 1);
-        assertThat(subscription.receive(), is(2));
+        assertThat(subscription.receive(FRAME_COUNT_LIMIT), is(2));
     }
 
     @Test
@@ -228,7 +229,7 @@ public class AeronTest
         final int msgCount = logAppender.capacity() / sendBuffer.capacity();
 
         writePackets(logAppender, msgCount);
-        assertThat(subscription.receive(), is(msgCount));
+        assertThat(subscription.receive(FRAME_COUNT_LIMIT), is(msgCount));
 
         // cleaning is triggered by the subscriber and not the subscriber
         // so we clean two ahead of the current buffer
@@ -236,19 +237,19 @@ public class AeronTest
         aeron.conductor().doWork();
 
         writePackets(appendersSession1[1], msgCount);
-        assertThat(subscription.receive(), is(msgCount));
+        assertThat(subscription.receive(FRAME_COUNT_LIMIT), is(msgCount));
 
         cleanBuffers(0);
         aeron.conductor().doWork();
 
         writePackets(appendersSession1[2], msgCount);
-        assertThat(subscription.receive(), is(msgCount));
+        assertThat(subscription.receive(FRAME_COUNT_LIMIT), is(msgCount));
 
         cleanBuffers(1);
         aeron.conductor().doWork();
 
         writePackets(logAppender, msgCount);
-        assertThat(subscription.receive(), is(msgCount));
+        assertThat(subscription.receive(FRAME_COUNT_LIMIT), is(msgCount));
     }
 
     @Test
@@ -267,19 +268,19 @@ public class AeronTest
         final int msgCount = logAppender.capacity() / SEND_BUFFER_CAPACITY;
 
         writePackets(logAppender, msgCount);
-        assertThat(subscription.receive(), is(msgCount));
+        assertThat(subscription.receive(FRAME_COUNT_LIMIT), is(msgCount));
 
         writePackets(appendersSession1[1], msgCount);
-        assertThat(subscription.receive(), is(msgCount));
+        assertThat(subscription.receive(FRAME_COUNT_LIMIT), is(msgCount));
 
         writePackets(appendersSession1[2], msgCount);
-        assertThat(subscription.receive(), is(msgCount));
+        assertThat(subscription.receive(FRAME_COUNT_LIMIT), is(msgCount));
 
         // force the roll
-        assertThat(subscription.receive(), is(msgCount));
+        assertThat(subscription.receive(FRAME_COUNT_LIMIT), is(msgCount));
 
         // Now you've hit an unclean buffer and can't proceed
-        assertThat(subscription.receive(), is(0));
+        assertThat(subscription.receive(FRAME_COUNT_LIMIT), is(0));
     }
 
     @Test
@@ -300,13 +301,13 @@ public class AeronTest
         final int msgCount = logAppender.capacity() / sendBuffer.capacity();
 
         writePackets(logAppender, msgCount);
-        assertThat(subscription.receive(), is(msgCount));
+        assertThat(subscription.receive(FRAME_COUNT_LIMIT), is(msgCount));
 
         writePackets(appendersSession1[1], msgCount);
-        assertThat(subscription.receive(), is(msgCount));
+        assertThat(subscription.receive(FRAME_COUNT_LIMIT), is(msgCount));
 
         writePackets(appendersSession2[0], 5);
-        assertThat(subscription.receive(), is(5));
+        assertThat(subscription.receive(FRAME_COUNT_LIMIT), is(5));
     }
 
     private DataHandler eitherSessionAssertingHandler()

@@ -33,6 +33,7 @@ public class ExampleSubscriber
     public static final String DESTINATION = "udp://localhost:40123";
     public static final int CHANNEL_ID_1 = 30;
     public static final int CHANNEL_ID_2 = 100;
+    public static final int FRAME_COUNT_LIMIT = 10;
 
     public static void main(final String[] args)
     {
@@ -56,10 +57,10 @@ public class ExampleSubscriber
                 {
                     while (true)
                     {
-                        final int messagesRead = subscription.receive();
+                        final int messagesRead = subscription.receive(FRAME_COUNT_LIMIT);
                         if (messagesRead == 0)
                         {
-                            Thread.sleep(1000); // Do some other work if nothing is recieve.
+                            Thread.sleep(1000); // Do some other work if nothing is receive.
                         }
                     }
                 }

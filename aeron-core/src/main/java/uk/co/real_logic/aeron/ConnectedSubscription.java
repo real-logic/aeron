@@ -59,7 +59,7 @@ public class ConnectedSubscription
         return sessionId;
     }
 
-    public int recieve()
+    public int receive(final int frameCountLimit)
     {
         LogReader logReader = logReaders[currentBufferId];
         if (logReader.isComplete())
@@ -79,7 +79,7 @@ public class ConnectedSubscription
             }
         }
 
-        return logReader.read(this::onFrame, Integer.MAX_VALUE);
+        return logReader.read(this::onFrame, frameCountLimit);
     }
 
     private boolean hasBeenCleaned(final LogReader logReader)

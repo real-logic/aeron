@@ -124,7 +124,7 @@ public class EventLogger
             final StackTraceElement[] stack = Thread.currentThread().getStackTrace();
 
             final AtomicBuffer encodedBuffer = encodingBuffer.get();
-            final int encodedLength = EventCodec.encode(encodedBuffer, className, stack[INVOKING_METHOD_INDEX]);
+            final int encodedLength = EventCodec.encode(encodedBuffer, stack[INVOKING_METHOD_INDEX]);
 
             ringBuffer.write(EventCode.INVOCATION.id(), encodedBuffer, 0, encodedLength);
         }

@@ -32,7 +32,9 @@ public enum EventCode
     CMD_OUT_NEW_PUBLICATION_BUFFER_NOTIFICATION(7, EventCodec::dissectAsCommand),
     CMD_OUT_NEW_SUBSCRIPTION_BUFFER_NOTIFICATION(8, EventCodec::dissectAsCommand),
     INVOCATION(9, EventCodec::dissectAsInvocation),
-    EXCEPTION(10, EventCodec::dissectAsException);
+    EXCEPTION(10, EventCodec::dissectAsException),
+    MALFORMED_FRAME_LENGTH(11, EventCodec::dissectAsCommand),
+    UNKNOWN_HEADER_TYPE(12, EventCodec::dissectAsCommand);
 
     private final static Int2ObjectHashMap<EventCode> mapOfIdToEventCode = new Int2ObjectHashMap<>();
 

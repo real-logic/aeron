@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.util.protocol;
 import uk.co.real_logic.aeron.util.Flyweight;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 
 /**
  * Flyweight for general Aeron header
@@ -61,6 +62,7 @@ public class HeaderFlyweight extends Flyweight
     public static final int FLAGS_FIELD_OFFSET = 1;
     public static final int TYPE_FIELD_OFFSET = 2;
     public static final int FRAME_LENGTH_FIELD_OFFSET = 4;
+    public static final int HEADER_LENGTH = FRAME_LENGTH_FIELD_OFFSET + SIZE_OF_INT;
 
     /**
      * return version field value

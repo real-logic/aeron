@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.BitUtil;
+import uk.co.real_logic.aeron.util.event.EventCode;
 import uk.co.real_logic.aeron.util.event.EventLogger;
 
 import java.net.*;
@@ -69,8 +70,7 @@ public class UdpDestination
 
                 if (null == savedIfc)
                 {
-                    System.err.println("WARNING: " + MediaDriver.MULTICAST_DEFAULT_INTERFACE_PROP_NAME +
-                            " not set correctly. Could not find interface: " + ifcName);
+                    LOGGER.log(EventCode.COULD_NOT_FIND_INTERFACE, ifcName);
                 }
             }
             else

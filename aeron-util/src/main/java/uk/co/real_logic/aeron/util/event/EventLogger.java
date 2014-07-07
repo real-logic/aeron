@@ -117,6 +117,17 @@ public class EventLogger
         }
     }
 
+    public void log(final EventCode code, final String value)
+    {
+        if (ON)
+        {
+            final AtomicBuffer encodedBuffer = encodingBuffer.get();
+            final int encodingLength = EventCodec.encode(encodedBuffer, value);
+
+            ringBuffer.write(code.id(), encodedBuffer, 0, encodingLength);
+        }
+    }
+
     public void logInvocation()
     {
         if (ON)

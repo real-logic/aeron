@@ -31,6 +31,20 @@ import java.nio.ByteBuffer;
  */
 public class DataFrameHandler implements FrameHandler, AutoCloseable
 {
+    /**
+     * Sizing of Initial Window
+     *
+     * RTT (LAN) = 100 usec
+     * 10 Gbps
+     *
+     * Buffer = Throughput * RTT
+     * Buffer = (10*1000*1000*1000/8) * 0.0001 = 125000
+     * Round to 128KB
+     *
+     * TODO: But, window should not be more than term/8, but must be >= MAX message size
+     */
+    private final static int INITIAL_WINDOW_SIZE = 128 * 1024;
+
     private final UdpTransport transport;
     private final UdpDestination destination;
     private final Long2ObjectHashMap<DriverSubscription> subscriptionByChannelIdMap = new Long2ObjectHashMap<>();
@@ -167,21 +181,21 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         }
 
         final DriverConnectedSubscription.SendSmHandler sendSm =
-                (termId, termOffset, window) -> sendStatusMessage(connectedSubscription, termId, termOffset, window);
+                (termId, termOffset, window) -> sendStatusMessage(connectedSubscription, (int)termId, termOffset, window);
 
         lossHandler.sendNakHandler(
-                (termId, termOffset, length) -> sendNak(connectedSubscription, (int) termId, termOffset, length));
+                (termId, termOffset, length) -> sendNak(connectedSubscription, (int)termId, termOffset, length));
 
-
-        connectedSubscription.termBuffer(event.termId(), event.bufferRotator(), lossHandler, sendSm);
+        connectedSubscription.termBuffer(event.termId(), INITIAL_WINDOW_SIZE,
+                event.bufferRotator(), lossHandler, sendSm);
 
         // now we are all setup, so send an SM to allow the source to send if it is waiting
         // TODO: grab initial term offset from data and store in subscriberSession somehow (per TermID)
-        sendStatusMessage(connectedSubscription, event.termId(), 0, 1000);
+        sendStatusMessage(connectedSubscription, (int)event.termId(), 0, INITIAL_WINDOW_SIZE);
     }
 
     private void sendStatusMessage(final DriverConnectedSubscription connectedSubscription,
-                                   final long termId,
+                                   final int termId,
                                    final int termOffset,
                                    final int window)
     {

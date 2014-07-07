@@ -19,6 +19,7 @@ import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
 import uk.co.real_logic.aeron.mediadriver.buffer.LogBuffers;
 import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -39,6 +40,7 @@ public class BufferAndFrameUtils
             private LogBuffers dirty = createTestLogBuffers(logBufferSize, stateBufferSize);
             private LogBuffers current = createTestLogBuffers(logBufferSize, stateBufferSize);
             private LogBuffers[] buffers = new LogBuffers[]{current, clean, dirty};
+            private long termBufferSize = logBufferSize;
 
             public Stream<LogBuffers> buffers()
             {
@@ -53,6 +55,11 @@ public class BufferAndFrameUtils
                 clean = dirty;
                 dirty = current;
                 current = newBuffer;
+            }
+
+            public int sizeOfTermBuffer()
+            {
+                return (int)termBufferSize - RingBufferDescriptor.TRAILER_LENGTH;
             }
 
             public void appendBufferLocationsTo(final LogBuffersMessageFlyweight newBufferMessage)

@@ -24,15 +24,17 @@ public interface SenderControlStrategy
      *
      * @return the calculated rightEdgeOfWindow
      */
-    int onStatusMessage(final long termId,
-                        final long highestContiguousSequenceNumber,
-                        final long receiverWindow,
-                        final InetSocketAddress address);
+    long onStatusMessage(final long termId,
+                         final long highestContiguousSequenceNumber,
+                         final long receiverWindow,
+                         final InetSocketAddress address);
 
     /**
-     * Initial receiver window value
+     * Initial right edge value
      *
-     * @return receiver window
+     * @param initialTermId for the term buffers
+     * @param sizeOfTermBuffer to use as the size of each term buffer
+     * @return right edge value
      */
-    int initialWindow();
+    long initialRightEdge(final long initialTermId, final int sizeOfTermBuffer);
 }

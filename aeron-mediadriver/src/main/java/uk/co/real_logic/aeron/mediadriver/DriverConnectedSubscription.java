@@ -51,6 +51,9 @@ public class DriverConnectedSubscription
         void sendSm(final long termId, final int termOffset, final int window);
     }
 
+    /** Timeout between SMs. One RTT. */
+    public static final long STATUS_MESSAGE_TIMEOUT = MediaDriver.ESTIMATED_RTT_NS;
+
     private final InetSocketAddress srcAddress;
     private final long sessionId;
     private final long channelId;
@@ -64,6 +67,11 @@ public class DriverConnectedSubscription
     private LossHandler lossHandler;
 
     private SendSmHandler sendSmHandler;
+    private long lastSmTimestamp;
+    private long lastSmTermId;
+    private int lastSmTail;
+    private int currentWindow;
+    private int currentWindowGain;
 
     public DriverConnectedSubscription(final long sessionId, final long channelId, final InetSocketAddress srcAddress)
     {
@@ -73,6 +81,7 @@ public class DriverConnectedSubscription
     }
 
     public void termBuffer(final long initialTermId,
+                           final int initialWindow,
                            final BufferRotator rotator,
                            final LossHandler lossHandler,
                            final SendSmHandler sendSmHandler)
@@ -85,6 +94,12 @@ public class DriverConnectedSubscription
                             .toArray(TermRebuilder[]::new);
         this.lossHandler = lossHandler;
         this.sendSmHandler = sendSmHandler;
+
+        // attaching this term buffer will send an SM, so save the params sent for comparison
+        this.lastSmTermId = initialTermId;
+        this.lastSmTail = lossHandler.highestContiguousOffset();
+        this.currentWindow = initialWindow;
+        this.currentWindowGain = currentWindow << 2; // window / 4
     }
 
     public InetSocketAddress sourceAddress()
@@ -132,29 +147,6 @@ public class DriverConnectedSubscription
         }
     }
 
-    static class TermRebuilder
-    {
-        private final LogRebuilder logRebuilder;
-        private final StateViewer stateViewer;
-
-        public TermRebuilder(final LogBuffers buffer)
-        {
-            final AtomicBuffer stateBuffer = buffer.stateBuffer();
-            stateViewer = new StateViewer(stateBuffer);
-            logRebuilder = new LogRebuilder(buffer.logBuffer(), stateBuffer);
-        }
-
-        public int tailVolatile()
-        {
-            return stateViewer.tailVolatile();
-        }
-
-        public void insert(final AtomicBuffer buffer, final int offset, final int length)
-        {
-            logRebuilder.insert(buffer, offset, length);
-        }
-    }
-
     /**
      * Called from the MediaConductor.
      *
@@ -198,7 +190,7 @@ public class DriverConnectedSubscription
             lossHandler.scan();
         }
 
-        // TODO: change return to indicate whether we want to have service soon - would be OK to scan lazily
+        // scan lazily
         return 0;
     }
 
@@ -207,21 +199,81 @@ public class DriverConnectedSubscription
      *
      * @return number of work items processed.
      */
-    public int sendAnyPendingSm()
+    public int sendAnyPendingSm(final long currentTimestamp)
     {
+        if (null == lossHandler || null == sendSmHandler)
+        {
+            return 0;
+        }
+
         /*
          * General approach is to check tail and see if it has moved enough to warrant sending an SM.
          * - send SM when termId has moved (i.e. buffer rotation of LossHandler - i.e. term completed)
-         * - send SM when (currentTail - lastTail) > X% of window
+         * - send SM when (currentTail - lastSmTail) > X% of window (the window gain)
          * - send SM when currentTail > lastTail && timeOfLastSM too long
          */
 
-        if (null != lossHandler && null != sendSmHandler)
+        final int currentSmTail = lossHandler.highestContiguousOffset();
+        final long currentSmTermId = lossHandler.currentTermId();
+
+        // if term has rotated for loss handler, then send an SM
+        if (lossHandler.currentTermId() != lastSmTermId)
         {
-            // TODO: determine if sending an SM and call sendSmHandler.sendSm()
-            // TODO: if SM sent, then return true, else fall through and return false
+            lastSmTimestamp = currentTimestamp;
+            return sendSm(currentSmTermId, currentSmTail, currentWindow);
         }
 
+        // made progress since last time we sent an SM, so may send
+        if (currentSmTail > lastSmTail)
+        {
+            // see if we have made enough progress to make sense to send an SM
+            if ((currentSmTail - lastSmTail) > currentWindowGain)
+            {
+                lastSmTimestamp = currentTimestamp;
+                return sendSm(currentSmTermId, currentSmTail, currentWindow);
+            }
+
+            // lastSmTimestamp might be 0 due to being initialized, but if we have sent some, then fine.
+//            if (currentTimestamp > (lastSmTimestamp + STATUS_MESSAGE_TIMEOUT) && lastSmTimestamp > 0)
+//            {
+//                lastSmTimestamp = currentTimestamp;
+//                return sendSm(currentSmTermId, currentSmTail, currentWindow);
+//            }
+        }
+
+        // invert the work count logic. We want to appear to be less busy once we send an SM
+        return 1;
+    }
+
+    private int sendSm(final long termId, final int termOffset, final int window)
+    {
+        sendSmHandler.sendSm(termId, termOffset, window);
+        lastSmTermId = termId;
+        lastSmTail = termOffset;
+
         return 0;
+    }
+
+    private static class TermRebuilder
+    {
+        private final LogRebuilder logRebuilder;
+        private final StateViewer stateViewer;
+
+        public TermRebuilder(final LogBuffers buffer)
+        {
+            final AtomicBuffer stateBuffer = buffer.stateBuffer();
+            stateViewer = new StateViewer(stateBuffer);
+            logRebuilder = new LogRebuilder(buffer.logBuffer(), stateBuffer);
+        }
+
+        public int tailVolatile()
+        {
+            return stateViewer.tailVolatile();
+        }
+
+        public void insert(final AtomicBuffer buffer, final int offset, final int length)
+        {
+            logRebuilder.insert(buffer, offset, length);
+        }
     }
 }

@@ -128,7 +128,8 @@ public class MediaConductor extends Agent
         workCount += publications.forEach(0, DriverPublication::processBufferRotation);
         workCount += connectedSubscriptions.forEach(0, DriverConnectedSubscription::processBufferRotation);
         workCount += connectedSubscriptions.forEach(0, DriverConnectedSubscription::scanForGaps);
-        workCount += connectedSubscriptions.forEach(0, DriverConnectedSubscription::sendAnyPendingSm);
+        workCount += connectedSubscriptions.forEach(0,
+                (subscription) -> subscription.sendAnyPendingSm(timerWheel.now()));
 
         workCount += processFromClientCommandBuffer();
         workCount += processMediaCommandBuffer();

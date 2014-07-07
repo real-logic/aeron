@@ -325,7 +325,6 @@ public class DriverPublication
                 final int bytesSent = frameHandler.sendTo(termRetransmitBuffer, dstAddress);
                 if (bytesSent != length)
                 {
-                    System.err.println("could not send entire retransmit");
                     LOGGER.log(EventCode.COULD_NOT_FIND_INTERFACE, termRetransmitBuffer, length, dstAddress);
                 }
             }

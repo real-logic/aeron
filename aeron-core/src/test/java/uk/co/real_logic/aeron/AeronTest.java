@@ -368,7 +368,7 @@ public class AeronTest
 
     private void cleanBuffer(final AtomicBuffer buffer)
     {
-        buffer.putBytes(0, new byte[buffer.capacity()]);
+        buffer.setMemory(0, buffer.capacity(), (byte)0);
     }
 
     private void cleanBuffers(final int index)

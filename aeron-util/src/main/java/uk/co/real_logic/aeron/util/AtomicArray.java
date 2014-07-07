@@ -135,15 +135,9 @@ public class AtomicArray<T> implements Collection<T>
         int i = fromIndex;
         do
         {
-            final T element = array[i];
-            if (null != element)
-            {
-                actionsCount += function.apply(element);
-            }
+            actionsCount += function.apply(array[i]);
 
-            i++;
-
-            if (i == array.length)
+            if (++i == array.length)
             {
                 i = 0;
             }

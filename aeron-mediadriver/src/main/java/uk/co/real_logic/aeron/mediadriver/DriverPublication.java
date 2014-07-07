@@ -23,6 +23,7 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogScanner;
+import uk.co.real_logic.aeron.util.event.EventCode;
 import uk.co.real_logic.aeron.util.event.EventLogger;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
@@ -315,15 +316,17 @@ public class DriverPublication
 
         if (-1 != index)
         {
-            termRetransmitBuffers[index].position(offset);
-            termRetransmitBuffers[index].limit(offset + length);
+            final ByteBuffer termRetransmitBuffer = termRetransmitBuffers[index];
+            termRetransmitBuffer.position(offset);
+            termRetransmitBuffer.limit(offset + length);
 
             try
             {
-                final int bytesSent = frameHandler.sendTo(termRetransmitBuffers[index], dstAddress);
+                final int bytesSent = frameHandler.sendTo(termRetransmitBuffer, dstAddress);
                 if (bytesSent != length)
                 {
                     System.err.println("could not send entire retransmit");
+                    LOGGER.log(EventCode.COULD_NOT_FIND_INTERFACE, termRetransmitBuffer, length, dstAddress);
                 }
             }
             catch (final Exception ex)
@@ -359,7 +362,7 @@ public class DriverPublication
             final int bytesSent = frameHandler.sendTo(scratchSendBuffer, dstAddress);
             if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
             {
-                System.out.println("Error sending heartbeat packet");
+                LOGGER.log(EventCode.ERROR_SENDING_HEARTBEAT_PACKET, scratchSendBuffer, DataHeaderFlyweight.HEADER_LENGTH, dstAddress);
             }
 
             timeOfLastSendOrHeartbeat.lazySet(timerWheel.now());

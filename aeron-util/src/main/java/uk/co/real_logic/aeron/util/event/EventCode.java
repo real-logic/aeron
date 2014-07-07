@@ -38,8 +38,10 @@ public enum EventCode
 
     /** Probably means MULTICAST_DEFAULT_INTERFACE_PROP_NAME wasn't set properly */
     COULD_NOT_FIND_INTERFACE(13, EventCodec::dissectAsString),
-    COULD_NOT_FIND_FRAME_HANDLER_FOR_NEW_CONNECTED_SUBSCRIPTION(14, EventCodec::dissectAsString);
-
+    COULD_NOT_FIND_FRAME_HANDLER_FOR_NEW_CONNECTED_SUBSCRIPTION(14, EventCodec::dissectAsString),
+    ERROR_SENDING_HEARTBEAT_PACKET(15, EventCodec::dissectAsFrame),
+    COULD_NOT_SEND_ENTIRE_RETRANSMIT(16, EventCodec::dissectAsFrame);
+    
     private final static Int2ObjectHashMap<EventCode> mapOfIdToEventCode = new Int2ObjectHashMap<>();
 
     @FunctionalInterface

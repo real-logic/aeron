@@ -91,8 +91,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
 
     public int doWork()
     {
-        int messageWorkCount = receiver.receive(this, activeCorrelationId);
-        return messageWorkCount + performBufferMaintenance();
+        return receiver.receive(this, activeCorrelationId) + performBufferMaintenance();
     }
 
     public void close()

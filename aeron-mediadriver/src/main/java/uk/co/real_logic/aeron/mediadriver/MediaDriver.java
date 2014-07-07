@@ -24,6 +24,7 @@ import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
+import uk.co.real_logic.aeron.util.event.EventLogger;
 import uk.co.real_logic.aeron.util.status.StatusBufferManager;
 
 import java.io.File;
@@ -58,6 +59,8 @@ import static uk.co.real_logic.aeron.util.IoUtil.mapNewFile;
  */
 public class MediaDriver implements AutoCloseable
 {
+    private static final EventLogger LOGGER = new EventLogger(MediaDriver.class);
+
     /**
      * Byte buffer size (in bytes) for reads
      */
@@ -427,7 +430,7 @@ public class MediaDriver implements AutoCloseable
         }
         catch (final Exception ex)
         {
-            ex.printStackTrace();
+            LOGGER.logException(ex);
         }
     }
 

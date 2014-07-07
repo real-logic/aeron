@@ -21,6 +21,7 @@ import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogRebuilder;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.StateViewer;
+import uk.co.real_logic.aeron.util.event.EventLogger;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 
 import java.io.IOException;
@@ -35,6 +36,8 @@ import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.UNKNOWN_TERM_
  */
 public class DriverConnectedSubscription
 {
+    private static final EventLogger LOGGER = new EventLogger(DriverConnectedSubscription.class);
+
     /**
      * Handler for sending Status Messages (SMs)
      */
@@ -170,8 +173,7 @@ public class DriverConnectedSubscription
             }
             catch (final IOException ex)
             {
-                // TODO; log
-                ex.printStackTrace();
+                LOGGER.logException(ex);
             }
         }
 

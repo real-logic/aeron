@@ -15,6 +15,8 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import uk.co.real_logic.aeron.util.event.EventLogger;
+
 import java.io.IOException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
@@ -27,6 +29,8 @@ import java.util.Set;
  */
 public class NioSelector implements AutoCloseable
 {
+    private static final EventLogger LOGGER = new EventLogger(NioSelector.class);
+
     private Selector selector;
 
     public NioSelector()
@@ -99,8 +103,7 @@ public class NioSelector implements AutoCloseable
         }
         catch (final Exception ex)
         {
-            ex.printStackTrace();
-
+            LOGGER.logException(ex);
             return 0;
         }
     }

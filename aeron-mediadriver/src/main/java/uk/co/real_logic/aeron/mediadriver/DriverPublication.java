@@ -23,6 +23,7 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogScanner;
+import uk.co.real_logic.aeron.util.event.EventLogger;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
@@ -40,6 +41,8 @@ import static uk.co.real_logic.aeron.util.BitUtil.align;
  */
 public class DriverPublication
 {
+    private static final EventLogger LOGGER = new EventLogger(DriverPublication.class);
+
     /** Initial heartbeat timeout (cancelled by SM) */
     public static final int INITIAL_HEARTBEAT_TIMEOUT_MS = 100;
     public static final long INITIAL_HEARTBEAT_TIMEOUT_NS = MILLISECONDS.toNanos(INITIAL_HEARTBEAT_TIMEOUT_MS);
@@ -140,7 +143,7 @@ public class DriverPublication
         }
         catch (final Exception ex)
         {
-            ex.printStackTrace();
+            LOGGER.logException(ex);
         }
 
         return workCount;
@@ -230,9 +233,8 @@ public class DriverPublication
             }
             catch (final IOException ex)
             {
-                // TODO: log exception
                 // TODO: probably should deal with stopping this all together
-                ex.printStackTrace();
+                LOGGER.logException(ex);
             }
         }
 
@@ -297,7 +299,7 @@ public class DriverPublication
         }
         catch (final Exception ex)
         {
-            ex.printStackTrace();
+            LOGGER.logException(ex);
         }
     }
 
@@ -325,7 +327,7 @@ public class DriverPublication
             }
             catch (final Exception ex)
             {
-                ex.printStackTrace();
+                LOGGER.logException(ex);
             }
         }
     }
@@ -363,7 +365,7 @@ public class DriverPublication
         }
         catch (final Exception ex)
         {
-            ex.printStackTrace();
+            LOGGER.logException(ex);
         }
     }
 }

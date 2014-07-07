@@ -6,6 +6,7 @@ import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.broadcast.CopyBroadcastReceiver;
+import uk.co.real_logic.aeron.util.event.EventLogger;
 import uk.co.real_logic.aeron.util.protocol.ErrorFlyweight;
 
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
@@ -15,6 +16,8 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
  */
 public class MediaDriverReceiver
 {
+    private static final EventLogger LOGGER = new EventLogger(MediaDriverReceiver.class);
+
     private final CopyBroadcastReceiver broadcastReceiver;
 
     private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
@@ -79,8 +82,7 @@ public class MediaDriverReceiver
                 }
                 catch (final Exception ex)
                 {
-                    // TODO: log & check exception
-                    ex.printStackTrace();
+                    LOGGER.logException(ex);
                 }
             }
         );

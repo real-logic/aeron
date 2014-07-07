@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.BitUtil;
+import uk.co.real_logic.aeron.util.event.EventLogger;
 
 import java.net.*;
 import java.util.Enumeration;
@@ -32,6 +33,8 @@ import static java.net.InetAddress.getByAddress;
  */
 public class UdpDestination
 {
+    private static final EventLogger LOGGER = new EventLogger(UdpDestination.class);
+
     private static final int LAST_MULTICAST_DIGIT = 3;
 
     private final InetSocketAddress remoteData;
@@ -96,7 +99,7 @@ public class UdpDestination
         }
         catch (final Exception ex)
         {
-            ex.printStackTrace();
+            LOGGER.logException(ex);
         }
 
         DEFAULT_MULTICAST_INTERFACE = savedIfc;

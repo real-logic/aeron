@@ -107,32 +107,32 @@ public class AtomicArray<T> implements Collection<T>
     /**
      * For each valid element, call a function passing the element
      *
-     * @param start    the index to start iterating at
+     * @param fromIndex    the index to fromIndex iterating at
      * @param function to call and pass each element to
      * @return true if side effects have occurred otherwise false.
      */
-    public int forEachFrom(int start, final ToIntFunction<? super T> function)
+    public int forEachFrom(int fromIndex, final ToIntFunction<? super T> function)
     {
         @SuppressWarnings("unchecked")
         final T[] array = (T[])arrayRef.get();
 
-        return forEachFrom(start, function, array);
+        return forEachFrom(fromIndex, function, array);
     }
 
-    private int forEachFrom(int start, final ToIntFunction<? super T> function, final T[] array)
+    private int forEachFrom(int fromIndex, final ToIntFunction<? super T> function, final T[] array)
     {
         if (array.length == 0)
         {
             return 0;
         }
 
-        if (array.length <= start)
+        if (array.length <= fromIndex)
         {
-            start = array.length - 1;
+            fromIndex = array.length - 1;
         }
 
         int actionsCount = 0;
-        int i = start;
+        int i = fromIndex;
         do
         {
             final T element = array[i];
@@ -148,7 +148,7 @@ public class AtomicArray<T> implements Collection<T>
                 i = 0;
             }
         }
-        while (i != start);
+        while (i != fromIndex);
 
         return actionsCount;
     }

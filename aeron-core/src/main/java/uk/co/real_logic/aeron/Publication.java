@@ -30,7 +30,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.Appen
 
 /**
  * Publication end of a channel for publishing messages to subscribers.
- *
+ * <p>
  * Publication instances are threadsafe and can be shared between publishers.
  */
 public class Publication
@@ -108,17 +108,27 @@ public class Publication
         }
 
         final AppendStatus status = logAppender.append(buffer, offset, length);
-
         if (status == TRIPPED)
         {
-            currentBufferIndex = rotateId(currentBufferIndex);
+            final int nextIndex = rotateId(currentBufferIndex);
+
+            if (0 != logAppenders[nextIndex].tailVolatile())
+            {
+                final String msg = String.format("Term not clean: destination=%s channelId=%d, required termId=%d",
+                                                 destination, channelId, currentTermId.get() + 1);
+                System.err.println(msg);
+
+                logAppenders[nextIndex].clean(); // Conductor is not keeping up do it yourself!!!
+            }
+
             final long currentTermId = this.currentTermId.get();
             final long newTermId = currentTermId + 1;
-            this.currentTermId.lazySet(newTermId);
 
-            dataHeaderFlyweight.wrap(logAppenders[currentBufferIndex].defaultHeader());
+            dataHeaderFlyweight.wrap(logAppenders[nextIndex].defaultHeader());
             dataHeaderFlyweight.termId(newTermId);
 
+            this.currentTermId.lazySet(newTermId);
+            currentBufferIndex = nextIndex;
             requestTermClean(currentTermId);
 
             return offer(buffer, offset, length);
@@ -130,13 +140,13 @@ public class Publication
     private boolean isPausedDueToFlowControl(final LogAppender logAppender, final int length)
     {
         // TODO: need to take account of bytes in previous terms.
-        int requiredPosition = logAppender.tailVolatile() + length;
+        final int requiredPosition = logAppender.tailVolatile() + length;
         return limit.limit() < requiredPosition;
     }
 
     /**
-     * Release this reference to the {@link Publication}. If all references are released then the associated
-     * buffers can be released.
+     * Release this reference to the {@link Publication}. To be called by the end using publisher.
+     * If all references are released then the associated buffers can be released.
      */
     public void release()
     {
@@ -174,16 +184,4 @@ public class Publication
     {
         return dirtyTermId;
     }
-
-    public void resetDirtyTermId()
-    {
-        dirtyTermId = NO_DIRTY_TERM;
-    }
-
-    protected boolean hasTerm(final long sessionId)
-    {
-        // TODO: remove this one ClientConductor.onNewBuffers has been refactored
-        return currentTermId.get() != UNKNOWN_TERM_ID;
-    }
-
 }

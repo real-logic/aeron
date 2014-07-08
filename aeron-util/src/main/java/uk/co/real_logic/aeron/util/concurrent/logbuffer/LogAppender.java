@@ -85,6 +85,15 @@ public class LogAppender
     }
 
     /**
+     * Clean down the buffers for reuse by zeroing them out.
+     */
+    public void clean()
+    {
+        logBuffer.setMemory(0, logBuffer.capacity(), (byte)0);
+        stateBuffer.setMemory(0, stateBuffer.capacity(), (byte)0);
+    }
+
+    /**
      * The capacity of the underlying log buffer.
      *
      * @return the capacity of the underlying log buffer.
@@ -122,16 +131,6 @@ public class LogAppender
     public int maxFrameLength()
     {
         return maxFrameLength;
-    }
-
-    /**
-     * The length of the default header that will be put into the log.
-     *
-     * @return the length of the default header that will be put in the log.
-     */
-    public int defaultHeaderLength()
-    {
-        return headerLength;
     }
 
     /**

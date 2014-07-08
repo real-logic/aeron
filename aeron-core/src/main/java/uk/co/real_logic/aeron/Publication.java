@@ -43,7 +43,6 @@ public class Publication
     private final long channelId;
     private final long sessionId;
     private final LogAppender[] logAppenders;
-    private final AtomicBuffer[] headers;
     private final LimitBarrier limit;
     private final AtomicLong currentTermId;
     private final DataHeaderFlyweight dataHeaderFlyweight = new DataHeaderFlyweight();
@@ -58,12 +57,10 @@ public class Publication
                        final long channelId,
                        final long sessionId,
                        final long initialTermId,
-                       final AtomicBuffer[] headers,
                        final LogAppender[] logAppenders,
                        final LimitBarrier limit)
     {
         this.conductor = conductor;
-        this.headers = headers;
 
         this.destination = destination;
         this.channelId = channelId;
@@ -119,7 +116,7 @@ public class Publication
             final long newTermId = currentTermId + 1;
             this.currentTermId.lazySet(newTermId);
 
-            dataHeaderFlyweight.wrap(headers[currentBufferIndex], 0);
+            dataHeaderFlyweight.wrap(logAppenders[currentBufferIndex].defaultHeader());
             dataHeaderFlyweight.termId(newTermId);
 
             requestTermClean(currentTermId);

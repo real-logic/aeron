@@ -73,6 +73,16 @@ public class AtomicBuffer
     }
 
     /**
+     * Attach a view to an existing {@link AtomicBuffer}
+     *
+     * @param buffer to which the view is attached.
+     */
+    public AtomicBuffer(final AtomicBuffer buffer)
+    {
+        wrap(buffer);
+    }
+
+    /**
      * Attach a view to a byte[] for providing direct access.
      *
      * @param buffer to which the view is attached.
@@ -121,6 +131,19 @@ public class AtomicBuffer
         this.capacity = capacity;
         byteArray = null;
         byteBuffer = null;
+    }
+
+    /**
+     * Attach a view to an existing {@link AtomicBuffer}
+     *
+     * @param buffer to which the view is attached.
+     */
+    public void wrap(final AtomicBuffer buffer)
+    {
+        addressOffset = buffer.addressOffset;
+        capacity = buffer.capacity;
+        byteArray = buffer.byteArray;
+        byteBuffer = buffer.byteBuffer;
     }
 
     /**

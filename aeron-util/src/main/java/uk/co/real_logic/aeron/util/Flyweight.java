@@ -29,8 +29,18 @@ import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_LONG;
  */
 public class Flyweight
 {
-    private AtomicBuffer atomicBuffer;
+    private static final byte[] EMPTY_BUFFER = new byte[0];
+
+    private final AtomicBuffer atomicBuffer = new AtomicBuffer(EMPTY_BUFFER);
     private int offset;
+
+    public Flyweight wrap(final byte[] buffer)
+    {
+        atomicBuffer.wrap(buffer);
+        offset = 0;
+
+        return this;
+    }
 
     public Flyweight wrap(final ByteBuffer buffer)
     {
@@ -39,12 +49,14 @@ public class Flyweight
 
     public Flyweight wrap(final ByteBuffer buffer, final int offset)
     {
-        return wrap(new AtomicBuffer(buffer), offset);
+        atomicBuffer.wrap(buffer);
+        this.offset = offset;
+        return this;
     }
 
     public Flyweight wrap(final AtomicBuffer buffer, final int offset)
     {
-        this.atomicBuffer = buffer;
+        atomicBuffer.wrap(buffer);
         this.offset = offset;
 
         return this;

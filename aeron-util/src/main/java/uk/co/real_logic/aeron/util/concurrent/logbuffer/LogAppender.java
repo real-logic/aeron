@@ -135,6 +135,16 @@ public class LogAppender
     }
 
     /**
+     * The default header applied to each record.
+     *
+     * @return the default header applied to each record.
+     */
+    public byte[] defaultHeader()
+    {
+        return defaultHeader;
+    }
+
+    /**
      * Get the current value of the tail counter for the log.
      *
      * @return the current value of the tail counter for the log.

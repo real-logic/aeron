@@ -77,5 +77,4 @@ public class StateViewer
     {
         return buffer.getInt(HIGH_WATER_MARK_OFFSET);
     }
-
 }

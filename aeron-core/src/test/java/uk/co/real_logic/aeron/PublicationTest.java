@@ -26,15 +26,12 @@ public class PublicationTest
     public static final long CHANNEL_ID_1 = 2L;
     public static final long SESSION_ID_1 = 13L;
     public static final long TERM_ID_1 = 1L;
-    public static final long TERM_ID_2 = 11L;
-    public static final int PACKET_VALUE = 37;
     public static final int SEND_BUFFER_CAPACITY = 1024;
 
     private final ByteBuffer sendBuffer = ByteBuffer.allocate(SEND_BUFFER_CAPACITY);
     private final AtomicBuffer atomicSendBuffer = new AtomicBuffer(sendBuffer);
     private final DataHeaderFlyweight dataHeaderFlyweight = new DataHeaderFlyweight();
 
-    private ClientConductor conductor;
     private Publication publication;
     private LimitBarrier limit;
     private LogAppender[] appenders;
@@ -43,7 +40,7 @@ public class PublicationTest
     @Before
     public void setup()
     {
-        conductor = mock(ClientConductor.class);
+        final ClientConductor conductor = mock(ClientConductor.class);
         limit = mock(LimitBarrier.class);
         when(limit.limit()).thenReturn(2L * SEND_BUFFER_CAPACITY);
 
@@ -52,13 +49,13 @@ public class PublicationTest
         for (int i = 0; i < BUFFER_COUNT; i++)
         {
             appenders[i] = mock(LogAppender.class);
-            headers[i] = new AtomicBuffer(new byte[DataHeaderFlyweight.HEADER_LENGTH]);
+            byte[] header = new byte[DataHeaderFlyweight.HEADER_LENGTH];
+            headers[i] = new AtomicBuffer(header);
             when(appenders[i].append(any(), anyInt(), anyInt())).thenReturn(SUCCESS);
+            when(appenders[i].defaultHeader()).thenReturn(header);
         }
 
-        publication = new Publication(
-                conductor, DESTINATION, CHANNEL_ID_1,
-                SESSION_ID_1, TERM_ID_1, headers, appenders, limit);
+        publication = new Publication(conductor, DESTINATION, CHANNEL_ID_1, SESSION_ID_1, TERM_ID_1, appenders, limit);
     }
 
     @Test
@@ -99,5 +96,4 @@ public class PublicationTest
         dataHeaderFlyweight.wrap(headers[1], 0);
         assertThat(dataHeaderFlyweight.termId(), is(TERM_ID_1 + 1));
     }
-
 }

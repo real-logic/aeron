@@ -211,7 +211,6 @@ public class ClientConductor extends Agent implements MediaDriverListener
                                  final LogBuffersMessageFlyweight logBuffersMessage) throws IOException
     {
         final LogAppender[] logs = new LogAppender[BUFFER_COUNT];
-        final AtomicBuffer[] headers = new AtomicBuffer[BUFFER_COUNT];
 
         for (int i = 0; i < BUFFER_COUNT; i++)
         {
@@ -219,13 +218,11 @@ public class ClientConductor extends Agent implements MediaDriverListener
             final AtomicBuffer stateBuffer = newBuffer(logBuffersMessage, i + BufferRotationDescriptor.BUFFER_COUNT);
             final byte[] header = DataHeaderFlyweight.createDefaultHeader(sessionId, channelId, termId);
 
-            headers[i] = new AtomicBuffer(header);
             logs[i] = new LogAppender(logBuffer, stateBuffer, header, MAX_FRAME_LENGTH);
         }
 
         final LimitBarrier limit = limitBarrier(positionIndicatorId);
-        final Publication publication =
-            new Publication(this, destination, channelId, sessionId, termId, headers, logs, limit);
+        final Publication publication = new Publication(this, destination, channelId, sessionId, termId, logs, limit);
         publications.add(publication);
         addedPublication = publication;
 

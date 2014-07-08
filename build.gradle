@@ -38,7 +38,8 @@ subprojects {
     apply plugin: 'checkstyle'
 
     // Make sure that we use the correct JDK in Eclipse
-    // Need to create a JDK8 in eclipse with the name JDK1.8
+    // There needs to be a JDK8 JVM installed in Eclipse before
+    // importing the generated projects.
     plugins.withType(org.gradle.api.plugins.JavaBasePlugin) {
         eclipse.classpath.file.whenMerged { org.gradle.plugins.ide.eclipse.model.Classpath path ->
             path.entries.findAll { it.path.contains('JRE_CONTAINER') }.each {

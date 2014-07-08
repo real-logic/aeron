@@ -21,7 +21,7 @@ package uk.co.real_logic.aeron.util.command;
  */
 public class ControlProtocolEvents
 {
-    // Library to Media Driver
+    // Clients to Media Driver
 
     /** Add Publication */
     public static final int ADD_PUBLICATION = 0x01;
@@ -34,7 +34,7 @@ public class ControlProtocolEvents
     /** Request Term */
     public static final int CLEAN_TERM_BUFFER = 0x06;
 
-    // Media Driver to Library
+    // Media Driver to Clients
 
     /** Error Response */
     public static final int ERROR_RESPONSE = 0x07;

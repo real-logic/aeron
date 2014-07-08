@@ -12,7 +12,7 @@ import uk.co.real_logic.aeron.util.protocol.ErrorFlyweight;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 
 /**
- * Analogue of {@see MediaDriverProxy} on the receive side
+ * Analogue of {@see MediaDriverProxy} on the poll side
  */
 public class MediaDriverReceiver
 {

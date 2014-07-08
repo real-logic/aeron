@@ -158,7 +158,7 @@ public class SubMulticastTest
         final ByteBuffer buffer = ByteBuffer.allocate(StatusMessageFlyweight.HEADER_LENGTH);
         int smsSeen = 0;
 
-        // should receive SM from consumer
+        // should poll SM from consumer
         while (senderChannel.receive(buffer) != null)
         {
             statusMessage.wrap(buffer, 0);
@@ -177,11 +177,11 @@ public class SubMulticastTest
         // send single Data Frame
         sendDataFrame(0, PAYLOAD);
 
-        // sleep to make sure that the receiver thread in the media driver has a chance to receive data
+        // sleep to make sure that the receiver thread in the media driver has a chance to poll data
         Thread.sleep(100);
 
-        // now receive data into app
-        subscription.receive(FRAME_COUNT_LIMIT);
+        // now poll data into app
+        subscription.poll(FRAME_COUNT_LIMIT);
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(1));
@@ -220,12 +220,12 @@ public class SubMulticastTest
             // send single Data Frame
             sendDataFrame(i * FrameDescriptor.FRAME_ALIGNMENT, PAYLOAD);
 
-            // sleep to make sure that the receiver thread in the media driver has a chance to receive data
+            // sleep to make sure that the receiver thread in the media driver has a chance to poll data
             Thread.sleep(100);
         }
 
-        // now receive data into app
-        subscription.receive(FRAME_COUNT_LIMIT);
+        // now poll data into app
+        subscription.poll(FRAME_COUNT_LIMIT);
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(3));
@@ -264,11 +264,11 @@ public class SubMulticastTest
         sendDataFrame(0, PAYLOAD);
         sendDataFrame(2 * FrameDescriptor.FRAME_ALIGNMENT, PAYLOAD);
 
-        // sleep to make sure that the receiver thread in the media driver has a chance to receive data
+        // sleep to make sure that the receiver thread in the media driver has a chance to poll data
         Thread.sleep(100);
 
-        // now receive data into app
-        subscription.receive(FRAME_COUNT_LIMIT);
+        // now poll data into app
+        subscription.poll(FRAME_COUNT_LIMIT);
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(1));
@@ -309,7 +309,7 @@ public class SubMulticastTest
         final ByteBuffer buffer = ByteBuffer.allocate(128);
         int smsSeen = 0, naksSeen = 0;
 
-        // should receive SM from consumer
+        // should poll SM from consumer
         while (senderChannel.receive(buffer) != null)
         {
             statusMessage.wrap(buffer, 0);
@@ -323,11 +323,11 @@ public class SubMulticastTest
         sendDataFrame(0, PAYLOAD);
         sendDataFrame(2 * FrameDescriptor.FRAME_ALIGNMENT, PAYLOAD);
 
-        // sleep to make sure that the receiver thread in the media driver has a chance to receive data
+        // sleep to make sure that the receiver thread in the media driver has a chance to poll data
         Thread.sleep(100);
 
-        // now receive data into app
-        subscription.receive(FRAME_COUNT_LIMIT);
+        // now poll data into app
+        subscription.poll(FRAME_COUNT_LIMIT);
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(1));
@@ -347,7 +347,7 @@ public class SubMulticastTest
 
         Thread.sleep(100);
 
-        subscription.receive(FRAME_COUNT_LIMIT);
+        subscription.poll(FRAME_COUNT_LIMIT);
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(2));

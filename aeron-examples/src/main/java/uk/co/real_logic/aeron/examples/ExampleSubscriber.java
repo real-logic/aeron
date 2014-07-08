@@ -57,10 +57,10 @@ public class ExampleSubscriber
                 {
                     while (true)
                     {
-                        final int messagesRead = subscription.receive(FRAME_COUNT_LIMIT);
+                        final int messagesRead = subscription.poll(FRAME_COUNT_LIMIT);
                         if (messagesRead == 0)
                         {
-                            Thread.sleep(1000); // Do some other work if nothing is receive.
+                            Thread.sleep(1000); // Do some other work if nothing is poll.
                         }
                     }
                 }

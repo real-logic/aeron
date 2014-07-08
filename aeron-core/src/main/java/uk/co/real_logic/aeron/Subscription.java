@@ -113,7 +113,7 @@ public class Subscription
      *
      * @return the number of messages received
      */
-    public int receive(final int frameCountLimit)
+    public int poll(final int frameCountLimit)
     {
         int index = connectionIndex++;
         if (connectedSubscriptions.size() == connectionIndex)
@@ -121,7 +121,7 @@ public class Subscription
             connectionIndex = 0;
         }
 
-        return connectedSubscriptions.doLimitedAction(index, frameCountLimit, ConnectedSubscription::receive);
+        return connectedSubscriptions.doLimitedAction(index, frameCountLimit, ConnectedSubscription::poll);
     }
 
     public void onBuffersMapped(final long sessionId, final long termId, final LogReader[] logReaders)

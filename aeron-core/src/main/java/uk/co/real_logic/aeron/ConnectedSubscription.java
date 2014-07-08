@@ -59,7 +59,7 @@ public class ConnectedSubscription
         return sessionId;
     }
 
-    public int receive(final int frameCountLimit)
+    public int poll(final int frameCountLimit)
     {
         LogReader logReader = logReaders[currentBufferId];
         if (logReader.isComplete())

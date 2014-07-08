@@ -137,7 +137,7 @@ public class DriverPublication
 
             if (scanner.isComplete())
             {
-                currentIndex = BufferRotationDescriptor.rotateId(currentIndex);
+                currentIndex = BufferRotationDescriptor.rotateNext(currentIndex);
                 currentTermId.lazySet(currentTermId.get() + 1);
             }
         }

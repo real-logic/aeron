@@ -133,7 +133,7 @@ public class DriverConnectedSubscription
         else if (termId == (currentTermId + 1))
         {
             this.currentTermId.lazySet(termId);
-            currentBufferId = BufferRotationDescriptor.rotateId(currentBufferId);
+            currentBufferId = BufferRotationDescriptor.rotateNext(currentBufferId);
             TermRebuilder rebuilder = rebuilders[currentBufferId];
             while (rebuilder.tailVolatile() != 0)
             {

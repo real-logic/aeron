@@ -23,7 +23,7 @@ import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.CLEAN_WINDOW;
-import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.rotateId;
+import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.rotateNext;
 import static uk.co.real_logic.aeron.util.ChannelCounters.UNKNOWN_TERM_ID;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.WORD_ALIGNMENT;
 
@@ -64,7 +64,7 @@ public class ConnectedSubscription
         LogReader logReader = logReaders[currentBufferId];
         if (logReader.isComplete())
         {
-            final int candidateBuffer = rotateId(currentBufferId);
+            final int candidateBuffer = rotateNext(currentBufferId);
             if (currentTermId.get() <= cleanedTermId.get())
             {
                 logReader = logReaders[candidateBuffer];
@@ -99,7 +99,7 @@ public class ConnectedSubscription
         final long expectedCleanTermId = currentTermId + CLEAN_WINDOW;
         if (expectedCleanTermId > cleanedTermId.get())
         {
-            final int requiredBufferId = rotateId(rotateId((currentBufferId)));
+            final int requiredBufferId = rotateNext(rotateNext((currentBufferId)));
             final LogReader requiredBuffer = logReaders[requiredBufferId];
             if (hasBeenCleaned(requiredBuffer))
             {

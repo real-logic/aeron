@@ -141,7 +141,7 @@ public class BitUtil
     }
 
     /**
-     * Cycles indices of an array one at a time.
+     * Cycles indices of an array one at a time in a forward fashion
      *
      * @param current value to be incremented.
      * @return the next value, or zero if max is reached.
@@ -155,6 +155,22 @@ public class BitUtil
         }
 
         return next;
+    }
+
+    /**
+     * Cycles indices of an array one at a time in a backwards fashion
+     *
+     * @param current value to be decremented.
+     * @return the next value, or max - 1 if current is zero
+     */
+    public static int previous(final int current, final int max)
+    {
+        if (0 == current)
+        {
+            return max - 1;
+        }
+
+        return current - 1;
     }
 
     /**

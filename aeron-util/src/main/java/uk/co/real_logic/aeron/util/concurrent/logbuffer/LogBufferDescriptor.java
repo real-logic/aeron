@@ -27,11 +27,23 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.F
  */
 public class LogBufferDescriptor
 {
+    /** The log is currently clean or in use. */
+    public static final int CLEAN = 0;
+
+    /** The log is dirty and requires cleaning. */
+    public static final int DIRTY = 1;
+
+    /** The log is in the process of being cleaned. */
+    public static final int IN_CLEANING = 2;
+
     /** Offset within the trailer where the tail value is stored. */
     public static final int TAIL_COUNTER_OFFSET;
 
     /** Offset within the trailer where the high water mark is stored. */
     public static final int HIGH_WATER_MARK_OFFSET;
+
+    /** Offset within the trailer where current status is stored */
+    public static final int STATUS_OFFSET;
 
     /** Total length of the state buffer in bytes. */
     public static final int STATE_BUFFER_LENGTH;
@@ -39,7 +51,8 @@ public class LogBufferDescriptor
     static
     {
         HIGH_WATER_MARK_OFFSET = 0;
-        TAIL_COUNTER_OFFSET = SIZE_OF_INT;
+        TAIL_COUNTER_OFFSET = HIGH_WATER_MARK_OFFSET + SIZE_OF_INT;
+        STATUS_OFFSET = TAIL_COUNTER_OFFSET + SIZE_OF_INT;
         STATE_BUFFER_LENGTH = CACHE_LINE_SIZE;
     }
 

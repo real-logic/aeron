@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.util;
 
 /**
- * .Common Information around buffer rotation, used by both the client and core API.
+ * Common Information around buffer rotation, used by both the client and core API.
  */
 public class BufferRotationDescriptor
 {
@@ -26,8 +26,13 @@ public class BufferRotationDescriptor
 
     public static final long UNKNOWN_TERM_ID = -1;
 
-    public static int rotateId(int previous)
+    public static int rotateNext(final int current)
     {
-        return BitUtil.next(previous, BUFFER_COUNT);
+        return BitUtil.next(current, BUFFER_COUNT);
+    }
+
+    public static int rotatePrevious(final int current)
+    {
+        return BitUtil.previous(current, BUFFER_COUNT);
     }
 }

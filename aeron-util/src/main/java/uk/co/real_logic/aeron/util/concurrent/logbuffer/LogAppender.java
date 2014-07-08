@@ -94,6 +94,38 @@ public class LogAppender
     }
 
     /**
+     * What is the current status of the buffer.
+     *
+     * @return the status of buffer as described in {@link LogBufferDescriptor}
+     */
+    public int status()
+    {
+        return stateBuffer.getIntVolatile(STATUS_OFFSET);
+    }
+
+    /**
+     * Atomically compare and set the status to updateStatus if it is in expectedStatus.
+     *
+     * @param expectedStatus as a conditional guard.
+     * @param updateStatus to be applied if conditional guard is meet.
+     * @return true if successful otherwise false.
+     */
+    public boolean compareAndSetStatus(final int expectedStatus, final int updateStatus)
+    {
+        return stateBuffer.compareAndSetInt(STATUS_OFFSET, expectedStatus, updateStatus);
+    }
+
+    /**
+     * Set the status of the log buffer with StoreStore memory ordering semantics.
+     *
+     * @param status to be set for the log buffer.
+     */
+    public void statusOrdered(final int status)
+    {
+        stateBuffer.putIntOrdered(STATUS_OFFSET, status);
+    }
+
+    /**
      * The capacity of the underlying log buffer.
      *
      * @return the capacity of the underlying log buffer.

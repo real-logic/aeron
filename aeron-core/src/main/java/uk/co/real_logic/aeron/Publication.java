@@ -27,6 +27,7 @@ import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.SUCCESS;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.TRIPPED;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.*;
 
 /**
  * Publication end of a channel for publishing messages to subscribers.
@@ -70,11 +71,21 @@ public class Publication
         this.limit = limit;
     }
 
+    /**
+     * Media address for delivery to the destination.
+     *
+     * @return Media address for delivery to the destination.
+     */
     public String destination()
     {
         return destination;
     }
 
+    /**
+     * Channel identity for scoping within the destination media address.
+     *
+     * @return Channel identity for scoping within the destination media address.
+     */
     public long channelId()
     {
         return channelId;
@@ -110,25 +121,31 @@ public class Publication
         final AppendStatus status = logAppender.append(buffer, offset, length);
         if (status == TRIPPED)
         {
-            final int nextIndex = rotateId(currentBufferIndex);
+            final int nextIndex = rotateNext(currentBufferIndex);
 
-            if (0 != logAppenders[nextIndex].tailVolatile())
+            final LogAppender nextAppender = logAppenders[nextIndex];
+            if (CLEAN != nextAppender.status())
             {
-                final String msg = String.format("Term not clean: destination=%s channelId=%d, required termId=%d",
-                                                 destination, channelId, currentTermId.get() + 1);
-                System.err.println(msg);
+                System.err.println(String.format("Term not clean: destination=%s channelId=%d, required termId=%d",
+                                                 destination, channelId, currentTermId.get() + 1));
 
-                logAppenders[nextIndex].clean(); // Conductor is not keeping up do it yourself!!!
+                if (nextAppender.compareAndSetStatus(DIRTY, IN_CLEANING))
+                {
+                    nextAppender.clean(); // Conductor is not keeping up so do it yourself!!!
+                }
             }
 
             final long currentTermId = this.currentTermId.get();
             final long newTermId = currentTermId + 1;
 
-            dataHeaderFlyweight.wrap(logAppenders[nextIndex].defaultHeader());
+            dataHeaderFlyweight.wrap(nextAppender.defaultHeader());
             dataHeaderFlyweight.termId(newTermId);
 
             this.currentTermId.lazySet(newTermId);
             currentBufferIndex = nextIndex;
+
+            final int previousIndex = rotatePrevious(currentBufferIndex);
+            logAppenders[previousIndex].statusOrdered(DIRTY);
             requestTermClean(currentTermId);
 
             return offer(buffer, offset, length);

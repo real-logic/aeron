@@ -94,7 +94,7 @@ public class ClientConductorTest
     private ClientConductor conductor;
     private ConductorErrorHandler errorHandler;
     private AtomicArray<Subscription> subscriberChannels;
-    private MediaDriverReceiver receiver;
+    private MediaDriverBroadcastReceiver receiver;
 
     @Before
     public void setUp() throws Exception
@@ -137,7 +137,7 @@ public class ClientConductorTest
                 return null;
             }).when(signal).await(anyLong());
 
-        receiver = new MediaDriverReceiver(toClientReceiver);
+        receiver = new MediaDriverBroadcastReceiver(toClientReceiver);
 
         conductor = new ClientConductor(
             receiver,

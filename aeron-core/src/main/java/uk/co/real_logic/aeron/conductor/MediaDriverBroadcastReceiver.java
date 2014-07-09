@@ -14,9 +14,9 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 /**
  * Analogue of {@see MediaDriverProxy} on the poll side
  */
-public class MediaDriverReceiver
+public class MediaDriverBroadcastReceiver
 {
-    private static final EventLogger LOGGER = new EventLogger(MediaDriverReceiver.class);
+    private static final EventLogger LOGGER = new EventLogger(MediaDriverBroadcastReceiver.class);
 
     private final CopyBroadcastReceiver broadcastReceiver;
 
@@ -25,7 +25,7 @@ public class MediaDriverReceiver
     private final LogBuffersMessageFlyweight logBuffersMessage = new LogBuffersMessageFlyweight();
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
 
-    public MediaDriverReceiver(final CopyBroadcastReceiver broadcastReceiver)
+    public MediaDriverBroadcastReceiver(final CopyBroadcastReceiver broadcastReceiver)
     {
         this.broadcastReceiver = broadcastReceiver;
     }
@@ -57,20 +57,23 @@ public class MediaDriverReceiver
                                     break;
                                 }
 
-                                listener.onNewPublication(destination, sessionId, channelId, termId, positionIndicatorId, logBuffersMessage);
+                                listener.onNewPublication(destination, sessionId, channelId, termId,
+                                                          positionIndicatorId, logBuffersMessage);
                             }
                             else
                             {
-                                listener.onNewConnectedSubscription(destination, sessionId, channelId, termId, logBuffersMessage);
+                                listener.onNewConnectedSubscription(destination, sessionId, channelId, termId,
+                                                                    logBuffersMessage);
                             }
                             break;
 
-                        case OPERATION_SUCCEEDED:
+                        case ON_OPERATION_SUCCESS:
                             correlatedMessage.wrap(buffer, index);
                             if (correlatedMessage.correlationId() == activeCorrelationId)
                             {
                                 listener.operationSucceeded();
                             }
+                            break;
 
                         case ERROR_RESPONSE:
                             handleErrorResponse(buffer, index, listener, activeCorrelationId);
@@ -88,14 +91,14 @@ public class MediaDriverReceiver
         );
     }
 
-    private void handleErrorResponse(
-            final AtomicBuffer buffer,
-            final int index,
-            final MediaDriverListener listener,
-            final long activeCorrelationId)
+    private void handleErrorResponse(final AtomicBuffer buffer,
+                                     final int index,
+                                     final MediaDriverListener listener,
+                                     final long activeCorrelationId)
     {
         errorHeader.wrap(buffer, index);
         final ErrorCode errorCode = errorHeader.errorCode();
+
         switch (errorCode)
         {
             // Publication errors
@@ -119,7 +122,7 @@ public class MediaDriverReceiver
     private long correlationId(final AtomicBuffer buffer, final int offset)
     {
         publicationMessage.wrap(buffer, offset);
+
         return publicationMessage.correlationId();
     }
-
 }

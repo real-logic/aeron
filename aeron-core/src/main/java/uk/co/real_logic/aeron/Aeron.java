@@ -66,7 +66,7 @@ public final class Aeron implements AutoCloseable
         final ConductorErrorHandler errorHandler = new ConductorErrorHandler(ctx.invalidDestinationHandler);
         final MediaDriverProxy mediaDriverProxy = new MediaDriverProxy(ctx.toDriverBuffer);
         final Signal correlationSignal = new Signal();
-        final MediaDriverReceiver receiver = new MediaDriverReceiver(ctx.toClientBuffer);
+        final MediaDriverBroadcastReceiver receiver = new MediaDriverBroadcastReceiver(ctx.toClientBuffer);
 
         conductor = new ClientConductor(
             receiver,

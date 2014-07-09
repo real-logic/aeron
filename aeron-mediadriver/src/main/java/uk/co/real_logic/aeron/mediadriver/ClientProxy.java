@@ -103,6 +103,6 @@ public class ClientProxy
     {
         correlatedMessage.wrap(tmpBuffer, 0);
         correlatedMessage.correlationId(correlationId);
-        transmitter.transmit(OPERATION_SUCCEEDED, tmpBuffer, 0, CorrelatedMessageFlyweight.length);
+        transmitter.transmit(ON_OPERATION_SUCCESS, tmpBuffer, 0, CorrelatedMessageFlyweight.length);
     }
 }

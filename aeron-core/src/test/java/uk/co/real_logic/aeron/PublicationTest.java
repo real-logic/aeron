@@ -2,9 +2,11 @@ package uk.co.real_logic.aeron;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.InOrder;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.status.LimitBarrier;
 
@@ -15,9 +17,8 @@ import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.*;
-import static uk.co.real_logic.aeron.Publication.NO_DIRTY_TERM;
+import static org.mockito.Mockito.inOrder;
 import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
-import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.CLEAN_WINDOW;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.*;
 
 public class PublicationTest
@@ -35,7 +36,7 @@ public class PublicationTest
     private Publication publication;
     private LimitBarrier limit;
     private LogAppender[] appenders;
-    private AtomicBuffer[] headers;
+    private byte[][] headers;
 
     @Before
     public void setup()
@@ -45,12 +46,12 @@ public class PublicationTest
         when(limit.limit()).thenReturn(2L * SEND_BUFFER_CAPACITY);
 
         appenders = new LogAppender[BUFFER_COUNT];
-        headers = new AtomicBuffer[BUFFER_COUNT];
+        headers = new byte[BUFFER_COUNT][];
         for (int i = 0; i < BUFFER_COUNT; i++)
         {
             appenders[i] = mock(LogAppender.class);
             byte[] header = new byte[DataHeaderFlyweight.HEADER_LENGTH];
-            headers[i] = new AtomicBuffer(header);
+            headers[i] = header;
             when(appenders[i].append(any(), anyInt(), anyInt())).thenReturn(SUCCESS);
             when(appenders[i].defaultHeader()).thenReturn(header);
         }
@@ -76,7 +77,6 @@ public class PublicationTest
     {
         when(appenders[0].append(any(), anyInt(), anyInt())).thenReturn(FAILURE);
         assertFalse(publication.offer(atomicSendBuffer));
-        assertThat(publication.dirtyTermId(), is(NO_DIRTY_TERM));
     }
 
     @Test
@@ -86,14 +86,15 @@ public class PublicationTest
 
         assertTrue(publication.offer(atomicSendBuffer));
 
-        // recorded the dirty term id
-        assertThat(publication.dirtyTermId(), is(TERM_ID_1 + CLEAN_WINDOW));
+        final InOrder inOrder = inOrder(appenders[0], appenders[1], appenders[2]);
+        inOrder.verify(appenders[1]).status();
+        inOrder.verify(appenders[2]).statusOrdered(LogBufferDescriptor.NEEDS_CLEANING);
 
         // written data to the next record
-        verify(appenders[1]).append(atomicSendBuffer, 0, atomicSendBuffer.capacity());
+        inOrder.verify(appenders[1]).append(atomicSendBuffer, 0, atomicSendBuffer.capacity());
 
         // updated the term id in the header
-        dataHeaderFlyweight.wrap(headers[1], 0);
+        dataHeaderFlyweight.wrap(headers[1]);
         assertThat(dataHeaderFlyweight.termId(), is(TERM_ID_1 + 1));
     }
 }

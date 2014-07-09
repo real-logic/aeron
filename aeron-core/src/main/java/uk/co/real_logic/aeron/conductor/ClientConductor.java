@@ -52,7 +52,6 @@ public class ClientConductor extends Agent implements MediaDriverListener
 
     private final MediaDriverBroadcastReceiver mediaDriverBroadcastReceiver;
     private final BufferUsageStrategy bufferUsage;
-    private final AtomicArray<Publication> publications = new AtomicArray<>();
     private final AtomicArray<Subscription> subscriptions = new AtomicArray<>();
     private final long awaitTimeout;
     private final long publicationWindow;
@@ -185,22 +184,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
 
     private int performBufferMaintenance()
     {
-        final int publicationWork = publications.doAction(
-            (publication) ->
-            {
-                final long dirtyTermId = publication.dirtyTermId();
-                if (dirtyTermId != Publication.NO_DIRTY_TERM)
-                {
-                    mediaDriverProxy.requestTerm(publication.destination(),
-                                                 publication.sessionId(),
-                                                 publication.channelId(),
-                                                 dirtyTermId);
-                }
-
-                return 1;
-            });
-
-        return publicationWork + subscriptions.doAction(Subscription::processBufferScan);
+        return subscriptions.doAction(Subscription::processBufferScan);
     }
 
     public void onNewPublication(final String destination,
@@ -214,17 +198,15 @@ public class ClientConductor extends Agent implements MediaDriverListener
 
         for (int i = 0; i < BUFFER_COUNT; i++)
         {
-            final AtomicBuffer logBuffer = newBuffer(logBuffersMessage, i);
-            final AtomicBuffer stateBuffer = newBuffer(logBuffersMessage, i + BufferRotationDescriptor.BUFFER_COUNT);
+            final AtomicBuffer logBuffer = mapBuffer(logBuffersMessage, i);
+            final AtomicBuffer stateBuffer = mapBuffer(logBuffersMessage, i + BufferRotationDescriptor.BUFFER_COUNT);
             final byte[] header = DataHeaderFlyweight.createDefaultHeader(sessionId, channelId, termId);
 
             logs[i] = new LogAppender(logBuffer, stateBuffer, header, MAX_FRAME_LENGTH);
         }
 
         final LimitBarrier limit = limitBarrier(positionIndicatorId);
-        final Publication publication = new Publication(this, destination, channelId, sessionId, termId, logs, limit);
-        publications.add(publication);
-        addedPublication = publication;
+        addedPublication = new Publication(this, destination, channelId, sessionId, termId, logs, limit);
 
         correlationSignal.signal();
     }
@@ -241,7 +223,10 @@ public class ClientConductor extends Agent implements MediaDriverListener
             final LogReader[] logs = new LogReader[BUFFER_COUNT];
             for (int i = 0; i < BUFFER_COUNT; i++)
             {
-                logs[i] = newReader(message, i);
+                final AtomicBuffer logBuffer = mapBuffer(message, i);
+                final AtomicBuffer stateBuffer = mapBuffer(message, i + BufferRotationDescriptor.BUFFER_COUNT);
+
+                logs[i] = new LogReader(logBuffer, stateBuffer);
             }
 
             subscription.onBuffersMapped(sessionId, currentTermId, logs);
@@ -280,15 +265,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
         }
     }
 
-    private LogReader newReader(final LogBuffersMessageFlyweight logBuffersMessage, final int index) throws IOException
-    {
-        final AtomicBuffer logBuffer = newBuffer(logBuffersMessage, index);
-        final AtomicBuffer stateBuffer = newBuffer(logBuffersMessage, index + BufferRotationDescriptor.BUFFER_COUNT);
-
-        return new LogReader(logBuffer, stateBuffer);
-    }
-
-    private AtomicBuffer newBuffer(final LogBuffersMessageFlyweight newBufferMessage, final int index)
+    private AtomicBuffer mapBuffer(final LogBuffersMessageFlyweight newBufferMessage, final int index)
         throws IOException
     {
         final String location = newBufferMessage.location(index);

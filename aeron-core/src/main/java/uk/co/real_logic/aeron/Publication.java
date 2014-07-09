@@ -32,23 +32,18 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescript
 /**
  * Publication end of a channel for publishing messages to subscribers.
  * <p>
- * Publication instances are threadsafe and can be shared between publishers.
+ * Note: Publication instances are threadsafe and can be shared between publisher threads.
  */
 public class Publication
 {
-    public static final long NO_DIRTY_TERM = -1L;
-
     private final ClientConductor conductor;
-
     private final String destination;
     private final long channelId;
     private final long sessionId;
     private final LogAppender[] logAppenders;
-    private final LimitBarrier limit;
+    private final LimitBarrier limitBarrier;
     private final AtomicLong currentTermId;
-    private final DataHeaderFlyweight dataHeaderFlyweight = new DataHeaderFlyweight();
-
-    private volatile long dirtyTermId = NO_DIRTY_TERM;
+    private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
     private int refCount = 0;
     private int currentBufferIndex = 0;
@@ -59,7 +54,7 @@ public class Publication
                        final long sessionId,
                        final long initialTermId,
                        final LogAppender[] logAppenders,
-                       final LimitBarrier limit)
+                       final LimitBarrier limitBarrier)
     {
         this.conductor = conductor;
 
@@ -68,7 +63,7 @@ public class Publication
         this.sessionId = sessionId;
         this.currentTermId = new AtomicLong(initialTermId);
         this.logAppenders = logAppenders;
-        this.limit = limit;
+        this.limitBarrier = limitBarrier;
     }
 
     /**
@@ -89,6 +84,42 @@ public class Publication
     public long channelId()
     {
         return channelId;
+    }
+
+    /**
+     * Session under which messages are published.
+     *
+     * @return the session id for this publication.
+     */
+    public long sessionId()
+    {
+        return sessionId;
+    }
+
+    /**
+     * Release this reference to the {@link Publication}. To be called by the end using publisher.
+     * If all references are released then the associated buffers can be released.
+     */
+    public void release()
+    {
+        synchronized (conductor)
+        {
+            if (--refCount == 0)
+            {
+                conductor.releasePublication(this);
+            }
+        }
+    }
+
+    /**
+     * Accessed by the client conductor.
+     */
+    public void incRef()
+    {
+        synchronized (conductor)
+        {
+            ++refCount;
+        }
     }
 
     /**
@@ -155,62 +186,19 @@ public class Publication
         final long currentTermId = this.currentTermId.get();
         final long newTermId = currentTermId + 1;
 
-        dataHeaderFlyweight.wrap(nextAppender.defaultHeader());
-        dataHeaderFlyweight.termId(newTermId);
+        dataHeader.wrap(nextAppender.defaultHeader());
+        dataHeader.termId(newTermId);
 
         this.currentTermId.lazySet(newTermId);
-        currentBufferIndex = nextIndex;
-
         final int previousIndex = rotatePrevious(currentBufferIndex);
+        currentBufferIndex = nextIndex;
         logAppenders[previousIndex].statusOrdered(NEEDS_CLEANING);
-        requestTermClean(currentTermId);
     }
 
     private boolean isPausedDueToFlowControl(final LogAppender logAppender, final int length)
     {
         // TODO: need to take account of bytes in previous terms.
         final int requiredPosition = logAppender.tailVolatile() + length;
-        return limit.limit() < requiredPosition;
-    }
-
-    /**
-     * Release this reference to the {@link Publication}. To be called by the end using publisher.
-     * If all references are released then the associated buffers can be released.
-     */
-    public void release()
-    {
-        synchronized (conductor)
-        {
-            if (--refCount == 0)
-            {
-                conductor.releasePublication(this);
-            }
-        }
-    }
-
-    /**
-     * Accessed by the client conductor.
-     */
-    public void incRef()
-    {
-        synchronized (conductor)
-        {
-            ++refCount;
-        }
-    }
-
-    private void requestTermClean(final long currentTermId)
-    {
-        dirtyTermId = currentTermId + CLEAN_WINDOW;
-    }
-
-    public long sessionId()
-    {
-        return sessionId;
-    }
-
-    public long dirtyTermId()
-    {
-        return dirtyTermId;
+        return limitBarrier.limit() < requiredPosition;
     }
 }

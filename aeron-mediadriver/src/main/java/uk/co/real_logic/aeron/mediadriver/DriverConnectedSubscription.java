@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
-import uk.co.real_logic.aeron.mediadriver.buffer.LogBuffers;
+import uk.co.real_logic.aeron.mediadriver.buffer.RawLog;
 import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogRebuilder;
@@ -261,7 +261,7 @@ public class DriverConnectedSubscription
         private final LogRebuilder logRebuilder;
         private final StateViewer stateViewer;
 
-        public TermRebuilder(final LogBuffers buffer)
+        public TermRebuilder(final RawLog buffer)
         {
             final AtomicBuffer stateBuffer = buffer.stateBuffer();
             stateViewer = new StateViewer(stateBuffer);

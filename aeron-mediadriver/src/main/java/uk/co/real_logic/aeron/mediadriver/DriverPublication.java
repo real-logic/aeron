@@ -16,26 +16,24 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
-import uk.co.real_logic.aeron.mediadriver.buffer.LogBuffers;
+import uk.co.real_logic.aeron.mediadriver.buffer.RawLog;
 import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogScanner;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.*;
 import uk.co.real_logic.aeron.util.event.EventCode;
 import uk.co.real_logic.aeron.util.event.EventLogger;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static uk.co.real_logic.aeron.util.BitUtil.align;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.IN_CLEANING;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.NEEDS_CLEANING;
 
 /**
  * Publication to be sent to registered subscribers.
@@ -53,27 +51,23 @@ public class DriverPublication
 
     private final TimerWheel timerWheel;
 
-    private final BufferRotator bufferRotator;
     private final long sessionId;
     private final long channelId;
 
     private final AtomicLong currentTermId;
-    private final AtomicLong cleanedTermId;
 
     // TODO: temporary. Replace with counter.
     private final AtomicLong timeOfLastSendOrHeartbeat;
 
     private final int headerLength;
     private final int mtuLength;
-    private final ByteBuffer scratchSendBuffer = ByteBuffer.allocateDirect(DataHeaderFlyweight.HEADER_LENGTH);
-    private final AtomicBuffer scratchAtomicBuffer = new AtomicBuffer(scratchSendBuffer);
+    private final ByteBuffer scratchByteBuffer = ByteBuffer.allocateDirect(DataHeaderFlyweight.HEADER_LENGTH);
+    private final AtomicBuffer scratchAtomicBuffer = new AtomicBuffer(scratchByteBuffer);
     private final LogScanner[] scanners;
     private final RetransmitHandler[] retransmitHandlers;
 
     private final ByteBuffer[] termSendBuffers;
     private final ByteBuffer[] termRetransmitBuffers;
-
-    private final AtomicInteger[] rightEdges = new AtomicInteger[BufferRotationDescriptor.BUFFER_COUNT];
 
     private final SenderControlStrategy controlStrategy;
     private final AtomicLong rightEdge;
@@ -103,7 +97,6 @@ public class DriverPublication
         this.dstAddress = frameHandler.destination().remoteData();
         this.controlStrategy = controlStrategy;
         this.timerWheel = timerWheel;
-        this.bufferRotator = bufferRotator;
         this.sessionId = sessionId;
         this.channelId = channelId;
         this.headerLength = headerLength;
@@ -115,11 +108,9 @@ public class DriverPublication
         retransmitHandlers = bufferRotator.buffers().map(this::newRetransmitHandler).toArray(RetransmitHandler[]::new);
 
         rightEdge = new AtomicLong(controlStrategy.initialRightEdge(initialTermId, bufferRotator.sizeOfTermBuffer()));
-
         shiftsForTermId = Long.numberOfTrailingZeros(bufferRotator.sizeOfTermBuffer());
 
         currentTermId = new AtomicLong(initialTermId);
-        cleanedTermId = new AtomicLong(initialTermId + 2);
         timeOfLastSendOrHeartbeat = new AtomicLong(this.timerWheel.now());
     }
 
@@ -218,30 +209,24 @@ public class DriverPublication
     /**
      * This is performed on the Media Conductor thread
      */
-    public int processBufferRotation()
+    public int cleanDirtyBuffer()
     {
         int workCount = 0;
-        final long requiredCleanTermId = currentTermId.get() + 1;
 
-        if (requiredCleanTermId > cleanedTermId.get())
+        for (final LogBuffer logBuffer : scanners)
         {
-            try
+            if (logBuffer.status() == NEEDS_CLEANING && logBuffer.compareAndSetStatus(NEEDS_CLEANING, IN_CLEANING))
             {
-                bufferRotator.rotate();
-                cleanedTermId.lazySet(requiredCleanTermId);
-                ++workCount;
-            }
-            catch (final IOException ex)
-            {
-                // TODO: probably should deal with stopping this all together
-                LOGGER.logException(ex);
+                logBuffer.clean();
+                workCount = 1;
+                break;
             }
         }
 
         return workCount;
     }
 
-    private ByteBuffer duplicateLogBuffer(final LogBuffers log)
+    private ByteBuffer duplicateLogBuffer(final RawLog log)
     {
         final ByteBuffer buffer = log.logBuffer().duplicateByteBuffer();
         buffer.clear();
@@ -249,12 +234,12 @@ public class DriverPublication
         return buffer;
     }
 
-    private LogScanner newScanner(final LogBuffers log)
+    private LogScanner newScanner(final RawLog log)
     {
         return new LogScanner(log.logBuffer(), log.stateBuffer(), headerLength);
     }
 
-    private RetransmitHandler newRetransmitHandler(final LogBuffers log)
+    private RetransmitHandler newRetransmitHandler(final RawLog log)
     {
         return new RetransmitHandler(new LogReader(log.logBuffer(), log.stateBuffer()),
                                      timerWheel,
@@ -275,7 +260,8 @@ public class DriverPublication
     }
 
     /*
-     * function used as a lambda for LogScanner.AvailabilityHandler
+     *
+     * Function used as a lambda for LogScanner.AvailabilityHandler
      */
     private void onSendFrame(final int offset, final int length)
     {
@@ -353,15 +339,16 @@ public class DriverPublication
                   .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
                   .version(HeaderFlyweight.CURRENT_VERSION);
 
-        scratchSendBuffer.position(0);
-        scratchSendBuffer.limit(DataHeaderFlyweight.HEADER_LENGTH);
+        scratchByteBuffer.position(0);
+        scratchByteBuffer.limit(DataHeaderFlyweight.HEADER_LENGTH);
 
         try
         {
-            final int bytesSent = frameHandler.sendTo(scratchSendBuffer, dstAddress);
+            final int bytesSent = frameHandler.sendTo(scratchByteBuffer, dstAddress);
             if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
             {
-                LOGGER.log(EventCode.ERROR_SENDING_HEARTBEAT_PACKET, scratchSendBuffer, DataHeaderFlyweight.HEADER_LENGTH, dstAddress);
+                LOGGER.log(EventCode.ERROR_SENDING_HEARTBEAT_PACKET, scratchByteBuffer,
+                           DataHeaderFlyweight.HEADER_LENGTH, dstAddress);
             }
 
             timeOfLastSendOrHeartbeat.lazySet(timerWheel.now());

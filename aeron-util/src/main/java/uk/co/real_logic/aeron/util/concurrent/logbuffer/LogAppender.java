@@ -38,12 +38,9 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescript
  * A message of type {@link LogBufferDescriptor#PADDING_FRAME_TYPE} is appended at the end of the buffer if claimed
  * space is not sufficiently large to accommodate the message about to be written.
  */
-public class LogAppender
+public class LogAppender extends LogBuffer
 {
-    private final AtomicBuffer logBuffer;
-    private final AtomicBuffer stateBuffer;
     private final byte[] defaultHeader;
-    private final int capacity;
     private final int maxMessageLength;
     private final int maxFrameLength;
     private final int headerLength;
@@ -69,70 +66,16 @@ public class LogAppender
                        final byte[] defaultHeader,
                        final int maxFrameLength)
     {
-        checkLogBuffer(logBuffer);
-        checkStateBuffer(stateBuffer);
+        super(logBuffer, stateBuffer);
+
         checkHeaderLength(defaultHeader.length);
         checkMaxFrameLength(maxFrameLength);
 
-        this.logBuffer = logBuffer;
-        this.stateBuffer = stateBuffer;
-        this.capacity = logBuffer.capacity();
         this.defaultHeader = defaultHeader;
         this.maxFrameLength = maxFrameLength;
-        this.maxMessageLength = FrameDescriptor.calculateMaxMessageLength(capacity);
+        this.maxMessageLength = FrameDescriptor.calculateMaxMessageLength(capacity());
         this.headerLength = defaultHeader.length;
         this.maxPayload = maxFrameLength - headerLength;
-    }
-
-    /**
-     * Clean down the buffers for reuse by zeroing them out.
-     */
-    public void clean()
-    {
-        logBuffer.setMemory(0, logBuffer.capacity(), (byte)0);
-        stateBuffer.setMemory(0, stateBuffer.capacity(), (byte)0);
-    }
-
-    /**
-     * What is the current status of the buffer.
-     *
-     * @return the status of buffer as described in {@link LogBufferDescriptor}
-     */
-    public int status()
-    {
-        return stateBuffer.getIntVolatile(STATUS_OFFSET);
-    }
-
-    /**
-     * Atomically compare and set the status to updateStatus if it is in expectedStatus.
-     *
-     * @param expectedStatus as a conditional guard.
-     * @param updateStatus to be applied if conditional guard is meet.
-     * @return true if successful otherwise false.
-     */
-    public boolean compareAndSetStatus(final int expectedStatus, final int updateStatus)
-    {
-        return stateBuffer.compareAndSetInt(STATUS_OFFSET, expectedStatus, updateStatus);
-    }
-
-    /**
-     * Set the status of the log buffer with StoreStore memory ordering semantics.
-     *
-     * @param status to be set for the log buffer.
-     */
-    public void statusOrdered(final int status)
-    {
-        stateBuffer.putIntOrdered(STATUS_OFFSET, status);
-    }
-
-    /**
-     * The capacity of the underlying log buffer.
-     *
-     * @return the capacity of the underlying log buffer.
-     */
-    public int capacity()
-    {
-        return capacity;
     }
 
     /**
@@ -182,8 +125,8 @@ public class LogAppender
      */
     public int tailVolatile()
     {
-        final int tail = stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET);
-        return Math.min(tail, capacity);
+        final int tail = stateBuffer().getIntVolatile(TAIL_COUNTER_OFFSET);
+        return Math.min(tail, capacity());
     }
 
     /**
@@ -213,6 +156,7 @@ public class LogAppender
         final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
         final int frameOffset = getTailAndAdd(alignedLength);
 
+        final int capacity = capacity();
         if (frameOffset + alignedLength > capacity)
         {
             if (frameOffset < capacity)
@@ -228,8 +172,8 @@ public class LogAppender
             return AppendStatus.FAILURE;
         }
 
-        logBuffer.putBytes(frameOffset, defaultHeader, 0, headerLength);
-        logBuffer.putBytes(frameOffset + headerLength, srcBuffer, srcOffset, length);
+        logBuffer().putBytes(frameOffset, defaultHeader, 0, headerLength);
+        logBuffer().putBytes(frameOffset + headerLength, srcBuffer, srcOffset, length);
 
         putFlags(frameOffset, UNFRAGMENTED);
         putTermOffset(frameOffset, frameOffset);
@@ -246,6 +190,7 @@ public class LogAppender
             align(remainingPayload + headerLength, FRAME_ALIGNMENT) + (numMaxPayloads * maxFrameLength);
         int frameOffset = getTailAndAdd(requiredCapacity);
 
+        final int capacity = capacity();
         if (frameOffset + requiredCapacity > capacity)
         {
             if (frameOffset < capacity)
@@ -269,11 +214,11 @@ public class LogAppender
             final int frameLength = bytesToWrite + headerLength;
             final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
 
-            logBuffer.putBytes(frameOffset, defaultHeader, 0, headerLength);
-            logBuffer.putBytes(frameOffset + headerLength,
-                               srcBuffer,
-                               srcOffset + (length - remaining),
-                               bytesToWrite);
+            logBuffer().putBytes(frameOffset, defaultHeader, 0, headerLength);
+            logBuffer().putBytes(frameOffset + headerLength,
+                                 srcBuffer,
+                                 srcOffset + (length - remaining),
+                                 bytesToWrite);
 
             if (remaining <= maxPayload)
             {
@@ -295,27 +240,27 @@ public class LogAppender
 
     private void appendPaddingFrame(final int frameOffset)
     {
-        logBuffer.putBytes(frameOffset, defaultHeader, 0, headerLength);
+        logBuffer().putBytes(frameOffset, defaultHeader, 0, headerLength);
 
         putFrameType(frameOffset, PADDING_FRAME_TYPE);
         putFlags(frameOffset, UNFRAGMENTED);
         putTermOffset(frameOffset, frameOffset);
-        putLengthOrdered(frameOffset, capacity - frameOffset);
+        putLengthOrdered(frameOffset, capacity() - frameOffset);
     }
 
     private void putFrameType(final int frameOffset, final int type)
     {
-        logBuffer.putShort(typeOffset(frameOffset), (short)type, LITTLE_ENDIAN);
+        logBuffer().putShort(typeOffset(frameOffset), (short)type, LITTLE_ENDIAN);
     }
 
     private void putFlags(final int frameOffset, final byte flags)
     {
-        logBuffer.putByte(flagsOffset(frameOffset), flags);
+        logBuffer().putByte(flagsOffset(frameOffset), flags);
     }
 
     private void putTermOffset(final int frameOffset, final int termOffset)
     {
-        logBuffer.putInt(termOffsetOffset(frameOffset), termOffset, LITTLE_ENDIAN);
+        logBuffer().putInt(termOffsetOffset(frameOffset), termOffset, LITTLE_ENDIAN);
     }
 
     private void putLengthOrdered(final int frameOffset, int frameLength)
@@ -325,22 +270,22 @@ public class LogAppender
             frameLength = Integer.reverseBytes(frameLength);
         }
 
-        logBuffer.putIntOrdered(lengthOffset(frameOffset), frameLength);
+        logBuffer().putIntOrdered(lengthOffset(frameOffset), frameLength);
     }
 
     private int getTailAndAdd(final int delta)
     {
-        return stateBuffer.getAndAddInt(TAIL_COUNTER_OFFSET, delta);
+        return stateBuffer().getAndAddInt(TAIL_COUNTER_OFFSET, delta);
     }
 
     private void checkMessageLength(final int length)
     {
         if (length > maxMessageLength)
         {
-            final String msg = String.format("encoded message exceeds maxMessageLength of %d, length=%d",
-                                             maxMessageLength, length);
+            final String s = String.format("encoded message exceeds maxMessageLength of %d, length=%d",
+                                           maxMessageLength, length);
 
-            throw new IllegalArgumentException(msg);
+            throw new IllegalArgumentException(s);
         }
     }
 }

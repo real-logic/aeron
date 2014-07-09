@@ -27,9 +27,9 @@ import java.nio.channels.FileChannel;
 import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
 
 /**
- * .
+ * Memory mapped raw logs to make up a term log buffer.
  */
-class MappedLogBuffers implements LogBuffers
+class MappedRawLog implements RawLog
 {
     private final File logFile;
     private final File stateFile;
@@ -43,12 +43,12 @@ class MappedLogBuffers implements LogBuffers
     private final AtomicBuffer logBuffer;
     private final AtomicBuffer stateBuffer;
 
-    MappedLogBuffers(final File logFile,
-                     final File stateFile,
-                     final FileChannel logFileChannel,
-                     final FileChannel stateFileChannel,
-                     final MappedByteBuffer logBuffer,
-                     final MappedByteBuffer stateBuffer)
+    MappedRawLog(final File logFile,
+                 final File stateFile,
+                 final FileChannel logFileChannel,
+                 final FileChannel stateFileChannel,
+                 final MappedByteBuffer logBuffer,
+                 final MappedByteBuffer stateBuffer)
     {
         this.logFile = logFile;
         this.stateFile = stateFile;
@@ -85,10 +85,11 @@ class MappedLogBuffers implements LogBuffers
             logFileChannel.close();
             stateFileChannel.close();
         }
-        catch (IOException e)
+        catch (final IOException ex)
         {
-            throw new RuntimeException(e);
+            throw new RuntimeException(ex);
         }
+
         IoUtil.unmap(mappedLogBuffer);
         IoUtil.unmap(mappedStateBuffer);
     }

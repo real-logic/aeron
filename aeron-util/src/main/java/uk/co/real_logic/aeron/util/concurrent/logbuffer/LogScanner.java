@@ -30,7 +30,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescript
  *
  * <b>Note:</b> An instance of this class is not threadsafe. Each thread must have its own instance.
  */
-public class LogScanner
+public class LogScanner extends LogBuffer
 {
     /**
      * Handler for notifying availability from latest offset.
@@ -41,10 +41,7 @@ public class LogScanner
         void onAvailable(final int offset, final int length);
     }
 
-    private final AtomicBuffer logBuffer;
-    private final AtomicBuffer stateBuffer;
     private final int alignedHeaderLength;
-    private final int capacity;
 
     private int offset = 0;
 
@@ -56,29 +53,15 @@ public class LogScanner
      * @param stateBuffer containing the state variables indicating the tail progress.
      * @param headerLength of frame before payload begins.
      */
-    public LogScanner(final AtomicBuffer logBuffer,
-                      final AtomicBuffer stateBuffer,
-                      final int headerLength)
+    public LogScanner(final AtomicBuffer logBuffer, final AtomicBuffer stateBuffer, final int headerLength)
     {
-        checkLogBuffer(logBuffer);
-        checkStateBuffer(stateBuffer);
+        super(logBuffer, stateBuffer);
+
         checkHeaderLength(headerLength);
 
-        this.logBuffer = logBuffer;
-        this.stateBuffer = stateBuffer;
         alignedHeaderLength = align(headerLength, FRAME_ALIGNMENT);
-        capacity = logBuffer.capacity();
     }
 
-    /**
-     * The capacity of the underlying log buffer.
-     *
-     * @return the capacity of the underlying log buffer.
-     */
-    public int capacity()
-    {
-        return capacity;
-    }
 
     /**
      * The offset at which the next frame begins.
@@ -97,7 +80,7 @@ public class LogScanner
      */
     public boolean isComplete()
     {
-        return offset >= capacity;
+        return offset >= capacity();
     }
 
     /**
@@ -172,16 +155,16 @@ public class LogScanner
 
     private int waitForFrameLength(final int frameOffset)
     {
-        return FrameDescriptor.waitForFrameLength(logBuffer, frameOffset);
+        return FrameDescriptor.waitForFrameLength(logBuffer(), frameOffset);
     }
 
     private int frameType(final int frameOffset)
     {
-        return logBuffer.getShort(typeOffset(frameOffset), ByteOrder.LITTLE_ENDIAN) & 0xFFFF;
+        return logBuffer().getShort(typeOffset(frameOffset), ByteOrder.LITTLE_ENDIAN) & 0xFFFF;
     }
 
     private int tail()
     {
-        return stateBuffer.getIntVolatile(LogBufferDescriptor.TAIL_COUNTER_OFFSET);
+        return stateBuffer().getIntVolatile(LogBufferDescriptor.TAIL_COUNTER_OFFSET);
     }
 }

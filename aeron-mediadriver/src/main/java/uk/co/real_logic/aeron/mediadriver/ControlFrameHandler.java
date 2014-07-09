@@ -24,9 +24,6 @@ import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-/**
- * Frame processing for sources
- */
 public class ControlFrameHandler implements FrameHandler, AutoCloseable
 {
     private final UdpTransport transport;
@@ -34,8 +31,8 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
     private final Long2ObjectHashMap<Long2ObjectHashMap<DriverPublication>> publicationsBySessionIdMap
         = new Long2ObjectHashMap<>();
 
-    public ControlFrameHandler(final UdpDestination destination,
-                               final NioSelector nioSelector) throws Exception
+    public ControlFrameHandler(final UdpDestination destination, final NioSelector nioSelector)
+        throws Exception
     {
         this.transport = new UdpTransport(this, destination, nioSelector);
         this.destination = destination;
@@ -100,8 +97,10 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
         return publicationsBySessionIdMap.size();
     }
 
-    public void onStatusMessageFrame(final StatusMessageFlyweight header, final AtomicBuffer buffer,
-                                     final long length, final InetSocketAddress srcAddress)
+    public void onStatusMessageFrame(final StatusMessageFlyweight header,
+                                     final AtomicBuffer buffer,
+                                     final long length,
+                                     final InetSocketAddress srcAddress)
     {
         final DriverPublication publication = findPublication(header.sessionId(), header.channelId());
         publication.onStatusMessage(header.termId(),
@@ -110,15 +109,19 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
                                     srcAddress);
     }
 
-    public void onNakFrame(final NakFlyweight nak, final AtomicBuffer buffer,
-                           final long length, final InetSocketAddress srcAddress)
+    public void onNakFrame(final NakFlyweight nak,
+                           final AtomicBuffer buffer,
+                           final long length,
+                           final InetSocketAddress srcAddress)
     {
         final DriverPublication publication = findPublication(nak.sessionId(), nak.channelId());
         publication.onNakFrame(nak.termId(), nak.termOffset(), nak.length());
     }
 
-    public void onDataFrame(final DataHeaderFlyweight header, final AtomicBuffer buffer,
-                            final long length, final InetSocketAddress srcAddress)
+    public void onDataFrame(final DataHeaderFlyweight header,
+                            final AtomicBuffer buffer,
+                            final long length,
+                            final InetSocketAddress srcAddress)
     {
         // ignore data
     }

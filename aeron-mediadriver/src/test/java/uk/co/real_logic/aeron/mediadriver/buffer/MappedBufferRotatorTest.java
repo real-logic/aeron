@@ -69,13 +69,13 @@ public class MappedBufferRotatorTest
     {
         final MappedBufferRotator rotator =
             new MappedBufferRotator(template.directory(), template.file(), BUFFER_SIZE, template.file(), BUFFER_SIZE);
-        final List<LogBuffers> buffers = rotator.buffers().collect(toList());
+        final List<RawLog> buffers = rotator.buffers().collect(toList());
 
         for (int i = 0; i < 20; i++)
         {
             rotator.rotate();
 
-            final LogBuffers buffer = buffers.get(i % buffers.size());
+            final RawLog buffer = buffers.get(i % buffers.size());
             handler.accept(buffer.logBuffer());
             handler.accept(buffer.stateBuffer());
         }

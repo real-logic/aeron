@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
-import uk.co.real_logic.aeron.mediadriver.buffer.LogBuffers;
+import uk.co.real_logic.aeron.mediadriver.buffer.RawLog;
 import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
@@ -36,20 +36,20 @@ public class BufferAndFrameUtils
     {
         return new BufferRotator()
         {
-            private LogBuffers clean = createTestLogBuffers(logBufferSize, stateBufferSize);
-            private LogBuffers dirty = createTestLogBuffers(logBufferSize, stateBufferSize);
-            private LogBuffers current = createTestLogBuffers(logBufferSize, stateBufferSize);
-            private LogBuffers[] buffers = new LogBuffers[]{current, clean, dirty};
+            private RawLog clean = createTestLogBuffers(logBufferSize, stateBufferSize);
+            private RawLog dirty = createTestLogBuffers(logBufferSize, stateBufferSize);
+            private RawLog current = createTestLogBuffers(logBufferSize, stateBufferSize);
+            private RawLog[] buffers = new RawLog[]{current, clean, dirty};
             private long termBufferSize = logBufferSize;
 
-            public Stream<LogBuffers> buffers()
+            public Stream<RawLog> buffers()
             {
                 return Stream.of(buffers);
             }
 
             public void rotate() throws IOException
             {
-                final LogBuffers newBuffer = clean;
+                final RawLog newBuffer = clean;
 
                 // should reset here
                 clean = dirty;
@@ -81,9 +81,9 @@ public class BufferAndFrameUtils
         };
     }
 
-    public static LogBuffers createTestLogBuffers(final long logBufferSize, final long stateBufferSize)
+    public static RawLog createTestLogBuffers(final long logBufferSize, final long stateBufferSize)
     {
-        return new LogBuffers()
+        return new RawLog()
         {
             private final AtomicBuffer logBuffer = new AtomicBuffer((ByteBuffer.allocate((int)logBufferSize)));
             private final AtomicBuffer stateBuffer = new AtomicBuffer((ByteBuffer.allocate((int)stateBufferSize)));

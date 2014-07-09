@@ -25,7 +25,7 @@ import java.util.stream.Stream;
  */
 public interface BufferRotator
 {
-    Stream<? extends LogBuffers> buffers();
+    Stream<? extends RawLog> buffers();
 
     int sizeOfTermBuffer();
 

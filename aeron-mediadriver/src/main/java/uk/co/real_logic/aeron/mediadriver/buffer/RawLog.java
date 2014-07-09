@@ -18,9 +18,9 @@ package uk.co.real_logic.aeron.mediadriver.buffer;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 /**
- * Encapsulates the pair of buffers used for sending/receiving
+ * Encapsulates the pair of buffers used to hold a term of publication/subscription
  */
-public interface LogBuffers extends AutoCloseable
+public interface RawLog extends AutoCloseable
 {
     AtomicBuffer logBuffer();
 

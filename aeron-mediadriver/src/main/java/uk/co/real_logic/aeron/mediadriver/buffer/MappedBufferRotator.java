@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron.mediadriver.buffer;
 
 import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
 
 import java.io.File;
@@ -45,11 +44,11 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
     private final FileChannel stateTemplate;
     private final int logBufferSize;
     private final int stateBufferSize;
-    private final MappedLogBuffers[] buffers;
+    private final MappedRawLog[] buffers;
 
-    private MappedLogBuffers current;
-    private MappedLogBuffers clean;
-    private MappedLogBuffers dirty;
+    private MappedRawLog current;
+    private MappedRawLog clean;
+    private MappedRawLog dirty;
 
     MappedBufferRotator(final File directory,
                         final FileChannel logTemplate,
@@ -77,15 +76,15 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
             throw new IllegalStateException(e);
         }
 
-        buffers = new MappedLogBuffers[]{current, clean, dirty};
+        buffers = new MappedRawLog[]{current, clean, dirty};
     }
 
     public void close()
     {
-        buffers().forEach(MappedLogBuffers::close);
+        buffers().forEach(MappedRawLog::close);
     }
 
-    public Stream<MappedLogBuffers> buffers()
+    public Stream<MappedRawLog> buffers()
     {
         return Stream.of(buffers);
     }
@@ -97,7 +96,7 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
 
     public void rotate() throws IOException
     {
-        final MappedLogBuffers newBuffer = clean;
+        final MappedRawLog newBuffer = clean;
 
         dirty.reset(logTemplate, stateTemplate);
         clean = dirty;
@@ -133,19 +132,19 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
         }
     }
 
-    private MappedLogBuffers newTerm(final String prefix, final File directory) throws IOException
+    private MappedRawLog newTerm(final String prefix, final File directory) throws IOException
     {
         final File logFile = new File(directory, prefix + LOG_SUFFIX);
         final File stateFile = new File(directory, prefix + STATE_SUFFIX);
         final FileChannel logFileChannel = openBufferFile(logFile);
         final FileChannel stateFileChannel = openBufferFile(stateFile);
 
-        return new MappedLogBuffers(logFile,
-                                    stateFile,
-                                    logFileChannel,
-                                    stateFileChannel,
-                                    mapBufferFile(logFileChannel, logBufferSize),
-                                    mapBufferFile(stateFileChannel, stateBufferSize));
+        return new MappedRawLog(logFile,
+                                stateFile,
+                                logFileChannel,
+                                stateFileChannel,
+                                mapBufferFile(logFileChannel, logBufferSize),
+                                mapBufferFile(stateFileChannel, stateBufferSize));
     }
 
     private FileChannel openBufferFile(final File file) throws FileNotFoundException
@@ -153,7 +152,8 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
         return new RandomAccessFile(file, "rw").getChannel();
     }
 
-    private MappedByteBuffer mapBufferFile(final FileChannel channel, final long bufferSize) throws IOException
+    private MappedByteBuffer mapBufferFile(final FileChannel channel, final long bufferSize)
+        throws IOException
     {
         reset(channel, logTemplate, logBufferSize);
 

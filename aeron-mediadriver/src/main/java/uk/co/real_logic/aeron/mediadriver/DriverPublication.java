@@ -211,19 +211,17 @@ public class DriverPublication
      */
     public int cleanDirtyBuffer()
     {
-        int workCount = 0;
-
         for (final LogBuffer logBuffer : scanners)
         {
             if (logBuffer.status() == NEEDS_CLEANING && logBuffer.compareAndSetStatus(NEEDS_CLEANING, IN_CLEANING))
             {
                 logBuffer.clean();
-                workCount = 1;
-                break;
+
+                return 1;
             }
         }
 
-        return workCount;
+        return 0;
     }
 
     private ByteBuffer duplicateLogBuffer(final RawLog log)

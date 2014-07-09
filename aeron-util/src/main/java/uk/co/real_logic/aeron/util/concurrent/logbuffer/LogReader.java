@@ -28,7 +28,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescript
  *
  * <b>Note:</b> Reading from the log is thread safe, but each thread needs its own instance of this class.
  */
-public class LogReader
+public class LogReader extends LogBuffer
 {
     /**
      * Handler for reading data that is coming from a log buffer.
@@ -39,17 +39,11 @@ public class LogReader
         void onFrame(final AtomicBuffer buffer, final int offset, final int length);
     }
 
-    private final AtomicBuffer logBuffer;
-    private final StateViewer stateViewer;
     private int cursor = 0;
 
     public LogReader(final AtomicBuffer logBuffer, final AtomicBuffer stateBuffer)
     {
-        checkLogBuffer(logBuffer);
-        checkStateBuffer(stateBuffer);
-
-        this.logBuffer = logBuffer;
-        this.stateViewer = new StateViewer(stateBuffer);
+        super(logBuffer, stateBuffer);
     }
 
     /**
@@ -59,7 +53,7 @@ public class LogReader
      */
     public void seek(final int offset)
     {
-        checkOffset(offset, stateViewer.tailVolatile());
+        checkOffset(offset, tailVolatile());
         checkOffsetAlignment(offset);
 
         cursor = offset;
@@ -75,17 +69,17 @@ public class LogReader
     public int read(final FrameHandler handler, final int framesCountLimit)
     {
         int framesCounter = 0;
-        final int tail = stateViewer.tailVolatile();
+        final int tail = tailVolatile();
 
         while (tail > cursor && framesCounter < framesCountLimit)
         {
-            final int frameLength = waitForFrameLength(logBuffer, cursor);
+            final int frameLength = waitForFrameLength(logBuffer(), cursor);
             try
             {
                 if (frameType(cursor) != PADDING_FRAME_TYPE)
                 {
                     ++framesCounter;
-                    handler.onFrame(logBuffer, cursor, frameLength);
+                    handler.onFrame(logBuffer(), cursor, frameLength);
 
                 }
             }
@@ -105,21 +99,11 @@ public class LogReader
      */
     public boolean isComplete()
     {
-        return cursor >= logBuffer.capacity();
-    }
-
-    /**
-     * Returns the current tail of the buffer, using a volatile read.
-     *
-     * @return the current tail.
-     */
-    public int tailVolatile()
-    {
-        return stateViewer.tailVolatile();
+        return cursor >= capacity();
     }
 
     private int frameType(final int frameOffset)
     {
-        return logBuffer.getShort(typeOffset(frameOffset), ByteOrder.LITTLE_ENDIAN) & 0xFFFF;
+        return logBuffer().getShort(typeOffset(frameOffset), ByteOrder.LITTLE_ENDIAN) & 0xFFFF;
     }
 }

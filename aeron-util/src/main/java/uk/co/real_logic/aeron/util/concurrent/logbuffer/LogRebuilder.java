@@ -30,11 +30,8 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescript
  * <b>Note:</b> Only one rebuilder should rebuild a log at any given time. This is not thread safe
  * by rebuilder instance or across rebuilder instances.
  */
-public class LogRebuilder
+public class LogRebuilder extends LogBuffer
 {
-    private final AtomicBuffer stateBuffer;
-    private final AtomicBuffer logBuffer;
-
     /**
      * Construct a rebuilder over a log and state buffer.
      *
@@ -43,11 +40,7 @@ public class LogRebuilder
      */
     public LogRebuilder(final AtomicBuffer logBuffer, final AtomicBuffer stateBuffer)
     {
-        checkLogBuffer(logBuffer);
-        checkStateBuffer(stateBuffer);
-
-        this.stateBuffer = stateBuffer;
-        this.logBuffer = logBuffer;
+        super(logBuffer, stateBuffer);
     }
 
     /**
@@ -67,7 +60,7 @@ public class LogRebuilder
 
         if (termOffset >= tail)
         {
-            logBuffer.putBytes(termOffset, packet, srcOffset, length);
+            logBuffer().putBytes(termOffset, packet, srcOffset, length);
 
             int alignedFrameLength;
             while ((alignedFrameLength = alignedFrameLength(tail)) != 0)
@@ -92,31 +85,21 @@ public class LogRebuilder
      */
     public boolean isComplete()
     {
-        return stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET) >= logBuffer.capacity();
+        return stateBuffer().getIntVolatile(TAIL_COUNTER_OFFSET) >= capacity();
     }
 
     private int alignedFrameLength(final int tail)
     {
-        return BitUtil.align(logBuffer.getInt(lengthOffset(tail), ByteOrder.LITTLE_ENDIAN), FRAME_ALIGNMENT);
+        return BitUtil.align(logBuffer().getInt(lengthOffset(tail), ByteOrder.LITTLE_ENDIAN), FRAME_ALIGNMENT);
     }
 
     private void putTailOrdered(int tail)
     {
-        stateBuffer.putIntOrdered(TAIL_COUNTER_OFFSET, tail);
-    }
-
-    private int highWaterMark()
-    {
-        return stateBuffer.getInt(HIGH_WATER_MARK_OFFSET);
-    }
-
-    private int tail()
-    {
-        return stateBuffer.getInt(TAIL_COUNTER_OFFSET);
+        stateBuffer().putIntOrdered(TAIL_COUNTER_OFFSET, tail);
     }
 
     private void putHighWaterMark(final int highWaterMark)
     {
-        stateBuffer.putIntOrdered(HIGH_WATER_MARK_OFFSET, highWaterMark);
+        stateBuffer().putIntOrdered(HIGH_WATER_MARK_OFFSET, highWaterMark);
     }
 }

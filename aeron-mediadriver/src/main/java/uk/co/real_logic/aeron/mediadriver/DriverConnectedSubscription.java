@@ -16,11 +16,9 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
-import uk.co.real_logic.aeron.mediadriver.buffer.RawLog;
 import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogRebuilder;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.StateViewer;
 import uk.co.real_logic.aeron.util.event.EventLogger;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 
@@ -66,7 +64,7 @@ public class DriverConnectedSubscription
     private int currentBufferId = 0;
 
     private BufferRotator rotator;
-    private TermRebuilder[] rebuilders;
+    private LogRebuilder[] rebuilders;
     private LossHandler lossHandler;
 
     private SendSmHandler sendSmHandler;
@@ -93,8 +91,8 @@ public class DriverConnectedSubscription
         currentTermId.lazySet(initialTermId);
         this.rotator = rotator;
         rebuilders = rotator.buffers()
-                            .map(TermRebuilder::new)
-                            .toArray(TermRebuilder[]::new);
+                            .map((rawLog) -> new LogRebuilder(rawLog.logBuffer(), rawLog.stateBuffer()))
+                            .toArray(LogRebuilder[]::new);
         this.lossHandler = lossHandler;
         this.sendSmHandler = sendSmHandler;
 
@@ -127,14 +125,14 @@ public class DriverConnectedSubscription
 
         if (termId == currentTermId)
         {
-            final TermRebuilder rebuilder = rebuilders[currentBufferId];
+            final LogRebuilder rebuilder = rebuilders[currentBufferId];
             rebuilder.insert(buffer, 0, (int)length);
         }
         else if (termId == (currentTermId + 1))
         {
             this.currentTermId.lazySet(termId);
             currentBufferId = BufferRotationDescriptor.rotateNext(currentBufferId);
-            TermRebuilder rebuilder = rebuilders[currentBufferId];
+            LogRebuilder rebuilder = rebuilders[currentBufferId];
             while (rebuilder.tailVolatile() != 0)
             {
                 // TODO:
@@ -254,28 +252,5 @@ public class DriverConnectedSubscription
         lastSmTail = termOffset;
 
         return 0;
-    }
-
-    private static class TermRebuilder
-    {
-        private final LogRebuilder logRebuilder;
-        private final StateViewer stateViewer;
-
-        public TermRebuilder(final RawLog buffer)
-        {
-            final AtomicBuffer stateBuffer = buffer.stateBuffer();
-            stateViewer = new StateViewer(stateBuffer);
-            logRebuilder = new LogRebuilder(buffer.logBuffer(), stateBuffer);
-        }
-
-        public int tailVolatile()
-        {
-            return stateViewer.tailVolatile();
-        }
-
-        public void insert(final AtomicBuffer buffer, final int offset, final int length)
-        {
-            logRebuilder.insert(buffer, offset, length);
-        }
     }
 }

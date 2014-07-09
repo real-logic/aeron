@@ -96,7 +96,7 @@ public class LogScanner extends LogBuffer
 
         if (!isComplete())
         {
-            final int tail = tail();
+            final int tail = tailVolatile();
             final int offset = this.offset;
             if (tail > offset)
             {
@@ -144,7 +144,7 @@ public class LogScanner extends LogBuffer
      */
     public void seek(final int offset)
     {
-        final int tail = tail();
+        final int tail = tailVolatile();
         if (offset < 0 || offset > tail)
         {
             throw new IllegalStateException(String.format("Invalid offset %d: range is 0 - %d", offset, tail));
@@ -161,10 +161,5 @@ public class LogScanner extends LogBuffer
     private int frameType(final int frameOffset)
     {
         return logBuffer().getShort(typeOffset(frameOffset), ByteOrder.LITTLE_ENDIAN) & 0xFFFF;
-    }
-
-    private int tail()
-    {
-        return stateBuffer().getIntVolatile(LogBufferDescriptor.TAIL_COUNTER_OFFSET);
     }
 }

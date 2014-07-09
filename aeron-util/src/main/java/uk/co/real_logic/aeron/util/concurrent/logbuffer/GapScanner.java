@@ -21,8 +21,6 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.lengthOffset;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.checkLogBuffer;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.checkStateBuffer;
 
 /**
  * Scans for gaps in the sequence of bytes in a replicated term buffer between the tail and the
@@ -30,7 +28,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescript
  *
  * <b>Note:</b> This class is threadsafe to be used across multiple threads.
  */
-public class GapScanner
+public class GapScanner extends LogBuffer
 {
     /**
      * Handler for notifying of gaps in the log.
@@ -49,9 +47,6 @@ public class GapScanner
         boolean onGap(final AtomicBuffer buffer, final int offset, final int length);
     }
 
-    private final AtomicBuffer logBuffer;
-    private final StateViewer stateViewer;
-
     /**
      * Construct a gap scanner over a log and state buffer.
      *
@@ -60,11 +55,7 @@ public class GapScanner
      */
     public GapScanner(final AtomicBuffer logBuffer, final AtomicBuffer stateBuffer)
     {
-        checkLogBuffer(logBuffer);
-        checkStateBuffer(stateBuffer);
-
-        this.logBuffer = logBuffer;
-        this.stateViewer = new StateViewer(stateBuffer);
+        super(logBuffer, stateBuffer);
     }
 
     /**
@@ -76,8 +67,8 @@ public class GapScanner
     public int scan(final GapHandler handler)
     {
         int count = 0;
-        final int highWaterMark = stateViewer.highWaterMarkVolatile();
-        int offset = stateViewer.tailVolatile();
+        final int highWaterMark = highWaterMarkVolatile();
+        int offset = tailVolatile();
 
         while (offset < highWaterMark)
         {
@@ -96,16 +87,6 @@ public class GapScanner
         return count;
     }
 
-    /**
-     * Return the current tail value.
-     *
-     * @return current tail value.
-     */
-    public int tailVolatile()
-    {
-        return stateViewer.tailVolatile();
-    }
-
     private int scanGap(final GapHandler handler, final int offset, final int highWaterMark)
     {
         int gapLength = 0;
@@ -117,11 +98,11 @@ public class GapScanner
         }
         while (0 == alignedFrameLength);
 
-        return handler.onGap(logBuffer, offset, gapLength) ? (offset + gapLength) : highWaterMark;
+        return handler.onGap(logBuffer(), offset, gapLength) ? (offset + gapLength) : highWaterMark;
     }
 
     private int alignedFrameLength(final int cursor)
     {
-        return BitUtil.align(logBuffer.getInt(lengthOffset(cursor), LITTLE_ENDIAN), FRAME_ALIGNMENT);
+        return BitUtil.align(logBuffer().getInt(lengthOffset(cursor), LITTLE_ENDIAN), FRAME_ALIGNMENT);
     }
 }

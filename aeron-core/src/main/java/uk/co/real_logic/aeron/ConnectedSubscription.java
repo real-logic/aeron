@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 
@@ -84,7 +85,7 @@ public class ConnectedSubscription
 
     private boolean hasBeenCleaned(final LogReader logReader)
     {
-        return logReader.tailVolatile() == 0;
+        return logReader.status() == LogBufferDescriptor.CLEAN;
     }
 
     public int processBufferScan()

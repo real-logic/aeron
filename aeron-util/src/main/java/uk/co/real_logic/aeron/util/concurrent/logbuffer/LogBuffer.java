@@ -17,9 +17,7 @@ package uk.co.real_logic.aeron.util.concurrent.logbuffer;
 
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.STATUS_OFFSET;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.checkLogBuffer;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.checkStateBuffer;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.*;
 
 /**
  * Base log buffer implementation containing common functionality.
@@ -109,5 +107,45 @@ public class LogBuffer
     public void statusOrdered(final int status)
     {
         stateBuffer.putIntOrdered(STATUS_OFFSET, status);
+    }
+
+    /**
+     * Get the current tail value in a volatile memory ordering fashion.
+     *
+     * @return the current tail value.
+     */
+    public int tailVolatile()
+    {
+        return stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET);
+    }
+
+    /**
+     * Get the current high-water-mark value in a volatile memory ordering fashion.
+     *
+     * @return the current high-water-mark value.
+     */
+    public int highWaterMarkVolatile()
+    {
+        return stateBuffer.getIntVolatile(HIGH_WATER_MARK_OFFSET);
+    }
+
+    /**
+     * Get the current tail value.
+     *
+     * @return the current tail value.
+     */
+    public int tail()
+    {
+        return stateBuffer.getInt(TAIL_COUNTER_OFFSET);
+    }
+
+    /**
+     * Get the current high-water-mark value.
+     *
+     * @return the current high-water-mark value.
+     */
+    public int highWaterMark()
+    {
+        return stateBuffer.getInt(HIGH_WATER_MARK_OFFSET);
     }
 }

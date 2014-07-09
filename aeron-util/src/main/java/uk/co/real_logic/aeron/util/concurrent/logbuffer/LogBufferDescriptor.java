@@ -31,7 +31,7 @@ public class LogBufferDescriptor
     public static final int CLEAN = 0;
 
     /** The log is dirty and requires cleaning. */
-    public static final int DIRTY = 1;
+    public static final int NEEDS_CLEANING = 1;
 
     /** The log is in the process of being cleaned. */
     public static final int IN_CLEANING = 2;

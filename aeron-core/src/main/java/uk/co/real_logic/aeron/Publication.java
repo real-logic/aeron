@@ -129,9 +129,16 @@ public class Publication
                 System.err.println(String.format("Term not clean: destination=%s channelId=%d, required termId=%d",
                                                  destination, channelId, currentTermId.get() + 1));
 
-                if (nextAppender.compareAndSetStatus(DIRTY, IN_CLEANING))
+                if (nextAppender.compareAndSetStatus(NEEDS_CLEANING, IN_CLEANING))
                 {
                     nextAppender.clean(); // Conductor is not keeping up so do it yourself!!!
+                }
+                else
+                {
+                    while (CLEAN != nextAppender.status())
+                    {
+                        Thread.yield();
+                    }
                 }
             }
 
@@ -145,7 +152,7 @@ public class Publication
             currentBufferIndex = nextIndex;
 
             final int previousIndex = rotatePrevious(currentBufferIndex);
-            logAppenders[previousIndex].statusOrdered(DIRTY);
+            logAppenders[previousIndex].statusOrdered(NEEDS_CLEANING);
             requestTermClean(currentTermId);
 
             return offer(buffer, offset, length);

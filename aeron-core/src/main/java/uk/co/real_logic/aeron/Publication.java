@@ -121,44 +121,49 @@ public class Publication
         final AppendStatus status = logAppender.append(buffer, offset, length);
         if (status == TRIPPED)
         {
-            final int nextIndex = rotateNext(currentBufferIndex);
-
-            final LogAppender nextAppender = logAppenders[nextIndex];
-            if (CLEAN != nextAppender.status())
-            {
-                System.err.println(String.format("Term not clean: destination=%s channelId=%d, required termId=%d",
-                                                 destination, channelId, currentTermId.get() + 1));
-
-                if (nextAppender.compareAndSetStatus(NEEDS_CLEANING, IN_CLEANING))
-                {
-                    nextAppender.clean(); // Conductor is not keeping up so do it yourself!!!
-                }
-                else
-                {
-                    while (CLEAN != nextAppender.status())
-                    {
-                        Thread.yield();
-                    }
-                }
-            }
-
-            final long currentTermId = this.currentTermId.get();
-            final long newTermId = currentTermId + 1;
-
-            dataHeaderFlyweight.wrap(nextAppender.defaultHeader());
-            dataHeaderFlyweight.termId(newTermId);
-
-            this.currentTermId.lazySet(newTermId);
-            currentBufferIndex = nextIndex;
-
-            final int previousIndex = rotatePrevious(currentBufferIndex);
-            logAppenders[previousIndex].statusOrdered(NEEDS_CLEANING);
-            requestTermClean(currentTermId);
+            nextTerm();
 
             return offer(buffer, offset, length);
         }
 
         return status == SUCCESS;
+    }
+
+    private void nextTerm()
+    {
+        final int nextIndex = rotateNext(currentBufferIndex);
+
+        final LogAppender nextAppender = logAppenders[nextIndex];
+        if (CLEAN != nextAppender.status())
+        {
+            System.err.println(String.format("Term not clean: destination=%s channelId=%d, required termId=%d",
+                                             destination, channelId, currentTermId.get() + 1));
+
+            if (nextAppender.compareAndSetStatus(NEEDS_CLEANING, IN_CLEANING))
+            {
+                nextAppender.clean(); // Conductor is not keeping up so do it yourself!!!
+            }
+            else
+            {
+                while (CLEAN != nextAppender.status())
+                {
+                    Thread.yield();
+                }
+            }
+        }
+
+        final long currentTermId = this.currentTermId.get();
+        final long newTermId = currentTermId + 1;
+
+        dataHeaderFlyweight.wrap(nextAppender.defaultHeader());
+        dataHeaderFlyweight.termId(newTermId);
+
+        this.currentTermId.lazySet(newTermId);
+        currentBufferIndex = nextIndex;
+
+        final int previousIndex = rotatePrevious(currentBufferIndex);
+        logAppenders[previousIndex].statusOrdered(NEEDS_CLEANING);
+        requestTermClean(currentTermId);
     }
 
     private boolean isPausedDueToFlowControl(final LogAppender logAppender, final int length)

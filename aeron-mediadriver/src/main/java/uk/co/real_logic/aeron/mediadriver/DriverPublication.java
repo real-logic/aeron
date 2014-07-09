@@ -54,7 +54,7 @@ public class DriverPublication
     private final long sessionId;
     private final long channelId;
 
-    private final AtomicLong currentTermId;
+    private final AtomicLong currentTermId; // TODO: is this ever read across threads? Does it need to be atomic?
 
     // TODO: temporary. Replace with counter.
     private final AtomicLong timeOfLastSendOrHeartbeat;

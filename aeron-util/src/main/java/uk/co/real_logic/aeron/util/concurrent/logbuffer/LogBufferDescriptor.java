@@ -52,8 +52,8 @@ public class LogBufferDescriptor
     {
         HIGH_WATER_MARK_OFFSET = 0;
         TAIL_COUNTER_OFFSET = HIGH_WATER_MARK_OFFSET + SIZE_OF_INT;
-        STATUS_OFFSET = TAIL_COUNTER_OFFSET + SIZE_OF_INT;
-        STATE_BUFFER_LENGTH = CACHE_LINE_SIZE;
+        STATUS_OFFSET = TAIL_COUNTER_OFFSET + CACHE_LINE_SIZE;
+        STATE_BUFFER_LENGTH = CACHE_LINE_SIZE * 2;
     }
 
     /** Minimum buffer size for the log */

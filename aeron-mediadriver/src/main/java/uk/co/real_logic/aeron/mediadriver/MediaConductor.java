@@ -125,7 +125,7 @@ public class MediaConductor extends Agent
             LOGGER.logException(ex);
         }
 
-        workCount += publications.doAction(DriverPublication::cleanDirtyBuffer);
+        workCount += publications.doAction(DriverPublication::backgroundCleaning);
         workCount += connectedSubscriptions.doAction(DriverConnectedSubscription::processBufferRotation);
         workCount += connectedSubscriptions.doAction(DriverConnectedSubscription::scanForGaps);
         workCount += connectedSubscriptions.doAction((subscription) -> subscription.sendAnyPendingSm(timerWheel.now()));

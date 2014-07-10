@@ -39,9 +39,8 @@ public class ConnectedSubscription
     private final long sessionId;
     private final Subscription.DataHandler dataHandler;
     private final AtomicLong currentTermId;
-    private final AtomicLong cleanedTermId;
 
-    private int currentBufferId = 0;
+    private int currentBufferIndex = 0;
 
     public ConnectedSubscription(final LogReader[] readers,
                                  final long sessionId,
@@ -52,7 +51,6 @@ public class ConnectedSubscription
         this.sessionId = sessionId;
         this.dataHandler = dataHandler;
         this.currentTermId = new AtomicLong(currentTermId);
-        cleanedTermId = new AtomicLong(currentTermId + CLEAN_WINDOW);
     }
 
     public long sessionId()
@@ -62,55 +60,24 @@ public class ConnectedSubscription
 
     public int poll(final int frameCountLimit)
     {
-        LogReader logReader = logReaders[currentBufferId];
+        final int currentBufferIndex = this.currentBufferIndex;
+        LogReader logReader = logReaders[currentBufferIndex];
+
         if (logReader.isComplete())
         {
-            final int candidateBuffer = rotateNext(currentBufferId);
-            if (currentTermId.get() <= cleanedTermId.get())
+            final int nextIndex = rotateNext(currentBufferIndex);
+            logReader = logReaders[nextIndex];
+            if (logReader.status() != LogBufferDescriptor.CLEAN)
             {
-                logReader = logReaders[candidateBuffer];
-                currentBufferId = candidateBuffer;
-                currentTermId.incrementAndGet();
-                logReader.seek(0);
-            }
-            else
-            {
-                // Need to wait for the next buffer to be cleaned
                 return 0;
             }
+
+            currentTermId.lazySet(currentTermId.get() + 1);
+            this.currentBufferIndex = nextIndex;
+            logReader.seek(0);
         }
 
         return logReader.read(this::onFrame, frameCountLimit);
-    }
-
-    private boolean hasBeenCleaned(final LogReader logReader)
-    {
-        return logReader.status() == LogBufferDescriptor.CLEAN;
-    }
-
-    public int processBufferScan()
-    {
-        final long currentTermId = this.currentTermId.get();
-        if (currentTermId == UNKNOWN_TERM_ID)
-        {
-            // Doesn't have any buffers yet
-            return 0;
-        }
-
-        final long expectedCleanTermId = currentTermId + CLEAN_WINDOW;
-        if (expectedCleanTermId > cleanedTermId.get())
-        {
-            final int requiredBufferId = rotateNext(rotateNext((currentBufferId)));
-            final LogReader requiredBuffer = logReaders[requiredBufferId];
-            if (hasBeenCleaned(requiredBuffer))
-            {
-                cleanedTermId.incrementAndGet();
-            }
-
-            return 1;
-        }
-
-        return 0;
     }
 
     private void onFrame(final AtomicBuffer buffer, final int offset, final int length)

@@ -124,14 +124,9 @@ public class Subscription
         return connectedSubscriptions.doLimitedAction(index, frameCountLimit, ConnectedSubscription::poll);
     }
 
-    public void onBuffersMapped(final long sessionId, final long termId, final LogReader[] logReaders)
+    public void onLogBufferMapped(final long sessionId, final long termId, final LogReader[] logReaders)
     {
         connectedSubscriptions.add(new ConnectedSubscription(logReaders, sessionId, termId, handler));
-    }
-
-    public int processBufferScan()
-    {
-        return connectedSubscriptions.doAction(ConnectedSubscription::processBufferScan);
     }
 
     public boolean isConnected(final long sessionId)

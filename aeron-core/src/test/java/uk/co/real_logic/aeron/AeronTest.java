@@ -253,37 +253,6 @@ public class AeronTest
     }
 
     @Test
-    public void subscriberBufferRollsDoNotOverflowTheCleanedBuffer() throws Exception
-    {
-        channel1Handler = sessionAssertingHandler();
-
-        final Subscription subscription = aeron.addSubscription(DESTINATION, CHANNEL_ID_1, channel1Handler);
-
-        sendNewBufferNotification(ON_NEW_CONNECTED_SUBSCRIPTION, SESSION_ID_1, TERM_ID_1);
-
-        aeron.conductor().doWork();
-        skip(toDriverBuffer, 1);
-
-        final LogAppender logAppender = appendersSession1[0];
-        final int msgCount = logAppender.capacity() / SEND_BUFFER_CAPACITY;
-
-        writePackets(logAppender, msgCount);
-        assertThat(subscription.poll(FRAME_COUNT_LIMIT), is(msgCount));
-
-        writePackets(appendersSession1[1], msgCount);
-        assertThat(subscription.poll(FRAME_COUNT_LIMIT), is(msgCount));
-
-        writePackets(appendersSession1[2], msgCount);
-        assertThat(subscription.poll(FRAME_COUNT_LIMIT), is(msgCount));
-
-        // force the roll
-        assertThat(subscription.poll(FRAME_COUNT_LIMIT), is(msgCount));
-
-        // Now you've hit an unclean buffer and can't proceed
-        assertThat(subscription.poll(FRAME_COUNT_LIMIT), is(0));
-    }
-
-    @Test
     public void subscriberBufferRollsShouldNotAffectOtherSessions() throws Exception
     {
         channel1Handler = eitherSessionAssertingHandler();

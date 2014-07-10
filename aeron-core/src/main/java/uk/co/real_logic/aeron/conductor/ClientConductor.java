@@ -52,7 +52,6 @@ public class ClientConductor extends Agent implements MediaDriverListener
 
     private final MediaDriverBroadcastReceiver mediaDriverBroadcastReceiver;
     private final BufferUsageStrategy bufferUsage;
-    private final AtomicArray<Subscription> subscriptions = new AtomicArray<>();
     private final long awaitTimeout;
     private final long publicationWindow;
     private final ConnectionMap<String, Publication> publicationMap = new ConnectionMap<>(); // Guarded by this
@@ -90,7 +89,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
 
     public int doWork()
     {
-        return mediaDriverBroadcastReceiver.receive(this, activeCorrelationId) + performBufferMaintenance();
+        return mediaDriverBroadcastReceiver.receive(this, activeCorrelationId);
     }
 
     public void close()
@@ -163,7 +162,6 @@ public class ClientConductor extends Agent implements MediaDriverListener
         {
             subscription = new Subscription(this, handler, destination, channelId);
 
-            subscriptions.add(subscription);
             subscriptionMap.put(destination, channelId, subscription);
 
             mediaDriverProxy.addSubscription(destination, channelId);
@@ -177,14 +175,8 @@ public class ClientConductor extends Agent implements MediaDriverListener
         mediaDriverProxy.removeSubscription(subscription.destination(), subscription.channelId());
 
         subscriptionMap.remove(subscription.destination(), subscription.channelId());
-        subscriptions.remove(subscription);
 
         // TODO: clean up logs
-    }
-
-    private int performBufferMaintenance()
-    {
-        return subscriptions.doAction(Subscription::processBufferScan);
     }
 
     public void onNewPublication(final String destination,
@@ -229,7 +221,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
                 logs[i] = new LogReader(logBuffer, stateBuffer);
             }
 
-            subscription.onBuffersMapped(sessionId, currentTermId, logs);
+            subscription.onLogBufferMapped(sessionId, currentTermId, logs);
         }
     }
 

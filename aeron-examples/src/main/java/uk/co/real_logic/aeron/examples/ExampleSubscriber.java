@@ -118,7 +118,7 @@ public class ExampleSubscriber
                            final int offset,
                            final int length,
                            final long sessionId,
-                           final int flags)
+                           final byte flags)
         {
             final byte[] data = new byte[length];
             buffer.getBytes(offset, data);

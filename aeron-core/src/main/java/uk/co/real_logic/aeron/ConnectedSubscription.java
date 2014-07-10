@@ -81,7 +81,7 @@ public class ConnectedSubscription
 
     private void onFrame(final AtomicBuffer buffer, final int offset, final int length)
     {
-        final int flags = buffer.getByte(flagsOffset(offset)) & 0xFF;
+        final byte flags = buffer.getByte(flagsOffset(offset));
 
         dataHandler.onData(buffer, offset + HEADER_LENGTH, length - HEADER_LENGTH, sessionId, flags);
     }

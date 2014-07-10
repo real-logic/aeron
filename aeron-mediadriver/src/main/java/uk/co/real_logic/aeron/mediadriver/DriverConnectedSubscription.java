@@ -35,6 +35,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescript
 public class DriverConnectedSubscription
 {
     private static final EventLogger LOGGER = new EventLogger(DriverConnectedSubscription.class);
+    private static final LogRebuilder[] EMPTY_REBUILDERS = new LogRebuilder[0];
 
     /**
      * Handler for sending Status Messages (SMs)
@@ -52,7 +53,9 @@ public class DriverConnectedSubscription
         void sendSm(final long termId, final int termOffset, final int window);
     }
 
-    /** Timeout between SMs. One RTT. */
+    /**
+     * Timeout between SMs. One RTT.
+     */
     public static final long STATUS_MESSAGE_TIMEOUT = MediaDriver.ESTIMATED_RTT_NS;
 
     private final String destination;
@@ -60,12 +63,10 @@ public class DriverConnectedSubscription
     private final long sessionId;
     private final long channelId;
 
-    private final AtomicLong cleanedTermId = new AtomicLong(UNKNOWN_TERM_ID);
     private final AtomicLong currentTermId = new AtomicLong(UNKNOWN_TERM_ID);
     private int currentBufferIndex = 0;
 
-    private BufferRotator rotator;
-    private LogRebuilder[] rebuilders;
+    private LogRebuilder[] rebuilders = EMPTY_REBUILDERS;
     private LossHandler lossHandler;
 
     private SendSmHandler sendSmHandler;
@@ -86,15 +87,13 @@ public class DriverConnectedSubscription
         this.channelId = channelId;
     }
 
-    public void termBuffer(final long initialTermId,
-                           final int initialWindow,
-                           final BufferRotator rotator,
-                           final LossHandler lossHandler,
-                           final SendSmHandler sendSmHandler)
+    public void onLogBufferAvailable(final long initialTermId,
+                                     final int initialWindow,
+                                     final BufferRotator rotator,
+                                     final LossHandler lossHandler,
+                                     final SendSmHandler sendSmHandler)
     {
-        cleanedTermId.lazySet(initialTermId + CLEAN_WINDOW);
         currentTermId.lazySet(initialTermId);
-        this.rotator = rotator;
         rebuilders = rotator.buffers()
                             .map((rawLog) -> new LogRebuilder(rawLog.logBuffer(), rawLog.stateBuffer()))
                             .toArray(LogRebuilder[]::new);
@@ -123,7 +122,43 @@ public class DriverConnectedSubscription
         return channelId;
     }
 
-    public void rebuildBuffer(final DataHeaderFlyweight header, final AtomicBuffer buffer, final long length)
+    /**
+     * Called from the MediaConductor.
+     *
+     * @return if work has been done or not
+     */
+    public int cleanLogBuffer()
+    {
+        for (final LogBuffer logBuffer : rebuilders)
+        {
+            if (logBuffer.status() == NEEDS_CLEANING && logBuffer.compareAndSetStatus(NEEDS_CLEANING, IN_CLEANING))
+            {
+                logBuffer.clean();
+
+                return 1;
+            }
+        }
+
+        return 0;
+    }
+
+    /**
+     * Called from the MediaConductor.
+     *
+     * @return if work has been done or not
+     */
+    public int scanForGaps()
+    {
+        if (null != lossHandler)
+        {
+            lossHandler.scan();
+        }
+
+        // scan lazily
+        return 0;
+    }
+
+    public void insertIntoTerm(final DataHeaderFlyweight header, final AtomicBuffer buffer, final long length)
     {
         final long termId = header.termId();
         final long currentTermId = this.currentTermId.get();
@@ -169,45 +204,6 @@ public class DriverConnectedSubscription
 
         this.currentTermId.lazySet(termId);
         currentBufferIndex = nextIndex;
-    }
-
-    /**
-     * Called from the MediaConductor.
-     *
-     * @return if work has been done or not
-     */
-    public int cleanLogBuffer()
-    {
-
-        if (rebuilders != null) {
-            for (final LogBuffer logBuffer : rebuilders)
-            {
-                if (logBuffer.status() == NEEDS_CLEANING && logBuffer.compareAndSetStatus(NEEDS_CLEANING, IN_CLEANING))
-                {
-                    logBuffer.clean();
-
-                    return 1;
-                }
-            }
-        }
-
-        return 0;
-    }
-
-    /**
-     * Called from the MediaConductor.
-     *
-     * @return if work has been done or not
-     */
-    public int scanForGaps()
-    {
-        if (null != lossHandler)
-        {
-            lossHandler.scan();
-        }
-
-        // scan lazily
-        return 0;
     }
 
     /**

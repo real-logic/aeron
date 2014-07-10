@@ -218,6 +218,6 @@ public class Receiver extends Agent
         final LossHandler lossHandler = new LossHandler(scanners, conductorTimerWheel, delayGenerator);
 
         lossHandler.currentTermId(e.termId());
-        frameHandler.onSubscriptionReady(e, lossHandler);
+        frameHandler.onConnectedSubscriptionReady(e, lossHandler);
     }
 }

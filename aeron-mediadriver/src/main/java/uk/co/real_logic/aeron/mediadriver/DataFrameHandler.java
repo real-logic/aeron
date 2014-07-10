@@ -33,14 +33,14 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
 {
     /**
      * Sizing of Initial Window
-     *
+     * <p>
      * RTT (LAN) = 100 usec
      * 10 Gbps
-     *
+     * <p>
      * Buffer = Throughput * RTT
      * Buffer = (10*1000*1000*1000/8) * 0.0001 = 125000
      * Round to 128KB
-     *
+     * <p>
      * TODO: But, window should not be more than term/8, but must be >= MAX message size
      */
     private final static int INITIAL_WINDOW_SIZE = 128 * 1024;
@@ -140,7 +140,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
             {
                 if (header.frameLength() > DataHeaderFlyweight.HEADER_LENGTH)
                 {
-                    connectedSubscription.rebuildBuffer(header, buffer, length);
+                    connectedSubscription.insertIntoTerm(header, buffer, length);
                 }
             }
             else
@@ -165,7 +165,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         // this should be on the data channel and shouldn't include Naks, so ignore.
     }
 
-    public void onSubscriptionReady(final NewConnectedSubscriptionEvent event, final LossHandler lossHandler)
+    public void onConnectedSubscriptionReady(final NewConnectedSubscriptionEvent event, final LossHandler lossHandler)
     {
         final DriverSubscription subscription = subscriptionByChannelIdMap.get(event.channelId());
         if (null == subscription)
@@ -181,13 +181,13 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         }
 
         final DriverConnectedSubscription.SendSmHandler sendSm =
-                (termId, termOffset, window) -> sendStatusMessage(connectedSubscription, (int)termId, termOffset, window);
+            (termId, termOffset, window) -> sendStatusMessage(connectedSubscription, (int)termId, termOffset, window);
 
         lossHandler.sendNakHandler(
-                (termId, termOffset, length) -> sendNak(connectedSubscription, (int)termId, termOffset, length));
+            (termId, termOffset, length) -> sendNak(connectedSubscription, (int)termId, termOffset, length));
 
-        connectedSubscription.termBuffer(event.termId(), INITIAL_WINDOW_SIZE,
-                event.bufferRotator(), lossHandler, sendSm);
+        connectedSubscription.onLogBufferAvailable(event.termId(), INITIAL_WINDOW_SIZE,
+                                                   event.bufferRotator(), lossHandler, sendSm);
 
         // now we are all setup, so send an SM to allow the source to send if it is waiting
         // TODO: grab initial term offset from data and store in subscriberSession somehow (per TermID)
@@ -207,7 +207,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
                 .receiverWindow(window)
                 .headerType(HeaderFlyweight.HDR_TYPE_SM)
                 .frameLength(StatusMessageFlyweight.HEADER_LENGTH)
-                .flags((byte) 0)
+                .flags((byte)0)
                 .version(HeaderFlyweight.CURRENT_VERSION);
 
         smBuffer.position(0);

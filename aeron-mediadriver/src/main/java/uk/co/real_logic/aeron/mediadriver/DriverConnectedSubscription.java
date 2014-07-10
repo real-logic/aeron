@@ -87,6 +87,7 @@ public class DriverConnectedSubscription
         this.channelId = channelId;
     }
 
+    // TODO: simplify initialisation so the object is constructed in a valid state.
     public void onLogBufferAvailable(final long initialTermId,
                                      final int initialWindow,
                                      final BufferRotator rotator,

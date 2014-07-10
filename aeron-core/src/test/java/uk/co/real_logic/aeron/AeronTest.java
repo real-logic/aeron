@@ -64,7 +64,7 @@ public class AeronTest
     public static final int PACKET_VALUE = 37;
     public static final int SEND_BUFFER_CAPACITY = 1024;
     public static final int SCRATCH_BUFFER_CAPACITY = 1024;
-    public static final DataHandler EMPTY_DATA_HANDLER = (buffer, offset, length, sessionId) -> {};
+    public static final DataHandler EMPTY_DATA_HANDLER = (buffer, offset, length, sessionId, flags) -> {};
 
     public static final int RING_BUFFER_SZ = (16 * 1024) + RingBufferDescriptor.TRAILER_LENGTH;
     public static final int BROADCAST_BUFFER_SZ = (16 * 1024) + BroadcastBufferDescriptor.TRAILER_LENGTH;
@@ -281,7 +281,7 @@ public class AeronTest
 
     private DataHandler eitherSessionAssertingHandler()
     {
-        return (buffer, offset, length, sessionId) ->
+        return (buffer, offset, length, sessionId, flags) ->
         {
             assertThat(buffer.getInt(offset), is(PACKET_VALUE));
             assertThat(sessionId, anyOf(is(SESSION_ID_1), is(SESSION_ID_2)));
@@ -290,7 +290,7 @@ public class AeronTest
 
     private DataHandler sessionAssertingHandler()
     {
-        return (buffer, offset, length, sessionId) ->
+        return (buffer, offset, length, sessionId, flags) ->
         {
             assertThat(buffer.getInt(offset), is(PACKET_VALUE));
             assertThat(sessionId, is(SESSION_ID_1));

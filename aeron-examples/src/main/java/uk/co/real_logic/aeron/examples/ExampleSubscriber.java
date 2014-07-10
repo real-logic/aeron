@@ -40,7 +40,7 @@ public class ExampleSubscriber
         final ExecutorService executor = Executors.newFixedThreadPool(3);
         final Aeron.ClientContext aeronContext = new Aeron.ClientContext().errorHandler(ExampleSubscriber::onError);
         final Subscription.DataHandler messageHandler =
-            (buffer, offset, length, sessionId) ->
+            (buffer, offset, length, sessionId, flags) ->
             {
                 final byte[] data = new byte[length];
                 buffer.getBytes(offset, data);
@@ -117,7 +117,8 @@ public class ExampleSubscriber
         public void onData(final AtomicBuffer buffer,
                            final int offset,
                            final int length,
-                           final long sessionId)
+                           final long sessionId,
+                           final int flags)
         {
             final byte[] data = new byte[length];
             buffer.getBytes(offset, data);

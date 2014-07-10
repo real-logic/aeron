@@ -77,7 +77,7 @@ public class SubMulticastTest
 
     private final Queue<byte[]> receivedFrames = new ArrayDeque<>();
     private final Subscription.DataHandler saveFrames =
-        (buffer, offset, length, sessionId) ->
+        (buffer, offset, length, sessionId, flags) ->
         {
             final byte[] data = new byte[length];
             buffer.getBytes(offset, data);

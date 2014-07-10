@@ -22,7 +22,7 @@ import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 
 /**
  * Aeron Subscriber API for receiving messages from publishers on a given destination and channelId pair.
- *
+ * <p>
  * Subscriptions are not threadsafe and should not be shared between subscribers.
  */
 public class Subscription
@@ -35,12 +35,13 @@ public class Subscription
         /**
          * Method called by Aeron to deliver data to a {@link Subscription}
          *
-         * @param buffer to be delivered
-         * @param offset within buffer that data starts
-         * @param length of the data in the buffer
+         * @param buffer    to be delivered
+         * @param offset    within buffer that data starts
+         * @param length    of the data in the buffer
          * @param sessionId for the data source
+         * @param flags     for the status of the frame
          */
-        void onData(final AtomicBuffer buffer, final int offset, final int length, final long sessionId);
+        void onData(AtomicBuffer buffer, int offset, int length, long sessionId, int flags);
     }
 
     /**

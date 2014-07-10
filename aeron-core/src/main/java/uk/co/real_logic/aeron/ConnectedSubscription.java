@@ -23,10 +23,9 @@ import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.CLEAN_WINDOW;
 import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.rotateNext;
-import static uk.co.real_logic.aeron.util.ChannelCounters.UNKNOWN_TERM_ID;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.WORD_ALIGNMENT;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.flagsOffset;
 
 /**
  * A subscription that has been connected to from a publisher session.
@@ -82,6 +81,8 @@ public class ConnectedSubscription
 
     private void onFrame(final AtomicBuffer buffer, final int offset, final int length)
     {
-        dataHandler.onData(buffer, offset + HEADER_LENGTH, length - HEADER_LENGTH, sessionId);
+        final int flags = buffer.getByte(flagsOffset(offset)) & 0xFF;
+
+        dataHandler.onData(buffer, offset + HEADER_LENGTH, length - HEADER_LENGTH, sessionId, flags);
     }
 }

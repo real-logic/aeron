@@ -62,7 +62,7 @@ public class DriverSubscription
     public DriverConnectedSubscription newConnectedSubscription(final long sessionId, final InetSocketAddress srcAddress)
     {
         final DriverConnectedSubscription connectedSubscription
-            = new DriverConnectedSubscription(sessionId, channelId, srcAddress);
+            = new DriverConnectedSubscription(destination.clientAwareUri(), sessionId, channelId, srcAddress);
         connectedSubscriptions.add(connectedSubscription);
 
         return connectionBySessionIdMap.put(sessionId, connectedSubscription);
@@ -76,7 +76,7 @@ public class DriverSubscription
     public void close()
     {
         connectionBySessionIdMap.forEach(
-            (sessionId, connectedSubscription) -> conductorProxy.removeTermBuffers(destination, sessionId, channelId)
+            (sessionId, connectedSubscription) -> conductorProxy.removeLogBuffers(destination, sessionId, channelId)
         );
     }
 }

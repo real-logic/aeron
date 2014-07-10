@@ -209,7 +209,7 @@ public class DriverPublication
     /**
      * This is performed on the Media Conductor thread
      */
-    public int backgroundCleaning()
+    public int cleanLogBuffer()
     {
         for (final LogBuffer logBuffer : scanners)
         {

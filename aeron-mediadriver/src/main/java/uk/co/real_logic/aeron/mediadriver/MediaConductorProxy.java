@@ -45,26 +45,26 @@ public class MediaConductorProxy
         this.commandBuffer = commandBuffer;
     }
 
-    public void createTermBuffers(final UdpDestination destination,
-                                  final long sessionId,
-                                  final long channelId,
-                                  final long termId)
+    public void createLogBuffers(final UdpDestination destination,
+                                 final long sessionId,
+                                 final long channelId,
+                                 final long termId)
     {
-        writeTermBuffersMsg(destination, sessionId, channelId, termId, CREATE_CONNECTED_SUBSCRIPTION);
+        writeLogBuffersMsg(destination, sessionId, channelId, termId, CREATE_CONNECTED_SUBSCRIPTION);
     }
 
-    public void removeTermBuffers(final UdpDestination destination,
-                                  final long sessionId,
-                                  final long channelId)
+    public void removeLogBuffers(final UdpDestination destination,
+                                 final long sessionId,
+                                 final long channelId)
     {
-        writeTermBuffersMsg(destination, sessionId, channelId, 0L, REMOVE_CONNECTED_SUBSCRIPTION);
+        writeLogBuffersMsg(destination, sessionId, channelId, 0L, REMOVE_CONNECTED_SUBSCRIPTION);
     }
 
-    private void writeTermBuffersMsg(final UdpDestination destination,
-                                     final long sessionId,
-                                     final long channelId,
-                                     final long termId,
-                                     final int msgTypeId)
+    private void writeLogBuffersMsg(final UdpDestination destination,
+                                    final long sessionId,
+                                    final long channelId,
+                                    final long termId,
+                                    final int msgTypeId)
     {
         qualifiedMessage.wrap(scratchBuffer, 0);
         qualifiedMessage.sessionId(sessionId)

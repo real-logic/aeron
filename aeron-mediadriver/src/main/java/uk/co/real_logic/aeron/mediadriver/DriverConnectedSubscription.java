@@ -18,16 +18,16 @@ package uk.co.real_logic.aeron.mediadriver;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
 import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogRebuilder;
 import uk.co.real_logic.aeron.util.event.EventLogger;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.CLEAN_WINDOW;
-import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.UNKNOWN_TERM_ID;
+import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.*;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.*;
 
 /**
  * State maintained for active sessionIds within a channel for receiver processing
@@ -55,13 +55,14 @@ public class DriverConnectedSubscription
     /** Timeout between SMs. One RTT. */
     public static final long STATUS_MESSAGE_TIMEOUT = MediaDriver.ESTIMATED_RTT_NS;
 
+    private final String destination;
     private final InetSocketAddress srcAddress;
     private final long sessionId;
     private final long channelId;
 
     private final AtomicLong cleanedTermId = new AtomicLong(UNKNOWN_TERM_ID);
     private final AtomicLong currentTermId = new AtomicLong(UNKNOWN_TERM_ID);
-    private int currentBufferId = 0;
+    private int currentBufferIndex = 0;
 
     private BufferRotator rotator;
     private LogRebuilder[] rebuilders;
@@ -74,8 +75,12 @@ public class DriverConnectedSubscription
     private int currentWindow;
     private int currentWindowGain;
 
-    public DriverConnectedSubscription(final long sessionId, final long channelId, final InetSocketAddress srcAddress)
+    public DriverConnectedSubscription(final String destination,
+                                       final long sessionId,
+                                       final long channelId,
+                                       final InetSocketAddress srcAddress)
     {
+        this.destination = destination;
         this.srcAddress = srcAddress;
         this.sessionId = sessionId;
         this.channelId = channelId;
@@ -123,29 +128,47 @@ public class DriverConnectedSubscription
         final long termId = header.termId();
         final long currentTermId = this.currentTermId.get();
 
+        // TODO: handle packets outside acceptable range - can be done with position tracking
+
         if (termId == currentTermId)
         {
-            final LogRebuilder rebuilder = rebuilders[currentBufferId];
-            rebuilder.insert(buffer, 0, (int)length);
+            rebuilders[currentBufferIndex].insert(buffer, 0, (int)length);
         }
         else if (termId == (currentTermId + 1))
         {
-            this.currentTermId.lazySet(termId);
-            currentBufferId = BufferRotationDescriptor.rotateNext(currentBufferId);
-            LogRebuilder rebuilder = rebuilders[currentBufferId];
-            while (rebuilder.tailVolatile() != 0)
-            {
-                // TODO:
-                Thread.yield();
-            }
+            nextTerm(termId, currentTermId);
+            rebuilders[currentBufferIndex].insert(buffer, 0, (int)length);
+        }
+    }
 
-            rebuilder.insert(buffer, 0, (int)length);
-        }
-        else
+    private void nextTerm(final long termId, final long currentTermId)
+    {
+        final int nextIndex = BufferRotationDescriptor.rotateNext(currentBufferIndex);
+        final LogRebuilder rebuilder = rebuilders[nextIndex];
+
+        if (CLEAN != rebuilder.status())
         {
-            // TODO: log or monitor this case
-            System.out.println("Unexpected Term Id " + currentTermId + ":" + termId);
+            System.err.println(String.format("Term not clean: destination=%s channelId=%d, required termId=%d",
+                                             destination, channelId, currentTermId + 1));
+
+            if (rebuilder.compareAndSetStatus(NEEDS_CLEANING, IN_CLEANING))
+            {
+                rebuilder.clean(); // Conductor is not keeping up so do it yourself!!!
+            }
+            else
+            {
+                while (CLEAN != rebuilder.status())
+                {
+                    Thread.yield();
+                }
+            }
         }
+
+        final int previousIndex = rotatePrevious(currentBufferIndex);
+        rebuilders[previousIndex].statusOrdered(NEEDS_CLEANING);
+
+        this.currentTermId.lazySet(termId);
+        currentBufferIndex = nextIndex;
     }
 
     /**
@@ -153,29 +176,22 @@ public class DriverConnectedSubscription
      *
      * @return if work has been done or not
      */
-    public int processBufferRotation()
+    public int cleanLogBuffer()
     {
-        int workCount = 0;
-        final long currentTermId = this.currentTermId.get();
-        final long expectedTermId = currentTermId + CLEAN_WINDOW;
-        final long cleanedTermId = this.cleanedTermId.get();
 
-        // TODO: I don't think this works like it should be working... + had to add check on cleanedTermId for unknown
-        if (currentTermId != UNKNOWN_TERM_ID && cleanedTermId != UNKNOWN_TERM_ID && expectedTermId > cleanedTermId)
-        {
-            try
+        if (rebuilders != null) {
+            for (final LogBuffer logBuffer : rebuilders)
             {
-                rotator.rotate();
-                this.cleanedTermId.lazySet(cleanedTermId + 1);
-                ++workCount;
-            }
-            catch (final IOException ex)
-            {
-                LOGGER.logException(ex);
+                if (logBuffer.status() == NEEDS_CLEANING && logBuffer.compareAndSetStatus(NEEDS_CLEANING, IN_CLEANING))
+                {
+                    logBuffer.clean();
+
+                    return 1;
+                }
             }
         }
 
-        return workCount;
+        return 0;
     }
 
     /**

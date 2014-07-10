@@ -33,7 +33,7 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 public class MediaDriverProxy
 {
     /** Maximum size of the write buffer */
-    public static final int MSG_BUFFER_CAPACITY = 1024;
+    public static final int MSG_BUFFER_CAPACITY = 4096;
 
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(MSG_BUFFER_CAPACITY));
     private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
@@ -93,8 +93,8 @@ public class MediaDriverProxy
 
     private void sendSubscriptionMessage(final int msgTypeId, final String destination, final long channelId)
     {
-        // TODO: remove array from the protocol
-        subscriptionMessage.channelIds(new long[] { channelId});
+        // TODO: remove arrays from the protocol
+        subscriptionMessage.channelIds(new long[]{channelId});
         subscriptionMessage.destination(destination);
 
         if (!mediaDriverCommandBuffer.write(msgTypeId, writeBuffer, 0, subscriptionMessage.length()))

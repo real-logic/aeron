@@ -145,8 +145,8 @@ public class MediaConductorTest
         assertThat(publications.get(0).sessionId(), is(1L));
         assertThat(publications.get(0).channelId(), is(2L));
 
-        verify(mockClientProxy).onNewBuffers(eq(ControlProtocolEvents.ON_NEW_PUBLICATION),
-                                             eq(1L), eq(2L), anyLong(), eq(DESTINATION_URI + 4000), any(), anyLong(), anyInt());
+        verify(mockClientProxy).onNewLogBuffers(eq(ControlProtocolEvents.ON_NEW_PUBLICATION),
+                                                eq(1L), eq(2L), anyLong(), eq(DESTINATION_URI + 4000), any(), anyLong(), anyInt());
     }
 
     @Test

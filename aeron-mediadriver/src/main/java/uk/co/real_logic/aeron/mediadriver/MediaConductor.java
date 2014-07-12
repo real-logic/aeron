@@ -299,8 +299,8 @@ public class MediaConductor extends Agent
             frameHandler.addPublication(publication);
             final int positionCounterId = positionCounterId("publication", destination, sessionId, channelId);
 
-            clientProxy.onNewBuffers(ON_NEW_PUBLICATION, sessionId, channelId,
-                                     initialTermId, destination, bufferRotator, correlationId, positionCounterId);
+            clientProxy.onNewLogBuffers(ON_NEW_PUBLICATION, sessionId, channelId,
+                                        initialTermId, destination, bufferRotator, correlationId, positionCounterId);
             publications.add(publication);
         }
         catch (final ControlProtocolException ex)
@@ -386,20 +386,19 @@ public class MediaConductor extends Agent
 
         try
         {
-            final UdpDestination rcvDestination = UdpDestination.parse(destination);
-            final BufferRotator bufferRotator =
-                bufferManagement.addConnectedSubscription(rcvDestination, sessionId, channelId);
+            final UdpDestination udpDst = UdpDestination.parse(destination);
+            final BufferRotator bufferRotator = bufferManagement.addConnectedSubscription(udpDst, sessionId, channelId);
 
-            clientProxy.onNewBuffers(ON_NEW_CONNECTED_SUBSCRIPTION, sessionId, channelId, termId,
-                                     destination, bufferRotator, 0, 0);
+            clientProxy.onNewLogBuffers(ON_NEW_CONNECTED_SUBSCRIPTION, sessionId, channelId, termId,
+                                        destination, bufferRotator, 0, 0);
 
             final NewConnectedSubscriptionEvent event =
-                new NewConnectedSubscriptionEvent(rcvDestination, sessionId, channelId, termId, bufferRotator);
+                new NewConnectedSubscriptionEvent(udpDst, sessionId, channelId, termId, bufferRotator);
 
             while (!receiverProxy.newConnectedSubscription(event))
             {
                 // TODO: count errors
-                System.out.println("Error adding to bufferRotator");
+                System.out.println("Error adding to connected subscription");
             }
         }
         catch (final Exception ex)
@@ -416,8 +415,8 @@ public class MediaConductor extends Agent
 
         try
         {
-            final UdpDestination rcvDestination = UdpDestination.parse(destination);
-            bufferManagement.removeConnectedSubscription(rcvDestination, sessionId, channelId);
+            final UdpDestination udpDst = UdpDestination.parse(destination);
+            bufferManagement.removeConnectedSubscription(udpDst, sessionId, channelId);
         }
         catch (final Exception ex)
         {

@@ -73,14 +73,14 @@ public class ClientProxy
         transmitter.transmit(msgTypeId, buffer, index, length);
     }
 
-    public void onNewBuffers(final int msgTypeId,
-                             final long sessionId,
-                             final long channelId,
-                             final long termId,
-                             final String destination,
-                             final BufferRotator bufferRotator,
-                             final long correlationId,
-                             final int positionCounterId)
+    public void onNewLogBuffers(final int msgTypeId,
+                                final long sessionId,
+                                final long channelId,
+                                final long termId,
+                                final String destination,
+                                final BufferRotator bufferRotator,
+                                final long correlationId,
+                                final int positionCounterId)
     {
         logBuffersMessage.wrap(tmpBuffer, 0);
         logBuffersMessage.sessionId(sessionId)

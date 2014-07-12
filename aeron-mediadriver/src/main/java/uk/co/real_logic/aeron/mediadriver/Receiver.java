@@ -174,7 +174,7 @@ public class Receiver extends Agent
             return;
         }
 
-        final GapScanner[] scanners =
+        final GapScanner[] gapScanners =
             cmd.bufferRotator()
                .buffers()
                .map((rawLog) -> new GapScanner(rawLog.logBuffer(), rawLog.stateBuffer()))
@@ -189,7 +189,7 @@ public class Receiver extends Agent
             delayGenerator = NAK_UNICAST_DELAY_GENERATOR;
         }
 
-        final LossHandler lossHandler = new LossHandler(scanners, conductorTimerWheel, delayGenerator);
+        final LossHandler lossHandler = new LossHandler(gapScanners, conductorTimerWheel, delayGenerator);
 
         lossHandler.activeTermId(cmd.termId());
         frameHandler.onConnectedSubscriptionReady(cmd, lossHandler);

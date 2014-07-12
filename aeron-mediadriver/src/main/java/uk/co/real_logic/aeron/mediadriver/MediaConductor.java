@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
+import uk.co.real_logic.aeron.mediadriver.cmd.NewConnectedSubscriptionCmd;
 import uk.co.real_logic.aeron.util.*;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.command.PublicationMessageFlyweight;
@@ -369,7 +370,7 @@ public class MediaConductor extends Agent
 
     private void onAddSubscription(final SubscriptionMessageFlyweight subscriberMessage)
     {
-        receiverProxy.newSubscription(subscriberMessage.destination(), subscriberMessage.channelIds());
+        receiverProxy.addSubscription(subscriberMessage.destination(), subscriberMessage.channelIds());
     }
 
     private void onRemoveSubscription(final SubscriptionMessageFlyweight subscriberMessage)
@@ -392,8 +393,8 @@ public class MediaConductor extends Agent
             clientProxy.onNewLogBuffers(ON_NEW_CONNECTED_SUBSCRIPTION, sessionId, channelId, termId,
                                         destination, bufferRotator, 0, 0);
 
-            final NewConnectedSubscriptionEvent event =
-                new NewConnectedSubscriptionEvent(udpDst, sessionId, channelId, termId, bufferRotator);
+            final NewConnectedSubscriptionCmd event =
+                new NewConnectedSubscriptionCmd(udpDst, sessionId, channelId, termId, bufferRotator);
 
             while (!receiverProxy.newConnectedSubscription(event))
             {

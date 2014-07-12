@@ -15,11 +15,9 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import uk.co.real_logic.aeron.mediadriver.cmd.*;
 import uk.co.real_logic.aeron.util.*;
-import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
-import uk.co.real_logic.aeron.util.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.GapScanner;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.event.EventCode;
 import uk.co.real_logic.aeron.util.event.EventLogger;
 
@@ -29,7 +27,6 @@ import java.util.Queue;
 
 import static uk.co.real_logic.aeron.mediadriver.MediaConductor.NAK_MULTICAST_DELAY_GENERATOR;
 import static uk.co.real_logic.aeron.mediadriver.MediaConductor.NAK_UNICAST_DELAY_GENERATOR;
-import static uk.co.real_logic.aeron.util.ErrorCode.*;
 
 /**
  * Receiver service for JVM based media driver, uses an event loop with command buffer
@@ -38,23 +35,20 @@ public class Receiver extends Agent
 {
     private static final EventLogger LOGGER = new EventLogger(Receiver.class);
 
-    private final RingBuffer commandBuffer;
     private final NioSelector nioSelector;
     private final TimerWheel conductorTimerWheel;
     private final MediaConductorProxy conductorProxy;
     private final Map<UdpDestination, DataFrameHandler> frameHandlerByDestinationMap = new HashMap<>();
-    private final SubscriptionMessageFlyweight subscriberMessage = new SubscriptionMessageFlyweight();
-    private final Queue<NewConnectedSubscriptionEvent> newConnectedSubscriptionEventQueue;
+    private final Queue<? super Object> commandQueue;
     private final AtomicArray<DriverConnectedSubscription> connectedSubscriptions;
 
     public Receiver(final MediaDriver.MediaDriverContext ctx) throws Exception
     {
         super(ctx.receiverIdleStrategy());
 
-        this.commandBuffer = ctx.receiverCommandBuffer();
         this.conductorProxy = ctx.mediaConductorProxy();
         this.nioSelector = ctx.receiverNioSelector();
-        this.newConnectedSubscriptionEventQueue = ctx.newConnectedSubscriptionEventQueue();
+        this.commandQueue = ctx.receiverCommandQueue();
         this.conductorTimerWheel = ctx.conductorTimerWheel();
         this.connectedSubscriptions = ctx.connectedSubscriptions();
     }
@@ -65,8 +59,7 @@ public class Receiver extends Agent
         try
         {
             workCount += nioSelector.processKeys();
-            workCount += processCommandBuffer();
-            workCount += processConnectedSubscriptionEventQueue();
+            workCount += processCommandQueue();
         }
         catch (final Exception ex)
         {
@@ -76,56 +69,40 @@ public class Receiver extends Agent
         return workCount;
     }
 
-    private int processConnectedSubscriptionEventQueue()
+    private int processCommandQueue()
     {
         int workCount = 0;
 
-        NewConnectedSubscriptionEvent state;
-        while ((state = newConnectedSubscriptionEventQueue.poll()) != null)
+        Object cmd;
+        while ((cmd = commandQueue.poll()) != null)
         {
             ++workCount;
-            onNewConnectedSubscription(state);
+
+            try
+            {
+                if (cmd instanceof NewConnectedSubscriptionCmd)
+                {
+                    onNewConnectedSubscription((NewConnectedSubscriptionCmd)cmd);
+                }
+                else if (cmd instanceof AddSubscriptionCmd)
+                {
+                    final AddSubscriptionCmd addSubscriptionCmd = (AddSubscriptionCmd)cmd;
+                    onAddSubscription(addSubscriptionCmd.destination(), addSubscriptionCmd.channelIds());
+                }
+                else if (cmd instanceof RemoveSubscriptionCmd)
+                {
+                    final RemoveSubscriptionCmd removeSubscriptionCmd = (RemoveSubscriptionCmd)cmd;
+                    onRemoveSubscription(removeSubscriptionCmd.destination(), removeSubscriptionCmd.channelIds());
+                }
+            }
+            catch (final Exception ex)
+            {
+
+                LOGGER.logException(ex);
+            }
         }
 
         return workCount;
-    }
-
-    private int processCommandBuffer()
-    {
-        return commandBuffer.read(
-            (msgTypeId, buffer, index, length) ->
-            {
-                try
-                {
-                    switch (msgTypeId)
-                    {
-                        case ControlProtocolEvents.ADD_SUBSCRIPTION:
-                            subscriberMessage.wrap(buffer, index);
-                            onAddSubscription(subscriberMessage.destination(), subscriberMessage.channelIds());
-                            break;
-
-                        case ControlProtocolEvents.REMOVE_SUBSCRIPTION:
-                            subscriberMessage.wrap(buffer, index);
-                            onRemoveSubscription(subscriberMessage.destination(), subscriberMessage.channelIds());
-                            break;
-                    }
-                }
-                catch (final InvalidDestinationException ex)
-                {
-                    onError(INVALID_DESTINATION_IN_PUBLICATION, length);
-                    LOGGER.logException(ex);
-                }
-                catch (final SubscriptionNotRegisteredException ex)
-                {
-                    onError(SUBSCRIBER_NOT_REGISTERED, length);
-                    LOGGER.logException(ex);
-                }
-                catch (final Exception ex)
-                {
-                    onError(GENERIC_ERROR, length);
-                    LOGGER.logException(ex);
-                }
-            });
     }
 
     /**
@@ -150,11 +127,6 @@ public class Receiver extends Agent
     public DataFrameHandler frameHandler(final UdpDestination destination)
     {
         return frameHandlerByDestinationMap.get(destination);
-    }
-
-    private void onError(final ErrorCode errorCode, final int length)
-    {
-        conductorProxy.addErrorResponse(errorCode, subscriberMessage, length);
     }
 
     private void onAddSubscription(final String destination, final long[] channelIds) throws Exception
@@ -190,23 +162,23 @@ public class Receiver extends Agent
         }
     }
 
-    private void onNewConnectedSubscription(final NewConnectedSubscriptionEvent e)
+    private void onNewConnectedSubscription(final NewConnectedSubscriptionCmd cmd)
     {
-        final DataFrameHandler frameHandler = frameHandler(e.destination());
+        final DataFrameHandler frameHandler = frameHandler(cmd.destination());
         FeedbackDelayGenerator delayGenerator;
 
         if (null == frameHandler)
         {
-            final String destination = e.destination().toString();
+            final String destination = cmd.destination().toString();
             LOGGER.log(EventCode.COULD_NOT_FIND_FRAME_HANDLER_FOR_NEW_CONNECTED_SUBSCRIPTION, destination);
             return;
         }
 
-        final GapScanner[] scanners = e.bufferRotator().buffers()
-            .map((r) -> new GapScanner(r.logBuffer(), r.stateBuffer()))
+        final GapScanner[] scanners = cmd.bufferRotator().buffers()
+            .map((rawLog) -> new GapScanner(rawLog.logBuffer(), rawLog.stateBuffer()))
             .toArray(GapScanner[]::new);
 
-        if (e.destination().isMulticast())
+        if (cmd.destination().isMulticast())
         {
             delayGenerator = NAK_MULTICAST_DELAY_GENERATOR;
         }
@@ -217,7 +189,7 @@ public class Receiver extends Agent
 
         final LossHandler lossHandler = new LossHandler(scanners, conductorTimerWheel, delayGenerator);
 
-        lossHandler.activeTermId(e.termId());
-        frameHandler.onConnectedSubscriptionReady(e, lossHandler);
+        lossHandler.activeTermId(cmd.termId());
+        frameHandler.onConnectedSubscriptionReady(cmd, lossHandler);
     }
 }

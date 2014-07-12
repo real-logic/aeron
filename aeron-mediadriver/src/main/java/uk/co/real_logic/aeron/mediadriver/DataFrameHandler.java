@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
+import uk.co.real_logic.aeron.mediadriver.cmd.NewConnectedSubscriptionCmd;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -165,7 +166,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         // this should be on the data channel and shouldn't include Naks, so ignore.
     }
 
-    public void onConnectedSubscriptionReady(final NewConnectedSubscriptionEvent event, final LossHandler lossHandler)
+    public void onConnectedSubscriptionReady(final NewConnectedSubscriptionCmd event, final LossHandler lossHandler)
     {
         final DriverSubscription subscription = subscriptionByChannelIdMap.get(event.channelId());
         if (null == subscription)

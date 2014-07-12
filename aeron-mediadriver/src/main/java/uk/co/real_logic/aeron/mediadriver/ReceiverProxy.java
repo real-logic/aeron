@@ -15,56 +15,34 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.util.command.SubscriptionMessageFlyweight;
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.aeron.mediadriver.cmd.*;
 
-import java.nio.ByteBuffer;
 import java.util.Queue;
-
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ADD_SUBSCRIPTION;
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.REMOVE_SUBSCRIPTION;
 
 /**
  * Proxy for writing into the Receiver Thread's command buffer.
  */
 public class ReceiverProxy
 {
-    private static final int WRITE_BUFFER_CAPACITY = 1024;
+    private final Queue<? super Object> commandQueue;
 
-    private final RingBuffer commandBuffer;
-    private final Queue<NewConnectedSubscriptionEvent> newConnectedSubscriptionEventQueue;
-    private final AtomicBuffer tmpBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
-    private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
-
-    public ReceiverProxy(final RingBuffer commandBuffer,
-                         final Queue<NewConnectedSubscriptionEvent> newConnectedSubscriptionEventQueue)
+    public ReceiverProxy(final Queue<? super Object> commandQueue)
     {
-        this.commandBuffer = commandBuffer;
-        this.newConnectedSubscriptionEventQueue = newConnectedSubscriptionEventQueue;
+        this.commandQueue = commandQueue;
     }
 
-    public boolean newSubscription(final String destination, final long[] channelIdList)
+    public boolean addSubscription(final String destination, final long[] channelIds)
     {
-        return send(ADD_SUBSCRIPTION, destination, channelIdList);
+        return commandQueue.offer(new AddSubscriptionCmd(destination, channelIds));
     }
 
-    public boolean removeSubscription(final String destination, final long[] channelIdList)
+    public boolean removeSubscription(final String destination, final long[] channelIds)
     {
-        return send(REMOVE_SUBSCRIPTION, destination, channelIdList);
+        return commandQueue.offer(new RemoveSubscriptionCmd(destination, channelIds));
     }
 
-    private boolean send(final int msgTypeId, final String destination, final long[] channelIdList)
+    public boolean newConnectedSubscription(final NewConnectedSubscriptionCmd e)
     {
-        subscriptionMessage.wrap(tmpBuffer, 0);
-        subscriptionMessage.channelIds(channelIdList);
-        subscriptionMessage.destination(destination);
-
-        return commandBuffer.write(msgTypeId, tmpBuffer, 0, subscriptionMessage.length());
-    }
-
-    public boolean newConnectedSubscription(final NewConnectedSubscriptionEvent e)
-    {
-        return newConnectedSubscriptionEventQueue.offer(e);
+        return commandQueue.offer(e);
     }
 }

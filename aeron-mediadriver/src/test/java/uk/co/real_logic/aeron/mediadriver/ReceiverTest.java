@@ -21,6 +21,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
+import uk.co.real_logic.aeron.mediadriver.cmd.NewConnectedSubscriptionCmd;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
@@ -86,7 +87,6 @@ public class ReceiverTest
     {
         final MediaDriver.MediaDriverContext ctx = new MediaDriver.MediaDriverContext()
             .driverCommandBuffer(MediaDriver.COMMAND_BUFFER_SZ)
-            .receiverCommandBuffer(MediaDriver.COMMAND_BUFFER_SZ)
             .receiverNioSelector(mockNioSelector)
             .conductorNioSelector(mockNioSelector)
             .bufferManagement(mockBufferManagement)
@@ -94,12 +94,12 @@ public class ReceiverTest
                                  TimeUnit.MICROSECONDS,
                                  MediaDriver.MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
             .connectedSubscriptions(new AtomicArray<>())
-            .newConnectedSubscriptionEventQueue(new OneToOneConcurrentArrayQueue<>(1024));
+            .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024));
 
         toConductorBuffer = ctx.driverCommandBuffer();
         ctx.mediaConductorProxy(new MediaConductorProxy(toConductorBuffer));
 
-        receiverProxy = new ReceiverProxy(ctx.receiverCommandBuffer(), ctx.newConnectedSubscriptionEventQueue());
+        receiverProxy = new ReceiverProxy(ctx.receiverCommandQueue());
 
         receiver = new Receiver(ctx);
 
@@ -124,7 +124,7 @@ public class ReceiverTest
     {
         LOGGER.logInvocation();
 
-        receiverProxy.newSubscription(URI, ONE_CHANNEL);  // ADD_SUBSCRIPTION from client
+        receiverProxy.addSubscription(URI, ONE_CHANNEL);  // ADD_SUBSCRIPTION from client
 
         receiver.doWork();
 
@@ -147,7 +147,7 @@ public class ReceiverTest
                 assertThat(messageHeader.destination(), is(URI));
 
                 // pass in new term buffer from media conductor, which should trigger SM
-                receiverProxy.newConnectedSubscription(new NewConnectedSubscriptionEvent(destination, SESSION_ID,
+                receiverProxy.newConnectedSubscription(new NewConnectedSubscriptionCmd(destination, SESSION_ID,
                                                                                  CHANNEL_ID, TERM_ID, rotator));
             });
 
@@ -174,7 +174,7 @@ public class ReceiverTest
     {
         LOGGER.logInvocation();
 
-        receiverProxy.newSubscription(URI, ONE_CHANNEL);  // ADD_SUBSCRIPTION from client
+        receiverProxy.addSubscription(URI, ONE_CHANNEL);  // ADD_SUBSCRIPTION from client
 
         receiver.doWork();
 
@@ -191,7 +191,7 @@ public class ReceiverTest
             {
               assertThat(msgTypeId, is(ControlProtocolEvents.CREATE_CONNECTED_SUBSCRIPTION));
               // pass in new term buffer from media conductor, which should trigger SM
-              receiverProxy.newConnectedSubscription(new NewConnectedSubscriptionEvent(destination, SESSION_ID,
+              receiverProxy.newConnectedSubscription(new NewConnectedSubscriptionCmd(destination, SESSION_ID,
                                                                                CHANNEL_ID, TERM_ID, rotator));
             });
 
@@ -223,7 +223,7 @@ public class ReceiverTest
     {
         LOGGER.logInvocation();
 
-        receiverProxy.newSubscription(URI, ONE_CHANNEL);  // ADD_SUBSCRIPTION from client
+        receiverProxy.addSubscription(URI, ONE_CHANNEL);  // ADD_SUBSCRIPTION from client
 
         receiver.doWork();
 
@@ -240,7 +240,7 @@ public class ReceiverTest
             {
               assertThat(msgTypeId, is(ControlProtocolEvents.CREATE_CONNECTED_SUBSCRIPTION));
               // pass in new term buffer from media conductor, which should trigger SM
-              receiverProxy.newConnectedSubscription(new NewConnectedSubscriptionEvent(destination, SESSION_ID,
+              receiverProxy.newConnectedSubscription(new NewConnectedSubscriptionCmd(destination, SESSION_ID,
                                                                                CHANNEL_ID, TERM_ID, rotator));
             });
 
@@ -275,7 +275,7 @@ public class ReceiverTest
     {
         LOGGER.logInvocation();
 
-        receiverProxy.newSubscription(URI, ONE_CHANNEL);  // ADD_SUBSCRIPTION from client
+        receiverProxy.addSubscription(URI, ONE_CHANNEL);  // ADD_SUBSCRIPTION from client
 
         receiver.doWork();
 
@@ -292,7 +292,7 @@ public class ReceiverTest
             {
               assertThat(msgTypeId, is(ControlProtocolEvents.CREATE_CONNECTED_SUBSCRIPTION));
               // pass in new term buffer from media conductor, which should trigger SM
-              receiverProxy.newConnectedSubscription(new NewConnectedSubscriptionEvent(destination, SESSION_ID,
+              receiverProxy.newConnectedSubscription(new NewConnectedSubscriptionCmd(destination, SESSION_ID,
                                                                                CHANNEL_ID, TERM_ID, rotator));
             });
 
@@ -328,7 +328,7 @@ public class ReceiverTest
     {
         LOGGER.logInvocation();
 
-        receiverProxy.newSubscription(URI, ONE_CHANNEL);  // ADD_SUBSCRIPTION from client
+        receiverProxy.addSubscription(URI, ONE_CHANNEL);  // ADD_SUBSCRIPTION from client
 
         receiver.doWork();
 
@@ -342,7 +342,7 @@ public class ReceiverTest
 
         final int messagesRead = toConductorBuffer.read(
             (msgTypeId, buffer, index, length) ->
-                receiverProxy.newConnectedSubscription(new NewConnectedSubscriptionEvent(destination, SESSION_ID,
+                receiverProxy.newConnectedSubscription(new NewConnectedSubscriptionCmd(destination, SESSION_ID,
                                                                                  CHANNEL_ID, TERM_ID, rotator)));
 
         assertThat(messagesRead, is(1));

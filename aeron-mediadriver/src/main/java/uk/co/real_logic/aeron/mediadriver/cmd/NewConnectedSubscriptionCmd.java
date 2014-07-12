@@ -13,34 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.mediadriver;
+package uk.co.real_logic.aeron.mediadriver.cmd;
 
+import uk.co.real_logic.aeron.mediadriver.UdpDestination;
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
 
-public class NewConnectedSubscriptionEvent
+public class NewConnectedSubscriptionCmd
 {
-    public static final int STATE_PENDING = 1;
-    public static final int STATE_READY = 2;
-
     private final long sessionId;
     private final long channelId;
     private final long termId;
     private final BufferRotator bufferRotator;
     private final UdpDestination destination;
-    private int state;
 
-    public NewConnectedSubscriptionEvent(final UdpDestination destination,
-                                         final long sessionId,
-                                         final long channelId,
-                                         final long termId,
-                                         final BufferRotator bufferRotator)
+    public NewConnectedSubscriptionCmd(final UdpDestination destination,
+                                       final long sessionId,
+                                       final long channelId,
+                                       final long termId,
+                                       final BufferRotator bufferRotator)
     {
         this.sessionId = sessionId;
         this.channelId = channelId;
         this.termId = termId;
         this.bufferRotator = bufferRotator;
         this.destination = destination;
-        this.state = STATE_PENDING;
     }
 
     public UdpDestination destination()
@@ -61,16 +57,6 @@ public class NewConnectedSubscriptionEvent
     public long termId()
     {
         return termId;
-    }
-
-    public int state()
-    {
-        return state;
-    }
-
-    public void state(final int state)
-    {
-        this.state = state;
     }
 
     public BufferRotator bufferRotator()

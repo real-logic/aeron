@@ -250,7 +250,6 @@ public class MediaDriver implements AutoCloseable
     {
         ctx = context
             .driverCommandBuffer(COMMAND_BUFFER_SZ)
-            .receiverCommandBuffer(COMMAND_BUFFER_SZ)
             .receiverNioSelector(new NioSelector())
             .conductorNioSelector(new NioSelector())
             .unicastSenderFlowControl(UnicastSenderControlStrategy::new)
@@ -258,15 +257,15 @@ public class MediaDriver implements AutoCloseable
             .connectedSubscriptions(new AtomicArray<>())
             .publications(new AtomicArray<>())
             .conductorTimerWheel(new TimerWheel(MEDIA_CONDUCTOR_TICK_DURATION_US,
-                    TimeUnit.MICROSECONDS,
-                    MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
-            .newConnectedSubscriptionEventQueue(new OneToOneConcurrentArrayQueue<>(1024))
+                                                TimeUnit.MICROSECONDS,
+                                                MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
+            .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .conductorIdleStrategy(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                    AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
+                                                         AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
             .senderIdleStrategy(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                    AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
+                                                      AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
             .receiverIdleStrategy(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                    AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
+                                                        AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
             .conclude();
 
         this.adminDirFile = new File(ctx.adminDirName());
@@ -437,14 +436,13 @@ public class MediaDriver implements AutoCloseable
     public static class MediaDriverContext extends CommonContext
     {
         private RingBuffer driverCommandBuffer;
-        private RingBuffer receiverCommandBuffer;
         private BufferManagement bufferManagement;
         private NioSelector receiverNioSelector;
         private NioSelector conductorNioSelector;
         private Supplier<SenderControlStrategy> unicastSenderFlowControl;
         private Supplier<SenderControlStrategy> multicastSenderFlowControl;
         private TimerWheel conductorTimerWheel;
-        private Queue<NewConnectedSubscriptionEvent> newConnectedSubscriptionEventQueue;
+        private Queue<? super Object> receiverCommandQueue;
         private ReceiverProxy receiverProxy;
         private MediaConductorProxy mediaConductorProxy;
         private AgentIdleStrategy conductorIdleStrategy;
@@ -475,7 +473,7 @@ public class MediaDriver implements AutoCloseable
 
             fromClientCommands(new ManyToOneRingBuffer(new AtomicBuffer(toDriverBuffer)));
 
-            receiverProxy(new ReceiverProxy(receiverCommandBuffer(), newConnectedSubscriptionEventQueue()));
+            receiverProxy(new ReceiverProxy(receiverCommandQueue()));
             mediaConductorProxy(new MediaConductorProxy(driverCommandBuffer()));
 
             bufferManagement(newMappedBufferManager(dataDirName()));
@@ -484,14 +482,14 @@ public class MediaDriver implements AutoCloseable
             {
                 if (counterLabelsBuffer() == null)
                 {
-                    final MappedByteBuffer buffer = mapNewFile(new File(countersDirName(), LABELS_FILE), COUNTER_BUFFERS_SZ);
-                    counterLabelsBuffer(new AtomicBuffer(buffer));
+                    counterLabelsBuffer(new AtomicBuffer(mapNewFile(new File(countersDirName(), LABELS_FILE),
+                                                                    COUNTER_BUFFERS_SZ)));
                 }
 
                 if (counterValuesBuffer() == null)
                 {
-                    final MappedByteBuffer buffer = mapNewFile(new File(countersDirName(), VALUES_FILE), COUNTER_BUFFERS_SZ);
-                    counterValuesBuffer(new AtomicBuffer(buffer));
+                    counterValuesBuffer(new AtomicBuffer(mapNewFile(new File(countersDirName(), VALUES_FILE),
+                                                                    COUNTER_BUFFERS_SZ)));
                 }
 
                 statusBufferManager(new StatusBufferManager(counterLabelsBuffer(), counterValuesBuffer()));
@@ -511,12 +509,6 @@ public class MediaDriver implements AutoCloseable
         public MediaDriverContext driverCommandBuffer(final int size)
         {
             this.driverCommandBuffer = createNewCommandBuffer(size);
-            return this;
-        }
-
-        public MediaDriverContext receiverCommandBuffer(final int size)
-        {
-            this.receiverCommandBuffer = createNewCommandBuffer(size);
             return this;
         }
 
@@ -556,10 +548,9 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public MediaDriverContext newConnectedSubscriptionEventQueue(
-            final Queue<NewConnectedSubscriptionEvent> newConnectedSubscriptionEventQueue)
+        public MediaDriverContext receiverCommandQueue(final Queue<? super Object> receiverCommandQueue)
         {
-            this.newConnectedSubscriptionEventQueue = newConnectedSubscriptionEventQueue;
+            this.receiverCommandQueue = receiverCommandQueue;
             return this;
         }
 
@@ -629,11 +620,6 @@ public class MediaDriver implements AutoCloseable
             return driverCommandBuffer;
         }
 
-        public RingBuffer receiverCommandBuffer()
-        {
-            return receiverCommandBuffer;
-        }
-
         public BufferManagement bufferManagement()
         {
             return bufferManagement;
@@ -664,9 +650,9 @@ public class MediaDriver implements AutoCloseable
             return conductorTimerWheel;
         }
 
-        public Queue<NewConnectedSubscriptionEvent> newConnectedSubscriptionEventQueue()
+        public Queue<? super Object> receiverCommandQueue()
         {
-            return newConnectedSubscriptionEventQueue;
+            return receiverCommandQueue;
         }
 
         public ReceiverProxy receiverProxy()

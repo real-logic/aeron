@@ -107,7 +107,7 @@ public class ReceiverTest
         senderChannel.bind(senderAddress);
         senderChannel.configureBlocking(false);
 
-        logReaders = rotator.buffers().map((log) -> new LogReader(log.logBuffer(), log.stateBuffer()))
+        logReaders = rotator.buffers().map((rawLog) -> new LogReader(rawLog.logBuffer(), rawLog.stateBuffer()))
                                       .toArray(LogReader[]::new);
     }
 
@@ -147,8 +147,8 @@ public class ReceiverTest
                 assertThat(messageHeader.destination(), is(URI));
 
                 // pass in new term buffer from media conductor, which should trigger SM
-                receiverProxy.newConnectedSubscription(new NewConnectedSubscriptionCmd(destination, SESSION_ID,
-                                                                                 CHANNEL_ID, TERM_ID, rotator));
+                receiverProxy.newConnectedSubscription(
+                    new NewConnectedSubscriptionCmd(destination, SESSION_ID, CHANNEL_ID, TERM_ID, rotator));
             });
 
         assertThat(messagesRead, is(1));
@@ -191,8 +191,8 @@ public class ReceiverTest
             {
               assertThat(msgTypeId, is(ControlProtocolEvents.CREATE_CONNECTED_SUBSCRIPTION));
               // pass in new term buffer from media conductor, which should trigger SM
-              receiverProxy.newConnectedSubscription(new NewConnectedSubscriptionCmd(destination, SESSION_ID,
-                                                                               CHANNEL_ID, TERM_ID, rotator));
+              receiverProxy.newConnectedSubscription(
+                  new NewConnectedSubscriptionCmd(destination, SESSION_ID,CHANNEL_ID, TERM_ID, rotator));
             });
 
         assertThat(messagesRead, is(1));
@@ -240,8 +240,8 @@ public class ReceiverTest
             {
               assertThat(msgTypeId, is(ControlProtocolEvents.CREATE_CONNECTED_SUBSCRIPTION));
               // pass in new term buffer from media conductor, which should trigger SM
-              receiverProxy.newConnectedSubscription(new NewConnectedSubscriptionCmd(destination, SESSION_ID,
-                                                                               CHANNEL_ID, TERM_ID, rotator));
+              receiverProxy.newConnectedSubscription(
+                  new NewConnectedSubscriptionCmd(destination, SESSION_ID, CHANNEL_ID, TERM_ID, rotator));
             });
 
         assertThat(messagesRead, is(1));
@@ -292,8 +292,8 @@ public class ReceiverTest
             {
               assertThat(msgTypeId, is(ControlProtocolEvents.CREATE_CONNECTED_SUBSCRIPTION));
               // pass in new term buffer from media conductor, which should trigger SM
-              receiverProxy.newConnectedSubscription(new NewConnectedSubscriptionCmd(destination, SESSION_ID,
-                                                                               CHANNEL_ID, TERM_ID, rotator));
+              receiverProxy.newConnectedSubscription(
+                  new NewConnectedSubscriptionCmd(destination, SESSION_ID, CHANNEL_ID, TERM_ID, rotator));
             });
 
         assertThat(messagesRead, is(1));
@@ -342,8 +342,8 @@ public class ReceiverTest
 
         final int messagesRead = toConductorBuffer.read(
             (msgTypeId, buffer, index, length) ->
-                receiverProxy.newConnectedSubscription(new NewConnectedSubscriptionCmd(destination, SESSION_ID,
-                                                                                 CHANNEL_ID, TERM_ID, rotator)));
+                receiverProxy.newConnectedSubscription(
+                    new NewConnectedSubscriptionCmd(destination, SESSION_ID, CHANNEL_ID, TERM_ID, rotator)));
 
         assertThat(messagesRead, is(1));
 

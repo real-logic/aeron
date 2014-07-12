@@ -159,7 +159,7 @@ public class MediaConductorTest
         mediaConductor.doWork();
         receiver.doWork();
 
-        assertNotNull(receiver.frameHandler(UdpDestination.parse(DESTINATION_URI + 4000)));
+        assertNotNull(receiver.getFrameHandler(UdpDestination.parse(DESTINATION_URI + 4000)));
     }
 
     @Test
@@ -173,7 +173,7 @@ public class MediaConductorTest
         mediaConductor.doWork();
         receiver.doWork();
 
-        assertNull(receiver.frameHandler(UdpDestination.parse(DESTINATION_URI + 4000)));
+        assertNull(receiver.getFrameHandler(UdpDestination.parse(DESTINATION_URI + 4000)));
     }
 
     @Test
@@ -237,7 +237,7 @@ public class MediaConductorTest
         mediaConductor.doWork();
         receiver.doWork();
 
-        final DataFrameHandler frameHandler = receiver.frameHandler(destination);
+        final DataFrameHandler frameHandler = receiver.getFrameHandler(destination);
 
         assertNotNull(frameHandler);
         assertThat(frameHandler.subscriptionMap().size(), is(3));
@@ -247,7 +247,7 @@ public class MediaConductorTest
         mediaConductor.doWork();
         receiver.doWork();
 
-        assertNotNull(receiver.frameHandler(destination));
+        assertNotNull(receiver.getFrameHandler(destination));
         assertThat(frameHandler.subscriptionMap().size(), is(1));
     }
 
@@ -263,7 +263,7 @@ public class MediaConductorTest
         mediaConductor.doWork();
         receiver.doWork();
 
-        final DataFrameHandler frameHandler = receiver.frameHandler(destination);
+        final DataFrameHandler frameHandler = receiver.getFrameHandler(destination);
 
         assertNotNull(frameHandler);
         assertThat(frameHandler.subscriptionMap().size(), is(3));
@@ -273,7 +273,7 @@ public class MediaConductorTest
         mediaConductor.doWork();
         receiver.doWork();
 
-        assertNotNull(receiver.frameHandler(destination));
+        assertNotNull(receiver.getFrameHandler(destination));
         assertThat(frameHandler.subscriptionMap().size(), is(1));
 
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, ONE_CHANNEL);
@@ -281,7 +281,7 @@ public class MediaConductorTest
         mediaConductor.doWork();
         receiver.doWork();
 
-        assertNull(receiver.frameHandler(destination));
+        assertNull(receiver.getFrameHandler(destination));
     }
 
     @Test

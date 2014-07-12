@@ -97,7 +97,7 @@ public class Receiver extends Agent
             }
             catch (final Exception ex)
             {
-
+                // TODO: Send error to client - however best if validated by conductor so receiver not delayed
                 LOGGER.logException(ex);
             }
         }
@@ -124,20 +124,20 @@ public class Receiver extends Agent
         return nioSelector;
     }
 
-    public DataFrameHandler frameHandler(final UdpDestination destination)
+    public DataFrameHandler getFrameHandler(final UdpDestination destination)
     {
         return frameHandlerByDestinationMap.get(destination);
     }
 
     private void onAddSubscription(final String destination, final long[] channelIds) throws Exception
     {
-        final UdpDestination rcvDestination = UdpDestination.parse(destination);
-        DataFrameHandler frameHandler = frameHandler(rcvDestination);
+        final UdpDestination udpDestination = UdpDestination.parse(destination);
+        DataFrameHandler frameHandler = getFrameHandler(udpDestination);
 
         if (null == frameHandler)
         {
-            frameHandler = new DataFrameHandler(rcvDestination, nioSelector, conductorProxy, connectedSubscriptions);
-            frameHandlerByDestinationMap.put(rcvDestination, frameHandler);
+            frameHandler = new DataFrameHandler(udpDestination, nioSelector, conductorProxy, connectedSubscriptions);
+            frameHandlerByDestinationMap.put(udpDestination, frameHandler);
         }
 
         frameHandler.addSubscriptions(channelIds);
@@ -145,8 +145,8 @@ public class Receiver extends Agent
 
     private void onRemoveSubscription(final String destination, final long[] channelIds)
     {
-        final UdpDestination rcvDestination = UdpDestination.parse(destination);
-        final DataFrameHandler frameHandler = frameHandler(rcvDestination);
+        final UdpDestination udpDestination = UdpDestination.parse(destination);
+        final DataFrameHandler frameHandler = getFrameHandler(udpDestination);
 
         if (null == frameHandler)
         {
@@ -157,14 +157,14 @@ public class Receiver extends Agent
 
         if (0 == frameHandler.subscribedChannelCount())
         {
-            frameHandlerByDestinationMap.remove(rcvDestination);
+            frameHandlerByDestinationMap.remove(udpDestination);
             frameHandler.close();
         }
     }
 
     private void onNewConnectedSubscription(final NewConnectedSubscriptionCmd cmd)
     {
-        final DataFrameHandler frameHandler = frameHandler(cmd.destination());
+        final DataFrameHandler frameHandler = getFrameHandler(cmd.destination());
         FeedbackDelayGenerator delayGenerator;
 
         if (null == frameHandler)
@@ -174,9 +174,11 @@ public class Receiver extends Agent
             return;
         }
 
-        final GapScanner[] scanners = cmd.bufferRotator().buffers()
-            .map((rawLog) -> new GapScanner(rawLog.logBuffer(), rawLog.stateBuffer()))
-            .toArray(GapScanner[]::new);
+        final GapScanner[] scanners =
+            cmd.bufferRotator()
+               .buffers()
+               .map((rawLog) -> new GapScanner(rawLog.logBuffer(), rawLog.stateBuffer()))
+               .toArray(GapScanner[]::new);
 
         if (cmd.destination().isMulticast())
         {

@@ -128,7 +128,7 @@ public class ReceiverTest
 
         receiver.doWork();
 
-        DataFrameHandler frameHandler = receiver.frameHandler(destination);
+        DataFrameHandler frameHandler = receiver.getFrameHandler(destination);
 
         assertNotNull(frameHandler);
 
@@ -178,7 +178,7 @@ public class ReceiverTest
 
         receiver.doWork();
 
-        DataFrameHandler frameHandler = receiver.frameHandler(destination);
+        DataFrameHandler frameHandler = receiver.getFrameHandler(destination);
 
         assertNotNull(frameHandler);
 
@@ -227,7 +227,7 @@ public class ReceiverTest
 
         receiver.doWork();
 
-        final DataFrameHandler frameHandler = receiver.frameHandler(destination);
+        final DataFrameHandler frameHandler = receiver.getFrameHandler(destination);
 
         assertNotNull(frameHandler);
 
@@ -279,7 +279,7 @@ public class ReceiverTest
 
         receiver.doWork();
 
-        final DataFrameHandler frameHandler = receiver.frameHandler(destination);
+        final DataFrameHandler frameHandler = receiver.getFrameHandler(destination);
 
         assertNotNull(frameHandler);
 
@@ -332,7 +332,7 @@ public class ReceiverTest
 
         receiver.doWork();
 
-        DataFrameHandler frameHandler = receiver.frameHandler(destination);
+        DataFrameHandler frameHandler = receiver.getFrameHandler(destination);
 
         assertNotNull(frameHandler);
 

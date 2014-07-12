@@ -22,10 +22,6 @@ public class BufferRotationDescriptor
 {
     public static final int BUFFER_COUNT = 3;
 
-    public static final int CLEAN_WINDOW = 2;
-
-    public static final long UNKNOWN_TERM_ID = -1;
-
     public static int rotateNext(final int current)
     {
         return BitUtil.next(current, BUFFER_COUNT);

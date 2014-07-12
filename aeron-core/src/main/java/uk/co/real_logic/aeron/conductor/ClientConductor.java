@@ -209,7 +209,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
     public void onNewConnectedSubscription(final String destination,
                                            final long sessionId,
                                            final long channelId,
-                                           final long currentTermId,
+                                           final long initialTermId,
                                            final LogBuffersMessageFlyweight message) throws IOException
     {
         final Subscription subscription = subscriptionMap.get(destination, channelId);
@@ -224,7 +224,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
                 logs[i] = new LogReader(logBuffer, stateBuffer);
             }
 
-            subscription.onLogBufferMapped(sessionId, currentTermId, logs);
+            subscription.onLogBufferMapped(sessionId, initialTermId, logs);
         }
     }
 

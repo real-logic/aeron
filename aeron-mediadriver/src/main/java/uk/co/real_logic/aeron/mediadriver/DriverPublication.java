@@ -54,7 +54,7 @@ public class DriverPublication
     private final long sessionId;
     private final long channelId;
 
-    private final AtomicLong currentTermId; // TODO: is this ever read across threads? Does it need to be atomic?
+    private final AtomicLong activeTermId;
 
     // TODO: temporary. Replace with counter.
     private final AtomicLong timeOfLastSendOrHeartbeat;
@@ -77,7 +77,7 @@ public class DriverPublication
     private final DataHeaderFlyweight retransmitDataHeader = new DataHeaderFlyweight();
 
     private int nextTermOffset = 0;
-    private int currentIndex = 0;
+    private int activeIndex = 0;
     private int statusMessagesSeen = 0;
     private int shiftsForTermId;
 
@@ -110,7 +110,7 @@ public class DriverPublication
         rightEdge = new AtomicLong(controlStrategy.initialRightEdge(initialTermId, bufferRotator.sizeOfTermBuffer()));
         shiftsForTermId = Long.numberOfTrailingZeros(bufferRotator.sizeOfTermBuffer());
 
-        currentTermId = new AtomicLong(initialTermId);
+        activeTermId = new AtomicLong(initialTermId);
         timeOfLastSendOrHeartbeat = new AtomicLong(this.timerWheel.now());
     }
 
@@ -119,17 +119,17 @@ public class DriverPublication
         int workCount = 0;
         try
         {
-            final long nextOffset = (currentTermId.get() << shiftsForTermId) + nextTermOffset;
+            final long nextOffset = (activeTermId.get() << shiftsForTermId) + nextTermOffset;
             final int availableWindow = (int)(rightEdge.get() - nextOffset);
             final int scanLimit = Math.min(availableWindow, mtuLength);
 
-            final LogScanner scanner = scanners[currentIndex];
+            final LogScanner scanner = scanners[activeIndex];
             workCount += scanner.scanNext(this::onSendFrame, scanLimit);
 
             if (scanner.isComplete())
             {
-                currentIndex = BufferRotationDescriptor.rotateNext(currentIndex);
-                currentTermId.lazySet(currentTermId.get() + 1);
+                activeIndex = BufferRotationDescriptor.rotateNext(activeIndex);
+                activeTermId.lazySet(activeTermId.get() + 1);
             }
         }
         catch (final Exception ex)
@@ -248,9 +248,9 @@ public class DriverPublication
 
     private int determineIndexByTermId(final long termId)
     {
-        if (termId == currentTermId.get())
+        if (termId == activeTermId.get())
         {
-            return currentIndex;
+            return activeIndex;
         }
 
         // TODO: this needs to account for rotation
@@ -265,7 +265,7 @@ public class DriverPublication
     {
         // at this point sendBuffer wraps the same underlying
         // ByteBuffer as the buffer parameter
-        final ByteBuffer sendBuffer = termSendBuffers[currentIndex];
+        final ByteBuffer sendBuffer = termSendBuffers[activeIndex];
 
         // could wrap and use DataHeader to grab specific fields, e.g. dataHeader.wrap(sendBuffer, offset);
         sendBuffer.limit(offset + length);
@@ -330,7 +330,7 @@ public class DriverPublication
 
         dataHeader.sessionId(sessionId)
                   .channelId(channelId)
-                  .termId(currentTermId.get())
+                  .termId(activeTermId.get())
                   .termOffset(nextTermOffset)
                   .frameLength(DataHeaderFlyweight.HEADER_LENGTH)
                   .headerType(HeaderFlyweight.HDR_TYPE_DATA)

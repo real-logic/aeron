@@ -41,14 +41,9 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
     private static final String STATE_SUFFIX = "-state";
 
     private final FileChannel logTemplate;
-    private final FileChannel stateTemplate;
     private final int logBufferSize;
     private final int stateBufferSize;
     private final MappedRawLog[] buffers;
-
-    private MappedRawLog current;
-    private MappedRawLog clean;
-    private MappedRawLog dirty;
 
     MappedBufferRotator(final File directory,
                         final FileChannel logTemplate,
@@ -60,23 +55,23 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
 
         this.logTemplate = logTemplate;
         this.logBufferSize = logBufferSize;
-        this.stateTemplate = stateTemplate;
         this.stateBufferSize = stateBufferSize;
 
         try
         {
             requireEqual(logTemplate.size(), logBufferSize);
             requireEqual(stateTemplate.size(), stateBufferSize);
-            current = newTerm("0", directory);
-            clean = newTerm("1", directory);
-            dirty = newTerm("2", directory);
+            final MappedRawLog active = newTerm("0", directory);
+            final MappedRawLog clean = newTerm("1", directory);
+            final MappedRawLog dirty = newTerm("2", directory);
+
+
+            buffers = new MappedRawLog[]{active, clean, dirty};
         }
         catch (final IOException e)
         {
             throw new IllegalStateException(e);
         }
-
-        buffers = new MappedRawLog[]{current, clean, dirty};
     }
 
     public void close()
@@ -92,16 +87,6 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
     public int sizeOfTermBuffer()
     {
         return logBufferSize - RingBufferDescriptor.TRAILER_LENGTH;
-    }
-
-    public void rotate() throws IOException
-    {
-        final MappedRawLog newBuffer = clean;
-
-        dirty.reset(logTemplate, stateTemplate);
-        clean = dirty;
-        dirty = current;
-        current = newBuffer;
     }
 
     public void appendBufferLocationsTo(final LogBuffersMessageFlyweight newBufferMessage)

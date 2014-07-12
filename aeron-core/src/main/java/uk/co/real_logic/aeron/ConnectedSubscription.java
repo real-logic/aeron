@@ -37,19 +37,19 @@ public class ConnectedSubscription
     private final LogReader[] logReaders;
     private final long sessionId;
     private final Subscription.DataHandler dataHandler;
-    private final AtomicLong currentTermId;
+    private final AtomicLong activeTermId;
 
-    private int currentBufferIndex = 0;
+    private int activeIndex = 0;
 
     public ConnectedSubscription(final LogReader[] readers,
                                  final long sessionId,
-                                 final long currentTermId,
+                                 final long initialTermId,
                                  final Subscription.DataHandler dataHandler)
     {
         this.logReaders = readers;
         this.sessionId = sessionId;
         this.dataHandler = dataHandler;
-        this.currentTermId = new AtomicLong(currentTermId);
+        this.activeTermId = new AtomicLong(initialTermId);
     }
 
     public long sessionId()
@@ -59,20 +59,20 @@ public class ConnectedSubscription
 
     public int poll(final int frameCountLimit)
     {
-        final int currentBufferIndex = this.currentBufferIndex;
-        LogReader logReader = logReaders[currentBufferIndex];
+        final int activeIndex = this.activeIndex;
+        LogReader logReader = logReaders[activeIndex];
 
         if (logReader.isComplete())
         {
-            final int nextIndex = rotateNext(currentBufferIndex);
+            final int nextIndex = rotateNext(activeIndex);
             logReader = logReaders[nextIndex];
             if (logReader.status() != LogBufferDescriptor.CLEAN)
             {
                 return 0;
             }
 
-            currentTermId.lazySet(currentTermId.get() + 1);
-            this.currentBufferIndex = nextIndex;
+            activeTermId.lazySet(activeTermId.get() + 1);
+            this.activeIndex = nextIndex;
             logReader.seek(0);
         }
 

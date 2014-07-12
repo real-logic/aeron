@@ -87,7 +87,7 @@ public class LossHandlerTest
         handler = new LossHandler(scanners, wheel, delayGenerator, sendNakHandler);
         dataHeader.wrap(rcvBuffer, 0);
 
-        handler.currentTermId(TERM_ID);
+        handler.activeTermId(TERM_ID);
     }
 
     @Before
@@ -197,7 +197,7 @@ public class LossHandlerTest
     public void shouldHandleImmediateNak()
     {
         handler = new LossHandler(scanners, wheel, delayGeneratorWithImmediate, sendNakHandler);
-        handler.currentTermId(TERM_ID);
+        handler.activeTermId(TERM_ID);
 
         rcvDataFrame(offsetOfMessage(0));
         rcvDataFrame(offsetOfMessage(2));
@@ -222,7 +222,7 @@ public class LossHandlerTest
     public void shouldOnlySendNaksOnceOnMultipleScans()
     {
         handler = new LossHandler(scanners, wheel, delayGeneratorWithImmediate, sendNakHandler);
-        handler.currentTermId(TERM_ID);
+        handler.activeTermId(TERM_ID);
 
         rcvDataFrame(offsetOfMessage(0));
         rcvDataFrame(offsetOfMessage(2));

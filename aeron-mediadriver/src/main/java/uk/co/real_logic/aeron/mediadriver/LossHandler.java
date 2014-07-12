@@ -54,9 +54,9 @@ public class LossHandler
     private SendNakHandler sendNakHandler;
     private TimerWheel.Timer timer;
 
-    private int currentIndex = 0;
+    private int activeIndex = 0;
     private int scanCursor = 0;
-    private long currentTermId;
+    private long activeTermId;
 
     private long nakSentTimestamp;
 
@@ -98,7 +98,7 @@ public class LossHandler
             this.gaps[i] = new Gap();
         }
 
-        this.currentIndex = 0;
+        this.activeIndex = 0;
     }
 
     /**
@@ -112,13 +112,13 @@ public class LossHandler
     }
 
     /**
-     * Set current Term Id for the active buffer
+     * Set active Term Id for the active buffer
      *
      * @param termId for the active buffer
      */
-    public void currentTermId(final long termId)
+    public void activeTermId(final long termId)
     {
-        this.currentTermId = termId;
+        this.activeTermId = termId;
     }
 
     /**
@@ -130,10 +130,10 @@ public class LossHandler
     {
         scanCursor = 0;
 
-        scanners[currentIndex].scan(this::onGap);
+        scanners[activeIndex].scan(this::onGap);
         onScanComplete();
 
-        // TODO: determine if the buffer is complete and we need to rotate currentIndex for next scanner
+        // TODO: determine if the buffer is complete and we need to rotate activeIndex for next scanner
         // if (0 == gaps && ... )
     }
 
@@ -158,17 +158,17 @@ public class LossHandler
      */
     public int highestContiguousOffset()
     {
-        return scanners[currentIndex].tailVolatile();
+        return scanners[activeIndex].tailVolatile();
     }
 
     /**
-     * Return the current Term Id being used.
+     * Return the active Term Id being used.
      *
-     * @return current Term Id
+     * @return active Term Id
      */
-    public long currentTermId()
+    public long activeTermId()
     {
-        return currentTermId;
+        return activeTermId;
     }
 
     /**
@@ -191,7 +191,7 @@ public class LossHandler
     {
         if (scanCursor < gaps.length)
         {
-            gaps[scanCursor].reset(currentTermId, offset, length);
+            gaps[scanCursor].reset(activeTermId, offset, length);
 
             scanCursor++;
 

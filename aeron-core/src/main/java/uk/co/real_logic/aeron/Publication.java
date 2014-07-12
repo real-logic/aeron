@@ -43,11 +43,11 @@ public class Publication
     private final long sessionId;
     private final LogAppender[] logAppenders;
     private final LimitBarrier limitBarrier;
-    private final AtomicLong currentTermId;
+    private final AtomicLong activeTermId;
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
     private int refCount = 0;
-    private int currentBufferIndex = 0;
+    private int activeIndex = 0;
 
     public Publication(final ClientConductor conductor,
                        final String destination,
@@ -62,7 +62,7 @@ public class Publication
         this.destination = destination;
         this.channelId = channelId;
         this.sessionId = sessionId;
-        this.currentTermId = new AtomicLong(initialTermId);
+        this.activeTermId = new AtomicLong(initialTermId);
         this.logAppenders = logAppenders;
         this.limitBarrier = limitBarrier;
     }
@@ -144,7 +144,7 @@ public class Publication
      */
     public boolean offer(final AtomicBuffer buffer, final int offset, final int length)
     {
-        final LogAppender logAppender = logAppenders[currentBufferIndex];
+        final LogAppender logAppender = logAppenders[activeIndex];
         if (isPausedDueToFlowControl(logAppender, length))
         {
             return false;
@@ -163,13 +163,13 @@ public class Publication
 
     private void nextTerm()
     {
-        final int nextIndex = rotateNext(currentBufferIndex);
+        final int nextIndex = rotateNext(activeIndex);
 
         final LogAppender nextAppender = logAppenders[nextIndex];
         if (CLEAN != nextAppender.status())
         {
             System.err.println(String.format("Term not clean: destination=%s channelId=%d, required termId=%d",
-                                             destination, channelId, currentTermId.get() + 1));
+                                             destination, channelId, activeTermId.get() + 1));
 
             if (nextAppender.compareAndSetStatus(NEEDS_CLEANING, IN_CLEANING))
             {
@@ -184,15 +184,15 @@ public class Publication
             }
         }
 
-        final long currentTermId = this.currentTermId.get();
-        final long newTermId = currentTermId + 1;
+        final long activeTermId = this.activeTermId.get();
+        final long newTermId = activeTermId + 1;
 
         dataHeader.wrap(nextAppender.defaultHeader());
         dataHeader.termId(newTermId);
 
-        this.currentTermId.lazySet(newTermId);
-        final int previousIndex = rotatePrevious(currentBufferIndex);
-        currentBufferIndex = nextIndex;
+        this.activeTermId.lazySet(newTermId);
+        final int previousIndex = rotatePrevious(activeIndex);
+        activeIndex = nextIndex;
         logAppenders[previousIndex].statusOrdered(NEEDS_CLEANING);
     }
 

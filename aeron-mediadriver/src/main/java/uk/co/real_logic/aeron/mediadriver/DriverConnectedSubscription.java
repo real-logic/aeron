@@ -63,8 +63,8 @@ public class DriverConnectedSubscription
     private final long sessionId;
     private final long channelId;
 
-    private final AtomicLong currentTermId = new AtomicLong(UNKNOWN_TERM_ID);
-    private int currentBufferIndex = 0;
+    private final AtomicLong activeTermId = new AtomicLong();
+    private int activeIndex = 0;
 
     private LogRebuilder[] rebuilders = EMPTY_REBUILDERS;
     private LossHandler lossHandler;
@@ -94,7 +94,7 @@ public class DriverConnectedSubscription
                                      final LossHandler lossHandler,
                                      final SendSmHandler sendSmHandler)
     {
-        currentTermId.lazySet(initialTermId);
+        activeTermId.lazySet(initialTermId);
         rebuilders = rotator.buffers()
                             .map((rawLog) -> new LogRebuilder(rawLog.logBuffer(), rawLog.stateBuffer()))
                             .toArray(LogRebuilder[]::new);
@@ -162,30 +162,30 @@ public class DriverConnectedSubscription
     public void insertIntoTerm(final DataHeaderFlyweight header, final AtomicBuffer buffer, final long length)
     {
         final long termId = header.termId();
-        final long currentTermId = this.currentTermId.get();
+        final long activeTermId = this.activeTermId.get();
 
         // TODO: handle packets outside acceptable range - can be done with position tracking
 
-        if (termId == currentTermId)
+        if (termId == activeTermId)
         {
-            rebuilders[currentBufferIndex].insert(buffer, 0, (int)length);
+            rebuilders[activeIndex].insert(buffer, 0, (int)length);
         }
-        else if (termId == (currentTermId + 1))
+        else if (termId == (activeTermId + 1))
         {
-            nextTerm(termId, currentTermId);
-            rebuilders[currentBufferIndex].insert(buffer, 0, (int)length);
+            nextTerm(termId);
+            rebuilders[activeIndex].insert(buffer, 0, (int)length);
         }
     }
 
-    private void nextTerm(final long termId, final long currentTermId)
+    private void nextTerm(final long nextTermId)
     {
-        final int nextIndex = BufferRotationDescriptor.rotateNext(currentBufferIndex);
+        final int nextIndex = BufferRotationDescriptor.rotateNext(activeIndex);
         final LogRebuilder rebuilder = rebuilders[nextIndex];
 
         if (CLEAN != rebuilder.status())
         {
-            System.err.println(String.format("Term not clean: destination=%s channelId=%d, required termId=%d",
-                                             destination, channelId, currentTermId + 1));
+            System.err.println(String.format("Term not clean: destination=%s channelId=%d, required nextTermId=%d",
+                                             destination, channelId, nextTermId));
 
             if (rebuilder.compareAndSetStatus(NEEDS_CLEANING, IN_CLEANING))
             {
@@ -200,11 +200,11 @@ public class DriverConnectedSubscription
             }
         }
 
-        final int previousIndex = rotatePrevious(currentBufferIndex);
+        final int previousIndex = rotatePrevious(activeIndex);
         rebuilders[previousIndex].statusOrdered(NEEDS_CLEANING);
 
-        this.currentTermId.lazySet(termId);
-        currentBufferIndex = nextIndex;
+        this.activeTermId.lazySet(nextTermId);
+        activeIndex = nextIndex;
     }
 
     /**
@@ -227,10 +227,10 @@ public class DriverConnectedSubscription
          */
 
         final int currentSmTail = lossHandler.highestContiguousOffset();
-        final long currentSmTermId = lossHandler.currentTermId();
+        final long currentSmTermId = lossHandler.activeTermId();
 
         // if term has rotated for loss handler, then send an SM
-        if (lossHandler.currentTermId() != lastSmTermId)
+        if (lossHandler.activeTermId() != lastSmTermId)
         {
             lastSmTimestamp = currentTimestamp;
             return sendSm(currentSmTermId, currentSmTail, currentWindow);

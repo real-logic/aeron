@@ -393,10 +393,10 @@ public class MediaConductor extends Agent
             clientProxy.onNewLogBuffers(ON_NEW_CONNECTED_SUBSCRIPTION, sessionId, channelId, termId,
                                         destination, bufferRotator, 0, 0);
 
-            final NewConnectedSubscriptionCmd event =
+            final NewConnectedSubscriptionCmd cmd =
                 new NewConnectedSubscriptionCmd(udpDst, sessionId, channelId, termId, bufferRotator);
 
-            while (!receiverProxy.newConnectedSubscription(event))
+            while (!receiverProxy.newConnectedSubscription(cmd))
             {
                 // TODO: count errors
                 System.out.println("Error adding to connected subscription");

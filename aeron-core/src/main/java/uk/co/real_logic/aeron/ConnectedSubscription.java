@@ -23,7 +23,7 @@ import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.rotateNext;
+import static uk.co.real_logic.aeron.util.TermHelper.rotateNext;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.WORD_ALIGNMENT;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.flagsOffset;
 

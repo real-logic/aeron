@@ -27,7 +27,7 @@ import java.nio.channels.FileChannel;
 import java.util.stream.Stream;
 
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
-import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
+import static uk.co.real_logic.aeron.util.TermHelper.BUFFER_COUNT;
 
 /**
  * Encapsulates responsibility for rotating and reusing memory mapped files used by the log buffers.
@@ -75,10 +75,10 @@ class MappedTermBuffers implements TermBuffers, AutoCloseable
 
     public void close()
     {
-        buffers().forEach(MappedRawLog::close);
+        stream().forEach(MappedRawLog::close);
     }
 
-    public Stream<MappedRawLog> buffers()
+    public Stream<MappedRawLog> stream()
     {
         return Stream.of(buffers);
     }

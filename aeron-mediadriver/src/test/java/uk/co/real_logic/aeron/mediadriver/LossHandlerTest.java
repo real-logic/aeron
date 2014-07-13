@@ -19,7 +19,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.InOrder;
-import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
+import uk.co.real_logic.aeron.util.TermHelper;
 import uk.co.real_logic.aeron.util.StaticDelayGenerator;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -54,10 +54,10 @@ public class LossHandlerTest
     public static final StaticDelayGenerator delayGeneratorWithImmediate =
             new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(20), true);
 
-    private final AtomicBuffer[] logBuffers = new AtomicBuffer[BufferRotationDescriptor.BUFFER_COUNT];
-    private final AtomicBuffer[] stateBuffers = new AtomicBuffer[BufferRotationDescriptor.BUFFER_COUNT];
-    private final LogRebuilder[] rebuilders = new LogRebuilder[BufferRotationDescriptor.BUFFER_COUNT];
-    private final GapScanner[] scanners = new GapScanner[BufferRotationDescriptor.BUFFER_COUNT];
+    private final AtomicBuffer[] logBuffers = new AtomicBuffer[TermHelper.BUFFER_COUNT];
+    private final AtomicBuffer[] stateBuffers = new AtomicBuffer[TermHelper.BUFFER_COUNT];
+    private final LogRebuilder[] rebuilders = new LogRebuilder[TermHelper.BUFFER_COUNT];
+    private final GapScanner[] scanners = new GapScanner[TermHelper.BUFFER_COUNT];
 
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final AtomicBuffer rcvBuffer = new AtomicBuffer(new byte[MESSAGE_LENGTH]);
@@ -69,7 +69,7 @@ public class LossHandlerTest
 
     public LossHandlerTest()
     {
-        for (int i = 0; i < BufferRotationDescriptor.BUFFER_COUNT; i++)
+        for (int i = 0; i < TermHelper.BUFFER_COUNT; i++)
         {
             logBuffers[i] = new AtomicBuffer(ByteBuffer.allocateDirect(LOG_BUFFER_SIZE));
             stateBuffers[i] = new AtomicBuffer(ByteBuffer.allocateDirect(STATE_BUFFER_SIZE));

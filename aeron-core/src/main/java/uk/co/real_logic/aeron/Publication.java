@@ -23,8 +23,8 @@ import uk.co.real_logic.aeron.util.status.LimitBarrier;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.rotateNext;
-import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.rotatePrevious;
+import static uk.co.real_logic.aeron.util.TermHelper.rotateNext;
+import static uk.co.real_logic.aeron.util.TermHelper.rotatePrevious;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.SUCCESS;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.TRIPPED;

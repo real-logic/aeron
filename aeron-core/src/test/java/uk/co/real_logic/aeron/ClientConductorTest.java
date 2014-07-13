@@ -20,7 +20,7 @@ import org.junit.Before;
 import org.junit.Test;
 import uk.co.real_logic.aeron.conductor.*;
 import uk.co.real_logic.aeron.util.AtomicArray;
-import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
+import uk.co.real_logic.aeron.util.TermHelper;
 import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastBufferDescriptor;
@@ -81,12 +81,12 @@ public class ClientConductorTest
 
     private final AtomicBuffer counterValuesBuffer = new AtomicBuffer(new byte[COUNTER_BUFFER_SZ]);
 
-    private AtomicBuffer[] logBuffersSession1 = new AtomicBuffer[BufferRotationDescriptor.BUFFER_COUNT];
-    private AtomicBuffer[] logBuffersSession2 = new AtomicBuffer[BufferRotationDescriptor.BUFFER_COUNT];
-    private AtomicBuffer[] stateBuffersSession1 = new AtomicBuffer[BufferRotationDescriptor.BUFFER_COUNT];
-    private AtomicBuffer[] stateBuffersSession2 = new AtomicBuffer[BufferRotationDescriptor.BUFFER_COUNT];
-    private LogAppender[] appendersSession1 = new LogAppender[BufferRotationDescriptor.BUFFER_COUNT];
-    private LogAppender[] appendersSession2 = new LogAppender[BufferRotationDescriptor.BUFFER_COUNT];
+    private AtomicBuffer[] logBuffersSession1 = new AtomicBuffer[TermHelper.BUFFER_COUNT];
+    private AtomicBuffer[] logBuffersSession2 = new AtomicBuffer[TermHelper.BUFFER_COUNT];
+    private AtomicBuffer[] stateBuffersSession1 = new AtomicBuffer[TermHelper.BUFFER_COUNT];
+    private AtomicBuffer[] stateBuffersSession2 = new AtomicBuffer[TermHelper.BUFFER_COUNT];
+    private LogAppender[] appendersSession1 = new LogAppender[TermHelper.BUFFER_COUNT];
+    private LogAppender[] appendersSession2 = new LogAppender[TermHelper.BUFFER_COUNT];
     private BufferUsageStrategy mockBufferUsage = mock(BufferUsageStrategy.class);
 
     private Signal signal;
@@ -100,7 +100,7 @@ public class ClientConductorTest
     public void setUp() throws Exception
     {
 
-        for (int i = 0; i < BufferRotationDescriptor.BUFFER_COUNT; i++)
+        for (int i = 0; i < TermHelper.BUFFER_COUNT; i++)
         {
             logBuffersSession1[i] = new AtomicBuffer(new byte[LOG_BUFFER_SIZE]);
             stateBuffersSession1[i] = new AtomicBuffer(new byte[LogBufferDescriptor.STATE_BUFFER_LENGTH]);
@@ -269,7 +269,7 @@ public class ClientConductorTest
                         .correlationId(CORRELATION_ID)
                         .termId(termId);
 
-        IntStream.range(0, BufferRotationDescriptor.BUFFER_COUNT).forEach(
+        IntStream.range(0, TermHelper.BUFFER_COUNT).forEach(
             (i) ->
             {
                 newBufferMessage.location(i, sessionId + "-log-" + i);
@@ -278,12 +278,12 @@ public class ClientConductorTest
             }
         );
 
-        IntStream.range(0, BufferRotationDescriptor.BUFFER_COUNT).forEach(
+        IntStream.range(0, TermHelper.BUFFER_COUNT).forEach(
             (i) ->
             {
-                newBufferMessage.location(i + BufferRotationDescriptor.BUFFER_COUNT, sessionId + "-state-" + i);
-                newBufferMessage.bufferOffset(i + BufferRotationDescriptor.BUFFER_COUNT, 0);
-                newBufferMessage.bufferLength(i + BufferRotationDescriptor.BUFFER_COUNT,
+                newBufferMessage.location(i + TermHelper.BUFFER_COUNT, sessionId + "-state-" + i);
+                newBufferMessage.bufferOffset(i + TermHelper.BUFFER_COUNT, 0);
+                newBufferMessage.bufferLength(i + TermHelper.BUFFER_COUNT,
                                               LogBufferDescriptor.STATE_BUFFER_LENGTH);
             }
         );

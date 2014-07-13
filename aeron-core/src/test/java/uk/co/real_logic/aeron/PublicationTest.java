@@ -18,7 +18,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.inOrder;
-import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
+import static uk.co.real_logic.aeron.util.TermHelper.BUFFER_COUNT;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.*;
 
 public class PublicationTest

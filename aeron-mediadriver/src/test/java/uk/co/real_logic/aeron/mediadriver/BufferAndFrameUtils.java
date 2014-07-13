@@ -23,7 +23,7 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import java.nio.ByteBuffer;
 import java.util.stream.Stream;
 
-import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
+import static uk.co.real_logic.aeron.util.TermHelper.BUFFER_COUNT;
 
 /**
  * Buffer utility functions
@@ -39,7 +39,7 @@ public class BufferAndFrameUtils
             private RawLog active = createTestLogBuffer(logBufferSize, stateBufferSize);
             private RawLog[] buffers = new RawLog[]{active, clean, dirty};
 
-            public Stream<RawLog> buffers()
+            public Stream<RawLog> stream()
             {
                 return Stream.of(buffers);
             }

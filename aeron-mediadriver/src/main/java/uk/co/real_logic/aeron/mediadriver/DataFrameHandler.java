@@ -188,7 +188,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
             (termId, termOffset, length) -> sendNak(connectedSubscription, (int)termId, termOffset, length));
 
         connectedSubscription.onLogBufferAvailable(cmd.termId(), INITIAL_WINDOW_SIZE,
-                                                   cmd.bufferRotator(), lossHandler, sendSm);
+                                                   cmd.termBuffers(), lossHandler, sendSm);
 
         // now we are all setup, so send an SM to allow the source to send if it is waiting
         // TODO: grab initial term offset from data and store in subscriberSession somehow (per TermID)

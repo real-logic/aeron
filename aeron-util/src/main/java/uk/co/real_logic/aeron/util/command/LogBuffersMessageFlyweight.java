@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.util.command;
 
-import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
+import uk.co.real_logic.aeron.util.TermHelper;
 import uk.co.real_logic.aeron.util.Flyweight;
 
 import java.nio.ByteOrder;
@@ -120,7 +120,7 @@ public class LogBuffersMessageFlyweight extends Flyweight
     /**
      * Contains both log buffers and state buffers
      */
-    public static final int PAYLOAD_BUFFER_COUNT = BufferRotationDescriptor.BUFFER_COUNT * 2;
+    public static final int PAYLOAD_BUFFER_COUNT = TermHelper.BUFFER_COUNT * 2;
 
     /**
      * The Destination sits at the end of the message, after the location strings for both the

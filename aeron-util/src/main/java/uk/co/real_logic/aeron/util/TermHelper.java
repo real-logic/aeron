@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.util;
 /**
  * Common Information around buffer rotation, used by both the client and core API.
  */
-public class BufferRotationDescriptor
+public class TermHelper
 {
     public static final int BUFFER_COUNT = 3;
 

@@ -21,7 +21,7 @@ import java.util.stream.Stream;
 
 public interface TermBuffers
 {
-    Stream<? extends RawLog> buffers();
+    Stream<? extends RawLog> stream();
 
     void appendBufferLocationsTo(final LogBuffersMessageFlyweight logBuffersMessage);
 }

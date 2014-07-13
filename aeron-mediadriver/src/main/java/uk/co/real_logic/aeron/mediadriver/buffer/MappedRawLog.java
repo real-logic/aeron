@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
-import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
+import static uk.co.real_logic.aeron.util.TermHelper.BUFFER_COUNT;
 
 /**
  * Memory mapped raw logs to make up a term log buffer.

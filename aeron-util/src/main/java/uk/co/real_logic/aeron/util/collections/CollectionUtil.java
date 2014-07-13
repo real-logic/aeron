@@ -25,8 +25,15 @@ public class CollectionUtil
 {
     /**
      * A getOrDefault that doesn't create garbage if its suppler is non-capturing.
+     *
+     * @param map to perform the lookup on.
+     * @param key on which the lookup is done.
+     * @param supplier of the default value if one is not found.
+     * @param <K> type of the key
+     * @param <V> type of the value
+     * @return the value if found or a new default which as been added to the map.
      */
-    public static <K, V> V getOrDefault(Map<K, V> map, K key, Function<K, V> supplier)
+    public static <K, V> V getOrDefault(final Map<K, V> map, final K key, final Function<K, V> supplier)
     {
         V value = map.get(key);
         if (value == null)
@@ -34,6 +41,7 @@ public class CollectionUtil
             value = supplier.apply(key);
             map.put(key, value);
         }
+
         return value;
     }
 }

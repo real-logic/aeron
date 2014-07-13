@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.mediadriver.buffer.TermBuffers;
 import uk.co.real_logic.aeron.mediadriver.buffer.RawLog;
-import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
+import uk.co.real_logic.aeron.util.TermHelper;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.*;
@@ -102,10 +102,10 @@ public class DriverPublication
         this.headerLength = headerLength;
         this.mtuLength = mtuLength;
 
-        scanners = termBuffers.buffers().map(this::newScanner).toArray(LogScanner[]::new);
-        termSendBuffers = termBuffers.buffers().map(this::duplicateLogBuffer).toArray(ByteBuffer[]::new);
-        termRetransmitBuffers = termBuffers.buffers().map(this::duplicateLogBuffer).toArray(ByteBuffer[]::new);
-        retransmitHandlers = termBuffers.buffers().map(this::newRetransmitHandler).toArray(RetransmitHandler[]::new);
+        scanners = termBuffers.stream().map(this::newScanner).toArray(LogScanner[]::new);
+        termSendBuffers = termBuffers.stream().map(this::duplicateLogBuffer).toArray(ByteBuffer[]::new);
+        termRetransmitBuffers = termBuffers.stream().map(this::duplicateLogBuffer).toArray(ByteBuffer[]::new);
+        retransmitHandlers = termBuffers.stream().map(this::newRetransmitHandler).toArray(RetransmitHandler[]::new);
 
         final int termCapacity = scanners[0].capacity();
         rightEdge = new AtomicLong(controlStrategy.initialRightEdge(initialTermId, termCapacity));
@@ -129,7 +129,7 @@ public class DriverPublication
 
             if (scanner.isComplete())
             {
-                activeIndex = BufferRotationDescriptor.rotateNext(activeIndex);
+                activeIndex = TermHelper.rotateNext(activeIndex);
                 activeTermId.lazySet(activeTermId.get() + 1);
             }
         }

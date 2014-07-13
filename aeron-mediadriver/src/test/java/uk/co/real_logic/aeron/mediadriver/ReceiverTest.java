@@ -107,7 +107,7 @@ public class ReceiverTest
         senderChannel.bind(senderAddress);
         senderChannel.configureBlocking(false);
 
-        logReaders = rotator.buffers().map((rawLog) -> new LogReader(rawLog.logBuffer(), rawLog.stateBuffer()))
+        logReaders = rotator.stream().map((rawLog) -> new LogReader(rawLog.logBuffer(), rawLog.stateBuffer()))
                                       .toArray(LogReader[]::new);
     }
 

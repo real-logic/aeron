@@ -175,8 +175,8 @@ public class Receiver extends Agent
         }
 
         final GapScanner[] gapScanners =
-            cmd.bufferRotator()
-               .buffers()
+            cmd.termBuffers()
+               .stream()
                .map((rawLog) -> new GapScanner(rawLog.logBuffer(), rawLog.stateBuffer()))
                .toArray(GapScanner[]::new);
 

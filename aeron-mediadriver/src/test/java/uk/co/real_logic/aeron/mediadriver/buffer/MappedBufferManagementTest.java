@@ -57,7 +57,7 @@ public class MappedBufferManagementTest
     {
         final TermBuffers rotator = bufferManagement.addPublication(destination, SESSION_ID, CHANNEL_ID);
 
-        rotator.buffers().forEach(
+        rotator.stream().forEach(
             (logBuffer) ->
             {
                 final AtomicBuffer log = logBuffer.logBuffer();

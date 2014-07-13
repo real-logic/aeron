@@ -21,7 +21,7 @@ import uk.co.real_logic.aeron.RegistrationException;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.util.Agent;
 import uk.co.real_logic.aeron.util.AgentIdleStrategy;
-import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
+import uk.co.real_logic.aeron.util.TermHelper;
 import uk.co.real_logic.aeron.util.ErrorCode;
 import uk.co.real_logic.aeron.util.collections.ConnectionMap;
 import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
@@ -36,7 +36,7 @@ import uk.co.real_logic.aeron.util.status.WindowedLimitBarrier;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
+import static uk.co.real_logic.aeron.util.TermHelper.BUFFER_COUNT;
 
 /**
  * Client conductor takes responses and notifications from media driver and acts on them. As well as passes commands
@@ -194,7 +194,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
         for (int i = 0; i < BUFFER_COUNT; i++)
         {
             final AtomicBuffer logBuffer = mapBuffer(logBuffersMessage, i);
-            final AtomicBuffer stateBuffer = mapBuffer(logBuffersMessage, i + BufferRotationDescriptor.BUFFER_COUNT);
+            final AtomicBuffer stateBuffer = mapBuffer(logBuffersMessage, i + TermHelper.BUFFER_COUNT);
             final byte[] header = DataHeaderFlyweight.createDefaultHeader(sessionId, channelId, termId);
 
             logs[i] = new LogAppender(logBuffer, stateBuffer, header, MAX_FRAME_LENGTH);
@@ -219,7 +219,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
             for (int i = 0; i < BUFFER_COUNT; i++)
             {
                 final AtomicBuffer logBuffer = mapBuffer(message, i);
-                final AtomicBuffer stateBuffer = mapBuffer(message, i + BufferRotationDescriptor.BUFFER_COUNT);
+                final AtomicBuffer stateBuffer = mapBuffer(message, i + TermHelper.BUFFER_COUNT);
 
                 logs[i] = new LogReader(logBuffer, stateBuffer);
             }

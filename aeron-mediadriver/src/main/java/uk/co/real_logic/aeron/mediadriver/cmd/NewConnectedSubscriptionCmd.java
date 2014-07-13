@@ -59,7 +59,7 @@ public class NewConnectedSubscriptionCmd
         return termId;
     }
 
-    public TermBuffers bufferRotator()
+    public TermBuffers termBuffers()
     {
         return termBuffers;
     }

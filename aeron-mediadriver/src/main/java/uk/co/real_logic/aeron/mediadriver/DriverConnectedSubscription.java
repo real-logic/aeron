@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.mediadriver.buffer.TermBuffers;
-import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
+import uk.co.real_logic.aeron.util.TermHelper;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogRebuilder;
@@ -26,7 +26,7 @@ import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.*;
+import static uk.co.real_logic.aeron.util.TermHelper.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.*;
 
 /**
@@ -95,7 +95,7 @@ public class DriverConnectedSubscription
                                      final SendSmHandler sendSmHandler)
     {
         activeTermId.lazySet(initialTermId);
-        rebuilders = termBuffers.buffers()
+        rebuilders = termBuffers.stream()
                                 .map((rawLog) -> new LogRebuilder(rawLog.logBuffer(), rawLog.stateBuffer()))
                                 .toArray(LogRebuilder[]::new);
         this.lossHandler = lossHandler;
@@ -179,7 +179,7 @@ public class DriverConnectedSubscription
 
     private void nextTerm(final long nextTermId)
     {
-        final int nextIndex = BufferRotationDescriptor.rotateNext(activeIndex);
+        final int nextIndex = TermHelper.rotateNext(activeIndex);
         final LogRebuilder rebuilder = rebuilders[nextIndex];
 
         if (CLEAN != rebuilder.status())

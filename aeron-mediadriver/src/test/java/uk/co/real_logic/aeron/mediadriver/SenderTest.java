@@ -98,7 +98,7 @@ public class SenderTest
     {
         currentTimestamp = 0;
 
-        logAppenders = termBuffers.buffers()
+        logAppenders = termBuffers.stream()
                               .map((log) -> new LogAppender(log.logBuffer(), log.stateBuffer(),
                                                             HEADER, MAX_FRAME_LENGTH)).toArray(LogAppender[]::new);
 

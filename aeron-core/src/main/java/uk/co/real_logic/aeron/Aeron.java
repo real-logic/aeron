@@ -71,7 +71,7 @@ public final class Aeron implements AutoCloseable
         conductor = new ClientConductor(
             receiver,
             errorHandler,
-            ctx.bufferUsageStrategy,
+            ctx.bufferLifecycleStrategy,
             ctx.counterValuesBuffer(),
             mediaDriverProxy,
             correlationSignal,
@@ -193,7 +193,7 @@ public final class Aeron implements AutoCloseable
         private MappedByteBuffer defaultToClientBuffer;
         private MappedByteBuffer defaultToDriverBuffer;
 
-        private BufferUsageStrategy bufferUsageStrategy;
+        private BufferLifecycleStrategy bufferLifecycleStrategy;
         private long publicationWindow;
 
         public ClientContext conclude() throws IOException
@@ -229,9 +229,9 @@ public final class Aeron implements AutoCloseable
                     counterValuesBuffer(new AtomicBuffer(values));
                 }
 
-                if (null == bufferUsageStrategy)
+                if (null == bufferLifecycleStrategy)
                 {
-                    bufferUsageStrategy = new MappingBufferUsageStrategy();
+                    bufferLifecycleStrategy = new MappedBufferLifecycleStrategy();
                 }
             }
             catch (IOException e)
@@ -266,9 +266,9 @@ public final class Aeron implements AutoCloseable
             return this;
         }
 
-        public ClientContext bufferUsageStrategy(final BufferUsageStrategy strategy)
+        public ClientContext bufferUsageStrategy(final BufferLifecycleStrategy strategy)
         {
-            this.bufferUsageStrategy = strategy;
+            this.bufferLifecycleStrategy = strategy;
             return this;
         }
 

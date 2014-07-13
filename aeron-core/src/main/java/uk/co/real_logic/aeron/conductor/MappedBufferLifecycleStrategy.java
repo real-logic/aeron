@@ -29,28 +29,30 @@ import java.util.List;
 import static uk.co.real_logic.aeron.util.IoUtil.mapExistingFile;
 
 /**
- * Default mapping buffer usage strategy for the client
+ * Default mapping buffer lifecycle strategy for the client
  *
- * Not thread-safe - Methods only called from ClientConductor
+ * Note: Not thread-safe - Methods only called from ClientConductor
  */
-public class MappingBufferUsageStrategy implements BufferUsageStrategy
+public class MappedBufferLifecycleStrategy implements BufferLifecycleStrategy
 {
-    private final List<IdentifiedBuffer> buffers;
+    private final List<LocatedBuffer> buffers;
 
-    public MappingBufferUsageStrategy()
+    public MappedBufferLifecycleStrategy()
     {
         buffers = new ArrayList<>();
     }
 
     public AtomicBuffer newBuffer(final String location, final int offset, final int length) throws IOException
     {
-        MappedByteBuffer buffer = mapExistingFile(new File(location), "Term Buffer");
+        final MappedByteBuffer buffer = mapExistingFile(new File(location), "Term Buffer");
         if (requiresIndirection(buffer, offset, length))
         {
             buffer.position(offset);
             buffer.limit(offset + length);
         }
-        buffers.add(new IdentifiedBuffer(location, buffer));
+
+        buffers.add(new LocatedBuffer(location, buffer));
+
         return new AtomicBuffer(buffer);
     }
 
@@ -63,10 +65,11 @@ public class MappingBufferUsageStrategy implements BufferUsageStrategy
     {
         final int limit = offset + length;
         int count = 0;
-        final Iterator<IdentifiedBuffer> it = buffers.iterator();
+        final Iterator<LocatedBuffer> it = buffers.iterator();
+
         while (it.hasNext())
         {
-            final IdentifiedBuffer buffer = it.next();
+            final LocatedBuffer buffer = it.next();
             if (buffer.matches(location, offset, limit))
             {
                 buffer.close();
@@ -80,16 +83,15 @@ public class MappingBufferUsageStrategy implements BufferUsageStrategy
 
     public void close()
     {
-        buffers.forEach(IdentifiedBuffer::close);
+        buffers.forEach(LocatedBuffer::close);
     }
 
-    private class IdentifiedBuffer
+    private static class LocatedBuffer
     {
         private final String location;
         private final MappedByteBuffer buffer;
 
-        private IdentifiedBuffer(final String location,
-                                 final MappedByteBuffer buffer)
+        private LocatedBuffer(final String location, final MappedByteBuffer buffer)
         {
             this.location = location;
             this.buffer = buffer;

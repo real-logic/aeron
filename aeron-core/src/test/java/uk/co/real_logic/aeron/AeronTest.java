@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import uk.co.real_logic.aeron.conductor.BufferUsageStrategy;
+import uk.co.real_logic.aeron.conductor.BufferLifecycleStrategy;
 import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -103,7 +103,7 @@ public class AeronTest
     private AtomicBuffer[] stateBuffersSession2 = new AtomicBuffer[BUFFER_COUNT];
     private LogAppender[] appendersSession1 = new LogAppender[BUFFER_COUNT];
     private LogAppender[] appendersSession2 = new LogAppender[BUFFER_COUNT];
-    private BufferUsageStrategy mockBufferUsage = mock(BufferUsageStrategy.class);
+    private BufferLifecycleStrategy mockBufferUsage = mock(BufferLifecycleStrategy.class);
 
     @Before
     public void setUp() throws Exception

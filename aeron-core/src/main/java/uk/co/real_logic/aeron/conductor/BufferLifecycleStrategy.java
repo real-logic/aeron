@@ -22,7 +22,7 @@ import java.io.IOException;
 /**
  * Interface for encapsulating the strategy of mapping ByteBuffers for Session, Channel, and Term.
  */
-public interface BufferUsageStrategy
+public interface BufferLifecycleStrategy
 {
     AtomicBuffer newBuffer(final String location, final int offset, final int length) throws IOException;
 

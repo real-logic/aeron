@@ -87,7 +87,7 @@ public class ClientConductorTest
     private AtomicBuffer[] stateBuffersSession2 = new AtomicBuffer[TermHelper.BUFFER_COUNT];
     private LogAppender[] appendersSession1 = new LogAppender[TermHelper.BUFFER_COUNT];
     private LogAppender[] appendersSession2 = new LogAppender[TermHelper.BUFFER_COUNT];
-    private BufferUsageStrategy mockBufferUsage = mock(BufferUsageStrategy.class);
+    private BufferLifecycleStrategy mockBufferUsage = mock(BufferLifecycleStrategy.class);
 
     private Signal signal;
     private MediaDriverProxy mediaDriverProxy;

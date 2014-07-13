@@ -30,19 +30,19 @@ import static java.nio.file.StandardOpenOption.WRITE;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
-public class MappingBufferUsageStrategyTest
+public class MappedBufferLifecycleStrategyTest
 {
     private static final String LOCATION = IoUtil.tmpDirName() + "/file_to_map";
     private static final String OTHER_LOCATION = LOCATION + "_other";
 
-    private BufferUsageStrategy usageStrategy;
+    private BufferLifecycleStrategy usageStrategy;
 
     @Before
     public void setUp() throws IOException
     {
         createFile(LOCATION);
         createFile(OTHER_LOCATION);
-        usageStrategy = new MappingBufferUsageStrategy();
+        usageStrategy = new MappedBufferLifecycleStrategy();
     }
 
     private void createFile(final String location) throws IOException

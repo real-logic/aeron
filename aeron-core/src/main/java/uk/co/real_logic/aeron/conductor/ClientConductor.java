@@ -54,7 +54,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
     private static final long NO_CORRELATION_ID = -1;
 
     private final MediaDriverBroadcastReceiver mediaDriverBroadcastReceiver;
-    private final BufferUsageStrategy bufferUsage;
+    private final BufferLifecycleStrategy bufferUsage;
     private final long awaitTimeout;
     private final long publicationWindow;
     private final ConnectionMap<String, Publication> publicationMap = new ConnectionMap<>(); // Guarded by this
@@ -71,7 +71,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
 
     public ClientConductor(final MediaDriverBroadcastReceiver mediaDriverBroadcastReceiver,
                            final ConductorErrorHandler errorHandler,
-                           final BufferUsageStrategy bufferUsageStrategy,
+                           final BufferLifecycleStrategy bufferLifecycleStrategy,
                            final AtomicBuffer counterValuesBuffer,
                            final MediaDriverProxy mediaDriverProxy,
                            final Signal correlationSignal,
@@ -85,7 +85,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
         this.correlationSignal = correlationSignal;
         this.mediaDriverProxy = mediaDriverProxy;
         this.mediaDriverBroadcastReceiver = mediaDriverBroadcastReceiver;
-        this.bufferUsage = bufferUsageStrategy;
+        this.bufferUsage = bufferLifecycleStrategy;
         this.awaitTimeout = awaitTimeout;
         this.publicationWindow = publicationWindow;
     }

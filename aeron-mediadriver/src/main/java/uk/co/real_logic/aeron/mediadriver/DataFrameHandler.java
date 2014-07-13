@@ -166,16 +166,16 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         // this should be on the data channel and shouldn't include Naks, so ignore.
     }
 
-    public void onConnectedSubscriptionReady(final NewConnectedSubscriptionCmd event, final LossHandler lossHandler)
+    public void onConnectedSubscriptionReady(final NewConnectedSubscriptionCmd cmd, final LossHandler lossHandler)
     {
-        final DriverSubscription subscription = subscriptionByChannelIdMap.get(event.channelId());
+        final DriverSubscription subscription = subscriptionByChannelIdMap.get(cmd.channelId());
         if (null == subscription)
         {
             throw new IllegalStateException("channel not found");
         }
 
         final DriverConnectedSubscription connectedSubscription =
-            subscription.getConnectedSubscription(event.sessionId());
+            subscription.getConnectedSubscription(cmd.sessionId());
         if (null == connectedSubscription)
         {
             throw new IllegalStateException("session not found");
@@ -187,12 +187,12 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         lossHandler.sendNakHandler(
             (termId, termOffset, length) -> sendNak(connectedSubscription, (int)termId, termOffset, length));
 
-        connectedSubscription.onLogBufferAvailable(event.termId(), INITIAL_WINDOW_SIZE,
-                                                   event.bufferRotator(), lossHandler, sendSm);
+        connectedSubscription.onLogBufferAvailable(cmd.termId(), INITIAL_WINDOW_SIZE,
+                                                   cmd.bufferRotator(), lossHandler, sendSm);
 
         // now we are all setup, so send an SM to allow the source to send if it is waiting
         // TODO: grab initial term offset from data and store in subscriberSession somehow (per TermID)
-        sendStatusMessage(connectedSubscription, (int)event.termId(), 0, INITIAL_WINDOW_SIZE);
+        sendStatusMessage(connectedSubscription, (int)cmd.termId(), 0, INITIAL_WINDOW_SIZE);
     }
 
     private void sendStatusMessage(final DriverConnectedSubscription connectedSubscription,

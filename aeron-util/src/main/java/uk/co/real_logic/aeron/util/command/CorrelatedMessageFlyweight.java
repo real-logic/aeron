@@ -18,7 +18,7 @@ public class CorrelatedMessageFlyweight extends Flyweight
 {
     public static final int CORRELATION_ID_FIELD_OFFSET = 0;
 
-    public static final int length = SIZE_OF_LONG;
+    public static final int LENGTH = SIZE_OF_LONG;
 
     /**
      * return correlation id field
@@ -41,5 +41,4 @@ public class CorrelatedMessageFlyweight extends Flyweight
         atomicBuffer().putLong(offset() + CORRELATION_ID_FIELD_OFFSET, correlationId, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
-
 }

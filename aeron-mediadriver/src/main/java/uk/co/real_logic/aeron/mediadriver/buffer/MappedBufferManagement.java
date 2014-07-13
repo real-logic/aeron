@@ -34,7 +34,7 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescri
  */
 class MappedBufferManagement implements BufferManagement
 {
-    public static final int LOG_BUFFER_SIZE = COMMAND_BUFFER_SZ + TRAILER_LENGTH;
+    public static final int LOG_BUFFER_SIZE = COMMAND_BUFFER_SZ + TRAILER_LENGTH; // TODO: Is this correct?
 
     private final FileChannel logTemplate;
     private final FileChannel stateTemplate;
@@ -42,8 +42,8 @@ class MappedBufferManagement implements BufferManagement
     private final File publicationsDir;
     private final File subscriptionsDir;
 
-    private final ConnectionMap<UdpDestination, MappedTermBuffers> publicationsRotatorMap = new ConnectionMap<>();
-    private final ConnectionMap<UdpDestination, MappedTermBuffers> subscriptionsRotatorMap = new ConnectionMap<>();
+    private final ConnectionMap<UdpDestination, MappedTermBuffers> publicationTermsMap = new ConnectionMap<>();
+    private final ConnectionMap<UdpDestination, MappedTermBuffers> subscriptionTermsMap = new ConnectionMap<>();
 
     MappedBufferManagement(final String dataDir)
     {
@@ -65,19 +65,19 @@ class MappedBufferManagement implements BufferManagement
             logTemplate.close();
             stateTemplate.close();
 
-            publicationsRotatorMap.forEach(
+            publicationTermsMap.forEach(
                 (ConnectionMap.ConnectionHandler<UdpDestination, MappedTermBuffers>)
                     (final UdpDestination destination,
                      final Long sessionId,
                      final Long channelId,
-                     final MappedTermBuffers bufferRotator) -> bufferRotator.close());
+                     final MappedTermBuffers termBuffers) -> termBuffers.close());
 
-            subscriptionsRotatorMap.forEach(
+            subscriptionTermsMap.forEach(
                 (ConnectionMap.ConnectionHandler<UdpDestination, MappedTermBuffers>)
                     (final UdpDestination destination,
                      final Long sessionId,
                      final Long channelId,
-                     final MappedTermBuffers bufferRotator) -> bufferRotator.close());
+                     final MappedTermBuffers termBuffers) -> termBuffers.close());
         }
         catch (final Exception ex)
         {
@@ -110,24 +110,28 @@ class MappedBufferManagement implements BufferManagement
     public TermBuffers addPublication(final UdpDestination destination, final long sessionId, final long channelId)
         throws Exception
     {
-        return addPublication(destination, sessionId, channelId, publicationsDir, publicationsRotatorMap);
+        return addPublication(destination, sessionId, channelId, publicationsDir, publicationTermsMap);
     }
 
     public void removePublication(final UdpDestination destination, final long sessionId, final long channelId)
         throws IllegalArgumentException
     {
-        removePublication(destination, sessionId, channelId, publicationsRotatorMap);
+        removePublication(destination, sessionId, channelId, publicationTermsMap);
     }
 
-    public void removeConnectedSubscription(final UdpDestination destination, final long sessionId, final long channelId)
+    public void removeConnectedSubscription(final UdpDestination destination,
+                                            final long sessionId,
+                                            final long channelId)
     {
-        removePublication(destination, sessionId, channelId, subscriptionsRotatorMap);
+        removePublication(destination, sessionId, channelId, subscriptionTermsMap);
     }
 
-    public TermBuffers addConnectedSubscription(final UdpDestination destination, final long sessionId, final long channelId)
+    public TermBuffers addConnectedSubscription(final UdpDestination destination,
+                                                final long sessionId,
+                                                final long channelId)
         throws Exception
     {
-        return addPublication(destination, sessionId, channelId, subscriptionsDir, subscriptionsRotatorMap);
+        return addPublication(destination, sessionId, channelId, subscriptionsDir, subscriptionTermsMap);
     }
 
     private void removePublication(final UdpDestination destination,
@@ -135,35 +139,35 @@ class MappedBufferManagement implements BufferManagement
                                    final long channelId,
                                    final ConnectionMap<UdpDestination, MappedTermBuffers> termMap)
     {
-        final MappedTermBuffers bufferRotator = termMap.remove(destination, sessionId, channelId);
-        if (bufferRotator == null)
+        final MappedTermBuffers termBuffers = termMap.remove(destination, sessionId, channelId);
+        if (termBuffers == null)
         {
             final String msg = String.format("No buffers for %s, sessionId = %d, channelId = %d",
                                              destination, sessionId, channelId);
             throw new IllegalArgumentException(msg);
         }
 
-        bufferRotator.close();
+        termBuffers.close();
     }
 
     private MappedTermBuffers addPublication(final UdpDestination destination,
-                                               final long sessionId,
-                                               final long channelId,
-                                               final File rootDir,
-                                               final ConnectionMap<UdpDestination, MappedTermBuffers> rotatorMap)
+                                             final long sessionId,
+                                             final long channelId,
+                                             final File rootDir,
+                                             final ConnectionMap<UdpDestination, MappedTermBuffers> termsMap)
     {
-        MappedTermBuffers bufferRotator = rotatorMap.get(destination, sessionId, channelId);
-        if (bufferRotator == null)
+        MappedTermBuffers termBuffers = termsMap.get(destination, sessionId, channelId);
+        if (termBuffers == null)
         {
             final File dir = channelLocation(rootDir, sessionId, channelId, true, destination.clientAwareUri());
-            bufferRotator = new MappedTermBuffers(dir,
-                                                    logTemplate,
-                                                    LOG_BUFFER_SIZE,
-                                                    stateTemplate,
-                                                    STATE_BUFFER_LENGTH);
-            rotatorMap.put(destination, sessionId, channelId, bufferRotator);
+            termBuffers = new MappedTermBuffers(dir,
+                                                logTemplate,
+                                                LOG_BUFFER_SIZE,
+                                                stateTemplate,
+                                                STATE_BUFFER_LENGTH);
+            termsMap.put(destination, sessionId, channelId, termBuffers);
         }
 
-        return bufferRotator;
+        return termBuffers;
     }
 }

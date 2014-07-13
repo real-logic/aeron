@@ -70,7 +70,7 @@ public class ReceiverTest
     private final QualifiedMessageFlyweight messageHeader = new QualifiedMessageFlyweight();
     private final StatusMessageFlyweight statusHeader = new StatusMessageFlyweight();
 
-    private final TermBuffers rotator =
+    private final TermBuffers termBuffers =
         BufferAndFrameUtils.createTestTermBuffers(LOG_BUFFER_SIZE, LogBufferDescriptor.STATE_BUFFER_LENGTH);
 
     private LogReader[] logReaders;
@@ -107,8 +107,9 @@ public class ReceiverTest
         senderChannel.bind(senderAddress);
         senderChannel.configureBlocking(false);
 
-        logReaders = rotator.stream().map((rawLog) -> new LogReader(rawLog.logBuffer(), rawLog.stateBuffer()))
-                                      .toArray(LogReader[]::new);
+        logReaders = termBuffers.stream()
+                                .map((rawLog) -> new LogReader(rawLog.logBuffer(), rawLog.stateBuffer()))
+                                .toArray(LogReader[]::new);
     }
 
     @After
@@ -148,7 +149,7 @@ public class ReceiverTest
 
                 // pass in new term buffer from media conductor, which should trigger SM
                 receiverProxy.newConnectedSubscription(
-                    new NewConnectedSubscriptionCmd(destination, SESSION_ID, CHANNEL_ID, TERM_ID, rotator));
+                    new NewConnectedSubscriptionCmd(destination, SESSION_ID, CHANNEL_ID, TERM_ID, termBuffers));
             });
 
         assertThat(messagesRead, is(1));
@@ -192,7 +193,7 @@ public class ReceiverTest
               assertThat(msgTypeId, is(ControlProtocolEvents.CREATE_CONNECTED_SUBSCRIPTION));
               // pass in new term buffer from media conductor, which should trigger SM
               receiverProxy.newConnectedSubscription(
-                  new NewConnectedSubscriptionCmd(destination, SESSION_ID,CHANNEL_ID, TERM_ID, rotator));
+                  new NewConnectedSubscriptionCmd(destination, SESSION_ID,CHANNEL_ID, TERM_ID, termBuffers));
             });
 
         assertThat(messagesRead, is(1));
@@ -241,7 +242,7 @@ public class ReceiverTest
               assertThat(msgTypeId, is(ControlProtocolEvents.CREATE_CONNECTED_SUBSCRIPTION));
               // pass in new term buffer from media conductor, which should trigger SM
               receiverProxy.newConnectedSubscription(
-                  new NewConnectedSubscriptionCmd(destination, SESSION_ID, CHANNEL_ID, TERM_ID, rotator));
+                  new NewConnectedSubscriptionCmd(destination, SESSION_ID, CHANNEL_ID, TERM_ID, termBuffers));
             });
 
         assertThat(messagesRead, is(1));
@@ -293,7 +294,7 @@ public class ReceiverTest
               assertThat(msgTypeId, is(ControlProtocolEvents.CREATE_CONNECTED_SUBSCRIPTION));
               // pass in new term buffer from media conductor, which should trigger SM
               receiverProxy.newConnectedSubscription(
-                  new NewConnectedSubscriptionCmd(destination, SESSION_ID, CHANNEL_ID, TERM_ID, rotator));
+                  new NewConnectedSubscriptionCmd(destination, SESSION_ID, CHANNEL_ID, TERM_ID, termBuffers));
             });
 
         assertThat(messagesRead, is(1));
@@ -343,7 +344,7 @@ public class ReceiverTest
         final int messagesRead = toConductorBuffer.read(
             (msgTypeId, buffer, index, length) ->
                 receiverProxy.newConnectedSubscription(
-                    new NewConnectedSubscriptionCmd(destination, SESSION_ID, CHANNEL_ID, TERM_ID, rotator)));
+                    new NewConnectedSubscriptionCmd(destination, SESSION_ID, CHANNEL_ID, TERM_ID, termBuffers)));
 
         assertThat(messagesRead, is(1));
 

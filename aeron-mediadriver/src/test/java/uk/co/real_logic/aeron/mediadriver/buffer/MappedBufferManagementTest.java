@@ -55,16 +55,16 @@ public class MappedBufferManagementTest
     @Test
     public void mappedFilesAreCorrectSizeAndZeroed() throws Exception
     {
-        final TermBuffers rotator = bufferManagement.addPublication(destination, SESSION_ID, CHANNEL_ID);
+        final TermBuffers termBuffers = bufferManagement.addPublication(destination, SESSION_ID, CHANNEL_ID);
 
-        rotator.stream().forEach(
+        termBuffers.stream().forEach(
             (logBuffer) ->
             {
                 final AtomicBuffer log = logBuffer.logBuffer();
 
                 assertThat(log.capacity(), is(MappedBufferManagement.LOG_BUFFER_SIZE));
                 assertThat(log.getByte(0), is((byte)0));
-                assertThat(log.getByte((int)MappedBufferManagement.LOG_BUFFER_SIZE - 1), is((byte)0));
+                assertThat(log.getByte(MappedBufferManagement.LOG_BUFFER_SIZE - 1), is((byte)0));
 
                 final AtomicBuffer state = logBuffer.stateBuffer();
 

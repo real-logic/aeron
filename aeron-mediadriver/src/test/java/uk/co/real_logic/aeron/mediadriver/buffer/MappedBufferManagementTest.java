@@ -55,7 +55,7 @@ public class MappedBufferManagementTest
     @Test
     public void mappedFilesAreCorrectSizeAndZeroed() throws Exception
     {
-        final BufferRotator rotator = bufferManagement.addPublication(destination, SESSION_ID, CHANNEL_ID);
+        final TermBuffers rotator = bufferManagement.addPublication(destination, SESSION_ID, CHANNEL_ID);
 
         rotator.buffers().forEach(
             (logBuffer) ->

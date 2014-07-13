@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron.mediadriver.buffer;
 
 import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -35,31 +34,31 @@ import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
  * <p>
  * Keeps 3 buffers on hold at any one time.
  */
-class MappedBufferRotator implements BufferRotator, AutoCloseable
+class MappedTermBuffers implements TermBuffers, AutoCloseable
 {
     private static final String LOG_SUFFIX = "-log";
     private static final String STATE_SUFFIX = "-state";
 
     private final FileChannel logTemplate;
-    private final int logBufferSize;
-    private final int stateBufferSize;
+    private final int logBufferLength;
+    private final int stateBufferLength;
     private final MappedRawLog[] buffers;
 
-    MappedBufferRotator(final File directory,
-                        final FileChannel logTemplate,
-                        final int logBufferSize,
-                        final FileChannel stateTemplate,
-                        final int stateBufferSize)
+    MappedTermBuffers(final File directory,
+                      final FileChannel logTemplate,
+                      final int logBufferLength,
+                      final FileChannel stateTemplate,
+                      final int stateBufferSize)
     {
         IoUtil.ensureDirectoryExists(directory, "buffer directory");
 
         this.logTemplate = logTemplate;
-        this.logBufferSize = logBufferSize;
-        this.stateBufferSize = stateBufferSize;
+        this.logBufferLength = logBufferLength;
+        this.stateBufferLength = stateBufferSize;
 
         try
         {
-            requireEqual(logTemplate.size(), logBufferSize);
+            requireEqual(logTemplate.size(), logBufferLength);
             requireEqual(stateTemplate.size(), stateBufferSize);
             final MappedRawLog active = newTerm("0", directory);
             final MappedRawLog clean = newTerm("1", directory);
@@ -84,21 +83,16 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
         return Stream.of(buffers);
     }
 
-    public int sizeOfTermBuffer()
-    {
-        return logBufferSize - RingBufferDescriptor.TRAILER_LENGTH;
-    }
-
-    public void appendBufferLocationsTo(final LogBuffersMessageFlyweight newBufferMessage)
+    public void appendBufferLocationsTo(final LogBuffersMessageFlyweight logBuffersMessage)
     {
         for (int i = 0; i < BUFFER_COUNT; i++)
         {
-            buffers[i].logBufferInformation(i, newBufferMessage);
+            buffers[i].logBufferInformation(i, logBuffersMessage);
         }
 
         for (int i = 0; i < BUFFER_COUNT; i++)
         {
-            buffers[i].stateBufferInformation(i, newBufferMessage);
+            buffers[i].stateBufferInformation(i, logBuffersMessage);
         }
     }
 
@@ -128,8 +122,8 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
                                 stateFile,
                                 logFileChannel,
                                 stateFileChannel,
-                                mapBufferFile(logFileChannel, logBufferSize),
-                                mapBufferFile(stateFileChannel, stateBufferSize));
+                                mapBufferFile(logFileChannel, logBufferLength),
+                                mapBufferFile(stateFileChannel, stateBufferLength));
     }
 
     private FileChannel openBufferFile(final File file) throws FileNotFoundException
@@ -140,7 +134,7 @@ class MappedBufferRotator implements BufferRotator, AutoCloseable
     private MappedByteBuffer mapBufferFile(final FileChannel channel, final long bufferSize)
         throws IOException
     {
-        reset(channel, logTemplate, logBufferSize);
+        reset(channel, logTemplate, logBufferLength);
 
         return channel.map(READ_WRITE, 0, bufferSize);
     }

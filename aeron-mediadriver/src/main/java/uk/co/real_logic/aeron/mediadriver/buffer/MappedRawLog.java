@@ -74,8 +74,8 @@ class MappedRawLog implements RawLog
 
     public void reset(final FileChannel logTemplate, final FileChannel stateTemplate) throws IOException
     {
-        MappedBufferRotator.reset(logFileChannel, logTemplate, logBuffer.capacity());
-        MappedBufferRotator.reset(stateFileChannel, stateTemplate, stateBuffer.capacity());
+        MappedTermBuffers.reset(logFileChannel, logTemplate, logBuffer.capacity());
+        MappedTermBuffers.reset(stateFileChannel, stateTemplate, stateBuffer.capacity());
     }
 
     public void close()

@@ -19,14 +19,9 @@ import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
 
 import java.util.stream.Stream;
 
-/**
- * Handles rotating buffers within a {@link uk.co.real_logic.aeron.mediadriver.DriverPublication}
- */
-public interface BufferRotator
+public interface TermBuffers
 {
     Stream<? extends RawLog> buffers();
 
-    int sizeOfTermBuffer();
-
-    void appendBufferLocationsTo(final LogBuffersMessageFlyweight newBufferMessage);
+    void appendBufferLocationsTo(final LogBuffersMessageFlyweight logBuffersMessage);
 }

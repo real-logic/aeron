@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
+import uk.co.real_logic.aeron.mediadriver.buffer.TermBuffers;
 import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBuffer;
@@ -90,14 +90,14 @@ public class DriverConnectedSubscription
     // TODO: simplify initialisation so the object is constructed in a valid state.
     public void onLogBufferAvailable(final long initialTermId,
                                      final int initialWindow,
-                                     final BufferRotator rotator,
+                                     final TermBuffers termBuffers,
                                      final LossHandler lossHandler,
                                      final SendSmHandler sendSmHandler)
     {
         activeTermId.lazySet(initialTermId);
-        rebuilders = rotator.buffers()
-                            .map((rawLog) -> new LogRebuilder(rawLog.logBuffer(), rawLog.stateBuffer()))
-                            .toArray(LogRebuilder[]::new);
+        rebuilders = termBuffers.buffers()
+                                .map((rawLog) -> new LogRebuilder(rawLog.logBuffer(), rawLog.stateBuffer()))
+                                .toArray(LogRebuilder[]::new);
         this.lossHandler = lossHandler;
         this.sendSmHandler = sendSmHandler;
 

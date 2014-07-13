@@ -19,7 +19,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
-import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
+import uk.co.real_logic.aeron.mediadriver.buffer.TermBuffers;
 import uk.co.real_logic.aeron.util.AtomicArray;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -59,8 +59,8 @@ public class SenderTest
 
     private final AtomicArray<DriverPublication> publications = new AtomicArray<>();
     private final Sender sender = new Sender(new MediaDriver.MediaDriverContext().publications(publications));
-    private final BufferRotator bufferRotator =
-        BufferAndFrameUtils.createTestRotator(LOG_BUFFER_SIZE, LogBufferDescriptor.STATE_BUFFER_LENGTH);
+    private final TermBuffers termBuffers =
+        BufferAndFrameUtils.createTestTermBuffers(LOG_BUFFER_SIZE, LogBufferDescriptor.STATE_BUFFER_LENGTH);
 
     private LogAppender[] logAppenders;
     private DriverPublication publication;
@@ -98,7 +98,7 @@ public class SenderTest
     {
         currentTimestamp = 0;
 
-        logAppenders = bufferRotator.buffers()
+        logAppenders = termBuffers.buffers()
                               .map((log) -> new LogAppender(log.logBuffer(), log.stateBuffer(),
                                                             HEADER, MAX_FRAME_LENGTH)).toArray(LogAppender[]::new);
 
@@ -106,7 +106,7 @@ public class SenderTest
         when(mockControlFrameHandler.destination()).thenReturn(destination);
         when(mockControlFrameHandler.sendTo(anyObject(), anyObject())).thenAnswer(saveByteBufferAnswer);
 
-        publication = new DriverPublication(mockControlFrameHandler, wheel, spySenderControlStrategy, bufferRotator,
+        publication = new DriverPublication(mockControlFrameHandler, wheel, spySenderControlStrategy, termBuffers,
                                       SESSION_ID, CHANNEL_ID, INITIAL_TERM_ID, HEADER.length, MAX_FRAME_LENGTH);
         publications.add(publication);
     }

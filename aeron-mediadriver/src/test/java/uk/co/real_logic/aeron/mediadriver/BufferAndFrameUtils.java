@@ -15,13 +15,11 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
+import uk.co.real_logic.aeron.mediadriver.buffer.TermBuffers;
 import uk.co.real_logic.aeron.mediadriver.buffer.RawLog;
 import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.stream.Stream;
 
@@ -32,56 +30,40 @@ import static uk.co.real_logic.aeron.util.BufferRotationDescriptor.BUFFER_COUNT;
  */
 public class BufferAndFrameUtils
 {
-    public static BufferRotator createTestRotator(final long logBufferSize, final long stateBufferSize)
+    public static TermBuffers createTestTermBuffers(final long logBufferSize, final long stateBufferSize)
     {
-        return new BufferRotator()
+        return new TermBuffers()
         {
-            private RawLog clean = createTestLogBuffers(logBufferSize, stateBufferSize);
-            private RawLog dirty = createTestLogBuffers(logBufferSize, stateBufferSize);
-            private RawLog current = createTestLogBuffers(logBufferSize, stateBufferSize);
-            private RawLog[] buffers = new RawLog[]{current, clean, dirty};
-            private long termBufferSize = logBufferSize;
+            private RawLog clean = createTestLogBuffer(logBufferSize, stateBufferSize);
+            private RawLog dirty = createTestLogBuffer(logBufferSize, stateBufferSize);
+            private RawLog active = createTestLogBuffer(logBufferSize, stateBufferSize);
+            private RawLog[] buffers = new RawLog[]{active, clean, dirty};
 
             public Stream<RawLog> buffers()
             {
                 return Stream.of(buffers);
             }
 
-            public void rotate() throws IOException
-            {
-                final RawLog newBuffer = clean;
-
-                // should reset here
-                clean = dirty;
-                dirty = current;
-                current = newBuffer;
-            }
-
-            public int sizeOfTermBuffer()
-            {
-                return (int)termBufferSize - RingBufferDescriptor.TRAILER_LENGTH;
-            }
-
-            public void appendBufferLocationsTo(final LogBuffersMessageFlyweight newBufferMessage)
+            public void appendBufferLocationsTo(final LogBuffersMessageFlyweight logBuffersMessage)
             {
                 for (int i = 0; i < BUFFER_COUNT; i++)
                 {
-                    newBufferMessage.bufferOffset(i, 0);
-                    newBufferMessage.bufferLength(i, (int)logBufferSize);
-                    newBufferMessage.location(i, "logBuffer-" + i);
+                    logBuffersMessage.bufferOffset(i, 0);
+                    logBuffersMessage.bufferLength(i, (int)logBufferSize);
+                    logBuffersMessage.location(i, "logBuffer-" + i);
                 }
 
                 for (int i = 0; i < BUFFER_COUNT; i++)
                 {
-                    newBufferMessage.bufferOffset(i + BUFFER_COUNT, 0);
-                    newBufferMessage.bufferLength(i + BUFFER_COUNT, (int)stateBufferSize);
-                    newBufferMessage.location(i + BUFFER_COUNT, "stateBuffer-" + i);
+                    logBuffersMessage.bufferOffset(i + BUFFER_COUNT, 0);
+                    logBuffersMessage.bufferLength(i + BUFFER_COUNT, (int)stateBufferSize);
+                    logBuffersMessage.location(i + BUFFER_COUNT, "stateBuffer-" + i);
                 }
             }
         };
     }
 
-    public static RawLog createTestLogBuffers(final long logBufferSize, final long stateBufferSize)
+    public static RawLog createTestLogBuffer(final long logBufferSize, final long stateBufferSize)
     {
         return new RawLog()
         {

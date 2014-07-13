@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
+import uk.co.real_logic.aeron.mediadriver.buffer.TermBuffers;
 import uk.co.real_logic.aeron.mediadriver.buffer.RawLog;
 import uk.co.real_logic.aeron.util.BufferRotationDescriptor;
 import uk.co.real_logic.aeron.util.TimerWheel;
@@ -86,7 +86,7 @@ public class DriverPublication
     public DriverPublication(final ControlFrameHandler frameHandler,
                              final TimerWheel timerWheel,
                              final SenderControlStrategy controlStrategy,
-                             final BufferRotator bufferRotator,
+                             final TermBuffers termBuffers,
                              final long sessionId,
                              final long channelId,
                              final long initialTermId,
@@ -102,13 +102,14 @@ public class DriverPublication
         this.headerLength = headerLength;
         this.mtuLength = mtuLength;
 
-        scanners = bufferRotator.buffers().map(this::newScanner).toArray(LogScanner[]::new);
-        termSendBuffers = bufferRotator.buffers().map(this::duplicateLogBuffer).toArray(ByteBuffer[]::new);
-        termRetransmitBuffers = bufferRotator.buffers().map(this::duplicateLogBuffer).toArray(ByteBuffer[]::new);
-        retransmitHandlers = bufferRotator.buffers().map(this::newRetransmitHandler).toArray(RetransmitHandler[]::new);
+        scanners = termBuffers.buffers().map(this::newScanner).toArray(LogScanner[]::new);
+        termSendBuffers = termBuffers.buffers().map(this::duplicateLogBuffer).toArray(ByteBuffer[]::new);
+        termRetransmitBuffers = termBuffers.buffers().map(this::duplicateLogBuffer).toArray(ByteBuffer[]::new);
+        retransmitHandlers = termBuffers.buffers().map(this::newRetransmitHandler).toArray(RetransmitHandler[]::new);
 
-        rightEdge = new AtomicLong(controlStrategy.initialRightEdge(initialTermId, bufferRotator.sizeOfTermBuffer()));
-        shiftsForTermId = Long.numberOfTrailingZeros(bufferRotator.sizeOfTermBuffer());
+        final int termCapacity = scanners[0].capacity();
+        rightEdge = new AtomicLong(controlStrategy.initialRightEdge(initialTermId, termCapacity));
+        shiftsForTermId = Long.numberOfTrailingZeros(termCapacity);
 
         activeTermId = new AtomicLong(initialTermId);
         timeOfLastSendOrHeartbeat = new AtomicLong(this.timerWheel.now());

@@ -16,26 +16,26 @@
 package uk.co.real_logic.aeron.mediadriver.cmd;
 
 import uk.co.real_logic.aeron.mediadriver.UdpDestination;
-import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
+import uk.co.real_logic.aeron.mediadriver.buffer.TermBuffers;
 
 public class NewConnectedSubscriptionCmd
 {
     private final long sessionId;
     private final long channelId;
     private final long termId;
-    private final BufferRotator bufferRotator;
+    private final TermBuffers termBuffers;
     private final UdpDestination destination;
 
     public NewConnectedSubscriptionCmd(final UdpDestination destination,
                                        final long sessionId,
                                        final long channelId,
                                        final long termId,
-                                       final BufferRotator bufferRotator)
+                                       final TermBuffers termBuffers)
     {
         this.sessionId = sessionId;
         this.channelId = channelId;
         this.termId = termId;
-        this.bufferRotator = bufferRotator;
+        this.termBuffers = termBuffers;
         this.destination = destination;
     }
 
@@ -59,8 +59,8 @@ public class NewConnectedSubscriptionCmd
         return termId;
     }
 
-    public BufferRotator bufferRotator()
+    public TermBuffers bufferRotator()
     {
-        return bufferRotator;
+        return termBuffers;
     }
 }

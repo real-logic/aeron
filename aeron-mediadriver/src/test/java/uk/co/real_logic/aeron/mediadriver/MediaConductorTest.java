@@ -93,8 +93,8 @@ public class MediaConductorTest
     public void setUp() throws Exception
     {
         when(mockBufferManagement.addPublication(anyObject(), anyLong(), anyLong()))
-            .thenReturn(BufferAndFrameUtils.createTestRotator(65536 + RingBufferDescriptor.TRAILER_LENGTH,
-                                                              LogBufferDescriptor.STATE_BUFFER_LENGTH));
+            .thenReturn(BufferAndFrameUtils.createTestTermBuffers(65536 + RingBufferDescriptor.TRAILER_LENGTH,
+                                                                  LogBufferDescriptor.STATE_BUFFER_LENGTH));
 
         final MediaDriver.MediaDriverContext ctx = new MediaDriver.MediaDriverContext()
             .driverCommandBuffer(MediaDriver.COMMAND_BUFFER_SZ)

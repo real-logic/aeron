@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
+import uk.co.real_logic.aeron.mediadriver.buffer.TermBuffers;
 import uk.co.real_logic.aeron.util.ErrorCode;
 import uk.co.real_logic.aeron.util.Flyweight;
 import uk.co.real_logic.aeron.util.command.CorrelatedMessageFlyweight;
@@ -78,7 +78,7 @@ public class ClientProxy
                                 final long channelId,
                                 final long termId,
                                 final String destination,
-                                final BufferRotator bufferRotator,
+                                final TermBuffers termBuffers,
                                 final long correlationId,
                                 final int positionCounterId)
     {
@@ -88,7 +88,7 @@ public class ClientProxy
                          .correlationId(correlationId)
                          .termId(termId)
                          .positionCounterId(positionCounterId);
-        bufferRotator.appendBufferLocationsTo(logBuffersMessage);
+        termBuffers.appendBufferLocationsTo(logBuffersMessage);
         logBuffersMessage.destination(destination);
 
         LOGGER.log(msgTypeId == ON_NEW_PUBLICATION ?

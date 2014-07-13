@@ -42,8 +42,8 @@ class MappedBufferManagement implements BufferManagement
     private final File publicationsDir;
     private final File subscriptionsDir;
 
-    private final ConnectionMap<UdpDestination, MappedBufferRotator> publicationsRotatorMap = new ConnectionMap<>();
-    private final ConnectionMap<UdpDestination, MappedBufferRotator> subscriptionsRotatorMap = new ConnectionMap<>();
+    private final ConnectionMap<UdpDestination, MappedTermBuffers> publicationsRotatorMap = new ConnectionMap<>();
+    private final ConnectionMap<UdpDestination, MappedTermBuffers> subscriptionsRotatorMap = new ConnectionMap<>();
 
     MappedBufferManagement(final String dataDir)
     {
@@ -66,18 +66,18 @@ class MappedBufferManagement implements BufferManagement
             stateTemplate.close();
 
             publicationsRotatorMap.forEach(
-                (ConnectionMap.ConnectionHandler<UdpDestination, MappedBufferRotator>)
+                (ConnectionMap.ConnectionHandler<UdpDestination, MappedTermBuffers>)
                     (final UdpDestination destination,
                      final Long sessionId,
                      final Long channelId,
-                     final MappedBufferRotator bufferRotator) -> bufferRotator.close());
+                     final MappedTermBuffers bufferRotator) -> bufferRotator.close());
 
             subscriptionsRotatorMap.forEach(
-                (ConnectionMap.ConnectionHandler<UdpDestination, MappedBufferRotator>)
+                (ConnectionMap.ConnectionHandler<UdpDestination, MappedTermBuffers>)
                     (final UdpDestination destination,
                      final Long sessionId,
                      final Long channelId,
-                     final MappedBufferRotator bufferRotator) -> bufferRotator.close());
+                     final MappedTermBuffers bufferRotator) -> bufferRotator.close());
         }
         catch (final Exception ex)
         {
@@ -107,7 +107,7 @@ class MappedBufferManagement implements BufferManagement
         }
     }
 
-    public BufferRotator addPublication(final UdpDestination destination, final long sessionId, final long channelId)
+    public TermBuffers addPublication(final UdpDestination destination, final long sessionId, final long channelId)
         throws Exception
     {
         return addPublication(destination, sessionId, channelId, publicationsDir, publicationsRotatorMap);
@@ -124,7 +124,7 @@ class MappedBufferManagement implements BufferManagement
         removePublication(destination, sessionId, channelId, subscriptionsRotatorMap);
     }
 
-    public BufferRotator addConnectedSubscription(final UdpDestination destination, final long sessionId, final long channelId)
+    public TermBuffers addConnectedSubscription(final UdpDestination destination, final long sessionId, final long channelId)
         throws Exception
     {
         return addPublication(destination, sessionId, channelId, subscriptionsDir, subscriptionsRotatorMap);
@@ -133,9 +133,9 @@ class MappedBufferManagement implements BufferManagement
     private void removePublication(final UdpDestination destination,
                                    final long sessionId,
                                    final long channelId,
-                                   final ConnectionMap<UdpDestination, MappedBufferRotator> termMap)
+                                   final ConnectionMap<UdpDestination, MappedTermBuffers> termMap)
     {
-        final MappedBufferRotator bufferRotator = termMap.remove(destination, sessionId, channelId);
+        final MappedTermBuffers bufferRotator = termMap.remove(destination, sessionId, channelId);
         if (bufferRotator == null)
         {
             final String msg = String.format("No buffers for %s, sessionId = %d, channelId = %d",
@@ -146,17 +146,17 @@ class MappedBufferManagement implements BufferManagement
         bufferRotator.close();
     }
 
-    private MappedBufferRotator addPublication(final UdpDestination destination,
+    private MappedTermBuffers addPublication(final UdpDestination destination,
                                                final long sessionId,
                                                final long channelId,
                                                final File rootDir,
-                                               final ConnectionMap<UdpDestination, MappedBufferRotator> rotatorMap)
+                                               final ConnectionMap<UdpDestination, MappedTermBuffers> rotatorMap)
     {
-        MappedBufferRotator bufferRotator = rotatorMap.get(destination, sessionId, channelId);
+        MappedTermBuffers bufferRotator = rotatorMap.get(destination, sessionId, channelId);
         if (bufferRotator == null)
         {
             final File dir = channelLocation(rootDir, sessionId, channelId, true, destination.clientAwareUri());
-            bufferRotator = new MappedBufferRotator(dir,
+            bufferRotator = new MappedTermBuffers(dir,
                                                     logTemplate,
                                                     LOG_BUFFER_SIZE,
                                                     stateTemplate,

@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
-import uk.co.real_logic.aeron.mediadriver.buffer.BufferRotator;
+import uk.co.real_logic.aeron.mediadriver.buffer.TermBuffers;
 import uk.co.real_logic.aeron.mediadriver.cmd.NewConnectedSubscriptionCmd;
 import uk.co.real_logic.aeron.util.*;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
@@ -283,14 +283,14 @@ public class MediaConductor extends Agent
             }
 
             final long initialTermId = generateTermId();
-            final BufferRotator bufferRotator = bufferManagement.addPublication(srcDestination, sessionId, channelId);
+            final TermBuffers termBuffers = bufferManagement.addPublication(srcDestination, sessionId, channelId);
             final SenderControlStrategy flowControlStrategy =
                 srcDestination.isMulticast() ? multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
 
             publication = new DriverPublication(frameHandler,
                                                 timerWheel,
                                                 flowControlStrategy,
-                                                bufferRotator,
+                                                termBuffers,
                                                 sessionId,
                                                 channelId,
                                                 initialTermId,
@@ -301,7 +301,7 @@ public class MediaConductor extends Agent
             final int positionCounterId = positionCounterId("publication", destination, sessionId, channelId);
 
             clientProxy.onNewLogBuffers(ON_NEW_PUBLICATION, sessionId, channelId,
-                                        initialTermId, destination, bufferRotator, correlationId, positionCounterId);
+                                        initialTermId, destination, termBuffers, correlationId, positionCounterId);
             publications.add(publication);
         }
         catch (final ControlProtocolException ex)
@@ -388,13 +388,13 @@ public class MediaConductor extends Agent
         try
         {
             final UdpDestination udpDst = UdpDestination.parse(destination);
-            final BufferRotator bufferRotator = bufferManagement.addConnectedSubscription(udpDst, sessionId, channelId);
+            final TermBuffers termBuffers = bufferManagement.addConnectedSubscription(udpDst, sessionId, channelId);
 
             clientProxy.onNewLogBuffers(ON_NEW_CONNECTED_SUBSCRIPTION, sessionId, channelId, termId,
-                                        destination, bufferRotator, 0, 0);
+                                        destination, termBuffers, 0, 0);
 
             final NewConnectedSubscriptionCmd cmd =
-                new NewConnectedSubscriptionCmd(udpDst, sessionId, channelId, termId, bufferRotator);
+                new NewConnectedSubscriptionCmd(udpDst, sessionId, channelId, termId, termBuffers);
 
             while (!receiverProxy.newConnectedSubscription(cmd))
             {

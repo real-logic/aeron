@@ -24,7 +24,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 
-import static uk.co.real_logic.aeron.mediadriver.MediaDriver.TERM_BUFFER_SZ;
 import static uk.co.real_logic.aeron.util.FileMappingConvention.channelLocation;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
 
@@ -42,7 +41,9 @@ public class TermBufferManager implements AutoCloseable
     private final ConnectionMap<UdpDestination, MappedTermBuffers> publicationTermsMap = new ConnectionMap<>();
     private final ConnectionMap<UdpDestination, MappedTermBuffers> subscriptionTermsMap = new ConnectionMap<>();
 
-    public TermBufferManager(final String dataDir)
+    private final int termBufferSize;
+
+    public TermBufferManager(final String dataDir, final int termBufferSize)
     {
         final FileMappingConvention fileConvention = new FileMappingConvention(dataDir);
         publicationsDir = fileConvention.publicationsDir();
@@ -51,7 +52,9 @@ public class TermBufferManager implements AutoCloseable
         IoUtil.ensureDirectoryExists(publicationsDir, FileMappingConvention.PUBLICATIONS);
         IoUtil.ensureDirectoryExists(subscriptionsDir, FileMappingConvention.SUBSCRIPTIONS);
 
-        logTemplate = createTemplateFile(dataDir, "logTemplate", TERM_BUFFER_SZ);
+        this.termBufferSize = termBufferSize;
+
+        logTemplate = createTemplateFile(dataDir, "logTemplate", termBufferSize);
         stateTemplate = createTemplateFile(dataDir, "stateTemplate", STATE_BUFFER_LENGTH);
     }
 
@@ -157,7 +160,7 @@ public class TermBufferManager implements AutoCloseable
         if (termBuffers == null)
         {
             final File dir = channelLocation(rootDir, sessionId, channelId, true, destination.clientAwareUri());
-            termBuffers = new MappedTermBuffers(dir, logTemplate, TERM_BUFFER_SZ, stateTemplate, STATE_BUFFER_LENGTH);
+            termBuffers = new MappedTermBuffers(dir, logTemplate, termBufferSize, stateTemplate, STATE_BUFFER_LENGTH);
             termsMap.put(destination, sessionId, channelId, termBuffers);
         }
 

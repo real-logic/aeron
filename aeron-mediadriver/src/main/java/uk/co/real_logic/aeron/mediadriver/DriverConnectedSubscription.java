@@ -207,7 +207,7 @@ public class DriverConnectedSubscription
     }
 
     /**
-     * Called form the MediaConductor.
+     * Called from the MediaConductor.
      *
      * @return number of work items processed.
      */

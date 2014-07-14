@@ -25,18 +25,21 @@ public class NewConnectedSubscriptionCmd
     private final long termId;
     private final TermBuffers termBuffers;
     private final UdpDestination destination;
+    private final int initialWindowSize;
 
     public NewConnectedSubscriptionCmd(final UdpDestination destination,
                                        final long sessionId,
                                        final long channelId,
                                        final long termId,
-                                       final TermBuffers termBuffers)
+                                       final TermBuffers termBuffers,
+                                       final int initialWindowSize)
     {
         this.sessionId = sessionId;
         this.channelId = channelId;
         this.termId = termId;
         this.termBuffers = termBuffers;
         this.destination = destination;
+        this.initialWindowSize = initialWindowSize;
     }
 
     public UdpDestination destination()
@@ -62,5 +65,10 @@ public class NewConnectedSubscriptionCmd
     public TermBuffers termBuffers()
     {
         return termBuffers;
+    }
+
+    public int initialWindowSize()
+    {
+        return initialWindowSize;
     }
 }

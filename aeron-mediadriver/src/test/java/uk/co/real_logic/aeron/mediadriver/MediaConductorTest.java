@@ -68,6 +68,7 @@ public class MediaConductorTest
     private static final long[] ONE_CHANNEL = {10};
     private static final long[] TWO_CHANNELS = {20, 30};
     private static final long[] THREE_CHANNELS = {10, 20, 30};
+    private static final int TERM_BUFFER_SZ = MediaDriver.TERM_BUFFER_SZ_DEFAULT;
 
     private final ByteBuffer toDriverBuffer =
         ByteBuffer.allocate(MediaDriver.COMMAND_BUFFER_SZ + RingBufferDescriptor.TRAILER_LENGTH);
@@ -93,7 +94,7 @@ public class MediaConductorTest
     public void setUp() throws Exception
     {
         when(mockTermBufferManager.addPublication(anyObject(), anyLong(), anyLong()))
-            .thenReturn(BufferAndFrameUtils.createTestTermBuffers(MediaDriver.TERM_BUFFER_SZ,
+            .thenReturn(BufferAndFrameUtils.createTestTermBuffers(TERM_BUFFER_SZ,
                                                                   LogBufferDescriptor.STATE_BUFFER_LENGTH));
 
         final MediaDriver.MediaDriverContext ctx = new MediaDriver.MediaDriverContext()

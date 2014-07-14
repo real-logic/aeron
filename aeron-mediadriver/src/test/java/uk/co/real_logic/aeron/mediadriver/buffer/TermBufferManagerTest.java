@@ -36,6 +36,7 @@ public class TermBufferManagerTest
     private static final long SESSION_ID = 100;
     private static final long CHANNEL_ID = 100;
     private static final File DATA_DIR = new File(IoUtil.tmpDirName(), "dataDirName");
+    private static final int TERM_BUFFER_SZ = MediaDriver.TERM_BUFFER_SZ_DEFAULT;
     private TermBufferManager termBufferManager;
     private UdpDestination destination = UdpDestination.parse(DESTINATION_URI);
 
@@ -43,7 +44,7 @@ public class TermBufferManagerTest
     public void createDataDir()
     {
         IoUtil.ensureDirectoryExists(DATA_DIR, "data");
-        termBufferManager = new TermBufferManager(DATA_DIR.getAbsolutePath());
+        termBufferManager = new TermBufferManager(DATA_DIR.getAbsolutePath(), TERM_BUFFER_SZ);
     }
 
     @After
@@ -63,9 +64,9 @@ public class TermBufferManagerTest
             {
                 final AtomicBuffer log = logBuffer.logBuffer();
 
-                assertThat(log.capacity(), is(MediaDriver.TERM_BUFFER_SZ));
+                assertThat(log.capacity(), is(TERM_BUFFER_SZ));
                 assertThat(log.getByte(0), is((byte)0));
-                assertThat(log.getByte(MediaDriver.TERM_BUFFER_SZ - 1), is((byte)0));
+                assertThat(log.getByte(TERM_BUFFER_SZ - 1), is((byte)0));
 
                 final AtomicBuffer state = logBuffer.stateBuffer();
 

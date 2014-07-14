@@ -22,6 +22,7 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastBufferDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastTransmitter;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
@@ -95,6 +96,11 @@ public class MediaDriver implements AutoCloseable
     public static final String COUNTER_BUFFERS_SZ_PROP_NAME = "aeron.dir.counters.size";
 
     /**
+     * Property name for size of the initial window
+     */
+    public static final String INITIAL_WINDOW_SIZE_PROP_NAME = "aeron.rcv.initial.window.size";
+
+    /**
      * Default byte buffer size for reads
      */
     public static final int READ_BYTE_BUFFER_SZ_DEFAULT = 4096;
@@ -102,7 +108,7 @@ public class MediaDriver implements AutoCloseable
     /**
      * Default term buffer size.
      */
-    public static final int TERM_BUFFER_SZ_DEFAULT = 16 * 1048576;
+    public static final int TERM_BUFFER_SZ_DEFAULT = 16 * 1024 * 1024;
 
     /**
      * Default buffer size for command buffers between threads
@@ -169,6 +175,20 @@ public class MediaDriver implements AutoCloseable
     public static final int MAX_RETRANSMITS_DEFAULT = 16;
 
     /**
+     * Default initial window size for flow control sender to receiver purposes
+     *
+     * Sizing of Initial Window
+     * <p>
+     * RTT (LAN) = 100 usec
+     * Throughput = 10 Gbps
+     * <p>
+     * Buffer = Throughput * RTT
+     * Buffer = (10*1000*1000*1000/8) * 0.0001 = 125000
+     * Round to 128KB
+     */
+    public static final int INITIAL_WINDOW_SIZE_DEFAULT = 128 * 1024;
+
+    /**
      * Estimated RTT in nanoseconds.
      */
     public static final long ESTIMATED_RTT_NS = TimeUnit.MICROSECONDS.toNanos(100);
@@ -176,10 +196,9 @@ public class MediaDriver implements AutoCloseable
     /**
      * Estimated max throughput in bytes.
      */
-    public static final long ESTIMATED_MAX_THROUGHPUT_IN_BYTES = 10 * 1000 * 1000 * 1000; // 10 Gbps
+    public static final long ESTIMATED_MAX_THROUGHPUT_IN_BYTES = 10 * 1000 * 1000 * 1000 / 8; // 10 Gbps
 
     public static final int READ_BYTE_BUFFER_SZ = getInteger(READ_BUFFER_SZ_PROP_NAME, READ_BYTE_BUFFER_SZ_DEFAULT);
-    public static final int TERM_BUFFER_SZ = getInteger(TERM_BUFFER_SZ_PROP_NAME, TERM_BUFFER_SZ_DEFAULT);
     public static final int COMMAND_BUFFER_SZ = getInteger(COMMAND_BUFFER_SZ_PROP_NAME, COMMAND_BUFFER_SZ_DEFAULT);
     public static final int CONDUCTOR_BUFFER_SZ = getInteger(CONDUCTOR_BUFFER_SZ_PROP_NAME, CONDUCTOR_BUFFER_SZ_DEFAULT);
     public static final int TO_CLIENTS_BUFFER_SZ = getInteger(TO_CLIENTS_BUFFER_SZ_PROP_NAME, TO_CLIENTS_BUFFER_SZ_DEFAULT);
@@ -265,8 +284,8 @@ public class MediaDriver implements AutoCloseable
             .connectedSubscriptions(new AtomicArray<>())
             .publications(new AtomicArray<>())
             .conductorTimerWheel(new TimerWheel(MEDIA_CONDUCTOR_TICK_DURATION_US,
-                                                TimeUnit.MICROSECONDS,
-                                                MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
+                    TimeUnit.MICROSECONDS,
+                    MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
             .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .conductorIdleStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
@@ -466,13 +485,21 @@ public class MediaDriver implements AutoCloseable
         private MappedByteBuffer toDriverBuffer;
         private StatusBufferManager statusBufferManager;
 
+        private int termBufferSize;
+        private int initialWindowSize;
+
         public MediaDriverContext()
         {
+            termBufferSize(getInteger(TERM_BUFFER_SZ_PROP_NAME, TERM_BUFFER_SZ_DEFAULT));
+            initialWindowSize(getInteger(INITIAL_WINDOW_SIZE_PROP_NAME, INITIAL_WINDOW_SIZE_DEFAULT));
         }
 
         public MediaDriverContext conclude() throws IOException
         {
             super.conclude();
+
+            validateTermBufferSize(termBufferSize());
+            validateInitialWindowSize(initialWindowSize(), mtuLength());
 
             toClientsBuffer = mapNewFile(toClientsFile(), TO_CLIENTS_BUFFER_SZ);
 
@@ -485,7 +512,7 @@ public class MediaDriver implements AutoCloseable
             receiverProxy(new ReceiverProxy(receiverCommandQueue()));
             mediaConductorProxy(new MediaConductorProxy(conductorCommandQueue));
 
-            termBufferManager(new TermBufferManager(dataDirName()));
+            termBufferManager(new TermBufferManager(dataDirName(), termBufferSize));
 
             if (statusBufferManager() == null)
             {
@@ -618,6 +645,18 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
+        public MediaDriverContext termBufferSize(final int termBufferSize)
+        {
+            this.termBufferSize = termBufferSize;
+            return this;
+        }
+
+        public MediaDriverContext initialWindowSize(final int initialWindowSize)
+        {
+            this.initialWindowSize = initialWindowSize;
+            return this;
+        }
+
         public OneToOneConcurrentArrayQueue<? super Object> conductorCommandQueue()
         {
             return conductorCommandQueue;
@@ -708,6 +747,16 @@ public class MediaDriver implements AutoCloseable
             return statusBufferManager;
         }
 
+        public int termBufferSize()
+        {
+            return termBufferSize;
+        }
+
+        public int initialWindowSize()
+        {
+            return initialWindowSize;
+        }
+
         public void close() throws Exception
         {
             if (null != toClientsBuffer)
@@ -727,6 +776,23 @@ public class MediaDriver implements AutoCloseable
             catch (final Exception ex)
             {
                 throw new RuntimeException(ex);
+            }
+        }
+
+        public static void validateTermBufferSize(final int size)
+        {
+            if (size < 2 || 1 != Integer.bitCount(size))
+            {
+                throw new IllegalStateException("Term buffer size must be a positive power of 2: " + size);
+            }
+        }
+
+        public static void validateInitialWindowSize(final int initialWindowSize, final int mtuLength)
+        {
+            if (mtuLength > initialWindowSize)
+            {
+                throw new IllegalStateException("Initial window size must be greater than or equal to MTU length: " +
+                    mtuLength);
             }
         }
     }

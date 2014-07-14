@@ -32,20 +32,6 @@ import java.nio.ByteBuffer;
  */
 public class DataFrameHandler implements FrameHandler, AutoCloseable
 {
-    /**
-     * Sizing of Initial Window
-     * <p>
-     * RTT (LAN) = 100 usec
-     * 10 Gbps
-     * <p>
-     * Buffer = Throughput * RTT
-     * Buffer = (10*1000*1000*1000/8) * 0.0001 = 125000
-     * Round to 128KB
-     * <p>
-     * TODO: But, window should not be more than term/8, but must be >= MAX message size
-     */
-    private final static int INITIAL_WINDOW_SIZE = 128 * 1024;
-
     private final UdpTransport transport;
     private final UdpDestination destination;
     private final Long2ObjectHashMap<DriverSubscription> subscriptionByChannelIdMap = new Long2ObjectHashMap<>();
@@ -187,12 +173,12 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         lossHandler.sendNakHandler(
             (termId, termOffset, length) -> sendNak(connectedSubscription, (int)termId, termOffset, length));
 
-        connectedSubscription.onLogBufferAvailable(cmd.termId(), INITIAL_WINDOW_SIZE,
+        connectedSubscription.onLogBufferAvailable(cmd.termId(), cmd.initialWindowSize(),
                                                    cmd.termBuffers(), lossHandler, sendSm);
 
         // now we are all setup, so send an SM to allow the source to send if it is waiting
         // TODO: grab initial term offset from data and store in subscriberSession somehow (per TermID)
-        sendStatusMessage(connectedSubscription, (int)cmd.termId(), 0, INITIAL_WINDOW_SIZE);
+        sendStatusMessage(connectedSubscription, (int)cmd.termId(), 0, cmd.initialWindowSize());
     }
 
     private void sendStatusMessage(final DriverConnectedSubscription connectedSubscription,

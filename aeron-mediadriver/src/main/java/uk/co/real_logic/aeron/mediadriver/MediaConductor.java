@@ -87,10 +87,10 @@ public class MediaConductor extends Agent
     private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
 
     private final int mtuLength;
+    private final int initialWindowSize;
     private final TimerWheel.Timer heartbeatTimer;
     private final StatusBufferManager statusBufferManager;
     private final AtomicBuffer counterValuesBuffer;
-
 
     public MediaConductor(final MediaDriverContext ctx)
     {
@@ -101,6 +101,7 @@ public class MediaConductor extends Agent
         this.termBufferManager = ctx.termBufferManager();
         this.nioSelector = ctx.conductorNioSelector();
         this.mtuLength = ctx.mtuLength();
+        this.initialWindowSize = ctx.initialWindowSize();
         this.unicastSenderFlowControl = ctx.unicastSenderFlowControl();
         this.multicastSenderFlowControl = ctx.multicastSenderFlowControl();
         this.statusBufferManager = ctx.statusBufferManager();
@@ -405,7 +406,7 @@ public class MediaConductor extends Agent
                                         udpDst.clientAwareUri(), termBuffers, 0, 0);
 
             final NewConnectedSubscriptionCmd newConnectedSubscriptionCmd =
-                new NewConnectedSubscriptionCmd(udpDst, sessionId, channelId, termId, termBuffers);
+                new NewConnectedSubscriptionCmd(udpDst, sessionId, channelId, termId, termBuffers, initialWindowSize);
 
             while (!receiverProxy.newConnectedSubscription(newConnectedSubscriptionCmd))
             {

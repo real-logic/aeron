@@ -59,6 +59,7 @@ public class ReceiverTest
     private static final long SESSION_ID = 1;
     private static final byte[] FAKE_PAYLOAD = "Hello there, message!".getBytes();
     private static final byte[] NO_PAYLOAD = new byte[0];
+    private static final int INITIAL_WINDOW_SIZE = MediaDriver.INITIAL_WINDOW_SIZE_DEFAULT;
 
     private final NioSelector mockNioSelector = mock(NioSelector.class);
     private final TermBufferManager mockTermBufferManager = mock(TermBufferManager.class);
@@ -147,7 +148,8 @@ public class ReceiverTest
 
                 // pass in new term buffer from media conductor, which should trigger SM
                 receiverProxy.newConnectedSubscription(
-                    new NewConnectedSubscriptionCmd(UDP_DESTINATION, SESSION_ID, CHANNEL_ID, TERM_ID, termBuffers));
+                    new NewConnectedSubscriptionCmd(UDP_DESTINATION, SESSION_ID, CHANNEL_ID, TERM_ID,
+                        termBuffers, INITIAL_WINDOW_SIZE));
             });
 
         assertThat(messagesRead, is(1));
@@ -191,7 +193,8 @@ public class ReceiverTest
                 assertTrue(e instanceof CreateConnectedSubscriptionCmd);
                 // pass in new term buffer from media conductor, which should trigger SM
                 receiverProxy.newConnectedSubscription(
-                    new NewConnectedSubscriptionCmd(UDP_DESTINATION, SESSION_ID, CHANNEL_ID, TERM_ID, termBuffers));
+                    new NewConnectedSubscriptionCmd(UDP_DESTINATION, SESSION_ID, CHANNEL_ID, TERM_ID,
+                        termBuffers, INITIAL_WINDOW_SIZE));
             });
 
         assertThat(messagesRead, is(1));
@@ -240,7 +243,8 @@ public class ReceiverTest
                 assertTrue(e instanceof CreateConnectedSubscriptionCmd);
                 // pass in new term buffer from media conductor, which should trigger SM
                 receiverProxy.newConnectedSubscription(
-                    new NewConnectedSubscriptionCmd(UDP_DESTINATION, SESSION_ID, CHANNEL_ID, TERM_ID, termBuffers));
+                    new NewConnectedSubscriptionCmd(UDP_DESTINATION, SESSION_ID, CHANNEL_ID, TERM_ID,
+                        termBuffers, INITIAL_WINDOW_SIZE));
             });
 
         assertThat(messagesRead, is(1));
@@ -292,7 +296,8 @@ public class ReceiverTest
                 assertTrue(e instanceof CreateConnectedSubscriptionCmd);
                 // pass in new term buffer from media conductor, which should trigger SM
                 receiverProxy.newConnectedSubscription(
-                    new NewConnectedSubscriptionCmd(UDP_DESTINATION, SESSION_ID, CHANNEL_ID, TERM_ID, termBuffers));
+                    new NewConnectedSubscriptionCmd(UDP_DESTINATION, SESSION_ID, CHANNEL_ID, TERM_ID,
+                        termBuffers, INITIAL_WINDOW_SIZE));
             });
 
         assertThat(messagesRead, is(1));
@@ -342,7 +347,8 @@ public class ReceiverTest
         final int messagesRead = toConductorQueue.drain(
             (e) ->
                 receiverProxy.newConnectedSubscription(
-                    new NewConnectedSubscriptionCmd(UDP_DESTINATION, SESSION_ID, CHANNEL_ID, TERM_ID, termBuffers)));
+                    new NewConnectedSubscriptionCmd(UDP_DESTINATION, SESSION_ID, CHANNEL_ID, TERM_ID,
+                        termBuffers, INITIAL_WINDOW_SIZE)));
 
         assertThat(messagesRead, is(1));
 

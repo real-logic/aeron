@@ -25,7 +25,7 @@ public class RateReporter implements Runnable
     @FunctionalInterface
     public interface ReportingFunction
     {
-        void onReport(final long messagesPerSec, final long bytesPerSec);
+        void onReport(final double messagesPerSec, final double bytesPerSec);
     }
 
     private final long reportIntervalNs;
@@ -60,8 +60,10 @@ public class RateReporter implements Runnable
             final long currentTimestamp = System.nanoTime();
 
             final long timeSpanNs = currentTimestamp - lastTimestamp;
-            final long messagesPerSec = (currentTotalMessages - lastTotalMessages) * reportIntervalNs / timeSpanNs;
-            final long bytesPerSec = (currentTotalBytes - lastTotalBytes) * reportIntervalNs / timeSpanNs;
+            final double messagesPerSec = (double)((currentTotalMessages - lastTotalMessages) * reportIntervalNs) /
+                    (double)timeSpanNs;
+            final double bytesPerSec = (double)((currentTotalBytes - lastTotalBytes) * reportIntervalNs) /
+                    (double)timeSpanNs;
 
             reportingFunction.onReport(messagesPerSec, bytesPerSec);
 

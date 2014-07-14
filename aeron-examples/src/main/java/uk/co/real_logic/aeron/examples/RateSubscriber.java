@@ -18,14 +18,16 @@ package uk.co.real_logic.aeron.examples;
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
+import uk.co.real_logic.aeron.util.RateReporter;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
- * Example Aeron subscriber application
+ * Example that displays current rate while receiving data
  */
-public class ExampleSubscriber
+public class RateSubscriber
 {
     public static final String DESTINATION = "udp://localhost:40123";
     public static final int CHANNEL_ID_1 = 10;
@@ -33,18 +35,19 @@ public class ExampleSubscriber
 
     public static void main(final String[] args)
     {
-        final ExecutorService executor = Executors.newFixedThreadPool(1);
+        final ExecutorService executor = Executors.newFixedThreadPool(2);
         final Aeron.ClientContext aeronContext = new Aeron.ClientContext().errorHandler(ExampleUtil::printError);
 
         try (final MediaDriver driver = ExampleUtil.createEmbeddedMediaDriver();
              final Aeron aeron = ExampleUtil.createAeron(aeronContext))
         {
-            // subscription for channel Id 1
-            final Subscription subscription1 = aeron.addSubscription(DESTINATION, CHANNEL_ID_1,
-                    ExampleUtil.printStringMessage(CHANNEL_ID_1));
+            final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), ExampleUtil::printRate);
 
-            // spin off the subscriber thread if you want it to be independent
+            final Subscription subscription1 = aeron.addSubscription(DESTINATION, CHANNEL_ID_1,
+                    ExampleUtil.rateReporterHandler(reporter));
+
             executor.execute(() -> ExampleUtil.consumerLoop(FRAME_COUNT_LIMIT).accept(subscription1));
+            executor.execute(reporter);
 
             // run aeron client conductor thread from here
             aeron.run();

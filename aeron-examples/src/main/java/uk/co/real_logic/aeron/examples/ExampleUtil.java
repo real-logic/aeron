@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.examples;
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
+import uk.co.real_logic.aeron.util.RateReporter;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.util.concurrent.ExecutorService;
@@ -123,6 +124,18 @@ public class ExampleUtil
     }
 
     /**
+     * Return a reusable, parameteried {@link uk.co.real_logic.aeron.Subscription.DataHandler} that calls into a
+     * {@link RateReporter}.
+     *
+     * @param reporter for the rate
+     * @return {@link Subscription.DataHandler} that records the rate information
+     */
+    public static Subscription.DataHandler rateReporterHandler(final RateReporter reporter)
+    {
+        return (buffer, offset, length, sessionId, flags) -> reporter.onMessage(1, length);
+    }
+
+    /**
      * Generic error handler that just prints message to stdout.
      *
      * @param destination for the error
@@ -138,5 +151,16 @@ public class ExampleUtil
                                   final HeaderFlyweight cause)
     {
         System.out.println(message);
+    }
+
+    /**
+     * Print the rates to stdout
+     *
+     * @param messagesPerSec being reported
+     * @param bytesPerSec being reported
+     */
+    public static void printRate(final double messagesPerSec, final double bytesPerSec)
+    {
+        System.out.println(String.format("%.02g msgs/sec, %.02g bytes/sec", messagesPerSec, bytesPerSec));
     }
 }

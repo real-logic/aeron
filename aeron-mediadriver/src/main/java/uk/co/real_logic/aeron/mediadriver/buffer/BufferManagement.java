@@ -28,16 +28,16 @@ public interface BufferManagement extends AutoCloseable
     }
 
     TermBuffers addPublication(final UdpDestination destination,
-                                 final long sessionId,
-                                 final long channelId) throws Exception;
+                               final long sessionId,
+                               final long channelId) throws Exception;
 
     void removePublication(final UdpDestination destination,
                            final long sessionId,
                            final long channelId) throws IllegalArgumentException;
 
     TermBuffers addConnectedSubscription(final UdpDestination destination,
-                                           final long sessionId,
-                                           final long channelId) throws Exception;
+                                         final long sessionId,
+                                         final long channelId) throws Exception;
 
     void removeConnectedSubscription(final UdpDestination destination,
                                      final long sessionId,

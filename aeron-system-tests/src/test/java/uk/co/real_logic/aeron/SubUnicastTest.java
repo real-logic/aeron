@@ -116,7 +116,6 @@ public class SubUnicastTest
     {
         Aeron.ClientContext ctx = new Aeron.ClientContext();
 
-
         ctx.counterLabelsBuffer(counterLabelsBuffer)
            .counterValuesBuffer(counterValuesBuffer);
 

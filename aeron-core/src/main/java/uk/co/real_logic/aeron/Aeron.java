@@ -35,15 +35,12 @@ import java.util.concurrent.TimeoutException;
 
 import static java.lang.Long.getLong;
 import static uk.co.real_logic.aeron.util.IoUtil.mapExistingFile;
-import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
 
 /**
  * Encapsulation of media driver and client for source and receiver construction
  */
 public final class Aeron implements AutoCloseable
 {
-    private static final int COMMAND_BUFFER_SIZE = 4096 + TRAILER_LENGTH;
-
     // TODO: make configurable
     public static final long AWAIT_TIMEOUT = 10_000;
 

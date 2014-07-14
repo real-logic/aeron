@@ -24,7 +24,7 @@ import java.util.concurrent.locks.LockSupport;
  * {@link Thread#yield()} for maxYields
  * {@link LockSupport#parkNanos(long)} on an exponential backoff to maxParkPeriodNs
  */
-public class AgentIdleStrategy
+public class SpinYieldParkIdleStrategy implements IdleStrategy
 {
     public enum State
     {
@@ -50,10 +50,10 @@ public class AgentIdleStrategy
      * @param minParkPeriodNs to use when initiating parking
      * @param maxParkPeriodNs to use when parking
      */
-    public AgentIdleStrategy(final long maxSpins,
-                             final long maxYields,
-                             final long minParkPeriodNs,
-                             final long maxParkPeriodNs)
+    public SpinYieldParkIdleStrategy(final long maxSpins,
+                                     final long maxYields,
+                                     final long minParkPeriodNs,
+                                     final long maxParkPeriodNs)
     {
         this.maxSpins = maxSpins;
         this.maxYields = maxYields;
@@ -65,11 +65,7 @@ public class AgentIdleStrategy
         this.state = State.NOT_IDLE;
     }
 
-    /**
-     * Perform current idle strategy (or not) depending on whether work has been done or not
-     *
-     * @param workCount performed in last duty cycle.
-     */
+    /** {@inheritDoc} */
     public void idle(final int workCount)
     {
         if (workCount > 0)

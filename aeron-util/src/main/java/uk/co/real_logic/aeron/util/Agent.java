@@ -20,15 +20,15 @@ package uk.co.real_logic.aeron.util;
  */
 public abstract class Agent implements Runnable, AutoCloseable
 {
-    private final AgentIdleStrategy idleStrategy;
+    private final IdleStrategy idleStrategy;
     private volatile boolean running;
 
     /**
-     * Create an agent passing in {@link AgentIdleStrategy}
+     * Create an agent passing in {@link IdleStrategy}
      *
      * @param idleStrategy to use for Agent run loop
      */
-    public Agent(final AgentIdleStrategy idleStrategy)
+    public Agent(final IdleStrategy idleStrategy)
     {
         this.idleStrategy = idleStrategy;
         this.running = true;

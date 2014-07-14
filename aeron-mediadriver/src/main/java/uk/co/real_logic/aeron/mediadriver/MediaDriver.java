@@ -260,11 +260,11 @@ public class MediaDriver implements AutoCloseable
                                                 TimeUnit.MICROSECONDS,
                                                 MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
-            .conductorIdleStrategy(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
+            .conductorIdleStrategy(new SpinYieldParkIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
                                                          AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
-            .senderIdleStrategy(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
+            .senderIdleStrategy(new SpinYieldParkIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
                                                       AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
-            .receiverIdleStrategy(new AgentIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
+            .receiverIdleStrategy(new SpinYieldParkIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
                                                         AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
             .conclude();
 
@@ -445,9 +445,9 @@ public class MediaDriver implements AutoCloseable
         private Queue<? super Object> receiverCommandQueue;
         private ReceiverProxy receiverProxy;
         private MediaConductorProxy mediaConductorProxy;
-        private AgentIdleStrategy conductorIdleStrategy;
-        private AgentIdleStrategy senderIdleStrategy;
-        private AgentIdleStrategy receiverIdleStrategy;
+        private IdleStrategy conductorIdleStrategy;
+        private IdleStrategy senderIdleStrategy;
+        private IdleStrategy receiverIdleStrategy;
         private AtomicArray<DriverConnectedSubscription> connectedSubscriptions;
         private AtomicArray<DriverPublication> publications;
         private ClientProxy clientProxy;
@@ -566,19 +566,19 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public MediaDriverContext conductorIdleStrategy(final AgentIdleStrategy strategy)
+        public MediaDriverContext conductorIdleStrategy(final IdleStrategy strategy)
         {
             this.conductorIdleStrategy = strategy;
             return this;
         }
 
-        public MediaDriverContext senderIdleStrategy(final AgentIdleStrategy strategy)
+        public MediaDriverContext senderIdleStrategy(final IdleStrategy strategy)
         {
             this.senderIdleStrategy = strategy;
             return this;
         }
 
-        public MediaDriverContext receiverIdleStrategy(final AgentIdleStrategy strategy)
+        public MediaDriverContext receiverIdleStrategy(final IdleStrategy strategy)
         {
             this.receiverIdleStrategy = strategy;
             return this;
@@ -665,17 +665,17 @@ public class MediaDriver implements AutoCloseable
             return mediaConductorProxy;
         }
 
-        public AgentIdleStrategy conductorIdleStrategy()
+        public IdleStrategy conductorIdleStrategy()
         {
             return conductorIdleStrategy;
         }
 
-        public AgentIdleStrategy senderIdleStrategy()
+        public IdleStrategy senderIdleStrategy()
         {
             return senderIdleStrategy;
         }
 
-        public AgentIdleStrategy receiverIdleStrategy()
+        public IdleStrategy receiverIdleStrategy()
         {
             return receiverIdleStrategy;
         }

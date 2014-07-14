@@ -19,11 +19,11 @@ import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Example Aeron pusblisher application
@@ -38,7 +38,7 @@ public class ExamplePublisher
     public static void main(final String[] args)
     {
         final ExecutorService executor = Executors.newSingleThreadExecutor();
-        final Aeron.ClientContext context = new Aeron.ClientContext().errorHandler(ExamplePublisher::onError);
+        final Aeron.ClientContext context = new Aeron.ClientContext().errorHandler(ExampleUtil::printError);
 
         try (final MediaDriver driver = ExampleUtil.createEmbeddedMediaDriver();
              final Aeron aeron = ExampleUtil.createAeron(context, executor))
@@ -62,7 +62,7 @@ public class ExamplePublisher
                     System.out.println(" yay!");
                 }
 
-                Thread.sleep(1000);
+                Thread.sleep(TimeUnit.SECONDS.toMillis(1));
             }
 
             aeron.shutdown();
@@ -74,14 +74,5 @@ public class ExamplePublisher
         }
 
         executor.shutdown();
-    }
-
-    public static void onError(final String destination,
-                               final long sessionId,
-                               final long channelId,
-                               final String message,
-                               final HeaderFlyweight cause)
-    {
-        System.err.println(message);
     }
 }

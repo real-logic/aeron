@@ -38,7 +38,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import static java.lang.Integer.getInteger;
-import static uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement.newMappedBufferManager;
 import static uk.co.real_logic.aeron.util.IoUtil.mapNewFile;
 
 /**
@@ -477,7 +476,7 @@ public class MediaDriver implements AutoCloseable
             receiverProxy(new ReceiverProxy(receiverCommandQueue()));
             mediaConductorProxy(new MediaConductorProxy(driverCommandBuffer()));
 
-            bufferManagement(newMappedBufferManager(dataDirName()));
+            bufferManagement(new BufferManagement(dataDirName()));
 
             if (statusBufferManager() == null)
             {

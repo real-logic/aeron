@@ -24,7 +24,7 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicArray;
 public class Sender extends Agent
 {
     private final AtomicArray<DriverPublication> publications;
-    private int startingOffset = 0;
+    private int roundRobinIndex = 0;
 
     public Sender(final MediaDriver.MediaDriverContext ctx)
     {
@@ -35,12 +35,12 @@ public class Sender extends Agent
 
     public int doWork()
     {
-        startingOffset++;
-        if (startingOffset == publications.size())
+        roundRobinIndex++;
+        if (roundRobinIndex == publications.size())
         {
-            startingOffset = 0;
+            roundRobinIndex = 0;
         }
 
-        return publications.doAction(startingOffset, DriverPublication::send);
+        return publications.doAction(roundRobinIndex, DriverPublication::send);
     }
 }

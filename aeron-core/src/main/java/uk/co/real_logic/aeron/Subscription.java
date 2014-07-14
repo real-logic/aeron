@@ -78,7 +78,7 @@ public class Subscription
     private final DataHandler handler;
     private final ClientConductor conductor;
 
-    private int connectionIndex = 0;
+    private int roundRobinIndex = 0;
 
     public Subscription(final ClientConductor conductor,
                         final DataHandler handler,
@@ -116,13 +116,13 @@ public class Subscription
      */
     public int poll(final int frameCountLimit)
     {
-        int index = connectionIndex++;
-        if (connectedSubscriptions.size() == connectionIndex)
+        roundRobinIndex++;
+        if (connectedSubscriptions.size() == roundRobinIndex)
         {
-            connectionIndex = 0;
+            roundRobinIndex = 0;
         }
 
-        return connectedSubscriptions.doLimitedAction(index, frameCountLimit, ConnectedSubscription::poll);
+        return connectedSubscriptions.doLimitedAction(roundRobinIndex, frameCountLimit, ConnectedSubscription::poll);
     }
 
     public void onLogBufferMapped(final long sessionId, final long termId, final LogReader[] logReaders)

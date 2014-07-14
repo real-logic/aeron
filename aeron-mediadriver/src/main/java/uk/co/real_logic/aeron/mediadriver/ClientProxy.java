@@ -75,14 +75,14 @@ public class ClientProxy
                                 final String destination,
                                 final TermBuffers termBuffers,
                                 final long correlationId,
-                                final int positionCounterId)
+                                final int positionCounterOffset)
     {
         logBuffersMessage.wrap(tmpBuffer, 0);
         logBuffersMessage.sessionId(sessionId)
                          .channelId(channelId)
                          .correlationId(correlationId)
                          .termId(termId)
-                         .positionCounterId(positionCounterId);
+                         .positionCounterOffset(positionCounterOffset);
         termBuffers.appendBufferLocationsTo(logBuffersMessage);
         logBuffersMessage.destination(destination);
 

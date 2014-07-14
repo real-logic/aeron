@@ -186,7 +186,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
                                  final long sessionId,
                                  final long channelId,
                                  final long termId,
-                                 final int positionIndicatorId,
+                                 final int positionIndicatorOffset,
                                  final LogBuffersMessageFlyweight logBuffersMessage) throws IOException
     {
         final LogAppender[] logs = new LogAppender[BUFFER_COUNT];
@@ -200,7 +200,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
             logs[i] = new LogAppender(logBuffer, stateBuffer, header, MAX_FRAME_LENGTH);
         }
 
-        final LimitBarrier limit = limitBarrier(positionIndicatorId);
+        final LimitBarrier limit = limitBarrier(positionIndicatorOffset);
         addedPublication = new Publication(this, destination, channelId, sessionId, termId, logs, limit);
 
         correlationSignal.signal();
@@ -270,9 +270,9 @@ public class ClientConductor extends Agent implements MediaDriverListener
         return bufferUsage.newBuffer(location, offset, length);
     }
 
-    private LimitBarrier limitBarrier(final int positionIndicatorId)
+    private LimitBarrier limitBarrier(final int positionIndicatorOffset)
     {
-        final BufferPositionIndicator indicator = new BufferPositionIndicator(counterValuesBuffer, positionIndicatorId);
+        final BufferPositionIndicator indicator = new BufferPositionIndicator(counterValuesBuffer, positionIndicatorOffset);
 
         return new WindowedLimitBarrier(indicator, publicationWindow);
     }

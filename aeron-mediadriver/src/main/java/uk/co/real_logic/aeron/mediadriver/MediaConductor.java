@@ -30,6 +30,7 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.event.EventCode;
 import uk.co.real_logic.aeron.util.event.EventLogger;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.util.status.BufferPositionReporter;
 import uk.co.real_logic.aeron.util.status.StatusBufferManager;
 
 import java.util.concurrent.TimeUnit;
@@ -288,6 +289,10 @@ public class MediaConductor extends Agent
             final SenderControlStrategy flowControlStrategy =
                 srcDestination.isMulticast() ? multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
 
+            final int positionCounterOffset = positionCounterId("publication", destination, sessionId, channelId);
+            final BufferPositionReporter positionReporter =
+                    new BufferPositionReporter(statusBufferManager.descriptorBuffer(), positionCounterOffset);
+
             publication = new DriverPublication(frameHandler,
                                                 timerWheel,
                                                 flowControlStrategy,
@@ -299,10 +304,10 @@ public class MediaConductor extends Agent
                                                 mtuLength);
 
             frameHandler.addPublication(publication);
-            final int positionCounterId = positionCounterId("publication", destination, sessionId, channelId);
 
             clientProxy.onNewLogBuffers(ON_NEW_PUBLICATION, sessionId, channelId,
-                                        initialTermId, destination, termBuffers, correlationId, positionCounterId);
+                                        initialTermId, destination, termBuffers, correlationId, positionCounterOffset);
+
             publications.add(publication);
         }
         catch (final ControlProtocolException ex)

@@ -41,7 +41,7 @@ import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_LONG;
  * +---------------------------------------------------------------+
  * |                           Term ID                             |
  * +---------------------------------------------------------------+
- * |                      Position Indicator Id                    |
+ * |                   Position Indicator Offset                   |
  * +---------------------------------------------------------------+
  * |                          File Offset 0                        |
  * +---------------------------------------------------------------+
@@ -235,24 +235,24 @@ public class LogBuffersMessageFlyweight extends Flyweight
     }
 
     /**
-     * return position counter id field
+     * return position counter offset field
      *
-     * @return position counter id field
+     * @return position counter offset field
      */
-    public int positionCounterId()
+    public int positionCounterOffset()
     {
         return atomicBuffer().getInt(offset() + POSITION_COUNTER_ID_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
-     * set position counter id field
+     * set position counter offset field
      *
-     * @param positionCounterId field value
+     * @param positionCounterOffset field value
      * @return flyweight
      */
-    public LogBuffersMessageFlyweight positionCounterId(final int positionCounterId)
+    public LogBuffersMessageFlyweight positionCounterOffset(final int positionCounterOffset)
     {
-        atomicBuffer().putInt(offset() + POSITION_COUNTER_ID_OFFSET, positionCounterId, LITTLE_ENDIAN);
+        atomicBuffer().putInt(offset() + POSITION_COUNTER_ID_OFFSET, positionCounterOffset, LITTLE_ENDIAN);
         return this;
     }
 

@@ -48,7 +48,7 @@ public class MediaDriverBroadcastReceiver
                             final long sessionId = logBuffersMessage.sessionId();
                             final long channelId = logBuffersMessage.channelId();
                             final long termId = logBuffersMessage.termId();
-                            final int positionIndicatorId = logBuffersMessage.positionCounterId();
+                            final int positionIndicatorOffset = logBuffersMessage.positionCounterOffset();
 
                             if (msgTypeId == ON_NEW_PUBLICATION)
                             {
@@ -58,7 +58,7 @@ public class MediaDriverBroadcastReceiver
                                 }
 
                                 listener.onNewPublication(destination, sessionId, channelId, termId,
-                                                          positionIndicatorId, logBuffersMessage);
+                                                          positionIndicatorOffset, logBuffersMessage);
                             }
                             else
                             {

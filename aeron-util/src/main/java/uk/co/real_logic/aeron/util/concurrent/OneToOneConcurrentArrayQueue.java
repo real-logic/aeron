@@ -183,6 +183,27 @@ public class OneToOneConcurrentArrayQueue<E>
         return (E)UNSAFE.getObjectVolatile(buffer, sequenceToOffset(head));
     }
 
+    public int drain(final ElementHandler<E> elementHandler)
+    {
+        final long currentHead = head;
+        final long currentTail = tail;
+        long nextSequence = currentHead;
+
+        try
+        {
+            while (nextSequence < currentTail)
+            {
+                elementHandler.onElement(removeSequence(nextSequence++));
+            }
+        }
+        finally
+        {
+            headOrdered(nextSequence);
+        }
+
+        return (int)(currentTail - currentHead);
+    }
+
     public int size()
     {
         int size;
@@ -299,5 +320,17 @@ public class OneToOneConcurrentArrayQueue<E>
     private long sequenceToOffset(final long sequence)
     {
         return ARRAY_BASE + ((sequence & mask) << SHIFT_FOR_SCALE);
+    }
+
+    @SuppressWarnings("unchecked")
+    private E removeSequence(final long sequence)
+    {
+        final Object[] buffer = this.buffer;
+        final long offset = sequenceToOffset(sequence);
+
+        final Object e = UNSAFE.getObject(buffer, offset);
+        UNSAFE.putObject(buffer, offset, null);
+
+        return (E)e;
     }
 }

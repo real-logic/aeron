@@ -17,13 +17,15 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.mediadriver.buffer.TermBufferManager;
 import uk.co.real_logic.aeron.mediadriver.buffer.TermBuffers;
+import uk.co.real_logic.aeron.mediadriver.cmd.CreateConnectedSubscriptionCmd;
 import uk.co.real_logic.aeron.mediadriver.cmd.NewConnectedSubscriptionCmd;
+import uk.co.real_logic.aeron.mediadriver.cmd.RemoveConnectedSubscriptionCmd;
 import uk.co.real_logic.aeron.util.*;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.command.PublicationMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.QualifiedMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicArray;
+import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.event.EventCode;
 import uk.co.real_logic.aeron.util.event.EventLogger;
@@ -65,7 +67,7 @@ public class MediaConductor extends Agent
     public static final FeedbackDelayGenerator RETRANS_UNICAST_LINGER_GENERATOR =
         () -> RETRANS_UNICAST_LINGER_DEFAULT_NS;
 
-    private final RingBuffer driverCommandBuffer;
+    private final OneToOneConcurrentArrayQueue<? super Object> commandQueue;
     private final ReceiverProxy receiverProxy;
     private final ClientProxy clientProxy;
     private final NioSelector nioSelector;
@@ -81,7 +83,6 @@ public class MediaConductor extends Agent
 
     private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
     private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
-    private final QualifiedMessageFlyweight qualifiedMessage = new QualifiedMessageFlyweight();
 
     private final int mtuLength;
     private final TimerWheel.Timer heartbeatTimer;
@@ -91,7 +92,7 @@ public class MediaConductor extends Agent
     {
         super(ctx.conductorIdleStrategy());
 
-        this.driverCommandBuffer = ctx.driverCommandBuffer();
+        this.commandQueue = ctx.conductorCommandQueue();
         this.receiverProxy = ctx.receiverProxy();
         this.termBufferManager = ctx.termBufferManager();
         this.nioSelector = ctx.conductorNioSelector();
@@ -133,7 +134,7 @@ public class MediaConductor extends Agent
         workCount += connectedSubscriptions.doAction((subscription) -> subscription.sendAnyPendingSm(timerWheel.now()));
 
         workCount += processFromClientCommandBuffer();
-        workCount += processMediaCommandBuffer();
+        workCount += processFromReceiverCommandQueue();
         workCount += processTimers();
 
         return workCount;
@@ -156,26 +157,25 @@ public class MediaConductor extends Agent
         return nioSelector;
     }
 
-    private int processMediaCommandBuffer()
+    private int processFromReceiverCommandQueue()
     {
-        return driverCommandBuffer.read(
-            (msgTypeId, buffer, index, length) ->
+        return commandQueue.drain(
+            (obj) ->
             {
-                switch (msgTypeId)
+                try
                 {
-                    case CREATE_CONNECTED_SUBSCRIPTION:
-                        qualifiedMessage.wrap(buffer, index);
-                        onCreateConnectedSubscription(qualifiedMessage);
-                        break;
-
-                    case REMOVE_CONNECTED_SUBSCRIPTION:
-                        qualifiedMessage.wrap(buffer, index);
-                        onRemoveConnectedSubscription(qualifiedMessage);
-                        break;
-
-                    case ERROR_RESPONSE:
-                        clientProxy.onError(msgTypeId, buffer, index, length);
-                        break;
+                    if (obj instanceof CreateConnectedSubscriptionCmd)
+                    {
+                        onCreateConnectedSubscription((CreateConnectedSubscriptionCmd)obj);
+                    }
+                    else if (obj instanceof RemoveConnectedSubscriptionCmd)
+                    {
+                        onRemoveConnectedSubscription((RemoveConnectedSubscriptionCmd)obj);
+                    }
+                }
+                catch (final Exception ex)
+                {
+                    LOGGER.logException(ex);
                 }
             });
     }
@@ -331,6 +331,7 @@ public class MediaConductor extends Agent
         final String destination = publicationMessage.destination();
         final long sessionId = publicationMessage.sessionId();
         final long channelId = publicationMessage.channelId();
+
         try
         {
             final UdpDestination srcDestination = UdpDestination.parse(destination);
@@ -379,25 +380,24 @@ public class MediaConductor extends Agent
         receiverProxy.removeSubscription(subscriberMessage.destination(), subscriberMessage.channelIds());
     }
 
-    private void onCreateConnectedSubscription(final QualifiedMessageFlyweight qualifiedMessage)
+    private void onCreateConnectedSubscription(final CreateConnectedSubscriptionCmd cmd)
     {
-        final String destination = qualifiedMessage.destination();
-        final long sessionId = qualifiedMessage.sessionId();
-        final long channelId = qualifiedMessage.channelId();
-        final long termId = qualifiedMessage.termId();
+        final UdpDestination udpDst = cmd.udpDestination();
+        final long sessionId = cmd.sessionId();
+        final long channelId = cmd.channelId();
+        final long termId = cmd.termId();
 
         try
         {
-            final UdpDestination udpDst = UdpDestination.parse(destination);
             final TermBuffers termBuffers = termBufferManager.addConnectedSubscription(udpDst, sessionId, channelId);
 
             clientProxy.onNewLogBuffers(ON_NEW_CONNECTED_SUBSCRIPTION, sessionId, channelId, termId,
-                                        destination, termBuffers, 0, 0);
+                                        udpDst.clientAwareUri(), termBuffers, 0, 0);
 
-            final NewConnectedSubscriptionCmd cmd =
+            final NewConnectedSubscriptionCmd newConnectedSubscriptionCmd =
                 new NewConnectedSubscriptionCmd(udpDst, sessionId, channelId, termId, termBuffers);
 
-            while (!receiverProxy.newConnectedSubscription(cmd))
+            while (!receiverProxy.newConnectedSubscription(newConnectedSubscriptionCmd))
             {
                 // TODO: count errors
                 System.out.println("Error adding to connected subscription");
@@ -409,16 +409,11 @@ public class MediaConductor extends Agent
         }
     }
 
-    private void onRemoveConnectedSubscription(final QualifiedMessageFlyweight qualifiedMessage)
+    private void onRemoveConnectedSubscription(final RemoveConnectedSubscriptionCmd cmd)
     {
-        final String destination = qualifiedMessage.destination();
-        final long sessionId = qualifiedMessage.sessionId();
-        final long channelId = qualifiedMessage.channelId();
-
         try
         {
-            final UdpDestination udpDst = UdpDestination.parse(destination);
-            termBufferManager.removeConnectedSubscription(udpDst, sessionId, channelId);
+            termBufferManager.removeConnectedSubscription(cmd.udpDestination(), cmd.sessionId(), cmd.channelId());
         }
         catch (final Exception ex)
         {

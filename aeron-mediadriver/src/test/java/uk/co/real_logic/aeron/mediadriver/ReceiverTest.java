@@ -21,16 +21,14 @@ import org.junit.Ignore;
 import org.junit.Test;
 import uk.co.real_logic.aeron.mediadriver.buffer.TermBufferManager;
 import uk.co.real_logic.aeron.mediadriver.buffer.TermBuffers;
+import uk.co.real_logic.aeron.mediadriver.cmd.CreateConnectedSubscriptionCmd;
 import uk.co.real_logic.aeron.mediadriver.cmd.NewConnectedSubscriptionCmd;
 import uk.co.real_logic.aeron.util.concurrent.AtomicArray;
 import uk.co.real_logic.aeron.util.TimerWheel;
-import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
-import uk.co.real_logic.aeron.util.command.QualifiedMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
 import uk.co.real_logic.aeron.util.event.EventLogger;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
@@ -42,6 +40,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.util.concurrent.TimeUnit;
 
+import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertNotNull;
@@ -53,7 +52,7 @@ public class ReceiverTest
 
     public static final long LOG_BUFFER_SIZE = (64 * 1024) + RingBufferDescriptor.TRAILER_LENGTH;
     private static final String URI = "udp://localhost:45678";
-    private static final UdpDestination destination = UdpDestination.parse(URI);
+    private static final UdpDestination UDP_DESTINATION = UdpDestination.parse(URI);
     private static final long CHANNEL_ID = 10;
     private static final long[] ONE_CHANNEL = {CHANNEL_ID};
     private static final long TERM_ID = 3;
@@ -67,7 +66,6 @@ public class ReceiverTest
     private final AtomicBuffer dataBuffer = new AtomicBuffer(dataFrameBuffer);
 
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
-    private final QualifiedMessageFlyweight messageHeader = new QualifiedMessageFlyweight();
     private final StatusMessageFlyweight statusHeader = new StatusMessageFlyweight();
 
     private final TermBuffers termBuffers =
@@ -80,13 +78,13 @@ public class ReceiverTest
 
     private Receiver receiver;
     private ReceiverProxy receiverProxy;
-    private RingBuffer toConductorBuffer;
+    private OneToOneConcurrentArrayQueue<? super Object> toConductorQueue;
 
     @Before
     public void setUp() throws Exception
     {
         final MediaDriver.MediaDriverContext ctx = new MediaDriver.MediaDriverContext()
-            .driverCommandBuffer(MediaDriver.COMMAND_BUFFER_SZ)
+            .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .receiverNioSelector(mockNioSelector)
             .conductorNioSelector(mockNioSelector)
             .termBufferManager(mockTermBufferManager)
@@ -96,8 +94,8 @@ public class ReceiverTest
             .connectedSubscriptions(new AtomicArray<>())
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024));
 
-        toConductorBuffer = ctx.driverCommandBuffer();
-        ctx.mediaConductorProxy(new MediaConductorProxy(toConductorBuffer));
+        toConductorQueue = ctx.conductorCommandQueue();
+        ctx.mediaConductorProxy(new MediaConductorProxy(toConductorQueue));
 
         receiverProxy = new ReceiverProxy(ctx.receiverCommandQueue());
 
@@ -129,7 +127,7 @@ public class ReceiverTest
 
         receiver.doWork();
 
-        DataFrameHandler frameHandler = receiver.getFrameHandler(destination);
+        DataFrameHandler frameHandler = receiver.getFrameHandler(UDP_DESTINATION);
 
         assertNotNull(frameHandler);
 
@@ -137,19 +135,19 @@ public class ReceiverTest
 
         frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
-        final int messagesRead = toConductorBuffer.read(
-            (msgTypeId, buffer, index, length) ->
+        final int messagesRead = toConductorQueue.drain(
+            (e) ->
             {
-                assertThat(msgTypeId, is(ControlProtocolEvents.CREATE_CONNECTED_SUBSCRIPTION));
-                messageHeader.wrap(buffer, index);
-                assertThat(messageHeader.termId(), is(TERM_ID));
-                assertThat(messageHeader.channelId(), is(CHANNEL_ID));
-                assertThat(messageHeader.sessionId(), is(SESSION_ID));
-                assertThat(messageHeader.destination(), is(URI));
+                final CreateConnectedSubscriptionCmd cmd = (CreateConnectedSubscriptionCmd)e;
+
+                assertThat(cmd.termId(), is(TERM_ID));
+                assertThat(cmd.channelId(), is(CHANNEL_ID));
+                assertThat(cmd.sessionId(), is(SESSION_ID));
+                assertThat(cmd.udpDestination().clientAwareUri(), is(URI));
 
                 // pass in new term buffer from media conductor, which should trigger SM
                 receiverProxy.newConnectedSubscription(
-                    new NewConnectedSubscriptionCmd(destination, SESSION_ID, CHANNEL_ID, TERM_ID, termBuffers));
+                    new NewConnectedSubscriptionCmd(UDP_DESTINATION, SESSION_ID, CHANNEL_ID, TERM_ID, termBuffers));
             });
 
         assertThat(messagesRead, is(1));
@@ -162,7 +160,7 @@ public class ReceiverTest
         statusHeader.wrap(rcvBuffer);
 
         assertNotNull(rcvAddress);
-        assertThat(rcvAddress.getPort(), is(destination.remoteData().getPort()));
+        assertThat(rcvAddress.getPort(), is(UDP_DESTINATION.remoteData().getPort()));
         assertThat(statusHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_SM));
         assertThat(statusHeader.channelId(), is(ONE_CHANNEL[0]));
         assertThat(statusHeader.sessionId(), is(SESSION_ID));
@@ -179,7 +177,7 @@ public class ReceiverTest
 
         receiver.doWork();
 
-        DataFrameHandler frameHandler = receiver.getFrameHandler(destination);
+        DataFrameHandler frameHandler = receiver.getFrameHandler(UDP_DESTINATION);
 
         assertNotNull(frameHandler);
 
@@ -187,13 +185,13 @@ public class ReceiverTest
 
         frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
-        int messagesRead = toConductorBuffer.read(
-            (msgTypeId, buffer, index, length) ->
+        int messagesRead = toConductorQueue.drain(
+            (e) ->
             {
-              assertThat(msgTypeId, is(ControlProtocolEvents.CREATE_CONNECTED_SUBSCRIPTION));
-              // pass in new term buffer from media conductor, which should trigger SM
-              receiverProxy.newConnectedSubscription(
-                  new NewConnectedSubscriptionCmd(destination, SESSION_ID,CHANNEL_ID, TERM_ID, termBuffers));
+                assertTrue(e instanceof CreateConnectedSubscriptionCmd);
+                // pass in new term buffer from media conductor, which should trigger SM
+                receiverProxy.newConnectedSubscription(
+                    new NewConnectedSubscriptionCmd(UDP_DESTINATION, SESSION_ID, CHANNEL_ID, TERM_ID, termBuffers));
             });
 
         assertThat(messagesRead, is(1));
@@ -228,7 +226,7 @@ public class ReceiverTest
 
         receiver.doWork();
 
-        final DataFrameHandler frameHandler = receiver.getFrameHandler(destination);
+        final DataFrameHandler frameHandler = receiver.getFrameHandler(UDP_DESTINATION);
 
         assertNotNull(frameHandler);
 
@@ -236,13 +234,13 @@ public class ReceiverTest
 
         frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
-        int messagesRead = toConductorBuffer.read(
-            (msgTypeId, buffer, index, length) ->
+        int messagesRead = toConductorQueue.drain(
+            (e) ->
             {
-              assertThat(msgTypeId, is(ControlProtocolEvents.CREATE_CONNECTED_SUBSCRIPTION));
-              // pass in new term buffer from media conductor, which should trigger SM
-              receiverProxy.newConnectedSubscription(
-                  new NewConnectedSubscriptionCmd(destination, SESSION_ID, CHANNEL_ID, TERM_ID, termBuffers));
+                assertTrue(e instanceof CreateConnectedSubscriptionCmd);
+                // pass in new term buffer from media conductor, which should trigger SM
+                receiverProxy.newConnectedSubscription(
+                    new NewConnectedSubscriptionCmd(UDP_DESTINATION, SESSION_ID, CHANNEL_ID, TERM_ID, termBuffers));
             });
 
         assertThat(messagesRead, is(1));
@@ -280,7 +278,7 @@ public class ReceiverTest
 
         receiver.doWork();
 
-        final DataFrameHandler frameHandler = receiver.getFrameHandler(destination);
+        final DataFrameHandler frameHandler = receiver.getFrameHandler(UDP_DESTINATION);
 
         assertNotNull(frameHandler);
 
@@ -288,13 +286,13 @@ public class ReceiverTest
 
         frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
-        int messagesRead = toConductorBuffer.read(
-            (msgTypeId, buffer, index, length) ->
+        int messagesRead = toConductorQueue.drain(
+            (e) ->
             {
-              assertThat(msgTypeId, is(ControlProtocolEvents.CREATE_CONNECTED_SUBSCRIPTION));
-              // pass in new term buffer from media conductor, which should trigger SM
-              receiverProxy.newConnectedSubscription(
-                  new NewConnectedSubscriptionCmd(destination, SESSION_ID, CHANNEL_ID, TERM_ID, termBuffers));
+                assertTrue(e instanceof CreateConnectedSubscriptionCmd);
+                // pass in new term buffer from media conductor, which should trigger SM
+                receiverProxy.newConnectedSubscription(
+                    new NewConnectedSubscriptionCmd(UDP_DESTINATION, SESSION_ID, CHANNEL_ID, TERM_ID, termBuffers));
             });
 
         assertThat(messagesRead, is(1));
@@ -333,7 +331,7 @@ public class ReceiverTest
 
         receiver.doWork();
 
-        DataFrameHandler frameHandler = receiver.getFrameHandler(destination);
+        DataFrameHandler frameHandler = receiver.getFrameHandler(UDP_DESTINATION);
 
         assertNotNull(frameHandler);
 
@@ -341,10 +339,10 @@ public class ReceiverTest
 
         frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
-        final int messagesRead = toConductorBuffer.read(
-            (msgTypeId, buffer, index, length) ->
+        final int messagesRead = toConductorQueue.drain(
+            (e) ->
                 receiverProxy.newConnectedSubscription(
-                    new NewConnectedSubscriptionCmd(destination, SESSION_ID, CHANNEL_ID, TERM_ID, termBuffers)));
+                    new NewConnectedSubscriptionCmd(UDP_DESTINATION, SESSION_ID, CHANNEL_ID, TERM_ID, termBuffers)));
 
         assertThat(messagesRead, is(1));
 

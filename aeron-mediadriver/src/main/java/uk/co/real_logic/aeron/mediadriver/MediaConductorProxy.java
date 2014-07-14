@@ -15,77 +15,35 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.util.ErrorCode;
-import uk.co.real_logic.aeron.util.Flyweight;
-import uk.co.real_logic.aeron.util.command.QualifiedMessageFlyweight;
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
-import uk.co.real_logic.aeron.util.protocol.ErrorFlyweight;
+import uk.co.real_logic.aeron.mediadriver.cmd.CreateConnectedSubscriptionCmd;
+import uk.co.real_logic.aeron.mediadriver.cmd.RemoveConnectedSubscriptionCmd;
 
-import java.nio.ByteBuffer;
-
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
-import static uk.co.real_logic.aeron.util.protocol.ErrorFlyweight.HEADER_LENGTH;
+import java.util.Queue;
 
 /**
- * Proxy for writing into the media driver conductor command buffer
+ * Proxy for sending commands to the media conductor.
  */
 public class MediaConductorProxy
 {
-    private static final int WRITE_BUFFER_CAPACITY = 4096;
+    private final Queue<? super Object> commandQueue;
 
-    private final RingBuffer commandBuffer;
-    private final AtomicBuffer scratchBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
-
-    private final QualifiedMessageFlyweight qualifiedMessage = new QualifiedMessageFlyweight();
-    private final ErrorFlyweight errorHeader = new ErrorFlyweight();
-
-    public MediaConductorProxy(final RingBuffer commandBuffer)
+    public MediaConductorProxy(final Queue<? super Object> commandQueue)
     {
-        this.commandBuffer = commandBuffer;
+        this.commandQueue = commandQueue;
     }
 
-    public void createLogBuffers(final UdpDestination destination,
-                                 final long sessionId,
-                                 final long channelId,
-                                 final long termId)
+    public boolean createTermBuffers(final UdpDestination destination,
+                                     final long sessionId,
+                                     final long channelId,
+                                     final long termId)
     {
-        writeLogBuffersMsg(destination, sessionId, channelId, termId, CREATE_CONNECTED_SUBSCRIPTION);
+        return commandQueue.offer(new CreateConnectedSubscriptionCmd(destination, sessionId, channelId, termId));
     }
 
-    public void removeLogBuffers(final UdpDestination destination,
-                                 final long sessionId,
-                                 final long channelId)
+    public boolean removeTermBuffers(final UdpDestination destination,
+                                     final long sessionId,
+                                     final long channelId)
     {
-        writeLogBuffersMsg(destination, sessionId, channelId, 0L, REMOVE_CONNECTED_SUBSCRIPTION);
-    }
-
-    private void writeLogBuffersMsg(final UdpDestination destination,
-                                    final long sessionId,
-                                    final long channelId,
-                                    final long termId,
-                                    final int msgTypeId)
-    {
-        qualifiedMessage.wrap(scratchBuffer, 0);
-        qualifiedMessage.sessionId(sessionId)
-                        .channelId(channelId)
-                        .termId(termId)
-                        .destination(destination.clientAwareUri());
-
-        write(msgTypeId, qualifiedMessage.length());
-    }
-
-    public void addErrorResponse(final ErrorCode errorCode, final Flyweight flyweight, final int length)
-    {
-        errorHeader.wrap(scratchBuffer, 0);
-        errorHeader.errorCode(errorCode);
-        errorHeader.offendingFlyweight(flyweight, length);
-        errorHeader.frameLength(HEADER_LENGTH + length);
-        write(ERROR_RESPONSE, errorHeader.frameLength());
-    }
-
-    private void write(final int msgTypeId, final int length)
-    {
-        commandBuffer.write(msgTypeId, scratchBuffer, 0, length);
+        return commandQueue.offer(new RemoveConnectedSubscriptionCmd(destination, sessionId, channelId));
     }
 }

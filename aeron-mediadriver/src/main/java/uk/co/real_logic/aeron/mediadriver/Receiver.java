@@ -18,13 +18,13 @@ package uk.co.real_logic.aeron.mediadriver;
 import uk.co.real_logic.aeron.mediadriver.cmd.*;
 import uk.co.real_logic.aeron.util.*;
 import uk.co.real_logic.aeron.util.concurrent.AtomicArray;
+import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.GapScanner;
 import uk.co.real_logic.aeron.util.event.EventCode;
 import uk.co.real_logic.aeron.util.event.EventLogger;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Queue;
 
 import static uk.co.real_logic.aeron.mediadriver.MediaConductor.NAK_MULTICAST_DELAY_GENERATOR;
 import static uk.co.real_logic.aeron.mediadriver.MediaConductor.NAK_UNICAST_DELAY_GENERATOR;
@@ -40,7 +40,7 @@ public class Receiver extends Agent
     private final TimerWheel conductorTimerWheel;
     private final MediaConductorProxy conductorProxy;
     private final Map<UdpDestination, DataFrameHandler> frameHandlerByDestinationMap = new HashMap<>();
-    private final Queue<? super Object> commandQueue;
+    private final OneToOneConcurrentArrayQueue<? super Object> commandQueue;
     private final AtomicArray<DriverConnectedSubscription> connectedSubscriptions;
 
     public Receiver(final MediaDriver.MediaDriverContext ctx) throws Exception
@@ -60,7 +60,7 @@ public class Receiver extends Agent
         try
         {
             workCount += nioSelector.processKeys();
-            workCount += processCommandQueue();
+            workCount += processConductorCommands();
         }
         catch (final Exception ex)
         {
@@ -70,40 +70,34 @@ public class Receiver extends Agent
         return workCount;
     }
 
-    private int processCommandQueue()
+    private int processConductorCommands()
     {
-        int workCount = 0;
-
-        Object cmd;
-        while ((cmd = commandQueue.poll()) != null)
-        {
-            ++workCount;
-
-            try
+        return commandQueue.drain(
+            (obj) ->
             {
-                if (cmd instanceof NewConnectedSubscriptionCmd)
+                try
                 {
-                    onNewConnectedSubscription((NewConnectedSubscriptionCmd)cmd);
+                    if (obj instanceof NewConnectedSubscriptionCmd)
+                    {
+                        onNewConnectedSubscription((NewConnectedSubscriptionCmd)obj);
+                    }
+                    else if (obj instanceof AddSubscriptionCmd)
+                    {
+                        final AddSubscriptionCmd cmd = (AddSubscriptionCmd)obj;
+                        onAddSubscription(cmd.destination(), cmd.channelIds());
+                    }
+                    else if (obj instanceof RemoveSubscriptionCmd)
+                    {
+                        final RemoveSubscriptionCmd cmd = (RemoveSubscriptionCmd)obj;
+                        onRemoveSubscription(cmd.destination(), cmd.channelIds());
+                    }
                 }
-                else if (cmd instanceof AddSubscriptionCmd)
+                catch (final Exception ex)
                 {
-                    final AddSubscriptionCmd addSubscriptionCmd = (AddSubscriptionCmd)cmd;
-                    onAddSubscription(addSubscriptionCmd.destination(), addSubscriptionCmd.channelIds());
+                    // TODO: Send error to client - however best if validated by conductor so receiver not delayed
+                    LOGGER.logException(ex);
                 }
-                else if (cmd instanceof RemoveSubscriptionCmd)
-                {
-                    final RemoveSubscriptionCmd removeSubscriptionCmd = (RemoveSubscriptionCmd)cmd;
-                    onRemoveSubscription(removeSubscriptionCmd.destination(), removeSubscriptionCmd.channelIds());
-                }
-            }
-            catch (final Exception ex)
-            {
-                // TODO: Send error to client - however best if validated by conductor so receiver not delayed
-                LOGGER.logException(ex);
-            }
-        }
-
-        return workCount;
+            });
     }
 
     /**

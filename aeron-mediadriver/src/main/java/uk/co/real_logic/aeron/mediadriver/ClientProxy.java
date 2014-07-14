@@ -68,11 +68,6 @@ public class ClientProxy
         transmitter.transmit(ERROR_RESPONSE, tmpBuffer, 0, errorFlyweight.frameLength());
     }
 
-    public void onError(final int msgTypeId, final AtomicBuffer buffer, final int index, final int length)
-    {
-        transmitter.transmit(msgTypeId, buffer, index, length);
-    }
-
     public void onNewLogBuffers(final int msgTypeId,
                                 final long sessionId,
                                 final long channelId,

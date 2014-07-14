@@ -30,9 +30,7 @@ import uk.co.real_logic.aeron.util.status.StatusBufferManager;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
-import java.util.Queue;
 import java.util.concurrent.*;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
@@ -260,7 +258,6 @@ public class MediaDriver implements AutoCloseable
     public MediaDriver(final MediaDriverContext context) throws Exception
     {
         ctx = context
-            .driverCommandBuffer(COMMAND_BUFFER_SZ)
             .receiverNioSelector(new NioSelector())
             .conductorNioSelector(new NioSelector())
             .unicastSenderFlowControl(UnicastSenderControlStrategy::new)
@@ -270,6 +267,7 @@ public class MediaDriver implements AutoCloseable
             .conductorTimerWheel(new TimerWheel(MEDIA_CONDUCTOR_TICK_DURATION_US,
                                                 TimeUnit.MICROSECONDS,
                                                 MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
+            .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .conductorIdleStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
                                                            AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
@@ -446,14 +444,14 @@ public class MediaDriver implements AutoCloseable
 
     public static class MediaDriverContext extends CommonContext
     {
-        private RingBuffer driverCommandBuffer;
         private TermBufferManager termBufferManager;
         private NioSelector receiverNioSelector;
         private NioSelector conductorNioSelector;
         private Supplier<SenderControlStrategy> unicastSenderFlowControl;
         private Supplier<SenderControlStrategy> multicastSenderFlowControl;
         private TimerWheel conductorTimerWheel;
-        private Queue<? super Object> receiverCommandQueue;
+        private OneToOneConcurrentArrayQueue<? super Object> conductorCommandQueue;
+        private OneToOneConcurrentArrayQueue<? super Object> receiverCommandQueue;
         private ReceiverProxy receiverProxy;
         private MediaConductorProxy mediaConductorProxy;
         private IdleStrategy conductorIdleStrategy;
@@ -485,7 +483,7 @@ public class MediaDriver implements AutoCloseable
             fromClientCommands(new ManyToOneRingBuffer(new AtomicBuffer(toDriverBuffer)));
 
             receiverProxy(new ReceiverProxy(receiverCommandQueue()));
-            mediaConductorProxy(new MediaConductorProxy(driverCommandBuffer()));
+            mediaConductorProxy(new MediaConductorProxy(conductorCommandQueue));
 
             termBufferManager(new TermBufferManager(dataDirName()));
 
@@ -509,17 +507,10 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        private RingBuffer createNewCommandBuffer(final int size)
+        public MediaDriverContext conductorCommandQueue(
+            final OneToOneConcurrentArrayQueue<? super Object> conductorCommandQueue)
         {
-            final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(size + RingBufferDescriptor.TRAILER_LENGTH);
-            final AtomicBuffer atomicBuffer = new AtomicBuffer(byteBuffer);
-
-            return new ManyToOneRingBuffer(atomicBuffer);
-        }
-
-        public MediaDriverContext driverCommandBuffer(final int size)
-        {
-            this.driverCommandBuffer = createNewCommandBuffer(size);
+            this.conductorCommandQueue = conductorCommandQueue;
             return this;
         }
 
@@ -559,7 +550,8 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public MediaDriverContext receiverCommandQueue(final Queue<? super Object> receiverCommandQueue)
+        public MediaDriverContext receiverCommandQueue(
+            final OneToOneConcurrentArrayQueue<? super Object> receiverCommandQueue)
         {
             this.receiverCommandQueue = receiverCommandQueue;
             return this;
@@ -626,9 +618,9 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public RingBuffer driverCommandBuffer()
+        public OneToOneConcurrentArrayQueue<? super Object> conductorCommandQueue()
         {
-            return driverCommandBuffer;
+            return conductorCommandQueue;
         }
 
         public TermBufferManager termBufferManager()
@@ -661,7 +653,7 @@ public class MediaDriver implements AutoCloseable
             return conductorTimerWheel;
         }
 
-        public Queue<? super Object> receiverCommandQueue()
+        public OneToOneConcurrentArrayQueue<? super Object> receiverCommandQueue()
         {
             return receiverCommandQueue;
         }

@@ -25,7 +25,7 @@ import java.net.InetSocketAddress;
  */
 public class DriverSubscription
 {
-    private final UdpDestination destination;
+    private final UdpDestination udpDestination;
     private final long channelId;
     private final MediaConductorProxy conductorProxy;
     private final AtomicArray<DriverConnectedSubscription> connectedSubscriptions;
@@ -33,12 +33,12 @@ public class DriverSubscription
 
     private int refCount = 0;
 
-    public DriverSubscription(final UdpDestination destination,
+    public DriverSubscription(final UdpDestination udpDestination,
                               final long channelId,
                               final MediaConductorProxy conductorProxy,
                               final AtomicArray<DriverConnectedSubscription> connectedSubscriptions)
     {
-        this.destination = destination;
+        this.udpDestination = udpDestination;
         this.channelId = channelId;
         this.conductorProxy = conductorProxy;
         this.connectedSubscriptions = connectedSubscriptions;
@@ -59,10 +59,11 @@ public class DriverSubscription
         return connectionBySessionIdMap.get(sessionId);
     }
 
-    public DriverConnectedSubscription newConnectedSubscription(final long sessionId, final InetSocketAddress srcAddress)
+    public DriverConnectedSubscription newConnectedSubscription(final long sessionId,
+                                                                final InetSocketAddress srcAddress)
     {
         final DriverConnectedSubscription connectedSubscription
-            = new DriverConnectedSubscription(destination.clientAwareUri(), sessionId, channelId, srcAddress);
+            = new DriverConnectedSubscription(udpDestination.clientAwareUri(), sessionId, channelId, srcAddress);
         connectedSubscriptions.add(connectedSubscription);
 
         return connectionBySessionIdMap.put(sessionId, connectedSubscription);
@@ -73,10 +74,15 @@ public class DriverSubscription
         return channelId;
     }
 
+    public UdpDestination udpDestination()
+    {
+        return udpDestination;
+    }
+
     public void close()
     {
         connectionBySessionIdMap.forEach(
-            (sessionId, connectedSubscription) -> conductorProxy.removeTermBuffers(destination, sessionId, channelId)
+            (sessionId, connectedSubscription) -> conductorProxy.removeTermBuffers(udpDestination, sessionId, channelId)
         );
     }
 }

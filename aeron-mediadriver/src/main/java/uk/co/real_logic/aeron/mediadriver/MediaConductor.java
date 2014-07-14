@@ -382,9 +382,9 @@ public class MediaConductor extends Agent
 
     private void onCreateConnectedSubscription(final CreateConnectedSubscriptionCmd cmd)
     {
-        final UdpDestination udpDst = cmd.udpDestination();
+        final UdpDestination udpDst = cmd.subscription().udpDestination();
+        final long channelId = cmd.subscription().channelId();
         final long sessionId = cmd.sessionId();
-        final long channelId = cmd.channelId();
         final long termId = cmd.termId();
 
         try

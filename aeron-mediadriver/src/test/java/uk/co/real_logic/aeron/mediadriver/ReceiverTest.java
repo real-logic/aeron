@@ -57,7 +57,7 @@ public class ReceiverTest
     private static final long[] ONE_CHANNEL = {CHANNEL_ID};
     private static final long TERM_ID = 3;
     private static final long SESSION_ID = 1;
-    private static final byte[] FAKE_PAYLOAD = "Hello thare, message!".getBytes();
+    private static final byte[] FAKE_PAYLOAD = "Hello there, message!".getBytes();
     private static final byte[] NO_PAYLOAD = new byte[0];
 
     private final NioSelector mockNioSelector = mock(NioSelector.class);
@@ -140,10 +140,10 @@ public class ReceiverTest
             {
                 final CreateConnectedSubscriptionCmd cmd = (CreateConnectedSubscriptionCmd)e;
 
-                assertThat(cmd.termId(), is(TERM_ID));
-                assertThat(cmd.channelId(), is(CHANNEL_ID));
+                assertThat(cmd.subscription().udpDestination(), is(UDP_DESTINATION));
+                assertThat(cmd.subscription().channelId(), is(CHANNEL_ID));
                 assertThat(cmd.sessionId(), is(SESSION_ID));
-                assertThat(cmd.udpDestination().clientAwareUri(), is(URI));
+                assertThat(cmd.termId(), is(TERM_ID));
 
                 // pass in new term buffer from media conductor, which should trigger SM
                 receiverProxy.newConnectedSubscription(

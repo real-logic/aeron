@@ -147,7 +147,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
             else
             {
                 subscription.newConnectedSubscription(sessionId, srcAddress);
-                conductorProxy.createTermBuffers(destination(), sessionId, channelId, termId);
+                conductorProxy.createConnectedSubscription(subscription, srcAddress, sessionId, termId);
             }
         }
     }

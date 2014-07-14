@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.mediadriver;
 import uk.co.real_logic.aeron.mediadriver.cmd.CreateConnectedSubscriptionCmd;
 import uk.co.real_logic.aeron.mediadriver.cmd.RemoveConnectedSubscriptionCmd;
 
+import java.net.InetSocketAddress;
 import java.util.Queue;
 
 /**
@@ -32,12 +33,12 @@ public class MediaConductorProxy
         this.commandQueue = commandQueue;
     }
 
-    public boolean createTermBuffers(final UdpDestination destination,
-                                     final long sessionId,
-                                     final long channelId,
-                                     final long termId)
+    public boolean createConnectedSubscription(final DriverSubscription subscription,
+                                               final InetSocketAddress srcAddress,
+                                               final long channelId,
+                                               final long termId)
     {
-        return commandQueue.offer(new CreateConnectedSubscriptionCmd(destination, sessionId, channelId, termId));
+        return commandQueue.offer(new CreateConnectedSubscriptionCmd(subscription, srcAddress, channelId, termId));
     }
 
     public boolean removeTermBuffers(final UdpDestination destination,

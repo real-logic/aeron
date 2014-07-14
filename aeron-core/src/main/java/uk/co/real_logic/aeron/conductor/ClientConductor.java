@@ -20,7 +20,7 @@ import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.RegistrationException;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.util.Agent;
-import uk.co.real_logic.aeron.util.SpinYieldParkIdleStrategy;
+import uk.co.real_logic.aeron.util.BackoffIdleStrategy;
 import uk.co.real_logic.aeron.util.TermHelper;
 import uk.co.real_logic.aeron.util.ErrorCode;
 import uk.co.real_logic.aeron.util.collections.ConnectionMap;
@@ -78,7 +78,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
                            final long awaitTimeout,
                            final long publicationWindow)
     {
-        super(new SpinYieldParkIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
+        super(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
                                     AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS));
 
         this.counterValuesBuffer = counterValuesBuffer;

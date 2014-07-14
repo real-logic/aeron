@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
+import uk.co.real_logic.aeron.mediadriver.buffer.TermBufferManager;
 import uk.co.real_logic.aeron.mediadriver.buffer.TermBuffers;
 import uk.co.real_logic.aeron.mediadriver.cmd.NewConnectedSubscriptionCmd;
 import uk.co.real_logic.aeron.util.*;
@@ -69,7 +69,7 @@ public class MediaConductor extends Agent
     private final ReceiverProxy receiverProxy;
     private final ClientProxy clientProxy;
     private final NioSelector nioSelector;
-    private final BufferManagement bufferManagement;
+    private final TermBufferManager termBufferManager;
     private final RingBuffer fromClientCommands;
     private final Long2ObjectHashMap<ControlFrameHandler> srcDestinationMap = new Long2ObjectHashMap<>();
     private final TimerWheel timerWheel;
@@ -93,7 +93,7 @@ public class MediaConductor extends Agent
 
         this.driverCommandBuffer = ctx.driverCommandBuffer();
         this.receiverProxy = ctx.receiverProxy();
-        this.bufferManagement = ctx.bufferManagement();
+        this.termBufferManager = ctx.bufferManagement();
         this.nioSelector = ctx.conductorNioSelector();
         this.mtuLength = ctx.mtuLength();
         this.unicastSenderFlowControl = ctx.unicastSenderFlowControl();
@@ -284,7 +284,7 @@ public class MediaConductor extends Agent
             }
 
             final long initialTermId = generateTermId();
-            final TermBuffers termBuffers = bufferManagement.addPublication(srcDestination, sessionId, channelId);
+            final TermBuffers termBuffers = termBufferManager.addPublication(srcDestination, sessionId, channelId);
             final SenderControlStrategy flowControlStrategy =
                 srcDestination.isMulticast() ? multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
 
@@ -355,7 +355,7 @@ public class MediaConductor extends Agent
                 frameHandler.close();
             }
 
-            bufferManagement.removePublication(srcDestination, sessionId, channelId);
+            termBufferManager.removePublication(srcDestination, sessionId, channelId);
 
             clientProxy.operationSucceeded(publicationMessage.correlationId());
         }
@@ -389,7 +389,7 @@ public class MediaConductor extends Agent
         try
         {
             final UdpDestination udpDst = UdpDestination.parse(destination);
-            final TermBuffers termBuffers = bufferManagement.addConnectedSubscription(udpDst, sessionId, channelId);
+            final TermBuffers termBuffers = termBufferManager.addConnectedSubscription(udpDst, sessionId, channelId);
 
             clientProxy.onNewLogBuffers(ON_NEW_CONNECTED_SUBSCRIPTION, sessionId, channelId, termId,
                                         destination, termBuffers, 0, 0);
@@ -418,7 +418,7 @@ public class MediaConductor extends Agent
         try
         {
             final UdpDestination udpDst = UdpDestination.parse(destination);
-            bufferManagement.removeConnectedSubscription(udpDst, sessionId, channelId);
+            termBufferManager.removeConnectedSubscription(udpDst, sessionId, channelId);
         }
         catch (final Exception ex)
         {

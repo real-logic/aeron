@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
+import uk.co.real_logic.aeron.mediadriver.buffer.TermBufferManager;
 import uk.co.real_logic.aeron.util.*;
 import uk.co.real_logic.aeron.util.concurrent.AtomicArray;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -194,7 +194,7 @@ public class MediaDriver implements AutoCloseable
     private final File adminDirFile;
     private final File dataDirFile;
 
-    private final BufferManagement bufferManagement;
+    private final TermBufferManager termBufferManager;
 
     private final Receiver receiver;
     private final Sender sender;
@@ -260,12 +260,12 @@ public class MediaDriver implements AutoCloseable
                                                 TimeUnit.MICROSECONDS,
                                                 MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
-            .conductorIdleStrategy(new SpinYieldParkIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                                                         AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
-            .senderIdleStrategy(new SpinYieldParkIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                                                      AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
-            .receiverIdleStrategy(new SpinYieldParkIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
+            .conductorIdleStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
+                                                           AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
+            .senderIdleStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
                                                         AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
+            .receiverIdleStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
+                                                          AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
             .conclude();
 
         this.adminDirFile = new File(ctx.adminDirName());
@@ -273,7 +273,7 @@ public class MediaDriver implements AutoCloseable
 
         ensureDirectoriesExist();
 
-        this.bufferManagement = ctx.bufferManagement;
+        this.termBufferManager = ctx.termBufferManager;
         this.receiver = new Receiver(ctx);
         this.sender = new Sender(ctx);
         this.conductor = new MediaConductor(ctx);
@@ -364,7 +364,7 @@ public class MediaDriver implements AutoCloseable
         sender.close();
         conductor.close();
         conductor.nioSelector().selectNowWithoutProcessing();
-        bufferManagement.close();
+        termBufferManager.close();
         ctx.close();
         deleteDirectories();
     }
@@ -436,7 +436,7 @@ public class MediaDriver implements AutoCloseable
     public static class MediaDriverContext extends CommonContext
     {
         private RingBuffer driverCommandBuffer;
-        private BufferManagement bufferManagement;
+        private TermBufferManager termBufferManager;
         private NioSelector receiverNioSelector;
         private NioSelector conductorNioSelector;
         private Supplier<SenderControlStrategy> unicastSenderFlowControl;
@@ -476,7 +476,7 @@ public class MediaDriver implements AutoCloseable
             receiverProxy(new ReceiverProxy(receiverCommandQueue()));
             mediaConductorProxy(new MediaConductorProxy(driverCommandBuffer()));
 
-            bufferManagement(new BufferManagement(dataDirName()));
+            bufferManagement(new TermBufferManager(dataDirName()));
 
             if (statusBufferManager() == null)
             {
@@ -512,9 +512,9 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public MediaDriverContext bufferManagement(final BufferManagement bufferManagement)
+        public MediaDriverContext bufferManagement(final TermBufferManager termBufferManager)
         {
-            this.bufferManagement = bufferManagement;
+            this.termBufferManager = termBufferManager;
             return this;
         }
 
@@ -620,9 +620,9 @@ public class MediaDriver implements AutoCloseable
             return driverCommandBuffer;
         }
 
-        public BufferManagement bufferManagement()
+        public TermBufferManager bufferManagement()
         {
-            return bufferManagement;
+            return termBufferManager;
         }
 
         public NioSelector receiverNioSelector()

@@ -24,7 +24,7 @@ import java.util.concurrent.locks.LockSupport;
  * {@link Thread#yield()} for maxYields
  * {@link LockSupport#parkNanos(long)} on an exponential backoff to maxParkPeriodNs
  */
-public class SpinYieldParkIdleStrategy implements IdleStrategy
+public class BackoffIdleStrategy implements IdleStrategy
 {
     public enum State
     {
@@ -50,10 +50,10 @@ public class SpinYieldParkIdleStrategy implements IdleStrategy
      * @param minParkPeriodNs to use when initiating parking
      * @param maxParkPeriodNs to use when parking
      */
-    public SpinYieldParkIdleStrategy(final long maxSpins,
-                                     final long maxYields,
-                                     final long minParkPeriodNs,
-                                     final long maxParkPeriodNs)
+    public BackoffIdleStrategy(final long maxSpins,
+                               final long maxYields,
+                               final long minParkPeriodNs,
+                               final long maxParkPeriodNs)
     {
         this.maxSpins = maxSpins;
         this.maxYields = maxYields;

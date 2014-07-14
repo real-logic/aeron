@@ -32,7 +32,7 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescri
 /**
  * Interface for encapsulating the allocation of ByteBuffers for Session, Channel, and Term
  */
-public class BufferManagement implements AutoCloseable
+public class TermBufferManager implements AutoCloseable
 {
     public static final int LOG_BUFFER_SIZE = COMMAND_BUFFER_SZ + TRAILER_LENGTH; // TODO: Is this correct?
 
@@ -45,7 +45,7 @@ public class BufferManagement implements AutoCloseable
     private final ConnectionMap<UdpDestination, MappedTermBuffers> publicationTermsMap = new ConnectionMap<>();
     private final ConnectionMap<UdpDestination, MappedTermBuffers> subscriptionTermsMap = new ConnectionMap<>();
 
-    public BufferManagement(final String dataDir)
+    public TermBufferManager(final String dataDir)
     {
         final FileMappingConvention fileConvention = new FileMappingConvention(dataDir);
         publicationsDir = fileConvention.publicationsDir();
@@ -160,15 +160,10 @@ public class BufferManagement implements AutoCloseable
         if (termBuffers == null)
         {
             final File dir = channelLocation(rootDir, sessionId, channelId, true, destination.clientAwareUri());
-            termBuffers = new MappedTermBuffers(dir,
-                                                logTemplate,
-                                                LOG_BUFFER_SIZE,
-                                                stateTemplate,
-                                                STATE_BUFFER_LENGTH);
+            termBuffers = new MappedTermBuffers(dir, logTemplate, LOG_BUFFER_SIZE, stateTemplate, STATE_BUFFER_LENGTH);
             termsMap.put(destination, sessionId, channelId, termBuffers);
         }
 
         return termBuffers;
     }
-
 }

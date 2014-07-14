@@ -19,7 +19,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import uk.co.real_logic.aeron.mediadriver.buffer.BufferManagement;
+import uk.co.real_logic.aeron.mediadriver.buffer.TermBufferManager;
 import uk.co.real_logic.aeron.mediadriver.buffer.TermBuffers;
 import uk.co.real_logic.aeron.mediadriver.cmd.NewConnectedSubscriptionCmd;
 import uk.co.real_logic.aeron.util.concurrent.AtomicArray;
@@ -62,7 +62,7 @@ public class ReceiverTest
     private static final byte[] NO_PAYLOAD = new byte[0];
 
     private final NioSelector mockNioSelector = mock(NioSelector.class);
-    private final BufferManagement mockBufferManagement = mock(BufferManagement.class);
+    private final TermBufferManager mockTermBufferManager = mock(TermBufferManager.class);
     private final ByteBuffer dataFrameBuffer = ByteBuffer.allocate(2 * 1024);
     private final AtomicBuffer dataBuffer = new AtomicBuffer(dataFrameBuffer);
 
@@ -89,7 +89,7 @@ public class ReceiverTest
             .driverCommandBuffer(MediaDriver.COMMAND_BUFFER_SZ)
             .receiverNioSelector(mockNioSelector)
             .conductorNioSelector(mockNioSelector)
-            .bufferManagement(mockBufferManagement)
+            .bufferManagement(mockTermBufferManager)
             .conductorTimerWheel(new TimerWheel(MediaDriver.MEDIA_CONDUCTOR_TICK_DURATION_US,
                                  TimeUnit.MICROSECONDS,
                                  MediaDriver.MEDIA_CONDUCTOR_TICKS_PER_WHEEL))

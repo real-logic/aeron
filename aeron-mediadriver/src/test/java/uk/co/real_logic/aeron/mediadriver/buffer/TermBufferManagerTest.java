@@ -29,42 +29,42 @@ import java.io.IOException;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
-public class BufferManagementTest
+public class TermBufferManagerTest
 {
     private static final String DESTINATION_URI = "udp://localhost:4321";
     private static final long SESSION_ID = 100;
     private static final long CHANNEL_ID = 100;
     private static final File DATA_DIR = new File(IoUtil.tmpDirName(), "dataDirName");
-    private BufferManagement bufferManagement;
+    private TermBufferManager termBufferManager;
     private UdpDestination destination = UdpDestination.parse(DESTINATION_URI);
 
     @Before
     public void createDataDir()
     {
         IoUtil.ensureDirectoryExists(DATA_DIR, "data");
-        bufferManagement = new BufferManagement(DATA_DIR.getAbsolutePath());
+        termBufferManager = new TermBufferManager(DATA_DIR.getAbsolutePath());
     }
 
     @After
     public void cleanupFiles() throws IOException
     {
-        bufferManagement.close();
+        termBufferManager.close();
         IoUtil.delete(DATA_DIR, true);
     }
 
     @Test
     public void mappedFilesAreCorrectSizeAndZeroed() throws Exception
     {
-        final TermBuffers termBuffers = bufferManagement.addPublication(destination, SESSION_ID, CHANNEL_ID);
+        final TermBuffers termBuffers = termBufferManager.addPublication(destination, SESSION_ID, CHANNEL_ID);
 
         termBuffers.stream().forEach(
             (logBuffer) ->
             {
                 final AtomicBuffer log = logBuffer.logBuffer();
 
-                assertThat(log.capacity(), is(BufferManagement.LOG_BUFFER_SIZE));
+                assertThat(log.capacity(), is(TermBufferManager.LOG_BUFFER_SIZE));
                 assertThat(log.getByte(0), is((byte)0));
-                assertThat(log.getByte(BufferManagement.LOG_BUFFER_SIZE - 1), is((byte)0));
+                assertThat(log.getByte(TermBufferManager.LOG_BUFFER_SIZE - 1), is((byte)0));
 
                 final AtomicBuffer state = logBuffer.stateBuffer();
 
@@ -78,26 +78,26 @@ public class BufferManagementTest
     @Test(expected = IllegalArgumentException.class)
     public void shouldExceptionWhenRemovingUnknownPublisherChannel() throws Exception
     {
-        bufferManagement.removePublication(destination, SESSION_ID, CHANNEL_ID);
+        termBufferManager.removePublication(destination, SESSION_ID, CHANNEL_ID);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldExceptionWhenRemovingUnknownSubscriberChannel() throws Exception
     {
-        bufferManagement.removeConnectedSubscription(destination, SESSION_ID, CHANNEL_ID);
+        termBufferManager.removeConnectedSubscription(destination, SESSION_ID, CHANNEL_ID);
     }
 
     @Test
     public void shouldBeAbleToAddAndRemovePublisherChannel() throws Exception
     {
-        bufferManagement.addPublication(destination, SESSION_ID, CHANNEL_ID);
-        bufferManagement.removePublication(destination, SESSION_ID, CHANNEL_ID);
+        termBufferManager.addPublication(destination, SESSION_ID, CHANNEL_ID);
+        termBufferManager.removePublication(destination, SESSION_ID, CHANNEL_ID);
     }
 
     @Test
     public void shouldBeAbleToAddAndRemoveSubscriberChannel() throws Exception
     {
-        bufferManagement.addConnectedSubscription(destination, SESSION_ID, CHANNEL_ID);
-        bufferManagement.removeConnectedSubscription(destination, SESSION_ID, CHANNEL_ID);
+        termBufferManager.addConnectedSubscription(destination, SESSION_ID, CHANNEL_ID);
+        termBufferManager.removeConnectedSubscription(destination, SESSION_ID, CHANNEL_ID);
     }
 }

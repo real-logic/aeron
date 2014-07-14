@@ -25,6 +25,7 @@ import uk.co.real_logic.aeron.util.event.EventCode;
 import uk.co.real_logic.aeron.util.event.EventLogger;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.util.status.BufferPositionReporter;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -57,7 +58,6 @@ public class DriverPublication
 
     private final AtomicLong activeTermId;
 
-    // TODO: temporary. Replace with counter.
     private final AtomicLong timeOfLastSendOrHeartbeat;
 
     private final int headerLength;
@@ -73,6 +73,7 @@ public class DriverPublication
     private final SenderControlStrategy controlStrategy;
     private final AtomicLong rightEdge;
     private final ControlFrameHandler frameHandler;
+    private final BufferPositionReporter positionReporter;
 
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final DataHeaderFlyweight retransmitDataHeader = new DataHeaderFlyweight();
@@ -88,6 +89,7 @@ public class DriverPublication
                              final TimerWheel timerWheel,
                              final SenderControlStrategy controlStrategy,
                              final TermBuffers termBuffers,
+                             final BufferPositionReporter positionReporter,
                              final long sessionId,
                              final long channelId,
                              final long initialTermId,
@@ -98,6 +100,7 @@ public class DriverPublication
         this.dstAddress = frameHandler.destination().remoteData();
         this.controlStrategy = controlStrategy;
         this.timerWheel = timerWheel;
+        this.positionReporter = positionReporter;
         this.sessionId = sessionId;
         this.channelId = channelId;
         this.headerLength = headerLength;
@@ -134,6 +137,8 @@ public class DriverPublication
                 activeIndex = TermHelper.rotateNext(activeIndex);
                 activeTermId.lazySet(activeTermId.get() + 1);
             }
+
+            positionReporter.position(nextTermOffset);
         }
         catch (final Exception ex)
         {

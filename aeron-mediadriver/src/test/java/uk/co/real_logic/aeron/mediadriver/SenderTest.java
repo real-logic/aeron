@@ -29,6 +29,7 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
 import uk.co.real_logic.aeron.util.event.EventLogger;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.util.status.BufferPositionReporter;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -64,6 +65,7 @@ public class SenderTest
 
     private LogAppender[] logAppenders;
     private DriverPublication publication;
+    private BufferPositionReporter positionReporter;
 
     private final SenderControlStrategy spySenderControlStrategy = spy(new UnicastSenderControlStrategy());
 
@@ -106,8 +108,10 @@ public class SenderTest
         when(mockControlFrameHandler.destination()).thenReturn(destination);
         when(mockControlFrameHandler.sendTo(anyObject(), anyObject())).thenAnswer(saveByteBufferAnswer);
 
+        positionReporter = mock(BufferPositionReporter.class);
+
         publication = new DriverPublication(mockControlFrameHandler, wheel, spySenderControlStrategy, termBuffers,
-                                      SESSION_ID, CHANNEL_ID, INITIAL_TERM_ID, HEADER.length, MAX_FRAME_LENGTH);
+            positionReporter, SESSION_ID, CHANNEL_ID, INITIAL_TERM_ID, HEADER.length, MAX_FRAME_LENGTH);
         publications.add(publication);
     }
 

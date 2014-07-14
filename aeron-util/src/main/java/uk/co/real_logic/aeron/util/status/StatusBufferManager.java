@@ -45,11 +45,6 @@ public class StatusBufferManager
         idCounter = 1;
     }
 
-    public AtomicBuffer descriptorBuffer()
-    {
-        return descriptorBuffer;
-    }
-
     public int registerCounter(String label)
     {
         if (counterOffset(idCounter) >= counterCapacity)

@@ -66,8 +66,6 @@ public class StreamingPublisher
                     Thread.yield();
                 }
 
-                System.out.println("offer " + i);
-
                 reporter.onMessage(1, buffer.capacity());
             }
 

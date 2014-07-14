@@ -25,6 +25,7 @@ import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicArray;
+import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.event.EventCode;
@@ -88,6 +89,8 @@ public class MediaConductor extends Agent
     private final int mtuLength;
     private final TimerWheel.Timer heartbeatTimer;
     private final StatusBufferManager statusBufferManager;
+    private final AtomicBuffer counterValuesBuffer;
+
 
     public MediaConductor(final MediaDriverContext ctx)
     {
@@ -101,6 +104,7 @@ public class MediaConductor extends Agent
         this.unicastSenderFlowControl = ctx.unicastSenderFlowControl();
         this.multicastSenderFlowControl = ctx.multicastSenderFlowControl();
         this.statusBufferManager = ctx.statusBufferManager();
+        this.counterValuesBuffer = ctx.counterValuesBuffer();
 
         timerWheel = ctx.conductorTimerWheel();
         heartbeatTimer = newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheck);
@@ -291,12 +295,13 @@ public class MediaConductor extends Agent
 
             final int positionCounterOffset = positionCounterId("publication", destination, sessionId, channelId);
             final BufferPositionReporter positionReporter =
-                    new BufferPositionReporter(statusBufferManager.descriptorBuffer(), positionCounterOffset);
+                    new BufferPositionReporter(counterValuesBuffer, positionCounterOffset);
 
             publication = new DriverPublication(frameHandler,
                                                 timerWheel,
                                                 flowControlStrategy,
                                                 termBuffers,
+                                                positionReporter,
                                                 sessionId,
                                                 channelId,
                                                 initialTermId,

@@ -39,7 +39,7 @@ import static uk.co.real_logic.aeron.util.IoUtil.mapExistingFile;
 /**
  * Encapsulation of media driver and client for source and receiver construction
  */
-public final class Aeron implements AutoCloseable
+public final class Aeron implements AutoCloseable, Runnable
 {
     // TODO: make configurable
     public static final long AWAIT_TIMEOUT = 10_000;

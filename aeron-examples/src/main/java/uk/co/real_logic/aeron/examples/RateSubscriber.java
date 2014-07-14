@@ -41,16 +41,18 @@ public class RateSubscriber
         try (final MediaDriver driver = ExampleUtil.createEmbeddedMediaDriver();
              final Aeron aeron = ExampleUtil.createAeron(aeronContext))
         {
+            System.out.println("Subscribing to " + DESTINATION + " on channel Id " + CHANNEL_ID_1);
+
             final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), ExampleUtil::printRate);
 
-            final Subscription subscription1 = aeron.addSubscription(DESTINATION, CHANNEL_ID_1,
+            final Subscription subscription = aeron.addSubscription(DESTINATION, CHANNEL_ID_1,
                     ExampleUtil.rateReporterHandler(reporter));
 
-            executor.execute(() -> ExampleUtil.consumerLoop(FRAME_COUNT_LIMIT).accept(subscription1));
-            executor.execute(reporter);
+            executor.execute(() -> ExampleUtil.subscriberLoop(FRAME_COUNT_LIMIT).accept(subscription));
+            executor.execute(aeron);
 
-            // run aeron client conductor thread from here
-            aeron.run();
+            // run the rate reporter loop
+            reporter.run();
         }
         catch (final Exception ex)
         {

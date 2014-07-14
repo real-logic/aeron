@@ -18,6 +18,8 @@ package uk.co.real_logic.aeron.examples;
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
+import uk.co.real_logic.aeron.util.BitUtil;
+import uk.co.real_logic.aeron.util.RateReporter;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import java.nio.ByteBuffer;
@@ -26,45 +28,58 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Example Aeron publisher application
+ * Publisher that sends as fast as possible a given number of messages at a given size
  */
-public class ExamplePublisher
+public class StreamingPublisher
 {
     public static final int CHANNEL_ID = 10;
     public static final String DESTINATION = "udp://localhost:40123";
+    public static final int MESSAGE_LENGTH = 256;
+    public static final long NUMBER_OF_MESSAGES = 100;
+    public static final long LINGER_TIMEOUT = TimeUnit.SECONDS.toMillis(5);
 
-    private static final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocateDirect(256));
+    private static final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
 
     public static void main(final String[] args)
     {
-        final ExecutorService executor = Executors.newSingleThreadExecutor();
+        final ExecutorService executor = Executors.newFixedThreadPool(2);
         final Aeron.ClientContext context = new Aeron.ClientContext().errorHandler(ExampleUtil::printError);
 
         try (final MediaDriver driver = ExampleUtil.createEmbeddedMediaDriver();
              final Aeron aeron = ExampleUtil.createAeron(context, executor))
         {
+            System.out.println("Streaming " + NUMBER_OF_MESSAGES + " messages of size " + MESSAGE_LENGTH +
+                    " bytes to " + DESTINATION + " on channel Id " + CHANNEL_ID);
+
             final Publication publication = aeron.addPublication(DESTINATION, CHANNEL_ID, 0);
+            final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), ExampleUtil::printRate);
 
-            for (int i = 0; i < 10; i++)
+            // report the rate we are sending
+            executor.execute(reporter);
+
+            for (long i = 0; i < NUMBER_OF_MESSAGES; i++)
             {
-                final String message = "Hello World! " + i;
-                buffer.putBytes(0, message.getBytes());
+                buffer.putLong(0, i);
 
-                System.out.print("offering " + i);
-                final boolean result = publication.offer(buffer, 0, message.getBytes().length);
-
-                if (!result)
+                while (!publication.offer(buffer, 0, buffer.capacity()))
                 {
-                    System.out.println(" ah?!");
-                }
-                else
-                {
-                    System.out.println(" yay!");
+                    Thread.yield();
                 }
 
-                Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+                System.out.println("offer " + i);
+
+                reporter.onMessage(1, buffer.capacity());
             }
 
+            System.out.println("Done streaming.");
+
+            if (0 < LINGER_TIMEOUT)
+            {
+                System.out.println("Lingering for " + LINGER_TIMEOUT + " milliseconds...");
+                Thread.sleep(LINGER_TIMEOUT);
+            }
+
+            reporter.done();
             aeron.shutdown();
             driver.shutdown();
         }

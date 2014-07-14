@@ -28,7 +28,7 @@ import java.util.concurrent.Executors;
 public class ExampleSubscriber
 {
     public static final String DESTINATION = "udp://localhost:40123";
-    public static final int CHANNEL_ID_1 = 10;
+    public static final int CHANNEL_ID = 10;
     public static final int FRAME_COUNT_LIMIT = 10;
 
     public static void main(final String[] args)
@@ -40,11 +40,11 @@ public class ExampleSubscriber
              final Aeron aeron = ExampleUtil.createAeron(aeronContext))
         {
             // subscription for channel Id 1
-            final Subscription subscription1 = aeron.addSubscription(DESTINATION, CHANNEL_ID_1,
-                    ExampleUtil.printStringMessage(CHANNEL_ID_1));
+            final Subscription subscription1 = aeron.addSubscription(DESTINATION, CHANNEL_ID,
+                    ExampleUtil.printStringMessage(CHANNEL_ID));
 
             // spin off the subscriber thread if you want it to be independent
-            executor.execute(() -> ExampleUtil.consumerLoop(FRAME_COUNT_LIMIT).accept(subscription1));
+            executor.execute(() -> ExampleUtil.subscriberLoop(FRAME_COUNT_LIMIT).accept(subscription1));
 
             // run aeron client conductor thread from here
             aeron.run();

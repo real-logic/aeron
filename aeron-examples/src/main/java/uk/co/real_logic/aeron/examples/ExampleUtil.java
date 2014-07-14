@@ -83,7 +83,7 @@ public class ExampleUtil
      * @param limit passed to {@link Subscription#poll(int)}
      * @return loop function
      */
-    public static Consumer<Subscription> consumerLoop(final int limit)
+    public static Consumer<Subscription> subscriberLoop(final int limit)
     {
         return (subscription) ->
         {

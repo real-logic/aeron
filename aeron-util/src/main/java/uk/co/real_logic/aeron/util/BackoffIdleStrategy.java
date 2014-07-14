@@ -20,8 +20,8 @@ import java.util.concurrent.locks.LockSupport;
 /**
  * Idling strategy for Agent spin loop
  *
- * Spin for maxSpins
- * {@link Thread#yield()} for maxYields
+ * Spin for maxSpins,
+ * {@link Thread#yield()} for maxYields, then
  * {@link LockSupport#parkNanos(long)} on an exponential backoff to maxParkPeriodNs
  */
 public class BackoffIdleStrategy implements IdleStrategy

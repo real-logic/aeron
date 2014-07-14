@@ -44,6 +44,7 @@ import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.Subscription.DataHandler;
 import static uk.co.real_logic.aeron.util.TermHelper.BUFFER_COUNT;
+import static uk.co.real_logic.aeron.util.TermHelper.termIdToBufferIndex;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.SUCCESS;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
@@ -190,7 +191,7 @@ public class AeronTest
         aeron.conductor().doWork();
         skip(toDriverBuffer, 1);
 
-        writePackets(appendersSession1[0], 1);
+        writePackets(appendersSession1[termIdToBufferIndex(TERM_ID_1)], 1);
 
         assertThat(subscription.poll(FRAME_COUNT_LIMIT), is(1));
     }
@@ -208,8 +209,8 @@ public class AeronTest
         aeron.conductor().doWork();
         skip(toDriverBuffer, 1);
 
-        writePackets(appendersSession1[0], 1);
-        writePackets(appendersSession2[0], 1);
+        writePackets(appendersSession1[termIdToBufferIndex(TERM_ID_1)], 1);
+        writePackets(appendersSession2[termIdToBufferIndex(TERM_ID_2)], 1);
         assertThat(subscription.poll(FRAME_COUNT_LIMIT), is(2));
     }
 
@@ -225,7 +226,7 @@ public class AeronTest
         aeron.conductor().doWork();
         skip(toDriverBuffer, 1);
 
-        final LogAppender logAppender = appendersSession1[0];
+        final LogAppender logAppender = appendersSession1[termIdToBufferIndex(TERM_ID_1)];
         final int msgCount = logAppender.capacity() / sendBuffer.capacity();
 
         writePackets(logAppender, msgCount);
@@ -233,19 +234,19 @@ public class AeronTest
 
         // cleaning is triggered by the subscriber and not the subscriber
         // so we clean two ahead of the current buffer
-        cleanBuffers(2);
+        cleanBuffers(termIdToBufferIndex(TERM_ID_1 + 2));
         aeron.conductor().doWork();
 
-        writePackets(appendersSession1[1], msgCount);
+        writePackets(appendersSession1[termIdToBufferIndex(TERM_ID_1 + 1)], msgCount);
         assertThat(subscription.poll(FRAME_COUNT_LIMIT), is(msgCount));
 
-        cleanBuffers(0);
+        cleanBuffers(termIdToBufferIndex(TERM_ID_1));
         aeron.conductor().doWork();
 
-        writePackets(appendersSession1[2], msgCount);
+        writePackets(appendersSession1[termIdToBufferIndex(TERM_ID_1 + 2)], msgCount);
         assertThat(subscription.poll(FRAME_COUNT_LIMIT), is(msgCount));
 
-        cleanBuffers(1);
+        cleanBuffers(termIdToBufferIndex(TERM_ID_1 + 1));
         aeron.conductor().doWork();
 
         writePackets(logAppender, msgCount);
@@ -266,16 +267,16 @@ public class AeronTest
         aeron.conductor().doWork();
         skip(toMediaDriver, 1);
 
-        final LogAppender logAppender = appendersSession1[0];
+        final LogAppender logAppender = appendersSession1[termIdToBufferIndex(TERM_ID_1)];
         final int msgCount = logAppender.capacity() / sendBuffer.capacity();
 
         writePackets(logAppender, msgCount);
         assertThat(subscription.poll(FRAME_COUNT_LIMIT), is(msgCount));
 
-        writePackets(appendersSession1[1], msgCount);
+        writePackets(appendersSession1[termIdToBufferIndex(TERM_ID_1 + 1)], msgCount);
         assertThat(subscription.poll(FRAME_COUNT_LIMIT), is(msgCount));
 
-        writePackets(appendersSession2[0], 5);
+        writePackets(appendersSession2[termIdToBufferIndex(TERM_ID_2)], 5);
         assertThat(subscription.poll(FRAME_COUNT_LIMIT), is(5));
     }
 

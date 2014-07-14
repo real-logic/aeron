@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static uk.co.real_logic.aeron.util.TermHelper.rotateNext;
 import static uk.co.real_logic.aeron.util.TermHelper.rotatePrevious;
+import static uk.co.real_logic.aeron.util.TermHelper.termIdToBufferIndex;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.SUCCESS;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.TRIPPED;
@@ -47,7 +48,7 @@ public class Publication
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
     private int refCount = 0;
-    private int activeIndex = 0;
+    private int activeIndex;
 
     public Publication(final ClientConductor conductor,
                        final String destination,
@@ -65,6 +66,7 @@ public class Publication
         this.activeTermId = new AtomicLong(initialTermId);
         this.logAppenders = logAppenders;
         this.limitBarrier = limitBarrier;
+        this.activeIndex = termIdToBufferIndex(initialTermId);
     }
 
     /**

@@ -24,6 +24,7 @@ import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static uk.co.real_logic.aeron.util.TermHelper.rotateNext;
+import static uk.co.real_logic.aeron.util.TermHelper.termIdToBufferIndex;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.WORD_ALIGNMENT;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.flagsOffset;
 
@@ -39,7 +40,7 @@ public class ConnectedSubscription
     private final Subscription.DataHandler dataHandler;
     private final AtomicLong activeTermId;
 
-    private int activeIndex = 0;
+    private int activeIndex;
 
     public ConnectedSubscription(final LogReader[] readers,
                                  final long sessionId,
@@ -50,6 +51,7 @@ public class ConnectedSubscription
         this.sessionId = sessionId;
         this.dataHandler = dataHandler;
         this.activeTermId = new AtomicLong(initialTermId);
+        this.activeIndex = termIdToBufferIndex(initialTermId);
     }
 
     public long sessionId()

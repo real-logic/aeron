@@ -19,6 +19,7 @@ import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.inOrder;
 import static uk.co.real_logic.aeron.util.TermHelper.BUFFER_COUNT;
+import static uk.co.real_logic.aeron.util.TermHelper.termIdToBufferIndex;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.*;
 
 public class PublicationTest
@@ -75,26 +76,27 @@ public class PublicationTest
     @Test
     public void shouldFailToOfferWhenAppendFails()
     {
-        when(appenders[0].append(any(), anyInt(), anyInt())).thenReturn(FAILURE);
+        when(appenders[termIdToBufferIndex(TERM_ID_1)].append(any(), anyInt(), anyInt())).thenReturn(FAILURE);
         assertFalse(publication.offer(atomicSendBuffer));
     }
 
     @Test
     public void shouldRotateWhenAppendTrips()
     {
-        when(appenders[0].append(any(), anyInt(), anyInt())).thenReturn(TRIPPED);
+        when(appenders[termIdToBufferIndex(TERM_ID_1)].append(any(), anyInt(), anyInt())).thenReturn(TRIPPED);
 
         assertTrue(publication.offer(atomicSendBuffer));
 
         final InOrder inOrder = inOrder(appenders[0], appenders[1], appenders[2]);
-        inOrder.verify(appenders[1]).status();
-        inOrder.verify(appenders[2]).statusOrdered(LogBufferDescriptor.NEEDS_CLEANING);
+        inOrder.verify(appenders[termIdToBufferIndex(TERM_ID_1 + 1)]).status();
+        inOrder.verify(appenders[termIdToBufferIndex(TERM_ID_1 + 2)]).statusOrdered(LogBufferDescriptor.NEEDS_CLEANING);
 
         // written data to the next record
-        inOrder.verify(appenders[1]).append(atomicSendBuffer, 0, atomicSendBuffer.capacity());
+        inOrder.verify(appenders[termIdToBufferIndex(TERM_ID_1 + 1)])
+               .append(atomicSendBuffer, 0, atomicSendBuffer.capacity());
 
         // updated the term id in the header
-        dataHeaderFlyweight.wrap(headers[1]);
+        dataHeaderFlyweight.wrap(headers[termIdToBufferIndex(TERM_ID_1 + 1)]);
         assertThat(dataHeaderFlyweight.termId(), is(TERM_ID_1 + 1));
     }
 }

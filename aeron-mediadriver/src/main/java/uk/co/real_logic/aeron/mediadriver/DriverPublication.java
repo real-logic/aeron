@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static uk.co.real_logic.aeron.util.BitUtil.align;
+import static uk.co.real_logic.aeron.util.TermHelper.termIdToBufferIndex;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.IN_CLEANING;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.NEEDS_CLEANING;
 
@@ -101,6 +102,7 @@ public class DriverPublication
         this.channelId = channelId;
         this.headerLength = headerLength;
         this.mtuLength = mtuLength;
+        this.activeIndex = termIdToBufferIndex(initialTermId);
 
         scanners = termBuffers.stream().map(this::newScanner).toArray(LogScanner[]::new);
         termSendBuffers = termBuffers.stream().map(this::duplicateLogBuffer).toArray(ByteBuffer[]::new);

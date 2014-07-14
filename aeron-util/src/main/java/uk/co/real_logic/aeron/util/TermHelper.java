@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.util;
 
 /**
- * Common Information around buffer rotation, used by both the client and core API.
+ * Common helper for dealing with term buffers.
  */
 public class TermHelper
 {
@@ -30,5 +30,10 @@ public class TermHelper
     public static int rotatePrevious(final int current)
     {
         return BitUtil.previous(current, BUFFER_COUNT);
+    }
+
+    public static int termIdToBufferIndex(final long termId)
+    {
+        return (int)(termId % BUFFER_COUNT);
     }
 }

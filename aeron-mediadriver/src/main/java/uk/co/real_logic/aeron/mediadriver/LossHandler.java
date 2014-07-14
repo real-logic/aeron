@@ -171,16 +171,6 @@ public class LossHandler
         return activeTermId;
     }
 
-    /**
-     * Return the {@link TimerWheel} used by the loss handler
-     *
-     * @return {@link TimerWheel} used by the loss handler
-     */
-    public TimerWheel timerWheel()
-    {
-        return wheel;
-    }
-
     private void suppressNak()
     {
         nakSentTimestamp = wheel.now();

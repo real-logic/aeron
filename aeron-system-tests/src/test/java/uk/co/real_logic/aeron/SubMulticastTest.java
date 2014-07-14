@@ -121,7 +121,6 @@ public class SubMulticastTest
     {
         Aeron.ClientContext ctx = new Aeron.ClientContext();
 
-
         ctx.counterLabelsBuffer(counterLabelsBuffer)
            .counterValuesBuffer(counterValuesBuffer);
 

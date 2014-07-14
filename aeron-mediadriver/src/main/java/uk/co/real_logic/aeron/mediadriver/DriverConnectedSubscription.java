@@ -20,7 +20,6 @@ import uk.co.real_logic.aeron.util.TermHelper;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogRebuilder;
-import uk.co.real_logic.aeron.util.event.EventLogger;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 
 import java.net.InetSocketAddress;
@@ -34,7 +33,6 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescript
  */
 public class DriverConnectedSubscription
 {
-    private static final EventLogger LOGGER = new EventLogger(DriverConnectedSubscription.class);
     private static final LogRebuilder[] EMPTY_REBUILDERS = new LogRebuilder[0];
 
     /**
@@ -64,7 +62,7 @@ public class DriverConnectedSubscription
     private final long channelId;
 
     private final AtomicLong activeTermId = new AtomicLong();
-    private int activeIndex = 0;
+    private int activeIndex;
 
     private LogRebuilder[] rebuilders = EMPTY_REBUILDERS;
     private LossHandler lossHandler;
@@ -106,6 +104,7 @@ public class DriverConnectedSubscription
         this.lastSmTail = lossHandler.highestContiguousOffset();
         this.currentWindow = initialWindow;
         this.currentWindowGain = currentWindow << 2; // window / 4
+        this.activeIndex = termIdToBufferIndex(initialTermId);
     }
 
     public InetSocketAddress sourceAddress()

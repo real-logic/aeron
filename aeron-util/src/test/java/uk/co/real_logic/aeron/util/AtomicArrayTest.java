@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.util;
 
 import org.junit.Test;
+import uk.co.real_logic.aeron.util.concurrent.AtomicArray;
 
 import java.util.ArrayList;
 import java.util.HashSet;

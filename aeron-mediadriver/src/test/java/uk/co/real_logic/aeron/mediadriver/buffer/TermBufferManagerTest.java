@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.mediadriver.buffer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import uk.co.real_logic.aeron.mediadriver.MediaDriver;
 import uk.co.real_logic.aeron.mediadriver.UdpDestination;
 import uk.co.real_logic.aeron.util.IoUtil;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -62,9 +63,9 @@ public class TermBufferManagerTest
             {
                 final AtomicBuffer log = logBuffer.logBuffer();
 
-                assertThat(log.capacity(), is(TermBufferManager.LOG_BUFFER_SIZE));
+                assertThat(log.capacity(), is(MediaDriver.TERM_BUFFER_SZ));
                 assertThat(log.getByte(0), is((byte)0));
-                assertThat(log.getByte(TermBufferManager.LOG_BUFFER_SIZE - 1), is((byte)0));
+                assertThat(log.getByte(MediaDriver.TERM_BUFFER_SZ - 1), is((byte)0));
 
                 final AtomicBuffer state = logBuffer.stateBuffer();
 

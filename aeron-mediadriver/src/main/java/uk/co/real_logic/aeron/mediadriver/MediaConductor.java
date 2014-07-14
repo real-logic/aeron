@@ -93,7 +93,7 @@ public class MediaConductor extends Agent
 
         this.driverCommandBuffer = ctx.driverCommandBuffer();
         this.receiverProxy = ctx.receiverProxy();
-        this.termBufferManager = ctx.bufferManagement();
+        this.termBufferManager = ctx.termBufferManager();
         this.nioSelector = ctx.conductorNioSelector();
         this.mtuLength = ctx.mtuLength();
         this.unicastSenderFlowControl = ctx.unicastSenderFlowControl();

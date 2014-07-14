@@ -67,6 +67,11 @@ public class MediaDriver implements AutoCloseable
     public static final String READ_BUFFER_SZ_PROP_NAME = "aeron.rcv.buffer.size";
 
     /**
+     * Size (in bytes) of the log buffers for terms
+     */
+    public static final String TERM_BUFFER_SZ_PROP_NAME = "aeron.term.buffer.size";
+
+    /**
      * Size (in bytes) of the command buffers between threads
      */
     public static final String COMMAND_BUFFER_SZ_PROP_NAME = "aeron.command.buffer.size";
@@ -95,6 +100,11 @@ public class MediaDriver implements AutoCloseable
      * Default byte buffer size for reads
      */
     public static final int READ_BYTE_BUFFER_SZ_DEFAULT = 4096;
+
+    /**
+     * Default term buffer size.
+     */
+    public static final int TERM_BUFFER_SZ_DEFAULT = 16 * 1048576;
 
     /**
      * Default buffer size for command buffers between threads
@@ -171,6 +181,7 @@ public class MediaDriver implements AutoCloseable
     public static final long ESTIMATED_MAX_THROUGHPUT_IN_BYTES = 10 * 1000 * 1000 * 1000; // 10 Gbps
 
     public static final int READ_BYTE_BUFFER_SZ = getInteger(READ_BUFFER_SZ_PROP_NAME, READ_BYTE_BUFFER_SZ_DEFAULT);
+    public static final int TERM_BUFFER_SZ = getInteger(TERM_BUFFER_SZ_PROP_NAME, TERM_BUFFER_SZ_DEFAULT);
     public static final int COMMAND_BUFFER_SZ = getInteger(COMMAND_BUFFER_SZ_PROP_NAME, COMMAND_BUFFER_SZ_DEFAULT);
     public static final int CONDUCTOR_BUFFER_SZ = getInteger(CONDUCTOR_BUFFER_SZ_PROP_NAME, CONDUCTOR_BUFFER_SZ_DEFAULT);
     public static final int TO_CLIENTS_BUFFER_SZ = getInteger(TO_CLIENTS_BUFFER_SZ_PROP_NAME, TO_CLIENTS_BUFFER_SZ_DEFAULT);
@@ -476,7 +487,7 @@ public class MediaDriver implements AutoCloseable
             receiverProxy(new ReceiverProxy(receiverCommandQueue()));
             mediaConductorProxy(new MediaConductorProxy(driverCommandBuffer()));
 
-            bufferManagement(new TermBufferManager(dataDirName()));
+            termBufferManager(new TermBufferManager(dataDirName()));
 
             if (statusBufferManager() == null)
             {
@@ -512,7 +523,7 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public MediaDriverContext bufferManagement(final TermBufferManager termBufferManager)
+        public MediaDriverContext termBufferManager(final TermBufferManager termBufferManager)
         {
             this.termBufferManager = termBufferManager;
             return this;
@@ -620,7 +631,7 @@ public class MediaDriver implements AutoCloseable
             return driverCommandBuffer;
         }
 
-        public TermBufferManager bufferManagement()
+        public TermBufferManager termBufferManager()
         {
             return termBufferManager;
         }

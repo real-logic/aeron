@@ -108,7 +108,7 @@ public class MediaConductorTest
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .connectedSubscriptions(new AtomicArray<>())
             .publications(publications)
-            .bufferManagement(mockTermBufferManager)
+            .termBufferManager(mockTermBufferManager)
             .statusBufferManager(mock(StatusBufferManager.class));
 
         ctx.fromClientCommands(fromClientCommands);

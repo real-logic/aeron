@@ -89,7 +89,7 @@ public class ReceiverTest
             .driverCommandBuffer(MediaDriver.COMMAND_BUFFER_SZ)
             .receiverNioSelector(mockNioSelector)
             .conductorNioSelector(mockNioSelector)
-            .bufferManagement(mockTermBufferManager)
+            .termBufferManager(mockTermBufferManager)
             .conductorTimerWheel(new TimerWheel(MediaDriver.MEDIA_CONDUCTOR_TICK_DURATION_US,
                                  TimeUnit.MICROSECONDS,
                                  MediaDriver.MEDIA_CONDUCTOR_TICKS_PER_WHEEL))

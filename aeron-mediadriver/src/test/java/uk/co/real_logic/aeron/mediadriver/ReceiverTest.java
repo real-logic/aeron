@@ -29,7 +29,6 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
 import uk.co.real_logic.aeron.util.event.EventLogger;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
@@ -50,7 +49,7 @@ public class ReceiverTest
 {
     public static final EventLogger LOGGER = new EventLogger(ReceiverTest.class);
 
-    public static final long LOG_BUFFER_SIZE = (64 * 1024) + RingBufferDescriptor.TRAILER_LENGTH;
+    public static final long LOG_BUFFER_SIZE = 64 * 1024;
     private static final String URI = "udp://localhost:45678";
     private static final UdpDestination UDP_DESTINATION = UdpDestination.parse(URI);
     private static final long CHANNEL_ID = 10;

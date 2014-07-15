@@ -39,12 +39,11 @@ import java.util.stream.IntStream;
 
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
-import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
 
 @RunWith(Theories.class)
 public class RetransmitHandlerTest
 {
-    private static final int LOG_BUFFER_SIZE = 65536 + TRAILER_LENGTH;
+    private static final int LOG_BUFFER_SIZE = 64 * 1024;
     private static final int STATE_BUFFER_SIZE = STATE_BUFFER_LENGTH;
     private static final byte[] DATA = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
     private static final int MESSAGE_LENGTH = DataHeaderFlyweight.HEADER_LENGTH + DATA.length;
@@ -60,8 +59,8 @@ public class RetransmitHandlerTest
     private final AtomicBuffer stateBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(STATE_BUFFER_SIZE));
     private final LogReader logReader = new LogReader(logBuffer, stateBuffer);
 
-    private final LogAppender logAppender = new LogAppender(logBuffer, stateBuffer,
-        DataHeaderFlyweight.DEFAULT_HEADER_NULL_IDS, 1024);
+    private final LogAppender logAppender =
+        new LogAppender(logBuffer, stateBuffer, DataHeaderFlyweight.DEFAULT_HEADER_NULL_IDS, 1024);
     private final LogRebuilder logRebuilder = new LogRebuilder(logBuffer, stateBuffer);
 
     private final AtomicBuffer rcvBuffer = new AtomicBuffer(new byte[MESSAGE_LENGTH]);

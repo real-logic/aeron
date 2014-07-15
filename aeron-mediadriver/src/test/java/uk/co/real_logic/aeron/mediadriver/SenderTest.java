@@ -25,7 +25,6 @@ import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
 import uk.co.real_logic.aeron.util.event.EventLogger;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
@@ -49,7 +48,7 @@ public class SenderTest
 {
     public static final EventLogger LOGGER = new EventLogger(SenderTest.class);
 
-    public static final long LOG_BUFFER_SIZE = (64 * 1024) + RingBufferDescriptor.TRAILER_LENGTH;
+    public static final long LOG_BUFFER_SIZE = 64 * 1024;
     public static final int MAX_FRAME_LENGTH = 1024;
     public static final long SESSION_ID = 1L;
     public static final long CHANNEL_ID = 2L;

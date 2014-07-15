@@ -36,24 +36,22 @@ import java.util.function.BooleanSupplier;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.util.BitUtil.align;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
-import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
 
-public class
-        LossHandlerTest
+public class LossHandlerTest
 {
-    private static final int LOG_BUFFER_SIZE = 65536 + TRAILER_LENGTH;
+    private static final int LOG_BUFFER_SIZE = 64 * 1024;
     private static final int STATE_BUFFER_SIZE = STATE_BUFFER_LENGTH;
-    private static final byte[] DATA = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
+    private static final byte[] DATA = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
     private static final int MESSAGE_LENGTH = DataHeaderFlyweight.HEADER_LENGTH + DATA.length;
     private static final long SESSION_ID = 0x5E55101DL;
     private static final long CHANNEL_ID = 0xC400EL;
     private static final long TERM_ID = 0xEE81D;
 
     public static final StaticDelayGenerator delayGenerator =
-            new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(20), false);
+        new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(20), false);
 
     public static final StaticDelayGenerator delayGeneratorWithImmediate =
-            new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(20), true);
+        new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(20), true);
 
     private final AtomicBuffer[] logBuffers = new AtomicBuffer[TermHelper.BUFFER_COUNT];
     private final AtomicBuffer[] stateBuffers = new AtomicBuffer[TermHelper.BUFFER_COUNT];
@@ -79,9 +77,9 @@ public class
         }
 
         wheel = new TimerWheel(() -> currentTime,
-            MediaDriver.MEDIA_CONDUCTOR_TICK_DURATION_US,
-            TimeUnit.MICROSECONDS,
-            MediaDriver.MEDIA_CONDUCTOR_TICKS_PER_WHEEL);
+                               MediaDriver.MEDIA_CONDUCTOR_TICK_DURATION_US,
+                               TimeUnit.MICROSECONDS,
+                               MediaDriver.MEDIA_CONDUCTOR_TICKS_PER_WHEEL);
 
         sendNakHandler = mock(LossHandler.SendNakHandler.class);
 

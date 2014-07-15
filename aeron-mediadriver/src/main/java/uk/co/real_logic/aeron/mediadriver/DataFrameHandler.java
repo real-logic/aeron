@@ -134,12 +134,12 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
             {
                 subscription.newConnectedSubscription(sessionId, srcAddress);
 
-                final InetSocketAddress controlAddress = transport.isMulticast() ? destination.remoteControl() :
-                    srcAddress;
+                final InetSocketAddress controlAddress =
+                    transport.isMulticast() ? destination.remoteControl() : srcAddress;
 
                 conductorProxy.createConnectedSubscription(subscription.udpDestination(), sessionId, channelId, termId,
-                    composeSmHandler(controlAddress, sessionId, channelId),
-                    composeNakHandler(controlAddress, sessionId, channelId));
+                                                           composeSmHandler(controlAddress, sessionId, channelId),
+                                                           composeNakHandler(controlAddress, sessionId, channelId));
             }
         }
     }
@@ -174,7 +174,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         }
 
         connectedSubscription.onLogBufferAvailable(cmd.termId(), cmd.initialWindowSize(),
-                cmd.termBuffers(), cmd.lossHandler(), cmd.sendSmHandler());
+                                                   cmd.termBuffers(), cmd.lossHandler(), cmd.sendSmHandler());
 
         // TODO: grab initial term offset from data and store in subscriberSession somehow (per TermID)
         // now we are all setup, so send an SM to allow the source to send if it is waiting
@@ -212,7 +212,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
                 .receiverWindow(window)
                 .headerType(HeaderFlyweight.HDR_TYPE_SM)
                 .frameLength(StatusMessageFlyweight.HEADER_LENGTH)
-                .flags((byte) 0)
+                .flags((byte)0)
                 .version(HeaderFlyweight.CURRENT_VERSION);
 
         smBuffer.position(0);

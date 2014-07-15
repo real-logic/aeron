@@ -297,7 +297,7 @@ public class MediaConductor extends Agent
 
             final int positionCounterOffset = positionCounterId("publication", destination, sessionId, channelId);
             final BufferPositionReporter positionReporter =
-                    new BufferPositionReporter(counterValuesBuffer, positionCounterOffset);
+                new BufferPositionReporter(counterValuesBuffer, positionCounterOffset);
 
             publication = new DriverPublication(frameHandler,
                                                 timerWheel,
@@ -406,20 +406,20 @@ public class MediaConductor extends Agent
             clientProxy.onNewLogBuffers(ON_NEW_CONNECTED_SUBSCRIPTION, sessionId, channelId, termId,
                                         udpDst.clientAwareUri(), termBuffers, 0, 0);
 
-            final GapScanner[] gapScanners = termBuffers
-                .stream()
-                .map((rawLog) -> new GapScanner(rawLog.logBuffer(), rawLog.stateBuffer()))
-                .toArray(GapScanner[]::new);
+            final GapScanner[] gapScanners =
+                termBuffers.stream()
+                           .map((rawLog) -> new GapScanner(rawLog.logBuffer(), rawLog.stateBuffer()))
+                           .toArray(GapScanner[]::new);
 
-            final FeedbackDelayGenerator delayGenerator = udpDst.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR :
-                NAK_UNICAST_DELAY_GENERATOR;
+            final FeedbackDelayGenerator delayGenerator =
+                udpDst.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR;
 
             final LossHandler lossHandler = new LossHandler(gapScanners, timerWheel, delayGenerator,
-                cmd.sendNakHandler(), termId);
+                                                            cmd.sendNakHandler(), termId);
 
             final NewConnectedSubscriptionCmd newConnectedSubscriptionCmd =
                 new NewConnectedSubscriptionCmd(udpDst, sessionId, channelId, termId, termBuffers,
-                    initialWindowSize, lossHandler, cmd.sendSmHandler());
+                                                initialWindowSize, lossHandler, cmd.sendSmHandler());
 
             while (!receiverProxy.newConnectedSubscription(newConnectedSubscriptionCmd))
             {

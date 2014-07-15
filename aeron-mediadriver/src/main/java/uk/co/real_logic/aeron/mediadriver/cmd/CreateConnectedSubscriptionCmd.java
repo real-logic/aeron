@@ -16,11 +16,8 @@
 package uk.co.real_logic.aeron.mediadriver.cmd;
 
 import uk.co.real_logic.aeron.mediadriver.DriverConnectedSubscription;
-import uk.co.real_logic.aeron.mediadriver.DriverSubscription;
 import uk.co.real_logic.aeron.mediadriver.LossHandler;
 import uk.co.real_logic.aeron.mediadriver.UdpDestination;
-
-import java.net.InetSocketAddress;
 
 public class CreateConnectedSubscriptionCmd
 {

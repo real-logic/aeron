@@ -141,15 +141,16 @@ public class ReceiverTest
             {
                 final CreateConnectedSubscriptionCmd cmd = (CreateConnectedSubscriptionCmd)e;
 
-                assertThat(cmd.subscription().udpDestination(), is(UDP_DESTINATION));
-                assertThat(cmd.subscription().channelId(), is(CHANNEL_ID));
+                assertThat(cmd.udpDestination(), is(UDP_DESTINATION));
+                assertThat(cmd.channelId(), is(CHANNEL_ID));
                 assertThat(cmd.sessionId(), is(SESSION_ID));
                 assertThat(cmd.termId(), is(TERM_ID));
 
                 // pass in new term buffer from media conductor, which should trigger SM
                 receiverProxy.newConnectedSubscription(
                     new NewConnectedSubscriptionCmd(UDP_DESTINATION, SESSION_ID, CHANNEL_ID, TERM_ID,
-                        termBuffers, INITIAL_WINDOW_SIZE));
+                        termBuffers, INITIAL_WINDOW_SIZE, mock(LossHandler.class),
+                        frameHandler.composeSmHandler(senderAddress, SESSION_ID, CHANNEL_ID)));
             });
 
         assertThat(messagesRead, is(1));
@@ -194,7 +195,8 @@ public class ReceiverTest
                 // pass in new term buffer from media conductor, which should trigger SM
                 receiverProxy.newConnectedSubscription(
                     new NewConnectedSubscriptionCmd(UDP_DESTINATION, SESSION_ID, CHANNEL_ID, TERM_ID,
-                        termBuffers, INITIAL_WINDOW_SIZE));
+                        termBuffers, INITIAL_WINDOW_SIZE, mock(LossHandler.class),
+                        frameHandler.composeSmHandler(senderAddress, SESSION_ID, CHANNEL_ID)));
             });
 
         assertThat(messagesRead, is(1));
@@ -244,7 +246,8 @@ public class ReceiverTest
                 // pass in new term buffer from media conductor, which should trigger SM
                 receiverProxy.newConnectedSubscription(
                     new NewConnectedSubscriptionCmd(UDP_DESTINATION, SESSION_ID, CHANNEL_ID, TERM_ID,
-                        termBuffers, INITIAL_WINDOW_SIZE));
+                        termBuffers, INITIAL_WINDOW_SIZE, mock(LossHandler.class),
+                        frameHandler.composeSmHandler(senderAddress, SESSION_ID, CHANNEL_ID)));
             });
 
         assertThat(messagesRead, is(1));
@@ -297,7 +300,8 @@ public class ReceiverTest
                 // pass in new term buffer from media conductor, which should trigger SM
                 receiverProxy.newConnectedSubscription(
                     new NewConnectedSubscriptionCmd(UDP_DESTINATION, SESSION_ID, CHANNEL_ID, TERM_ID,
-                        termBuffers, INITIAL_WINDOW_SIZE));
+                        termBuffers, INITIAL_WINDOW_SIZE, mock(LossHandler.class),
+                        frameHandler.composeSmHandler(senderAddress, SESSION_ID, CHANNEL_ID)));
             });
 
         assertThat(messagesRead, is(1));
@@ -348,7 +352,8 @@ public class ReceiverTest
             (e) ->
                 receiverProxy.newConnectedSubscription(
                     new NewConnectedSubscriptionCmd(UDP_DESTINATION, SESSION_ID, CHANNEL_ID, TERM_ID,
-                        termBuffers, INITIAL_WINDOW_SIZE)));
+                        termBuffers, INITIAL_WINDOW_SIZE, mock(LossHandler.class),
+                        frameHandler.composeSmHandler(senderAddress, SESSION_ID, CHANNEL_ID))));
 
         assertThat(messagesRead, is(1));
 

@@ -133,7 +133,13 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
             else
             {
                 subscription.newConnectedSubscription(sessionId, srcAddress);
-                conductorProxy.createConnectedSubscription(subscription, srcAddress, sessionId, termId);
+
+                final InetSocketAddress controlAddress = transport.isMulticast() ? destination.remoteControl() :
+                    srcAddress;
+
+                conductorProxy.createConnectedSubscription(subscription.udpDestination(), sessionId, channelId, termId,
+                    composeSmHandler(controlAddress, sessionId, channelId),
+                    composeNakHandler(controlAddress, sessionId, channelId));
             }
         }
     }
@@ -152,7 +158,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         // this should be on the data channel and shouldn't include Naks, so ignore.
     }
 
-    public void onConnectedSubscriptionReady(final NewConnectedSubscriptionCmd cmd, final LossHandler lossHandler)
+    public void onConnectedSubscriptionReady(final NewConnectedSubscriptionCmd cmd)
     {
         final DriverSubscription subscription = subscriptionByChannelIdMap.get(cmd.channelId());
         if (null == subscription)
@@ -167,34 +173,46 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
             throw new IllegalStateException("session not found");
         }
 
-        final DriverConnectedSubscription.SendSmHandler sendSm =
-            (termId, termOffset, window) -> sendStatusMessage(connectedSubscription, (int)termId, termOffset, window);
-
-        lossHandler.sendNakHandler(
-            (termId, termOffset, length) -> sendNak(connectedSubscription, (int)termId, termOffset, length));
-
         connectedSubscription.onLogBufferAvailable(cmd.termId(), cmd.initialWindowSize(),
-                                                   cmd.termBuffers(), lossHandler, sendSm);
+                cmd.termBuffers(), cmd.lossHandler(), cmd.sendSmHandler());
 
-        // now we are all setup, so send an SM to allow the source to send if it is waiting
         // TODO: grab initial term offset from data and store in subscriberSession somehow (per TermID)
-        sendStatusMessage(connectedSubscription, (int)cmd.termId(), 0, cmd.initialWindowSize());
+        // now we are all setup, so send an SM to allow the source to send if it is waiting
+        cmd.sendSmHandler().sendSm(cmd.termId(), 0, cmd.initialWindowSize());
     }
 
-    private void sendStatusMessage(final DriverConnectedSubscription connectedSubscription,
+    public DriverConnectedSubscription.SendSmHandler composeSmHandler(final InetSocketAddress controlAddress,
+                                                                      final long sessionId,
+                                                                      final long channelId)
+    {
+        return (termId, termOffset, window) ->
+            sendStatusMessage(controlAddress, sessionId, channelId, (int)termId, termOffset, window);
+    }
+
+    public LossHandler.SendNakHandler composeNakHandler(final InetSocketAddress controlAddress,
+                                                        final long sessionId,
+                                                        final long channelId)
+    {
+        return (termId, termOffset, length) ->
+            sendNak(controlAddress, sessionId, channelId, (int)termId, termOffset, length);
+    }
+
+    private void sendStatusMessage(final InetSocketAddress controlAddress,
+                                   final long sessionId,
+                                   final long channelId,
                                    final int termId,
                                    final int termOffset,
                                    final int window)
     {
         smHeader.wrap(smBuffer, 0);
-        smHeader.sessionId(connectedSubscription.sessionId())
-                .channelId(connectedSubscription.channelId())
+        smHeader.sessionId(sessionId)
+                .channelId(channelId)
                 .termId(termId)
                 .highestContiguousTermOffset(termOffset)
                 .receiverWindow(window)
                 .headerType(HeaderFlyweight.HDR_TYPE_SM)
                 .frameLength(StatusMessageFlyweight.HEADER_LENGTH)
-                .flags((byte)0)
+                .flags((byte) 0)
                 .version(HeaderFlyweight.CURRENT_VERSION);
 
         smBuffer.position(0);
@@ -202,7 +220,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
 
         try
         {
-            if (transport.sendTo(smBuffer, controlAddress(connectedSubscription)) < smHeader.frameLength())
+            if (transport.sendTo(smBuffer, controlAddress) < smHeader.frameLength())
             {
                 throw new IllegalStateException("could not send all of SM");
             }
@@ -213,14 +231,16 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         }
     }
 
-    private void sendNak(final DriverConnectedSubscription connectedSubscription,
+    private void sendNak(final InetSocketAddress controlAddress,
+                         final long sessionId,
+                         final long channelId,
                          final int termId,
                          final int termOffset,
                          final int length)
     {
         nakHeader.wrap(nakBuffer, 0);
-        nakHeader.channelId(connectedSubscription.channelId())
-                 .sessionId(connectedSubscription.sessionId())
+        nakHeader.channelId(channelId)
+                 .sessionId(sessionId)
                  .termId(termId)
                  .termOffset(termOffset)
                  .length(length)
@@ -234,7 +254,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
 
         try
         {
-            if (transport.sendTo(nakBuffer, controlAddress(connectedSubscription)) < nakHeader.frameLength())
+            if (transport.sendTo(nakBuffer, controlAddress) < nakHeader.frameLength())
             {
                 throw new IllegalStateException("could not send all of NAK");
             }
@@ -243,15 +263,5 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         {
             throw new RuntimeException(ex);
         }
-    }
-
-    private InetSocketAddress controlAddress(final DriverConnectedSubscription connectedSubscription)
-    {
-        if (transport.isMulticast())
-        {
-            return destination().remoteControl();
-        }
-
-        return connectedSubscription.sourceAddress();
     }
 }

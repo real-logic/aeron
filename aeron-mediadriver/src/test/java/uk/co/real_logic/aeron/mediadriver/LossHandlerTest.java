@@ -38,7 +38,8 @@ import static uk.co.real_logic.aeron.util.BitUtil.align;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
 
-public class LossHandlerTest
+public class
+        LossHandlerTest
 {
     private static final int LOG_BUFFER_SIZE = 65536 + TRAILER_LENGTH;
     private static final int STATE_BUFFER_SIZE = STATE_BUFFER_LENGTH;
@@ -84,10 +85,8 @@ public class LossHandlerTest
 
         sendNakHandler = mock(LossHandler.SendNakHandler.class);
 
-        handler = new LossHandler(scanners, wheel, delayGenerator, sendNakHandler);
+        handler = new LossHandler(scanners, wheel, delayGenerator, sendNakHandler, TERM_ID);
         dataHeader.wrap(rcvBuffer, 0);
-
-        handler.activeTermId(TERM_ID);
     }
 
     @Before
@@ -196,8 +195,7 @@ public class LossHandlerTest
     @Test
     public void shouldHandleImmediateNak()
     {
-        handler = new LossHandler(scanners, wheel, delayGeneratorWithImmediate, sendNakHandler);
-        handler.activeTermId(TERM_ID);
+        handler = new LossHandler(scanners, wheel, delayGeneratorWithImmediate, sendNakHandler, TERM_ID);
 
         rcvDataFrame(offsetOfMessage(0));
         rcvDataFrame(offsetOfMessage(2));
@@ -221,8 +219,7 @@ public class LossHandlerTest
     @Test
     public void shouldOnlySendNaksOnceOnMultipleScans()
     {
-        handler = new LossHandler(scanners, wheel, delayGeneratorWithImmediate, sendNakHandler);
-        handler.activeTermId(TERM_ID);
+        handler = new LossHandler(scanners, wheel, delayGeneratorWithImmediate, sendNakHandler, TERM_ID);
 
         rcvDataFrame(offsetOfMessage(0));
         rcvDataFrame(offsetOfMessage(2));

@@ -160,7 +160,6 @@ public class Receiver extends Agent
     private void onNewConnectedSubscription(final NewConnectedSubscriptionCmd cmd)
     {
         final DataFrameHandler frameHandler = getFrameHandler(cmd.destination());
-        FeedbackDelayGenerator delayGenerator;
 
         if (null == frameHandler)
         {
@@ -169,24 +168,6 @@ public class Receiver extends Agent
             return;
         }
 
-        final GapScanner[] gapScanners =
-            cmd.termBuffers()
-               .stream()
-               .map((rawLog) -> new GapScanner(rawLog.logBuffer(), rawLog.stateBuffer()))
-               .toArray(GapScanner[]::new);
-
-        if (cmd.destination().isMulticast())
-        {
-            delayGenerator = NAK_MULTICAST_DELAY_GENERATOR;
-        }
-        else
-        {
-            delayGenerator = NAK_UNICAST_DELAY_GENERATOR;
-        }
-
-        final LossHandler lossHandler = new LossHandler(gapScanners, conductorTimerWheel, delayGenerator);
-
-        lossHandler.activeTermId(cmd.termId());
-        frameHandler.onConnectedSubscriptionReady(cmd, lossHandler);
+        frameHandler.onConnectedSubscriptionReady(cmd);
     }
 }

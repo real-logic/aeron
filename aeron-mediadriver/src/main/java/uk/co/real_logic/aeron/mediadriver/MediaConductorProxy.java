@@ -33,12 +33,15 @@ public class MediaConductorProxy
         this.commandQueue = commandQueue;
     }
 
-    public boolean createConnectedSubscription(final DriverSubscription subscription,
-                                               final InetSocketAddress srcAddress,
+    public boolean createConnectedSubscription(final UdpDestination udpDestination,
+                                               final long sessionId,
                                                final long channelId,
-                                               final long termId)
+                                               final long termId,
+                                               final DriverConnectedSubscription.SendSmHandler sendSmHandler,
+                                               final LossHandler.SendNakHandler sendNakHandler)
     {
-        return commandQueue.offer(new CreateConnectedSubscriptionCmd(subscription, srcAddress, channelId, termId));
+        return commandQueue.offer(new CreateConnectedSubscriptionCmd(udpDestination, sessionId, channelId,
+            termId, sendSmHandler, sendNakHandler));
     }
 
     public boolean removeTermBuffers(final UdpDestination destination,

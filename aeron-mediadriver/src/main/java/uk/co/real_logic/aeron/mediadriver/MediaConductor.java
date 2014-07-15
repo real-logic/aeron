@@ -27,6 +27,7 @@ import uk.co.real_logic.aeron.util.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicArray;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.aeron.util.concurrent.logbuffer.GapScanner;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.event.EventCode;
 import uk.co.real_logic.aeron.util.event.EventLogger;
@@ -393,9 +394,9 @@ public class MediaConductor extends Agent
 
     private void onCreateConnectedSubscription(final CreateConnectedSubscriptionCmd cmd)
     {
-        final UdpDestination udpDst = cmd.subscription().udpDestination();
-        final long channelId = cmd.subscription().channelId();
+        final UdpDestination udpDst = cmd.udpDestination();
         final long sessionId = cmd.sessionId();
+        final long channelId = cmd.channelId();
         final long termId = cmd.termId();
 
         try
@@ -405,8 +406,20 @@ public class MediaConductor extends Agent
             clientProxy.onNewLogBuffers(ON_NEW_CONNECTED_SUBSCRIPTION, sessionId, channelId, termId,
                                         udpDst.clientAwareUri(), termBuffers, 0, 0);
 
+            final GapScanner[] gapScanners = termBuffers
+                .stream()
+                .map((rawLog) -> new GapScanner(rawLog.logBuffer(), rawLog.stateBuffer()))
+                .toArray(GapScanner[]::new);
+
+            final FeedbackDelayGenerator delayGenerator = udpDst.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR :
+                NAK_UNICAST_DELAY_GENERATOR;
+
+            final LossHandler lossHandler = new LossHandler(gapScanners, timerWheel, delayGenerator,
+                cmd.sendNakHandler(), termId);
+
             final NewConnectedSubscriptionCmd newConnectedSubscriptionCmd =
-                new NewConnectedSubscriptionCmd(udpDst, sessionId, channelId, termId, termBuffers, initialWindowSize);
+                new NewConnectedSubscriptionCmd(udpDst, sessionId, channelId, termId, termBuffers,
+                    initialWindowSize, lossHandler, cmd.sendSmHandler());
 
             while (!receiverProxy.newConnectedSubscription(newConnectedSubscriptionCmd))
             {

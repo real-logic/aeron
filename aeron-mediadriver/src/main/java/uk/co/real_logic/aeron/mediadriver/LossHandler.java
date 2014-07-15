@@ -61,20 +61,6 @@ public class LossHandler
     private long nakSentTimestamp;
 
     /**
-     * Create a loss handler for a channel with no send NAK handler.
-     *
-     * @param scanners       for the gaps attached to LogBuffers
-     * @param wheel          for timer management
-     * @param delayGenerator to use for delay determination
-     */
-    public LossHandler(final GapScanner[] scanners,
-                       final TimerWheel wheel,
-                       final FeedbackDelayGenerator delayGenerator)
-    {
-        this(scanners, wheel, delayGenerator, null);
-    }
-
-    /**
      * Create a loss handler for a channel.
      *
      * @param scanners       for the gaps attached to LogBuffers
@@ -85,7 +71,8 @@ public class LossHandler
     public LossHandler(final GapScanner[] scanners,
                        final TimerWheel wheel,
                        final FeedbackDelayGenerator delayGenerator,
-                       final SendNakHandler sendNakHandler)
+                       final SendNakHandler sendNakHandler,
+                       final long activeTermId)
     {
         this.scanners = scanners;
         this.wheel = wheel;
@@ -99,26 +86,7 @@ public class LossHandler
         }
 
         this.activeIndex = 0;
-    }
-
-    /**
-     * Set send NAK handler.
-     *
-     * @param handler to call when NAK is to be sent
-     */
-    public void sendNakHandler(final SendNakHandler handler)
-    {
-        this.sendNakHandler = handler;
-    }
-
-    /**
-     * Set active Term Id for the active buffer
-     *
-     * @param termId for the active buffer
-     */
-    public void activeTermId(final long termId)
-    {
-        this.activeTermId = termId;
+        this.activeTermId = activeTermId;
     }
 
     /**

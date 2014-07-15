@@ -15,41 +15,60 @@
  */
 package uk.co.real_logic.aeron.mediadriver.cmd;
 
+import uk.co.real_logic.aeron.mediadriver.DriverConnectedSubscription;
 import uk.co.real_logic.aeron.mediadriver.DriverSubscription;
+import uk.co.real_logic.aeron.mediadriver.LossHandler;
+import uk.co.real_logic.aeron.mediadriver.UdpDestination;
 
 import java.net.InetSocketAddress;
 
 public class CreateConnectedSubscriptionCmd
 {
-    private final DriverSubscription subscription;
-    private final InetSocketAddress srcAddress;
+    private final UdpDestination udpDestination;
+    private final DriverConnectedSubscription.SendSmHandler sendSmHandler;
+    private final LossHandler.SendNakHandler sendNakHandler;
     private final long sessionId;
+    private final long channelId;
     private final long termId;
 
-    public CreateConnectedSubscriptionCmd(final DriverSubscription subscription,
-                                          final InetSocketAddress srcAddress,
+    public CreateConnectedSubscriptionCmd(final UdpDestination udpDestination,
                                           final long sessionId,
-                                          final long termId)
+                                          final long channelId,
+                                          final long termId,
+                                          final DriverConnectedSubscription.SendSmHandler sendSmHandler,
+                                          final LossHandler.SendNakHandler sendNakHandler)
     {
-        this.subscription = subscription;
-        this.srcAddress = srcAddress;
+        this.udpDestination = udpDestination;
+        this.sendSmHandler = sendSmHandler;
+        this.sendNakHandler = sendNakHandler;
         this.sessionId = sessionId;
+        this.channelId = channelId;
         this.termId = termId;
     }
 
-    public DriverSubscription subscription()
+    public UdpDestination udpDestination()
     {
-        return subscription;
+        return udpDestination;
     }
 
-    public InetSocketAddress srcAddress()
+    public DriverConnectedSubscription.SendSmHandler sendSmHandler()
     {
-        return srcAddress;
+        return sendSmHandler;
+    }
+
+    public LossHandler.SendNakHandler sendNakHandler()
+    {
+        return sendNakHandler;
     }
 
     public long sessionId()
     {
         return sessionId;
+    }
+
+    public long channelId()
+    {
+        return channelId;
     }
 
     public long termId()

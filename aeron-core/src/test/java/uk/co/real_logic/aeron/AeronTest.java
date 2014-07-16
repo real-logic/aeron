@@ -19,9 +19,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.MessageHandler;
 import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastBufferDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastReceiver;
 import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastTransmitter;
@@ -74,7 +72,6 @@ public class AeronTest extends MockBufferUsage
     private DataHandler channel1Handler = EMPTY_DATA_HANDLER;
 
     private final LogBuffersMessageFlyweight newBufferMessage = new LogBuffersMessageFlyweight();
-    private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
     private final ErrorFlyweight errorHeader = new ErrorFlyweight();
 
     private final ByteBuffer sendBuffer = ByteBuffer.allocate(SEND_BUFFER_CAPACITY);
@@ -283,17 +280,5 @@ public class AeronTest extends MockBufferUsage
     {
         cleanBuffer(logBuffersSession1[index]);
         cleanBuffer(stateBuffersSession1[index]);
-    }
-
-    private MessageHandler assertSubscriberMessageOfType(final int expectedMsgTypeId, final long channelId)
-    {
-        return (msgTypeId, buffer, index, length) ->
-        {
-            assertThat(msgTypeId, is(expectedMsgTypeId));
-
-            subscriptionMessage.wrap(buffer, index);
-            assertThat(subscriptionMessage.channelId(), is(channelId));
-            assertThat(subscriptionMessage.destination(), is(DESTINATION));
-        };
     }
 }

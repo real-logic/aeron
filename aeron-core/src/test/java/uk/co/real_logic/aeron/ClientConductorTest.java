@@ -22,16 +22,11 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.conductor.*;
 import uk.co.real_logic.aeron.util.TermHelper;
 import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
-import uk.co.real_logic.aeron.util.concurrent.AtomicArray;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastBufferDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastReceiver;
 import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.aeron.util.concurrent.broadcast.CopyBroadcastReceiver;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
 import uk.co.real_logic.aeron.util.protocol.ErrorFlyweight;
 
 import java.nio.ByteBuffer;
@@ -45,6 +40,7 @@ import static uk.co.real_logic.aeron.Subscription.DataHandler;
 import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION_IN_PUBLICATION;
 import static uk.co.real_logic.aeron.util.ErrorCode.PUBLICATION_CHANNEL_ALREADY_EXISTS;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ON_NEW_PUBLICATION;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
 
 public class ClientConductorTest extends MockBufferUsage
 {
@@ -56,7 +52,6 @@ public class ClientConductorTest extends MockBufferUsage
     public static final long TERM_ID_1 = 1L;
     public static final int SEND_BUFFER_CAPACITY = 1024;
 
-    public static final int RING_BUFFER_SZ = (16 * 1024) + RingBufferDescriptor.TRAILER_LENGTH;
     public static final int BROADCAST_BUFFER_SZ = (16 * 1024) + BroadcastBufferDescriptor.TRAILER_LENGTH;
     public static final long CORRELATION_ID = 2000;
     public static final int AWAIT_TIMEOUT = 100;
@@ -73,35 +68,27 @@ public class ClientConductorTest extends MockBufferUsage
         new CopyBroadcastReceiver(new BroadcastReceiver(toClientBuffer));
     private final BroadcastTransmitter toClientTransmitter = new BroadcastTransmitter(toClientBuffer);
 
-    private final RingBuffer toDriverBuffer = new ManyToOneRingBuffer(new AtomicBuffer(new byte[RING_BUFFER_SZ]));
-
     private final AtomicBuffer counterValuesBuffer = new AtomicBuffer(new byte[COUNTER_BUFFER_SZ]);
 
     private Signal signal;
     private MediaDriverProxy mediaDriverProxy;
     private ClientConductor conductor;
-    private ConductorErrorHandler errorHandler;
-    private AtomicArray<Subscription> subscriberChannels;
-    private MediaDriverBroadcastReceiver receiver;
     private DataHandler dataHandler = mock(DataHandler.class);
 
     @Before
     public void setUp() throws Exception
     {
+
         mediaDriverProxy = mock(MediaDriverProxy.class);
         signal = mock(Signal.class);
-        subscriberChannels = new AtomicArray<>();
-        errorHandler = mock(ConductorErrorHandler.class);
 
         when(mediaDriverProxy.addPublication(any(), anyLong(), anyLong())).thenReturn(CORRELATION_ID);
 
         willNotifyNewBuffer();
 
-        receiver = new MediaDriverBroadcastReceiver(toClientReceiver);
-
         conductor = new ClientConductor(
-            receiver,
-            errorHandler,
+            new MediaDriverBroadcastReceiver(toClientReceiver),
+            mock(ConductorErrorHandler.class),
             mockBufferUsage,
             counterValuesBuffer,
             mediaDriverProxy,
@@ -143,12 +130,12 @@ public class ClientConductorTest extends MockBufferUsage
     public void shouldFailToAddOnMediaDriverError()
     {
         doAnswer(
-                (invocation) ->
-                {
-                    conductor.onError(PUBLICATION_CHANNEL_ALREADY_EXISTS,
-                        "publication and session already exist on destination");
-                    return null;
-                }).when(signal).await(anyLong());
+            (invocation) ->
+            {
+                conductor.onError(PUBLICATION_CHANNEL_ALREADY_EXISTS,
+                                  "publication and session already exist on destination");
+                return null;
+            }).when(signal).await(anyLong());
 
         addPublication();
     }
@@ -223,7 +210,7 @@ public class ClientConductorTest extends MockBufferUsage
     }
 
     @Test
-    public void closingAPublicationDoesntRemoveOtherPublications() throws Exception
+    public void closingAPublicationDoesNotRemoveOtherPublications() throws Exception
     {
         Publication publication = conductor.addPublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
         conductor.addPublication(DESTINATION, CHANNEL_ID_2, SESSION_ID_2);
@@ -289,7 +276,7 @@ public class ClientConductorTest extends MockBufferUsage
             {
                 newBufferMessage.location(i, sessionId + "-log-" + i);
                 newBufferMessage.bufferOffset(i, 0);
-                newBufferMessage.bufferLength(i, LOG_BUFFER_SIZE);
+                newBufferMessage.bufferLength(i, LOG_BUFFER_SZ);
             }
         );
 
@@ -298,8 +285,7 @@ public class ClientConductorTest extends MockBufferUsage
             {
                 newBufferMessage.location(i + TermHelper.BUFFER_COUNT, sessionId + "-state-" + i);
                 newBufferMessage.bufferOffset(i + TermHelper.BUFFER_COUNT, 0);
-                newBufferMessage.bufferLength(i + TermHelper.BUFFER_COUNT,
-                                              LogBufferDescriptor.STATE_BUFFER_LENGTH);
+                newBufferMessage.bufferLength(i + TermHelper.BUFFER_COUNT, STATE_BUFFER_LENGTH);
             }
         );
 

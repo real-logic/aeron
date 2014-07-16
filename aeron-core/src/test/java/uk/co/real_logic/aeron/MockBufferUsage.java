@@ -21,7 +21,7 @@ import static org.mockito.Mockito.*;
 public class MockBufferUsage
 {
     public static final int MAX_FRAME_LENGTH = 1024;
-    public static final int LOG_BUFFER_SIZE = LogBufferDescriptor.LOG_MIN_SIZE;
+    public static final int LOG_BUFFER_SZ = LogBufferDescriptor.LOG_MIN_SIZE;
 
     public static final long SESSION_ID_1 = 13L;
     public static final long SESSION_ID_2 = 15L;
@@ -43,9 +43,9 @@ public class MockBufferUsage
 
         for (int i = 0; i < TermHelper.BUFFER_COUNT; i++)
         {
-            logBuffersSession1[i] = new AtomicBuffer(new byte[LOG_BUFFER_SIZE]);
+            logBuffersSession1[i] = new AtomicBuffer(new byte[LOG_BUFFER_SZ]);
             stateBuffersSession1[i] = new AtomicBuffer(new byte[LogBufferDescriptor.STATE_BUFFER_LENGTH]);
-            logBuffersSession2[i] = new AtomicBuffer(new byte[LOG_BUFFER_SIZE]);
+            logBuffersSession2[i] = new AtomicBuffer(new byte[LOG_BUFFER_SZ]);
             stateBuffersSession2[i] = new AtomicBuffer(new byte[LogBufferDescriptor.STATE_BUFFER_LENGTH]);
 
             when(mockBufferUsage.newBuffer(eq(SESSION_ID_1 + "-log-" + i), anyInt(), anyInt()))

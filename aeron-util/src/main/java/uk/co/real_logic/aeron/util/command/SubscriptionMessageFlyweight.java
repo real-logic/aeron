@@ -15,8 +15,6 @@
  */
 package uk.co.real_logic.aeron.util.command;
 
-import uk.co.real_logic.aeron.util.Flyweight;
-
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_LONG;
 
@@ -27,21 +25,23 @@ import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_LONG;
  * 0                   1                   2                   3
  * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |                           Channel Id                          +
+ * |                         Correlation ID                        |
+ * +---------------------------------------------------------------+
+ * |                           Channel Id                          |
  * +---------------------------------------------------------------+
  * |      Destination Length       |   Destination               ...
  * |                                                             ...
  * +---------------------------------------------------------------+
  */
-public class SubscriptionMessageFlyweight extends Flyweight
+public class SubscriptionMessageFlyweight extends CorrelatedMessageFlyweight
 {
-    private static final int CHANNEL_ID_OFFSET = 0;
+    private static final int CHANNEL_ID_OFFSET = CORRELATION_ID_FIELD_OFFSET + SIZE_OF_LONG;
     private static final int DESTINATION_OFFSET = CHANNEL_ID_OFFSET + SIZE_OF_LONG;
 
     private int lengthOfDestination;
 
     /**
-     * Get the channel id
+     * return the channel id
      *
      * @return the channel id
      */
@@ -62,7 +62,7 @@ public class SubscriptionMessageFlyweight extends Flyweight
     }
 
     /**
-     * Get the destination field
+     * return the destination field
      *
      * @return destination field
      */
@@ -85,6 +85,6 @@ public class SubscriptionMessageFlyweight extends Flyweight
 
     public int length()
     {
-        return SIZE_OF_LONG + lengthOfDestination;
+        return SIZE_OF_LONG + SIZE_OF_LONG + lengthOfDestination;
     }
 }

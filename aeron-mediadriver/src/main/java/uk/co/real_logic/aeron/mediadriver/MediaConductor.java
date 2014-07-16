@@ -174,7 +174,7 @@ public class MediaConductor extends Agent
                     }
                     else if (obj instanceof SubscriptionRemovedCmd)
                     {
-                        onRemoveSubscription((SubscriptionRemovedCmd)obj);
+                        onRemovedSubscription((SubscriptionRemovedCmd)obj);
                     }
                 }
                 catch (final Exception ex)
@@ -449,7 +449,7 @@ public class MediaConductor extends Agent
         }
     }
 
-    private void onRemoveSubscription(final SubscriptionRemovedCmd cmd)
+    private void onRemovedSubscription(final SubscriptionRemovedCmd cmd)
     {
         final DriverSubscription subscription = cmd.driverSubscription();
 

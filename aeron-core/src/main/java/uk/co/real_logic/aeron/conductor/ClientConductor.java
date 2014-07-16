@@ -15,10 +15,7 @@
  */
 package uk.co.real_logic.aeron.conductor;
 
-import uk.co.real_logic.aeron.MediaDriverTimeoutException;
-import uk.co.real_logic.aeron.Publication;
-import uk.co.real_logic.aeron.RegistrationException;
-import uk.co.real_logic.aeron.Subscription;
+import uk.co.real_logic.aeron.*;
 import uk.co.real_logic.aeron.util.Agent;
 import uk.co.real_logic.aeron.util.BackoffIdleStrategy;
 import uk.co.real_logic.aeron.util.ErrorCode;
@@ -158,7 +155,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
 
     public synchronized Subscription addSubscription(final String destination,
                                                      final long channelId,
-                                                     final Subscription.DataHandler handler)
+                                                     final DataHandler handler)
     {
 
         Subscription subscription = subscriptionMap.get(destination, channelId);

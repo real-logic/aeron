@@ -37,7 +37,7 @@ public class ConnectedSubscription
 
     private final LogReader[] logReaders;
     private final long sessionId;
-    private final Subscription.DataHandler dataHandler;
+    private final DataHandler dataHandler;
     private final AtomicLong activeTermId;
 
     private int activeIndex;
@@ -45,7 +45,7 @@ public class ConnectedSubscription
     public ConnectedSubscription(final LogReader[] readers,
                                  final long sessionId,
                                  final long initialTermId,
-                                 final Subscription.DataHandler dataHandler)
+                                 final DataHandler dataHandler)
     {
         this.logReaders = readers;
         this.sessionId = sessionId;

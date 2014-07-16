@@ -166,7 +166,7 @@ public final class Aeron implements AutoCloseable, Runnable
      */
     public Subscription addSubscription(final String destination,
                                         final long channelId,
-                                        final Subscription.DataHandler handler)
+                                        final DataHandler handler)
     {
         return conductor.addSubscription(destination, channelId, handler);
     }

@@ -74,7 +74,7 @@ public class SubUnicastTest
     private DatagramChannel senderChannel;
 
     private final Queue<byte[]> receivedFrames = new ArrayDeque<>();
-    private final Subscription.DataHandler saveFrames =
+    private final DataHandler saveFrames =
         (buffer, offset, length, sessionId, flags) ->
         {
             final byte[] data = new byte[length];

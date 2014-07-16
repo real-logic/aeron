@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.examples;
 
 import uk.co.real_logic.aeron.Aeron;
+import uk.co.real_logic.aeron.DataHandler;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
 import uk.co.real_logic.aeron.util.RateReporter;
@@ -106,12 +107,12 @@ public class ExampleUtil
     }
 
     /**
-     * Return a reusable, parameterized {@link uk.co.real_logic.aeron.Subscription.DataHandler} that prints to stdout
+     * Return a reusable, parameterized {@link uk.co.real_logic.aeron.DataHandler} that prints to stdout
      *
      * @param channelId to show when printing
      * @return subscription data handler function that prints the message contents
      */
-    public static Subscription.DataHandler printStringMessage(final long channelId)
+    public static DataHandler printStringMessage(final long channelId)
     {
         return (buffer, offset, length, sessionId, flags) ->
         {
@@ -124,13 +125,13 @@ public class ExampleUtil
     }
 
     /**
-     * Return a reusable, parameteried {@link uk.co.real_logic.aeron.Subscription.DataHandler} that calls into a
+     * Return a reusable, parameteried {@link uk.co.real_logic.aeron.DataHandler} that calls into a
      * {@link RateReporter}.
      *
      * @param reporter for the rate
-     * @return {@link Subscription.DataHandler} that records the rate information
+     * @return {@link uk.co.real_logic.aeron.DataHandler} that records the rate information
      */
-    public static Subscription.DataHandler rateReporterHandler(final RateReporter reporter)
+    public static DataHandler rateReporterHandler(final RateReporter reporter)
     {
         return (buffer, offset, length, sessionId, flags) -> reporter.onMessage(1, length);
     }

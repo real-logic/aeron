@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Queue;
+import java.util.function.Consumer;
 
 import static uk.co.real_logic.aeron.util.UnsafeAccess.UNSAFE;
 
@@ -183,7 +184,7 @@ public class OneToOneConcurrentArrayQueue<E>
         return (E)UNSAFE.getObjectVolatile(buffer, sequenceToOffset(head));
     }
 
-    public int drain(final ElementHandler<E> elementHandler)
+    public int drain(final Consumer<E> elementHandler)
     {
         final long currentHead = head;
         final long currentTail = tail;
@@ -193,7 +194,7 @@ public class OneToOneConcurrentArrayQueue<E>
         {
             while (nextSequence < currentTail)
             {
-                elementHandler.onElement(removeSequence(nextSequence++));
+                elementHandler.accept(removeSequence(nextSequence++));
             }
         }
         finally

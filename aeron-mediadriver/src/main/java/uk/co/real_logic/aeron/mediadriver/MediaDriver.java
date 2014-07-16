@@ -22,7 +22,6 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastBufferDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastTransmitter;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
@@ -176,7 +175,7 @@ public class MediaDriver implements AutoCloseable
 
     /**
      * Default initial window size for flow control sender to receiver purposes
-     *
+     * <p>
      * Sizing of Initial Window
      * <p>
      * RTT (LAN) = 100 usec
@@ -281,11 +280,10 @@ public class MediaDriver implements AutoCloseable
             .conductorNioSelector(new NioSelector())
             .unicastSenderFlowControl(UnicastSenderControlStrategy::new)
             .multicastSenderFlowControl(UnicastSenderControlStrategy::new)
-            .connectedSubscriptions(new AtomicArray<>())
             .publications(new AtomicArray<>())
             .conductorTimerWheel(new TimerWheel(MEDIA_CONDUCTOR_TICK_DURATION_US,
-                    TimeUnit.MICROSECONDS,
-                    MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
+                                                TimeUnit.MICROSECONDS,
+                                                MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
             .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .conductorIdleStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
@@ -476,7 +474,6 @@ public class MediaDriver implements AutoCloseable
         private IdleStrategy conductorIdleStrategy;
         private IdleStrategy senderIdleStrategy;
         private IdleStrategy receiverIdleStrategy;
-        private AtomicArray<DriverConnectedSubscription> connectedSubscriptions;
         private AtomicArray<DriverPublication> publications;
         private ClientProxy clientProxy;
         private RingBuffer fromClientCommands;
@@ -614,13 +611,6 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public MediaDriverContext connectedSubscriptions(
-            final AtomicArray<DriverConnectedSubscription> connectedSubscriptions)
-        {
-            this.connectedSubscriptions = connectedSubscriptions;
-            return this;
-        }
-
         public MediaDriverContext publications(final AtomicArray<DriverPublication> publications)
         {
             this.publications = publications;
@@ -722,11 +712,6 @@ public class MediaDriver implements AutoCloseable
             return receiverIdleStrategy;
         }
 
-        public AtomicArray<DriverConnectedSubscription> connectedSubscriptions()
-        {
-            return connectedSubscriptions;
-        }
-
         public AtomicArray<DriverPublication> publications()
         {
             return publications;
@@ -791,8 +776,7 @@ public class MediaDriver implements AutoCloseable
         {
             if (mtuLength > initialWindowSize)
             {
-                throw new IllegalStateException("Initial window size must be greater than or equal to MTU length: " +
-                    mtuLength);
+                throw new IllegalStateException("Initial window size must be >= to MTU length: " + mtuLength);
             }
         }
     }

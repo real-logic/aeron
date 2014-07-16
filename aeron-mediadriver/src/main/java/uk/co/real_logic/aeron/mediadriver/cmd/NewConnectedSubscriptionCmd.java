@@ -22,71 +22,15 @@ import uk.co.real_logic.aeron.mediadriver.buffer.TermBuffers;
 
 public class NewConnectedSubscriptionCmd
 {
-    private final long sessionId;
-    private final long channelId;
-    private final long termId;
-    private final TermBuffers termBuffers;
-    private final UdpDestination destination;
-    private final int initialWindowSize;
-    private final LossHandler lossHandler;
-    private final DriverConnectedSubscription.SendSmHandler sendSmHandler;
+    private final DriverConnectedSubscription connectedSubscription;
 
-    public NewConnectedSubscriptionCmd(final UdpDestination destination,
-                                       final long sessionId,
-                                       final long channelId,
-                                       final long termId,
-                                       final TermBuffers termBuffers,
-                                       final int initialWindowSize,
-                                       final LossHandler lossHandler,
-                                       final DriverConnectedSubscription.SendSmHandler sendSmHandler)
+    public NewConnectedSubscriptionCmd(final DriverConnectedSubscription connectedSubscription)
     {
-        this.sessionId = sessionId;
-        this.channelId = channelId;
-        this.termId = termId;
-        this.termBuffers = termBuffers;
-        this.destination = destination;
-        this.initialWindowSize = initialWindowSize;
-        this.lossHandler = lossHandler;
-        this.sendSmHandler = sendSmHandler;
+        this.connectedSubscription = connectedSubscription;
     }
 
-    public UdpDestination destination()
+    public DriverConnectedSubscription connectedSubscription()
     {
-        return destination;
-    }
-
-    public long sessionId()
-    {
-        return sessionId;
-    }
-
-    public long channelId()
-    {
-        return channelId;
-    }
-
-    public long termId()
-    {
-        return termId;
-    }
-
-    public TermBuffers termBuffers()
-    {
-        return termBuffers;
-    }
-
-    public int initialWindowSize()
-    {
-        return initialWindowSize;
-    }
-
-    public LossHandler lossHandler()
-    {
-        return lossHandler;
-    }
-
-    public DriverConnectedSubscription.SendSmHandler sendSmHandler()
-    {
-        return sendSmHandler;
+        return connectedSubscription;
     }
 }

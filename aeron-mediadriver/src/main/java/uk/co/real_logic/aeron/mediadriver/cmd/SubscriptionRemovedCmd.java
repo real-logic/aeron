@@ -15,26 +15,19 @@
  */
 package uk.co.real_logic.aeron.mediadriver.cmd;
 
-import uk.co.real_logic.aeron.mediadriver.UdpDestination;
+import uk.co.real_logic.aeron.mediadriver.DriverSubscription;
 
-public class RemoveSubscriptionCmd
+public class SubscriptionRemovedCmd
 {
-    private final UdpDestination udpDestination;
-    private final long channelId;
+    final DriverSubscription driverSubscription;
 
-    public RemoveSubscriptionCmd(final UdpDestination udpDestination, final long channelId)
+    public SubscriptionRemovedCmd(final DriverSubscription driverSubscription)
     {
-        this.udpDestination = udpDestination;
-        this.channelId = channelId;
+        this.driverSubscription = driverSubscription;
     }
 
-    public UdpDestination destination()
+    public DriverSubscription driverSubscription()
     {
-        return udpDestination;
-    }
-
-    public long channelId()
-    {
-        return channelId;
+        return driverSubscription;
     }
 }

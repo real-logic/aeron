@@ -29,29 +29,13 @@ import java.util.concurrent.TimeUnit;
  */
 public class LossHandler
 {
-    /**
-     * Handler for sending a NAK
-     */
-    @FunctionalInterface
-    public interface SendNakHandler
-    {
-        /**
-         * Called when a NAK should be sent
-         *
-         * @param termId     for the NAK
-         * @param termOffset for the NAK
-         * @param length     for the NAK
-         */
-        void onSendNak(final long termId, final int termOffset, final int length);
-    }
-
     private final GapScanner[] scanners;
     private final TimerWheel wheel;
     private final Gap[] gaps = new Gap[2];
     private final Gap activeGap = new Gap();
     private final FeedbackDelayGenerator delayGenerator;
 
-    private SendNakHandler sendNakHandler;
+    private NakMessageSender nakMessageSender;
     private TimerWheel.Timer timer;
 
     private int activeIndex = 0;
@@ -66,18 +50,18 @@ public class LossHandler
      * @param scanners       for the gaps attached to LogBuffers
      * @param wheel          for timer management
      * @param delayGenerator to use for delay determination
-     * @param sendNakHandler to call when sending a NAK is indicated
+     * @param nakMessageSender to call when sending a NAK is indicated
      */
     public LossHandler(final GapScanner[] scanners,
                        final TimerWheel wheel,
                        final FeedbackDelayGenerator delayGenerator,
-                       final SendNakHandler sendNakHandler,
+                       final NakMessageSender nakMessageSender,
                        final long activeTermId)
     {
         this.scanners = scanners;
         this.wheel = wheel;
         this.delayGenerator = delayGenerator;
-        this.sendNakHandler = sendNakHandler;
+        this.nakMessageSender = nakMessageSender;
         this.nakSentTimestamp = wheel.now();
 
         for (int i = 0, max = gaps.length; i < max; i++)
@@ -172,7 +156,7 @@ public class LossHandler
 
                 if (delayGenerator.immediateFeedback())
                 {
-                    sendNakHandler.onSendNak(activeGap.termId, activeGap.termOffset, activeGap.length);
+                    nakMessageSender.send(activeGap.termId, activeGap.termOffset, activeGap.length);
                 }
             }
         }
@@ -188,14 +172,14 @@ public class LossHandler
 
             if (delayGenerator.immediateFeedback())
             {
-                sendNakHandler.onSendNak(activeGap.termId, activeGap.termOffset, activeGap.length);
+                nakMessageSender.send(activeGap.termId, activeGap.termOffset, activeGap.length);
             }
         }
     }
 
     private void onTimerExpire()
     {
-        sendNakHandler.onSendNak(activeGap.termId, activeGap.termOffset, activeGap.length);
+        nakMessageSender.send(activeGap.termId, activeGap.termOffset, activeGap.length);
         scheduleTimer();
         nakSentTimestamp = wheel.now();
     }

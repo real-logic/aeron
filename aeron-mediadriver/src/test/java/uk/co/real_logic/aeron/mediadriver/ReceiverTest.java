@@ -23,7 +23,6 @@ import uk.co.real_logic.aeron.mediadriver.buffer.TermBufferManager;
 import uk.co.real_logic.aeron.mediadriver.buffer.TermBuffers;
 import uk.co.real_logic.aeron.mediadriver.cmd.CreateConnectedSubscriptionCmd;
 import uk.co.real_logic.aeron.mediadriver.cmd.NewConnectedSubscriptionCmd;
-import uk.co.real_logic.aeron.util.concurrent.AtomicArray;
 import uk.co.real_logic.aeron.util.TimerWheel;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
@@ -59,6 +58,7 @@ public class ReceiverTest
     private static final byte[] NO_PAYLOAD = new byte[0];
     private static final int INITIAL_WINDOW_SIZE = MediaDriver.INITIAL_WINDOW_SIZE_DEFAULT;
 
+    public final LossHandler mockLossHandler = mock(LossHandler.class);
     private final NioSelector mockNioSelector = mock(NioSelector.class);
     private final TermBufferManager mockTermBufferManager = mock(TermBufferManager.class);
     private final ByteBuffer dataFrameBuffer = ByteBuffer.allocate(2 * 1024);
@@ -88,9 +88,8 @@ public class ReceiverTest
             .conductorNioSelector(mockNioSelector)
             .termBufferManager(mockTermBufferManager)
             .conductorTimerWheel(new TimerWheel(MediaDriver.MEDIA_CONDUCTOR_TICK_DURATION_US,
-                                 TimeUnit.MICROSECONDS,
-                                 MediaDriver.MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
-            .connectedSubscriptions(new AtomicArray<>())
+                                                TimeUnit.MICROSECONDS,
+                                                MediaDriver.MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024));
 
         toConductorQueue = ctx.conductorCommandQueue();
@@ -122,7 +121,7 @@ public class ReceiverTest
     {
         LOGGER.logInvocation();
 
-        receiverProxy.addSubscription(URI, CHANNEL_ID);  // ADD_SUBSCRIPTION from client
+        receiverProxy.addSubscription(UDP_DESTINATION, CHANNEL_ID);  // ADD_SUBSCRIPTION from client
 
         receiver.doWork();
 
@@ -146,9 +145,16 @@ public class ReceiverTest
 
                 // pass in new term buffer from media conductor, which should trigger SM
                 receiverProxy.newConnectedSubscription(
-                    new NewConnectedSubscriptionCmd(UDP_DESTINATION, SESSION_ID, CHANNEL_ID, TERM_ID,
-                        termBuffers, INITIAL_WINDOW_SIZE, mock(LossHandler.class),
-                        frameHandler.composeSmHandler(senderAddress, SESSION_ID, CHANNEL_ID)));
+                    new NewConnectedSubscriptionCmd(
+                        new DriverConnectedSubscription(
+                            UDP_DESTINATION,
+                            SESSION_ID,
+                            CHANNEL_ID,
+                            TERM_ID,
+                            INITIAL_WINDOW_SIZE,
+                            termBuffers,
+                            mockLossHandler,
+                            frameHandler.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID))));
             });
 
         assertThat(messagesRead, is(1));
@@ -174,7 +180,7 @@ public class ReceiverTest
     {
         LOGGER.logInvocation();
 
-        receiverProxy.addSubscription(URI, CHANNEL_ID);  // ADD_SUBSCRIPTION from client
+        receiverProxy.addSubscription(UDP_DESTINATION, CHANNEL_ID);  // ADD_SUBSCRIPTION from client
 
         receiver.doWork();
 
@@ -192,9 +198,16 @@ public class ReceiverTest
                 assertTrue(e instanceof CreateConnectedSubscriptionCmd);
                 // pass in new term buffer from media conductor, which should trigger SM
                 receiverProxy.newConnectedSubscription(
-                    new NewConnectedSubscriptionCmd(UDP_DESTINATION, SESSION_ID, CHANNEL_ID, TERM_ID,
-                        termBuffers, INITIAL_WINDOW_SIZE, mock(LossHandler.class),
-                        frameHandler.composeSmHandler(senderAddress, SESSION_ID, CHANNEL_ID)));
+                    new NewConnectedSubscriptionCmd(
+                        new DriverConnectedSubscription(
+                            UDP_DESTINATION,
+                            SESSION_ID,
+                            CHANNEL_ID,
+                            TERM_ID,
+                            INITIAL_WINDOW_SIZE,
+                            termBuffers,
+                            mockLossHandler,
+                            frameHandler.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID))));
             });
 
         assertThat(messagesRead, is(1));
@@ -225,7 +238,7 @@ public class ReceiverTest
     {
         LOGGER.logInvocation();
 
-        receiverProxy.addSubscription(URI, CHANNEL_ID);  // ADD_SUBSCRIPTION from client
+        receiverProxy.addSubscription(UDP_DESTINATION, CHANNEL_ID);  // ADD_SUBSCRIPTION from client
 
         receiver.doWork();
 
@@ -243,9 +256,16 @@ public class ReceiverTest
                 assertTrue(e instanceof CreateConnectedSubscriptionCmd);
                 // pass in new term buffer from media conductor, which should trigger SM
                 receiverProxy.newConnectedSubscription(
-                    new NewConnectedSubscriptionCmd(UDP_DESTINATION, SESSION_ID, CHANNEL_ID, TERM_ID,
-                        termBuffers, INITIAL_WINDOW_SIZE, mock(LossHandler.class),
-                        frameHandler.composeSmHandler(senderAddress, SESSION_ID, CHANNEL_ID)));
+                    new NewConnectedSubscriptionCmd(
+                        new DriverConnectedSubscription(
+                            UDP_DESTINATION,
+                            SESSION_ID,
+                            CHANNEL_ID,
+                            TERM_ID,
+                            INITIAL_WINDOW_SIZE,
+                            termBuffers,
+                            mockLossHandler,
+                            frameHandler.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID))));
             });
 
         assertThat(messagesRead, is(1));
@@ -279,7 +299,7 @@ public class ReceiverTest
     {
         LOGGER.logInvocation();
 
-        receiverProxy.addSubscription(URI, CHANNEL_ID);  // ADD_SUBSCRIPTION from client
+        receiverProxy.addSubscription(UDP_DESTINATION, CHANNEL_ID);  // ADD_SUBSCRIPTION from client
 
         receiver.doWork();
 
@@ -297,9 +317,16 @@ public class ReceiverTest
                 assertTrue(e instanceof CreateConnectedSubscriptionCmd);
                 // pass in new term buffer from media conductor, which should trigger SM
                 receiverProxy.newConnectedSubscription(
-                    new NewConnectedSubscriptionCmd(UDP_DESTINATION, SESSION_ID, CHANNEL_ID, TERM_ID,
-                        termBuffers, INITIAL_WINDOW_SIZE, mock(LossHandler.class),
-                        frameHandler.composeSmHandler(senderAddress, SESSION_ID, CHANNEL_ID)));
+                    new NewConnectedSubscriptionCmd(
+                        new DriverConnectedSubscription(
+                            UDP_DESTINATION,
+                            SESSION_ID,
+                            CHANNEL_ID,
+                            TERM_ID,
+                            INITIAL_WINDOW_SIZE,
+                            termBuffers,
+                            mockLossHandler,
+                            frameHandler.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID))));
             });
 
         assertThat(messagesRead, is(1));
@@ -334,7 +361,7 @@ public class ReceiverTest
     {
         LOGGER.logInvocation();
 
-        receiverProxy.addSubscription(URI, CHANNEL_ID);  // ADD_SUBSCRIPTION from client
+        receiverProxy.addSubscription(UDP_DESTINATION, CHANNEL_ID);  // ADD_SUBSCRIPTION from client
 
         receiver.doWork();
 
@@ -349,9 +376,16 @@ public class ReceiverTest
         final int messagesRead = toConductorQueue.drain(
             (e) ->
                 receiverProxy.newConnectedSubscription(
-                    new NewConnectedSubscriptionCmd(UDP_DESTINATION, SESSION_ID, CHANNEL_ID, TERM_ID,
-                        termBuffers, INITIAL_WINDOW_SIZE, mock(LossHandler.class),
-                        frameHandler.composeSmHandler(senderAddress, SESSION_ID, CHANNEL_ID))));
+                    new NewConnectedSubscriptionCmd(
+                        new DriverConnectedSubscription(
+                            UDP_DESTINATION,
+                            SESSION_ID,
+                            CHANNEL_ID,
+                            TERM_ID,
+                            INITIAL_WINDOW_SIZE,
+                            termBuffers,
+                            mockLossHandler,
+                            frameHandler.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID)))));
 
         assertThat(messagesRead, is(1));
 

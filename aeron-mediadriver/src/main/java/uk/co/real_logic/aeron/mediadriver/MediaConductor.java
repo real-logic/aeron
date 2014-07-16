@@ -19,7 +19,7 @@ import uk.co.real_logic.aeron.mediadriver.buffer.TermBufferManager;
 import uk.co.real_logic.aeron.mediadriver.buffer.TermBuffers;
 import uk.co.real_logic.aeron.mediadriver.cmd.CreateConnectedSubscriptionCmd;
 import uk.co.real_logic.aeron.mediadriver.cmd.NewConnectedSubscriptionCmd;
-import uk.co.real_logic.aeron.mediadriver.cmd.RemoveConnectedSubscriptionCmd;
+import uk.co.real_logic.aeron.mediadriver.cmd.SubscriptionRemovedCmd;
 import uk.co.real_logic.aeron.util.*;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.command.PublicationMessageFlyweight;
@@ -35,6 +35,7 @@ import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.status.BufferPositionReporter;
 import uk.co.real_logic.aeron.util.status.StatusBufferManager;
 
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -59,7 +60,8 @@ public class MediaConductor extends Agent
         new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(NAK_UNICAST_DELAY_DEFAULT_NS), true);
 
     public static final OptimalMulticastDelayGenerator NAK_MULTICAST_DELAY_GENERATOR =
-        new OptimalMulticastDelayGenerator(MediaDriver.NAK_MAX_BACKOFF_DEFAULT, MediaDriver.NAK_GROUPSIZE_DEFAULT,
+        new OptimalMulticastDelayGenerator(MediaDriver.NAK_MAX_BACKOFF_DEFAULT,
+                                           MediaDriver.NAK_GROUPSIZE_DEFAULT,
                                            MediaDriver.NAK_GRTT_DEFAULT);
 
     /**
@@ -78,7 +80,7 @@ public class MediaConductor extends Agent
     private final RingBuffer fromClientCommands;
     private final Long2ObjectHashMap<ControlFrameHandler> srcDestinationMap = new Long2ObjectHashMap<>();
     private final TimerWheel timerWheel;
-    private final AtomicArray<DriverConnectedSubscription> connectedSubscriptions;
+    private final ArrayList<DriverConnectedSubscription> connectedSubscriptions = new ArrayList<>();
     private final AtomicArray<DriverPublication> publications;
 
     private final Supplier<SenderControlStrategy> unicastSenderFlowControl;
@@ -111,7 +113,6 @@ public class MediaConductor extends Agent
         timerWheel = ctx.conductorTimerWheel();
         heartbeatTimer = newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheck);
 
-        connectedSubscriptions = ctx.connectedSubscriptions();
         publications = ctx.publications();
         fromClientCommands = ctx.fromClientCommands();
         clientProxy = ctx.clientProxy();
@@ -127,9 +128,14 @@ public class MediaConductor extends Agent
         int workCount = nioSelector.processKeys();
 
         workCount += publications.doAction(DriverPublication::cleanLogBuffer);
-        workCount += connectedSubscriptions.doAction(DriverConnectedSubscription::cleanLogBuffer);
-        workCount += connectedSubscriptions.doAction(DriverConnectedSubscription::scanForGaps);
-        workCount += connectedSubscriptions.doAction((subscription) -> subscription.sendAnyPendingSm(timerWheel.now()));
+
+        final long now = timerWheel.now();
+        for (final DriverConnectedSubscription connectedSubscription : connectedSubscriptions)
+        {
+            workCount += connectedSubscription.cleanLogBuffer();
+            workCount += connectedSubscription.scanForGaps();
+            workCount += connectedSubscription.sendPendingStatusMessages(now);
+        }
 
         workCount += processFromClientCommandBuffer();
         workCount += processFromReceiverCommandQueue();
@@ -158,22 +164,24 @@ public class MediaConductor extends Agent
     private int processFromReceiverCommandQueue()
     {
         return commandQueue.drain(
-                (obj) ->
+            (obj) ->
+            {
+                try
                 {
-                    try
+                    if (obj instanceof CreateConnectedSubscriptionCmd)
                     {
-                        if (obj instanceof CreateConnectedSubscriptionCmd)
-                        {
-                            onCreateConnectedSubscription((CreateConnectedSubscriptionCmd) obj);
-                        } else if (obj instanceof RemoveConnectedSubscriptionCmd)
-                        {
-                            onRemoveConnectedSubscription((RemoveConnectedSubscriptionCmd) obj);
-                        }
-                    } catch (final Exception ex)
-                    {
-                        LOGGER.logException(ex);
+                        onCreateConnectedSubscription((CreateConnectedSubscriptionCmd)obj);
                     }
-                });
+                    else if (obj instanceof SubscriptionRemovedCmd)
+                    {
+                        onRemoveSubscription((SubscriptionRemovedCmd)obj);
+                    }
+                }
+                catch (final Exception ex)
+                {
+                    LOGGER.logException(ex);
+                }
+            });
     }
 
     private int processFromClientCommandBuffer()
@@ -223,6 +231,7 @@ public class MediaConductor extends Agent
                 }
                 catch (final Exception ex)
                 {
+                    // TODO: send errors back to the client for exceptions
                     LOGGER.logException(ex);
                 }
             });
@@ -301,8 +310,8 @@ public class MediaConductor extends Agent
 
             frameHandler.addPublication(publication);
 
-            clientProxy.onNewLogBuffers(ON_NEW_PUBLICATION, sessionId, channelId,
-                                        initialTermId, destination, termBuffers, correlationId, positionCounterOffset);
+            clientProxy.onNewTermBuffers(ON_NEW_PUBLICATION, sessionId, channelId, initialTermId, destination,
+                                         termBuffers, correlationId, positionCounterOffset);
 
             publications.add(publication);
         }
@@ -373,27 +382,34 @@ public class MediaConductor extends Agent
 
     private void onAddSubscription(final SubscriptionMessageFlyweight subscriberMessage)
     {
-        receiverProxy.addSubscription(subscriberMessage.destination(), subscriberMessage.channelId());
+        final String destination = subscriberMessage.destination();
+        final UdpDestination udpDestination = UdpDestination.parse(destination);
+
+        receiverProxy.addSubscription(udpDestination, subscriberMessage.channelId());
     }
 
     private void onRemoveSubscription(final SubscriptionMessageFlyweight subscriberMessage)
     {
-        receiverProxy.removeSubscription(subscriberMessage.destination(), subscriberMessage.channelId());
+        final String destination = subscriberMessage.destination();
+        final UdpDestination udpDestination = UdpDestination.parse(destination);
+
+        receiverProxy.removeSubscription(udpDestination, subscriberMessage.channelId());
     }
 
     private void onCreateConnectedSubscription(final CreateConnectedSubscriptionCmd cmd)
     {
-        final UdpDestination udpDst = cmd.udpDestination();
+        final UdpDestination udpDestination = cmd.udpDestination();
         final long sessionId = cmd.sessionId();
         final long channelId = cmd.channelId();
-        final long termId = cmd.termId();
+        final long initialTermId = cmd.termId();
 
         try
         {
-            final TermBuffers termBuffers = termBufferManager.addConnectedSubscription(udpDst, sessionId, channelId);
+            final TermBuffers termBuffers =
+                termBufferManager.addConnectedSubscription(udpDestination, sessionId, channelId);
 
-            clientProxy.onNewLogBuffers(ON_NEW_CONNECTED_SUBSCRIPTION, sessionId, channelId, termId,
-                                        udpDst.clientAwareUri(), termBuffers, 0, 0);
+            clientProxy.onNewTermBuffers(ON_NEW_CONNECTED_SUBSCRIPTION, sessionId, channelId, initialTermId,
+                                         udpDestination.clientAwareUri(), termBuffers, 0, 0);
 
             final GapScanner[] gapScanners =
                 termBuffers.stream()
@@ -401,14 +417,25 @@ public class MediaConductor extends Agent
                            .toArray(GapScanner[]::new);
 
             final FeedbackDelayGenerator delayGenerator =
-                udpDst.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR;
+                udpDestination.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR;
 
-            final LossHandler lossHandler = new LossHandler(gapScanners, timerWheel, delayGenerator,
-                                                            cmd.sendNakHandler(), termId);
+            final LossHandler lossHandler =
+                new LossHandler(gapScanners, timerWheel, delayGenerator, cmd.sendNakHandler(), initialTermId);
+
+            final DriverConnectedSubscription connectedSubscription =
+                new DriverConnectedSubscription(udpDestination,
+                                                sessionId,
+                                                channelId,
+                                                initialTermId,
+                                                initialWindowSize,
+                                                termBuffers,
+                                                lossHandler,
+                                                cmd.sendSmHandler());
+
+            connectedSubscriptions.add(connectedSubscription);
 
             final NewConnectedSubscriptionCmd newConnectedSubscriptionCmd =
-                new NewConnectedSubscriptionCmd(udpDst, sessionId, channelId, termId, termBuffers,
-                                                initialWindowSize, lossHandler, cmd.sendSmHandler());
+                new NewConnectedSubscriptionCmd(connectedSubscription);
 
             while (!receiverProxy.newConnectedSubscription(newConnectedSubscriptionCmd))
             {
@@ -422,15 +449,24 @@ public class MediaConductor extends Agent
         }
     }
 
-    private void onRemoveConnectedSubscription(final RemoveConnectedSubscriptionCmd cmd)
+    private void onRemoveSubscription(final SubscriptionRemovedCmd cmd)
     {
-        try
+        final DriverSubscription subscription = cmd.driverSubscription();
+
+        for (final DriverConnectedSubscription connectedSubscription : subscription.connectedSubscriptions())
         {
-            termBufferManager.removeConnectedSubscription(cmd.udpDestination(), cmd.sessionId(), cmd.channelId());
-        }
-        catch (final Exception ex)
-        {
-            LOGGER.logException(ex);
+            try
+            {
+                termBufferManager.removeConnectedSubscription(connectedSubscription.udpDestination(),
+                                                              connectedSubscription.sessionId(),
+                                                              connectedSubscription.channelId());
+
+                connectedSubscriptions.remove(connectedSubscription);
+            }
+            catch (final Exception ex)
+            {
+                LOGGER.logException(ex);
+            }
         }
     }
 

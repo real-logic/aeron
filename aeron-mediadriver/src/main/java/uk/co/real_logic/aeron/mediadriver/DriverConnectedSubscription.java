@@ -22,7 +22,6 @@ import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogRebuilder;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 
-import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static uk.co.real_logic.aeron.util.TermHelper.*;
@@ -33,83 +32,59 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescript
  */
 public class DriverConnectedSubscription
 {
-    private static final LogRebuilder[] EMPTY_REBUILDERS = new LogRebuilder[0];
-
-    /**
-     * Handler for sending Status Messages (SMs)
-     */
-    @FunctionalInterface
-    public interface SendSmHandler
-    {
-        /**
-         * Called when an SM should be sent.
-         *
-         * @param termId     for the SM
-         * @param termOffset for the SM
-         * @param window     for the SM
-         */
-        void sendSm(final long termId, final int termOffset, final int window);
-    }
-
     /**
      * Timeout between SMs. One RTT.
      */
     public static final long STATUS_MESSAGE_TIMEOUT = MediaDriver.ESTIMATED_RTT_NS;
 
-    private final String destination;
-    private final InetSocketAddress srcAddress;
+    private final UdpDestination udpDestination;
     private final long sessionId;
     private final long channelId;
 
     private final AtomicLong activeTermId = new AtomicLong();
     private int activeIndex;
 
-    private LogRebuilder[] rebuilders = EMPTY_REBUILDERS;
-    private LossHandler lossHandler;
+    private final LogRebuilder[] rebuilders;
+    private final LossHandler lossHandler;
+    private final StatusMessageSender statusMessageSender;
 
-    private SendSmHandler sendSmHandler;
     private long lastSmTimestamp;
     private long lastSmTermId;
     private int lastSmTail;
-    private int currentWindow;
+    private int currentWindowSize;
     private int currentWindowGain;
 
-    public DriverConnectedSubscription(final String destination,
+    public DriverConnectedSubscription(final UdpDestination udpDestination,
                                        final long sessionId,
                                        final long channelId,
-                                       final InetSocketAddress srcAddress)
+                                       final long initialTermId,
+                                       final int initialWindow,
+                                       final TermBuffers termBuffers,
+                                       final LossHandler lossHandler,
+                                       final StatusMessageSender statusMessageSender)
     {
-        this.destination = destination;
-        this.srcAddress = srcAddress;
+        this.udpDestination = udpDestination;
         this.sessionId = sessionId;
         this.channelId = channelId;
-    }
 
-    // TODO: simplify initialisation so the object is constructed in a valid state.
-    public void onLogBufferAvailable(final long initialTermId,
-                                     final int initialWindow,
-                                     final TermBuffers termBuffers,
-                                     final LossHandler lossHandler,
-                                     final SendSmHandler sendSmHandler)
-    {
         activeTermId.lazySet(initialTermId);
         rebuilders = termBuffers.stream()
                                 .map((rawLog) -> new LogRebuilder(rawLog.logBuffer(), rawLog.stateBuffer()))
                                 .toArray(LogRebuilder[]::new);
         this.lossHandler = lossHandler;
-        this.sendSmHandler = sendSmHandler;
+        this.statusMessageSender = statusMessageSender;
 
         // attaching this term buffer will send an SM, so save the params sent for comparison
         this.lastSmTermId = initialTermId;
         this.lastSmTail = lossHandler.highestContiguousOffset();
-        this.currentWindow = initialWindow;
-        this.currentWindowGain = currentWindow << 2; // window / 4
+        this.currentWindowSize = initialWindow;
+        this.currentWindowGain = currentWindowSize << 2; // window / 4
         this.activeIndex = termIdToBufferIndex(initialTermId);
     }
 
-    public InetSocketAddress sourceAddress()
+    public UdpDestination udpDestination()
     {
-        return srcAddress;
+        return udpDestination;
     }
 
     public long sessionId()
@@ -120,6 +95,21 @@ public class DriverConnectedSubscription
     public long channelId()
     {
         return channelId;
+    }
+
+    public long activeTermId()
+    {
+        return activeTermId.get();
+    }
+
+    public StatusMessageSender sendSmHandler()
+    {
+        return statusMessageSender;
+    }
+
+    public int currentWindowSize()
+    {
+        return currentWindowSize;
     }
 
     /**
@@ -149,10 +139,7 @@ public class DriverConnectedSubscription
      */
     public int scanForGaps()
     {
-        if (null != lossHandler)
-        {
-            lossHandler.scan();
-        }
+        lossHandler.scan();
 
         // scan lazily
         return 0;
@@ -184,7 +171,7 @@ public class DriverConnectedSubscription
         if (CLEAN != rebuilder.status())
         {
             System.err.println(String.format("Term not clean: destination=%s channelId=%d, required nextTermId=%d",
-                                             destination, channelId, nextTermId));
+                                             udpDestination, channelId, nextTermId));
 
             if (rebuilder.compareAndSetStatus(NEEDS_CLEANING, IN_CLEANING))
             {
@@ -211,13 +198,8 @@ public class DriverConnectedSubscription
      *
      * @return number of work items processed.
      */
-    public int sendAnyPendingSm(final long currentTimestamp)
+    public int sendPendingStatusMessages(final long now)
     {
-        if (null == lossHandler || null == sendSmHandler)
-        {
-            return 0;
-        }
-
         /*
          * General approach is to check tail and see if it has moved enough to warrant sending an SM.
          * - send SM when termId has moved (i.e. buffer rotation of LossHandler - i.e. term completed)
@@ -231,8 +213,8 @@ public class DriverConnectedSubscription
         // if term has rotated for loss handler, then send an SM
         if (lossHandler.activeTermId() != lastSmTermId)
         {
-            lastSmTimestamp = currentTimestamp;
-            return sendSm(currentSmTermId, currentSmTail, currentWindow);
+            lastSmTimestamp = now;
+            return sendStatusMessage(currentSmTermId, currentSmTail, currentWindowSize);
         }
 
         // made progress since last time we sent an SM, so may send
@@ -241,15 +223,15 @@ public class DriverConnectedSubscription
             // see if we have made enough progress to make sense to send an SM
             if ((currentSmTail - lastSmTail) > currentWindowGain)
             {
-                lastSmTimestamp = currentTimestamp;
-                return sendSm(currentSmTermId, currentSmTail, currentWindow);
+                lastSmTimestamp = now;
+                return sendStatusMessage(currentSmTermId, currentSmTail, currentWindowSize);
             }
 
             // lastSmTimestamp might be 0 due to being initialized, but if we have sent some, then fine.
-//            if (currentTimestamp > (lastSmTimestamp + STATUS_MESSAGE_TIMEOUT) && lastSmTimestamp > 0)
+//            if (now > (lastSmTimestamp + STATUS_MESSAGE_TIMEOUT) && lastSmTimestamp > 0)
 //            {
-//                lastSmTimestamp = currentTimestamp;
-//                return sendSm(currentSmTermId, currentSmTail, currentWindow);
+//                lastSmTimestamp = now;
+//                return send(currentSmTermId, currentSmTail, currentWindowSize);
 //            }
         }
 
@@ -257,9 +239,9 @@ public class DriverConnectedSubscription
         return 1;
     }
 
-    private int sendSm(final long termId, final int termOffset, final int window)
+    private int sendStatusMessage(final long termId, final int termOffset, final int window)
     {
-        sendSmHandler.sendSm(termId, termOffset, window);
+        statusMessageSender.send(termId, termOffset, window);
         lastSmTermId = termId;
         lastSmTail = termOffset;
 

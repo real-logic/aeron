@@ -15,10 +15,9 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.util.concurrent.AtomicArray;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 
-import java.net.InetSocketAddress;
+import java.util.Collection;
 
 /**
  * Subscriptions maintained per channel for receiver processing
@@ -28,20 +27,17 @@ public class DriverSubscription
     private final UdpDestination udpDestination;
     private final long channelId;
     private final MediaConductorProxy conductorProxy;
-    private final AtomicArray<DriverConnectedSubscription> connectedSubscriptions;
     private final Long2ObjectHashMap<DriverConnectedSubscription> connectionBySessionIdMap = new Long2ObjectHashMap<>();
 
     private int refCount = 0;
 
     public DriverSubscription(final UdpDestination udpDestination,
                               final long channelId,
-                              final MediaConductorProxy conductorProxy,
-                              final AtomicArray<DriverConnectedSubscription> connectedSubscriptions)
+                              final MediaConductorProxy conductorProxy)
     {
         this.udpDestination = udpDestination;
         this.channelId = channelId;
         this.conductorProxy = conductorProxy;
-        this.connectedSubscriptions = connectedSubscriptions;
     }
 
     public int decRef()
@@ -59,14 +55,9 @@ public class DriverSubscription
         return connectionBySessionIdMap.get(sessionId);
     }
 
-    public DriverConnectedSubscription newConnectedSubscription(final long sessionId,
-                                                                final InetSocketAddress srcAddress)
+    public DriverConnectedSubscription putConnectedSubscription(final DriverConnectedSubscription connectedSubscription)
     {
-        final DriverConnectedSubscription connectedSubscription
-            = new DriverConnectedSubscription(udpDestination.clientAwareUri(), sessionId, channelId, srcAddress);
-        connectedSubscriptions.add(connectedSubscription);
-
-        return connectionBySessionIdMap.put(sessionId, connectedSubscription);
+        return connectionBySessionIdMap.put(connectedSubscription.sessionId(), connectedSubscription);
     }
 
     public long channelId()
@@ -81,8 +72,11 @@ public class DriverSubscription
 
     public void close()
     {
-        connectionBySessionIdMap.forEach(
-            (sessionId, connectedSubscription) -> conductorProxy.removeTermBuffers(udpDestination, sessionId, channelId)
-        );
+        conductorProxy.removeSubscription(this);
+    }
+
+    public Collection<DriverConnectedSubscription> connectedSubscriptions()
+    {
+        return connectionBySessionIdMap.values();
     }
 }

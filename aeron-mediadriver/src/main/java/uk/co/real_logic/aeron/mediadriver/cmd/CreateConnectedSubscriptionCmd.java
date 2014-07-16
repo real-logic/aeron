@@ -15,47 +15,37 @@
  */
 package uk.co.real_logic.aeron.mediadriver.cmd;
 
-import uk.co.real_logic.aeron.mediadriver.DriverConnectedSubscription;
-import uk.co.real_logic.aeron.mediadriver.LossHandler;
+import uk.co.real_logic.aeron.mediadriver.NakMessageSender;
+import uk.co.real_logic.aeron.mediadriver.StatusMessageSender;
 import uk.co.real_logic.aeron.mediadriver.UdpDestination;
 
 public class CreateConnectedSubscriptionCmd
 {
     private final UdpDestination udpDestination;
-    private final DriverConnectedSubscription.SendSmHandler sendSmHandler;
-    private final LossHandler.SendNakHandler sendNakHandler;
     private final long sessionId;
     private final long channelId;
     private final long termId;
+    private final StatusMessageSender statusMessageSender;
+    private final NakMessageSender nakMessageSender;
 
     public CreateConnectedSubscriptionCmd(final UdpDestination udpDestination,
                                           final long sessionId,
                                           final long channelId,
                                           final long termId,
-                                          final DriverConnectedSubscription.SendSmHandler sendSmHandler,
-                                          final LossHandler.SendNakHandler sendNakHandler)
+                                          final StatusMessageSender statusMessageSender,
+                                          final NakMessageSender nakMessageSender)
     {
         this.udpDestination = udpDestination;
-        this.sendSmHandler = sendSmHandler;
-        this.sendNakHandler = sendNakHandler;
         this.sessionId = sessionId;
         this.channelId = channelId;
         this.termId = termId;
+        this.statusMessageSender = statusMessageSender;
+        this.nakMessageSender = nakMessageSender;
     }
 
     public UdpDestination udpDestination()
     {
         return udpDestination;
-    }
-
-    public DriverConnectedSubscription.SendSmHandler sendSmHandler()
-    {
-        return sendSmHandler;
-    }
-
-    public LossHandler.SendNakHandler sendNakHandler()
-    {
-        return sendNakHandler;
     }
 
     public long sessionId()
@@ -71,5 +61,15 @@ public class CreateConnectedSubscriptionCmd
     public long termId()
     {
         return termId;
+    }
+
+    public StatusMessageSender sendSmHandler()
+    {
+        return statusMessageSender;
+    }
+
+    public NakMessageSender sendNakHandler()
+    {
+        return nakMessageSender;
     }
 }

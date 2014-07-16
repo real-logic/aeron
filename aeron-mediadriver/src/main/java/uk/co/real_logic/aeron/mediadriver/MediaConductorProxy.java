@@ -16,9 +16,8 @@
 package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.mediadriver.cmd.CreateConnectedSubscriptionCmd;
-import uk.co.real_logic.aeron.mediadriver.cmd.RemoveConnectedSubscriptionCmd;
+import uk.co.real_logic.aeron.mediadriver.cmd.SubscriptionRemovedCmd;
 
-import java.net.InetSocketAddress;
 import java.util.Queue;
 
 /**
@@ -37,17 +36,19 @@ public class MediaConductorProxy
                                                final long sessionId,
                                                final long channelId,
                                                final long termId,
-                                               final DriverConnectedSubscription.SendSmHandler sendSmHandler,
-                                               final LossHandler.SendNakHandler sendNakHandler)
+                                               final StatusMessageSender statusMessageSender,
+                                               final NakMessageSender nakMessageSender)
     {
-        return commandQueue.offer(new CreateConnectedSubscriptionCmd(udpDestination, sessionId, channelId,
-            termId, sendSmHandler, sendNakHandler));
+        return commandQueue.offer(new CreateConnectedSubscriptionCmd(udpDestination,
+                                                                     sessionId,
+                                                                     channelId,
+                                                                     termId,
+                                                                     statusMessageSender,
+                                                                     nakMessageSender));
     }
 
-    public boolean removeTermBuffers(final UdpDestination destination,
-                                     final long sessionId,
-                                     final long channelId)
+    public boolean removeSubscription(final DriverSubscription subscription)
     {
-        return commandQueue.offer(new RemoveConnectedSubscriptionCmd(destination, sessionId, channelId));
+        return commandQueue.offer(new SubscriptionRemovedCmd(subscription));
     }
 }

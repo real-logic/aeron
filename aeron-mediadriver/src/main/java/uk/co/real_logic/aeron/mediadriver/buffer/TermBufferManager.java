@@ -107,23 +107,23 @@ public class TermBufferManager implements AutoCloseable
         }
     }
 
-    public TermBuffers addPublication(final UdpDestination destination, final long sessionId, final long channelId)
+    public TermBuffers addPublication(final UdpDestination udpDestination, final long sessionId, final long channelId)
         throws Exception
     {
-        return add(destination, sessionId, channelId, publicationsDir, publicationTermsMap);
+        return add(udpDestination, sessionId, channelId, publicationsDir, publicationTermsMap);
     }
 
-    public void removePublication(final UdpDestination destination, final long sessionId, final long channelId)
+    public void removePublication(final UdpDestination udpDestination, final long sessionId, final long channelId)
         throws IllegalArgumentException
     {
-        remove(destination, sessionId, channelId, publicationTermsMap);
+        remove(udpDestination, sessionId, channelId, publicationTermsMap);
     }
 
-    public void removeConnectedSubscription(final UdpDestination destination,
+    public void removeConnectedSubscription(final UdpDestination udpDestination,
                                             final long sessionId,
                                             final long channelId)
     {
-        remove(destination, sessionId, channelId, subscriptionTermsMap);
+        remove(udpDestination, sessionId, channelId, subscriptionTermsMap);
     }
 
     public TermBuffers addConnectedSubscription(final UdpDestination destination,
@@ -134,34 +134,34 @@ public class TermBufferManager implements AutoCloseable
         return add(destination, sessionId, channelId, subscriptionsDir, subscriptionTermsMap);
     }
 
-    private void remove(final UdpDestination destination,
+    private void remove(final UdpDestination udpDestination,
                         final long sessionId,
                         final long channelId,
                         final ConnectionMap<UdpDestination, MappedTermBuffers> termMap)
     {
-        final MappedTermBuffers termBuffers = termMap.remove(destination, sessionId, channelId);
+        final MappedTermBuffers termBuffers = termMap.remove(udpDestination, sessionId, channelId);
         if (termBuffers == null)
         {
             final String msg = String.format("No buffers for %s, sessionId = %d, channelId = %d",
-                                             destination, sessionId, channelId);
+                                             udpDestination, sessionId, channelId);
             throw new IllegalArgumentException(msg);
         }
 
         termBuffers.close();
     }
 
-    private MappedTermBuffers add(final UdpDestination destination,
+    private MappedTermBuffers add(final UdpDestination udpDestination,
                                   final long sessionId,
                                   final long channelId,
                                   final File rootDir,
                                   final ConnectionMap<UdpDestination, MappedTermBuffers> termsMap)
     {
-        MappedTermBuffers termBuffers = termsMap.get(destination, sessionId, channelId);
+        MappedTermBuffers termBuffers = termsMap.get(udpDestination, sessionId, channelId);
         if (termBuffers == null)
         {
-            final File dir = channelLocation(rootDir, sessionId, channelId, true, destination.clientAwareUri());
+            final File dir = channelLocation(rootDir, sessionId, channelId, true, udpDestination.clientAwareUri());
             termBuffers = new MappedTermBuffers(dir, logTemplate, termBufferSize, stateTemplate, STATE_BUFFER_LENGTH);
-            termsMap.put(destination, sessionId, channelId, termBuffers);
+            termsMap.put(udpDestination, sessionId, channelId, termBuffers);
         }
 
         return termBuffers;

@@ -13,28 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.mediadriver.cmd;
+package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.mediadriver.UdpDestination;
-
-public class RemoveSubscriptionCmd
+public class UnknownSubscriptionException extends IllegalArgumentException
 {
-    private final UdpDestination udpDestination;
-    private final long channelId;
-
-    public RemoveSubscriptionCmd(final UdpDestination udpDestination, final long channelId)
+    public UnknownSubscriptionException(final String message)
     {
-        this.udpDestination = udpDestination;
-        this.channelId = channelId;
-    }
-
-    public UdpDestination destination()
-    {
-        return udpDestination;
-    }
-
-    public long channelId()
-    {
-        return channelId;
+        super(message);
     }
 }

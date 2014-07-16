@@ -59,11 +59,10 @@ public class LossHandlerTest
     private final GapScanner[] scanners = new GapScanner[TermHelper.BUFFER_COUNT];
 
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
-    private final AtomicBuffer rcvBuffer = new AtomicBuffer(new byte[MESSAGE_LENGTH]);
 
     private final TimerWheel wheel;
     private LossHandler handler;
-    private LossHandler.SendNakHandler sendNakHandler;
+    private NakMessageSender nakMessageSender;
     private long currentTime;
 
     public LossHandlerTest()
@@ -81,9 +80,10 @@ public class LossHandlerTest
                                TimeUnit.MICROSECONDS,
                                MediaDriver.MEDIA_CONDUCTOR_TICKS_PER_WHEEL);
 
-        sendNakHandler = mock(LossHandler.SendNakHandler.class);
+        nakMessageSender = mock(NakMessageSender.class);
 
-        handler = new LossHandler(scanners, wheel, delayGenerator, sendNakHandler, TERM_ID);
+        final AtomicBuffer rcvBuffer = new AtomicBuffer(new byte[MESSAGE_LENGTH]);
+        handler = new LossHandler(scanners, wheel, delayGenerator, nakMessageSender, TERM_ID);
         dataHeader.wrap(rcvBuffer, 0);
     }
 
@@ -98,7 +98,7 @@ public class LossHandlerTest
     {
         handler.scan();
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
-        verifyZeroInteractions(sendNakHandler);
+        verifyZeroInteractions(nakMessageSender);
     }
 
     @Test
@@ -110,7 +110,7 @@ public class LossHandlerTest
         handler.scan();
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(40));
 
-        verify(sendNakHandler).onSendNak(TERM_ID, offsetOfMessage(1), gapLength());
+        verify(nakMessageSender).send(TERM_ID, offsetOfMessage(1), gapLength());
     }
 
     @Test
@@ -122,7 +122,7 @@ public class LossHandlerTest
         handler.scan();
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(60));
 
-        verify(sendNakHandler, atLeast(2)).onSendNak(TERM_ID, offsetOfMessage(1), gapLength());
+        verify(nakMessageSender, atLeast(2)).send(TERM_ID, offsetOfMessage(1), gapLength());
     }
 
     @Test
@@ -136,7 +136,7 @@ public class LossHandlerTest
         handler.onNak(TERM_ID, offsetOfMessage(1));
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(20));
 
-        verifyZeroInteractions(sendNakHandler);
+        verifyZeroInteractions(nakMessageSender);
     }
 
     @Test
@@ -151,7 +151,7 @@ public class LossHandlerTest
         handler.scan();
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
 
-        verifyZeroInteractions(sendNakHandler);
+        verifyZeroInteractions(nakMessageSender);
     }
 
     @Test
@@ -168,10 +168,10 @@ public class LossHandlerTest
         handler.scan();
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(80));
 
-        InOrder inOrder = inOrder(sendNakHandler);
-        inOrder.verify(sendNakHandler, atLeast(1)).onSendNak(TERM_ID, offsetOfMessage(1), gapLength());
-        inOrder.verify(sendNakHandler, atLeast(1)).onSendNak(TERM_ID, offsetOfMessage(3), gapLength());
-        inOrder.verify(sendNakHandler, never()).onSendNak(TERM_ID, offsetOfMessage(5), gapLength());
+        InOrder inOrder = inOrder(nakMessageSender);
+        inOrder.verify(nakMessageSender, atLeast(1)).send(TERM_ID, offsetOfMessage(1), gapLength());
+        inOrder.verify(nakMessageSender, atLeast(1)).send(TERM_ID, offsetOfMessage(3), gapLength());
+        inOrder.verify(nakMessageSender, never()).send(TERM_ID, offsetOfMessage(5), gapLength());
     }
 
     @Test
@@ -187,20 +187,20 @@ public class LossHandlerTest
         handler.scan();
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
 
-        verify(sendNakHandler, atLeast(1)).onSendNak(TERM_ID, offsetOfMessage(3), gapLength());
+        verify(nakMessageSender, atLeast(1)).send(TERM_ID, offsetOfMessage(3), gapLength());
     }
 
     @Test
     public void shouldHandleImmediateNak()
     {
-        handler = new LossHandler(scanners, wheel, delayGeneratorWithImmediate, sendNakHandler, TERM_ID);
+        handler = new LossHandler(scanners, wheel, delayGeneratorWithImmediate, nakMessageSender, TERM_ID);
 
         rcvDataFrame(offsetOfMessage(0));
         rcvDataFrame(offsetOfMessage(2));
 
         handler.scan();
 
-        verify(sendNakHandler).onSendNak(TERM_ID, offsetOfMessage(1), gapLength());
+        verify(nakMessageSender).send(TERM_ID, offsetOfMessage(1), gapLength());
     }
 
     @Test
@@ -211,13 +211,13 @@ public class LossHandlerTest
 
         handler.scan();
 
-        verifyZeroInteractions(sendNakHandler);
+        verifyZeroInteractions(nakMessageSender);
     }
 
     @Test
     public void shouldOnlySendNaksOnceOnMultipleScans()
     {
-        handler = new LossHandler(scanners, wheel, delayGeneratorWithImmediate, sendNakHandler, TERM_ID);
+        handler = new LossHandler(scanners, wheel, delayGeneratorWithImmediate, nakMessageSender, TERM_ID);
 
         rcvDataFrame(offsetOfMessage(0));
         rcvDataFrame(offsetOfMessage(2));
@@ -225,7 +225,7 @@ public class LossHandlerTest
         handler.scan();
         handler.scan();
 
-        verify(sendNakHandler).onSendNak(TERM_ID, offsetOfMessage(1), gapLength());
+        verify(nakMessageSender).send(TERM_ID, offsetOfMessage(1), gapLength());
     }
 
     @Test

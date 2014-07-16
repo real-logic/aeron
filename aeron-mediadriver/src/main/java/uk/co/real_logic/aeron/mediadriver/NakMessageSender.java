@@ -15,10 +15,18 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-public class SubscriptionNotRegisteredException extends IllegalArgumentException
+/**
+ * Handler for sending a NAK
+ */
+@FunctionalInterface
+public interface NakMessageSender
 {
-    public SubscriptionNotRegisteredException(final String message)
-    {
-        super(message);
-    }
+    /**
+     * Called when a NAK should be sent
+     *
+     * @param termId     for the NAK
+     * @param termOffset for the NAK
+     * @param length     for the NAK
+     */
+    void send(final long termId, final int termOffset, final int length);
 }

@@ -15,20 +15,22 @@
  */
 package uk.co.real_logic.aeron.mediadriver.cmd;
 
+import uk.co.real_logic.aeron.mediadriver.UdpDestination;
+
 public class AddSubscriptionCmd
 {
-    private final String destination;
+    private final UdpDestination udpDestination;
     private final long channelId;
 
-    public AddSubscriptionCmd(final String destination, final long channelId)
+    public AddSubscriptionCmd(final UdpDestination udpDestination, final long channelId)
     {
-        this.destination = destination;
+        this.udpDestination = udpDestination;
         this.channelId = channelId;
     }
 
-    public String destination()
+    public UdpDestination destination()
     {
-        return destination;
+        return udpDestination;
     }
 
     public long channelId()

@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.mediadriver.cmd.*;
 import uk.co.real_logic.aeron.util.*;
-import uk.co.real_logic.aeron.util.concurrent.AtomicArray;
 import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.util.event.EventCode;
 import uk.co.real_logic.aeron.util.event.EventLogger;
@@ -33,11 +32,9 @@ public class Receiver extends Agent
     private static final EventLogger LOGGER = new EventLogger(Receiver.class);
 
     private final NioSelector nioSelector;
-    private final TimerWheel conductorTimerWheel;
     private final MediaConductorProxy conductorProxy;
     private final Map<UdpDestination, DataFrameHandler> frameHandlerByDestinationMap = new HashMap<>();
     private final OneToOneConcurrentArrayQueue<? super Object> commandQueue;
-    private final AtomicArray<DriverConnectedSubscription> connectedSubscriptions;
 
     public Receiver(final MediaDriver.MediaDriverContext ctx) throws Exception
     {
@@ -46,8 +43,6 @@ public class Receiver extends Agent
         this.conductorProxy = ctx.mediaConductorProxy();
         this.nioSelector = ctx.receiverNioSelector();
         this.commandQueue = ctx.receiverCommandQueue();
-        this.conductorTimerWheel = ctx.conductorTimerWheel();
-        this.connectedSubscriptions = ctx.connectedSubscriptions();
     }
 
     public int doWork() throws Exception
@@ -109,28 +104,26 @@ public class Receiver extends Agent
         return frameHandlerByDestinationMap.get(destination);
     }
 
-    private void onAddSubscription(final String destination, final long channelId) throws Exception
+    private void onAddSubscription(final UdpDestination udpDestination, final long channelId) throws Exception
     {
-        final UdpDestination udpDestination = UdpDestination.parse(destination);
         DataFrameHandler frameHandler = getFrameHandler(udpDestination);
 
         if (null == frameHandler)
         {
-            frameHandler = new DataFrameHandler(udpDestination, nioSelector, conductorProxy, connectedSubscriptions);
+            frameHandler = new DataFrameHandler(udpDestination, nioSelector, conductorProxy);
             frameHandlerByDestinationMap.put(udpDestination, frameHandler);
         }
 
         frameHandler.addSubscription(channelId);
     }
 
-    private void onRemoveSubscription(final String destination, final long channelId)
+    private void onRemoveSubscription(final UdpDestination udpDestination, final long channelId)
     {
-        final UdpDestination udpDestination = UdpDestination.parse(destination);
         final DataFrameHandler frameHandler = getFrameHandler(udpDestination);
 
         if (null == frameHandler)
         {
-            throw new SubscriptionNotRegisteredException("destination unknown for receiver remove: " + destination);
+            throw new UnknownSubscriptionException("Unknown Subscription: destination=" + udpDestination);
         }
 
         frameHandler.removeSubscription(channelId);
@@ -144,15 +137,17 @@ public class Receiver extends Agent
 
     private void onNewConnectedSubscription(final NewConnectedSubscriptionCmd cmd)
     {
-        final DataFrameHandler frameHandler = getFrameHandler(cmd.destination());
+        final DriverConnectedSubscription connectedSubscription = cmd.connectedSubscription();
+        final DataFrameHandler frameHandler = getFrameHandler(connectedSubscription.udpDestination());
 
-        if (null == frameHandler)
+        if (null != frameHandler)
         {
-            final String destination = cmd.destination().toString();
-            LOGGER.log(EventCode.COULD_NOT_FIND_FRAME_HANDLER_FOR_NEW_CONNECTED_SUBSCRIPTION, destination);
-            return;
+            frameHandler.onConnectedSubscriptionReady(connectedSubscription);
         }
-
-        frameHandler.onConnectedSubscriptionReady(cmd);
+        else
+        {
+            final String destination = connectedSubscription.udpDestination().toString();
+            LOGGER.log(EventCode.COULD_NOT_FIND_FRAME_HANDLER_FOR_NEW_CONNECTED_SUBSCRIPTION, destination);
+        }
     }
 }

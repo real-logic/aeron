@@ -13,28 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.mediadriver.cmd;
+package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.mediadriver.UdpDestination;
-
-public class RemoveSubscriptionCmd
+/**
+ * Handler for sending Status Messages (SMs)
+ */
+@FunctionalInterface
+public interface StatusMessageSender
 {
-    private final UdpDestination udpDestination;
-    private final long channelId;
-
-    public RemoveSubscriptionCmd(final UdpDestination udpDestination, final long channelId)
-    {
-        this.udpDestination = udpDestination;
-        this.channelId = channelId;
-    }
-
-    public UdpDestination destination()
-    {
-        return udpDestination;
-    }
-
-    public long channelId()
-    {
-        return channelId;
-    }
+    /**
+     * Called when an SM should be sent.
+     *
+     * @param termId     for the SM
+     * @param termOffset for the SM
+     * @param window     for the SM
+     */
+    void send(final long termId, final int termOffset, final int window);
 }

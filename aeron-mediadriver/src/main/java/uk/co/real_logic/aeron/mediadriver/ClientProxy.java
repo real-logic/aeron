@@ -68,14 +68,14 @@ public class ClientProxy
         transmitter.transmit(ERROR_RESPONSE, tmpBuffer, 0, errorFlyweight.frameLength());
     }
 
-    public void onNewLogBuffers(final int msgTypeId,
-                                final long sessionId,
-                                final long channelId,
-                                final long termId,
-                                final String destination,
-                                final TermBuffers termBuffers,
-                                final long correlationId,
-                                final int positionCounterOffset)
+    public void onNewTermBuffers(final int msgTypeId,
+                                 final long sessionId,
+                                 final long channelId,
+                                 final long termId,
+                                 final String destination,
+                                 final TermBuffers termBuffers,
+                                 final long correlationId,
+                                 final int positionCounterOffset)
     {
         logBuffersMessage.wrap(tmpBuffer, 0);
         logBuffersMessage.sessionId(sessionId)

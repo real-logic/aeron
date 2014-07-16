@@ -15,8 +15,6 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.mediadriver.cmd.NewConnectedSubscriptionCmd;
-import uk.co.real_logic.aeron.util.concurrent.AtomicArray;
 import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
@@ -32,25 +30,25 @@ import java.nio.ByteBuffer;
  */
 public class DataFrameHandler implements FrameHandler, AutoCloseable
 {
+    private static final String INIT_IN_PROGRESS = "Connection initialisation in progress";
+
     private final UdpTransport transport;
-    private final UdpDestination destination;
+    private final UdpDestination udpDestination;
+    private final Long2ObjectHashMap<String> initialisationInProgressMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<DriverSubscription> subscriptionByChannelIdMap = new Long2ObjectHashMap<>();
     private final MediaConductorProxy conductorProxy;
-    private final AtomicArray<DriverConnectedSubscription> connectedSubscriptions;
     private final ByteBuffer smBuffer = ByteBuffer.allocateDirect(StatusMessageFlyweight.HEADER_LENGTH);
     private final ByteBuffer nakBuffer = ByteBuffer.allocateDirect(NakFlyweight.HEADER_LENGTH);
     private final StatusMessageFlyweight smHeader = new StatusMessageFlyweight();
     private final NakFlyweight nakHeader = new NakFlyweight();
 
-    public DataFrameHandler(final UdpDestination destination,
+    public DataFrameHandler(final UdpDestination udpDestination,
                             final NioSelector nioSelector,
-                            final MediaConductorProxy conductorProxy,
-                            final AtomicArray<DriverConnectedSubscription> connectedSubscriptions)
+                            final MediaConductorProxy conductorProxy)
         throws Exception
     {
-        this.connectedSubscriptions = connectedSubscriptions;
-        this.transport = new UdpTransport(this, destination, nioSelector);
-        this.destination = destination;
+        this.transport = new UdpTransport(this, udpDestination, nioSelector);
+        this.udpDestination = udpDestination;
         this.conductorProxy = conductorProxy;
     }
 
@@ -59,9 +57,9 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         transport.close();
     }
 
-    public UdpDestination destination()
+    public UdpDestination udpDestination()
     {
-        return destination;
+        return udpDestination;
     }
 
     public Long2ObjectHashMap<DriverSubscription> subscriptionMap()
@@ -75,7 +73,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
 
         if (null == subscription)
         {
-            subscription = new DriverSubscription(destination, channelId, conductorProxy, connectedSubscriptions);
+            subscription = new DriverSubscription(udpDestination, channelId, conductorProxy);
             subscriptionByChannelIdMap.put(channelId, subscription);
         }
 
@@ -88,7 +86,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
 
         if (subscription == null)
         {
-            throw new SubscriptionNotRegisteredException("No subscription registered on " + channelId);
+            throw new UnknownSubscriptionException("No subscription registered on " + channelId);
         }
 
         if (subscription.decRef() == 0)
@@ -124,16 +122,20 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
                     connectedSubscription.insertIntoTerm(header, buffer, length);
                 }
             }
-            else
+            else if (null == initialisationInProgressMap.get(sessionId))
             {
-                subscription.newConnectedSubscription(sessionId, srcAddress);
-
                 final InetSocketAddress controlAddress =
-                    transport.isMulticast() ? destination.remoteControl() : srcAddress;
+                    transport.isMulticast() ? udpDestination.remoteControl() : srcAddress;
 
-                conductorProxy.createConnectedSubscription(subscription.udpDestination(), sessionId, channelId, termId,
-                                                           composeSmHandler(controlAddress, sessionId, channelId),
-                                                           composeNakHandler(controlAddress, sessionId, channelId));
+                initialisationInProgressMap.put(sessionId, INIT_IN_PROGRESS); // TODO: need to clean up on timeout
+
+                conductorProxy.createConnectedSubscription(
+                    subscription.udpDestination(),
+                    sessionId,
+                    channelId,
+                    termId,
+                    composeStatusMessageSender(controlAddress, sessionId, channelId),
+                    composeNakMessageSender(controlAddress, sessionId, channelId));
             }
         }
     }
@@ -152,40 +154,37 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         // this should be on the data channel and shouldn't include Naks, so ignore.
     }
 
-    public void onConnectedSubscriptionReady(final NewConnectedSubscriptionCmd cmd)
+    public void onConnectedSubscriptionReady(final DriverConnectedSubscription connectedSubscription)
     {
-        final DriverSubscription subscription = subscriptionByChannelIdMap.get(cmd.channelId());
+        final DriverSubscription subscription = subscriptionByChannelIdMap.get(connectedSubscription.channelId());
         if (null == subscription)
         {
             throw new IllegalStateException("channel not found");
         }
 
-        final DriverConnectedSubscription connectedSubscription =
-            subscription.getConnectedSubscription(cmd.sessionId());
-        if (null == connectedSubscription)
-        {
-            throw new IllegalStateException("session not found");
-        }
-
-        connectedSubscription.onLogBufferAvailable(cmd.termId(), cmd.initialWindowSize(),
-                                                   cmd.termBuffers(), cmd.lossHandler(), cmd.sendSmHandler());
+        subscription.putConnectedSubscription(connectedSubscription);
+        initialisationInProgressMap.remove(connectedSubscription.sessionId());
 
         // TODO: grab initial term offset from data and store in subscriberSession somehow (per TermID)
         // now we are all setup, so send an SM to allow the source to send if it is waiting
-        cmd.sendSmHandler().sendSm(cmd.termId(), 0, cmd.initialWindowSize());
+
+        final long initialTermId = connectedSubscription.activeTermId();
+        final int initialWindowSize = connectedSubscription.currentWindowSize();
+
+        connectedSubscription.sendSmHandler().send(initialTermId, 0, initialWindowSize);
     }
 
-    public DriverConnectedSubscription.SendSmHandler composeSmHandler(final InetSocketAddress controlAddress,
-                                                                      final long sessionId,
-                                                                      final long channelId)
+    public StatusMessageSender composeStatusMessageSender(final InetSocketAddress controlAddress,
+                                                          final long sessionId,
+                                                          final long channelId)
     {
         return (termId, termOffset, window) ->
             sendStatusMessage(controlAddress, sessionId, channelId, (int)termId, termOffset, window);
     }
 
-    public LossHandler.SendNakHandler composeNakHandler(final InetSocketAddress controlAddress,
-                                                        final long sessionId,
-                                                        final long channelId)
+    public NakMessageSender composeNakMessageSender(final InetSocketAddress controlAddress,
+                                                    final long sessionId,
+                                                    final long channelId)
     {
         return (termId, termOffset, length) ->
             sendNak(controlAddress, sessionId, channelId, (int)termId, termOffset, length);
@@ -206,7 +205,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
                 .receiverWindow(window)
                 .headerType(HeaderFlyweight.HDR_TYPE_SM)
                 .frameLength(StatusMessageFlyweight.HEADER_LENGTH)
-                .flags((byte) 0)
+                .flags((byte)0)
                 .version(HeaderFlyweight.CURRENT_VERSION);
 
         smBuffer.position(0);

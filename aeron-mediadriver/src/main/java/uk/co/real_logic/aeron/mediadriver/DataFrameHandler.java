@@ -69,38 +69,32 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         return subscriptionByChannelIdMap;
     }
 
-    public void addSubscriptions(final long[] channelIds)
+    public void addSubscriptions(final long channelId)
     {
-        for (final long channelId : channelIds)
+        DriverSubscription subscription = subscriptionByChannelIdMap.get(channelId);
+
+        if (null == subscription)
         {
-            DriverSubscription subscription = subscriptionByChannelIdMap.get(channelId);
-
-            if (null == subscription)
-            {
-                subscription = new DriverSubscription(destination, channelId, conductorProxy, connectedSubscriptions);
-                subscriptionByChannelIdMap.put(channelId, subscription);
-            }
-
-            subscription.incRef();
+            subscription = new DriverSubscription(destination, channelId, conductorProxy, connectedSubscriptions);
+            subscriptionByChannelIdMap.put(channelId, subscription);
         }
+
+        subscription.incRef();
     }
 
-    public void removeSubscriptions(final long[] channelIds)
+    public void removeSubscriptions(final long channelId)
     {
-        for (final long channelId : channelIds)
+        final DriverSubscription subscription = subscriptionByChannelIdMap.get(channelId);
+
+        if (subscription == null)
         {
-            final DriverSubscription subscription = subscriptionByChannelIdMap.get(channelId);
+            throw new SubscriptionNotRegisteredException("No subscription registered on " + channelId);
+        }
 
-            if (subscription == null)
-            {
-                throw new SubscriptionNotRegisteredException("No subscription registered on " + channelId);
-            }
-
-            if (subscription.decRef() == 0)
-            {
-                subscriptionByChannelIdMap.remove(channelId);
-                subscription.close();
-            }
+        if (subscription.decRef() == 0)
+        {
+            subscriptionByChannelIdMap.remove(channelId);
+            subscription.close();
         }
     }
 
@@ -212,7 +206,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
                 .receiverWindow(window)
                 .headerType(HeaderFlyweight.HDR_TYPE_SM)
                 .frameLength(StatusMessageFlyweight.HEADER_LENGTH)
-                .flags((byte)0)
+                .flags((byte) 0)
                 .version(HeaderFlyweight.CURRENT_VERSION);
 
         smBuffer.position(0);

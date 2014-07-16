@@ -65,9 +65,9 @@ public class MediaConductorTest
 
     private static final String DESTINATION_URI = "udp://localhost:";
     private static final String INVALID_URI = "udp://";
-    private static final long[] ONE_CHANNEL = {10};
-    private static final long[] TWO_CHANNELS = {20, 30};
-    private static final long[] THREE_CHANNELS = {10, 20, 30};
+    private static final long CHANNEL_1 = 10;
+    private static final long CHANNEL_2 = 20;
+    private static final long CHANNEL_3 = 30;
     private static final int TERM_BUFFER_SZ = MediaDriver.TERM_BUFFER_SZ_DEFAULT;
 
     private final ByteBuffer toDriverBuffer =
@@ -155,7 +155,7 @@ public class MediaConductorTest
     {
         LOGGER.logInvocation();
 
-        writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, DESTINATION_URI + 4000, ONE_CHANNEL);
+        writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_1);
 
         mediaConductor.doWork();
         receiver.doWork();
@@ -168,8 +168,8 @@ public class MediaConductorTest
     {
         LOGGER.logInvocation();
 
-        writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, DESTINATION_URI + 4000, ONE_CHANNEL);
-        writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, ONE_CHANNEL);
+        writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_1);
+        writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_1);
 
         mediaConductor.doWork();
         receiver.doWork();
@@ -233,7 +233,9 @@ public class MediaConductorTest
 
         final UdpDestination destination = UdpDestination.parse(DESTINATION_URI + 4000);
 
-        writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, DESTINATION_URI + 4000, THREE_CHANNELS);
+        writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_1);
+        writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_2);
+        writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_3);
 
         mediaConductor.doWork();
         receiver.doWork();
@@ -243,7 +245,8 @@ public class MediaConductorTest
         assertNotNull(frameHandler);
         assertThat(frameHandler.subscriptionMap().size(), is(3));
 
-        writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, TWO_CHANNELS);
+        writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_1);
+        writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_2);
 
         mediaConductor.doWork();
         receiver.doWork();
@@ -259,7 +262,9 @@ public class MediaConductorTest
 
         final UdpDestination destination = UdpDestination.parse(DESTINATION_URI + 4000);
 
-        writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, DESTINATION_URI + 4000, THREE_CHANNELS);
+        writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_1);
+        writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_2);
+        writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_3);
 
         mediaConductor.doWork();
         receiver.doWork();
@@ -269,7 +274,8 @@ public class MediaConductorTest
         assertNotNull(frameHandler);
         assertThat(frameHandler.subscriptionMap().size(), is(3));
 
-        writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, TWO_CHANNELS);
+        writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_2);
+        writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_3);
 
         mediaConductor.doWork();
         receiver.doWork();
@@ -277,7 +283,7 @@ public class MediaConductorTest
         assertNotNull(receiver.getFrameHandler(destination));
         assertThat(frameHandler.subscriptionMap().size(), is(1));
 
-        writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, ONE_CHANNEL);
+        writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_1);
 
         mediaConductor.doWork();
         receiver.doWork();
@@ -358,7 +364,7 @@ public class MediaConductorTest
     {
         LOGGER.logInvocation();
 
-        writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, INVALID_URI, ONE_CHANNEL);
+        writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, INVALID_URI, CHANNEL_1);
 
         mediaConductor.doWork();
         receiver.doWork();
@@ -378,11 +384,11 @@ public class MediaConductorTest
         fromClientCommands.write(msgTypeId, writeBuffer, 0, publicationMessage.length());
     }
 
-    private void writeSubscriberMessage(final int msgTypeId, final String destination, final long[] channelIds)
+    private void writeSubscriberMessage(final int msgTypeId, final String destination, final long channelId)
         throws IOException
     {
         subscriptionMessage.wrap(writeBuffer, 0);
-        subscriptionMessage.channelIds(channelIds)
+        subscriptionMessage.channelId(channelId)
                            .destination(destination);
 
         fromClientCommands.write(msgTypeId, writeBuffer, 0, subscriptionMessage.length());

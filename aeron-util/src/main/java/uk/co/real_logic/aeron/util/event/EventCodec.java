@@ -28,7 +28,6 @@ import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -415,11 +414,7 @@ public class EventCodec
 
     private static String dissect(final SubscriptionMessageFlyweight command)
     {
-        final String ids = Arrays.stream(command.channelIds())
-                .mapToObj(Long::toString)
-                .collect(Collectors.joining(","));
-
-        return String.format("%s %s", command.destination(), ids);
+        return String.format("%s %d", command.destination(), command.channelId());
     }
 
     private static String dissect(final LogBuffersMessageFlyweight command)

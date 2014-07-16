@@ -93,8 +93,7 @@ public class MediaDriverProxy
 
     private void sendSubscriptionMessage(final int msgTypeId, final String destination, final long channelId)
     {
-        // TODO: remove arrays from the protocol
-        subscriptionMessage.channelIds(new long[]{channelId});
+        subscriptionMessage.channelId(channelId);
         subscriptionMessage.destination(destination);
 
         if (!mediaDriverCommandBuffer.write(msgTypeId, writeBuffer, 0, subscriptionMessage.length()))

@@ -84,7 +84,7 @@ public class MediaDriverProxyTest
 
                 assertThat(msgTypeId, is(REMOVE_SUBSCRIPTION));
                 assertThat(subscriberMessage.destination(), is(DESTINATION));
-                assertThat(subscriberMessage.channelIds(), is(new long[] {CHANNEL_ID}));
+                assertThat(subscriberMessage.channelId(), is(CHANNEL_ID));
             }
         );
     }

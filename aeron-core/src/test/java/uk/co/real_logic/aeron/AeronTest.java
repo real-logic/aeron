@@ -345,14 +345,14 @@ public class AeronTest
         cleanBuffer(stateBuffersSession1[index]);
     }
 
-    private MessageHandler assertSubscriberMessageOfType(final int expectedMsgTypeId, final long... channelIds)
+    private MessageHandler assertSubscriberMessageOfType(final int expectedMsgTypeId, final long channelId)
     {
         return (msgTypeId, buffer, index, length) ->
         {
             assertThat(msgTypeId, is(expectedMsgTypeId));
 
             subscriptionMessage.wrap(buffer, index);
-            assertThat(subscriptionMessage.channelIds(), is(channelIds));
+            assertThat(subscriptionMessage.channelId(), is(channelId));
             assertThat(subscriptionMessage.destination(), is(DESTINATION));
         };
     }

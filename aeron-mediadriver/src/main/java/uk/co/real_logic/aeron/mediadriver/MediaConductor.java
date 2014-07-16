@@ -167,24 +167,22 @@ public class MediaConductor extends Agent
     private int processFromReceiverCommandQueue()
     {
         return commandQueue.drain(
-            (obj) ->
-            {
-                try
+                (obj) ->
                 {
-                    if (obj instanceof CreateConnectedSubscriptionCmd)
+                    try
                     {
-                        onCreateConnectedSubscription((CreateConnectedSubscriptionCmd)obj);
-                    }
-                    else if (obj instanceof RemoveConnectedSubscriptionCmd)
+                        if (obj instanceof CreateConnectedSubscriptionCmd)
+                        {
+                            onCreateConnectedSubscription((CreateConnectedSubscriptionCmd) obj);
+                        } else if (obj instanceof RemoveConnectedSubscriptionCmd)
+                        {
+                            onRemoveConnectedSubscription((RemoveConnectedSubscriptionCmd) obj);
+                        }
+                    } catch (final Exception ex)
                     {
-                        onRemoveConnectedSubscription((RemoveConnectedSubscriptionCmd)obj);
+                        LOGGER.logException(ex);
                     }
-                }
-                catch (final Exception ex)
-                {
-                    LOGGER.logException(ex);
-                }
-            });
+                });
     }
 
     private int processFromClientCommandBuffer()
@@ -384,12 +382,12 @@ public class MediaConductor extends Agent
 
     private void onAddSubscription(final SubscriptionMessageFlyweight subscriberMessage)
     {
-        receiverProxy.addSubscription(subscriberMessage.destination(), subscriberMessage.channelIds());
+        receiverProxy.addSubscription(subscriberMessage.destination(), subscriberMessage.channelId());
     }
 
     private void onRemoveSubscription(final SubscriptionMessageFlyweight subscriberMessage)
     {
-        receiverProxy.removeSubscription(subscriberMessage.destination(), subscriberMessage.channelIds());
+        receiverProxy.removeSubscription(subscriberMessage.destination(), subscriberMessage.channelId());
     }
 
     private void onCreateConnectedSubscription(final CreateConnectedSubscriptionCmd cmd)

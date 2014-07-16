@@ -18,12 +18,12 @@ package uk.co.real_logic.aeron.mediadriver.cmd;
 public class RemoveSubscriptionCmd
 {
     private final String destination;
-    private final long[] channelIds;
+    private final long channelId;
 
-    public RemoveSubscriptionCmd(final String destination, final long[] channelIds)
+    public RemoveSubscriptionCmd(final String destination, final long channelId)
     {
         this.destination = destination;
-        this.channelIds = channelIds;
+        this.channelId = channelId;
     }
 
     public String destination()
@@ -31,8 +31,8 @@ public class RemoveSubscriptionCmd
         return destination;
     }
 
-    public long[] channelIds()
+    public long channelId()
     {
-        return channelIds;
+        return channelId;
     }
 }

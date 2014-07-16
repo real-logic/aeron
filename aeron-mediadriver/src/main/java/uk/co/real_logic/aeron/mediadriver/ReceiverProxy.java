@@ -31,12 +31,12 @@ public class ReceiverProxy
         this.commandQueue = commandQueue;
     }
 
-    public boolean addSubscription(final String destination, final long[] channelIds)
+    public boolean addSubscription(final String destination, final long channelIds)
     {
         return commandQueue.offer(new AddSubscriptionCmd(destination, channelIds));
     }
 
-    public boolean removeSubscription(final String destination, final long[] channelIds)
+    public boolean removeSubscription(final String destination, final long channelIds)
     {
         return commandQueue.offer(new RemoveSubscriptionCmd(destination, channelIds));
     }

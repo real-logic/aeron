@@ -19,15 +19,11 @@ import uk.co.real_logic.aeron.mediadriver.cmd.*;
 import uk.co.real_logic.aeron.util.*;
 import uk.co.real_logic.aeron.util.concurrent.AtomicArray;
 import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.GapScanner;
 import uk.co.real_logic.aeron.util.event.EventCode;
 import uk.co.real_logic.aeron.util.event.EventLogger;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import static uk.co.real_logic.aeron.mediadriver.MediaConductor.NAK_MULTICAST_DELAY_GENERATOR;
-import static uk.co.real_logic.aeron.mediadriver.MediaConductor.NAK_UNICAST_DELAY_GENERATOR;
 
 /**
  * Receiver service for JVM based media driver, uses an event loop with command buffer
@@ -84,12 +80,12 @@ public class Receiver extends Agent
                     else if (obj instanceof AddSubscriptionCmd)
                     {
                         final AddSubscriptionCmd cmd = (AddSubscriptionCmd)obj;
-                        onAddSubscription(cmd.destination(), cmd.channelIds());
+                        onAddSubscription(cmd.destination(), cmd.channelId());
                     }
                     else if (obj instanceof RemoveSubscriptionCmd)
                     {
                         final RemoveSubscriptionCmd cmd = (RemoveSubscriptionCmd)obj;
-                        onRemoveSubscription(cmd.destination(), cmd.channelIds());
+                        onRemoveSubscription(cmd.destination(), cmd.channelId());
                     }
                 }
                 catch (final Exception ex)
@@ -124,7 +120,7 @@ public class Receiver extends Agent
         return frameHandlerByDestinationMap.get(destination);
     }
 
-    private void onAddSubscription(final String destination, final long[] channelIds) throws Exception
+    private void onAddSubscription(final String destination, final long channelId) throws Exception
     {
         final UdpDestination udpDestination = UdpDestination.parse(destination);
         DataFrameHandler frameHandler = getFrameHandler(udpDestination);
@@ -135,10 +131,10 @@ public class Receiver extends Agent
             frameHandlerByDestinationMap.put(udpDestination, frameHandler);
         }
 
-        frameHandler.addSubscriptions(channelIds);
+        frameHandler.addSubscriptions(channelId);
     }
 
-    private void onRemoveSubscription(final String destination, final long[] channelIds)
+    private void onRemoveSubscription(final String destination, final long channelId)
     {
         final UdpDestination udpDestination = UdpDestination.parse(destination);
         final DataFrameHandler frameHandler = getFrameHandler(udpDestination);
@@ -148,7 +144,7 @@ public class Receiver extends Agent
             throw new SubscriptionNotRegisteredException("destination unknown for receiver remove: " + destination);
         }
 
-        frameHandler.removeSubscriptions(channelIds);
+        frameHandler.removeSubscriptions(channelId);
 
         if (0 == frameHandler.subscribedChannelCount())
         {

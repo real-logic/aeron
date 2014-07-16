@@ -18,20 +18,16 @@ package uk.co.real_logic.aeron.util.command;
 import uk.co.real_logic.aeron.util.Flyweight;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_LONG;
 
 /**
  * Control message for adding or removing a subscription.
  *
- * Must write channels ids before destination.
- *
  * <p>
  * 0                   1                   2                   3
  * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |      Channel Length           |   Channel Ids               ...
- * |                                                             ...
+ * |                           Channel Id                          +
  * +---------------------------------------------------------------+
  * |      Destination Length       |   Destination               ...
  * |                                                             ...
@@ -39,29 +35,29 @@ import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_LONG;
  */
 public class SubscriptionMessageFlyweight extends Flyweight
 {
-    private static final int CHANNEL_IDS_OFFSET = 0;
+    private static final int CHANNEL_ID_OFFSET = 0;
+    private static final int DESTINATION_OFFSET = CHANNEL_ID_OFFSET + SIZE_OF_LONG;
 
-    private int lengthOfChannelIds;
     private int lengthOfDestination;
 
     /**
-     * get the channel id list
+     * get the channel id
      *
-     * @return the channel id list
+     * @return the channel id
      */
-    public long[] channelIds()
+    public long channelId()
     {
-        return uint32ArrayGet(offset() + CHANNEL_IDS_OFFSET, LITTLE_ENDIAN);
+        return uint32Get(offset() + CHANNEL_ID_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
-     * set the channel id list
+     * set the channel id
      *
-     * @param value the channel id list
+     * @param value the channel id
      */
-    public SubscriptionMessageFlyweight channelIds(long[] value)
+    public SubscriptionMessageFlyweight channelId(long value)
     {
-        lengthOfChannelIds = uint32ArrayPut(offset() + CHANNEL_IDS_OFFSET, value, LITTLE_ENDIAN);
+        uint32Put(offset() + CHANNEL_ID_OFFSET, value, LITTLE_ENDIAN);
         return this;
     }
 
@@ -72,12 +68,7 @@ public class SubscriptionMessageFlyweight extends Flyweight
      */
     public String destination()
     {
-        // destination comes after channels
-        final int destinationOffset =
-            CHANNEL_IDS_OFFSET + SIZE_OF_INT +
-            atomicBuffer().getInt(offset() + CHANNEL_IDS_OFFSET, LITTLE_ENDIAN) * SIZE_OF_LONG;
-
-        return stringGet(offset() + destinationOffset, LITTLE_ENDIAN);
+        return stringGet(offset() + DESTINATION_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -90,12 +81,12 @@ public class SubscriptionMessageFlyweight extends Flyweight
      */
     public SubscriptionMessageFlyweight destination(final String destination)
     {
-        lengthOfDestination = stringPut(offset() + lengthOfChannelIds, destination, LITTLE_ENDIAN);
+        lengthOfDestination = stringPut(offset() + DESTINATION_OFFSET, destination, LITTLE_ENDIAN);
         return this;
     }
 
     public int length()
     {
-        return lengthOfChannelIds + lengthOfDestination;
+        return SIZE_OF_LONG + lengthOfDestination;
     }
 }

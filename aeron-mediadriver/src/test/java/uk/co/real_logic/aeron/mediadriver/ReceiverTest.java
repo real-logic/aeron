@@ -53,7 +53,6 @@ public class ReceiverTest
     private static final String URI = "udp://localhost:45678";
     private static final UdpDestination UDP_DESTINATION = UdpDestination.parse(URI);
     private static final long CHANNEL_ID = 10;
-    private static final long[] ONE_CHANNEL = {CHANNEL_ID};
     private static final long TERM_ID = 3;
     private static final long SESSION_ID = 1;
     private static final byte[] FAKE_PAYLOAD = "Hello there, message!".getBytes();
@@ -123,7 +122,7 @@ public class ReceiverTest
     {
         LOGGER.logInvocation();
 
-        receiverProxy.addSubscription(URI, ONE_CHANNEL);  // ADD_SUBSCRIPTION from client
+        receiverProxy.addSubscription(URI, CHANNEL_ID);  // ADD_SUBSCRIPTION from client
 
         receiver.doWork();
 
@@ -164,7 +163,7 @@ public class ReceiverTest
         assertNotNull(rcvAddress);
         assertThat(rcvAddress.getPort(), is(UDP_DESTINATION.remoteData().getPort()));
         assertThat(statusHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_SM));
-        assertThat(statusHeader.channelId(), is(ONE_CHANNEL[0]));
+        assertThat(statusHeader.channelId(), is(CHANNEL_ID));
         assertThat(statusHeader.sessionId(), is(SESSION_ID));
         assertThat(statusHeader.termId(), is(TERM_ID));
         assertThat(statusHeader.frameLength(), is(StatusMessageFlyweight.HEADER_LENGTH));
@@ -175,7 +174,7 @@ public class ReceiverTest
     {
         LOGGER.logInvocation();
 
-        receiverProxy.addSubscription(URI, ONE_CHANNEL);  // ADD_SUBSCRIPTION from client
+        receiverProxy.addSubscription(URI, CHANNEL_ID);  // ADD_SUBSCRIPTION from client
 
         receiver.doWork();
 
@@ -226,7 +225,7 @@ public class ReceiverTest
     {
         LOGGER.logInvocation();
 
-        receiverProxy.addSubscription(URI, ONE_CHANNEL);  // ADD_SUBSCRIPTION from client
+        receiverProxy.addSubscription(URI, CHANNEL_ID);  // ADD_SUBSCRIPTION from client
 
         receiver.doWork();
 
@@ -280,7 +279,7 @@ public class ReceiverTest
     {
         LOGGER.logInvocation();
 
-        receiverProxy.addSubscription(URI, ONE_CHANNEL);  // ADD_SUBSCRIPTION from client
+        receiverProxy.addSubscription(URI, CHANNEL_ID);  // ADD_SUBSCRIPTION from client
 
         receiver.doWork();
 
@@ -335,7 +334,7 @@ public class ReceiverTest
     {
         LOGGER.logInvocation();
 
-        receiverProxy.addSubscription(URI, ONE_CHANNEL);  // ADD_SUBSCRIPTION from client
+        receiverProxy.addSubscription(URI, CHANNEL_ID);  // ADD_SUBSCRIPTION from client
 
         receiver.doWork();
 

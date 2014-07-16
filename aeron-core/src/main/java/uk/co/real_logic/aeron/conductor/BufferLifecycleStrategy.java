@@ -15,8 +15,6 @@
  */
 package uk.co.real_logic.aeron.conductor;
 
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-
 import java.io.IOException;
 
 /**
@@ -24,7 +22,7 @@ import java.io.IOException;
  */
 public interface BufferLifecycleStrategy
 {
-    AtomicBuffer newBuffer(final String location, final int offset, final int length) throws IOException;
+    LogInformation newBuffer(final String location, final int offset, final int length) throws IOException;
 
     int releaseBuffers(final String location, final int offset, final int length);
 

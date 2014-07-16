@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import uk.co.real_logic.aeron.conductor.BufferLifecycleStrategy;
 import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -40,8 +39,7 @@ import java.nio.ByteBuffer;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.aeron.Subscription.DataHandler;
 import static uk.co.real_logic.aeron.util.TermHelper.BUFFER_COUNT;
 import static uk.co.real_logic.aeron.util.TermHelper.termIdToBufferIndex;
@@ -50,7 +48,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.Appen
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.skip;
 
-public class AeronTest
+public class AeronTest extends MockBufferUsage
 {
     public static final int MAX_FRAME_LENGTH = 1024;
     public static final int COUNTER_BUFFER_SZ = 1024;
@@ -97,39 +95,9 @@ public class AeronTest
 
     private Aeron aeron;
 
-    private AtomicBuffer[] logBuffersSession1 = new AtomicBuffer[BUFFER_COUNT];
-    private AtomicBuffer[] logBuffersSession2 = new AtomicBuffer[BUFFER_COUNT];
-    private AtomicBuffer[] stateBuffersSession1 = new AtomicBuffer[BUFFER_COUNT];
-    private AtomicBuffer[] stateBuffersSession2 = new AtomicBuffer[BUFFER_COUNT];
-    private LogAppender[] appendersSession1 = new LogAppender[BUFFER_COUNT];
-    private LogAppender[] appendersSession2 = new LogAppender[BUFFER_COUNT];
-    private BufferLifecycleStrategy mockBufferUsage = mock(BufferLifecycleStrategy.class);
-
     @Before
     public void setUp() throws Exception
     {
-        for (int i = 0; i < BUFFER_COUNT; i++)
-        {
-            logBuffersSession1[i] = new AtomicBuffer(new byte[LOG_BUFFER_SIZE]);
-            stateBuffersSession1[i] = new AtomicBuffer(new byte[STATE_BUFFER_LENGTH]);
-            logBuffersSession2[i] = new AtomicBuffer(new byte[LOG_BUFFER_SIZE]);
-            stateBuffersSession2[i] = new AtomicBuffer(new byte[STATE_BUFFER_LENGTH]);
-
-            when(mockBufferUsage.newBuffer(eq(SESSION_ID_1 + "-log-" + i), anyInt(), anyInt()))
-                .thenReturn(logBuffersSession1[i]);
-            when(mockBufferUsage.newBuffer(eq(SESSION_ID_1 + "-state-" + i), anyInt(), anyInt()))
-                .thenReturn(stateBuffersSession1[i]);
-            when(mockBufferUsage.newBuffer(eq(SESSION_ID_2 + "-log-" + i), anyInt(), anyInt()))
-                .thenReturn(logBuffersSession2[i]);
-            when(mockBufferUsage.newBuffer(eq(SESSION_ID_2 + "-state-" + i), anyInt(), anyInt()))
-                .thenReturn(stateBuffersSession2[i]);
-
-            appendersSession1[i] = new LogAppender(logBuffersSession1[i], stateBuffersSession1[i],
-                                                   DataHeaderFlyweight.DEFAULT_HEADER_NULL_IDS, MAX_FRAME_LENGTH);
-            appendersSession2[i] = new LogAppender(logBuffersSession2[i], stateBuffersSession2[i],
-                                                   DataHeaderFlyweight.DEFAULT_HEADER_NULL_IDS, MAX_FRAME_LENGTH);
-        }
-
         final Aeron.ClientContext ctx =
             new Aeron.ClientContext()
                 .toClientBuffer(toClientReceiver)

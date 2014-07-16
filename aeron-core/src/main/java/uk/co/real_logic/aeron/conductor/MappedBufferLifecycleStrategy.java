@@ -42,7 +42,7 @@ public class MappedBufferLifecycleStrategy implements BufferLifecycleStrategy
         buffers = new ArrayList<>();
     }
 
-    public AtomicBuffer newBuffer(final String location, final int offset, final int length) throws IOException
+    public LogInformation newBuffer(final String location, final int offset, final int length) throws IOException
     {
         final MappedByteBuffer buffer = mapExistingFile(new File(location), "Term Buffer");
         if (requiresIndirection(buffer, offset, length))
@@ -53,7 +53,7 @@ public class MappedBufferLifecycleStrategy implements BufferLifecycleStrategy
 
         buffers.add(new LocatedBuffer(location, buffer));
 
-        return new AtomicBuffer(buffer);
+        return new LogInformation(location, offset, length, new AtomicBuffer(buffer), this);
     }
 
     private boolean requiresIndirection(final ByteBuffer buffer, final int offset, final int length)

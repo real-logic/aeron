@@ -153,8 +153,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
 
         operationSucceeded = false;
 
-        // TODO:
-        // bufferUsage.releasePublisherBuffers(destination, channelId, sessionId);
+        publicationMap.remove(destination, sessionId, channelId);
     }
 
     public synchronized Subscription addSubscription(final String destination,
@@ -193,18 +192,21 @@ public class ClientConductor extends Agent implements MediaDriverListener
                                  final LogBuffersMessageFlyweight logBuffersMessage) throws IOException
     {
         final LogAppender[] logs = new LogAppender[BUFFER_COUNT];
+        final LogInformation[] logInformation = new LogInformation[BUFFER_COUNT * 2];
 
         for (int i = 0; i < BUFFER_COUNT; i++)
         {
-            final AtomicBuffer logBuffer = mapBuffer(logBuffersMessage, i);
-            final AtomicBuffer stateBuffer = mapBuffer(logBuffersMessage, i + TermHelper.BUFFER_COUNT);
+            final LogInformation logBuffer = mapBuffer(logBuffersMessage, i);
+            final LogInformation stateBuffer = mapBuffer(logBuffersMessage, i + TermHelper.BUFFER_COUNT);
             final byte[] header = DataHeaderFlyweight.createDefaultHeader(sessionId, channelId, termId);
 
-            logs[i] = new LogAppender(logBuffer, stateBuffer, header, MAX_FRAME_LENGTH);
+            logs[i] = new LogAppender(logBuffer.buffer(), stateBuffer.buffer(), header, MAX_FRAME_LENGTH);
+            logInformation[i * 2] = logBuffer;
+            logInformation[i * 2 + 1] = stateBuffer;
         }
 
         final LimitBarrier limit = limitBarrier(positionIndicatorOffset);
-        addedPublication = new Publication(this, destination, channelId, sessionId, termId, logs, limit);
+        addedPublication = new Publication(this, destination, channelId, sessionId, termId, logs, limit, logInformation);
 
         correlationSignal.signal();
     }
@@ -219,12 +221,17 @@ public class ClientConductor extends Agent implements MediaDriverListener
         if (null != subscription && !subscription.isConnected(sessionId))
         {
             final LogReader[] logs = new LogReader[BUFFER_COUNT];
+            // TODO: put logInformation into subscriptions
+            final LogInformation[] logInformation = new LogInformation[BUFFER_COUNT * 2];
+
             for (int i = 0; i < BUFFER_COUNT; i++)
             {
-                final AtomicBuffer logBuffer = mapBuffer(message, i);
-                final AtomicBuffer stateBuffer = mapBuffer(message, i + TermHelper.BUFFER_COUNT);
+                final LogInformation logBuffer = mapBuffer(message, i);
+                final LogInformation stateBuffer = mapBuffer(message, i + TermHelper.BUFFER_COUNT);
 
-                logs[i] = new LogReader(logBuffer, stateBuffer);
+                logs[i] = new LogReader(logBuffer.buffer(), stateBuffer.buffer());
+                logInformation[i * 2] = logBuffer;
+                logInformation[i * 2 + 1] = stateBuffer;
             }
 
             subscription.onLogBufferMapped(sessionId, initialTermId, logs);
@@ -263,7 +270,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
         }
     }
 
-    private AtomicBuffer mapBuffer(final LogBuffersMessageFlyweight newBufferMessage, final int index)
+    private LogInformation mapBuffer(final LogBuffersMessageFlyweight newBufferMessage, final int index)
         throws IOException
     {
         final String location = newBufferMessage.location(index);

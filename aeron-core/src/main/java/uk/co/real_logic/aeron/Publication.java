@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.conductor.ClientConductor;
+import uk.co.real_logic.aeron.conductor.LogInformation;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
@@ -42,6 +43,7 @@ public class Publication
     private final String destination;
     private final long channelId;
     private final long sessionId;
+    private final LogInformation[] logsInformation;
     private final LogAppender[] logAppenders;
     private final LimitBarrier limitBarrier;
     private final AtomicLong activeTermId;
@@ -56,13 +58,15 @@ public class Publication
                        final long sessionId,
                        final long initialTermId,
                        final LogAppender[] logAppenders,
-                       final LimitBarrier limitBarrier)
+                       final LimitBarrier limitBarrier,
+                       final LogInformation[] logsInformation)
     {
         this.conductor = conductor;
 
         this.destination = destination;
         this.channelId = channelId;
         this.sessionId = sessionId;
+        this.logsInformation = logsInformation;
         this.activeTermId = new AtomicLong(initialTermId);
         this.logAppenders = logAppenders;
         this.limitBarrier = limitBarrier;
@@ -110,7 +114,16 @@ public class Publication
             if (--refCount == 0)
             {
                 conductor.releasePublication(this);
+                releaseBuffers();
             }
+        }
+    }
+
+    private void releaseBuffers()
+    {
+        for (LogInformation logInformation : this.logsInformation)
+        {
+            logInformation.releaseBuffer();
         }
     }
 
@@ -204,4 +217,5 @@ public class Publication
         final int requiredPosition = logAppender.tailVolatile() + length;
         return limitBarrier.limit() < requiredPosition;
     }
+
 }

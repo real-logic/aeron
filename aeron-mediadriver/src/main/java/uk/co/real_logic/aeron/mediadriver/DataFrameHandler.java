@@ -171,7 +171,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         final long initialTermId = connectedSubscription.activeTermId();
         final int initialWindowSize = connectedSubscription.currentWindowSize();
 
-        connectedSubscription.sendSmHandler().send(initialTermId, 0, initialWindowSize);
+        connectedSubscription.statusMessageSender().send(initialTermId, 0, initialWindowSize);
     }
 
     public StatusMessageSender composeStatusMessageSender(final InetSocketAddress controlAddress,

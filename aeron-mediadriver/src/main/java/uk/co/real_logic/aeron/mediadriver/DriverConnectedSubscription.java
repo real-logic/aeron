@@ -102,7 +102,7 @@ public class DriverConnectedSubscription
         return activeTermId.get();
     }
 
-    public StatusMessageSender sendSmHandler()
+    public StatusMessageSender statusMessageSender()
     {
         return statusMessageSender;
     }

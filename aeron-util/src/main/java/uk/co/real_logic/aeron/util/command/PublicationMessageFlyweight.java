@@ -21,7 +21,7 @@ import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_LONG;
 
 /**
- * Control message for adding and removing a publication
+ * Control message for adding or removing a publication
  *
  * <p>
  * 0                   1                   2                   3
@@ -47,7 +47,8 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
     private int lengthOfDestination;
 
     /**
-     * return session id field
+     * Get the session id field
+     *
      * @return session id field
      */
     public long sessionId()
@@ -56,7 +57,8 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
     }
 
     /**
-     * set session id field
+     * Set session id field
+     *
      * @param sessionId field value
      * @return flyweight
      */
@@ -67,7 +69,7 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
     }
 
     /**
-     * return channel id field
+     * Get the channel id field
      *
      * @return channel id field
      */
@@ -77,7 +79,7 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
     }
 
     /**
-     * set channel id field
+     * Set the channel id field
      *
      * @param channelId field value
      * @return flyweight
@@ -89,7 +91,7 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
     }
 
     /**
-     * return destination field
+     * Get the destination field
      *
      * @return destination field
      */
@@ -99,7 +101,7 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
     }
 
     /**
-     * set destination field
+     * Set the destination field
      *
      * @param destination field value
      * @return flyweight

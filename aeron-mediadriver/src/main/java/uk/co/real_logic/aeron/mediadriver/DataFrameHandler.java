@@ -69,7 +69,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         return subscriptionByChannelIdMap;
     }
 
-    public void addSubscriptions(final long channelId)
+    public void addSubscription(final long channelId)
     {
         DriverSubscription subscription = subscriptionByChannelIdMap.get(channelId);
 
@@ -82,7 +82,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         subscription.incRef();
     }
 
-    public void removeSubscriptions(final long channelId)
+    public void removeSubscription(final long channelId)
     {
         final DriverSubscription subscription = subscriptionByChannelIdMap.get(channelId);
 
@@ -98,7 +98,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         }
     }
 
-    public int subscribedChannelCount()
+    public int subscriptionCount()
     {
         return subscriptionByChannelIdMap.size();
     }

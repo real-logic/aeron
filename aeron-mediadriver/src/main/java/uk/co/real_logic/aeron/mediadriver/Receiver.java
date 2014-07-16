@@ -120,7 +120,7 @@ public class Receiver extends Agent
             frameHandlerByDestinationMap.put(udpDestination, frameHandler);
         }
 
-        frameHandler.addSubscriptions(channelId);
+        frameHandler.addSubscription(channelId);
     }
 
     private void onRemoveSubscription(final String destination, final long channelId)
@@ -133,9 +133,9 @@ public class Receiver extends Agent
             throw new SubscriptionNotRegisteredException("destination unknown for receiver remove: " + destination);
         }
 
-        frameHandler.removeSubscriptions(channelId);
+        frameHandler.removeSubscription(channelId);
 
-        if (0 == frameHandler.subscribedChannelCount())
+        if (0 == frameHandler.subscriptionCount())
         {
             frameHandlerByDestinationMap.remove(udpDestination);
             frameHandler.close();

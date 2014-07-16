@@ -82,7 +82,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
                            final long publicationWindow)
     {
         super(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                                    AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS));
+                                      AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS));
 
         this.counterValuesBuffer = counterValuesBuffer;
         this.correlationSignal = correlationSignal;
@@ -99,7 +99,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
         {
             return mediaDriverBroadcastReceiver.receive(this, activeCorrelationId);
         }
-        catch (Exception ex)
+        catch (final Exception ex)
         {
             LOGGER.logException(ex);
             return 0;

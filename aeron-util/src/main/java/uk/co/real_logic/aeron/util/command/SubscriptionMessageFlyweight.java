@@ -41,7 +41,7 @@ public class SubscriptionMessageFlyweight extends Flyweight
     private int lengthOfDestination;
 
     /**
-     * get the channel id
+     * Get the channel id
      *
      * @return the channel id
      */
@@ -51,7 +51,7 @@ public class SubscriptionMessageFlyweight extends Flyweight
     }
 
     /**
-     * set the channel id
+     * Set the channel id
      *
      * @param value the channel id
      */
@@ -62,7 +62,7 @@ public class SubscriptionMessageFlyweight extends Flyweight
     }
 
     /**
-     * return destination field
+     * Get the destination field
      *
      * @return destination field
      */
@@ -72,9 +72,7 @@ public class SubscriptionMessageFlyweight extends Flyweight
     }
 
     /**
-     * set destination field
-     *
-     * Assumes the channel ids have already been written
+     * Set destination field
      *
      * @param destination field value
      * @return flyweight

@@ -95,7 +95,7 @@ public class MediaConductor extends Agent
 
     public MediaConductor(final MediaDriverContext ctx)
     {
-        super(ctx.conductorIdleStrategy());
+        super(ctx.conductorIdleStrategy(), LOGGER::logException);
 
         this.commandQueue = ctx.conductorCommandQueue();
         this.receiverProxy = ctx.receiverProxy();
@@ -122,27 +122,18 @@ public class MediaConductor extends Agent
         return srcDestinationMap.get(destination.consistentHash());
     }
 
-    public int doWork()
+    public int doWork() throws Exception
     {
-        int workCount = 0;
+        int workCount = nioSelector.processKeys();
 
-        try
-        {
-            workCount += nioSelector.processKeys();
+        workCount += publications.doAction(DriverPublication::cleanLogBuffer);
+        workCount += connectedSubscriptions.doAction(DriverConnectedSubscription::cleanLogBuffer);
+        workCount += connectedSubscriptions.doAction(DriverConnectedSubscription::scanForGaps);
+        workCount += connectedSubscriptions.doAction((subscription) -> subscription.sendAnyPendingSm(timerWheel.now()));
 
-            workCount += publications.doAction(DriverPublication::cleanLogBuffer);
-            workCount += connectedSubscriptions.doAction(DriverConnectedSubscription::cleanLogBuffer);
-            workCount += connectedSubscriptions.doAction(DriverConnectedSubscription::scanForGaps);
-            workCount += connectedSubscriptions.doAction((subscription) -> subscription.sendAnyPendingSm(timerWheel.now()));
-
-            workCount += processFromClientCommandBuffer();
-            workCount += processFromReceiverCommandQueue();
-            workCount += processTimers();
-        }
-        catch (final Exception ex)
-        {
-            LOGGER.logException(ex);
-        }
+        workCount += processFromClientCommandBuffer();
+        workCount += processFromReceiverCommandQueue();
+        workCount += processTimers();
 
         return workCount;
     }

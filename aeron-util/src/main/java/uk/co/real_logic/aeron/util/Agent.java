@@ -15,12 +15,16 @@
  */
 package uk.co.real_logic.aeron.util;
 
+import java.util.function.Consumer;
+
 /**
  * Base agent that is responsible for an ongoing activity.
  */
 public abstract class Agent implements Runnable, AutoCloseable
 {
     private final IdleStrategy idleStrategy;
+    private final Consumer<Exception> exceptionHandler;
+
     private volatile boolean running;
 
     /**
@@ -28,9 +32,10 @@ public abstract class Agent implements Runnable, AutoCloseable
      *
      * @param idleStrategy to use for Agent run loop
      */
-    public Agent(final IdleStrategy idleStrategy)
+    public Agent(final IdleStrategy idleStrategy, final Consumer<Exception> exceptionHandler)
     {
         this.idleStrategy = idleStrategy;
+        this.exceptionHandler = exceptionHandler;
         this.running = true;
     }
 
@@ -43,7 +48,16 @@ public abstract class Agent implements Runnable, AutoCloseable
     {
         while (running)
         {
-            final int workCount = doWork();
+            int workCount;
+            try
+            {
+                workCount = doWork();
+            }
+            catch (final Exception ex)
+            {
+                exceptionHandler.accept(ex);
+                workCount = 0;
+            }
 
             idleStrategy.idle(workCount);
         }
@@ -73,5 +87,5 @@ public abstract class Agent implements Runnable, AutoCloseable
      *
      * @return true if work has been done otherwise false to indicate no work was currently available.
      */
-    public abstract int doWork();
+    public abstract int doWork() throws Exception;
 }

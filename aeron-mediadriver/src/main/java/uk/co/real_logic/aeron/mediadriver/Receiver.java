@@ -41,7 +41,7 @@ public class Receiver extends Agent
 
     public Receiver(final MediaDriver.MediaDriverContext ctx) throws Exception
     {
-        super(ctx.receiverIdleStrategy());
+        super(ctx.receiverIdleStrategy(), LOGGER::logException);
 
         this.conductorProxy = ctx.mediaConductorProxy();
         this.nioSelector = ctx.receiverNioSelector();
@@ -50,20 +50,9 @@ public class Receiver extends Agent
         this.connectedSubscriptions = ctx.connectedSubscriptions();
     }
 
-    public int doWork()
+    public int doWork() throws Exception
     {
-        int workCount = 0;
-        try
-        {
-            workCount += nioSelector.processKeys();
-            workCount += processConductorCommands();
-        }
-        catch (final Exception ex)
-        {
-            LOGGER.logException(ex);
-        }
-
-        return workCount;
+        return nioSelector.processKeys() + processConductorCommands();
     }
 
     private int processConductorCommands()

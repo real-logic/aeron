@@ -207,7 +207,7 @@ public class MediaConductorTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveMultipleChannels() throws IOException
+    public void shouldBeAbleToRemoveMultipleChannels() throws Exception
     {
         LOGGER.logInvocation();
 

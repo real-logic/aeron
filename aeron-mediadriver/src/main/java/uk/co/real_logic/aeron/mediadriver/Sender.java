@@ -32,28 +32,20 @@ public class Sender extends Agent
 
     public Sender(final MediaDriver.MediaDriverContext ctx)
     {
-        super(ctx.senderIdleStrategy());
+        super(ctx.senderIdleStrategy(), LOGGER::logException);
 
         publications = ctx.publications();
     }
 
     public int doWork()
     {
-        try
+        roundRobinIndex++;
+        if (roundRobinIndex == publications.size())
         {
-            roundRobinIndex++;
-            if (roundRobinIndex == publications.size())
-            {
-                roundRobinIndex = 0;
-            }
+            roundRobinIndex = 0;
+        }
 
-            return publications.doAction(roundRobinIndex, DriverPublication::send);
-        }
-        catch (final Exception ex)
-        {
-            LOGGER.logException(ex);
-            return 0;
-        }
+        return publications.doAction(roundRobinIndex, DriverPublication::send);
     }
 
 }

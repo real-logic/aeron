@@ -61,14 +61,14 @@ public class MediaDriverProxy
         return sendPublicationMessage(destination, sessionId, channelId, REMOVE_PUBLICATION);
     }
 
-    public void addSubscription(final String destination, final long channelId)
+    public long addSubscription(final String destination, final long channelId)
     {
-        sendSubscriptionMessage(ADD_SUBSCRIPTION, destination, channelId);
+        return sendSubscriptionMessage(ADD_SUBSCRIPTION, destination, channelId);
     }
 
-    public void removeSubscription(final String destination, final long channelId)
+    public long removeSubscription(final String destination, final long channelId)
     {
-        sendSubscriptionMessage(REMOVE_SUBSCRIPTION, destination, channelId);
+        return sendSubscriptionMessage(REMOVE_SUBSCRIPTION, destination, channelId);
     }
 
     private long sendPublicationMessage(final String destination,
@@ -91,8 +91,11 @@ public class MediaDriverProxy
         return correlationId;
     }
 
-    private void sendSubscriptionMessage(final int msgTypeId, final String destination, final long channelId)
+    private long sendSubscriptionMessage(final int msgTypeId, final String destination, final long channelId)
     {
+        final long correlationId = mediaDriverCommandBuffer.nextCorrelationId();
+
+        subscriptionMessage.correlationId(correlationId);
         subscriptionMessage.channelId(channelId);
         subscriptionMessage.destination(destination);
 
@@ -100,6 +103,8 @@ public class MediaDriverProxy
         {
             throw new IllegalStateException("could not write subscription message");
         }
+
+        return correlationId;
     }
 
     public void requestTerm(final String destination, final long sessionId, final long channelId, final long termId)

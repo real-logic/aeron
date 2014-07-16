@@ -121,7 +121,7 @@ public class ClientConductorTest extends MockBufferUsage
     @Test(expected = MediaDriverTimeoutException.class)
     public void cannotCreatePublisherUntilBuffersMapped()
     {
-        signalWillTimeOut();
+        willSignalTimeOut();
 
         addPublication();
     }
@@ -252,7 +252,7 @@ public class ClientConductorTest extends MockBufferUsage
     @Test(expected = MediaDriverTimeoutException.class)
     public void cannotCreateSubscriberIfMediaDriverDoesNotReply()
     {
-        signalWillTimeOut();
+        willSignalTimeOut();
 
         addSubscription();
     }
@@ -294,7 +294,7 @@ public class ClientConductorTest extends MockBufferUsage
         toClientTransmitter.transmit(msgTypeId, atomicSendBuffer, 0, newBufferMessage.length());
     }
 
-    private void signalWillTimeOut()
+    private void willSignalTimeOut()
     {
         doAnswer(
             (invocation) ->

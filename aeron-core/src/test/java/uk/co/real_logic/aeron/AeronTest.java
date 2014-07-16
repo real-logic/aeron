@@ -45,10 +45,9 @@ import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.Subscription.DataHandler;
 import static uk.co.real_logic.aeron.util.TermHelper.BUFFER_COUNT;
 import static uk.co.real_logic.aeron.util.TermHelper.termIdToBufferIndex;
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
+import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ON_NEW_CONNECTED_SUBSCRIPTION;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.SUCCESS;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
-import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.assertMsgRead;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.skip;
 
 public class AeronTest
@@ -150,33 +149,6 @@ public class AeronTest
     public void tearDown()
     {
         aeron.close();
-    }
-
-    @Test
-    public void registeringSubscriberNotifiesMediaDriver() throws Exception
-    {
-        final Subscription subscription = aeron.addSubscription(DESTINATION, CHANNEL_ID_1, EMPTY_DATA_HANDLER);
-
-        aeron.conductor().doWork();
-
-        assertMsgRead(toDriverBuffer, assertSubscriberMessageOfType(ADD_SUBSCRIPTION, CHANNEL_ID_1));
-
-        assertThat(subscription.poll(FRAME_COUNT_LIMIT), is(0));
-    }
-
-    @Test
-    public void removingSubscriberNotifiesMediaDriver()
-    {
-        final RingBuffer toMediaDriver = toDriverBuffer;
-        final Subscription subscription = aeron.addSubscription(DESTINATION, CHANNEL_ID_1, channel1Handler);
-
-        aeron.conductor().doWork();
-        skip(toMediaDriver, 1);
-
-        subscription.release();
-        aeron.conductor().doWork();
-
-        assertMsgRead(toMediaDriver, assertSubscriberMessageOfType(REMOVE_SUBSCRIPTION, CHANNEL_ID_1));
     }
 
     @Test

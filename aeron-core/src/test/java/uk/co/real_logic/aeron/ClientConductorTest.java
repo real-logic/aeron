@@ -17,11 +17,12 @@ package uk.co.real_logic.aeron;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import uk.co.real_logic.aeron.conductor.*;
-import uk.co.real_logic.aeron.util.concurrent.AtomicArray;
 import uk.co.real_logic.aeron.util.TermHelper;
 import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
+import uk.co.real_logic.aeron.util.concurrent.AtomicArray;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastBufferDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastReceiver;
@@ -42,6 +43,7 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.*;
+import static uk.co.real_logic.aeron.Subscription.DataHandler;
 import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION_IN_PUBLICATION;
 import static uk.co.real_logic.aeron.util.ErrorCode.PUBLICATION_CHANNEL_ALREADY_EXISTS;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ON_NEW_PUBLICATION;
@@ -95,6 +97,7 @@ public class ClientConductorTest
     private ConductorErrorHandler errorHandler;
     private AtomicArray<Subscription> subscriberChannels;
     private MediaDriverBroadcastReceiver receiver;
+    private DataHandler dataHandler = mock(DataHandler.class);
 
     @Before
     public void setUp() throws Exception
@@ -159,6 +162,10 @@ public class ClientConductorTest
         conductor.close();
     }
 
+    // --------------------------------
+    // Publication related interactions
+    // --------------------------------
+
     @Test
     public void creatingChannelsShouldNotifyMediaDriver() throws Exception
     {
@@ -170,12 +177,7 @@ public class ClientConductorTest
     @Test(expected = MediaDriverTimeoutException.class)
     public void cannotCreatePublisherUntilBuffersMapped()
     {
-        doAnswer(
-            (invocation) ->
-            {
-                Thread.sleep(AWAIT_TIMEOUT + 1);
-                return null;
-            }).when(signal).await(anyLong());
+        signalWillTimeOut();
 
         addPublication();
     }
@@ -258,6 +260,52 @@ public class ClientConductorTest
 
         verify(mediaDriverProxy).removePublication(DESTINATION, SESSION_ID_1, CHANNEL_ID_1);
         verify(mediaDriverProxy, never()).removePublication(DESTINATION, SESSION_ID_2, CHANNEL_ID_2);
+    }
+
+    // ---------------------------------
+    // Subscription related interactions
+    // ---------------------------------
+
+    @Test
+    public void registeringSubscriberNotifiesMediaDriver() throws Exception
+    {
+        addSubscription();
+
+        verify(mediaDriverProxy).addSubscription(DESTINATION, CHANNEL_ID_1);
+    }
+
+    @Test
+    public void removingSubscriberNotifiesMediaDriver()
+    {
+        final Subscription subscription = addSubscription();
+
+        subscription.release();
+
+        verify(mediaDriverProxy).removeSubscription(DESTINATION, CHANNEL_ID_1);
+    }
+
+    @Ignore("not implemented yet")
+    @Test(expected = MediaDriverTimeoutException.class)
+    public void cannotCreateSubscriberIfMediaDriverDoesNotReply()
+    {
+        signalWillTimeOut();
+
+        addSubscription();
+    }
+
+    private void signalWillTimeOut()
+    {
+        doAnswer(
+                (invocation) ->
+                {
+                    Thread.sleep(AWAIT_TIMEOUT + 1);
+                    return null;
+                }).when(signal).await(anyLong());
+    }
+
+    private Subscription addSubscription()
+    {
+        return conductor.addSubscription(DESTINATION, CHANNEL_ID_1, dataHandler);
     }
 
     private void sendNewBufferNotification(final int msgTypeId,

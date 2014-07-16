@@ -129,20 +129,20 @@ public class MediaConductor extends Agent
         try
         {
             workCount += nioSelector.processKeys();
+
+            workCount += publications.doAction(DriverPublication::cleanLogBuffer);
+            workCount += connectedSubscriptions.doAction(DriverConnectedSubscription::cleanLogBuffer);
+            workCount += connectedSubscriptions.doAction(DriverConnectedSubscription::scanForGaps);
+            workCount += connectedSubscriptions.doAction((subscription) -> subscription.sendAnyPendingSm(timerWheel.now()));
+
+            workCount += processFromClientCommandBuffer();
+            workCount += processFromReceiverCommandQueue();
+            workCount += processTimers();
         }
         catch (final Exception ex)
         {
             LOGGER.logException(ex);
         }
-
-        workCount += publications.doAction(DriverPublication::cleanLogBuffer);
-        workCount += connectedSubscriptions.doAction(DriverConnectedSubscription::cleanLogBuffer);
-        workCount += connectedSubscriptions.doAction(DriverConnectedSubscription::scanForGaps);
-        workCount += connectedSubscriptions.doAction((subscription) -> subscription.sendAnyPendingSm(timerWheel.now()));
-
-        workCount += processFromClientCommandBuffer();
-        workCount += processFromReceiverCommandQueue();
-        workCount += processTimers();
 
         return workCount;
     }

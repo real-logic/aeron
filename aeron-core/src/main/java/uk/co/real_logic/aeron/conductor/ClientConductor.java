@@ -21,13 +21,14 @@ import uk.co.real_logic.aeron.RegistrationException;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.util.Agent;
 import uk.co.real_logic.aeron.util.BackoffIdleStrategy;
-import uk.co.real_logic.aeron.util.TermHelper;
 import uk.co.real_logic.aeron.util.ErrorCode;
+import uk.co.real_logic.aeron.util.TermHelper;
 import uk.co.real_logic.aeron.util.collections.ConnectionMap;
 import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
+import uk.co.real_logic.aeron.util.event.EventLogger;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.status.BufferPositionIndicator;
 import uk.co.real_logic.aeron.util.status.LimitBarrier;
@@ -44,6 +45,8 @@ import static uk.co.real_logic.aeron.util.TermHelper.BUFFER_COUNT;
  */
 public class ClientConductor extends Agent implements MediaDriverListener
 {
+    private static final EventLogger LOGGER = new EventLogger(ClientConductor.class);
+
     private static final int MAX_FRAME_LENGTH = 1024;
 
     public static final long AGENT_IDLE_MAX_SPINS = 5000;
@@ -92,7 +95,15 @@ public class ClientConductor extends Agent implements MediaDriverListener
 
     public int doWork()
     {
-        return mediaDriverBroadcastReceiver.receive(this, activeCorrelationId);
+        try
+        {
+            return mediaDriverBroadcastReceiver.receive(this, activeCorrelationId);
+        }
+        catch (Exception ex)
+        {
+            LOGGER.logException(ex);
+            return 0;
+        }
     }
 
     public void close()

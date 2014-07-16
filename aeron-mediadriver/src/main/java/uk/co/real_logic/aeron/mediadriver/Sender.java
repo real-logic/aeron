@@ -17,12 +17,16 @@ package uk.co.real_logic.aeron.mediadriver;
 
 import uk.co.real_logic.aeron.util.Agent;
 import uk.co.real_logic.aeron.util.concurrent.AtomicArray;
+import uk.co.real_logic.aeron.util.event.EventLogger;
 
 /**
  * Agent that iterates over publications for sending them to registered subscribers.
  */
 public class Sender extends Agent
 {
+
+    private static final EventLogger LOGGER = new EventLogger(Sender.class);
+
     private final AtomicArray<DriverPublication> publications;
     private int roundRobinIndex = 0;
 
@@ -35,12 +39,21 @@ public class Sender extends Agent
 
     public int doWork()
     {
-        roundRobinIndex++;
-        if (roundRobinIndex == publications.size())
+        try
         {
-            roundRobinIndex = 0;
-        }
+            roundRobinIndex++;
+            if (roundRobinIndex == publications.size())
+            {
+                roundRobinIndex = 0;
+            }
 
-        return publications.doAction(roundRobinIndex, DriverPublication::send);
+            return publications.doAction(roundRobinIndex, DriverPublication::send);
+        }
+        catch (final Exception ex)
+        {
+            LOGGER.logException(ex);
+            return 0;
+        }
     }
+
 }

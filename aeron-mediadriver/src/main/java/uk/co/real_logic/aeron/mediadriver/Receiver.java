@@ -146,7 +146,7 @@ public class Receiver extends Agent
 
         frameHandler.removeSubscription(channelId);
 
-        if (0 == frameHandler.subscribedChannelCount())
+        if (0 == frameHandler.subscriptionCount())
         {
             frameHandlerByDestinationMap.remove(udpDestination);
             frameHandler.close();

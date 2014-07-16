@@ -98,7 +98,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         }
     }
 
-    public int subscribedChannelCount()
+    public int subscriptionCount()
     {
         return subscriptionByChannelIdMap.size();
     }

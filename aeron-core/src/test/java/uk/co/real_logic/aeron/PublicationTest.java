@@ -9,7 +9,7 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.util.status.LimitBarrier;
+import uk.co.real_logic.aeron.util.status.PositionIndicator;
 
 import java.nio.ByteBuffer;
 
@@ -21,7 +21,9 @@ import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.inOrder;
 import static uk.co.real_logic.aeron.util.TermHelper.BUFFER_COUNT;
 import static uk.co.real_logic.aeron.util.TermHelper.termIdToBufferIndex;
+import static uk.co.real_logic.aeron.util.concurrent.broadcast.RecordDescriptor.RECORD_ALIGNMENT;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.*;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.LOG_MIN_SIZE;
 
 public class PublicationTest
 {
@@ -36,17 +38,16 @@ public class PublicationTest
     private final DataHeaderFlyweight dataHeaderFlyweight = new DataHeaderFlyweight();
 
     private Publication publication;
-    private LimitBarrier limit;
+    private PositionIndicator limit;
     private LogAppender[] appenders;
-    private LogInformation[] logInformation;
     private byte[][] headers;
 
     @Before
     public void setup()
     {
         final ClientConductor conductor = mock(ClientConductor.class);
-        limit = mock(LimitBarrier.class);
-        when(limit.limit()).thenReturn(2L * SEND_BUFFER_CAPACITY);
+        limit = mock(PositionIndicator.class);
+        when(limit.position()).thenReturn(2L * SEND_BUFFER_CAPACITY);
 
         appenders = new LogAppender[BUFFER_COUNT];
         headers = new byte[BUFFER_COUNT][];
@@ -57,11 +58,13 @@ public class PublicationTest
             headers[i] = header;
             when(appenders[i].append(any(), anyInt(), anyInt())).thenReturn(SUCCESS);
             when(appenders[i].defaultHeader()).thenReturn(header);
+            when(appenders[i].capacity()).thenReturn(LOG_MIN_SIZE);
         }
 
-        logInformation = new LogInformation[0];
+        final LogInformation[] logInformation = new LogInformation[0];
 
-        publication = new Publication(conductor, DESTINATION, CHANNEL_ID_1, SESSION_ID_1, TERM_ID_1, appenders, limit, logInformation);
+        publication = new Publication(conductor, DESTINATION, CHANNEL_ID_1, SESSION_ID_1,
+                                      TERM_ID_1, appenders, limit, logInformation);
     }
 
     @Test
@@ -73,7 +76,7 @@ public class PublicationTest
     @Test
     public void shouldFailToOfferAMessageWhenLimited()
     {
-        when(limit.limit()).thenReturn(SEND_BUFFER_CAPACITY - 1L);
+        when(limit.position()).thenReturn(0L);
         assertFalse(publication.offer(atomicSendBuffer));
     }
 
@@ -88,6 +91,8 @@ public class PublicationTest
     public void shouldRotateWhenAppendTrips()
     {
         when(appenders[termIdToBufferIndex(TERM_ID_1)].append(any(), anyInt(), anyInt())).thenReturn(TRIPPED);
+        when(appenders[termIdToBufferIndex(TERM_ID_1)].tailVolatile()).thenReturn(LOG_MIN_SIZE - RECORD_ALIGNMENT);
+        when(limit.position()).thenReturn(Long.MAX_VALUE);
 
         assertTrue(publication.offer(atomicSendBuffer));
 

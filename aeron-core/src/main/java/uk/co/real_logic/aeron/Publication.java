@@ -20,7 +20,7 @@ import uk.co.real_logic.aeron.conductor.LogInformation;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.util.status.LimitBarrier;
+import uk.co.real_logic.aeron.util.status.PositionIndicator;
 
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -45,10 +45,12 @@ public class Publication
     private final long sessionId;
     private final LogInformation[] logsInformation;
     private final LogAppender[] logAppenders;
-    private final LimitBarrier limitBarrier;
+    private final PositionIndicator limitIndicator;
     private final AtomicLong activeTermId;
-    private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
+    private final int positionBitsToShift;
+    private final long initialPosition;
 
+    private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private int refCount = 0;
     private int activeIndex;
 
@@ -58,7 +60,7 @@ public class Publication
                        final long sessionId,
                        final long initialTermId,
                        final LogAppender[] logAppenders,
-                       final LimitBarrier limitBarrier,
+                       final PositionIndicator limitIndicator,
                        final LogInformation[] logsInformation)
     {
         this.conductor = conductor;
@@ -69,8 +71,11 @@ public class Publication
         this.logsInformation = logsInformation;
         this.activeTermId = new AtomicLong(initialTermId);
         this.logAppenders = logAppenders;
-        this.limitBarrier = limitBarrier;
+        this.limitIndicator = limitIndicator;
         this.activeIndex = termIdToBufferIndex(initialTermId);
+
+        this.positionBitsToShift = Integer.numberOfTrailingZeros(logAppenders[0].capacity());
+        this.initialPosition = initialTermId << positionBitsToShift;
     }
 
     /**
@@ -160,20 +165,20 @@ public class Publication
     public boolean offer(final AtomicBuffer buffer, final int offset, final int length)
     {
         final LogAppender logAppender = logAppenders[activeIndex];
-        if (isPausedDueToFlowControl(logAppender, length))
+        if (checkLimit(logAppender.tailVolatile()))
         {
-            return false;
+            final AppendStatus status = logAppender.append(buffer, offset, length);
+            if (status == TRIPPED)
+            {
+                nextTerm();
+
+                return offer(buffer, offset, length);
+            }
+
+            return status == SUCCESS;
         }
 
-        final AppendStatus status = logAppender.append(buffer, offset, length);
-        if (status == TRIPPED)
-        {
-            nextTerm();
-
-            return offer(buffer, offset, length);
-        }
-
-        return status == SUCCESS;
+        return false;
     }
 
     private void nextTerm()
@@ -211,11 +216,14 @@ public class Publication
         logAppenders[previousIndex].statusOrdered(NEEDS_CLEANING);
     }
 
-    private boolean isPausedDueToFlowControl(final LogAppender logAppender, final int length)
+    private boolean checkLimit(final int currentTail)
     {
-        // TODO: need to take account of bytes in previous terms.
-        final int requiredPosition = logAppender.tailVolatile() + length;
-        return limitBarrier.limit() < requiredPosition;
+        return position(currentTail) < limitIndicator.position();
     }
 
+    private long position(final int currentTail)
+    {
+        // TODO: we need to deal with termId wrapping and going negative.
+        return ((activeTermId.get() << positionBitsToShift) - initialPosition) + currentTail;
+    }
 }

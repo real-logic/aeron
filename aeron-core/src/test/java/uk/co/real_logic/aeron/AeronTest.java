@@ -99,8 +99,7 @@ public class AeronTest extends MockBufferUsage
             new Aeron.ClientContext()
                 .toClientBuffer(toClientReceiver)
                 .toDriverBuffer(toDriverBuffer)
-                .bufferUsageStrategy(mockBufferUsage)
-                .invalidDestinationHandler(invalidDestination);
+                .bufferUsageStrategy(mockBufferUsage);
 
         ctx.counterLabelsBuffer(counterLabelsBuffer)
            .counterValuesBuffer(counterValuesBuffer);

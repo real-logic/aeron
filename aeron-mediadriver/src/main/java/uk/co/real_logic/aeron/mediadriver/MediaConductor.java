@@ -118,7 +118,7 @@ public class MediaConductor extends Agent
         clientProxy = ctx.clientProxy();
     }
 
-    public ControlFrameHandler frameHandler(final UdpDestination destination)
+    public ControlFrameHandler getFrameHandler(final UdpDestination destination)
     {
         return srcDestinationMap.get(destination.consistentHash());
     }
@@ -293,7 +293,7 @@ public class MediaConductor extends Agent
             final SenderControlStrategy flowControlStrategy =
                 srcDestination.isMulticast() ? multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
 
-            final int positionCounterOffset = positionCounterId("publication", destination, sessionId, channelId);
+            final int positionCounterOffset = positionCounterOffset("publication", destination, sessionId, channelId);
             final BufferPositionReporter positionReporter =
                 new BufferPositionReporter(counterValuesBuffer, positionCounterOffset);
 
@@ -321,14 +321,14 @@ public class MediaConductor extends Agent
         }
         catch (final Exception ex)
         {
-            throw new ControlProtocolException(GENERIC_ERROR_MESSAGE, ex.getMessage());
+            throw new ControlProtocolException(GENERIC_ERROR_MESSAGE, ex.getMessage(), ex);
         }
     }
 
-    private int positionCounterId(final String type,
-                                  final String destination,
-                                  final long sessionId,
-                                  final long channelId)
+    private int positionCounterOffset(final String type,
+                                      final String destination,
+                                      final long sessionId,
+                                      final long channelId)
     {
         final String label = String.format("%s: %s %d %d", type, destination, sessionId, channelId);
         final int id = statusBufferManager.registerCounter(label);
@@ -376,7 +376,7 @@ public class MediaConductor extends Agent
         }
         catch (final Exception ex)
         {
-            throw new ControlProtocolException(GENERIC_ERROR_MESSAGE, ex.getMessage());
+            throw new ControlProtocolException(GENERIC_ERROR_MESSAGE, ex.getMessage(), ex);
         }
     }
 

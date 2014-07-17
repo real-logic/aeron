@@ -167,19 +167,18 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
     {
         readByteBuffer.clear();
         final InetSocketAddress srcAddress = (InetSocketAddress)channel.receive(readByteBuffer);
-        final int len = readByteBuffer.position();
-        int offset = 0;
 
         if (srcAddress == null)
         {
             return 0;
         }
 
-        // each datagram only can hold a single frame
+        // each datagram only can hold a single frame // TODO: This is not true - we can have multiple framed msgs
 
+        final int len = readByteBuffer.position();
+        int offset = 0;
         header.wrap(readBuffer, offset);
 
-        readByteBuffer.position(0);
         LOGGER.log(EventCode.FRAME_IN, readByteBuffer, len, srcAddress);
 
         // drop a version we don't know

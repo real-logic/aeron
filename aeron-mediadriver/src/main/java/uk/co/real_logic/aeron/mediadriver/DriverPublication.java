@@ -73,10 +73,13 @@ public class DriverPublication
     private final SenderControlStrategy controlStrategy;
     private final AtomicLong rightEdge;
     private final ControlFrameHandler frameHandler;
-    private final BufferPositionReporter positionReporter;
+    private final BufferPositionReporter limitReporter;
 
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final DataHeaderFlyweight retransmitDataHeader = new DataHeaderFlyweight();
+
+    private final int positionBitsToShift;
+    private final long initialPosition;
 
     private int nextTermOffset = 0;
     private int activeIndex = 0;
@@ -89,7 +92,7 @@ public class DriverPublication
                              final TimerWheel timerWheel,
                              final SenderControlStrategy controlStrategy,
                              final TermBuffers termBuffers,
-                             final BufferPositionReporter positionReporter,
+                             final BufferPositionReporter limitReporter,
                              final long sessionId,
                              final long channelId,
                              final long initialTermId,
@@ -100,7 +103,7 @@ public class DriverPublication
         this.dstAddress = frameHandler.destination().remoteData();
         this.controlStrategy = controlStrategy;
         this.timerWheel = timerWheel;
-        this.positionReporter = positionReporter;
+        this.limitReporter = limitReporter;
         this.sessionId = sessionId;
         this.channelId = channelId;
         this.headerLength = headerLength;
@@ -118,6 +121,10 @@ public class DriverPublication
 
         activeTermId = new AtomicLong(initialTermId);
         timeOfLastSendOrHeartbeat = new AtomicLong(this.timerWheel.now());
+
+        this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
+        this.initialPosition = initialTermId << positionBitsToShift;
+        limitReporter.position(termCapacity);
     }
 
     public int send()
@@ -138,7 +145,7 @@ public class DriverPublication
                 activeTermId.lazySet(activeTermId.get() + 1);
             }
 
-            positionReporter.position(nextTermOffset);
+            limitReporter.position(position(scanner.tail()) + scanner.capacity());
         }
         catch (final Exception ex)
         {
@@ -363,5 +370,11 @@ public class DriverPublication
         {
             LOGGER.logException(ex);
         }
+    }
+
+    private long position(final int currentTail)
+    {
+        // TODO: we need to deal with termId wrapping and going negative.
+        return ((activeTermId.get() << positionBitsToShift) - initialPosition) + currentTail;
     }
 }

@@ -27,9 +27,7 @@ import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.util.event.EventLogger;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.util.status.BufferPositionIndicator;
-import uk.co.real_logic.aeron.util.status.LimitBarrier;
-import uk.co.real_logic.aeron.util.status.WindowedLimitBarrier;
+import uk.co.real_logic.aeron.util.status.*;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -56,7 +54,6 @@ public class ClientConductor extends Agent implements MediaDriverListener
     private final MediaDriverBroadcastReceiver mediaDriverBroadcastReceiver;
     private final BufferLifecycleStrategy bufferUsage;
     private final long awaitTimeout;
-    private final long publicationWindow;
     private final ConnectionMap<String, Publication> publicationMap = new ConnectionMap<>(); // Guarded by this
     private final SubscriptionMap subscriptionMap = new SubscriptionMap();
 
@@ -68,18 +65,18 @@ public class ClientConductor extends Agent implements MediaDriverListener
     private Publication addedPublication; // Guarded by this
     private boolean operationSucceeded = false; // Guarded by this
     private RegistrationException registrationException; // Guarded by this
+    private BufferPositionIndicator senderPostionLimit;
 
     public ClientConductor(final MediaDriverBroadcastReceiver mediaDriverBroadcastReceiver,
-                           final ConductorErrorHandler errorHandler,
                            final BufferLifecycleStrategy bufferLifecycleStrategy,
                            final AtomicBuffer counterValuesBuffer,
                            final MediaDriverProxy mediaDriverProxy,
                            final Signal correlationSignal,
-                           final long awaitTimeout,
-                           final long publicationWindow)
+                           final long awaitTimeout)
     {
         super(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                                    AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS), LOGGER::logException);
+                                      AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS),
+              LOGGER::logException);
 
         this.counterValuesBuffer = counterValuesBuffer;
         this.correlationSignal = correlationSignal;
@@ -87,7 +84,6 @@ public class ClientConductor extends Agent implements MediaDriverListener
         this.mediaDriverBroadcastReceiver = mediaDriverBroadcastReceiver;
         this.bufferUsage = bufferLifecycleStrategy;
         this.awaitTimeout = awaitTimeout;
-        this.publicationWindow = publicationWindow;
     }
 
     public int doWork()
@@ -185,7 +181,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
                                  final long sessionId,
                                  final long channelId,
                                  final long termId,
-                                 final int positionIndicatorOffset,
+                                 final int limitPositionIndicatorOffset,
                                  final LogBuffersMessageFlyweight logBuffersMessage) throws IOException
     {
         final LogAppender[] logs = new LogAppender[BUFFER_COUNT];
@@ -202,7 +198,8 @@ public class ClientConductor extends Agent implements MediaDriverListener
             logInformation[i * 2 + 1] = stateBuffer;
         }
 
-        final LimitBarrier limit = limitBarrier(positionIndicatorOffset);
+        final PositionIndicator limit = new BufferPositionIndicator(counterValuesBuffer, limitPositionIndicatorOffset);
+
         addedPublication = new Publication(this, destination, channelId, sessionId, termId, logs, limit, logInformation);
 
         correlationSignal.signal();
@@ -275,12 +272,5 @@ public class ClientConductor extends Agent implements MediaDriverListener
         final int length = newBufferMessage.bufferLength(index);
 
         return bufferUsage.newBuffer(location, offset, length);
-    }
-
-    private LimitBarrier limitBarrier(final int positionIndicatorOffset)
-    {
-        final BufferPositionIndicator indicator = new BufferPositionIndicator(counterValuesBuffer, positionIndicatorOffset);
-
-        return new WindowedLimitBarrier(indicator, publicationWindow);
     }
 }

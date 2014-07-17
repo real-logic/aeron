@@ -28,7 +28,6 @@ import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_LONG;
  */
 public class StatusBufferManager
 {
-
     private final AtomicBuffer descriptorBuffer;
     private final int counterCapacity;
 
@@ -45,7 +44,7 @@ public class StatusBufferManager
         idCounter = 1;
     }
 
-    public int registerCounter(String label)
+    public int registerCounter(final String label)
     {
         if (counterOffset(idCounter) >= counterCapacity)
         {
@@ -77,5 +76,4 @@ public class StatusBufferManager
             offset += SIZE_OF_INT + length;
         }
     }
-
 }

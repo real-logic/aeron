@@ -28,7 +28,7 @@ import java.nio.charset.StandardCharsets;
 /**
  * Event logger interface for applications/libraries
  */
-public class EventLogger
+public class EventLogger // TODO: We should inject loggers rather than use static fields.
 {
     private final static boolean ON;
     private final static ManyToOneRingBuffer ringBuffer;

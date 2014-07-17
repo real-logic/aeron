@@ -79,13 +79,18 @@ public class PubUnicastTest
     {
         System.setProperty(DIRS_DELETE_ON_EXIT_PROP_NAME, "true");
 
-        executorService = Executors.newFixedThreadPool(2);
+        executorService = Executors.newSingleThreadExecutor();
 
         receiverChannel = DatagramChannel.open();
         receiverChannel.configureBlocking(false);
         receiverChannel.bind(new InetSocketAddress(HOST, PORT));
 
-        driver = new MediaDriver();
+        final MediaDriver.MediaDriverContext ctx = new MediaDriver.MediaDriverContext();
+
+        ctx.counterLabelsBuffer(counterLabelsBuffer)
+           .counterValuesBuffer(counterValuesBuffer);
+
+        driver = new MediaDriver(ctx);
 
         producingClient = Aeron.newSingleMediaDriver(newAeronContext());
 

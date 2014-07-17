@@ -27,7 +27,6 @@ import uk.co.real_logic.aeron.util.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.util.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
@@ -51,6 +50,7 @@ import static uk.co.real_logic.aeron.mediadriver.MediaDriver.MEDIA_CONDUCTOR_TIC
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.MEDIA_CONDUCTOR_TICK_DURATION_US;
 import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION_IN_PUBLICATION;
 import static uk.co.real_logic.aeron.util.ErrorCode.PUBLICATION_CHANNEL_UNKNOWN;
+import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
 
 /**
  * Test the Media Driver Conductor in isolation
@@ -94,8 +94,11 @@ public class MediaConductorTest
     public void setUp() throws Exception
     {
         when(mockTermBufferManager.addPublication(anyObject(), anyLong(), anyLong()))
-            .thenReturn(BufferAndFrameUtils.createTestTermBuffers(TERM_BUFFER_SZ,
-                                                                  LogBufferDescriptor.STATE_BUFFER_LENGTH));
+            .thenReturn(BufferAndFrameUtils.createTestTermBuffers(TERM_BUFFER_SZ, STATE_BUFFER_LENGTH));
+
+        final AtomicBuffer counterBuffer = new AtomicBuffer(new byte[4096]);
+        final StatusBufferManager statusBufferManager =
+            new StatusBufferManager(new AtomicBuffer(new byte[4096]), counterBuffer);
 
         final MediaDriver.MediaDriverContext ctx = new MediaDriver.MediaDriverContext()
             .receiverNioSelector(nioSelector)
@@ -108,11 +111,13 @@ public class MediaConductorTest
             .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .publications(publications)
+
             .termBufferManager(mockTermBufferManager)
-            .statusBufferManager(mock(StatusBufferManager.class));
+            .statusBufferManager(statusBufferManager);
 
         ctx.fromClientCommands(fromClientCommands);
         ctx.clientProxy(mockClientProxy);
+        ctx.counterValuesBuffer(counterBuffer);
 
         ctx.receiverProxy(new ReceiverProxy(ctx.receiverCommandQueue()));
         ctx.mediaConductorProxy(new MediaConductorProxy(ctx.conductorCommandQueue()));
@@ -202,7 +207,7 @@ public class MediaConductorTest
         mediaConductor.doWork();
 
         assertThat(publications.size(), is(0));
-        assertNull(mediaConductor.frameHandler(UdpDestination.parse(DESTINATION_URI + 4005)));
+        assertNull(mediaConductor.getFrameHandler(UdpDestination.parse(DESTINATION_URI + 4005)));
     }
 
     @Test

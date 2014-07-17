@@ -55,7 +55,6 @@ public class ClientConductorTest extends MockBufferUsage
     public static final int BROADCAST_BUFFER_SZ = (16 * 1024) + BroadcastBufferDescriptor.TRAILER_LENGTH;
     public static final long CORRELATION_ID = 2000;
     public static final int AWAIT_TIMEOUT = 100;
-    public static final long PUBLICATION_WINDOW = 1024;
 
     private final LogBuffersMessageFlyweight newBufferMessage = new LogBuffersMessageFlyweight();
     private final ErrorFlyweight errorHeader = new ErrorFlyweight();
@@ -88,13 +87,11 @@ public class ClientConductorTest extends MockBufferUsage
 
         conductor = new ClientConductor(
             new MediaDriverBroadcastReceiver(toClientReceiver),
-            mock(ConductorErrorHandler.class),
             mockBufferUsage,
             counterValuesBuffer,
             mediaDriverProxy,
             signal,
-            AWAIT_TIMEOUT,
-            PUBLICATION_WINDOW);
+            AWAIT_TIMEOUT);
 
         newBufferMessage.wrap(atomicSendBuffer, 0);
         errorHeader.wrap(atomicSendBuffer, 0);

@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron.examples;
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
-import uk.co.real_logic.aeron.util.BitUtil;
 import uk.co.real_logic.aeron.util.RateReporter;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
@@ -43,7 +42,7 @@ public class StreamingPublisher
     public static void main(final String[] args)
     {
         final ExecutorService executor = Executors.newFixedThreadPool(2);
-        final Aeron.ClientContext context = new Aeron.ClientContext().errorHandler(ExampleUtil::printError);
+        final Aeron.ClientContext context = new Aeron.ClientContext();
 
         try (final MediaDriver driver = ExampleUtil.createEmbeddedMediaDriver();
              final Aeron aeron = ExampleUtil.createAeron(context, executor))

@@ -90,7 +90,12 @@ public class PubMulticastTest
         receiverChannel.join(InetAddress.getByName(DATA_ADDRESS), ifc);
         receiverChannel.setOption(StandardSocketOptions.IP_MULTICAST_IF, ifc);
 
-        driver = new MediaDriver();
+        final MediaDriver.MediaDriverContext ctx = new MediaDriver.MediaDriverContext();
+
+        ctx.counterLabelsBuffer(counterLabelsBuffer)
+           .counterValuesBuffer(counterValuesBuffer);
+
+        driver = new MediaDriver(ctx);
 
         producingClient = Aeron.newSingleMediaDriver(newAeronContext());
 
@@ -109,7 +114,7 @@ public class PubMulticastTest
         Aeron.ClientContext ctx = new Aeron.ClientContext();
 
         ctx.counterLabelsBuffer(counterLabelsBuffer)
-                .counterValuesBuffer(counterValuesBuffer);
+           .counterValuesBuffer(counterValuesBuffer);
 
         return ctx;
     }
@@ -196,7 +201,7 @@ public class PubMulticastTest
         assertThat(rcvedDataFrames, is(1L));
     }
 
-    @Test(timeout = 1000)
+    @Test(timeout = 100000)
     public void shouldHandleNak() throws Exception
     {
         LOGGER.logInvocation();

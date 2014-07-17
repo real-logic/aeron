@@ -33,7 +33,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import static java.lang.Long.getLong;
 import static uk.co.real_logic.aeron.util.IoUtil.mapExistingFile;
 
 /**
@@ -60,20 +59,17 @@ public final class Aeron implements AutoCloseable, Runnable
             throw new IllegalStateException("Unable to start Aeron", ex);
         }
 
-        final ConductorErrorHandler errorHandler = new ConductorErrorHandler(ctx.invalidDestinationHandler);
         final MediaDriverProxy mediaDriverProxy = new MediaDriverProxy(ctx.toDriverBuffer);
         final Signal correlationSignal = new Signal();
         final MediaDriverBroadcastReceiver receiver = new MediaDriverBroadcastReceiver(ctx.toClientBuffer);
 
         conductor = new ClientConductor(
             receiver,
-            errorHandler,
             ctx.bufferLifecycleStrategy,
             ctx.counterValuesBuffer(),
             mediaDriverProxy,
             correlationSignal,
-            AWAIT_TIMEOUT,
-            ctx.publicationWindow);
+            AWAIT_TIMEOUT);
 
         this.savedCtx = ctx;
     }
@@ -178,12 +174,6 @@ public final class Aeron implements AutoCloseable, Runnable
 
     public static class ClientContext extends CommonContext
     {
-        public static final long PUBLICATION_WINDOW_DEFAULT = 1024;
-        public static final String PUBLICATION_WINDOW_NAME = "aeron.client.publication.window";
-
-        private ErrorHandler errorHandler = new DummyErrorHandler();
-        private InvalidDestinationHandler invalidDestinationHandler;
-
         private CopyBroadcastReceiver toClientBuffer;
         private RingBuffer toDriverBuffer;
 
@@ -191,13 +181,10 @@ public final class Aeron implements AutoCloseable, Runnable
         private MappedByteBuffer defaultToDriverBuffer;
 
         private BufferLifecycleStrategy bufferLifecycleStrategy;
-        private long publicationWindow;
 
         public ClientContext conclude() throws IOException
         {
             super.conclude();
-
-            publicationWindow(getLong(PUBLICATION_WINDOW_NAME, PUBLICATION_WINDOW_DEFAULT));
 
             try
             {
@@ -239,18 +226,6 @@ public final class Aeron implements AutoCloseable, Runnable
             return this;
         }
 
-        public ClientContext errorHandler(ErrorHandler errorHandler)
-        {
-            this.errorHandler = errorHandler;
-            return this;
-        }
-
-        public ClientContext invalidDestinationHandler(final InvalidDestinationHandler invalidDestinationHandler)
-        {
-            this.invalidDestinationHandler = invalidDestinationHandler;
-            return this;
-        }
-
         public ClientContext toClientBuffer(final CopyBroadcastReceiver toClientBuffer)
         {
             this.toClientBuffer = toClientBuffer;
@@ -266,12 +241,6 @@ public final class Aeron implements AutoCloseable, Runnable
         public ClientContext bufferUsageStrategy(final BufferLifecycleStrategy strategy)
         {
             this.bufferLifecycleStrategy = strategy;
-            return this;
-        }
-
-        public ClientContext publicationWindow(final long publicationWindow)
-        {
-            this.publicationWindow = publicationWindow;
             return this;
         }
 

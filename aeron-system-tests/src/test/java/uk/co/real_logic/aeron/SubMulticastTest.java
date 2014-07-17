@@ -146,7 +146,7 @@ public class SubMulticastTest
         // TODO: should be able to remove sleep and send multiple data frames until SM received....
 
         // let buffers get connected and media driver set things up
-        Thread.sleep(10);
+        Thread.sleep(100);
 
         // send some 0 length data frame
         sendDataFrame(0, NO_PAYLOAD);
@@ -190,7 +190,7 @@ public class SubMulticastTest
         LOGGER.logInvocation();
 
         // let buffers get connected and media driver set things up
-        Thread.sleep(10);
+        Thread.sleep(100);
 
         // send some 0 length data frame
         sendDataFrame(0, NO_PAYLOAD);
@@ -234,7 +234,7 @@ public class SubMulticastTest
         LOGGER.logInvocation();
 
         // let buffers get connected and media driver set things up
-        Thread.sleep(10);
+        Thread.sleep(100);
 
         // send some 0 length data frame
         sendDataFrame(0, NO_PAYLOAD);

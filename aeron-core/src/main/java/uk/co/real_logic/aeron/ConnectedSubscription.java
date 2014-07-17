@@ -16,10 +16,12 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.util.BitUtil;
+import uk.co.real_logic.aeron.util.TermHelper;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.util.status.PositionReporter;
 
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -38,20 +40,29 @@ public class ConnectedSubscription
     private final LogReader[] logReaders;
     private final long sessionId;
     private final DataHandler dataHandler;
+    private PositionReporter reporter;
     private final AtomicLong activeTermId;
+    private final int positionBitsToShift;
+    private final long initialPosition;
+
 
     private int activeIndex;
 
     public ConnectedSubscription(final LogReader[] readers,
                                  final long sessionId,
                                  final long initialTermId,
-                                 final DataHandler dataHandler)
+                                 final DataHandler dataHandler,
+                                 final PositionReporter reporter)
     {
         this.logReaders = readers;
         this.sessionId = sessionId;
         this.dataHandler = dataHandler;
+        this.reporter = reporter;
         this.activeTermId = new AtomicLong(initialTermId);
         this.activeIndex = termIdToBufferIndex(initialTermId);
+
+        this.positionBitsToShift = Integer.numberOfTrailingZeros(logReaders[0].capacity());
+        this.initialPosition = initialTermId << positionBitsToShift;
     }
 
     public long sessionId()
@@ -78,7 +89,12 @@ public class ConnectedSubscription
             logReader.seek(0);
         }
 
-        return logReader.read(this::onFrame, frameCountLimit);
+        final int messagesRead = logReader.read(this::onFrame, frameCountLimit);
+        if (messagesRead > 0)
+        {
+            reporter.position(TermHelper.calculatePosition(logReader.tail(), activeTermId.get(), positionBitsToShift, initialPosition));
+        }
+        return messagesRead;
     }
 
     private void onFrame(final AtomicBuffer buffer, final int offset, final int length)

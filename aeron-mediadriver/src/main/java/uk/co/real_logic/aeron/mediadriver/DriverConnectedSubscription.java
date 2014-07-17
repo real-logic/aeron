@@ -21,6 +21,7 @@ import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogRebuilder;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.util.status.PositionIndicator;
 
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -40,6 +41,7 @@ public class DriverConnectedSubscription
     private final UdpDestination udpDestination;
     private final long sessionId;
     private final long channelId;
+    private PositionIndicator limit;
 
     private final AtomicLong activeTermId = new AtomicLong();
     private int activeIndex;
@@ -47,6 +49,9 @@ public class DriverConnectedSubscription
     private final LogRebuilder[] rebuilders;
     private final LossHandler lossHandler;
     private final StatusMessageSender statusMessageSender;
+
+    private final int positionBitsToShift;
+    private final long initialPosition;
 
     private long lastSmTimestamp;
     private long lastSmTermId;
@@ -61,11 +66,13 @@ public class DriverConnectedSubscription
                                        final int initialWindow,
                                        final TermBuffers termBuffers,
                                        final LossHandler lossHandler,
-                                       final StatusMessageSender statusMessageSender)
+                                       final StatusMessageSender statusMessageSender,
+                                       final PositionIndicator limit)
     {
         this.udpDestination = udpDestination;
         this.sessionId = sessionId;
         this.channelId = channelId;
+        this.limit = limit;
 
         activeTermId.lazySet(initialTermId);
         rebuilders = termBuffers.stream()
@@ -80,6 +87,9 @@ public class DriverConnectedSubscription
         this.currentWindowSize = initialWindow;
         this.currentWindowGain = currentWindowSize << 2; // window / 4
         this.activeIndex = termIdToBufferIndex(initialTermId);
+
+        this.positionBitsToShift = Integer.numberOfTrailingZeros(rebuilders[0].capacity());
+        this.initialPosition = initialTermId << positionBitsToShift;
     }
 
     public UdpDestination udpDestination()
@@ -147,14 +157,30 @@ public class DriverConnectedSubscription
 
     public void insertIntoTerm(final DataHeaderFlyweight header, final AtomicBuffer buffer, final long length)
     {
+        final LogRebuilder currentRebuilder = rebuilders[activeIndex];
         final long termId = header.termId();
         final long activeTermId = this.activeTermId.get();
 
-        // TODO: handle packets outside acceptable range - can be done with position tracking
+        final int packetTail = (int)header.termOffset();
+        final long newPosition = calculatePosition(packetTail, termId, positionBitsToShift, initialPosition);
+        final long currentPosition = position(currentRebuilder.tail());
+
+        final int termCapacity = currentRebuilder.capacity();
+        if (newPosition < currentPosition || newPosition > (currentPosition + (termCapacity - length)))
+        {
+            // TODO: invalid packet we probably want to update an error counter
+            return;
+        }
+
+        if ((newPosition + length) > (limit.position() + termCapacity))
+        {
+            // TODO: increment a counter to say subscriber is not keeping up
+            return;
+        }
 
         if (termId == activeTermId)
         {
-            rebuilders[activeIndex].insert(buffer, 0, (int)length);
+            currentRebuilder.insert(buffer, 0, (int)length);
         }
         else if (termId == (activeTermId + 1))
         {
@@ -246,5 +272,10 @@ public class DriverConnectedSubscription
         lastSmTail = termOffset;
 
         return 0;
+    }
+
+    private long position(final int currentTail)
+    {
+        return calculatePosition(currentTail, activeTermId.get(), positionBitsToShift, initialPosition);
     }
 }

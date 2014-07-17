@@ -32,8 +32,7 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.event.EventCode;
 import uk.co.real_logic.aeron.util.event.EventLogger;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.util.status.BufferPositionReporter;
-import uk.co.real_logic.aeron.util.status.StatusBufferManager;
+import uk.co.real_logic.aeron.util.status.*;
 
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
@@ -408,8 +407,11 @@ public class MediaConductor extends Agent
             final TermBuffers termBuffers =
                 termBufferManager.addConnectedSubscription(udpDestination, sessionId, channelId);
 
+            final int positionCounterOffset = positionCounterOffset("subscription", udpDestination
+                .clientAwareUri(), sessionId, channelId);
+
             clientProxy.onNewTermBuffers(ON_NEW_CONNECTED_SUBSCRIPTION, sessionId, channelId, initialTermId,
-                                         udpDestination.clientAwareUri(), termBuffers, 0, 0);
+                                         udpDestination.clientAwareUri(), termBuffers, 0, positionCounterOffset);
 
             final GapScanner[] gapScanners =
                 termBuffers.stream()
@@ -422,6 +424,8 @@ public class MediaConductor extends Agent
             final LossHandler lossHandler =
                 new LossHandler(gapScanners, timerWheel, delayGenerator, cmd.sendNakHandler(), initialTermId);
 
+            final PositionIndicator indicator = new BufferPositionIndicator(counterValuesBuffer, positionCounterOffset);
+
             final DriverConnectedSubscription connectedSubscription =
                 new DriverConnectedSubscription(udpDestination,
                                                 sessionId,
@@ -430,7 +434,8 @@ public class MediaConductor extends Agent
                                                 initialWindowSize,
                                                 termBuffers,
                                                 lossHandler,
-                                                cmd.sendSmHandler());
+                                                cmd.sendSmHandler(),
+                                                indicator);
 
             connectedSubscriptions.add(connectedSubscription);
 

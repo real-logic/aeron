@@ -37,7 +37,6 @@ import java.nio.ByteBuffer;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
 
 import static uk.co.real_logic.aeron.util.TermHelper.BUFFER_COUNT;
 import static uk.co.real_logic.aeron.util.TermHelper.termIdToBufferIndex;
@@ -48,7 +47,6 @@ import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUt
 
 public class AeronTest extends MockBufferUsage
 {
-    public static final int MAX_FRAME_LENGTH = 1024;
     public static final int COUNTER_BUFFER_SZ = 1024;
 
     public static final String DESTINATION = "udp://localhost:40124";
@@ -66,8 +64,6 @@ public class AeronTest extends MockBufferUsage
     public static final int BROADCAST_BUFFER_SZ = (16 * 1024) + BroadcastBufferDescriptor.TRAILER_LENGTH;
     public static final int LOG_BUFFER_SIZE = LogBufferDescriptor.LOG_MIN_SIZE;
     public static final int FRAME_COUNT_LIMIT = Integer.MAX_VALUE;
-
-    private final InvalidDestinationHandler invalidDestination = mock(InvalidDestinationHandler.class);
 
     private DataHandler channel1Handler = EMPTY_DATA_HANDLER;
 

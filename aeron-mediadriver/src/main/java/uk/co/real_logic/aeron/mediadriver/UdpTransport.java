@@ -65,6 +65,8 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
                         final NioSelector nioSelector) throws Exception
     {
         this.readBuffer = new AtomicBuffer(this.readByteBuffer);
+        wrapHeadersOnReadBuffer();
+
         this.frameHandler = frameHandler;
         this.nioSelector = nioSelector;
 
@@ -80,6 +82,8 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
                         final NioSelector nioSelector) throws Exception
     {
         this.readBuffer = new AtomicBuffer(this.readByteBuffer);
+        wrapHeadersOnReadBuffer();
+
         this.frameHandler = frameHandler;
         this.nioSelector = nioSelector;
 
@@ -109,6 +113,8 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
                         final NioSelector nioSelector) throws Exception
     {
         this.readBuffer = new AtomicBuffer(this.readByteBuffer);
+        wrapHeadersOnReadBuffer();
+
         this.frameHandler = frameHandler;
         this.nioSelector = nioSelector;
 
@@ -173,13 +179,10 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
             return 0;
         }
 
-        // each datagram only can hold a single frame // TODO: This is not true - we can have multiple framed msgs
+        // each datagram will start with a frame and have 1 or more frames per datagram
 
-        final int len = readByteBuffer.position();
-        int offset = 0;
-        header.wrap(readBuffer, offset);
-
-        LOGGER.log(EventCode.FRAME_IN, readByteBuffer, len, srcAddress);
+        final int length = readByteBuffer.position();
+        LOGGER.log(EventCode.FRAME_IN, readByteBuffer, length, srcAddress);
 
         // drop a version we don't know
         if (header.version() != HeaderFlyweight.CURRENT_VERSION)
@@ -190,32 +193,37 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
         // malformed, so log and break out of entire packet
         if (header.frameLength() <= FrameDescriptor.BASE_HEADER_LENGTH)
         {
-            LOGGER.log(EventCode.MALFORMED_FRAME_LENGTH, readBuffer, offset, HeaderFlyweight.HEADER_LENGTH);
+            LOGGER.log(EventCode.MALFORMED_FRAME_LENGTH, readBuffer, 0, HeaderFlyweight.HEADER_LENGTH);
             return 0;
         }
 
         switch (header.headerType())
         {
             case HDR_TYPE_DATA:
-                dataHeader.wrap(readBuffer, offset);
-                frameHandler.onDataFrame(dataHeader, readBuffer, len, srcAddress);
+                frameHandler.onDataFrame(dataHeader, readBuffer, length, srcAddress);
                 break;
 
             case HDR_TYPE_NAK:
-                nakHeader.wrap(readBuffer, offset);
-                frameHandler.onNakFrame(nakHeader, readBuffer, len, srcAddress);
+                frameHandler.onNakFrame(nakHeader, readBuffer, length, srcAddress);
                 break;
 
             case HDR_TYPE_SM:
-                statusMessage.wrap(readBuffer, offset);
-                frameHandler.onStatusMessageFrame(statusMessage, readBuffer, len, srcAddress);
+                frameHandler.onStatusMessageFrame(statusMessage, readBuffer, length, srcAddress);
                 break;
 
             default:
-                LOGGER.log(EventCode.UNKNOWN_HEADER_TYPE, readBuffer, offset, HeaderFlyweight.HEADER_LENGTH);
+                LOGGER.log(EventCode.UNKNOWN_HEADER_TYPE, readBuffer, 0, HeaderFlyweight.HEADER_LENGTH);
                 break;
         }
 
         return 1;
+    }
+
+    private void wrapHeadersOnReadBuffer()
+    {
+        header.wrap(readBuffer, 0);
+        dataHeader.wrap(readBuffer, 0);
+        nakHeader.wrap(readBuffer, 0);
+        statusMessage.wrap(readBuffer, 0);
     }
 }

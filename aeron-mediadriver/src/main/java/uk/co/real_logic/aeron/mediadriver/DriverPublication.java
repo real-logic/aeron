@@ -374,7 +374,6 @@ public class DriverPublication
 
     private long position(final int currentTail)
     {
-        // TODO: we need to deal with termId wrapping and going negative.
-        return ((activeTermId.get() << positionBitsToShift) - initialPosition) + currentTail;
+        return TermHelper.calculatePosition(currentTail, activeTermId.get(), positionBitsToShift, initialPosition);
     }
 }

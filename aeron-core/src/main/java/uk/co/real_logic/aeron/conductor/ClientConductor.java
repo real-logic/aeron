@@ -65,7 +65,6 @@ public class ClientConductor extends Agent implements MediaDriverListener
     private Publication addedPublication; // Guarded by this
     private boolean operationSucceeded = false; // Guarded by this
     private RegistrationException registrationException; // Guarded by this
-    private BufferPositionIndicator senderPostionLimit;
 
     public ClientConductor(final MediaDriverBroadcastReceiver mediaDriverBroadcastReceiver,
                            final BufferLifecycleStrategy bufferLifecycleStrategy,
@@ -228,7 +227,9 @@ public class ClientConductor extends Agent implements MediaDriverListener
                 logInformation[i * 2 + 1] = stateBuffer;
             }
 
-            subscription.onLogBufferMapped(sessionId, initialTermId, logs);
+            final PositionReporter positionReporter =
+                new BufferPositionReporter(counterValuesBuffer, message.positionCounterOffset());
+            subscription.onLogBufferMapped(sessionId, initialTermId, logs, positionReporter);
         }
     }
 

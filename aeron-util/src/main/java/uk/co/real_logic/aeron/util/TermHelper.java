@@ -36,4 +36,22 @@ public class TermHelper
     {
         return (int)(termId % BUFFER_COUNT);
     }
+
+    /**
+     * Calculate the current position in absolute number of bytes.
+     *
+     * @param currentTail in the term.
+     * @param activeTermId active term id.
+     * @param positionBitsToShift number of times to left shift the activeTermId
+     * @param initialPosition that first activeTermId started at
+     * @return the absolute position in bytes
+     */
+    public static long calculatePosition(final int currentTail,
+                                         final long activeTermId,
+                                         final int positionBitsToShift,
+                                         final long initialPosition)
+    {
+        // TODO: we need to deal with termId wrapping and going negative.
+        return ((activeTermId << positionBitsToShift) - initialPosition) + currentTail;
+    }
 }

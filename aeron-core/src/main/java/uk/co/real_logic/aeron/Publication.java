@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.conductor.ClientConductor;
 import uk.co.real_logic.aeron.conductor.LogInformation;
+import uk.co.real_logic.aeron.util.TermHelper;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
@@ -223,7 +224,6 @@ public class Publication
 
     private long position(final int currentTail)
     {
-        // TODO: we need to deal with termId wrapping and going negative.
-        return ((activeTermId.get() << positionBitsToShift) - initialPosition) + currentTail;
+        return TermHelper.calculatePosition(currentTail, activeTermId.get(), positionBitsToShift, initialPosition);
     }
 }

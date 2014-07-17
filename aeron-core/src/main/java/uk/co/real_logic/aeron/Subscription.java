@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
 import uk.co.real_logic.aeron.util.concurrent.AtomicArray;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
+import uk.co.real_logic.aeron.util.status.PositionReporter;
 
 /**
  * Aeron Subscriber API for receiving messages from publishers on a given destination and channelId pair.
@@ -83,9 +84,10 @@ public class Subscription
         return connectedSubscriptions.doLimitedAction(roundRobinIndex, fragmentCountLimit, ConnectedSubscription::poll);
     }
 
-    public void onLogBufferMapped(final long sessionId, final long termId, final LogReader[] logReaders)
+    public void onLogBufferMapped(final long sessionId, final long termId,
+                                  final LogReader[] logReaders, final PositionReporter reporter)
     {
-        connectedSubscriptions.add(new ConnectedSubscription(logReaders, sessionId, termId, handler));
+        connectedSubscriptions.add(new ConnectedSubscription(logReaders, sessionId, termId, handler, reporter));
     }
 
     public boolean isConnected(final long sessionId)

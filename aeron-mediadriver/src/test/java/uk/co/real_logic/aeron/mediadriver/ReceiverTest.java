@@ -32,6 +32,7 @@ import uk.co.real_logic.aeron.util.event.EventLogger;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
+import uk.co.real_logic.aeron.util.status.PositionIndicator;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -43,6 +44,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class ReceiverTest
 {
@@ -57,6 +59,7 @@ public class ReceiverTest
     private static final byte[] FAKE_PAYLOAD = "Hello there, message!".getBytes();
     private static final byte[] NO_PAYLOAD = new byte[0];
     private static final int INITIAL_WINDOW_SIZE = MediaDriver.INITIAL_WINDOW_SIZE_DEFAULT;
+    private static final PositionIndicator POSITION_INDICATOR = mock(PositionIndicator.class);
 
     public final LossHandler mockLossHandler = mock(LossHandler.class);
     private final NioSelector mockNioSelector = mock(NioSelector.class);
@@ -82,6 +85,8 @@ public class ReceiverTest
     @Before
     public void setUp() throws Exception
     {
+        when(POSITION_INDICATOR.position()).thenReturn(Long.MAX_VALUE - LOG_BUFFER_SIZE);
+
         final MediaDriver.MediaDriverContext ctx = new MediaDriver.MediaDriverContext()
             .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .receiverNioSelector(mockNioSelector)
@@ -154,7 +159,8 @@ public class ReceiverTest
                             INITIAL_WINDOW_SIZE,
                             termBuffers,
                             mockLossHandler,
-                            frameHandler.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID))));
+                            frameHandler.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID),
+                            POSITION_INDICATOR)));
             });
 
         assertThat(messagesRead, is(1));
@@ -207,7 +213,8 @@ public class ReceiverTest
                             INITIAL_WINDOW_SIZE,
                             termBuffers,
                             mockLossHandler,
-                            frameHandler.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID))));
+                            frameHandler.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID),
+                            POSITION_INDICATOR)));
             });
 
         assertThat(messagesRead, is(1));
@@ -265,7 +272,8 @@ public class ReceiverTest
                             INITIAL_WINDOW_SIZE,
                             termBuffers,
                             mockLossHandler,
-                            frameHandler.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID))));
+                            frameHandler.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID),
+                            POSITION_INDICATOR)));
             });
 
         assertThat(messagesRead, is(1));
@@ -326,7 +334,8 @@ public class ReceiverTest
                             INITIAL_WINDOW_SIZE,
                             termBuffers,
                             mockLossHandler,
-                            frameHandler.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID))));
+                            frameHandler.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID),
+                            POSITION_INDICATOR)));
             });
 
         assertThat(messagesRead, is(1));
@@ -385,7 +394,8 @@ public class ReceiverTest
                             INITIAL_WINDOW_SIZE,
                             termBuffers,
                             mockLossHandler,
-                            frameHandler.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID)))));
+                            frameHandler.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID),
+                            POSITION_INDICATOR))));
 
         assertThat(messagesRead, is(1));
 

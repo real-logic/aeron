@@ -171,6 +171,8 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
         final long initialTermId = connectedSubscription.activeTermId();
         final int initialWindowSize = connectedSubscription.currentWindowSize();
 
+        // TODO: This should be done by the conductor as part of the normal duty cycle.
+        // TODO: Object should be setup in an initial state to send the initial status message
         connectedSubscription.statusMessageSender().send(initialTermId, 0, initialWindowSize);
     }
 

@@ -11,8 +11,6 @@ import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
@@ -34,13 +32,10 @@ public class MockBufferUsage
     protected LogAppender[] appendersSession2 = new LogAppender[TermHelper.BUFFER_COUNT];
     protected BufferLifecycleStrategy mockBufferUsage = mock(BufferLifecycleStrategy.class);
 
-    private List<LogInformation> logsInformation;
 
     @Before
     public void setupBuffers() throws IOException
     {
-        logsInformation = new ArrayList<>();
-
         for (int i = 0; i < TermHelper.BUFFER_COUNT; i++)
         {
             logBuffersSession1[i] = new AtomicBuffer(new byte[LOG_BUFFER_SZ]);
@@ -69,9 +64,7 @@ public class MockBufferUsage
         return (invocation) ->
         {
             final Object[] args = invocation.getArguments();
-            final LogInformation logInformation = new LogInformation((String) args[0], (int) args[1], (int) args[2], buffer, mockBufferUsage);
-            logsInformation.add(logInformation);
-            return logInformation;
+            return  new LogInformation((String) args[0], (int) args[1], (int) args[2], buffer, mockBufferUsage);
         };
     }
 

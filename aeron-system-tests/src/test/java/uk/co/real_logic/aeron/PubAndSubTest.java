@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron;
 
 import org.junit.After;
 import org.junit.Ignore;
+import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
@@ -45,10 +46,6 @@ public class PubAndSubTest
 
     private static final long CHANNEL_ID = 1L;
     private static final long SESSION_ID = 2L;
-    private static final int COUNTER_BUFFER_SZ = 1024;
-
-    private final AtomicBuffer counterValuesBuffer = new AtomicBuffer(new byte[COUNTER_BUFFER_SZ]);
-    private final AtomicBuffer counterLabelsBuffer = new AtomicBuffer(new byte[COUNTER_BUFFER_SZ]);
 
     private Aeron publishingClient;
     private Aeron subscribingClient;
@@ -64,7 +61,11 @@ public class PubAndSubTest
 
         executorService = Executors.newFixedThreadPool(2);
 
-        driver = new MediaDriver();
+        final MediaDriver.MediaDriverContext ctx = new MediaDriver.MediaDriverContext();
+
+        ctx.warnIfDirectoriesExist(false);
+
+        driver = new MediaDriver(ctx);
 
         final DataHandler dataHandler = mock(DataHandler.class);
 
@@ -83,9 +84,6 @@ public class PubAndSubTest
     private Aeron.ClientContext newAeronContext()
     {
         Aeron.ClientContext ctx = new Aeron.ClientContext();
-
-        ctx.counterLabelsBuffer(counterLabelsBuffer)
-           .counterValuesBuffer(counterValuesBuffer);
 
         return ctx;
     }
@@ -107,6 +105,7 @@ public class PubAndSubTest
     }
 
     @Theory
+    @Test(timeout = 1000)
     public void shouldSpinUpAndShutdown(final String destination) throws Exception
     {
         setup(destination);

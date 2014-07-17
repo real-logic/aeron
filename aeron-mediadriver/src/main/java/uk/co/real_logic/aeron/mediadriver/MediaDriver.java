@@ -399,8 +399,10 @@ public class MediaDriver implements AutoCloseable
     {
         final BiConsumer<String, String> callback = (path, name) ->
         {
-            // TODO: replace with logging?
-            System.err.println("WARNING: " + name + " directory already exists: " + path);
+            if (ctx.warnIfDirectoriesExist())
+            {
+                System.err.println("WARNING: " + name + " directory already exists: " + path);
+            }
         };
 
         IoUtil.ensureDirectoryExists(adminDirFile, "conductor", callback);
@@ -485,10 +487,13 @@ public class MediaDriver implements AutoCloseable
         private int termBufferSize;
         private int initialWindowSize;
 
+        private boolean warnIfDirectoriesExist;
+
         public MediaDriverContext()
         {
             termBufferSize(getInteger(TERM_BUFFER_SZ_PROP_NAME, TERM_BUFFER_SZ_DEFAULT));
             initialWindowSize(getInteger(INITIAL_WINDOW_SIZE_PROP_NAME, INITIAL_WINDOW_SIZE_DEFAULT));
+            warnIfDirectoriesExist = true;
         }
 
         public MediaDriverContext conclude() throws IOException
@@ -647,6 +652,12 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
+        public MediaDriverContext warnIfDirectoriesExist(final boolean value)
+        {
+            this.warnIfDirectoriesExist = value;
+            return this;
+        }
+
         public OneToOneConcurrentArrayQueue<? super Object> conductorCommandQueue()
         {
             return conductorCommandQueue;
@@ -740,6 +751,11 @@ public class MediaDriver implements AutoCloseable
         public int initialWindowSize()
         {
             return initialWindowSize;
+        }
+
+        public boolean warnIfDirectoriesExist()
+        {
+            return warnIfDirectoriesExist;
         }
 
         public void close() throws Exception

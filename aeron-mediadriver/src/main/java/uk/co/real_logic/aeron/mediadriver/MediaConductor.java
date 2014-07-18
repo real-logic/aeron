@@ -450,7 +450,7 @@ public class MediaConductor extends Agent
             while (!receiverProxy.newConnectedSubscription(newConnectedSubscriptionCmd))
             {
                 // TODO: count errors
-                System.out.println("Error adding to connected subscription");
+                System.out.println("Error adding a connected subscription");
             }
         }
         catch (final Exception ex)

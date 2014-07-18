@@ -106,23 +106,20 @@ public class SubMulticastTest
 
         driver = new MediaDriver(ctx);
 
-        consumingClient = Aeron.newSingleMediaDriver(newAeronContext());
-
-        subscription = consumingClient.addSubscription(DESTINATION, CHANNEL_ID, saveFrames);
-
         payload.putBytes(0, PAYLOAD);
 
-        executorService = Executors.newSingleThreadExecutor();
+        consumingClient = Aeron.newSingleMediaDriver(newAeronContext());
 
+        executorService = Executors.newSingleThreadExecutor();
         driver.invokeEmbedded();
         consumingClient.invoke(executorService);
+
+        subscription = consumingClient.addSubscription(DESTINATION, CHANNEL_ID, saveFrames);
     }
 
     private Aeron.ClientContext newAeronContext()
     {
-        Aeron.ClientContext ctx = new Aeron.ClientContext();
-
-        return ctx;
+        return new Aeron.ClientContext();
     }
 
     @After

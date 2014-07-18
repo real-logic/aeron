@@ -103,14 +103,14 @@ public class SubUnicastTest
 
         consumingClient = Aeron.newSingleMediaDriver(newAeronContext());
 
-        subscription = consumingClient.addSubscription(DESTINATION, CHANNEL_ID, saveFrames);
-
         payload.putBytes(0, PAYLOAD);
 
         executorService = Executors.newSingleThreadExecutor();
 
         driver.invokeEmbedded();
         consumingClient.invoke(executorService);
+
+        subscription = consumingClient.addSubscription(DESTINATION, CHANNEL_ID, saveFrames);
     }
 
     private Aeron.ClientContext newAeronContext()

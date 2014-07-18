@@ -48,7 +48,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.MEDIA_CONDUCTOR_TICKS_PER_WHEEL;
 import static uk.co.real_logic.aeron.mediadriver.MediaDriver.MEDIA_CONDUCTOR_TICK_DURATION_US;
-import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION_IN_PUBLICATION;
+import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION;
 import static uk.co.real_logic.aeron.util.ErrorCode.PUBLICATION_CHANNEL_UNKNOWN;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
 
@@ -69,6 +69,7 @@ public class MediaConductorTest
     private static final long CHANNEL_2 = 20;
     private static final long CHANNEL_3 = 30;
     private static final int TERM_BUFFER_SZ = MediaDriver.TERM_BUFFER_SZ_DEFAULT;
+    private static final long CORRELATION_ID = 1429;
 
     private final ByteBuffer toDriverBuffer =
         ByteBuffer.allocate(MediaDriver.COMMAND_BUFFER_SZ + RingBufferDescriptor.TRAILER_LENGTH);
@@ -136,7 +137,7 @@ public class MediaConductorTest
     }
 
     @Test
-    public void shouldBeAbleToAddSingleChannel() throws Exception
+    public void shouldBeAbleToAddSinglePublication() throws Exception
     {
         LOGGER.logInvocation();
 
@@ -155,7 +156,7 @@ public class MediaConductorTest
     }
 
     @Test
-    public void shouldBeAbleToAddSingleSubscriber() throws Exception
+    public void shouldBeAbleToAddSingleSubscription() throws Exception
     {
         LOGGER.logInvocation();
 
@@ -164,11 +165,13 @@ public class MediaConductorTest
         mediaConductor.doWork();
         receiver.doWork();
 
+        verify(mockClientProxy).operationSucceeded(CORRELATION_ID);
+
         assertNotNull(receiver.getFrameHandler(UdpDestination.parse(DESTINATION_URI + 4000)));
     }
 
     @Test
-    public void shouldBeAbleToAddAndRemoveSingleSubscriber() throws Exception
+    public void shouldBeAbleToAddAndRemoveSingleSubscription() throws Exception
     {
         LOGGER.logInvocation();
 
@@ -310,7 +313,8 @@ public class MediaConductorTest
         assertThat(publications.get(0).sessionId(), is(1L));
         assertThat(publications.get(0).channelId(), is(2L));
 
-        mockClientProxy.onError(eq(ErrorCode.PUBLICATION_CHANNEL_ALREADY_EXISTS), argThat(not(isEmptyOrNullString())), any(), anyInt());
+        verify(mockClientProxy).onError(eq(ErrorCode.PUBLICATION_CHANNEL_ALREADY_EXISTS), argThat(not(isEmptyOrNullString())), any(), anyInt());
+        verifyNeverSucceeds();
     }
 
     @Test
@@ -324,7 +328,8 @@ public class MediaConductorTest
 
         assertThat(publications.size(), is(0));
 
-        mockClientProxy.onError(eq(INVALID_DESTINATION_IN_PUBLICATION), argThat(not(isEmptyOrNullString())), any(), anyInt());
+        verify(mockClientProxy).onError(eq(INVALID_DESTINATION), argThat(not(isEmptyOrNullString())), any(), anyInt());
+        verifyNeverSucceeds();
     }
 
     @Test
@@ -342,7 +347,8 @@ public class MediaConductorTest
         assertThat(publications.get(0).sessionId(), is(1L));
         assertThat(publications.get(0).channelId(), is(2L));
 
-        mockClientProxy.onError(eq(PUBLICATION_CHANNEL_UNKNOWN), argThat(not(isEmptyOrNullString())), any(), anyInt());
+        verify(mockClientProxy).onError(eq(PUBLICATION_CHANNEL_UNKNOWN), argThat(not(isEmptyOrNullString())), any(), anyInt());
+        verifyNeverSucceeds();
     }
 
     @Test
@@ -360,11 +366,12 @@ public class MediaConductorTest
         assertThat(publications.get(0).sessionId(), is(1L));
         assertThat(publications.get(0).channelId(), is(2L));
 
-        mockClientProxy.onError(eq(PUBLICATION_CHANNEL_UNKNOWN), argThat(not(isEmptyOrNullString())), any(), anyInt());
+        verify(mockClientProxy).onError(eq(PUBLICATION_CHANNEL_UNKNOWN), argThat(not(isEmptyOrNullString())), any(), anyInt());
+        verifyNeverSucceeds();
     }
 
     @Test
-    public void shouldErrorOnAddSubscriberWithInvalidUri() throws Exception
+    public void shouldErrorOnAddSubscriptionWithInvalidUri() throws Exception
     {
         LOGGER.logInvocation();
 
@@ -374,7 +381,13 @@ public class MediaConductorTest
         receiver.doWork();
         mediaConductor.doWork();
 
-        mockClientProxy.onError(eq(INVALID_DESTINATION_IN_PUBLICATION), argThat(not(isEmptyOrNullString())), any(), anyInt());
+        verify(mockClientProxy).onError(eq(INVALID_DESTINATION), argThat(not(isEmptyOrNullString())), any(), anyInt());
+        verifyNeverSucceeds();
+    }
+
+    private void verifyNeverSucceeds()
+    {
+        verify(mockClientProxy, never()).operationSucceeded(anyLong());
     }
 
     private void writeChannelMessage(final int msgTypeId, final long sessionId, final long channelId, final int port)
@@ -393,7 +406,8 @@ public class MediaConductorTest
     {
         subscriptionMessage.wrap(writeBuffer, 0);
         subscriptionMessage.channelId(channelId)
-                           .destination(destination);
+                           .destination(destination)
+                           .correlationId(CORRELATION_ID);
 
         fromClientCommands.write(msgTypeId, writeBuffer, 0, subscriptionMessage.length());
     }

@@ -176,7 +176,7 @@ public class MediaConductor extends Agent
                     }
                     else if (obj instanceof SubscriptionRemovedCmd)
                     {
-                        onRemovedSubscription((SubscriptionRemovedCmd)obj);
+                        onRemovedSubscription((SubscriptionRemovedCmd) obj);
                     }
                 }
                 catch (final Exception ex)
@@ -233,7 +233,7 @@ public class MediaConductor extends Agent
                 }
                 catch (final Exception ex)
                 {
-                    // TODO: send errors back to the client for exceptions
+                    clientProxy.onError(GENERIC_ERROR, ex.getMessage(), flyweight, length);
                     LOGGER.logException(ex);
                 }
             });
@@ -313,7 +313,7 @@ public class MediaConductor extends Agent
             frameHandler.addPublication(publication);
 
             clientProxy.onNewTermBuffers(ON_NEW_PUBLICATION, sessionId, channelId, initialTermId, destination,
-                                         termBuffers, correlationId, positionCounterOffset);
+                    termBuffers, correlationId, positionCounterOffset);
 
             publications.add(publication);
         }
@@ -339,7 +339,7 @@ public class MediaConductor extends Agent
             final ControlFrameHandler frameHandler = srcDestinationMap.get(srcDestination.consistentHash());
             if (null == frameHandler)
             {
-                throw new ControlProtocolException(INVALID_DESTINATION_IN_PUBLICATION, "destination unknown");
+                throw new ControlProtocolException(INVALID_DESTINATION, "destination unknown");
             }
 
             final DriverPublication publication = frameHandler.removePublication(sessionId, channelId);
@@ -373,9 +373,20 @@ public class MediaConductor extends Agent
     private void onAddSubscription(final SubscriptionMessageFlyweight subscriberMessage)
     {
         final String destination = subscriberMessage.destination();
-        final UdpDestination udpDestination = UdpDestination.parse(destination);
+        try
+        {
+            final UdpDestination udpDestination = UdpDestination.parse(destination);
+            if (!receiverProxy.addSubscription(udpDestination, subscriberMessage.channelId()))
+            {
+                // TODO: should we error here?
+            }
 
-        receiverProxy.addSubscription(udpDestination, subscriberMessage.channelId());
+            clientProxy.operationSucceeded(subscriberMessage.correlationId());
+        }
+        catch (final IllegalArgumentException ex)
+        {
+            clientProxy.onError(INVALID_DESTINATION, ex.getMessage(), subscriberMessage, subscriberMessage.length());
+        }
     }
 
     private void onRemoveSubscription(final SubscriptionMessageFlyweight subscriberMessage)
@@ -383,7 +394,10 @@ public class MediaConductor extends Agent
         final String destination = subscriberMessage.destination();
         final UdpDestination udpDestination = UdpDestination.parse(destination);
 
-        receiverProxy.removeSubscription(udpDestination, subscriberMessage.channelId());
+        if (!receiverProxy.removeSubscription(udpDestination, subscriberMessage.channelId()))
+        {
+            // TODO: should we error here?
+        }
     }
 
     private void onCreateConnectedSubscription(final CreateConnectedSubscriptionCmd cmd)

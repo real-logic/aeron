@@ -17,9 +17,11 @@ package uk.co.real_logic.aeron;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
-import uk.co.real_logic.aeron.conductor.*;
+import uk.co.real_logic.aeron.conductor.ClientConductor;
+import uk.co.real_logic.aeron.conductor.MediaDriverBroadcastReceiver;
+import uk.co.real_logic.aeron.conductor.MediaDriverProxy;
+import uk.co.real_logic.aeron.conductor.Signal;
 import uk.co.real_logic.aeron.util.TermHelper;
 import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -36,8 +38,7 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
-
-import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION_IN_PUBLICATION;
+import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION;
 import static uk.co.real_logic.aeron.util.ErrorCode.PUBLICATION_CHANNEL_ALREADY_EXISTS;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ON_NEW_PUBLICATION;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
@@ -182,7 +183,7 @@ public class ClientConductorTest extends MockBufferUsage
         doAnswer(
             (invocation) ->
             {
-                conductor.onError(INVALID_DESTINATION_IN_PUBLICATION, "destination unknown");
+                conductor.onError(INVALID_DESTINATION, "destination unknown");
                 return null;
             }).when(signal).await(anyLong());
 
@@ -230,6 +231,8 @@ public class ClientConductorTest extends MockBufferUsage
     @Test
     public void registeringSubscriberNotifiesMediaDriver() throws Exception
     {
+        willNotifyOperationSucceeded();
+
         addSubscription();
 
         verify(mediaDriverProxy).addSubscription(DESTINATION, CHANNEL_ID_1);
@@ -238,6 +241,8 @@ public class ClientConductorTest extends MockBufferUsage
     @Test
     public void removingSubscriberNotifiesMediaDriver()
     {
+        willNotifyOperationSucceeded();
+
         final Subscription subscription = addSubscription();
 
         subscription.release();
@@ -245,7 +250,6 @@ public class ClientConductorTest extends MockBufferUsage
         verify(mediaDriverProxy).removeSubscription(DESTINATION, CHANNEL_ID_1);
     }
 
-    @Ignore("not implemented yet")
     @Test(expected = MediaDriverTimeoutException.class)
     public void cannotCreateSubscriberIfMediaDriverDoesNotReply()
     {

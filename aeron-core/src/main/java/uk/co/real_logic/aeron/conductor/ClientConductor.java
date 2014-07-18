@@ -121,13 +121,6 @@ public class ClientConductor extends Agent implements MediaDriverListener
         return publication;
     }
 
-    private void await(final long startTime)
-    {
-        correlationSignal.await(awaitTimeout);
-        checkMediaDriverTimeout(startTime);
-        checkRegistrationException();
-    }
-
     public synchronized void releasePublication(final Publication publication)
     {
         final String destination = publication.destination();
@@ -136,14 +129,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
 
         activeCorrelationId = mediaDriverProxy.removePublication(destination, sessionId, channelId);
 
-        // TODO: wait for response from media driver
-        final long startTime = System.currentTimeMillis();
-        while (!operationSucceeded)
-        {
-            await(startTime);
-        }
-
-        operationSucceeded = false;
+        awaitOperationSucceeded();
 
         publicationMap.remove(destination, sessionId, channelId);
     }
@@ -161,11 +147,13 @@ public class ClientConductor extends Agent implements MediaDriverListener
 
             subscriptionMap.put(destination, channelId, subscription);
 
-            mediaDriverProxy.addSubscription(destination, channelId);
+            activeCorrelationId = mediaDriverProxy.addSubscription(destination, channelId);
+            awaitOperationSucceeded();
         }
 
         return subscription;
     }
+
 
     public synchronized void releaseSubscription(final Subscription subscription)
     {
@@ -243,6 +231,24 @@ public class ClientConductor extends Agent implements MediaDriverListener
     {
         operationSucceeded = true;
         correlationSignal.signal();
+    }
+
+    private void await(final long startTime)
+    {
+        correlationSignal.await(awaitTimeout);
+        checkMediaDriverTimeout(startTime);
+        checkRegistrationException();
+    }
+
+    private void awaitOperationSucceeded()
+    {
+        final long startTime = System.currentTimeMillis();
+        while (!operationSucceeded)
+        {
+            await(startTime);
+        }
+
+        operationSucceeded = false;
     }
 
     private void checkRegistrationException()

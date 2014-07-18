@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -111,6 +112,7 @@ public class AeronTest extends MockBufferUsage
         aeron.close();
     }
 
+    @Ignore("port to a proper unit test")
     @Test
     public void subscriberCanReceiveAMessage() throws Exception
     {
@@ -128,6 +130,7 @@ public class AeronTest extends MockBufferUsage
         assertThat(subscription.poll(FRAME_COUNT_LIMIT), is(1));
     }
 
+    @Ignore("port to a proper unit test")
     @Test
     public void subscriberCanReceivePacketsFromMultipleSessions() throws Exception
     {
@@ -146,6 +149,7 @@ public class AeronTest extends MockBufferUsage
         assertThat(subscription.poll(FRAME_COUNT_LIMIT), is(2));
     }
 
+    @Ignore("port to a proper unit test")
     @Test
     public void receivingEnoughPacketsCausesSubscriberBufferRoll() throws Exception
     {
@@ -185,6 +189,7 @@ public class AeronTest extends MockBufferUsage
         assertThat(subscription.poll(FRAME_COUNT_LIMIT), is(msgCount));
     }
 
+    @Ignore("port to a proper unit test")
     @Test
     public void subscriberBufferRollsShouldNotAffectOtherSessions() throws Exception
     {

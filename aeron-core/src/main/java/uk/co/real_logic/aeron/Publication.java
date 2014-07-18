@@ -127,7 +127,7 @@ public class Publication
 
     private void releaseBuffers()
     {
-        for (LogInformation logInformation : this.logsInformation)
+        for (final LogInformation logInformation : logsInformation)
         {
             logInformation.releaseBuffer();
         }

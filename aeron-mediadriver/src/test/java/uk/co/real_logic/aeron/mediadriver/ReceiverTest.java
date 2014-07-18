@@ -19,7 +19,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import uk.co.real_logic.aeron.mediadriver.buffer.TermBufferManager;
+import uk.co.real_logic.aeron.mediadriver.buffer.TermBufferFactory;
 import uk.co.real_logic.aeron.mediadriver.buffer.TermBuffers;
 import uk.co.real_logic.aeron.mediadriver.cmd.CreateConnectedSubscriptionCmd;
 import uk.co.real_logic.aeron.mediadriver.cmd.NewConnectedSubscriptionCmd;
@@ -63,7 +63,7 @@ public class ReceiverTest
 
     public final LossHandler mockLossHandler = mock(LossHandler.class);
     private final NioSelector mockNioSelector = mock(NioSelector.class);
-    private final TermBufferManager mockTermBufferManager = mock(TermBufferManager.class);
+    private final TermBufferFactory mockTermBufferFactory = mock(TermBufferFactory.class);
     private final ByteBuffer dataFrameBuffer = ByteBuffer.allocate(2 * 1024);
     private final AtomicBuffer dataBuffer = new AtomicBuffer(dataFrameBuffer);
 
@@ -71,7 +71,7 @@ public class ReceiverTest
     private final StatusMessageFlyweight statusHeader = new StatusMessageFlyweight();
 
     private final TermBuffers termBuffers =
-        BufferAndFrameUtils.createTestTermBuffers(LOG_BUFFER_SIZE, LogBufferDescriptor.STATE_BUFFER_LENGTH);
+        BufferAndFrameHelper.newTestTermBuffers(LOG_BUFFER_SIZE, LogBufferDescriptor.STATE_BUFFER_LENGTH);
 
     private LogReader[] logReaders;
 
@@ -91,7 +91,7 @@ public class ReceiverTest
             .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .receiverNioSelector(mockNioSelector)
             .conductorNioSelector(mockNioSelector)
-            .termBufferManager(mockTermBufferManager)
+            .termBufferManager(mockTermBufferFactory)
             .conductorTimerWheel(new TimerWheel(MediaDriver.MEDIA_CONDUCTOR_TICK_DURATION_US,
                                                 TimeUnit.MICROSECONDS,
                                                 MediaDriver.MEDIA_CONDUCTOR_TICKS_PER_WHEEL))

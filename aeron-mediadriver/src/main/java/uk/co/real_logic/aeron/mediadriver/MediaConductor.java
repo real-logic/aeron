@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.mediadriver.buffer.TermBufferManager;
+import uk.co.real_logic.aeron.mediadriver.buffer.TermBufferFactory;
 import uk.co.real_logic.aeron.mediadriver.buffer.TermBuffers;
 import uk.co.real_logic.aeron.mediadriver.cmd.CreateConnectedSubscriptionCmd;
 import uk.co.real_logic.aeron.mediadriver.cmd.NewConnectedSubscriptionCmd;
@@ -75,7 +75,7 @@ public class MediaConductor extends Agent
     private final ReceiverProxy receiverProxy;
     private final ClientProxy clientProxy;
     private final NioSelector nioSelector;
-    private final TermBufferManager termBufferManager;
+    private final TermBufferFactory termBufferFactory;
     private final RingBuffer fromClientCommands;
     private final Long2ObjectHashMap<ControlFrameHandler> srcDestinationMap = new Long2ObjectHashMap<>();
     private final TimerWheel timerWheel;
@@ -100,7 +100,7 @@ public class MediaConductor extends Agent
 
         this.commandQueue = ctx.conductorCommandQueue();
         this.receiverProxy = ctx.receiverProxy();
-        this.termBufferManager = ctx.termBufferManager();
+        this.termBufferFactory = ctx.termBufferManager();
         this.nioSelector = ctx.conductorNioSelector();
         this.mtuLength = ctx.mtuLength();
         this.initialWindowSize = ctx.initialWindowSize();
@@ -147,6 +147,9 @@ public class MediaConductor extends Agent
     {
         stop();
 
+        termBufferFactory.close();
+        publications.forEach(DriverPublication::close);
+        connectedSubscriptions.forEach(DriverConnectedSubscription::close);
         srcDestinationMap.forEach((hash, frameHandler) -> frameHandler.close());
     }
 
@@ -288,11 +291,11 @@ public class MediaConductor extends Agent
             }
 
             final long initialTermId = generateTermId();
-            final TermBuffers termBuffers = termBufferManager.addPublication(srcDestination, sessionId, channelId);
+            final TermBuffers termBuffers = termBufferFactory.newPublication(srcDestination, sessionId, channelId);
             final SenderControlStrategy flowControlStrategy =
                 srcDestination.isMulticast() ? multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
 
-            final int positionCounterOffset = positionCounterOffset("publication", destination, sessionId, channelId);
+            final int positionCounterOffset = registerPositionCounter("publication", destination, sessionId, channelId);
             final BufferPositionReporter positionReporter =
                 new BufferPositionReporter(counterValuesBuffer, positionCounterOffset);
 
@@ -324,17 +327,6 @@ public class MediaConductor extends Agent
         }
     }
 
-    private int positionCounterOffset(final String type,
-                                      final String destination,
-                                      final long sessionId,
-                                      final long channelId)
-    {
-        final String label = String.format("%s: %s %d %d", type, destination, sessionId, channelId);
-        final int id = statusBufferManager.registerCounter(label);
-
-        return StatusBufferManager.counterOffset(id);
-    }
-
     private void onRemovePublication(final PublicationMessageFlyweight publicationMessage)
     {
         final String destination = publicationMessage.destination();
@@ -358,14 +350,13 @@ public class MediaConductor extends Agent
             }
 
             publications.remove(publication);
+            publication.close();
 
             if (frameHandler.sessionCount() == 0)
             {
                 srcDestinationMap.remove(srcDestination.consistentHash());
                 frameHandler.close();
             }
-
-            termBufferManager.removePublication(srcDestination, sessionId, channelId);
 
             clientProxy.operationSucceeded(publicationMessage.correlationId());
         }
@@ -405,9 +396,9 @@ public class MediaConductor extends Agent
         try
         {
             final TermBuffers termBuffers =
-                termBufferManager.addConnectedSubscription(udpDestination, sessionId, channelId);
+                termBufferFactory.newConnectedSubscription(udpDestination, sessionId, channelId);
 
-            final int positionCounterOffset = positionCounterOffset("subscription", udpDestination
+            final int positionCounterOffset = registerPositionCounter("subscription", udpDestination
                 .clientAwareUri(), sessionId, channelId);
 
             clientProxy.onNewTermBuffers(ON_NEW_CONNECTED_SUBSCRIPTION, sessionId, channelId, initialTermId,
@@ -462,11 +453,8 @@ public class MediaConductor extends Agent
         {
             try
             {
-                termBufferManager.removeConnectedSubscription(connectedSubscription.udpDestination(),
-                                                              connectedSubscription.sessionId(),
-                                                              connectedSubscription.channelId());
-
                 connectedSubscriptions.remove(connectedSubscription);
+                connectedSubscription.close();
             }
             catch (final Exception ex)
             {
@@ -485,5 +473,16 @@ public class MediaConductor extends Agent
     {
         // term Id can be psuedo-random. Doesn't have to be perfect. But must be in the range [0, 0x7FFFFFFF]
         return (int)(Math.random() * (double)0x7FFFFFFF);
+    }
+
+    private int registerPositionCounter(final String type,
+                                        final String destination,
+                                        final long sessionId,
+                                        final long channelId)
+    {
+        final String label = String.format("%s: %s %d %d", type, destination, sessionId, channelId);
+        final int id = statusBufferManager.registerCounter(label);
+
+        return StatusBufferManager.counterOffset(id);
     }
 }

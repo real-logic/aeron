@@ -60,7 +60,7 @@ public class SenderTest
     private final AtomicArray<DriverPublication> publications = new AtomicArray<>();
     private final Sender sender = new Sender(new MediaDriver.MediaDriverContext().publications(publications));
     private final TermBuffers termBuffers =
-        BufferAndFrameUtils.createTestTermBuffers(LOG_BUFFER_SIZE, LogBufferDescriptor.STATE_BUFFER_LENGTH);
+        BufferAndFrameHelper.newTestTermBuffers(LOG_BUFFER_SIZE, LogBufferDescriptor.STATE_BUFFER_LENGTH);
 
     private LogAppender[] logAppenders;
     private DriverPublication publication;

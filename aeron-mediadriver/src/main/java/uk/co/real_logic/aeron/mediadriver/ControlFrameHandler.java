@@ -28,7 +28,7 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
 {
     private final UdpTransport transport;
     private final UdpDestination destination;
-    private final Long2ObjectHashMap<Long2ObjectHashMap<DriverPublication>> publicationsBySessionIdMap
+    private final Long2ObjectHashMap<Long2ObjectHashMap<DriverPublication>> publicationBySessionMap
         = new Long2ObjectHashMap<>();
 
     public ControlFrameHandler(final UdpDestination destination, final NioSelector nioSelector)
@@ -60,7 +60,7 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
 
     public DriverPublication findPublication(final long sessionId, final long channelId)
     {
-        final Long2ObjectHashMap<DriverPublication> publicationByChannelIdMap = publicationsBySessionIdMap.get(sessionId);
+        final Long2ObjectHashMap<DriverPublication> publicationByChannelIdMap = publicationBySessionMap.get(sessionId);
         if (null == publicationByChannelIdMap)
         {
             return null;
@@ -71,13 +71,13 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
 
     public void addPublication(final DriverPublication publication)
     {
-        publicationsBySessionIdMap.getOrDefault(publication.sessionId(), Long2ObjectHashMap::new)
+        publicationBySessionMap.getOrDefault(publication.sessionId(), Long2ObjectHashMap::new)
                                   .put(publication.channelId(), publication);
     }
 
     public DriverPublication removePublication(final long sessionId, final long channelId)
     {
-        final Long2ObjectHashMap<DriverPublication> publicationByChannelIdMap = publicationsBySessionIdMap.get(sessionId);
+        final Long2ObjectHashMap<DriverPublication> publicationByChannelIdMap = publicationBySessionMap.get(sessionId);
         if (null == publicationByChannelIdMap)
         {
             return null;
@@ -86,7 +86,7 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
         final DriverPublication publication = publicationByChannelIdMap.remove(channelId);
         if (publicationByChannelIdMap.isEmpty())
         {
-            publicationsBySessionIdMap.remove(sessionId);
+            publicationBySessionMap.remove(sessionId);
         }
 
         return publication;
@@ -94,7 +94,7 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
 
     public int sessionCount()
     {
-        return publicationsBySessionIdMap.size();
+        return publicationBySessionMap.size();
     }
 
     public void onStatusMessageFrame(final StatusMessageFlyweight header,

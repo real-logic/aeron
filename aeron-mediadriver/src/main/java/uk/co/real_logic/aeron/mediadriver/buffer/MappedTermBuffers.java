@@ -34,7 +34,7 @@ import static uk.co.real_logic.aeron.util.TermHelper.BUFFER_COUNT;
  * <p>
  * Keeps 3 buffers on hold at any one time.
  */
-class MappedTermBuffers implements TermBuffers, AutoCloseable
+class MappedTermBuffers implements TermBuffers
 {
     private static final String LOG_SUFFIX = "-log";
     private static final String STATE_SUFFIX = "-state";

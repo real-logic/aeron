@@ -10,12 +10,11 @@ public class LogInformation
     private final AtomicBuffer buffer;
     private final BufferLifecycleStrategy strategy;
 
-    public LogInformation(
-            final String location,
-            final int offset,
-            final int length,
-            final AtomicBuffer buffer,
-            final BufferLifecycleStrategy strategy)
+    public LogInformation(final String location,
+                          final int offset,
+                          final int length,
+                          final AtomicBuffer buffer,
+                          final BufferLifecycleStrategy strategy)
     {
         this.location = location;
         this.offset = offset;

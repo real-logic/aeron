@@ -94,6 +94,7 @@ public class ConnectedSubscription
             positionReporter.position(
                 calculatePosition(logReader.tail(), activeTermId.get(), positionBitsToShift, initialPosition));
         }
+
         return messagesRead;
     }
 

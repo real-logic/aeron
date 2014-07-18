@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.mediadriver.buffer.TermBufferManager;
+import uk.co.real_logic.aeron.mediadriver.buffer.TermBufferFactory;
 import uk.co.real_logic.aeron.util.*;
 import uk.co.real_logic.aeron.util.concurrent.AtomicArray;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -221,7 +221,7 @@ public class MediaDriver implements AutoCloseable
     private final File adminDirFile;
     private final File dataDirFile;
 
-    private final TermBufferManager termBufferManager;
+    private final TermBufferFactory termBufferFactory;
 
     private final Receiver receiver;
     private final Sender sender;
@@ -299,7 +299,7 @@ public class MediaDriver implements AutoCloseable
 
         ensureDirectoriesExist();
 
-        this.termBufferManager = ctx.termBufferManager;
+        this.termBufferFactory = ctx.termBufferFactory;
         this.receiver = new Receiver(ctx);
         this.sender = new Sender(ctx);
         this.conductor = new MediaConductor(ctx);
@@ -390,20 +390,20 @@ public class MediaDriver implements AutoCloseable
         sender.close();
         conductor.close();
         conductor.nioSelector().selectNowWithoutProcessing();
-        termBufferManager.close();
         ctx.close();
         deleteDirectories();
     }
 
     private void ensureDirectoriesExist() throws Exception
     {
-        final BiConsumer<String, String> callback = (path, name) ->
-        {
-            if (ctx.warnIfDirectoriesExist())
+        final BiConsumer<String, String> callback =
+            (path, name) ->
             {
-                System.err.println("WARNING: " + name + " directory already exists: " + path);
-            }
-        };
+                if (ctx.warnIfDirectoriesExist())
+                {
+                    System.err.println("WARNING: " + name + " directory already exists: " + path);
+                }
+            };
 
         IoUtil.ensureDirectoryExists(adminDirFile, "conductor", callback);
         IoUtil.ensureDirectoryExists(dataDirFile, "data", callback);
@@ -463,7 +463,7 @@ public class MediaDriver implements AutoCloseable
 
     public static class MediaDriverContext extends CommonContext
     {
-        private TermBufferManager termBufferManager;
+        private TermBufferFactory termBufferFactory;
         private NioSelector receiverNioSelector;
         private NioSelector conductorNioSelector;
         private Supplier<SenderControlStrategy> unicastSenderFlowControl;
@@ -514,7 +514,7 @@ public class MediaDriver implements AutoCloseable
             receiverProxy(new ReceiverProxy(receiverCommandQueue()));
             mediaConductorProxy(new MediaConductorProxy(conductorCommandQueue));
 
-            termBufferManager(new TermBufferManager(dataDirName(), termBufferSize));
+            termBufferManager(new TermBufferFactory(dataDirName(), termBufferSize));
 
             if (statusBufferManager() == null)
             {
@@ -543,9 +543,9 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public MediaDriverContext termBufferManager(final TermBufferManager termBufferManager)
+        public MediaDriverContext termBufferManager(final TermBufferFactory termBufferFactory)
         {
-            this.termBufferManager = termBufferManager;
+            this.termBufferFactory = termBufferFactory;
             return this;
         }
 
@@ -663,9 +663,9 @@ public class MediaDriver implements AutoCloseable
             return conductorCommandQueue;
         }
 
-        public TermBufferManager termBufferManager()
+        public TermBufferFactory termBufferManager()
         {
-            return termBufferManager;
+            return termBufferFactory;
         }
 
         public NioSelector receiverNioSelector()

@@ -72,12 +72,6 @@ class MappedRawLog implements RawLog
         return stateBuffer;
     }
 
-    public void reset(final FileChannel logTemplate, final FileChannel stateTemplate) throws IOException
-    {
-        MappedTermBuffers.reset(logFileChannel, logTemplate, logBuffer.capacity());
-        MappedTermBuffers.reset(stateFileChannel, stateTemplate, stateBuffer.capacity());
-    }
-
     public void close()
     {
         try

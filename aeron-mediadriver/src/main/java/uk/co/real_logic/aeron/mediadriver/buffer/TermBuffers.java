@@ -19,9 +19,14 @@ import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
 
 import java.util.stream.Stream;
 
-public interface TermBuffers
+/**
+ * Represents the collection of term buffers for the connection between a publisher and subscriber connection.
+ */
+public interface TermBuffers extends AutoCloseable
 {
     Stream<? extends RawLog> stream();
 
     void appendBufferLocationsTo(final LogBuffersMessageFlyweight logBuffersMessage);
+
+    void close();
 }

@@ -30,34 +30,33 @@ import java.io.IOException;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
-public class TermBufferManagerTest
+public class TermBufferFactoryTest
 {
     private static final String DESTINATION_URI = "udp://localhost:4321";
     private static final long SESSION_ID = 100;
     private static final long CHANNEL_ID = 100;
     private static final File DATA_DIR = new File(IoUtil.tmpDirName(), "dataDirName");
     private static final int TERM_BUFFER_SZ = MediaDriver.TERM_BUFFER_SZ_DEFAULT;
-    private TermBufferManager termBufferManager;
+    private TermBufferFactory termBufferFactory;
     private UdpDestination destination = UdpDestination.parse(DESTINATION_URI);
 
     @Before
     public void createDataDir()
     {
         IoUtil.ensureDirectoryExists(DATA_DIR, "data");
-        termBufferManager = new TermBufferManager(DATA_DIR.getAbsolutePath(), TERM_BUFFER_SZ);
+        termBufferFactory = new TermBufferFactory(DATA_DIR.getAbsolutePath(), TERM_BUFFER_SZ);
     }
 
     @After
     public void cleanupFiles() throws IOException
     {
-        termBufferManager.close();
         IoUtil.delete(DATA_DIR, true);
     }
 
     @Test
     public void mappedFilesAreCorrectSizeAndZeroed() throws Exception
     {
-        final TermBuffers termBuffers = termBufferManager.addPublication(destination, SESSION_ID, CHANNEL_ID);
+        final TermBuffers termBuffers = termBufferFactory.newPublication(destination, SESSION_ID, CHANNEL_ID);
 
         termBuffers.stream().forEach(
             (logBuffer) ->
@@ -75,31 +74,5 @@ public class TermBufferManagerTest
                 assertThat(state.getByte(LogBufferDescriptor.STATE_BUFFER_LENGTH - 1), is((byte)0));
             }
         );
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void shouldExceptionWhenRemovingUnknownPublisherChannel() throws Exception
-    {
-        termBufferManager.removePublication(destination, SESSION_ID, CHANNEL_ID);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void shouldExceptionWhenRemovingUnknownSubscriberChannel() throws Exception
-    {
-        termBufferManager.removeConnectedSubscription(destination, SESSION_ID, CHANNEL_ID);
-    }
-
-    @Test
-    public void shouldBeAbleToAddAndRemovePublisherChannel() throws Exception
-    {
-        termBufferManager.addPublication(destination, SESSION_ID, CHANNEL_ID);
-        termBufferManager.removePublication(destination, SESSION_ID, CHANNEL_ID);
-    }
-
-    @Test
-    public void shouldBeAbleToAddAndRemoveSubscriberChannel() throws Exception
-    {
-        termBufferManager.addConnectedSubscription(destination, SESSION_ID, CHANNEL_ID);
-        termBufferManager.removeConnectedSubscription(destination, SESSION_ID, CHANNEL_ID);
     }
 }

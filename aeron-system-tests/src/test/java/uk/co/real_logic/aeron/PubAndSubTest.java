@@ -23,7 +23,6 @@ import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import uk.co.real_logic.aeron.mediadriver.MediaDriver;
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -69,8 +68,8 @@ public class PubAndSubTest
 
         final DataHandler dataHandler = mock(DataHandler.class);
 
-        publishingClient = Aeron.newSingleMediaDriver(newAeronContext());
-        subscribingClient = Aeron.newSingleMediaDriver(newAeronContext());
+        publishingClient = Aeron.newSingleMediaDriver(new Aeron.ClientContext());
+        subscribingClient = Aeron.newSingleMediaDriver(new Aeron.ClientContext());
 
         subscription = subscribingClient.addSubscription(destination, CHANNEL_ID, dataHandler);
 
@@ -79,13 +78,6 @@ public class PubAndSubTest
         subscribingClient.invoke(executorService);
 
         publication = publishingClient.addPublication(destination, CHANNEL_ID, SESSION_ID);
-    }
-
-    private Aeron.ClientContext newAeronContext()
-    {
-        Aeron.ClientContext ctx = new Aeron.ClientContext();
-
-        return ctx;
     }
 
     @After

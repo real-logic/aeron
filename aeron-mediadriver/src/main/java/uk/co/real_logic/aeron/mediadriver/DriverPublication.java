@@ -40,7 +40,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescript
 /**
  * Publication to be sent to registered subscribers.
  */
-public class DriverPublication
+public class DriverPublication implements AutoCloseable
 {
     private static final EventLogger LOGGER = new EventLogger(DriverPublication.class);
 
@@ -73,6 +73,7 @@ public class DriverPublication
     private final SenderControlStrategy controlStrategy;
     private final AtomicLong rightEdge;
     private final ControlFrameHandler frameHandler;
+    private final TermBuffers termBuffers;
     private final BufferPositionReporter limitReporter;
 
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
@@ -100,6 +101,7 @@ public class DriverPublication
                              final int mtuLength)
     {
         this.frameHandler = frameHandler;
+        this.termBuffers = termBuffers;
         this.dstAddress = frameHandler.destination().remoteData();
         this.controlStrategy = controlStrategy;
         this.timerWheel = timerWheel;
@@ -125,6 +127,11 @@ public class DriverPublication
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
         this.initialPosition = initialTermId << positionBitsToShift;
         limitReporter.position(termCapacity);
+    }
+
+    public void close()
+    {
+        termBuffers.close();
     }
 
     public int send()

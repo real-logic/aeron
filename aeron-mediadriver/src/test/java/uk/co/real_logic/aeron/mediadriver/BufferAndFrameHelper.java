@@ -26,17 +26,17 @@ import java.util.stream.Stream;
 import static uk.co.real_logic.aeron.util.TermHelper.BUFFER_COUNT;
 
 /**
- * Buffer utility functions
+ * Buffer helper functions
  */
-public class BufferAndFrameUtils
+public class BufferAndFrameHelper
 {
-    public static TermBuffers createTestTermBuffers(final long logBufferSize, final long stateBufferSize)
+    public static TermBuffers newTestTermBuffers(final long logBufferSize, final long stateBufferSize)
     {
         return new TermBuffers()
         {
-            private RawLog clean = createTestLogBuffer(logBufferSize, stateBufferSize);
-            private RawLog dirty = createTestLogBuffer(logBufferSize, stateBufferSize);
-            private RawLog active = createTestLogBuffer(logBufferSize, stateBufferSize);
+            private RawLog clean = newTestLogBuffer(logBufferSize, stateBufferSize);
+            private RawLog dirty = newTestLogBuffer(logBufferSize, stateBufferSize);
+            private RawLog active = newTestLogBuffer(logBufferSize, stateBufferSize);
             private RawLog[] buffers = new RawLog[]{active, clean, dirty};
 
             public Stream<RawLog> stream()
@@ -60,10 +60,14 @@ public class BufferAndFrameUtils
                     logBuffersMessage.location(i + BUFFER_COUNT, "stateBuffer-" + i);
                 }
             }
+
+            public void close()
+            {
+            }
         };
     }
 
-    public static RawLog createTestLogBuffer(final long logBufferSize, final long stateBufferSize)
+    public static RawLog newTestLogBuffer(final long logBufferSize, final long stateBufferSize)
     {
         return new RawLog()
         {
@@ -80,7 +84,7 @@ public class BufferAndFrameUtils
                 return stateBuffer;
             }
 
-            public void close() throws Exception
+            public void close()
             {
             }
         };

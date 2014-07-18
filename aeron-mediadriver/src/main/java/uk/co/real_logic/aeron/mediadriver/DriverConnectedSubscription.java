@@ -31,16 +31,15 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescript
 /**
  * State maintained for active sessionIds within a channel for receiver processing
  */
-public class DriverConnectedSubscription
+public class DriverConnectedSubscription implements AutoCloseable
 {
-    /**
-     * Timeout between SMs. One RTT.
-     */
+    /** Timeout between SMs. One RTT. */
     public static final long STATUS_MESSAGE_TIMEOUT = MediaDriver.ESTIMATED_RTT_NS;
 
     private final UdpDestination udpDestination;
     private final long sessionId;
     private final long channelId;
+    private TermBuffers termBuffers;
     private PositionIndicator subscriberLimit;
 
     private final AtomicLong activeTermId = new AtomicLong();
@@ -72,6 +71,7 @@ public class DriverConnectedSubscription
         this.udpDestination = udpDestination;
         this.sessionId = sessionId;
         this.channelId = channelId;
+        this.termBuffers = termBuffers;
         this.subscriberLimit = subscriberLimit;
 
         activeTermId.lazySet(initialTermId);
@@ -120,6 +120,11 @@ public class DriverConnectedSubscription
     public int currentWindowSize()
     {
         return currentWindowSize;
+    }
+
+    public void close()
+    {
+        termBuffers.close();
     }
 
     /**

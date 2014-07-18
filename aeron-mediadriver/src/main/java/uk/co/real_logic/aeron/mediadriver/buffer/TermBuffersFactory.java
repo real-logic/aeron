@@ -54,6 +54,9 @@ public class TermBuffersFactory implements AutoCloseable
         stateTemplate = createTemplateFile(dataDirectoryName, "stateTemplate", STATE_BUFFER_LENGTH);
     }
 
+    /**
+     * Close the template files.
+     */
     public void close()
     {
         try
@@ -67,6 +70,14 @@ public class TermBuffersFactory implements AutoCloseable
         }
     }
 
+    /**
+     * Create new {@link TermBuffers} in the publications directory for the supplied triplet.
+     *
+     * @param udpDestination address on the media to send to.
+     * @param sessionId under which transmissions are made.
+     * @param channelId within the destination address to separate message flows.
+     * @return the newly allocated {@link TermBuffers}
+     */
     public TermBuffers newPublication(final UdpDestination udpDestination,
                                       final long sessionId,
                                       final long channelId)
@@ -74,6 +85,14 @@ public class TermBuffersFactory implements AutoCloseable
         return newInstance(udpDestination, sessionId, channelId, publicationsDir);
     }
 
+    /**
+     * Create new {@link TermBuffers} in the subscriptions directory for the supplied triplet.
+     *
+     * @param udpDestination address on the media to listened to.
+     * @param sessionId under which transmissions are made.
+     * @param channelId within the destination address to separate message flows.
+     * @return the newly allocated {@link TermBuffers}
+     */
     public TermBuffers newConnectedSubscription(final UdpDestination udpDestination,
                                                 final long sessionId,
                                                 final long channelId)

@@ -125,7 +125,7 @@ public class ClientConductorTest extends MockBufferUsage
     }
 
     @Test(expected = RegistrationException.class)
-    public void shouldFailToAddOnMediaDriverError()
+    public void shouldFailToAddPublicationOnMediaDriverError()
     {
         doAnswer(
             (invocation) ->
@@ -254,6 +254,20 @@ public class ClientConductorTest extends MockBufferUsage
     public void cannotCreateSubscriberIfMediaDriverDoesNotReply()
     {
         willSignalTimeOut();
+
+        addSubscription();
+    }
+
+    @Test(expected = RegistrationException.class)
+    public void shouldFailToAddSubscriptionOnMediaDriverError()
+    {
+        doAnswer(
+            (invocation) ->
+            {
+                conductor.onError(INVALID_DESTINATION,
+                        "Multicast data address must be odd");
+                return null;
+            }).when(signal).await(anyLong());
 
         addSubscription();
     }

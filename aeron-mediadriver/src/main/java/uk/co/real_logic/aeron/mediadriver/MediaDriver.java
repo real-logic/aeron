@@ -221,8 +221,6 @@ public class MediaDriver implements AutoCloseable
     private final File adminDirFile;
     private final File dataDirFile;
 
-    private final TermBuffersFactory termBuffersFactory;
-
     private final Receiver receiver;
     private final Sender sender;
     private final MediaConductor conductor;
@@ -299,7 +297,6 @@ public class MediaDriver implements AutoCloseable
 
         ensureDirectoriesExist();
 
-        this.termBuffersFactory = ctx.termBuffersFactory;
         this.receiver = new Receiver(ctx);
         this.sender = new Sender(ctx);
         this.conductor = new MediaConductor(ctx);

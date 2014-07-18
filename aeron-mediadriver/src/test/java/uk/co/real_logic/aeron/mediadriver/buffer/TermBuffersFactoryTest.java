@@ -30,21 +30,21 @@ import java.io.IOException;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
-public class TermBufferFactoryTest
+public class TermBuffersFactoryTest
 {
     private static final String DESTINATION_URI = "udp://localhost:4321";
     private static final long SESSION_ID = 100;
     private static final long CHANNEL_ID = 100;
     private static final File DATA_DIR = new File(IoUtil.tmpDirName(), "dataDirName");
     private static final int TERM_BUFFER_SZ = MediaDriver.TERM_BUFFER_SZ_DEFAULT;
-    private TermBufferFactory termBufferFactory;
+    private TermBuffersFactory termBuffersFactory;
     private UdpDestination destination = UdpDestination.parse(DESTINATION_URI);
 
     @Before
     public void createDataDir()
     {
         IoUtil.ensureDirectoryExists(DATA_DIR, "data");
-        termBufferFactory = new TermBufferFactory(DATA_DIR.getAbsolutePath(), TERM_BUFFER_SZ);
+        termBuffersFactory = new TermBuffersFactory(DATA_DIR.getAbsolutePath(), TERM_BUFFER_SZ);
     }
 
     @After
@@ -56,7 +56,7 @@ public class TermBufferFactoryTest
     @Test
     public void mappedFilesAreCorrectSizeAndZeroed() throws Exception
     {
-        final TermBuffers termBuffers = termBufferFactory.newPublication(destination, SESSION_ID, CHANNEL_ID);
+        final TermBuffers termBuffers = termBuffersFactory.newPublication(destination, SESSION_ID, CHANNEL_ID);
 
         termBuffers.stream().forEach(
             (logBuffer) ->

@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.mediadriver;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import uk.co.real_logic.aeron.mediadriver.buffer.TermBufferFactory;
+import uk.co.real_logic.aeron.mediadriver.buffer.TermBuffersFactory;
 import uk.co.real_logic.aeron.util.concurrent.AtomicArray;
 import uk.co.real_logic.aeron.util.ErrorCode;
 import uk.co.real_logic.aeron.util.TimerWheel;
@@ -74,7 +74,7 @@ public class MediaConductorTest
         ByteBuffer.allocate(MediaDriver.COMMAND_BUFFER_SZ + RingBufferDescriptor.TRAILER_LENGTH);
 
     private final NioSelector nioSelector = mock(NioSelector.class);
-    private final TermBufferFactory mockTermBufferFactory = mock(TermBufferFactory.class);
+    private final TermBuffersFactory mockTermBuffersFactory = mock(TermBuffersFactory.class);
 
     private final RingBuffer fromClientCommands = new ManyToOneRingBuffer(new AtomicBuffer(toDriverBuffer));
     private final ClientProxy mockClientProxy = mock(ClientProxy.class);
@@ -93,7 +93,7 @@ public class MediaConductorTest
     @Before
     public void setUp() throws Exception
     {
-        when(mockTermBufferFactory.newPublication(anyObject(), anyLong(), anyLong()))
+        when(mockTermBuffersFactory.newPublication(anyObject(), anyLong(), anyLong()))
             .thenReturn(BufferAndFrameHelper.newTestTermBuffers(TERM_BUFFER_SZ, STATE_BUFFER_LENGTH));
 
         final AtomicBuffer counterBuffer = new AtomicBuffer(new byte[4096]);
@@ -112,7 +112,7 @@ public class MediaConductorTest
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .publications(publications)
 
-            .termBufferManager(mockTermBufferFactory)
+            .termBufferManager(mockTermBuffersFactory)
             .statusBufferManager(statusBufferManager);
 
         ctx.fromClientCommands(fromClientCommands);

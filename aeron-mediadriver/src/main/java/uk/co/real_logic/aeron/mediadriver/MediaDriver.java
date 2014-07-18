@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.mediadriver;
 
-import uk.co.real_logic.aeron.mediadriver.buffer.TermBufferFactory;
+import uk.co.real_logic.aeron.mediadriver.buffer.TermBuffersFactory;
 import uk.co.real_logic.aeron.util.*;
 import uk.co.real_logic.aeron.util.concurrent.AtomicArray;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
@@ -221,7 +221,7 @@ public class MediaDriver implements AutoCloseable
     private final File adminDirFile;
     private final File dataDirFile;
 
-    private final TermBufferFactory termBufferFactory;
+    private final TermBuffersFactory termBuffersFactory;
 
     private final Receiver receiver;
     private final Sender sender;
@@ -299,7 +299,7 @@ public class MediaDriver implements AutoCloseable
 
         ensureDirectoriesExist();
 
-        this.termBufferFactory = ctx.termBufferFactory;
+        this.termBuffersFactory = ctx.termBuffersFactory;
         this.receiver = new Receiver(ctx);
         this.sender = new Sender(ctx);
         this.conductor = new MediaConductor(ctx);
@@ -463,7 +463,7 @@ public class MediaDriver implements AutoCloseable
 
     public static class MediaDriverContext extends CommonContext
     {
-        private TermBufferFactory termBufferFactory;
+        private TermBuffersFactory termBuffersFactory;
         private NioSelector receiverNioSelector;
         private NioSelector conductorNioSelector;
         private Supplier<SenderControlStrategy> unicastSenderFlowControl;
@@ -514,7 +514,7 @@ public class MediaDriver implements AutoCloseable
             receiverProxy(new ReceiverProxy(receiverCommandQueue()));
             mediaConductorProxy(new MediaConductorProxy(conductorCommandQueue));
 
-            termBufferManager(new TermBufferFactory(dataDirName(), termBufferSize));
+            termBufferManager(new TermBuffersFactory(dataDirName(), termBufferSize));
 
             if (statusBufferManager() == null)
             {
@@ -543,9 +543,9 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public MediaDriverContext termBufferManager(final TermBufferFactory termBufferFactory)
+        public MediaDriverContext termBufferManager(final TermBuffersFactory termBuffersFactory)
         {
-            this.termBufferFactory = termBufferFactory;
+            this.termBuffersFactory = termBuffersFactory;
             return this;
         }
 
@@ -663,9 +663,9 @@ public class MediaDriver implements AutoCloseable
             return conductorCommandQueue;
         }
 
-        public TermBufferFactory termBufferManager()
+        public TermBuffersFactory termBufferManager()
         {
-            return termBufferFactory;
+            return termBuffersFactory;
         }
 
         public NioSelector receiverNioSelector()

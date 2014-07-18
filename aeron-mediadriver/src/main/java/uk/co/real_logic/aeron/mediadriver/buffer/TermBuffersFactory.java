@@ -29,7 +29,7 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescript
 /**
  * Factory for creating new {@link TermBuffers} in publications or subscriptions directory as appropriate.
  */
-public class TermBufferFactory implements AutoCloseable
+public class TermBuffersFactory implements AutoCloseable
 {
     private final FileChannel logTemplate;
     private final FileChannel stateTemplate;
@@ -39,7 +39,7 @@ public class TermBufferFactory implements AutoCloseable
 
     private final int termBufferSize;
 
-    public TermBufferFactory(final String dataDirectoryName, final int termBufferSize)
+    public TermBuffersFactory(final String dataDirectoryName, final int termBufferSize)
     {
         final FileMappingConvention fileConvention = new FileMappingConvention(dataDirectoryName);
         publicationsDir = fileConvention.publicationsDir();

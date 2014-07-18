@@ -41,7 +41,7 @@ public class DriverConnectedSubscription
     private final UdpDestination udpDestination;
     private final long sessionId;
     private final long channelId;
-    private PositionIndicator limit;
+    private PositionIndicator subscriberLimit;
 
     private final AtomicLong activeTermId = new AtomicLong();
     private int activeIndex;
@@ -67,12 +67,12 @@ public class DriverConnectedSubscription
                                        final TermBuffers termBuffers,
                                        final LossHandler lossHandler,
                                        final StatusMessageSender statusMessageSender,
-                                       final PositionIndicator limit)
+                                       final PositionIndicator subscriberLimit)
     {
         this.udpDestination = udpDestination;
         this.sessionId = sessionId;
         this.channelId = channelId;
-        this.limit = limit;
+        this.subscriberLimit = subscriberLimit;
 
         activeTermId.lazySet(initialTermId);
         rebuilders = termBuffers.stream()
@@ -166,13 +166,13 @@ public class DriverConnectedSubscription
         final long currentPosition = position(currentRebuilder.tail());
 
         final int termCapacity = currentRebuilder.capacity();
-        if (newPosition < currentPosition || newPosition > (currentPosition + (termCapacity - length)))
+        if (isFrameSequenceOutOfRange(length, newPosition, currentPosition, termCapacity))
         {
             // TODO: invalid packet we probably want to update an error counter
             return;
         }
 
-        if ((newPosition + length) > (limit.position() + termCapacity))
+        if (hasLimitBeenReached(length, newPosition, termCapacity))
         {
             // TODO: increment a counter to say subscriber is not keeping up
             return;
@@ -187,36 +187,6 @@ public class DriverConnectedSubscription
             nextTerm(termId);
             rebuilders[activeIndex].insert(buffer, 0, (int)length);
         }
-    }
-
-    private void nextTerm(final long nextTermId)
-    {
-        final int nextIndex = TermHelper.rotateNext(activeIndex);
-        final LogRebuilder rebuilder = rebuilders[nextIndex];
-
-        if (CLEAN != rebuilder.status())
-        {
-            System.err.println(String.format("Term not clean: destination=%s channelId=%d, required nextTermId=%d",
-                                             udpDestination, channelId, nextTermId));
-
-            if (rebuilder.compareAndSetStatus(NEEDS_CLEANING, IN_CLEANING))
-            {
-                rebuilder.clean(); // Conductor is not keeping up so do it yourself!!!
-            }
-            else
-            {
-                while (CLEAN != rebuilder.status())
-                {
-                    Thread.yield();
-                }
-            }
-        }
-
-        final int previousIndex = rotatePrevious(activeIndex);
-        rebuilders[previousIndex].statusOrdered(NEEDS_CLEANING);
-
-        this.activeTermId.lazySet(nextTermId);
-        activeIndex = nextIndex;
     }
 
     /**
@@ -277,5 +247,48 @@ public class DriverConnectedSubscription
     private long position(final int currentTail)
     {
         return calculatePosition(currentTail, activeTermId.get(), positionBitsToShift, initialPosition);
+    }
+
+    private boolean hasLimitBeenReached(final long length, final long newPosition, final int termCapacity)
+    {
+        return (newPosition + length) > (subscriberLimit.position() + termCapacity);
+    }
+
+    public boolean isFrameSequenceOutOfRange(final long length,
+                                             final long newPosition,
+                                             final long currentPosition,
+                                             final int termCapacity)
+    {
+        return newPosition < currentPosition || newPosition > (currentPosition + (termCapacity - length));
+    }
+
+    private void nextTerm(final long nextTermId)
+    {
+        final int nextIndex = TermHelper.rotateNext(activeIndex);
+        final LogRebuilder rebuilder = rebuilders[nextIndex];
+
+        if (CLEAN != rebuilder.status())
+        {
+            System.err.println(String.format("Term not clean: destination=%s channelId=%d, required nextTermId=%d",
+                                             udpDestination, channelId, nextTermId));
+
+            if (rebuilder.compareAndSetStatus(NEEDS_CLEANING, IN_CLEANING))
+            {
+                rebuilder.clean(); // Conductor is not keeping up so do it yourself!!!
+            }
+            else
+            {
+                while (CLEAN != rebuilder.status())
+                {
+                    Thread.yield();
+                }
+            }
+        }
+
+        final int previousIndex = rotatePrevious(activeIndex);
+        rebuilders[previousIndex].statusOrdered(NEEDS_CLEANING);
+
+        this.activeTermId.lazySet(nextTermId);
+        activeIndex = nextIndex;
     }
 }

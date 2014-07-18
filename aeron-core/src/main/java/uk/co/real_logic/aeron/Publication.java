@@ -46,7 +46,7 @@ public class Publication
     private final long sessionId;
     private final LogInformation[] logsInformation;
     private final LogAppender[] logAppenders;
-    private final PositionIndicator limitIndicator;
+    private final PositionIndicator senderLimit;
     private final AtomicLong activeTermId;
     private final int positionBitsToShift;
     private final long initialPosition;
@@ -61,7 +61,7 @@ public class Publication
                        final long sessionId,
                        final long initialTermId,
                        final LogAppender[] logAppenders,
-                       final PositionIndicator limitIndicator,
+                       final PositionIndicator senderLimit,
                        final LogInformation[] logsInformation)
     {
         this.conductor = conductor;
@@ -72,7 +72,7 @@ public class Publication
         this.logsInformation = logsInformation;
         this.activeTermId = new AtomicLong(initialTermId);
         this.logAppenders = logAppenders;
-        this.limitIndicator = limitIndicator;
+        this.senderLimit = senderLimit;
         this.activeIndex = termIdToBufferIndex(initialTermId);
 
         this.positionBitsToShift = Integer.numberOfTrailingZeros(logAppenders[0].capacity());
@@ -166,7 +166,7 @@ public class Publication
     public boolean offer(final AtomicBuffer buffer, final int offset, final int length)
     {
         final LogAppender logAppender = logAppenders[activeIndex];
-        if (checkLimit(logAppender.tailVolatile()))
+        if (hasLimitBeenReached(logAppender.tailVolatile()))
         {
             final AppendStatus status = logAppender.append(buffer, offset, length);
             if (status == TRIPPED)
@@ -217,9 +217,9 @@ public class Publication
         logAppenders[previousIndex].statusOrdered(NEEDS_CLEANING);
     }
 
-    private boolean checkLimit(final int currentTail)
+    private boolean hasLimitBeenReached(final int currentTail)
     {
-        return position(currentTail) < limitIndicator.position();
+        return position(currentTail) < senderLimit.position();
     }
 
     private long position(final int currentTail)

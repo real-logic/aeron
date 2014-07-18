@@ -16,7 +16,6 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.util.BitUtil;
-import uk.co.real_logic.aeron.util.TermHelper;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
@@ -25,6 +24,7 @@ import uk.co.real_logic.aeron.util.status.PositionReporter;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import static uk.co.real_logic.aeron.util.TermHelper.calculatePosition;
 import static uk.co.real_logic.aeron.util.TermHelper.rotateNext;
 import static uk.co.real_logic.aeron.util.TermHelper.termIdToBufferIndex;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.WORD_ALIGNMENT;
@@ -40,11 +40,10 @@ public class ConnectedSubscription
     private final LogReader[] logReaders;
     private final long sessionId;
     private final DataHandler dataHandler;
-    private PositionReporter reporter;
+    private PositionReporter positionReporter;
     private final AtomicLong activeTermId;
     private final int positionBitsToShift;
     private final long initialPosition;
-
 
     private int activeIndex;
 
@@ -52,12 +51,12 @@ public class ConnectedSubscription
                                  final long sessionId,
                                  final long initialTermId,
                                  final DataHandler dataHandler,
-                                 final PositionReporter reporter)
+                                 final PositionReporter positionReporter)
     {
         this.logReaders = readers;
         this.sessionId = sessionId;
         this.dataHandler = dataHandler;
-        this.reporter = reporter;
+        this.positionReporter = positionReporter;
         this.activeTermId = new AtomicLong(initialTermId);
         this.activeIndex = termIdToBufferIndex(initialTermId);
 
@@ -92,7 +91,8 @@ public class ConnectedSubscription
         final int messagesRead = logReader.read(this::onFrame, frameCountLimit);
         if (messagesRead > 0)
         {
-            reporter.position(TermHelper.calculatePosition(logReader.tail(), activeTermId.get(), positionBitsToShift, initialPosition));
+            positionReporter.position(
+                calculatePosition(logReader.tail(), activeTermId.get(), positionBitsToShift, initialPosition));
         }
         return messagesRead;
     }

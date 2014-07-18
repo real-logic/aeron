@@ -145,7 +145,7 @@ public class DriverPublication
                 activeTermId.lazySet(activeTermId.get() + 1);
             }
 
-            limitReporter.position(position(scanner.tail()) + scanner.capacity());
+            limitReporter.position(calculatePosition(scanner.tail()) + scanner.capacity());
         }
         catch (final Exception ex)
         {
@@ -372,7 +372,7 @@ public class DriverPublication
         }
     }
 
-    private long position(final int currentTail)
+    private long calculatePosition(final int currentTail)
     {
         return TermHelper.calculatePosition(currentTail, activeTermId.get(), positionBitsToShift, initialPosition);
     }

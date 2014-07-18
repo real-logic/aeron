@@ -91,7 +91,7 @@ public class ReceiverTest
             .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .receiverNioSelector(mockNioSelector)
             .conductorNioSelector(mockNioSelector)
-            .termBufferManager(mockTermBuffersFactory)
+            .termBuffersFactory(mockTermBuffersFactory)
             .conductorTimerWheel(new TimerWheel(MediaDriver.MEDIA_CONDUCTOR_TICK_DURATION_US,
                                                 TimeUnit.MICROSECONDS,
                                                 MediaDriver.MEDIA_CONDUCTOR_TICKS_PER_WHEEL))

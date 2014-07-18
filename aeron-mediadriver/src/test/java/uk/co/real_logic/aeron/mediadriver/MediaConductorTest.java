@@ -113,7 +113,7 @@ public class MediaConductorTest
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .publications(publications)
 
-            .termBufferManager(mockTermBuffersFactory)
+            .termBuffersFactory(mockTermBuffersFactory)
             .statusBufferManager(statusBufferManager);
 
         ctx.fromClientCommands(fromClientCommands);

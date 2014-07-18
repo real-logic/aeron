@@ -100,7 +100,7 @@ public class MediaConductor extends Agent
 
         this.commandQueue = ctx.conductorCommandQueue();
         this.receiverProxy = ctx.receiverProxy();
-        this.termBuffersFactory = ctx.termBufferManager();
+        this.termBuffersFactory = ctx.termBuffersFactory();
         this.nioSelector = ctx.conductorNioSelector();
         this.mtuLength = ctx.mtuLength();
         this.initialWindowSize = ctx.initialWindowSize();
@@ -176,7 +176,7 @@ public class MediaConductor extends Agent
                     }
                     else if (obj instanceof SubscriptionRemovedCmd)
                     {
-                        onRemovedSubscription((SubscriptionRemovedCmd) obj);
+                        onRemovedSubscription((SubscriptionRemovedCmd)obj);
                     }
                 }
                 catch (final Exception ex)
@@ -313,7 +313,7 @@ public class MediaConductor extends Agent
             frameHandler.addPublication(publication);
 
             clientProxy.onNewTermBuffers(ON_NEW_PUBLICATION, sessionId, channelId, initialTermId, destination,
-                    termBuffers, correlationId, positionCounterOffset);
+                                         termBuffers, correlationId, positionCounterOffset);
 
             publications.add(publication);
         }

@@ -511,7 +511,7 @@ public class MediaDriver implements AutoCloseable
             receiverProxy(new ReceiverProxy(receiverCommandQueue()));
             mediaConductorProxy(new MediaConductorProxy(conductorCommandQueue));
 
-            termBufferManager(new TermBuffersFactory(dataDirName(), termBufferSize));
+            termBuffersFactory(new TermBuffersFactory(dataDirName(), termBufferSize));
 
             if (statusBufferManager() == null)
             {
@@ -540,7 +540,7 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public MediaDriverContext termBufferManager(final TermBuffersFactory termBuffersFactory)
+        public MediaDriverContext termBuffersFactory(final TermBuffersFactory termBuffersFactory)
         {
             this.termBuffersFactory = termBuffersFactory;
             return this;
@@ -660,7 +660,7 @@ public class MediaDriver implements AutoCloseable
             return conductorCommandQueue;
         }
 
-        public TermBuffersFactory termBufferManager()
+        public TermBuffersFactory termBuffersFactory()
         {
             return termBuffersFactory;
         }

@@ -52,7 +52,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
     private static final long NO_CORRELATION_ID = -1;
 
     private final MediaDriverBroadcastReceiver mediaDriverBroadcastReceiver;
-    private final BufferLifecycleStrategy bufferUsage;
+    private final BufferManager bufferManager;
     private final long awaitTimeout;
     private final ConnectionMap<String, Publication> publicationMap = new ConnectionMap<>(); // Guarded by this
     private final SubscriptionMap subscriptionMap = new SubscriptionMap();
@@ -67,7 +67,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
     private RegistrationException registrationException; // Guarded by this
 
     public ClientConductor(final MediaDriverBroadcastReceiver mediaDriverBroadcastReceiver,
-                           final BufferLifecycleStrategy bufferLifecycleStrategy,
+                           final BufferManager bufferManager,
                            final AtomicBuffer counterValuesBuffer,
                            final MediaDriverProxy mediaDriverProxy,
                            final Signal correlationSignal,
@@ -81,7 +81,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
         this.correlationSignal = correlationSignal;
         this.mediaDriverProxy = mediaDriverProxy;
         this.mediaDriverBroadcastReceiver = mediaDriverBroadcastReceiver;
-        this.bufferUsage = bufferLifecycleStrategy;
+        this.bufferManager = bufferManager;
         this.awaitTimeout = awaitTimeout;
     }
 
@@ -93,7 +93,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
     public void close()
     {
         stop();
-        bufferUsage.close();
+        bufferManager.close();
     }
 
     public synchronized Publication addPublication(final String destination, final long channelId, final long sessionId)
@@ -138,7 +138,6 @@ public class ClientConductor extends Agent implements MediaDriverListener
                                                      final long channelId,
                                                      final DataHandler handler)
     {
-
         Subscription subscription = subscriptionMap.get(destination, channelId);
 
         if (null == subscription)
@@ -153,7 +152,6 @@ public class ClientConductor extends Agent implements MediaDriverListener
 
         return subscription;
     }
-
 
     public synchronized void releaseSubscription(final Subscription subscription)
     {
@@ -172,22 +170,24 @@ public class ClientConductor extends Agent implements MediaDriverListener
                                  final LogBuffersMessageFlyweight logBuffersMessage) throws IOException
     {
         final LogAppender[] logs = new LogAppender[BUFFER_COUNT];
-        final LogInformation[] logInformation = new LogInformation[BUFFER_COUNT * 2];
+        final ManagedBuffer[] managedBuffers = new ManagedBuffer[BUFFER_COUNT * 2];
 
         for (int i = 0; i < BUFFER_COUNT; i++)
         {
-            final LogInformation logBuffer = mapBuffer(logBuffersMessage, i);
-            final LogInformation stateBuffer = mapBuffer(logBuffersMessage, i + TermHelper.BUFFER_COUNT);
+            final ManagedBuffer logBuffer = mapBuffer(logBuffersMessage, i);
+            final ManagedBuffer stateBuffer = mapBuffer(logBuffersMessage, i + TermHelper.BUFFER_COUNT);
             final byte[] header = DataHeaderFlyweight.createDefaultHeader(sessionId, channelId, termId);
 
             logs[i] = new LogAppender(logBuffer.buffer(), stateBuffer.buffer(), header, MAX_FRAME_LENGTH);
-            logInformation[i * 2] = logBuffer;
-            logInformation[i * 2 + 1] = stateBuffer;
+            managedBuffers[i * 2] = logBuffer;
+            managedBuffers[i * 2 + 1] = stateBuffer;
         }
 
-        final PositionIndicator limit = new BufferPositionIndicator(counterValuesBuffer, limitPositionIndicatorOffset);
+        final PositionIndicator senderLimit =
+            new BufferPositionIndicator(counterValuesBuffer, limitPositionIndicatorOffset);
 
-        addedPublication = new Publication(this, destination, channelId, sessionId, termId, logs, limit, logInformation);
+        addedPublication = new Publication(this, destination, channelId, sessionId,
+                                           termId, logs, senderLimit, managedBuffers);
 
         correlationSignal.signal();
     }
@@ -202,22 +202,22 @@ public class ClientConductor extends Agent implements MediaDriverListener
         if (null != subscription && !subscription.isConnected(sessionId))
         {
             final LogReader[] logs = new LogReader[BUFFER_COUNT];
-            // TODO: put logInformation into subscriptions
-            final LogInformation[] logInformation = new LogInformation[BUFFER_COUNT * 2];
+            // TODO: put managedBuffers into subscriptions
+            final ManagedBuffer[] managedBuffers = new ManagedBuffer[BUFFER_COUNT * 2];
 
             for (int i = 0; i < BUFFER_COUNT; i++)
             {
-                final LogInformation logBuffer = mapBuffer(message, i);
-                final LogInformation stateBuffer = mapBuffer(message, i + TermHelper.BUFFER_COUNT);
+                final ManagedBuffer logBuffer = mapBuffer(message, i);
+                final ManagedBuffer stateBuffer = mapBuffer(message, i + TermHelper.BUFFER_COUNT);
 
                 logs[i] = new LogReader(logBuffer.buffer(), stateBuffer.buffer());
-                logInformation[i * 2] = logBuffer;
-                logInformation[i * 2 + 1] = stateBuffer;
+                managedBuffers[i * 2] = logBuffer;
+                managedBuffers[i * 2 + 1] = stateBuffer;
             }
 
             final PositionReporter positionReporter =
                 new BufferPositionReporter(counterValuesBuffer, message.positionCounterOffset());
-            subscription.onLogBufferMapped(sessionId, initialTermId, logs, positionReporter);
+            subscription.onTermBuffersMapped(sessionId, initialTermId, logs, positionReporter);
         }
     }
 
@@ -271,13 +271,13 @@ public class ClientConductor extends Agent implements MediaDriverListener
         }
     }
 
-    private LogInformation mapBuffer(final LogBuffersMessageFlyweight newBufferMessage, final int index)
+    private ManagedBuffer mapBuffer(final LogBuffersMessageFlyweight logBuffersMessage, final int index)
         throws IOException
     {
-        final String location = newBufferMessage.location(index);
-        final int offset = newBufferMessage.bufferOffset(index);
-        final int length = newBufferMessage.bufferLength(index);
+        final String location = logBuffersMessage.location(index);
+        final int offset = logBuffersMessage.bufferOffset(index);
+        final int length = logBuffersMessage.bufferLength(index);
 
-        return bufferUsage.newBuffer(location, offset, length);
+        return bufferManager.newBuffer(location, offset, length);
     }
 }

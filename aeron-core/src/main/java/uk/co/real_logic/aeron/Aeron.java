@@ -63,13 +63,12 @@ public final class Aeron implements AutoCloseable, Runnable
         final Signal correlationSignal = new Signal();
         final MediaDriverBroadcastReceiver receiver = new MediaDriverBroadcastReceiver(ctx.toClientBuffer);
 
-        conductor = new ClientConductor(
-            receiver,
-            ctx.bufferLifecycleStrategy,
-            ctx.counterValuesBuffer(),
-            mediaDriverProxy,
-            correlationSignal,
-            AWAIT_TIMEOUT);
+        conductor = new ClientConductor(receiver,
+                                        ctx.bufferManager,
+                                        ctx.counterValuesBuffer(),
+                                        mediaDriverProxy,
+                                        correlationSignal,
+                                        AWAIT_TIMEOUT);
 
         this.savedCtx = ctx;
     }
@@ -143,8 +142,8 @@ public final class Aeron implements AutoCloseable, Runnable
      * Add a {@link Publication} for publishing messages to subscribers.
      *
      * @param destination for receiving the messages know to the media layer.
-     * @param channelId within the destination scope.
-     * @param sessionId to scope the source of the Publication.
+     * @param channelId   within the destination scope.
+     * @param sessionId   to scope the source of the Publication.
      * @return the new Publication.
      */
     public Publication addPublication(final String destination, final long channelId, final long sessionId)
@@ -154,15 +153,13 @@ public final class Aeron implements AutoCloseable, Runnable
 
     /**
      * Add a new {@link Subscription} for subscribing to messages from publishers.
-
+     *
      * @param destination for receiving the messages know to the media layer.
-     * @param channelId within the destination scope.
-     * @param handler to be called back for each message received.
+     * @param channelId   within the destination scope.
+     * @param handler     to be called back for each message received.
      * @return the {@link Subscription} for the destination and channelId pair.
      */
-    public Subscription addSubscription(final String destination,
-                                        final long channelId,
-                                        final DataHandler handler)
+    public Subscription addSubscription(final String destination, final long channelId, final DataHandler handler)
     {
         return conductor.addSubscription(destination, channelId, handler);
     }
@@ -180,7 +177,7 @@ public final class Aeron implements AutoCloseable, Runnable
         private MappedByteBuffer defaultToClientBuffer;
         private MappedByteBuffer defaultToDriverBuffer;
 
-        private BufferLifecycleStrategy bufferLifecycleStrategy;
+        private BufferManager bufferManager;
 
         public ClientContext conclude() throws IOException
         {
@@ -203,24 +200,26 @@ public final class Aeron implements AutoCloseable, Runnable
 
                 if (counterLabelsBuffer() == null)
                 {
-                    final MappedByteBuffer labels = mapExistingFile(new File(countersDirName(), LABELS_FILE), LABELS_FILE);
+                    final MappedByteBuffer labels =
+                        mapExistingFile(new File(countersDirName(), LABELS_FILE), LABELS_FILE);
                     counterLabelsBuffer(new AtomicBuffer(labels));
                 }
 
                 if (counterValuesBuffer() == null)
                 {
-                    final MappedByteBuffer values = mapExistingFile(new File(countersDirName(), VALUES_FILE), VALUES_FILE);
+                    final MappedByteBuffer values =
+                        mapExistingFile(new File(countersDirName(), VALUES_FILE), VALUES_FILE);
                     counterValuesBuffer(new AtomicBuffer(values));
                 }
 
-                if (null == bufferLifecycleStrategy)
+                if (null == bufferManager)
                 {
-                    bufferLifecycleStrategy = new MappedBufferLifecycleStrategy();
+                    bufferManager = new MappedBufferManager();
                 }
             }
-            catch (IOException e)
+            catch (final IOException ex)
             {
-                throw new IllegalStateException("Could not initialise buffers", e);
+                throw new IllegalStateException("Could not initialise buffers", ex);
             }
 
             return this;
@@ -238,9 +237,9 @@ public final class Aeron implements AutoCloseable, Runnable
             return this;
         }
 
-        public ClientContext bufferUsageStrategy(final BufferLifecycleStrategy strategy)
+        public ClientContext bufferManager(final BufferManager bufferManager)
         {
-            this.bufferLifecycleStrategy = strategy;
+            this.bufferManager = bufferManager;
             return this;
         }
 

@@ -20,9 +20,9 @@ import java.io.IOException;
 /**
  * Interface for encapsulating the strategy of mapping ByteBuffers for Session, Channel, and Term.
  */
-public interface BufferLifecycleStrategy
+public interface BufferManager
 {
-    LogInformation newBuffer(final String location, final int offset, final int length) throws IOException;
+    ManagedBuffer newBuffer(final String location, final int offset, final int length) throws IOException;
 
     int releaseBuffers(final String location, final int offset, final int length);
 

@@ -33,16 +33,12 @@ import static uk.co.real_logic.aeron.util.IoUtil.mapExistingFile;
  *
  * Note: Not thread-safe - Methods only called from ClientConductor
  */
-public class MappedBufferLifecycleStrategy implements BufferLifecycleStrategy
+public class MappedBufferManager implements BufferManager
 {
-    private final List<LocatedBuffer> buffers;
+    private final List<LocatedBuffer> buffers = new ArrayList<>();
 
-    public MappedBufferLifecycleStrategy()
-    {
-        buffers = new ArrayList<>();
-    }
-
-    public LogInformation newBuffer(final String location, final int offset, final int length) throws IOException
+    public ManagedBuffer newBuffer(final String location, final int offset, final int length)
+        throws IOException
     {
         final MappedByteBuffer buffer = mapExistingFile(new File(location), "Term Buffer");
         if (requiresIndirection(buffer, offset, length))
@@ -53,7 +49,7 @@ public class MappedBufferLifecycleStrategy implements BufferLifecycleStrategy
 
         buffers.add(new LocatedBuffer(location, buffer));
 
-        return new LogInformation(location, offset, length, new AtomicBuffer(buffer), this);
+        return new ManagedBuffer(location, offset, length, new AtomicBuffer(buffer), this);
     }
 
     private boolean requiresIndirection(final ByteBuffer buffer, final int offset, final int length)
@@ -86,12 +82,12 @@ public class MappedBufferLifecycleStrategy implements BufferLifecycleStrategy
         buffers.forEach(LocatedBuffer::close);
     }
 
-    private static class LocatedBuffer
+    static class LocatedBuffer
     {
         private final String location;
         private final MappedByteBuffer buffer;
 
-        private LocatedBuffer(final String location, final MappedByteBuffer buffer)
+        LocatedBuffer(final String location, final MappedByteBuffer buffer)
         {
             this.location = location;
             this.buffer = buffer;

@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.conductor.ClientConductor;
-import uk.co.real_logic.aeron.conductor.LogInformation;
+import uk.co.real_logic.aeron.conductor.ManagedBuffer;
 import uk.co.real_logic.aeron.util.TermHelper;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
@@ -44,7 +44,7 @@ public class Publication
     private final String destination;
     private final long channelId;
     private final long sessionId;
-    private final LogInformation[] logsInformation;
+    private final ManagedBuffer[] managedBuffers;
     private final LogAppender[] logAppenders;
     private final PositionIndicator senderLimit;
     private final AtomicLong activeTermId;
@@ -62,14 +62,14 @@ public class Publication
                        final long initialTermId,
                        final LogAppender[] logAppenders,
                        final PositionIndicator senderLimit,
-                       final LogInformation[] logsInformation)
+                       final ManagedBuffer[] managedBuffers)
     {
         this.conductor = conductor;
 
         this.destination = destination;
         this.channelId = channelId;
         this.sessionId = sessionId;
-        this.logsInformation = logsInformation;
+        this.managedBuffers = managedBuffers;
         this.activeTermId = new AtomicLong(initialTermId);
         this.logAppenders = logAppenders;
         this.senderLimit = senderLimit;
@@ -127,9 +127,9 @@ public class Publication
 
     private void releaseBuffers()
     {
-        for (final LogInformation logInformation : logsInformation)
+        for (final ManagedBuffer managedBuffer : managedBuffers)
         {
-            logInformation.releaseBuffer();
+            managedBuffer.release();
         }
     }
 

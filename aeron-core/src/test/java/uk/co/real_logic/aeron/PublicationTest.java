@@ -4,7 +4,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
-import uk.co.real_logic.aeron.conductor.LogInformation;
+import uk.co.real_logic.aeron.conductor.ManagedBuffer;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
@@ -61,10 +61,10 @@ public class PublicationTest
             when(appenders[i].capacity()).thenReturn(LOG_MIN_SIZE);
         }
 
-        final LogInformation[] logInformation = new LogInformation[0];
+        final ManagedBuffer[] managedBuffers = new ManagedBuffer[0];
 
         publication = new Publication(conductor, DESTINATION, CHANNEL_ID_1, SESSION_ID_1,
-                                      TERM_ID_1, appenders, limit, logInformation);
+                                      TERM_ID_1, appenders, limit, managedBuffers);
     }
 
     @Test

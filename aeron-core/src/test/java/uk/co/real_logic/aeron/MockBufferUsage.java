@@ -2,8 +2,8 @@ package uk.co.real_logic.aeron;
 
 import org.junit.Before;
 import org.mockito.stubbing.Answer;
-import uk.co.real_logic.aeron.conductor.BufferLifecycleStrategy;
-import uk.co.real_logic.aeron.conductor.LogInformation;
+import uk.co.real_logic.aeron.conductor.BufferManager;
+import uk.co.real_logic.aeron.conductor.ManagedBuffer;
 import uk.co.real_logic.aeron.util.TermHelper;
 import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
@@ -30,7 +30,7 @@ public class MockBufferUsage
     protected AtomicBuffer[] stateBuffersSession2 = new AtomicBuffer[TermHelper.BUFFER_COUNT];
     protected LogAppender[] appendersSession1 = new LogAppender[TermHelper.BUFFER_COUNT];
     protected LogAppender[] appendersSession2 = new LogAppender[TermHelper.BUFFER_COUNT];
-    protected BufferLifecycleStrategy mockBufferUsage = mock(BufferLifecycleStrategy.class);
+    protected BufferManager mockBufferUsage = mock(BufferManager.class);
 
 
     @Before
@@ -59,12 +59,12 @@ public class MockBufferUsage
         }
     }
 
-    public Answer<LogInformation> answer(final AtomicBuffer buffer)
+    public Answer<ManagedBuffer> answer(final AtomicBuffer buffer)
     {
         return (invocation) ->
         {
             final Object[] args = invocation.getArguments();
-            return  new LogInformation((String) args[0], (int) args[1], (int) args[2], buffer, mockBufferUsage);
+            return  new ManagedBuffer((String) args[0], (int) args[1], (int) args[2], buffer, mockBufferUsage);
         };
     }
 

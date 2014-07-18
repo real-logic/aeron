@@ -84,8 +84,8 @@ public class Subscription
         return connectedSubscriptions.doLimitedAction(roundRobinIndex, fragmentCountLimit, ConnectedSubscription::poll);
     }
 
-    public void onLogBufferMapped(final long sessionId, final long termId,
-                                  final LogReader[] logReaders, final PositionReporter reporter)
+    public void onTermBuffersMapped(final long sessionId, final long termId,
+                                    final LogReader[] logReaders, final PositionReporter reporter)
     {
         connectedSubscriptions.add(new ConnectedSubscription(logReaders, sessionId, termId, handler, reporter));
     }

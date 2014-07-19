@@ -31,7 +31,7 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
 import uk.co.real_logic.aeron.util.event.EventLogger;
-import uk.co.real_logic.aeron.util.status.StatusBufferManager;
+import uk.co.real_logic.aeron.util.status.CountersManager;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -98,8 +98,8 @@ public class DriverConductorTest
             .thenReturn(BufferAndFrameHelper.newTestTermBuffers(TERM_BUFFER_SZ, STATE_BUFFER_LENGTH));
 
         final AtomicBuffer counterBuffer = new AtomicBuffer(new byte[4096]);
-        final StatusBufferManager statusBufferManager =
-            new StatusBufferManager(new AtomicBuffer(new byte[4096]), counterBuffer);
+        final CountersManager countersManager =
+            new CountersManager(new AtomicBuffer(new byte[4096]), counterBuffer);
 
         final MediaDriver.DriverContext ctx = new MediaDriver.DriverContext()
             .receiverNioSelector(nioSelector)
@@ -114,11 +114,11 @@ public class DriverConductorTest
             .publications(publications)
 
             .termBuffersFactory(mockTermBuffersFactory)
-            .statusBufferManager(statusBufferManager);
+            .countersManager(countersManager);
 
         ctx.fromClientCommands(fromClientCommands);
         ctx.clientProxy(mockClientProxy);
-        ctx.counterValuesBuffer(counterBuffer);
+        ctx.countersBuffer(counterBuffer);
 
         ctx.receiverProxy(new ReceiverProxy(ctx.receiverCommandQueue()));
         ctx.driverConductorProxy(new DriverConductorProxy(ctx.conductorCommandQueue()));

@@ -26,7 +26,7 @@ import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
 import uk.co.real_logic.aeron.util.event.EventLogger;
-import uk.co.real_logic.aeron.util.status.StatusBufferManager;
+import uk.co.real_logic.aeron.util.status.CountersManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -479,7 +479,7 @@ public class MediaDriver implements AutoCloseable
 
         private MappedByteBuffer toClientsBuffer;
         private MappedByteBuffer toDriverBuffer;
-        private StatusBufferManager statusBufferManager;
+        private CountersManager countersManager;
 
         private int termBufferSize;
         private int initialWindowSize;
@@ -513,7 +513,7 @@ public class MediaDriver implements AutoCloseable
 
             termBuffersFactory(new TermBuffersFactory(dataDirName(), termBufferSize));
 
-            if (statusBufferManager() == null)
+            if (countersManager() == null)
             {
                 if (counterLabelsBuffer() == null)
                 {
@@ -521,13 +521,13 @@ public class MediaDriver implements AutoCloseable
                                                                     COUNTER_BUFFERS_SZ)));
                 }
 
-                if (counterValuesBuffer() == null)
+                if (countersBuffer() == null)
                 {
-                    counterValuesBuffer(new AtomicBuffer(mapNewFile(new File(countersDirName(), VALUES_FILE),
-                                                                    COUNTER_BUFFERS_SZ)));
+                    countersBuffer(new AtomicBuffer(mapNewFile(new File(countersDirName(), VALUES_FILE),
+                                                               COUNTER_BUFFERS_SZ)));
                 }
 
-                statusBufferManager(new StatusBufferManager(counterLabelsBuffer(), counterValuesBuffer()));
+                countersManager(new CountersManager(counterLabelsBuffer(), countersBuffer()));
             }
 
             return this;
@@ -631,9 +631,9 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public DriverContext statusBufferManager(final StatusBufferManager statusBufferManager)
+        public DriverContext countersManager(final CountersManager countersManager)
         {
-            this.statusBufferManager = statusBufferManager;
+            this.countersManager = countersManager;
             return this;
         }
 
@@ -735,9 +735,9 @@ public class MediaDriver implements AutoCloseable
             return fromClientCommands;
         }
 
-        public StatusBufferManager statusBufferManager()
+        public CountersManager countersManager()
         {
-            return statusBufferManager;
+            return countersManager;
         }
 
         public int termBufferSize()

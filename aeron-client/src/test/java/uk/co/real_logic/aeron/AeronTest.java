@@ -99,7 +99,7 @@ public class AeronTest extends MockBufferUsage
                 .bufferManager(mockBufferUsage);
 
         ctx.counterLabelsBuffer(counterLabelsBuffer)
-           .counterValuesBuffer(counterValuesBuffer);
+           .countersBuffer(counterValuesBuffer);
 
         aeron = Aeron.newSingleMediaDriver(ctx);
 

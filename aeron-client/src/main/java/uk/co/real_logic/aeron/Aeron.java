@@ -65,7 +65,7 @@ public final class Aeron implements AutoCloseable, Runnable
 
         conductor = new ClientConductor(receiver,
                                         ctx.bufferManager,
-                                        ctx.counterValuesBuffer(),
+                                        ctx.countersBuffer(),
                                         driverProxy,
                                         correlationSignal,
                                         AWAIT_TIMEOUT);
@@ -205,11 +205,11 @@ public final class Aeron implements AutoCloseable, Runnable
                     counterLabelsBuffer(new AtomicBuffer(labels));
                 }
 
-                if (counterValuesBuffer() == null)
+                if (countersBuffer() == null)
                 {
                     final MappedByteBuffer values =
                         mapExistingFile(new File(countersDirName(), VALUES_FILE), VALUES_FILE);
-                    counterValuesBuffer(new AtomicBuffer(values));
+                    countersBuffer(new AtomicBuffer(values));
                 }
 
                 if (null == bufferManager)

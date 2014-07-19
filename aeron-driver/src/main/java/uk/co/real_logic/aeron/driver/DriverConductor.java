@@ -91,8 +91,8 @@ public class DriverConductor extends Agent
     private final int mtuLength;
     private final int initialWindowSize;
     private final TimerWheel.Timer heartbeatTimer;
-    private final StatusBufferManager statusBufferManager;
-    private final AtomicBuffer counterValuesBuffer;
+    private final CountersManager countersManager;
+    private final AtomicBuffer countersBuffer;
 
     public DriverConductor(final DriverContext ctx)
     {
@@ -106,8 +106,8 @@ public class DriverConductor extends Agent
         this.initialWindowSize = ctx.initialWindowSize();
         this.unicastSenderFlowControl = ctx.unicastSenderFlowControl();
         this.multicastSenderFlowControl = ctx.multicastSenderFlowControl();
-        this.statusBufferManager = ctx.statusBufferManager();
-        this.counterValuesBuffer = ctx.counterValuesBuffer();
+        this.countersManager = ctx.countersManager();
+        this.countersBuffer = ctx.countersBuffer();
 
         timerWheel = ctx.conductorTimerWheel();
         heartbeatTimer = newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheck);
@@ -297,7 +297,7 @@ public class DriverConductor extends Agent
 
             final int positionCounterOffset = registerPositionCounter("publication", destination, sessionId, channelId);
             final BufferPositionReporter positionReporter =
-                new BufferPositionReporter(counterValuesBuffer, positionCounterOffset);
+                new BufferPositionReporter(countersBuffer, positionCounterOffset);
 
             publication = new DriverPublication(frameHandler,
                                                 timerWheel,
@@ -429,7 +429,7 @@ public class DriverConductor extends Agent
             final LossHandler lossHandler =
                 new LossHandler(gapScanners, timerWheel, delayGenerator, cmd.sendNakHandler(), initialTermId);
 
-            final PositionIndicator indicator = new BufferPositionIndicator(counterValuesBuffer, positionCounterOffset);
+            final PositionIndicator indicator = new BufferPositionIndicator(countersBuffer, positionCounterOffset);
 
             final DriverConnectedSubscription connectedSubscription =
                 new DriverConnectedSubscription(udpDestination,
@@ -495,8 +495,8 @@ public class DriverConductor extends Agent
                                         final long channelId)
     {
         final String label = String.format("%s: %s %d %d", type, destination, sessionId, channelId);
-        final int id = statusBufferManager.registerCounter(label);
+        final int id = countersManager.registerCounter(label);
 
-        return StatusBufferManager.counterOffset(id);
+        return CountersManager.counterOffset(id);
     }
 }

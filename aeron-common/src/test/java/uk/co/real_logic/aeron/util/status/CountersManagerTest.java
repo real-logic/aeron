@@ -30,19 +30,19 @@ import static org.mockito.Mockito.verify;
 import static uk.co.real_logic.aeron.util.BitUtil.SIZE_OF_LONG;
 
 @SuppressWarnings("unchecked")
-public class StatusBufferTest
+public class CountersManagerTest
 {
-    private AtomicBuffer descriptorBuffer = new AtomicBuffer(allocate(512));
+    private AtomicBuffer labelsBuffer = new AtomicBuffer(allocate(512));
     private AtomicBuffer counterBuffer = new AtomicBuffer(allocate(3 * SIZE_OF_LONG));
-    private StatusBufferManager manager = new StatusBufferManager(descriptorBuffer, counterBuffer);
-    private StatusBufferManager otherManager = new StatusBufferManager(descriptorBuffer, counterBuffer);
+    private CountersManager manager = new CountersManager(labelsBuffer, counterBuffer);
+    private CountersManager otherManager = new CountersManager(labelsBuffer, counterBuffer);
 
     @Test
     public void managerShouldStoreLabels()
     {
         int counterId = manager.registerCounter("abc");
         BiConsumer<Integer, String> consumer = mock(BiConsumer.class);
-        otherManager.listDescriptors(consumer);
+        otherManager.forEachLabel(consumer);
         verify(consumer).accept(counterId, "abc");
     }
 
@@ -54,7 +54,7 @@ public class StatusBufferTest
         int ghi = manager.registerCounter("ghi");
 
         BiConsumer<Integer, String> consumer = mock(BiConsumer.class);
-        otherManager.listDescriptors(consumer);
+        otherManager.forEachLabel(consumer);
 
         InOrder inOrder = Mockito.inOrder(consumer);
         inOrder.verify(consumer).accept(abc, "abc");
@@ -78,11 +78,10 @@ public class StatusBufferTest
         manager.registerCounter("def");
 
         int id = manager.registerCounter("abc");
-        int offset = StatusBufferManager.counterOffset(id);
+        int offset = CountersManager.counterOffset(id);
         BufferPositionIndicator reader = new BufferPositionIndicator(counterBuffer, offset);
         BufferPositionReporter writer = new BufferPositionReporter(counterBuffer, offset);
         writer.position(0xFFFFFFFFFL);
         assertThat(reader.position(), is(0xFFFFFFFFFL));
     }
-
 }

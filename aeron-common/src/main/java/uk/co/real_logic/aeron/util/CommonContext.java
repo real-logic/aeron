@@ -71,7 +71,7 @@ public class CommonContext implements AutoCloseable
     private File toDriverFile;
     private File toClientsFile;
     private AtomicBuffer counterLabelsBuffer;
-    private AtomicBuffer counterValuesBuffer;
+    private AtomicBuffer countersBuffer;
 
     public CommonContext()
     {
@@ -178,14 +178,14 @@ public class CommonContext implements AutoCloseable
         return this;
     }
 
-    public AtomicBuffer counterValuesBuffer()
+    public AtomicBuffer countersBuffer()
     {
-        return counterValuesBuffer;
+        return countersBuffer;
     }
 
-    public CommonContext counterValuesBuffer(AtomicBuffer counterValuesBuffer)
+    public CommonContext countersBuffer(AtomicBuffer countersBuffer)
     {
-        this.counterValuesBuffer = counterValuesBuffer;
+        this.countersBuffer = countersBuffer;
         return this;
     }
 

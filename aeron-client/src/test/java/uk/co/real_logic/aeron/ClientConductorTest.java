@@ -19,8 +19,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
-import uk.co.real_logic.aeron.conductor.MediaDriverBroadcastReceiver;
-import uk.co.real_logic.aeron.conductor.MediaDriverProxy;
+import uk.co.real_logic.aeron.conductor.DriverBroadcastReceiver;
+import uk.co.real_logic.aeron.conductor.DriverProxy;
 import uk.co.real_logic.aeron.conductor.Signal;
 import uk.co.real_logic.aeron.util.TermHelper;
 import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
@@ -71,7 +71,7 @@ public class ClientConductorTest extends MockBufferUsage
     private final AtomicBuffer counterValuesBuffer = new AtomicBuffer(new byte[COUNTER_BUFFER_SZ]);
 
     private Signal signal;
-    private MediaDriverProxy mediaDriverProxy;
+    private DriverProxy driverProxy;
     private ClientConductor conductor;
     private DataHandler dataHandler = mock(DataHandler.class);
 
@@ -79,18 +79,18 @@ public class ClientConductorTest extends MockBufferUsage
     public void setUp() throws Exception
     {
 
-        mediaDriverProxy = mock(MediaDriverProxy.class);
+        driverProxy = mock(DriverProxy.class);
         signal = mock(Signal.class);
 
-        when(mediaDriverProxy.addPublication(any(), anyLong(), anyLong())).thenReturn(CORRELATION_ID);
+        when(driverProxy.addPublication(any(), anyLong(), anyLong())).thenReturn(CORRELATION_ID);
 
         willNotifyNewBuffer();
 
         conductor = new ClientConductor(
-            new MediaDriverBroadcastReceiver(toClientReceiver),
+            new DriverBroadcastReceiver(toClientReceiver),
             mockBufferUsage,
             counterValuesBuffer,
-            mediaDriverProxy,
+            driverProxy,
             signal,
             AWAIT_TIMEOUT);
 
@@ -113,7 +113,7 @@ public class ClientConductorTest extends MockBufferUsage
     {
         addPublication();
 
-        verify(mediaDriverProxy).addPublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
+        verify(driverProxy).addPublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
     }
 
     @Test(expected = MediaDriverTimeoutException.class)
@@ -156,7 +156,7 @@ public class ClientConductorTest extends MockBufferUsage
         publication.release();
 
         verifyBuffersReleased(SESSION_ID_1);
-        verify(mediaDriverProxy).removePublication(DESTINATION, SESSION_ID_1, CHANNEL_ID_1);
+        verify(driverProxy).removePublication(DESTINATION, SESSION_ID_1, CHANNEL_ID_1);
     }
 
     @Test
@@ -198,13 +198,13 @@ public class ClientConductorTest extends MockBufferUsage
 
         publication.release();
         verifyBuffersNotReleased(SESSION_ID_2);
-        verify(mediaDriverProxy, never()).removePublication(DESTINATION, SESSION_ID_1, CHANNEL_ID_1);
+        verify(driverProxy, never()).removePublication(DESTINATION, SESSION_ID_1, CHANNEL_ID_1);
 
         willNotifyOperationSucceeded();
 
         publication.release();
         verifyBuffersReleased(SESSION_ID_1);
-        verify(mediaDriverProxy).removePublication(DESTINATION, SESSION_ID_1, CHANNEL_ID_1);
+        verify(driverProxy).removePublication(DESTINATION, SESSION_ID_1, CHANNEL_ID_1);
     }
 
     @Test
@@ -218,10 +218,10 @@ public class ClientConductorTest extends MockBufferUsage
         publication.release();
 
         verifyBuffersReleased(SESSION_ID_1);
-        verify(mediaDriverProxy).removePublication(DESTINATION, SESSION_ID_1, CHANNEL_ID_1);
+        verify(driverProxy).removePublication(DESTINATION, SESSION_ID_1, CHANNEL_ID_1);
 
         verifyBuffersNotReleased(SESSION_ID_2);
-        verify(mediaDriverProxy, never()).removePublication(DESTINATION, SESSION_ID_2, CHANNEL_ID_2);
+        verify(driverProxy, never()).removePublication(DESTINATION, SESSION_ID_2, CHANNEL_ID_2);
     }
 
     // ---------------------------------
@@ -235,7 +235,7 @@ public class ClientConductorTest extends MockBufferUsage
 
         addSubscription();
 
-        verify(mediaDriverProxy).addSubscription(DESTINATION, CHANNEL_ID_1);
+        verify(driverProxy).addSubscription(DESTINATION, CHANNEL_ID_1);
     }
 
     @Test
@@ -247,7 +247,7 @@ public class ClientConductorTest extends MockBufferUsage
 
         subscription.release();
 
-        verify(mediaDriverProxy).removeSubscription(DESTINATION, CHANNEL_ID_1);
+        verify(driverProxy).removeSubscription(DESTINATION, CHANNEL_ID_1);
     }
 
     @Test(expected = MediaDriverTimeoutException.class)

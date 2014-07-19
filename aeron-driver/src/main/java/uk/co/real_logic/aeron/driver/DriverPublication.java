@@ -173,7 +173,7 @@ public class DriverPublication implements AutoCloseable
     }
 
     /**
-     * This is performed on the Media Conductor thread
+     * This is performed on the {@link DriverConductor} thread
      */
     public void onStatusMessage(final long termId,
                                 final long highestContiguousSequenceNumber,
@@ -189,7 +189,7 @@ public class DriverPublication implements AutoCloseable
     }
 
     /**
-     * This is performed on the Media Conductor thread
+     * This is performed on the {@link DriverConductor} thread
      */
     public void onNakFrame(final long termId, final long termOffset, final long length)
     {
@@ -202,7 +202,7 @@ public class DriverPublication implements AutoCloseable
     }
 
     /**
-     * This is performed on the Media Conductor thread
+     * This is performed on the {@link DriverConductor} thread
      */
     public boolean heartbeatCheck()
     {
@@ -229,7 +229,7 @@ public class DriverPublication implements AutoCloseable
     }
 
     /**
-     * This is performed on the Media Conductor thread
+     * This is performed on the {@link DriverConductor} thread
      */
     public int cleanLogBuffer()
     {
@@ -263,8 +263,8 @@ public class DriverPublication implements AutoCloseable
     {
         return new RetransmitHandler(new LogReader(log.logBuffer(), log.stateBuffer()),
                                      timerWheel,
-                                     MediaConductor.RETRANS_UNICAST_DELAY_GENERATOR,
-                                     MediaConductor.RETRANS_UNICAST_LINGER_GENERATOR,
+                                     DriverConductor.RETRANS_UNICAST_DELAY_GENERATOR,
+                                     DriverConductor.RETRANS_UNICAST_LINGER_GENERATOR,
                                      this::onSendRetransmit);
     }
 
@@ -312,7 +312,7 @@ public class DriverPublication implements AutoCloseable
     }
 
     /**
-     * This is performed on the Media Conductor thread via the RetransmitHandler
+     * This is performed on the {@link DriverConductor}thread via the RetransmitHandler
      */
     private void onSendRetransmit(final AtomicBuffer buffer, final int offset, final int length)
     {

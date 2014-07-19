@@ -31,7 +31,7 @@ import java.nio.ByteBuffer;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 
 /**
- * Proxy for communicating from the media driver to the client conductor.
+ * Proxy for communicating from the driver to the client conductor.
  */
 public class ClientProxy
 {

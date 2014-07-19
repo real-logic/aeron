@@ -38,7 +38,7 @@ import static uk.co.real_logic.aeron.util.TermHelper.BUFFER_COUNT;
  * Client conductor takes responses and notifications from media driver and acts on them. As well as passes commands
  * to the media driver.
  */
-public class ClientConductor extends Agent implements MediaDriverListener
+public class ClientConductor extends Agent implements DriverListener
 {
     private static final EventLogger LOGGER = new EventLogger(ClientConductor.class);
 
@@ -51,14 +51,14 @@ public class ClientConductor extends Agent implements MediaDriverListener
 
     private static final long NO_CORRELATION_ID = -1;
 
-    private final MediaDriverBroadcastReceiver mediaDriverBroadcastReceiver;
+    private final DriverBroadcastReceiver driverBroadcastReceiver;
     private final BufferManager bufferManager;
     private final long awaitTimeout;
     private final ConnectionMap<String, Publication> publicationMap = new ConnectionMap<>(); // Guarded by this
     private final SubscriptionMap subscriptionMap = new SubscriptionMap();
 
     private final AtomicBuffer counterValuesBuffer;
-    private final MediaDriverProxy mediaDriverProxy;
+    private final DriverProxy driverProxy;
     private final Signal correlationSignal;
 
     private long activeCorrelationId; // Guarded by this
@@ -66,10 +66,10 @@ public class ClientConductor extends Agent implements MediaDriverListener
     private boolean operationSucceeded = false; // Guarded by this
     private RegistrationException registrationException; // Guarded by this
 
-    public ClientConductor(final MediaDriverBroadcastReceiver mediaDriverBroadcastReceiver,
+    public ClientConductor(final DriverBroadcastReceiver driverBroadcastReceiver,
                            final BufferManager bufferManager,
                            final AtomicBuffer counterValuesBuffer,
-                           final MediaDriverProxy mediaDriverProxy,
+                           final DriverProxy driverProxy,
                            final Signal correlationSignal,
                            final long awaitTimeout)
     {
@@ -79,15 +79,15 @@ public class ClientConductor extends Agent implements MediaDriverListener
 
         this.counterValuesBuffer = counterValuesBuffer;
         this.correlationSignal = correlationSignal;
-        this.mediaDriverProxy = mediaDriverProxy;
-        this.mediaDriverBroadcastReceiver = mediaDriverBroadcastReceiver;
+        this.driverProxy = driverProxy;
+        this.driverBroadcastReceiver = driverBroadcastReceiver;
         this.bufferManager = bufferManager;
         this.awaitTimeout = awaitTimeout;
     }
 
     public int doWork()
     {
-        return mediaDriverBroadcastReceiver.receive(this, activeCorrelationId);
+        return driverBroadcastReceiver.receive(this, activeCorrelationId);
     }
 
     public void close()
@@ -102,7 +102,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
 
         if (publication == null)
         {
-            activeCorrelationId = mediaDriverProxy.addPublication(destination, channelId, sessionId);
+            activeCorrelationId = driverProxy.addPublication(destination, channelId, sessionId);
 
             final long startTime = System.currentTimeMillis();
             while (addedPublication == null)
@@ -127,7 +127,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
         final long channelId = publication.channelId();
         final long sessionId = publication.sessionId();
 
-        activeCorrelationId = mediaDriverProxy.removePublication(destination, sessionId, channelId);
+        activeCorrelationId = driverProxy.removePublication(destination, sessionId, channelId);
 
         awaitOperationSucceeded();
 
@@ -146,7 +146,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
 
             subscriptionMap.put(destination, channelId, subscription);
 
-            activeCorrelationId = mediaDriverProxy.addSubscription(destination, channelId);
+            activeCorrelationId = driverProxy.addSubscription(destination, channelId);
             awaitOperationSucceeded();
         }
 
@@ -155,7 +155,7 @@ public class ClientConductor extends Agent implements MediaDriverListener
 
     public synchronized void releaseSubscription(final Subscription subscription)
     {
-        mediaDriverProxy.removeSubscription(subscription.destination(), subscription.channelId());
+        driverProxy.removeSubscription(subscription.destination(), subscription.channelId());
 
         subscriptionMap.remove(subscription.destination(), subscription.channelId());
 

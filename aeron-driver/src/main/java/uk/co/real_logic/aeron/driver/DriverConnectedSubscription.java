@@ -128,7 +128,7 @@ public class DriverConnectedSubscription implements AutoCloseable
     }
 
     /**
-     * Called from the MediaConductor.
+     * Called from the {@link DriverConductor}.
      *
      * @return if work has been done or not
      */
@@ -148,7 +148,7 @@ public class DriverConnectedSubscription implements AutoCloseable
     }
 
     /**
-     * Called from the MediaConductor.
+     * Called from the {@link DriverConductor}.
      *
      * @return if work has been done or not
      */
@@ -195,7 +195,7 @@ public class DriverConnectedSubscription implements AutoCloseable
     }
 
     /**
-     * Called from the MediaConductor.
+     * Called from the {@link DriverConductor}.
      *
      * @return number of work items processed.
      */

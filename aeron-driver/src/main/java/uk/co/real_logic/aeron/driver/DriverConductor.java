@@ -43,11 +43,11 @@ import static uk.co.real_logic.aeron.util.ErrorCode.*;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 
 /**
- * Media Conductor to take commands from Publishers and Subscribers as well as handle NAKs and retransmissions
+ * Driver Conductor to take commands from publishers and subscribers as well as handle NAKs and retransmissions
  */
-public class MediaConductor extends Agent
+public class DriverConductor extends Agent
 {
-    private static final EventLogger LOGGER = new EventLogger(MediaConductor.class);
+    private static final EventLogger LOGGER = new EventLogger(DriverConductor.class);
 
     public static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
     public static final int HEARTBEAT_TIMEOUT_MS = 100;
@@ -94,7 +94,7 @@ public class MediaConductor extends Agent
     private final StatusBufferManager statusBufferManager;
     private final AtomicBuffer counterValuesBuffer;
 
-    public MediaConductor(final MediaDriverContext ctx)
+    public DriverConductor(final DriverContext ctx)
     {
         super(ctx.conductorIdleStrategy(), LOGGER::logException);
 

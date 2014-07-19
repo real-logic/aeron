@@ -30,7 +30,7 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
  *
  * Writes messages into the client conductor buffer.
  */
-public class MediaDriverProxy
+public class DriverProxy
 {
     /** Maximum size of the write buffer */
     public static final int MSG_BUFFER_CAPACITY = 4096;
@@ -42,7 +42,7 @@ public class MediaDriverProxy
 
     private final RingBuffer mediaDriverCommandBuffer;
 
-    public MediaDriverProxy(final RingBuffer mediaDriverCommandBuffer)
+    public DriverProxy(final RingBuffer mediaDriverCommandBuffer)
     {
         this.mediaDriverCommandBuffer = mediaDriverCommandBuffer;
 

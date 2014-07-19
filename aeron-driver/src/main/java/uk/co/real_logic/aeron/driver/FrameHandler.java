@@ -23,7 +23,7 @@ import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
 import java.net.InetSocketAddress;
 
 /**
- * Callback interface for various Frame types. For media driver, specifically, this is Data or Control.
+ * Callback interface for various Frame types. For driver, specifically, this is Data or Control.
  *
  * Subclasses must explicitly handle all cases for clarity.
  */

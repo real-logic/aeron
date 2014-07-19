@@ -87,18 +87,18 @@ public class ReceiverTest
     {
         when(POSITION_INDICATOR.position()).thenReturn(Long.MAX_VALUE - LOG_BUFFER_SIZE);
 
-        final MediaDriver.MediaDriverContext ctx = new MediaDriver.MediaDriverContext()
+        final MediaDriver.DriverContext ctx = new MediaDriver.DriverContext()
             .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .receiverNioSelector(mockNioSelector)
             .conductorNioSelector(mockNioSelector)
             .termBuffersFactory(mockTermBuffersFactory)
-            .conductorTimerWheel(new TimerWheel(MediaDriver.MEDIA_CONDUCTOR_TICK_DURATION_US,
+            .conductorTimerWheel(new TimerWheel(MediaDriver.CONDUCTOR_TICK_DURATION_US,
                                                 TimeUnit.MICROSECONDS,
-                                                MediaDriver.MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
+                                                MediaDriver.CONDUCTOR_TICKS_PER_WHEEL))
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024));
 
         toConductorQueue = ctx.conductorCommandQueue();
-        ctx.mediaConductorProxy(new MediaConductorProxy(toConductorQueue));
+        ctx.driverConductorProxy(new DriverConductorProxy(toConductorQueue));
 
         receiverProxy = new ReceiverProxy(ctx.receiverCommandQueue());
 
@@ -148,7 +148,7 @@ public class ReceiverTest
                 assertThat(cmd.sessionId(), is(SESSION_ID));
                 assertThat(cmd.termId(), is(TERM_ID));
 
-                // pass in new term buffer from media conductor, which should trigger SM
+                // pass in new term buffer from conductor, which should trigger SM
                 receiverProxy.newConnectedSubscription(
                     new NewConnectedSubscriptionCmd(
                         new DriverConnectedSubscription(
@@ -202,7 +202,7 @@ public class ReceiverTest
             (e) ->
             {
                 assertTrue(e instanceof CreateConnectedSubscriptionCmd);
-                // pass in new term buffer from media conductor, which should trigger SM
+                // pass in new term buffer from conductor, which should trigger SM
                 receiverProxy.newConnectedSubscription(
                     new NewConnectedSubscriptionCmd(
                         new DriverConnectedSubscription(
@@ -261,7 +261,7 @@ public class ReceiverTest
             (e) ->
             {
                 assertTrue(e instanceof CreateConnectedSubscriptionCmd);
-                // pass in new term buffer from media conductor, which should trigger SM
+                // pass in new term buffer from conductor, which should trigger SM
                 receiverProxy.newConnectedSubscription(
                     new NewConnectedSubscriptionCmd(
                         new DriverConnectedSubscription(
@@ -323,7 +323,7 @@ public class ReceiverTest
             (e) ->
             {
                 assertTrue(e instanceof CreateConnectedSubscriptionCmd);
-                // pass in new term buffer from media conductor, which should trigger SM
+                // pass in new term buffer from conductor, which should trigger SM
                 receiverProxy.newConnectedSubscription(
                     new NewConnectedSubscriptionCmd(
                         new DriverConnectedSubscription(

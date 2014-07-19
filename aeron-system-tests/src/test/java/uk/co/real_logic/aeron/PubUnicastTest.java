@@ -82,7 +82,7 @@ public class PubUnicastTest
         receiverChannel.configureBlocking(false);
         receiverChannel.bind(new InetSocketAddress(HOST, PORT));
 
-        final MediaDriver.MediaDriverContext ctx = new MediaDriver.MediaDriverContext();
+        final MediaDriver.DriverContext ctx = new MediaDriver.DriverContext();
 
         ctx.warnIfDirectoriesExist(false);
 

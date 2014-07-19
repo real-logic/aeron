@@ -58,7 +58,7 @@ public class SenderTest
     public final byte[] HEADER = DataHeaderFlyweight.createDefaultHeader(SESSION_ID, CHANNEL_ID, INITIAL_TERM_ID);
 
     private final AtomicArray<DriverPublication> publications = new AtomicArray<>();
-    private final Sender sender = new Sender(new MediaDriver.MediaDriverContext().publications(publications));
+    private final Sender sender = new Sender(new MediaDriver.DriverContext().publications(publications));
     private final TermBuffers termBuffers =
         BufferAndFrameHelper.newTestTermBuffers(LOG_BUFFER_SIZE, LogBufferDescriptor.STATE_BUFFER_LENGTH);
 
@@ -71,9 +71,9 @@ public class SenderTest
     private long currentTimestamp;
 
     private final TimerWheel wheel = new TimerWheel(() -> currentTimestamp,
-                                                    MediaDriver.MEDIA_CONDUCTOR_TICK_DURATION_US,
+                                                    MediaDriver.CONDUCTOR_TICK_DURATION_US,
                                                     TimeUnit.MICROSECONDS,
-                                                    MediaDriver.MEDIA_CONDUCTOR_TICKS_PER_WHEEL);
+                                                    MediaDriver.CONDUCTOR_TICKS_PER_WHEEL);
 
     private final Queue<ByteBuffer> receivedFrames = new ArrayDeque<>();
 

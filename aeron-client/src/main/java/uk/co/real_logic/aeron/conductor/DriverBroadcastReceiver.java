@@ -14,9 +14,9 @@ import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 /**
  * Analogue of {@see MediaDriverProxy} on the poll side
  */
-public class MediaDriverBroadcastReceiver
+public class DriverBroadcastReceiver
 {
-    private static final EventLogger LOGGER = new EventLogger(MediaDriverBroadcastReceiver.class);
+    private static final EventLogger LOGGER = new EventLogger(DriverBroadcastReceiver.class);
 
     private final CopyBroadcastReceiver broadcastReceiver;
 
@@ -25,12 +25,12 @@ public class MediaDriverBroadcastReceiver
     private final LogBuffersMessageFlyweight logBuffersMessage = new LogBuffersMessageFlyweight();
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
 
-    public MediaDriverBroadcastReceiver(final CopyBroadcastReceiver broadcastReceiver)
+    public DriverBroadcastReceiver(final CopyBroadcastReceiver broadcastReceiver)
     {
         this.broadcastReceiver = broadcastReceiver;
     }
 
-    public int receive(final MediaDriverListener listener, final long activeCorrelationId)
+    public int receive(final DriverListener listener, final long activeCorrelationId)
     {
         return broadcastReceiver.receive(
             (msgTypeId, buffer, index, length) ->
@@ -93,7 +93,7 @@ public class MediaDriverBroadcastReceiver
 
     private void handleErrorResponse(final AtomicBuffer buffer,
                                      final int index,
-                                     final MediaDriverListener listener,
+                                     final DriverListener listener,
                                      final long activeCorrelationId)
     {
         errorHeader.wrap(buffer, index);

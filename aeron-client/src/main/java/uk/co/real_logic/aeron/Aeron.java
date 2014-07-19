@@ -59,14 +59,14 @@ public final class Aeron implements AutoCloseable, Runnable
             throw new IllegalStateException("Unable to start Aeron", ex);
         }
 
-        final MediaDriverProxy mediaDriverProxy = new MediaDriverProxy(ctx.toDriverBuffer);
+        final DriverProxy driverProxy = new DriverProxy(ctx.toDriverBuffer);
         final Signal correlationSignal = new Signal();
-        final MediaDriverBroadcastReceiver receiver = new MediaDriverBroadcastReceiver(ctx.toClientBuffer);
+        final DriverBroadcastReceiver receiver = new DriverBroadcastReceiver(ctx.toClientBuffer);
 
         conductor = new ClientConductor(receiver,
                                         ctx.bufferManager,
                                         ctx.counterValuesBuffer(),
-                                        mediaDriverProxy,
+                                        driverProxy,
                                         correlationSignal,
                                         AWAIT_TIMEOUT);
 

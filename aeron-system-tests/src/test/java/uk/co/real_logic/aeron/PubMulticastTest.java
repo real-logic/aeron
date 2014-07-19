@@ -87,7 +87,7 @@ public class PubMulticastTest
         receiverChannel.join(InetAddress.getByName(DATA_ADDRESS), ifc);
         receiverChannel.setOption(StandardSocketOptions.IP_MULTICAST_IF, ifc);
 
-        final MediaDriver.MediaDriverContext ctx = new MediaDriver.MediaDriverContext();
+        final MediaDriver.DriverContext ctx = new MediaDriver.DriverContext();
 
         ctx.warnIfDirectoriesExist(false);
 

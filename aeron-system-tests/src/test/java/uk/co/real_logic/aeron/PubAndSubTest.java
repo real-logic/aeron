@@ -60,7 +60,7 @@ public class PubAndSubTest
 
         executorService = Executors.newFixedThreadPool(2);
 
-        final MediaDriver.MediaDriverContext ctx = new MediaDriver.MediaDriverContext();
+        final MediaDriver.DriverContext ctx = new MediaDriver.DriverContext();
 
         ctx.warnIfDirectoriesExist(false);
 

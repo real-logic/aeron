@@ -36,7 +36,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
     private final UdpDestination udpDestination;
     private final Long2ObjectHashMap<String> initialisationInProgressMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<DriverSubscription> subscriptionByChannelIdMap = new Long2ObjectHashMap<>();
-    private final MediaConductorProxy conductorProxy;
+    private final DriverConductorProxy conductorProxy;
     private final ByteBuffer smBuffer = ByteBuffer.allocateDirect(StatusMessageFlyweight.HEADER_LENGTH);
     private final ByteBuffer nakBuffer = ByteBuffer.allocateDirect(NakFlyweight.HEADER_LENGTH);
     private final StatusMessageFlyweight smHeader = new StatusMessageFlyweight();
@@ -44,7 +44,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
 
     public DataFrameHandler(final UdpDestination udpDestination,
                             final NioSelector nioSelector,
-                            final MediaConductorProxy conductorProxy)
+                            final DriverConductorProxy conductorProxy)
         throws Exception
     {
         this.transport = new UdpTransport(this, udpDestination, nioSelector);

@@ -46,8 +46,8 @@ import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
-import static uk.co.real_logic.aeron.driver.MediaDriver.MEDIA_CONDUCTOR_TICKS_PER_WHEEL;
-import static uk.co.real_logic.aeron.driver.MediaDriver.MEDIA_CONDUCTOR_TICK_DURATION_US;
+import static uk.co.real_logic.aeron.driver.MediaDriver.CONDUCTOR_TICKS_PER_WHEEL;
+import static uk.co.real_logic.aeron.driver.MediaDriver.CONDUCTOR_TICK_DURATION_US;
 import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION;
 import static uk.co.real_logic.aeron.util.ErrorCode.PUBLICATION_CHANNEL_UNKNOWN;
 import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
@@ -57,11 +57,11 @@ import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescript
  *
  * Tests for interaction of media conductor with client protocol
  */
-public class MediaConductorTest
+public class DriverConductorTest
 {
     // TODO: Assert the error log has been notified appropriately
 
-    public static final EventLogger LOGGER = new EventLogger(MediaConductorTest.class);
+    public static final EventLogger LOGGER = new EventLogger(DriverConductorTest.class);
 
     private static final String DESTINATION_URI = "udp://localhost:";
     private static final String INVALID_URI = "udp://";
@@ -88,7 +88,7 @@ public class MediaConductorTest
     private final AtomicArray<DriverPublication> publications = new AtomicArray<>();
 
 
-    private MediaConductor mediaConductor;
+    private DriverConductor driverConductor;
     private Receiver receiver;
 
     @Before
@@ -101,14 +101,14 @@ public class MediaConductorTest
         final StatusBufferManager statusBufferManager =
             new StatusBufferManager(new AtomicBuffer(new byte[4096]), counterBuffer);
 
-        final MediaDriver.MediaDriverContext ctx = new MediaDriver.MediaDriverContext()
+        final MediaDriver.DriverContext ctx = new MediaDriver.DriverContext()
             .receiverNioSelector(nioSelector)
             .conductorNioSelector(nioSelector)
             .unicastSenderFlowControl(UnicastSenderControlStrategy::new)
             .multicastSenderFlowControl(DefaultMulticastSenderControlStrategy::new)
-            .conductorTimerWheel(new TimerWheel(MEDIA_CONDUCTOR_TICK_DURATION_US,
+            .conductorTimerWheel(new TimerWheel(CONDUCTOR_TICK_DURATION_US,
                                                 TimeUnit.MICROSECONDS,
-                                                MEDIA_CONDUCTOR_TICKS_PER_WHEEL))
+                                                CONDUCTOR_TICKS_PER_WHEEL))
             .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .publications(publications)
@@ -121,10 +121,10 @@ public class MediaConductorTest
         ctx.counterValuesBuffer(counterBuffer);
 
         ctx.receiverProxy(new ReceiverProxy(ctx.receiverCommandQueue()));
-        ctx.mediaConductorProxy(new MediaConductorProxy(ctx.conductorCommandQueue()));
+        ctx.driverConductorProxy(new DriverConductorProxy(ctx.conductorCommandQueue()));
 
         receiver = new Receiver(ctx);
-        mediaConductor = new MediaConductor(ctx);
+        driverConductor = new DriverConductor(ctx);
     }
 
     @After
@@ -132,8 +132,8 @@ public class MediaConductorTest
     {
         receiver.close();
         receiver.nioSelector().selectNowWithoutProcessing();
-        mediaConductor.close();
-        mediaConductor.nioSelector().selectNowWithoutProcessing();
+        driverConductor.close();
+        driverConductor.nioSelector().selectNowWithoutProcessing();
     }
 
     @Test
@@ -143,7 +143,7 @@ public class MediaConductorTest
 
         writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 2L, 4000);
 
-        mediaConductor.doWork();
+        driverConductor.doWork();
 
         assertThat(publications.size(), is(1));
         assertNotNull(publications.get(0));
@@ -162,7 +162,7 @@ public class MediaConductorTest
 
         writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_1);
 
-        mediaConductor.doWork();
+        driverConductor.doWork();
         receiver.doWork();
 
         verify(mockClientProxy).operationSucceeded(CORRELATION_ID);
@@ -178,7 +178,7 @@ public class MediaConductorTest
         writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_1);
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_1);
 
-        mediaConductor.doWork();
+        driverConductor.doWork();
         receiver.doWork();
 
         assertNull(receiver.getFrameHandler(UdpDestination.parse(DESTINATION_URI + 4000)));
@@ -194,7 +194,7 @@ public class MediaConductorTest
         writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 3L, 2L, 4003);
         writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 3L, 4L, 4004);
 
-        mediaConductor.doWork();
+        driverConductor.doWork();
 
         assertThat(publications.size(), is(4));
     }
@@ -207,10 +207,10 @@ public class MediaConductorTest
         writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 2L, 4005);
         writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1L, 2L, 4005);
 
-        mediaConductor.doWork();
+        driverConductor.doWork();
 
         assertThat(publications.size(), is(0));
-        assertNull(mediaConductor.getFrameHandler(UdpDestination.parse(DESTINATION_URI + 4005)));
+        assertNull(driverConductor.getFrameHandler(UdpDestination.parse(DESTINATION_URI + 4005)));
     }
 
     @Test
@@ -228,7 +228,7 @@ public class MediaConductorTest
         writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 3L, 2L, 4008);
         writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 3L, 4L, 4008);
 
-        mediaConductor.doWork();
+        driverConductor.doWork();
 
         assertThat(publications.size(), is(0));
     }
@@ -244,7 +244,7 @@ public class MediaConductorTest
         writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_2);
         writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_3);
 
-        mediaConductor.doWork();
+        driverConductor.doWork();
         receiver.doWork();
 
         final DataFrameHandler frameHandler = receiver.getFrameHandler(destination);
@@ -255,7 +255,7 @@ public class MediaConductorTest
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_1);
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_2);
 
-        mediaConductor.doWork();
+        driverConductor.doWork();
         receiver.doWork();
 
         assertNotNull(receiver.getFrameHandler(destination));
@@ -273,7 +273,7 @@ public class MediaConductorTest
         writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_2);
         writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_3);
 
-        mediaConductor.doWork();
+        driverConductor.doWork();
         receiver.doWork();
 
         final DataFrameHandler frameHandler = receiver.getFrameHandler(destination);
@@ -284,7 +284,7 @@ public class MediaConductorTest
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_2);
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_3);
 
-        mediaConductor.doWork();
+        driverConductor.doWork();
         receiver.doWork();
 
         assertNotNull(receiver.getFrameHandler(destination));
@@ -292,7 +292,7 @@ public class MediaConductorTest
 
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_1);
 
-        mediaConductor.doWork();
+        driverConductor.doWork();
         receiver.doWork();
 
         assertNull(receiver.getFrameHandler(destination));
@@ -306,7 +306,7 @@ public class MediaConductorTest
         writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 2L, 4000);
         writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 2L, 4000);
 
-        mediaConductor.doWork();
+        driverConductor.doWork();
 
         assertThat(publications.size(), is(1));
         assertNotNull(publications.get(0));
@@ -324,7 +324,7 @@ public class MediaConductorTest
 
         writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1L, 2L, 4000);
 
-        mediaConductor.doWork();
+        driverConductor.doWork();
 
         assertThat(publications.size(), is(0));
 
@@ -340,7 +340,7 @@ public class MediaConductorTest
         writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 2L, 4000);
         writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 2L, 2L, 4000);
 
-        mediaConductor.doWork();
+        driverConductor.doWork();
 
         assertThat(publications.size(), is(1));
         assertNotNull(publications.get(0));
@@ -359,7 +359,7 @@ public class MediaConductorTest
         writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 2L, 4000);
         writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1L, 3L, 4000);
 
-        mediaConductor.doWork();
+        driverConductor.doWork();
 
         assertThat(publications.size(), is(1));
         assertNotNull(publications.get(0));
@@ -377,9 +377,9 @@ public class MediaConductorTest
 
         writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, INVALID_URI, CHANNEL_1);
 
-        mediaConductor.doWork();
+        driverConductor.doWork();
         receiver.doWork();
-        mediaConductor.doWork();
+        driverConductor.doWork();
 
         verify(mockClientProxy).onError(eq(INVALID_DESTINATION), argThat(not(isEmptyOrNullString())), any(), anyInt());
         verifyNeverSucceeds();

@@ -26,14 +26,14 @@ public class DriverSubscription
 {
     private final UdpDestination udpDestination;
     private final long channelId;
-    private final MediaConductorProxy conductorProxy;
+    private final DriverConductorProxy conductorProxy;
     private final Long2ObjectHashMap<DriverConnectedSubscription> connectionBySessionIdMap = new Long2ObjectHashMap<>();
 
     private int refCount = 0;
 
     public DriverSubscription(final UdpDestination udpDestination,
                               final long channelId,
-                              final MediaConductorProxy conductorProxy)
+                              final DriverConductorProxy conductorProxy)
     {
         this.udpDestination = udpDestination;
         this.channelId = channelId;

@@ -100,7 +100,7 @@ public class SubMulticastTest
         senderChannel.join(InetAddress.getByName(CONTROL_ADDRESS), ifc);
         senderChannel.setOption(StandardSocketOptions.IP_MULTICAST_IF, ifc);
 
-        final MediaDriver.MediaDriverContext ctx = new MediaDriver.MediaDriverContext();
+        final MediaDriver.DriverContext ctx = new MediaDriver.DriverContext();
 
         ctx.warnIfDirectoriesExist(false);
 

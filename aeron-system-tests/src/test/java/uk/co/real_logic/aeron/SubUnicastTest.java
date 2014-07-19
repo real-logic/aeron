@@ -95,7 +95,7 @@ public class SubUnicastTest
         senderChannel.configureBlocking(false);
         senderChannel.bind(srcAddress);
 
-        final MediaDriver.MediaDriverContext ctx = new MediaDriver.MediaDriverContext();
+        final MediaDriver.DriverContext ctx = new MediaDriver.DriverContext();
 
         ctx.warnIfDirectoriesExist(false);
 

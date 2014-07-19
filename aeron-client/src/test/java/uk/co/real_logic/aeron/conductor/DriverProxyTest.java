@@ -31,7 +31,7 @@ import static org.junit.Assert.assertThat;
 import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
 
-public class MediaDriverProxyTest
+public class DriverProxyTest
 {
     public static final String DESTINATION = "udp://localhost:40123@localhost:40124";
 
@@ -39,7 +39,7 @@ public class MediaDriverProxyTest
     private static final long SESSION_ID = 1L;
     private final RingBuffer conductorBuffer =
         new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocateDirect(TRAILER_LENGTH + 1024)));
-    private final MediaDriverProxy conductor = new MediaDriverProxy(conductorBuffer);
+    private final DriverProxy conductor = new DriverProxy(conductorBuffer);
 
     @Test
     public void threadSendsAddChannelMessage()

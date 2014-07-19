@@ -32,15 +32,15 @@ public class Receiver extends Agent
     private static final EventLogger LOGGER = new EventLogger(Receiver.class);
 
     private final NioSelector nioSelector;
-    private final MediaConductorProxy conductorProxy;
+    private final DriverConductorProxy conductorProxy;
     private final Map<UdpDestination, DataFrameHandler> frameHandlerByDestinationMap = new HashMap<>();
     private final OneToOneConcurrentArrayQueue<? super Object> commandQueue;
 
-    public Receiver(final MediaDriver.MediaDriverContext ctx) throws Exception
+    public Receiver(final MediaDriver.DriverContext ctx) throws Exception
     {
         super(ctx.receiverIdleStrategy(), LOGGER::logException);
 
-        this.conductorProxy = ctx.mediaConductorProxy();
+        this.conductorProxy = ctx.driverConductorProxy();
         this.nioSelector = ctx.receiverNioSelector();
         this.commandQueue = ctx.receiverCommandQueue();
     }

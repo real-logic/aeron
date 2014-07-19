@@ -23,11 +23,11 @@ import java.util.Queue;
 /**
  * Proxy for sending commands to the media conductor.
  */
-public class MediaConductorProxy
+public class DriverConductorProxy
 {
     private final Queue<? super Object> commandQueue;
 
-    public MediaConductorProxy(final Queue<? super Object> commandQueue)
+    public DriverConductorProxy(final Queue<? super Object> commandQueue)
     {
         this.commandQueue = commandQueue;
     }

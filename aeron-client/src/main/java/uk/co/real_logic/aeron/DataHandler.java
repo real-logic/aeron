@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 
 /**
  * Interface for delivery of data to a {@link uk.co.real_logic.aeron.Subscription}

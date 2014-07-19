@@ -15,12 +15,8 @@
  */
 package uk.co.real_logic.aeron;
 
-import org.junit.After;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.experimental.theories.DataPoint;
-import org.junit.experimental.theories.Theories;
-import org.junit.experimental.theories.Theory;
+import org.junit.*;
+import org.junit.experimental.theories.*;
 import org.junit.runner.RunWith;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
@@ -28,8 +24,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static org.mockito.Mockito.mock;
-
-import static uk.co.real_logic.aeron.util.CommonContext.DIRS_DELETE_ON_EXIT_PROP_NAME;
+import static uk.co.real_logic.aeron.common.CommonContext.DIRS_DELETE_ON_EXIT_PROP_NAME;
 
 /**
  * Test that has a publisher and subscriber and single media driver for unicast and multicast cases

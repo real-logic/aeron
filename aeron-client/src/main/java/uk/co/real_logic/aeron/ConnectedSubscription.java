@@ -15,20 +15,18 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.util.BitUtil;
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
-import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.util.status.PositionReporter;
+import uk.co.real_logic.aeron.common.BitUtil;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.common.status.PositionReporter;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import static uk.co.real_logic.aeron.util.TermHelper.calculatePosition;
-import static uk.co.real_logic.aeron.util.TermHelper.rotateNext;
-import static uk.co.real_logic.aeron.util.TermHelper.termIdToBufferIndex;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.WORD_ALIGNMENT;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.flagsOffset;
+import static uk.co.real_logic.aeron.common.TermHelper.*;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.WORD_ALIGNMENT;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.flagsOffset;
 
 /**
  * A subscription that has been connected to from a publisher session.

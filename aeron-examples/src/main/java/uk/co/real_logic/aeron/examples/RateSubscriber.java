@@ -17,12 +17,10 @@ package uk.co.real_logic.aeron.examples;
 
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Subscription;
+import uk.co.real_logic.aeron.common.RateReporter;
 import uk.co.real_logic.aeron.driver.MediaDriver;
-import uk.co.real_logic.aeron.util.RateReporter;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * Example that displays current rate while receiving data

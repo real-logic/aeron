@@ -15,18 +15,16 @@
  */
 package uk.co.real_logic.aeron.conductor;
 
-import uk.co.real_logic.aeron.util.IoUtil;
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.IoUtil;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
-import static uk.co.real_logic.aeron.util.IoUtil.mapExistingFile;
+import static uk.co.real_logic.aeron.common.IoUtil.mapExistingFile;
 
 /**
  * Default mapping buffer lifecycle strategy for the client

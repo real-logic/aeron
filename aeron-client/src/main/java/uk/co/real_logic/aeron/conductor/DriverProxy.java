@@ -15,15 +15,13 @@
  */
 package uk.co.real_logic.aeron.conductor;
 
-import uk.co.real_logic.aeron.util.command.PublicationMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.QualifiedMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.SubscriptionMessageFlyweight;
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.aeron.common.command.*;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
 
 import java.nio.ByteBuffer;
 
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
+import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.*;
 
 /**
  * Separates the concern of communicating with the client conductor away from the rest of the client.

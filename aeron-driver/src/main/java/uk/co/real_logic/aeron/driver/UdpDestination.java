@@ -15,9 +15,9 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.util.BitUtil;
-import uk.co.real_logic.aeron.util.event.EventCode;
-import uk.co.real_logic.aeron.util.event.EventLogger;
+import uk.co.real_logic.aeron.common.BitUtil;
+import uk.co.real_logic.aeron.common.event.EventCode;
+import uk.co.real_logic.aeron.common.event.EventLogger;
 
 import java.net.*;
 import java.util.Enumeration;

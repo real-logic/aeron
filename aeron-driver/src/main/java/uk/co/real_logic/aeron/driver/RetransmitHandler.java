@@ -15,11 +15,11 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.util.FeedbackDelayGenerator;
-import uk.co.real_logic.aeron.util.TimerWheel;
-import uk.co.real_logic.aeron.util.collections.Int2ObjectHashMap;
-import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
+import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
+import uk.co.real_logic.aeron.common.TimerWheel;
+import uk.co.real_logic.aeron.common.collections.Int2ObjectHashMap;
+import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
 
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;

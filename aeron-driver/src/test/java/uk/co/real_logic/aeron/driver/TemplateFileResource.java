@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.driver;
 
 import org.junit.rules.ExternalResource;
-import uk.co.real_logic.aeron.util.IoUtil;
+import uk.co.real_logic.aeron.common.IoUtil;
 
 import java.io.File;
 import java.nio.channels.FileChannel;

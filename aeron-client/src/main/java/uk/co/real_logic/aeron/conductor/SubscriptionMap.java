@@ -16,13 +16,13 @@
 package uk.co.real_logic.aeron.conductor;
 
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
+import uk.co.real_logic.aeron.common.collections.Long2ObjectHashMap;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-import static uk.co.real_logic.aeron.util.collections.CollectionUtil.getOrDefault;
+import static uk.co.real_logic.aeron.common.collections.CollectionUtil.getOrDefault;
 
 public class SubscriptionMap
 {

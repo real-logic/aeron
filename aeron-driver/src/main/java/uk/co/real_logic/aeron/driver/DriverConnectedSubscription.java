@@ -15,18 +15,18 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import uk.co.real_logic.aeron.common.TermHelper;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBuffer;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogRebuilder;
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.common.status.PositionIndicator;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
-import uk.co.real_logic.aeron.util.TermHelper;
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBuffer;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogRebuilder;
-import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.util.status.PositionIndicator;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import static uk.co.real_logic.aeron.util.TermHelper.*;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.*;
+import static uk.co.real_logic.aeron.common.TermHelper.*;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 
 /**
  * State maintained for active sessionIds within a channel for receiver processing

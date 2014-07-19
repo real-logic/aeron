@@ -1,7 +1,7 @@
 package uk.co.real_logic.aeron.conductor;
 
-import uk.co.real_logic.aeron.util.ErrorCode;
-import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
+import uk.co.real_logic.aeron.common.ErrorCode;
+import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
 
 import java.io.IOException;
 

@@ -15,20 +15,20 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import uk.co.real_logic.aeron.common.ErrorCode;
+import uk.co.real_logic.aeron.common.Flyweight;
+import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
+import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastTransmitter;
+import uk.co.real_logic.aeron.common.event.EventCode;
+import uk.co.real_logic.aeron.common.event.EventLogger;
+import uk.co.real_logic.aeron.common.protocol.ErrorFlyweight;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
-import uk.co.real_logic.aeron.util.ErrorCode;
-import uk.co.real_logic.aeron.util.Flyweight;
-import uk.co.real_logic.aeron.util.command.CorrelatedMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastTransmitter;
-import uk.co.real_logic.aeron.util.event.EventCode;
-import uk.co.real_logic.aeron.util.event.EventLogger;
-import uk.co.real_logic.aeron.util.protocol.ErrorFlyweight;
 
 import java.nio.ByteBuffer;
 
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
+import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.*;
 
 /**
  * Proxy for communicating from the driver to the client conductor.

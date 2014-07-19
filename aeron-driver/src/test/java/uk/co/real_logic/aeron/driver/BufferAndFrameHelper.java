@@ -15,15 +15,15 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
+import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
-import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 
 import java.nio.ByteBuffer;
 import java.util.stream.Stream;
 
-import static uk.co.real_logic.aeron.util.TermHelper.BUFFER_COUNT;
+import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
 
 /**
  * Buffer helper functions

@@ -15,23 +15,21 @@
  */
 package uk.co.real_logic.aeron;
 
+import uk.co.real_logic.aeron.common.TermHelper;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.common.status.PositionIndicator;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
 import uk.co.real_logic.aeron.conductor.ManagedBuffer;
-import uk.co.real_logic.aeron.util.TermHelper;
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
-import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.util.status.PositionIndicator;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import static uk.co.real_logic.aeron.util.TermHelper.rotateNext;
-import static uk.co.real_logic.aeron.util.TermHelper.rotatePrevious;
-import static uk.co.real_logic.aeron.util.TermHelper.termIdToBufferIndex;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.SUCCESS;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.TRIPPED;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.*;
+import static uk.co.real_logic.aeron.common.TermHelper.*;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender.AppendStatus;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender.AppendStatus.SUCCESS;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender.AppendStatus.TRIPPED;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 
 /**
  * Publication end of a channel for publishing messages to subscribers.

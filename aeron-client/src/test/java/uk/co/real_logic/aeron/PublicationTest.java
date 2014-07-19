@@ -3,13 +3,13 @@ package uk.co.real_logic.aeron;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.common.status.PositionIndicator;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
 import uk.co.real_logic.aeron.conductor.ManagedBuffer;
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
-import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.util.status.PositionIndicator;
 
 import java.nio.ByteBuffer;
 
@@ -18,12 +18,11 @@ import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.inOrder;
-import static uk.co.real_logic.aeron.util.TermHelper.BUFFER_COUNT;
-import static uk.co.real_logic.aeron.util.TermHelper.termIdToBufferIndex;
-import static uk.co.real_logic.aeron.util.concurrent.broadcast.RecordDescriptor.RECORD_ALIGNMENT;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.*;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.LOG_MIN_SIZE;
+import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
+import static uk.co.real_logic.aeron.common.TermHelper.termIdToBufferIndex;
+import static uk.co.real_logic.aeron.common.concurrent.broadcast.RecordDescriptor.RECORD_ALIGNMENT;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender.AppendStatus.*;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.LOG_MIN_SIZE;
 
 public class PublicationTest
 {

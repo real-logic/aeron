@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver.buffer;
 
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 
 /**
  * Encapsulates the pair of buffers used to hold a term of publication/subscription

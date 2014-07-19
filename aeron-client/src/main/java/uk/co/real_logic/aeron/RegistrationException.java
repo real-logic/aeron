@@ -1,6 +1,6 @@
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.util.ErrorCode;
+import uk.co.real_logic.aeron.common.ErrorCode;
 
 public class RegistrationException extends RuntimeException
 {

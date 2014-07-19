@@ -16,20 +16,18 @@
 package uk.co.real_logic.aeron.conductor;
 
 import org.junit.Test;
-import uk.co.real_logic.aeron.util.command.PublicationMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.QualifiedMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.SubscriptionMessageFlyweight;
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.MessageHandler;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.aeron.common.command.*;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.MessageHandler;
+import uk.co.real_logic.aeron.common.concurrent.ringbuffer.ManyToOneRingBuffer;
+import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
 
 import java.nio.ByteBuffer;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
-import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
+import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.*;
+import static uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
 
 public class DriverProxyTest
 {

@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.util.ErrorCode;
+import uk.co.real_logic.aeron.common.ErrorCode;
 
 public class ControlProtocolException extends IllegalArgumentException
 {

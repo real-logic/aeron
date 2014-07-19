@@ -15,9 +15,9 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.util.Agent;
-import uk.co.real_logic.aeron.util.concurrent.AtomicArray;
-import uk.co.real_logic.aeron.util.event.EventLogger;
+import uk.co.real_logic.aeron.common.Agent;
+import uk.co.real_logic.aeron.common.concurrent.AtomicArray;
+import uk.co.real_logic.aeron.common.event.EventLogger;
 
 /**
  * Agent that iterates over publications for sending them to registered subscribers.

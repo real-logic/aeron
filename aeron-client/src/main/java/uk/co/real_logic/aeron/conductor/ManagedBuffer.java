@@ -1,6 +1,6 @@
 package uk.co.real_logic.aeron.conductor;
 
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 
 public class ManagedBuffer
 {

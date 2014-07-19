@@ -15,18 +15,14 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import uk.co.real_logic.aeron.common.*;
+import uk.co.real_logic.aeron.common.concurrent.*;
+import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastBufferDescriptor;
+import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastTransmitter;
+import uk.co.real_logic.aeron.common.concurrent.ringbuffer.*;
+import uk.co.real_logic.aeron.common.event.EventLogger;
+import uk.co.real_logic.aeron.common.status.CountersManager;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
-import uk.co.real_logic.aeron.util.*;
-import uk.co.real_logic.aeron.util.concurrent.AtomicArray;
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastBufferDescriptor;
-import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastTransmitter;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
-import uk.co.real_logic.aeron.util.event.EventLogger;
-import uk.co.real_logic.aeron.util.status.CountersManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,7 +32,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import static java.lang.Integer.getInteger;
-import static uk.co.real_logic.aeron.util.IoUtil.mapNewFile;
+import static uk.co.real_logic.aeron.common.IoUtil.mapNewFile;
 
 /**
  * Main class for JVM-based media driver
@@ -331,7 +327,7 @@ public class MediaDriver implements AutoCloseable
     }
 
     /**
-     * Invoke and start all {@link uk.co.real_logic.aeron.util.Agent}s internal to the media driver using
+     * Invoke and start all {@link uk.co.real_logic.aeron.common.Agent}s internal to the media driver using
      * a fixed size thread pool internal to the media driver.
      */
     public void invokeEmbedded()
@@ -344,7 +340,7 @@ public class MediaDriver implements AutoCloseable
     }
 
     /**
-     * Stop running {@link uk.co.real_logic.aeron.util.Agent}s. Waiting for each to finish.
+     * Stop running {@link uk.co.real_logic.aeron.common.Agent}s. Waiting for each to finish.
      *
      * @throws Exception
      */

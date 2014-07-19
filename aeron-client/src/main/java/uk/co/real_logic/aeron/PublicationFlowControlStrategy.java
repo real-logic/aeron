@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.StateViewer;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.StateViewer;
 
 public interface PublicationFlowControlStrategy
 {

@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.examples;
 
 import uk.co.real_logic.aeron.BufferExhaustedException;
 import uk.co.real_logic.aeron.Publication;
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 
 /**
  * A example wrapper around {@see Channel} which supports blocking

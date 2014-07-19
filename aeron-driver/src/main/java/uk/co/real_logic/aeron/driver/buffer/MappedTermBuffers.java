@@ -15,19 +15,16 @@
  */
 package uk.co.real_logic.aeron.driver.buffer;
 
-import uk.co.real_logic.aeron.util.IoUtil;
-import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
+import uk.co.real_logic.aeron.common.IoUtil;
+import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.io.*;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.stream.Stream;
 
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
-import static uk.co.real_logic.aeron.util.TermHelper.BUFFER_COUNT;
+import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
 
 /**
  * Encapsulates responsibility for rotating and reusing memory mapped files used by the log buffers.

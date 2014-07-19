@@ -15,36 +15,27 @@
  */
 package uk.co.real_logic.aeron;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastBufferDescriptor;
-import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastReceiver;
-import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastTransmitter;
-import uk.co.real_logic.aeron.util.concurrent.broadcast.CopyBroadcastReceiver;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
-import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.util.protocol.ErrorFlyweight;
+import org.junit.*;
+import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.broadcast.*;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
+import uk.co.real_logic.aeron.common.concurrent.ringbuffer.*;
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.common.protocol.ErrorFlyweight;
 
 import java.nio.ByteBuffer;
 
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-
-import static uk.co.real_logic.aeron.util.TermHelper.BUFFER_COUNT;
-import static uk.co.real_logic.aeron.util.TermHelper.termIdToBufferIndex;
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ON_NEW_CONNECTED_SUBSCRIPTION;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.SUCCESS;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
-import static uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferTestUtil.skip;
+import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
+import static uk.co.real_logic.aeron.common.TermHelper.termIdToBufferIndex;
+import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ON_NEW_CONNECTED_SUBSCRIPTION;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender.AppendStatus.SUCCESS;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
+import static uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBufferTestUtil.skip;
 
 public class AeronTest extends MockBufferUsage
 {

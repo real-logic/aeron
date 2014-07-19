@@ -15,24 +15,18 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
-import uk.co.real_logic.aeron.util.event.EventCode;
-import uk.co.real_logic.aeron.util.event.EventLogger;
-import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
-import uk.co.real_logic.aeron.util.protocol.NakFlyweight;
-import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
+import uk.co.real_logic.aeron.common.event.EventCode;
+import uk.co.real_logic.aeron.common.event.EventLogger;
+import uk.co.real_logic.aeron.common.protocol.*;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
-import java.net.StandardSocketOptions;
+import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 
-import static uk.co.real_logic.aeron.util.protocol.HeaderFlyweight.*;
+import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.*;
 
 /**
  * Transport abstraction for UDP sources and receivers.

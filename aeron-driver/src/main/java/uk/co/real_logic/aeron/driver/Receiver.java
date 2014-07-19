@@ -15,11 +15,11 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import uk.co.real_logic.aeron.common.Agent;
+import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.aeron.common.event.EventCode;
+import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.driver.cmd.*;
-import uk.co.real_logic.aeron.util.*;
-import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.aeron.util.event.EventCode;
-import uk.co.real_logic.aeron.util.event.EventLogger;
 
 import java.util.HashMap;
 import java.util.Map;

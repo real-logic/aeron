@@ -15,10 +15,8 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.util.protocol.NakFlyweight;
-import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.protocol.*;
 
 import java.net.InetSocketAddress;
 

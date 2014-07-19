@@ -15,23 +15,15 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
+import uk.co.real_logic.aeron.common.ErrorCode;
+import uk.co.real_logic.aeron.common.TimerWheel;
+import uk.co.real_logic.aeron.common.command.*;
+import uk.co.real_logic.aeron.common.concurrent.*;
+import uk.co.real_logic.aeron.common.concurrent.ringbuffer.*;
+import uk.co.real_logic.aeron.common.event.EventLogger;
+import uk.co.real_logic.aeron.common.status.CountersManager;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
-import uk.co.real_logic.aeron.util.concurrent.AtomicArray;
-import uk.co.real_logic.aeron.util.ErrorCode;
-import uk.co.real_logic.aeron.util.TimerWheel;
-import uk.co.real_logic.aeron.util.command.ControlProtocolEvents;
-import uk.co.real_logic.aeron.util.command.PublicationMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.SubscriptionMessageFlyweight;
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBufferDescriptor;
-import uk.co.real_logic.aeron.util.event.EventLogger;
-import uk.co.real_logic.aeron.util.status.CountersManager;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -46,11 +38,11 @@ import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
+import static uk.co.real_logic.aeron.common.ErrorCode.INVALID_DESTINATION;
+import static uk.co.real_logic.aeron.common.ErrorCode.PUBLICATION_CHANNEL_UNKNOWN;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
 import static uk.co.real_logic.aeron.driver.MediaDriver.CONDUCTOR_TICKS_PER_WHEEL;
 import static uk.co.real_logic.aeron.driver.MediaDriver.CONDUCTOR_TICK_DURATION_US;
-import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION;
-import static uk.co.real_logic.aeron.util.ErrorCode.PUBLICATION_CHANNEL_UNKNOWN;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
 
 /**
  * Test the Media Driver Conductor in isolation

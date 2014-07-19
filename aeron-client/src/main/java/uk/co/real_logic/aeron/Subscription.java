@@ -15,10 +15,10 @@
  */
 package uk.co.real_logic.aeron;
 
+import uk.co.real_logic.aeron.common.concurrent.AtomicArray;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
+import uk.co.real_logic.aeron.common.status.PositionReporter;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
-import uk.co.real_logic.aeron.util.concurrent.AtomicArray;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
-import uk.co.real_logic.aeron.util.status.PositionReporter;
 
 /**
  * Aeron Subscriber API for receiving messages from publishers on a given destination and channelId pair.

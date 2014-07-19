@@ -15,27 +15,21 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
 import org.mockito.InOrder;
-import uk.co.real_logic.aeron.util.TermHelper;
-import uk.co.real_logic.aeron.util.StaticDelayGenerator;
-import uk.co.real_logic.aeron.util.TimerWheel;
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.GapScanner;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogRebuilder;
-import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.common.*;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.*;
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
 import static org.mockito.Mockito.*;
-import static uk.co.real_logic.aeron.util.BitUtil.align;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
+import static uk.co.real_logic.aeron.common.BitUtil.align;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
 
 public class LossHandlerTest
 {

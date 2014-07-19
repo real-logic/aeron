@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.examples;
 
-import uk.co.real_logic.aeron.util.event.EventReader;
+import uk.co.real_logic.aeron.common.event.EventReader;
 
 /**
  * Simple application for reading of event log

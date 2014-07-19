@@ -15,21 +15,13 @@
  */
 package uk.co.real_logic.aeron;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import uk.co.real_logic.aeron.conductor.ClientConductor;
-import uk.co.real_logic.aeron.conductor.DriverBroadcastReceiver;
-import uk.co.real_logic.aeron.conductor.DriverProxy;
-import uk.co.real_logic.aeron.conductor.Signal;
-import uk.co.real_logic.aeron.util.TermHelper;
-import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastBufferDescriptor;
-import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastReceiver;
-import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastTransmitter;
-import uk.co.real_logic.aeron.util.concurrent.broadcast.CopyBroadcastReceiver;
-import uk.co.real_logic.aeron.util.protocol.ErrorFlyweight;
+import org.junit.*;
+import uk.co.real_logic.aeron.common.TermHelper;
+import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.broadcast.*;
+import uk.co.real_logic.aeron.common.protocol.ErrorFlyweight;
+import uk.co.real_logic.aeron.conductor.*;
 
 import java.nio.ByteBuffer;
 import java.util.stream.IntStream;
@@ -38,10 +30,10 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
-import static uk.co.real_logic.aeron.util.ErrorCode.INVALID_DESTINATION;
-import static uk.co.real_logic.aeron.util.ErrorCode.PUBLICATION_CHANNEL_ALREADY_EXISTS;
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.ON_NEW_PUBLICATION;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
+import static uk.co.real_logic.aeron.common.ErrorCode.INVALID_DESTINATION;
+import static uk.co.real_logic.aeron.common.ErrorCode.PUBLICATION_CHANNEL_ALREADY_EXISTS;
+import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ON_NEW_PUBLICATION;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
 
 public class ClientConductorTest extends MockBufferUsage
 {

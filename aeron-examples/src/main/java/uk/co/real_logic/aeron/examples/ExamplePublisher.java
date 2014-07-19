@@ -17,13 +17,11 @@ package uk.co.real_logic.aeron.examples;
 
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Publication;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.driver.MediaDriver;
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * Example Aeron publisher application

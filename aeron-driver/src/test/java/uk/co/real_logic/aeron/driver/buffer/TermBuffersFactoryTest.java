@@ -15,14 +15,12 @@
  */
 package uk.co.real_logic.aeron.driver.buffer;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
+import uk.co.real_logic.aeron.common.IoUtil;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.driver.UdpDestination;
-import uk.co.real_logic.aeron.util.IoUtil;
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
 
 import java.io.File;
 import java.io.IOException;

@@ -15,20 +15,18 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.mockito.stubbing.Answer;
+import uk.co.real_logic.aeron.common.TimerWheel;
+import uk.co.real_logic.aeron.common.concurrent.AtomicArray;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
+import uk.co.real_logic.aeron.common.event.EventLogger;
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.common.status.BufferPositionReporter;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
-import uk.co.real_logic.aeron.util.concurrent.AtomicArray;
-import uk.co.real_logic.aeron.util.TimerWheel;
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
-import uk.co.real_logic.aeron.util.event.EventLogger;
-import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
-import uk.co.real_logic.aeron.util.status.BufferPositionReporter;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -40,9 +38,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
 import static org.mockito.Mockito.*;
-import static uk.co.real_logic.aeron.util.BitUtil.align;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender.AppendStatus.SUCCESS;
+import static uk.co.real_logic.aeron.common.BitUtil.align;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender.AppendStatus.SUCCESS;
 
 public class SenderTest
 {

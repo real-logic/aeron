@@ -16,23 +16,20 @@
 package uk.co.real_logic.aeron.conductor;
 
 import uk.co.real_logic.aeron.*;
-import uk.co.real_logic.aeron.util.Agent;
-import uk.co.real_logic.aeron.util.BackoffIdleStrategy;
-import uk.co.real_logic.aeron.util.ErrorCode;
-import uk.co.real_logic.aeron.util.TermHelper;
-import uk.co.real_logic.aeron.util.collections.ConnectionMap;
-import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogReader;
-import uk.co.real_logic.aeron.util.event.EventLogger;
-import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.util.status.*;
+import uk.co.real_logic.aeron.common.*;
+import uk.co.real_logic.aeron.common.collections.ConnectionMap;
+import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
+import uk.co.real_logic.aeron.common.event.EventLogger;
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.common.status.*;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-import static uk.co.real_logic.aeron.util.TermHelper.BUFFER_COUNT;
+import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
 
 /**
  * Client conductor takes responses and notifications from media driver and acts on them. As well as passes commands

@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver.buffer;
 
-import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
+import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
 
 import java.util.stream.Stream;
 

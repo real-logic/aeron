@@ -15,16 +15,16 @@
  */
 package uk.co.real_logic.aeron.driver.buffer;
 
-import uk.co.real_logic.aeron.util.IoUtil;
-import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.IoUtil;
+import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
-import static uk.co.real_logic.aeron.util.TermHelper.BUFFER_COUNT;
+import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
 
 /**
  * Memory mapped raw logs to make up a term log buffer.

@@ -15,22 +15,14 @@
  */
 package uk.co.real_logic.aeron;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
+import uk.co.real_logic.aeron.common.event.EventLogger;
+import uk.co.real_logic.aeron.common.protocol.*;
 import uk.co.real_logic.aeron.driver.MediaDriver;
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.FrameDescriptor;
-import uk.co.real_logic.aeron.util.event.EventLogger;
-import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
-import uk.co.real_logic.aeron.util.protocol.NakFlyweight;
-import uk.co.real_logic.aeron.util.protocol.StatusMessageFlyweight;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
-import java.net.StandardSocketOptions;
+import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.util.ArrayDeque;
@@ -42,8 +34,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
-import static uk.co.real_logic.aeron.util.BitUtil.align;
-import static uk.co.real_logic.aeron.util.CommonContext.DIRS_DELETE_ON_EXIT_PROP_NAME;
+import static uk.co.real_logic.aeron.common.BitUtil.align;
+import static uk.co.real_logic.aeron.common.CommonContext.DIRS_DELETE_ON_EXIT_PROP_NAME;
 
 /**
  * Test that has a consumer and single media driver for multicast cases. Uses socket as sender/publisher endpoint.

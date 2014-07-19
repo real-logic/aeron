@@ -15,16 +15,16 @@
  */
 package uk.co.real_logic.aeron.driver.buffer;
 
+import uk.co.real_logic.aeron.common.FileMappingConvention;
+import uk.co.real_logic.aeron.common.IoUtil;
 import uk.co.real_logic.aeron.driver.UdpDestination;
-import uk.co.real_logic.aeron.util.FileMappingConvention;
-import uk.co.real_logic.aeron.util.IoUtil;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 
-import static uk.co.real_logic.aeron.util.FileMappingConvention.channelLocation;
-import static uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
+import static uk.co.real_logic.aeron.common.FileMappingConvention.channelLocation;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
 
 /**
  * Factory for creating new {@link TermBuffers} in publications or subscriptions directory as appropriate.

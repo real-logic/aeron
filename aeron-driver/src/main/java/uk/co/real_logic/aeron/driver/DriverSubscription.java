@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
+import uk.co.real_logic.aeron.common.collections.Long2ObjectHashMap;
 
 import java.util.Collection;
 

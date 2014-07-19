@@ -15,32 +15,28 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
+import uk.co.real_logic.aeron.common.*;
+import uk.co.real_logic.aeron.common.collections.Long2ObjectHashMap;
+import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
+import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
+import uk.co.real_logic.aeron.common.concurrent.*;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner;
+import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.aeron.common.event.EventCode;
+import uk.co.real_logic.aeron.common.event.EventLogger;
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.common.status.*;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
-import uk.co.real_logic.aeron.driver.cmd.CreateConnectedSubscriptionCmd;
-import uk.co.real_logic.aeron.driver.cmd.NewConnectedSubscriptionCmd;
-import uk.co.real_logic.aeron.driver.cmd.SubscriptionRemovedCmd;
-import uk.co.real_logic.aeron.util.*;
-import uk.co.real_logic.aeron.util.collections.Long2ObjectHashMap;
-import uk.co.real_logic.aeron.util.command.PublicationMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.SubscriptionMessageFlyweight;
-import uk.co.real_logic.aeron.util.concurrent.AtomicArray;
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.GapScanner;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
-import uk.co.real_logic.aeron.util.event.EventCode;
-import uk.co.real_logic.aeron.util.event.EventLogger;
-import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.util.status.*;
+import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
+import uk.co.real_logic.aeron.driver.cmd.*;
 
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import static uk.co.real_logic.aeron.common.ErrorCode.*;
+import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.driver.MediaDriver.*;
-import static uk.co.real_logic.aeron.util.ErrorCode.*;
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
 
 /**
  * Driver Conductor to take commands from publishers and subscribers as well as handle NAKs and retransmissions

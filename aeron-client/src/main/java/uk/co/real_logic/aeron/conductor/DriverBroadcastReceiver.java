@@ -1,15 +1,13 @@
 package uk.co.real_logic.aeron.conductor;
 
-import uk.co.real_logic.aeron.util.ErrorCode;
-import uk.co.real_logic.aeron.util.command.CorrelatedMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.LogBuffersMessageFlyweight;
-import uk.co.real_logic.aeron.util.command.PublicationMessageFlyweight;
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.broadcast.CopyBroadcastReceiver;
-import uk.co.real_logic.aeron.util.event.EventLogger;
-import uk.co.real_logic.aeron.util.protocol.ErrorFlyweight;
+import uk.co.real_logic.aeron.common.ErrorCode;
+import uk.co.real_logic.aeron.common.command.*;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.broadcast.CopyBroadcastReceiver;
+import uk.co.real_logic.aeron.common.event.EventLogger;
+import uk.co.real_logic.aeron.common.protocol.ErrorFlyweight;
 
-import static uk.co.real_logic.aeron.util.command.ControlProtocolEvents.*;
+import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.*;
 
 /**
  * Analogue of {@see MediaDriverProxy} on the poll side

@@ -15,10 +15,10 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.util.FeedbackDelayGenerator;
-import uk.co.real_logic.aeron.util.TimerWheel;
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.GapScanner;
+import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
+import uk.co.real_logic.aeron.common.TimerWheel;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner;
 
 import java.util.concurrent.TimeUnit;
 

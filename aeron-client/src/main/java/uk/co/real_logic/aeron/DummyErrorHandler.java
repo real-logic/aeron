@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron;
 
 
-import uk.co.real_logic.aeron.util.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
 
 /**
  * Avoids null checks everywhere you want to use an ErrorHandler.

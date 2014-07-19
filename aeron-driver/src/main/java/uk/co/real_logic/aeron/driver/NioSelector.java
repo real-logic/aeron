@@ -15,12 +15,10 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.util.event.EventLogger;
+import uk.co.real_logic.aeron.common.event.EventLogger;
 
 import java.io.IOException;
-import java.nio.channels.SelectableChannel;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
+import java.nio.channels.*;
 import java.util.Iterator;
 import java.util.Set;
 

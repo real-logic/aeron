@@ -2,13 +2,13 @@ package uk.co.real_logic.aeron;
 
 import org.junit.Before;
 import org.mockito.stubbing.Answer;
+import uk.co.real_logic.aeron.common.TermHelper;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.conductor.BufferManager;
 import uk.co.real_logic.aeron.conductor.ManagedBuffer;
-import uk.co.real_logic.aeron.util.TermHelper;
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogAppender;
-import uk.co.real_logic.aeron.util.concurrent.logbuffer.LogBufferDescriptor;
-import uk.co.real_logic.aeron.util.protocol.DataHeaderFlyweight;
 
 import java.io.IOException;
 

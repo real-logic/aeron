@@ -15,25 +15,20 @@
  */
 package uk.co.real_logic.aeron;
 
+import uk.co.real_logic.aeron.common.*;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastReceiver;
+import uk.co.real_logic.aeron.common.concurrent.broadcast.CopyBroadcastReceiver;
+import uk.co.real_logic.aeron.common.concurrent.ringbuffer.ManyToOneRingBuffer;
+import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.conductor.*;
-import uk.co.real_logic.aeron.util.Agent;
-import uk.co.real_logic.aeron.util.CommonContext;
-import uk.co.real_logic.aeron.util.IoUtil;
-import uk.co.real_logic.aeron.util.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.util.concurrent.broadcast.BroadcastReceiver;
-import uk.co.real_logic.aeron.util.concurrent.broadcast.CopyBroadcastReceiver;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.ManyToOneRingBuffer;
-import uk.co.real_logic.aeron.util.concurrent.ringbuffer.RingBuffer;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 
-import static uk.co.real_logic.aeron.util.IoUtil.mapExistingFile;
+import static uk.co.real_logic.aeron.common.IoUtil.mapExistingFile;
 
 /**
  * Encapsulation of media driver and client for source and receiver construction
@@ -82,7 +77,7 @@ public final class Aeron implements AutoCloseable, Runnable
     }
 
     /**
-     * Invoke Aeron {@link uk.co.real_logic.aeron.util.Agent}s from the executor.
+     * Invoke Aeron {@link uk.co.real_logic.aeron.common.Agent}s from the executor.
      *
      * @param executor to execute from
      */

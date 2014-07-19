@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.examples;
 
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.aeron.mediadriver.MediaDriver;
+import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

@@ -22,9 +22,9 @@ limitations under the License.
 Directory Structure
 -------------------
 
-API and protocol processing
+Client API and protocol processing
 
-    aeron-core
+    aeron-client
 
 Examples
 
@@ -32,11 +32,11 @@ Examples
 
 Media Driver
 
-    aeron-mediadriver
+    aeron-driver
 
-Utility Class/Methods
+Common Classes/Methods
 
-    aeron-util
+    aeron-common
 
 Benchmarks
 
@@ -73,8 +73,8 @@ Media Driver Packaging
 
 The Media Driver is packaged by the default build into an application that can be found here
 
-    aeron-mediadriver/build/distributions/aeron-mediadriver-${VERSION}.zip
+    aeron-driver/build/distributions/aeron-driver-${VERSION}.zip
 
 The Media Driver can also be run directly from Gradle
 
-    $ ./gradlew aeron-mediadriver:run
+    $ ./gradlew aeron-driver:run

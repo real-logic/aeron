@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.mediadriver.MediaDriver;
+import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;

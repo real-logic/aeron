@@ -22,7 +22,7 @@ import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
-import uk.co.real_logic.aeron.mediadriver.MediaDriver;
+import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

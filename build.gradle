@@ -40,7 +40,7 @@ subprojects {
     // Make sure that we use the correct JDK in Eclipse
     // There needs to be a JDK8 JVM installed in Eclipse before
     // importing the generated projects.
-    plugins.withType(org.gradle.api.plugins.JavaBasePlugin) {
+    plugins.withType(JavaBasePlugin) {
         eclipse.classpath.file.whenMerged { org.gradle.plugins.ide.eclipse.model.Classpath path ->
             path.entries.findAll { it.path.contains('JRE_CONTAINER') }.each {
                 it.path += "/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"
@@ -117,14 +117,14 @@ subprojects {
     }
 }
 
-project(':aeron-mediadriver') {
+project(':aeron-driver') {
     apply plugin: 'application'
 
-    mainClassName = 'uk.co.real_logic.aeron.mediadriver.MediaDriver'
+    mainClassName = 'uk.co.real_logic.aeron.driver.MediaDriver'
 
     dependencies {
-        compile project(':aeron-util')
-        testCompile project(path: ':aeron-util', configuration: 'tests')
+        compile project(':aeron-common')
+        testCompile project(path: ':aeron-common', configuration: 'tests')
     }
 
     test {
@@ -138,10 +138,10 @@ project(':aeron-mediadriver') {
     }
 }
 
-project(':aeron-core') {
+project(':aeron-client') {
     dependencies {
-        compile project(':aeron-util')
-        testCompile project(path: ':aeron-util', configuration: 'tests')
+        compile project(':aeron-common')
+        testCompile project(path: ':aeron-common', configuration: 'tests')
     }
 }
 
@@ -149,7 +149,7 @@ project(':aeron-examples') {
     apply plugin: 'shadow'
 
     dependencies {
-        compile project(':aeron-core'), project(':aeron-mediadriver')
+        compile project(':aeron-client'), project(':aeron-driver')
     }
 
     shadow {
@@ -165,7 +165,7 @@ project(':aeron-benchmark') {
     apply plugin: 'shadow'
 
     dependencies {
-        compile project(':aeron-core'), project(':aeron-mediadriver')
+        compile project(':aeron-client'), project(':aeron-driver')
         compile 'org.openjdk.jmh:jmh-core:0.4.2'
     }
 
@@ -186,8 +186,8 @@ project(':aeron-benchmark') {
 
 project(':aeron-system-tests') {
     dependencies {
-        compile project(':aeron-core'), project(':aeron-mediadriver')
-        testCompile project(path: ':aeron-util', configuration: 'tests')
+        compile project(':aeron-client'), project(':aeron-driver')
+        testCompile project(path: ':aeron-common', configuration: 'tests')
     }
 
     test {

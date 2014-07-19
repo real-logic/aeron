@@ -1,1 +1,1 @@
-include 'aeron-util', 'aeron-core', 'aeron-mediadriver', 'aeron-examples', 'aeron-benchmark', 'aeron-system-tests'
+include 'aeron-common', 'aeron-client', 'aeron-driver', 'aeron-examples', 'aeron-benchmark', 'aeron-system-tests'

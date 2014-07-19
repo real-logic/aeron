@@ -75,6 +75,7 @@ public class LogBuffer
     {
         logBuffer.setMemory(0, logBuffer.capacity(), (byte)0);
         stateBuffer.setMemory(0, stateBuffer.capacity(), (byte)0);
+        statusOrdered(CLEAN);
     }
 
     /**

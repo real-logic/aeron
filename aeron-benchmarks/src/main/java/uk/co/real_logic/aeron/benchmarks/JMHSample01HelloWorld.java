@@ -22,7 +22,7 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package uk.co.real_logic.aeron.benchmark;
+package uk.co.real_logic.aeron.benchmarks;
 
 import org.openjdk.jmh.annotations.GenerateMicroBenchmark;
 import org.openjdk.jmh.runner.Runner;

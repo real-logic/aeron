@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.benchmark.filelocks;
+package uk.co.real_logic.aeron.benchmarks.filelocks;
 
 public interface Signaller
 {

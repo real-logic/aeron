@@ -40,7 +40,7 @@ Common Classes/Methods
 
 Benchmarks
 
-    aeron-benchmark
+    aeron-benchmarks
 
 Build
 -----

@@ -161,7 +161,7 @@ project(':aeron-examples') {
     }
 }
 
-project(':aeron-benchmark') {
+project(':aeron-benchmarks') {
     apply plugin: 'shadow'
 
     dependencies {
@@ -170,7 +170,7 @@ project(':aeron-benchmark') {
     }
 
     shadow {
-        outputFile = new File('aeron-benchmark/build/libs/microbenchmarks.jar')
+        outputFile = new File('aeron-benchmarks/build/libs/microbenchmarks.jar')
     }
 
     jar {

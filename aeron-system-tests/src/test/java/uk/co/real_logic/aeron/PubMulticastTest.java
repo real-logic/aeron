@@ -68,8 +68,6 @@ public class PubMulticastTest
     @Before
     public void setupClientAndMediaDriver() throws Exception
     {
-        System.setProperty(DIRS_DELETE_ON_EXIT_PROP_NAME, "true");
-
         final NetworkInterface ifc = NetworkInterface.getByInetAddress(InetAddress.getByName("localhost"));
         receiverChannel = DatagramChannel.open();
         receiverChannel.configureBlocking(false);
@@ -80,6 +78,7 @@ public class PubMulticastTest
 
         final MediaDriver.DriverContext ctx = new MediaDriver.DriverContext();
 
+        ctx.dirsDeleteOnExit(true);
         ctx.warnIfDirectoriesExist(false);
 
         driver = new MediaDriver(ctx);

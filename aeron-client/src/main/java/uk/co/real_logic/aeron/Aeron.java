@@ -196,6 +196,8 @@ public final class Aeron implements AutoCloseable, Runnable
 
         private MappedByteBuffer defaultToClientBuffer;
         private MappedByteBuffer defaultToDriverBuffer;
+        private MappedByteBuffer defaultCounterLabelsBuffer;
+        private MappedByteBuffer defaultCounterValuesBuffer;
 
         private BufferManager bufferManager;
 
@@ -220,16 +222,14 @@ public final class Aeron implements AutoCloseable, Runnable
 
                 if (counterLabelsBuffer() == null)
                 {
-                    final MappedByteBuffer labels =
-                        mapExistingFile(new File(countersDirName(), LABELS_FILE), LABELS_FILE);
-                    counterLabelsBuffer(new AtomicBuffer(labels));
+                    defaultCounterLabelsBuffer = mapExistingFile(new File(countersDirName(), LABELS_FILE), LABELS_FILE);
+                    counterLabelsBuffer(new AtomicBuffer(defaultCounterLabelsBuffer));
                 }
 
                 if (countersBuffer() == null)
                 {
-                    final MappedByteBuffer values =
-                        mapExistingFile(new File(countersDirName(), VALUES_FILE), VALUES_FILE);
-                    countersBuffer(new AtomicBuffer(values));
+                    defaultCounterValuesBuffer = mapExistingFile(new File(countersDirName(), VALUES_FILE), VALUES_FILE);
+                    countersBuffer(new AtomicBuffer(defaultCounterValuesBuffer));
                 }
 
                 if (null == bufferManager)
@@ -273,6 +273,16 @@ public final class Aeron implements AutoCloseable, Runnable
             if (null != defaultToClientBuffer)
             {
                 IoUtil.unmap(defaultToClientBuffer);
+            }
+
+            if (null != defaultCounterLabelsBuffer)
+            {
+                IoUtil.unmap(defaultCounterLabelsBuffer);
+            }
+
+            if (null != defaultCounterValuesBuffer)
+            {
+                IoUtil.unmap(defaultCounterValuesBuffer);
             }
 
             try

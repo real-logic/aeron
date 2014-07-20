@@ -84,14 +84,13 @@ public class SubUnicastTest
     @Before
     public void setupClientAndMediaDriver() throws Exception
     {
-        System.setProperty(DIRS_DELETE_ON_EXIT_PROP_NAME, "true");
-
         senderChannel = DatagramChannel.open();
         senderChannel.configureBlocking(false);
         senderChannel.bind(srcAddress);
 
         final MediaDriver.DriverContext ctx = new MediaDriver.DriverContext();
 
+        ctx.dirsDeleteOnExit(true);
         ctx.warnIfDirectoriesExist(false);
 
         driver = new MediaDriver(ctx);

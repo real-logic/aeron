@@ -216,6 +216,7 @@ public class MediaDriver implements AutoCloseable
 
     private final File adminDirFile;
     private final File dataDirFile;
+    private final File countersDirFile;
 
     private final Receiver receiver;
     private final Sender sender;
@@ -290,6 +291,7 @@ public class MediaDriver implements AutoCloseable
 
         this.adminDirFile = new File(ctx.adminDirName());
         this.dataDirFile = new File(ctx.dataDirName());
+        this.countersDirFile = new File(ctx.countersDirName());
 
         ensureDirectoriesExist();
 
@@ -400,6 +402,7 @@ public class MediaDriver implements AutoCloseable
 
         IoUtil.ensureDirectoryExists(adminDirFile, "conductor", callback);
         IoUtil.ensureDirectoryExists(dataDirFile, "data", callback);
+        IoUtil.ensureDirectoryExists(countersDirFile, "counters", callback);
     }
 
     private void deleteDirectories() throws Exception
@@ -408,6 +411,7 @@ public class MediaDriver implements AutoCloseable
         {
             IoUtil.delete(adminDirFile, false);
             IoUtil.delete(dataDirFile, false);
+            IoUtil.delete(countersDirFile, false);
         }
     }
 
@@ -475,6 +479,8 @@ public class MediaDriver implements AutoCloseable
 
         private MappedByteBuffer toClientsBuffer;
         private MappedByteBuffer toDriverBuffer;
+        private MappedByteBuffer counterLabelsByteBuffer;
+        private MappedByteBuffer counterValuesByteBuffer;
         private CountersManager countersManager;
 
         private int termBufferSize;
@@ -513,14 +519,16 @@ public class MediaDriver implements AutoCloseable
             {
                 if (counterLabelsBuffer() == null)
                 {
-                    counterLabelsBuffer(new AtomicBuffer(mapNewFile(new File(countersDirName(), LABELS_FILE),
-                                                                    COUNTER_BUFFERS_SZ)));
+                    counterLabelsByteBuffer = mapNewFile(new File(countersDirName(), LABELS_FILE), COUNTER_BUFFERS_SZ);
+
+                    counterLabelsBuffer(new AtomicBuffer(counterLabelsByteBuffer));
                 }
 
                 if (countersBuffer() == null)
                 {
-                    countersBuffer(new AtomicBuffer(mapNewFile(new File(countersDirName(), VALUES_FILE),
-                                                               COUNTER_BUFFERS_SZ)));
+                    counterValuesByteBuffer = mapNewFile(new File(countersDirName(), VALUES_FILE), COUNTER_BUFFERS_SZ);
+
+                    countersBuffer(new AtomicBuffer(counterValuesByteBuffer));
                 }
 
                 countersManager(new CountersManager(counterLabelsBuffer(), countersBuffer()));
@@ -761,6 +769,16 @@ public class MediaDriver implements AutoCloseable
             if (null != toDriverBuffer)
             {
                 IoUtil.unmap(toDriverBuffer);
+            }
+
+            if (null != counterLabelsByteBuffer)
+            {
+                IoUtil.unmap(counterLabelsByteBuffer);
+            }
+
+            if (null != counterValuesByteBuffer)
+            {
+                IoUtil.unmap(counterValuesByteBuffer);
             }
 
             try

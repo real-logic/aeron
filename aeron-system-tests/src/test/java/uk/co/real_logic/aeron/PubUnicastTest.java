@@ -68,8 +68,6 @@ public class PubUnicastTest
     @Before
     public void setupClientAndMediaDriver() throws Exception
     {
-        System.setProperty(DIRS_DELETE_ON_EXIT_PROP_NAME, "true");
-
         executorService = Executors.newSingleThreadExecutor();
 
         receiverChannel = DatagramChannel.open();
@@ -78,6 +76,7 @@ public class PubUnicastTest
 
         final MediaDriver.DriverContext ctx = new MediaDriver.DriverContext();
 
+        ctx.dirsDeleteOnExit(true);
         ctx.warnIfDirectoriesExist(false);
 
         driver = new MediaDriver(ctx);

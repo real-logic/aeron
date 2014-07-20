@@ -92,7 +92,7 @@ public class AeronTest extends MockBufferUsage
         ctx.counterLabelsBuffer(counterLabelsBuffer)
            .countersBuffer(counterValuesBuffer);
 
-        aeron = Aeron.newSingleMediaDriver(ctx);
+        aeron = Aeron.newClient(ctx);
 
         errorHeader.wrap(atomicScratchBuffer, 0);
     }

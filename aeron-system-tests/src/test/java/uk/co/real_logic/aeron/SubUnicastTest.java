@@ -96,7 +96,7 @@ public class SubUnicastTest
 
         driver = new MediaDriver(ctx);
 
-        consumingClient = Aeron.newSingleMediaDriver(newAeronContext());
+        consumingClient = Aeron.newClient(newAeronContext());
 
         payload.putBytes(0, PAYLOAD);
 
@@ -118,11 +118,12 @@ public class SubUnicastTest
     @After
     public void closeEverything() throws Exception
     {
+        subscription.release();
+
         consumingClient.shutdown();
         driver.shutdown();
 
         senderChannel.close();
-        subscription.release();
         consumingClient.close();
         driver.close();
         executorService.shutdown();

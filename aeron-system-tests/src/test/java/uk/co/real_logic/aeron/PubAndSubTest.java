@@ -18,13 +18,18 @@ package uk.co.real_logic.aeron;
 import org.junit.*;
 import org.junit.experimental.theories.*;
 import org.junit.runner.RunWith;
+import uk.co.real_logic.aeron.common.BitUtil;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static org.mockito.Matchers.anyObject;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
-import static uk.co.real_logic.aeron.common.CommonContext.DIRS_DELETE_ON_EXIT_PROP_NAME;
+import static org.mockito.Mockito.verify;
 
 /**
  * Test that has a publisher and subscriber and single media driver for unicast and multicast cases
@@ -47,24 +52,24 @@ public class PubAndSubTest
     private Subscription subscription;
     private Publication publication;
 
+    private AtomicBuffer buffer = new AtomicBuffer(new byte[256]);
+    private DataHandler dataHandler = mock(DataHandler.class);
+
     private ExecutorService executorService;
 
     private void setup(final String destination) throws Exception
     {
-        System.setProperty(DIRS_DELETE_ON_EXIT_PROP_NAME, "true");
-
         executorService = Executors.newFixedThreadPool(2);
 
         final MediaDriver.DriverContext ctx = new MediaDriver.DriverContext();
 
+        ctx.dirsDeleteOnExit(true);
         ctx.warnIfDirectoriesExist(false);
 
         driver = new MediaDriver(ctx);
 
-        final DataHandler dataHandler = mock(DataHandler.class);
-
-        publishingClient = Aeron.newSingleMediaDriver(new Aeron.ClientContext());
-        subscribingClient = Aeron.newSingleMediaDriver(new Aeron.ClientContext());
+        publishingClient = Aeron.newClient(new Aeron.ClientContext());
+        subscribingClient = Aeron.newClient(new Aeron.ClientContext());
 
         driver.invokeEmbedded();
         publishingClient.invoke(executorService);
@@ -78,12 +83,12 @@ public class PubAndSubTest
     public void closeEverything() throws Exception
     {
         publication.release();
+        subscription.release();
 
         subscribingClient.shutdown();
         publishingClient.shutdown();
         driver.shutdown();
 
-        subscription.release();
         subscribingClient.close();
         publishingClient.close();
         driver.close();
@@ -100,15 +105,29 @@ public class PubAndSubTest
     }
 
     @Theory
-    @Ignore("isn't finished yet - simple message send/receive")
+    @Test(timeout = 1000)
     public void shouldReceivePublishedMessage(final String destination) throws Exception
     {
         setup(destination);
 
-        Thread.sleep(100);
+        buffer.putInt(0, 1);
+
+        publication.offer(buffer, 0, BitUtil.SIZE_OF_INT);
+
+        int msgs = 0;
+        do
+        {
+            msgs += subscription.poll(Integer.MAX_VALUE);
+            Thread.yield();
+        }
+        while (msgs < 1);
+
+        verify(dataHandler).onData(anyObject(), eq(DataHeaderFlyweight.HEADER_LENGTH), eq(BitUtil.SIZE_OF_INT),
+                eq(SESSION_ID), eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
     }
 
     @Theory
+    @Test(timeout = 1000)
     @Ignore("isn't finished yet = send enough data to rollover a buffer")
     public void shouldContinueAfterBufferRollover(final String destination) throws Exception
     {

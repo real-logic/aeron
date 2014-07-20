@@ -100,7 +100,7 @@ public class SubMulticastTest
 
         payload.putBytes(0, PAYLOAD);
 
-        consumingClient = Aeron.newSingleMediaDriver(newAeronContext());
+        consumingClient = Aeron.newClient(newAeronContext());
 
         executorService = Executors.newSingleThreadExecutor();
         driver.invokeEmbedded();
@@ -117,11 +117,12 @@ public class SubMulticastTest
     @After
     public void closeEverything() throws Exception
     {
+        subscription.release();
+
         consumingClient.shutdown();
         driver.shutdown();
 
         senderChannel.close();
-        subscription.release();
         consumingClient.close();
         driver.close();
         executorService.shutdown();

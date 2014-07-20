@@ -84,7 +84,7 @@ public class PubMulticastTest
 
         driver = new MediaDriver(ctx);
 
-        producingClient = Aeron.newSingleMediaDriver(newAeronContext());
+        producingClient = Aeron.newClient(newAeronContext());
 
         payload.putBytes(0, PAYLOAD);
 

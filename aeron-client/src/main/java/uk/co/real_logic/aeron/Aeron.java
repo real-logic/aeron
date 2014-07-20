@@ -122,19 +122,32 @@ public final class Aeron implements AutoCloseable, Runnable
     }
 
     /**
-     * Creates an media driver associated with this Aeron instance that can be used to create sources and
-     * subscriptions on.
+     * Creates an Aeron client associated with this Aeron instance that can be used to create sources and
+     * subscriptions on. Default configuration.
      *
-     * @param ctx of the media driver and Aeron configuration or null for default configuration
      * @return Aeron instance
      */
-    public static Aeron newSingleMediaDriver(final ClientContext ctx)
+    public static Aeron newClient()
+    {
+        return new Aeron(new ClientContext());
+    }
+
+    /**
+     * Creates an Aeron client associated with this Aeron instance that can be used to create sources and
+     * subscriptions on.
+     *
+     * @param ctx of the media driver and Aeron configuration
+     * @return Aeron instance
+     */
+    public static Aeron newClient(final ClientContext ctx)
     {
         return new Aeron(ctx);
     }
 
     /**
      * Add a {@link Publication} for publishing messages to subscribers.
+     *
+     * If the sessionId is 0, then a random one will be generated.
      *
      * @param destination for receiving the messages know to the media layer.
      * @param channelId   within the destination scope.
@@ -143,7 +156,14 @@ public final class Aeron implements AutoCloseable, Runnable
      */
     public Publication addPublication(final String destination, final long channelId, final long sessionId)
     {
-        return conductor.addPublication(destination, channelId, sessionId);
+        long sessionIdToRequest = sessionId;
+
+        if (0 == sessionId)
+        {
+            sessionIdToRequest = generateSessionId();
+        }
+
+        return conductor.addPublication(destination, channelId, sessionIdToRequest);
     }
 
     /**
@@ -162,6 +182,11 @@ public final class Aeron implements AutoCloseable, Runnable
     public ClientConductor conductor()
     {
         return conductor;
+    }
+
+    private long generateSessionId()
+    {
+        return ((long)(Math.random() * (double)0xFFFFFFF7L) & 0xFFFFFFFFL);
     }
 
     public static class ClientContext extends CommonContext

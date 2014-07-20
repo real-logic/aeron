@@ -27,9 +27,9 @@ import java.util.concurrent.Executors;
  */
 public class ExampleSubscriber
 {
-    public static final String DESTINATION = "udp://localhost:40123";
-    public static final int CHANNEL_ID = 10;
-    public static final int FRAME_COUNT_LIMIT = 10;
+    public static final int CHANNEL_ID = Configuration.CHANNEL_ID;
+    public static final String DESTINATION = Configuration.DESTINATION;
+    public static final int FRAME_COUNT_LIMIT = Configuration.FRAME_COUNT_LIMIT;
 
     public static void main(final String[] args)
     {
@@ -39,6 +39,8 @@ public class ExampleSubscriber
         try (final MediaDriver driver = ExampleUtil.createEmbeddedMediaDriver();
              final Aeron aeron = ExampleUtil.createAeron(aeronContext))
         {
+            System.out.println("Subscribing to " + DESTINATION + " on channel Id " + CHANNEL_ID);
+
             // subscription for channel Id 1
             final Subscription subscription1 = aeron.addSubscription(DESTINATION, CHANNEL_ID,
                     ExampleUtil.printStringMessage(CHANNEL_ID));

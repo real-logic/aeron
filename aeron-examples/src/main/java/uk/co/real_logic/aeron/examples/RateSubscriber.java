@@ -27,9 +27,9 @@ import java.util.concurrent.*;
  */
 public class RateSubscriber
 {
-    public static final String DESTINATION = "udp://localhost:40123";
-    public static final int CHANNEL_ID_1 = 10;
-    public static final int FRAME_COUNT_LIMIT = 10;
+    public static final int CHANNEL_ID = Configuration.CHANNEL_ID;
+    public static final String DESTINATION = Configuration.DESTINATION;
+    public static final int FRAME_COUNT_LIMIT = Configuration.FRAME_COUNT_LIMIT;
 
     public static void main(final String[] args)
     {
@@ -39,11 +39,11 @@ public class RateSubscriber
         try (final MediaDriver driver = ExampleUtil.createEmbeddedMediaDriver();
              final Aeron aeron = ExampleUtil.createAeron(aeronContext))
         {
-            System.out.println("Subscribing to " + DESTINATION + " on channel Id " + CHANNEL_ID_1);
+            System.out.println("Subscribing to " + DESTINATION + " on channel Id " + CHANNEL_ID);
 
             final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), ExampleUtil::printRate);
 
-            final Subscription subscription = aeron.addSubscription(DESTINATION, CHANNEL_ID_1,
+            final Subscription subscription = aeron.addSubscription(DESTINATION, CHANNEL_ID,
                     ExampleUtil.rateReporterHandler(reporter));
 
             executor.execute(() -> ExampleUtil.subscriberLoop(FRAME_COUNT_LIMIT).accept(subscription));

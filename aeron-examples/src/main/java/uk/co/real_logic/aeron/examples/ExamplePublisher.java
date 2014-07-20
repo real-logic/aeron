@@ -28,8 +28,8 @@ import java.util.concurrent.*;
  */
 public class ExamplePublisher
 {
-    public static final int CHANNEL_ID = 10;
-    public static final String DESTINATION = "udp://localhost:40123";
+    public static final int CHANNEL_ID = Configuration.CHANNEL_ID;
+    public static final String DESTINATION = Configuration.DESTINATION;
 
     private static final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocateDirect(256));
 
@@ -41,6 +41,8 @@ public class ExamplePublisher
         try (final MediaDriver driver = ExampleUtil.createEmbeddedMediaDriver();
              final Aeron aeron = ExampleUtil.createAeron(context, executor))
         {
+            System.out.println("Publishing to " + DESTINATION + " on channel Id " + CHANNEL_ID);
+
             final Publication publication = aeron.addPublication(DESTINATION, CHANNEL_ID, 0);
 
             for (int i = 0; i < 10; i++)

@@ -29,11 +29,11 @@ import java.util.concurrent.*;
  */
 public class StreamingPublisher
 {
-    public static final int CHANNEL_ID = 10;
-    public static final String DESTINATION = "udp://localhost:40123";
-    public static final int MESSAGE_LENGTH = 256;
-    public static final long NUMBER_OF_MESSAGES = 100;
-    public static final long LINGER_TIMEOUT = TimeUnit.SECONDS.toMillis(5);
+    public static final int CHANNEL_ID = Configuration.CHANNEL_ID;
+    public static final String DESTINATION = Configuration.DESTINATION;
+    public static final int MESSAGE_LENGTH = Configuration.MESSAGE_LENGTH;
+    public static final long NUMBER_OF_MESSAGES = Configuration.NUMBER_OF_MESSAGES;
+    public static final long LINGER_TIMEOUT_MS = Configuration.LINGER_TIMEOUT_MS;
 
     private static final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
 
@@ -68,10 +68,10 @@ public class StreamingPublisher
 
             System.out.println("Done streaming.");
 
-            if (0 < LINGER_TIMEOUT)
+            if (0 < LINGER_TIMEOUT_MS)
             {
-                System.out.println("Lingering for " + LINGER_TIMEOUT + " milliseconds...");
-                Thread.sleep(LINGER_TIMEOUT);
+                System.out.println("Lingering for " + LINGER_TIMEOUT_MS + " milliseconds...");
+                Thread.sleep(LINGER_TIMEOUT_MS);
             }
 
             reporter.done();

@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.common;
 
 import java.util.concurrent.locks.LockSupport;
+import java.util.function.BiConsumer;
 
 /**
  * Tracker and reporter of rates.
@@ -24,24 +25,9 @@ import java.util.concurrent.locks.LockSupport;
  */
 public class RateReporter implements Runnable
 {
-    /**
-     * Reporting function for {@link RateReporter}
-     */
-    @FunctionalInterface
-    public interface ReportingFunction
-    {
-        /**
-         * Called when a rate report is generated.
-         *
-         * @param messagesPerSec reported in last interval
-         * @param bytesPerSec reported in last interval
-         */
-        void onReport(final double messagesPerSec, final double bytesPerSec);
-    }
-
     private final long reportIntervalNs;
     private final long parkNs;
-    private final ReportingFunction reportingFunction;
+    private final BiConsumer<Double, Double> reportingFunction;
 
     private volatile boolean done = false;
     private volatile long totalBytes;
@@ -56,7 +42,7 @@ public class RateReporter implements Runnable
      * @param reportInterval in nanoseconds
      * @param reportingFunction to call for reporting rates
      */
-    public RateReporter(final long reportInterval, final ReportingFunction reportingFunction)
+    public RateReporter(final long reportInterval, final BiConsumer<Double, Double> reportingFunction)
     {
         this.reportIntervalNs = reportInterval;
         this.parkNs = reportInterval;
@@ -85,7 +71,7 @@ public class RateReporter implements Runnable
             final double bytesPerSec = (double)((currentTotalBytes - lastTotalBytes) * reportIntervalNs) /
                     (double)timeSpanNs;
 
-            reportingFunction.onReport(messagesPerSec, bytesPerSec);
+            reportingFunction.accept(messagesPerSec, bytesPerSec);
 
             lastTotalBytes = currentTotalBytes;
             lastTotalMessages = currentTotalMessages;

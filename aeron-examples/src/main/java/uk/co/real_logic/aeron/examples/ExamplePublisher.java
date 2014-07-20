@@ -30,6 +30,7 @@ public class ExamplePublisher
 {
     public static final int CHANNEL_ID = Configuration.CHANNEL_ID;
     public static final String DESTINATION = Configuration.DESTINATION;
+    public static final long NUMBER_OF_MESSAGES = Configuration.NUMBER_OF_MESSAGES;
 
     private static final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocateDirect(256));
 
@@ -45,12 +46,12 @@ public class ExamplePublisher
 
             final Publication publication = aeron.addPublication(DESTINATION, CHANNEL_ID, 0);
 
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
             {
                 final String message = "Hello World! " + i;
                 buffer.putBytes(0, message.getBytes());
 
-                System.out.print("offering " + i);
+                System.out.print("offering " + i + "/" + NUMBER_OF_MESSAGES);
                 final boolean result = publication.offer(buffer, 0, message.getBytes().length);
 
                 if (!result)

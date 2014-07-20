@@ -37,19 +37,16 @@ public class ExampleSubscriber
         final Aeron.ClientContext aeronContext = new Aeron.ClientContext();
 
         try (final MediaDriver driver = ExampleUtil.createEmbeddedMediaDriver();
-             final Aeron aeron = ExampleUtil.createAeron(aeronContext))
+             final Aeron aeron = ExampleUtil.createAeron(aeronContext, executor))
         {
             System.out.println("Subscribing to " + DESTINATION + " on channel Id " + CHANNEL_ID);
 
             // subscription for channel Id 1
-            final Subscription subscription1 = aeron.addSubscription(DESTINATION, CHANNEL_ID,
+            final Subscription subscription = aeron.addSubscription(DESTINATION, CHANNEL_ID,
                     ExampleUtil.printStringMessage(CHANNEL_ID));
 
-            // spin off the subscriber thread if you want it to be independent
-            executor.execute(() -> ExampleUtil.subscriberLoop(FRAME_COUNT_LIMIT).accept(subscription1));
-
-            // run aeron client conductor thread from here
-            aeron.run();
+            // run the subscriber thread from here
+            ExampleUtil.subscriberLoop(FRAME_COUNT_LIMIT).accept(subscription);
         }
         catch (final Exception ex)
         {

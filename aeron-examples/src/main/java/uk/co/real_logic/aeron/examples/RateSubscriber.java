@@ -37,7 +37,7 @@ public class RateSubscriber
         final Aeron.ClientContext aeronContext = new Aeron.ClientContext();
 
         try (final MediaDriver driver = ExampleUtil.createEmbeddedMediaDriver();
-             final Aeron aeron = ExampleUtil.createAeron(aeronContext))
+             final Aeron aeron = ExampleUtil.createAeron(aeronContext, executor))
         {
             System.out.println("Subscribing to " + DESTINATION + " on channel Id " + CHANNEL_ID);
 
@@ -47,7 +47,6 @@ public class RateSubscriber
                     ExampleUtil.rateReporterHandler(reporter));
 
             executor.execute(() -> ExampleUtil.subscriberLoop(FRAME_COUNT_LIMIT).accept(subscription));
-            executor.execute(aeron);
 
             // run the rate reporter loop
             reporter.run();

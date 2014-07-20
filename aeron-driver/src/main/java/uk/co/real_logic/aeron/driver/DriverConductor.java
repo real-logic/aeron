@@ -366,31 +366,31 @@ public class DriverConductor extends Agent
         }
     }
 
-    private void onAddSubscription(final SubscriptionMessageFlyweight subscriberMessage)
+    private void onAddSubscription(final SubscriptionMessageFlyweight subscriptionMessage)
     {
-        final String destination = subscriberMessage.destination();
+        final String destination = subscriptionMessage.destination();
         try
         {
             final UdpDestination udpDestination = UdpDestination.parse(destination);
-            if (!receiverProxy.addSubscription(udpDestination, subscriberMessage.channelId()))
+            if (!receiverProxy.addSubscription(udpDestination, subscriptionMessage.channelId()))
             {
                 // TODO: should we error here?
             }
 
-            clientProxy.operationSucceeded(subscriberMessage.correlationId());
+            clientProxy.operationSucceeded(subscriptionMessage.correlationId());
         }
         catch (final IllegalArgumentException ex)
         {
-            clientProxy.onError(INVALID_DESTINATION, ex.getMessage(), subscriberMessage, subscriberMessage.length());
+            clientProxy.onError(INVALID_DESTINATION, ex.getMessage(), subscriptionMessage, subscriptionMessage.length());
         }
     }
 
-    private void onRemoveSubscription(final SubscriptionMessageFlyweight subscriberMessage)
+    private void onRemoveSubscription(final SubscriptionMessageFlyweight subscriptionMessage)
     {
-        final String destination = subscriberMessage.destination();
+        final String destination = subscriptionMessage.destination();
         final UdpDestination udpDestination = UdpDestination.parse(destination);
 
-        if (!receiverProxy.removeSubscription(udpDestination, subscriberMessage.channelId()))
+        if (!receiverProxy.removeSubscription(udpDestination, subscriptionMessage.channelId()))
         {
             // TODO: should we error here?
         }

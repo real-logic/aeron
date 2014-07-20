@@ -121,8 +121,7 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
             }
             else if (null == initialisationInProgressMap.get(sessionId))
             {
-                final InetSocketAddress controlAddress =
-                    transport.isMulticast() ? udpDestination.remoteControl() : srcAddress;
+                final InetSocketAddress controlAddress = transport.isMulticast() ? udpDestination.remoteControl() : srcAddress;
 
                 initialisationInProgressMap.put(sessionId, INIT_IN_PROGRESS); // TODO: need to clean up on timeout
 

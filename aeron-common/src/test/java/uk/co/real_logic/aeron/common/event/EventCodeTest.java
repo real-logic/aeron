@@ -15,7 +15,6 @@ public class EventCodeTest
         Set<Long> seenTagBits = new HashSet<>();
         for (EventCode code : EventCode.values())
         {
-            System.out.println(code.tagBit());
             assertTrue(seenTagBits.add(code.tagBit()));
         }
     }

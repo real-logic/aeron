@@ -42,7 +42,7 @@ public enum EventCode
     ERROR_SENDING_HEARTBEAT_PACKET(15, EventCodec::dissectAsFrame),
     COULD_NOT_SEND_ENTIRE_RETRANSMIT(16, EventCodec::dissectAsFrame);
 
-    private final static Int2ObjectHashMap<EventCode> mapOfIdToEventCode = new Int2ObjectHashMap<>();
+    private static final Int2ObjectHashMap<EventCode> EVENT_CODE_BY_ID_MAP = new Int2ObjectHashMap<>();
 
     @FunctionalInterface
     private interface DissectFunction
@@ -58,7 +58,7 @@ public enum EventCode
     {
         for (final EventCode e : EventCode.values())
         {
-            mapOfIdToEventCode.put(e.id(), e);
+            EVENT_CODE_BY_ID_MAP.put(e.id(), e);
         }
     }
 
@@ -87,7 +87,7 @@ public enum EventCode
 
     public static EventCode get(final int id)
     {
-        final EventCode code = mapOfIdToEventCode.get(id);
+        final EventCode code = EVENT_CODE_BY_ID_MAP.get(id);
 
         if (null == code)
         {

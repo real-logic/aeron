@@ -21,6 +21,7 @@ import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastBufferDescrip
 import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.*;
 import uk.co.real_logic.aeron.common.event.EventLogger;
+import uk.co.real_logic.aeron.common.event.EventReader;
 import uk.co.real_logic.aeron.common.status.CountersManager;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
 
@@ -29,6 +30,7 @@ import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.util.concurrent.*;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static java.lang.Integer.getInteger;
@@ -219,6 +221,7 @@ public class MediaDriver implements AutoCloseable
     private final Receiver receiver;
     private final Sender sender;
     private final DriverConductor conductor;
+    private final EventReader eventReader;
     private final DriverContext ctx;
 
     private ExecutorService executor;
@@ -226,10 +229,12 @@ public class MediaDriver implements AutoCloseable
     private Thread conductorThread;
     private Thread senderThread;
     private Thread receiverThread;
+    private Thread eventReaderThread;
 
     private Future conductorFuture;
     private Future senderFuture;
     private Future receiverFuture;
+    private Future eventReaderFuture;
 
     /**
      * Start Media Driver as a stand-alone process.
@@ -294,6 +299,13 @@ public class MediaDriver implements AutoCloseable
         this.receiver = new Receiver(ctx);
         this.sender = new Sender(ctx);
         this.conductor = new DriverConductor(ctx);
+
+
+        final EventReader.Context readerCtx = new EventReader.Context()
+                .backoffStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
+                        AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
+                .handler(ctx.eventConsumer);
+        this.eventReader = new EventReader(readerCtx);
     }
 
     /**
@@ -309,6 +321,9 @@ public class MediaDriver implements AutoCloseable
 
         receiverThread = new Thread(receiver);
         invokeDaemonized(receiverThread, "driver-receiver");
+
+        eventReaderThread = new Thread(eventReader);
+        invokeDaemonized(eventReaderThread, "event-reader");
     }
 
     /**
@@ -335,6 +350,7 @@ public class MediaDriver implements AutoCloseable
         conductorFuture = executor.submit(conductor);
         senderFuture = executor.submit(sender);
         receiverFuture = executor.submit(receiver);
+        eventReaderFuture = executor.submit(eventReader);
     }
 
     /**
@@ -344,26 +360,17 @@ public class MediaDriver implements AutoCloseable
      */
     public void shutdown() throws Exception
     {
-        if (null != senderThread)
-        {
-            shutdown(senderThread, sender);
-        }
-
-        if (null != receiverThread)
-        {
-            shutdown(receiverThread, receiver);
-        }
-
-        if (null != conductorThread)
-        {
-            shutdown(conductorThread, conductor);
-        }
+        shutdown(senderThread, sender);
+        shutdown(receiverThread, receiver);
+        shutdown(conductorThread, conductor);
+        shutdown(eventReaderThread, conductor);
 
         if (null != executor)
         {
             shutdownExecutorThread(senderFuture, sender);
             shutdownExecutorThread(receiverFuture, receiver);
             shutdownExecutorThread(conductorFuture, conductor);
+            shutdownExecutorThread(eventReaderFuture, conductor);
 
             executor.shutdown();
         }
@@ -413,6 +420,11 @@ public class MediaDriver implements AutoCloseable
 
     private void shutdown(final Thread thread, final Agent agent)
     {
+        if (thread == null)
+        {
+            return;
+        }
+
         agent.stop();
         thread.interrupt();
 
@@ -487,6 +499,7 @@ public class MediaDriver implements AutoCloseable
         private EventLogger receiverLogger;
         private EventLogger driverLogger;
         private EventLogger senderLogger;
+        private Consumer<String> eventConsumer;
 
         public DriverContext()
         {
@@ -542,6 +555,7 @@ public class MediaDriver implements AutoCloseable
             driverLogger(new EventLogger());
             receiverLogger(new EventLogger());
             senderLogger(new EventLogger());
+            eventConsumer(System.out::println);
 
             return this;
         }
@@ -689,6 +703,12 @@ public class MediaDriver implements AutoCloseable
         public DriverContext senderLogger(final EventLogger value)
         {
             this.senderLogger = value;
+            return this;
+        }
+
+        public DriverContext eventConsumer(final Consumer<String> value)
+        {
+            this.eventConsumer = value;
             return this;
         }
 

@@ -15,6 +15,8 @@
  */
 package uk.co.real_logic.aeron.common.event;
 
+import uk.co.real_logic.aeron.common.Agent;
+import uk.co.real_logic.aeron.common.IdleStrategy;
 import uk.co.real_logic.aeron.common.IoUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.ManyToOneRingBuffer;
@@ -27,14 +29,17 @@ import java.util.function.Consumer;
 /**
  * Event Log Reader
  */
-public class EventReader implements AutoCloseable
+public class EventReader extends Agent implements AutoCloseable
 {
     private File eventsFile;
     private MappedByteBuffer buffer;
     private ManyToOneRingBuffer ringBuffer;
+    private Consumer<String> handler;
 
     public EventReader(final Context context)
     {
+        super(context.backoffStrategy(), e -> e.printStackTrace());
+        handler = context.handler();
         try
         {
             eventsFile = context.eventsFile();
@@ -62,11 +67,6 @@ public class EventReader implements AutoCloseable
         }
     }
 
-    public int read(final Consumer<String> handler)
-    {
-        return read(handler, Integer.MAX_VALUE);
-    }
-
     public int read(final Consumer<String> handler, final int limit)
     {
         return ringBuffer.read(
@@ -79,6 +79,11 @@ public class EventReader implements AutoCloseable
         IoUtil.unmap(buffer);
     }
 
+    public int doWork() throws Exception
+    {
+        return read(handler, Integer.MAX_VALUE);
+    }
+
     public static class Context
     {
         private File eventsFile = new File(System.getProperty(EventConfiguration.LOCATION_PROPERTY_NAME,
@@ -86,6 +91,9 @@ public class EventReader implements AutoCloseable
         private long bufferSize = Long.getLong(EventConfiguration.BUFFER_SIZE_PROPERTY_NAME,
             EventConfiguration.BUFFER_SIZE_DEFAULT) + RingBufferDescriptor.TRAILER_LENGTH;
         private boolean deleteOnExit = Boolean.getBoolean(EventConfiguration.DELETE_ON_EXIT_PROPERTY_NAME);
+
+        private IdleStrategy backoffStrategy;
+        private Consumer<String> handler;
 
         public Context eventsFile(final File eventsFile)
         {
@@ -105,6 +113,18 @@ public class EventReader implements AutoCloseable
             return this;
         }
 
+        public Context backoffStrategy(final IdleStrategy value)
+        {
+            this.backoffStrategy = value;
+            return this;
+        }
+
+        public Context handler(final Consumer<String> value)
+        {
+            this.handler = value;
+            return this;
+        }
+
         public File eventsFile()
         {
             return eventsFile;
@@ -118,6 +138,16 @@ public class EventReader implements AutoCloseable
         public boolean deleteOnExit()
         {
             return deleteOnExit;
+        }
+
+        public IdleStrategy backoffStrategy()
+        {
+            return backoffStrategy;
+        }
+
+        public Consumer<String> handler()
+        {
+            return handler;
         }
     }
 }

@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 /**
  *
  */
-public class Configuration
+public class ExampleConfiguration
 {
     public static final String DESTINATION_PROP = "aeron.example.destination";
     public static final String CHANNEL_ID_PROP = "aeron.example.channelId";

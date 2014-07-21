@@ -28,9 +28,9 @@ import java.util.concurrent.*;
  */
 public class ExamplePublisher
 {
-    public static final int CHANNEL_ID = Configuration.CHANNEL_ID;
-    public static final String DESTINATION = Configuration.DESTINATION;
-    public static final long NUMBER_OF_MESSAGES = Configuration.NUMBER_OF_MESSAGES;
+    public static final int CHANNEL_ID = ExampleConfiguration.CHANNEL_ID;
+    public static final String DESTINATION = ExampleConfiguration.DESTINATION;
+    public static final long NUMBER_OF_MESSAGES = ExampleConfiguration.NUMBER_OF_MESSAGES;
 
     private static final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocateDirect(256));
 

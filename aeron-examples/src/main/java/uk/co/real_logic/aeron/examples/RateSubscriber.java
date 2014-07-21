@@ -27,9 +27,9 @@ import java.util.concurrent.*;
  */
 public class RateSubscriber
 {
-    public static final int CHANNEL_ID = Configuration.CHANNEL_ID;
-    public static final String DESTINATION = Configuration.DESTINATION;
-    public static final int FRAME_COUNT_LIMIT = Configuration.FRAME_COUNT_LIMIT;
+    public static final int CHANNEL_ID = ExampleConfiguration.CHANNEL_ID;
+    public static final String DESTINATION = ExampleConfiguration.DESTINATION;
+    public static final int FRAME_COUNT_LIMIT = ExampleConfiguration.FRAME_COUNT_LIMIT;
 
     public static void main(final String[] args)
     {

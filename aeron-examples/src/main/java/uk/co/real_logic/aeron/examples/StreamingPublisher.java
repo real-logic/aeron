@@ -29,11 +29,11 @@ import java.util.concurrent.*;
  */
 public class StreamingPublisher
 {
-    public static final int CHANNEL_ID = Configuration.CHANNEL_ID;
-    public static final String DESTINATION = Configuration.DESTINATION;
-    public static final int MESSAGE_LENGTH = Configuration.MESSAGE_LENGTH;
-    public static final long NUMBER_OF_MESSAGES = Configuration.NUMBER_OF_MESSAGES;
-    public static final long LINGER_TIMEOUT_MS = Configuration.LINGER_TIMEOUT_MS;
+    public static final int CHANNEL_ID = ExampleConfiguration.CHANNEL_ID;
+    public static final String DESTINATION = ExampleConfiguration.DESTINATION;
+    public static final int MESSAGE_LENGTH = ExampleConfiguration.MESSAGE_LENGTH;
+    public static final long NUMBER_OF_MESSAGES = ExampleConfiguration.NUMBER_OF_MESSAGES;
+    public static final long LINGER_TIMEOUT_MS = ExampleConfiguration.LINGER_TIMEOUT_MS;
 
     private static final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
 

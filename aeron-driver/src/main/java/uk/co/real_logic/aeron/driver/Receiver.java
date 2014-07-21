@@ -108,7 +108,7 @@ public class Receiver extends Agent
 
         if (null == frameHandler)
         {
-            frameHandler = new DataFrameHandler(udpDestination, nioSelector, conductorProxy);
+            frameHandler = new DataFrameHandler(udpDestination, nioSelector, conductorProxy, new EventLogger());
             frameHandlerByDestinationMap.put(udpDestination, frameHandler);
         }
 

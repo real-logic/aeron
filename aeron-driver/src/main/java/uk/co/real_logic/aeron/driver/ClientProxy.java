@@ -43,10 +43,12 @@ public class ClientProxy
     private final ErrorFlyweight errorFlyweight = new ErrorFlyweight();
     private final LogBuffersMessageFlyweight logBuffersMessage = new LogBuffersMessageFlyweight();
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
+    private final EventLogger logger;
 
-    public ClientProxy(final BroadcastTransmitter transmitter)
+    public ClientProxy(final BroadcastTransmitter transmitter, final EventLogger logger)
     {
         this.transmitter = transmitter;
+        this.logger = logger;
     }
 
     public void onError(final ErrorCode errorCode,
@@ -84,9 +86,9 @@ public class ClientProxy
         termBuffers.appendBufferLocationsTo(logBuffersMessage);
         logBuffersMessage.destination(destination);
 
-        EventLogger.log(msgTypeId == ON_NEW_PUBLICATION ?
-                        EventCode.CMD_OUT_NEW_PUBLICATION_BUFFER_NOTIFICATION :
-                        EventCode.CMD_OUT_NEW_SUBSCRIPTION_BUFFER_NOTIFICATION,
+        logger.log(msgTypeId == ON_NEW_PUBLICATION ?
+                   EventCode.CMD_OUT_NEW_PUBLICATION_BUFFER_NOTIFICATION :
+                   EventCode.CMD_OUT_NEW_SUBSCRIPTION_BUFFER_NOTIFICATION,
                 tmpBuffer, 0, logBuffersMessage.length());
 
         transmitter.transmit(msgTypeId, tmpBuffer, 0, logBuffersMessage.length());

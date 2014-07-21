@@ -48,14 +48,17 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
     private final NioSelector nioSelector;
     private final SelectionKey registeredKey;
     private final boolean multicast;
+    private final EventLogger logger;
 
     /*
      * Generic constructor. Used mainly for selector testing.
      */
     public UdpTransport(final FrameHandler frameHandler,
                         final InetSocketAddress local,
-                        final NioSelector nioSelector) throws Exception
+                        final NioSelector nioSelector,
+                        final EventLogger logger) throws Exception
     {
+        this.logger = logger;
         this.readBuffer = new AtomicBuffer(this.readByteBuffer);
         wrapHeadersOnReadBuffer();
 
@@ -71,24 +74,28 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
 
     public UdpTransport(final ControlFrameHandler frameHandler,
                         final UdpDestination destination,
-                        final NioSelector nioSelector) throws Exception
+                        final NioSelector nioSelector,
+                        final EventLogger logger) throws Exception
     {
-        this(frameHandler, destination, destination.remoteControl(), nioSelector, destination.localControl());
+        this(frameHandler, destination, destination.remoteControl(), nioSelector, destination.localControl(), logger);
     }
 
     public UdpTransport(final DataFrameHandler frameHandler,
                         final UdpDestination destination,
-                        final NioSelector nioSelector) throws Exception
+                        final NioSelector nioSelector,
+                        final EventLogger logger) throws Exception
     {
-        this(frameHandler, destination, destination.remoteData(), nioSelector, destination.remoteData());
+        this(frameHandler, destination, destination.remoteData(), nioSelector, destination.remoteData(), logger);
     }
 
     private UdpTransport(final FrameHandler frameHandler,
                          final UdpDestination destination,
                          final InetSocketAddress endPointSocketAddress,
                          final NioSelector nioSelector,
-                         final InetSocketAddress bindAddress) throws Exception
+                         final InetSocketAddress bindAddress,
+                         final EventLogger logger) throws Exception
     {
+        this.logger = logger;
         this.readBuffer = new AtomicBuffer(this.readByteBuffer);
         wrapHeadersOnReadBuffer();
 
@@ -170,7 +177,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
         // malformed, so log and break out of entire packet
         if (header.frameLength() <= FrameDescriptor.BASE_HEADER_LENGTH)
         {
-            EventLogger.log(EventCode.MALFORMED_FRAME_LENGTH, readBuffer, 0, HeaderFlyweight.HEADER_LENGTH);
+            logger.log(EventCode.MALFORMED_FRAME_LENGTH, readBuffer, 0, HeaderFlyweight.HEADER_LENGTH);
             return 0;
         }
 
@@ -189,7 +196,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
                 break;
 
             default:
-                EventLogger.log(EventCode.UNKNOWN_HEADER_TYPE, readBuffer, 0, HeaderFlyweight.HEADER_LENGTH);
+                logger.log(EventCode.UNKNOWN_HEADER_TYPE, readBuffer, 0, HeaderFlyweight.HEADER_LENGTH);
                 break;
         }
 

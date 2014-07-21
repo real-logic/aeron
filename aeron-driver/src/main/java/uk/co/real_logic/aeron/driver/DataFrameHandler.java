@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.*;
 
 import java.net.InetSocketAddress;
@@ -41,10 +42,11 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
 
     public DataFrameHandler(final UdpDestination udpDestination,
                             final NioSelector nioSelector,
-                            final DriverConductorProxy conductorProxy)
+                            final DriverConductorProxy conductorProxy,
+                            final EventLogger logger)
         throws Exception
     {
-        this.transport = new UdpTransport(this, udpDestination, nioSelector);
+        this.transport = new UdpTransport(this, udpDestination, nioSelector, logger);
         this.udpDestination = udpDestination;
         this.conductorProxy = conductorProxy;
     }

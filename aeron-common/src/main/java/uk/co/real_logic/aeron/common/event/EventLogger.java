@@ -71,7 +71,7 @@ public class EventLogger // TODO: We should inject loggers rather than use stati
         ON = Boolean.getBoolean(EventConfiguration.LOGGER_ON_PROPERTY_NAME) && null != tmpRingBuffer;
     }
 
-    public static void log(final EventCode code, final AtomicBuffer buffer, final int offset, final int length)
+    public void log(final EventCode code, final AtomicBuffer buffer, final int offset, final int length)
     {
         if (ON)
         {

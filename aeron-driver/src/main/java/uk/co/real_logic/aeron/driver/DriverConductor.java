@@ -88,6 +88,8 @@ public class DriverConductor extends Agent
     private final CountersManager countersManager;
     private final AtomicBuffer countersBuffer;
 
+    private final EventLogger logger;
+
     public DriverConductor(final DriverContext ctx)
     {
         super(ctx.conductorIdleStrategy(), EventLogger::logException);
@@ -109,6 +111,7 @@ public class DriverConductor extends Agent
         publications = ctx.publications();
         fromClientCommands = ctx.fromClientCommands();
         clientProxy = ctx.clientProxy();
+        logger = ctx.driverLogger();
     }
 
     public ControlFrameHandler getFrameHandler(final UdpDestination destination)
@@ -193,28 +196,28 @@ public class DriverConductor extends Agent
                     {
                         case ADD_PUBLICATION:
                             publicationMessage.wrap(buffer, index);
-                            EventLogger.log(EventCode.CMD_IN_ADD_PUBLICATION, buffer, index, length);
+                            logger.log(EventCode.CMD_IN_ADD_PUBLICATION, buffer, index, length);
                             flyweight = publicationMessage;
                             onAddPublication(publicationMessage);
                             break;
 
                         case REMOVE_PUBLICATION:
                             publicationMessage.wrap(buffer, index);
-                            EventLogger.log(EventCode.CMD_IN_REMOVE_PUBLICATION, buffer, index, length);
+                            logger.log(EventCode.CMD_IN_REMOVE_PUBLICATION, buffer, index, length);
                             flyweight = publicationMessage;
                             onRemovePublication(publicationMessage);
                             break;
 
                         case ADD_SUBSCRIPTION:
                             subscriptionMessage.wrap(buffer, index);
-                            EventLogger.log(EventCode.CMD_IN_ADD_SUBSCRIPTION, buffer, index, length);
+                            logger.log(EventCode.CMD_IN_ADD_SUBSCRIPTION, buffer, index, length);
                             flyweight = subscriptionMessage;
                             onAddSubscription(subscriptionMessage);
                             break;
 
                         case REMOVE_SUBSCRIPTION:
                             subscriptionMessage.wrap(buffer, index);
-                            EventLogger.log(EventCode.CMD_IN_REMOVE_SUBSCRIPTION, buffer, index, length);
+                            logger.log(EventCode.CMD_IN_REMOVE_SUBSCRIPTION, buffer, index, length);
                             flyweight = subscriptionMessage;
                             onRemoveSubscription(subscriptionMessage);
                             break;
@@ -268,7 +271,7 @@ public class DriverConductor extends Agent
             ControlFrameHandler frameHandler = srcDestinationMap.get(srcDestination.consistentHash());
             if (null == frameHandler)
             {
-                frameHandler = new ControlFrameHandler(srcDestination, nioSelector);
+                frameHandler = new ControlFrameHandler(srcDestination, nioSelector, new EventLogger());
                 srcDestinationMap.put(srcDestination.consistentHash(), frameHandler);
             }
             else if (!frameHandler.destination().equals(srcDestination))

@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.driver;
 
 import org.junit.Test;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.*;
 
 import java.net.InetSocketAddress;
@@ -43,6 +44,8 @@ public class SelectorTest
     private final InetSocketAddress srcLocalAddress = new InetSocketAddress(SRC_PORT);
     private final InetSocketAddress srcRemoteAddress = new InetSocketAddress("localhost", RCV_PORT);
 
+    private final EventLogger mockLogger = new EventLogger();
+
     private final FrameHandler nullHandler = new FrameHandler()
     {
         public void onDataFrame(final DataHeaderFlyweight header, final AtomicBuffer buffer,
@@ -57,8 +60,8 @@ public class SelectorTest
     public void shouldHandleBasicSetupAndTeardown() throws Exception
     {
         final NioSelector nioSelector = new NioSelector();
-        final UdpTransport rcv = new UdpTransport(nullHandler, rcvLocalAddress, nioSelector);
-        final UdpTransport src = new UdpTransport(nullHandler, srcLocalAddress, nioSelector);
+        final UdpTransport rcv = new UdpTransport(nullHandler, rcvLocalAddress, nioSelector, mockLogger);
+        final UdpTransport src = new UdpTransport(nullHandler, srcLocalAddress, nioSelector, mockLogger);
 
         processLoop(nioSelector, 5);
         rcv.close();
@@ -92,9 +95,9 @@ public class SelectorTest
                                              final long length, final InetSocketAddress srcAddress) {}
             public void onNakFrame(final NakFlyweight header, final AtomicBuffer buffer,
                                    final long length, final InetSocketAddress srcAddress) {}
-        }, rcvLocalAddress, nioSelector);
+        }, rcvLocalAddress, nioSelector, mockLogger);
 
-        final UdpTransport src = new UdpTransport(nullHandler, srcLocalAddress, nioSelector);
+        final UdpTransport src = new UdpTransport(nullHandler, srcLocalAddress, nioSelector, mockLogger);
 
         encodeDataHeader.wrap(atomicBuffer, 0);
         encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
@@ -145,9 +148,9 @@ public class SelectorTest
 
             public void onNakFrame(final NakFlyweight header, final AtomicBuffer buffer,
                                    final long length, final InetSocketAddress srcAddress) {}
-        }, rcvLocalAddress, nioSelector);
+        }, rcvLocalAddress, nioSelector, mockLogger);
 
-        final UdpTransport src = new UdpTransport(nullHandler, srcLocalAddress, nioSelector);
+        final UdpTransport src = new UdpTransport(nullHandler, srcLocalAddress, nioSelector, mockLogger);
 
         statusMessage.wrap(atomicBuffer, 0);
         statusMessage.channelId(CHANNEL_ID)
@@ -215,9 +218,9 @@ public class SelectorTest
             {
                 cntlHeadersReceived.incrementAndGet();
             }
-        }, rcvLocalAddress, nioSelector);
+        }, rcvLocalAddress, nioSelector, mockLogger);
 
-        final UdpTransport src = new UdpTransport(nullHandler, srcLocalAddress, nioSelector);
+        final UdpTransport src = new UdpTransport(nullHandler, srcLocalAddress, nioSelector, mockLogger);
 
         encodeDataHeader.wrap(atomicBuffer, 0);
         encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
@@ -280,9 +283,9 @@ public class SelectorTest
             {
                 cntlHeadersReceived.incrementAndGet();
             }
-        }, srcLocalAddress, nioSelector);
+        }, srcLocalAddress, nioSelector, mockLogger);
 
-        final UdpTransport rcv = new UdpTransport(nullHandler, rcvLocalAddress, nioSelector);
+        final UdpTransport rcv = new UdpTransport(nullHandler, rcvLocalAddress, nioSelector, mockLogger);
 
         statusMessage.wrap(atomicBuffer, 0);
         statusMessage.channelId(CHANNEL_ID)

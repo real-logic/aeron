@@ -275,16 +275,16 @@ public class MediaDriver implements AutoCloseable
             .multicastSenderFlowControl(UnicastSenderControlStrategy::new)
             .publications(new AtomicArray<>())
             .conductorTimerWheel(new TimerWheel(CONDUCTOR_TICK_DURATION_US,
-                                                TimeUnit.MICROSECONDS,
-                                                CONDUCTOR_TICKS_PER_WHEEL))
+                    TimeUnit.MICROSECONDS,
+                    CONDUCTOR_TICKS_PER_WHEEL))
             .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .conductorIdleStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                                                           AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
+                    AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
             .senderIdleStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                                                        AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
+                    AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
             .receiverIdleStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                                                          AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
+                    AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
             .conclude();
 
         this.adminDirFile = new File(ctx.adminDirName());
@@ -485,6 +485,7 @@ public class MediaDriver implements AutoCloseable
         private int initialWindowSize;
 
         private boolean warnIfDirectoriesExist;
+        private EventLogger driverLogger;
 
         public DriverContext()
         {
@@ -502,7 +503,8 @@ public class MediaDriver implements AutoCloseable
 
             toClientsBuffer = mapNewFile(toClientsFile(), TO_CLIENTS_BUFFER_SZ);
 
-            clientProxy(new ClientProxy(new BroadcastTransmitter(new AtomicBuffer(toClientsBuffer))));
+            final BroadcastTransmitter transmitter = new BroadcastTransmitter(new AtomicBuffer(toClientsBuffer));
+            clientProxy(new ClientProxy(transmitter, new EventLogger()));
 
             toDriverBuffer = mapNewFile(toDriverFile(), CONDUCTOR_BUFFER_SZ);
 
@@ -531,6 +533,8 @@ public class MediaDriver implements AutoCloseable
 
                 countersManager(new CountersManager(counterLabelsBuffer(), countersBuffer()));
             }
+
+            driverLogger = new EventLogger();
 
             return this;
         }
@@ -654,6 +658,12 @@ public class MediaDriver implements AutoCloseable
         public DriverContext warnIfDirectoriesExist(final boolean value)
         {
             this.warnIfDirectoriesExist = value;
+            return this;
+        }
+
+        public DriverContext driverLogger(final EventLogger value)
+        {
+            this.driverLogger = value;
             return this;
         }
 
@@ -803,6 +813,11 @@ public class MediaDriver implements AutoCloseable
             {
                 throw new IllegalStateException("Initial window size must be >= to MTU length: " + mtuLength);
             }
+        }
+
+        public EventLogger driverLogger()
+        {
+            return driverLogger;
         }
     }
 }

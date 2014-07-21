@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.*;
 
 import java.net.InetSocketAddress;
@@ -29,10 +30,13 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
     private final Long2ObjectHashMap<Long2ObjectHashMap<DriverPublication>> publicationBySessionMap
         = new Long2ObjectHashMap<>();
 
-    public ControlFrameHandler(final UdpDestination destination, final NioSelector nioSelector)
+    public ControlFrameHandler(
+            final UdpDestination destination,
+            final NioSelector nioSelector,
+            final EventLogger logger)
         throws Exception
     {
-        this.transport = new UdpTransport(this, destination, nioSelector);
+        this.transport = new UdpTransport(this, destination, nioSelector, logger);
         this.destination = destination;
     }
 

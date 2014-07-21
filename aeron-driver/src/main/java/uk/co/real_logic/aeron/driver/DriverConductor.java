@@ -384,6 +384,7 @@ public class DriverConductor extends Agent
         catch (final IllegalArgumentException ex)
         {
             clientProxy.onError(INVALID_DESTINATION, ex.getMessage(), subscriptionMessage, subscriptionMessage.length());
+            logger.logException(ex);
         }
     }
 

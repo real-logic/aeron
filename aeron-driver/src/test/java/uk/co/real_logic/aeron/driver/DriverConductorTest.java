@@ -51,8 +51,6 @@ import static uk.co.real_logic.aeron.driver.MediaDriver.CONDUCTOR_TICK_DURATION_
  */
 public class DriverConductorTest
 {
-    // TODO: Assert the error log has been notified appropriately
-
     private static final String DESTINATION_URI = "udp://localhost:";
     private static final String INVALID_URI = "udp://";
     private static final long CHANNEL_1 = 10;
@@ -76,7 +74,7 @@ public class DriverConductorTest
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(256));
 
     private final AtomicArray<DriverPublication> publications = new AtomicArray<>();
-    private final EventLogger mockDriverLogger = mock(EventLogger.class);
+    private final EventLogger mockConductorLogger = mock(EventLogger.class);
     private final EventLogger mockReceiverLogger = mock(EventLogger.class);
 
     private DriverConductor driverConductor;
@@ -106,7 +104,7 @@ public class DriverConductorTest
 
             .termBuffersFactory(mockTermBuffersFactory)
             .countersManager(countersManager)
-            .conductorLogger(mockDriverLogger)
+            .conductorLogger(mockConductorLogger)
             .receiverLogger(mockReceiverLogger);
 
         ctx.fromClientCommands(fromClientCommands);
@@ -308,6 +306,7 @@ public class DriverConductorTest
 
         verify(mockClientProxy).onError(eq(ErrorCode.PUBLICATION_CHANNEL_ALREADY_EXISTS), argThat(not(isEmptyOrNullString())), any(), anyInt());
         verifyNeverSucceeds();
+        verifyExceptionLogged();
     }
 
     @Test
@@ -323,6 +322,7 @@ public class DriverConductorTest
 
         verify(mockClientProxy).onError(eq(INVALID_DESTINATION), argThat(not(isEmptyOrNullString())), any(), anyInt());
         verifyNeverSucceeds();
+        verifyExceptionLogged();
     }
 
     @Test
@@ -342,6 +342,7 @@ public class DriverConductorTest
 
         verify(mockClientProxy).onError(eq(PUBLICATION_CHANNEL_UNKNOWN), argThat(not(isEmptyOrNullString())), any(), anyInt());
         verifyNeverSucceeds();
+        verifyExceptionLogged();
     }
 
     @Test
@@ -361,6 +362,7 @@ public class DriverConductorTest
 
         verify(mockClientProxy).onError(eq(PUBLICATION_CHANNEL_UNKNOWN), argThat(not(isEmptyOrNullString())), any(), anyInt());
         verifyNeverSucceeds();
+        verifyExceptionLogged();
     }
 
     @Test
@@ -376,6 +378,12 @@ public class DriverConductorTest
 
         verify(mockClientProxy).onError(eq(INVALID_DESTINATION), argThat(not(isEmptyOrNullString())), any(), anyInt());
         verifyNeverSucceeds();
+        verifyExceptionLogged();
+    }
+
+    private void verifyExceptionLogged()
+    {
+        verify(mockConductorLogger).logException(any());
     }
 
     private void verifyNeverSucceeds()

@@ -27,7 +27,7 @@ import java.nio.MappedByteBuffer;
 /**
  * Event logger interface for applications/libraries
  */
-public class EventLogger // TODO: We should inject loggers rather than use static fields.
+public class EventLogger
 {
     private static final boolean ON;
     private static final ManyToOneRingBuffer ringBuffer;

@@ -27,14 +27,14 @@ import java.nio.ByteBuffer;
  * Aggregator of multiple {@link DriverPublication}s onto a single transport session with processing of
  * control frames.
  */
-public class PublicationMediaEndpoint implements AutoCloseable
+public class MediaPublicationEndpoint implements AutoCloseable
 {
     private final UdpTransport transport;
     private final UdpDestination destination;
     private final Long2ObjectHashMap<Long2ObjectHashMap<DriverPublication>> publicationBySessionMap
         = new Long2ObjectHashMap<>();
 
-    public PublicationMediaEndpoint(final UdpDestination destination,
+    public MediaPublicationEndpoint(final UdpDestination destination,
                                     final NioSelector nioSelector,
                                     final EventLogger logger)
         throws Exception

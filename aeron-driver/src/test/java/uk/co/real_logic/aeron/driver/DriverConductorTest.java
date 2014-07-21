@@ -238,7 +238,7 @@ public class DriverConductorTest
         driverConductor.doWork();
         receiver.doWork();
 
-        final SubscriptionMediaEndpoint mediaEndpoint = receiver.subscriptionMediaEndpoint(destination);
+        final MediaSubscriptionEndpoint mediaEndpoint = receiver.subscriptionMediaEndpoint(destination);
 
         assertNotNull(mediaEndpoint);
         assertThat(mediaEndpoint.subscriptionMap().size(), is(3));
@@ -267,7 +267,7 @@ public class DriverConductorTest
         driverConductor.doWork();
         receiver.doWork();
 
-        final SubscriptionMediaEndpoint mediaEndpoint = receiver.subscriptionMediaEndpoint(destination);
+        final MediaSubscriptionEndpoint mediaEndpoint = receiver.subscriptionMediaEndpoint(destination);
 
         assertNotNull(mediaEndpoint);
         assertThat(mediaEndpoint.subscriptionMap().size(), is(3));

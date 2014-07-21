@@ -31,7 +31,7 @@ public class Receiver extends Agent
 {
     private final NioSelector nioSelector;
     private final DriverConductorProxy conductorProxy;
-    private final Map<UdpDestination, SubscriptionMediaEndpoint> mediaEndpointByDestinationMap = new HashMap<>();
+    private final Map<UdpDestination, MediaSubscriptionEndpoint> mediaEndpointByDestinationMap = new HashMap<>();
     private final OneToOneConcurrentArrayQueue<? super Object> commandQueue;
     private final EventLogger logger;
 
@@ -99,18 +99,18 @@ public class Receiver extends Agent
         return nioSelector;
     }
 
-    public SubscriptionMediaEndpoint subscriptionMediaEndpoint(final UdpDestination destination)
+    public MediaSubscriptionEndpoint subscriptionMediaEndpoint(final UdpDestination destination)
     {
         return mediaEndpointByDestinationMap.get(destination);
     }
 
     private void onAddSubscription(final UdpDestination udpDestination, final long channelId) throws Exception
     {
-        SubscriptionMediaEndpoint mediaEndpoint = subscriptionMediaEndpoint(udpDestination);
+        MediaSubscriptionEndpoint mediaEndpoint = subscriptionMediaEndpoint(udpDestination);
 
         if (null == mediaEndpoint)
         {
-            mediaEndpoint = new SubscriptionMediaEndpoint(udpDestination, nioSelector, conductorProxy, new EventLogger());
+            mediaEndpoint = new MediaSubscriptionEndpoint(udpDestination, nioSelector, conductorProxy, new EventLogger());
             mediaEndpointByDestinationMap.put(udpDestination, mediaEndpoint);
         }
 
@@ -119,7 +119,7 @@ public class Receiver extends Agent
 
     private void onRemoveSubscription(final UdpDestination udpDestination, final long channelId)
     {
-        final SubscriptionMediaEndpoint mediaEndpoint = subscriptionMediaEndpoint(udpDestination);
+        final MediaSubscriptionEndpoint mediaEndpoint = subscriptionMediaEndpoint(udpDestination);
 
         if (null == mediaEndpoint)
         {
@@ -138,7 +138,7 @@ public class Receiver extends Agent
     private void onNewConnectedSubscription(final NewConnectedSubscriptionCmd cmd)
     {
         final DriverConnectedSubscription connectedSubscription = cmd.connectedSubscription();
-        final SubscriptionMediaEndpoint mediaEndpoint = subscriptionMediaEndpoint(connectedSubscription.udpDestination());
+        final MediaSubscriptionEndpoint mediaEndpoint = subscriptionMediaEndpoint(connectedSubscription.udpDestination());
 
         if (null != mediaEndpoint)
         {

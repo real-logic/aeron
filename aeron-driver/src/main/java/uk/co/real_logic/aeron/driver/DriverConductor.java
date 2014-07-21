@@ -71,7 +71,7 @@ public class DriverConductor extends Agent
     private final NioSelector nioSelector;
     private final TermBuffersFactory termBuffersFactory;
     private final RingBuffer fromClientCommands;
-    private final Long2ObjectHashMap<PublicationMediaEndpoint> srcDestinationMap = new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<MediaPublicationEndpoint> srcDestinationMap = new Long2ObjectHashMap<>();
     private final TimerWheel timerWheel;
     private final ArrayList<DriverConnectedSubscription> connectedSubscriptions = new ArrayList<>();
     private final AtomicArray<DriverPublication> publications;
@@ -114,7 +114,7 @@ public class DriverConductor extends Agent
         logger = ctx.conductorLogger();
     }
 
-    public PublicationMediaEndpoint publicationMediaEndpoint(final UdpDestination destination)
+    public MediaPublicationEndpoint publicationMediaEndpoint(final UdpDestination destination)
     {
         return srcDestinationMap.get(destination.consistentHash());
     }
@@ -268,10 +268,10 @@ public class DriverConductor extends Agent
         try
         {
             final UdpDestination srcDestination = UdpDestination.parse(destination);
-            PublicationMediaEndpoint mediaEndpoint = srcDestinationMap.get(srcDestination.consistentHash());
+            MediaPublicationEndpoint mediaEndpoint = srcDestinationMap.get(srcDestination.consistentHash());
             if (null == mediaEndpoint)
             {
-                mediaEndpoint = new PublicationMediaEndpoint(srcDestination, nioSelector, new EventLogger());
+                mediaEndpoint = new MediaPublicationEndpoint(srcDestination, nioSelector, new EventLogger());
                 srcDestinationMap.put(srcDestination.consistentHash(), mediaEndpoint);
             }
             else if (!mediaEndpoint.destination().equals(srcDestination))
@@ -334,7 +334,7 @@ public class DriverConductor extends Agent
         try
         {
             final UdpDestination srcDestination = UdpDestination.parse(destination);
-            final PublicationMediaEndpoint mediaEndpoint = srcDestinationMap.get(srcDestination.consistentHash());
+            final MediaPublicationEndpoint mediaEndpoint = srcDestinationMap.get(srcDestination.consistentHash());
             if (null == mediaEndpoint)
             {
                 throw new ControlProtocolException(INVALID_DESTINATION, "destination unknown");

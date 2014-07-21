@@ -125,7 +125,7 @@ public class ReceiverTest
 
         receiver.doWork();
 
-        SubscriptionMediaEndpoint frameHandler = receiver.subscriptionMediaEndpoint(UDP_DESTINATION);
+        MediaSubscriptionEndpoint frameHandler = receiver.subscriptionMediaEndpoint(UDP_DESTINATION);
 
         assertNotNull(frameHandler);
 
@@ -185,7 +185,7 @@ public class ReceiverTest
 
         receiver.doWork();
 
-        SubscriptionMediaEndpoint frameHandler = receiver.subscriptionMediaEndpoint(UDP_DESTINATION);
+        MediaSubscriptionEndpoint frameHandler = receiver.subscriptionMediaEndpoint(UDP_DESTINATION);
 
         assertNotNull(frameHandler);
 
@@ -244,7 +244,7 @@ public class ReceiverTest
 
         receiver.doWork();
 
-        final SubscriptionMediaEndpoint frameHandler = receiver.subscriptionMediaEndpoint(UDP_DESTINATION);
+        final MediaSubscriptionEndpoint frameHandler = receiver.subscriptionMediaEndpoint(UDP_DESTINATION);
 
         assertNotNull(frameHandler);
 
@@ -306,7 +306,7 @@ public class ReceiverTest
 
         receiver.doWork();
 
-        final SubscriptionMediaEndpoint frameHandler = receiver.subscriptionMediaEndpoint(UDP_DESTINATION);
+        final MediaSubscriptionEndpoint frameHandler = receiver.subscriptionMediaEndpoint(UDP_DESTINATION);
 
         assertNotNull(frameHandler);
 
@@ -369,7 +369,7 @@ public class ReceiverTest
 
         receiver.doWork();
 
-        SubscriptionMediaEndpoint frameHandler = receiver.subscriptionMediaEndpoint(UDP_DESTINATION);
+        MediaSubscriptionEndpoint frameHandler = receiver.subscriptionMediaEndpoint(UDP_DESTINATION);
 
         assertNotNull(frameHandler);
 

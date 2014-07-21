@@ -27,7 +27,7 @@ import java.nio.ByteBuffer;
  * Aggregator of multiple {@link DriverSubscription}s onto a single transport session with processing of
  * data frames.
  */
-public class SubscriptionMediaEndpoint implements AutoCloseable
+public class MediaSubscriptionEndpoint implements AutoCloseable
 {
     private static final String INIT_IN_PROGRESS = "Connection initialisation in progress";
 
@@ -41,7 +41,7 @@ public class SubscriptionMediaEndpoint implements AutoCloseable
     private final StatusMessageFlyweight smHeader = new StatusMessageFlyweight();
     private final NakFlyweight nakHeader = new NakFlyweight();
 
-    public SubscriptionMediaEndpoint(final UdpDestination udpDestination,
+    public MediaSubscriptionEndpoint(final UdpDestination udpDestination,
                                      final NioSelector nioSelector,
                                      final DriverConductorProxy conductorProxy,
                                      final EventLogger logger)

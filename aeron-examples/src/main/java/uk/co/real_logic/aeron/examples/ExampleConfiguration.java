@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.examples;
 import java.util.concurrent.TimeUnit;
 
 /**
- *
+ * Configuration used for examples all in one place.
  */
 public class ExampleConfiguration
 {

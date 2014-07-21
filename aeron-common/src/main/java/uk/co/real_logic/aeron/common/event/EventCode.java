@@ -50,6 +50,7 @@ public enum EventCode
         String dissect(final EventCode code, final AtomicBuffer buffer, final int offset, final int length);
     }
 
+    private long tagBit;
     private final int id;
     private final DissectFunction dissector;
 
@@ -64,12 +65,24 @@ public enum EventCode
     EventCode(final int id, final DissectFunction dissector)
     {
         this.id = id;
+        this.tagBit = 1L << id;
         this.dissector = dissector;
     }
 
     public int id()
     {
         return id;
+    }
+
+    /**
+     * returns the event code's tag bit. Each tag bit is a unique identifier for the event code used
+     * when checking that the event code is enabled or not. Each EventCode has a unique tag bit.
+     *
+     * @return the tag bit
+     */
+    public long tagBit()
+    {
+        return tagBit;
     }
 
     public static EventCode get(final int id)

@@ -158,7 +158,7 @@ public class DriverConductorTest
 
         verify(mockClientProxy).operationSucceeded(CORRELATION_ID);
 
-        assertNotNull(receiver.getFrameHandler(UdpDestination.parse(DESTINATION_URI + 4000)));
+        assertNotNull(receiver.subscriptionMediaEndpoint(UdpDestination.parse(DESTINATION_URI + 4000)));
     }
 
     @Test
@@ -172,7 +172,7 @@ public class DriverConductorTest
         driverConductor.doWork();
         receiver.doWork();
 
-        assertNull(receiver.getFrameHandler(UdpDestination.parse(DESTINATION_URI + 4000)));
+        assertNull(receiver.subscriptionMediaEndpoint(UdpDestination.parse(DESTINATION_URI + 4000)));
     }
 
     @Test
@@ -225,7 +225,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldKeepFrameHandlerUponRemovalOfAllButOneSubscriber() throws Exception
+    public void shouldKeepSubscriptionMediaEndpointUponRemovalOfAllButOneSubscriber() throws Exception
     {
         EventLogger.logInvocation();
 
@@ -238,10 +238,10 @@ public class DriverConductorTest
         driverConductor.doWork();
         receiver.doWork();
 
-        final DataFrameHandler frameHandler = receiver.getFrameHandler(destination);
+        final SubscriptionMediaEndpoint mediaEndpoint = receiver.subscriptionMediaEndpoint(destination);
 
-        assertNotNull(frameHandler);
-        assertThat(frameHandler.subscriptionMap().size(), is(3));
+        assertNotNull(mediaEndpoint);
+        assertThat(mediaEndpoint.subscriptionMap().size(), is(3));
 
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_1);
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_2);
@@ -249,12 +249,12 @@ public class DriverConductorTest
         driverConductor.doWork();
         receiver.doWork();
 
-        assertNotNull(receiver.getFrameHandler(destination));
-        assertThat(frameHandler.subscriptionMap().size(), is(1));
+        assertNotNull(receiver.subscriptionMediaEndpoint(destination));
+        assertThat(mediaEndpoint.subscriptionMap().size(), is(1));
     }
 
     @Test
-    public void shouldOnlyRemoveFrameHandlerUponRemovalOfAllSubscribers() throws Exception
+    public void shouldOnlyRemoveSubscriptionMediaEndpointUponRemovalOfAllSubscribers() throws Exception
     {
         EventLogger.logInvocation();
 
@@ -267,10 +267,10 @@ public class DriverConductorTest
         driverConductor.doWork();
         receiver.doWork();
 
-        final DataFrameHandler frameHandler = receiver.getFrameHandler(destination);
+        final SubscriptionMediaEndpoint mediaEndpoint = receiver.subscriptionMediaEndpoint(destination);
 
-        assertNotNull(frameHandler);
-        assertThat(frameHandler.subscriptionMap().size(), is(3));
+        assertNotNull(mediaEndpoint);
+        assertThat(mediaEndpoint.subscriptionMap().size(), is(3));
 
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_2);
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_3);
@@ -278,15 +278,15 @@ public class DriverConductorTest
         driverConductor.doWork();
         receiver.doWork();
 
-        assertNotNull(receiver.getFrameHandler(destination));
-        assertThat(frameHandler.subscriptionMap().size(), is(1));
+        assertNotNull(receiver.subscriptionMediaEndpoint(destination));
+        assertThat(mediaEndpoint.subscriptionMap().size(), is(1));
 
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_1);
 
         driverConductor.doWork();
         receiver.doWork();
 
-        assertNull(receiver.getFrameHandler(destination));
+        assertNull(receiver.subscriptionMediaEndpoint(destination));
     }
 
     @Test

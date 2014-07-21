@@ -24,9 +24,10 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 /**
- * Frame processing for data
+ * Aggregator of multiple {@link DriverSubscription}s onto a single transport session with processing of
+ * data frames.
  */
-public class DataFrameHandler implements AutoCloseable
+public class SubscriptionMediaEndpoint implements AutoCloseable
 {
     private static final String INIT_IN_PROGRESS = "Connection initialisation in progress";
 
@@ -40,10 +41,10 @@ public class DataFrameHandler implements AutoCloseable
     private final StatusMessageFlyweight smHeader = new StatusMessageFlyweight();
     private final NakFlyweight nakHeader = new NakFlyweight();
 
-    public DataFrameHandler(final UdpDestination udpDestination,
-                            final NioSelector nioSelector,
-                            final DriverConductorProxy conductorProxy,
-                            final EventLogger logger)
+    public SubscriptionMediaEndpoint(final UdpDestination udpDestination,
+                                     final NioSelector nioSelector,
+                                     final DriverConductorProxy conductorProxy,
+                                     final EventLogger logger)
         throws Exception
     {
         this.transport = new UdpTransport(udpDestination, this::onDataFrame, logger);

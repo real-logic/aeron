@@ -31,7 +31,7 @@ public class Receiver extends Agent
 {
     private final NioSelector nioSelector;
     private final DriverConductorProxy conductorProxy;
-    private final Map<UdpDestination, DataFrameHandler> frameHandlerByDestinationMap = new HashMap<>();
+    private final Map<UdpDestination, SubscriptionMediaEndpoint> mediaEndpointByDestinationMap = new HashMap<>();
     private final OneToOneConcurrentArrayQueue<? super Object> commandQueue;
     private final EventLogger logger;
 
@@ -86,7 +86,7 @@ public class Receiver extends Agent
     public void close()
     {
         stop();
-        frameHandlerByDestinationMap.forEach((destination, frameHandler) -> frameHandler.close());
+        mediaEndpointByDestinationMap.forEach((destination, mediaEndpoint) -> mediaEndpoint.close());
     }
 
     /**
@@ -99,50 +99,50 @@ public class Receiver extends Agent
         return nioSelector;
     }
 
-    public DataFrameHandler getFrameHandler(final UdpDestination destination)
+    public SubscriptionMediaEndpoint subscriptionMediaEndpoint(final UdpDestination destination)
     {
-        return frameHandlerByDestinationMap.get(destination);
+        return mediaEndpointByDestinationMap.get(destination);
     }
 
     private void onAddSubscription(final UdpDestination udpDestination, final long channelId) throws Exception
     {
-        DataFrameHandler frameHandler = getFrameHandler(udpDestination);
+        SubscriptionMediaEndpoint mediaEndpoint = subscriptionMediaEndpoint(udpDestination);
 
-        if (null == frameHandler)
+        if (null == mediaEndpoint)
         {
-            frameHandler = new DataFrameHandler(udpDestination, nioSelector, conductorProxy, new EventLogger());
-            frameHandlerByDestinationMap.put(udpDestination, frameHandler);
+            mediaEndpoint = new SubscriptionMediaEndpoint(udpDestination, nioSelector, conductorProxy, new EventLogger());
+            mediaEndpointByDestinationMap.put(udpDestination, mediaEndpoint);
         }
 
-        frameHandler.addSubscription(channelId);
+        mediaEndpoint.addSubscription(channelId);
     }
 
     private void onRemoveSubscription(final UdpDestination udpDestination, final long channelId)
     {
-        final DataFrameHandler frameHandler = getFrameHandler(udpDestination);
+        final SubscriptionMediaEndpoint mediaEndpoint = subscriptionMediaEndpoint(udpDestination);
 
-        if (null == frameHandler)
+        if (null == mediaEndpoint)
         {
             throw new UnknownSubscriptionException("Unknown Subscription: destination=" + udpDestination);
         }
 
-        frameHandler.removeSubscription(channelId);
+        mediaEndpoint.removeSubscription(channelId);
 
-        if (0 == frameHandler.subscriptionCount())
+        if (0 == mediaEndpoint.subscriptionCount())
         {
-            frameHandlerByDestinationMap.remove(udpDestination);
-            frameHandler.close();
+            mediaEndpointByDestinationMap.remove(udpDestination);
+            mediaEndpoint.close();
         }
     }
 
     private void onNewConnectedSubscription(final NewConnectedSubscriptionCmd cmd)
     {
         final DriverConnectedSubscription connectedSubscription = cmd.connectedSubscription();
-        final DataFrameHandler frameHandler = getFrameHandler(connectedSubscription.udpDestination());
+        final SubscriptionMediaEndpoint mediaEndpoint = subscriptionMediaEndpoint(connectedSubscription.udpDestination());
 
-        if (null != frameHandler)
+        if (null != mediaEndpoint)
         {
-            frameHandler.onConnectedSubscriptionReady(connectedSubscription);
+            mediaEndpoint.onConnectedSubscriptionReady(connectedSubscription);
         }
         else
         {

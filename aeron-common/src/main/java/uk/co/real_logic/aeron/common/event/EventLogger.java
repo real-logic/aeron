@@ -93,17 +93,8 @@ public class EventLogger // TODO: We should inject loggers rather than use stati
         }
     }
 
-    public static void log(final EventCode code, final byte[] buffer, int offset, int length)
-    {
-        if (ON)
-        {
-            final AtomicBuffer encodedBuffer = encodingBuffer.get();
-            final int encodingLength = EventCodec.encode(encodedBuffer, buffer, offset, length);
-
-            ringBuffer.write(code.id(), encodedBuffer, 0, encodingLength);
-        }
-    }
-
+    // TODO: in order to make this an instance field UdpDestination's initialisation needs to avoid
+    // a static block
     public static void log(final EventCode code, final String value)
     {
         if (ON)
@@ -115,6 +106,9 @@ public class EventLogger // TODO: We should inject loggers rather than use stati
         }
     }
 
+    /**
+     * Method static because its currently only used in tests.
+     */
     public static void logInvocation()
     {
         if (ON)

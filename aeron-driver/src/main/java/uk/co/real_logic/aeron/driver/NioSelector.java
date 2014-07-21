@@ -27,10 +27,13 @@ import java.util.Set;
  */
 public class NioSelector implements AutoCloseable
 {
+    private final EventLogger logger;
+
     private Selector selector;
 
-    public NioSelector()
+    public NioSelector(EventLogger logger)
     {
+        this.logger = logger;
         try
         {
             this.selector = Selector.open(); // yes, SelectorProvider, blah, blah
@@ -99,7 +102,7 @@ public class NioSelector implements AutoCloseable
         }
         catch (final Exception ex)
         {
-            EventLogger.logException(ex);
+            logger.logException(ex);
             return 0;
         }
     }

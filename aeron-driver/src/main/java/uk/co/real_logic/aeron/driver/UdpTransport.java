@@ -139,7 +139,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
         }
         catch (final Exception ex)
         {
-            EventLogger.logException(ex);
+            logger.logException(ex);
         }
     }
 

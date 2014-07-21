@@ -97,7 +97,8 @@ public class DriverPublication implements AutoCloseable
                              final long channelId,
                              final long initialTermId,
                              final int headerLength,
-                             final int mtuLength, final EventLogger logger)
+                             final int mtuLength,
+                             final EventLogger logger)
     {
         this.frameHandler = frameHandler;
         this.termBuffers = termBuffers;
@@ -156,7 +157,7 @@ public class DriverPublication implements AutoCloseable
         }
         catch (final Exception ex)
         {
-            EventLogger.logException(ex);
+            logger.logException(ex);
         }
 
         return workCount;
@@ -307,7 +308,7 @@ public class DriverPublication implements AutoCloseable
         }
         catch (final Exception ex)
         {
-            EventLogger.logException(ex);
+            logger.logException(ex);
         }
     }
 
@@ -336,7 +337,7 @@ public class DriverPublication implements AutoCloseable
             }
             catch (final Exception ex)
             {
-                EventLogger.logException(ex);
+                logger.logException(ex);
             }
         }
     }
@@ -375,7 +376,7 @@ public class DriverPublication implements AutoCloseable
         }
         catch (final Exception ex)
         {
-            EventLogger.logException(ex);
+            logger.logException(ex);
         }
     }
 

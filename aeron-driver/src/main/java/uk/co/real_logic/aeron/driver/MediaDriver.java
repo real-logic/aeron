@@ -269,8 +269,6 @@ public class MediaDriver implements AutoCloseable
     public MediaDriver(final DriverContext context) throws Exception
     {
         ctx = context
-            .receiverNioSelector(new NioSelector())
-            .conductorNioSelector(new NioSelector())
             .unicastSenderFlowControl(UnicastSenderControlStrategy::new)
             .multicastSenderFlowControl(UnicastSenderControlStrategy::new)
             .publications(new AtomicArray<>())
@@ -452,7 +450,7 @@ public class MediaDriver implements AutoCloseable
         }
         catch (final Exception ex)
         {
-            EventLogger.logException(ex);
+            ctx.driverLogger().logException(ex);
         }
     }
 
@@ -485,7 +483,10 @@ public class MediaDriver implements AutoCloseable
         private int initialWindowSize;
 
         private boolean warnIfDirectoriesExist;
+        private EventLogger conductorLogger;
+        private EventLogger receiverLogger;
         private EventLogger driverLogger;
+        private EventLogger senderLogger;
 
         public DriverContext()
         {
@@ -497,6 +498,9 @@ public class MediaDriver implements AutoCloseable
         public DriverContext conclude() throws IOException
         {
             super.conclude();
+
+            receiverNioSelector(new NioSelector(new EventLogger()));
+            conductorNioSelector(new NioSelector(new EventLogger()));
 
             validateTermBufferSize(termBufferSize());
             validateInitialWindowSize(initialWindowSize(), mtuLength());
@@ -534,7 +538,10 @@ public class MediaDriver implements AutoCloseable
                 countersManager(new CountersManager(counterLabelsBuffer(), countersBuffer()));
             }
 
-            driverLogger = new EventLogger();
+            conductorLogger(new EventLogger());
+            driverLogger(new EventLogger());
+            receiverLogger(new EventLogger());
+            senderLogger(new EventLogger());
 
             return this;
         }
@@ -661,9 +668,27 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
+        public DriverContext conductorLogger(final EventLogger value)
+        {
+            this.conductorLogger = value;
+            return this;
+        }
+
+        public DriverContext receiverLogger(final EventLogger value)
+        {
+            this.receiverLogger = value;
+            return this;
+        }
+
         public DriverContext driverLogger(final EventLogger value)
         {
             this.driverLogger = value;
+            return this;
+        }
+
+        public DriverContext senderLogger(final EventLogger value)
+        {
+            this.senderLogger = value;
             return this;
         }
 
@@ -813,6 +838,21 @@ public class MediaDriver implements AutoCloseable
             {
                 throw new IllegalStateException("Initial window size must be >= to MTU length: " + mtuLength);
             }
+        }
+
+        public EventLogger conductorLogger()
+        {
+            return conductorLogger;
+        }
+
+        public EventLogger receiverLogger()
+        {
+            return receiverLogger;
+        }
+
+        public EventLogger senderLogger()
+        {
+            return senderLogger;
         }
 
         public EventLogger driverLogger()

@@ -15,15 +15,17 @@ import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.*;
 public class DriverBroadcastReceiver
 {
     private final CopyBroadcastReceiver broadcastReceiver;
+    private final EventLogger logger;
 
     private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
     private final ErrorFlyweight errorHeader = new ErrorFlyweight();
     private final LogBuffersMessageFlyweight logBuffersMessage = new LogBuffersMessageFlyweight();
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
 
-    public DriverBroadcastReceiver(final CopyBroadcastReceiver broadcastReceiver)
+    public DriverBroadcastReceiver(final CopyBroadcastReceiver broadcastReceiver, final EventLogger logger)
     {
         this.broadcastReceiver = broadcastReceiver;
+        this.logger = logger;
     }
 
     public int receive(final DriverListener listener, final long activeCorrelationId)
@@ -81,7 +83,7 @@ public class DriverBroadcastReceiver
                 }
                 catch (final Exception ex)
                 {
-                    EventLogger.logException(ex);
+                    logger.logException(ex);
                 }
             }
         );

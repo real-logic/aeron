@@ -20,6 +20,7 @@ import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.*;
+import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.ErrorFlyweight;
 import uk.co.real_logic.aeron.conductor.*;
 
@@ -62,6 +63,9 @@ public class ClientConductorTest extends MockBufferUsage
 
     private final AtomicBuffer counterValuesBuffer = new AtomicBuffer(new byte[COUNTER_BUFFER_SZ]);
 
+    private final EventLogger mockReceiverLogger = new EventLogger();
+    private final EventLogger mockClientLogger = new EventLogger();
+
     private Signal signal;
     private DriverProxy driverProxy;
     private ClientConductor conductor;
@@ -79,12 +83,13 @@ public class ClientConductorTest extends MockBufferUsage
         willNotifyNewBuffer();
 
         conductor = new ClientConductor(
-            new DriverBroadcastReceiver(toClientReceiver),
+            new DriverBroadcastReceiver(toClientReceiver, mockReceiverLogger),
             mockBufferUsage,
             counterValuesBuffer,
             driverProxy,
             signal,
-            AWAIT_TIMEOUT);
+            AWAIT_TIMEOUT,
+            mockClientLogger);
 
         newBufferMessage.wrap(atomicSendBuffer, 0);
         errorHeader.wrap(atomicSendBuffer, 0);

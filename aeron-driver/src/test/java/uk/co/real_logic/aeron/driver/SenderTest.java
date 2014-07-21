@@ -53,8 +53,13 @@ public class SenderTest
 
     public final byte[] HEADER = DataHeaderFlyweight.createDefaultHeader(SESSION_ID, CHANNEL_ID, INITIAL_TERM_ID);
 
+    private final EventLogger mockLogger = mock(EventLogger.class);
+
     private final AtomicArray<DriverPublication> publications = new AtomicArray<>();
-    private final Sender sender = new Sender(new MediaDriver.DriverContext().publications(publications));
+    private final Sender sender = new Sender(new MediaDriver.DriverContext()
+                                                            .publications(publications)
+                                                            .senderLogger(mockLogger));
+
     private final TermBuffers termBuffers =
         BufferAndFrameHelper.newTestTermBuffers(LOG_BUFFER_SIZE, LogBufferDescriptor.STATE_BUFFER_LENGTH);
 
@@ -89,8 +94,6 @@ public class SenderTest
             // we don't pass on the args, so don't reset buffer.position() back
             return size;
         };
-
-    private EventLogger mockLogger = mock(EventLogger.class);
 
     @Before
     public void setUp() throws Exception

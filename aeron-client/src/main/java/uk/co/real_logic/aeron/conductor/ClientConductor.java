@@ -66,11 +66,12 @@ public class ClientConductor extends Agent implements DriverListener
                            final AtomicBuffer counterValuesBuffer,
                            final DriverProxy driverProxy,
                            final Signal correlationSignal,
-                           final long awaitTimeout)
+                           final long awaitTimeout,
+                           final EventLogger logger)
     {
         super(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
                                       AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS),
-              EventLogger::logException);
+                logger::logException);
 
         this.counterValuesBuffer = counterValuesBuffer;
         this.correlationSignal = correlationSignal;

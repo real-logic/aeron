@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.Agent;
 import uk.co.real_logic.aeron.common.concurrent.AtomicArray;
-import uk.co.real_logic.aeron.common.event.EventLogger;
 
 /**
  * Agent that iterates over publications for sending them to registered subscribers.
@@ -29,7 +28,7 @@ public class Sender extends Agent
 
     public Sender(final MediaDriver.DriverContext ctx)
     {
-        super(ctx.senderIdleStrategy(), EventLogger::logException);
+        super(ctx.senderIdleStrategy(), ctx.senderLogger()::logException);
 
         publications = ctx.publications();
     }

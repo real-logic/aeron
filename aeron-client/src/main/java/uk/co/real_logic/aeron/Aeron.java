@@ -21,6 +21,7 @@ import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastReceiver;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.conductor.*;
 
 import java.io.File;
@@ -56,14 +57,15 @@ public final class Aeron implements AutoCloseable, Runnable
 
         final DriverProxy driverProxy = new DriverProxy(ctx.toDriverBuffer);
         final Signal correlationSignal = new Signal();
-        final DriverBroadcastReceiver receiver = new DriverBroadcastReceiver(ctx.toClientBuffer);
+        final DriverBroadcastReceiver receiver = new DriverBroadcastReceiver(ctx.toClientBuffer, new EventLogger());
 
         conductor = new ClientConductor(receiver,
                                         ctx.bufferManager,
                                         ctx.countersBuffer(),
                                         driverProxy,
                                         correlationSignal,
-                                        AWAIT_TIMEOUT);
+                                        AWAIT_TIMEOUT,
+                                        ctx.conductorLogger);
 
         this.savedCtx = ctx;
     }
@@ -200,6 +202,7 @@ public final class Aeron implements AutoCloseable, Runnable
         private MappedByteBuffer defaultCounterValuesBuffer;
 
         private BufferManager bufferManager;
+        private EventLogger conductorLogger;
 
         public ClientContext conclude() throws IOException
         {
@@ -242,6 +245,8 @@ public final class Aeron implements AutoCloseable, Runnable
                 throw new IllegalStateException("Could not initialise buffers", ex);
             }
 
+            conductorLogger(new EventLogger());
+
             return this;
         }
 
@@ -260,6 +265,12 @@ public final class Aeron implements AutoCloseable, Runnable
         public ClientContext bufferManager(final BufferManager bufferManager)
         {
             this.bufferManager = bufferManager;
+            return this;
+        }
+
+        public ClientContext conductorLogger(final EventLogger value)
+        {
+            this.conductorLogger = value;
             return this;
         }
 

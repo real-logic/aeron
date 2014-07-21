@@ -97,7 +97,8 @@ public class UdpDestination
         }
         catch (final Exception ex)
         {
-            EventLogger.logException(ex);
+            // TODO: stop doing static initialisation in this class
+            new EventLogger().logException(ex);
         }
 
         DEFAULT_MULTICAST_INTERFACE = savedIfc;

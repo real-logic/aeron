@@ -122,7 +122,7 @@ public class EventLogger // TODO: We should inject loggers rather than use stati
         }
     }
 
-    public static void logException(final Exception ex)
+    public void logException(final Exception ex)
     {
         if (ON)
         {

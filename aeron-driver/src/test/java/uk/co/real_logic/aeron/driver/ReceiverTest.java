@@ -66,11 +66,12 @@ public class ReceiverTest
     private final TermBuffers termBuffers =
         BufferAndFrameHelper.newTestTermBuffers(LOG_BUFFER_SIZE, LogBufferDescriptor.STATE_BUFFER_LENGTH);
 
+    private final EventLogger mockLogger = mock(EventLogger.class);
+
     private LogReader[] logReaders;
-
     private DatagramChannel senderChannel;
-    private InetSocketAddress senderAddress = new InetSocketAddress("localhost", 40123);
 
+    private InetSocketAddress senderAddress = new InetSocketAddress("localhost", 40123);
     private Receiver receiver;
     private ReceiverProxy receiverProxy;
     private OneToOneConcurrentArrayQueue<? super Object> toConductorQueue;
@@ -88,7 +89,8 @@ public class ReceiverTest
             .conductorTimerWheel(new TimerWheel(MediaDriver.CONDUCTOR_TICK_DURATION_US,
                                                 TimeUnit.MICROSECONDS,
                                                 MediaDriver.CONDUCTOR_TICKS_PER_WHEEL))
-            .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024));
+            .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
+            .receiverLogger(mockLogger);
 
         toConductorQueue = ctx.conductorCommandQueue();
         ctx.driverConductorProxy(new DriverConductorProxy(toConductorQueue));

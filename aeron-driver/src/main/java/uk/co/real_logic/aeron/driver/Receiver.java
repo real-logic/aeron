@@ -33,14 +33,16 @@ public class Receiver extends Agent
     private final DriverConductorProxy conductorProxy;
     private final Map<UdpDestination, DataFrameHandler> frameHandlerByDestinationMap = new HashMap<>();
     private final OneToOneConcurrentArrayQueue<? super Object> commandQueue;
+    private final EventLogger logger;
 
     public Receiver(final MediaDriver.DriverContext ctx) throws Exception
     {
-        super(ctx.receiverIdleStrategy(), EventLogger::logException);
+        super(ctx.receiverIdleStrategy(), ctx.receiverLogger()::logException);
 
         this.conductorProxy = ctx.driverConductorProxy();
         this.nioSelector = ctx.receiverNioSelector();
         this.commandQueue = ctx.receiverCommandQueue();
+        this.logger = ctx.receiverLogger();
     }
 
     public int doWork() throws Exception
@@ -73,7 +75,7 @@ public class Receiver extends Agent
                 catch (final Exception ex)
                 {
                     // TODO: Send error to client - however best if validated by conductor so receiver not delayed
-                    EventLogger.logException(ex);
+                    logger.logException(ex);
                 }
             });
     }

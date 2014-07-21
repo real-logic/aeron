@@ -92,7 +92,7 @@ public class DriverConductor extends Agent
 
     public DriverConductor(final DriverContext ctx)
     {
-        super(ctx.conductorIdleStrategy(), EventLogger::logException);
+        super(ctx.conductorIdleStrategy(), ctx.conductorLogger()::logException);
 
         this.commandQueue = ctx.conductorCommandQueue();
         this.receiverProxy = ctx.receiverProxy();
@@ -111,7 +111,7 @@ public class DriverConductor extends Agent
         publications = ctx.publications();
         fromClientCommands = ctx.fromClientCommands();
         clientProxy = ctx.clientProxy();
-        logger = ctx.driverLogger();
+        logger = ctx.conductorLogger();
     }
 
     public ControlFrameHandler getFrameHandler(final UdpDestination destination)
@@ -178,7 +178,7 @@ public class DriverConductor extends Agent
                 }
                 catch (final Exception ex)
                 {
-                    EventLogger.logException(ex);
+                    logger.logException(ex);
                 }
             });
     }
@@ -226,12 +226,12 @@ public class DriverConductor extends Agent
                 catch (final ControlProtocolException ex)
                 {
                     clientProxy.onError(ex.errorCode(), ex.getMessage(), flyweight, length);
-                    EventLogger.logException(ex);
+                    logger.logException(ex);
                 }
                 catch (final Exception ex)
                 {
                     clientProxy.onError(GENERIC_ERROR, ex.getMessage(), flyweight, length);
-                    EventLogger.logException(ex);
+                    logger.logException(ex);
                 }
             });
     }
@@ -453,7 +453,7 @@ public class DriverConductor extends Agent
         }
         catch (final Exception ex)
         {
-            EventLogger.logException(ex);
+            logger.logException(ex);
         }
     }
 
@@ -470,7 +470,7 @@ public class DriverConductor extends Agent
             }
             catch (final Exception ex)
             {
-                EventLogger.logException(ex);
+                logger.logException(ex);
             }
         }
     }

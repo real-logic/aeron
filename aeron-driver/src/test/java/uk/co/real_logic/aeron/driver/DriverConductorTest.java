@@ -76,11 +76,11 @@ public class DriverConductorTest
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(256));
 
     private final AtomicArray<DriverPublication> publications = new AtomicArray<>();
-    private EventLogger mockDriverLogger = mock(EventLogger.class);
+    private final EventLogger mockDriverLogger = mock(EventLogger.class);
+    private final EventLogger mockReceiverLogger = mock(EventLogger.class);
 
     private DriverConductor driverConductor;
     private Receiver receiver;
-
 
     @Before
     public void setUp() throws Exception
@@ -106,7 +106,8 @@ public class DriverConductorTest
 
             .termBuffersFactory(mockTermBuffersFactory)
             .countersManager(countersManager)
-            .driverLogger(mockDriverLogger);
+            .conductorLogger(mockDriverLogger)
+            .receiverLogger(mockReceiverLogger);
 
         ctx.fromClientCommands(fromClientCommands);
         ctx.clientProxy(mockClientProxy);

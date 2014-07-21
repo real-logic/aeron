@@ -16,18 +16,24 @@
 package uk.co.real_logic.aeron.conductor;
 
 import uk.co.real_logic.aeron.*;
-import uk.co.real_logic.aeron.common.*;
+import uk.co.real_logic.aeron.common.Agent;
+import uk.co.real_logic.aeron.common.BackoffIdleStrategy;
+import uk.co.real_logic.aeron.common.ErrorCode;
+import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.collections.ConnectionMap;
 import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
-import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.common.status.*;
+import uk.co.real_logic.aeron.common.status.BufferPositionIndicator;
+import uk.co.real_logic.aeron.common.status.BufferPositionReporter;
+import uk.co.real_logic.aeron.common.status.PositionIndicator;
+import uk.co.real_logic.aeron.common.status.PositionReporter;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
 
@@ -66,12 +72,12 @@ public class ClientConductor extends Agent implements DriverListener
                            final AtomicBuffer counterValuesBuffer,
                            final DriverProxy driverProxy,
                            final Signal correlationSignal,
-                           final long awaitTimeout,
-                           final EventLogger logger)
+                           final Consumer<Exception> errorHandler,
+                           final long awaitTimeout)
     {
         super(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
                                       AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS),
-                logger::logException);
+            errorHandler);
 
         this.counterValuesBuffer = counterValuesBuffer;
         this.correlationSignal = correlationSignal;

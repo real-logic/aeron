@@ -4,8 +4,9 @@ import uk.co.real_logic.aeron.common.ErrorCode;
 import uk.co.real_logic.aeron.common.command.*;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.CopyBroadcastReceiver;
-import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.ErrorFlyweight;
+
+import java.util.function.Consumer;
 
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.*;
 
@@ -15,17 +16,18 @@ import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.*;
 public class DriverBroadcastReceiver
 {
     private final CopyBroadcastReceiver broadcastReceiver;
-    private final EventLogger logger;
+    private final Consumer<Exception> errorHandler;
 
     private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
     private final ErrorFlyweight errorHeader = new ErrorFlyweight();
     private final LogBuffersMessageFlyweight logBuffersMessage = new LogBuffersMessageFlyweight();
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
 
-    public DriverBroadcastReceiver(final CopyBroadcastReceiver broadcastReceiver, final EventLogger logger)
+    public DriverBroadcastReceiver(final CopyBroadcastReceiver broadcastReceiver,
+                                   final Consumer<Exception> errorHandler)
     {
         this.broadcastReceiver = broadcastReceiver;
-        this.logger = logger;
+        this.errorHandler = errorHandler;
     }
 
     public int receive(final DriverListener listener, final long activeCorrelationId)
@@ -83,7 +85,7 @@ public class DriverBroadcastReceiver
                 }
                 catch (final Exception ex)
                 {
-                    logger.logException(ex);
+                    errorHandler.accept(ex);
                 }
             }
         );

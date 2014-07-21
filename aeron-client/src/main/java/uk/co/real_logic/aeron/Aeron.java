@@ -15,19 +15,24 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.common.*;
+import uk.co.real_logic.aeron.common.Agent;
+import uk.co.real_logic.aeron.common.CommonContext;
+import uk.co.real_logic.aeron.common.IoUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastReceiver;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
-import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.conductor.*;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 
 import static uk.co.real_logic.aeron.common.IoUtil.mapExistingFile;
 
@@ -57,15 +62,15 @@ public final class Aeron implements AutoCloseable, Runnable
 
         final DriverProxy driverProxy = new DriverProxy(ctx.toDriverBuffer);
         final Signal correlationSignal = new Signal();
-        final DriverBroadcastReceiver receiver = new DriverBroadcastReceiver(ctx.toClientBuffer, new EventLogger());
+        final DriverBroadcastReceiver receiver = new DriverBroadcastReceiver(ctx.toClientBuffer, ctx.errorHandler);
 
         conductor = new ClientConductor(receiver,
                                         ctx.bufferManager,
                                         ctx.countersBuffer(),
                                         driverProxy,
                                         correlationSignal,
-                                        AWAIT_TIMEOUT,
-                                        ctx.conductorLogger);
+                                        ctx.errorHandler,
+                                        AWAIT_TIMEOUT);
 
         this.savedCtx = ctx;
     }
@@ -202,7 +207,8 @@ public final class Aeron implements AutoCloseable, Runnable
         private MappedByteBuffer defaultCounterValuesBuffer;
 
         private BufferManager bufferManager;
-        private EventLogger conductorLogger;
+
+        private Consumer<Exception> errorHandler;
 
         public ClientContext conclude() throws IOException
         {
@@ -239,13 +245,16 @@ public final class Aeron implements AutoCloseable, Runnable
                 {
                     bufferManager = new MappedBufferManager();
                 }
+
+                if (null == errorHandler)
+                {
+                    errorHandler = (ex) -> ex.printStackTrace();
+                }
             }
             catch (final IOException ex)
             {
                 throw new IllegalStateException("Could not initialise buffers", ex);
             }
-
-            conductorLogger(new EventLogger());
 
             return this;
         }
@@ -268,9 +277,9 @@ public final class Aeron implements AutoCloseable, Runnable
             return this;
         }
 
-        public ClientContext conductorLogger(final EventLogger value)
+        public ClientContext errorHandler(final Consumer<Exception> handler)
         {
-            this.conductorLogger = value;
+            this.errorHandler = handler;
             return this;
         }
 

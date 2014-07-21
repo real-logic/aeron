@@ -15,16 +15,24 @@
  */
 package uk.co.real_logic.aeron;
 
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.common.concurrent.broadcast.*;
-import uk.co.real_logic.aeron.common.event.EventLogger;
+import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastBufferDescriptor;
+import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastReceiver;
+import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastTransmitter;
+import uk.co.real_logic.aeron.common.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.aeron.common.protocol.ErrorFlyweight;
-import uk.co.real_logic.aeron.conductor.*;
+import uk.co.real_logic.aeron.conductor.ClientConductor;
+import uk.co.real_logic.aeron.conductor.DriverBroadcastReceiver;
+import uk.co.real_logic.aeron.conductor.DriverProxy;
+import uk.co.real_logic.aeron.conductor.Signal;
 
 import java.nio.ByteBuffer;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
 import static org.hamcrest.Matchers.not;
@@ -63,8 +71,8 @@ public class ClientConductorTest extends MockBufferUsage
 
     private final AtomicBuffer counterValuesBuffer = new AtomicBuffer(new byte[COUNTER_BUFFER_SZ]);
 
-    private final EventLogger mockReceiverLogger = new EventLogger();
-    private final EventLogger mockClientLogger = new EventLogger();
+    private final Consumer<Exception> mockReceiverErrorHandler = (ex) -> ex.printStackTrace();
+    private final Consumer<Exception> mockClientErrorHandler = (ex) -> ex.printStackTrace();
 
     private Signal signal;
     private DriverProxy driverProxy;
@@ -83,13 +91,13 @@ public class ClientConductorTest extends MockBufferUsage
         willNotifyNewBuffer();
 
         conductor = new ClientConductor(
-            new DriverBroadcastReceiver(toClientReceiver, mockReceiverLogger),
+            new DriverBroadcastReceiver(toClientReceiver, mockReceiverErrorHandler),
             mockBufferUsage,
             counterValuesBuffer,
             driverProxy,
             signal,
-            AWAIT_TIMEOUT,
-            mockClientLogger);
+            mockClientErrorHandler,
+            AWAIT_TIMEOUT);
 
         newBufferMessage.wrap(atomicSendBuffer, 0);
         errorHeader.wrap(atomicSendBuffer, 0);

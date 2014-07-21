@@ -23,20 +23,20 @@ import uk.co.real_logic.aeron.common.protocol.*;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-public class ControlFrameHandler implements FrameHandler, AutoCloseable
+public class ControlFrameHandler implements AutoCloseable
 {
     private final UdpTransport transport;
     private final UdpDestination destination;
     private final Long2ObjectHashMap<Long2ObjectHashMap<DriverPublication>> publicationBySessionMap
         = new Long2ObjectHashMap<>();
 
-    public ControlFrameHandler(
-            final UdpDestination destination,
-            final NioSelector nioSelector,
-            final EventLogger logger)
+    public ControlFrameHandler(final UdpDestination destination,
+                               final NioSelector nioSelector,
+                               final EventLogger logger)
         throws Exception
     {
-        this.transport = new UdpTransport(this, destination, nioSelector, logger);
+        this.transport = new UdpTransport(destination, this::onStatusMessageFrame, this::onNakFrame, logger);
+        this.transport.registerForRead(nioSelector);
         this.destination = destination;
     }
 
@@ -99,10 +99,10 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
         return publicationBySessionMap.size();
     }
 
-    public void onStatusMessageFrame(final StatusMessageFlyweight header,
-                                     final AtomicBuffer buffer,
-                                     final long length,
-                                     final InetSocketAddress srcAddress)
+    private void onStatusMessageFrame(final StatusMessageFlyweight header,
+                                      final AtomicBuffer buffer,
+                                      final long length,
+                                      final InetSocketAddress srcAddress)
     {
         final DriverPublication publication = findPublication(header.sessionId(), header.channelId());
         publication.onStatusMessage(header.termId(),
@@ -111,20 +111,12 @@ public class ControlFrameHandler implements FrameHandler, AutoCloseable
                                     srcAddress);
     }
 
-    public void onNakFrame(final NakFlyweight nak,
-                           final AtomicBuffer buffer,
-                           final long length,
-                           final InetSocketAddress srcAddress)
-    {
-        final DriverPublication publication = findPublication(nak.sessionId(), nak.channelId());
-        publication.onNakFrame(nak.termId(), nak.termOffset(), nak.length());
-    }
-
-    public void onDataFrame(final DataHeaderFlyweight header,
+    private void onNakFrame(final NakFlyweight nak,
                             final AtomicBuffer buffer,
                             final long length,
                             final InetSocketAddress srcAddress)
     {
-        // ignore data
+        final DriverPublication publication = findPublication(nak.sessionId(), nak.channelId());
+        publication.onNakFrame(nak.termId(), nak.termOffset(), nak.length());
     }
 }

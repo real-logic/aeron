@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.channels.*;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.function.IntSupplier;
 
 /**
  * Encapsulation of NIO Selector logic for integration into Receiver Thread and Conductor Thread
@@ -52,19 +53,9 @@ public class NioSelector implements AutoCloseable
      * @return SelectionKey for registration for cancel
      * @throws Exception
      */
-    public SelectionKey registerForRead(final SelectableChannel channel, final ReadHandler obj) throws Exception
+    public SelectionKey registerForRead(final SelectableChannel channel, final IntSupplier obj) throws Exception
     {
         return channel.register(selector, SelectionKey.OP_READ, obj);
-    }
-
-    /**
-     * Cancel pending reads for selection key.
-     *
-     * @param key to cancel
-     */
-    public void cancelRead(final SelectionKey key)
-    {
-        key.cancel();
     }
 
     /**
@@ -94,19 +85,6 @@ public class NioSelector implements AutoCloseable
         selector.selectNow();
     }
 
-    private int handleReadable(final SelectionKey key)
-    {
-        try
-        {
-            return ((ReadHandler)key.attachment()).onRead();
-        }
-        catch (final Exception ex)
-        {
-            logger.logException(ex);
-            return 0;
-        }
-    }
-
     private int handleSelectedKeys() throws Exception
     {
         int handledFrames = 0;
@@ -120,7 +98,7 @@ public class NioSelector implements AutoCloseable
                 final SelectionKey key = iter.next();
                 if (key.isReadable())
                 {
-                    handledFrames += handleReadable(key);
+                    handledFrames += ((IntSupplier)key.attachment()).getAsInt();
                 }
 
                 iter.remove();  // just remove here. If we ever add TCP, then will be cleaner.

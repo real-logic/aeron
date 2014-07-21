@@ -35,72 +35,126 @@ import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.*;
  *
  * Holds DatagramChannel, read Buffer, etc.
  */
-public final class UdpTransport implements ReadHandler, AutoCloseable
+public final class UdpTransport implements AutoCloseable
 {
-    private final ByteBuffer readByteBuffer = ByteBuffer.allocateDirect(MediaDriver.READ_BYTE_BUFFER_SZ);
-    private final AtomicBuffer readBuffer;
+    @FunctionalInterface
+    public interface DataFrameHandler
+    {
+        /**
+         * Handle a Data Frame.
+         *
+         * @param header of the first Data Frame in the message (may be re-wrapped if needed)
+         * @param buffer holding the data (always starts at 0 offset)
+         * @param length of the Frame (may be longer than the header frame length)
+         * @param srcAddress of the Frame
+         */
+        void onFrame(final DataHeaderFlyweight header, final AtomicBuffer buffer,
+                     final int length, final InetSocketAddress srcAddress);
+    }
+
+    @FunctionalInterface
+    public interface StatusMessageFrameHandler
+    {
+        /**
+         * Handle a Status Message Frame
+         *
+         * @param header of the first Status Message Frame in the message (may be re-wrapped if needed)
+         * @param buffer holding the NAK (always starts at 0 offset)
+         * @param length of the Frame (may be longer than the header frame length)
+         * @param srcAddress of the Frame
+         */
+        void onFrame(final StatusMessageFlyweight header, final AtomicBuffer buffer,
+                     final int length, final InetSocketAddress srcAddress);
+    }
+
+    @FunctionalInterface
+    public interface NakFrameHandler
+    {
+        /**
+         * Handle a NAK Frame
+         *
+         * @param header the first NAK Frame in the message (may be re-wrapped if needed)
+         * @param buffer holding the Status Message (always starts at 0 offset)
+         * @param length of the Frame (may be longer than the header frame length)
+         * @param srcAddress of the Frame
+         */
+        void onFrame(final NakFlyweight header, final AtomicBuffer buffer,
+                     final int length, final InetSocketAddress srcAddress);
+    }
+
     private final DatagramChannel channel = DatagramChannel.open();
+
+    private final ByteBuffer readByteBuffer = ByteBuffer.allocateDirect(MediaDriver.READ_BYTE_BUFFER_SZ);
+    private final AtomicBuffer readBuffer = new AtomicBuffer(readByteBuffer);
+
     private final HeaderFlyweight header = new HeaderFlyweight();
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final NakFlyweight nakHeader = new NakFlyweight();
     private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
-    private final FrameHandler frameHandler;
-    private final NioSelector nioSelector;
-    private final SelectionKey registeredKey;
-    private final boolean multicast;
+
+    private final DataFrameHandler dataFrameHandler;
+    private final StatusMessageFrameHandler smFrameHandler;
+    private final NakFrameHandler nakFrameHandler;
+
     private final EventLogger logger;
 
-    /*
-     * Generic constructor. Used mainly for selector testing.
+    private final boolean multicast;
+
+    private SelectionKey registeredKey;
+
+    /**
+     * Construct a transport for use with receiving and processing data frames
+     *
+     * @param destination of the transport
+     * @param dataFrameHandler to call when data frames are received
+     * @param logger for logging
+     * @throws Exception
      */
-    public UdpTransport(final FrameHandler frameHandler,
-                        final InetSocketAddress local,
-                        final NioSelector nioSelector,
-                        final EventLogger logger) throws Exception
+    public UdpTransport(final UdpDestination destination,
+                        final DataFrameHandler dataFrameHandler,
+                        final EventLogger logger)
+        throws Exception
     {
-        this.logger = logger;
-        this.readBuffer = new AtomicBuffer(this.readByteBuffer);
-        wrapHeadersOnReadBuffer();
-
-        this.frameHandler = frameHandler;
-        this.nioSelector = nioSelector;
-
-        channel.bind(local);
-        channel.configureBlocking(false);
-        registeredKey = nioSelector.registerForRead(channel, this);
-
-        multicast = false;
+        this(destination, dataFrameHandler, null, null, logger, destination.remoteData(),
+            destination.remoteData());
     }
 
-    public UdpTransport(final ControlFrameHandler frameHandler,
-                        final UdpDestination destination,
-                        final NioSelector nioSelector,
-                        final EventLogger logger) throws Exception
+    /**
+     * Construct a transport for use with receiving and processing control frames
+     *
+     * Does not register
+     *
+     * @param destination of the transport
+     * @param smFrameHandler to call when status message frames are received
+     * @param nakFrameHandler to call when NAK frames are received
+     * @param logger for logging
+     * @throws Exception
+     */
+    public UdpTransport(final UdpDestination destination,
+                        final StatusMessageFrameHandler smFrameHandler,
+                        final NakFrameHandler nakFrameHandler,
+                        final EventLogger logger)
+        throws Exception
     {
-        this(frameHandler, destination, destination.remoteControl(), nioSelector, destination.localControl(), logger);
+        this(destination, null, smFrameHandler, nakFrameHandler, logger, destination.remoteControl(),
+            destination.localControl());
     }
 
-    public UdpTransport(final DataFrameHandler frameHandler,
-                        final UdpDestination destination,
-                        final NioSelector nioSelector,
-                        final EventLogger logger) throws Exception
-    {
-        this(frameHandler, destination, destination.remoteData(), nioSelector, destination.remoteData(), logger);
-    }
-
-    private UdpTransport(final FrameHandler frameHandler,
-                         final UdpDestination destination,
+    private UdpTransport(final UdpDestination destination,
+                         final DataFrameHandler dataFrameHandler,
+                         final StatusMessageFrameHandler smFrameHandler,
+                         final NakFrameHandler nakFrameHandler,
+                         final EventLogger logger,
                          final InetSocketAddress endPointSocketAddress,
-                         final NioSelector nioSelector,
-                         final InetSocketAddress bindAddress,
-                         final EventLogger logger) throws Exception
+                         final InetSocketAddress bindAddress)
+        throws Exception
     {
         this.logger = logger;
-        this.readBuffer = new AtomicBuffer(this.readByteBuffer);
-        wrapHeadersOnReadBuffer();
+        this.dataFrameHandler = dataFrameHandler;
+        this.smFrameHandler = smFrameHandler;
+        this.nakFrameHandler = nakFrameHandler;
 
-        this.frameHandler = frameHandler;
-        this.nioSelector = nioSelector;
+        wrapHeadersOnReadBuffer();
 
         if (destination.isMulticast())
         {
@@ -120,9 +174,16 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
         }
 
         channel.configureBlocking(false);
-        registeredKey = nioSelector.registerForRead(channel, this);
     }
 
+    /**
+     * Send contents of {@link ByteBuffer} to remote address
+     *
+     * @param buffer to send
+     * @param remoteAddress to send to
+     * @return number of bytes sent
+     * @throws Exception
+     */
     public int sendTo(final ByteBuffer buffer, final InetSocketAddress remoteAddress) throws Exception
     {
         logger.log(EventCode.FRAME_OUT, buffer, buffer.remaining(), remoteAddress);
@@ -130,11 +191,36 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
         return channel.send(buffer, remoteAddress);
     }
 
+    /**
+     * Register transport with {@link NioSelector} for reading from the channel
+     *
+     * @param nioSelector to register read with
+     * @throws Exception
+     */
+    public void registerForRead(final NioSelector nioSelector) throws Exception
+    {
+        if (null != dataFrameHandler)
+        {
+            registeredKey = nioSelector.registerForRead(channel, this::onReadDataFrames);
+        }
+        else
+        {
+            registeredKey = nioSelector.registerForRead(channel, this::onReadControlFrames);
+        }
+    }
+
+    /**
+     * Close transport, canceling any pending read operations and closing channel
+     */
     public void close()
     {
         try
         {
-            nioSelector.cancelRead(registeredKey);
+            if (null != registeredKey)
+            {
+                registeredKey.cancel();
+            }
+
             channel.close();
         }
         catch (final Exception ex)
@@ -143,64 +229,109 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
         }
     }
 
-    public DatagramChannel channel()
-    {
-        return channel;
-    }
-
     public boolean isMulticast()
     {
         return multicast;
     }
 
-    public int onRead() throws Exception
+    private int onReadDataFrames()
     {
-        readByteBuffer.clear();
-        final InetSocketAddress srcAddress = (InetSocketAddress)channel.receive(readByteBuffer);
+        final InetSocketAddress srcAddress = receiveFrame();
 
-        if (srcAddress == null)
+        if (null == srcAddress)
         {
             return 0;
         }
-
-        // each datagram will start with a frame and have 1 or more frames per datagram
 
         final int length = readByteBuffer.position();
-        logger.log(EventCode.FRAME_IN, readByteBuffer, length, srcAddress);
 
-        // drop a version we don't know
-        if (header.version() != HeaderFlyweight.CURRENT_VERSION)
+        if (!isValidFrame(length))
         {
             return 0;
         }
 
-        // malformed, so log and break out of entire packet
-        if (header.frameLength() <= FrameDescriptor.BASE_HEADER_LENGTH)
+        if (header.headerType() == HeaderFlyweight.HDR_TYPE_DATA)
         {
-            logger.log(EventCode.MALFORMED_FRAME_LENGTH, readBuffer, 0, HeaderFlyweight.HEADER_LENGTH);
+            dataFrameHandler.onFrame(dataHeader, readBuffer, length, srcAddress);
+            return 1;
+        }
+
+//        logger.log(EventCode.UNKNOWN_HEADER_TYPE, readBuffer, 0, HeaderFlyweight.HEADER_LENGTH);
+        return 0;
+    }
+
+    private int onReadControlFrames()
+    {
+        final InetSocketAddress srcAddress = receiveFrame();
+
+        if (null == srcAddress)
+        {
+            return 0;
+        }
+
+        final int length = readByteBuffer.position();
+
+        if (!isValidFrame(length))
+        {
             return 0;
         }
 
         switch (header.headerType())
         {
-            case HDR_TYPE_DATA:
-                frameHandler.onDataFrame(dataHeader, readBuffer, length, srcAddress);
-                break;
-
             case HDR_TYPE_NAK:
-                frameHandler.onNakFrame(nakHeader, readBuffer, length, srcAddress);
-                break;
+                nakFrameHandler.onFrame(nakHeader, readBuffer, length, srcAddress);
+                return 1;
 
             case HDR_TYPE_SM:
-                frameHandler.onStatusMessageFrame(statusMessage, readBuffer, length, srcAddress);
-                break;
+                smFrameHandler.onFrame(statusMessage, readBuffer, length, srcAddress);
+                return 1;
 
             default:
-                logger.log(EventCode.UNKNOWN_HEADER_TYPE, readBuffer, 0, HeaderFlyweight.HEADER_LENGTH);
+//                logger.log(EventCode.UNKNOWN_HEADER_TYPE, readBuffer, 0, HeaderFlyweight.HEADER_LENGTH);
                 break;
         }
 
-        return 1;
+        return 0;
+    }
+
+    private InetSocketAddress receiveFrame()
+    {
+        readByteBuffer.clear();
+
+        try
+        {
+            final InetSocketAddress srcAddress = (InetSocketAddress) channel.receive(readByteBuffer);
+
+            if (null != srcAddress)
+            {
+                logger.log(EventCode.FRAME_IN, readByteBuffer, readByteBuffer.position(), srcAddress);
+            }
+
+            return srcAddress;
+        }
+        catch (final Exception ex)
+        {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    private boolean isValidFrame(final int length)
+    {
+        // drop a version we don't know
+        if (header.version() != HeaderFlyweight.CURRENT_VERSION)
+        {
+            logger.log(EventCode.MALFORMED_FRAME_LENGTH, readBuffer, 0, header.frameLength());
+            return false;
+        }
+
+        // too short
+        if (length <= FrameDescriptor.BASE_HEADER_LENGTH)
+        {
+            logger.log(EventCode.MALFORMED_FRAME_LENGTH, readBuffer, 0, length);
+            return false;
+        }
+
+        return true;
     }
 
     private void wrapHeadersOnReadBuffer()

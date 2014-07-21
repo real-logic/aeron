@@ -26,7 +26,7 @@ import java.nio.ByteBuffer;
 /**
  * Frame processing for data
  */
-public class DataFrameHandler implements FrameHandler, AutoCloseable
+public class DataFrameHandler implements AutoCloseable
 {
     private static final String INIT_IN_PROGRESS = "Connection initialisation in progress";
 
@@ -46,7 +46,8 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
                             final EventLogger logger)
         throws Exception
     {
-        this.transport = new UdpTransport(this, udpDestination, nioSelector, logger);
+        this.transport = new UdpTransport(udpDestination, this::onDataFrame, logger);
+        this.transport.registerForRead(nioSelector);
         this.udpDestination = udpDestination;
         this.conductorProxy = conductorProxy;
     }
@@ -136,20 +137,6 @@ public class DataFrameHandler implements FrameHandler, AutoCloseable
                     composeNakMessageSender(controlAddress, sessionId, channelId));
             }
         }
-    }
-
-    public void onStatusMessageFrame(final StatusMessageFlyweight header,
-                                     final AtomicBuffer buffer,
-                                     final long length,
-                                     final InetSocketAddress srcAddress)
-    {
-        // this should be on the data channel and shouldn't include SMs, so ignore.
-    }
-
-    public void onNakFrame(final NakFlyweight header, final AtomicBuffer buffer,
-                           final long length, final InetSocketAddress srcAddress)
-    {
-        // this should be on the data channel and shouldn't include Naks, so ignore.
     }
 
     public void onConnectedSubscriptionReady(final DriverConnectedSubscription connectedSubscription)

@@ -104,13 +104,13 @@ public class SenderTest
                               .map((log) -> new LogAppender(log.logBuffer(), log.stateBuffer(),
                                                             HEADER, MAX_FRAME_LENGTH)).toArray(LogAppender[]::new);
 
-        final ControlFrameHandler mockControlFrameHandler = mock(ControlFrameHandler.class);
-        when(mockControlFrameHandler.destination()).thenReturn(destination);
-        when(mockControlFrameHandler.sendTo(anyObject(), anyObject())).thenAnswer(saveByteBufferAnswer);
+        final PublicationMediaEndpoint mockPublicationMediaEndpoint = mock(PublicationMediaEndpoint.class);
+        when(mockPublicationMediaEndpoint.destination()).thenReturn(destination);
+        when(mockPublicationMediaEndpoint.sendTo(anyObject(), anyObject())).thenAnswer(saveByteBufferAnswer);
 
         positionReporter = mock(BufferPositionReporter.class);
 
-        publication = new DriverPublication(mockControlFrameHandler, wheel, spySenderControlStrategy, termBuffers,
+        publication = new DriverPublication(mockPublicationMediaEndpoint, wheel, spySenderControlStrategy, termBuffers,
             positionReporter, SESSION_ID, CHANNEL_ID, INITIAL_TERM_ID, HEADER.length, MAX_FRAME_LENGTH, mockLogger);
         publications.add(publication);
     }

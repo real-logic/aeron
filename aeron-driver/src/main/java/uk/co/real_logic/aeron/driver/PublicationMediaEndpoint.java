@@ -23,16 +23,20 @@ import uk.co.real_logic.aeron.common.protocol.*;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-public class ControlFrameHandler implements AutoCloseable
+/**
+ * Aggregator of multiple {@link DriverPublication}s onto a single transport session with processing of
+ * control frames.
+ */
+public class PublicationMediaEndpoint implements AutoCloseable
 {
     private final UdpTransport transport;
     private final UdpDestination destination;
     private final Long2ObjectHashMap<Long2ObjectHashMap<DriverPublication>> publicationBySessionMap
         = new Long2ObjectHashMap<>();
 
-    public ControlFrameHandler(final UdpDestination destination,
-                               final NioSelector nioSelector,
-                               final EventLogger logger)
+    public PublicationMediaEndpoint(final UdpDestination destination,
+                                    final NioSelector nioSelector,
+                                    final EventLogger logger)
         throws Exception
     {
         this.transport = new UdpTransport(destination, this::onStatusMessageFrame, this::onNakFrame, logger);

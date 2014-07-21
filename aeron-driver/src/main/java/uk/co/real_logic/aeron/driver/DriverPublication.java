@@ -70,7 +70,7 @@ public class DriverPublication implements AutoCloseable
 
     private final SenderControlStrategy controlStrategy;
     private final AtomicLong rightEdge;
-    private final ControlFrameHandler frameHandler;
+    private final PublicationMediaEndpoint mediaEndpoint;
     private final TermBuffers termBuffers;
     private final BufferPositionReporter limitReporter;
 
@@ -88,7 +88,7 @@ public class DriverPublication implements AutoCloseable
 
     private final InetSocketAddress dstAddress;
 
-    public DriverPublication(final ControlFrameHandler frameHandler,
+    public DriverPublication(final PublicationMediaEndpoint mediaEndpoint,
                              final TimerWheel timerWheel,
                              final SenderControlStrategy controlStrategy,
                              final TermBuffers termBuffers,
@@ -100,10 +100,10 @@ public class DriverPublication implements AutoCloseable
                              final int mtuLength,
                              final EventLogger logger)
     {
-        this.frameHandler = frameHandler;
+        this.mediaEndpoint = mediaEndpoint;
         this.termBuffers = termBuffers;
         this.logger = logger;
-        this.dstAddress = frameHandler.destination().remoteData();
+        this.dstAddress = mediaEndpoint.destination().remoteData();
         this.controlStrategy = controlStrategy;
         this.timerWheel = timerWheel;
         this.limitReporter = limitReporter;
@@ -296,7 +296,7 @@ public class DriverPublication implements AutoCloseable
 
         try
         {
-            final int bytesSent = frameHandler.sendTo(sendBuffer, dstAddress);
+            final int bytesSent = mediaEndpoint.sendTo(sendBuffer, dstAddress);
             if (length != bytesSent)
             {
                 throw new IllegalStateException("could not send all of message: " + bytesSent + "/" + length);
@@ -329,7 +329,7 @@ public class DriverPublication implements AutoCloseable
 
             try
             {
-                final int bytesSent = frameHandler.sendTo(termRetransmitBuffer, dstAddress);
+                final int bytesSent = mediaEndpoint.sendTo(termRetransmitBuffer, dstAddress);
                 if (bytesSent != length)
                 {
                     logger.log(EventCode.COULD_NOT_FIND_INTERFACE, termRetransmitBuffer, length, dstAddress);
@@ -365,7 +365,7 @@ public class DriverPublication implements AutoCloseable
 
         try
         {
-            final int bytesSent = frameHandler.sendTo(scratchByteBuffer, dstAddress);
+            final int bytesSent = mediaEndpoint.sendTo(scratchByteBuffer, dstAddress);
             if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
             {
                 logger.log(EventCode.ERROR_SENDING_HEARTBEAT_PACKET, scratchByteBuffer,

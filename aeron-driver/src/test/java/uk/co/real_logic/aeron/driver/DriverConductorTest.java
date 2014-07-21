@@ -201,7 +201,7 @@ public class DriverConductorTest
         driverConductor.doWork();
 
         assertThat(publications.size(), is(0));
-        assertNull(driverConductor.getFrameHandler(UdpDestination.parse(DESTINATION_URI + 4005)));
+        assertNull(driverConductor.publicationMediaEndpoint(UdpDestination.parse(DESTINATION_URI + 4005)));
     }
 
     @Test

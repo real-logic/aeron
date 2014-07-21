@@ -71,7 +71,7 @@ public class DriverConductor extends Agent
     private final NioSelector nioSelector;
     private final TermBuffersFactory termBuffersFactory;
     private final RingBuffer fromClientCommands;
-    private final Long2ObjectHashMap<ControlFrameHandler> srcDestinationMap = new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<PublicationMediaEndpoint> srcDestinationMap = new Long2ObjectHashMap<>();
     private final TimerWheel timerWheel;
     private final ArrayList<DriverConnectedSubscription> connectedSubscriptions = new ArrayList<>();
     private final AtomicArray<DriverPublication> publications;
@@ -114,7 +114,7 @@ public class DriverConductor extends Agent
         logger = ctx.conductorLogger();
     }
 
-    public ControlFrameHandler getFrameHandler(final UdpDestination destination)
+    public PublicationMediaEndpoint publicationMediaEndpoint(final UdpDestination destination)
     {
         return srcDestinationMap.get(destination.consistentHash());
     }
@@ -147,7 +147,7 @@ public class DriverConductor extends Agent
         termBuffersFactory.close();
         publications.forEach(DriverPublication::close);
         connectedSubscriptions.forEach(DriverConnectedSubscription::close);
-        srcDestinationMap.forEach((hash, frameHandler) -> frameHandler.close());
+        srcDestinationMap.forEach((hash, endpoint) -> endpoint.close());
     }
 
     /**
@@ -268,19 +268,19 @@ public class DriverConductor extends Agent
         try
         {
             final UdpDestination srcDestination = UdpDestination.parse(destination);
-            ControlFrameHandler frameHandler = srcDestinationMap.get(srcDestination.consistentHash());
-            if (null == frameHandler)
+            PublicationMediaEndpoint mediaEndpoint = srcDestinationMap.get(srcDestination.consistentHash());
+            if (null == mediaEndpoint)
             {
-                frameHandler = new ControlFrameHandler(srcDestination, nioSelector, new EventLogger());
-                srcDestinationMap.put(srcDestination.consistentHash(), frameHandler);
+                mediaEndpoint = new PublicationMediaEndpoint(srcDestination, nioSelector, new EventLogger());
+                srcDestinationMap.put(srcDestination.consistentHash(), mediaEndpoint);
             }
-            else if (!frameHandler.destination().equals(srcDestination))
+            else if (!mediaEndpoint.destination().equals(srcDestination))
             {
                 throw new ControlProtocolException(ErrorCode.PUBLICATION_CHANNEL_ALREADY_EXISTS,
                                                    "destinations hash same, but destinations different");
             }
 
-            DriverPublication publication = frameHandler.findPublication(sessionId, channelId);
+            DriverPublication publication = mediaEndpoint.findPublication(sessionId, channelId);
             if (null != publication)
             {
                 throw new ControlProtocolException(ErrorCode.PUBLICATION_CHANNEL_ALREADY_EXISTS,
@@ -296,7 +296,7 @@ public class DriverConductor extends Agent
             final BufferPositionReporter positionReporter =
                 new BufferPositionReporter(countersBuffer, positionCounterOffset);
 
-            publication = new DriverPublication(frameHandler,
+            publication = new DriverPublication(mediaEndpoint,
                                                 timerWheel,
                                                 flowControlStrategy,
                                                 termBuffers,
@@ -308,7 +308,7 @@ public class DriverConductor extends Agent
                                                 mtuLength,
                                                 new EventLogger());
 
-            frameHandler.addPublication(publication);
+            mediaEndpoint.addPublication(publication);
 
             clientProxy.onNewTermBuffers(ON_NEW_PUBLICATION, sessionId, channelId, initialTermId, destination,
                                          termBuffers, correlationId, positionCounterOffset);
@@ -334,13 +334,13 @@ public class DriverConductor extends Agent
         try
         {
             final UdpDestination srcDestination = UdpDestination.parse(destination);
-            final ControlFrameHandler frameHandler = srcDestinationMap.get(srcDestination.consistentHash());
-            if (null == frameHandler)
+            final PublicationMediaEndpoint mediaEndpoint = srcDestinationMap.get(srcDestination.consistentHash());
+            if (null == mediaEndpoint)
             {
                 throw new ControlProtocolException(INVALID_DESTINATION, "destination unknown");
             }
 
-            final DriverPublication publication = frameHandler.removePublication(sessionId, channelId);
+            final DriverPublication publication = mediaEndpoint.removePublication(sessionId, channelId);
             if (null == publication)
             {
                 throw new ControlProtocolException(PUBLICATION_CHANNEL_UNKNOWN,
@@ -350,10 +350,10 @@ public class DriverConductor extends Agent
             publications.remove(publication);
             publication.close();
 
-            if (frameHandler.sessionCount() == 0)
+            if (mediaEndpoint.sessionCount() == 0)
             {
                 srcDestinationMap.remove(srcDestination.consistentHash());
-                frameHandler.close();
+                mediaEndpoint.close();
             }
 
             clientProxy.operationSucceeded(publicationMessage.correlationId());

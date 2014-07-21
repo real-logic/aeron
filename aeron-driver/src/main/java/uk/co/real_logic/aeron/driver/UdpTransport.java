@@ -73,36 +73,21 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
                         final UdpDestination destination,
                         final NioSelector nioSelector) throws Exception
     {
-        this.readBuffer = new AtomicBuffer(this.readByteBuffer);
-        wrapHeadersOnReadBuffer();
-
-        this.frameHandler = frameHandler;
-        this.nioSelector = nioSelector;
-
-        if (destination.isMulticast())
-        {
-            final InetAddress endPointAddress = destination.remoteControl().getAddress();
-            final int dstPort = destination.remoteControl().getPort();
-            final NetworkInterface localInterface = destination.localInterface();
-            channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
-            channel.bind(new InetSocketAddress(dstPort));
-            channel.join(endPointAddress, localInterface);
-            channel.setOption(StandardSocketOptions.IP_MULTICAST_IF, localInterface);
-            multicast = true;
-        }
-        else
-        {
-            channel.bind(destination.localControl());
-            multicast = false;
-        }
-
-        channel.configureBlocking(false);
-        registeredKey = nioSelector.registerForRead(channel, this);
+        this(frameHandler, destination, destination.remoteControl(), nioSelector, destination.localControl());
     }
 
     public UdpTransport(final DataFrameHandler frameHandler,
                         final UdpDestination destination,
                         final NioSelector nioSelector) throws Exception
+    {
+        this(frameHandler, destination, destination.remoteData(), nioSelector, destination.remoteData());
+    }
+
+    private UdpTransport(final FrameHandler frameHandler,
+                         final UdpDestination destination,
+                         final InetSocketAddress endPointSocketAddress,
+                         final NioSelector nioSelector,
+                         final InetSocketAddress bindAddress) throws Exception
     {
         this.readBuffer = new AtomicBuffer(this.readByteBuffer);
         wrapHeadersOnReadBuffer();
@@ -112,8 +97,8 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
 
         if (destination.isMulticast())
         {
-            final InetAddress endPointAddress = destination.remoteData().getAddress();
-            final int dstPort = destination.remoteData().getPort();
+            final InetAddress endPointAddress = endPointSocketAddress.getAddress();
+            final int dstPort = endPointSocketAddress.getPort();
             final NetworkInterface localInterface = destination.localInterface();
             channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
             channel.bind(new InetSocketAddress(dstPort));
@@ -123,7 +108,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
         }
         else
         {
-            channel.bind(destination.remoteData());
+            channel.bind(bindAddress);
             multicast = false;
         }
 

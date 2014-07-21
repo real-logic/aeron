@@ -71,7 +71,6 @@ public class SubUnicastTest
             receivedFrames.add(data);
         };
 
-
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
     private final NakFlyweight nakHeader = new NakFlyweight();

@@ -53,8 +53,6 @@ public class SelectorAndTransportTest
     private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
 
     private final InetSocketAddress rcvRemoteAddress = new InetSocketAddress("localhost", SRC_PORT);
-    private final InetSocketAddress rcvLocalAddress = new InetSocketAddress(RCV_PORT);
-    private final InetSocketAddress srcLocalAddress = new InetSocketAddress(SRC_PORT);
     private final InetSocketAddress srcRemoteAddress = new InetSocketAddress("localhost", RCV_PORT);
 
     private final EventLogger mockTransportLogger = new EventLogger();

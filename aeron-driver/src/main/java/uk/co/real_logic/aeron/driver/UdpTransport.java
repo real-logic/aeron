@@ -154,13 +154,17 @@ public final class UdpTransport implements AutoCloseable
         this.smFrameHandler = smFrameHandler;
         this.nakFrameHandler = nakFrameHandler;
 
-        wrapHeadersOnReadBuffer();
+        header.wrap(readBuffer, 0);
+        dataHeader.wrap(readBuffer, 0);
+        nakHeader.wrap(readBuffer, 0);
+        statusMessage.wrap(readBuffer, 0);
 
         if (destination.isMulticast())
         {
             final InetAddress endPointAddress = endPointSocketAddress.getAddress();
             final int dstPort = endPointSocketAddress.getPort();
             final NetworkInterface localInterface = destination.localInterface();
+
             channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
             channel.bind(new InetSocketAddress(dstPort));
             channel.join(endPointAddress, localInterface);
@@ -229,6 +233,11 @@ public final class UdpTransport implements AutoCloseable
         }
     }
 
+    /**
+     * Is transport representing a multicast media or unicast
+     *
+     * @return if transport is multicast media
+     */
     public boolean isMulticast()
     {
         return multicast;
@@ -332,13 +341,5 @@ public final class UdpTransport implements AutoCloseable
         }
 
         return true;
-    }
-
-    private void wrapHeadersOnReadBuffer()
-    {
-        header.wrap(readBuffer, 0);
-        dataHeader.wrap(readBuffer, 0);
-        nakHeader.wrap(readBuffer, 0);
-        statusMessage.wrap(readBuffer, 0);
     }
 }

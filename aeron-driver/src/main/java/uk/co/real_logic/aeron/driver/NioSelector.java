@@ -27,8 +27,6 @@ import java.util.Set;
  */
 public class NioSelector implements AutoCloseable
 {
-    private static final EventLogger LOGGER = new EventLogger(NioSelector.class);
-
     private Selector selector;
 
     public NioSelector()
@@ -101,7 +99,7 @@ public class NioSelector implements AutoCloseable
         }
         catch (final Exception ex)
         {
-            LOGGER.logException(ex);
+            EventLogger.logException(ex);
             return 0;
         }
     }

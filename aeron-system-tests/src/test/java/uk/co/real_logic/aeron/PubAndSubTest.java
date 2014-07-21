@@ -20,6 +20,7 @@ import org.junit.experimental.theories.*;
 import org.junit.runner.RunWith;
 import uk.co.real_logic.aeron.common.BitUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
@@ -99,6 +100,8 @@ public class PubAndSubTest
     @Test(timeout = 1000)
     public void shouldSpinUpAndShutdown(final String destination) throws Exception
     {
+        EventLogger.logInvocation();
+
         setup(destination);
 
         Thread.sleep(100);
@@ -108,6 +111,8 @@ public class PubAndSubTest
     @Test(timeout = 1000)
     public void shouldReceivePublishedMessage(final String destination) throws Exception
     {
+        EventLogger.logInvocation();
+
         setup(destination);
 
         buffer.putInt(0, 1);

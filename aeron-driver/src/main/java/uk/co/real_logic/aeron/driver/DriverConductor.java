@@ -43,8 +43,6 @@ import static uk.co.real_logic.aeron.driver.MediaDriver.*;
  */
 public class DriverConductor extends Agent
 {
-    private static final EventLogger LOGGER = new EventLogger(DriverConductor.class);
-
     public static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
     public static final int HEARTBEAT_TIMEOUT_MS = 100;
 
@@ -92,7 +90,7 @@ public class DriverConductor extends Agent
 
     public DriverConductor(final DriverContext ctx)
     {
-        super(ctx.conductorIdleStrategy(), LOGGER::logException);
+        super(ctx.conductorIdleStrategy(), EventLogger::logException);
 
         this.commandQueue = ctx.conductorCommandQueue();
         this.receiverProxy = ctx.receiverProxy();
@@ -177,7 +175,7 @@ public class DriverConductor extends Agent
                 }
                 catch (final Exception ex)
                 {
-                    LOGGER.logException(ex);
+                    EventLogger.logException(ex);
                 }
             });
     }
@@ -195,28 +193,28 @@ public class DriverConductor extends Agent
                     {
                         case ADD_PUBLICATION:
                             publicationMessage.wrap(buffer, index);
-                            LOGGER.log(EventCode.CMD_IN_ADD_PUBLICATION, buffer, index, length);
+                            EventLogger.log(EventCode.CMD_IN_ADD_PUBLICATION, buffer, index, length);
                             flyweight = publicationMessage;
                             onAddPublication(publicationMessage);
                             break;
 
                         case REMOVE_PUBLICATION:
                             publicationMessage.wrap(buffer, index);
-                            LOGGER.log(EventCode.CMD_IN_REMOVE_PUBLICATION, buffer, index, length);
+                            EventLogger.log(EventCode.CMD_IN_REMOVE_PUBLICATION, buffer, index, length);
                             flyweight = publicationMessage;
                             onRemovePublication(publicationMessage);
                             break;
 
                         case ADD_SUBSCRIPTION:
                             subscriptionMessage.wrap(buffer, index);
-                            LOGGER.log(EventCode.CMD_IN_ADD_SUBSCRIPTION, buffer, index, length);
+                            EventLogger.log(EventCode.CMD_IN_ADD_SUBSCRIPTION, buffer, index, length);
                             flyweight = subscriptionMessage;
                             onAddSubscription(subscriptionMessage);
                             break;
 
                         case REMOVE_SUBSCRIPTION:
                             subscriptionMessage.wrap(buffer, index);
-                            LOGGER.log(EventCode.CMD_IN_REMOVE_SUBSCRIPTION, buffer, index, length);
+                            EventLogger.log(EventCode.CMD_IN_REMOVE_SUBSCRIPTION, buffer, index, length);
                             flyweight = subscriptionMessage;
                             onRemoveSubscription(subscriptionMessage);
                             break;
@@ -225,12 +223,12 @@ public class DriverConductor extends Agent
                 catch (final ControlProtocolException ex)
                 {
                     clientProxy.onError(ex.errorCode(), ex.getMessage(), flyweight, length);
-                    LOGGER.logException(ex);
+                    EventLogger.logException(ex);
                 }
                 catch (final Exception ex)
                 {
                     clientProxy.onError(GENERIC_ERROR, ex.getMessage(), flyweight, length);
-                    LOGGER.logException(ex);
+                    EventLogger.logException(ex);
                 }
             });
     }
@@ -451,7 +449,7 @@ public class DriverConductor extends Agent
         }
         catch (final Exception ex)
         {
-            LOGGER.logException(ex);
+            EventLogger.logException(ex);
         }
     }
 
@@ -468,7 +466,7 @@ public class DriverConductor extends Agent
             }
             catch (final Exception ex)
             {
-                LOGGER.logException(ex);
+                EventLogger.logException(ex);
             }
         }
     }

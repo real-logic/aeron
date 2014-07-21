@@ -29,8 +29,6 @@ import java.util.Map;
  */
 public class Receiver extends Agent
 {
-    private static final EventLogger LOGGER = new EventLogger(Receiver.class);
-
     private final NioSelector nioSelector;
     private final DriverConductorProxy conductorProxy;
     private final Map<UdpDestination, DataFrameHandler> frameHandlerByDestinationMap = new HashMap<>();
@@ -38,7 +36,7 @@ public class Receiver extends Agent
 
     public Receiver(final MediaDriver.DriverContext ctx) throws Exception
     {
-        super(ctx.receiverIdleStrategy(), LOGGER::logException);
+        super(ctx.receiverIdleStrategy(), EventLogger::logException);
 
         this.conductorProxy = ctx.driverConductorProxy();
         this.nioSelector = ctx.receiverNioSelector();
@@ -75,7 +73,7 @@ public class Receiver extends Agent
                 catch (final Exception ex)
                 {
                     // TODO: Send error to client - however best if validated by conductor so receiver not delayed
-                    LOGGER.logException(ex);
+                    EventLogger.logException(ex);
                 }
             });
     }
@@ -147,7 +145,7 @@ public class Receiver extends Agent
         else
         {
             final String destination = connectedSubscription.udpDestination().toString();
-            LOGGER.log(EventCode.COULD_NOT_FIND_FRAME_HANDLER_FOR_NEW_CONNECTED_SUBSCRIPTION, destination);
+            EventLogger.log(EventCode.COULD_NOT_FIND_FRAME_HANDLER_FOR_NEW_CONNECTED_SUBSCRIPTION, destination);
         }
     }
 }

@@ -37,8 +37,6 @@ import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
  */
 public class ClientConductor extends Agent implements DriverListener
 {
-    private static final EventLogger LOGGER = new EventLogger(ClientConductor.class);
-
     private static final int MAX_FRAME_LENGTH = 1024;
 
     public static final long AGENT_IDLE_MAX_SPINS = 100;
@@ -72,7 +70,7 @@ public class ClientConductor extends Agent implements DriverListener
     {
         super(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
                                       AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS),
-              LOGGER::logException);
+              EventLogger::logException);
 
         this.counterValuesBuffer = counterValuesBuffer;
         this.correlationSignal = correlationSignal;

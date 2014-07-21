@@ -14,8 +14,6 @@ import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.*;
  */
 public class DriverBroadcastReceiver
 {
-    private static final EventLogger LOGGER = new EventLogger(DriverBroadcastReceiver.class);
-
     private final CopyBroadcastReceiver broadcastReceiver;
 
     private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
@@ -83,7 +81,7 @@ public class DriverBroadcastReceiver
                 }
                 catch (final Exception ex)
                 {
-                    LOGGER.logException(ex);
+                    EventLogger.logException(ex);
                 }
             }
         );

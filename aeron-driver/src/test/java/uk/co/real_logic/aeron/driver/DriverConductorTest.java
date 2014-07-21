@@ -53,8 +53,6 @@ public class DriverConductorTest
 {
     // TODO: Assert the error log has been notified appropriately
 
-    public static final EventLogger LOGGER = new EventLogger(DriverConductorTest.class);
-
     private static final String DESTINATION_URI = "udp://localhost:";
     private static final String INVALID_URI = "udp://";
     private static final long CHANNEL_1 = 10;
@@ -131,7 +129,7 @@ public class DriverConductorTest
     @Test
     public void shouldBeAbleToAddSinglePublication() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 2L, 4000);
 
@@ -150,7 +148,7 @@ public class DriverConductorTest
     @Test
     public void shouldBeAbleToAddSingleSubscription() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_1);
 
@@ -165,7 +163,7 @@ public class DriverConductorTest
     @Test
     public void shouldBeAbleToAddAndRemoveSingleSubscription() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_1);
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_1);
@@ -179,7 +177,7 @@ public class DriverConductorTest
     @Test
     public void shouldBeAbleToAddMultipleChannels() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 2L, 4001);
         writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 3L, 4002);
@@ -194,7 +192,7 @@ public class DriverConductorTest
     @Test
     public void shouldBeAbleToRemoveSingleChannel() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 2L, 4005);
         writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1L, 2L, 4005);
@@ -208,7 +206,7 @@ public class DriverConductorTest
     @Test
     public void shouldBeAbleToRemoveMultipleChannels() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 2L, 4006);
         writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 3L, 4007);
@@ -228,7 +226,7 @@ public class DriverConductorTest
     @Test
     public void shouldKeepFrameHandlerUponRemovalOfAllButOneSubscriber() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         final UdpDestination destination = UdpDestination.parse(DESTINATION_URI + 4000);
 
@@ -257,7 +255,7 @@ public class DriverConductorTest
     @Test
     public void shouldOnlyRemoveFrameHandlerUponRemovalOfAllSubscribers() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         final UdpDestination destination = UdpDestination.parse(DESTINATION_URI + 4000);
 
@@ -293,7 +291,7 @@ public class DriverConductorTest
     @Test
     public void shouldErrorOnAddDuplicateChannelOnExistingSession() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 2L, 4000);
         writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 2L, 4000);
@@ -312,7 +310,7 @@ public class DriverConductorTest
     @Test
     public void shouldErrorOnRemoveChannelOnUnknownDestination() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1L, 2L, 4000);
 
@@ -327,7 +325,7 @@ public class DriverConductorTest
     @Test
     public void shouldErrorOnRemoveChannelOnUnknownSessionId() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 2L, 4000);
         writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 2L, 2L, 4000);
@@ -346,7 +344,7 @@ public class DriverConductorTest
     @Test
     public void shouldErrorOnRemoveChannelOnUnknownChannelId() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 2L, 4000);
         writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1L, 3L, 4000);
@@ -365,7 +363,7 @@ public class DriverConductorTest
     @Test
     public void shouldErrorOnAddSubscriptionWithInvalidUri() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, INVALID_URI, CHANNEL_1);
 

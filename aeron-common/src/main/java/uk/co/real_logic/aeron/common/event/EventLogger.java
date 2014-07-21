@@ -23,16 +23,15 @@ import java.io.File;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
-import java.nio.charset.StandardCharsets;
 
 /**
  * Event logger interface for applications/libraries
  */
 public class EventLogger // TODO: We should inject loggers rather than use static fields.
 {
-    private final static boolean ON;
-    private final static ManyToOneRingBuffer ringBuffer;
-    private final static ThreadLocal<AtomicBuffer> encodingBuffer;
+    private static final boolean ON;
+    private static final ManyToOneRingBuffer ringBuffer;
+    private static final ThreadLocal<AtomicBuffer> encodingBuffer;
 
     /**
      *  The index in the stack trace of the method that called logException().
@@ -41,8 +40,6 @@ public class EventLogger // TODO: We should inject loggers rather than use stati
      *  stack[1] is logException().
      */
     private static final int INVOKING_METHOD_INDEX = 2;
-
-    private byte[] className;
 
     static
     {
@@ -74,17 +71,7 @@ public class EventLogger // TODO: We should inject loggers rather than use stati
         ON = Boolean.getBoolean(EventConfiguration.LOGGER_ON_PROPERTY_NAME) && null != tmpRingBuffer;
     }
 
-    public EventLogger(final Class clazz)
-    {
-        className = clazz.getName().getBytes(StandardCharsets.UTF_8);
-    }
-
-    public byte[] classNameAsBytes()
-    {
-        return className;
-    }
-
-    public void log(final EventCode code, final AtomicBuffer buffer, final int offset, final int length)
+    public static void log(final EventCode code, final AtomicBuffer buffer, final int offset, final int length)
     {
         if (ON)
         {
@@ -95,7 +82,7 @@ public class EventLogger // TODO: We should inject loggers rather than use stati
         }
     }
 
-    public void log(final EventCode code, final ByteBuffer buffer, final int length, final InetSocketAddress dstAddr)
+    public static void log(final EventCode code, final ByteBuffer buffer, final int length, final InetSocketAddress dstAddr)
     {
         if (ON)
         {
@@ -106,7 +93,7 @@ public class EventLogger // TODO: We should inject loggers rather than use stati
         }
     }
 
-    public void log(final EventCode code, final byte[] buffer, int offset, int length)
+    public static void log(final EventCode code, final byte[] buffer, int offset, int length)
     {
         if (ON)
         {
@@ -117,7 +104,7 @@ public class EventLogger // TODO: We should inject loggers rather than use stati
         }
     }
 
-    public void log(final EventCode code, final String value)
+    public static void log(final EventCode code, final String value)
     {
         if (ON)
         {
@@ -128,7 +115,7 @@ public class EventLogger // TODO: We should inject loggers rather than use stati
         }
     }
 
-    public void logInvocation()
+    public static void logInvocation()
     {
         if (ON)
         {
@@ -141,7 +128,7 @@ public class EventLogger // TODO: We should inject loggers rather than use stati
         }
     }
 
-    public void logException(final Exception ex)
+    public static void logException(final Exception ex)
     {
         if (ON)
         {

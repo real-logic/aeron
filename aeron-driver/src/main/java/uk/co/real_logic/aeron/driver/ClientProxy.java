@@ -35,8 +35,6 @@ import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.*;
  */
 public class ClientProxy
 {
-    private static final EventLogger LOGGER = new EventLogger(ClientProxy.class);
-
     private static final int WRITE_BUFFER_CAPACITY = 1024;
 
     private final AtomicBuffer tmpBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
@@ -86,10 +84,10 @@ public class ClientProxy
         termBuffers.appendBufferLocationsTo(logBuffersMessage);
         logBuffersMessage.destination(destination);
 
-        LOGGER.log(msgTypeId == ON_NEW_PUBLICATION ?
-                       EventCode.CMD_OUT_NEW_PUBLICATION_BUFFER_NOTIFICATION :
-                       EventCode.CMD_OUT_NEW_SUBSCRIPTION_BUFFER_NOTIFICATION,
-                   tmpBuffer, 0, logBuffersMessage.length());
+        EventLogger.log(msgTypeId == ON_NEW_PUBLICATION ?
+                        EventCode.CMD_OUT_NEW_PUBLICATION_BUFFER_NOTIFICATION :
+                        EventCode.CMD_OUT_NEW_SUBSCRIPTION_BUFFER_NOTIFICATION,
+                tmpBuffer, 0, logBuffersMessage.length());
 
         transmitter.transmit(msgTypeId, tmpBuffer, 0, logBuffersMessage.length());
     }

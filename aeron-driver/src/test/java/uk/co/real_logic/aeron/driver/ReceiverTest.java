@@ -43,8 +43,6 @@ import static org.mockito.Mockito.when;
 
 public class ReceiverTest
 {
-    public static final EventLogger LOGGER = new EventLogger(ReceiverTest.class);
-
     public static final long LOG_BUFFER_SIZE = 64 * 1024;
     private static final String URI = "udp://localhost:45678";
     private static final UdpDestination UDP_DESTINATION = UdpDestination.parse(URI);
@@ -119,7 +117,7 @@ public class ReceiverTest
     @Test
     public void shouldCreateRcvTermAndSendSmOnZeroLengthData() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         receiverProxy.addSubscription(UDP_DESTINATION, CHANNEL_ID);  // ADD_SUBSCRIPTION from client
 
@@ -179,7 +177,7 @@ public class ReceiverTest
     @Test
     public void shouldInsertDataIntoLogAfterInitialExchange() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         receiverProxy.addSubscription(UDP_DESTINATION, CHANNEL_ID);  // ADD_SUBSCRIPTION from client
 
@@ -238,7 +236,7 @@ public class ReceiverTest
     @Test
     public void shouldNotOverwriteDataFrameWithHeartbeat() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         receiverProxy.addSubscription(UDP_DESTINATION, CHANNEL_ID);  // ADD_SUBSCRIPTION from client
 
@@ -300,7 +298,7 @@ public class ReceiverTest
     @Test
     public void shouldOverwriteHeartbeatWithDataFrame() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         receiverProxy.addSubscription(UDP_DESTINATION, CHANNEL_ID);  // ADD_SUBSCRIPTION from client
 
@@ -363,7 +361,7 @@ public class ReceiverTest
     @Ignore("does not work correctly yet")
     public void shouldBeAbleToHandleTermBufferRolloverCorrectly() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         receiverProxy.addSubscription(UDP_DESTINATION, CHANNEL_ID);  // ADD_SUBSCRIPTION from client
 

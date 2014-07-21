@@ -35,15 +35,12 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
 import static uk.co.real_logic.aeron.common.BitUtil.align;
-import static uk.co.real_logic.aeron.common.CommonContext.DIRS_DELETE_ON_EXIT_PROP_NAME;
 
 /**
  * Test that has a consumer and single media driver for multicast cases. Uses socket as sender/publisher endpoint.
  */
 public class SubMulticastTest
 {
-    public static final EventLogger LOGGER = new EventLogger(SubMulticastTest.class);
-
     private static final String DATA_ADDRESS = "224.20.30.39";
     private static final String CONTROL_ADDRESS = "224.20.30.40";
     private static final int DST_PORT = 54322;
@@ -130,7 +127,7 @@ public class SubMulticastTest
     @Test(timeout = 1000)
     public void shouldReceiveCorrectlyFormedSingleDataFrame() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         // TODO: should be able to remove sleep and send multiple data frames until SM received....
 
@@ -176,7 +173,7 @@ public class SubMulticastTest
     @Test(timeout = 1000)
     public void shouldReceiveMultipleDataFrames() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         // let buffers get connected and media driver set things up
         Thread.sleep(100);
@@ -220,7 +217,7 @@ public class SubMulticastTest
     @Test(timeout = 1000)
     public void shouldSendNaksForMissingData() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         // let buffers get connected and media driver set things up
         Thread.sleep(100);
@@ -277,7 +274,7 @@ public class SubMulticastTest
     @Test(timeout = 1000)
     public void shouldReceiveRetransmitAndDeliver() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         // let buffers get connected and media driver set things up
         Thread.sleep(100);

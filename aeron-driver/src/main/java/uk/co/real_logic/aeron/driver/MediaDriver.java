@@ -53,8 +53,6 @@ import static uk.co.real_logic.aeron.common.IoUtil.mapNewFile;
  */
 public class MediaDriver implements AutoCloseable
 {
-    private static final EventLogger LOGGER = new EventLogger(MediaDriver.class);
-
     /**
      * Byte buffer size (in bytes) for reads
      */
@@ -454,7 +452,7 @@ public class MediaDriver implements AutoCloseable
         }
         catch (final Exception ex)
         {
-            LOGGER.logException(ex);
+            EventLogger.logException(ex);
         }
     }
 

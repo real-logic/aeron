@@ -44,8 +44,6 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender.App
 
 public class SenderTest
 {
-    public static final EventLogger LOGGER = new EventLogger(SenderTest.class);
-
     public static final long LOG_BUFFER_SIZE = 64 * 1024;
     public static final int MAX_FRAME_LENGTH = 1024;
     public static final long SESSION_ID = 1L;
@@ -121,7 +119,7 @@ public class SenderTest
     @Test
     public void shouldAddAndRemovePublication()
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         publications.remove(publication);
     }
@@ -129,7 +127,7 @@ public class SenderTest
     @Test
     public void shouldSendZeroLengthDataFrameOnChannelWhenTimeoutWithoutStatusMessage() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         currentTimestamp += TimeUnit.MILLISECONDS.toNanos(DriverPublication.INITIAL_HEARTBEAT_TIMEOUT_MS) - 1;
         publications.forEach(DriverPublication::heartbeatCheck);
@@ -152,7 +150,7 @@ public class SenderTest
     @Test
     public void shouldSendMultipleZeroLengthDataFrameOnChannelWhenTimeoutWithoutStatusMessage() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         currentTimestamp += TimeUnit.MILLISECONDS.toNanos(DriverPublication.INITIAL_HEARTBEAT_TIMEOUT_MS) - 1;
         publications.forEach(DriverPublication::heartbeatCheck);
@@ -171,7 +169,7 @@ public class SenderTest
     @Test
     public void shouldNotSendZeroLengthDataFrameAfterReceivingStatusMessage() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         currentTimestamp += TimeUnit.MILLISECONDS.toNanos(DriverPublication.HEARTBEAT_TIMEOUT_MS);
         publication.onStatusMessage(INITIAL_TERM_ID, 0, 0, rcvAddress);
@@ -182,7 +180,7 @@ public class SenderTest
     @Test
     public void shouldBeAbleToSendOnChannel() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         publication.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FRAME_ALIGNMENT), rcvAddress);
 
@@ -207,7 +205,7 @@ public class SenderTest
     @Test
     public void shouldBeAbleToSendOnChannelTwice() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         publication.onStatusMessage(INITIAL_TERM_ID, 0, (2 * align(PAYLOAD.length, FRAME_ALIGNMENT)),
                                     rcvAddress);
@@ -246,7 +244,7 @@ public class SenderTest
     @Test
     public void shouldBeAbleToSendOnChannelTwiceAsBatch() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         publication.onStatusMessage(INITIAL_TERM_ID, 0, (2 * align(PAYLOAD.length, FRAME_ALIGNMENT)), rcvAddress);
 
@@ -284,7 +282,7 @@ public class SenderTest
     @Test
     public void shouldNotSendUntilStatusMessageReceived() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -311,7 +309,7 @@ public class SenderTest
     @Test
     public void shouldNotBeAbleToSendAfterUsingUpYourWindow() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -340,7 +338,7 @@ public class SenderTest
     @Test
     public void shouldSend0LengthDataFrameAsHeartbeatWhenIdle() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         publication.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FRAME_ALIGNMENT), rcvAddress);
 
@@ -368,7 +366,7 @@ public class SenderTest
     @Test
     public void shouldSendMultiple0LengthDataFrameAsHeartbeatsWhenIdle()
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         publication.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FRAME_ALIGNMENT), rcvAddress);
 

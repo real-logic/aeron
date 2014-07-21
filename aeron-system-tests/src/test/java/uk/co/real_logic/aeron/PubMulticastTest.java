@@ -32,15 +32,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
-import static uk.co.real_logic.aeron.common.CommonContext.DIRS_DELETE_ON_EXIT_PROP_NAME;
 
 /**
  * Test that has a publisher and single media driver for multicast cases. Uses socket as receiver/consumer endpoint.
  */
 public class PubMulticastTest
 {
-    public static final EventLogger LOGGER = new EventLogger(PubMulticastTest.class);
-
     private static final String DATA_ADDRESS = "224.20.30.39";
     private static final String CONTROL_ADDRESS = "224.20.30.40";
     private static final int DST_PORT = 54321;
@@ -119,7 +116,7 @@ public class PubMulticastTest
     @Test(timeout = 1000)
     public void shouldSendCorrectlyFormedSingleDataFrames() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         // let buffers get connected
 
@@ -186,7 +183,7 @@ public class PubMulticastTest
     @Test(timeout = 100000)
     public void shouldHandleNak() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         // let buffers get connected
 
@@ -270,7 +267,7 @@ public class PubMulticastTest
     @Ignore("isn't finished yet - send enough data to rollover a buffer")
     public void messagesShouldContinueAfterBufferRollover()
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
     }
 
     private void sendSM(final long termId) throws Exception

@@ -35,15 +35,12 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
 import static uk.co.real_logic.aeron.common.BitUtil.align;
-import static uk.co.real_logic.aeron.common.CommonContext.DIRS_DELETE_ON_EXIT_PROP_NAME;
 
 /**
  * Test that has a consumer and single media driver for unicast cases. Uses socket as sender/publisher endpoint.
  */
 public class SubUnicastTest
 {
-    public static final EventLogger LOGGER = new EventLogger(SubUnicastTest.class);
-
     private static final String HOST = "localhost";
     private static final int PORT = 54323;
     private static final int SRC_PORT = 54324;
@@ -131,7 +128,7 @@ public class SubUnicastTest
     @Test(timeout = 1000)
     public void shouldReceiveCorrectlyFormedSingleDataFrame() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         // let buffers get connected and media driver set things up
         Thread.sleep(10);
@@ -174,7 +171,7 @@ public class SubUnicastTest
     @Test(timeout = 1000)
     public void shouldReceiveMultipleDataFrames() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         // let buffers get connected and media driver set things up
         Thread.sleep(10);
@@ -218,7 +215,7 @@ public class SubUnicastTest
     @Test(timeout = 1000)
     public void shouldSendNaksForMissingData() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         // let buffers get connected and media driver set things up
         Thread.sleep(10);
@@ -274,7 +271,7 @@ public class SubUnicastTest
     @Test(timeout = 1000)
     public void shouldReceiveRetransmitAndDeliver() throws Exception
     {
-        LOGGER.logInvocation();
+        EventLogger.logInvocation();
 
         // let buffers get connected and media driver set things up
         Thread.sleep(10);

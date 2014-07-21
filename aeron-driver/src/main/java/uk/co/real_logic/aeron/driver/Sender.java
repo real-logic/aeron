@@ -24,14 +24,12 @@ import uk.co.real_logic.aeron.common.event.EventLogger;
  */
 public class Sender extends Agent
 {
-    private static final EventLogger LOGGER = new EventLogger(Sender.class);
-
     private final AtomicArray<DriverPublication> publications;
     private int roundRobinIndex = 0;
 
     public Sender(final MediaDriver.DriverContext ctx)
     {
-        super(ctx.senderIdleStrategy(), LOGGER::logException);
+        super(ctx.senderIdleStrategy(), EventLogger::logException);
 
         publications = ctx.publications();
     }

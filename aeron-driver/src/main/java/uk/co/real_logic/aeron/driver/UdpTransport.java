@@ -37,8 +37,6 @@ import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.*;
  */
 public final class UdpTransport implements ReadHandler, AutoCloseable
 {
-    private static final EventLogger LOGGER = new EventLogger(UdpTransport.class);
-
     private final ByteBuffer readByteBuffer = ByteBuffer.allocateDirect(MediaDriver.READ_BYTE_BUFFER_SZ);
     private final AtomicBuffer readBuffer;
     private final DatagramChannel channel = DatagramChannel.open();
@@ -135,7 +133,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
 
     public int sendTo(final ByteBuffer buffer, final InetSocketAddress remoteAddress) throws Exception
     {
-        LOGGER.log(EventCode.FRAME_OUT, buffer, buffer.remaining(), remoteAddress);
+        EventLogger.log(EventCode.FRAME_OUT, buffer, buffer.remaining(), remoteAddress);
 
         return channel.send(buffer, remoteAddress);
     }
@@ -149,7 +147,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
         }
         catch (final Exception ex)
         {
-            LOGGER.logException(ex);
+            EventLogger.logException(ex);
         }
     }
 
@@ -176,7 +174,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
         // each datagram will start with a frame and have 1 or more frames per datagram
 
         final int length = readByteBuffer.position();
-        LOGGER.log(EventCode.FRAME_IN, readByteBuffer, length, srcAddress);
+        EventLogger.log(EventCode.FRAME_IN, readByteBuffer, length, srcAddress);
 
         // drop a version we don't know
         if (header.version() != HeaderFlyweight.CURRENT_VERSION)
@@ -187,7 +185,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
         // malformed, so log and break out of entire packet
         if (header.frameLength() <= FrameDescriptor.BASE_HEADER_LENGTH)
         {
-            LOGGER.log(EventCode.MALFORMED_FRAME_LENGTH, readBuffer, 0, HeaderFlyweight.HEADER_LENGTH);
+            EventLogger.log(EventCode.MALFORMED_FRAME_LENGTH, readBuffer, 0, HeaderFlyweight.HEADER_LENGTH);
             return 0;
         }
 
@@ -206,7 +204,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
                 break;
 
             default:
-                LOGGER.log(EventCode.UNKNOWN_HEADER_TYPE, readBuffer, 0, HeaderFlyweight.HEADER_LENGTH);
+                EventLogger.log(EventCode.UNKNOWN_HEADER_TYPE, readBuffer, 0, HeaderFlyweight.HEADER_LENGTH);
                 break;
         }
 

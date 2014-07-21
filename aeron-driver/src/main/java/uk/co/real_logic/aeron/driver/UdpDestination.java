@@ -34,8 +34,6 @@ import static java.net.InetAddress.getByAddress;
  */
 public class UdpDestination
 {
-    private static final EventLogger LOGGER = new EventLogger(UdpDestination.class);
-
     private static final int LAST_MULTICAST_DIGIT = 3;
 
     private final InetSocketAddress remoteData;
@@ -70,7 +68,7 @@ public class UdpDestination
 
                 if (null == savedIfc)
                 {
-                    LOGGER.log(EventCode.COULD_NOT_FIND_INTERFACE, ifcName);
+                    EventLogger.log(EventCode.COULD_NOT_FIND_INTERFACE, ifcName);
                 }
             }
             else
@@ -99,7 +97,7 @@ public class UdpDestination
         }
         catch (final Exception ex)
         {
-            LOGGER.logException(ex);
+            EventLogger.logException(ex);
         }
 
         DEFAULT_MULTICAST_INTERFACE = savedIfc;

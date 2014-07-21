@@ -42,8 +42,6 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
  */
 public class DriverPublication implements AutoCloseable
 {
-    private static final EventLogger LOGGER = new EventLogger(DriverPublication.class);
-
     /** Initial heartbeat timeout (cancelled by SM) */
     public static final int INITIAL_HEARTBEAT_TIMEOUT_MS = 100;
     public static final long INITIAL_HEARTBEAT_TIMEOUT_NS = MILLISECONDS.toNanos(INITIAL_HEARTBEAT_TIMEOUT_MS);
@@ -156,7 +154,7 @@ public class DriverPublication implements AutoCloseable
         }
         catch (final Exception ex)
         {
-            LOGGER.logException(ex);
+            EventLogger.logException(ex);
         }
 
         return workCount;
@@ -307,7 +305,7 @@ public class DriverPublication implements AutoCloseable
         }
         catch (final Exception ex)
         {
-            LOGGER.logException(ex);
+            EventLogger.logException(ex);
         }
     }
 
@@ -331,12 +329,12 @@ public class DriverPublication implements AutoCloseable
                 final int bytesSent = frameHandler.sendTo(termRetransmitBuffer, dstAddress);
                 if (bytesSent != length)
                 {
-                    LOGGER.log(EventCode.COULD_NOT_FIND_INTERFACE, termRetransmitBuffer, length, dstAddress);
+                    EventLogger.log(EventCode.COULD_NOT_FIND_INTERFACE, termRetransmitBuffer, length, dstAddress);
                 }
             }
             catch (final Exception ex)
             {
-                LOGGER.logException(ex);
+                EventLogger.logException(ex);
             }
         }
     }
@@ -367,15 +365,15 @@ public class DriverPublication implements AutoCloseable
             final int bytesSent = frameHandler.sendTo(scratchByteBuffer, dstAddress);
             if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
             {
-                LOGGER.log(EventCode.ERROR_SENDING_HEARTBEAT_PACKET, scratchByteBuffer,
-                           DataHeaderFlyweight.HEADER_LENGTH, dstAddress);
+                EventLogger.log(EventCode.ERROR_SENDING_HEARTBEAT_PACKET, scratchByteBuffer,
+                        DataHeaderFlyweight.HEADER_LENGTH, dstAddress);
             }
 
             timeOfLastSendOrHeartbeat.lazySet(timerWheel.now());
         }
         catch (final Exception ex)
         {
-            LOGGER.logException(ex);
+            EventLogger.logException(ex);
         }
     }
 

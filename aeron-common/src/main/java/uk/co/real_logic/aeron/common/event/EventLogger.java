@@ -82,7 +82,7 @@ public class EventLogger // TODO: We should inject loggers rather than use stati
         }
     }
 
-    public static void log(final EventCode code, final ByteBuffer buffer, final int length, final InetSocketAddress dstAddr)
+    public void log(final EventCode code, final ByteBuffer buffer, final int length, final InetSocketAddress dstAddr)
     {
         if (ON)
         {

@@ -90,6 +90,8 @@ public class SenderTest
             return size;
         };
 
+    private EventLogger mockLogger = mock(EventLogger.class);
+
     @Before
     public void setUp() throws Exception
     {
@@ -106,7 +108,7 @@ public class SenderTest
         positionReporter = mock(BufferPositionReporter.class);
 
         publication = new DriverPublication(mockControlFrameHandler, wheel, spySenderControlStrategy, termBuffers,
-            positionReporter, SESSION_ID, CHANNEL_ID, INITIAL_TERM_ID, HEADER.length, MAX_FRAME_LENGTH);
+            positionReporter, SESSION_ID, CHANNEL_ID, INITIAL_TERM_ID, HEADER.length, MAX_FRAME_LENGTH, mockLogger);
         publications.add(publication);
     }
 

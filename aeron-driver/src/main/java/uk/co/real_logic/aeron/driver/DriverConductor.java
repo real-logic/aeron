@@ -305,7 +305,8 @@ public class DriverConductor extends Agent
                                                 channelId,
                                                 initialTermId,
                                                 HEADER_LENGTH,
-                                                mtuLength);
+                                                mtuLength,
+                                                new EventLogger());
 
             frameHandler.addPublication(publication);
 

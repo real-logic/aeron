@@ -125,7 +125,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
 
     public int sendTo(final ByteBuffer buffer, final InetSocketAddress remoteAddress) throws Exception
     {
-        EventLogger.log(EventCode.FRAME_OUT, buffer, buffer.remaining(), remoteAddress);
+        logger.log(EventCode.FRAME_OUT, buffer, buffer.remaining(), remoteAddress);
 
         return channel.send(buffer, remoteAddress);
     }
@@ -166,7 +166,7 @@ public final class UdpTransport implements ReadHandler, AutoCloseable
         // each datagram will start with a frame and have 1 or more frames per datagram
 
         final int length = readByteBuffer.position();
-        EventLogger.log(EventCode.FRAME_IN, readByteBuffer, length, srcAddress);
+        logger.log(EventCode.FRAME_IN, readByteBuffer, length, srcAddress);
 
         // drop a version we don't know
         if (header.version() != HeaderFlyweight.CURRENT_VERSION)

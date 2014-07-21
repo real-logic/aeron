@@ -79,6 +79,7 @@ public class DriverPublication implements AutoCloseable
 
     private final int positionBitsToShift;
     private final long initialPosition;
+    private final EventLogger logger;
 
     private int nextTermOffset = 0;
     private int activeIndex = 0;
@@ -96,10 +97,11 @@ public class DriverPublication implements AutoCloseable
                              final long channelId,
                              final long initialTermId,
                              final int headerLength,
-                             final int mtuLength)
+                             final int mtuLength, final EventLogger logger)
     {
         this.frameHandler = frameHandler;
         this.termBuffers = termBuffers;
+        this.logger = logger;
         this.dstAddress = frameHandler.destination().remoteData();
         this.controlStrategy = controlStrategy;
         this.timerWheel = timerWheel;
@@ -329,7 +331,7 @@ public class DriverPublication implements AutoCloseable
                 final int bytesSent = frameHandler.sendTo(termRetransmitBuffer, dstAddress);
                 if (bytesSent != length)
                 {
-                    EventLogger.log(EventCode.COULD_NOT_FIND_INTERFACE, termRetransmitBuffer, length, dstAddress);
+                    logger.log(EventCode.COULD_NOT_FIND_INTERFACE, termRetransmitBuffer, length, dstAddress);
                 }
             }
             catch (final Exception ex)
@@ -365,7 +367,7 @@ public class DriverPublication implements AutoCloseable
             final int bytesSent = frameHandler.sendTo(scratchByteBuffer, dstAddress);
             if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
             {
-                EventLogger.log(EventCode.ERROR_SENDING_HEARTBEAT_PACKET, scratchByteBuffer,
+                logger.log(EventCode.ERROR_SENDING_HEARTBEAT_PACKET, scratchByteBuffer,
                         DataHeaderFlyweight.HEADER_LENGTH, dstAddress);
             }
 

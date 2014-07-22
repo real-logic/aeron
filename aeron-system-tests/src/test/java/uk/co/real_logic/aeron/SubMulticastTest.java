@@ -29,7 +29,9 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.IntConsumer;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -73,6 +75,12 @@ public class SubMulticastTest
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
     private final NakFlyweight nakHeader = new NakFlyweight();
+
+    private final IntConsumer subscriptionPollWithYield = (i) ->
+        {
+            subscription.poll(FRAME_COUNT_LIMIT);
+            Thread.yield();
+        };
 
     private ExecutorService executorService;
 
@@ -160,10 +168,9 @@ public class SubMulticastTest
         sendDataFrame(0, PAYLOAD);
 
         // now poll data into app
-        while (0 == subscription.poll(FRAME_COUNT_LIMIT))
-        {
-            Thread.yield();
-        }
+        SystemTestHelper.executeUntil(() -> (receivedFrames.size() > 0),
+                subscriptionPollWithYield,
+                Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(1));
@@ -200,13 +207,10 @@ public class SubMulticastTest
             sendDataFrame(i * FrameDescriptor.FRAME_ALIGNMENT, PAYLOAD);
         }
 
-        int rcvedMessages = 0;
-        do
-        {
-            rcvedMessages += subscription.poll(FRAME_COUNT_LIMIT);
-            Thread.yield();
-        }
-        while (rcvedMessages < 3);
+        // now poll data into app
+        SystemTestHelper.executeUntil(() -> (receivedFrames.size() >= 3),
+                subscriptionPollWithYield,
+                Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(3));
@@ -244,30 +248,29 @@ public class SubMulticastTest
         sendDataFrame(2 * FrameDescriptor.FRAME_ALIGNMENT, PAYLOAD);
 
         // now poll data into app
-        while (0 == subscription.poll(FRAME_COUNT_LIMIT))
-        {
-            Thread.yield();
-        }
+        SystemTestHelper.executeUntil(() -> (receivedFrames.size() > 0),
+                subscriptionPollWithYield,
+                Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(1));
         assertThat(receivedFrames.remove(), is(PAYLOAD));
 
         DatagramTestHelper.receiveUntil(senderChannel,
-            (buffer) ->
-            {
-                nakHeader.wrap(buffer, 0);
-                assertThat(nakHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_NAK));
-                assertThat(nakHeader.frameLength(), is(NakFlyweight.HEADER_LENGTH));
+                (buffer) ->
+                {
+                    nakHeader.wrap(buffer, 0);
+                    assertThat(nakHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_NAK));
+                    assertThat(nakHeader.frameLength(), is(NakFlyweight.HEADER_LENGTH));
 //                    assertThat(buffer.position(), is(nakHeader.frameLength()));
-                assertThat(nakHeader.channelId(), is(CHANNEL_ID));
-                assertThat(nakHeader.sessionId(), is(SESSION_ID));
-                assertThat(nakHeader.termId(), is(TERM_ID));
-                assertThat(nakHeader.termOffset(), is((long)FrameDescriptor.FRAME_ALIGNMENT));
-                assertThat(nakHeader.length(), is((long)FrameDescriptor.FRAME_ALIGNMENT));
-                naksSeen.incrementAndGet();
-                return true;
-            });
+                    assertThat(nakHeader.channelId(), is(CHANNEL_ID));
+                    assertThat(nakHeader.sessionId(), is(SESSION_ID));
+                    assertThat(nakHeader.termId(), is(TERM_ID));
+                    assertThat(nakHeader.termOffset(), is((long) FrameDescriptor.FRAME_ALIGNMENT));
+                    assertThat(nakHeader.length(), is((long) FrameDescriptor.FRAME_ALIGNMENT));
+                    naksSeen.incrementAndGet();
+                    return true;
+                });
 
         assertThat(naksSeen.get(), greaterThanOrEqualTo(1L));
     }
@@ -302,10 +305,9 @@ public class SubMulticastTest
         sendDataFrame(2 * FrameDescriptor.FRAME_ALIGNMENT, PAYLOAD);
 
         // now poll data into app
-        while (0 == subscription.poll(FRAME_COUNT_LIMIT))
-        {
-            Thread.yield();
-        }
+        SystemTestHelper.executeUntil(() -> (receivedFrames.size() > 0),
+                subscriptionPollWithYield,
+                Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(1));
@@ -324,10 +326,10 @@ public class SubMulticastTest
 
         sendDataFrame(FrameDescriptor.FRAME_ALIGNMENT, PAYLOAD);
 
-        while (0 == subscription.poll(FRAME_COUNT_LIMIT))
-        {
-            Thread.yield();
-        }
+        // now poll data into app
+        SystemTestHelper.executeUntil(() -> (receivedFrames.size() >= 2),
+                subscriptionPollWithYield,
+                Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(2));

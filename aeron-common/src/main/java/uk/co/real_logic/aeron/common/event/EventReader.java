@@ -46,7 +46,11 @@ public class EventReader extends Agent implements AutoCloseable
 
             if (eventsFile.exists())
             {
-                System.err.println("WARNING: using existing event buffer at: " + eventsFile);
+                if (context.warnIfEventsFileExists)
+                {
+                    System.err.println("WARNING: using existing event buffer at: " + eventsFile);
+                }
+
                 buffer = IoUtil.mapExistingFile(eventsFile, "event-buffer");
             }
             else
@@ -59,7 +63,12 @@ public class EventReader extends Agent implements AutoCloseable
                 eventsFile.deleteOnExit();
             }
 
-            ringBuffer = new ManyToOneRingBuffer(new AtomicBuffer(buffer));
+            final AtomicBuffer atomicBuffer = new AtomicBuffer(buffer);
+
+            // fill with 0 (this should not be that big, so no big deal to do it here)
+            atomicBuffer.setMemory(0, buffer.capacity(), (byte)0);
+
+            ringBuffer = new ManyToOneRingBuffer(atomicBuffer);
         }
         catch (final Exception ex)
         {
@@ -81,7 +90,7 @@ public class EventReader extends Agent implements AutoCloseable
 
     public int doWork() throws Exception
     {
-        return read(handler, Integer.MAX_VALUE);
+        return read(handler, 1);
     }
 
     public static class Context
@@ -91,6 +100,7 @@ public class EventReader extends Agent implements AutoCloseable
         private long bufferSize = Long.getLong(EventConfiguration.BUFFER_SIZE_PROPERTY_NAME,
             EventConfiguration.BUFFER_SIZE_DEFAULT) + RingBufferDescriptor.TRAILER_LENGTH;
         private boolean deleteOnExit = Boolean.getBoolean(EventConfiguration.DELETE_ON_EXIT_PROPERTY_NAME);
+        private boolean warnIfEventsFileExists = true;
 
         private IdleStrategy backoffStrategy;
         private Consumer<String> handler;
@@ -125,6 +135,12 @@ public class EventReader extends Agent implements AutoCloseable
             return this;
         }
 
+        public Context warnIfEventsFileExists(final boolean value)
+        {
+            this.warnIfEventsFileExists = value;
+            return this;
+        }
+
         public File eventsFile()
         {
             return eventsFile;
@@ -148,6 +164,11 @@ public class EventReader extends Agent implements AutoCloseable
         public Consumer<String> handler()
         {
             return handler;
+        }
+
+        public boolean warnIfEventsFileExists()
+        {
+            return warnIfEventsFileExists;
         }
     }
 }

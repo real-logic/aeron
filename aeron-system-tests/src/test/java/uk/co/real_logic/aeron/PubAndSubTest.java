@@ -26,6 +26,7 @@ import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.eq;
@@ -83,6 +84,7 @@ public class PubAndSubTest
     @After
     public void closeEverything() throws Exception
     {
+        System.err.println("closeEverything");
         publication.release();
         subscription.release();
 
@@ -119,13 +121,14 @@ public class PubAndSubTest
 
         publication.offer(buffer, 0, BitUtil.SIZE_OF_INT);
 
-        int msgs = 0;
-        do
-        {
-            msgs += subscription.poll(Integer.MAX_VALUE);
-            Thread.yield();
-        }
-        while (msgs < 1);
+        int msgs[] = new int[1];
+        SystemTestHelper.executeUntil(() -> (msgs[0] > 0),
+            (i) ->
+            {
+                msgs[0] += subscription.poll(10);
+                Thread.yield();
+            },
+            Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
 
         verify(dataHandler).onData(anyObject(), eq(DataHeaderFlyweight.HEADER_LENGTH), eq(BitUtil.SIZE_OF_INT),
                 eq(SESSION_ID), eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));

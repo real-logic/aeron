@@ -209,6 +209,7 @@ task(runEx, dependsOn: project(':aeron-examples').'build', type: JavaExec) {
     systemProperties('aeron.dir.data': baseDir + '-data',
             'aeron.dir.conductor': baseDir + '-conductor',
             'aeron.dir.counters': baseDir + '-counters',
+            'aeron.event.buffer.location': baseDir + '-events',
             'aeron.dir.delete.on.exit': System.properties['aeron.dir.delete.on.exit'],
             'aeron.event.log': System.properties['aeron.event.log'])
 }

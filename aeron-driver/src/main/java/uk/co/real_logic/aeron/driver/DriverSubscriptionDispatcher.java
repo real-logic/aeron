@@ -23,7 +23,7 @@ import java.net.InetSocketAddress;
 
 /**
  * Handling of dispatching data frames to {@link DriverConnectedSubscription}s
- *
+ * <p>
  * All methods should be called via {@link Receiver} thread
  */
 public class DriverSubscriptionDispatcher
@@ -39,7 +39,7 @@ public class DriverSubscriptionDispatcher
     public DriverSubscriptionDispatcher(final UdpTransport transport,
                                         final UdpDestination udpDestination,
                                         final DriverConductorProxy conductorProxy)
-            throws Exception
+        throws Exception
     {
         this.transport = transport;
         this.udpDestination = udpDestination;
@@ -106,16 +106,16 @@ public class DriverSubscriptionDispatcher
             }
             else if (null == initialisationInProgressMap.get(sessionId))
             {
-                final InetSocketAddress controlAddress = transport.isMulticast() ? udpDestination.remoteControl() : srcAddress;
+                final InetSocketAddress controlAddress =
+                    transport.isMulticast() ? udpDestination.remoteControl() : srcAddress;
 
                 initialisationInProgressMap.put(sessionId, INIT_IN_PROGRESS); // TODO: need to clean up on timeout
 
-                conductorProxy.createConnectedSubscription(
-                        subscription.udpDestination(),
-                        sessionId,
-                        channelId,
-                        termId,
-                        controlAddress);
+                conductorProxy.createConnectedSubscription(subscription.udpDestination(),
+                                                           sessionId,
+                                                           channelId,
+                                                           termId,
+                                                           controlAddress);
             }
         }
     }

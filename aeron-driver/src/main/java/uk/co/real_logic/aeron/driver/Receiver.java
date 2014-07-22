@@ -29,7 +29,6 @@ import uk.co.real_logic.aeron.driver.cmd.RemoveSubscriptionCmd;
 public class Receiver extends Agent
 {
     private final NioSelector nioSelector;
-    private final DriverConductorProxy conductorProxy;
     private final OneToOneConcurrentArrayQueue<? super Object> commandQueue;
     private final EventLogger logger;
 
@@ -37,7 +36,6 @@ public class Receiver extends Agent
     {
         super(ctx.receiverIdleStrategy(), ctx.receiverLogger()::logException);
 
-        this.conductorProxy = ctx.driverConductorProxy();
         this.nioSelector = ctx.receiverNioSelector();
         this.commandQueue = ctx.receiverCommandQueue();
         this.logger = ctx.receiverLogger();

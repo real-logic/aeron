@@ -88,7 +88,7 @@ public class MediaSubscriptionEndpoint implements AutoCloseable
         return count;
     }
 
-    public long incrRefToChannelId(final long channelId)
+    public long incRefToChannelId(final long channelId)
     {
         Long count = refCountByChannelIdMap.get(channelId);
 
@@ -99,7 +99,7 @@ public class MediaSubscriptionEndpoint implements AutoCloseable
         return count;
     }
 
-    public long decrRefToChannelId(final long channelId)
+    public long decRefToChannelId(final long channelId)
     {
         Long count = refCountByChannelIdMap.get(channelId);
 
@@ -122,7 +122,7 @@ public class MediaSubscriptionEndpoint implements AutoCloseable
         return count;
     }
 
-    public long numberOfChannels()
+    public long channelCount()
     {
         return refCountByChannelIdMap.size();
     }

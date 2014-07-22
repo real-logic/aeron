@@ -406,7 +406,7 @@ public class DriverConductor extends Agent
                 }
             }
 
-            final long initialCount = mediaEndpoint.incrRefToChannelId(channelId);
+            final long initialCount = mediaEndpoint.incRefToChannelId(channelId);
 
             if (1 == initialCount)
             {
@@ -449,7 +449,7 @@ public class DriverConductor extends Agent
                 throw new ControlProtocolException(SUBSCRIBER_NOT_REGISTERED, "subscriptions unknown for destination");
             }
 
-            final long count = mediaEndpoint.decrRefToChannelId(channelId);
+            final long count = mediaEndpoint.decRefToChannelId(channelId);
 
             if (0 == count)
             {
@@ -459,7 +459,7 @@ public class DriverConductor extends Agent
                 }
             }
 
-            if (mediaEndpoint.numberOfChannels() == 0)
+            if (mediaEndpoint.channelCount() == 0)
             {
                 subscriptionEndpointByHash.remove(udpDestination.consistentHash());
                 mediaEndpoint.close();

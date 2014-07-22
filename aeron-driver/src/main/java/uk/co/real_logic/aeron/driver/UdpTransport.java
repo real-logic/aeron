@@ -48,8 +48,7 @@ public final class UdpTransport implements AutoCloseable
          * @param length of the Frame (may be longer than the header frame length)
          * @param srcAddress of the Frame
          */
-        void onFrame(final DataHeaderFlyweight header, final AtomicBuffer buffer,
-                     final int length, final InetSocketAddress srcAddress);
+        void onFrame(DataHeaderFlyweight header, AtomicBuffer buffer, int length, InetSocketAddress srcAddress);
     }
 
     @FunctionalInterface
@@ -63,8 +62,7 @@ public final class UdpTransport implements AutoCloseable
          * @param length of the Frame (may be longer than the header frame length)
          * @param srcAddress of the Frame
          */
-        void onFrame(final StatusMessageFlyweight header, final AtomicBuffer buffer,
-                     final int length, final InetSocketAddress srcAddress);
+        void onFrame(StatusMessageFlyweight header, AtomicBuffer buffer, int length, InetSocketAddress srcAddress);
     }
 
     @FunctionalInterface
@@ -78,8 +76,7 @@ public final class UdpTransport implements AutoCloseable
          * @param length of the Frame (may be longer than the header frame length)
          * @param srcAddress of the Frame
          */
-        void onFrame(final NakFlyweight header, final AtomicBuffer buffer,
-                     final int length, final InetSocketAddress srcAddress);
+        void onFrame(NakFlyweight header, AtomicBuffer buffer, int length, InetSocketAddress srcAddress);
     }
 
     private final DatagramChannel channel = DatagramChannel.open();
@@ -115,8 +112,7 @@ public final class UdpTransport implements AutoCloseable
                         final EventLogger logger)
         throws Exception
     {
-        this(destination, dataFrameHandler, null, null, logger, destination.remoteData(),
-            destination.remoteData());
+        this(destination, dataFrameHandler, null, null, logger, destination.remoteData(), destination.remoteData());
     }
 
     /**
@@ -137,7 +133,7 @@ public final class UdpTransport implements AutoCloseable
         throws Exception
     {
         this(destination, null, smFrameHandler, nakFrameHandler, logger, destination.remoteControl(),
-            destination.localControl());
+             destination.localControl());
     }
 
     private UdpTransport(final UdpDestination destination,

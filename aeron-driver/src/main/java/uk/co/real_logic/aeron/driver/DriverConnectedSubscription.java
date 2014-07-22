@@ -93,11 +93,6 @@ public class DriverConnectedSubscription implements AutoCloseable
         this.initialPosition = initialTermId << positionBitsToShift;
     }
 
-    public UdpDestination udpDestination()
-    {
-        return udpDestination;
-    }
-
     public long sessionId()
     {
         return sessionId;
@@ -106,21 +101,6 @@ public class DriverConnectedSubscription implements AutoCloseable
     public long channelId()
     {
         return channelId;
-    }
-
-    public long activeTermId()
-    {
-        return activeTermId.get();
-    }
-
-    public StatusMessageSender statusMessageSender()
-    {
-        return statusMessageSender;
-    }
-
-    public int currentWindowSize()
-    {
-        return currentWindowSize;
     }
 
     public void close()

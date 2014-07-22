@@ -32,7 +32,7 @@ public class NioSelector implements AutoCloseable
 
     private Selector selector;
 
-    public NioSelector(EventLogger logger)
+    public NioSelector(final EventLogger logger)
     {
         this.logger = logger;
         try

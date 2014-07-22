@@ -125,9 +125,17 @@ public class Publication
 
     private void releaseBuffers()
     {
-        for (final ManagedBuffer managedBuffer : managedBuffers)
+        try
         {
-            managedBuffer.release();
+            for (final ManagedBuffer managedBuffer : managedBuffers)
+            {
+                managedBuffer.close();
+            }
+        }
+        catch (Exception ex)
+        {
+            // TODO: decide if this is the right error handling strategy
+            throw new IllegalStateException(ex);
         }
     }
 

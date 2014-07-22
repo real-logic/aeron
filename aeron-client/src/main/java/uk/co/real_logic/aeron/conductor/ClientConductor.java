@@ -95,7 +95,6 @@ public class ClientConductor extends Agent implements DriverListener
     public void close()
     {
         stop();
-        bufferManager.close();
     }
 
     public synchronized Publication addPublication(final String destination, final long channelId, final long sessionId)
@@ -157,11 +156,11 @@ public class ClientConductor extends Agent implements DriverListener
 
     public synchronized void releaseSubscription(final Subscription subscription)
     {
-        driverProxy.removeSubscription(subscription.destination(), subscription.channelId());
+        activeCorrelationId = driverProxy.removeSubscription(subscription.destination(), subscription.channelId());
 
         subscriptionMap.remove(subscription.destination(), subscription.channelId());
 
-        // TODO: clean up logs
+        awaitOperationSucceeded();
     }
 
     public void onNewPublication(final String destination,
@@ -219,7 +218,7 @@ public class ClientConductor extends Agent implements DriverListener
 
             final PositionReporter positionReporter =
                 new BufferPositionReporter(counterValuesBuffer, message.positionCounterOffset());
-            subscription.onTermBuffersMapped(sessionId, initialTermId, logs, positionReporter);
+            subscription.onTermBuffersMapped(sessionId, initialTermId, logs, positionReporter, managedBuffers);
         }
     }
 

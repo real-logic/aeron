@@ -27,14 +27,12 @@ import java.util.*;
 import static uk.co.real_logic.aeron.common.IoUtil.mapExistingFile;
 
 /**
- * Default mapping buffer lifecycle strategy for the client
+ * Default mapping byteBuffer lifecycle strategy for the client
  *
  * Note: Not thread-safe - Methods only called from ClientConductor
  */
 public class MappedBufferManager implements BufferManager
 {
-    private final List<LocatedBuffer> buffers = new ArrayList<>();
-
     public ManagedBuffer newBuffer(final String location, final int offset, final int length)
         throws IOException
     {
@@ -45,9 +43,7 @@ public class MappedBufferManager implements BufferManager
             buffer.limit(offset + length);
         }
 
-        buffers.add(new LocatedBuffer(location, buffer));
-
-        return new ManagedBuffer(location, offset, length, new AtomicBuffer(buffer), this);
+        return new MappedManagedBuffer(buffer);
     }
 
     private boolean requiresIndirection(final ByteBuffer buffer, final int offset, final int length)
@@ -55,50 +51,25 @@ public class MappedBufferManager implements BufferManager
         return offset != 0 || buffer.capacity() != length;
     }
 
-    public int releaseBuffers(final String location, final int offset, final int length)
+    static class MappedManagedBuffer implements ManagedBuffer
     {
-        final int limit = offset + length;
-        int count = 0;
-        final Iterator<LocatedBuffer> it = buffers.iterator();
+        private final MappedByteBuffer byteBuffer;
+        private final AtomicBuffer buffer;
 
-        while (it.hasNext())
+        MappedManagedBuffer(final MappedByteBuffer buffer)
         {
-            final LocatedBuffer buffer = it.next();
-            if (buffer.matches(location, offset, limit))
-            {
-                buffer.close();
-                it.remove();
-                count++;
-            }
-        }
-
-        return count;
-    }
-
-    public void close()
-    {
-        buffers.forEach(LocatedBuffer::close);
-    }
-
-    static class LocatedBuffer
-    {
-        private final String location;
-        private final MappedByteBuffer buffer;
-
-        LocatedBuffer(final String location, final MappedByteBuffer buffer)
-        {
-            this.location = location;
-            this.buffer = buffer;
-        }
-
-        public boolean matches(final String location, final int offset, final int limit)
-        {
-            return this.location.equals(location) && buffer.position() == offset && buffer.limit() == limit;
+            this.byteBuffer = buffer;
+            this.buffer = new AtomicBuffer(buffer);
         }
 
         public void close()
         {
-            IoUtil.unmap(buffer);
+            IoUtil.unmap(byteBuffer);
+        }
+
+        public AtomicBuffer buffer()
+        {
+            return buffer;
         }
     }
 }

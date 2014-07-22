@@ -19,6 +19,7 @@ import uk.co.real_logic.aeron.common.concurrent.AtomicArray;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.common.status.PositionReporter;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
+import uk.co.real_logic.aeron.conductor.ManagedBuffer;
 
 /**
  * Aeron Subscriber API for receiving messages from publishers on a given destination and channelId pair.
@@ -62,6 +63,12 @@ public class Subscription
     public void release()
     {
         conductor.releaseSubscription(this);
+        releaseBuffers();
+    }
+
+    private void releaseBuffers()
+    {
+        connectedSubscriptions.forEach(ConnectedSubscription::releaseBuffers);
     }
 
     /**
@@ -85,9 +92,9 @@ public class Subscription
     }
 
     public void onTermBuffersMapped(final long sessionId, final long termId,
-                                    final LogReader[] logReaders, final PositionReporter reporter)
+                                    final LogReader[] logReaders, final PositionReporter reporter, final ManagedBuffer[] managedBuffers)
     {
-        connectedSubscriptions.add(new ConnectedSubscription(logReaders, sessionId, termId, handler, reporter));
+        connectedSubscriptions.add(new ConnectedSubscription(logReaders, sessionId, termId, handler, reporter, managedBuffers));
     }
 
     public boolean isConnected(final long sessionId)

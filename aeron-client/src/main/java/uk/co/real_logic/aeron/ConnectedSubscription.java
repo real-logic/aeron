@@ -21,6 +21,7 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.status.PositionReporter;
+import uk.co.real_logic.aeron.conductor.ManagedBuffer;
 
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -39,6 +40,7 @@ public class ConnectedSubscription
     private final long sessionId;
     private final DataHandler dataHandler;
     private PositionReporter positionReporter;
+    private final ManagedBuffer[] managedBuffers;
     private final AtomicLong activeTermId;
     private final int positionBitsToShift;
     private final long initialPosition;
@@ -49,12 +51,14 @@ public class ConnectedSubscription
                                  final long sessionId,
                                  final long initialTermId,
                                  final DataHandler dataHandler,
-                                 final PositionReporter positionReporter)
+                                 final PositionReporter positionReporter,
+                                 final ManagedBuffer[] managedBuffers)
     {
         this.logReaders = readers;
         this.sessionId = sessionId;
         this.dataHandler = dataHandler;
         this.positionReporter = positionReporter;
+        this.managedBuffers = managedBuffers;
         this.activeTermId = new AtomicLong(initialTermId);
         this.activeIndex = termIdToBufferIndex(initialTermId);
 
@@ -101,5 +105,21 @@ public class ConnectedSubscription
         final byte flags = buffer.getByte(flagsOffset(offset));
 
         dataHandler.onData(buffer, offset + HEADER_LENGTH, length - HEADER_LENGTH, sessionId, flags);
+    }
+
+    public void releaseBuffers()
+    {
+        try
+        {
+            for (final ManagedBuffer managedBuffer : managedBuffers)
+            {
+                managedBuffer.close();
+            }
+        }
+        catch (Exception ex)
+        {
+            // TODO: decide if this is the right error handling strategy
+            throw new IllegalStateException(ex);
+        }
     }
 }

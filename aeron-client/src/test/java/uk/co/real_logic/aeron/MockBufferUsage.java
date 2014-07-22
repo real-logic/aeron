@@ -3,6 +3,7 @@ package uk.co.real_logic.aeron;
 import org.junit.Before;
 import org.mockito.stubbing.Answer;
 import uk.co.real_logic.aeron.common.TermHelper;
+import uk.co.real_logic.aeron.common.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
@@ -32,7 +33,6 @@ public class MockBufferUsage
     protected LogAppender[] appendersSession2 = new LogAppender[TermHelper.BUFFER_COUNT];
     protected BufferManager mockBufferUsage = mock(BufferManager.class);
 
-
     @Before
     public void setupBuffers() throws IOException
     {
@@ -59,29 +59,17 @@ public class MockBufferUsage
         }
     }
 
+
+
     public Answer<ManagedBuffer> answer(final AtomicBuffer buffer)
     {
         return (invocation) ->
         {
             final Object[] args = invocation.getArguments();
-            return  new ManagedBuffer((String) args[0], (int) args[1], (int) args[2], buffer, mockBufferUsage);
+
+            ManagedBuffer mockBuffer = mock(ManagedBuffer.class);
+            when(mockBuffer.buffer()).thenReturn(buffer);
+            return mockBuffer;
         };
     }
-
-    public void verifyBuffersReleased(final long sessionId)
-    {
-        for (int i = 0; i < TermHelper.BUFFER_COUNT; i++)
-        {
-            verify(mockBufferUsage).releaseBuffers(eq(sessionId + "-log-" + i), anyInt(), anyInt());
-        }
-    }
-
-    public void verifyBuffersNotReleased(final long sessionId)
-    {
-        for (int i = 0; i < TermHelper.BUFFER_COUNT; i++)
-        {
-            verify(mockBufferUsage, never()).releaseBuffers(eq(sessionId + "-log-" + i), anyInt(), anyInt());
-        }
-    }
-
 }

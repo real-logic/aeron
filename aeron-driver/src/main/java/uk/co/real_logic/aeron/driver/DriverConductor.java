@@ -464,6 +464,7 @@ public class DriverConductor extends Agent
                 subscriptionEndpointByHash.remove(udpDestination.consistentHash());
                 mediaEndpoint.close();
             }
+            clientProxy.operationSucceeded(subscriptionMessage.correlationId());
         }
         catch (final ControlProtocolException ex)
         {

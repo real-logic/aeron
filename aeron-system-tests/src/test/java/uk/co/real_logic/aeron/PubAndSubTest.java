@@ -84,7 +84,6 @@ public class PubAndSubTest
     @After
     public void closeEverything() throws Exception
     {
-        System.err.println("closeEverything");
         publication.release();
         subscription.release();
 

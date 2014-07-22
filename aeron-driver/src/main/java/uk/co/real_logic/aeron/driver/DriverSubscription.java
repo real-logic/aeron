@@ -29,8 +29,6 @@ public class DriverSubscription
     private final DriverConductorProxy conductorProxy;
     private final Long2ObjectHashMap<DriverConnectedSubscription> connectionBySessionIdMap = new Long2ObjectHashMap<>();
 
-    private int refCount = 0;
-
     public DriverSubscription(final UdpDestination udpDestination,
                               final long channelId,
                               final DriverConductorProxy conductorProxy)
@@ -38,16 +36,6 @@ public class DriverSubscription
         this.udpDestination = udpDestination;
         this.channelId = channelId;
         this.conductorProxy = conductorProxy;
-    }
-
-    public int decRef()
-    {
-        return --refCount;
-    }
-
-    public int incRef()
-    {
-        return ++refCount;
     }
 
     public DriverConnectedSubscription getConnectedSubscription(final long sessionId)

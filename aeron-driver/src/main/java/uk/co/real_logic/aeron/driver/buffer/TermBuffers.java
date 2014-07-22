@@ -26,6 +26,8 @@ public interface TermBuffers extends AutoCloseable
 {
     Stream<? extends RawLog> stream();
 
+    RawLog[] buffers();
+
     void appendBufferLocationsTo(final LogBuffersMessageFlyweight logBuffersMessage);
 
     void close();

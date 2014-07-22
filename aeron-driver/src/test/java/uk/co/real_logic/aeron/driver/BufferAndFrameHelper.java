@@ -44,6 +44,11 @@ public class BufferAndFrameHelper
                 return Stream.of(buffers);
             }
 
+            public RawLog[] buffers()
+            {
+                return buffers;
+            }
+
             public void appendBufferLocationsTo(final LogBuffersMessageFlyweight logBuffersMessage)
             {
                 for (int i = 0; i < BUFFER_COUNT; i++)

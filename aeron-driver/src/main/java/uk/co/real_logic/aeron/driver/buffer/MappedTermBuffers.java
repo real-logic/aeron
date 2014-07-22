@@ -80,6 +80,11 @@ class MappedTermBuffers implements TermBuffers
         return Stream.of(buffers);
     }
 
+    public MappedRawLog[] buffers()
+    {
+        return buffers;
+    }
+
     public void appendBufferLocationsTo(final LogBuffersMessageFlyweight logBuffersMessage)
     {
         for (int i = 0; i < BUFFER_COUNT; i++)

@@ -62,11 +62,11 @@ public class DriverPublication implements AutoCloseable
     private final int mtuLength;
     private final ByteBuffer scratchByteBuffer = ByteBuffer.allocateDirect(DataHeaderFlyweight.HEADER_LENGTH);
     private final AtomicBuffer scratchAtomicBuffer = new AtomicBuffer(scratchByteBuffer);
-    private final LogScanner[] scanners;
-    private final RetransmitHandler[] retransmitHandlers;
+    private final LogScanner[] logScanners = new LogScanner[TermHelper.BUFFER_COUNT];
+    private final RetransmitHandler[] retransmitHandlers = new RetransmitHandler[TermHelper.BUFFER_COUNT];
 
-    private final ByteBuffer[] termSendBuffers;
-    private final ByteBuffer[] termRetransmitBuffers;
+    private final ByteBuffer[] sendBuffers = new ByteBuffer[TermHelper.BUFFER_COUNT];
+    private final ByteBuffer[] retransmitBuffers = new ByteBuffer[TermHelper.BUFFER_COUNT];
 
     private final SenderControlStrategy controlStrategy;
     private final AtomicLong rightEdge;
@@ -113,12 +113,16 @@ public class DriverPublication implements AutoCloseable
         this.mtuLength = mtuLength;
         this.activeIndex = termIdToBufferIndex(initialTermId);
 
-        scanners = termBuffers.stream().map(this::newScanner).toArray(LogScanner[]::new);
-        termSendBuffers = termBuffers.stream().map(this::duplicateLogBuffer).toArray(ByteBuffer[]::new);
-        termRetransmitBuffers = termBuffers.stream().map(this::duplicateLogBuffer).toArray(ByteBuffer[]::new);
-        retransmitHandlers = termBuffers.stream().map(this::newRetransmitHandler).toArray(RetransmitHandler[]::new);
+        final RawLog[] rawLogs = termBuffers.buffers();
+        for (int i = 0; i < rawLogs.length; i++)
+        {
+            logScanners[i] = newScanner(rawLogs[i]);
+            sendBuffers[i] = duplicateLogBuffer(rawLogs[i]);
+            retransmitBuffers[i] = duplicateLogBuffer(rawLogs[i]);
+            retransmitHandlers[i] = newRetransmitHandler(rawLogs[i]);
+        }
 
-        final int termCapacity = scanners[0].capacity();
+        final int termCapacity = logScanners[0].capacity();
         rightEdge = new AtomicLong(controlStrategy.initialRightEdge(initialTermId, termCapacity));
         shiftsForTermId = Long.numberOfTrailingZeros(termCapacity);
 
@@ -144,7 +148,7 @@ public class DriverPublication implements AutoCloseable
             final int availableWindow = (int)(rightEdge.get() - nextOffset);
             final int scanLimit = Math.min(availableWindow, mtuLength);
 
-            final LogScanner scanner = scanners[activeIndex];
+            final LogScanner scanner = logScanners[activeIndex];
             workCount += scanner.scanNext(this::onSendFrame, scanLimit);
 
             if (scanner.isComplete())
@@ -198,7 +202,7 @@ public class DriverPublication implements AutoCloseable
 
         if (-1 != index)
         {
-            retransmitHandlers[index].onNak((int)termOffset);
+            retransmitHandlers[index].onNak((int)termOffset, (int)length);
         }
     }
 
@@ -234,7 +238,7 @@ public class DriverPublication implements AutoCloseable
      */
     public int cleanLogBuffer()
     {
-        for (final LogBuffer logBuffer : scanners)
+        for (final LogBuffer logBuffer : logScanners)
         {
             if (logBuffer.status() == NEEDS_CLEANING && logBuffer.compareAndSetStatus(NEEDS_CLEANING, IN_CLEANING))
             {
@@ -262,7 +266,7 @@ public class DriverPublication implements AutoCloseable
 
     private RetransmitHandler newRetransmitHandler(final RawLog log)
     {
-        return new RetransmitHandler(new LogReader(log.logBuffer(), log.stateBuffer()),
+        return new RetransmitHandler(new LogScanner(log.logBuffer(), log.stateBuffer(), headerLength),
                                      timerWheel,
                                      DriverConductor.RETRANS_UNICAST_DELAY_GENERATOR,
                                      DriverConductor.RETRANS_UNICAST_LINGER_GENERATOR,
@@ -284,11 +288,11 @@ public class DriverPublication implements AutoCloseable
      *
      * Function used as a lambda for LogScanner.AvailabilityHandler
      */
-    private void onSendFrame(final int offset, final int length)
+    private void onSendFrame(final AtomicBuffer buffer, final int offset, final int length)
     {
         // at this point sendBuffer wraps the same underlying
         // ByteBuffer as the buffer parameter
-        final ByteBuffer sendBuffer = termSendBuffers[activeIndex];
+        final ByteBuffer sendBuffer = sendBuffers[activeIndex];
 
         // could wrap and use DataHeader to grab specific fields, e.g. dataHeader.wrap(sendBuffer, offset);
         sendBuffer.limit(offset + length);
@@ -317,13 +321,13 @@ public class DriverPublication implements AutoCloseable
      */
     private void onSendRetransmit(final AtomicBuffer buffer, final int offset, final int length)
     {
-        // use termRetransmitBuffers, but need to know which one... so, use DataHeaderFlyweight to grab it
+        // use retransmitBuffers, but need to know which one... so, use DataHeaderFlyweight to grab it
         retransmitDataHeader.wrap(buffer, offset);
         final int index = determineIndexByTermId(retransmitDataHeader.termId());
 
         if (-1 != index)
         {
-            final ByteBuffer termRetransmitBuffer = termRetransmitBuffers[index];
+            final ByteBuffer termRetransmitBuffer = retransmitBuffers[index];
             termRetransmitBuffer.position(offset);
             termRetransmitBuffer.limit(offset + length);
 

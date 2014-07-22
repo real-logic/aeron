@@ -19,7 +19,7 @@ import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.collections.Int2ObjectHashMap;
 import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogScanner;
 
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
@@ -36,9 +36,9 @@ public class RetransmitHandler
     /** Maximum number of concurrent retransmits */
     public static final int MAX_RETRANSMITS = MediaDriver.MAX_RETRANSMITS_DEFAULT;
 
-    private final LogReader reader; // TODO: Should be using LogScanner to be more efficient and deal with padding
+    private final LogScanner scanner;
     private final TimerWheel timerWheel;
-    private final LogReader.FrameHandler sendRetransmitHandler;
+    private final LogScanner.AvailabilityHandler sendRetransmitHandler;
     private final Queue<RetransmitAction> retransmitActionPool = new OneToOneConcurrentArrayQueue<>(MAX_RETRANSMITS);
     private final Int2ObjectHashMap<RetransmitAction> activeRetransmitByTermOffsetMap = new Int2ObjectHashMap<>();
     private final FeedbackDelayGenerator delayGenerator;
@@ -47,19 +47,19 @@ public class RetransmitHandler
     /**
      * Create a retransmit handler for a log buffer.
      *
-     * @param reader to read frames from for retransmission
+     * @param scanner to read frames from for retransmission
      * @param timerWheel for timers
      * @param delayGenerator to use for delay determination
      * @param lingerTimeoutGenerator to use for linger timeout
      * @param retransmitHandler for sending retransmits
      */
-    public RetransmitHandler(final LogReader reader,
+    public RetransmitHandler(final LogScanner scanner,
                              final TimerWheel timerWheel,
                              final FeedbackDelayGenerator delayGenerator,
                              final FeedbackDelayGenerator lingerTimeoutGenerator,
-                             final LogReader.FrameHandler retransmitHandler)
+                             final LogScanner.AvailabilityHandler retransmitHandler)
     {
-        this.reader = reader;
+        this.scanner = scanner;
         this.timerWheel = timerWheel;
         this.delayGenerator = delayGenerator;
         this.lingerTimeoutGenerator = lingerTimeoutGenerator;
@@ -73,14 +73,15 @@ public class RetransmitHandler
      *
      * @param termOffset from the NAK and the offset of the data to retransmit
      */
-    public void onNak(final int termOffset)
+    public void onNak(final int termOffset, final int length)
     {
         if (!retransmitActionPool.isEmpty() &&
             null == activeRetransmitByTermOffsetMap.get(termOffset) &&
-            reader.tailVolatile() > termOffset)
+            scanner.tailVolatile() > termOffset)
         {
             final RetransmitAction retransmitAction = retransmitActionPool.poll();
             retransmitAction.termOffset = termOffset;
+            retransmitAction.length = length;
 
             final long delay = determineRetransmitDelay();
             if (0 == delay)
@@ -102,7 +103,7 @@ public class RetransmitHandler
      *
      * @param termOffset of the data
      */
-    public void onRetransmitReceived(final int termOffset)
+    public void onRetransmitReceived(final int termOffset) // TODO: Why is this only called from tests?
     {
         final RetransmitAction retransmitAction = activeRetransmitByTermOffsetMap.get(termOffset);
 
@@ -128,8 +129,8 @@ public class RetransmitHandler
 
     private void perform(final RetransmitAction retransmitAction)
     {
-        reader.seek(retransmitAction.termOffset);
-        reader.read(sendRetransmitHandler, Integer.MAX_VALUE);
+        scanner.seek(retransmitAction.termOffset);
+        scanner.scanNext(sendRetransmitHandler, retransmitAction.length);
     }
 
     private enum State
@@ -139,12 +140,13 @@ public class RetransmitHandler
         INACTIVE
     }
 
-    private class RetransmitAction
+    class RetransmitAction
     {
-        private int termOffset;
-        private State state = State.INACTIVE;
-        private TimerWheel.Timer delayTimer;
-        private TimerWheel.Timer lingerTimer;
+        int termOffset;
+        int length;
+        State state = State.INACTIVE;
+        TimerWheel.Timer delayTimer;
+        TimerWheel.Timer lingerTimer;
 
         public void delay(final long delay)
         {

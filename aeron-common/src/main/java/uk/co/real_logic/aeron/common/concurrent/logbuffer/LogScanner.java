@@ -38,7 +38,7 @@ public class LogScanner extends LogBuffer
     @FunctionalInterface
     public interface AvailabilityHandler
     {
-        void onAvailable(final int offset, final int length);
+        void onAvailable(AtomicBuffer buffer, int offset, int length);
     }
 
     private final int alignedHeaderLength;
@@ -128,7 +128,7 @@ public class LogScanner extends LogBuffer
                 if (length > 0)
                 {
                     this.offset += (length + padding);
-                    handler.onAvailable(offset, length);
+                    handler.onAvailable(logBuffer(), offset, length);
                 }
             }
         }

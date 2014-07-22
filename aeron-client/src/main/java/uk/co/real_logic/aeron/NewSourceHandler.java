@@ -16,15 +16,16 @@
 package uk.co.real_logic.aeron;
 
 /**
- * Interface for delivery of new source events to a {@link uk.co.real_logic.aeron.Subscription}
+ * Interface for delivery of new source events to a {@link Aeron} instance.
  */
 public interface NewSourceHandler
 {
     /**
      * Method called by Aeron to deliver notification of a new source session
      *
-     * @param channelId for the event
-     * @param sessionId of the new source
+     * @param destination for the source
+     * @param sessionId for the source
+     * @param channelId for the source
      */
-    void onNewSource(final long channelId, final long sessionId);
+    void onNewSource(final String destination, final long sessionId, final long channelId);
 }

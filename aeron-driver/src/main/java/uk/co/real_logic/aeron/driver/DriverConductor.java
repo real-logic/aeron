@@ -486,7 +486,8 @@ public class DriverConductor extends Agent
 
         try
         {
-            final MediaSubscriptionEndpoint mediaEndpoint = subscriptionEndpointByHash.get(udpDestination.consistentHash());
+            final MediaSubscriptionEndpoint mediaEndpoint =
+                subscriptionEndpointByHash.get(udpDestination.consistentHash());
 
             if (null == mediaEndpoint)
             {

@@ -97,6 +97,7 @@ public class ClientConductorTest extends MockBufferUsage
             driverProxy,
             signal,
             mockClientErrorHandler,
+            null,
             AWAIT_TIMEOUT);
 
         newBufferMessage.wrap(atomicSendBuffer, 0);

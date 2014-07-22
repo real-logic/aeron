@@ -15,11 +15,16 @@
  */
 package uk.co.real_logic.aeron;
 
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.common.event.EventLogger;
-import uk.co.real_logic.aeron.common.protocol.*;
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.common.protocol.NakFlyweight;
+import uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.net.InetSocketAddress;
@@ -137,9 +142,6 @@ public class SubUnicastTest
     {
         EventLogger.logInvocation();
 
-        // let buffers get connected and media driver set things up
-        Thread.sleep(10);
-
         // send some 0 length data frame
         sendDataFrame(0, NO_PAYLOAD);
 
@@ -179,9 +181,6 @@ public class SubUnicastTest
     {
         EventLogger.logInvocation();
 
-        // let buffers get connected and media driver set things up
-        Thread.sleep(10);
-
         // send some 0 length data frame
         sendDataFrame(0, NO_PAYLOAD);
 
@@ -220,9 +219,6 @@ public class SubUnicastTest
     public void shouldSendNaksForMissingData() throws Exception
     {
         EventLogger.logInvocation();
-
-        // let buffers get connected and media driver set things up
-        Thread.sleep(10);
 
         // send some 0 length data frame
         sendDataFrame(0, NO_PAYLOAD);
@@ -275,9 +271,6 @@ public class SubUnicastTest
     public void shouldReceiveRetransmitAndDeliver() throws Exception
     {
         EventLogger.logInvocation();
-
-        // let buffers get connected and media driver set things up
-        Thread.sleep(10);
 
         // send some 0 length data frame
         sendDataFrame(0, NO_PAYLOAD);

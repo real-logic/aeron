@@ -105,8 +105,6 @@ public class PubAndSubTest
         EventLogger.logInvocation();
 
         setup(destination);
-
-        Thread.sleep(100);
     }
 
     @Theory

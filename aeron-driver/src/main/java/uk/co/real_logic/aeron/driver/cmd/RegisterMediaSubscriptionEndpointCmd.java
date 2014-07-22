@@ -17,24 +17,17 @@ package uk.co.real_logic.aeron.driver.cmd;
 
 import uk.co.real_logic.aeron.driver.MediaSubscriptionEndpoint;
 
-public class AddSubscriptionCmd
+public class RegisterMediaSubscriptionEndpointCmd
 {
     private final MediaSubscriptionEndpoint mediaSubscriptionEndpoint;
-    private final long channelId;
 
-    public AddSubscriptionCmd(final MediaSubscriptionEndpoint mediaSubscriptionEndpoint, final long channelId)
+    public RegisterMediaSubscriptionEndpointCmd(final MediaSubscriptionEndpoint mediaSubscriptionEndpoint)
     {
         this.mediaSubscriptionEndpoint = mediaSubscriptionEndpoint;
-        this.channelId = channelId;
     }
 
     public MediaSubscriptionEndpoint mediaSubscriptionEndpoint()
     {
         return mediaSubscriptionEndpoint;
-    }
-
-    public long channelId()
-    {
-        return channelId;
     }
 }

@@ -74,12 +74,16 @@ public class ReceiverTest
     private InetSocketAddress senderAddress = new InetSocketAddress("localhost", 40123);
     private Receiver receiver;
     private ReceiverProxy receiverProxy;
+    private DriverConductorProxy driverConductorProxy;
     private OneToOneConcurrentArrayQueue<? super Object> toConductorQueue;
+
+    private MediaSubscriptionEndpoint mediaSubscriptionEndpoint;
 
     @Before
     public void setUp() throws Exception
     {
         when(POSITION_INDICATOR.position()).thenReturn(Long.MAX_VALUE - LOG_BUFFER_SIZE);
+        when(mockLossHandler.activeTermId()).thenReturn(TERM_ID);
 
         final MediaDriver.DriverContext ctx = new MediaDriver.DriverContext()
             .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
@@ -93,7 +97,8 @@ public class ReceiverTest
             .receiverLogger(mockLogger);
 
         toConductorQueue = ctx.conductorCommandQueue();
-        ctx.driverConductorProxy(new DriverConductorProxy(toConductorQueue));
+        driverConductorProxy = new DriverConductorProxy(toConductorQueue);
+        ctx.driverConductorProxy(driverConductorProxy);
 
         receiverProxy = new ReceiverProxy(ctx.receiverCommandQueue());
 
@@ -106,11 +111,15 @@ public class ReceiverTest
         logReaders = termBuffers.stream()
                                 .map((rawLog) -> new LogReader(rawLog.logBuffer(), rawLog.stateBuffer()))
                                 .toArray(LogReader[]::new);
+
+        mediaSubscriptionEndpoint = new MediaSubscriptionEndpoint(UdpDestination.parse(URI),
+                driverConductorProxy, mockLogger);
     }
 
     @After
     public void tearDown() throws Exception
     {
+        mediaSubscriptionEndpoint.close();
         senderChannel.close();
         receiver.close();
         receiver.nioSelector().selectNowWithoutProcessing();
@@ -121,17 +130,19 @@ public class ReceiverTest
     {
         EventLogger.logInvocation();
 
-        receiverProxy.addSubscription(UDP_DESTINATION, CHANNEL_ID);  // ADD_SUBSCRIPTION from client
+        receiverProxy.registerMediaEndpoint(mediaSubscriptionEndpoint);
+        receiverProxy.addSubscription(mediaSubscriptionEndpoint, CHANNEL_ID);
 
         receiver.doWork();
 
-        MediaSubscriptionEndpoint frameHandler = receiver.subscriptionMediaEndpoint(UDP_DESTINATION);
-
-        assertNotNull(frameHandler);
-
         fillDataFrame(dataHeader, 0, NO_PAYLOAD);
 
-        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
+        mediaSubscriptionEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
+
+        final DriverConnectedSubscription connectedSubscription =
+            new DriverConnectedSubscription(UDP_DESTINATION, SESSION_ID, CHANNEL_ID, TERM_ID, INITIAL_WINDOW_SIZE,
+                    termBuffers, mockLossHandler, mediaSubscriptionEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID),
+                    POSITION_INDICATOR);
 
         final int messagesRead = toConductorQueue.drain(
             (e) ->
@@ -145,22 +156,14 @@ public class ReceiverTest
 
                 // pass in new term buffer from conductor, which should trigger SM
                 receiverProxy.newConnectedSubscription(
-                    new NewConnectedSubscriptionCmd(
-                        new DriverConnectedSubscription(
-                            UDP_DESTINATION,
-                            SESSION_ID,
-                            CHANNEL_ID,
-                            TERM_ID,
-                            INITIAL_WINDOW_SIZE,
-                            termBuffers,
-                            mockLossHandler,
-                            frameHandler.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID),
-                            POSITION_INDICATOR)));
+                    new NewConnectedSubscriptionCmd(mediaSubscriptionEndpoint, connectedSubscription));
             });
 
         assertThat(messagesRead, is(1));
 
         receiver.doWork();
+
+        connectedSubscription.sendPendingStatusMessages(1000);
 
         final ByteBuffer rcvBuffer = ByteBuffer.allocateDirect(256);
         final InetSocketAddress rcvAddress = (InetSocketAddress)senderChannel.receive(rcvBuffer);
@@ -181,17 +184,14 @@ public class ReceiverTest
     {
         EventLogger.logInvocation();
 
-        receiverProxy.addSubscription(UDP_DESTINATION, CHANNEL_ID);  // ADD_SUBSCRIPTION from client
+        receiverProxy.registerMediaEndpoint(mediaSubscriptionEndpoint);
+        receiverProxy.addSubscription(mediaSubscriptionEndpoint, CHANNEL_ID);
 
         receiver.doWork();
 
-        MediaSubscriptionEndpoint frameHandler = receiver.subscriptionMediaEndpoint(UDP_DESTINATION);
-
-        assertNotNull(frameHandler);
-
         fillDataFrame(dataHeader, 0, NO_PAYLOAD);
 
-        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
+        mediaSubscriptionEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
         int messagesRead = toConductorQueue.drain(
             (e) ->
@@ -199,7 +199,7 @@ public class ReceiverTest
                 assertTrue(e instanceof CreateConnectedSubscriptionCmd);
                 // pass in new term buffer from conductor, which should trigger SM
                 receiverProxy.newConnectedSubscription(
-                    new NewConnectedSubscriptionCmd(
+                    new NewConnectedSubscriptionCmd(mediaSubscriptionEndpoint,
                         new DriverConnectedSubscription(
                             UDP_DESTINATION,
                             SESSION_ID,
@@ -208,7 +208,7 @@ public class ReceiverTest
                             INITIAL_WINDOW_SIZE,
                             termBuffers,
                             mockLossHandler,
-                            frameHandler.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID),
+                            mediaSubscriptionEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID),
                             POSITION_INDICATOR)));
             });
 
@@ -217,7 +217,7 @@ public class ReceiverTest
         receiver.doWork();
 
         fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);
-        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
+        mediaSubscriptionEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
         messagesRead = logReaders[0].read(
             (buffer, offset, length) ->
@@ -240,17 +240,14 @@ public class ReceiverTest
     {
         EventLogger.logInvocation();
 
-        receiverProxy.addSubscription(UDP_DESTINATION, CHANNEL_ID);  // ADD_SUBSCRIPTION from client
+        receiverProxy.registerMediaEndpoint(mediaSubscriptionEndpoint);
+        receiverProxy.addSubscription(mediaSubscriptionEndpoint, CHANNEL_ID);
 
         receiver.doWork();
 
-        final MediaSubscriptionEndpoint frameHandler = receiver.subscriptionMediaEndpoint(UDP_DESTINATION);
-
-        assertNotNull(frameHandler);
-
         fillDataFrame(dataHeader, 0, NO_PAYLOAD);
 
-        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
+        mediaSubscriptionEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
         int messagesRead = toConductorQueue.drain(
             (e) ->
@@ -258,7 +255,7 @@ public class ReceiverTest
                 assertTrue(e instanceof CreateConnectedSubscriptionCmd);
                 // pass in new term buffer from conductor, which should trigger SM
                 receiverProxy.newConnectedSubscription(
-                    new NewConnectedSubscriptionCmd(
+                    new NewConnectedSubscriptionCmd(mediaSubscriptionEndpoint,
                         new DriverConnectedSubscription(
                             UDP_DESTINATION,
                             SESSION_ID,
@@ -267,7 +264,7 @@ public class ReceiverTest
                             INITIAL_WINDOW_SIZE,
                             termBuffers,
                             mockLossHandler,
-                            frameHandler.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID),
+                            mediaSubscriptionEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID),
                             POSITION_INDICATOR)));
             });
 
@@ -276,10 +273,10 @@ public class ReceiverTest
         receiver.doWork();
 
         fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);  // initial data frame
-        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
+        mediaSubscriptionEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
         fillDataFrame(dataHeader, 0, NO_PAYLOAD);  // heartbeat with same term offset
-        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
+        mediaSubscriptionEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
         messagesRead = logReaders[0].read(
             (buffer, offset, length) ->
@@ -302,17 +299,14 @@ public class ReceiverTest
     {
         EventLogger.logInvocation();
 
-        receiverProxy.addSubscription(UDP_DESTINATION, CHANNEL_ID);  // ADD_SUBSCRIPTION from client
+        receiverProxy.registerMediaEndpoint(mediaSubscriptionEndpoint);
+        receiverProxy.addSubscription(mediaSubscriptionEndpoint, CHANNEL_ID);
 
         receiver.doWork();
 
-        final MediaSubscriptionEndpoint frameHandler = receiver.subscriptionMediaEndpoint(UDP_DESTINATION);
-
-        assertNotNull(frameHandler);
-
         fillDataFrame(dataHeader, 0, NO_PAYLOAD);
 
-        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
+        mediaSubscriptionEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
         int messagesRead = toConductorQueue.drain(
             (e) ->
@@ -320,7 +314,7 @@ public class ReceiverTest
                 assertTrue(e instanceof CreateConnectedSubscriptionCmd);
                 // pass in new term buffer from conductor, which should trigger SM
                 receiverProxy.newConnectedSubscription(
-                    new NewConnectedSubscriptionCmd(
+                    new NewConnectedSubscriptionCmd(mediaSubscriptionEndpoint,
                         new DriverConnectedSubscription(
                             UDP_DESTINATION,
                             SESSION_ID,
@@ -329,7 +323,7 @@ public class ReceiverTest
                             INITIAL_WINDOW_SIZE,
                             termBuffers,
                             mockLossHandler,
-                            frameHandler.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID),
+                            mediaSubscriptionEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID),
                             POSITION_INDICATOR)));
             });
 
@@ -338,10 +332,10 @@ public class ReceiverTest
         receiver.doWork();
 
         fillDataFrame(dataHeader, 0, NO_PAYLOAD);  // heartbeat with same term offset
-        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
+        mediaSubscriptionEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
         fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);  // initial data frame
-        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
+        mediaSubscriptionEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
         messagesRead = logReaders[0].read(
             (buffer, offset, length) ->
@@ -365,22 +359,19 @@ public class ReceiverTest
     {
         EventLogger.logInvocation();
 
-        receiverProxy.addSubscription(UDP_DESTINATION, CHANNEL_ID);  // ADD_SUBSCRIPTION from client
+        receiverProxy.registerMediaEndpoint(mediaSubscriptionEndpoint);
+        receiverProxy.addSubscription(mediaSubscriptionEndpoint, CHANNEL_ID);
 
         receiver.doWork();
 
-        MediaSubscriptionEndpoint frameHandler = receiver.subscriptionMediaEndpoint(UDP_DESTINATION);
-
-        assertNotNull(frameHandler);
-
         fillDataFrame(dataHeader, 0, NO_PAYLOAD);
 
-        frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
+        mediaSubscriptionEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
         final int messagesRead = toConductorQueue.drain(
             (e) ->
                 receiverProxy.newConnectedSubscription(
-                    new NewConnectedSubscriptionCmd(
+                    new NewConnectedSubscriptionCmd(mediaSubscriptionEndpoint,
                         new DriverConnectedSubscription(
                             UDP_DESTINATION,
                             SESSION_ID,
@@ -389,7 +380,7 @@ public class ReceiverTest
                             INITIAL_WINDOW_SIZE,
                             termBuffers,
                             mockLossHandler,
-                            frameHandler.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID),
+                            mediaSubscriptionEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID),
                             POSITION_INDICATOR))));
 
         assertThat(messagesRead, is(1));
@@ -401,7 +392,7 @@ public class ReceiverTest
         for (int i = 0; i < iterations; i++)
         {
             fillDataFrame(dataHeader, offset, FAKE_PAYLOAD);
-            frameHandler.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
+            mediaSubscriptionEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
             receiver.doWork();
         }
     }

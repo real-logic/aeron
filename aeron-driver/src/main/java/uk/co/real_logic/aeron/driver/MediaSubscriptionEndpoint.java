@@ -18,7 +18,10 @@ package uk.co.real_logic.aeron.driver;
 import uk.co.real_logic.aeron.common.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.event.EventLogger;
-import uk.co.real_logic.aeron.common.protocol.*;
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.common.protocol.NakFlyweight;
+import uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -29,28 +32,26 @@ import java.nio.ByteBuffer;
  */
 public class MediaSubscriptionEndpoint implements AutoCloseable
 {
-    private static final String INIT_IN_PROGRESS = "Connection initialisation in progress";
-
     private final UdpTransport transport;
-    private final UdpDestination udpDestination;
-    private final Long2ObjectHashMap<String> initialisationInProgressMap = new Long2ObjectHashMap<>();
-    private final Long2ObjectHashMap<DriverSubscription> subscriptionByChannelIdMap = new Long2ObjectHashMap<>();
-    private final DriverConductorProxy conductorProxy;
+    private final DriverSubscriptionDispatcher dispatcher;
+
+    private final Long2ObjectHashMap<Long> refCountByChannelIdMap = new Long2ObjectHashMap<>();
+
     private final ByteBuffer smBuffer = ByteBuffer.allocateDirect(StatusMessageFlyweight.HEADER_LENGTH);
     private final ByteBuffer nakBuffer = ByteBuffer.allocateDirect(NakFlyweight.HEADER_LENGTH);
     private final StatusMessageFlyweight smHeader = new StatusMessageFlyweight();
     private final NakFlyweight nakHeader = new NakFlyweight();
 
     public MediaSubscriptionEndpoint(final UdpDestination udpDestination,
-                                     final NioSelector nioSelector,
                                      final DriverConductorProxy conductorProxy,
                                      final EventLogger logger)
         throws Exception
     {
         this.transport = new UdpTransport(udpDestination, this::onDataFrame, logger);
-        this.transport.registerForRead(nioSelector);
-        this.udpDestination = udpDestination;
-        this.conductorProxy = conductorProxy;
+        this.dispatcher = new DriverSubscriptionDispatcher(transport, udpDestination, conductorProxy);
+
+        smHeader.wrap(smBuffer, 0);
+        nakHeader.wrap(nakBuffer, 0);
     }
 
     public void close()
@@ -58,108 +59,78 @@ public class MediaSubscriptionEndpoint implements AutoCloseable
         transport.close();
     }
 
-    public UdpDestination udpDestination()
+    public void registerForRead(final NioSelector nioSelector)
     {
-        return udpDestination;
-    }
-
-    public Long2ObjectHashMap<DriverSubscription> subscriptionMap()
-    {
-        return subscriptionByChannelIdMap;
-    }
-
-    public void addSubscription(final long channelId)
-    {
-        DriverSubscription subscription = subscriptionByChannelIdMap.get(channelId);
-
-        if (null == subscription)
+        try
         {
-            subscription = new DriverSubscription(udpDestination, channelId, conductorProxy);
-            subscriptionByChannelIdMap.put(channelId, subscription);
+            transport.registerForRead(nioSelector);
         }
-
-        subscription.incRef();
-    }
-
-    public void removeSubscription(final long channelId)
-    {
-        final DriverSubscription subscription = subscriptionByChannelIdMap.get(channelId);
-
-        if (subscription == null)
+        catch (final Exception ex)
         {
-            throw new UnknownSubscriptionException("No subscription registered on " + channelId);
-        }
-
-        if (subscription.decRef() == 0)
-        {
-            subscriptionByChannelIdMap.remove(channelId);
-            subscription.close();
+            throw new RuntimeException(ex);
         }
     }
 
-    public int subscriptionCount()
+    public DriverSubscriptionDispatcher dispatcher()
     {
-        return subscriptionByChannelIdMap.size();
+        return dispatcher;
     }
 
-    public void onDataFrame(final DataHeaderFlyweight header,
-                            final AtomicBuffer buffer,
-                            final long length,
-                            final InetSocketAddress srcAddress)
+    public long refCountForChannelId(final long channelId)
     {
-        final long channelId = header.channelId();
-        final DriverSubscription subscription = subscriptionByChannelIdMap.get(channelId);
+        final Long count = refCountByChannelIdMap.get(channelId);
 
-        if (null != subscription)
+        if (null == count)
         {
-            final long sessionId = header.sessionId();
-            final long termId = header.termId();
-            final DriverConnectedSubscription connectedSubscription = subscription.getConnectedSubscription(sessionId);
-
-            if (null != connectedSubscription)
-            {
-                if (header.frameLength() > DataHeaderFlyweight.HEADER_LENGTH)
-                {
-                    connectedSubscription.insertIntoTerm(header, buffer, length);
-                }
-            }
-            else if (null == initialisationInProgressMap.get(sessionId))
-            {
-                final InetSocketAddress controlAddress = transport.isMulticast() ? udpDestination.remoteControl() : srcAddress;
-
-                initialisationInProgressMap.put(sessionId, INIT_IN_PROGRESS); // TODO: need to clean up on timeout
-
-                conductorProxy.createConnectedSubscription(
-                    subscription.udpDestination(),
-                    sessionId,
-                    channelId,
-                    termId,
-                    composeStatusMessageSender(controlAddress, sessionId, channelId),
-                    composeNakMessageSender(controlAddress, sessionId, channelId));
-            }
+            return 0;
         }
+
+        return count;
     }
 
-    public void onConnectedSubscriptionReady(final DriverConnectedSubscription connectedSubscription)
+    public long incrRefToChannelId(final long channelId)
     {
-        final DriverSubscription subscription = subscriptionByChannelIdMap.get(connectedSubscription.channelId());
-        if (null == subscription)
+        Long count = refCountByChannelIdMap.get(channelId);
+
+        count = (null == count) ? 1 : count + 1;
+
+        refCountByChannelIdMap.put(channelId, count);
+
+        return count;
+    }
+
+    public long decrRefToChannelId(final long channelId)
+    {
+        Long count = refCountByChannelIdMap.get(channelId);
+
+        if (null == count)
         {
-            throw new IllegalStateException("channel not found");
+            throw new IllegalStateException("Could not find channel Id to decrement: " + channelId);
         }
 
-        subscription.putConnectedSubscription(connectedSubscription);
-        initialisationInProgressMap.remove(connectedSubscription.sessionId());
+        count--;
 
-        // TODO: grab initial term offset from data and store in subscriberSession somehow (per TermID)
-        // now we are all setup, so send an SM to allow the source to send if it is waiting
+        if (0 == count)
+        {
+            refCountByChannelIdMap.remove(channelId);
+        }
+        else
+        {
+            refCountByChannelIdMap.put(channelId, count);
+        }
 
-        final long initialTermId = connectedSubscription.activeTermId();
-        final int initialWindowSize = connectedSubscription.currentWindowSize();
+        return count;
+    }
 
-        // TODO: This should be done by the conductor as part of the normal duty cycle.
-        // TODO: Object should be setup in an initial state to send the initial status message
-        connectedSubscription.statusMessageSender().send(initialTermId, 0, initialWindowSize);
+    public long numberOfChannels()
+    {
+        return refCountByChannelIdMap.size();
+    }
+
+    public void onDataFrame(final DataHeaderFlyweight header, final AtomicBuffer buffer,
+                            final int length, final InetSocketAddress srcAddress)
+    {
+        dispatcher.onDataFrame(header, buffer, length, srcAddress);
     }
 
     public StatusMessageSender composeStatusMessageSender(final InetSocketAddress controlAddress,
@@ -185,7 +156,6 @@ public class MediaSubscriptionEndpoint implements AutoCloseable
                                    final int termOffset,
                                    final int window)
     {
-        smHeader.wrap(smBuffer, 0);
         smHeader.sessionId(sessionId)
                 .channelId(channelId)
                 .termId(termId)
@@ -219,7 +189,6 @@ public class MediaSubscriptionEndpoint implements AutoCloseable
                          final int termOffset,
                          final int length)
     {
-        nakHeader.wrap(nakBuffer, 0);
         nakHeader.channelId(channelId)
                  .sessionId(sessionId)
                  .termId(termId)

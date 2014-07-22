@@ -158,7 +158,7 @@ public class DriverConductorTest
 
         verify(mockClientProxy).operationSucceeded(CORRELATION_ID);
 
-        assertNotNull(receiver.subscriptionMediaEndpoint(UdpDestination.parse(DESTINATION_URI + 4000)));
+        assertNotNull(driverConductor.subscriptionMediaEndpoint(UdpDestination.parse(DESTINATION_URI + 4000)));
     }
 
     @Test
@@ -172,7 +172,7 @@ public class DriverConductorTest
         driverConductor.doWork();
         receiver.doWork();
 
-        assertNull(receiver.subscriptionMediaEndpoint(UdpDestination.parse(DESTINATION_URI + 4000)));
+        assertNull(driverConductor.subscriptionMediaEndpoint(UdpDestination.parse(DESTINATION_URI + 4000)));
     }
 
     @Test
@@ -238,10 +238,10 @@ public class DriverConductorTest
         driverConductor.doWork();
         receiver.doWork();
 
-        final MediaSubscriptionEndpoint mediaEndpoint = receiver.subscriptionMediaEndpoint(destination);
+        final MediaSubscriptionEndpoint mediaEndpoint = driverConductor.subscriptionMediaEndpoint(destination);
 
         assertNotNull(mediaEndpoint);
-        assertThat(mediaEndpoint.subscriptionMap().size(), is(3));
+        assertThat(mediaEndpoint.numberOfChannels(), is(3L));
 
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_1);
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_2);
@@ -249,8 +249,8 @@ public class DriverConductorTest
         driverConductor.doWork();
         receiver.doWork();
 
-        assertNotNull(receiver.subscriptionMediaEndpoint(destination));
-        assertThat(mediaEndpoint.subscriptionMap().size(), is(1));
+        assertNotNull(driverConductor.subscriptionMediaEndpoint(destination));
+        assertThat(mediaEndpoint.numberOfChannels(), is(1L));
     }
 
     @Test
@@ -267,10 +267,10 @@ public class DriverConductorTest
         driverConductor.doWork();
         receiver.doWork();
 
-        final MediaSubscriptionEndpoint mediaEndpoint = receiver.subscriptionMediaEndpoint(destination);
+        final MediaSubscriptionEndpoint mediaEndpoint = driverConductor.subscriptionMediaEndpoint(destination);
 
         assertNotNull(mediaEndpoint);
-        assertThat(mediaEndpoint.subscriptionMap().size(), is(3));
+        assertThat(mediaEndpoint.numberOfChannels(), is(3L));
 
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_2);
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_3);
@@ -278,15 +278,15 @@ public class DriverConductorTest
         driverConductor.doWork();
         receiver.doWork();
 
-        assertNotNull(receiver.subscriptionMediaEndpoint(destination));
-        assertThat(mediaEndpoint.subscriptionMap().size(), is(1));
+        assertNotNull(driverConductor.subscriptionMediaEndpoint(destination));
+        assertThat(mediaEndpoint.numberOfChannels(), is(1L));
 
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_1);
 
         driverConductor.doWork();
         receiver.doWork();
 
-        assertNull(receiver.subscriptionMediaEndpoint(destination));
+        assertNull(driverConductor.subscriptionMediaEndpoint(destination));
     }
 
     @Test

@@ -81,9 +81,10 @@ public class DriverConnectedSubscription implements AutoCloseable
         this.lossHandler = lossHandler;
         this.statusMessageSender = statusMessageSender;
 
-        // attaching this term buffer will send an SM, so save the params sent for comparison
+        // attaching this term buffer will send an SM, so save the params set for comparison
         this.lastSmTermId = initialTermId;
         this.lastSmTail = lossHandler.highestContiguousOffset();
+        this.lastSmTimestamp = 0;
         this.currentWindowSize = initialWindow;
         this.currentWindowGain = currentWindowSize << 2; // window / 4
         this.activeIndex = termIdToBufferIndex(initialTermId);
@@ -210,6 +211,13 @@ public class DriverConnectedSubscription implements AutoCloseable
 
         final int currentSmTail = lossHandler.highestContiguousOffset();
         final long currentSmTermId = lossHandler.activeTermId();
+
+        // send initial SM
+        if (0 == lastSmTimestamp)
+        {
+            lastSmTimestamp = now;
+            return sendStatusMessage(currentSmTermId, currentSmTail, currentWindowSize);
+        }
 
         // if term has rotated for loss handler, then send an SM
         if (lossHandler.activeTermId() != lastSmTermId)

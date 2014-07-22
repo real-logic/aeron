@@ -31,18 +31,23 @@ public class ReceiverProxy
         this.commandQueue = commandQueue;
     }
 
-    public boolean addSubscription(final UdpDestination udpDestination, final long channelId)
+    public boolean addSubscription(final MediaSubscriptionEndpoint mediaEndpoint, final long channelId)
     {
-        return commandQueue.offer(new AddSubscriptionCmd(udpDestination, channelId));
+        return commandQueue.offer(new AddSubscriptionCmd(mediaEndpoint, channelId));
     }
 
-    public boolean removeSubscription(final UdpDestination udpDestination, final long channelId)
+    public boolean removeSubscription(final MediaSubscriptionEndpoint mediaEndpoint, final long channelId)
     {
-        return commandQueue.offer(new RemoveSubscriptionCmd(udpDestination, channelId));
+        return commandQueue.offer(new RemoveSubscriptionCmd(mediaEndpoint, channelId));
     }
 
     public boolean newConnectedSubscription(final NewConnectedSubscriptionCmd e)
     {
         return commandQueue.offer(e);
+    }
+
+    public boolean registerMediaEndpoint(final MediaSubscriptionEndpoint mediaEndpoint)
+    {
+        return commandQueue.offer(new RegisterMediaSubscriptionEndpointCmd(mediaEndpoint));
     }
 }

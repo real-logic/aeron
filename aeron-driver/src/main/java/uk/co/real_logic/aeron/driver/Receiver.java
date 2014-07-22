@@ -17,12 +17,11 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.Agent;
 import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.aeron.common.event.EventCode;
 import uk.co.real_logic.aeron.common.event.EventLogger;
-import uk.co.real_logic.aeron.driver.cmd.*;
-
-import java.util.HashMap;
-import java.util.Map;
+import uk.co.real_logic.aeron.driver.cmd.AddSubscriptionCmd;
+import uk.co.real_logic.aeron.driver.cmd.NewConnectedSubscriptionCmd;
+import uk.co.real_logic.aeron.driver.cmd.RegisterMediaSubscriptionEndpointCmd;
+import uk.co.real_logic.aeron.driver.cmd.RemoveSubscriptionCmd;
 
 /**
  * Receiver service for JVM based media driver, uses an event loop with command buffer
@@ -31,7 +30,6 @@ public class Receiver extends Agent
 {
     private final NioSelector nioSelector;
     private final DriverConductorProxy conductorProxy;
-    private final Map<UdpDestination, MediaSubscriptionEndpoint> mediaEndpointByDestinationMap = new HashMap<>();
     private final OneToOneConcurrentArrayQueue<? super Object> commandQueue;
     private final EventLogger logger;
 
@@ -64,12 +62,17 @@ public class Receiver extends Agent
                     else if (obj instanceof AddSubscriptionCmd)
                     {
                         final AddSubscriptionCmd cmd = (AddSubscriptionCmd)obj;
-                        onAddSubscription(cmd.destination(), cmd.channelId());
+                        onAddSubscription(cmd.mediaSubscriptionEndpoint(), cmd.channelId());
                     }
                     else if (obj instanceof RemoveSubscriptionCmd)
                     {
                         final RemoveSubscriptionCmd cmd = (RemoveSubscriptionCmd)obj;
-                        onRemoveSubscription(cmd.destination(), cmd.channelId());
+                        onRemoveSubscription(cmd.mediaSubscriptionEndpoint(), cmd.channelId());
+                    }
+                    else if (obj instanceof RegisterMediaSubscriptionEndpointCmd)
+                    {
+                        final RegisterMediaSubscriptionEndpointCmd cmd = (RegisterMediaSubscriptionEndpointCmd)obj;
+                        onRegisterMediaSubscriptionEndpoint(cmd.mediaSubscriptionEndpoint());
                     }
                 }
                 catch (final Exception ex)
@@ -86,68 +89,39 @@ public class Receiver extends Agent
     public void close()
     {
         stop();
-        mediaEndpointByDestinationMap.forEach((destination, mediaEndpoint) -> mediaEndpoint.close());
     }
 
     /**
-     * Return the {@link uk.co.real_logic.aeron.driver.NioSelector} in use by the thread
+     * Return the {@link NioSelector} in use by the thread
      *
-     * @return the {@link uk.co.real_logic.aeron.driver.NioSelector} in use by the thread
+     * @return the {@link NioSelector} in use by the thread
      */
     public NioSelector nioSelector()
     {
         return nioSelector;
     }
 
-    public MediaSubscriptionEndpoint subscriptionMediaEndpoint(final UdpDestination destination)
+    private void onAddSubscription(final MediaSubscriptionEndpoint mediaSubscriptionEndpoint,
+                                   final long channelId) throws Exception
     {
-        return mediaEndpointByDestinationMap.get(destination);
+        mediaSubscriptionEndpoint.dispatcher().addSubscription(channelId);
     }
 
-    private void onAddSubscription(final UdpDestination udpDestination, final long channelId) throws Exception
+    private void onRemoveSubscription(final MediaSubscriptionEndpoint mediaSubscriptionEndpoint,
+                                      final long channelId)
     {
-        MediaSubscriptionEndpoint mediaEndpoint = subscriptionMediaEndpoint(udpDestination);
-
-        if (null == mediaEndpoint)
-        {
-            mediaEndpoint = new MediaSubscriptionEndpoint(udpDestination, nioSelector, conductorProxy, new EventLogger());
-            mediaEndpointByDestinationMap.put(udpDestination, mediaEndpoint);
-        }
-
-        mediaEndpoint.addSubscription(channelId);
-    }
-
-    private void onRemoveSubscription(final UdpDestination udpDestination, final long channelId)
-    {
-        final MediaSubscriptionEndpoint mediaEndpoint = subscriptionMediaEndpoint(udpDestination);
-
-        if (null == mediaEndpoint)
-        {
-            throw new UnknownSubscriptionException("Unknown Subscription: destination=" + udpDestination);
-        }
-
-        mediaEndpoint.removeSubscription(channelId);
-
-        if (0 == mediaEndpoint.subscriptionCount())
-        {
-            mediaEndpointByDestinationMap.remove(udpDestination);
-            mediaEndpoint.close();
-        }
+        mediaSubscriptionEndpoint.dispatcher().removeSubscription(channelId);
     }
 
     private void onNewConnectedSubscription(final NewConnectedSubscriptionCmd cmd)
     {
-        final DriverConnectedSubscription connectedSubscription = cmd.connectedSubscription();
-        final MediaSubscriptionEndpoint mediaEndpoint = subscriptionMediaEndpoint(connectedSubscription.udpDestination());
+        final MediaSubscriptionEndpoint mediaSubscriptionEndpoint = cmd.mediaSubscriptionEndpoint();
 
-        if (null != mediaEndpoint)
-        {
-            mediaEndpoint.onConnectedSubscriptionReady(connectedSubscription);
-        }
-        else
-        {
-            final String destination = connectedSubscription.udpDestination().toString();
-            EventLogger.log(EventCode.COULD_NOT_FIND_FRAME_HANDLER_FOR_NEW_CONNECTED_SUBSCRIPTION, destination);
-        }
+        mediaSubscriptionEndpoint.dispatcher().addConnectedSubscription(cmd.connectedSubscription());
+    }
+
+    private void onRegisterMediaSubscriptionEndpoint(final MediaSubscriptionEndpoint mediaSubscriptionEndpoint)
+    {
+        mediaSubscriptionEndpoint.registerForRead(nioSelector);
     }
 }

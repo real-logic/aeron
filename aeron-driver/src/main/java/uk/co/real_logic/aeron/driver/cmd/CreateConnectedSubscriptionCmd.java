@@ -17,28 +17,27 @@ package uk.co.real_logic.aeron.driver.cmd;
 
 import uk.co.real_logic.aeron.driver.*;
 
+import java.net.InetSocketAddress;
+
 public class CreateConnectedSubscriptionCmd
 {
     private final UdpDestination udpDestination;
     private final long sessionId;
     private final long channelId;
     private final long termId;
-    private final StatusMessageSender statusMessageSender;
-    private final NakMessageSender nakMessageSender;
+    private final InetSocketAddress controlAddress;
 
     public CreateConnectedSubscriptionCmd(final UdpDestination udpDestination,
                                           final long sessionId,
                                           final long channelId,
                                           final long termId,
-                                          final StatusMessageSender statusMessageSender,
-                                          final NakMessageSender nakMessageSender)
+                                          final InetSocketAddress controlAddress)
     {
         this.udpDestination = udpDestination;
         this.sessionId = sessionId;
         this.channelId = channelId;
         this.termId = termId;
-        this.statusMessageSender = statusMessageSender;
-        this.nakMessageSender = nakMessageSender;
+        this.controlAddress = controlAddress;
     }
 
     public UdpDestination udpDestination()
@@ -61,13 +60,8 @@ public class CreateConnectedSubscriptionCmd
         return termId;
     }
 
-    public StatusMessageSender sendSmHandler()
+    public InetSocketAddress controlAddress()
     {
-        return statusMessageSender;
-    }
-
-    public NakMessageSender sendNakHandler()
-    {
-        return nakMessageSender;
+        return controlAddress;
     }
 }

@@ -204,6 +204,7 @@ public class SubMulticastTest
         do
         {
             rcvedMessages += subscription.poll(FRAME_COUNT_LIMIT);
+            Thread.yield();
         }
         while (rcvedMessages < 3);
 

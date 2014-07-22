@@ -16,14 +16,23 @@
 package uk.co.real_logic.aeron.driver.cmd;
 
 import uk.co.real_logic.aeron.driver.DriverConnectedSubscription;
+import uk.co.real_logic.aeron.driver.MediaSubscriptionEndpoint;
 
 public class NewConnectedSubscriptionCmd
 {
+    private final MediaSubscriptionEndpoint mediaSubscriptionEndpoint;
     private final DriverConnectedSubscription connectedSubscription;
 
-    public NewConnectedSubscriptionCmd(final DriverConnectedSubscription connectedSubscription)
+    public NewConnectedSubscriptionCmd(final MediaSubscriptionEndpoint mediaSubscriptionEndpoint,
+                                       final DriverConnectedSubscription connectedSubscription)
     {
+        this.mediaSubscriptionEndpoint = mediaSubscriptionEndpoint;
         this.connectedSubscription = connectedSubscription;
+    }
+
+    public MediaSubscriptionEndpoint mediaSubscriptionEndpoint()
+    {
+        return mediaSubscriptionEndpoint;
     }
 
     public DriverConnectedSubscription connectedSubscription()

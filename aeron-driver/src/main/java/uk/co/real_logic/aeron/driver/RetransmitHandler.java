@@ -43,27 +43,30 @@ public class RetransmitHandler
     private final Int2ObjectHashMap<RetransmitAction> activeRetransmitByTermOffsetMap = new Int2ObjectHashMap<>();
     private final FeedbackDelayGenerator delayGenerator;
     private final FeedbackDelayGenerator lingerTimeoutGenerator;
+    private final int mtuLength;
 
     /**
      * Create a retransmit handler for a log buffer.
-     *
-     * @param scanner to read frames from for retransmission
+     *  @param scanner to read frames from for retransmission
      * @param timerWheel for timers
      * @param delayGenerator to use for delay determination
      * @param lingerTimeoutGenerator to use for linger timeout
      * @param retransmitHandler for sending retransmits
+     * @param mtuLength for the media packet
      */
     public RetransmitHandler(final LogScanner scanner,
                              final TimerWheel timerWheel,
                              final FeedbackDelayGenerator delayGenerator,
                              final FeedbackDelayGenerator lingerTimeoutGenerator,
-                             final LogScanner.AvailabilityHandler retransmitHandler)
+                             final LogScanner.AvailabilityHandler retransmitHandler,
+                             final int mtuLength)
     {
         this.scanner = scanner;
         this.timerWheel = timerWheel;
         this.delayGenerator = delayGenerator;
         this.lingerTimeoutGenerator = lingerTimeoutGenerator;
         this.sendRetransmitHandler = retransmitHandler;
+        this.mtuLength = mtuLength;
 
         IntStream.range(0, MAX_RETRANSMITS).forEach((i) -> retransmitActionPool.offer(new RetransmitAction()));
     }
@@ -130,7 +133,13 @@ public class RetransmitHandler
     private void perform(final RetransmitAction retransmitAction)
     {
         scanner.seek(retransmitAction.termOffset);
-        scanner.scanNext(sendRetransmitHandler, retransmitAction.length);
+
+        int remainingBytes = retransmitAction.length;
+        do
+        {
+            remainingBytes -= scanner.scanNext(sendRetransmitHandler, Math.min(remainingBytes, mtuLength));
+        }
+        while (remainingBytes > 0);
     }
 
     private enum State

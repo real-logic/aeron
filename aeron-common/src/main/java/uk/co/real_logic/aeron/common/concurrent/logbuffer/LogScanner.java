@@ -88,11 +88,11 @@ public class LogScanner extends LogBuffer
      *
      * @param handler called back if a frame is available.
      * @param bytesLimit in bytes to scan.
-     * @return number of frames available
+     * @return number of bytes notified available
      */
     public int scanNext(final AvailabilityHandler handler, final int bytesLimit)
     {
-        int frameCount = 0;
+        int bytesCount = 0;
 
         if (!isComplete())
         {
@@ -121,7 +121,7 @@ public class LogScanner extends LogBuffer
                         break;
                     }
 
-                    ++frameCount;
+                    bytesCount += length;
                 }
                 while ((offset + length + padding) < tail);
 
@@ -133,7 +133,7 @@ public class LogScanner extends LogBuffer
             }
         }
 
-        return frameCount;
+        return bytesCount;
     }
 
     /**

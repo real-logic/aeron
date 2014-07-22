@@ -40,6 +40,7 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
 @RunWith(Theories.class)
 public class RetransmitHandlerTest
 {
+    private static final int MTU_LENGTH = 1024;
     private static final int LOG_BUFFER_SIZE = 64 * 1024;
     private static final int STATE_BUFFER_SIZE = STATE_BUFFER_LENGTH;
     private static final byte[] DATA = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
@@ -74,7 +75,7 @@ public class RetransmitHandlerTest
     private final LogScanner.AvailabilityHandler retransmitHandler = mock(LogScanner.AvailabilityHandler.class);
 
     private RetransmitHandler handler =
-        new RetransmitHandler(scanner, wheel, delayGenerator, lingerGenerator, retransmitHandler);
+        new RetransmitHandler(scanner, wheel, delayGenerator, lingerGenerator, retransmitHandler, MTU_LENGTH);
 
     @DataPoint
     public static final BiConsumer<RetransmitHandlerTest, Integer> senderAddDataFrame = (h, i) -> addSentDataFrame(h);
@@ -157,7 +158,7 @@ public class RetransmitHandlerTest
     public void shouldImmediateRetransmitOnNak(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
         createTermBuffer(creator, 5);
-        handler = new RetransmitHandler(scanner, wheel, zeroDelayGenerator, lingerGenerator, retransmitHandler);
+        handler = newZeroDelayRetransmitHandler();
 
         handler.onNak(offsetOfMessage(0), MESSAGE_LENGTH);
 
@@ -168,7 +169,7 @@ public class RetransmitHandlerTest
     public void shouldGoIntoLingerOnImmediateRetransmit(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
         createTermBuffer(creator, 5);
-        handler = new RetransmitHandler(scanner, wheel, zeroDelayGenerator, lingerGenerator, retransmitHandler);
+        handler = newZeroDelayRetransmitHandler();
 
         handler.onNak(offsetOfMessage(0), MESSAGE_LENGTH);
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(40));
@@ -194,6 +195,12 @@ public class RetransmitHandlerTest
 
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(40));
         verifyZeroInteractions(retransmitHandler);
+    }
+
+    private RetransmitHandler newZeroDelayRetransmitHandler()
+    {
+        return new RetransmitHandler(scanner, wheel, zeroDelayGenerator,
+                                     lingerGenerator, retransmitHandler, MTU_LENGTH);
     }
 
     private void createTermBuffer(final BiConsumer<RetransmitHandlerTest, Integer> creator, final int num)

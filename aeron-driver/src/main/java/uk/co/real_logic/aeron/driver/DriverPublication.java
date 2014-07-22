@@ -264,13 +264,14 @@ public class DriverPublication implements AutoCloseable
         return new LogScanner(log.logBuffer(), log.stateBuffer(), headerLength);
     }
 
-    private RetransmitHandler newRetransmitHandler(final RawLog log)
+    private RetransmitHandler newRetransmitHandler(final RawLog rawLog)
     {
-        return new RetransmitHandler(new LogScanner(log.logBuffer(), log.stateBuffer(), headerLength),
+        return new RetransmitHandler(new LogScanner(rawLog.logBuffer(), rawLog.stateBuffer(), headerLength),
                                      timerWheel,
                                      DriverConductor.RETRANS_UNICAST_DELAY_GENERATOR,
                                      DriverConductor.RETRANS_UNICAST_LINGER_GENERATOR,
-                                     this::onSendRetransmit);
+                                     this::onSendRetransmit,
+                                     mtuLength);
     }
 
     private int determineIndexByTermId(final long termId)

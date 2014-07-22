@@ -3,6 +3,7 @@ package uk.co.real_logic.aeron;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
+import org.mockito.verification.VerificationMode;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
@@ -40,6 +41,7 @@ public class PublicationTest
     private PositionIndicator limit;
     private LogAppender[] appenders;
     private byte[][] headers;
+    private ManagedBuffer[] managedBuffers;
 
     @Before
     public void setup()
@@ -60,7 +62,11 @@ public class PublicationTest
             when(appenders[i].capacity()).thenReturn(LOG_MIN_SIZE);
         }
 
-        final ManagedBuffer[] managedBuffers = new ManagedBuffer[0];
+        managedBuffers = new ManagedBuffer[BUFFER_COUNT * 2];
+        for (int i = 0; i < BUFFER_COUNT * 2; i++)
+        {
+            managedBuffers[i] = mock(ManagedBuffer.class);
+        }
 
         publication = new Publication(conductor, DESTINATION, CHANNEL_ID_1, SESSION_ID_1,
                                       TERM_ID_1, appenders, limit, managedBuffers);
@@ -107,4 +113,38 @@ public class PublicationTest
         dataHeaderFlyweight.wrap(headers[termIdToBufferIndex(TERM_ID_1 + 1)]);
         assertThat(dataHeaderFlyweight.termId(), is(TERM_ID_1 + 1));
     }
+
+    @Test
+    public void shouldUnmapBuffersWhenReleased() throws Exception
+    {
+        publication.release();
+        verifyBuffersUnmapped(times(1));
+    }
+
+    @Test
+    public void shouldntUnmapBuffersBeforeLastRelease() throws Exception
+    {
+        publication.incRef();
+        publication.release();
+        verifyBuffersUnmapped(never());
+    }
+
+    @Test
+    public void shouldUnmapBuffersWithMultipleReferences() throws Exception
+    {
+        publication.incRef();
+        publication.release();
+
+        publication.release();
+        verifyBuffersUnmapped(times(1));
+    }
+
+    private void verifyBuffersUnmapped(final VerificationMode times) throws Exception
+    {
+        for (ManagedBuffer buffer : managedBuffers)
+        {
+            verify(buffer, times).close();
+        }
+    }
+
 }

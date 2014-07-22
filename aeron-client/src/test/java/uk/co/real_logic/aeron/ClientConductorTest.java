@@ -160,9 +160,7 @@ public class ClientConductorTest extends MockBufferUsage
 
         publication.release();
 
-        // TODO: do these verifies as part of a publication test.
-        // verifyBuffersReleased(SESSION_ID_1);
-        verify(driverProxy).removePublication(DESTINATION, SESSION_ID_1, CHANNEL_ID_1);
+        (driverProxy).removePublication(DESTINATION, SESSION_ID_1, CHANNEL_ID_1);
     }
 
     @Test
@@ -203,14 +201,11 @@ public class ClientConductorTest extends MockBufferUsage
         addPublication();
 
         publication.release();
-        // verifyBuffersNotReleased(SESSION_ID_2);
         verify(driverProxy, never()).removePublication(DESTINATION, SESSION_ID_1, CHANNEL_ID_1);
 
         willNotifyOperationSucceeded();
 
         publication.release();
-        // TODO: do these verifies as part of a publication test.
-        // verifyBuffersReleased(SESSION_ID_1);
         verify(driverProxy).removePublication(DESTINATION, SESSION_ID_1, CHANNEL_ID_1);
     }
 
@@ -224,11 +219,8 @@ public class ClientConductorTest extends MockBufferUsage
 
         publication.release();
 
-        // TODO: do these verifies as part of a publication test.
-        // verifyBuffersReleased(SESSION_ID_1);
         verify(driverProxy).removePublication(DESTINATION, SESSION_ID_1, CHANNEL_ID_1);
 
-        // verifyBuffersNotReleased(SESSION_ID_2);
         verify(driverProxy, never()).removePublication(DESTINATION, SESSION_ID_2, CHANNEL_ID_2);
     }
 

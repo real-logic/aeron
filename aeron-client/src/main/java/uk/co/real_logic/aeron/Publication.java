@@ -50,7 +50,7 @@ public class Publication
     private final long initialPosition;
 
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
-    private int refCount = 0;
+    private int refCount = 1;
     private int activeIndex;
 
     public Publication(final ClientConductor conductor,

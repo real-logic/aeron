@@ -37,7 +37,7 @@ public class LogReader extends LogBuffer
     @FunctionalInterface
     public interface FrameHandler
     {
-        void onFrame(final AtomicBuffer buffer, final int offset, final int length);
+        void onFrame(AtomicBuffer buffer, int offset, int length);
     }
 
     private int cursor = 0;

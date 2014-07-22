@@ -44,7 +44,7 @@ public class GapScanner extends LogBuffer
          * @param length of the gap in bytes.
          * @return true if scanning should continue otherwise false to halt scanning.
          */
-        boolean onGap(final AtomicBuffer buffer, final int offset, final int length);
+        boolean onGap(AtomicBuffer buffer, int offset, int length);
     }
 
     /**

@@ -116,8 +116,10 @@ public class ClientConductor extends Agent implements DriverListener
             addedPublication = null;
             activeCorrelationId = NO_CORRELATION_ID;
         }
-
-        publication.incRef();
+        else
+        {
+            publication.incRef();
+        }
 
         return publication;
     }

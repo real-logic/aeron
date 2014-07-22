@@ -170,7 +170,6 @@ public class ClientConductorTest extends MockBufferUsage
 
         willNotifyOperationSucceeded();
         firstPublication.release();
-        // verifyBuffersReleased(SESSION_ID_1);
 
         willNotifyNewBuffer();
         Publication secondPublication = addPublication();

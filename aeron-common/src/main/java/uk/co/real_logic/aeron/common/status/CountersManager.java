@@ -15,24 +15,31 @@
  */
 package uk.co.real_logic.aeron.common.status;
 
+import uk.co.real_logic.aeron.common.BitUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 
+import java.util.Deque;
+import java.util.LinkedList;
 import java.util.function.BiConsumer;
 
 import static java.nio.ByteOrder.nativeOrder;
 import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_INT;
-import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_LONG;
 
 /**
  * Manages the registration of counters.
  */
 public class CountersManager
 {
-    private final AtomicBuffer labelsBuffer;
-    private final int countersCapacity;
 
-    private int labelsOffset;
-    private int idCounter;
+    public static final int LABEL_SIZE = 1024;
+    public static final int COUNTER_SIZE = BitUtil.CACHE_LINE_SIZE;
+    public static final int UNREGISTERED_LABEL_SIZE = -1;
+
+    private final AtomicBuffer labelsBuffer;
+    private final AtomicBuffer countersBuffer;
+    private final Deque<Integer> freeList = new LinkedList<>();
+
+    private int highWaterMark = -1;
 
     /**
      * Create a new counter buffer manager over two buffers.
@@ -43,11 +50,7 @@ public class CountersManager
     public CountersManager(final AtomicBuffer labelsBuffer, final AtomicBuffer countersBuffer)
     {
         this.labelsBuffer = labelsBuffer;
-        this.countersCapacity = countersBuffer.capacity();
-        labelsOffset = 0;
-
-        // deliberately start at 1, so reading a 0 means the end of the written data
-        idCounter = 1;
+        this.countersBuffer = countersBuffer;
     }
 
     /**
@@ -58,16 +61,48 @@ public class CountersManager
      */
     public int registerCounter(final String label)
     {
-        if (counterOffset(idCounter) >= countersCapacity)
+        final int counterId = counterId();
+        final int labelsOffset = labelOffset(counterId);
+        if ((counterOffset(counterId) + COUNTER_SIZE) > countersBuffer.capacity())
         {
             throw new IllegalArgumentException("Unable to register counter, counter buffer is full");
         }
 
-        labelsBuffer.putInt(labelsOffset, idCounter);
-        labelsOffset += SIZE_OF_INT;
-        labelsOffset += labelsBuffer.putString(labelsOffset, label, nativeOrder());
+        if ((labelsOffset + LABEL_SIZE) > labelsBuffer.capacity())
+        {
+            throw new IllegalArgumentException("Unable to register counter, labels buffer is full");
+        }
 
-        return idCounter++;
+        labelsBuffer.putString(labelsOffset, label, LABEL_SIZE - SIZE_OF_INT, nativeOrder());
+
+        return counterId;
+    }
+
+    private int labelOffset(final int counterId)
+    {
+        return counterId * LABEL_SIZE;
+    }
+
+    /**
+     * Deregister the counter identified by counterId.
+     *
+     * @param counterId the counter to deregister
+     */
+    public void deregisterCounter(final int counterId)
+    {
+        labelsBuffer.putInt(labelOffset(counterId), UNREGISTERED_LABEL_SIZE);
+        countersBuffer.putLong(counterOffset(counterId), 0L);
+        freeList.push(counterId);
+    }
+
+    private int counterId()
+    {
+        if (freeList.isEmpty())
+        {
+            return ++highWaterMark;
+        }
+
+        return freeList.pop();
     }
 
     /**
@@ -78,8 +113,7 @@ public class CountersManager
      */
     public static int counterOffset(int id)
     {
-        // ids start at 1
-        return (id - 1) * SIZE_OF_LONG;
+        return id * COUNTER_SIZE;
     }
 
     /**
@@ -89,16 +123,21 @@ public class CountersManager
      */
     public void forEachLabel(final BiConsumer<Integer, String> consumer)
     {
-        int offset = 0;
-        int id;
+        int labelsOffset = 0;
+        int size;
+        int id = 0;
 
-        while ((id = labelsBuffer.getInt(offset)) != 0)
+        while ((size = labelsBuffer.getInt(labelsOffset)) != 0)
         {
-            offset += SIZE_OF_INT;
-            final int length = labelsBuffer.getInt(offset, nativeOrder());
-            final String label = labelsBuffer.getString(offset, length);
-            consumer.accept(id, label);
-            offset += SIZE_OF_INT + length;
+
+            if (size != UNREGISTERED_LABEL_SIZE)
+            {
+                final String label = labelsBuffer.getString(labelsOffset, nativeOrder());
+                consumer.accept(id, label);
+            }
+
+            labelsOffset += LABEL_SIZE;
+            id++;
         }
     }
 }

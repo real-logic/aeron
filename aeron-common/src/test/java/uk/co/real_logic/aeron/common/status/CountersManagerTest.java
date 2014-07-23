@@ -32,8 +32,10 @@ import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_LONG;
 @SuppressWarnings("unchecked")
 public class CountersManagerTest
 {
-    private AtomicBuffer labelsBuffer = new AtomicBuffer(allocate(512));
-    private AtomicBuffer counterBuffer = new AtomicBuffer(allocate(3 * SIZE_OF_LONG));
+    private static final int NUMBER_OF_COUNTERS = 4;
+
+    private AtomicBuffer labelsBuffer = new AtomicBuffer(allocate(NUMBER_OF_COUNTERS * CountersManager.LABEL_SIZE));
+    private AtomicBuffer counterBuffer = new AtomicBuffer(allocate(NUMBER_OF_COUNTERS * CountersManager.COUNTER_SIZE));
     private CountersManager manager = new CountersManager(labelsBuffer, counterBuffer);
     private CountersManager otherManager = new CountersManager(labelsBuffer, counterBuffer);
 
@@ -63,6 +65,26 @@ public class CountersManagerTest
         inOrder.verifyNoMoreInteractions();
     }
 
+    @Test
+    public void shouldDeregisterAndReuseCounters()
+    {
+        int abc = manager.registerCounter("abc");
+        int def = manager.registerCounter("def");
+        int ghi = manager.registerCounter("ghi");
+
+        manager.deregisterCounter(def);
+
+        BiConsumer<Integer, String> consumer = mock(BiConsumer.class);
+        otherManager.forEachLabel(consumer);
+
+        InOrder inOrder = Mockito.inOrder(consumer);
+        inOrder.verify(consumer).accept(abc, "abc");
+        inOrder.verify(consumer).accept(ghi, "ghi");
+        inOrder.verifyNoMoreInteractions();
+
+        assertThat(manager.registerCounter("the next label"), is(def));
+    }
+
     @Test(expected = IllegalArgumentException.class)
     public void managerShouldNotOverAllocateCounters()
     {
@@ -70,6 +92,7 @@ public class CountersManagerTest
         manager.registerCounter("def");
         manager.registerCounter("ghi");
         manager.registerCounter("jkl");
+        manager.registerCounter("mno");
     }
 
     @Test

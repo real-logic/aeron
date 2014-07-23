@@ -906,7 +906,17 @@ public class AtomicBuffer
 
     public int putString(final int offset, final String value, final ByteOrder byteOrder)
     {
+        return putString(offset, value, Integer.MAX_VALUE, byteOrder);
+    }
+
+    public int putString(final int offset, final String value, final int maximumEncodedSize, final ByteOrder byteOrder)
+    {
         final byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        if (bytes.length > maximumEncodedSize)
+        {
+            throw new IllegalArgumentException("Encoded string larger than maximum size: " + maximumEncodedSize);
+        }
+
         putInt(offset, bytes.length, byteOrder);
         return SIZE_OF_INT + putBytes(offset + SIZE_OF_INT, bytes);
     }

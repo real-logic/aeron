@@ -136,7 +136,7 @@ class MappedTermBuffers implements TermBuffers
     private MappedByteBuffer mapBufferFile(final FileChannel channel, final long bufferSize)
         throws IOException
     {
-        reset(channel, logTemplate, logBufferLength);
+        reset(channel, logTemplate, bufferSize);
 
         return channel.map(READ_WRITE, 0, bufferSize);
     }

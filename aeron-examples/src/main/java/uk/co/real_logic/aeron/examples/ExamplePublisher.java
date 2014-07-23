@@ -32,7 +32,7 @@ public class ExamplePublisher
     public static final String DESTINATION = ExampleConfiguration.DESTINATION;
     public static final long NUMBER_OF_MESSAGES = ExampleConfiguration.NUMBER_OF_MESSAGES;
 
-    private static final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocateDirect(256));
+    private static final AtomicBuffer BUFFER = new AtomicBuffer(ByteBuffer.allocateDirect(256));
 
     public static void main(final String[] args)
     {
@@ -49,10 +49,10 @@ public class ExamplePublisher
             for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
             {
                 final String message = "Hello World! " + i;
-                buffer.putBytes(0, message.getBytes());
+                BUFFER.putBytes(0, message.getBytes());
 
                 System.out.print("offering " + i + "/" + NUMBER_OF_MESSAGES);
-                final boolean result = publication.offer(buffer, 0, message.getBytes().length);
+                final boolean result = publication.offer(BUFFER, 0, message.getBytes().length);
 
                 if (!result)
                 {

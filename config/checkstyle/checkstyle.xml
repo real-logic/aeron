@@ -40,7 +40,7 @@
         <module name="UnusedImports"/>
 
         <module name="LineLength">
-            <property name="max" value="120"/>
+            <property name="max" value="130"/>
             <property name="ignorePattern" value="^[ \t]*\*.*@.*$"/>
         </module>
 

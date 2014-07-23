@@ -112,7 +112,8 @@ public class DriverSubscriptionDispatcher
                 final InetSocketAddress controlAddress =
                     transport.isMulticast() ? udpDestination.remoteControl() : srcAddress;
 
-                initialisationInProgressMap.put(sessionId, INIT_IN_PROGRESS); // TODO: need to clean up on timeout - how can this fail?
+                // TODO: need to clean up on timeout - how can this fail?
+                initialisationInProgressMap.put(sessionId, INIT_IN_PROGRESS);
 
                 conductorProxy.createConnectedSubscription(subscription.udpDestination(),
                                                            sessionId,

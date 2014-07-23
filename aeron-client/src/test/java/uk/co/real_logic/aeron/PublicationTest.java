@@ -44,7 +44,7 @@ public class PublicationTest
     private ManagedBuffer[] managedBuffers;
 
     @Before
-    public void setup()
+    public void setUp()
     {
         final ClientConductor conductor = mock(ClientConductor.class);
         limit = mock(PositionIndicator.class);

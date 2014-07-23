@@ -15,11 +15,16 @@
  */
 package uk.co.real_logic.aeron;
 
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.common.event.EventLogger;
-import uk.co.real_logic.aeron.common.protocol.*;
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.common.protocol.NakFlyweight;
+import uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.net.InetSocketAddress;
@@ -29,7 +34,9 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.IntConsumer;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -74,6 +81,12 @@ public class SubUnicastTest
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
     private final NakFlyweight nakHeader = new NakFlyweight();
+
+    private final IntConsumer subscriptionPollWithYield = (i) ->
+        {
+            subscription.poll(FRAME_COUNT_LIMIT);
+            Thread.yield();
+        };
 
     private ExecutorService executorService;
 
@@ -129,9 +142,6 @@ public class SubUnicastTest
     {
         EventLogger.logInvocation();
 
-        // let buffers get connected and media driver set things up
-        Thread.sleep(10);
-
         // send some 0 length data frame
         sendDataFrame(0, NO_PAYLOAD);
 
@@ -157,10 +167,9 @@ public class SubUnicastTest
         sendDataFrame(0, PAYLOAD);
 
         // now poll data into app
-        while (0 == subscription.poll(FRAME_COUNT_LIMIT))
-        {
-            Thread.yield();
-        }
+        SystemTestHelper.executeUntil(() -> (receivedFrames.size() > 0),
+                subscriptionPollWithYield,
+                Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(1));
@@ -171,9 +180,6 @@ public class SubUnicastTest
     public void shouldReceiveMultipleDataFrames() throws Exception
     {
         EventLogger.logInvocation();
-
-        // let buffers get connected and media driver set things up
-        Thread.sleep(10);
 
         // send some 0 length data frame
         sendDataFrame(0, NO_PAYLOAD);
@@ -197,12 +203,10 @@ public class SubUnicastTest
             sendDataFrame(i * FrameDescriptor.FRAME_ALIGNMENT, PAYLOAD);
         }
 
-        int rcvedMessages = 0;
-        do
-        {
-            rcvedMessages += subscription.poll(FRAME_COUNT_LIMIT);
-        }
-        while (rcvedMessages < 3);
+        // now poll data into app
+        SystemTestHelper.executeUntil(() -> (receivedFrames.size() >= 3),
+                subscriptionPollWithYield,
+                Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(3));
@@ -215,9 +219,6 @@ public class SubUnicastTest
     public void shouldSendNaksForMissingData() throws Exception
     {
         EventLogger.logInvocation();
-
-        // let buffers get connected and media driver set things up
-        Thread.sleep(10);
 
         // send some 0 length data frame
         sendDataFrame(0, NO_PAYLOAD);
@@ -240,10 +241,9 @@ public class SubUnicastTest
         sendDataFrame(2 * FrameDescriptor.FRAME_ALIGNMENT, PAYLOAD);
 
         // now poll data into app
-        while (0 == subscription.poll(FRAME_COUNT_LIMIT))
-        {
-            Thread.yield();
-        }
+        SystemTestHelper.executeUntil(() -> (receivedFrames.size() > 0),
+                subscriptionPollWithYield,
+                Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(1));
@@ -272,9 +272,6 @@ public class SubUnicastTest
     {
         EventLogger.logInvocation();
 
-        // let buffers get connected and media driver set things up
-        Thread.sleep(10);
-
         // send some 0 length data frame
         sendDataFrame(0, NO_PAYLOAD);
 
@@ -296,10 +293,9 @@ public class SubUnicastTest
         sendDataFrame(2 * FrameDescriptor.FRAME_ALIGNMENT, PAYLOAD);
 
         // now poll data into app
-        while (0 == subscription.poll(FRAME_COUNT_LIMIT))
-        {
-            Thread.yield();
-        }
+        SystemTestHelper.executeUntil(() -> (receivedFrames.size() > 0),
+                subscriptionPollWithYield,
+                Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(1));
@@ -318,10 +314,10 @@ public class SubUnicastTest
 
         sendDataFrame(FrameDescriptor.FRAME_ALIGNMENT, PAYLOAD);
 
-        while (0 == subscription.poll(FRAME_COUNT_LIMIT))
-        {
-            Thread.yield();
-        }
+        // now poll data into app
+        SystemTestHelper.executeUntil(() -> (receivedFrames.size() >= 2),
+                subscriptionPollWithYield,
+                Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(2));

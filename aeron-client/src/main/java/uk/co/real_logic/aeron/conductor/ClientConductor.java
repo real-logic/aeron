@@ -62,6 +62,8 @@ public class ClientConductor extends Agent implements DriverListener
     private final DriverProxy driverProxy;
     private final Signal correlationSignal;
 
+    private final NewSourceHandler newSourceHandler;
+
     private long activeCorrelationId; // Guarded by this
     private Publication addedPublication; // Guarded by this
     private boolean operationSucceeded = false; // Guarded by this
@@ -73,6 +75,7 @@ public class ClientConductor extends Agent implements DriverListener
                            final DriverProxy driverProxy,
                            final Signal correlationSignal,
                            final Consumer<Exception> errorHandler,
+                           final NewSourceHandler newSourceHandler,
                            final long awaitTimeout)
     {
         super(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
@@ -85,6 +88,7 @@ public class ClientConductor extends Agent implements DriverListener
         this.driverBroadcastReceiver = driverBroadcastReceiver;
         this.bufferManager = bufferManager;
         this.awaitTimeout = awaitTimeout;
+        this.newSourceHandler = newSourceHandler;
     }
 
     public int doWork()
@@ -221,6 +225,11 @@ public class ClientConductor extends Agent implements DriverListener
             final PositionReporter positionReporter =
                 new BufferPositionReporter(counterValuesBuffer, message.positionCounterOffset());
             subscription.onTermBuffersMapped(sessionId, initialTermId, logs, positionReporter, managedBuffers);
+
+            if (null != newSourceHandler)
+            {
+                newSourceHandler.onNewSource(destination, sessionId, channelId);
+            }
         }
     }
 

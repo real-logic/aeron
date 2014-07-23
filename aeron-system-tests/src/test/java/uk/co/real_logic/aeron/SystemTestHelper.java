@@ -15,17 +15,23 @@
  */
 package uk.co.real_logic.aeron;
 
-/**
- * Interface for delivery of new source events to a {@link Aeron} instance.
- */
-public interface NewSourceHandler
+import java.util.function.BooleanSupplier;
+import java.util.function.IntConsumer;
+
+public class SystemTestHelper
 {
-    /**
-     * Method called by Aeron to deliver notification of a new source session
-     *
-     * @param destination for the source
-     * @param sessionId for the source
-     * @param channelId for the source
-     */
-    void onNewSource(final String destination, final long sessionId, final long channelId);
+    public static void executeUntil(final BooleanSupplier condition, final IntConsumer body,
+                                    final int maxIterations, final long timeout)
+    {
+        final long start = System.nanoTime();
+        long end;
+        int iteration = 0;
+
+        do
+        {
+            body.accept(iteration);
+            end = System.nanoTime();
+        }
+        while (!condition.getAsBoolean() && ((end - start) < timeout) && iteration++ < maxIterations);
+    }
 }

@@ -100,7 +100,7 @@ public class EventCodec
     public static int encode(final AtomicBuffer encodingBuffer, final StackTraceElement stack)
     {
         final int relativeOffset = putStackTraceElement(encodingBuffer, stack, LOG_HEADER_LENGTH);
-        final int captureLength = relativeOffset - LOG_HEADER_LENGTH;
+        final int captureLength = relativeOffset;
         encodeLogHeader(encodingBuffer, captureLength, captureLength);
         return relativeOffset;
     }
@@ -217,7 +217,7 @@ public class EventCodec
         int relativeOffset = dissectLogHeader(code, buffer, initialOffset, builder);
         builder.append(": ");
 
-        readStackTraceElement(buffer, relativeOffset, builder);
+        readStackTraceElement(buffer, initialOffset + relativeOffset, builder);
 
         return builder.toString();
     }

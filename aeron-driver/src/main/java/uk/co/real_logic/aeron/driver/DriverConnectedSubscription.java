@@ -23,6 +23,7 @@ import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.status.PositionIndicator;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static uk.co.real_logic.aeron.common.TermHelper.*;
@@ -35,6 +36,9 @@ public class DriverConnectedSubscription implements AutoCloseable
 {
     /** Timeout between SMs. One RTT. */
     public static final long STATUS_MESSAGE_TIMEOUT = MediaDriver.ESTIMATED_RTT_NS;
+
+    private static final int STATE_CREATED = 0;
+    private static final int STATE_READY_TO_SEND_SMS = 1;
 
     private final UdpDestination udpDestination;
     private final long sessionId;
@@ -57,6 +61,8 @@ public class DriverConnectedSubscription implements AutoCloseable
     private int lastSmTail;
     private int currentWindowSize;
     private int currentWindowGain;
+
+    private AtomicInteger state = new AtomicInteger(STATE_CREATED);
 
     public DriverConnectedSubscription(final UdpDestination udpDestination,
                                        final long sessionId,
@@ -178,6 +184,7 @@ public class DriverConnectedSubscription implements AutoCloseable
     /**
      * Called from the {@link DriverConductor}.
      *
+     * @param now time in nanoseconds
      * @return number of work items processed.
      */
     public int sendPendingStatusMessages(final long now)
@@ -191,6 +198,12 @@ public class DriverConnectedSubscription implements AutoCloseable
 
         final int currentSmTail = lossHandler.highestContiguousOffset();
         final long currentSmTermId = lossHandler.activeTermId();
+
+        // not able to send yet because not added to dispatcher, anything received will be dropped (in progress)
+        if (STATE_CREATED == state.get())
+        {
+            return 0;
+        }
 
         // send initial SM
         if (0 == lastSmTimestamp)
@@ -226,6 +239,14 @@ public class DriverConnectedSubscription implements AutoCloseable
 
         // invert the work count logic. We want to appear to be less busy once we send an SM
         return 1;
+    }
+
+    /**
+     * Called from the {@link Receiver} thread once added to dispatcher
+     */
+    public void readyToSendSms()
+    {
+        state.lazySet(STATE_READY_TO_SEND_SMS);
     }
 
     private int sendStatusMessage(final long termId, final int termOffset, final int window)

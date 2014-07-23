@@ -300,11 +300,12 @@ public class MediaDriver implements AutoCloseable
         this.sender = new Sender(ctx);
         this.conductor = new DriverConductor(ctx);
 
-
         final EventReader.Context readerCtx = new EventReader.Context()
-                .backoffStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                        AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
-                .handler(ctx.eventConsumer);
+            .backoffStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
+                    AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
+            .warnIfEventsFileExists(ctx.warnIfDirectoriesExist)
+            .handler(ctx.eventConsumer);
+
         this.eventReader = new EventReader(readerCtx);
     }
 
@@ -345,7 +346,7 @@ public class MediaDriver implements AutoCloseable
      */
     public void invokeEmbedded()
     {
-        executor = Executors.newFixedThreadPool(3);
+        executor = Executors.newFixedThreadPool(4);
 
         conductorFuture = executor.submit(conductor);
         senderFuture = executor.submit(sender);
@@ -363,14 +364,14 @@ public class MediaDriver implements AutoCloseable
         shutdown(senderThread, sender);
         shutdown(receiverThread, receiver);
         shutdown(conductorThread, conductor);
-        shutdown(eventReaderThread, conductor);
+        shutdown(eventReaderThread, eventReader);
 
         if (null != executor)
         {
             shutdownExecutorThread(senderFuture, sender);
             shutdownExecutorThread(receiverFuture, receiver);
             shutdownExecutorThread(conductorFuture, conductor);
-            shutdownExecutorThread(eventReaderFuture, conductor);
+            shutdownExecutorThread(eventReaderFuture, eventReader);
 
             executor.shutdown();
         }
@@ -389,6 +390,7 @@ public class MediaDriver implements AutoCloseable
         conductor.close();
         conductor.nioSelector().selectNowWithoutProcessing();
         ctx.close();
+        eventReader.close();
         deleteDirectories();
     }
 

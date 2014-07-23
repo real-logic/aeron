@@ -81,6 +81,9 @@ public class DriverSubscriptionDispatcher
 
         subscription.putConnectedSubscription(connectedSubscription);
         initialisationInProgressMap.remove(connectedSubscription.sessionId());
+
+        // update state of the subscription so that it will send SMs now
+        connectedSubscription.readyToSendSms();
     }
 
     public void onDataFrame(final DataHeaderFlyweight header,

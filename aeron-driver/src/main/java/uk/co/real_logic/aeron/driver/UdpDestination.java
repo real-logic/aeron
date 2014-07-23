@@ -48,7 +48,7 @@ public class UdpDestination
 
     private static final NetworkInterface DEFAULT_MULTICAST_INTERFACE;
 
-    // TODO: stop doing static initialisation in this class
+    // TODO: stop doing static initialisation in this class. Move this to its own NetworkUtil class
     static
     {
         NetworkInterface savedIfc = null;

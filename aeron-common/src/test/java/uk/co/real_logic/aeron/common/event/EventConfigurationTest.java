@@ -13,17 +13,16 @@ import static uk.co.real_logic.aeron.common.event.EventConfiguration.*;
 
 public class EventConfigurationTest
 {
-
     @Test
     public void nullPropertyShouldDefaultToProductionEventCodes()
     {
         assertThat(getEnabledEventCodes(null), is(PRODUCTION_LOGGER_EVENT_CODES));
     }
 
-    @Test
+    @Test(expected = IllegalArgumentException.class)
     public void malformedPropertyShouldDefaultToProductionEventCodes()
     {
-        assertThat(getEnabledEventCodes("daskjdasklh"), is(PRODUCTION_LOGGER_EVENT_CODES));
+        getEnabledEventCodes("list of invalid options");
     }
 
     @Test
@@ -46,5 +45,4 @@ public class EventConfigurationTest
         final long bitSet = EventConfiguration.makeTagBitSet(eventCodes);
         assertThat(bitSet, is(EXCEPTION.tagBit() | ERROR_SENDING_HEARTBEAT_PACKET.tagBit()));
     }
-
 }

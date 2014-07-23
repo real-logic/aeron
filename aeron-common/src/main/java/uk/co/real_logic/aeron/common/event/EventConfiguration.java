@@ -30,42 +30,57 @@ import static uk.co.real_logic.aeron.common.event.EventCode.*;
  */
 public class EventConfiguration
 {
-    /** Event Buffer location system property name */
+    /**
+     * Event Buffer location system property name
+     */
     public static final String LOCATION_PROPERTY_NAME = "aeron.event.buffer.location";
-    /** Event Buffer size system property name */
+
+    /**
+     * Event Buffer size system property name
+     */
     public static final String BUFFER_SIZE_PROPERTY_NAME = "aeron.event.buffer.size";
-    /** Event Buffer location deleted on exit system property name */
+
+    /**
+     * Event Buffer location deleted on exit system property name
+     */
     public static final String DELETE_ON_EXIT_PROPERTY_NAME = "aeron.event.buffer.delete-on-exit";
 
     /**
      * Event tags system property name. This is either:
      * <COMMA>
-     *
+     * <p>
      * <ul>
-     *   <li>A comma separated list of EventCodes to enable</li>
-     *   <li>"all" which enables all the codes</li>
-     *   <li>"prod" which enables the codes specified by PRODUCTION_LOGGER_EVENT_CODES</li>
+     * <li>A comma separated list of EventCodes to enable</li>
+     * <li>"all" which enables all the codes</li>
+     * <li>"prod" which enables the codes specified by PRODUCTION_LOGGER_EVENT_CODES</li>
      * </ul>
      */
     public static final String ENABLED_LOGGER_EVENT_CODES_PROPERTY_NAME = "aeron.event.log";
 
-    public static final Set<EventCode> PRODUCTION_LOGGER_EVENT_CODES = EnumSet.of(
-            EXCEPTION,
-            ERROR_SENDING_HEARTBEAT_PACKET,
-            COULD_NOT_FIND_FRAME_HANDLER_FOR_NEW_CONNECTED_SUBSCRIPTION,
-            COULD_NOT_FIND_INTERFACE,
-            COULD_NOT_SEND_ENTIRE_RETRANSMIT,
-            MALFORMED_FRAME_LENGTH,
-            UNKNOWN_HEADER_TYPE);
+    public static final Set<EventCode> PRODUCTION_LOGGER_EVENT_CODES =
+        EnumSet.of(EXCEPTION,
+                   ERROR_SENDING_HEARTBEAT_PACKET,
+                   COULD_NOT_FIND_FRAME_HANDLER_FOR_NEW_CONNECTED_SUBSCRIPTION,
+                   COULD_NOT_FIND_INTERFACE,
+                   COULD_NOT_SEND_ENTIRE_RETRANSMIT,
+                   MALFORMED_FRAME_LENGTH,
+                   UNKNOWN_HEADER_TYPE);
 
     public static final Set<EventCode> ALL_LOGGER_EVENT_CODES = EnumSet.allOf(EventCode.class);
 
-    /** Event Buffer default location */
+    /**
+     * Event Buffer default location
+     */
     public static final String LOCATION_DEFAULT = IoUtil.tmpDirName() + "aeron" + File.separator + "event-buffer";
-    /** Event Buffer default size (in bytes) */
+
+    /**
+     * Event Buffer default size (in bytes)
+     */
     public static final long BUFFER_SIZE_DEFAULT = 65536;
 
-    /** Maximum length of an event in bytes */
+    /**
+     * Maximum length of an event in bytes
+     */
     public final static int MAX_EVENT_LENGTH = 1024;
 
     private static Pattern COMMA = Pattern.compile(",");
@@ -82,6 +97,12 @@ public class EventConfiguration
                          .reduce(0L, (acc, x) -> acc | x);
     }
 
+    /**
+     * Get the {@link Set} of {@link EventCode}s that are enabled for the logger.
+     *
+     * @param enabledLoggerEventCodes that can be "all", "prod" or a comma separated list.
+     * @return the {@link Set} of {@link EventCode}s that are enabled for the logger.
+     */
     static Set<EventCode> getEnabledEventCodes(final String enabledLoggerEventCodes)
     {
         if (enabledLoggerEventCodes == null)
@@ -98,18 +119,9 @@ public class EventConfiguration
                 return PRODUCTION_LOGGER_EVENT_CODES;
 
             default:
-                try
-                {
-                    return COMMA.splitAsStream(enabledLoggerEventCodes)
-                                .map(EventCode::valueOf)
-                                .collect(Collectors.toSet());
-                }
-                catch (IllegalArgumentException e)
-                {
-                    System.err.println(ENABLED_LOGGER_EVENT_CODES_PROPERTY_NAME
-                            + " not configured properly, defaulting to " + PRODUCTION_LOGGER_EVENT_CODES);
-                    return PRODUCTION_LOGGER_EVENT_CODES;
-                }
+                return COMMA.splitAsStream(enabledLoggerEventCodes)
+                            .map(EventCode::valueOf)
+                            .collect(Collectors.toSet());
         }
     }
 

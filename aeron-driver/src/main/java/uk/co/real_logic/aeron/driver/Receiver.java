@@ -75,7 +75,6 @@ public class Receiver extends Agent
                 }
                 catch (final Exception ex)
                 {
-                    // TODO: Send error to client - however best if validated by conductor so receiver not delayed
                     logger.logException(ex);
                 }
             });

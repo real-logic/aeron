@@ -67,8 +67,8 @@ public class DriverBroadcastReceiver
                             }
                             break;
 
-                        case ERROR_RESPONSE:
-                            handleErrorResponse(buffer, index, listener, activeCorrelationId);
+                        case ON_ERROR:
+                            onError(buffer, index, listener, activeCorrelationId);
                             break;
 
                         default:
@@ -83,10 +83,8 @@ public class DriverBroadcastReceiver
         );
     }
 
-    private void handleErrorResponse(final AtomicBuffer buffer,
-                                     final int index,
-                                     final DriverListener listener,
-                                     final long activeCorrelationId)
+    private void onError(final AtomicBuffer buffer, final int index,
+                         final DriverListener listener, final long activeCorrelationId)
     {
         errorHeader.wrap(buffer, index);
         final ErrorCode errorCode = errorHeader.errorCode();

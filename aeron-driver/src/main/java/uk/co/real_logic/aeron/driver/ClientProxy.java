@@ -65,7 +65,7 @@ public class ClientProxy
                       .errorMessage(errorBytes)
                       .frameLength(frameLength);
 
-        transmitter.transmit(ERROR_RESPONSE, tmpBuffer, 0, errorFlyweight.frameLength());
+        transmitter.transmit(ON_ERROR, tmpBuffer, 0, errorFlyweight.frameLength());
     }
 
     public void onNewTermBuffers(final int msgTypeId,

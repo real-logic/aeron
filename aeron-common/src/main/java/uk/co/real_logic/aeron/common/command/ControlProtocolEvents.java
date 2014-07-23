@@ -37,9 +37,7 @@ public class ControlProtocolEvents
     // Media Driver to Clients
 
     /** Error Response */
-    public static final int ERROR_RESPONSE = 0x07;
-    /** Error Notification */
-    public static final int ON_ERROR = 0x08;
+    public static final int ON_ERROR = 0x07;
     /** New subscription Buffer Notification */
     public static final int ON_NEW_CONNECTED_SUBSCRIPTION = 0x09;
     /** New publication Buffer Notification */

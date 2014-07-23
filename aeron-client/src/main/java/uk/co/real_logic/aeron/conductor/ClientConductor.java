@@ -203,7 +203,8 @@ public class ClientConductor extends Agent implements DriverListener
                                            final long sessionId,
                                            final long channelId,
                                            final long initialTermId,
-                                           final LogBuffersMessageFlyweight message) throws IOException
+                                           final LogBuffersMessageFlyweight message)
+        throws IOException
     {
         final Subscription subscription = subscriptionMap.get(destination, channelId);
         if (null != subscription && !subscription.isConnected(sessionId))
@@ -222,7 +223,7 @@ public class ClientConductor extends Agent implements DriverListener
             }
 
             final PositionReporter positionReporter =
-                new BufferPositionReporter(counterValuesBuffer, message.positionCounterOffset());
+                new BufferPositionReporter(counterValuesBuffer, message.positionCounterId());
             subscription.onTermBuffersMapped(sessionId, initialTermId, logs, positionReporter, managedBuffers);
 
             if (null != newSourceHandler)

@@ -239,7 +239,7 @@ public class LogBuffersMessageFlyweight extends Flyweight
      *
      * @return position counter offset field
      */
-    public int positionCounterOffset()
+    public int positionCounterId()
     {
         return atomicBuffer().getInt(offset() + POSITION_COUNTER_ID_OFFSET, LITTLE_ENDIAN);
     }

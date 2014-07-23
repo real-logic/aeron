@@ -43,20 +43,15 @@ public class DriverBroadcastReceiver
                             logBuffersMessage.wrap(buffer, index);
 
                             final String destination = logBuffersMessage.destination();
-
                             final long sessionId = logBuffersMessage.sessionId();
                             final long channelId = logBuffersMessage.channelId();
                             final long termId = logBuffersMessage.termId();
-                            final int positionIndicatorOffset = logBuffersMessage.positionCounterOffset();
+                            final int positionCounterId = logBuffersMessage.positionCounterId();
 
-                            if (msgTypeId == ON_NEW_PUBLICATION)
+                            if (msgTypeId == ON_NEW_PUBLICATION && logBuffersMessage.correlationId() == activeCorrelationId)
                             {
-                                if (logBuffersMessage.correlationId() != activeCorrelationId)
-                                {
-                                    break;
-                                }
-
-                                listener.onNewPublication(destination, sessionId, channelId, termId, positionIndicatorOffset, logBuffersMessage);
+                                listener.onNewPublication(
+                                    destination, sessionId, channelId, termId, positionCounterId, logBuffersMessage);
                             }
                             else
                             {
@@ -88,7 +83,10 @@ public class DriverBroadcastReceiver
         );
     }
 
-    private void handleErrorResponse(final AtomicBuffer buffer, final int index, final DriverListener listener, final long activeCorrelationId)
+    private void handleErrorResponse(final AtomicBuffer buffer,
+                                     final int index,
+                                     final DriverListener listener,
+                                     final long activeCorrelationId)
     {
         errorHeader.wrap(buffer, index);
         final ErrorCode errorCode = errorHeader.errorCode();

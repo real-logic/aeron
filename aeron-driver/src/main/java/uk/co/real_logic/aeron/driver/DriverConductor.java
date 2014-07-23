@@ -504,10 +504,10 @@ public class DriverConductor extends Agent
                 termBuffersFactory.newConnectedSubscription(udpDestination, sessionId, channelId);
 
             final int positionCounterId = registerPositionCounter("subscription", udpDestination
-                .clientAwareUri(), sessionId, channelId);
+                .originalUriAsString(), sessionId, channelId);
 
             clientProxy.onNewTermBuffers(ON_NEW_CONNECTED_SUBSCRIPTION, sessionId, channelId, initialTermId,
-                                         udpDestination.clientAwareUri(), termBuffers, 0, positionCounterId);
+                                         udpDestination.originalUriAsString(), termBuffers, 0, positionCounterId);
 
             final GapScanner[] gapScanners =
                 termBuffers.stream()
@@ -581,11 +581,11 @@ public class DriverConductor extends Agent
     }
 
     private int registerPositionCounter(final String type,
-                                        final String destination,
+                                        final String destinationDirName,
                                         final long sessionId,
                                         final long channelId)
     {
-        final String label = String.format("%s: %s %d %d", type, destination, sessionId, channelId);
+        final String label = String.format("%s: %s %d %d", type, destinationDirName, sessionId, channelId);
         return countersManager.registerCounter(label);
     }
 }

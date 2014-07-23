@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.driver.buffer;
 
-import uk.co.real_logic.aeron.driver.FileMappingConvention;
 import uk.co.real_logic.aeron.common.IoUtil;
 import uk.co.real_logic.aeron.driver.UdpDestination;
 
@@ -23,7 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 
-import static uk.co.real_logic.aeron.driver.FileMappingConvention.channelLocation;
+import static uk.co.real_logic.aeron.driver.buffer.FileMappingConvention.channelLocation;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
 
 /**
@@ -119,7 +118,7 @@ public class TermBuffersFactory implements AutoCloseable
                                     final long channelId,
                                     final File rootDir)
     {
-        final File dir = channelLocation(rootDir, sessionId, channelId, true, udpDestination.clientAwareUri());
+        final File dir = channelLocation(rootDir, sessionId, channelId, true, udpDestination.canonicalRepresentation());
 
         return new MappedTermBuffers(dir, logTemplate, termBufferSize, stateTemplate, STATE_BUFFER_LENGTH);
     }

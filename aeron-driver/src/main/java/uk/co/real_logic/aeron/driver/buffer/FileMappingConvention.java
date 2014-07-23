@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.driver;
+package uk.co.real_logic.aeron.driver.buffer;
 
 import uk.co.real_logic.aeron.common.IoUtil;
 
@@ -32,12 +32,6 @@ public class FileMappingConvention
 {
     public static final String PUBLICATIONS = "publications";
     public static final String SUBSCRIPTIONS = "subscriptions";
-
-    public enum Type
-    {
-        LOG,
-        STATE
-    }
 
     private final File subscriptionsDir;
     private final File publicationsDir;
@@ -70,35 +64,13 @@ public class FileMappingConvention
         return subscriptionsDir;
     }
 
-    /**
-     * Get the file corresponding to a given session/channel/term triple.
-     */
-    public static File termLocation(final File rootDir,
-                                    final long sessionId,
-                                    final long channelId,
-                                    final long index,
-                                    final boolean createIfMissing,
-                                    final String destination,
-                                    final Type type)
-    {
-        final File channelDir = channelLocation(rootDir, sessionId, channelId, createIfMissing, destination);
-        final String suffix = bufferSuffix(index, type);
-
-        return new File(channelDir, suffix);
-    }
-
-    public static String bufferSuffix(final long index, final Type type)
-    {
-        return Long.toString(index) + "-" + type.name().toLowerCase();
-    }
-
     public static File channelLocation(final File rootDir,
                                        final long sessionId,
                                        final long channelId,
                                        final boolean createIfMissing,
-                                       final String destination)
+                                       final String destinationDirName)
     {
-        final File destinationDir = new File(rootDir, destinationToDir(destination));
+        final File destinationDir = new File(rootDir, destinationDirName);
         final File sessionDir = new File(destinationDir, Long.toString(sessionId));
         final File channelDir = new File(sessionDir, Long.toString(channelId));
 
@@ -108,11 +80,5 @@ public class FileMappingConvention
         }
 
         return channelDir;
-    }
-
-    public static String destinationToDir(final String destination)
-    {
-        return destination.replace(':', '_')
-                          .replace('/', '_');
     }
 }

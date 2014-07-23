@@ -428,8 +428,8 @@ public class EventCodec
                         command.bufferLength(i), command.bufferOffset(i)))
                 .collect(Collectors.joining("\n    "));
 
-        return String.format("%x:%x:%x [%x]\n    %s", command.sessionId(), command.channelId(), command.termId(),
-                command.correlationId(), locations);
+        return String.format("%s %x:%x:%x [%x]\n    %s", command.destination(), command.sessionId(),
+                command.channelId(), command.termId(), command.correlationId(), locations);
     }
 
     private static String dissect(final CorrelatedMessageFlyweight command)

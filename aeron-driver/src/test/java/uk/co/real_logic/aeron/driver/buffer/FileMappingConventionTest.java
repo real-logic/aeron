@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.driver;
+package uk.co.real_logic.aeron.driver.buffer;
 
 import org.junit.Test;
+import uk.co.real_logic.aeron.driver.UdpDestination;
 
 import java.io.File;
 import java.io.IOException;
 
 import static org.junit.Assert.assertTrue;
-import static uk.co.real_logic.aeron.driver.FileMappingConvention.destinationToDir;
 
 public class FileMappingConventionTest
 {
@@ -30,7 +30,13 @@ public class FileMappingConventionTest
     {
         assertIsValidFile(destinationToDir("udp://localhost:40123@localhost:40124"));
         assertIsValidFile(destinationToDir("udp://localhost:40124"));
-        assertIsValidFile(destinationToDir("unknwonudp://localhost:40124"));
+    }
+
+    private String destinationToDir(final String uri)
+    {
+        final UdpDestination destination = UdpDestination.parse(uri);
+
+        return destination.canonicalRepresentation();
     }
 
     private void assertIsValidFile(final String destinationDir) throws IOException

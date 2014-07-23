@@ -109,6 +109,12 @@ public class UdpDestination
         }
     }
 
+    /**
+     * Parse URI and create destination
+     *
+     * @param destinationUri to parse
+     * @return created destination
+     */
     public static UdpDestination parse(final String destinationUri)
     {
         try
@@ -213,27 +219,47 @@ public class UdpDestination
         return localAddress;
     }
 
+    /**
+     * Remote data address information
+     *
+     * @return remote data address information
+     */
     public InetSocketAddress remoteData()
     {
         return remoteData;
     }
 
+    /**
+     * Local data address information
+     *
+     * @return local data address information
+     */
     public InetSocketAddress localData()
     {
         return localData;
     }
 
+    /**
+     * Remote control address information
+     *
+     * @return remote control address information
+     */
     public InetSocketAddress remoteControl()
     {
         return remoteControl;
     }
 
+    /**
+     * Local control address information
+     *
+     * @return local control address information
+     */
     public InetSocketAddress localControl()
     {
         return localControl;
     }
 
-    public UdpDestination(final Context context)
+    private UdpDestination(final Context context)
     {
         this.remoteData = context.remoteData;
         this.localData = context.localData;
@@ -245,21 +271,37 @@ public class UdpDestination
         this.localInterface = context.localInterface;
     }
 
+    /**
+     * Return consistent hash of destination information
+     *
+     * {@link BitUtil#generateConsistentHash(byte[])}
+     *
+     * @return consistent hash of destination information
+     */
     public long consistentHash()
     {
         return consistentHash;
     }
 
+    /**
+     * Return the canonical representation of the destination
+     *
+     * {@link UdpDestination#generateCanonicalRepresentation(java.net.InetSocketAddress, java.net.InetSocketAddress)}
+     *
+     * @return canonical representation of destination
+     */
     public String canonicalRepresentation()
     {
         return canonicalRepresentation;
     }
 
+    /** {@inheritDoc} */
     public int hashCode()
     {
         return (int)consistentHash;
     }
 
+    /** {@inheritDoc} */
     public boolean equals(Object obj)
     {
         if (null != obj && obj instanceof UdpDestination)
@@ -272,6 +314,7 @@ public class UdpDestination
         return false;
     }
 
+    /** {@inheritDoc} */
     public String toString()
     {
         return canonicalRepresentation;
@@ -288,7 +331,7 @@ public class UdpDestination
      * - uses "-" as all field separators
      *
      * The general format is:
-     * UDP:interface:localPort:destinationAddr:destinationPort
+     * UDP-interface-localPort-destinationAddr-destinationPort
      *
      * @return canonical representation as a string
      */
@@ -303,28 +346,38 @@ public class UdpDestination
                              remoteData.getPort());
     }
 
+    /**
+     * Does destination represent a multicast or not
+     *
+     * @return does destination represent a multicast or not
+     */
     public boolean isMulticast()
     {
         return remoteData.getAddress().isMulticastAddress();
     }
 
+    /**
+     * Local interface to be used by the destination
+     *
+     * @return {@link NetworkInterface} for the local interface used by the destination
+     * @throws SocketException
+     */
     public NetworkInterface localInterface() throws SocketException
     {
         return localInterface;
     }
 
     /**
-     * Clients use the destination as part of the path for the buffer, and they are only aware
-     * of the destination uri they used.
+     * Original URI of the destination URI.
      *
-     * @return the client aware uri
+     * @return the original uri
      */
-    public String clientAwareUri()
+    public String originalUriAsString()
     {
         return uriStr;
     }
 
-    public static class Context
+    private static class Context
     {
         private InetSocketAddress remoteData;
         private InetSocketAddress localData;

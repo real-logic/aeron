@@ -424,7 +424,7 @@ public class EventCodec
     private static String dissect(final LogBuffersMessageFlyweight command)
     {
         final String locations = IntStream.range(0, 6)
-                .mapToObj((i) -> String.format("{%s, %d, %d}", command.location(i),
+                .mapToObj((i) -> String.format("{%s, %d@%x}", command.location(i),
                         command.bufferLength(i), command.bufferOffset(i)))
                 .collect(Collectors.joining("\n    "));
 

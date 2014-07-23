@@ -105,7 +105,7 @@ class MappedRawLog implements RawLog
     {
         final int offset = buffer.position();
         newBufferMessage.bufferOffset(index, offset);
-        newBufferMessage.bufferLength(index, buffer.position() - offset);
+        newBufferMessage.bufferLength(index, buffer.capacity() - offset);
         newBufferMessage.location(index, file.getAbsolutePath());
     }
 }

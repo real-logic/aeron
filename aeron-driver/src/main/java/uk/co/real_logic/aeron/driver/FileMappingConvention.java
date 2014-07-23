@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.common;
+package uk.co.real_logic.aeron.driver;
+
+import uk.co.real_logic.aeron.common.IoUtil;
 
 import java.io.File;
 
 /**
- * Encodes the file mapping convention used by both the client and the media driver for exchanging buffer files.
+ * Encodes the file mapping convention used by the media driver for exchanging buffer files.
  *
  * Root directory is the "aeron.data.dir"
  * Senders are under "${aeron.data.dir}/publications"

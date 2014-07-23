@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.common;
+package uk.co.real_logic.aeron.driver;
 
 import org.junit.Test;
 
@@ -21,7 +21,7 @@ import java.io.File;
 import java.io.IOException;
 
 import static org.junit.Assert.assertTrue;
-import static uk.co.real_logic.aeron.common.FileMappingConvention.destinationToDir;
+import static uk.co.real_logic.aeron.driver.FileMappingConvention.destinationToDir;
 
 public class FileMappingConventionTest
 {

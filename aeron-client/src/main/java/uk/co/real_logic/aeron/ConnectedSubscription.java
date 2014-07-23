@@ -24,9 +24,6 @@ import uk.co.real_logic.aeron.common.status.PositionReporter;
 import uk.co.real_logic.aeron.conductor.ManagedBuffer;
 
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import static uk.co.real_logic.aeron.common.TermHelper.*;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.WORD_ALIGNMENT;
@@ -116,12 +113,10 @@ public class ConnectedSubscription
         {
             try
             {
-
                 managedBuffer.close();
             }
-            catch (Exception ex)
+            catch (final Exception ex)
             {
-                // TODO: decide if this is the right error handling strategy
                 throw new IllegalStateException(ex);
             }
         }

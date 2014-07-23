@@ -129,12 +129,10 @@ public class Publication
         {
             try
             {
-
                 managedBuffer.close();
             }
-            catch (Exception ex)
+            catch (final Exception ex)
             {
-                // TODO: decide if this is the right error handling strategy
                 throw new IllegalStateException(ex);
             }
         }

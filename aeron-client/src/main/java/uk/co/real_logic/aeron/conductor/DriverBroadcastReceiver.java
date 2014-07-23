@@ -23,7 +23,7 @@ public class DriverBroadcastReceiver
     private final LogBuffersMessageFlyweight logBuffersMessage = new LogBuffersMessageFlyweight();
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
 
-    public DriverBroadcastReceiver(final CopyBroadcastReceiver broadcastReceiver,final Consumer<Exception> errorHandler)
+    public DriverBroadcastReceiver(final CopyBroadcastReceiver broadcastReceiver, final Consumer<Exception> errorHandler)
     {
         this.broadcastReceiver = broadcastReceiver;
         this.errorHandler = errorHandler;

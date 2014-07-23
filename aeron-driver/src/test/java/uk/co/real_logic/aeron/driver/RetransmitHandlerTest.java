@@ -78,11 +78,12 @@ public class RetransmitHandlerTest
         new RetransmitHandler(scanner, wheel, delayGenerator, lingerGenerator, retransmitHandler, MTU_LENGTH);
 
     @DataPoint
-    public static final BiConsumer<RetransmitHandlerTest, Integer> senderAddDataFrame = (h, i) -> addSentDataFrame(h);
+    public static final BiConsumer<RetransmitHandlerTest, Integer> senderAddDataFrame =
+        (handler, i) -> handler.addSentDataFrame();
 
     @DataPoint
     public static final BiConsumer<RetransmitHandlerTest, Integer> receiverAddDataFrame =
-        (handler, msgNum) -> addReceivedDataFrame(handler, msgNum);
+        (handler, i) -> handler.addReceivedDataFrame(i);
 
     @Theory
     public void shouldRetransmitOnNak(final BiConsumer<RetransmitHandlerTest, Integer> creator)
@@ -129,6 +130,27 @@ public class RetransmitHandlerTest
         InOrder inOrder = inOrder(retransmitHandler);
         inOrder.verify(retransmitHandler).onAvailable(logBuffer, offsetOfMessage(0), MESSAGE_LENGTH);
         inOrder.verify(retransmitHandler).onAvailable(logBuffer, offsetOfMessage(1), MESSAGE_LENGTH);
+    }
+
+    @Theory
+    public void shouldRetransmitOnNakOverMessageLength(final BiConsumer<RetransmitHandlerTest, Integer> creator)
+    {
+        createTermBuffer(creator, 10);
+        handler.onNak(offsetOfMessage(0), MESSAGE_LENGTH * 5);
+        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
+
+        verify(retransmitHandler).onAvailable(logBuffer, offsetOfMessage(0), MESSAGE_LENGTH * 5);
+    }
+
+    @Theory
+    public void shouldRetransmitOnNakOverMtuLength(final BiConsumer<RetransmitHandlerTest, Integer> creator)
+    {
+        final int numMsgsPerMtu = MTU_LENGTH / MESSAGE_LENGTH;
+        createTermBuffer(creator, numMsgsPerMtu * 5);
+        handler.onNak(offsetOfMessage(0), MTU_LENGTH * 2);
+        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
+
+        verify(retransmitHandler).onAvailable(logBuffer, offsetOfMessage(0), MTU_LENGTH);
     }
 
     @Theory
@@ -219,16 +241,6 @@ public class RetransmitHandlerTest
     private static int offsetOfMessage(final int index)
     {
         return index * FRAME_ALIGNMENT;
-    }
-
-    private static void addSentDataFrame(final RetransmitHandlerTest handler)
-    {
-        handler.addSentDataFrame();
-    }
-
-    private static void addReceivedDataFrame(final RetransmitHandlerTest handler, final int msgNum)
-    {
-        handler.addReceivedDataFrame(msgNum);
     }
 
     private void addSentDataFrame()

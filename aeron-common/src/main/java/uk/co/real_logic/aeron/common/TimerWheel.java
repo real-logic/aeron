@@ -124,6 +124,18 @@ public class TimerWheel
     }
 
     /**
+     * Return a blank {@link Timer} suitable for rescheduling.
+     *
+     * NOTE: Appears to be a cancelled timer
+     *
+     * @return new blank timer
+     */
+    public Timer newBlankTimer()
+    {
+        return new Timer();
+    }
+
+    /**
      * Schedule a new timer that runs {@code task} when it expires.
      *
      * @param delay until timer should expire
@@ -275,6 +287,11 @@ public class TimerWheel
         private int tickIndex;
         private long remainingRounds;
         private TimerState state;
+
+        public Timer()
+        {
+            this.state = TimerState.CANCELLED;
+        }
 
         public Timer(final long deadline, final Runnable task)
         {

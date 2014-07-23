@@ -61,6 +61,7 @@ public class LossHandler
     {
         this.scanners = scanners;
         this.wheel = wheel;
+        this.timer = wheel.newBlankTimer();
         this.delayGenerator = delayGenerator;
         this.nakMessageSender = nakMessageSender;
         this.nakSentTimestamp = wheel.now();
@@ -107,7 +108,8 @@ public class LossHandler
      */
     public void onNak(final long termId, final int termOffset)
     {
-        if (null != timer && timer.isActive() && activeGap.matches(termId, termOffset))
+//        if (null != timer && timer.isActive() && activeGap.matches(termId, termOffset))
+        if (timer.isActive() && activeGap.matches(termId, termOffset))
         {
             suppressNak();
         }
@@ -171,7 +173,7 @@ public class LossHandler
     private void onScanComplete()
     {
         final Gap firstGap = gaps[0];
-        if (null == timer || !timer.isActive())
+        if (!timer.isActive())
         {
             if (scanCursor > 0)
             {
@@ -218,19 +220,12 @@ public class LossHandler
     {
         final long delay = determineNakDelay();
 
-        if (null == timer)
+        if (timer.isActive())
         {
-            timer = wheel.newTimeout(delay, TimeUnit.NANOSECONDS, this::onTimerExpire);
+            timer.cancel();
         }
-        else
-        {
-            if (timer.isActive())
-            {
-                timer.cancel();
-            }
 
-            wheel.rescheduleTimeout(delay, TimeUnit.NANOSECONDS, timer);
-        }
+        wheel.rescheduleTimeout(delay, TimeUnit.NANOSECONDS, timer, this::onTimerExpire);
     }
 
     private static class Gap

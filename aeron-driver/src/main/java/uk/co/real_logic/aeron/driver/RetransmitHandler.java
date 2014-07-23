@@ -47,7 +47,8 @@ public class RetransmitHandler
 
     /**
      * Create a retransmit handler for a log buffer.
-     *  @param scanner to read frames from for retransmission
+     *
+     * @param scanner to read frames from for retransmission
      * @param timerWheel for timers
      * @param delayGenerator to use for delay determination
      * @param lingerTimeoutGenerator to use for linger timeout
@@ -75,6 +76,7 @@ public class RetransmitHandler
      * Called on reception of a NAK to start retransmits handling.
      *
      * @param termOffset from the NAK and the offset of the data to retransmit
+     * @param length of the missing data
      */
     public void onNak(final int termOffset, final int length)
     {
@@ -104,9 +106,11 @@ public class RetransmitHandler
     /**
      * Called to indicate a retransmission is received that may obviate the need to send one ourselves.
      *
+     * NOTE: Currently only called from unit tests. Would be used for retransmitting from receivers for NAK suppression
+     *
      * @param termOffset of the data
      */
-    public void onRetransmitReceived(final int termOffset) // TODO: Why is this only called from tests?
+    public void onRetransmitReceived(final int termOffset)
     {
         final RetransmitAction retransmitAction = activeRetransmitByTermOffsetMap.get(termOffset);
 
@@ -154,33 +158,19 @@ public class RetransmitHandler
         int termOffset;
         int length;
         State state = State.INACTIVE;
-        TimerWheel.Timer delayTimer;
-        TimerWheel.Timer lingerTimer;
+        TimerWheel.Timer delayTimer = timerWheel.newBlankTimer();
+        TimerWheel.Timer lingerTimer = timerWheel.newBlankTimer();
 
         public void delay(final long delay)
         {
             state = State.DELAYED;
-            if (null == delayTimer)
-            {
-                delayTimer = timerWheel.newTimeout(delay, TimeUnit.NANOSECONDS, this::onDelayTimeout);
-            }
-            else
-            {
-                timerWheel.rescheduleTimeout(delay, TimeUnit.NANOSECONDS, delayTimer);
-            }
+            timerWheel.rescheduleTimeout(delay, TimeUnit.NANOSECONDS, delayTimer, this::onDelayTimeout);
         }
 
         public void linger(final long timeout)
         {
             state = State.LINGERING;
-            if (null == lingerTimer)
-            {
-                lingerTimer = timerWheel.newTimeout(timeout, TimeUnit.NANOSECONDS, this::onLingerTimeout);
-            }
-            else
-            {
-                timerWheel.rescheduleTimeout(timeout, TimeUnit.NANOSECONDS, lingerTimer);
-            }
+            timerWheel.rescheduleTimeout(timeout, TimeUnit.NANOSECONDS, lingerTimer, this::onLingerTimeout);
         }
 
         public void onDelayTimeout()

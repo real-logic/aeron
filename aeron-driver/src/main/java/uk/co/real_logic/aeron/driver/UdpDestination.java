@@ -48,6 +48,7 @@ public class UdpDestination
 
     private static final NetworkInterface DEFAULT_MULTICAST_INTERFACE;
 
+    // TODO: stop doing static initialisation in this class
     static
     {
         NetworkInterface savedIfc = null;
@@ -97,7 +98,6 @@ public class UdpDestination
         }
         catch (final Exception ex)
         {
-            // TODO: stop doing static initialisation in this class
             new EventLogger().logException(ex);
         }
 

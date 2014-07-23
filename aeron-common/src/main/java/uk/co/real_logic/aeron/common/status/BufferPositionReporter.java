@@ -24,16 +24,31 @@ public class BufferPositionReporter implements PositionReporter
 {
 
     private final AtomicBuffer buffer;
+    private final int counterId;
+    private final CountersManager countersManager;
     private final int offset;
 
-    public BufferPositionReporter(final AtomicBuffer buffer, final int offset)
+    public BufferPositionReporter(final AtomicBuffer buffer, final int counterId)
+    {
+        this(buffer, counterId, null);
+    }
+
+    public BufferPositionReporter(final AtomicBuffer buffer, final int counterId, final CountersManager countersManager)
     {
         this.buffer = buffer;
-        this.offset = offset;
+        this.counterId = counterId;
+        this.countersManager = countersManager;
+        this.offset = CountersManager.counterOffset(counterId);
     }
 
     public void position(final long value)
     {
         buffer.putLongOrdered(offset, value);
     }
+
+    public void close()
+    {
+        countersManager.deregisterCounter(counterId);
+    }
+
 }

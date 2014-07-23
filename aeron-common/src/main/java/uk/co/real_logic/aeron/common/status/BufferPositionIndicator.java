@@ -23,16 +23,31 @@ import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 public class BufferPositionIndicator implements PositionIndicator
 {
     private final AtomicBuffer buffer;
+    private final int couunterId;
+    private final CountersManager countersManager;
     private final int offset;
 
-    public BufferPositionIndicator(final AtomicBuffer buffer, final int offset)
+    public BufferPositionIndicator(final AtomicBuffer buffer, final int counterId)
+    {
+        this(buffer, counterId, null);
+    }
+
+    public BufferPositionIndicator(final AtomicBuffer buffer, final int counterId,
+                                   final CountersManager countersManager)
     {
         this.buffer = buffer;
-        this.offset = offset;
+        this.couunterId = counterId;
+        this.countersManager = countersManager;
+        this.offset = CountersManager.counterOffset(counterId);
     }
 
     public long position()
     {
         return buffer.getLongVolatile(offset);
+    }
+
+    public void close()
+    {
+        countersManager.deregisterCounter(couunterId);
     }
 }

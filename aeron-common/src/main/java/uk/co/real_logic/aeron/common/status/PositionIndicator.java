@@ -20,7 +20,7 @@ package uk.co.real_logic.aeron.common.status;
  *
  * Threadsafe to read from.
  */
-public interface PositionIndicator
+public interface PositionIndicator extends AutoCloseable
 {
     /**
      * Reads the current position of the component
@@ -28,4 +28,6 @@ public interface PositionIndicator
      * @return the current position of the component
      */
     long position();
+
+    void close();
 }

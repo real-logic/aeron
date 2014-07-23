@@ -101,9 +101,8 @@ public class CountersManagerTest
         manager.registerCounter("def");
 
         int id = manager.registerCounter("abc");
-        int offset = CountersManager.counterOffset(id);
-        BufferPositionIndicator reader = new BufferPositionIndicator(counterBuffer, offset);
-        BufferPositionReporter writer = new BufferPositionReporter(counterBuffer, offset);
+        BufferPositionIndicator reader = new BufferPositionIndicator(counterBuffer, id);
+        BufferPositionReporter writer = new BufferPositionReporter(counterBuffer, id);
         writer.position(0xFFFFFFFFFL);
         assertThat(reader.position(), is(0xFFFFFFFFFL));
     }

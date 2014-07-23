@@ -309,9 +309,9 @@ public class DriverConductor extends Agent
             final SenderControlStrategy flowControlStrategy =
                 srcDestination.isMulticast() ? multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
 
-            final int positionCounterOffset = registerPositionCounter("publication", destination, sessionId, channelId);
+            final int positionCounterId = registerPositionCounter("publication", destination, sessionId, channelId);
             final BufferPositionReporter positionReporter =
-                new BufferPositionReporter(countersBuffer, positionCounterOffset);
+                new BufferPositionReporter(countersBuffer, positionCounterId, countersManager);
 
             publication = new DriverPublication(mediaEndpoint,
                                                 timerWheel,
@@ -328,7 +328,7 @@ public class DriverConductor extends Agent
             mediaEndpoint.addPublication(publication);
 
             clientProxy.onNewTermBuffers(ON_NEW_PUBLICATION, sessionId, channelId, initialTermId, destination,
-                                         termBuffers, correlationId, positionCounterOffset);
+                                         termBuffers, correlationId, positionCounterId);
 
             publications.add(publication);
         }
@@ -503,11 +503,11 @@ public class DriverConductor extends Agent
             final TermBuffers termBuffers =
                 termBuffersFactory.newConnectedSubscription(udpDestination, sessionId, channelId);
 
-            final int positionCounterOffset = registerPositionCounter("subscription", udpDestination
+            final int positionCounterId = registerPositionCounter("subscription", udpDestination
                 .clientAwareUri(), sessionId, channelId);
 
             clientProxy.onNewTermBuffers(ON_NEW_CONNECTED_SUBSCRIPTION, sessionId, channelId, initialTermId,
-                                         udpDestination.clientAwareUri(), termBuffers, 0, positionCounterOffset);
+                                         udpDestination.clientAwareUri(), termBuffers, 0, positionCounterId);
 
             final GapScanner[] gapScanners =
                 termBuffers.stream()
@@ -520,8 +520,7 @@ public class DriverConductor extends Agent
             final LossHandler lossHandler =
                 new LossHandler(gapScanners, timerWheel, delayGenerator, nakMessageSender, initialTermId);
 
-            // TODO: remove this counter when we teardown the subscription
-            final PositionIndicator indicator = new BufferPositionIndicator(countersBuffer, positionCounterOffset);
+            final PositionIndicator indicator = new BufferPositionIndicator(countersBuffer, positionCounterId, countersManager);
 
             final DriverConnectedSubscription connectedSubscription =
                 new DriverConnectedSubscription(udpDestination,
@@ -587,8 +586,6 @@ public class DriverConductor extends Agent
                                         final long channelId)
     {
         final String label = String.format("%s: %s %d %d", type, destination, sessionId, channelId);
-        final int id = countersManager.registerCounter(label);
-
-        return CountersManager.counterOffset(id);
+        return countersManager.registerCounter(label);
     }
 }

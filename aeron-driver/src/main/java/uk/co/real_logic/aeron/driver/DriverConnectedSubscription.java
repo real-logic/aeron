@@ -112,6 +112,7 @@ public class DriverConnectedSubscription implements AutoCloseable
     public void close()
     {
         termBuffers.close();
+        subscriberLimit.close();
     }
 
     /**

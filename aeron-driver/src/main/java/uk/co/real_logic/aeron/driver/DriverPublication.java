@@ -137,6 +137,7 @@ public class DriverPublication implements AutoCloseable
     public void close()
     {
         termBuffers.close();
+        limitReporter.close();
     }
 
     public int send()

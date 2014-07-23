@@ -20,7 +20,7 @@ package uk.co.real_logic.aeron.common.status;
  *
  * Threadsafe to write to.
  */
-public interface PositionReporter
+public interface PositionReporter extends AutoCloseable
 {
 
     /**
@@ -29,4 +29,7 @@ public interface PositionReporter
      * @param value the current position of the component.
      */
     void position(long value);
+
+    void close();
+
 }

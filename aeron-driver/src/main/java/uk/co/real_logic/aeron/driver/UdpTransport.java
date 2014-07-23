@@ -132,8 +132,7 @@ public final class UdpTransport implements AutoCloseable
                         final EventLogger logger)
         throws Exception
     {
-        this(destination, null, smFrameHandler, nakFrameHandler, logger, destination.remoteControl(),
-             destination.localControl());
+        this(destination, null, smFrameHandler, nakFrameHandler, logger, destination.remoteControl(), destination.localControl());
     }
 
     private UdpTransport(final UdpDestination destination,

@@ -49,13 +49,13 @@ public class DriverBroadcastReceiver
                             final long termId = logBuffersMessage.termId();
                             final int positionIndicatorOffset = logBuffersMessage.positionCounterOffset();
 
-                            if (logBuffersMessage.correlationId() != activeCorrelationId)
-                            {
-                                break;
-                            }
-
                             if (msgTypeId == ON_NEW_PUBLICATION)
                             {
+                                if (logBuffersMessage.correlationId() != activeCorrelationId)
+                                {
+                                    break;
+                                }
+
                                 listener.onNewPublication(destination, sessionId, channelId, termId, positionIndicatorOffset, logBuffersMessage);
                             }
                             else

@@ -107,7 +107,6 @@ public class PubAndSubTest
         setup(destination);
     }
 
-    @Ignore
     @Theory
     @Test(timeout = 1000)
     public void shouldReceivePublishedMessage(final String destination) throws Exception

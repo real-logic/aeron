@@ -49,6 +49,8 @@ public class EventCodec
             ThreadLocal.withInitial(SubscriptionMessageFlyweight::new);
     private final static ThreadLocal<LogBuffersMessageFlyweight> newBufferMessage =
             ThreadLocal.withInitial(LogBuffersMessageFlyweight::new);
+    private final static ThreadLocal<CorrelatedMessageFlyweight> correlatedMsg =
+            ThreadLocal.withInitial(CorrelatedMessageFlyweight::new);
 
     private final static int LOG_HEADER_LENGTH = 16;
     private final static int SOCKET_ADDRESS_MAX_LENGTH = 24;
@@ -200,6 +202,12 @@ public class EventCodec
                 final LogBuffersMessageFlyweight newBuffer = newBufferMessage.get();
                 newBuffer.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(newBuffer));
+                break;
+
+            case CMD_OUT_ON_OPERATION_SUCCESS:
+                final CorrelatedMessageFlyweight correlatedCmd = correlatedMsg.get();
+                correlatedCmd.wrap(buffer, offset + relativeOffset);
+                builder.append(dissect(correlatedCmd));
                 break;
 
             default:
@@ -404,12 +412,13 @@ public class EventCodec
 
     private static String dissect(final PublicationMessageFlyweight command)
     {
-        return String.format("%3$s %1$x:%2$x", command.sessionId(), command.channelId(), command.destination());
+        return String.format("%3$s %1$x:%2$x [%4$x]", command.sessionId(), command.channelId(), command.destination(),
+                command.correlationId());
     }
 
     private static String dissect(final SubscriptionMessageFlyweight command)
     {
-        return String.format("%s %d", command.destination(), command.channelId());
+        return String.format("%s %d [%x]", command.destination(), command.channelId(), command.correlationId());
     }
 
     private static String dissect(final LogBuffersMessageFlyweight command)
@@ -419,6 +428,12 @@ public class EventCodec
                         command.bufferLength(i), command.bufferOffset(i)))
                 .collect(Collectors.joining("\n    "));
 
-        return String.format("%x:%x:%x\n    %s", command.sessionId(), command.channelId(), command.termId(), locations);
+        return String.format("%x:%x:%x [%x]\n    %s", command.sessionId(), command.channelId(), command.termId(),
+                command.correlationId(), locations);
+    }
+
+    private static String dissect(final CorrelatedMessageFlyweight command)
+    {
+        return String.format("[%x]", command.correlationId());
     }
 }

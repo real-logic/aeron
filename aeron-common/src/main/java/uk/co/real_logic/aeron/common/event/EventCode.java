@@ -40,7 +40,8 @@ public enum EventCode
     COULD_NOT_FIND_INTERFACE(13, EventCodec::dissectAsString),
     COULD_NOT_FIND_FRAME_HANDLER_FOR_NEW_CONNECTED_SUBSCRIPTION(14, EventCodec::dissectAsString),
     ERROR_SENDING_HEARTBEAT_PACKET(15, EventCodec::dissectAsFrame),
-    COULD_NOT_SEND_ENTIRE_RETRANSMIT(16, EventCodec::dissectAsFrame);
+    COULD_NOT_SEND_ENTIRE_RETRANSMIT(16, EventCodec::dissectAsFrame),
+    CMD_OUT_ON_OPERATION_SUCCESS(17, EventCodec::dissectAsCommand);
 
     private static final Int2ObjectHashMap<EventCode> EVENT_CODE_BY_ID_MAP = new Int2ObjectHashMap<>();
 

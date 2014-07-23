@@ -26,11 +26,10 @@ import static java.nio.ByteOrder.nativeOrder;
 import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_INT;
 
 /**
- * Manages the registration of counters.
+ * Manages the registration and deregistration of counters.
  */
 public class CountersManager
 {
-
     public static final int LABEL_SIZE = 1024;
     public static final int COUNTER_SIZE = BitUtil.CACHE_LINE_SIZE;
     public static final int UNREGISTERED_LABEL_SIZE = -1;
@@ -39,7 +38,7 @@ public class CountersManager
     private final AtomicBuffer countersBuffer;
     private final Deque<Integer> freeList = new LinkedList<>();
 
-    private int highWaterMark = -1;
+    private int idHighWaterMark = -1;
 
     /**
      * Create a new counter buffer manager over two buffers.
@@ -78,11 +77,6 @@ public class CountersManager
         return counterId;
     }
 
-    private int labelOffset(final int counterId)
-    {
-        return counterId * LABEL_SIZE;
-    }
-
     /**
      * Deregister the counter identified by counterId.
      *
@@ -93,16 +87,6 @@ public class CountersManager
         labelsBuffer.putInt(labelOffset(counterId), UNREGISTERED_LABEL_SIZE);
         countersBuffer.putLong(counterOffset(counterId), 0L);
         freeList.push(counterId);
-    }
-
-    private int counterId()
-    {
-        if (freeList.isEmpty())
-        {
-            return ++highWaterMark;
-        }
-
-        return freeList.pop();
     }
 
     /**
@@ -139,5 +123,20 @@ public class CountersManager
             labelsOffset += LABEL_SIZE;
             id++;
         }
+    }
+
+    private int labelOffset(final int counterId)
+    {
+        return counterId * LABEL_SIZE;
+    }
+
+    private int counterId()
+    {
+        if (freeList.isEmpty())
+        {
+            return ++idHighWaterMark;
+        }
+
+        return freeList.pop();
     }
 }

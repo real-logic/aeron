@@ -26,7 +26,7 @@ import uk.co.real_logic.aeron.conductor.ManagedBuffer;
  * <p>
  * Subscriptions are not threadsafe and should not be shared between subscribers.
  */
-public class Subscription
+public class Subscription implements AutoCloseable
 {
     private final String destination;
     private final long channelId;
@@ -60,15 +60,15 @@ public class Subscription
     /**
      * Release the Subscription so that associated buffers can be released.
      */
-    public void release()
+    public void close()
     {
         conductor.releaseSubscription(this);
-        releaseBuffers();
+        closeBuffers();
     }
 
-    private void releaseBuffers()
+    private void closeBuffers()
     {
-        connectedSubscriptions.forEach(ConnectedSubscription::releaseBuffers);
+        connectedSubscriptions.forEach(ConnectedSubscription::close);
     }
 
     /**

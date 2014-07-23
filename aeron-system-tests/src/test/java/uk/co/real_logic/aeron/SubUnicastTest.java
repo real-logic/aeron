@@ -126,7 +126,7 @@ public class SubUnicastTest
     @After
     public void closeEverything() throws Exception
     {
-        subscription.release();
+        subscription.close();
 
         consumingClient.shutdown();
         driver.shutdown();

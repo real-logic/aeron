@@ -520,6 +520,7 @@ public class DriverConductor extends Agent
             final LossHandler lossHandler =
                 new LossHandler(gapScanners, timerWheel, delayGenerator, nakMessageSender, initialTermId);
 
+            // TODO: remove this counter when we teardown the subscription
             final PositionIndicator indicator = new BufferPositionIndicator(countersBuffer, positionCounterOffset);
 
             final DriverConnectedSubscription connectedSubscription =

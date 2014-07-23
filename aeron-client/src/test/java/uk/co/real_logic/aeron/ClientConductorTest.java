@@ -245,7 +245,7 @@ public class ClientConductorTest extends MockBufferUsage
 
         final Subscription subscription = addSubscription();
 
-        subscription.release();
+        subscription.close();
 
         verify(driverProxy).removeSubscription(DESTINATION, CHANNEL_ID_1);
     }

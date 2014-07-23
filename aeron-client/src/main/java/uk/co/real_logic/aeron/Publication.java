@@ -118,24 +118,25 @@ public class Publication
             if (--refCount == 0)
             {
                 conductor.releasePublication(this);
-                releaseBuffers();
+                closeBuffers();
             }
         }
     }
 
-    private void releaseBuffers()
+    private void closeBuffers()
     {
-        try
+        for (final ManagedBuffer managedBuffer : managedBuffers)
         {
-            for (final ManagedBuffer managedBuffer : managedBuffers)
+            try
             {
+
                 managedBuffer.close();
             }
-        }
-        catch (Exception ex)
-        {
-            // TODO: decide if this is the right error handling strategy
-            throw new IllegalStateException(ex);
+            catch (Exception ex)
+            {
+                // TODO: decide if this is the right error handling strategy
+                throw new IllegalStateException(ex);
+            }
         }
     }
 

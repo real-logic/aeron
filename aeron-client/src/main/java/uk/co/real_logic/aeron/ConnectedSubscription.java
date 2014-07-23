@@ -24,6 +24,9 @@ import uk.co.real_logic.aeron.common.status.PositionReporter;
 import uk.co.real_logic.aeron.conductor.ManagedBuffer;
 
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import static uk.co.real_logic.aeron.common.TermHelper.*;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.WORD_ALIGNMENT;
@@ -107,19 +110,20 @@ public class ConnectedSubscription
         dataHandler.onData(buffer, offset + HEADER_LENGTH, length - HEADER_LENGTH, sessionId, flags);
     }
 
-    public void releaseBuffers()
+    public void close()
     {
-        try
+        for (final ManagedBuffer managedBuffer : managedBuffers)
         {
-            for (final ManagedBuffer managedBuffer : managedBuffers)
+            try
             {
+
                 managedBuffer.close();
             }
-        }
-        catch (Exception ex)
-        {
-            // TODO: decide if this is the right error handling strategy
-            throw new IllegalStateException(ex);
+            catch (Exception ex)
+            {
+                // TODO: decide if this is the right error handling strategy
+                throw new IllegalStateException(ex);
+            }
         }
     }
 }

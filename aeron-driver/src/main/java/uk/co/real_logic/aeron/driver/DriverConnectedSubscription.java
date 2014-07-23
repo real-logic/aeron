@@ -142,10 +142,8 @@ public class DriverConnectedSubscription implements AutoCloseable
      */
     public int scanForGaps()
     {
-        lossHandler.scan();
-
-        // scan lazily
-        return 0;
+        // if scan() returns true, loss handler moved to new GapScanner, it should be serviced soon, else be lazy
+        return (lossHandler.scan() ? 1 : 0);
     }
 
     public void insertIntoTerm(final DataHeaderFlyweight header, final AtomicBuffer buffer, final long length)

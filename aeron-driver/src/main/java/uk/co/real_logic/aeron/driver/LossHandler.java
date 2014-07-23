@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
+import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner;
@@ -69,7 +70,7 @@ public class LossHandler
             this.gaps[i] = new Gap();
         }
 
-        this.activeIndex = 0;
+        this.activeIndex = TermHelper.termIdToBufferIndex(activeTermId);
         this.activeTermId = activeTermId;
     }
 
@@ -77,16 +78,25 @@ public class LossHandler
      * Scan for gaps and handle received data.
      * <p>
      * The handler keeps track from scan to scan what is a gap and what must have been repaired.
+     * @return whether a scan should be done soon or could wait
      */
-    public void scan()
+    public boolean scan()
     {
         scanCursor = 0;
-
-        scanners[activeIndex].scan(this::onGap);
+        final GapScanner currentScanner = scanners[activeIndex];
+        int numGaps = currentScanner.scan(this::onGap);
         onScanComplete();
 
-        // TODO: determine if the buffer is complete and we need to rotate activeIndex for next scanner
-        // if (0 == gaps && ... )
+        if (0 == numGaps && isGapScannerComplete(currentScanner))
+        {
+            // current scanner is complete, move to next one
+            activeIndex = TermHelper.rotateNext(activeIndex);
+            activeTermId = activeTermId + 1;
+
+            return true; // signal another scan should be done soon
+        }
+
+        return false;
     }
 
     /**
@@ -121,6 +131,21 @@ public class LossHandler
     public long activeTermId()
     {
         return activeTermId;
+    }
+
+    /**
+     * Return the active scanner index
+     *
+     * @return active scanner index
+     */
+    public int activeIndex()
+    {
+        return activeIndex;
+    }
+
+    private static boolean isGapScannerComplete(final GapScanner activeScanner)
+    {
+        return (activeScanner.tailVolatile() >= activeScanner.capacity());
     }
 
     private void suppressNak()

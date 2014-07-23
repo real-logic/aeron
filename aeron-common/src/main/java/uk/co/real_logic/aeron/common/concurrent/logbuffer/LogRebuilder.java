@@ -63,8 +63,9 @@ public class LogRebuilder extends LogBuffer
         {
             logBuffer().putBytes(termOffset, packet, srcOffset, length);
 
+            final int capacity = capacity();
             int alignedFrameLength;
-            while ((alignedFrameLength = alignedFrameLength(tail)) != 0)
+            while ((tail < capacity) && (alignedFrameLength = alignedFrameLength(tail)) != 0)
             {
                 tail += alignedFrameLength;
             }

@@ -15,11 +15,17 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.InOrder;
-import uk.co.real_logic.aeron.common.*;
+import uk.co.real_logic.aeron.common.StaticDelayGenerator;
+import uk.co.real_logic.aeron.common.TermHelper;
+import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.*;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogRebuilder;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
 
@@ -27,14 +33,16 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.common.BitUtil.align;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
 
 public class LossHandlerTest
 {
-    private static final int LOG_BUFFER_SIZE = 64 * 1024;
-    private static final int STATE_BUFFER_SIZE = STATE_BUFFER_LENGTH;
+    private static final int LOG_BUFFER_SIZE = 16 * 1024;
     private static final byte[] DATA = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
     private static final int MESSAGE_LENGTH = DataHeaderFlyweight.HEADER_LENGTH + DATA.length;
     private static final long SESSION_ID = 0x5E55101DL;
@@ -58,13 +66,14 @@ public class LossHandlerTest
     private LossHandler handler;
     private NakMessageSender nakMessageSender;
     private long currentTime;
+    private int activeIndex = TermHelper.termIdToBufferIndex(TERM_ID);
 
     public LossHandlerTest()
     {
         for (int i = 0; i < TermHelper.BUFFER_COUNT; i++)
         {
             logBuffers[i] = new AtomicBuffer(ByteBuffer.allocateDirect(LOG_BUFFER_SIZE));
-            stateBuffers[i] = new AtomicBuffer(ByteBuffer.allocateDirect(STATE_BUFFER_SIZE));
+            stateBuffers[i] = new AtomicBuffer(ByteBuffer.allocateDirect(LogBufferDescriptor.STATE_BUFFER_LENGTH));
             rebuilders[i] = new LogRebuilder(logBuffers[i], stateBuffers[i]);
             scanners[i] = new GapScanner(logBuffers[i], stateBuffers[i]);
         }
@@ -98,8 +107,8 @@ public class LossHandlerTest
     @Test
     public void shouldNakMissingData()
     {
-        rcvDataFrame(offsetOfMessage(0));
-        rcvDataFrame(offsetOfMessage(2));
+        insertDataFrame(offsetOfMessage(0));
+        insertDataFrame(offsetOfMessage(2));
 
         handler.scan();
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(40));
@@ -110,8 +119,8 @@ public class LossHandlerTest
     @Test
     public void shouldRetransmitNakForMissingData()
     {
-        rcvDataFrame(offsetOfMessage(0));
-        rcvDataFrame(offsetOfMessage(2));
+        insertDataFrame(offsetOfMessage(0));
+        insertDataFrame(offsetOfMessage(2));
 
         handler.scan();
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(60));
@@ -122,8 +131,8 @@ public class LossHandlerTest
     @Test
     public void shouldSuppressNakOnReceivingNak()
     {
-        rcvDataFrame(offsetOfMessage(0));
-        rcvDataFrame(offsetOfMessage(2));
+        insertDataFrame(offsetOfMessage(0));
+        insertDataFrame(offsetOfMessage(2));
 
         handler.scan();
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(20));
@@ -136,12 +145,12 @@ public class LossHandlerTest
     @Test
     public void shouldStopNakOnReceivingData()
     {
-        rcvDataFrame(offsetOfMessage(0));
-        rcvDataFrame(offsetOfMessage(2));
+        insertDataFrame(offsetOfMessage(0));
+        insertDataFrame(offsetOfMessage(2));
 
         handler.scan();
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(20));
-        rcvDataFrame(offsetOfMessage(1));
+        insertDataFrame(offsetOfMessage(1));
         handler.scan();
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
 
@@ -151,14 +160,14 @@ public class LossHandlerTest
     @Test
     public void shouldHandleMoreThan2Gaps()
     {
-        rcvDataFrame(offsetOfMessage(0));
-        rcvDataFrame(offsetOfMessage(2));
-        rcvDataFrame(offsetOfMessage(4));
-        rcvDataFrame(offsetOfMessage(6));
+        insertDataFrame(offsetOfMessage(0));
+        insertDataFrame(offsetOfMessage(2));
+        insertDataFrame(offsetOfMessage(4));
+        insertDataFrame(offsetOfMessage(6));
 
         handler.scan();
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(40));
-        rcvDataFrame(offsetOfMessage(1));
+        insertDataFrame(offsetOfMessage(1));
         handler.scan();
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(80));
 
@@ -171,13 +180,13 @@ public class LossHandlerTest
     @Test
     public void shouldReplaceOldNakWithNewNak()
     {
-        rcvDataFrame(0);
-        rcvDataFrame(offsetOfMessage(2));
+        insertDataFrame(0);
+        insertDataFrame(offsetOfMessage(2));
 
         handler.scan();
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(20));
-        rcvDataFrame(offsetOfMessage(4));
-        rcvDataFrame(offsetOfMessage(1));
+        insertDataFrame(offsetOfMessage(4));
+        insertDataFrame(offsetOfMessage(1));
         handler.scan();
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
 
@@ -189,8 +198,8 @@ public class LossHandlerTest
     {
         handler = new LossHandler(scanners, wheel, delayGeneratorWithImmediate, nakMessageSender, TERM_ID);
 
-        rcvDataFrame(offsetOfMessage(0));
-        rcvDataFrame(offsetOfMessage(2));
+        insertDataFrame(offsetOfMessage(0));
+        insertDataFrame(offsetOfMessage(2));
 
         handler.scan();
 
@@ -200,8 +209,8 @@ public class LossHandlerTest
     @Test
     public void shouldNotNakImmediatelyByDefault()
     {
-        rcvDataFrame(offsetOfMessage(0));
-        rcvDataFrame(offsetOfMessage(2));
+        insertDataFrame(offsetOfMessage(0));
+        insertDataFrame(offsetOfMessage(2));
 
         handler.scan();
 
@@ -213,8 +222,8 @@ public class LossHandlerTest
     {
         handler = new LossHandler(scanners, wheel, delayGeneratorWithImmediate, nakMessageSender, TERM_ID);
 
-        rcvDataFrame(offsetOfMessage(0));
-        rcvDataFrame(offsetOfMessage(2));
+        insertDataFrame(offsetOfMessage(0));
+        insertDataFrame(offsetOfMessage(2));
 
         handler.scan();
         handler.scan();
@@ -223,26 +232,133 @@ public class LossHandlerTest
     }
 
     @Test
-    @Ignore
-    public void shouldRotateToNewTermIdCorrectly()
+    public void shouldRotateToNewTermIdCorrectlyOnNoGapsNoPadding()
     {
+        // use immediate NAKs for simplicity
+        handler = new LossHandler(scanners, wheel, delayGeneratorWithImmediate, nakMessageSender, TERM_ID);
 
+        assertThat(handler.activeIndex(), is(activeIndex));
+
+        // fill term buffer (making sure to be exact, i.e. no padding)
+        int offset = 0, i = 0;
+        while (LOG_BUFFER_SIZE > offset)
+        {
+            insertDataFrame(offsetOfMessage(i++));
+            offset += FrameDescriptor.FRAME_ALIGNMENT;
+        }
+
+        assertThat(offset, is(LOG_BUFFER_SIZE));  // sanity check the fill to make sure it doesn't need padding
+        assertTrue(rebuilders[activeIndex].isComplete());
+        assertTrue(handler.scan());
+
+        activeIndex = TermHelper.rotateNext(activeIndex);
+        assertThat(handler.activeIndex(), is(activeIndex));
+
+        insertDataFrame(offsetOfMessage(0));
+
+        assertFalse(handler.scan());
+        verifyZeroInteractions(nakMessageSender);
     }
 
-    private void rcvDataFrame(final int offset)
+    @Test
+    public void shouldRotateToNewTermIdCorrectlyOnNoGaps()
+    {
+        // use immediate NAKs for simplicity
+        handler = new LossHandler(scanners, wheel, delayGeneratorWithImmediate, nakMessageSender, TERM_ID);
+
+        assertThat(handler.activeIndex(), is(activeIndex));
+
+        // fill term buffer except the padding frame
+        int offset = 0, i = 0;
+        while ((LOG_BUFFER_SIZE - 1024) > offset)
+        {
+            insertDataFrame(offsetOfMessage(i++));
+            offset += FrameDescriptor.FRAME_ALIGNMENT;
+        }
+        insertPaddingFrame(offsetOfMessage(i));  // and now pad to end of buffer
+
+        assertTrue(rebuilders[activeIndex].isComplete());
+        assertTrue(handler.scan());
+
+        activeIndex = TermHelper.rotateNext(activeIndex);
+        assertThat(handler.activeIndex(), is(activeIndex));
+
+        insertDataFrame(offsetOfMessage(0));
+
+        assertFalse(handler.scan());
+        verifyZeroInteractions(nakMessageSender);
+    }
+
+    @Test
+    public void shouldRotateToNewTermIdCorrectlyOnReceivingDataAfterGap()
+    {
+        // use immediate NAKs for simplicity
+        handler = new LossHandler(scanners, wheel, delayGeneratorWithImmediate, nakMessageSender, TERM_ID);
+
+        assertThat(handler.activeIndex(), is(activeIndex));
+
+        insertDataFrame(offsetOfMessage(0));
+        // fill term buffer except the padding frame
+        int offset = offsetOfMessage(2), i = 2;
+        while (LOG_BUFFER_SIZE > offset)
+        {
+            insertDataFrame(offsetOfMessage(i++));
+            offset += FrameDescriptor.FRAME_ALIGNMENT;
+        }
+
+        assertThat(offset, is(LOG_BUFFER_SIZE));  // sanity check the fill to make sure it doesn't need padding
+        assertFalse(rebuilders[activeIndex].isComplete());
+        assertFalse(handler.scan());
+
+        verify(nakMessageSender).send(TERM_ID, offsetOfMessage(1), gapLength());
+
+        insertDataFrame(offsetOfMessage(1));
+
+        assertTrue(rebuilders[activeIndex].isComplete());
+        assertTrue(handler.scan());
+
+        activeIndex = TermHelper.rotateNext(activeIndex);
+        assertThat(handler.activeIndex(), is(activeIndex));
+
+        insertDataFrame(offsetOfMessage(0));
+
+        assertFalse(handler.scan());
+        verifyNoMoreInteractions(nakMessageSender);
+    }
+
+    private void insertDataFrame(final int offset)
+    {
+        insertDataFrame(offset, DATA);
+    }
+
+    private void insertDataFrame(final int offset, final byte[] payload)
     {
         dataHeader.termId(TERM_ID)
                   .channelId(CHANNEL_ID)
                   .sessionId(SESSION_ID)
                   .termOffset(offset)
-                  .frameLength(MESSAGE_LENGTH)
+                  .frameLength(payload.length + DataHeaderFlyweight.HEADER_LENGTH)
                   .headerType(HeaderFlyweight.HDR_TYPE_DATA)
                   .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
                   .version(HeaderFlyweight.CURRENT_VERSION);
 
-        dataHeader.atomicBuffer().putBytes(dataHeader.dataOffset(), DATA);
+        dataHeader.atomicBuffer().putBytes(dataHeader.dataOffset(), payload);
 
-        rebuilders[0].insert(dataHeader.atomicBuffer(), 0, MESSAGE_LENGTH);
+        rebuilders[activeIndex].insert(dataHeader.atomicBuffer(), 0, payload.length + DataHeaderFlyweight.HEADER_LENGTH);
+    }
+
+    private void insertPaddingFrame(final int offset)
+    {
+        dataHeader.termId(TERM_ID)
+                  .channelId(CHANNEL_ID)
+                  .sessionId(SESSION_ID)
+                  .termOffset(offset)
+                  .frameLength(LOG_BUFFER_SIZE - offset)
+                  .headerType(LogBufferDescriptor.PADDING_FRAME_TYPE)
+                  .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
+                  .version(HeaderFlyweight.CURRENT_VERSION);
+
+        rebuilders[activeIndex].insert(dataHeader.atomicBuffer(), 0, FrameDescriptor.BASE_HEADER_LENGTH);
     }
 
     private int offsetOfMessage(final int index)

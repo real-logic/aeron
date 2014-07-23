@@ -209,7 +209,6 @@ public class ClientConductor extends Agent implements DriverListener
         if (null != subscription && !subscription.isConnected(sessionId))
         {
             final LogReader[] logs = new LogReader[BUFFER_COUNT];
-            // TODO: put managedBuffers into subscriptions
             final ManagedBuffer[] managedBuffers = new ManagedBuffer[BUFFER_COUNT * 2];
 
             for (int i = 0; i < BUFFER_COUNT; i++)

@@ -25,7 +25,7 @@ public class CopyBroadcastReceiver
     }
 
     /**
-     * Receive all messages in the broadcast buffer until it is drained.
+     * Receive one message from the broadcast buffer.
      *
      * @param handler to be called for each message received.
      * @return the number of messages that have been received.
@@ -35,7 +35,7 @@ public class CopyBroadcastReceiver
         int messagesReceived = 0;
         final long lastSeenLappedCount = receiver.lappedCount();
 
-        while (receiver.receiveNext())
+        if (receiver.receiveNext())
         {
             if (lastSeenLappedCount != receiver.lappedCount())
             {
@@ -46,8 +46,7 @@ public class CopyBroadcastReceiver
             final int capacity = scratchBuffer.capacity();
             if (length > capacity)
             {
-                String msg = String.format("Buffer required size %d but only has %d", length, capacity);
-                throw new IllegalStateException(msg);
+                throw new IllegalStateException(String.format("Buffer required size %d but only has %d", length, capacity));
             }
 
             final int msgTypeId = receiver.typeId();
@@ -60,7 +59,7 @@ public class CopyBroadcastReceiver
 
             handler.onMessage(msgTypeId, scratchBuffer, 0, length);
 
-            messagesReceived++;
+            messagesReceived = 1;
         }
 
         return messagesReceived;

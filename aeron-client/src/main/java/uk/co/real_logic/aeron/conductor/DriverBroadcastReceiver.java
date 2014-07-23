@@ -23,8 +23,7 @@ public class DriverBroadcastReceiver
     private final LogBuffersMessageFlyweight logBuffersMessage = new LogBuffersMessageFlyweight();
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
 
-    public DriverBroadcastReceiver(final CopyBroadcastReceiver broadcastReceiver,
-                                   final Consumer<Exception> errorHandler)
+    public DriverBroadcastReceiver(final CopyBroadcastReceiver broadcastReceiver,final Consumer<Exception> errorHandler)
     {
         this.broadcastReceiver = broadcastReceiver;
         this.errorHandler = errorHandler;
@@ -50,20 +49,18 @@ public class DriverBroadcastReceiver
                             final long termId = logBuffersMessage.termId();
                             final int positionIndicatorOffset = logBuffersMessage.positionCounterOffset();
 
+                            if (logBuffersMessage.correlationId() != activeCorrelationId)
+                            {
+                                break;
+                            }
+
                             if (msgTypeId == ON_NEW_PUBLICATION)
                             {
-                                if (logBuffersMessage.correlationId() != activeCorrelationId)
-                                {
-                                    break;
-                                }
-
-                                listener.onNewPublication(destination, sessionId, channelId, termId,
-                                                          positionIndicatorOffset, logBuffersMessage);
+                                listener.onNewPublication(destination, sessionId, channelId, termId, positionIndicatorOffset, logBuffersMessage);
                             }
                             else
                             {
-                                listener.onNewConnectedSubscription(destination, sessionId, channelId, termId,
-                                                                    logBuffersMessage);
+                                listener.onNewConnectedSubscription(destination, sessionId, channelId, termId, logBuffersMessage);
                             }
                             break;
 
@@ -91,10 +88,7 @@ public class DriverBroadcastReceiver
         );
     }
 
-    private void handleErrorResponse(final AtomicBuffer buffer,
-                                     final int index,
-                                     final DriverListener listener,
-                                     final long activeCorrelationId)
+    private void handleErrorResponse(final AtomicBuffer buffer, final int index, final DriverListener listener, final long activeCorrelationId)
     {
         errorHeader.wrap(buffer, index);
         final ErrorCode errorCode = errorHeader.errorCode();

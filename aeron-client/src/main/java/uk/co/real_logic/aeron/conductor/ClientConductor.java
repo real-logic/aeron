@@ -64,7 +64,7 @@ public class ClientConductor extends Agent implements DriverListener
 
     private final NewSourceHandler newSourceHandler;
 
-    private long activeCorrelationId; // Guarded by this
+    private long activeCorrelationId = -1; // Guarded by this
     private Publication addedPublication; // Guarded by this
     private boolean operationSucceeded = false; // Guarded by this
     private RegistrationException registrationException; // Guarded by this

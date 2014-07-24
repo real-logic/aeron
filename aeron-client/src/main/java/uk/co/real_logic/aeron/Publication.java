@@ -120,21 +120,6 @@ public class Publication
         }
     }
 
-    private void closeBuffers()
-    {
-        for (final ManagedBuffer managedBuffer : managedBuffers)
-        {
-            try
-            {
-                managedBuffer.close();
-            }
-            catch (final Exception ex)
-            {
-                throw new IllegalStateException(ex);
-            }
-        }
-    }
-
     /**
      * Accessed by the client conductor.
      */
@@ -184,6 +169,21 @@ public class Publication
         }
 
         return false;
+    }
+
+    private void closeBuffers()
+    {
+        for (final ManagedBuffer managedBuffer : managedBuffers)
+        {
+            try
+            {
+                managedBuffer.close();
+            }
+            catch (final Exception ex)
+            {
+                throw new IllegalStateException(ex);
+            }
+        }
     }
 
     private void nextTerm()

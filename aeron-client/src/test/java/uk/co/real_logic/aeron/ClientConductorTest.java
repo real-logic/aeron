@@ -30,6 +30,8 @@ import uk.co.real_logic.aeron.conductor.ClientConductor;
 import uk.co.real_logic.aeron.conductor.DriverBroadcastReceiver;
 import uk.co.real_logic.aeron.conductor.DriverProxy;
 import uk.co.real_logic.aeron.conductor.Signal;
+import uk.co.real_logic.aeron.exceptions.MediaDriverTimeoutException;
+import uk.co.real_logic.aeron.exceptions.RegistrationException;
 
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
@@ -71,8 +73,8 @@ public class ClientConductorTest extends MockBufferUsage
 
     private final AtomicBuffer counterValuesBuffer = new AtomicBuffer(new byte[COUNTER_BUFFER_SZ]);
 
-    private final Consumer<Exception> mockReceiverErrorHandler = (ex) -> ex.printStackTrace();
-    private final Consumer<Exception> mockClientErrorHandler = (ex) -> ex.printStackTrace();
+    private final Consumer<Exception> mockReceiverErrorHandler = Throwable::printStackTrace;
+    private final Consumer<Exception> mockClientErrorHandler = Throwable::printStackTrace;
 
     private Signal signal;
     private DriverProxy driverProxy;
@@ -136,8 +138,7 @@ public class ClientConductorTest extends MockBufferUsage
         doAnswer(
             (invocation) ->
             {
-                conductor.onError(PUBLICATION_CHANNEL_ALREADY_EXISTS,
-                                  "publication and session already exist on destination");
+                conductor.onError(PUBLICATION_CHANNEL_ALREADY_EXISTS, "publication and session already exist on destination");
                 return null;
             }).when(signal).await(anyLong());
 
@@ -264,8 +265,7 @@ public class ClientConductorTest extends MockBufferUsage
         doAnswer(
             (invocation) ->
             {
-                conductor.onError(INVALID_DESTINATION,
-                        "Multicast data address must be odd");
+                conductor.onError(INVALID_DESTINATION, "Multicast data address must be odd");
                 return null;
             }).when(signal).await(anyLong());
 

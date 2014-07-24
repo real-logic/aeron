@@ -30,6 +30,8 @@ import uk.co.real_logic.aeron.common.status.BufferPositionIndicator;
 import uk.co.real_logic.aeron.common.status.BufferPositionReporter;
 import uk.co.real_logic.aeron.common.status.PositionIndicator;
 import uk.co.real_logic.aeron.common.status.PositionReporter;
+import uk.co.real_logic.aeron.exceptions.MediaDriverTimeoutException;
+import uk.co.real_logic.aeron.exceptions.RegistrationException;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;

@@ -28,44 +28,39 @@ import java.nio.MappedByteBuffer;
  */
 public class StatusInfo
 {
-    public static void main(final String[] args)
+    public static void main(final String[] args) throws Exception
     {
         final File labelsFile = new File(System.getProperty(CommonContext.COUNTERS_DIR_PROP_NAME,
-                CommonContext.COUNTERS_DIR_PROP_DEFAULT), CommonContext.LABELS_FILE);
+                                                            CommonContext.COUNTERS_DIR_PROP_DEFAULT),
+                                         CommonContext.LABELS_FILE);
         final File valuesFile = new File(System.getProperty(CommonContext.COUNTERS_DIR_PROP_NAME,
-                CommonContext.COUNTERS_DIR_PROP_DEFAULT), CommonContext.VALUES_FILE);
+                                                            CommonContext.COUNTERS_DIR_PROP_DEFAULT),
+                                         CommonContext.VALUES_FILE);
 
         System.out.println("Labels file " + labelsFile);
         System.out.println("Values file " + valuesFile);
 
-        try
+        final MappedByteBuffer labelsByteBuffer = IoUtil.mapExistingFile(labelsFile, "labels");
+        final MappedByteBuffer valuesByteBuffer = IoUtil.mapExistingFile(valuesFile, "values");
+
+        final AtomicBuffer valuesBuffer = new AtomicBuffer(valuesByteBuffer);
+
+        final CountersManager countersManager = new CountersManager(new AtomicBuffer(labelsByteBuffer), valuesBuffer);
+
+        while (true)
         {
-            final MappedByteBuffer labelsByteBuffer = IoUtil.mapExistingFile(labelsFile, "labels");
-            final MappedByteBuffer valuesByteBuffer = IoUtil.mapExistingFile(valuesFile, "values");
+            final double timestamp = System.nanoTime() / 1000_000_000.0d;
 
-            final AtomicBuffer valuesBuffer = new AtomicBuffer(valuesByteBuffer);
+            countersManager.forEach(
+                (id, label) ->
+                {
+                    final int offset = CountersManager.counterOffset(id);
+                    final long value = valuesBuffer.getLongVolatile(offset);
 
-            final CountersManager manager = new CountersManager(new AtomicBuffer(labelsByteBuffer), valuesBuffer);
+                    System.out.println(String.format("[%f] %d[%d]: <<%s>> = %d", timestamp, id, offset, label, value));
+                });
 
-            while (true)
-            {
-                final double timestamp = (double)System.nanoTime() / (double)(1000*1000*1000);
-
-                manager.forEach(
-                    (id, label) ->
-                    {
-                        final int offset = CountersManager.counterOffset(id);
-                        final long value = valuesBuffer.getLongVolatile(offset);
-
-                        System.out.println(String.format("[%f] %d[%d]: <<%s>> = %d", timestamp, id, offset, label, value));
-                    });
-
-                Thread.sleep(1000);
-            }
-        }
-        catch (final Exception ex)
-        {
-            ex.printStackTrace();
+            Thread.sleep(1000);
         }
     }
 }

@@ -43,7 +43,7 @@ public class CountersManagerTest
     {
         final int counterId = manager.allocate("abc");
         final BiConsumer<Integer, String> consumer = mock(BiConsumer.class);
-        otherManager.iterate(consumer);
+        otherManager.forEach(consumer);
         verify(consumer).accept(counterId, "abc");
     }
 
@@ -55,7 +55,7 @@ public class CountersManagerTest
         final int ghi = manager.allocate("ghi");
 
         final BiConsumer<Integer, String> consumer = mock(BiConsumer.class);
-        otherManager.iterate(consumer);
+        otherManager.forEach(consumer);
 
         final InOrder inOrder = Mockito.inOrder(consumer);
         inOrder.verify(consumer).accept(abc, "abc");
@@ -74,7 +74,7 @@ public class CountersManagerTest
         manager.free(def);
 
         final BiConsumer<Integer, String> consumer = mock(BiConsumer.class);
-        otherManager.iterate(consumer);
+        otherManager.forEach(consumer);
 
         final InOrder inOrder = Mockito.inOrder(consumer);
         inOrder.verify(consumer).accept(abc, "abc");

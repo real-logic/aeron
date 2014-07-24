@@ -105,7 +105,7 @@ public class CountersManager
      *
      * @param consumer function to be called for each label.
      */
-    public void iterate(final BiConsumer<Integer, String> consumer)
+    public void forEach(final BiConsumer<Integer, String> consumer)
     {
         int labelsOffset = 0;
         int size;

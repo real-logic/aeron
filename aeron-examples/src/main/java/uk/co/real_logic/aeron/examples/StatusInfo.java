@@ -51,7 +51,7 @@ public class StatusInfo
             {
                 final double timestamp = (double)System.nanoTime() / (double)(1000*1000*1000);
 
-                manager.iterate(
+                manager.forEach(
                     (id, label) ->
                     {
                         final int offset = CountersManager.counterOffset(id);

@@ -57,7 +57,7 @@ public class LogBufferDescriptor
     }
 
     /** Minimum buffer size for the log */
-    public static final int LOG_MIN_SIZE = FrameDescriptor.FRAME_ALIGNMENT * 256;
+    public static final int MIN_LOG_SIZE = 64 * 1024; // TODO: make a sensible default
 
     /** Padding frame type to indicate end of the log is not in use. */
     public static final int PADDING_FRAME_TYPE = 0;
@@ -71,17 +71,17 @@ public class LogBufferDescriptor
     public static void checkLogBuffer(final AtomicBuffer buffer)
     {
         final int capacity = buffer.capacity();
-        if (capacity < LOG_MIN_SIZE)
+        if (capacity < MIN_LOG_SIZE)
         {
             final String s = String.format("Log buffer capacity less than min size of %d, capacity=%d",
-                                           valueOf(LOG_MIN_SIZE), valueOf(capacity));
+                                           MIN_LOG_SIZE, capacity);
             throw new IllegalStateException(s);
         }
 
-        if (capacity % FRAME_ALIGNMENT != 0)
+        if ((capacity & (FRAME_ALIGNMENT - 1)) != 0)
         {
             final String s = String.format("Log buffer capacity not a multiple of %d, capacity=%d",
-                                           valueOf(FRAME_ALIGNMENT), valueOf(capacity));
+                                           FRAME_ALIGNMENT, capacity);
             throw new IllegalStateException(s);
         }
     }

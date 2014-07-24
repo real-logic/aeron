@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.driver;
 
 import org.junit.After;
 import org.junit.Test;
+import uk.co.real_logic.aeron.common.BitUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.common.event.EventLogger;
@@ -39,12 +40,10 @@ public class SelectorAndTransportTest
     private static final long SESSION_ID = 0xdeadbeefL;
     private static final long CHANNEL_ID = 0x44332211L;
     private static final long TERM_ID = 0x99887766L;
+    private static final int FRAME_LENGTH = 24;
 
-    private static final UdpDestination SRC_DEST =
-            UdpDestination.parse("udp://localhost:" + SRC_PORT + "@localhost:" + RCV_PORT);
-
-    private static final UdpDestination RCV_DEST =
-            UdpDestination.parse("udp://localhost:" + RCV_PORT);
+    private static final UdpDestination SRC_DEST = UdpDestination.parse("udp://localhost:" + SRC_PORT + "@localhost:" + RCV_PORT);
+    private static final UdpDestination RCV_DEST = UdpDestination.parse("udp://localhost:" + RCV_PORT);
 
     private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(256);
     private final AtomicBuffer buffer = new AtomicBuffer(byteBuffer);
@@ -57,18 +56,15 @@ public class SelectorAndTransportTest
 
     private final EventLogger mockTransportLogger = new EventLogger();
 
-    private final UdpTransport.DataFrameHandler mockDataFrameHandler =
-        mock(UdpTransport.DataFrameHandler.class);
-
+    private final UdpTransport.DataFrameHandler mockDataFrameHandler = mock(UdpTransport.DataFrameHandler.class);
+    private final UdpTransport.NakFrameHandler mockNakFrameHandler = mock(UdpTransport.NakFrameHandler.class);
     private final UdpTransport.StatusMessageFrameHandler mockStatusMessageFrameHandler =
         mock(UdpTransport.StatusMessageFrameHandler.class);
 
-    private final UdpTransport.NakFrameHandler mockNakFrameHandler =
-        mock(UdpTransport.NakFrameHandler.class);
 
-    NioSelector nioSelector;
-    UdpTransport src;
-    UdpTransport rcv;
+    private NioSelector nioSelector;
+    private UdpTransport src;
+    private UdpTransport rcv;
 
     @After
     public void tearDown()
@@ -115,18 +111,19 @@ public class SelectorAndTransportTest
     public void shouldSendEmptyDataFrameUnicastFromSourceToReceiver() throws Exception
     {
         final AtomicInteger dataHeadersReceived = new AtomicInteger(0);
-        final UdpTransport.DataFrameHandler dataFrameHandler = (header, buffer, length, srcAddress) ->
-        {
-            assertThat(header.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
-            assertThat(header.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
-            assertThat(header.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
-            assertThat(header.frameLength(), is(24));
-            assertThat(header.sessionId(), is(SESSION_ID));
-            assertThat(header.channelId(), is(CHANNEL_ID));
-            assertThat(header.termId(), is(TERM_ID));
-            assertThat(header.dataOffset(), is(24));
-            dataHeadersReceived.incrementAndGet();
-        };
+        final UdpTransport.DataFrameHandler dataFrameHandler =
+            (header, buffer, length, srcAddress) ->
+            {
+                assertThat(header.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
+                assertThat(header.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+                assertThat(header.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
+                assertThat(header.frameLength(), is(FRAME_LENGTH));
+                assertThat(header.sessionId(), is(SESSION_ID));
+                assertThat(header.channelId(), is(CHANNEL_ID));
+                assertThat(header.termId(), is(TERM_ID));
+                assertThat(header.dataOffset(), is(FRAME_LENGTH));
+                dataHeadersReceived.incrementAndGet();
+            };
 
         nioSelector = new NioSelector();
         rcv = new UdpTransport(RCV_DEST, dataFrameHandler, mockTransportLogger);
@@ -139,11 +136,11 @@ public class SelectorAndTransportTest
         encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
                         .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
                         .headerType(HeaderFlyweight.HDR_TYPE_DATA)
-                        .frameLength(24);
+                        .frameLength(FRAME_LENGTH);
         encodeDataHeader.sessionId(SESSION_ID)
                         .channelId(CHANNEL_ID)
                         .termId(TERM_ID);
-        byteBuffer.position(0).limit(24);
+        byteBuffer.position(0).limit(FRAME_LENGTH);
 
         processLoop(nioSelector, 5);
         src.sendTo(byteBuffer, srcRemoteAddress);
@@ -160,18 +157,19 @@ public class SelectorAndTransportTest
     {
         final AtomicInteger dataHeadersReceived = new AtomicInteger(0);
 
-        final UdpTransport.DataFrameHandler dataFrameHandler = (header, buffer, length, srcAddress) ->
-        {
-            assertThat(header.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
-            assertThat(header.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
-            assertThat(header.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
-            assertThat(header.frameLength(), is(24));
-            assertThat(header.sessionId(), is(SESSION_ID));
-            assertThat(header.channelId(), is(CHANNEL_ID));
-            assertThat(header.termId(), is(TERM_ID));
-            assertThat(length, is(FrameDescriptor.FRAME_ALIGNMENT + 24));
-            dataHeadersReceived.incrementAndGet();
-        };
+        final UdpTransport.DataFrameHandler dataFrameHandler =
+            (header, buffer, length, srcAddress) ->
+            {
+                assertThat(header.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
+                assertThat(header.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+                assertThat(header.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
+                assertThat(header.frameLength(), is(FRAME_LENGTH));
+                assertThat(header.sessionId(), is(SESSION_ID));
+                assertThat(header.channelId(), is(CHANNEL_ID));
+                assertThat(header.termId(), is(TERM_ID));
+                assertThat(length, is(2 * BitUtil.align(FRAME_LENGTH, FrameDescriptor.FRAME_ALIGNMENT)));
+                dataHeadersReceived.incrementAndGet();
+            };
 
         nioSelector = new NioSelector();
         rcv = new UdpTransport(RCV_DEST, dataFrameHandler, mockTransportLogger);
@@ -184,11 +182,12 @@ public class SelectorAndTransportTest
         encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
                         .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
                         .headerType(HeaderFlyweight.HDR_TYPE_DATA)
-                        .frameLength(24);
+                        .frameLength(FRAME_LENGTH);
         encodeDataHeader.sessionId(SESSION_ID)
                         .channelId(CHANNEL_ID)
                         .termId(TERM_ID);
-        encodeDataHeader.wrap(buffer, FrameDescriptor.FRAME_ALIGNMENT);
+
+        encodeDataHeader.wrap(buffer, BitUtil.align(FRAME_LENGTH, FrameDescriptor.FRAME_ALIGNMENT));
         encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
                         .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
                         .headerType(HeaderFlyweight.HDR_TYPE_DATA)
@@ -196,7 +195,8 @@ public class SelectorAndTransportTest
         encodeDataHeader.sessionId(SESSION_ID)
                         .channelId(CHANNEL_ID)
                         .termId(TERM_ID);
-        byteBuffer.position(0).limit(FrameDescriptor.FRAME_ALIGNMENT + 24);
+
+        byteBuffer.position(0).limit(2 * BitUtil.align(FRAME_LENGTH, FrameDescriptor.FRAME_ALIGNMENT));
 
         processLoop(nioSelector, 5);
         src.sendTo(byteBuffer, srcRemoteAddress);
@@ -212,12 +212,13 @@ public class SelectorAndTransportTest
     public void shouldHandleSmFrameFromReceiverToSender() throws Exception
     {
         final AtomicInteger cntlHeadersReceived = new AtomicInteger(0);
-        final UdpTransport.StatusMessageFrameHandler statusMessageFrameHandler = (header, buffer, length, srcAddress) ->
-        {
-            assertThat(header.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
-            assertThat(header.frameLength(), is(StatusMessageFlyweight.HEADER_LENGTH));
-            cntlHeadersReceived.incrementAndGet();
-        };
+        final UdpTransport.StatusMessageFrameHandler statusMessageFrameHandler =
+            (header, buffer, length, srcAddress) ->
+            {
+                assertThat(header.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
+                assertThat(header.frameLength(), is(StatusMessageFlyweight.HEADER_LENGTH));
+                cntlHeadersReceived.incrementAndGet();
+            };
 
         nioSelector = new NioSelector();
         rcv = new UdpTransport(RCV_DEST, mockDataFrameHandler, mockTransportLogger);
@@ -233,7 +234,7 @@ public class SelectorAndTransportTest
                      .receiverWindow(1000)
                      .highestContiguousTermOffset(0)
                      .version(HeaderFlyweight.CURRENT_VERSION)
-                     .flags((short) 0)
+                     .flags((short)0)
                      .headerType(HeaderFlyweight.HDR_TYPE_SM)
                      .frameLength(StatusMessageFlyweight.HEADER_LENGTH);
         byteBuffer.position(0).limit(statusMessage.frameLength());

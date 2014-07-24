@@ -3,7 +3,6 @@ package uk.co.real_logic.aeron;
 import org.junit.Before;
 import org.mockito.stubbing.Answer;
 import uk.co.real_logic.aeron.common.TermHelper;
-import uk.co.real_logic.aeron.common.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
@@ -20,7 +19,7 @@ import static org.mockito.Mockito.*;
 public class MockBufferUsage
 {
     public static final int MAX_FRAME_LENGTH = 1024;
-    public static final int LOG_BUFFER_SZ = LogBufferDescriptor.LOG_MIN_SIZE;
+    public static final int LOG_BUFFER_SZ = LogBufferDescriptor.MIN_LOG_SIZE;
 
     public static final long SESSION_ID_1 = 13L;
     public static final long SESSION_ID_2 = 15L;

@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import uk.co.real_logic.aeron.common.BitUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.common.event.EventLogger;
@@ -41,7 +42,6 @@ import java.util.function.IntConsumer;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
-import static uk.co.real_logic.aeron.common.BitUtil.align;
 
 /**
  * Test that has a consumer and single media driver for unicast cases. Uses socket as sender/publisher endpoint.
@@ -58,6 +58,8 @@ public class SubUnicastTest
     private static final byte[] PAYLOAD = "Payload goes here!".getBytes();
     private static final byte[] NO_PAYLOAD = {};
     private static final int FRAME_COUNT_LIMIT = Integer.MAX_VALUE;
+    public static final int ALIGNED_FRAME_LENGTH =
+        BitUtil.align(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT);
 
     private final AtomicBuffer payload = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
 
@@ -82,7 +84,8 @@ public class SubUnicastTest
     private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
     private final NakFlyweight nakHeader = new NakFlyweight();
 
-    private final IntConsumer subscriptionPollWithYield = (i) ->
+    private final IntConsumer subscriptionPollWithYield =
+        (i) ->
         {
             subscription.poll(FRAME_COUNT_LIMIT);
             Thread.yield();
@@ -118,9 +121,7 @@ public class SubUnicastTest
 
     private Aeron.ClientContext newAeronContext()
     {
-        Aeron.ClientContext ctx = new Aeron.ClientContext();
-
-        return ctx;
+        return new Aeron.ClientContext();
     }
 
     @After
@@ -148,7 +149,8 @@ public class SubUnicastTest
         final AtomicLong statusMessagesSeen = new AtomicLong();
 
         // should poll SM from consumer
-        DatagramTestHelper.receiveUntil(senderChannel,
+        DatagramTestHelper.receiveUntil(
+            senderChannel,
             (buffer) ->
             {
                 statusMessage.wrap(buffer, 0);
@@ -158,6 +160,7 @@ public class SubUnicastTest
                 assertThat(statusMessage.sessionId(), is(SESSION_ID));
                 assertThat(statusMessage.termId(), is(TERM_ID));
                 statusMessagesSeen.incrementAndGet();
+
                 return true;
             });
 
@@ -167,9 +170,10 @@ public class SubUnicastTest
         sendDataFrame(0, PAYLOAD);
 
         // now poll data into app
-        SystemTestHelper.executeUntil(() -> (receivedFrames.size() > 0),
-                subscriptionPollWithYield,
-                Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
+        SystemTestHelper.executeUntil(
+            () -> receivedFrames.size() > 0,
+            subscriptionPollWithYield,
+            Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(1));
@@ -186,12 +190,14 @@ public class SubUnicastTest
 
         final AtomicLong statusMessagesSeen = new AtomicLong();
 
-        DatagramTestHelper.receiveUntil(senderChannel,
+        DatagramTestHelper.receiveUntil(
+            senderChannel,
             (buffer) ->
             {
                 statusMessage.wrap(buffer, 0);
                 assertThat(statusMessage.headerType(), is(HeaderFlyweight.HDR_TYPE_SM));
                 statusMessagesSeen.incrementAndGet();
+
                 return true;
             });
 
@@ -200,13 +206,14 @@ public class SubUnicastTest
         for (int i = 0; i < 3; i++)
         {
             // send single Data Frame
-            sendDataFrame(i * FrameDescriptor.FRAME_ALIGNMENT, PAYLOAD);
+            sendDataFrame(i * ALIGNED_FRAME_LENGTH, PAYLOAD);
         }
 
         // now poll data into app
-        SystemTestHelper.executeUntil(() -> (receivedFrames.size() >= 3),
-                subscriptionPollWithYield,
-                Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
+        SystemTestHelper.executeUntil(
+            () -> receivedFrames.size() >= 3,
+            subscriptionPollWithYield,
+            Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(3));
@@ -226,30 +233,34 @@ public class SubUnicastTest
         final AtomicLong statusMessagesSeen = new AtomicLong();
         final AtomicLong naksSeen = new AtomicLong();
 
-        DatagramTestHelper.receiveUntil(senderChannel,
+        DatagramTestHelper.receiveUntil(
+            senderChannel,
             (buffer) ->
             {
                 statusMessage.wrap(buffer, 0);
                 assertThat(statusMessage.headerType(), is(HeaderFlyweight.HDR_TYPE_SM));
                 statusMessagesSeen.incrementAndGet();
+
                 return true;
             });
 
         assertThat(statusMessagesSeen.get(), greaterThanOrEqualTo(1L));
 
         sendDataFrame(0, PAYLOAD);
-        sendDataFrame(2 * FrameDescriptor.FRAME_ALIGNMENT, PAYLOAD);
+        sendDataFrame(2 * ALIGNED_FRAME_LENGTH, PAYLOAD);
 
         // now poll data into app
-        SystemTestHelper.executeUntil(() -> (receivedFrames.size() > 0),
-                subscriptionPollWithYield,
-                Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
+        SystemTestHelper.executeUntil(
+            () -> receivedFrames.size() > 0,
+            subscriptionPollWithYield,
+            Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(1));
         assertThat(receivedFrames.remove(), is(PAYLOAD));
 
-        DatagramTestHelper.receiveUntil(senderChannel,
+        DatagramTestHelper.receiveUntil(
+            senderChannel,
             (buffer) ->
             {
                 nakHeader.wrap(buffer, 0);
@@ -258,9 +269,10 @@ public class SubUnicastTest
                 assertThat(nakHeader.channelId(), is(CHANNEL_ID));
                 assertThat(nakHeader.sessionId(), is(SESSION_ID));
                 assertThat(nakHeader.termId(), is(TERM_ID));
-                assertThat(nakHeader.termOffset(), is((long)FrameDescriptor.FRAME_ALIGNMENT));
-                assertThat(nakHeader.length(), is((long)FrameDescriptor.FRAME_ALIGNMENT));
+                assertThat(nakHeader.termOffset(), is((long)ALIGNED_FRAME_LENGTH));
+                assertThat(nakHeader.length(), is((long)ALIGNED_FRAME_LENGTH));
                 naksSeen.incrementAndGet();
+
                 return true;
             });
 
@@ -278,46 +290,52 @@ public class SubUnicastTest
         final AtomicLong statusMessagesSeen = new AtomicLong();
         final AtomicLong naksSeen = new AtomicLong();
 
-        DatagramTestHelper.receiveUntil(senderChannel,
+        DatagramTestHelper.receiveUntil(
+            senderChannel,
             (buffer) ->
             {
                 statusMessage.wrap(buffer, 0);
                 assertThat(statusMessage.headerType(), is(HeaderFlyweight.HDR_TYPE_SM));
                 statusMessagesSeen.incrementAndGet();
+
                 return true;
             });
 
         assertThat(statusMessagesSeen.get(), greaterThanOrEqualTo(1L));
 
         sendDataFrame(0, PAYLOAD);
-        sendDataFrame(2 * FrameDescriptor.FRAME_ALIGNMENT, PAYLOAD);
+        sendDataFrame(2 * ALIGNED_FRAME_LENGTH, PAYLOAD);
 
         // now poll data into app
-        SystemTestHelper.executeUntil(() -> (receivedFrames.size() > 0),
-                subscriptionPollWithYield,
-                Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
+        SystemTestHelper.executeUntil(
+            () -> receivedFrames.size() > 0,
+            subscriptionPollWithYield,
+            Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(1));
         assertThat(receivedFrames.remove(), is(PAYLOAD));
 
-        DatagramTestHelper.receiveUntil(senderChannel,
+        DatagramTestHelper.receiveUntil(
+            senderChannel,
             (buffer) ->
             {
                 nakHeader.wrap(buffer, 0);
                 assertThat(nakHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_NAK));
                 naksSeen.incrementAndGet();
+
                 return true;
             });
 
         assertThat(naksSeen.get(), greaterThanOrEqualTo(1L));
 
-        sendDataFrame(FrameDescriptor.FRAME_ALIGNMENT, PAYLOAD);
+        sendDataFrame(ALIGNED_FRAME_LENGTH, PAYLOAD);
 
         // now poll data into app
-        SystemTestHelper.executeUntil(() -> (receivedFrames.size() >= 2),
-                subscriptionPollWithYield,
-                Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
+        SystemTestHelper.executeUntil(
+            () -> receivedFrames.size() >= 2,
+            subscriptionPollWithYield,
+            Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(2));
@@ -327,8 +345,7 @@ public class SubUnicastTest
 
     private void sendDataFrame(final long termOffset, final byte[] payload) throws Exception
     {
-        final int frameLength = align(DataHeaderFlyweight.HEADER_LENGTH + payload.length,
-                                      FrameDescriptor.FRAME_ALIGNMENT);
+        final int frameLength = ALIGNED_FRAME_LENGTH;
         final ByteBuffer dataBuffer = ByteBuffer.allocate(frameLength);
         final AtomicBuffer dataAtomicBuffer = new AtomicBuffer(dataBuffer);
 

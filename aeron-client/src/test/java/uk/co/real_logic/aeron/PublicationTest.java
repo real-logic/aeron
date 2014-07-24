@@ -23,7 +23,7 @@ import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
 import static uk.co.real_logic.aeron.common.TermHelper.termIdToBufferIndex;
 import static uk.co.real_logic.aeron.common.concurrent.broadcast.RecordDescriptor.RECORD_ALIGNMENT;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender.AppendStatus.*;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.LOG_MIN_SIZE;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.MIN_LOG_SIZE;
 
 public class PublicationTest
 {
@@ -59,7 +59,7 @@ public class PublicationTest
             headers[i] = header;
             when(appenders[i].append(any(), anyInt(), anyInt())).thenReturn(SUCCESS);
             when(appenders[i].defaultHeader()).thenReturn(header);
-            when(appenders[i].capacity()).thenReturn(LOG_MIN_SIZE);
+            when(appenders[i].capacity()).thenReturn(MIN_LOG_SIZE);
         }
 
         managedBuffers = new ManagedBuffer[BUFFER_COUNT * 2];
@@ -96,7 +96,7 @@ public class PublicationTest
     public void shouldRotateWhenAppendTrips()
     {
         when(appenders[termIdToBufferIndex(TERM_ID_1)].append(any(), anyInt(), anyInt())).thenReturn(TRIPPED);
-        when(appenders[termIdToBufferIndex(TERM_ID_1)].tailVolatile()).thenReturn(LOG_MIN_SIZE - RECORD_ALIGNMENT);
+        when(appenders[termIdToBufferIndex(TERM_ID_1)].tailVolatile()).thenReturn(MIN_LOG_SIZE - RECORD_ALIGNMENT);
         when(limit.position()).thenReturn(Long.MAX_VALUE);
 
         assertTrue(publication.offer(atomicSendBuffer));

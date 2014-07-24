@@ -304,7 +304,8 @@ public class DriverConductorTest
         assertThat(publications.get(0).sessionId(), is(1L));
         assertThat(publications.get(0).channelId(), is(2L));
 
-        verify(mockClientProxy).onError(eq(ErrorCode.PUBLICATION_CHANNEL_ALREADY_EXISTS), argThat(not(isEmptyOrNullString())), any(), anyInt());
+        verify(mockClientProxy)
+            .onError(eq(ErrorCode.PUBLICATION_CHANNEL_ALREADY_EXISTS), argThat(not(isEmptyOrNullString())), any(), anyInt());
         verifyNeverSucceeds();
         verifyExceptionLogged();
     }

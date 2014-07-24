@@ -54,7 +54,7 @@ public class AeronTest extends MockBufferUsage
 
     public static final int RING_BUFFER_SZ = (16 * 1024) + RingBufferDescriptor.TRAILER_LENGTH;
     public static final int BROADCAST_BUFFER_SZ = (16 * 1024) + BroadcastBufferDescriptor.TRAILER_LENGTH;
-    public static final int LOG_BUFFER_SIZE = LogBufferDescriptor.LOG_MIN_SIZE;
+    public static final int LOG_BUFFER_SIZE = LogBufferDescriptor.MIN_LOG_SIZE;
     public static final int FRAME_COUNT_LIMIT = Integer.MAX_VALUE;
 
     private DataHandler channel1Handler = EMPTY_DATA_HANDLER;

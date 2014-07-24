@@ -53,7 +53,7 @@ import static java.lang.Integer.valueOf;
 public class FrameDescriptor
 {
     /** Alignment as a multiple of bytes for each frame. The length field will store the unaligned length in bytes. */
-    public static final int FRAME_ALIGNMENT = BitUtil.CACHE_LINE_SIZE;
+    public static final int FRAME_ALIGNMENT = 8;
 
     /** Word alignment for fields. */
     public static final int WORD_ALIGNMENT = BitUtil.SIZE_OF_LONG;
@@ -112,13 +112,6 @@ public class FrameDescriptor
             throw new IllegalStateException(s);
         }
 
-        if (length > FRAME_ALIGNMENT)
-        {
-            final String s = String.format("Frame header length must not be greater than %d, length=%d",
-                                           valueOf(FRAME_ALIGNMENT), valueOf(length));
-            throw new IllegalStateException(s);
-        }
-
         if (length % WORD_ALIGNMENT != 0)
         {
             final String s = String.format("Frame header length must be a multiple of %d, length=%d",
@@ -135,7 +128,7 @@ public class FrameDescriptor
      */
     public static void checkMaxFrameLength(final int length)
     {
-        if (length % FRAME_ALIGNMENT != 0)
+        if ((length & (FRAME_ALIGNMENT - 1)) != 0)
         {
             final String s = String.format("Max frame length must be a multiple of %d, length=%d",
                                            valueOf(FRAME_ALIGNMENT), valueOf(length));

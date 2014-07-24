@@ -42,9 +42,18 @@ import static uk.co.real_logic.aeron.common.BitUtil.align;
 
 public class LossHandlerTest
 {
-    private static final int LOG_BUFFER_SIZE = 16 * 1024;
-    private static final byte[] DATA = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+    private static final int LOG_BUFFER_SIZE = LogBufferDescriptor.MIN_LOG_SIZE;
+    private static final byte[] DATA = new byte[36];
+    static
+    {
+        for (int i = 0; i < DATA.length; i++)
+        {
+            DATA[i] = (byte)i;
+        }
+    }
+
     private static final int MESSAGE_LENGTH = DataHeaderFlyweight.HEADER_LENGTH + DATA.length;
+    private static final int ALIGNED_FRAME_LENGTH = align(MESSAGE_LENGTH, FrameDescriptor.FRAME_ALIGNMENT);
     private static final long SESSION_ID = 0x5E55101DL;
     private static final long CHANNEL_ID = 0xC400EL;
     private static final long TERM_ID = 0xEE81D;
@@ -55,8 +64,6 @@ public class LossHandlerTest
     public static final StaticDelayGenerator delayGeneratorWithImmediate =
         new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(20), true);
 
-    private final AtomicBuffer[] logBuffers = new AtomicBuffer[TermHelper.BUFFER_COUNT];
-    private final AtomicBuffer[] stateBuffers = new AtomicBuffer[TermHelper.BUFFER_COUNT];
     private final LogRebuilder[] rebuilders = new LogRebuilder[TermHelper.BUFFER_COUNT];
     private final GapScanner[] scanners = new GapScanner[TermHelper.BUFFER_COUNT];
 
@@ -72,10 +79,10 @@ public class LossHandlerTest
     {
         for (int i = 0; i < TermHelper.BUFFER_COUNT; i++)
         {
-            logBuffers[i] = new AtomicBuffer(ByteBuffer.allocateDirect(LOG_BUFFER_SIZE));
-            stateBuffers[i] = new AtomicBuffer(ByteBuffer.allocateDirect(LogBufferDescriptor.STATE_BUFFER_LENGTH));
-            rebuilders[i] = new LogRebuilder(logBuffers[i], stateBuffers[i]);
-            scanners[i] = new GapScanner(logBuffers[i], stateBuffers[i]);
+            final AtomicBuffer logBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(LOG_BUFFER_SIZE));
+            final AtomicBuffer stateBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(LogBufferDescriptor.STATE_BUFFER_LENGTH));
+            rebuilders[i] = new LogRebuilder(logBuffer, stateBuffer);
+            scanners[i] = new GapScanner(logBuffer, stateBuffer);
         }
 
         wheel = new TimerWheel(() -> currentTime,
@@ -244,7 +251,7 @@ public class LossHandlerTest
         while (LOG_BUFFER_SIZE > offset)
         {
             insertDataFrame(offsetOfMessage(i++));
-            offset += FrameDescriptor.FRAME_ALIGNMENT;
+            offset += ALIGNED_FRAME_LENGTH;
         }
 
         assertThat(offset, is(LOG_BUFFER_SIZE));  // sanity check the fill to make sure it doesn't need padding
@@ -273,7 +280,7 @@ public class LossHandlerTest
         while ((LOG_BUFFER_SIZE - 1024) > offset)
         {
             insertDataFrame(offsetOfMessage(i++));
-            offset += FrameDescriptor.FRAME_ALIGNMENT;
+            offset += ALIGNED_FRAME_LENGTH;
         }
         insertPaddingFrame(offsetOfMessage(i));  // and now pad to end of buffer
 
@@ -303,7 +310,7 @@ public class LossHandlerTest
         while (LOG_BUFFER_SIZE > offset)
         {
             insertDataFrame(offsetOfMessage(i++));
-            offset += FrameDescriptor.FRAME_ALIGNMENT;
+            offset += ALIGNED_FRAME_LENGTH;
         }
 
         assertThat(offset, is(LOG_BUFFER_SIZE));  // sanity check the fill to make sure it doesn't need padding
@@ -363,12 +370,12 @@ public class LossHandlerTest
 
     private int offsetOfMessage(final int index)
     {
-        return index * FrameDescriptor.FRAME_ALIGNMENT;
+        return index * ALIGNED_FRAME_LENGTH;
     }
 
     private int gapLength()
     {
-        return align(MESSAGE_LENGTH, FrameDescriptor.FRAME_ALIGNMENT);
+        return ALIGNED_FRAME_LENGTH;
     }
 
     private long processTimersUntil(final BooleanSupplier condition)

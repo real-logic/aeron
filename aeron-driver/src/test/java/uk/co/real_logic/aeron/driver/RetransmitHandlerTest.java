@@ -34,17 +34,17 @@ import java.util.stream.IntStream;
 
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.common.BitUtil.align;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
 
 @RunWith(Theories.class)
 public class RetransmitHandlerTest
 {
     private static final int MTU_LENGTH = 1024;
-    private static final int LOG_BUFFER_SIZE = 64 * 1024;
+    private static final int LOG_BUFFER_SIZE = LogBufferDescriptor.MIN_LOG_SIZE;
     private static final int STATE_BUFFER_SIZE = STATE_BUFFER_LENGTH;
     private static final byte[] DATA = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
-    private static final int MESSAGE_LENGTH = align(DataHeaderFlyweight.HEADER_LENGTH + DATA.length, FRAME_ALIGNMENT);
+    private static final int MESSAGE_LENGTH = DataHeaderFlyweight.HEADER_LENGTH + DATA.length;
+    private static final int ALIGNED_FRAME_LENGTH = align(MESSAGE_LENGTH, FrameDescriptor.FRAME_ALIGNMENT);
     private static final long SESSION_ID = 0x5E55101DL;
     private static final long CHANNEL_ID = 0x5400EL;
     private static final long TERM_ID = 0x7F003355L;
@@ -78,86 +78,84 @@ public class RetransmitHandlerTest
         new RetransmitHandler(scanner, wheel, delayGenerator, lingerGenerator, retransmitHandler, MTU_LENGTH);
 
     @DataPoint
-    public static final BiConsumer<RetransmitHandlerTest, Integer> senderAddDataFrame =
-        (handler, i) -> handler.addSentDataFrame();
+    public static final BiConsumer<RetransmitHandlerTest, Integer> senderAddDataFrame = (h, i) -> h.addSentDataFrame();
 
     @DataPoint
-    public static final BiConsumer<RetransmitHandlerTest, Integer> receiverAddDataFrame =
-        (handler, i) -> handler.addReceivedDataFrame(i);
+    public static final BiConsumer<RetransmitHandlerTest, Integer> receiverAddDataFrame = (h, i) -> h.addReceivedDataFrame(i);
 
     @Theory
     public void shouldRetransmitOnNak(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
         createTermBuffer(creator, 5);
-        handler.onNak(offsetOfMessage(0), MESSAGE_LENGTH);
+        handler.onNak(offsetOfMessage(0), ALIGNED_FRAME_LENGTH);
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
 
-        verify(retransmitHandler).onAvailable(logBuffer, offsetOfMessage(0), MESSAGE_LENGTH);
+        verify(retransmitHandler).onAvailable(logBuffer, offsetOfMessage(0), ALIGNED_FRAME_LENGTH);
     }
 
     @Theory
     public void shouldNotRetransmitOnNakWhileInLinger(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
         createTermBuffer(creator, 5);
-        handler.onNak(offsetOfMessage(0), MESSAGE_LENGTH);
+        handler.onNak(offsetOfMessage(0), ALIGNED_FRAME_LENGTH);
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(40));
-        handler.onNak(offsetOfMessage(0), MESSAGE_LENGTH);
+        handler.onNak(offsetOfMessage(0), ALIGNED_FRAME_LENGTH);
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
 
-        verify(retransmitHandler).onAvailable(logBuffer, offsetOfMessage(0), MESSAGE_LENGTH);
+        verify(retransmitHandler).onAvailable(logBuffer, offsetOfMessage(0), ALIGNED_FRAME_LENGTH);
     }
 
     @Theory
     public void shouldRetransmitOnNakAfterLinger(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
         createTermBuffer(creator, 5);
-        handler.onNak(offsetOfMessage(0), MESSAGE_LENGTH);
+        handler.onNak(offsetOfMessage(0), ALIGNED_FRAME_LENGTH);
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
-        handler.onNak(offsetOfMessage(0), MESSAGE_LENGTH);
+        handler.onNak(offsetOfMessage(0), ALIGNED_FRAME_LENGTH);
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(200));
 
-        verify(retransmitHandler, times(2)).onAvailable(logBuffer, offsetOfMessage(0), MESSAGE_LENGTH);
+        verify(retransmitHandler, times(2)).onAvailable(logBuffer, offsetOfMessage(0), ALIGNED_FRAME_LENGTH);
     }
 
     @Theory
     public void shouldRetransmitOnMultipleNaks(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
         createTermBuffer(creator, 5);
-        handler.onNak(offsetOfMessage(0), MESSAGE_LENGTH);
-        handler.onNak(offsetOfMessage(1), MESSAGE_LENGTH);
+        handler.onNak(offsetOfMessage(0), ALIGNED_FRAME_LENGTH);
+        handler.onNak(offsetOfMessage(1), ALIGNED_FRAME_LENGTH);
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
 
         InOrder inOrder = inOrder(retransmitHandler);
-        inOrder.verify(retransmitHandler).onAvailable(logBuffer, offsetOfMessage(0), MESSAGE_LENGTH);
-        inOrder.verify(retransmitHandler).onAvailable(logBuffer, offsetOfMessage(1), MESSAGE_LENGTH);
+        inOrder.verify(retransmitHandler).onAvailable(logBuffer, offsetOfMessage(0), ALIGNED_FRAME_LENGTH);
+        inOrder.verify(retransmitHandler).onAvailable(logBuffer, offsetOfMessage(1), ALIGNED_FRAME_LENGTH);
     }
 
     @Theory
     public void shouldRetransmitOnNakOverMessageLength(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
         createTermBuffer(creator, 10);
-        handler.onNak(offsetOfMessage(0), MESSAGE_LENGTH * 5);
+        handler.onNak(offsetOfMessage(0), ALIGNED_FRAME_LENGTH * 5);
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
 
-        verify(retransmitHandler).onAvailable(logBuffer, offsetOfMessage(0), MESSAGE_LENGTH * 5);
+        verify(retransmitHandler).onAvailable(logBuffer, offsetOfMessage(0), ALIGNED_FRAME_LENGTH * 5);
     }
 
     @Theory
     public void shouldRetransmitOnNakOverMtuLength(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
-        final int numMsgsPerMtu = MTU_LENGTH / MESSAGE_LENGTH;
-        createTermBuffer(creator, numMsgsPerMtu * 5);
+        final int numFramesPerMtu = MTU_LENGTH / ALIGNED_FRAME_LENGTH;
+        createTermBuffer(creator, numFramesPerMtu * 5);
         handler.onNak(offsetOfMessage(0), MTU_LENGTH * 2);
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
 
-        verify(retransmitHandler).onAvailable(logBuffer, offsetOfMessage(0), MTU_LENGTH);
+        verify(retransmitHandler).onAvailable(logBuffer, offsetOfMessage(0), numFramesPerMtu * ALIGNED_FRAME_LENGTH);
     }
 
     @Theory
     public void shouldStopRetransmitOnRetransmitReception(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
         createTermBuffer(creator, 5);
-        handler.onNak(offsetOfMessage(0), MESSAGE_LENGTH);
+        handler.onNak(offsetOfMessage(0), ALIGNED_FRAME_LENGTH);
         handler.onRetransmitReceived(offsetOfMessage(0));
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
 
@@ -168,12 +166,12 @@ public class RetransmitHandlerTest
     public void shouldStopOneRetransmitOnRetransmitReception(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
         createTermBuffer(creator, 5);
-        handler.onNak(offsetOfMessage(0), MESSAGE_LENGTH);
-        handler.onNak(offsetOfMessage(1), MESSAGE_LENGTH);
+        handler.onNak(offsetOfMessage(0), ALIGNED_FRAME_LENGTH);
+        handler.onNak(offsetOfMessage(1), ALIGNED_FRAME_LENGTH);
         handler.onRetransmitReceived(offsetOfMessage(0));
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
 
-        verify(retransmitHandler).onAvailable(logBuffer, offsetOfMessage(1), MESSAGE_LENGTH);
+        verify(retransmitHandler).onAvailable(logBuffer, offsetOfMessage(1), ALIGNED_FRAME_LENGTH);
     }
 
     @Theory
@@ -182,9 +180,9 @@ public class RetransmitHandlerTest
         createTermBuffer(creator, 5);
         handler = newZeroDelayRetransmitHandler();
 
-        handler.onNak(offsetOfMessage(0), MESSAGE_LENGTH);
+        handler.onNak(offsetOfMessage(0), ALIGNED_FRAME_LENGTH);
 
-        verify(retransmitHandler).onAvailable(logBuffer, offsetOfMessage(0), MESSAGE_LENGTH);
+        verify(retransmitHandler).onAvailable(logBuffer, offsetOfMessage(0), ALIGNED_FRAME_LENGTH);
     }
 
     @Theory
@@ -193,18 +191,18 @@ public class RetransmitHandlerTest
         createTermBuffer(creator, 5);
         handler = newZeroDelayRetransmitHandler();
 
-        handler.onNak(offsetOfMessage(0), MESSAGE_LENGTH);
+        handler.onNak(offsetOfMessage(0), ALIGNED_FRAME_LENGTH);
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(40));
-        handler.onNak(offsetOfMessage(0), MESSAGE_LENGTH);
+        handler.onNak(offsetOfMessage(0), ALIGNED_FRAME_LENGTH);
 
-        verify(retransmitHandler).onAvailable(logBuffer, offsetOfMessage(0), MESSAGE_LENGTH);
+        verify(retransmitHandler).onAvailable(logBuffer, offsetOfMessage(0), ALIGNED_FRAME_LENGTH);
     }
 
     @Theory
     public void shouldOnlyRetransmitOnNakWhenConfiguredTo(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
         createTermBuffer(creator, 5);
-        handler.onNak(offsetOfMessage(0), MESSAGE_LENGTH);
+        handler.onNak(offsetOfMessage(0), ALIGNED_FRAME_LENGTH);
 
         verifyZeroInteractions(retransmitHandler);
     }
@@ -213,7 +211,7 @@ public class RetransmitHandlerTest
     public void shouldNotRetransmitOnNakForMissingFrame()
     {
         createTermBufferWithGap(receiverAddDataFrame, 5, 2);
-        handler.onNak(offsetOfMessage(2), MESSAGE_LENGTH);
+        handler.onNak(offsetOfMessage(2), ALIGNED_FRAME_LENGTH);
 
         processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(40));
         verifyZeroInteractions(retransmitHandler);
@@ -221,8 +219,7 @@ public class RetransmitHandlerTest
 
     private RetransmitHandler newZeroDelayRetransmitHandler()
     {
-        return new RetransmitHandler(scanner, wheel, zeroDelayGenerator,
-                                     lingerGenerator, retransmitHandler, MTU_LENGTH);
+        return new RetransmitHandler(scanner, wheel, zeroDelayGenerator, lingerGenerator, retransmitHandler, MTU_LENGTH);
     }
 
     private void createTermBuffer(final BiConsumer<RetransmitHandlerTest, Integer> creator, final int num)
@@ -240,7 +237,7 @@ public class RetransmitHandlerTest
 
     private static int offsetOfMessage(final int index)
     {
-        return index * FRAME_ALIGNMENT;
+        return index * ALIGNED_FRAME_LENGTH;
     }
 
     private void addSentDataFrame()

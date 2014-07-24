@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron;
 
 import org.junit.*;
+import uk.co.real_logic.aeron.common.BitUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.common.event.EventLogger;
@@ -45,7 +46,8 @@ public class PubUnicastTest
     private static final long CHANNEL_ID = 1L;
     private static final long SESSION_ID = 2L;
     private static final byte[] PAYLOAD = "Payload goes here!".getBytes();
-
+    public static final int ALIGNED_FRAME_LENGTH =
+        BitUtil.align(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT);
     private final AtomicBuffer payload = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
 
     private final InetSocketAddress srcAddress = new InetSocketAddress(HOST, SRC_PORT);
@@ -90,9 +92,7 @@ public class PubUnicastTest
 
     private Aeron.ClientContext newAeronContext()
     {
-        Aeron.ClientContext ctx = new Aeron.ClientContext();
-
-        return ctx;
+        return new Aeron.ClientContext();
     }
 
     @After
@@ -123,8 +123,8 @@ public class PubUnicastTest
         }
 
         final AtomicLong termId = new AtomicLong();
-        final AtomicLong rcvedZeroLengthData = new AtomicLong();
-        final AtomicLong rcvedDataFrames = new AtomicLong();
+        final AtomicLong receivedZeroLengthData = new AtomicLong();
+        final AtomicLong receivedDataFrames = new AtomicLong();
 
         // should only see 0 length data until SM is sent
         DatagramTestHelper.receiveUntil(receiverChannel,
@@ -138,11 +138,11 @@ public class PubUnicastTest
 //                    assertThat(rcvBuffer.position(), is(DataHeaderFlyweight.HEADER_LENGTH));
                 termId.set(dataHeader.termId());
 //                    assertThat(address, is(srcAddress));
-                rcvedZeroLengthData.incrementAndGet();
+                receivedZeroLengthData.incrementAndGet();
                 return true;
             });
 
-        assertThat(rcvedZeroLengthData.get(), greaterThanOrEqualTo(1L));
+        assertThat(receivedZeroLengthData.get(), greaterThanOrEqualTo(1L));
 
         // send SM
         sendSM(termId.get());
@@ -162,14 +162,14 @@ public class PubUnicastTest
                 {
                     assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
 //                    assertThat(rcvBuffer.position(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
-                    rcvedDataFrames.incrementAndGet();
+                    receivedDataFrames.incrementAndGet();
                     return true;
                 }
 
                 return false;
             });
 
-        assertThat(rcvedDataFrames.get(), greaterThanOrEqualTo(1L));
+        assertThat(receivedDataFrames.get(), greaterThanOrEqualTo(1L));
     }
 
     @Test(timeout = 1000)
@@ -186,8 +186,8 @@ public class PubUnicastTest
         }
 
         final AtomicLong termId = new AtomicLong();
-        final AtomicLong rcvedZeroLengthData = new AtomicLong();
-        final AtomicLong rcvedDataFrames = new AtomicLong();
+        final AtomicLong receivedZeroLengthData = new AtomicLong();
+        final AtomicLong receivedDataFrames = new AtomicLong();
 
         // should only see 0 length data until SM is sent
         DatagramTestHelper.receiveUntil(receiverChannel,
@@ -197,11 +197,11 @@ public class PubUnicastTest
                 assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
                 assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH));
                 termId.set(dataHeader.termId());
-                rcvedZeroLengthData.incrementAndGet();
+                receivedZeroLengthData.incrementAndGet();
                 return true;
             });
 
-        assertThat(rcvedZeroLengthData.get(), greaterThanOrEqualTo(1L));
+        assertThat(receivedZeroLengthData.get(), greaterThanOrEqualTo(1L));
 
         // send SM
         sendSM(termId.get());
@@ -216,16 +216,16 @@ public class PubUnicastTest
                 if (dataHeader.frameLength() > DataHeaderFlyweight.HEADER_LENGTH)
                 {
                     assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
-                    rcvedDataFrames.incrementAndGet();
+                    receivedDataFrames.incrementAndGet();
                     return true;
                 }
                 return false;
             });
 
-        assertThat(rcvedDataFrames.get(), greaterThanOrEqualTo(1L));
+        assertThat(receivedDataFrames.get(), greaterThanOrEqualTo(1L));
 
         // send NAK
-        sendNak(termId.get(), 0, FrameDescriptor.FRAME_ALIGNMENT);
+        sendNak(termId.get(), 0, ALIGNED_FRAME_LENGTH);
 
         // assert the received Data Frames are correct
         DatagramTestHelper.receiveUntil(receiverChannel,
@@ -243,14 +243,14 @@ public class PubUnicastTest
                 {
                     assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
 //                        assertThat(rcvBuffer.position(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
-                    rcvedDataFrames.incrementAndGet();
+                    receivedDataFrames.incrementAndGet();
                     return true;
                 }
 
                 return false;
             });
 
-        assertThat(rcvedDataFrames.get(), greaterThanOrEqualTo(2L));
+        assertThat(receivedDataFrames.get(), greaterThanOrEqualTo(2L));
     }
 
     @Test

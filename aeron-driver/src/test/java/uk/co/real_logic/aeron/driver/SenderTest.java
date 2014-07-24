@@ -44,7 +44,7 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender.App
 
 public class SenderTest
 {
-    public static final long LOG_BUFFER_SIZE = 64 * 1024;
+    public static final long LOG_BUFFER_SIZE = LogBufferDescriptor.MIN_LOG_SIZE;
     public static final int MAX_FRAME_LENGTH = 1024;
     public static final long SESSION_ID = 1L;
     public static final long CHANNEL_ID = 2L;
@@ -52,20 +52,18 @@ public class SenderTest
     public static final byte[] PAYLOAD = "Payload is here!".getBytes();
 
     public final byte[] HEADER = DataHeaderFlyweight.createDefaultHeader(SESSION_ID, CHANNEL_ID, INITIAL_TERM_ID);
+    public final int ALIGNED_FRAME_LENGTH = align(HEADER.length + PAYLOAD.length, FRAME_ALIGNMENT);
 
     private final EventLogger mockLogger = mock(EventLogger.class);
 
     private final AtomicArray<DriverPublication> publications = new AtomicArray<>();
-    private final Sender sender = new Sender(new MediaDriver.DriverContext()
-                                                            .publications(publications)
-                                                            .senderLogger(mockLogger));
+    private final Sender sender = new Sender(new MediaDriver.DriverContext().publications(publications).senderLogger(mockLogger));
 
     private final TermBuffers termBuffers =
         BufferAndFrameHelper.newTestTermBuffers(LOG_BUFFER_SIZE, LogBufferDescriptor.STATE_BUFFER_LENGTH);
 
     private LogAppender[] logAppenders;
     private DriverPublication publication;
-    private BufferPositionReporter positionReporter;
 
     private final SenderControlStrategy spySenderControlStrategy = spy(new UnicastSenderControlStrategy());
 
@@ -100,18 +98,26 @@ public class SenderTest
     {
         currentTimestamp = 0;
 
-        logAppenders = termBuffers.stream()
-                              .map((log) -> new LogAppender(log.logBuffer(), log.stateBuffer(),
-                                                            HEADER, MAX_FRAME_LENGTH)).toArray(LogAppender[]::new);
+        logAppenders =
+            termBuffers.stream()
+                       .map((log) -> new LogAppender(log.logBuffer(), log.stateBuffer(),HEADER, MAX_FRAME_LENGTH))
+                       .toArray(LogAppender[]::new);
 
         final MediaPublicationEndpoint mockMediaPublicationEndpoint = mock(MediaPublicationEndpoint.class);
         when(mockMediaPublicationEndpoint.destination()).thenReturn(destination);
         when(mockMediaPublicationEndpoint.sendTo(anyObject(), anyObject())).thenAnswer(saveByteBufferAnswer);
 
-        positionReporter = mock(BufferPositionReporter.class);
-
-        publication = new DriverPublication(mockMediaPublicationEndpoint, wheel, spySenderControlStrategy, termBuffers,
-            positionReporter, SESSION_ID, CHANNEL_ID, INITIAL_TERM_ID, HEADER.length, MAX_FRAME_LENGTH, mockLogger);
+        publication = new DriverPublication(mockMediaPublicationEndpoint,
+                                            wheel,
+                                            spySenderControlStrategy,
+                                            termBuffers,
+                                            mock(BufferPositionReporter.class),
+                                            SESSION_ID,
+                                            CHANNEL_ID,
+                                            INITIAL_TERM_ID,
+                                            HEADER.length,
+                                            MAX_FRAME_LENGTH,
+                                            mockLogger);
         publications.add(publication);
     }
 
@@ -168,6 +174,7 @@ public class SenderTest
         publications.forEach(DriverPublication::heartbeatCheck);
         currentTimestamp += 10;
         publications.forEach(DriverPublication::heartbeatCheck);
+
         assertThat(receivedFrames.size(), is(2));
     }
 
@@ -179,6 +186,7 @@ public class SenderTest
         currentTimestamp += TimeUnit.MILLISECONDS.toNanos(DriverPublication.HEARTBEAT_TIMEOUT_MS);
         publication.onStatusMessage(INITIAL_TERM_ID, 0, 0, rcvAddress);
         publications.forEach(DriverPublication::heartbeatCheck);
+
         assertThat(receivedFrames.size(), is(0));
     }
 
@@ -187,7 +195,7 @@ public class SenderTest
     {
         EventLogger.logInvocation();
 
-        publication.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FRAME_ALIGNMENT), rcvAddress);
+        publication.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress);
 
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -196,8 +204,10 @@ public class SenderTest
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(1));
+
         dataHeader.wrap(receivedFrames.remove(), 0);
-        assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
+
+        assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
         assertThat(dataHeader.channelId(), is(CHANNEL_ID));
         assertThat(dataHeader.sessionId(), is(SESSION_ID));
@@ -212,8 +222,7 @@ public class SenderTest
     {
         EventLogger.logInvocation();
 
-        publication.onStatusMessage(INITIAL_TERM_ID, 0, (2 * align(PAYLOAD.length, FRAME_ALIGNMENT)),
-                                    rcvAddress);
+        publication.onStatusMessage(INITIAL_TERM_ID, 0, (2 * ALIGNED_FRAME_LENGTH), rcvAddress);
 
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -226,7 +235,8 @@ public class SenderTest
         assertThat(receivedFrames.size(), is(2));
 
         dataHeader.wrap(receivedFrames.remove(), 0);
-        assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
+
+        assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
         assertThat(dataHeader.channelId(), is(CHANNEL_ID));
         assertThat(dataHeader.sessionId(), is(SESSION_ID));
@@ -236,7 +246,7 @@ public class SenderTest
         assertThat(dataHeader.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
 
         dataHeader.wrap(receivedFrames.remove(), 0);
-        assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
+        assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
         assertThat(dataHeader.channelId(), is(CHANNEL_ID));
         assertThat(dataHeader.sessionId(), is(SESSION_ID));
@@ -251,7 +261,7 @@ public class SenderTest
     {
         EventLogger.logInvocation();
 
-        publication.onStatusMessage(INITIAL_TERM_ID, 0, (2 * align(PAYLOAD.length, FRAME_ALIGNMENT)), rcvAddress);
+        publication.onStatusMessage(INITIAL_TERM_ID, 0, (2 * ALIGNED_FRAME_LENGTH), rcvAddress);
 
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -264,7 +274,7 @@ public class SenderTest
         final ByteBuffer frame = receivedFrames.remove();
 
         dataHeader.wrap(frame, 0);
-        assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
+        assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
         assertThat(dataHeader.channelId(), is(CHANNEL_ID));
         assertThat(dataHeader.sessionId(), is(SESSION_ID));
@@ -274,7 +284,7 @@ public class SenderTest
         assertThat(dataHeader.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
 
         dataHeader.wrap(frame, (int)offsetOfMessage(2));
-        assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
+        assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
         assertThat(dataHeader.channelId(), is(CHANNEL_ID));
         assertThat(dataHeader.sessionId(), is(SESSION_ID));
@@ -296,12 +306,14 @@ public class SenderTest
         sender.doWork();
         assertThat(receivedFrames.size(), is(0));
 
-        publication.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FRAME_ALIGNMENT), rcvAddress);
+        publication.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress);
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(1));
+
         dataHeader.wrap(receivedFrames.remove(), 0);
-        assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
+
+        assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
         assertThat(dataHeader.channelId(), is(CHANNEL_ID));
         assertThat(dataHeader.sessionId(), is(SESSION_ID));
@@ -319,13 +331,15 @@ public class SenderTest
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
         assertThat(logAppenders[0].append(buffer, 0, PAYLOAD.length), is(SUCCESS));
-        publication.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FRAME_ALIGNMENT), rcvAddress);
+        publication.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress);
 
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(1));
+
         dataHeader.wrap(receivedFrames.remove(), 0);
-        assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
+
+        assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
         assertThat(dataHeader.channelId(), is(CHANNEL_ID));
         assertThat(dataHeader.sessionId(), is(SESSION_ID));
@@ -345,7 +359,7 @@ public class SenderTest
     {
         EventLogger.logInvocation();
 
-        publication.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FRAME_ALIGNMENT), rcvAddress);
+        publication.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress);
 
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -358,9 +372,11 @@ public class SenderTest
 
         currentTimestamp += TimeUnit.MILLISECONDS.toNanos(DriverPublication.HEARTBEAT_TIMEOUT_MS) - 1;
         publications.forEach(DriverPublication::heartbeatCheck);
+
         assertThat(receivedFrames.size(), is(0));  // should not send yet
         currentTimestamp += 10;
         publications.forEach(DriverPublication::heartbeatCheck);
+
         assertThat(receivedFrames.size(), greaterThanOrEqualTo(1));  // should send now
 
         dataHeader.wrap(new AtomicBuffer(receivedFrames.remove()), 0);
@@ -373,7 +389,7 @@ public class SenderTest
     {
         EventLogger.logInvocation();
 
-        publication.onStatusMessage(INITIAL_TERM_ID, 0, align(PAYLOAD.length, FRAME_ALIGNMENT), rcvAddress);
+        publication.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress);
 
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -409,6 +425,6 @@ public class SenderTest
 
     private long offsetOfMessage(final int num)
     {
-        return (num - 1) * align(PAYLOAD.length, FRAME_ALIGNMENT);
+        return (num - 1) * align(HEADER.length + PAYLOAD.length, FRAME_ALIGNMENT);
     }
 }

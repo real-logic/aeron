@@ -43,7 +43,7 @@ import static org.mockito.Mockito.when;
 
 public class ReceiverTest
 {
-    public static final long LOG_BUFFER_SIZE = 64 * 1024;
+    public static final long LOG_BUFFER_SIZE = LogBufferDescriptor.MIN_LOG_SIZE;
     private static final String URI = "udp://localhost:45678";
     private static final UdpDestination UDP_DESTINATION = UdpDestination.parse(URI);
     private static final long CHANNEL_ID = 10;
@@ -74,7 +74,6 @@ public class ReceiverTest
     private InetSocketAddress senderAddress = new InetSocketAddress("localhost", 40123);
     private Receiver receiver;
     private ReceiverProxy receiverProxy;
-    private DriverConductorProxy driverConductorProxy;
     private OneToOneConcurrentArrayQueue<? super Object> toConductorQueue;
 
     private MediaSubscriptionEndpoint mediaSubscriptionEndpoint;
@@ -97,7 +96,7 @@ public class ReceiverTest
             .receiverLogger(mockLogger);
 
         toConductorQueue = ctx.conductorCommandQueue();
-        driverConductorProxy = new DriverConductorProxy(toConductorQueue);
+        final DriverConductorProxy driverConductorProxy = new DriverConductorProxy(toConductorQueue);
         ctx.driverConductorProxy(driverConductorProxy);
 
         receiverProxy = new ReceiverProxy(ctx.receiverCommandQueue());
@@ -112,8 +111,7 @@ public class ReceiverTest
                                 .map((rawLog) -> new LogReader(rawLog.logBuffer(), rawLog.stateBuffer()))
                                 .toArray(LogReader[]::new);
 
-        mediaSubscriptionEndpoint = new MediaSubscriptionEndpoint(UdpDestination.parse(URI),
-                driverConductorProxy, mockLogger);
+        mediaSubscriptionEndpoint = new MediaSubscriptionEndpoint(UdpDestination.parse(URI), driverConductorProxy, mockLogger);
     }
 
     @After
@@ -140,9 +138,15 @@ public class ReceiverTest
         mediaSubscriptionEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
         final DriverConnectedSubscription connectedSubscription =
-            new DriverConnectedSubscription(UDP_DESTINATION, SESSION_ID, CHANNEL_ID, TERM_ID, INITIAL_WINDOW_SIZE,
-                    termBuffers, mockLossHandler, mediaSubscriptionEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID),
-                    POSITION_INDICATOR);
+            new DriverConnectedSubscription(
+                UDP_DESTINATION,
+                SESSION_ID,
+                CHANNEL_ID,
+                TERM_ID,
+                INITIAL_WINDOW_SIZE,
+                termBuffers,
+                mockLossHandler,
+                mediaSubscriptionEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID), POSITION_INDICATOR);
 
         final int messagesRead = toConductorQueue.drain(
             (e) ->
@@ -199,7 +203,8 @@ public class ReceiverTest
                 assertTrue(e instanceof CreateConnectedSubscriptionCmd);
                 // pass in new term buffer from conductor, which should trigger SM
                 receiverProxy.newConnectedSubscription(
-                    new NewConnectedSubscriptionCmd(mediaSubscriptionEndpoint,
+                    new NewConnectedSubscriptionCmd(
+                        mediaSubscriptionEndpoint,
                         new DriverConnectedSubscription(
                             UDP_DESTINATION,
                             SESSION_ID,
@@ -255,17 +260,18 @@ public class ReceiverTest
                 assertTrue(e instanceof CreateConnectedSubscriptionCmd);
                 // pass in new term buffer from conductor, which should trigger SM
                 receiverProxy.newConnectedSubscription(
-                    new NewConnectedSubscriptionCmd(mediaSubscriptionEndpoint,
-                        new DriverConnectedSubscription(
-                            UDP_DESTINATION,
-                            SESSION_ID,
-                            CHANNEL_ID,
-                            TERM_ID,
-                            INITIAL_WINDOW_SIZE,
-                            termBuffers,
-                            mockLossHandler,
-                            mediaSubscriptionEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID),
-                            POSITION_INDICATOR)));
+                    new NewConnectedSubscriptionCmd
+                        (mediaSubscriptionEndpoint,
+                         new DriverConnectedSubscription(
+                             UDP_DESTINATION,
+                             SESSION_ID,
+                             CHANNEL_ID,
+                             TERM_ID,
+                             INITIAL_WINDOW_SIZE,
+                             termBuffers,
+                             mockLossHandler,
+                             mediaSubscriptionEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID),
+                             POSITION_INDICATOR)));
             });
 
         assertThat(messagesRead, is(1));
@@ -314,7 +320,8 @@ public class ReceiverTest
                 assertTrue(e instanceof CreateConnectedSubscriptionCmd);
                 // pass in new term buffer from conductor, which should trigger SM
                 receiverProxy.newConnectedSubscription(
-                    new NewConnectedSubscriptionCmd(mediaSubscriptionEndpoint,
+                    new NewConnectedSubscriptionCmd(
+                        mediaSubscriptionEndpoint,
                         new DriverConnectedSubscription(
                             UDP_DESTINATION,
                             SESSION_ID,
@@ -371,7 +378,8 @@ public class ReceiverTest
         final int messagesRead = toConductorQueue.drain(
             (e) ->
                 receiverProxy.newConnectedSubscription(
-                    new NewConnectedSubscriptionCmd(mediaSubscriptionEndpoint,
+                    new NewConnectedSubscriptionCmd(
+                        mediaSubscriptionEndpoint,
                         new DriverConnectedSubscription(
                             UDP_DESTINATION,
                             SESSION_ID,

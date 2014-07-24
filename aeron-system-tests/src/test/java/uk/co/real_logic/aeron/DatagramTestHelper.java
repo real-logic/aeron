@@ -22,8 +22,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.util.function.Function;
 
-/**
- */
 public class DatagramTestHelper
 {
     public static void receiveUntil(final DatagramChannel channel, final Function<ByteBuffer, Boolean> handler)

@@ -57,20 +57,19 @@ public class TermBuffersFactoryTest
         final TermBuffers termBuffers = termBuffersFactory.newPublication(destination, SESSION_ID, CHANNEL_ID);
 
         termBuffers.stream().forEach(
-            (logBuffer) ->
+            (rawLog) ->
             {
-                final AtomicBuffer log = logBuffer.logBuffer();
+                final AtomicBuffer log = rawLog.logBuffer();
 
                 assertThat(log.capacity(), is(TERM_BUFFER_SZ));
                 assertThat(log.getByte(0), is((byte)0));
                 assertThat(log.getByte(TERM_BUFFER_SZ - 1), is((byte)0));
 
-                final AtomicBuffer state = logBuffer.stateBuffer();
+                final AtomicBuffer state = rawLog.stateBuffer();
 
                 assertThat(state.capacity(), is(LogBufferDescriptor.STATE_BUFFER_LENGTH));
                 assertThat(state.getByte(0), is((byte)0));
                 assertThat(state.getByte(LogBufferDescriptor.STATE_BUFFER_LENGTH - 1), is((byte)0));
-            }
-        );
+            });
     }
 }

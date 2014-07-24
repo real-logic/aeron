@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
+import uk.co.real_logic.aeron.common.BitUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 
 import java.nio.ByteBuffer;
@@ -32,7 +33,7 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
 
 public class LogRebuilderTest
 {
-    private static final int LOG_BUFFER_CAPACITY = 1024 * 16;
+    private static final int LOG_BUFFER_CAPACITY = LogBufferDescriptor.MIN_LOG_SIZE;
     private static final int STATE_BUFFER_CAPACITY = STATE_BUFFER_LENGTH;
 
     private final AtomicBuffer logBuffer = mock(AtomicBuffer.class);
@@ -52,7 +53,7 @@ public class LogRebuilderTest
     @Test(expected = IllegalStateException.class)
     public void shouldThrowExceptionWhenCapacityNotMultipleOfAlignment()
     {
-        final int logBufferCapacity = LogBufferDescriptor.LOG_MIN_SIZE + FRAME_ALIGNMENT + 1;
+        final int logBufferCapacity = LogBufferDescriptor.MIN_LOG_SIZE + FRAME_ALIGNMENT + 1;
 
         when(logBuffer.capacity()).thenReturn(logBufferCapacity);
 
@@ -88,10 +89,10 @@ public class LogRebuilderTest
     @Test
     public void shouldInsertLastFrameIntoBuffer()
     {
-        final int frameLength = FRAME_ALIGNMENT * 2;
+        final int frameLength = BitUtil.align(256, FRAME_ALIGNMENT);
         final int srcOffset = 0;
         final int tail = LOG_BUFFER_CAPACITY - frameLength;
-        final AtomicBuffer packet = new AtomicBuffer(ByteBuffer.allocate(FRAME_ALIGNMENT));
+        final AtomicBuffer packet = new AtomicBuffer(ByteBuffer.allocate(frameLength));
         packet.putShort(typeOffset(srcOffset), (short)PADDING_FRAME_TYPE, LITTLE_ENDIAN);
         packet.putInt(termOffsetOffset(srcOffset), tail, LITTLE_ENDIAN);
         packet.putInt(lengthOffset(srcOffset), frameLength, LITTLE_ENDIAN);
@@ -113,69 +114,72 @@ public class LogRebuilderTest
     @Test
     public void shouldFillSingleGap()
     {
-        final int length = FRAME_ALIGNMENT;
+        final int frameLength = 50;
+        final int alignedFrameLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
         final int srcOffset = 0;
-        final int tail = FRAME_ALIGNMENT;
-        final AtomicBuffer packet = new AtomicBuffer(ByteBuffer.allocate(length));
+        final int tail = alignedFrameLength;
+        final AtomicBuffer packet = new AtomicBuffer(ByteBuffer.allocate(alignedFrameLength));
         packet.putInt(termOffsetOffset(srcOffset), tail, LITTLE_ENDIAN);
 
-        stateBuffer.putInt(TAIL_COUNTER_OFFSET, FRAME_ALIGNMENT);
-        stateBuffer.putInt(HIGH_WATER_MARK_OFFSET, FRAME_ALIGNMENT * 3);
-        when(logBuffer.getInt(lengthOffset(0))).thenReturn(length);
-        when(logBuffer.getInt(lengthOffset(FRAME_ALIGNMENT), LITTLE_ENDIAN)).thenReturn(length);
-        when(logBuffer.getInt(lengthOffset(FRAME_ALIGNMENT * 2), LITTLE_ENDIAN)).thenReturn(length);
+        stateBuffer.putInt(TAIL_COUNTER_OFFSET, alignedFrameLength);
+        stateBuffer.putInt(HIGH_WATER_MARK_OFFSET, alignedFrameLength * 3);
+        when(logBuffer.getInt(lengthOffset(0))).thenReturn(frameLength);
+        when(logBuffer.getInt(lengthOffset(alignedFrameLength), LITTLE_ENDIAN)).thenReturn(frameLength);
+        when(logBuffer.getInt(lengthOffset(alignedFrameLength * 2), LITTLE_ENDIAN)).thenReturn(frameLength);
 
-        logRebuilder.insert(packet, srcOffset, length);
+        logRebuilder.insert(packet, srcOffset, alignedFrameLength);
 
-        assertThat(stateViewer.tailVolatile(), is(FRAME_ALIGNMENT * 3));
-        assertThat(stateViewer.highWaterMarkVolatile(), is(FRAME_ALIGNMENT * 3));
+        assertThat(stateViewer.tailVolatile(), is(alignedFrameLength * 3));
+        assertThat(stateViewer.highWaterMarkVolatile(), is(alignedFrameLength * 3));
 
         final InOrder inOrder = inOrder(logBuffer, stateBuffer);
-        inOrder.verify(logBuffer).putBytes(tail, packet, srcOffset, length);
-        inOrder.verify(stateBuffer).putIntOrdered(TAIL_COUNTER_OFFSET, FRAME_ALIGNMENT * 3);
+        inOrder.verify(logBuffer).putBytes(tail, packet, srcOffset, alignedFrameLength);
+        inOrder.verify(stateBuffer).putIntOrdered(TAIL_COUNTER_OFFSET, alignedFrameLength * 3);
     }
 
     @Test
     public void shouldFillAfterAGap()
     {
-        final int length = FRAME_ALIGNMENT;
+        final int frameLength = 50;
+        final int alignedFrameLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
         final int srcOffset = 0;
-        final AtomicBuffer packet = new AtomicBuffer(ByteBuffer.allocate(length));
-        packet.putInt(termOffsetOffset(srcOffset), FRAME_ALIGNMENT * 2, LITTLE_ENDIAN);
+        final AtomicBuffer packet = new AtomicBuffer(ByteBuffer.allocate(alignedFrameLength));
+        packet.putInt(termOffsetOffset(srcOffset), alignedFrameLength * 2, LITTLE_ENDIAN);
 
         stateBuffer.putInt(TAIL_COUNTER_OFFSET, 0);
-        stateBuffer.putInt(HIGH_WATER_MARK_OFFSET, FRAME_ALIGNMENT * 2);
+        stateBuffer.putInt(HIGH_WATER_MARK_OFFSET, alignedFrameLength * 2);
         when(logBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN)).thenReturn(0);
-        when(logBuffer.getInt(lengthOffset(FRAME_ALIGNMENT), LITTLE_ENDIAN)).thenReturn(length);
+        when(logBuffer.getInt(lengthOffset(alignedFrameLength), LITTLE_ENDIAN)).thenReturn(frameLength);
 
-        logRebuilder.insert(packet, srcOffset, length);
+        logRebuilder.insert(packet, srcOffset, alignedFrameLength);
 
         assertThat(stateViewer.tailVolatile(), is(0));
-        assertThat(stateViewer.highWaterMarkVolatile(), is(FRAME_ALIGNMENT * 3));
+        assertThat(stateViewer.highWaterMarkVolatile(), is(alignedFrameLength * 3));
 
         final InOrder inOrder = inOrder(logBuffer, stateBuffer);
-        inOrder.verify(logBuffer).putBytes(FRAME_ALIGNMENT * 2, packet, srcOffset, length);
-        inOrder.verify(stateBuffer).putIntOrdered(HIGH_WATER_MARK_OFFSET, FRAME_ALIGNMENT * 3);
+        inOrder.verify(logBuffer).putBytes(alignedFrameLength * 2, packet, srcOffset, alignedFrameLength);
+        inOrder.verify(stateBuffer).putIntOrdered(HIGH_WATER_MARK_OFFSET, alignedFrameLength * 3);
     }
 
     @Test
     public void shouldFillGapButNotMoveTailOrHwm()
     {
-        final int length = FRAME_ALIGNMENT;
+        final int frameLength = 50;
+        final int alignedFrameLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
         final int srcOffset = 0;
-        final AtomicBuffer packet = new AtomicBuffer(ByteBuffer.allocate(length));
-        packet.putInt(termOffsetOffset(srcOffset), FRAME_ALIGNMENT * 2, LITTLE_ENDIAN);
+        final AtomicBuffer packet = new AtomicBuffer(ByteBuffer.allocate(alignedFrameLength));
+        packet.putInt(termOffsetOffset(srcOffset), alignedFrameLength * 2, LITTLE_ENDIAN);
 
-        stateBuffer.putInt(TAIL_COUNTER_OFFSET, FRAME_ALIGNMENT);
-        stateBuffer.putInt(HIGH_WATER_MARK_OFFSET, FRAME_ALIGNMENT * 4);
-        when(logBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN)).thenReturn(FRAME_ALIGNMENT);
-        when(logBuffer.getInt(lengthOffset(FRAME_ALIGNMENT), LITTLE_ENDIAN)).thenReturn(0);
+        stateBuffer.putInt(TAIL_COUNTER_OFFSET, alignedFrameLength);
+        stateBuffer.putInt(HIGH_WATER_MARK_OFFSET, alignedFrameLength * 4);
+        when(logBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN)).thenReturn(frameLength);
+        when(logBuffer.getInt(lengthOffset(alignedFrameLength), LITTLE_ENDIAN)).thenReturn(0);
 
-        logRebuilder.insert(packet, srcOffset, length);
+        logRebuilder.insert(packet, srcOffset, alignedFrameLength);
 
-        assertThat(stateViewer.tailVolatile(), is(FRAME_ALIGNMENT));
-        assertThat(stateViewer.highWaterMarkVolatile(), is(FRAME_ALIGNMENT * 4));
+        assertThat(stateViewer.tailVolatile(), is(alignedFrameLength));
+        assertThat(stateViewer.highWaterMarkVolatile(), is(alignedFrameLength * 4));
 
-        verify(logBuffer).putBytes(FRAME_ALIGNMENT * 2, packet, srcOffset, length);
+        verify(logBuffer).putBytes(alignedFrameLength * 2, packet, srcOffset, alignedFrameLength);
     }
 }

@@ -60,13 +60,17 @@ Full clean and build of all modules
 Running Examples
 ----------------
 
-You can run the `ExamplePublisher` with its own Media Driver via Gradle
+Start up a media driver via Gradle
 
-    $ ./gradlew pub
+    $ ./gradlew aeron-driver:run
 
-You can run the `ExampleSubscriber` with its own Media Driver via Gradle
+You can run the `ExamplePublisher` from a command line
 
-    $ ./gradlew sub
+    $ java -cp aeron-examples/build/libs/examples.jar uk.co.real_logic.aeron.examples.ExamplePublisher
+
+You can run the `ExampleSubscriber` from a command line
+
+    $ java -cp aeron-examples/build/libs/examples.jar uk.co.real_logic.aeron.examples.ExamplePublisher
 
 Media Driver Packaging
 ----------------------

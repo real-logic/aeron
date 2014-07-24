@@ -31,6 +31,7 @@ public class ExamplePublisher
     public static final int CHANNEL_ID = ExampleConfiguration.CHANNEL_ID;
     public static final String DESTINATION = ExampleConfiguration.DESTINATION;
     public static final long NUMBER_OF_MESSAGES = ExampleConfiguration.NUMBER_OF_MESSAGES;
+    public static final boolean EMBEDDED_MEDIA_DRIVER = ExampleConfiguration.EMBEDDED_MEDIA_DRIVER;
 
     private static final AtomicBuffer BUFFER = new AtomicBuffer(ByteBuffer.allocateDirect(256));
 
@@ -38,10 +39,14 @@ public class ExamplePublisher
     {
         final ExecutorService executor = Executors.newSingleThreadExecutor();
         final Aeron.ClientContext context = new Aeron.ClientContext();
+        MediaDriver driver = null;
+        Aeron aeron = null;
 
-        try (final MediaDriver driver = ExampleUtil.createEmbeddedMediaDriver();
-             final Aeron aeron = ExampleUtil.createAeron(context, executor))
+        try
         {
+            driver = (EMBEDDED_MEDIA_DRIVER ? ExampleUtil.createEmbeddedMediaDriver() : null);
+            aeron = ExampleUtil.createAeron(context, executor);
+
             System.out.println("Publishing to " + DESTINATION + " on channel Id " + CHANNEL_ID);
 
             final Publication publication = aeron.addPublication(DESTINATION, CHANNEL_ID, 0);
@@ -67,11 +72,27 @@ public class ExamplePublisher
             }
 
             aeron.shutdown();
-            driver.shutdown();
+
+            if (null != driver)
+            {
+                driver.shutdown();
+            }
         }
         catch (final Exception ex)
         {
             ex.printStackTrace();
+        }
+        finally
+        {
+            if (null != aeron)
+            {
+                aeron.close();
+            }
+
+            if (null != driver)
+            {
+                driver.close();
+            }
         }
 
         executor.shutdown();

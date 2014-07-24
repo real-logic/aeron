@@ -207,6 +207,7 @@ task(runEx, dependsOn: project(':aeron-examples').'build', type: JavaExec) {
     main = 'uk.co.real_logic.aeron.examples.' + mainClass
     classpath = project(':aeron-examples').sourceSets.main.runtimeClasspath
     systemProperties('aeron.dir.data': baseDir + '-data',
+            'aeron.example.embeddedMediaDriver': true,
             'aeron.dir.conductor': baseDir + '-conductor',
             'aeron.dir.counters': baseDir + '-counters',
             'aeron.event.buffer.location': baseDir + '-events',

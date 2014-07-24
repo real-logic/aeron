@@ -379,19 +379,24 @@ public class MediaDriver implements AutoCloseable
 
     /**
      * Close and cleanup all resources for media driver
-     *
-     * @throws Exception
      */
-    public void close() throws Exception
+    public void close()
     {
-        receiver.close();
-        receiver.nioSelector().selectNowWithoutProcessing();
-        sender.close();
-        conductor.close();
-        conductor.nioSelector().selectNowWithoutProcessing();
-        ctx.close();
-        eventReader.close();
-        deleteDirectories();
+        try
+        {
+            receiver.close();
+            receiver.nioSelector().selectNowWithoutProcessing();
+            sender.close();
+            conductor.close();
+            conductor.nioSelector().selectNowWithoutProcessing();
+            ctx.close();
+            eventReader.close();
+            deleteDirectories();
+        }
+        catch (final Exception ex)
+        {
+            throw new RuntimeException(ex);
+        }
     }
 
     private void ensureDirectoriesExist() throws Exception

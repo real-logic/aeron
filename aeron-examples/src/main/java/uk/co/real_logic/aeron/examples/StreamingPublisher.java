@@ -34,6 +34,7 @@ public class StreamingPublisher
     public static final int MESSAGE_LENGTH = ExampleConfiguration.MESSAGE_LENGTH;
     public static final long NUMBER_OF_MESSAGES = ExampleConfiguration.NUMBER_OF_MESSAGES;
     public static final long LINGER_TIMEOUT_MS = ExampleConfiguration.LINGER_TIMEOUT_MS;
+    public static final boolean EMBEDDED_MEDIA_DRIVER = ExampleConfiguration.EMBEDDED_MEDIA_DRIVER;
 
     private static final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
 
@@ -41,10 +42,14 @@ public class StreamingPublisher
     {
         final ExecutorService executor = Executors.newFixedThreadPool(2);
         final Aeron.ClientContext context = new Aeron.ClientContext();
+        MediaDriver driver = null;
+        Aeron aeron = null;
 
-        try (final MediaDriver driver = ExampleUtil.createEmbeddedMediaDriver();
-             final Aeron aeron = ExampleUtil.createAeron(context, executor))
+        try
         {
+            driver = (EMBEDDED_MEDIA_DRIVER ? ExampleUtil.createEmbeddedMediaDriver() : null);
+            aeron = ExampleUtil.createAeron(context, executor);
+
             System.out.println("Streaming " + NUMBER_OF_MESSAGES + " messages of size " + MESSAGE_LENGTH +
                     " bytes to " + DESTINATION + " on channel Id " + CHANNEL_ID);
 
@@ -76,11 +81,24 @@ public class StreamingPublisher
 
             reporter.done();
             aeron.shutdown();
-            driver.shutdown();
+
+            if (null != driver)
+            {
+                driver.shutdown();
+            }
         }
         catch (final Exception ex)
         {
             ex.printStackTrace();
+        }
+        if (null != aeron)
+        {
+            aeron.close();
+        }
+
+        if (null != driver)
+        {
+            driver.close();
         }
 
         executor.shutdown();

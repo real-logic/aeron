@@ -30,15 +30,20 @@ public class ExampleSubscriber
     public static final int CHANNEL_ID = ExampleConfiguration.CHANNEL_ID;
     public static final String DESTINATION = ExampleConfiguration.DESTINATION;
     public static final int FRAME_COUNT_LIMIT = ExampleConfiguration.FRAME_COUNT_LIMIT;
+    public static final boolean EMBEDDED_MEDIA_DRIVER = ExampleConfiguration.EMBEDDED_MEDIA_DRIVER;
 
     public static void main(final String[] args)
     {
         final ExecutorService executor = Executors.newFixedThreadPool(1);
         final Aeron.ClientContext aeronContext = new Aeron.ClientContext();
+        MediaDriver driver = null;
+        Aeron aeron = null;
 
-        try (final MediaDriver driver = ExampleUtil.createEmbeddedMediaDriver();
-             final Aeron aeron = ExampleUtil.createAeron(aeronContext, executor))
+        try
         {
+            driver = (EMBEDDED_MEDIA_DRIVER ? ExampleUtil.createEmbeddedMediaDriver() : null);
+            aeron = ExampleUtil.createAeron(aeronContext, executor);
+
             System.out.println("Subscribing to " + DESTINATION + " on channel Id " + CHANNEL_ID);
 
             // subscription for channel Id 1
@@ -51,6 +56,18 @@ public class ExampleSubscriber
         catch (final Exception ex)
         {
             ex.printStackTrace();
+        }
+        finally
+        {
+            if (null != aeron)
+            {
+                aeron.close();
+            }
+
+            if (null != driver)
+            {
+                driver.close();
+            }
         }
 
         executor.shutdown();

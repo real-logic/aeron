@@ -28,6 +28,7 @@ public class ExampleConfiguration
     public static final String MESSAGE_LENGTH_PROP = "aeron.example.messageLength";
     public static final String NUMBER_OF_MESSAGES_PROP = "aeron.example.numberOfMessages";
     public static final String LINGER_TIMEOUT_MS_PROP = "aeron.example.lingerTimeout";
+    public static final String EMBEDDED_MEDIA_DRIVER_PROP = "aeron.example.embeddedMediaDriver";
 
     public static final String DESTINATION;
     public static final int CHANNEL_ID;
@@ -35,6 +36,7 @@ public class ExampleConfiguration
     public static final int MESSAGE_LENGTH;
     public static final long NUMBER_OF_MESSAGES;
     public static final long LINGER_TIMEOUT_MS;
+    public static final boolean EMBEDDED_MEDIA_DRIVER;
 
     static
     {
@@ -44,5 +46,6 @@ public class ExampleConfiguration
         MESSAGE_LENGTH = Integer.getInteger(MESSAGE_LENGTH_PROP, 256);
         NUMBER_OF_MESSAGES = Long.getLong(NUMBER_OF_MESSAGES_PROP, 100);
         LINGER_TIMEOUT_MS = Long.getLong(LINGER_TIMEOUT_MS_PROP, TimeUnit.SECONDS.toMillis(5));
+        EMBEDDED_MEDIA_DRIVER = Boolean.getBoolean(EMBEDDED_MEDIA_DRIVER_PROP);
     }
 }

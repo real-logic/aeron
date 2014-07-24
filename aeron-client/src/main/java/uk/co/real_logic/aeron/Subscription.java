@@ -31,18 +31,18 @@ public class Subscription implements AutoCloseable
     private final String destination;
     private final long channelId;
     private final AtomicArray<ConnectedSubscription> connectedSubscriptions = new AtomicArray<>();
-    private final DataHandler handler;
-    private final ClientConductor conductor;
+    private final DataHandler dataHandler;
+    private final ClientConductor clientConductor;
 
     private int roundRobinIndex = 0;
 
-    public Subscription(final ClientConductor conductor,
-                        final DataHandler handler,
+    public Subscription(final ClientConductor clientConductor,
+                        final DataHandler dataHandler,
                         final String destination,
                         final long channelId)
     {
-        this.conductor = conductor;
-        this.handler = handler;
+        this.clientConductor = clientConductor;
+        this.dataHandler = dataHandler;
         this.destination = destination;
         this.channelId = channelId;
     }
@@ -62,7 +62,7 @@ public class Subscription implements AutoCloseable
      */
     public void close()
     {
-        conductor.releaseSubscription(this);
+        clientConductor.releaseSubscription(this);
         closeBuffers();
     }
 
@@ -91,10 +91,14 @@ public class Subscription implements AutoCloseable
         return connectedSubscriptions.doLimitedAction(roundRobinIndex, fragmentCountLimit, ConnectedSubscription::poll);
     }
 
-    public void onTermBuffersMapped(final long sessionId, final long termId,
-                                    final LogReader[] logReaders, final PositionReporter reporter, final ManagedBuffer[] managedBuffers)
+    public void onTermBuffersMapped(final long sessionId,
+                                    final long termId,
+                                    final LogReader[] logReaders,
+                                    final PositionReporter positionReporter,
+                                    final ManagedBuffer[] managedBuffers)
     {
-        connectedSubscriptions.add(new ConnectedSubscription(logReaders, sessionId, termId, handler, reporter, managedBuffers));
+        connectedSubscriptions.add(
+            new ConnectedSubscription(logReaders, sessionId, termId, dataHandler, positionReporter, managedBuffers));
     }
 
     public boolean isConnected(final long sessionId)

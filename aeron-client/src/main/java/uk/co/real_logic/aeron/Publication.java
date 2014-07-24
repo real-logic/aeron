@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBuffer;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.status.PositionIndicator;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
@@ -38,7 +39,7 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
  */
 public class Publication
 {
-    private final ClientConductor conductor;
+    private final ClientConductor clientConductor;
     private final String destination;
     private final long channelId;
     private final long sessionId;
@@ -53,7 +54,7 @@ public class Publication
     private int refCount = 1;
     private int activeIndex;
 
-    public Publication(final ClientConductor conductor,
+    public Publication(final ClientConductor clientConductor,
                        final String destination,
                        final long channelId,
                        final long sessionId,
@@ -62,7 +63,7 @@ public class Publication
                        final PositionIndicator senderLimit,
                        final ManagedBuffer[] managedBuffers)
     {
-        this.conductor = conductor;
+        this.clientConductor = clientConductor;
 
         this.destination = destination;
         this.channelId = channelId;
@@ -113,11 +114,11 @@ public class Publication
      */
     public void release()
     {
-        synchronized (conductor)
+        synchronized (clientConductor)
         {
             if (--refCount == 0)
             {
-                conductor.releasePublication(this);
+                clientConductor.releasePublication(this);
                 closeBuffers();
             }
         }
@@ -143,7 +144,7 @@ public class Publication
      */
     public void incRef()
     {
-        synchronized (conductor)
+        synchronized (clientConductor)
         {
             ++refCount;
         }
@@ -192,26 +193,10 @@ public class Publication
         final int nextIndex = rotateNext(activeIndex);
 
         final LogAppender nextAppender = logAppenders[nextIndex];
-        if (CLEAN != nextAppender.status())
-        {
-            System.err.println(String.format("Term not clean: destination=%s channelId=%d, required termId=%d",
-                                             destination, channelId, activeTermId.get() + 1));
-
-            if (nextAppender.compareAndSetStatus(NEEDS_CLEANING, IN_CLEANING))
-            {
-                nextAppender.clean(); // Conductor is not keeping up so do it yourself!!!
-            }
-            else
-            {
-                while (CLEAN != nextAppender.status())
-                {
-                    Thread.yield();
-                }
-            }
-        }
-
         final long activeTermId = this.activeTermId.get();
         final long newTermId = activeTermId + 1;
+
+        checkForCleanTerm(nextAppender, destination, channelId, newTermId);
 
         dataHeader.wrap(nextAppender.defaultHeader());
         dataHeader.termId(newTermId);

@@ -15,6 +15,12 @@
  */
 package uk.co.real_logic.aeron.common;
 
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBuffer;
+
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.CLEAN;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.IN_CLEANING;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.NEEDS_CLEANING;
+
 /**
  * Common helper for dealing with term buffers.
  */
@@ -53,5 +59,38 @@ public class TermHelper
     {
         // TODO: we need to deal with termId wrapping and going negative.
         return ((activeTermId << positionBitsToShift) - initialPosition) + currentTail;
+    }
+
+    /**
+     * Check that has been cleaned and is ready for use. If it is not clean it will be cleaned on this thread
+     * or this thread will wait for the conductor to complete the cleaning.
+     *
+     * @param logBuffer to be checked.
+     * @param destination used from the client to notify of unclean buffer.
+     * @param channelId used from the client to notify of unclean buffer.
+     * @param termId used from the client to notify of unclean buffer.
+     */
+    public static void checkForCleanTerm(final LogBuffer logBuffer,
+                                         final String destination,
+                                         final long channelId,
+                                         final long termId)
+    {
+        if (CLEAN != logBuffer.status())
+        {
+            System.err.println(String.format("Term not clean: destination=%s channelId=%d, required termId=%d",
+                                             destination, channelId, termId));
+
+            if (logBuffer.compareAndSetStatus(NEEDS_CLEANING, IN_CLEANING))
+            {
+                logBuffer.clean(); // Conductor is not keeping up so do it yourself!!!
+            }
+            else
+            {
+                while (CLEAN != logBuffer.status())
+                {
+                    Thread.yield();
+                }
+            }
+        }
     }
 }

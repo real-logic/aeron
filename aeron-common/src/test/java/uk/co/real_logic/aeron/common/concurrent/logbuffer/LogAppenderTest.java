@@ -132,7 +132,7 @@ public class LogAppenderTest
 
         when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(tailValue);
 
-        assertThat(logAppender.tailVolatile(), is(LOG_BUFFER_CAPACITY));
+        assertThat(logAppender.tailVolatile(), is(tailValue));
     }
 
     @Test(expected = IllegalArgumentException.class)

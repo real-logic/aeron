@@ -519,8 +519,8 @@ public class MediaDriver implements AutoCloseable
         {
             super.conclude();
 
-            receiverNioSelector(new NioSelector(new EventLogger()));
-            conductorNioSelector(new NioSelector(new EventLogger()));
+            receiverNioSelector(new NioSelector());
+            conductorNioSelector(new NioSelector());
 
             validateTermBufferSize(termBufferSize());
             validateInitialWindowSize(initialWindowSize(), mtuLength());

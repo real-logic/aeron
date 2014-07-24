@@ -56,7 +56,6 @@ public class SelectorAndTransportTest
     private final InetSocketAddress srcRemoteAddress = new InetSocketAddress("localhost", RCV_PORT);
 
     private final EventLogger mockTransportLogger = new EventLogger();
-    private final EventLogger mockSelectorLogger = new EventLogger();
 
     private final UdpTransport.DataFrameHandler mockDataFrameHandler =
         mock(UdpTransport.DataFrameHandler.class);
@@ -102,7 +101,7 @@ public class SelectorAndTransportTest
     @Test(timeout = 1000)
     public void shouldHandleBasicSetupAndTeardown() throws Exception
     {
-        nioSelector = new NioSelector(mockSelectorLogger);
+        nioSelector = new NioSelector();
         rcv = new UdpTransport(RCV_DEST, mockDataFrameHandler, mockTransportLogger);
         src = new UdpTransport(SRC_DEST, mockStatusMessageFrameHandler, mockNakFrameHandler, mockTransportLogger);
 
@@ -129,7 +128,7 @@ public class SelectorAndTransportTest
             dataHeadersReceived.incrementAndGet();
         };
 
-        nioSelector = new NioSelector(mockSelectorLogger);
+        nioSelector = new NioSelector();
         rcv = new UdpTransport(RCV_DEST, dataFrameHandler, mockTransportLogger);
         src = new UdpTransport(SRC_DEST, mockStatusMessageFrameHandler, mockNakFrameHandler, mockTransportLogger);
 
@@ -174,7 +173,7 @@ public class SelectorAndTransportTest
             dataHeadersReceived.incrementAndGet();
         };
 
-        nioSelector = new NioSelector(mockSelectorLogger);
+        nioSelector = new NioSelector();
         rcv = new UdpTransport(RCV_DEST, dataFrameHandler, mockTransportLogger);
         src = new UdpTransport(SRC_DEST, mockStatusMessageFrameHandler, mockNakFrameHandler, mockTransportLogger);
 
@@ -220,7 +219,7 @@ public class SelectorAndTransportTest
             cntlHeadersReceived.incrementAndGet();
         };
 
-        nioSelector = new NioSelector(mockSelectorLogger);
+        nioSelector = new NioSelector();
         rcv = new UdpTransport(RCV_DEST, mockDataFrameHandler, mockTransportLogger);
         src = new UdpTransport(SRC_DEST, statusMessageFrameHandler, mockNakFrameHandler, mockTransportLogger);
 

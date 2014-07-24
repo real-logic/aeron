@@ -120,17 +120,6 @@ public class LogAppender extends LogBuffer
     }
 
     /**
-     * Get the current value of the tail counter for the log.
-     *
-     * @return the current value of the tail counter for the log.
-     */
-    public int tailVolatile()
-    {
-        final int tail = stateBuffer().getIntVolatile(TAIL_COUNTER_OFFSET);
-        return Math.min(tail, capacity());
-    }
-
-    /**
      * Append a message to the log if sufficient capacity exists.
      *
      * @param srcBuffer containing the encoded message.

@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.driver;
+package uk.co.real_logic.aeron.driver.exceptions;
 
-public class InvalidDestinationException extends IllegalArgumentException
+public class UnknownSubscriptionException extends IllegalArgumentException
 {
-    public InvalidDestinationException(final Exception cause)
+    public UnknownSubscriptionException(final String message)
     {
-        super(cause);
+        super(message);
     }
 }

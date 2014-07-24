@@ -15,8 +15,6 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.event.EventLogger;
-
 import java.io.IOException;
 import java.nio.channels.*;
 import java.util.Iterator;
@@ -28,13 +26,10 @@ import java.util.function.IntSupplier;
  */
 public class NioSelector implements AutoCloseable
 {
-    private final EventLogger logger;
-
     private Selector selector;
 
-    public NioSelector(final EventLogger logger)
+    public NioSelector()
     {
-        this.logger = logger;
         try
         {
             this.selector = Selector.open(); // yes, SelectorProvider, blah, blah

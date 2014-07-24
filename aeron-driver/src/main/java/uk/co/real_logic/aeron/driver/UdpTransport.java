@@ -94,9 +94,7 @@ public final class UdpTransport implements AutoCloseable
     private final NakFrameHandler nakFrameHandler;
 
     private final EventLogger logger;
-
     private final boolean multicast;
-
     private SelectionKey registeredKey;
 
     /**
@@ -107,9 +105,7 @@ public final class UdpTransport implements AutoCloseable
      * @param logger for logging
      * @throws Exception
      */
-    public UdpTransport(final UdpDestination destination,
-                        final DataFrameHandler dataFrameHandler,
-                        final EventLogger logger)
+    public UdpTransport(final UdpDestination destination, final DataFrameHandler dataFrameHandler, final EventLogger logger)
         throws Exception
     {
         this(destination, dataFrameHandler, null, null, logger, destination.remoteData(), destination.remoteData());

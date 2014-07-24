@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.driver;
 
 import org.hamcrest.Matcher;
 import org.junit.Test;
+import uk.co.real_logic.aeron.driver.exceptions.InvalidDestinationException;
 
 import java.net.*;
 import java.util.HashMap;

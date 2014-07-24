@@ -98,7 +98,8 @@ public class Receiver extends Agent
         return nioSelector;
     }
 
-    private void onAddSubscription(final MediaSubscriptionEndpoint mediaSubscriptionEndpoint, final long channelId) throws Exception
+    private void onAddSubscription(final MediaSubscriptionEndpoint mediaSubscriptionEndpoint, final long channelId)
+        throws Exception
     {
         mediaSubscriptionEndpoint.dispatcher().addSubscription(channelId);
     }

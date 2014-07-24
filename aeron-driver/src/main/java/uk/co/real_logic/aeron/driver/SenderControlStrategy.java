@@ -30,11 +30,11 @@ public interface SenderControlStrategy
                          final InetSocketAddress address);
 
     /**
-     * Initial right edge value
+     * Initial limit to which the position can progress.
      *
      * @param initialTermId for the term buffers
-     * @param sizeOfTermBuffer to use as the size of each term buffer
-     * @return right edge value
+     * @param termBufferCapacity to use as the size of each term buffer
+     * @return limit to which the position can go.
      */
-    long initialRightEdge(final long initialTermId, final int sizeOfTermBuffer);
+    long initialPositionLimit(final long initialTermId, final int termBufferCapacity);
 }

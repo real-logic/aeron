@@ -13,29 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.driver;
+package uk.co.real_logic.aeron.driver.exceptions;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
-/**
- * Encapsulate the flow control status of a publication
- */
-public class SenderFlowControlState
+public class InvalidDestinationException extends IllegalArgumentException
 {
-    private final AtomicInteger rightEdge = new AtomicInteger();
-
-    public SenderFlowControlState(final int initialRightEdge)
+    public InvalidDestinationException(final Exception cause)
     {
-        rightEdge.lazySet(initialRightEdge);
-    }
-
-    public void rightEdgeOfWindowOrdered(final int rightEdge)
-    {
-        this.rightEdge.lazySet(rightEdge);
-    }
-
-    public int rightEdgeOfWindowVolatile()
-    {
-        return rightEdge.get();
+        super(cause);
     }
 }

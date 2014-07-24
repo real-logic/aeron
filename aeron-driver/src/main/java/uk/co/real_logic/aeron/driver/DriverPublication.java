@@ -42,10 +42,14 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
  */
 public class DriverPublication implements AutoCloseable
 {
-    /** Initial heartbeat timeout (cancelled by SM) */
+    /**
+     * Initial heartbeat timeout (cancelled by SM)
+     */
     public static final int INITIAL_HEARTBEAT_TIMEOUT_MS = 100;
     public static final long INITIAL_HEARTBEAT_TIMEOUT_NS = MILLISECONDS.toNanos(INITIAL_HEARTBEAT_TIMEOUT_MS);
-    /** Heartbeat after data sent */
+    /**
+     * Heartbeat after data sent
+     */
     public static final int HEARTBEAT_TIMEOUT_MS = 500;
     public static final long HEARTBEAT_TIMEOUT_NS = MILLISECONDS.toNanos(HEARTBEAT_TIMEOUT_MS);
 
@@ -69,7 +73,7 @@ public class DriverPublication implements AutoCloseable
     private final ByteBuffer[] retransmitBuffers = new ByteBuffer[TermHelper.BUFFER_COUNT];
 
     private final SenderControlStrategy controlStrategy;
-    private final AtomicLong rightEdge;
+    private final AtomicLong positionLimit;
     private final MediaPublicationEndpoint mediaEndpoint;
     private final TermBuffers termBuffers;
     private final BufferPositionReporter limitReporter;
@@ -123,7 +127,7 @@ public class DriverPublication implements AutoCloseable
         }
 
         final int termCapacity = logScanners[0].capacity();
-        rightEdge = new AtomicLong(controlStrategy.initialRightEdge(initialTermId, termCapacity));
+        positionLimit = new AtomicLong(controlStrategy.initialPositionLimit(initialTermId, termCapacity));
         shiftsForTermId = Long.numberOfTrailingZeros(termCapacity);
 
         activeTermId = new AtomicLong(initialTermId);
@@ -146,7 +150,7 @@ public class DriverPublication implements AutoCloseable
         try
         {
             final long nextOffset = (activeTermId.get() << shiftsForTermId) + nextTermOffset;
-            final int availableWindow = (int)(rightEdge.get() - nextOffset);
+            final int availableWindow = (int)(positionLimit.get() - nextOffset);
             final int scanLimit = Math.min(availableWindow, mtuLength);
 
             final LogScanner scanner = logScanners[activeIndex];
@@ -186,10 +190,7 @@ public class DriverPublication implements AutoCloseable
                                 final long receiverWindow,
                                 final InetSocketAddress address)
     {
-        final long newRightEdge =
-            controlStrategy.onStatusMessage(termId, highestContiguousSequenceNumber, receiverWindow, address);
-
-        rightEdge.lazySet(newRightEdge);
+        positionLimit.lazySet(controlStrategy.onStatusMessage(termId, highestContiguousSequenceNumber, receiverWindow, address));
 
         statusMessagesSeen++;
     }
@@ -375,7 +376,7 @@ public class DriverPublication implements AutoCloseable
             if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
             {
                 logger.log(EventCode.ERROR_SENDING_HEARTBEAT_PACKET, scratchByteBuffer,
-                        DataHeaderFlyweight.HEADER_LENGTH, dstAddress);
+                           DataHeaderFlyweight.HEADER_LENGTH, dstAddress);
             }
 
             timeOfLastSendOrHeartbeat.lazySet(timerWheel.now());

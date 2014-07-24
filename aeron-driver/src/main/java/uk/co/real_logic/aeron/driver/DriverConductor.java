@@ -36,6 +36,7 @@ import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
 import uk.co.real_logic.aeron.driver.cmd.CreateConnectedSubscriptionCmd;
 import uk.co.real_logic.aeron.driver.cmd.NewConnectedSubscriptionCmd;
 import uk.co.real_logic.aeron.driver.cmd.SubscriptionRemovedCmd;
+import uk.co.real_logic.aeron.driver.exceptions.ControlProtocolException;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;

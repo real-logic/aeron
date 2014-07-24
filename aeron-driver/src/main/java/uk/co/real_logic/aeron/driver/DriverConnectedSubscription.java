@@ -262,9 +262,9 @@ public class DriverConnectedSubscription implements AutoCloseable
         state.lazySet(STATE_READY_TO_SEND_SMS);
     }
 
-    private int sendStatusMessage(final long termId, final int termOffset, final int window)
+    private int sendStatusMessage(final long termId, final int termOffset, final int windowSize)
     {
-        statusMessageSender.send(termId, termOffset, window);
+        statusMessageSender.send(termId, termOffset, windowSize);
         lastSmTermId = termId;
         lastSmTail = termOffset;
 

@@ -50,8 +50,8 @@ public class LogAppender extends LogBuffer
     public enum AppendStatus
     {
         SUCCESS,
+        TRIPPED,
         FAILURE,
-        TRIPPED
     }
 
     /**

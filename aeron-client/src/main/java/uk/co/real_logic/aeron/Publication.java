@@ -26,9 +26,6 @@ import uk.co.real_logic.aeron.conductor.ManagedBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static uk.co.real_logic.aeron.common.TermHelper.*;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender.AppendStatus;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender.AppendStatus.SUCCESS;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender.AppendStatus.TRIPPED;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 
 /**
@@ -171,17 +168,19 @@ public class Publication
     public boolean offer(final AtomicBuffer buffer, final int offset, final int length)
     {
         final LogAppender logAppender = logAppenders[activeIndex];
-        if (hasLimitBeenReached(logAppender.tailVolatile()))
+        final int currentTail = logAppender.tailVolatile();
+
+        if (limitNotReachedFor(currentTail))
         {
-            final AppendStatus status = logAppender.append(buffer, offset, length);
-            if (status == TRIPPED)
+            switch (logAppender.append(buffer, offset, length))
             {
-                nextTerm();
+                case SUCCESS:
+                    return true;
 
-                return offer(buffer, offset, length);
+                case TRIPPED:
+                    nextTerm();
+                    return offer(buffer, offset, length);
             }
-
-            return status == SUCCESS;
         }
 
         return false;
@@ -206,7 +205,7 @@ public class Publication
         logAppenders[previousIndex].statusOrdered(NEEDS_CLEANING);
     }
 
-    private boolean hasLimitBeenReached(final int currentTail)
+    private boolean limitNotReachedFor(final int currentTail)
     {
         return position(currentTail) < senderLimit.position();
     }

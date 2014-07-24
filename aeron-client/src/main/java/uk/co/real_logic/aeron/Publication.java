@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBuffer;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.status.PositionIndicator;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
@@ -196,7 +195,7 @@ public class Publication
         final long activeTermId = this.activeTermId.get();
         final long newTermId = activeTermId + 1;
 
-        checkForCleanTerm(nextAppender, destination, channelId, newTermId);
+        ensureClean(nextAppender, destination, channelId, newTermId);
 
         dataHeader.wrap(nextAppender.defaultHeader());
         dataHeader.termId(newTermId);

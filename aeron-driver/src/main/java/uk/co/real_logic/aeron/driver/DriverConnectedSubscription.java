@@ -298,7 +298,7 @@ public class DriverConnectedSubscription implements AutoCloseable
 
         if (nextIndex != hwmIndex)
         {
-            checkForCleanTerm(rebuilder, udpDestination.originalUriAsString(), channelId, activeTermId + 1);
+            ensureClean(rebuilder, udpDestination.originalUriAsString(), channelId, activeTermId + 1);
         }
 
         rebuilders[rotatePrevious(activeIndex)].statusOrdered(NEEDS_CLEANING);

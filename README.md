@@ -70,7 +70,7 @@ You can run the `ExamplePublisher` from a command line
 
 You can run the `ExampleSubscriber` from a command line
 
-    $ java -cp aeron-examples/build/libs/examples.jar uk.co.real_logic.aeron.examples.ExamplePublisher
+    $ java -cp aeron-examples/build/libs/examples.jar uk.co.real_logic.aeron.examples.ExampleSubscriber
 
 Media Driver Packaging
 ----------------------

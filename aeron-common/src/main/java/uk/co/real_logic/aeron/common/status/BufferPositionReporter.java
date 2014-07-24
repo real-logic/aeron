@@ -48,7 +48,7 @@ public class BufferPositionReporter implements PositionReporter
 
     public void close()
     {
-        countersManager.deregisterCounter(counterId);
+        countersManager.free(counterId);
     }
 
 }

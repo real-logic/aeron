@@ -581,6 +581,6 @@ public class DriverConductor extends Agent
                                         final long sessionId,
                                         final long channelId)
     {
-        return countersManager.registerCounter(String.format("%s: %s %d %d", type, destinationDirName, sessionId, channelId));
+        return countersManager.allocate(String.format("%s: %s %d %d", type, destinationDirName, sessionId, channelId));
     }
 }

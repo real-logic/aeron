@@ -26,7 +26,7 @@ import static java.nio.ByteOrder.nativeOrder;
 import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_INT;
 
 /**
- * Manages the registration and deregistration of counters.
+ * Manages the allocation and freeing of counters.
  */
 public class CountersManager
 {
@@ -53,23 +53,23 @@ public class CountersManager
     }
 
     /**
-     * Register a new counters with a given label.
+     * Allocate a new counter with a given label.
      *
      * @param label to describe the counter.
      * @return the id allocated for the counter.
      */
-    public int registerCounter(final String label)
+    public int allocate(final String label)
     {
         final int counterId = counterId();
         final int labelsOffset = labelOffset(counterId);
         if ((counterOffset(counterId) + COUNTER_SIZE) > countersBuffer.capacity())
         {
-            throw new IllegalArgumentException("Unable to register counter, counter buffer is full");
+            throw new IllegalArgumentException("Unable to allocated counter, counter buffer is full");
         }
 
         if ((labelsOffset + LABEL_SIZE) > labelsBuffer.capacity())
         {
-            throw new IllegalArgumentException("Unable to register counter, labels buffer is full");
+            throw new IllegalArgumentException("Unable to allocate counter, labels buffer is full");
         }
 
         labelsBuffer.putString(labelsOffset, label, LABEL_SIZE - SIZE_OF_INT, nativeOrder());
@@ -78,11 +78,11 @@ public class CountersManager
     }
 
     /**
-     * Deregister the counter identified by counterId.
+     * Free the counter identified by counterId.
      *
-     * @param counterId the counter to deregister
+     * @param counterId the counter to freed
      */
-    public void deregisterCounter(final int counterId)
+    public void free(final int counterId)
     {
         labelsBuffer.putInt(labelOffset(counterId), UNREGISTERED_LABEL_SIZE);
         countersBuffer.putLong(counterOffset(counterId), 0L);
@@ -105,7 +105,7 @@ public class CountersManager
      *
      * @param consumer function to be called for each label.
      */
-    public void forEachLabel(final BiConsumer<Integer, String> consumer)
+    public void iterate(final BiConsumer<Integer, String> consumer)
     {
         int labelsOffset = 0;
         int size;

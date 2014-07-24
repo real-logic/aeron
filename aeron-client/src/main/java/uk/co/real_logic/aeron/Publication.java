@@ -229,6 +229,6 @@ public class Publication
 
     private long position(final int currentTail)
     {
-        return TermHelper.calculatePosition(currentTail, activeTermId.get(), positionBitsToShift, initialPosition);
+        return TermHelper.calculatePosition(activeTermId.get(), currentTail, positionBitsToShift, initialPosition);
     }
 }

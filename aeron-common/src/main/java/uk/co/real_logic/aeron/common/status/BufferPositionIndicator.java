@@ -18,25 +18,37 @@ package uk.co.real_logic.aeron.common.status;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 
 /**
- * .
+ * Indicates the position of some entity that stores its value in an buffer. The buffer is managed by a {@link CountersManager}.
  */
 public class BufferPositionIndicator implements PositionIndicator
 {
     private final AtomicBuffer buffer;
-    private final int couunterId;
+    private final int counterId;
     private final CountersManager countersManager;
     private final int offset;
 
+    /**
+     * Map a position indicator over a buffer.
+     *
+     * @param buffer containing the counter.
+     * @param counterId identifier of the counter.
+     */
     public BufferPositionIndicator(final AtomicBuffer buffer, final int counterId)
     {
         this(buffer, counterId, null);
     }
 
-    public BufferPositionIndicator(final AtomicBuffer buffer, final int counterId,
-                                   final CountersManager countersManager)
+    /**
+     * Map a position indicator over a buffer and this indicator owns the counter for reclamation.
+     *
+     * @param buffer containing the counter.
+     * @param counterId identifier of the counter.
+     * @param countersManager to be used for freeing the counter when this is closed.
+     */
+    public BufferPositionIndicator(final AtomicBuffer buffer, final int counterId, final CountersManager countersManager)
     {
         this.buffer = buffer;
-        this.couunterId = counterId;
+        this.counterId = counterId;
         this.countersManager = countersManager;
         this.offset = CountersManager.counterOffset(counterId);
     }
@@ -48,6 +60,6 @@ public class BufferPositionIndicator implements PositionIndicator
 
     public void close()
     {
-        countersManager.deregisterCounter(couunterId);
+        countersManager.free(counterId);
     }
 }

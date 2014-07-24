@@ -34,9 +34,6 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
  */
 public class DriverConnectedSubscription implements AutoCloseable
 {
-    /** Timeout between SMs. One RTT. */
-    public static final long STATUS_MESSAGE_TIMEOUT = MediaDriver.ESTIMATED_RTT_NS;
-
     private static final int STATE_CREATED = 0;
     private static final int STATE_READY_TO_SEND_SMS = 1;
 
@@ -143,7 +140,7 @@ public class DriverConnectedSubscription implements AutoCloseable
     public int scanForGaps()
     {
         // if scan() returns true, loss handler moved to new GapScanner, it should be serviced soon, else be lazy
-        return (lossHandler.scan() ? 1 : 0);
+        return lossHandler.scan() ? 1 : 0;
     }
 
     public void insertIntoTerm(final DataHeaderFlyweight header, final AtomicBuffer buffer, final long length)
@@ -153,17 +150,17 @@ public class DriverConnectedSubscription implements AutoCloseable
         final long activeTermId = this.activeTermId.get();
 
         final int packetTail = (int)header.termOffset();
-        final long newPosition = calculatePosition(packetTail, termId, positionBitsToShift, initialPosition);
-        final long currentPosition = position(currentRebuilder.tail());
+        final long packetPosition = calculatePosition((int)termId, packetTail);
+        final long position = position(currentRebuilder.tail());
 
         final int termCapacity = currentRebuilder.capacity();
-        if (isFrameSequenceOutOfRange(length, newPosition, currentPosition, termCapacity))
+        if (isPacketOutOfRange(packetPosition, length, position, termCapacity))
         {
             // TODO: invalid packet we probably want to update an error counter
             return;
         }
 
-        if (hasLimitBeenReached(length, newPosition, termCapacity))
+        if (isFlowControlLimitReached(length, packetPosition, termCapacity))
         {
             // TODO: increment a counter to say subscriber is not keeping up
             return;
@@ -259,20 +256,25 @@ public class DriverConnectedSubscription implements AutoCloseable
 
     private long position(final int currentTail)
     {
-        return calculatePosition(currentTail, activeTermId.get(), positionBitsToShift, initialPosition);
+        return calculatePosition((int)activeTermId.get(), currentTail);
     }
 
-    private boolean hasLimitBeenReached(final long length, final long newPosition, final int termCapacity)
+    private long calculatePosition(final int termId, final int tail)
+    {
+        return TermHelper.calculatePosition(termId, tail, positionBitsToShift, initialPosition);
+    }
+
+    private boolean isFlowControlLimitReached(final long length, final long newPosition, final int termCapacity)
     {
         return (newPosition + length) > (subscriberLimit.position() + termCapacity);
     }
 
-    public boolean isFrameSequenceOutOfRange(final long length,
-                                             final long newPosition,
-                                             final long currentPosition,
-                                             final int termCapacity)
+    public boolean isPacketOutOfRange(final long packetPosition,
+                                      final long packetLength,
+                                      final long currentPosition,
+                                      final int termCapacity)
     {
-        return newPosition < currentPosition || newPosition > (currentPosition + (termCapacity - length));
+        return packetPosition < currentPosition || packetPosition > (currentPosition + (termCapacity - packetLength));
     }
 
     private void nextTerm(final long nextTermId)

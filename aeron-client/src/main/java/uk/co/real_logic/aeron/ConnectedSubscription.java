@@ -94,7 +94,7 @@ public class ConnectedSubscription
         if (messagesRead > 0)
         {
             positionReporter.position(
-                calculatePosition(logReader.tail(), activeTermId.get(), positionBitsToShift, initialPosition));
+                calculatePosition(activeTermId.get(), logReader.tail(), positionBitsToShift, initialPosition));
         }
 
         return messagesRead;

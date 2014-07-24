@@ -27,7 +27,6 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_LONG;
 
 @SuppressWarnings("unchecked")
 public class CountersManagerTest
@@ -42,23 +41,23 @@ public class CountersManagerTest
     @Test
     public void managerShouldStoreLabels()
     {
-        int counterId = manager.registerCounter("abc");
-        BiConsumer<Integer, String> consumer = mock(BiConsumer.class);
-        otherManager.forEachLabel(consumer);
+        final int counterId = manager.allocate("abc");
+        final BiConsumer<Integer, String> consumer = mock(BiConsumer.class);
+        otherManager.iterate(consumer);
         verify(consumer).accept(counterId, "abc");
     }
 
     @Test
     public void managerShouldStoreMultipleLabels()
     {
-        int abc = manager.registerCounter("abc");
-        int def = manager.registerCounter("def");
-        int ghi = manager.registerCounter("ghi");
+        final int abc = manager.allocate("abc");
+        final int def = manager.allocate("def");
+        final int ghi = manager.allocate("ghi");
 
-        BiConsumer<Integer, String> consumer = mock(BiConsumer.class);
-        otherManager.forEachLabel(consumer);
+        final BiConsumer<Integer, String> consumer = mock(BiConsumer.class);
+        otherManager.iterate(consumer);
 
-        InOrder inOrder = Mockito.inOrder(consumer);
+        final InOrder inOrder = Mockito.inOrder(consumer);
         inOrder.verify(consumer).accept(abc, "abc");
         inOrder.verify(consumer).accept(def, "def");
         inOrder.verify(consumer).accept(ghi, "ghi");
@@ -66,43 +65,43 @@ public class CountersManagerTest
     }
 
     @Test
-    public void shouldDeregisterAndReuseCounters()
+    public void shouldFreeAndReuseCounters()
     {
-        int abc = manager.registerCounter("abc");
-        int def = manager.registerCounter("def");
-        int ghi = manager.registerCounter("ghi");
+        final int abc = manager.allocate("abc");
+        final int def = manager.allocate("def");
+        final int ghi = manager.allocate("ghi");
 
-        manager.deregisterCounter(def);
+        manager.free(def);
 
-        BiConsumer<Integer, String> consumer = mock(BiConsumer.class);
-        otherManager.forEachLabel(consumer);
+        final BiConsumer<Integer, String> consumer = mock(BiConsumer.class);
+        otherManager.iterate(consumer);
 
-        InOrder inOrder = Mockito.inOrder(consumer);
+        final InOrder inOrder = Mockito.inOrder(consumer);
         inOrder.verify(consumer).accept(abc, "abc");
         inOrder.verify(consumer).accept(ghi, "ghi");
         inOrder.verifyNoMoreInteractions();
 
-        assertThat(manager.registerCounter("the next label"), is(def));
+        assertThat(manager.allocate("the next label"), is(def));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void managerShouldNotOverAllocateCounters()
     {
-        manager.registerCounter("abc");
-        manager.registerCounter("def");
-        manager.registerCounter("ghi");
-        manager.registerCounter("jkl");
-        manager.registerCounter("mno");
+        manager.allocate("abc");
+        manager.allocate("def");
+        manager.allocate("ghi");
+        manager.allocate("jkl");
+        manager.allocate("mno");
     }
 
     @Test
-    public void registeredCountersCanBeMapped()
+    public void allocatedCountersCanBeMapped()
     {
-        manager.registerCounter("def");
+        manager.allocate("def");
 
-        int id = manager.registerCounter("abc");
-        BufferPositionIndicator reader = new BufferPositionIndicator(counterBuffer, id);
-        BufferPositionReporter writer = new BufferPositionReporter(counterBuffer, id);
+        final int id = manager.allocate("abc");
+        final BufferPositionIndicator reader = new BufferPositionIndicator(counterBuffer, id);
+        final BufferPositionReporter writer = new BufferPositionReporter(counterBuffer, id);
         writer.position(0xFFFFFFFFFL);
         assertThat(reader.position(), is(0xFFFFFFFFFL));
     }

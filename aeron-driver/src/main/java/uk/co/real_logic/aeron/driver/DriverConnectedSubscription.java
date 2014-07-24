@@ -45,6 +45,8 @@ public class DriverConnectedSubscription implements AutoCloseable
 
     private final AtomicLong activeTermId = new AtomicLong();
     private int activeIndex;
+    private long hwmTermId;
+    private int hwmIndex;
 
     private final LogRebuilder[] rebuilders;
     private final LossHandler lossHandler;
@@ -52,6 +54,7 @@ public class DriverConnectedSubscription implements AutoCloseable
 
     private final int positionBitsToShift;
     private final long initialPosition;
+    private final int bufferLimit;
 
     private long lastSmTimestamp;
     private long lastSmTermId;
@@ -78,6 +81,9 @@ public class DriverConnectedSubscription implements AutoCloseable
         this.subscriberLimit = subscriberLimit;
 
         activeTermId.lazySet(initialTermId);
+        this.hwmIndex = this.activeIndex = termIdToBufferIndex(initialTermId);
+        this.hwmTermId = initialTermId;
+
         rebuilders = termBuffers.stream()
                                 .map((rawLog) -> new LogRebuilder(rawLog.logBuffer(), rawLog.stateBuffer()))
                                 .toArray(LogRebuilder[]::new);
@@ -90,9 +96,10 @@ public class DriverConnectedSubscription implements AutoCloseable
         this.lastSmTimestamp = 0;
         this.currentWindowSize = initialWindow;
         this.currentWindowGain = currentWindowSize << 2; // window / 4
-        this.activeIndex = termIdToBufferIndex(initialTermId);
 
-        this.positionBitsToShift = Integer.numberOfTrailingZeros(rebuilders[0].capacity());
+        final int termCapacity = rebuilders[0].capacity();
+        this.bufferLimit = termCapacity / 2;
+        this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
         this.initialPosition = initialTermId << positionBitsToShift;
     }
 
@@ -153,14 +160,13 @@ public class DriverConnectedSubscription implements AutoCloseable
         final long packetPosition = calculatePosition((int)termId, packetTail);
         final long position = position(currentRebuilder.tail());
 
-        final int termCapacity = currentRebuilder.capacity();
-        if (isPacketOutOfRange(packetPosition, length, position, termCapacity))
+        if (isOutOfBufferRange(packetPosition, length, position))
         {
             // TODO: invalid packet we probably want to update an error counter
             return;
         }
 
-        if (isFlowControlLimitReached(length, packetPosition, termCapacity))
+        if (isBeyondFlowControlLimit(packetPosition + length))
         {
             // TODO: increment a counter to say subscriber is not keeping up
             return;
@@ -169,11 +175,22 @@ public class DriverConnectedSubscription implements AutoCloseable
         if (termId == activeTermId)
         {
             currentRebuilder.insert(buffer, 0, (int)length);
+
+            if (currentRebuilder.isComplete())
+            {
+                activeIndex = hwmIndex = prepareForRotation(activeTermId);
+                this.activeTermId.lazySet(activeTermId + 1);
+            }
         }
         else if (termId == (activeTermId + 1))
         {
-            nextTerm(termId);
-            rebuilders[activeIndex].insert(buffer, 0, (int)length);
+            if (termId != hwmTermId)
+            {
+                hwmIndex = prepareForRotation(activeTermId);
+                hwmTermId = termId;
+            }
+
+            rebuilders[hwmIndex].insert(buffer, 0, (int)length);
         }
     }
 
@@ -264,28 +281,37 @@ public class DriverConnectedSubscription implements AutoCloseable
         return TermHelper.calculatePosition(termId, tail, positionBitsToShift, initialPosition);
     }
 
-    private boolean isFlowControlLimitReached(final long length, final long newPosition, final int termCapacity)
+    private boolean isBeyondFlowControlLimit(final long proposedPosition)
     {
-        return (newPosition + length) > (subscriberLimit.position() + termCapacity);
+        return proposedPosition > (subscriberLimit.position() + bufferLimit);
     }
 
-    public boolean isPacketOutOfRange(final long packetPosition,
-                                      final long packetLength,
-                                      final long currentPosition,
-                                      final int termCapacity)
+    public boolean isOutOfBufferRange(final long proposedPosition, final long length, final long currentPosition)
     {
-        return packetPosition < currentPosition || packetPosition > (currentPosition + (termCapacity - packetLength));
+        return proposedPosition < currentPosition || proposedPosition > (currentPosition + (bufferLimit - length));
     }
 
-    private void nextTerm(final long nextTermId)
+    private int prepareForRotation(final long activeTermId)
     {
         final int nextIndex = TermHelper.rotateNext(activeIndex);
         final LogRebuilder rebuilder = rebuilders[nextIndex];
 
+        if (nextIndex != hwmIndex)
+        {
+            checkForCleanTerm(activeTermId + 1, rebuilder);
+        }
+
+        rebuilders[rotatePrevious(activeIndex)].statusOrdered(NEEDS_CLEANING);
+
+        return nextIndex;
+    }
+
+    private void checkForCleanTerm(final long termId, final LogRebuilder rebuilder)
+    {
         if (CLEAN != rebuilder.status())
         {
-            System.err.println(String.format("Term not clean: destination=%s channelId=%d, required nextTermId=%d",
-                                             udpDestination, channelId, nextTermId));
+            System.err.println(String.format("Term not clean: destination=%s channelId=%d, required termId=%d",
+                                             udpDestination, channelId, termId));
 
             if (rebuilder.compareAndSetStatus(NEEDS_CLEANING, IN_CLEANING))
             {
@@ -299,11 +325,5 @@ public class DriverConnectedSubscription implements AutoCloseable
                 }
             }
         }
-
-        final int previousIndex = rotatePrevious(activeIndex);
-        rebuilders[previousIndex].statusOrdered(NEEDS_CLEANING);
-
-        this.activeTermId.lazySet(nextTermId);
-        activeIndex = nextIndex;
     }
 }

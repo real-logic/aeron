@@ -13,7 +13,7 @@ import java.util.function.Consumer;
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.*;
 
 /**
- * Analogue of {@see MediaDriverProxy} on the poll side
+ * Analogue of {@link DriverProxy} on the client side
  */
 public class DriverBroadcastReceiver
 {

@@ -103,7 +103,7 @@ public class ErrorFlyweight extends HeaderFlyweight
 
     /**
      * Copy the offending action from a flyweight into this error header. If you are using a HeaderFlyweight
-     * then {@see offendingHeader(HeaderFlyweight, int)}, this is for inter-thread messaging
+     * then {@link #offendingHeader(HeaderFlyweight, int)}, this is for inter-thread messaging
      *
      * sets offending flyweight frame length
      *

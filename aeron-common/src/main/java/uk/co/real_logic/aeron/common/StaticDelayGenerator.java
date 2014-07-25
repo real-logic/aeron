@@ -27,6 +27,7 @@ public class StaticDelayGenerator implements FeedbackDelayGenerator
      * Create a delay generator that uses the specified delay.
      *
      * @param delay to return
+     * @param immediateFeedback or not
      */
     public StaticDelayGenerator(final long delay, final boolean immediateFeedback)
     {

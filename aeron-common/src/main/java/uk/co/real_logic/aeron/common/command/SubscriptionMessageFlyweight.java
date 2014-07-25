@@ -54,6 +54,7 @@ public class SubscriptionMessageFlyweight extends CorrelatedMessageFlyweight
      * Set the channel id
      *
      * @param channelId the channel id
+     * @return flyweight
      */
     public SubscriptionMessageFlyweight channelId(final int channelId)
     {

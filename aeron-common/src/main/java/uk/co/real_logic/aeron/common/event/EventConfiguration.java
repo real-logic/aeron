@@ -47,8 +47,6 @@ public class EventConfiguration
 
     /**
      * Event tags system property name. This is either:
-     * <COMMA>
-     * <p>
      * <ul>
      * <li>A comma separated list of EventCodes to enable</li>
      * <li>"all" which enables all the codes</li>

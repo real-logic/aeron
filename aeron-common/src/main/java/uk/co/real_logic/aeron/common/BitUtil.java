@@ -53,7 +53,7 @@ public class BitUtil
     /**
      * Fast method of finding the next power of 2 greater than or equal to the supplied value.
      *
-     * If the value is <= 0 then 1 will be returned.
+     * If the value is &lt;= 0 then 1 will be returned.
      *
      * This method is not suitable for {@link Integer#MIN_VALUE} or numbers greater than 2^30.
      *
@@ -68,10 +68,11 @@ public class BitUtil
     /**
      * Align a value to the next multiple up of alignment.
      * If the value equals an alignment multiple then it is returned unchanged.
-     * <p/>
+     * <p>
      * This method executes without branching.
      *
      * @param value to be aligned up.
+     * @param alignment to be used.
      * @return the value aligned to the next boundary.
      */
     public static int align(final int value, final int alignment)
@@ -105,6 +106,7 @@ public class BitUtil
      *
      * @param buffer to convert to a hex representation
      * @return new String holding the hex representation (in Big Endian) of the passed array
+     * @throws Exception
      */
     public static String toHex(final byte[] buffer) throws Exception
     {
@@ -144,6 +146,7 @@ public class BitUtil
      * Cycles indices of an array one at a time in a forward fashion
      *
      * @param current value to be incremented.
+     * @param max value for the cycle.
      * @return the next value, or zero if max is reached.
      */
     public static int next(final int current, final int max)
@@ -161,6 +164,7 @@ public class BitUtil
      * Cycles indices of an array one at a time in a backwards fashion
      *
      * @param current value to be decremented.
+     * @param max value of the cycle.
      * @return the next value, or max - 1 if current is zero
      */
     public static int previous(final int current, final int max)

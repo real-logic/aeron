@@ -27,7 +27,7 @@ import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_INT;
  *
  * <ul>
  *     <li>Request Cleaned Term</li>
- *     <li>{@see NewBufferMessageFlyweight}</li>
+ *     <li>{@link LogBuffersMessageFlyweight}</li>
  * </ul>
  *
  * <p>

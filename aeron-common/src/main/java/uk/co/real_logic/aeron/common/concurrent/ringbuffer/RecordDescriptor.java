@@ -27,7 +27,6 @@ public class RecordDescriptor
      * and then the encoded message.
      * <p>
      * Writing of the record length signals the message recording is complete.
-     * <p>
      * <pre>
      *   0        4        8        12       16 -byte position
      *   +--------+--------+--------+--------+------------------------+

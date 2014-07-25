@@ -31,6 +31,7 @@ public abstract class Agent implements Runnable, AutoCloseable
      * Create an agent passing in {@link IdleStrategy}
      *
      * @param idleStrategy to use for Agent run loop
+     * @param exceptionHandler to be called if an {@link Exception} is encountered
      */
     public Agent(final IdleStrategy idleStrategy, final Consumer<Exception> exceptionHandler)
     {
@@ -86,6 +87,7 @@ public abstract class Agent implements Runnable, AutoCloseable
      * currently available for the agent to process.
      *
      * @return true if work has been done otherwise false to indicate no work was currently available.
+     * @throws Exception
      */
     public abstract int doWork() throws Exception;
 }

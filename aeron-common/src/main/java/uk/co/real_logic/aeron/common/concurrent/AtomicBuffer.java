@@ -327,6 +327,7 @@ public class AtomicBuffer
      * @param index in bytes for where to put.
      * @param expectedValue at to be compared
      * @param updateValue to be exchanged
+     * @return set successful or not
      */
     public boolean compareAndSetLong(final int index, final long expectedValue, final long updateValue)
     {
@@ -338,6 +339,7 @@ public class AtomicBuffer
      *
      * @param index in bytes for where to put.
      * @param value for at a given index
+     * @return previous value
      */
     public long getAndSetLong(final int index, final long value)
     {
@@ -350,6 +352,7 @@ public class AtomicBuffer
      *
      * @param index in bytes for where to put.
      * @param delta to be added to the value at the index
+     * @return previous value
      */
     public long getAndAddLong(final int index, final long delta)
     {
@@ -456,6 +459,7 @@ public class AtomicBuffer
      * @param index in bytes for where to put.
      * @param expectedValue at to be compared
      * @param updateValue to be exchanged
+     * @return successful or not
      */
     public boolean compareAndSetInt(final int index, final int expectedValue, final int updateValue)
     {
@@ -467,6 +471,7 @@ public class AtomicBuffer
      *
      * @param index in bytes for where to put.
      * @param value for at a given index
+     * @return previous value
      */
     public int getAndSetInt(final int index, final int value)
     {
@@ -479,6 +484,7 @@ public class AtomicBuffer
      *
      * @param index in bytes for where to put.
      * @param delta to be added to the value at the index
+     * @return previous value
      */
     public int getAndAddInt(final int index, final int delta)
     {
@@ -830,6 +836,7 @@ public class AtomicBuffer
      *
      * @param index     in the underlying buffer to start from.
      * @param srcBuffer to copy the bytes from.
+     * @param length    of the supplied buffer to copy.
      * @return count of bytes copied.
      */
     public int putBytes(final int index, final ByteBuffer srcBuffer, final int length)

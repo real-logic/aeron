@@ -24,7 +24,6 @@ import java.util.function.LongSupplier;
  * <p>
  * Assumes single-writer principle and timers firing on processing thread.
  * Low (or NO) garbage.
- * <p>
  * <h3>Implementation Details</h3>
  * <p>
  * Based on netty's HashedTimerWheel, which is based on

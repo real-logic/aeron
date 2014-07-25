@@ -21,6 +21,7 @@ package uk.co.real_logic.aeron.common;
  * Generates delay based on Optimal Multicast Feedback
  * http://tools.ietf.org/html/rfc5401#page-13
  *
+ * {@code
  * maxBackoffT is max interval for delay
  *
  * C version:
@@ -50,6 +51,7 @@ package uk.co.real_logic.aeron.common;
  * Recommended K:
  * - K = 4 for situations where responses come from multiple places (i.e. for NAKs, multiple retransmitters)
  * - K = 6 for situations where responses come from single places (i.e. for NAKs, source only retransmit)
+ * }
  */
 public class OptimalMulticastDelayGenerator implements FeedbackDelayGenerator
 {

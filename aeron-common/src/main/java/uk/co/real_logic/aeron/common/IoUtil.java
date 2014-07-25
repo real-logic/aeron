@@ -47,6 +47,7 @@ public class IoUtil
      * @param position    at which to start writing.
      * @param length      of the region to write.
      * @param value       to fill the region with.
+     * @throws java.io.IOException
      */
     public static void fill(final FileChannel fileChannel, final long position, final long length, final byte value)
         throws IOException
@@ -151,6 +152,7 @@ public class IoUtil
      * Check that a directory exists.
      *
      * @param directory to check for.
+     * @param name to be used for exception information.
      * @throws java.lang.IllegalArgumentException if the directory does not exist
      */
     public static void checkDirectoryExists(final File directory, final String name)

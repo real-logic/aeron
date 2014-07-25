@@ -23,7 +23,6 @@ import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.common.BitUtil.align;

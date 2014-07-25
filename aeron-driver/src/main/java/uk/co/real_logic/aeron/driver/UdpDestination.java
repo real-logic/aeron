@@ -332,12 +332,11 @@ public class UdpDestination
      * - uses "-" as all field separators
      *
      * The general format is:
-     * UDP-interface-localPort-destinationAddr-destinationPort
+     * UDP-interface-localPort-destinationAddress-destinationPort
      *
      * @return canonical representation as a string
      */
-    public static String generateCanonicalRepresentation(final InetSocketAddress localData,
-                                                         final InetSocketAddress remoteData)
+    public static String generateCanonicalRepresentation(final InetSocketAddress localData, final InetSocketAddress remoteData)
         throws Exception
     {
         return String.format("UDP-%1$s-%2$d-%3$s-%4$d",

@@ -25,12 +25,12 @@ import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_INT;
  *
  * Fill Usage: (Fluent)
  *
- * flywt.wrap(...).version(0);
+ * flyweight.wrap(...).version(0);
  *
  * Parse Usage:
  *
- * flwt.wrap(...)
- * val = flwt.version();
+ * flyweight.wrap(...)
+ * val = flyweight.version();
  *
  * 0                   1                   2                   3
  * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1

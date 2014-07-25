@@ -29,22 +29,23 @@ public class CollectionUtilTest
     @Test
     public void getOrDefaultUsesSupplier()
     {
-        Map<Integer, Integer> ints = new HashMap<>();
-        Integer result = CollectionUtil.getOrDefault(ints, 0, x -> x + 1);
+        final Map<Integer, Integer> ints = new HashMap<>();
+        final Integer result = CollectionUtil.getOrDefault(ints, 0, x -> x + 1);
+
         assertThat(result, is(1));
     }
 
     @Test
-    public void getOrDefaultDoesntCreateNewValueWhenOneExists()
+    public void getOrDefaultDoesNotCreateNewValueWhenOneExists()
     {
-        Map<Integer, Integer> ints = new HashMap<>();
+        final Map<Integer, Integer> ints = new HashMap<>();
         ints.put(0, 0);
-        Integer result = CollectionUtil.getOrDefault(ints, 0, x ->
+        final Integer result = CollectionUtil.getOrDefault(ints, 0, x ->
         {
             Assert.fail("Shouldn't be called");
             return x + 1;
         });
+
         assertThat(result, is(0));
     }
-
 }

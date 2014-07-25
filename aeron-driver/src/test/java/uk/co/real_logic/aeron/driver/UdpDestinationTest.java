@@ -57,7 +57,7 @@ public class UdpDestinationTest
     @Test(expected = InvalidDestinationException.class)
     public void shouldThrowExceptionForIncorrectScheme() throws Exception
     {
-        UdpDestination.parse("unknwonudp://localhost:40124");
+        UdpDestination.parse("unknownudp://localhost:40124");
     }
 
     @Test(expected = InvalidDestinationException.class)

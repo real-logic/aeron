@@ -79,7 +79,7 @@ public class Int2ObjectHashMapTest
         assertThat(valueOf(map.size()), is(valueOf(17)));
 
         assertThat(map.get(16), equalTo("16"));
-        assertThat(Double.valueOf(loadFactor), closeTo(map.getLoadFactor(), 0.0));
+        assertThat(loadFactor, closeTo(map.getLoadFactor(), 0.0));
     }
 
     @Test
@@ -97,7 +97,7 @@ public class Int2ObjectHashMapTest
 
         assertThat(map.get(key), is(value));
         assertThat(map.get(collisionKey), is(collisionValue));
-        assertThat(Double.valueOf(loadFactor), closeTo(map.getLoadFactor(), 0.0));
+        assertThat(loadFactor, closeTo(map.getLoadFactor(), 0.0));
     }
 
     @Test
@@ -311,7 +311,7 @@ public class Int2ObjectHashMapTest
         {
             assertThat(entry.getKey(), equalTo(valueOf(entry.getValue())));
 
-            if (entry.getKey().intValue() == 7)
+            if (entry.getKey() == 7)
             {
                 entry.setValue(testValue);
             }

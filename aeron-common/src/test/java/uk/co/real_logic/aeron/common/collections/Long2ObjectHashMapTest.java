@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static java.lang.Long.valueOf;
 import static org.hamcrest.core.Is.is;
@@ -80,7 +81,7 @@ public class Long2ObjectHashMapTest
         assertThat(valueOf(map.size()), is(valueOf(17)));
 
         assertThat(map.get(16), equalTo("16"));
-        assertThat(Double.valueOf(loadFactor), closeTo(map.getLoadFactor(), 0.0));
+        assertThat(loadFactor, closeTo(map.getLoadFactor(), 0.0));
 
     }
 
@@ -94,12 +95,12 @@ public class Long2ObjectHashMapTest
         map.put(key, value);
 
         final long collisionKey = key + map.getCapacity();
-        String collisionValue = Long.toString(collisionKey);
+        final String collisionValue = Long.toString(collisionKey);
         map.put(collisionKey, collisionValue);
 
         assertThat(map.get(key), is(value));
         assertThat(map.get(collisionKey), is(collisionValue));
-        assertThat(Double.valueOf(loadFactor), closeTo(map.getLoadFactor(), 0.0));
+        assertThat(loadFactor, closeTo(map.getLoadFactor(), 0.0));
     }
 
     @Test
@@ -208,12 +209,7 @@ public class Long2ObjectHashMapTest
             initialSet.add(value);
         }
 
-        final Collection<String> copyToSet = new HashSet<>();
-
-        for (final String s : longToObjectMap.values())
-        {
-            copyToSet.add(s);
-        }
+        final Collection<String> copyToSet = longToObjectMap.values().stream().collect(Collectors.toSet());
 
         assertThat(copyToSet, is(initialSet));
     }
@@ -252,12 +248,7 @@ public class Long2ObjectHashMapTest
             initialSet.add(valueOf(i));
         }
 
-        final Collection<Long> copyToSet = new HashSet<>();
-
-        for (final Long aLong : longToObjectMap.keySet())
-        {
-            copyToSet.add(aLong);
-        }
+        final Collection<Long> copyToSet = longToObjectMap.keySet().stream().collect(Collectors.toSet());
 
         assertThat(copyToSet, is(initialSet));
     }

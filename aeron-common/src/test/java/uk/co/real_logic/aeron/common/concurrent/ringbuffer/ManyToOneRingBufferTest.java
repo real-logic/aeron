@@ -23,7 +23,6 @@ import uk.co.real_logic.aeron.common.concurrent.MessageHandler;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.common.BitUtil.align;
 import static uk.co.real_logic.aeron.common.concurrent.ringbuffer.ManyToOneRingBuffer.PADDING_MSG_TYPE_ID;
@@ -225,9 +224,9 @@ public class ManyToOneRingBufferTest
 
         final int[] times = new int[1];
         final MessageHandler handler = (msgTypeId, buffer, index, length) -> times[0]++;
-        final int msgsRead = ringBuffer.read(handler);
+        final int messagesRead = ringBuffer.read(handler);
 
-        assertThat(msgsRead, is(1));
+        assertThat(messagesRead, is(1));
         assertThat(times[0], is(1));
 
         final InOrder inOrder = inOrder(buffer);

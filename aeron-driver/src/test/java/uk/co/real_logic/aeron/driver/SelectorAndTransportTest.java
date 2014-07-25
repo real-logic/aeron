@@ -211,13 +211,13 @@ public class SelectorAndTransportTest
     @Test(timeout = 1000)
     public void shouldHandleSmFrameFromReceiverToSender() throws Exception
     {
-        final AtomicInteger cntlHeadersReceived = new AtomicInteger(0);
+        final AtomicInteger controlHeadersReceived = new AtomicInteger(0);
         final UdpTransport.StatusMessageFrameHandler statusMessageFrameHandler =
             (header, buffer, length, srcAddress) ->
             {
                 assertThat(header.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
                 assertThat(header.frameLength(), is(StatusMessageFlyweight.HEADER_LENGTH));
-                cntlHeadersReceived.incrementAndGet();
+                controlHeadersReceived.incrementAndGet();
             };
 
         nioSelector = new NioSelector();
@@ -241,12 +241,12 @@ public class SelectorAndTransportTest
 
         processLoop(nioSelector, 5);
         rcv.sendTo(byteBuffer, rcvRemoteAddress);
-        while (cntlHeadersReceived.get() < 1)
+        while (controlHeadersReceived.get() < 1)
         {
             processLoop(nioSelector, 1);
         }
 
-        assertThat(cntlHeadersReceived.get(), is(1));
+        assertThat(controlHeadersReceived.get(), is(1));
     }
 
     private void processLoop(final NioSelector nioSelector, final int iterations) throws Exception

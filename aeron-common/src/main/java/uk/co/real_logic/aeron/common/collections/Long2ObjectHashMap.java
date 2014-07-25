@@ -343,7 +343,7 @@ public class Long2ObjectHashMap<V>
      */
     public Collection<V> values()
     {
-        return new ValueCollection<V>();
+        return new ValueCollection<>();
     }
 
     /**
@@ -351,7 +351,7 @@ public class Long2ObjectHashMap<V>
      */
     public Set<Entry<Long, V>> entrySet()
     {
-        return new EntrySet<V>();
+        return new EntrySet<>();
     }
 
     /**
@@ -525,7 +525,7 @@ public class Long2ObjectHashMap<V>
 
         public ValueIterator<V> iterator()
         {
-            return new ValueIterator<V>();
+            return new ValueIterator<>();
         }
 
         public void clear()
@@ -548,7 +548,7 @@ public class Long2ObjectHashMap<V>
 
         public Iterator<Map.Entry<Long, V>> iterator()
         {
-            return new EntryIterator<V>();
+            return new EntryIterator<>();
         }
 
         public void clear()
@@ -656,7 +656,7 @@ public class Long2ObjectHashMap<V>
     {
         public Long next()
         {
-            return Long.valueOf(nextLong());
+            return nextLong();
         }
 
         public long nextLong()
@@ -681,7 +681,7 @@ public class Long2ObjectHashMap<V>
 
         public Long getKey()
         {
-            return Long.valueOf(keys[getPosition()]);
+            return keys[getPosition()];
         }
 
         public V getValue()

@@ -16,8 +16,6 @@ import java.nio.ByteBuffer;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
 import static uk.co.real_logic.aeron.common.TermHelper.termIdToBufferIndex;
@@ -122,7 +120,7 @@ public class PublicationTest
     }
 
     @Test
-    public void shouldntUnmapBuffersBeforeLastRelease() throws Exception
+    public void shouldNotUnmapBuffersBeforeLastRelease() throws Exception
     {
         publication.incRef();
         publication.release();

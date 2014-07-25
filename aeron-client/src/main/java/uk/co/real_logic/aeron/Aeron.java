@@ -250,7 +250,7 @@ public final class Aeron implements AutoCloseable, Runnable
 
                 if (null == errorHandler)
                 {
-                    errorHandler = (ex) -> ex.printStackTrace();
+                    errorHandler = Throwable::printStackTrace;
                 }
             }
             catch (final IOException ex)

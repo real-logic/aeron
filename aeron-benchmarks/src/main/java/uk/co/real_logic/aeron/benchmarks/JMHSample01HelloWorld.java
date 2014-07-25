@@ -86,8 +86,10 @@ public class JMHSample01HelloWorld
 
     public static void main(String[] args) throws RunnerException
     {
-        Options opt = new OptionsBuilder().include(".*" + JMHSample01HelloWorld.class.getSimpleName() + ".*")
-                                          .forks(1).build();
+        final Options opt =
+            new OptionsBuilder().include(".*" + JMHSample01HelloWorld.class.getSimpleName() + ".*")
+                                .forks(1)
+                                .build();
 
         new Runner(opt).run();
     }

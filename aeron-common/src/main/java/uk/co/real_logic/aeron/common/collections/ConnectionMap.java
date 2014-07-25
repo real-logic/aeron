@@ -88,17 +88,13 @@ public class ConnectionMap<D, C>
     }
 
     @SuppressWarnings("unchecked")
-    public void forEach(final ConnectionHandler connection)
+    public void forEach(final ConnectionHandler connectionHandler)
     {
         destinationMap.forEach(
             (destination, sessionMap) ->
-            {
                 sessionMap.forEach(
                     (sessionId, channelMap) ->
-                    {
                         channelMap.forEach(
-                            (channelId, value) -> connection.accept(destination, sessionId, channelId, value));
-                    });
-            });
+                            (channelId, value) -> connectionHandler.accept(destination, sessionId, channelId, value))));
     }
 }

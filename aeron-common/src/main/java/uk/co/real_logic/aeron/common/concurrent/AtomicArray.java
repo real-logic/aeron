@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * A dynamic array that can be used concurrently with a single writer and many readers. All operations are lock-free.
@@ -308,7 +309,7 @@ public class AtomicArray<T> implements Collection<T>
         return Arrays.copyOf(theArray, theArray.length);
     }
 
-    public <T> T[] toArray(final T[] a)
+    public <E> E[] toArray(final E[] a)
     {
         throw new UnsupportedOperationException();
     }
@@ -320,10 +321,7 @@ public class AtomicArray<T> implements Collection<T>
 
     public boolean addAll(final Collection<? extends T> c)
     {
-        for (final T item : c)
-        {
-            add(item);
-        }
+        addAll(c.stream().collect(Collectors.toList()));
 
         return true;
     }

@@ -94,12 +94,12 @@ public class EventLogger
     }
 
     public void log(final EventCode code, final ByteBuffer buffer, final int offset,
-                    final int length, final InetSocketAddress dstAddr)
+                    final int length, final InetSocketAddress dstAddress)
     {
         if (isEnabled(code))
         {
             final AtomicBuffer encodedBuffer = encodingBuffer.get();
-            final int encodedLength = EventCodec.encode(encodedBuffer, buffer, offset, length, dstAddr);
+            final int encodedLength = EventCodec.encode(encodedBuffer, buffer, offset, length, dstAddress);
 
             ringBuffer.write(code.id(), encodedBuffer, 0, encodedLength);
         }

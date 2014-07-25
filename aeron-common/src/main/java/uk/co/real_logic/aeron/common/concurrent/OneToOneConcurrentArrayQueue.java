@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static uk.co.real_logic.aeron.common.UnsafeAccess.UNSAFE;
 
@@ -280,10 +281,7 @@ public class OneToOneConcurrentArrayQueue<E>
 
     public boolean addAll(final Collection<? extends E> c)
     {
-        for (final E e : c)
-        {
-            add(e);
-        }
+        addAll(c.stream().collect(Collectors.toList()));
 
         return true;
     }

@@ -345,7 +345,7 @@ public class Int2ObjectHashMap<V>
      */
     public Collection<V> values()
     {
-        return new ValueCollection<V>();
+        return new ValueCollection<>();
     }
 
     /**
@@ -353,7 +353,7 @@ public class Int2ObjectHashMap<V>
      */
     public Set<Entry<Integer, V>> entrySet()
     {
-        return new EntrySet<V>();
+        return new EntrySet<>();
     }
 
     /**
@@ -525,7 +525,7 @@ public class Int2ObjectHashMap<V>
 
         public ValueIterator<V> iterator()
         {
-            return new ValueIterator<V>();
+            return new ValueIterator<>();
         }
 
         public void clear()
@@ -548,7 +548,7 @@ public class Int2ObjectHashMap<V>
 
         public Iterator<Entry<Integer, V>> iterator()
         {
-            return new EntryIterator<V>();
+            return new EntryIterator<>();
         }
 
         public void clear()
@@ -656,7 +656,7 @@ public class Int2ObjectHashMap<V>
     {
         public Integer next()
         {
-            return Integer.valueOf(nextInt());
+            return nextInt();
         }
 
         public int nextInt()
@@ -681,7 +681,7 @@ public class Int2ObjectHashMap<V>
 
         public Integer getKey()
         {
-            return Integer.valueOf(keys[getPosition()]);
+            return keys[getPosition()];
         }
 
         public V getValue()

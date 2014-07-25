@@ -44,12 +44,4 @@ public class ControlProtocolEvents
     public static final int ON_NEW_PUBLICATION = 0x0A;
     /** Operation Succeeded */
     public static final int ON_OPERATION_SUCCESS = 0x0B;
-
-    // Within Media Driver between threads
-
-    /** Receiver thread tells media driver it wants to create a connection */
-    public static final int CREATE_CONNECTED_SUBSCRIPTION = 0xF0;
-
-    /** Receiver thread tells media driver it wants to remove a connection */
-    public static final int REMOVE_CONNECTED_SUBSCRIPTION = 0xF1;
 }

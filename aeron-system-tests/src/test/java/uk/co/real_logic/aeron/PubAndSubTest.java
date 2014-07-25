@@ -29,9 +29,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 /**
@@ -49,13 +52,17 @@ public class PubAndSubTest
     private static final long CHANNEL_ID = 1L;
     private static final long SESSION_ID = 2L;
 
+    private final MediaDriver.DriverContext driverContext = new MediaDriver.DriverContext();
+    private final Aeron.ClientContext publishingAeronContext = new Aeron.ClientContext();
+    private final Aeron.ClientContext subscribingAeronContext = new Aeron.ClientContext();
+
     private Aeron publishingClient;
     private Aeron subscribingClient;
     private MediaDriver driver;
     private Subscription subscription;
     private Publication publication;
 
-    private AtomicBuffer buffer = new AtomicBuffer(new byte[256]);
+    private AtomicBuffer buffer = new AtomicBuffer(new byte[4096]);
     private DataHandler dataHandler = mock(DataHandler.class);
 
     private ExecutorService executorService;
@@ -64,15 +71,13 @@ public class PubAndSubTest
     {
         executorService = Executors.newFixedThreadPool(2);
 
-        final MediaDriver.DriverContext ctx = new MediaDriver.DriverContext();
+        driverContext.dirsDeleteOnExit(true);
+        driverContext.warnIfDirectoriesExist(false);
 
-        ctx.dirsDeleteOnExit(true);
-        ctx.warnIfDirectoriesExist(false);
+        driver = new MediaDriver(driverContext);
 
-        driver = new MediaDriver(ctx);
-
-        publishingClient = Aeron.newClient(new Aeron.ClientContext());
-        subscribingClient = Aeron.newClient(new Aeron.ClientContext());
+        publishingClient = Aeron.newClient(publishingAeronContext);
+        subscribingClient = Aeron.newClient(subscribingAeronContext);
 
         driver.invokeEmbedded();
         publishingClient.invoke(executorService);
@@ -117,7 +122,7 @@ public class PubAndSubTest
 
         buffer.putInt(0, 1);
 
-        publication.offer(buffer, 0, BitUtil.SIZE_OF_INT);
+        assertTrue(publication.offer(buffer, 0, BitUtil.SIZE_OF_INT));
 
         final int fragmentsRead[] = new int[1];
         final BooleanSupplier condition = () -> fragmentsRead[0] > 0;
@@ -138,11 +143,101 @@ public class PubAndSubTest
 
     @Theory
     @Test(timeout = 1000)
-    @Ignore("isn't finished yet = send enough data to rollover a buffer")
     public void shouldContinueAfterBufferRollover(final String destination) throws Exception
+    {
+        final int termBufferSize = 64 *1024;
+        final int numMessagesInTermBuffer = 64;
+        final int messageLength = (termBufferSize / numMessagesInTermBuffer) - DataHeaderFlyweight.HEADER_LENGTH;
+        final int numMessagesToSend = numMessagesInTermBuffer + 1;
+
+        driverContext.termBufferSize(termBufferSize);
+
+        setup(destination);
+
+        for (int i = 0; i < numMessagesToSend; i++)
+        {
+            while (!publication.offer(buffer, 0, messageLength))
+            {
+                Thread.yield();
+            }
+
+            final int fragmentsRead[] = new int[1];
+            final BooleanSupplier condition = () -> fragmentsRead[0] > 0;
+            SystemTestHelper.executeUntil(condition,
+                    (j) ->
+                    {
+                        fragmentsRead[0] += subscription.poll(10);
+                        Thread.yield();
+                    },
+                    Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
+        }
+
+        verify(dataHandler, times(numMessagesToSend)).onData(anyObject(),
+                                                             anyInt(),
+                                                             eq(messageLength),
+                                                             eq(SESSION_ID),
+                                                             eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+    }
+
+    @Theory
+    @Test(timeout = 1000)
+    @Ignore("doesn't work yet - verify fails due to flow control on receiver - avoid by not sending all at once")
+    public void shouldContinueAfterBufferRolloverBatched(final String destination) throws Exception
+    {
+        final int termBufferSize = 64 *1024;
+        final int numMessagesInTermBuffer = 64;
+        final int messageLength = (termBufferSize / numMessagesInTermBuffer) - DataHeaderFlyweight.HEADER_LENGTH;
+        final int numMessagesToSend = numMessagesInTermBuffer + 1;
+
+        driverContext.termBufferSize(termBufferSize);
+
+        setup(destination);
+
+        // TODO: currently fails due to flow control mismatch. Should adjust to send in 1/4 term size batches instead
+
+        for (int i = 0; i < numMessagesToSend; i++)
+        {
+            while (!publication.offer(buffer, 0, messageLength))
+            {
+                Thread.yield();
+            }
+        }
+
+        final int fragmentsRead[] = new int[1];
+        final BooleanSupplier condition = () -> fragmentsRead[0] >= numMessagesToSend;
+        SystemTestHelper.executeUntil(condition,
+                (j) ->
+                {
+                    fragmentsRead[0] += subscription.poll(10);
+                    Thread.yield();
+                },
+                Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(900));
+
+        verify(dataHandler, times(numMessagesToSend)).onData(anyObject(),
+                anyInt(),
+                eq(messageLength),
+                eq(SESSION_ID),
+                eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+    }
+
+    @Theory
+    @Test(timeout = 1000)
+    @Ignore("isn't finished yet = send enough data to rollover a buffer")
+    public void shouldContinueAfterBufferRolloverWithPadding(final String destination) throws Exception
     {
         setup(destination);
 
         Thread.sleep(100);
     }
+
+    @Theory
+    @Test(timeout = 1000)
+    @Ignore("isn't finished yet = send enough data to rollover a buffer")
+    public void shouldContinueAfterBufferRolloverWithPaddingBatched(final String destination) throws Exception
+    {
+        setup(destination);
+
+        Thread.sleep(100);
+    }
+
 }

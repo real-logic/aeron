@@ -81,7 +81,7 @@ public class EventConfiguration
     /**
      * Maximum length of an event in bytes
      */
-    public final static int MAX_EVENT_LENGTH = 1024;
+    public final static int MAX_EVENT_LENGTH = 2048;
 
     private static Pattern COMMA = Pattern.compile(",");
 

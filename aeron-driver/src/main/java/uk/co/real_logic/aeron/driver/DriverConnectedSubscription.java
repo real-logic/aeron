@@ -61,6 +61,7 @@ public class DriverConnectedSubscription implements AutoCloseable
     private int lastSmTail;
     private int currentWindowSize;
     private int currentWindowGain;
+    private int termSizeSmGain;
 
     private AtomicInteger state = new AtomicInteger(STATE_CREATED);
 
@@ -94,13 +95,14 @@ public class DriverConnectedSubscription implements AutoCloseable
         this.lastSmTermId = initialTermId;
         this.lastSmTail = lossHandler.highestContiguousOffset();
         this.lastSmTimestamp = 0;
-        this.currentWindowSize = initialWindow;
-        this.currentWindowGain = currentWindowSize << 2; // window / 4
 
         final int termCapacity = rebuilders[0].capacity();
+        this.currentWindowSize = initialWindow;
+        this.currentWindowGain = currentWindowSize << 2; // window / 4
         this.bufferLimit = termCapacity / 2;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
         this.initialPosition = initialTermId << positionBitsToShift;
+        this.termSizeSmGain = termCapacity / 4;
     }
 
     public long sessionId()
@@ -163,12 +165,14 @@ public class DriverConnectedSubscription implements AutoCloseable
         if (isOutOfBufferRange(packetPosition, length, position))
         {
             // TODO: invalid packet we probably want to update an error counter
+            System.out.println(String.format("isOutOfBufferRange %x %d %x", packetPosition, length, position));
             return;
         }
 
         if (isBeyondFlowControlLimit(packetPosition + length))
         {
             // TODO: increment a counter to say subscriber is not keeping up
+            System.out.println(String.format("isBeyondFlowControlLimit %x %d", packetPosition, length));
             return;
         }
 
@@ -237,6 +241,12 @@ public class DriverConnectedSubscription implements AutoCloseable
         {
             // see if we have made enough progress to make sense to send an SM
             if ((currentSmTail - lastSmTail) > currentWindowGain)
+            {
+                lastSmTimestamp = now;
+                return sendStatusMessage(currentSmTermId, currentSmTail, currentWindowSize);
+            }
+
+            if ((currentSmTail - lastSmTail) > termSizeSmGain)
             {
                 lastSmTimestamp = now;
                 return sendStatusMessage(currentSmTermId, currentSmTail, currentWindowSize);

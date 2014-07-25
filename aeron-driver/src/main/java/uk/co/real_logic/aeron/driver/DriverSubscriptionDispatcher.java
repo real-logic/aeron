@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.driver.exceptions.UnknownSubscriptionException;
 
@@ -105,6 +106,11 @@ public class DriverSubscriptionDispatcher
             {
                 if (header.frameLength() > DataHeaderFlyweight.HEADER_LENGTH)
                 {
+                    connectedSubscription.insertIntoTerm(header, buffer, length);
+                }
+                else if ((header.flags() & DataHeaderFlyweight.PADDING_FLAG) == DataHeaderFlyweight.PADDING_FLAG)
+                {
+                    header.headerType(LogBufferDescriptor.PADDING_FRAME_TYPE);
                     connectedSubscription.insertIntoTerm(header, buffer, length);
                 }
             }

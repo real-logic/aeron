@@ -36,6 +36,7 @@ import static uk.co.real_logic.aeron.common.BitUtil.align;
 import static uk.co.real_logic.aeron.common.TermHelper.termIdToBufferIndex;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.IN_CLEANING;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.NEEDS_CLEANING;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.PADDING_FRAME_TYPE;
 
 /**
  * Publication to be sent to registered subscribers.
@@ -80,6 +81,7 @@ public class DriverPublication implements AutoCloseable
 
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final DataHeaderFlyweight retransmitDataHeader = new DataHeaderFlyweight();
+    private final DataHeaderFlyweight sendDataHeader = new DataHeaderFlyweight();
 
     private final int positionBitsToShift;
     private final long initialPosition;
@@ -288,7 +290,6 @@ public class DriverPublication implements AutoCloseable
     }
 
     /*
-     *
      * Function used as a lambda for LogScanner.AvailabilityHandler
      */
     private void onSendFrame(final AtomicBuffer buffer, final int offset, final int length)
@@ -297,9 +298,25 @@ public class DriverPublication implements AutoCloseable
         // ByteBuffer as the buffer parameter
         final ByteBuffer sendBuffer = sendBuffers[activeIndex];
 
-        // could wrap and use DataHeader to grab specific fields, e.g. dataHeader.wrap(sendBuffer, offset);
         sendBuffer.limit(offset + length);
         sendBuffer.position(offset);
+
+        // if we have a 0 length data message, it is most likely padding, so we will want to adjust it before sending.
+        // a padding frame may be embedded in a batch that is received. Don't need to adjust that one.
+        if (DataHeaderFlyweight.HEADER_LENGTH == length)
+        {
+            sendDataHeader.wrap(buffer, offset);
+
+            System.out.println("potential padding frame");
+            if (sendDataHeader.headerType() == PADDING_FRAME_TYPE)
+            {
+                final short flags = (short)(sendDataHeader.flags() & DataHeaderFlyweight.PADDING_FLAG);
+
+                sendDataHeader.flags(flags);
+                sendDataHeader.headerType(HeaderFlyweight.HDR_TYPE_DATA);
+                System.out.println("padding frame");
+            }
+        }
 
         try
         {
@@ -320,7 +337,7 @@ public class DriverPublication implements AutoCloseable
     }
 
     /**
-     * This is performed on the {@link DriverConductor}thread via the RetransmitHandler
+     * This is performed on the {@link DriverConductor} thread via the RetransmitHandler
      */
     private void onSendRetransmit(final AtomicBuffer buffer, final int offset, final int length)
     {
@@ -339,7 +356,7 @@ public class DriverPublication implements AutoCloseable
                 final int bytesSent = mediaEndpoint.sendTo(termRetransmitBuffer, dstAddress);
                 if (bytesSent != length)
                 {
-                    logger.log(EventCode.COULD_NOT_FIND_INTERFACE, termRetransmitBuffer, length, dstAddress);
+                    logger.log(EventCode.COULD_NOT_FIND_INTERFACE, termRetransmitBuffer, offset, length, dstAddress);
                 }
             }
             catch (final Exception ex)
@@ -375,7 +392,7 @@ public class DriverPublication implements AutoCloseable
             final int bytesSent = mediaEndpoint.sendTo(scratchByteBuffer, dstAddress);
             if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
             {
-                logger.log(EventCode.ERROR_SENDING_HEARTBEAT_PACKET, scratchByteBuffer,
+                logger.log(EventCode.ERROR_SENDING_HEARTBEAT_PACKET, scratchByteBuffer, 0,
                            DataHeaderFlyweight.HEADER_LENGTH, dstAddress);
             }
 

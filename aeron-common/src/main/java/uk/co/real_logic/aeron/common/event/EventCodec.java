@@ -68,13 +68,13 @@ public class EventCodec
     }
 
     public static int encode(final AtomicBuffer encodingBuffer, final ByteBuffer buffer,
-                             final int bufferLength, final InetSocketAddress dstAddr)
+                             final int offset, final int bufferLength, final InetSocketAddress dstAddr)
     {
         final int captureLength = determineCaptureLength(bufferLength);
         int relativeOffset = encodeLogHeader(encodingBuffer, captureLength, bufferLength);
 
         relativeOffset += encodeSocketAddress(encodingBuffer, relativeOffset, dstAddr);
-        encodingBuffer.putBytes(relativeOffset, buffer, 0, captureLength);
+        encodingBuffer.putBytes(relativeOffset, buffer, offset, captureLength);
         relativeOffset += captureLength;
 
         return relativeOffset;

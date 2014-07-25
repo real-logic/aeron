@@ -304,14 +304,14 @@ public class DriverPublication implements AutoCloseable
         {
             sendDataHeader.wrap(buffer, offset);
 
-            System.out.println("potential padding frame");
             if (sendDataHeader.headerType() == PADDING_FRAME_TYPE)
             {
-                final short flags = (short)(sendDataHeader.flags() & DataHeaderFlyweight.PADDING_FLAG);
+                final short flags = (short)(sendDataHeader.flags() | DataHeaderFlyweight.PADDING_FLAG);
 
                 sendDataHeader.flags(flags);
                 sendDataHeader.headerType(HeaderFlyweight.HDR_TYPE_DATA);
-                System.out.println("padding frame");
+                // the frameLength field will be the length of the padding. But the PADDING flag tells the receiver
+                // what to do.
             }
         }
 

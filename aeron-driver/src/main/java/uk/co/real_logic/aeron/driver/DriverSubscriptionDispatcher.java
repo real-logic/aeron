@@ -104,7 +104,7 @@ public class DriverSubscriptionDispatcher
 
             if (null != connectedSubscription)
             {
-                if (header.frameLength() > DataHeaderFlyweight.HEADER_LENGTH)
+                if (length > DataHeaderFlyweight.HEADER_LENGTH)
                 {
                     connectedSubscription.insertIntoTerm(header, buffer, length);
                 }

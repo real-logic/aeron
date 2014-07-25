@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
 /**
@@ -242,7 +243,6 @@ public class PubAndSubTest
 
     @Theory
     @Test(timeout = 1000)
-    @Ignore
     public void shouldContinueAfterBufferRolloverWithPadding(final String destination) throws Exception
     {
         /*
@@ -287,11 +287,52 @@ public class PubAndSubTest
 
     @Theory
     @Test(timeout = 1000)
-    @Ignore("isn't finished yet = send enough data to rollover a buffer")
+//    @Ignore("isn't finished yet = send enough data to rollover a buffer")
     public void shouldContinueAfterBufferRolloverWithPaddingBatched(final String destination) throws Exception
     {
+        /*
+         * 65536 bytes in the buffer
+         * 63 * 1032 = 65016
+         * 65536 - 65016 = 520 bytes padding at the end
+         * so, sending 64 messages causes last to overflow
+         */
+        final int termBufferSize = 64 * 1024;
+        final int messageLength = 1032 - DataHeaderFlyweight.HEADER_LENGTH;
+        final int numMessagesToSend = 64;
+        final int numBatchesPerTerm = 4;
+        final int numMessagesPerBatch = numMessagesToSend / numBatchesPerTerm;
+
+        driverContext.termBufferSize(termBufferSize);
+
         setup(destination);
 
-        Thread.sleep(100);
+        for (int i = 0; i < numBatchesPerTerm; i++)
+        {
+
+            for (int j = 0; j < numMessagesPerBatch; j++)
+            {
+                while (!publication.offer(buffer, 0, messageLength))
+                {
+                    Thread.yield();
+                }
+            }
+
+            final int fragmentsRead[] = new int[1];
+            SystemTestHelper.executeUntil(
+                () -> fragmentsRead[0] >= numMessagesPerBatch,
+                (j) ->
+                {
+                    fragmentsRead[0] += subscription.poll(10);
+                    Thread.yield();
+                },
+                Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(900));
+        }
+
+        verify(dataHandler, times(numMessagesToSend))
+            .onData(anyObject(),
+                anyInt(),
+                eq(messageLength),
+                eq(SESSION_ID),
+                eq((byte) DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
     }
 }

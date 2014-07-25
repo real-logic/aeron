@@ -97,9 +97,7 @@ public class PubMulticastTest
 
     private Aeron.ClientContext newAeronContext()
     {
-        Aeron.ClientContext ctx = new Aeron.ClientContext();
-
-        return ctx;
+        return new Aeron.ClientContext();
     }
 
     @After

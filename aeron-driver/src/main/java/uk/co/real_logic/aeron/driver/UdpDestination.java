@@ -299,7 +299,7 @@ public class UdpDestination
     /** {@inheritDoc} */
     public int hashCode()
     {
-        return (int)consistentHash;
+        return (int)(consistentHash ^ (consistentHash >>> 32));
     }
 
     /** {@inheritDoc} */

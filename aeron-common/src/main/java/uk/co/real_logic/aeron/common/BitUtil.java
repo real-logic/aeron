@@ -112,23 +112,27 @@ public class BitUtil
     }
 
     /**
-     * Generate a consistent hash of the bytes that is represented as an int.
+     * Generate a consistent hash of the bytes that is represented as a long.
      *
      * Not guaranteed to be unique. But should be reasonably unique and consistent.
      *
      * @param bytes bytes to hash over
-     * @return int representation of hash
+     * @return long representation of hash
      * @throws Exception if no known digest method
      */
-    public static int generateConsistentHash(final byte[] bytes) throws Exception
+    public static long generateConsistentHash(final byte[] bytes) throws Exception
     {
         final byte[] digest = MessageDigest.getInstance("SHA-1").digest(bytes);
 
-        // truncate by taking first 4 bytes
-        return ((int)digest[0] << 24) |
-               ((int)digest[1] << 16) |
-               ((int)digest[2] << 8)  |
-               ((int)digest[3]);
+        // truncate by taking first 8 bytes
+        return ((long)digest[0] << 56) |
+               ((long)digest[1] << 48) |
+               ((long)digest[2] << 40) |
+               ((long)digest[3] << 32) |
+               ((long)digest[4] << 24) |
+               ((long)digest[5] << 16) |
+               ((long)digest[6] << 8)  |
+               ((long)digest[7]);
     }
 
     public static boolean isEven(int number)

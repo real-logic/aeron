@@ -96,7 +96,7 @@ public class LogScanner extends LogBuffer
 
         if (!isComplete())
         {
-            final int tail = tailVolatile();
+            final int tail = Math.min(tailVolatile(), capacity());
             final int offset = this.offset;
             if (tail > offset)
             {

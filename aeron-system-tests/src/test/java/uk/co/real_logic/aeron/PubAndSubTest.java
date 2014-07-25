@@ -124,9 +124,8 @@ public class PubAndSubTest
         assertTrue(publication.offer(buffer, 0, BitUtil.SIZE_OF_INT));
 
         final int fragmentsRead[] = new int[1];
-        final BooleanSupplier condition = () -> fragmentsRead[0] > 0;
         SystemTestHelper.executeUntil
-            (condition,
+            (() -> fragmentsRead[0] > 0,
              (i) ->
              {
                  fragmentsRead[0] += subscription.poll(10);
@@ -136,10 +135,10 @@ public class PubAndSubTest
 
         verify(dataHandler)
             .onData(anyObject(),
-                    eq(DataHeaderFlyweight.HEADER_LENGTH),
-                    eq(BitUtil.SIZE_OF_INT),
-                    eq(SESSION_ID),
-                    eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+                eq(DataHeaderFlyweight.HEADER_LENGTH),
+                eq(BitUtil.SIZE_OF_INT),
+                eq(SESSION_ID),
+                eq((byte) DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
     }
 
     @Theory
@@ -163,9 +162,8 @@ public class PubAndSubTest
             }
 
             final int fragmentsRead[] = new int[1];
-            final BooleanSupplier condition = () -> fragmentsRead[0] > 0;
             SystemTestHelper.executeUntil(
-                condition,
+                () -> fragmentsRead[0] > 0,
                 (j) ->
                 {
                     fragmentsRead[0] += subscription.poll(10);
@@ -176,19 +174,20 @@ public class PubAndSubTest
 
         verify(dataHandler, times(numMessagesToSend))
             .onData(anyObject(),
-                    anyInt(),
-                    eq(messageLength),
-                    eq(SESSION_ID),
-                    eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+                anyInt(),
+                eq(messageLength),
+                eq(SESSION_ID),
+                eq((byte) DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
     }
 
     @Theory
     @Test(timeout = 1000)
-    @Ignore("doesn't work yet - verify fails due to flow control on receiver - avoid by not sending all at once")
     public void shouldContinueAfterBufferRolloverBatched(final String destination) throws Exception
     {
         final int termBufferSize = 64 * 1024;
-        final int numMessagesInTermBuffer = 64;
+        final int numBatchesPerTerm = 4;
+        final int numMessagesPerBatch = 16;
+        final int numMessagesInTermBuffer = numMessagesPerBatch * numBatchesPerTerm;
         final int messageLength = (termBufferSize / numMessagesInTermBuffer) - DataHeaderFlyweight.HEADER_LENGTH;
         final int numMessagesToSend = numMessagesInTermBuffer + 1;
 
@@ -196,20 +195,36 @@ public class PubAndSubTest
 
         setup(destination);
 
-        // TODO: currently fails due to flow control mismatch. Should adjust to send in 1/4 term size batches instead
-
-        for (int i = 0; i < numMessagesToSend; i++)
+        for (int i = 0; i < numBatchesPerTerm; i++)
         {
-            while (!publication.offer(buffer, 0, messageLength))
+
+            for (int j = 0; j < numMessagesPerBatch; j++)
             {
-                Thread.yield();
+                while (!publication.offer(buffer, 0, messageLength))
+                {
+                    Thread.yield();
+                }
             }
+
+            final int fragmentsRead[] = new int[1];
+            SystemTestHelper.executeUntil(
+                () -> fragmentsRead[0] >= numMessagesPerBatch,
+                (j) ->
+                {
+                    fragmentsRead[0] += subscription.poll(10);
+                    Thread.yield();
+                },
+                Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(900));
+        }
+
+        while (!publication.offer(buffer, 0, messageLength))
+        {
+            Thread.yield();
         }
 
         final int fragmentsRead[] = new int[1];
-        final BooleanSupplier condition = () -> fragmentsRead[0] >= numMessagesToSend;
         SystemTestHelper.executeUntil(
-            condition,
+            () -> fragmentsRead[0] > 0,
             (j) ->
             {
                 fragmentsRead[0] += subscription.poll(10);
@@ -227,12 +242,47 @@ public class PubAndSubTest
 
     @Theory
     @Test(timeout = 1000)
-    @Ignore("isn't finished yet = send enough data to rollover a buffer")
+    @Ignore
     public void shouldContinueAfterBufferRolloverWithPadding(final String destination) throws Exception
     {
+        /*
+         * 65536 bytes in the buffer
+         * 63 * 1032 = 65016
+         * 65536 - 65016 = 520 bytes padding at the end
+         * so, sending 64 messages causes last to overflow
+         */
+        final int termBufferSize = 64 * 1024;
+        final int messageLength = 1032 - DataHeaderFlyweight.HEADER_LENGTH;
+        final int numMessagesToSend = 64;
+
+        driverContext.termBufferSize(termBufferSize);
+
         setup(destination);
 
-        Thread.sleep(100);
+        for (int i = 0; i < numMessagesToSend; i++)
+        {
+            while (!publication.offer(buffer, 0, messageLength))
+            {
+                Thread.yield();
+            }
+
+            final int fragmentsRead[] = new int[1];
+            SystemTestHelper.executeUntil(
+                () -> fragmentsRead[0] > 0,
+                (j) ->
+                {
+                    fragmentsRead[0] += subscription.poll(10);
+                    Thread.yield();
+                },
+                Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
+        }
+
+        verify(dataHandler, times(numMessagesToSend))
+            .onData(anyObject(),
+                anyInt(),
+                eq(messageLength),
+                eq(SESSION_ID),
+                eq((byte) DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
     }
 
     @Theory

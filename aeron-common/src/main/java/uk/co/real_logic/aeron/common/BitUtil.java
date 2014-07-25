@@ -112,7 +112,7 @@ public class BitUtil
     }
 
     /**
-     * Generate a consistent hash of the bytes that is represented as a long.
+     * Generate a consistent hash of the bytes that is represented as an int.
      *
      * Not guaranteed to be unique. But should be reasonably unique and consistent.
      *

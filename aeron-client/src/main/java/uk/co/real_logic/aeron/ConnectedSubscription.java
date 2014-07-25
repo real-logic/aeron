@@ -39,7 +39,7 @@ public class ConnectedSubscription
     private final LogReader[] logReaders;
     private final long sessionId;
     private final DataHandler dataHandler;
-    private PositionReporter positionReporter;
+    private final PositionReporter positionReporter;
     private final ManagedBuffer[] managedBuffers;
     private final AtomicInteger activeTermId;
     private final int positionBitsToShift;

@@ -48,7 +48,7 @@ public class ExampleUtil
      * Create an Aeron instance with the given context and use the given {@link ExecutorService} to spawn any
      * needed threads.
      *
-     * @param context to use for instance creation
+     * @param context  to use for instance creation
      * @param executor to use for invoking conductor thread
      * @return {@link Aeron} instance
      * @throws Exception
@@ -84,24 +84,25 @@ public class ExampleUtil
      */
     public static Consumer<Subscription> subscriberLoop(final int limit)
     {
-        return (subscription) ->
-        {
-            try
+        return
+            (subscription) ->
             {
-                while (true)
+                try
                 {
-                    final int messagesRead = subscription.poll(limit);
-                    if (0 == messagesRead)
+                    while (true)
                     {
-                        Thread.sleep(TimeUnit.MILLISECONDS.toMillis(100)); // if no data, then sleep for 100 millis
+                        final int messagesRead = subscription.poll(limit);
+                        if (0 == messagesRead)
+                        {
+                            Thread.sleep(TimeUnit.MILLISECONDS.toMillis(100)); // if no data, then sleep for 100 millis
+                        }
                     }
                 }
-            }
-            catch (final Exception ex)
-            {
-                ex.printStackTrace();
-            }
-        };
+                catch (final Exception ex)
+                {
+                    ex.printStackTrace();
+                }
+            };
     }
 
     /**
@@ -118,7 +119,7 @@ public class ExampleUtil
             buffer.getBytes(offset, data);
 
             System.out.println(String.format("message to channel %d from session %d (%d@%d) <<%s>>",
-                    channelId, sessionId, length, offset, new String(data)));
+                                             channelId, sessionId, length, offset, new String(data)));
         };
     }
 
@@ -138,10 +139,10 @@ public class ExampleUtil
      * Generic error handler that just prints message to stdout.
      *
      * @param destination for the error
-     * @param sessionId for the error, if source
-     * @param channelId for the error
-     * @param message indicating what the error was
-     * @param cause of the error
+     * @param sessionId   for the error, if source
+     * @param channelId   for the error
+     * @param message     indicating what the error was
+     * @param cause       of the error
      */
     public static void printError(final String destination,
                                   final long sessionId,
@@ -156,7 +157,7 @@ public class ExampleUtil
      * Print the rates to stdout
      *
      * @param messagesPerSec being reported
-     * @param bytesPerSec being reported
+     * @param bytesPerSec    being reported
      */
     public static void printRate(final double messagesPerSec, final double bytesPerSec)
     {

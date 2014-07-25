@@ -31,18 +31,18 @@ import java.util.function.Consumer;
  */
 public class EventReader extends Agent implements AutoCloseable
 {
-    private File eventsFile;
     private MappedByteBuffer buffer;
     private ManyToOneRingBuffer ringBuffer;
     private Consumer<String> handler;
 
     public EventReader(final Context context)
     {
-        super(context.backoffStrategy(), e -> e.printStackTrace());
-        handler = context.handler();
+        super(context.backoffStrategy(), Throwable::printStackTrace);
+
+        handler = context.eventHandler();
         try
         {
-            eventsFile = context.eventsFile();
+            final File eventsFile = context.eventsFile();
 
             if (eventsFile.exists())
             {
@@ -95,15 +95,15 @@ public class EventReader extends Agent implements AutoCloseable
 
     public static class Context
     {
-        private File eventsFile = new File(System.getProperty(EventConfiguration.LOCATION_PROPERTY_NAME,
-            EventConfiguration.LOCATION_DEFAULT));
+        private File eventsFile =
+            new File(System.getProperty(EventConfiguration.LOCATION_PROPERTY_NAME, EventConfiguration.LOCATION_DEFAULT));
         private long bufferSize = Long.getLong(EventConfiguration.BUFFER_SIZE_PROPERTY_NAME,
             EventConfiguration.BUFFER_SIZE_DEFAULT) + RingBufferDescriptor.TRAILER_LENGTH;
         private boolean deleteOnExit = Boolean.getBoolean(EventConfiguration.DELETE_ON_EXIT_PROPERTY_NAME);
         private boolean warnIfEventsFileExists = true;
 
         private IdleStrategy backoffStrategy;
-        private Consumer<String> handler;
+        private Consumer<String> eventHandler;
 
         public Context eventsFile(final File eventsFile)
         {
@@ -129,9 +129,9 @@ public class EventReader extends Agent implements AutoCloseable
             return this;
         }
 
-        public Context handler(final Consumer<String> value)
+        public Context eventHandler(final Consumer<String> value)
         {
-            this.handler = value;
+            this.eventHandler = value;
             return this;
         }
 
@@ -161,9 +161,9 @@ public class EventReader extends Agent implements AutoCloseable
             return backoffStrategy;
         }
 
-        public Consumer<String> handler()
+        public Consumer<String> eventHandler()
         {
-            return handler;
+            return eventHandler;
         }
 
         public boolean warnIfEventsFileExists()

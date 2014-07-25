@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.examples;
 
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Publication;
+import uk.co.real_logic.aeron.common.CloseHelper;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
@@ -35,66 +36,47 @@ public class ExamplePublisher
 
     private static final AtomicBuffer BUFFER = new AtomicBuffer(ByteBuffer.allocateDirect(256));
 
-    public static void main(final String[] args)
+    public static void main(final String[] args) throws Exception
     {
         final ExecutorService executor = Executors.newSingleThreadExecutor();
         final Aeron.ClientContext context = new Aeron.ClientContext();
-        MediaDriver driver = null;
-        Aeron aeron = null;
 
-        try
+        final MediaDriver driver = (EMBEDDED_MEDIA_DRIVER ? ExampleUtil.createEmbeddedMediaDriver() : null);
+        final Aeron aeron = ExampleUtil.createAeron(context, executor);
+
+        System.out.println("Publishing to " + DESTINATION + " on channel Id " + CHANNEL_ID);
+
+        final Publication publication = aeron.addPublication(DESTINATION, CHANNEL_ID, 0);
+
+        for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
         {
-            driver = (EMBEDDED_MEDIA_DRIVER ? ExampleUtil.createEmbeddedMediaDriver() : null);
-            aeron = ExampleUtil.createAeron(context, executor);
+            final String message = "Hello World! " + i;
+            BUFFER.putBytes(0, message.getBytes());
 
-            System.out.println("Publishing to " + DESTINATION + " on channel Id " + CHANNEL_ID);
+            System.out.print("offering " + i + "/" + NUMBER_OF_MESSAGES);
+            final boolean result = publication.offer(BUFFER, 0, message.getBytes().length);
 
-            final Publication publication = aeron.addPublication(DESTINATION, CHANNEL_ID, 0);
-
-            for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
+            if (!result)
             {
-                final String message = "Hello World! " + i;
-                BUFFER.putBytes(0, message.getBytes());
-
-                System.out.print("offering " + i + "/" + NUMBER_OF_MESSAGES);
-                final boolean result = publication.offer(BUFFER, 0, message.getBytes().length);
-
-                if (!result)
-                {
-                    System.out.println(" ah?!");
-                }
-                else
-                {
-                    System.out.println(" yay!");
-                }
-
-                Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+                System.out.println(" ah?!");
+            }
+            else
+            {
+                System.out.println(" yay!");
             }
 
-            aeron.shutdown();
-
-            if (null != driver)
-            {
-                driver.shutdown();
-            }
-        }
-        catch (final Exception ex)
-        {
-            ex.printStackTrace();
-        }
-        finally
-        {
-            if (null != aeron)
-            {
-                aeron.close();
-            }
-
-            if (null != driver)
-            {
-                driver.close();
-            }
+            Thread.sleep(TimeUnit.SECONDS.toMillis(1));
         }
 
+        aeron.shutdown();
+
+        if (null != driver)
+        {
+            driver.shutdown();
+        }
+
+        CloseHelper.quietClose(aeron);
+        CloseHelper.quietClose(driver);
         executor.shutdown();
     }
 }

@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.examples;
 
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Subscription;
+import uk.co.real_logic.aeron.common.CloseHelper;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.util.concurrent.ExecutorService;
@@ -32,44 +33,25 @@ public class ExampleSubscriber
     public static final int FRAME_COUNT_LIMIT = ExampleConfiguration.FRAME_COUNT_LIMIT;
     public static final boolean EMBEDDED_MEDIA_DRIVER = ExampleConfiguration.EMBEDDED_MEDIA_DRIVER;
 
-    public static void main(final String[] args)
+    public static void main(final String[] args) throws Exception
     {
         final ExecutorService executor = Executors.newFixedThreadPool(1);
         final Aeron.ClientContext aeronContext = new Aeron.ClientContext();
-        MediaDriver driver = null;
-        Aeron aeron = null;
 
-        try
-        {
-            driver = (EMBEDDED_MEDIA_DRIVER ? ExampleUtil.createEmbeddedMediaDriver() : null);
-            aeron = ExampleUtil.createAeron(aeronContext, executor);
+        final MediaDriver driver = (EMBEDDED_MEDIA_DRIVER ? ExampleUtil.createEmbeddedMediaDriver() : null);
+        final Aeron aeron = ExampleUtil.createAeron(aeronContext, executor);
 
-            System.out.println("Subscribing to " + DESTINATION + " on channel Id " + CHANNEL_ID);
+        System.out.println("Subscribing to " + DESTINATION + " on channel Id " + CHANNEL_ID);
 
-            // subscription for channel Id 1
-            final Subscription subscription = aeron.addSubscription(DESTINATION, CHANNEL_ID,
-                    ExampleUtil.printStringMessage(CHANNEL_ID));
+        // subscription for channel Id 1
+        final Subscription subscription =
+            aeron.addSubscription(DESTINATION, CHANNEL_ID, ExampleUtil.printStringMessage(CHANNEL_ID));
 
-            // run the subscriber thread from here
-            ExampleUtil.subscriberLoop(FRAME_COUNT_LIMIT).accept(subscription);
-        }
-        catch (final Exception ex)
-        {
-            ex.printStackTrace();
-        }
-        finally
-        {
-            if (null != aeron)
-            {
-                aeron.close();
-            }
+        // run the subscriber thread from here
+        ExampleUtil.subscriberLoop(FRAME_COUNT_LIMIT).accept(subscription);
 
-            if (null != driver)
-            {
-                driver.close();
-            }
-        }
-
+        CloseHelper.quietClose(aeron);
+        CloseHelper.quietClose(driver);
         executor.shutdown();
     }
 }

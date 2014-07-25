@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.examples;
 
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Subscription;
+import uk.co.real_logic.aeron.common.CloseHelper;
 import uk.co.real_logic.aeron.common.RateReporter;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
@@ -32,46 +33,28 @@ public class RateSubscriber
     public static final int FRAME_COUNT_LIMIT = ExampleConfiguration.FRAME_COUNT_LIMIT;
     public static final boolean EMBEDDED_MEDIA_DRIVER = ExampleConfiguration.EMBEDDED_MEDIA_DRIVER;
 
-    public static void main(final String[] args)
+    public static void main(final String[] args) throws Exception
     {
         final ExecutorService executor = Executors.newFixedThreadPool(2);
         final Aeron.ClientContext aeronContext = new Aeron.ClientContext();
-        MediaDriver driver = null;
-        Aeron aeron = null;
 
-        try
-        {
-            driver = (EMBEDDED_MEDIA_DRIVER ? ExampleUtil.createEmbeddedMediaDriver() : null);
-            aeron = ExampleUtil.createAeron(aeronContext, executor);
+        final MediaDriver driver = (EMBEDDED_MEDIA_DRIVER ? ExampleUtil.createEmbeddedMediaDriver() : null);
+        final Aeron aeron = ExampleUtil.createAeron(aeronContext, executor);
 
-            System.out.println("Subscribing to " + DESTINATION + " on channel Id " + CHANNEL_ID);
+        System.out.println("Subscribing to " + DESTINATION + " on channel Id " + CHANNEL_ID);
 
-            final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), ExampleUtil::printRate);
+        final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), ExampleUtil::printRate);
 
-            final Subscription subscription = aeron.addSubscription(DESTINATION, CHANNEL_ID,
-                    ExampleUtil.rateReporterHandler(reporter));
+        final Subscription subscription =
+            aeron.addSubscription(DESTINATION, CHANNEL_ID, ExampleUtil.rateReporterHandler(reporter));
 
-            executor.execute(() -> ExampleUtil.subscriberLoop(FRAME_COUNT_LIMIT).accept(subscription));
+        executor.execute(() -> ExampleUtil.subscriberLoop(FRAME_COUNT_LIMIT).accept(subscription));
 
-            // run the rate reporter loop
-            reporter.run();
-        }
-        catch (final Exception ex)
-        {
-            ex.printStackTrace();
-        }
-        finally
-        {
-            if (null != aeron)
-            {
-                aeron.close();
-            }
+        // run the rate reporter loop
+        reporter.run();
 
-            if (null != driver)
-            {
-                driver.close();
-            }
-        }
+        CloseHelper.quietClose(aeron);
+        CloseHelper.quietClose(driver);
 
         executor.shutdown();
     }

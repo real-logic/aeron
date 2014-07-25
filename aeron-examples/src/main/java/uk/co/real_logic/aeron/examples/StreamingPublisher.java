@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.examples;
 
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Publication;
+import uk.co.real_logic.aeron.common.CloseHelper;
 import uk.co.real_logic.aeron.common.RateReporter;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.driver.MediaDriver;
@@ -38,68 +39,53 @@ public class StreamingPublisher
 
     private static final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
 
-    public static void main(final String[] args)
+    public static void main(final String[] args) throws Exception
     {
         final ExecutorService executor = Executors.newFixedThreadPool(2);
         final Aeron.ClientContext context = new Aeron.ClientContext();
-        MediaDriver driver = null;
-        Aeron aeron = null;
 
-        try
+        MediaDriver driver = (EMBEDDED_MEDIA_DRIVER ? ExampleUtil.createEmbeddedMediaDriver() : null);
+        Aeron aeron = ExampleUtil.createAeron(context, executor);
+
+        System.out.println("Streaming " + NUMBER_OF_MESSAGES + " messages of size " + MESSAGE_LENGTH +
+                           " bytes to " + DESTINATION + " on channel Id " + CHANNEL_ID);
+
+        final Publication publication = aeron.addPublication(DESTINATION, CHANNEL_ID, 0);
+        final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), ExampleUtil::printRate);
+
+        // report the rate we are sending
+        executor.execute(reporter);
+
+        for (long i = 0; i < NUMBER_OF_MESSAGES; i++)
         {
-            driver = (EMBEDDED_MEDIA_DRIVER ? ExampleUtil.createEmbeddedMediaDriver() : null);
-            aeron = ExampleUtil.createAeron(context, executor);
+            buffer.putLong(0, i);
 
-            System.out.println("Streaming " + NUMBER_OF_MESSAGES + " messages of size " + MESSAGE_LENGTH +
-                    " bytes to " + DESTINATION + " on channel Id " + CHANNEL_ID);
-
-            final Publication publication = aeron.addPublication(DESTINATION, CHANNEL_ID, 0);
-            final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), ExampleUtil::printRate);
-
-            // report the rate we are sending
-            executor.execute(reporter);
-
-            for (long i = 0; i < NUMBER_OF_MESSAGES; i++)
+            while (!publication.offer(buffer, 0, buffer.capacity()))
             {
-                buffer.putLong(0, i);
-
-                while (!publication.offer(buffer, 0, buffer.capacity()))
-                {
-                    Thread.yield();
-                }
-
-                reporter.onMessage(1, buffer.capacity());
+                Thread.yield();
             }
 
-            System.out.println("Done streaming.");
-
-            if (0 < LINGER_TIMEOUT_MS)
-            {
-                System.out.println("Lingering for " + LINGER_TIMEOUT_MS + " milliseconds...");
-                Thread.sleep(LINGER_TIMEOUT_MS);
-            }
-
-            reporter.done();
-            aeron.shutdown();
-
-            if (null != driver)
-            {
-                driver.shutdown();
-            }
+            reporter.onMessage(1, buffer.capacity());
         }
-        catch (final Exception ex)
+
+        System.out.println("Done streaming.");
+
+        if (0 < LINGER_TIMEOUT_MS)
         {
-            ex.printStackTrace();
+            System.out.println("Lingering for " + LINGER_TIMEOUT_MS + " milliseconds...");
+            Thread.sleep(LINGER_TIMEOUT_MS);
         }
-        if (null != aeron)
-        {
-            aeron.close();
-        }
+
+        reporter.done();
+        aeron.shutdown();
 
         if (null != driver)
         {
-            driver.close();
+            driver.shutdown();
         }
+
+        CloseHelper.quietClose(aeron);
+        CloseHelper.quietClose(driver);
 
         executor.shutdown();
     }

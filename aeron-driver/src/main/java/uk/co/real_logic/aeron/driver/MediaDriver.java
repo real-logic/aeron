@@ -188,11 +188,6 @@ public class MediaDriver implements AutoCloseable
      */
     public static final long ESTIMATED_RTT_NS = TimeUnit.MICROSECONDS.toNanos(100);
 
-    /**
-     * Estimated max throughput in bytes.
-     */
-    public static final long ESTIMATED_MAX_THROUGHPUT_IN_BYTES = 10 * 1000 * 1000 * 1000 / 8; // 10 Gbps
-
     public static final int READ_BYTE_BUFFER_SZ = getInteger(READ_BUFFER_SZ_PROP_NAME, READ_BYTE_BUFFER_SZ_DEFAULT);
     public static final int COMMAND_BUFFER_SZ = getInteger(COMMAND_BUFFER_SZ_PROP_NAME, COMMAND_BUFFER_SZ_DEFAULT);
     public static final int CONDUCTOR_BUFFER_SZ = getInteger(CONDUCTOR_BUFFER_SZ_PROP_NAME, CONDUCTOR_BUFFER_SZ_DEFAULT);
@@ -273,22 +268,22 @@ public class MediaDriver implements AutoCloseable
      */
     public MediaDriver(final DriverContext context) throws Exception
     {
-        ctx = context
-            .unicastSenderFlowControl(UnicastSenderControlStrategy::new)
-            .multicastSenderFlowControl(UnicastSenderControlStrategy::new)
-            .publications(new AtomicArray<>())
-            .conductorTimerWheel(new TimerWheel(CONDUCTOR_TICK_DURATION_US,
-                    TimeUnit.MICROSECONDS,
-                    CONDUCTOR_TICKS_PER_WHEEL))
-            .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
-            .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
-            .conductorIdleStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                    AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
-            .senderIdleStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                    AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
-            .receiverIdleStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                    AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
-            .conclude();
+        ctx =
+            context.unicastSenderFlowControl(UnicastSenderControlStrategy::new)
+                   .multicastSenderFlowControl(UnicastSenderControlStrategy::new)
+                   .publications(new AtomicArray<>())
+                   .conductorTimerWheel(new TimerWheel(CONDUCTOR_TICK_DURATION_US,
+                                                       TimeUnit.MICROSECONDS,
+                                                       CONDUCTOR_TICKS_PER_WHEEL))
+                   .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
+                   .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
+                   .conductorIdleStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
+                                                                  AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
+                   .senderIdleStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
+                                                               AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
+                   .receiverIdleStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
+                                                                 AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
+                   .conclude();
 
         this.adminDirFile = new File(ctx.adminDirName());
         this.dataDirFile = new File(ctx.dataDirName());
@@ -300,11 +295,12 @@ public class MediaDriver implements AutoCloseable
         this.sender = new Sender(ctx);
         this.conductor = new DriverConductor(ctx);
 
-        final EventReader.Context readerCtx = new EventReader.Context()
-            .backoffStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                    AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
-            .warnIfEventsFileExists(ctx.warnIfDirectoriesExist)
-            .handler(ctx.eventConsumer);
+        final EventReader.Context readerCtx =
+            new EventReader.Context()
+                .backoffStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
+                                                         AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
+                .warnIfEventsFileExists(ctx.warnIfDirectoriesExist)
+                .handler(ctx.eventConsumer);
 
         this.eventReader = new EventReader(readerCtx);
     }
@@ -819,7 +815,7 @@ public class MediaDriver implements AutoCloseable
             return warnIfDirectoriesExist;
         }
 
-        public void close() throws Exception
+        public void close()
         {
             if (null != toClientsBuffer)
             {
@@ -841,14 +837,7 @@ public class MediaDriver implements AutoCloseable
                 IoUtil.unmap(counterValuesByteBuffer);
             }
 
-            try
-            {
-                super.close();
-            }
-            catch (final Exception ex)
-            {
-                throw new RuntimeException(ex);
-            }
+            super.close();
         }
 
         public static void validateTermBufferSize(final int size)

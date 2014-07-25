@@ -21,12 +21,12 @@ import java.util.function.LongSupplier;
 
 /**
  * Timer Wheel (NOT thread safe)
- *
+ * <p>
  * Assumes single-writer principle and timers firing on processing thread.
  * Low (or NO) garbage.
- *
- *  <h3>Implementation Details</h3>
- *
+ * <p>
+ * <h3>Implementation Details</h3>
+ * <p>
  * Based on netty's HashedTimerWheel, which is based on
  * <a href="http://cseweb.ucsd.edu/users/varghese/">George Varghese</a> and
  * Tony Lauck's paper,
@@ -34,19 +34,18 @@ import java.util.function.LongSupplier;
  * and Hierarchical Timing Wheels: data structures to efficiently implement a
  * timer facility'</a>.  More comprehensive slides are located
  * <a href="http://www.cse.wustl.edu/~cdgill/courses/cs6874/TimingWheels.ppt">here</a>.
- *
+ * <p>
  * Wheel is backed by arrays. Timer cancellation is O(1). Timer scheduling might be slightly
  * longer if a lot of timers are in the same tick. The underlying tick contains an array. That
  * array grows when needed, but does not currently shrink.
- *
+ * <p>
  * Timer objects may be reused if desired, but all reuse must be done with timer cancellation, expiration,
  * and timeouts in consideration.
- *
+ * <p>
  * Caveats
- *
+ * <p>
  * Timers that expire in the same tick will not be ordered with one another. As ticks are
  * fairly large normally, this means that some timers may expire out of order.
- *
  */
 public class TimerWheel
 {
@@ -63,8 +62,8 @@ public class TimerWheel
     /**
      * Construct a timer wheel for use in scheduling timers.
      *
-     * @param tickDuration of each tick of the wheel
-     * @param timeUnit for the tick duration
+     * @param tickDuration  of each tick of the wheel
+     * @param timeUnit      for the tick duration
      * @param ticksPerWheel of the wheel. Must be a power of 2.
      * @throws IllegalArgumentException if {@code ticksPerWheel} is not a power of 2.
      */
@@ -77,12 +76,12 @@ public class TimerWheel
 
     /**
      * Construct a timer wheel for use in scheduling timers.
-     *
+     * <p>
      * This constructor allows a custom function to return the current time instead of {@link System#nanoTime()}.
      *
-     * @param clock to use for system time
-     * @param tickDuration of each tick of the wheel
-     * @param timeUnit for the tick duration
+     * @param clock         to use for system time
+     * @param tickDuration  of each tick of the wheel
+     * @param timeUnit      for the tick duration
      * @param ticksPerWheel of the wheel. Must be a power of 2.
      * @throws IllegalArgumentException if {@code ticksPerWheel} is not a power of 2.
      */
@@ -100,9 +99,9 @@ public class TimerWheel
 
         if (tickDurationInNanos >= (Long.MAX_VALUE / ticksPerWheel))
         {
-            throw new IllegalArgumentException(String.format(
-                    "tickDuration: %d (expected: 0 < tickDurationInNanos < %d",
-                    tickDuration, Long.MAX_VALUE / ticksPerWheel));
+            throw new IllegalArgumentException(
+                String.format("tickDuration: %d (expected: 0 < tickDurationInNanos < %d",
+                              tickDuration, Long.MAX_VALUE / ticksPerWheel));
         }
 
         wheel = new Timer[ticksPerWheel][];
@@ -125,7 +124,7 @@ public class TimerWheel
 
     /**
      * Return a blank {@link Timer} suitable for rescheduling.
-     *
+     * <p>
      * NOTE: Appears to be a cancelled timer
      *
      * @return new blank timer
@@ -139,8 +138,8 @@ public class TimerWheel
      * Schedule a new timer that runs {@code task} when it expires.
      *
      * @param delay until timer should expire
-     * @param unit of time for {@code delay}
-     * @param task to execute when timer expires
+     * @param unit  of time for {@code delay}
+     * @param task  to execute when timer expires
      * @return {@link Timer} for timer
      */
     public Timer newTimeout(final long delay, final TimeUnit unit, final Runnable task)
@@ -157,7 +156,7 @@ public class TimerWheel
      * Reschedule an expired timer, reusing the {@link Timer} object.
      *
      * @param delay until timer should expire
-     * @param unit of time for {@code delay}
+     * @param unit  of time for {@code delay}
      * @param timer to reschedule
      * @throws IllegalArgumentException if timer is active
      */
@@ -170,15 +169,12 @@ public class TimerWheel
      * Reschedule an expired timer, reusing the {@link Timer} object.
      *
      * @param delay until timer should expire
-     * @param unit of time for {@code delay}
+     * @param unit  of time for {@code delay}
      * @param timer to reschedule
-     * @param task to execute when timer expires
+     * @param task  to execute when timer expires
      * @throws IllegalArgumentException if timer is active
      */
-    public void rescheduleTimeout(final long delay,
-                                  final TimeUnit unit,
-                                  final Timer timer,
-                                  final Runnable task)
+    public void rescheduleTimeout(final long delay, final TimeUnit unit, final Timer timer, final Runnable task)
     {
         if (timer.isActive())
         {
@@ -358,18 +354,17 @@ public class TimerWheel
 
         public void remove()
         {
-            final Timer[] array = wheel[this.wheelIndex];
-            array[this.tickIndex] = null;
+            wheel[this.wheelIndex][this.tickIndex] = null;
         }
 
         public String toString()
         {
             return "Timer{" +
-                    "wheelIndex=\'" + wheelIndex + "\'" +
-                    ", tickIndex=\'" + tickIndex + "\'" +
-                    ", deadline=\'" + deadline + "\'" +
-                    ", remainingRounds=\'" + remainingRounds + "\'" +
-                    "}";
+                "wheelIndex=\'" + wheelIndex + "\'" +
+                ", tickIndex=\'" + tickIndex + "\'" +
+                ", deadline=\'" + deadline + "\'" +
+                ", remainingRounds=\'" + remainingRounds + "\'" +
+                "}";
         }
     }
 }

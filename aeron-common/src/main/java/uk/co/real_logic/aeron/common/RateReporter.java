@@ -57,7 +57,6 @@ public class RateReporter implements Runnable
     {
         do
         {
-            // "sleep" for report interval
             LockSupport.parkNanos(parkNs);
 
             // These are not transacted, so they could be off from one another.
@@ -66,10 +65,8 @@ public class RateReporter implements Runnable
             final long currentTimestamp = System.nanoTime();
 
             final long timeSpanNs = currentTimestamp - lastTimestamp;
-            final double messagesPerSec = (double)((currentTotalMessages - lastTotalMessages) * reportIntervalNs) /
-                    (double)timeSpanNs;
-            final double bytesPerSec = (double)((currentTotalBytes - lastTotalBytes) * reportIntervalNs) /
-                    (double)timeSpanNs;
+            final double messagesPerSec = ((currentTotalMessages - lastTotalMessages) * reportIntervalNs) / (double)timeSpanNs;
+            final double bytesPerSec = ((currentTotalBytes - lastTotalBytes) * reportIntervalNs) / (double)timeSpanNs;
 
             reportingFunction.accept(messagesPerSec, bytesPerSec);
 

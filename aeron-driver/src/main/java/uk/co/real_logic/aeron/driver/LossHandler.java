@@ -181,7 +181,7 @@ public class LossHandler
                 scheduleTimer();
                 nakSentTimestamp = wheel.now();
 
-                if (delayGenerator.immediateFeedback())
+                if (delayGenerator.shouldFeedbackImmediately())
                 {
                     nakMessageSender.send(activeGap.termId, activeGap.termOffset, activeGap.length);
                 }
@@ -197,7 +197,7 @@ public class LossHandler
             scheduleTimer();
             nakSentTimestamp = wheel.now();
 
-            if (delayGenerator.immediateFeedback())
+            if (delayGenerator.shouldFeedbackImmediately())
             {
                 nakMessageSender.send(activeGap.termId, activeGap.termOffset, activeGap.length);
             }

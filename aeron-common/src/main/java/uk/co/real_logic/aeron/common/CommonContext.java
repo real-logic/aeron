@@ -189,7 +189,7 @@ public class CommonContext implements AutoCloseable
         return this;
     }
 
-    public void close() throws Exception
+    public void close()
     {
     }
 }

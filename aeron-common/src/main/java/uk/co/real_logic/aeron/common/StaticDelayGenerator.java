@@ -41,7 +41,7 @@ public class StaticDelayGenerator implements FeedbackDelayGenerator
     }
 
     /** {@inheritDoc} */
-    public boolean immediateFeedback()
+    public boolean shouldFeedbackImmediately()
     {
         return immediateFeedback;
     }

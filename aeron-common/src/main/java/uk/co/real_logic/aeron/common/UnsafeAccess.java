@@ -14,15 +14,13 @@ public class UnsafeAccess
     {
         try
         {
-            final PrivilegedExceptionAction<Unsafe> action = new PrivilegedExceptionAction<Unsafe>()
-            {
-                public Unsafe run() throws Exception
+            final PrivilegedExceptionAction<Unsafe> action =
+                () ->
                 {
                     final Field f = Unsafe.class.getDeclaredField("theUnsafe");
                     f.setAccessible(true);
                     return (Unsafe)f.get(null);
-                }
-            };
+                };
 
             UNSAFE = AccessController.doPrivileged(action);
         }

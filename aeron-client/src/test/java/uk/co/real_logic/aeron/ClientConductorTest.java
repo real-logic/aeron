@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import uk.co.real_logic.aeron.common.CommonContext;
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
@@ -59,6 +60,7 @@ public class ClientConductorTest extends MockBufferUsage
     public static final int BROADCAST_BUFFER_SZ = (16 * 1024) + BroadcastBufferDescriptor.TRAILER_LENGTH;
     public static final long CORRELATION_ID = 2000;
     public static final int AWAIT_TIMEOUT = 100;
+    public static final int MTU_LENGTH = 1280; // from CommonContext
 
     private final LogBuffersMessageFlyweight newBufferMessage = new LogBuffersMessageFlyweight();
     private final ErrorFlyweight errorHeader = new ErrorFlyweight();
@@ -100,7 +102,8 @@ public class ClientConductorTest extends MockBufferUsage
             signal,
             mockClientErrorHandler,
             null,
-            AWAIT_TIMEOUT);
+            AWAIT_TIMEOUT,
+            MTU_LENGTH);
 
         newBufferMessage.wrap(atomicSendBuffer, 0);
         errorHeader.wrap(atomicSendBuffer, 0);

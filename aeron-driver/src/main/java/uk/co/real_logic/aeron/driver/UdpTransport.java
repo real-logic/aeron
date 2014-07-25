@@ -188,7 +188,7 @@ public final class UdpTransport implements AutoCloseable
      */
     public int sendTo(final ByteBuffer buffer, final InetSocketAddress remoteAddress) throws Exception
     {
-        logger.log(EventCode.FRAME_OUT, buffer, buffer.position(), buffer.limit(), remoteAddress);
+        logger.log(EventCode.FRAME_OUT, buffer, buffer.position(), buffer.remaining(), remoteAddress);
 
         return channel.send(buffer, remoteAddress);
     }

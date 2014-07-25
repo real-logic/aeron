@@ -48,8 +48,6 @@ import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
  */
 public class ClientConductor extends Agent implements DriverListener
 {
-    private static final int MAX_FRAME_LENGTH = 1024;
-
     public static final long AGENT_IDLE_MAX_SPINS = 100;
     public static final long AGENT_IDLE_MAX_YIELDS = 100;
     public static final long AGENT_IDLE_MIN_PARK_NS = TimeUnit.NANOSECONDS.toNanos(10);
@@ -68,6 +66,7 @@ public class ClientConductor extends Agent implements DriverListener
     private final Signal correlationSignal;
 
     private final NewSourceHandler newSourceHandler;
+    private final int mtuLength;
 
     private long activeCorrelationId = -1; // Guarded by this
     private Publication addedPublication; // Guarded by this
@@ -81,7 +80,8 @@ public class ClientConductor extends Agent implements DriverListener
                            final Signal correlationSignal,
                            final Consumer<Exception> errorHandler,
                            final NewSourceHandler newSourceHandler,
-                           final long awaitTimeout)
+                           final long awaitTimeout,
+                           final int mtuLength)
     {
         super(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
                                       AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS),
@@ -92,8 +92,9 @@ public class ClientConductor extends Agent implements DriverListener
         this.driverProxy = driverProxy;
         this.driverBroadcastReceiver = driverBroadcastReceiver;
         this.bufferManager = bufferManager;
-        this.awaitTimeout = awaitTimeout;
         this.newSourceHandler = newSourceHandler;
+        this.awaitTimeout = awaitTimeout;
+        this.mtuLength = mtuLength;
     }
 
     public int doWork()
@@ -190,7 +191,7 @@ public class ClientConductor extends Agent implements DriverListener
             final ManagedBuffer stateBuffer = mapBuffer(logBuffersMessage, i + TermHelper.BUFFER_COUNT);
             final byte[] header = DataHeaderFlyweight.createDefaultHeader(sessionId, channelId, termId);
 
-            logs[i] = new LogAppender(logBuffer.buffer(), stateBuffer.buffer(), header, MAX_FRAME_LENGTH);
+            logs[i] = new LogAppender(logBuffer.buffer(), stateBuffer.buffer(), header, mtuLength);
             managedBuffers[i * 2] = logBuffer;
             managedBuffers[i * 2 + 1] = stateBuffer;
         }

@@ -71,7 +71,8 @@ public final class Aeron implements AutoCloseable, Runnable
                                         correlationSignal,
                                         ctx.errorHandler,
                                         ctx.newSourceHandler,
-                                        AWAIT_TIMEOUT);
+                                        AWAIT_TIMEOUT,
+                                        ctx.mtuLength());
 
         this.savedCtx = ctx;
     }

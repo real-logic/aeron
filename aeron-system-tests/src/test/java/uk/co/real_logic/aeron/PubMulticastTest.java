@@ -17,9 +17,7 @@ package uk.co.real_logic.aeron;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
-import uk.co.real_logic.aeron.common.BitUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.common.event.EventLogger;
@@ -42,6 +40,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
+import static uk.co.real_logic.aeron.common.BitUtil.align;
 
 /**
  * Test that has a publisher and single media driver for multicast cases. Uses socket as receiver/consumer endpoint.
@@ -56,7 +55,7 @@ public class PubMulticastTest
     private static final int SESSION_ID = 2;
     private static final byte[] PAYLOAD = "Payload goes here!".getBytes();
     public static final int ALIGNED_FRAME_LENGTH =
-        BitUtil.align(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT);
+        align(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT);
 
     private final AtomicBuffer payload = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
 
@@ -149,7 +148,6 @@ public class PubMulticastTest
                     assertThat(dataHeader.channelId(), is(CHANNEL_ID));
                     assertThat(dataHeader.sessionId(), is(SESSION_ID));
                     termId.set(dataHeader.termId());
-
                     assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH));
                     assertThat(buffer.position(), is(DataHeaderFlyweight.HEADER_LENGTH));
                     receivedZeroLengthData.incrementAndGet();
@@ -179,7 +177,7 @@ public class PubMulticastTest
                 if (dataHeader.frameLength() > DataHeaderFlyweight.HEADER_LENGTH)
                 {
                     assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
-//                    assertThat(buffer.position(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length);
+                    assertThat(buffer.position(), is(ALIGNED_FRAME_LENGTH));
                     receivedDataFrames.incrementAndGet();
                     return true;
                 }
@@ -262,7 +260,7 @@ public class PubMulticastTest
                 if (dataHeader.frameLength() > DataHeaderFlyweight.HEADER_LENGTH)
                 {
                     assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
-//                    assertThat(rcvBuffer.position(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
+                    assertThat(buffer.position(), is(ALIGNED_FRAME_LENGTH));
                     receivedDataFrames.incrementAndGet();
                     return true;
                 }
@@ -271,13 +269,6 @@ public class PubMulticastTest
             });
 
         assertThat(receivedDataFrames.get(), greaterThanOrEqualTo(2));
-    }
-
-    @Test(timeout = 1000)
-    @Ignore("isn't finished yet - send enough data to rollover a buffer")
-    public void messagesShouldContinueAfterBufferRollover()
-    {
-        EventLogger.logInvocation();
     }
 
     private void sendSM(final int termId) throws Exception

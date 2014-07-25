@@ -16,7 +16,6 @@
 package uk.co.real_logic.aeron;
 
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
@@ -31,7 +30,6 @@ import uk.co.real_logic.aeron.driver.MediaDriver;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BooleanSupplier;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.eq;
@@ -198,7 +196,6 @@ public class PubAndSubTest
 
         for (int i = 0; i < numBatchesPerTerm; i++)
         {
-
             for (int j = 0; j < numMessagesPerBatch; j++)
             {
                 while (!publication.offer(buffer, 0, messageLength))
@@ -287,7 +284,6 @@ public class PubAndSubTest
 
     @Theory
     @Test(timeout = 1000)
-//    @Ignore("isn't finished yet = send enough data to rollover a buffer")
     public void shouldContinueAfterBufferRolloverWithPaddingBatched(final String destination) throws Exception
     {
         /*
@@ -308,7 +304,6 @@ public class PubAndSubTest
 
         for (int i = 0; i < numBatchesPerTerm; i++)
         {
-
             for (int j = 0; j < numMessagesPerBatch; j++)
             {
                 while (!publication.offer(buffer, 0, messageLength))

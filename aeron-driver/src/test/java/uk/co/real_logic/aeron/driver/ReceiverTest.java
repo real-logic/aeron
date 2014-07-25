@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron.driver;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
@@ -363,51 +362,6 @@ public class ReceiverTest
         );
 
         assertThat(messagesRead, is(1));
-    }
-
-    @Test
-    @Ignore("does not work correctly yet")
-    public void shouldBeAbleToHandleTermBufferRolloverCorrectly() throws Exception
-    {
-        EventLogger.logInvocation();
-
-        receiverProxy.registerMediaEndpoint(mediaSubscriptionEndpoint);
-        receiverProxy.addSubscription(mediaSubscriptionEndpoint, CHANNEL_ID);
-
-        receiver.doWork();
-
-        fillDataFrame(dataHeader, 0, NO_PAYLOAD);
-
-        mediaSubscriptionEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
-
-        final int messagesRead = toConductorQueue.drain(
-            (e) ->
-                receiverProxy.newConnectedSubscription(
-                    new NewConnectedSubscriptionCmd(
-                        mediaSubscriptionEndpoint,
-                        new DriverConnectedSubscription(
-                            UDP_DESTINATION,
-                            SESSION_ID,
-                            CHANNEL_ID,
-                            TERM_ID,
-                            INITIAL_WINDOW_SIZE,
-                            termBuffers,
-                            mockLossHandler,
-                            mediaSubscriptionEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID),
-                            POSITION_INDICATOR))));
-
-        assertThat(messagesRead, is(1));
-
-        final int packetsToFillBuffer = MediaDriver.COMMAND_BUFFER_SZ / FAKE_PAYLOAD.length;
-        final int iterations = 4 * packetsToFillBuffer;
-        final int offset = 0;
-
-        for (int i = 0; i < iterations; i++)
-        {
-            fillDataFrame(dataHeader, offset, FAKE_PAYLOAD);
-            mediaSubscriptionEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
-            receiver.doWork();
-        }
     }
 
     private void fillDataFrame(final DataHeaderFlyweight header, final int termOffset, final byte[] payload)

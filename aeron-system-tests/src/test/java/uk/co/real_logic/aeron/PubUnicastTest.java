@@ -17,11 +17,10 @@ package uk.co.real_logic.aeron;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
-import uk.co.real_logic.aeron.common.BitUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
@@ -39,6 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
+import static uk.co.real_logic.aeron.common.BitUtil.align;
 
 /**
  * Test that has a publisher and single media driver for unicast cases. Uses socket as receiver/consumer endpoint.
@@ -52,8 +52,10 @@ public class PubUnicastTest
     private static final int CHANNEL_ID = 1;
     private static final int SESSION_ID = 2;
     private static final byte[] PAYLOAD = "Payload goes here!".getBytes();
+    private static final int TERM_BUFFER_SIZE = LogBufferDescriptor.MIN_LOG_SIZE;
     public static final int ALIGNED_FRAME_LENGTH =
-        BitUtil.align(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT);
+        align(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT);
+
     private final AtomicBuffer payload = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
 
     private final InetSocketAddress srcAddress = new InetSocketAddress(HOST, SRC_PORT);
@@ -81,6 +83,7 @@ public class PubUnicastTest
 
         final MediaDriver.DriverContext ctx = new MediaDriver.DriverContext();
 
+        ctx.termBufferSize(TERM_BUFFER_SIZE);
         ctx.dirsDeleteOnExit(true);
         ctx.warnIfDirectoriesExist(false);
 
@@ -141,9 +144,8 @@ public class PubUnicastTest
                 assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH));
                 assertThat(dataHeader.channelId(), is(CHANNEL_ID));
                 assertThat(dataHeader.sessionId(), is(SESSION_ID));
-//                    assertThat(rcvBuffer.position(), is(DataHeaderFlyweight.HEADER_LENGTH));
+                assertThat(buffer.position(), is(DataHeaderFlyweight.HEADER_LENGTH));
                 termId.set(dataHeader.termId());
-//                    assertThat(address, is(srcAddress));
                 receivedZeroLengthData.incrementAndGet();
                 return true;
             });
@@ -162,12 +164,11 @@ public class PubUnicastTest
                 assertThat(dataHeader.channelId(), is(CHANNEL_ID));
                 assertThat(dataHeader.sessionId(), is(SESSION_ID));
                 assertThat(dataHeader.termId(), is(termId.get()));
-//                assertThat(address, is(srcAddress));
 
                 if (dataHeader.frameLength() > DataHeaderFlyweight.HEADER_LENGTH)
                 {
                     assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
-//                    assertThat(rcvBuffer.position(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
+                    assertThat(buffer.position(), is(ALIGNED_FRAME_LENGTH));
                     receivedDataFrames.incrementAndGet();
                     return true;
                 }
@@ -243,12 +244,11 @@ public class PubUnicastTest
                 assertThat(dataHeader.channelId(), is(CHANNEL_ID));
                 assertThat(dataHeader.sessionId(), is(SESSION_ID));
                 assertThat(dataHeader.termId(), is(termId.get()));
-//                    assertThat(address, is(srcAddress));
 
                 if (dataHeader.frameLength() > DataHeaderFlyweight.HEADER_LENGTH)
                 {
                     assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
-//                        assertThat(rcvBuffer.position(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
+                    assertThat(buffer.position(), is(ALIGNED_FRAME_LENGTH));
                     receivedDataFrames.incrementAndGet();
                     return true;
                 }
@@ -257,13 +257,6 @@ public class PubUnicastTest
             });
 
         assertThat(receivedDataFrames.get(), greaterThanOrEqualTo(2));
-    }
-
-    @Test
-    @Ignore("isn't finished yet - send enough data to rollover a buffer")
-    public void messagesShouldContinueAfterBufferRollover()
-    {
-        EventLogger.logInvocation();
     }
 
     private void sendSM(final int termId) throws Exception

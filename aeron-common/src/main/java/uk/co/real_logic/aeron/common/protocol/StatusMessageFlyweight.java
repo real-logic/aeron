@@ -37,9 +37,9 @@ public class StatusMessageFlyweight extends HeaderFlyweight
      * return session id field
      * @return session id field
      */
-    public long sessionId()
+    public int sessionId()
     {
-        return uint32Get(offset() + SESSION_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return atomicBuffer().getInt(offset() + SESSION_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -47,9 +47,9 @@ public class StatusMessageFlyweight extends HeaderFlyweight
      * @param sessionId field value
      * @return flyweight
      */
-    public StatusMessageFlyweight sessionId(final long sessionId)
+    public StatusMessageFlyweight sessionId(final int sessionId)
     {
-        uint32Put(offset() + SESSION_ID_FIELD_OFFSET, sessionId, LITTLE_ENDIAN);
+        atomicBuffer().putInt(offset() + SESSION_ID_FIELD_OFFSET, sessionId, LITTLE_ENDIAN);
         return this;
     }
 
@@ -58,9 +58,9 @@ public class StatusMessageFlyweight extends HeaderFlyweight
      *
      * @return channel id field
      */
-    public long channelId()
+    public int channelId()
     {
-        return uint32Get(offset() + CHANNEL_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return atomicBuffer().getInt(offset() + CHANNEL_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -69,9 +69,9 @@ public class StatusMessageFlyweight extends HeaderFlyweight
      * @param channelId field value
      * @return flyweight
      */
-    public StatusMessageFlyweight channelId(final long channelId)
+    public StatusMessageFlyweight channelId(final int channelId)
     {
-        uint32Put(offset() + CHANNEL_ID_FIELD_OFFSET, channelId, LITTLE_ENDIAN);
+        atomicBuffer().putInt(offset() + CHANNEL_ID_FIELD_OFFSET, channelId, LITTLE_ENDIAN);
         return this;
     }
 
@@ -80,9 +80,9 @@ public class StatusMessageFlyweight extends HeaderFlyweight
      *
      * @return highest contiguous term offset field
      */
-    public long highestContiguousTermOffset()
+    public int highestContiguousTermOffset()
     {
-        return uint32Get(offset() + CONTIGUOUS_TERM_OFFSET_FIELD_OFFSET, LITTLE_ENDIAN);
+        return atomicBuffer().getInt(offset() + CONTIGUOUS_TERM_OFFSET_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -91,9 +91,9 @@ public class StatusMessageFlyweight extends HeaderFlyweight
      * @param termOffset field value
      * @return flyweight
      */
-    public StatusMessageFlyweight highestContiguousTermOffset(final long termOffset)
+    public StatusMessageFlyweight highestContiguousTermOffset(final int termOffset)
     {
-        uint32Put(offset() + CONTIGUOUS_TERM_OFFSET_FIELD_OFFSET, termOffset, LITTLE_ENDIAN);
+        atomicBuffer().putInt(offset() + CONTIGUOUS_TERM_OFFSET_FIELD_OFFSET, termOffset, LITTLE_ENDIAN);
         return this;
     }
 
@@ -124,20 +124,20 @@ public class StatusMessageFlyweight extends HeaderFlyweight
      *
      * @return receiver window field
      */
-    public long receiverWindow()
+    public int receiverWindowSize()
     {
-        return uint32Get(offset() + RECEIVER_WINDOW_FIELD_OFFSET, LITTLE_ENDIAN);
+        return atomicBuffer().getInt(offset() + RECEIVER_WINDOW_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
      * set receiver window field
      *
-     * @param receiverWindow field value
+     * @param receiverWindowSize field value
      * @return flyweight
      */
-    public StatusMessageFlyweight receiverWindow(final long receiverWindow)
+    public StatusMessageFlyweight receiverWindowSize(final int receiverWindowSize)
     {
-        uint32Put(offset() + RECEIVER_WINDOW_FIELD_OFFSET, receiverWindow, LITTLE_ENDIAN);
+        atomicBuffer().putInt(offset() + RECEIVER_WINDOW_FIELD_OFFSET, receiverWindowSize, LITTLE_ENDIAN);
         return this;
     }
 }

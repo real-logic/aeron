@@ -57,9 +57,9 @@ public class QualifiedMessageFlyweight extends Flyweight
      * return session id field
      * @return session id field
      */
-    public long sessionId()
+    public int sessionId()
     {
-        return uint32Get(offset() + SESSION_ID_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return atomicBuffer().getInt(offset() + SESSION_ID_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
@@ -67,9 +67,9 @@ public class QualifiedMessageFlyweight extends Flyweight
      * @param sessionId field value
      * @return flyweight
      */
-    public QualifiedMessageFlyweight sessionId(final long sessionId)
+    public QualifiedMessageFlyweight sessionId(final int sessionId)
     {
-        uint32Put(offset() + SESSION_ID_OFFSET, (int)sessionId, ByteOrder.LITTLE_ENDIAN);
+        atomicBuffer().putInt(offset() + SESSION_ID_OFFSET, sessionId, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
@@ -78,9 +78,9 @@ public class QualifiedMessageFlyweight extends Flyweight
      *
      * @return channel id field
      */
-    public long channelId()
+    public int channelId()
     {
-        return uint32Get(offset() + CHANNEL_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return atomicBuffer().getInt(offset() + CHANNEL_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
@@ -89,9 +89,9 @@ public class QualifiedMessageFlyweight extends Flyweight
      * @param channelId field value
      * @return flyweight
      */
-    public QualifiedMessageFlyweight channelId(final long channelId)
+    public QualifiedMessageFlyweight channelId(final int channelId)
     {
-        uint32Put(offset() + CHANNEL_ID_FIELD_OFFSET, channelId, ByteOrder.LITTLE_ENDIAN);
+        atomicBuffer().putInt(offset() + CHANNEL_ID_FIELD_OFFSET, channelId, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
@@ -138,9 +138,7 @@ public class QualifiedMessageFlyweight extends Flyweight
      */
     public QualifiedMessageFlyweight destination(final String destination)
     {
-        lengthOfDestination = stringPut(offset() + DESTINATION_OFFSET,
-                                        destination,
-                                        ByteOrder.LITTLE_ENDIAN);
+        lengthOfDestination = stringPut(offset() + DESTINATION_OFFSET, destination, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 

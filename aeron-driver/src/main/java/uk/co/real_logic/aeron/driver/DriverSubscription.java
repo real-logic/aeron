@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.collections.Long2ObjectHashMap;
+import uk.co.real_logic.aeron.common.collections.Int2ObjectHashMap;
 
 import java.util.Collection;
 
@@ -25,20 +25,18 @@ import java.util.Collection;
 public class DriverSubscription
 {
     private final UdpDestination udpDestination;
-    private final long channelId;
+    private final int channelId;
     private final DriverConductorProxy conductorProxy;
-    private final Long2ObjectHashMap<DriverConnectedSubscription> connectionBySessionIdMap = new Long2ObjectHashMap<>();
+    private final Int2ObjectHashMap<DriverConnectedSubscription> connectionBySessionIdMap = new Int2ObjectHashMap<>();
 
-    public DriverSubscription(final UdpDestination udpDestination,
-                              final long channelId,
-                              final DriverConductorProxy conductorProxy)
+    public DriverSubscription(final UdpDestination udpDestination, final int channelId, final DriverConductorProxy conductorProxy)
     {
         this.udpDestination = udpDestination;
         this.channelId = channelId;
         this.conductorProxy = conductorProxy;
     }
 
-    public DriverConnectedSubscription getConnectedSubscription(final long sessionId)
+    public DriverConnectedSubscription getConnectedSubscription(final int sessionId)
     {
         return connectionBySessionIdMap.get(sessionId);
     }
@@ -48,7 +46,7 @@ public class DriverSubscription
         return connectionBySessionIdMap.put(connectedSubscription.sessionId(), connectedSubscription);
     }
 
-    public long channelId()
+    public int channelId()
     {
         return channelId;
     }

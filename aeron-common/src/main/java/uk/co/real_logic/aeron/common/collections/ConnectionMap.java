@@ -26,17 +26,17 @@ import static uk.co.real_logic.aeron.common.collections.CollectionUtil.getOrDefa
  */
 public class ConnectionMap<D, C>
 {
-    private final Map<D, Long2ObjectHashMap<Long2ObjectHashMap<C>>> destinationMap = new HashMap<>();
+    private final Map<D, Int2ObjectHashMap<Int2ObjectHashMap<C>>> destinationMap = new HashMap<>();
 
-    public C get(final D destination, final long sessionId, final long channelId)
+    public C get(final D destination, final int sessionId, final int channelId)
     {
-        final Long2ObjectHashMap<Long2ObjectHashMap<C>> sessionMap = destinationMap.get(destination);
+        final Int2ObjectHashMap<Int2ObjectHashMap<C>> sessionMap = destinationMap.get(destination);
         if (sessionMap == null)
         {
             return null;
         }
 
-        final Long2ObjectHashMap<C> channelMap = sessionMap.get(sessionId);
+        final Int2ObjectHashMap<C> channelMap = sessionMap.get(sessionId);
         if (channelMap == null)
         {
             return null;
@@ -45,24 +45,24 @@ public class ConnectionMap<D, C>
         return channelMap.get(channelId);
     }
 
-    public C put(final D destination, final long sessionId, final long channelId, final C value)
+    public C put(final D destination, final int sessionId, final int channelId, final C value)
     {
-        final Long2ObjectHashMap<Long2ObjectHashMap<C>> endPointMap
-            = getOrDefault(destinationMap, destination, ignore -> new Long2ObjectHashMap<>());
-        final Long2ObjectHashMap<C> channelMap = endPointMap.getOrDefault(sessionId, Long2ObjectHashMap::new);
+        final Int2ObjectHashMap<Int2ObjectHashMap<C>> endPointMap
+            = getOrDefault(destinationMap, destination, ignore -> new Int2ObjectHashMap<>());
+        final Int2ObjectHashMap<C> channelMap = endPointMap.getOrDefault(sessionId, Int2ObjectHashMap::new);
 
         return channelMap.put(channelId, value);
     }
 
-    public C remove(final D destination, final long sessionId, final long channelId)
+    public C remove(final D destination, final int sessionId, final int channelId)
     {
-        final Long2ObjectHashMap<Long2ObjectHashMap<C>> sessionMap = destinationMap.get(destination);
+        final Int2ObjectHashMap<Int2ObjectHashMap<C>> sessionMap = destinationMap.get(destination);
         if (sessionMap == null)
         {
             return null;
         }
 
-        final Long2ObjectHashMap<C> channelMap = sessionMap.get(sessionId);
+        final Int2ObjectHashMap<C> channelMap = sessionMap.get(sessionId);
         if (channelMap == null)
         {
             return null;
@@ -84,7 +84,7 @@ public class ConnectionMap<D, C>
 
     public interface ConnectionHandler<D, T>
     {
-        void accept(final D destination, final Long sessionId, final Long channelId, final T value);
+        void accept(final D destination, final Integer sessionId, final Integer channelId, final T value);
     }
 
     @SuppressWarnings("unchecked")

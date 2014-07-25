@@ -148,7 +148,7 @@ public class HeaderFlyweight extends Flyweight
      */
     public HeaderFlyweight frameLength(final int length)
     {
-        uint32Put(offset() + FRAME_LENGTH_FIELD_OFFSET, (long)length, LITTLE_ENDIAN);
+        uint32Put(offset() + FRAME_LENGTH_FIELD_OFFSET, length, LITTLE_ENDIAN);
         return this;
     }
 }

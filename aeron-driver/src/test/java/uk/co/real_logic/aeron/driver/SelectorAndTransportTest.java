@@ -37,8 +37,8 @@ public class SelectorAndTransportTest
 {
     private static final int RCV_PORT = 40123;
     private static final int SRC_PORT = 40124;
-    private static final long SESSION_ID = 0xdeadbeefL;
-    private static final long CHANNEL_ID = 0x44332211L;
+    private static final int SESSION_ID = 0xdeadbeef;
+    private static final int CHANNEL_ID = 0x44332211;
     private static final int TERM_ID = 0x99887766;
     private static final int FRAME_LENGTH = 24;
 
@@ -231,7 +231,7 @@ public class SelectorAndTransportTest
         statusMessage.channelId(CHANNEL_ID)
                      .sessionId(SESSION_ID)
                      .termId(TERM_ID)
-                     .receiverWindow(1000)
+                     .receiverWindowSize(1000)
                      .highestContiguousTermOffset(0)
                      .version(HeaderFlyweight.CURRENT_VERSION)
                      .flags((short)0)

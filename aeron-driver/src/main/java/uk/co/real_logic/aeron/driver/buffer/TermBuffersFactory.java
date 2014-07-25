@@ -77,9 +77,7 @@ public class TermBuffersFactory implements AutoCloseable
      * @param channelId within the destination address to separate message flows.
      * @return the newly allocated {@link TermBuffers}
      */
-    public TermBuffers newPublication(final UdpDestination udpDestination,
-                                      final long sessionId,
-                                      final long channelId)
+    public TermBuffers newPublication(final UdpDestination udpDestination, final int sessionId, final int channelId)
     {
         return newInstance(udpDestination, sessionId, channelId, publicationsDir);
     }
@@ -92,9 +90,7 @@ public class TermBuffersFactory implements AutoCloseable
      * @param channelId within the destination address to separate message flows.
      * @return the newly allocated {@link TermBuffers}
      */
-    public TermBuffers newConnectedSubscription(final UdpDestination udpDestination,
-                                                final long sessionId,
-                                                final long channelId)
+    public TermBuffers newConnectedSubscription(final UdpDestination udpDestination, final int sessionId, final int channelId)
     {
         return newInstance(udpDestination, sessionId, channelId, subscriptionsDir);
     }
@@ -113,10 +109,8 @@ public class TermBuffersFactory implements AutoCloseable
         }
     }
 
-    private TermBuffers newInstance(final UdpDestination udpDestination,
-                                    final long sessionId,
-                                    final long channelId,
-                                    final File rootDir)
+    private TermBuffers newInstance(final UdpDestination udpDestination, final int sessionId,
+                                    final int channelId, final File rootDir)
     {
         final File dir = channelLocation(rootDir, sessionId, channelId, true, udpDestination.canonicalRepresentation());
 

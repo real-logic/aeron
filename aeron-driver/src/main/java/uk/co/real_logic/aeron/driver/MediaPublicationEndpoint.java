@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.collections.Long2ObjectHashMap;
+import uk.co.real_logic.aeron.common.collections.Int2ObjectHashMap;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.NakFlyweight;
@@ -32,12 +32,9 @@ public class MediaPublicationEndpoint implements AutoCloseable
 {
     private final UdpTransport transport;
     private final UdpDestination destination;
-    private final Long2ObjectHashMap<Long2ObjectHashMap<DriverPublication>> publicationBySessionMap
-        = new Long2ObjectHashMap<>();
+    private final Int2ObjectHashMap<Int2ObjectHashMap<DriverPublication>> publicationBySessionMap = new Int2ObjectHashMap<>();
 
-    public MediaPublicationEndpoint(final UdpDestination destination,
-                                    final NioSelector nioSelector,
-                                    final EventLogger logger)
+    public MediaPublicationEndpoint(final UdpDestination destination, final NioSelector nioSelector, final EventLogger logger)
         throws Exception
     {
         this.transport = new UdpTransport(destination, this::onStatusMessageFrame, this::onNakFrame, logger);
@@ -65,9 +62,9 @@ public class MediaPublicationEndpoint implements AutoCloseable
         return destination;
     }
 
-    public DriverPublication findPublication(final long sessionId, final long channelId)
+    public DriverPublication findPublication(final int sessionId, final int channelId)
     {
-        final Long2ObjectHashMap<DriverPublication> publicationByChannelIdMap = publicationBySessionMap.get(sessionId);
+        final Int2ObjectHashMap<DriverPublication> publicationByChannelIdMap = publicationBySessionMap.get(sessionId);
         if (null == publicationByChannelIdMap)
         {
             return null;
@@ -78,13 +75,13 @@ public class MediaPublicationEndpoint implements AutoCloseable
 
     public void addPublication(final DriverPublication publication)
     {
-        publicationBySessionMap.getOrDefault(publication.sessionId(), Long2ObjectHashMap::new)
-                                  .put(publication.channelId(), publication);
+        publicationBySessionMap.getOrDefault(publication.sessionId(), Int2ObjectHashMap::new)
+                               .put(publication.channelId(), publication);
     }
 
-    public DriverPublication removePublication(final long sessionId, final long channelId)
+    public DriverPublication removePublication(final int sessionId, final int channelId)
     {
-        final Long2ObjectHashMap<DriverPublication> publicationByChannelIdMap = publicationBySessionMap.get(sessionId);
+        final Int2ObjectHashMap<DriverPublication> publicationByChannelIdMap = publicationBySessionMap.get(sessionId);
         if (null == publicationByChannelIdMap)
         {
             return null;
@@ -106,19 +103,19 @@ public class MediaPublicationEndpoint implements AutoCloseable
 
     private void onStatusMessageFrame(final StatusMessageFlyweight header,
                                       final AtomicBuffer buffer,
-                                      final long length,
+                                      final int length,
                                       final InetSocketAddress srcAddress)
     {
         final DriverPublication publication = findPublication(header.sessionId(), header.channelId());
         publication.onStatusMessage(header.termId(),
                                     header.highestContiguousTermOffset(),
-                                    header.receiverWindow(),
+                                    header.receiverWindowSize(),
                                     srcAddress);
     }
 
     private void onNakFrame(final NakFlyweight nak,
                             final AtomicBuffer buffer,
-                            final long length,
+                            final int length,
                             final InetSocketAddress srcAddress)
     {
         final DriverPublication publication = findPublication(nak.sessionId(), nak.channelId());

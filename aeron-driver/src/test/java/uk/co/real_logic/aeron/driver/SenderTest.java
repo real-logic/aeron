@@ -48,8 +48,8 @@ public class SenderTest
 {
     public static final long LOG_BUFFER_SIZE = LogBufferDescriptor.MIN_LOG_SIZE;
     public static final int MAX_FRAME_LENGTH = 1024;
-    public static final long SESSION_ID = 1L;
-    public static final long CHANNEL_ID = 2L;
+    public static final int SESSION_ID = 1;
+    public static final int CHANNEL_ID = 2;
     public static final int INITIAL_TERM_ID = 3;
     public static final byte[] PAYLOAD = "Payload is here!".getBytes();
 
@@ -285,7 +285,7 @@ public class SenderTest
         assertThat(dataHeader.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
         assertThat(dataHeader.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
 
-        dataHeader.wrap(frame, (int)offsetOfMessage(2));
+        dataHeader.wrap(frame, offsetOfMessage(2));
         assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
         assertThat(dataHeader.channelId(), is(CHANNEL_ID));
@@ -425,7 +425,7 @@ public class SenderTest
         assertThat(dataHeader.termOffset(), is(offsetOfMessage(2)));
     }
 
-    private long offsetOfMessage(final int num)
+    private int offsetOfMessage(final int num)
     {
         return (num - 1) * align(HEADER.length + PAYLOAD.length, FRAME_ALIGNMENT);
     }

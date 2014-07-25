@@ -55,9 +55,9 @@ public class DriverConductorTest
 {
     private static final String DESTINATION_URI = "udp://localhost:";
     private static final String INVALID_URI = "udp://";
-    private static final long CHANNEL_1 = 10;
-    private static final long CHANNEL_2 = 20;
-    private static final long CHANNEL_3 = 30;
+    private static final int CHANNEL_1 = 10;
+    private static final int CHANNEL_2 = 20;
+    private static final int CHANNEL_3 = 30;
     private static final int TERM_BUFFER_SZ = MediaDriver.TERM_BUFFER_SZ_DEFAULT;
     private static final long CORRELATION_ID = 1429;
 
@@ -85,7 +85,7 @@ public class DriverConductorTest
     @Before
     public void setUp() throws Exception
     {
-        when(mockTermBuffersFactory.newPublication(anyObject(), anyLong(), anyLong()))
+        when(mockTermBuffersFactory.newPublication(anyObject(), anyInt(), anyInt()))
             .thenReturn(BufferAndFrameHelper.newTestTermBuffers(TERM_BUFFER_SZ, STATE_BUFFER_LENGTH));
 
         final AtomicBuffer counterBuffer = new AtomicBuffer(new byte[4096]);
@@ -134,17 +134,17 @@ public class DriverConductorTest
     {
         EventLogger.logInvocation();
 
-        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 2L, 4000);
+        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4000);
 
         driverConductor.doWork();
 
         assertThat(publications.size(), is(1));
         assertNotNull(publications.get(0));
-        assertThat(publications.get(0).sessionId(), is(1L));
-        assertThat(publications.get(0).channelId(), is(2L));
+        assertThat(publications.get(0).sessionId(), is(1));
+        assertThat(publications.get(0).channelId(), is(2));
 
         verify(mockClientProxy).onNewTermBuffers(eq(ControlProtocolEvents.ON_NEW_PUBLICATION),
-                                                 eq(1L), eq(2L), anyInt(), eq(DESTINATION_URI + 4000),
+                                                 eq(1), eq(2), anyInt(), eq(DESTINATION_URI + 4000),
                                                  any(), anyLong(), anyInt());
     }
 
@@ -182,10 +182,10 @@ public class DriverConductorTest
     {
         EventLogger.logInvocation();
 
-        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 2L, 4001);
-        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 3L, 4002);
-        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 3L, 2L, 4003);
-        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 3L, 4L, 4004);
+        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4001);
+        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 3, 4002);
+        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 3, 2, 4003);
+        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 3, 4, 4004);
 
         driverConductor.doWork();
 
@@ -197,8 +197,8 @@ public class DriverConductorTest
     {
         EventLogger.logInvocation();
 
-        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 2L, 4005);
-        writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1L, 2L, 4005);
+        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4005);
+        writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1, 2, 4005);
 
         driverConductor.doWork();
 
@@ -211,15 +211,15 @@ public class DriverConductorTest
     {
         EventLogger.logInvocation();
 
-        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 2L, 4006);
-        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 3L, 4007);
-        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 3L, 2L, 4008);
-        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 3L, 4L, 4008);
+        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4006);
+        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 3, 4007);
+        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 3, 2, 4008);
+        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 3, 4, 4008);
 
-        writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1L, 2L, 4006);
-        writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1L, 3L, 4007);
-        writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 3L, 2L, 4008);
-        writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 3L, 4L, 4008);
+        writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1, 2, 4006);
+        writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1, 3, 4007);
+        writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 3, 2, 4008);
+        writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 3, 4, 4008);
 
         driverConductor.doWork();
 
@@ -243,7 +243,7 @@ public class DriverConductorTest
         final MediaSubscriptionEndpoint mediaEndpoint = driverConductor.subscriptionMediaEndpoint(destination);
 
         assertNotNull(mediaEndpoint);
-        assertThat(mediaEndpoint.channelCount(), is(3L));
+        assertThat(mediaEndpoint.channelCount(), is(3));
 
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_1);
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_2);
@@ -252,7 +252,7 @@ public class DriverConductorTest
         receiver.doWork();
 
         assertNotNull(driverConductor.subscriptionMediaEndpoint(destination));
-        assertThat(mediaEndpoint.channelCount(), is(1L));
+        assertThat(mediaEndpoint.channelCount(), is(1));
     }
 
     @Test
@@ -272,7 +272,7 @@ public class DriverConductorTest
         final MediaSubscriptionEndpoint mediaEndpoint = driverConductor.subscriptionMediaEndpoint(destination);
 
         assertNotNull(mediaEndpoint);
-        assertThat(mediaEndpoint.channelCount(), is(3L));
+        assertThat(mediaEndpoint.channelCount(), is(3));
 
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_2);
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_3);
@@ -281,7 +281,7 @@ public class DriverConductorTest
         receiver.doWork();
 
         assertNotNull(driverConductor.subscriptionMediaEndpoint(destination));
-        assertThat(mediaEndpoint.channelCount(), is(1L));
+        assertThat(mediaEndpoint.channelCount(), is(1));
 
         writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_1);
 
@@ -296,15 +296,15 @@ public class DriverConductorTest
     {
         EventLogger.logInvocation();
 
-        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 2L, 4000);
-        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 2L, 4000);
+        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4000);
+        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4000);
 
         driverConductor.doWork();
 
         assertThat(publications.size(), is(1));
         assertNotNull(publications.get(0));
-        assertThat(publications.get(0).sessionId(), is(1L));
-        assertThat(publications.get(0).channelId(), is(2L));
+        assertThat(publications.get(0).sessionId(), is(1));
+        assertThat(publications.get(0).channelId(), is(2));
 
         verify(mockClientProxy)
             .onError(eq(ErrorCode.PUBLICATION_CHANNEL_ALREADY_EXISTS), argThat(not(isEmptyOrNullString())), any(), anyInt());
@@ -317,7 +317,7 @@ public class DriverConductorTest
     {
         EventLogger.logInvocation();
 
-        writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1L, 2L, 4000);
+        writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1, 2, 4000);
 
         driverConductor.doWork();
 
@@ -333,15 +333,15 @@ public class DriverConductorTest
     {
         EventLogger.logInvocation();
 
-        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 2L, 4000);
-        writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 2L, 2L, 4000);
+        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4000);
+        writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 2, 2, 4000);
 
         driverConductor.doWork();
 
         assertThat(publications.size(), is(1));
         assertNotNull(publications.get(0));
-        assertThat(publications.get(0).sessionId(), is(1L));
-        assertThat(publications.get(0).channelId(), is(2L));
+        assertThat(publications.get(0).sessionId(), is(1));
+        assertThat(publications.get(0).channelId(), is(2));
 
         verify(mockClientProxy).onError(eq(PUBLICATION_CHANNEL_UNKNOWN), argThat(not(isEmptyOrNullString())), any(), anyInt());
         verifyNeverSucceeds();
@@ -353,15 +353,15 @@ public class DriverConductorTest
     {
         EventLogger.logInvocation();
 
-        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1L, 2L, 4000);
-        writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1L, 3L, 4000);
+        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4000);
+        writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1, 3, 4000);
 
         driverConductor.doWork();
 
         assertThat(publications.size(), is(1));
         assertNotNull(publications.get(0));
-        assertThat(publications.get(0).sessionId(), is(1L));
-        assertThat(publications.get(0).channelId(), is(2L));
+        assertThat(publications.get(0).sessionId(), is(1));
+        assertThat(publications.get(0).channelId(), is(2));
 
         verify(mockClientProxy).onError(eq(PUBLICATION_CHANNEL_UNKNOWN), argThat(not(isEmptyOrNullString())), any(), anyInt());
         verifyNeverSucceeds();
@@ -394,7 +394,7 @@ public class DriverConductorTest
         verify(mockClientProxy, never()).operationSucceeded(anyLong());
     }
 
-    private void writeChannelMessage(final int msgTypeId, final long sessionId, final long channelId, final int port)
+    private void writeChannelMessage(final int msgTypeId, final int sessionId, final int channelId, final int port)
         throws IOException
     {
         publicationMessage.wrap(writeBuffer, 0);
@@ -405,7 +405,7 @@ public class DriverConductorTest
         fromClientCommands.write(msgTypeId, writeBuffer, 0, publicationMessage.length());
     }
 
-    private void writeSubscriberMessage(final int msgTypeId, final String destination, final long channelId)
+    private void writeSubscriberMessage(final int msgTypeId, final String destination, final int channelId)
         throws IOException
     {
         subscriptionMessage.wrap(writeBuffer, 0);

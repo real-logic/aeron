@@ -45,8 +45,8 @@ public class DriverBroadcastReceiver
                             logBuffersMessage.wrap(buffer, index);
 
                             final String destination = logBuffersMessage.destination();
-                            final long sessionId = logBuffersMessage.sessionId();
-                            final long channelId = logBuffersMessage.channelId();
+                            final int sessionId = logBuffersMessage.sessionId();
+                            final int channelId = logBuffersMessage.channelId();
                             final int termId = logBuffersMessage.termId();
                             final int positionCounterId = logBuffersMessage.positionCounterId();
 

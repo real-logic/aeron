@@ -27,5 +27,5 @@ public interface NewSourceHandler
      * @param sessionId for the source
      * @param channelId for the source
      */
-    void onNewSource(final String destination, final long sessionId, final long channelId);
+    void onNewSource(final String destination, final int sessionId, final int channelId);
 }

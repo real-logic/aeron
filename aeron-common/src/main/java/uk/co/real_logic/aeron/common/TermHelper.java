@@ -69,10 +69,7 @@ public class TermHelper
      * @param channelId used from the client to notify of unclean buffer.
      * @param termId used from the client to notify of unclean buffer.
      */
-    public static void ensureClean(final LogBuffer logBuffer,
-                                   final String destination,
-                                   final long channelId,
-                                   final int termId)
+    public static void ensureClean(final LogBuffer logBuffer, final String destination, final int channelId, final int termId)
     {
         if (CLEAN != logBuffer.status())
         {

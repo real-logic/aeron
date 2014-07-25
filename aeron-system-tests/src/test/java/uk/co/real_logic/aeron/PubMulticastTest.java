@@ -38,7 +38,6 @@ import java.nio.channels.DatagramChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -53,8 +52,8 @@ public class PubMulticastTest
     private static final String CONTROL_ADDRESS = "224.20.30.40";
     private static final int DST_PORT = 54321;
     private static final String DESTINATION = "udp://localhost@" + DATA_ADDRESS + ":" + DST_PORT;
-    private static final long CHANNEL_ID = 1L;
-    private static final long SESSION_ID = 2L;
+    private static final int CHANNEL_ID = 1;
+    private static final int SESSION_ID = 2;
     private static final byte[] PAYLOAD = "Payload goes here!".getBytes();
     public static final int ALIGNED_FRAME_LENGTH =
         BitUtil.align(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT);
@@ -138,7 +137,7 @@ public class PubMulticastTest
         }
 
         final AtomicInteger termId = new AtomicInteger();
-        final AtomicLong receivedZeroLengthData = new AtomicLong(0);
+        final AtomicInteger receivedZeroLengthData = new AtomicInteger();
 
         // should only see 0 length data until SM is sent
         DatagramTestHelper.receiveUntil(receiverChannel,
@@ -160,12 +159,12 @@ public class PubMulticastTest
                 return false;
             });
 
-        assertThat(receivedZeroLengthData.get(), greaterThanOrEqualTo(1L));
+        assertThat(receivedZeroLengthData.get(), greaterThanOrEqualTo(1));
 
         // send SM
         sendSM(termId.get());
 
-        final AtomicLong receivedDataFrames = new AtomicLong(0);
+        final AtomicInteger receivedDataFrames = new AtomicInteger();
 
         // assert the received Data Frames are correctly formed. Either SM or real data
         DatagramTestHelper.receiveUntil(receiverChannel,
@@ -188,7 +187,7 @@ public class PubMulticastTest
                 return false;
             });
 
-        assertThat(receivedDataFrames.get(), is(1L));
+        assertThat(receivedDataFrames.get(), is(1));
     }
 
     @Test(timeout = 1000)
@@ -205,8 +204,8 @@ public class PubMulticastTest
         }
 
         final AtomicInteger termId = new AtomicInteger();
-        final AtomicLong receivedZeroLengthData = new AtomicLong();
-        final AtomicLong receivedDataFrames = new AtomicLong();
+        final AtomicInteger receivedZeroLengthData = new AtomicInteger();
+        final AtomicInteger receivedDataFrames = new AtomicInteger();
 
         // should only see 0 length data until SM is sent
         DatagramTestHelper.receiveUntil(receiverChannel,
@@ -224,7 +223,7 @@ public class PubMulticastTest
                 return false;
             });
 
-        assertThat(receivedZeroLengthData.get(), greaterThanOrEqualTo(1L));
+        assertThat(receivedZeroLengthData.get(), greaterThanOrEqualTo(1));
 
         // send SM
         sendSM(termId.get());
@@ -245,7 +244,7 @@ public class PubMulticastTest
                 return false;
             });
 
-        assertThat(receivedDataFrames.get(), greaterThanOrEqualTo(1L));
+        assertThat(receivedDataFrames.get(), greaterThanOrEqualTo(1));
 
         // send NAK
         sendNak(termId.get(), 0, ALIGNED_FRAME_LENGTH);
@@ -271,7 +270,7 @@ public class PubMulticastTest
                 return false;
             });
 
-        assertThat(receivedDataFrames.get(), greaterThanOrEqualTo(2L));
+        assertThat(receivedDataFrames.get(), greaterThanOrEqualTo(2));
     }
 
     @Test(timeout = 1000)
@@ -286,7 +285,7 @@ public class PubMulticastTest
         final ByteBuffer smBuffer = ByteBuffer.allocate(StatusMessageFlyweight.HEADER_LENGTH);
         statusMessage.wrap(new AtomicBuffer(smBuffer), 0);
 
-        statusMessage.receiverWindow(1000)
+        statusMessage.receiverWindowSize(1000)
                 .highestContiguousTermOffset(0)
                 .termId(termId)
                 .channelId(CHANNEL_ID)
@@ -303,7 +302,7 @@ public class PubMulticastTest
         assertThat(bytesSent, is(StatusMessageFlyweight.HEADER_LENGTH));
     }
 
-    private void sendNak(final int termId, final long termOffset, final long length) throws Exception
+    private void sendNak(final int termId, final int termOffset, final int length) throws Exception
     {
         final ByteBuffer nakBuffer = ByteBuffer.allocate(NakFlyweight.HEADER_LENGTH);
         nakHeader.wrap(new AtomicBuffer(nakBuffer), 0);

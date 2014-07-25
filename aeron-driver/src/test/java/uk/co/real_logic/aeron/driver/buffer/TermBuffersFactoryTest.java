@@ -33,8 +33,8 @@ import static org.junit.Assert.assertThat;
 public class TermBuffersFactoryTest
 {
     private static final String DESTINATION_URI = "udp://localhost:4321";
-    private static final long SESSION_ID = 100;
-    private static final long CHANNEL_ID = 100;
+    private static final int SESSION_ID = 100;
+    private static final int CHANNEL_ID = 100;
     private static final File DATA_DIR = new File(IoUtil.tmpDirName(), "dataDirName");
     private static final int TERM_BUFFER_SZ = MediaDriver.TERM_BUFFER_SZ_DEFAULT;
     private TermBuffersFactory termBuffersFactory;

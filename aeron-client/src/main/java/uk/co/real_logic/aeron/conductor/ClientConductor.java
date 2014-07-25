@@ -107,7 +107,7 @@ public class ClientConductor extends Agent implements DriverListener
         stop();
     }
 
-    public synchronized Publication addPublication(final String destination, final long channelId, final long sessionId)
+    public synchronized Publication addPublication(final String destination, final int channelId, final int sessionId)
     {
         Publication publication = publicationMap.get(destination, sessionId, channelId);
 
@@ -137,8 +137,8 @@ public class ClientConductor extends Agent implements DriverListener
     public synchronized void releasePublication(final Publication publication)
     {
         final String destination = publication.destination();
-        final long channelId = publication.channelId();
-        final long sessionId = publication.sessionId();
+        final int channelId = publication.channelId();
+        final int sessionId = publication.sessionId();
 
         activeCorrelationId = driverProxy.removePublication(destination, sessionId, channelId);
 
@@ -148,7 +148,7 @@ public class ClientConductor extends Agent implements DriverListener
     }
 
     public synchronized Subscription addSubscription(final String destination,
-                                                     final long channelId,
+                                                     final int channelId,
                                                      final DataHandler handler)
     {
         Subscription subscription = subscriptionMap.get(destination, channelId);
@@ -176,8 +176,8 @@ public class ClientConductor extends Agent implements DriverListener
     }
 
     public void onNewPublication(final String destination,
-                                 final long sessionId,
-                                 final long channelId,
+                                 final int sessionId,
+                                 final int channelId,
                                  final int termId,
                                  final int limitPositionIndicatorOffset,
                                  final LogBuffersMessageFlyweight logBuffersMessage) throws IOException
@@ -206,8 +206,8 @@ public class ClientConductor extends Agent implements DriverListener
     }
 
     public void onNewConnectedSubscription(final String destination,
-                                           final long sessionId,
-                                           final long channelId,
+                                           final int sessionId,
+                                           final int channelId,
                                            final int initialTermId,
                                            final LogBuffersMessageFlyweight message)
         throws IOException

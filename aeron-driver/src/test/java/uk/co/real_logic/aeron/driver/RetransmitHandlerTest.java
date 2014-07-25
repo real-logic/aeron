@@ -47,8 +47,8 @@ public class RetransmitHandlerTest
     private static final byte[] DATA = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
     private static final int MESSAGE_LENGTH = DataHeaderFlyweight.HEADER_LENGTH + DATA.length;
     private static final int ALIGNED_FRAME_LENGTH = align(MESSAGE_LENGTH, FrameDescriptor.FRAME_ALIGNMENT);
-    private static final long SESSION_ID = 0x5E55101DL;
-    private static final long CHANNEL_ID = 0x5400EL;
+    private static final int SESSION_ID = 0x5E55101D;
+    private static final int CHANNEL_ID = 0x5400E;
     private static final int TERM_ID = 0x7F003355;
 
     public static final FeedbackDelayGenerator delayGenerator = () -> TimeUnit.MILLISECONDS.toNanos(20);

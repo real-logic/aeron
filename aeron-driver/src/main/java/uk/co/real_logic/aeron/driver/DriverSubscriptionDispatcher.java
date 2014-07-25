@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.collections.Long2ObjectHashMap;
+import uk.co.real_logic.aeron.common.collections.Int2ObjectHashMap;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
@@ -34,8 +34,8 @@ public class DriverSubscriptionDispatcher
 
     private final UdpTransport transport;
     private final UdpDestination udpDestination;
-    private final Long2ObjectHashMap<String> initialisationInProgressMap = new Long2ObjectHashMap<>();
-    private final Long2ObjectHashMap<DriverSubscription> subscriptionByChannelIdMap = new Long2ObjectHashMap<>();
+    private final Int2ObjectHashMap<String> initialisationInProgressMap = new Int2ObjectHashMap<>();
+    private final Int2ObjectHashMap<DriverSubscription> subscriptionByChannelIdMap = new Int2ObjectHashMap<>();
     private final DriverConductorProxy conductorProxy;
 
     public DriverSubscriptionDispatcher(final UdpTransport transport,
@@ -48,7 +48,7 @@ public class DriverSubscriptionDispatcher
         this.conductorProxy = conductorProxy;
     }
 
-    public void addSubscription(final long channelId)
+    public void addSubscription(final int channelId)
     {
         DriverSubscription subscription = subscriptionByChannelIdMap.get(channelId);
 
@@ -59,7 +59,7 @@ public class DriverSubscriptionDispatcher
         }
     }
 
-    public void removeSubscription(final long channelId)
+    public void removeSubscription(final int channelId)
     {
         final DriverSubscription subscription = subscriptionByChannelIdMap.get(channelId);
 
@@ -90,15 +90,15 @@ public class DriverSubscriptionDispatcher
 
     public void onDataFrame(final DataHeaderFlyweight header,
                             final AtomicBuffer buffer,
-                            final long length,
+                            final int length,
                             final InetSocketAddress srcAddress)
     {
-        final long channelId = header.channelId();
+        final int channelId = header.channelId();
         final DriverSubscription subscription = subscriptionByChannelIdMap.get(channelId);
 
         if (null != subscription)
         {
-            final long sessionId = header.sessionId();
+            final int sessionId = header.sessionId();
             final int termId = header.termId();
             final DriverConnectedSubscription connectedSubscription = subscription.getConnectedSubscription(sessionId);
 
@@ -116,8 +116,7 @@ public class DriverSubscriptionDispatcher
             }
             else if (null == initialisationInProgressMap.get(sessionId))
             {
-                final InetSocketAddress controlAddress =
-                    transport.isMulticast() ? udpDestination.remoteControl() : srcAddress;
+                final InetSocketAddress controlAddress = transport.isMulticast() ? udpDestination.remoteControl() : srcAddress;
 
                 // TODO: need to clean up on timeout - how can this fail?
                 initialisationInProgressMap.put(sessionId, INIT_IN_PROGRESS);

@@ -177,5 +177,4 @@ public class ErrorFlyweight extends HeaderFlyweight
     {
         return new String(errorMessageAsBytes());
     }
-
 }

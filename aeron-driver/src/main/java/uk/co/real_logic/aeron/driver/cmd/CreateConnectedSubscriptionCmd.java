@@ -22,14 +22,14 @@ import java.net.InetSocketAddress;
 public class CreateConnectedSubscriptionCmd
 {
     private final UdpDestination udpDestination;
-    private final long sessionId;
-    private final long channelId;
+    private final int sessionId;
+    private final int channelId;
     private final int termId;
     private final InetSocketAddress controlAddress;
 
     public CreateConnectedSubscriptionCmd(final UdpDestination udpDestination,
-                                          final long sessionId,
-                                          final long channelId,
+                                          final int sessionId,
+                                          final int channelId,
                                           final int termId,
                                           final InetSocketAddress controlAddress)
     {
@@ -45,12 +45,12 @@ public class CreateConnectedSubscriptionCmd
         return udpDestination;
     }
 
-    public long sessionId()
+    public int sessionId()
     {
         return sessionId;
     }
 
-    public long channelId()
+    public int channelId()
     {
         return channelId;
     }

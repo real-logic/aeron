@@ -35,7 +35,7 @@ import uk.co.real_logic.aeron.common.protocol.ErrorFlyweight;
 
 import java.nio.ByteBuffer;
 
-import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
@@ -50,9 +50,9 @@ public class AeronTest extends MockBufferUsage
     public static final int COUNTER_BUFFER_SZ = 1024;
 
     public static final String DESTINATION = "udp://localhost:40124";
-    public static final long CHANNEL_ID_1 = 2L;
-    public static final long SESSION_ID_1 = 13L;
-    public static final long SESSION_ID_2 = 15L;
+    public static final int CHANNEL_ID_1 = 2;
+    public static final int SESSION_ID_1 = 13;
+    public static final int SESSION_ID_2 = 15;
     public static final int TERM_ID_1 = 1;
     public static final int TERM_ID_2 = 11;
     public static final int PACKET_VALUE = 37;
@@ -244,7 +244,7 @@ public class AeronTest extends MockBufferUsage
         }
     }
 
-    private void sendNewBufferNotification(final int msgTypeId, final long sessionId, final int termId)
+    private void sendNewBufferNotification(final int msgTypeId, final int sessionId, final int termId)
     {
         newBufferMessage.wrap(atomicScratchBuffer, 0);
         newBufferMessage.channelId(CHANNEL_ID_1)

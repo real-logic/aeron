@@ -163,9 +163,9 @@ public final class Aeron implements AutoCloseable, Runnable
      * @param sessionId   to scope the source of the Publication.
      * @return the new Publication.
      */
-    public Publication addPublication(final String destination, final long channelId, final long sessionId)
+    public Publication addPublication(final String destination, final int channelId, final int sessionId)
     {
-        long sessionIdToRequest = sessionId;
+        int sessionIdToRequest = sessionId;
 
         if (0 == sessionId)
         {
@@ -183,7 +183,7 @@ public final class Aeron implements AutoCloseable, Runnable
      * @param handler     to be called back for each message received.
      * @return the {@link Subscription} for the destination and channelId pair.
      */
-    public Subscription addSubscription(final String destination, final long channelId, final DataHandler handler)
+    public Subscription addSubscription(final String destination, final int channelId, final DataHandler handler)
     {
         return conductor.addSubscription(destination, channelId, handler);
     }
@@ -193,9 +193,9 @@ public final class Aeron implements AutoCloseable, Runnable
         return conductor;
     }
 
-    private long generateSessionId()
+    private int generateSessionId()
     {
-        return ((long)(Math.random() * (double)0xFFFFFFF7L) & 0xFFFFFFFFL);
+        return (int)(Math.random() * 0xFFFFFFF7);
     }
 
     public static class ClientContext extends CommonContext

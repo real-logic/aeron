@@ -174,9 +174,9 @@ public class LogBuffersMessageFlyweight extends Flyweight
      * return session id field
      * @return session id field
      */
-    public long sessionId()
+    public int sessionId()
     {
-        return uint32Get(offset() + SESSION_ID_OFFSET, LITTLE_ENDIAN);
+        return atomicBuffer().getInt(offset() + SESSION_ID_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -184,9 +184,9 @@ public class LogBuffersMessageFlyweight extends Flyweight
      * @param sessionId field value
      * @return flyweight
      */
-    public LogBuffersMessageFlyweight sessionId(final long sessionId)
+    public LogBuffersMessageFlyweight sessionId(final int sessionId)
     {
-        uint32Put(offset() + SESSION_ID_OFFSET, (int)sessionId, LITTLE_ENDIAN);
+        atomicBuffer().putInt(offset() + SESSION_ID_OFFSET, sessionId, LITTLE_ENDIAN);
         return this;
     }
 
@@ -195,9 +195,9 @@ public class LogBuffersMessageFlyweight extends Flyweight
      *
      * @return channel id field
      */
-    public long channelId()
+    public int channelId()
     {
-        return uint32Get(offset() + CHANNEL_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return atomicBuffer().getInt(offset() + CHANNEL_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -206,9 +206,9 @@ public class LogBuffersMessageFlyweight extends Flyweight
      * @param channelId field value
      * @return flyweight
      */
-    public LogBuffersMessageFlyweight channelId(final long channelId)
+    public LogBuffersMessageFlyweight channelId(final int channelId)
     {
-        uint32Put(offset() + CHANNEL_ID_FIELD_OFFSET, channelId, LITTLE_ENDIAN);
+        atomicBuffer().putInt(offset() + CHANNEL_ID_FIELD_OFFSET, channelId, LITTLE_ENDIAN);
         return this;
     }
 

@@ -54,8 +54,8 @@ public class DriverPublication implements AutoCloseable
 
     private final TimerWheel timerWheel;
 
-    private final long sessionId;
-    private final long channelId;
+    private final int sessionId;
+    private final int channelId;
 
     private final AtomicInteger activeTermId;
 
@@ -97,8 +97,8 @@ public class DriverPublication implements AutoCloseable
                              final SenderControlStrategy controlStrategy,
                              final TermBuffers termBuffers,
                              final BufferPositionReporter limitReporter,
-                             final long sessionId,
-                             final long channelId,
+                             final int sessionId,
+                             final int channelId,
                              final int initialTermId,
                              final int headerLength,
                              final int mtuLength,
@@ -172,12 +172,12 @@ public class DriverPublication implements AutoCloseable
         return workCount;
     }
 
-    public long sessionId()
+    public int sessionId()
     {
         return sessionId;
     }
 
-    public long channelId()
+    public int channelId()
     {
         return channelId;
     }

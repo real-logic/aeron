@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.collections.Long2ObjectHashMap;
+import uk.co.real_logic.aeron.common.collections.Int2ObjectHashMap;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
@@ -35,7 +35,7 @@ public class MediaSubscriptionEndpoint implements AutoCloseable
     private final UdpTransport transport;
     private final DriverSubscriptionDispatcher dispatcher;
 
-    private final Long2ObjectHashMap<Long> refCountByChannelIdMap = new Long2ObjectHashMap<>();
+    private final Int2ObjectHashMap<Integer> refCountByChannelIdMap = new Int2ObjectHashMap<>();
 
     private final ByteBuffer smBuffer = ByteBuffer.allocateDirect(StatusMessageFlyweight.HEADER_LENGTH);
     private final ByteBuffer nakBuffer = ByteBuffer.allocateDirect(NakFlyweight.HEADER_LENGTH);
@@ -76,9 +76,9 @@ public class MediaSubscriptionEndpoint implements AutoCloseable
         return dispatcher;
     }
 
-    public long refCountForChannelId(final long channelId)
+    public int getRefCountByChannelId(final int channelId)
     {
-        final Long count = refCountByChannelIdMap.get(channelId);
+        final Integer count = refCountByChannelIdMap.get(channelId);
 
         if (null == count)
         {
@@ -88,9 +88,9 @@ public class MediaSubscriptionEndpoint implements AutoCloseable
         return count;
     }
 
-    public long incRefToChannelId(final long channelId)
+    public int incRefToChannelId(final int channelId)
     {
-        Long count = refCountByChannelIdMap.get(channelId);
+        Integer count = refCountByChannelIdMap.get(channelId);
 
         count = (null == count) ? 1 : count + 1;
 
@@ -99,9 +99,9 @@ public class MediaSubscriptionEndpoint implements AutoCloseable
         return count;
     }
 
-    public long decRefToChannelId(final long channelId)
+    public int decRefToChannelId(final int channelId)
     {
-        Long count = refCountByChannelIdMap.get(channelId);
+        Integer count = refCountByChannelIdMap.get(channelId);
 
         if (null == count)
         {
@@ -122,7 +122,7 @@ public class MediaSubscriptionEndpoint implements AutoCloseable
         return count;
     }
 
-    public long channelCount()
+    public int channelCount()
     {
         return refCountByChannelIdMap.size();
     }
@@ -134,24 +134,24 @@ public class MediaSubscriptionEndpoint implements AutoCloseable
     }
 
     public StatusMessageSender composeStatusMessageSender(final InetSocketAddress controlAddress,
-                                                          final long sessionId,
-                                                          final long channelId)
+                                                          final int sessionId,
+                                                          final int channelId)
     {
         return (termId, termOffset, window) ->
-            sendStatusMessage(controlAddress, sessionId, channelId, (int)termId, termOffset, window);
+            sendStatusMessage(controlAddress, sessionId, channelId, termId, termOffset, window);
     }
 
     public NakMessageSender composeNakMessageSender(final InetSocketAddress controlAddress,
-                                                    final long sessionId,
-                                                    final long channelId)
+                                                    final int sessionId,
+                                                    final int channelId)
     {
         return (termId, termOffset, length) ->
-            sendNak(controlAddress, sessionId, channelId, (int)termId, termOffset, length);
+            sendNak(controlAddress, sessionId, channelId, termId, termOffset, length);
     }
 
     private void sendStatusMessage(final InetSocketAddress controlAddress,
-                                   final long sessionId,
-                                   final long channelId,
+                                   final int sessionId,
+                                   final int channelId,
                                    final int termId,
                                    final int termOffset,
                                    final int window)
@@ -160,7 +160,7 @@ public class MediaSubscriptionEndpoint implements AutoCloseable
                 .channelId(channelId)
                 .termId(termId)
                 .highestContiguousTermOffset(termOffset)
-                .receiverWindow(window)
+                .receiverWindowSize(window)
                 .headerType(HeaderFlyweight.HDR_TYPE_SM)
                 .frameLength(StatusMessageFlyweight.HEADER_LENGTH)
                 .flags((byte)0)
@@ -183,8 +183,8 @@ public class MediaSubscriptionEndpoint implements AutoCloseable
     }
 
     private void sendNak(final InetSocketAddress controlAddress,
-                         final long sessionId,
-                         final long channelId,
+                         final int sessionId,
+                         final int channelId,
                          final int termId,
                          final int termOffset,
                          final int length)

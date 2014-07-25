@@ -84,9 +84,9 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      * return session id field
      * @return session id field
      */
-    public long sessionId()
+    public int sessionId()
     {
-        return uint32Get(offset() + SESSION_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return atomicBuffer().getInt(offset() + SESSION_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -94,9 +94,9 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      * @param sessionId field value
      * @return flyweight
      */
-    public DataHeaderFlyweight sessionId(final long sessionId)
+    public DataHeaderFlyweight sessionId(final int sessionId)
     {
-        uint32Put(offset() + SESSION_ID_FIELD_OFFSET, sessionId, LITTLE_ENDIAN);
+        atomicBuffer().putInt(offset() + SESSION_ID_FIELD_OFFSET, sessionId, LITTLE_ENDIAN);
         return this;
     }
 
@@ -105,9 +105,9 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      *
      * @return channel id field
      */
-    public long channelId()
+    public int channelId()
     {
-        return uint32Get(offset() + CHANNEL_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return atomicBuffer().getInt(offset() + CHANNEL_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -116,9 +116,9 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      * @param channelId field value
      * @return flyweight
      */
-    public DataHeaderFlyweight channelId(final long channelId)
+    public DataHeaderFlyweight channelId(final int channelId)
     {
-        uint32Put(offset() + CHANNEL_ID_FIELD_OFFSET, channelId, LITTLE_ENDIAN);
+        atomicBuffer().putInt(offset() + CHANNEL_ID_FIELD_OFFSET, channelId, LITTLE_ENDIAN);
         return this;
     }
 
@@ -149,9 +149,9 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      *
      * @return term offset field
      */
-    public long termOffset()
+    public int termOffset()
     {
-        return uint32Get(offset() + TERM_OFFSET_FIELD_OFFSET, LITTLE_ENDIAN);
+        return atomicBuffer().getInt(offset() + TERM_OFFSET_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -160,9 +160,9 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      * @param termOffset field value
      * @return flyweight
      */
-    public DataHeaderFlyweight termOffset(final long termOffset)
+    public DataHeaderFlyweight termOffset(final int termOffset)
     {
-        uint32Put(offset() + TERM_OFFSET_FIELD_OFFSET, termOffset, LITTLE_ENDIAN);
+        atomicBuffer().putInt(offset() + TERM_OFFSET_FIELD_OFFSET, termOffset, LITTLE_ENDIAN);
         return this;
     }
 
@@ -185,15 +185,15 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      * @param termId for the header
      * @return byte array containing the header
      */
-    public static byte[] createDefaultHeader(final long sessionId, final long channelId, final int termId)
+    public static byte[] createDefaultHeader(final int sessionId, final int channelId, final int termId)
     {
         final byte[] hdr = new byte[HEADER_LENGTH];
         final AtomicBuffer buffer = new AtomicBuffer(hdr);
 
         buffer.wrap(hdr);
         buffer.putBytes(0, DEFAULT_HEADER_NULL_IDS);
-        buffer.putInt(SESSION_ID_FIELD_OFFSET, (int)sessionId, ByteOrder.LITTLE_ENDIAN);
-        buffer.putInt(CHANNEL_ID_FIELD_OFFSET, (int)channelId, ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(SESSION_ID_FIELD_OFFSET, sessionId, ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(CHANNEL_ID_FIELD_OFFSET, channelId, ByteOrder.LITTLE_ENDIAN);
         buffer.putInt(TERM_ID_FIELD_OFFSET, termId, ByteOrder.LITTLE_ENDIAN);
 
         return hdr;

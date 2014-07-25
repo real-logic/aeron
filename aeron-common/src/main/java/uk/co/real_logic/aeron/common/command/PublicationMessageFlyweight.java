@@ -51,9 +51,9 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
      *
      * @return session id field
      */
-    public long sessionId()
+    public int sessionId()
     {
-        return uint32Get(offset() + SESSION_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return atomicBuffer().getInt(offset() + SESSION_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
@@ -62,9 +62,9 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
      * @param sessionId field value
      * @return flyweight
      */
-    public PublicationMessageFlyweight sessionId(final long sessionId)
+    public PublicationMessageFlyweight sessionId(final int sessionId)
     {
-        uint32Put(offset() + SESSION_ID_FIELD_OFFSET, (int)sessionId, ByteOrder.LITTLE_ENDIAN);
+        atomicBuffer().putInt(offset() + SESSION_ID_FIELD_OFFSET, sessionId, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
@@ -73,9 +73,9 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
      *
      * @return channel id field
      */
-    public long channelId()
+    public int channelId()
     {
-        return uint32Get(offset() + CHANNEL_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return atomicBuffer().getInt(offset() + CHANNEL_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
@@ -84,9 +84,9 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
      * @param channelId field value
      * @return flyweight
      */
-    public PublicationMessageFlyweight channelId(final long channelId)
+    public PublicationMessageFlyweight channelId(final int channelId)
     {
-        uint32Put(offset() + CHANNEL_ID_FIELD_OFFSET, channelId, ByteOrder.LITTLE_ENDIAN);
+        atomicBuffer().putInt(offset() + CHANNEL_ID_FIELD_OFFSET, channelId, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
@@ -108,9 +108,7 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
      */
     public PublicationMessageFlyweight destination(final String destination)
     {
-        lengthOfDestination = stringPut(offset() + DESTINATION_OFFSET,
-                                        destination,
-                                        ByteOrder.LITTLE_ENDIAN);
+        lengthOfDestination = stringPut(offset() + DESTINATION_OFFSET, destination, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 

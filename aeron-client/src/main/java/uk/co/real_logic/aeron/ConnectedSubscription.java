@@ -37,7 +37,7 @@ public class ConnectedSubscription
     private static final int HEADER_LENGTH = BitUtil.align(DataHeaderFlyweight.HEADER_LENGTH, WORD_ALIGNMENT);
 
     private final LogReader[] logReaders;
-    private final long sessionId;
+    private final int sessionId;
     private final DataHandler dataHandler;
     private final PositionReporter positionReporter;
     private final ManagedBuffer[] managedBuffers;
@@ -48,7 +48,7 @@ public class ConnectedSubscription
     private int activeIndex;
 
     public ConnectedSubscription(final LogReader[] readers,
-                                 final long sessionId,
+                                 final int sessionId,
                                  final int initialTermId,
                                  final DataHandler dataHandler,
                                  final PositionReporter positionReporter,
@@ -66,7 +66,7 @@ public class ConnectedSubscription
         this.initialTermId = initialTermId;
     }
 
-    public long sessionId()
+    public int sessionId()
     {
         return sessionId;
     }

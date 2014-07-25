@@ -26,5 +26,5 @@ public interface InactiveSourceHandler
      * @param channelId for the event
      * @param sessionId of the inactive source
      */
-    void onInactiveSource(final long channelId, final long sessionId);
+    void onInactiveSource(final int channelId, final int sessionId);
 }

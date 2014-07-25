@@ -45,19 +45,19 @@ public class SubscriptionMessageFlyweight extends CorrelatedMessageFlyweight
      *
      * @return the channel id
      */
-    public long channelId()
+    public int channelId()
     {
-        return uint32Get(offset() + CHANNEL_ID_OFFSET, LITTLE_ENDIAN);
+        return atomicBuffer().getInt(offset() + CHANNEL_ID_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
      * Set the channel id
      *
-     * @param value the channel id
+     * @param channelId the channel id
      */
-    public SubscriptionMessageFlyweight channelId(long value)
+    public SubscriptionMessageFlyweight channelId(final int channelId)
     {
-        uint32Put(offset() + CHANNEL_ID_OFFSET, value, LITTLE_ENDIAN);
+        atomicBuffer().putInt(offset() + CHANNEL_ID_OFFSET, channelId, LITTLE_ENDIAN);
         return this;
     }
 

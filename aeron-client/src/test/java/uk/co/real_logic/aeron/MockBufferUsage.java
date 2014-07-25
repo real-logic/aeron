@@ -22,8 +22,8 @@ public class MockBufferUsage
     public static final int MAX_FRAME_LENGTH = 1024;
     public static final int LOG_BUFFER_SZ = LogBufferDescriptor.MIN_LOG_SIZE;
 
-    public static final long SESSION_ID_1 = 13L;
-    public static final long SESSION_ID_2 = 15L;
+    public static final int SESSION_ID_1 = 13;
+    public static final int SESSION_ID_2 = 15;
 
     protected AtomicBuffer[] logBuffersSession1 = new AtomicBuffer[TermHelper.BUFFER_COUNT];
     protected AtomicBuffer[] logBuffersSession2 = new AtomicBuffer[TermHelper.BUFFER_COUNT];
@@ -65,9 +65,7 @@ public class MockBufferUsage
     {
         return (invocation) ->
         {
-            final Object[] args = invocation.getArguments();
-
-            ManagedBuffer mockBuffer = mock(ManagedBuffer.class);
+            final ManagedBuffer mockBuffer = mock(ManagedBuffer.class);
             when(mockBuffer.buffer()).thenReturn(buffer);
             return mockBuffer;
         };

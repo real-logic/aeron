@@ -20,8 +20,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 /**
  * Flyweight for a Nak Packet
  *
- * <p>
- * @see <a href="https://github.com/real-logic/Aeron/wiki/Protocol-Specification#data-recovery-via-retransmit-request">Data Recovery</a>
+ * <a href="https://github.com/real-logic/Aeron/wiki/Protocol-Specification#data-recovery-via-retransmit-request">Data Recovery</a>
  */
 public class    NakFlyweight extends HeaderFlyweight
 {
@@ -37,9 +36,9 @@ public class    NakFlyweight extends HeaderFlyweight
      * return session id field
      * @return session id field
      */
-    public long sessionId()
+    public int sessionId()
     {
-        return uint32Get(offset() + SESSION_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return atomicBuffer().getInt(offset() + SESSION_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -47,9 +46,9 @@ public class    NakFlyweight extends HeaderFlyweight
      * @param sessionId field value
      * @return flyweight
      */
-    public NakFlyweight sessionId(final long sessionId)
+    public NakFlyweight sessionId(final int sessionId)
     {
-        uint32Put(offset() + SESSION_ID_FIELD_OFFSET, sessionId, LITTLE_ENDIAN);
+        atomicBuffer().putInt(offset() + SESSION_ID_FIELD_OFFSET, sessionId, LITTLE_ENDIAN);
         return this;
     }
 
@@ -58,9 +57,9 @@ public class    NakFlyweight extends HeaderFlyweight
      *
      * @return channel id field
      */
-    public long channelId()
+    public int channelId()
     {
-        return uint32Get(offset() + CHANNEL_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return atomicBuffer().getInt(offset() + CHANNEL_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -69,9 +68,9 @@ public class    NakFlyweight extends HeaderFlyweight
      * @param channelId field value
      * @return flyweight
      */
-    public NakFlyweight channelId(final long channelId)
+    public NakFlyweight channelId(final int channelId)
     {
-        uint32Put(offset() + CHANNEL_ID_FIELD_OFFSET, channelId, LITTLE_ENDIAN);
+        atomicBuffer().putInt(offset() + CHANNEL_ID_FIELD_OFFSET, channelId, LITTLE_ENDIAN);
         return this;
     }
 
@@ -99,9 +98,9 @@ public class    NakFlyweight extends HeaderFlyweight
      * return term offset field
      * @return term offset field
      */
-    public long termOffset()
+    public int termOffset()
     {
-        return uint32Get(offset() + TERM_OFFSET_FIELD_OFFSET, LITTLE_ENDIAN);
+        return atomicBuffer().getInt(offset() + TERM_OFFSET_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -109,19 +108,20 @@ public class    NakFlyweight extends HeaderFlyweight
      * @param termOffset field value
      * @return flyweight
      */
-    public NakFlyweight termOffset(final long termOffset)
+    public NakFlyweight termOffset(final int termOffset)
     {
-        uint32Put(offset() + TERM_OFFSET_FIELD_OFFSET, termOffset, LITTLE_ENDIAN);
+        atomicBuffer().putInt(offset() + TERM_OFFSET_FIELD_OFFSET, termOffset, LITTLE_ENDIAN);
         return this;
     }
 
     /**
-     * return length field
+     * The length field
+     *
      * @return length field
      */
-    public long length()
+    public int length()
     {
-        return uint32Get(offset() + LENGTH_FIELD_OFFSET, LITTLE_ENDIAN);
+        return atomicBuffer().getInt(offset() + LENGTH_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -129,9 +129,9 @@ public class    NakFlyweight extends HeaderFlyweight
      * @param length field value
      * @return flyweight
      */
-    public NakFlyweight length(final long length)
+    public NakFlyweight length(final int length)
     {
-        uint32Put(offset() + LENGTH_FIELD_OFFSET, length, LITTLE_ENDIAN);
+        atomicBuffer().putInt(offset() + LENGTH_FIELD_OFFSET, length, LITTLE_ENDIAN);
         return this;
     }
 }

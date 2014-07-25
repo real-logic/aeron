@@ -51,9 +51,9 @@ public class ReceiverTest
     public static final long LOG_BUFFER_SIZE = LogBufferDescriptor.MIN_LOG_SIZE;
     private static final String URI = "udp://localhost:45678";
     private static final UdpDestination UDP_DESTINATION = UdpDestination.parse(URI);
-    private static final long CHANNEL_ID = 10;
+    private static final int CHANNEL_ID = 10;
     private static final int TERM_ID = 3;
-    private static final long SESSION_ID = 1;
+    private static final int SESSION_ID = 1;
     private static final byte[] FAKE_PAYLOAD = "Hello there, message!".getBytes();
     private static final byte[] NO_PAYLOAD = new byte[0];
     private static final int INITIAL_WINDOW_SIZE = MediaDriver.INITIAL_WINDOW_SIZE_DEFAULT;
@@ -237,7 +237,7 @@ public class ReceiverTest
                 assertThat(dataHeader.termId(), is(TERM_ID));
                 assertThat(dataHeader.channelId(), is(CHANNEL_ID));
                 assertThat(dataHeader.sessionId(), is(SESSION_ID));
-                assertThat(dataHeader.termOffset(), is(0L));
+                assertThat(dataHeader.termOffset(), is(0));
                 assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
             }, Integer.MAX_VALUE
         );
@@ -297,7 +297,7 @@ public class ReceiverTest
                 assertThat(dataHeader.termId(), is(TERM_ID));
                 assertThat(dataHeader.channelId(), is(CHANNEL_ID));
                 assertThat(dataHeader.sessionId(), is(SESSION_ID));
-                assertThat(dataHeader.termOffset(), is(0L));
+                assertThat(dataHeader.termOffset(), is(0));
                 assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
             }, Integer.MAX_VALUE
         );
@@ -357,7 +357,7 @@ public class ReceiverTest
                 assertThat(dataHeader.termId(), is(TERM_ID));
                 assertThat(dataHeader.channelId(), is(CHANNEL_ID));
                 assertThat(dataHeader.sessionId(), is(SESSION_ID));
-                assertThat(dataHeader.termOffset(), is(0L));
+                assertThat(dataHeader.termOffset(), is(0));
                 assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
             }, Integer.MAX_VALUE
         );

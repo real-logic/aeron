@@ -48,8 +48,8 @@ public class PubAndSubTest
     @DataPoint
     public static final String MULTICAST_DESTINATION = "udp://localhost@224.20.30.39:54326";
 
-    private static final long CHANNEL_ID = 1L;
-    private static final long SESSION_ID = 2L;
+    private static final int CHANNEL_ID = 1;
+    private static final int SESSION_ID = 2;
 
     private final MediaDriver.DriverContext driverContext = new MediaDriver.DriverContext();
     private final Aeron.ClientContext publishingAeronContext = new Aeron.ClientContext();

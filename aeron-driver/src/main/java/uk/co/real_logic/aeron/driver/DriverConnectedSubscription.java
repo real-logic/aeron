@@ -38,8 +38,8 @@ public class DriverConnectedSubscription implements AutoCloseable
     private static final int STATE_READY_TO_SEND_SMS = 1;
 
     private final UdpDestination udpDestination;
-    private final long sessionId;
-    private final long channelId;
+    private final int sessionId;
+    private final int channelId;
     private TermBuffers termBuffers;
     private PositionIndicator subscriberLimit;
 
@@ -66,8 +66,8 @@ public class DriverConnectedSubscription implements AutoCloseable
     private AtomicInteger state = new AtomicInteger(STATE_CREATED);
 
     public DriverConnectedSubscription(final UdpDestination udpDestination,
-                                       final long sessionId,
-                                       final long channelId,
+                                       final int sessionId,
+                                       final int channelId,
                                        final int initialTermId,
                                        final int initialWindow,
                                        final TermBuffers termBuffers,
@@ -105,12 +105,12 @@ public class DriverConnectedSubscription implements AutoCloseable
         this.termSizeSmGain = termCapacity / 4;
     }
 
-    public long sessionId()
+    public int sessionId()
     {
         return sessionId;
     }
 
-    public long channelId()
+    public int channelId()
     {
         return channelId;
     }
@@ -152,13 +152,13 @@ public class DriverConnectedSubscription implements AutoCloseable
         return lossHandler.scan() ? 1 : 0;
     }
 
-    public void insertIntoTerm(final DataHeaderFlyweight header, final AtomicBuffer buffer, final long length)
+    public void insertIntoTerm(final DataHeaderFlyweight header, final AtomicBuffer buffer, final int length)
     {
         final LogRebuilder currentRebuilder = rebuilders[activeIndex];
         final int termId = header.termId();
         final int activeTermId = this.activeTermId.get();
 
-        final int packetTail = (int)header.termOffset();
+        final int packetTail = header.termOffset();
         final long packetPosition = calculatePosition(termId, packetTail);
         final long position = position(currentRebuilder.tail());
 
@@ -296,7 +296,7 @@ public class DriverConnectedSubscription implements AutoCloseable
         return proposedPosition > (subscriberLimit.position() + bufferLimit);
     }
 
-    public boolean isOutOfBufferRange(final long proposedPosition, final long length, final long currentPosition)
+    public boolean isOutOfBufferRange(final long proposedPosition, final int length, final long currentPosition)
     {
         return proposedPosition < currentPosition || proposedPosition > (currentPosition + (bufferLimit - length));
     }

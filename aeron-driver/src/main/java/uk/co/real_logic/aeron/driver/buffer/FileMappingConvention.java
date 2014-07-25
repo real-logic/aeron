@@ -65,14 +65,14 @@ public class FileMappingConvention
     }
 
     public static File channelLocation(final File rootDir,
-                                       final long sessionId,
-                                       final long channelId,
+                                       final int sessionId,
+                                       final int channelId,
                                        final boolean createIfMissing,
                                        final String destinationDirName)
     {
         final File destinationDir = new File(rootDir, destinationDirName);
-        final File sessionDir = new File(destinationDir, Long.toString(sessionId));
-        final File channelDir = new File(sessionDir, Long.toString(channelId));
+        final File sessionDir = new File(destinationDir, Integer.toString(sessionId));
+        final File channelDir = new File(sessionDir, Integer.toString(channelId));
 
         if (createIfMissing)
         {

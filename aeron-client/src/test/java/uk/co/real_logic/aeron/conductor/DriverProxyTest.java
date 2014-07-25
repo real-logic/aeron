@@ -35,8 +35,8 @@ public class DriverProxyTest
 {
     public static final String DESTINATION = "udp://localhost:40123@localhost:40124";
 
-    private static final long CHANNEL_ID = 1L;
-    private static final long SESSION_ID = 1L;
+    private static final int CHANNEL_ID = 1;
+    private static final int SESSION_ID = 1;
     private final RingBuffer conductorBuffer =
         new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocateDirect(TRAILER_LENGTH + 1024)));
     private final DriverProxy conductor = new DriverProxy(conductorBuffer);
@@ -65,8 +65,8 @@ public class DriverProxyTest
 
                 assertThat(msgTypeId, is(expectedMsgTypeId));
                 assertThat(publicationMessage.destination(), is(DESTINATION));
-                assertThat(publicationMessage.sessionId(), is(1L));
-                assertThat(publicationMessage.channelId(), is(2L));
+                assertThat(publicationMessage.sessionId(), is(1));
+                assertThat(publicationMessage.channelId(), is(2));
             }
         );
     }
@@ -101,8 +101,8 @@ public class DriverProxyTest
                 qualifiedMessage.wrap(buffer, index);
 
                 assertThat(msgTypeId, is(CLEAN_TERM_BUFFER));
-                assertThat(qualifiedMessage.sessionId(), is(1L));
-                assertThat(qualifiedMessage.channelId(), is(2L));
+                assertThat(qualifiedMessage.sessionId(), is(1));
+                assertThat(qualifiedMessage.channelId(), is(2));
                 assertThat(qualifiedMessage.destination(), is(DESTINATION));
                 assertThat(qualifiedMessage.termId(), is(3));
             }

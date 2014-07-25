@@ -277,8 +277,8 @@ public class DriverConductor extends Agent
     private void onAddPublication(final PublicationMessageFlyweight publicationMessage)
     {
         final String destination = publicationMessage.destination();
-        final long sessionId = publicationMessage.sessionId();
-        final long channelId = publicationMessage.channelId();
+        final int sessionId = publicationMessage.sessionId();
+        final int channelId = publicationMessage.channelId();
         final long correlationId = publicationMessage.correlationId();
 
         try
@@ -344,8 +344,8 @@ public class DriverConductor extends Agent
     private void onRemovePublication(final PublicationMessageFlyweight publicationMessage)
     {
         final String destination = publicationMessage.destination();
-        final long sessionId = publicationMessage.sessionId();
-        final long channelId = publicationMessage.channelId();
+        final int sessionId = publicationMessage.sessionId();
+        final int channelId = publicationMessage.channelId();
 
         try
         {
@@ -387,7 +387,7 @@ public class DriverConductor extends Agent
     private void onAddSubscription(final SubscriptionMessageFlyweight subscriptionMessage)
     {
         final String destination = subscriptionMessage.destination();
-        final long channelId = subscriptionMessage.channelId();
+        final int channelId = subscriptionMessage.channelId();
 
         try
         {
@@ -405,7 +405,7 @@ public class DriverConductor extends Agent
                 }
             }
 
-            final long initialCount = endpoint.incRefToChannelId(channelId);
+            final int initialCount = endpoint.incRefToChannelId(channelId);
 
             if (1 == initialCount)
             {
@@ -431,7 +431,7 @@ public class DriverConductor extends Agent
     private void onRemoveSubscription(final SubscriptionMessageFlyweight subscriptionMessage)
     {
         final String destination = subscriptionMessage.destination();
-        final long channelId = subscriptionMessage.channelId();
+        final int channelId = subscriptionMessage.channelId();
 
         try
         {
@@ -442,12 +442,12 @@ public class DriverConductor extends Agent
                 throw new ControlProtocolException(INVALID_DESTINATION, "destination unknown");
             }
 
-            if (endpoint.refCountForChannelId(channelId) == 0)
+            if (endpoint.getRefCountByChannelId(channelId) == 0)
             {
                 throw new ControlProtocolException(SUBSCRIBER_NOT_REGISTERED, "subscriptions unknown for destination");
             }
 
-            final long count = endpoint.decRefToChannelId(channelId);
+            final int count = endpoint.decRefToChannelId(channelId);
             if (0 == count)
             {
                 while (!receiverProxy.removeSubscription(endpoint, channelId))
@@ -477,8 +477,8 @@ public class DriverConductor extends Agent
     private void onCreateConnectedSubscription(final CreateConnectedSubscriptionCmd cmd)
     {
         final UdpDestination udpDestination = cmd.udpDestination();
-        final long sessionId = cmd.sessionId();
-        final long channelId = cmd.channelId();
+        final int sessionId = cmd.sessionId();
+        final int channelId = cmd.channelId();
         final int initialTermId = cmd.termId();
         final InetSocketAddress controlAddress = cmd.controlAddress();
 
@@ -574,20 +574,11 @@ public class DriverConductor extends Agent
     private int generateTermId()
     {
         // term Id can be psuedo-random. Doesn't have to be perfect. But must be in the range [0, 0x7FFFFFFF]
-        final int value = (int)(Math.random() * 0x7FFFFFFF);
-
-        if (value < 0)
-        {
-            throw new IllegalStateException("Value cannot be negative value=" + value);
-        }
-
-        return value;
+        return (int)(Math.random() * 0x7FFFFFFF);
     }
 
-    private int registerPositionCounter(final String type,
-                                        final String destinationDirName,
-                                        final long sessionId,
-                                        final long channelId)
+    private int registerPositionCounter(final String type, final String destinationDirName,
+                                        final int sessionId, final int channelId)
     {
         return countersManager.allocate(String.format("%s: %s %d %d", type, destinationDirName, sessionId, channelId));
     }

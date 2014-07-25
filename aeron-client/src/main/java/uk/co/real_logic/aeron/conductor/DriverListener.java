@@ -11,16 +11,16 @@ import java.io.IOException;
 public interface DriverListener
 {
     void onNewPublication(String destination,
-                          long sessionId,
-                          long channelId,
+                          int sessionId,
+                          int channelId,
                           int termId,
                           int positionIndicatorId,
                           LogBuffersMessageFlyweight logBuffersMessage) throws IOException;
 
 
     void onNewConnectedSubscription(String destination,
-                                    long sessionId,
-                                    long channelId,
+                                    int sessionId,
+                                    int channelId,
                                     int termId,
                                     LogBuffersMessageFlyweight logBuffersMessage) throws IOException;
 

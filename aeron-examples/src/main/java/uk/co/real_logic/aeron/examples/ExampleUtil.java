@@ -113,7 +113,7 @@ public class ExampleUtil
      * @param channelId to show when printing
      * @return subscription data handler function that prints the message contents
      */
-    public static DataHandler printStringMessage(final long channelId)
+    public static DataHandler printStringMessage(final int channelId)
     {
         return (buffer, offset, length, sessionId, flags) ->
         {
@@ -147,8 +147,8 @@ public class ExampleUtil
      * @param cause       of the error
      */
     public static void printError(final String destination,
-                                  final long sessionId,
-                                  final long channelId,
+                                  final int sessionId,
+                                  final int channelId,
                                   final String message,
                                   final HeaderFlyweight cause)
     {

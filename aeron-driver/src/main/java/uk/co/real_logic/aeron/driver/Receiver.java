@@ -98,13 +98,13 @@ public class Receiver extends Agent
         return nioSelector;
     }
 
-    private void onAddSubscription(final MediaSubscriptionEndpoint mediaSubscriptionEndpoint, final long channelId)
+    private void onAddSubscription(final MediaSubscriptionEndpoint mediaSubscriptionEndpoint, final int channelId)
         throws Exception
     {
         mediaSubscriptionEndpoint.dispatcher().addSubscription(channelId);
     }
 
-    private void onRemoveSubscription(final MediaSubscriptionEndpoint mediaSubscriptionEndpoint, final long channelId)
+    private void onRemoveSubscription(final MediaSubscriptionEndpoint mediaSubscriptionEndpoint, final int channelId)
     {
         mediaSubscriptionEndpoint.dispatcher().removeSubscription(channelId);
     }

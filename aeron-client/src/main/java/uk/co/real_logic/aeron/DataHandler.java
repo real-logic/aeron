@@ -34,5 +34,5 @@ public interface DataHandler
      * @param sessionId for the data source
      * @param flags     for the status of the frame
      */
-    void onData(AtomicBuffer buffer, int offset, int length, long sessionId, byte flags);
+    void onData(AtomicBuffer buffer, int offset, int length, int sessionId, byte flags);
 }

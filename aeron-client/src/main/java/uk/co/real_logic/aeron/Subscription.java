@@ -29,7 +29,7 @@ import uk.co.real_logic.aeron.conductor.ManagedBuffer;
 public class Subscription implements AutoCloseable
 {
     private final String destination;
-    private final long channelId;
+    private final int channelId;
     private final AtomicArray<ConnectedSubscription> connectedSubscriptions = new AtomicArray<>();
     private final DataHandler dataHandler;
     private final ClientConductor clientConductor;
@@ -39,7 +39,7 @@ public class Subscription implements AutoCloseable
     public Subscription(final ClientConductor clientConductor,
                         final DataHandler dataHandler,
                         final String destination,
-                        final long channelId)
+                        final int channelId)
     {
         this.clientConductor = clientConductor;
         this.dataHandler = dataHandler;
@@ -52,7 +52,7 @@ public class Subscription implements AutoCloseable
         return destination;
     }
 
-    public long channelId()
+    public int channelId()
     {
         return channelId;
     }
@@ -91,7 +91,7 @@ public class Subscription implements AutoCloseable
         return connectedSubscriptions.doLimitedAction(roundRobinIndex, fragmentCountLimit, ConnectedSubscription::poll);
     }
 
-    public void onTermBuffersMapped(final long sessionId,
+    public void onTermBuffersMapped(final int sessionId,
                                     final int termId,
                                     final LogReader[] logReaders,
                                     final PositionReporter positionReporter,
@@ -101,7 +101,7 @@ public class Subscription implements AutoCloseable
             new ConnectedSubscription(logReaders, sessionId, termId, dataHandler, positionReporter, managedBuffers));
     }
 
-    public boolean isConnected(final long sessionId)
+    public boolean isConnected(final int sessionId)
     {
         return null != connectedSubscriptions.findFirst((e) -> e.sessionId() == sessionId);
     }

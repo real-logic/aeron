@@ -37,8 +37,8 @@ public class Publication
 {
     private final ClientConductor clientConductor;
     private final String destination;
-    private final long channelId;
-    private final long sessionId;
+    private final int channelId;
+    private final int sessionId;
     private final ManagedBuffer[] managedBuffers;
     private final LogAppender[] logAppenders;
     private final PositionIndicator senderLimit;
@@ -52,8 +52,8 @@ public class Publication
 
     public Publication(final ClientConductor clientConductor,
                        final String destination,
-                       final long channelId,
-                       final long sessionId,
+                       final int channelId,
+                       final int sessionId,
                        final int initialTermId,
                        final LogAppender[] logAppenders,
                        final PositionIndicator senderLimit,
@@ -89,7 +89,7 @@ public class Publication
      *
      * @return Channel identity for scoping within the destination media address.
      */
-    public long channelId()
+    public int channelId()
     {
         return channelId;
     }
@@ -99,7 +99,7 @@ public class Publication
      *
      * @return the session id for this publication.
      */
-    public long sessionId()
+    public int sessionId()
     {
         return sessionId;
     }

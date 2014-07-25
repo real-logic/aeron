@@ -407,7 +407,7 @@ public class EventCodec
     {
         return String.format("SM %x len %d %x:%x:%x @%x %d", header.flags(), header.frameLength(),
                 header.sessionId(), header.channelId(), header.termId(), header.highestContiguousTermOffset(),
-                header.receiverWindow());
+                header.receiverWindowSize());
     }
 
     private static String dissect(final NakFlyweight header)

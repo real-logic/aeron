@@ -39,7 +39,7 @@ import java.util.Queue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntConsumer;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -55,8 +55,8 @@ public class SubMulticastTest
     private static final String CONTROL_ADDRESS = "224.20.30.40";
     private static final int DST_PORT = 54322;
     private static final String DESTINATION = "udp://localhost@" + DATA_ADDRESS + ":" + DST_PORT;
-    private static final long CHANNEL_ID = 1L;
-    private static final long SESSION_ID = 2L;
+    private static final int CHANNEL_ID = 1;
+    private static final int SESSION_ID = 2;
     private static final int TERM_ID = 3;
     private static final byte[] PAYLOAD = "Payload goes here!".getBytes();
     private static final byte[] NO_PAYLOAD = {};
@@ -151,7 +151,7 @@ public class SubMulticastTest
         // send some 0 length data frame
         sendDataFrame(0, NO_PAYLOAD);
 
-        final AtomicLong statusMessagesSeen = new AtomicLong();
+        final AtomicInteger statusMessagesSeen = new AtomicInteger();
 
         // should poll SM from consumer
         DatagramTestHelper.receiveUntil(
@@ -170,7 +170,7 @@ public class SubMulticastTest
                 return true;
             });
 
-        assertThat(statusMessagesSeen.get(), greaterThanOrEqualTo(1L));
+        assertThat(statusMessagesSeen.get(), greaterThanOrEqualTo(1));
 
         // send single Data Frame
         sendDataFrame(0, PAYLOAD);
@@ -194,7 +194,7 @@ public class SubMulticastTest
         // send some 0 length data frame
         sendDataFrame(0, NO_PAYLOAD);
 
-        final AtomicLong statusMessagesSeen = new AtomicLong();
+        final AtomicInteger statusMessagesSeen = new AtomicInteger();
 
         DatagramTestHelper.receiveUntil(
             senderChannel,
@@ -207,7 +207,7 @@ public class SubMulticastTest
                 return true;
             });
 
-        assertThat(statusMessagesSeen.get(), greaterThanOrEqualTo(1L));
+        assertThat(statusMessagesSeen.get(), greaterThanOrEqualTo(1));
 
         for (int i = 0; i < 3; i++)
         {
@@ -236,8 +236,8 @@ public class SubMulticastTest
         // send some 0 length data frame
         sendDataFrame(0, NO_PAYLOAD);
 
-        final AtomicLong statusMessagesSeen = new AtomicLong();
-        final AtomicLong naksSeen = new AtomicLong();
+        final AtomicInteger statusMessagesSeen = new AtomicInteger();
+        final AtomicInteger naksSeen = new AtomicInteger();
 
         DatagramTestHelper.receiveUntil(
             senderChannel,
@@ -249,7 +249,7 @@ public class SubMulticastTest
                 return true;
             });
 
-        assertThat(statusMessagesSeen.get(), greaterThanOrEqualTo(1L));
+        assertThat(statusMessagesSeen.get(), greaterThanOrEqualTo(1));
 
         sendDataFrame(0, PAYLOAD);
         sendDataFrame(2 * ALIGNED_FRAME_LENGTH, PAYLOAD);
@@ -275,14 +275,14 @@ public class SubMulticastTest
                 assertThat(nakHeader.channelId(), is(CHANNEL_ID));
                 assertThat(nakHeader.sessionId(), is(SESSION_ID));
                 assertThat(nakHeader.termId(), is(TERM_ID));
-                assertThat(nakHeader.termOffset(), is((long)ALIGNED_FRAME_LENGTH));
-                assertThat(nakHeader.length(), is((long)ALIGNED_FRAME_LENGTH));
+                assertThat(nakHeader.termOffset(), is(ALIGNED_FRAME_LENGTH));
+                assertThat(nakHeader.length(), is(ALIGNED_FRAME_LENGTH));
                 naksSeen.incrementAndGet();
 
                 return true;
             });
 
-        assertThat(naksSeen.get(), greaterThanOrEqualTo(1L));
+        assertThat(naksSeen.get(), greaterThanOrEqualTo(1));
     }
 
     @Test(timeout = 1000)
@@ -293,8 +293,8 @@ public class SubMulticastTest
         // send some 0 length data frame
         sendDataFrame(0, NO_PAYLOAD);
 
-        final AtomicLong statusMessagesSeen = new AtomicLong();
-        final AtomicLong naksSeen = new AtomicLong();
+        final AtomicInteger statusMessagesSeen = new AtomicInteger();
+        final AtomicInteger naksSeen = new AtomicInteger();
 
         // should poll SM from consumer
         DatagramTestHelper.receiveUntil(
@@ -308,7 +308,7 @@ public class SubMulticastTest
                 return true;
             });
 
-        assertThat(statusMessagesSeen.get(), greaterThanOrEqualTo(1L));
+        assertThat(statusMessagesSeen.get(), greaterThanOrEqualTo(1));
 
         sendDataFrame(0, PAYLOAD);
         sendDataFrame(2 * ALIGNED_FRAME_LENGTH, PAYLOAD);
@@ -334,7 +334,7 @@ public class SubMulticastTest
                 return true;
             });
 
-        assertThat(naksSeen.get(), greaterThanOrEqualTo(1L));
+        assertThat(naksSeen.get(), greaterThanOrEqualTo(1));
 
         sendDataFrame(ALIGNED_FRAME_LENGTH, PAYLOAD);
 
@@ -350,7 +350,7 @@ public class SubMulticastTest
         assertThat(receivedFrames.remove(), is(PAYLOAD));
     }
 
-    private void sendDataFrame(final long termOffset, final byte[] payload) throws Exception
+    private void sendDataFrame(final int termOffset, final byte[] payload) throws Exception
     {
         final int frameLength = ALIGNED_FRAME_LENGTH;
         final ByteBuffer dataBuffer = ByteBuffer.allocate(frameLength);

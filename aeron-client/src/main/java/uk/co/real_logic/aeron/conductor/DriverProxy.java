@@ -51,30 +51,27 @@ public class DriverProxy
         qualifiedMessage.wrap(writeBuffer, 0);
     }
 
-    public long addPublication(final String destination, final long channelId, final long sessionId)
+    public long addPublication(final String destination, final int channelId, final int sessionId)
     {
         return sendPublicationMessage(destination, sessionId, channelId, ADD_PUBLICATION);
     }
 
-    public long removePublication(final String destination, final long sessionId, final long channelId)
+    public long removePublication(final String destination, final int sessionId, final int channelId)
     {
         return sendPublicationMessage(destination, sessionId, channelId, REMOVE_PUBLICATION);
     }
 
-    public long addSubscription(final String destination, final long channelId)
+    public long addSubscription(final String destination, final int channelId)
     {
         return sendSubscriptionMessage(ADD_SUBSCRIPTION, destination, channelId);
     }
 
-    public long removeSubscription(final String destination, final long channelId)
+    public long removeSubscription(final String destination, final int channelId)
     {
         return sendSubscriptionMessage(REMOVE_SUBSCRIPTION, destination, channelId);
     }
 
-    private long sendPublicationMessage(final String destination,
-                                        final long sessionId,
-                                        final long channelId,
-                                        final int msgTypeId)
+    private long sendPublicationMessage(final String destination, final int sessionId, final int channelId, final int msgTypeId)
     {
         final long correlationId = mediaDriverCommandBuffer.nextCorrelationId();
 
@@ -91,7 +88,7 @@ public class DriverProxy
         return correlationId;
     }
 
-    private long sendSubscriptionMessage(final int msgTypeId, final String destination, final long channelId)
+    private long sendSubscriptionMessage(final int msgTypeId, final String destination, final int channelId)
     {
         final long correlationId = mediaDriverCommandBuffer.nextCorrelationId();
 
@@ -107,7 +104,7 @@ public class DriverProxy
         return correlationId;
     }
 
-    public void requestTerm(final String destination, final long sessionId, final long channelId, final int termId)
+    public void requestTerm(final String destination, final int sessionId, final int channelId, final int termId)
     {
         qualifiedMessage.sessionId(sessionId);
         qualifiedMessage.channelId(channelId);

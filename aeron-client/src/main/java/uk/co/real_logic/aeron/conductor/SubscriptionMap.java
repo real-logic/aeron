@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.conductor;
 
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.aeron.common.collections.Long2ObjectHashMap;
+import uk.co.real_logic.aeron.common.collections.Int2ObjectHashMap;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,14 +26,13 @@ import static uk.co.real_logic.aeron.common.collections.CollectionUtil.getOrDefa
 
 public class SubscriptionMap
 {
-    private static final Function<String, Long2ObjectHashMap<Subscription>> SUPPLIER =
-        (ignore) -> new Long2ObjectHashMap<>();
+    private static final Function<String, Int2ObjectHashMap<Subscription>> SUPPLIER = (ignore) -> new Int2ObjectHashMap<>();
 
-    private final Map<String, Long2ObjectHashMap<Subscription>> channelMapByDestinationMap = new HashMap<>();
+    private final Map<String, Int2ObjectHashMap<Subscription>> channelMapByDestinationMap = new HashMap<>();
 
-    public Subscription get(final String destination, final long channelId)
+    public Subscription get(final String destination, final int channelId)
     {
-        final Long2ObjectHashMap<Subscription> channelMap = channelMapByDestinationMap.get(destination);
+        final Int2ObjectHashMap<Subscription> channelMap = channelMapByDestinationMap.get(destination);
         if (channelMap == null)
         {
             return null;
@@ -42,14 +41,14 @@ public class SubscriptionMap
         return channelMap.get(channelId);
     }
 
-    public void put(final String destination, final long channelId, final Subscription value)
+    public void put(final String destination, final int channelId, final Subscription value)
     {
         getOrDefault(channelMapByDestinationMap, destination, SUPPLIER).put(channelId, value);
     }
 
-    public Subscription remove(final String destination, final long channelId)
+    public Subscription remove(final String destination, final int channelId)
     {
-        final Long2ObjectHashMap<Subscription> channelMap = channelMapByDestinationMap.get(destination);
+        final Int2ObjectHashMap<Subscription> channelMap = channelMapByDestinationMap.get(destination);
         if (channelMap == null)
         {
             return null;

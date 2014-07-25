@@ -16,9 +16,15 @@
 package uk.co.real_logic.aeron.common.event;
 
 import uk.co.real_logic.aeron.common.BitUtil;
-import uk.co.real_logic.aeron.common.command.*;
+import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
+import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
+import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
+import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.common.protocol.*;
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.common.protocol.NakFlyweight;
+import uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;

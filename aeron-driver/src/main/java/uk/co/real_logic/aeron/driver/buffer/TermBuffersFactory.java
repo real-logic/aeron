@@ -22,8 +22,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 
-import static uk.co.real_logic.aeron.driver.buffer.FileMappingConvention.channelLocation;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
+import static uk.co.real_logic.aeron.driver.buffer.FileMappingConvention.channelLocation;
 
 /**
  * Factory for creating new {@link TermBuffers} in publications or subscriptions directory as appropriate.

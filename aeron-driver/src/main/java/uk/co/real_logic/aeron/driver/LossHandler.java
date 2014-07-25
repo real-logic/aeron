@@ -41,7 +41,7 @@ public class LossHandler
 
     private int activeIndex = 0;
     private int scanCursor = 0;
-    private long activeTermId;
+    private int activeTermId;
 
     private long nakSentTimestamp;
 
@@ -57,7 +57,7 @@ public class LossHandler
                        final TimerWheel wheel,
                        final FeedbackDelayGenerator delayGenerator,
                        final NakMessageSender nakMessageSender,
-                       final long activeTermId)
+                       final int activeTermId)
     {
         this.scanners = scanners;
         this.wheel = wheel;
@@ -106,7 +106,7 @@ public class LossHandler
      * @param termId     in the NAK
      * @param termOffset in the NAK
      */
-    public void onNak(final long termId, final int termOffset)
+    public void onNak(final int termId, final int termOffset)
     {
 //        if (null != timer && timer.isActive() && activeGap.matches(termId, termOffset))
         if (timer.isActive() && activeGap.matches(termId, termOffset))
@@ -130,7 +130,7 @@ public class LossHandler
      *
      * @return active Term Id
      */
-    public long activeTermId()
+    public int activeTermId()
     {
         return activeTermId;
     }
@@ -230,18 +230,18 @@ public class LossHandler
 
     private static class Gap
     {
-        private long termId;
+        private int termId;
         private int termOffset;
         private int length;
 
-        public void reset(final long termId, final int termOffset, final int length)
+        public void reset(final int termId, final int termOffset, final int length)
         {
             this.termId = termId;
             this.termOffset = termOffset;
             this.length = length;
         }
 
-        public boolean matches(final long termId, final int termOffset)
+        public boolean matches(final int termId, final int termOffset)
         {
             return termId == this.termId && termOffset == this.termOffset;
         }

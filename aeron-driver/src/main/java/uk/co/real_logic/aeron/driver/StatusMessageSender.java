@@ -28,5 +28,5 @@ public interface StatusMessageSender
      * @param termOffset for the SM
      * @param window     for the SM
      */
-    void send(final long termId, final int termOffset, final int window);
+    void send(final int termId, final int termOffset, final int window);
 }

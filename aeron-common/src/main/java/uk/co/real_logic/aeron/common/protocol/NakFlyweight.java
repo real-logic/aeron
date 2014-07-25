@@ -79,9 +79,9 @@ public class    NakFlyweight extends HeaderFlyweight
      * return term id field
      * @return term id field
      */
-    public long termId()
+    public int termId()
     {
-        return uint32Get(offset() + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return atomicBuffer().getInt(offset() + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -89,9 +89,9 @@ public class    NakFlyweight extends HeaderFlyweight
      * @param termId field value
      * @return flyweight
      */
-    public NakFlyweight termId(final long termId)
+    public NakFlyweight termId(final int termId)
     {
-        uint32Put(offset() + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
+        atomicBuffer().putInt(offset() + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
         return this;
     }
 

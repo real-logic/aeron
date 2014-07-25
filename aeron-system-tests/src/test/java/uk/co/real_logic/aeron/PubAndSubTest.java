@@ -15,8 +15,12 @@
  */
 package uk.co.real_logic.aeron;
 
-import org.junit.*;
-import org.junit.experimental.theories.*;
+import org.junit.After;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.experimental.theories.DataPoint;
+import org.junit.experimental.theories.Theories;
+import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import uk.co.real_logic.aeron.common.BitUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
@@ -33,9 +37,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 /**
  * Test that has a publisher and subscriber and single media driver for unicast and multicast cases
@@ -126,26 +128,28 @@ public class PubAndSubTest
 
         final int fragmentsRead[] = new int[1];
         final BooleanSupplier condition = () -> fragmentsRead[0] > 0;
-        SystemTestHelper.executeUntil(condition,
-            (i) ->
-            {
-                fragmentsRead[0] += subscription.poll(10);
-                Thread.yield();
-            },
-            Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
+        SystemTestHelper.executeUntil
+            (condition,
+             (i) ->
+             {
+                 fragmentsRead[0] += subscription.poll(10);
+                 Thread.yield();
+             },
+             Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
 
-        verify(dataHandler).onData(anyObject(),
-                                   eq(DataHeaderFlyweight.HEADER_LENGTH),
-                                   eq(BitUtil.SIZE_OF_INT),
-                                   eq(SESSION_ID),
-                                   eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+        verify(dataHandler)
+            .onData(anyObject(),
+                    eq(DataHeaderFlyweight.HEADER_LENGTH),
+                    eq(BitUtil.SIZE_OF_INT),
+                    eq(SESSION_ID),
+                    eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
     }
 
     @Theory
     @Test(timeout = 1000)
     public void shouldContinueAfterBufferRollover(final String destination) throws Exception
     {
-        final int termBufferSize = 64 *1024;
+        final int termBufferSize = 64 * 1024;
         final int numMessagesInTermBuffer = 64;
         final int messageLength = (termBufferSize / numMessagesInTermBuffer) - DataHeaderFlyweight.HEADER_LENGTH;
         final int numMessagesToSend = numMessagesInTermBuffer + 1;
@@ -163,20 +167,22 @@ public class PubAndSubTest
 
             final int fragmentsRead[] = new int[1];
             final BooleanSupplier condition = () -> fragmentsRead[0] > 0;
-            SystemTestHelper.executeUntil(condition,
-                    (j) ->
-                    {
-                        fragmentsRead[0] += subscription.poll(10);
-                        Thread.yield();
-                    },
-                    Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
+            SystemTestHelper.executeUntil(
+                condition,
+                (j) ->
+                {
+                    fragmentsRead[0] += subscription.poll(10);
+                    Thread.yield();
+                },
+                Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
         }
 
-        verify(dataHandler, times(numMessagesToSend)).onData(anyObject(),
-                                                             anyInt(),
-                                                             eq(messageLength),
-                                                             eq(SESSION_ID),
-                                                             eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+        verify(dataHandler, times(numMessagesToSend))
+            .onData(anyObject(),
+                    anyInt(),
+                    eq(messageLength),
+                    eq(SESSION_ID),
+                    eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
     }
 
     @Theory
@@ -184,7 +190,7 @@ public class PubAndSubTest
     @Ignore("doesn't work yet - verify fails due to flow control on receiver - avoid by not sending all at once")
     public void shouldContinueAfterBufferRolloverBatched(final String destination) throws Exception
     {
-        final int termBufferSize = 64 *1024;
+        final int termBufferSize = 64 * 1024;
         final int numMessagesInTermBuffer = 64;
         final int messageLength = (termBufferSize / numMessagesInTermBuffer) - DataHeaderFlyweight.HEADER_LENGTH;
         final int numMessagesToSend = numMessagesInTermBuffer + 1;
@@ -205,19 +211,21 @@ public class PubAndSubTest
 
         final int fragmentsRead[] = new int[1];
         final BooleanSupplier condition = () -> fragmentsRead[0] >= numMessagesToSend;
-        SystemTestHelper.executeUntil(condition,
-                (j) ->
-                {
-                    fragmentsRead[0] += subscription.poll(10);
-                    Thread.yield();
-                },
-                Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(900));
+        SystemTestHelper.executeUntil(
+            condition,
+            (j) ->
+            {
+                fragmentsRead[0] += subscription.poll(10);
+                Thread.yield();
+            },
+            Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(900));
 
-        verify(dataHandler, times(numMessagesToSend)).onData(anyObject(),
-                anyInt(),
-                eq(messageLength),
-                eq(SESSION_ID),
-                eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+        verify(dataHandler, times(numMessagesToSend))
+            .onData(anyObject(),
+                    anyInt(),
+                    eq(messageLength),
+                    eq(SESSION_ID),
+                    eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
     }
 
     @Theory
@@ -239,5 +247,4 @@ public class PubAndSubTest
 
         Thread.sleep(100);
     }
-
 }

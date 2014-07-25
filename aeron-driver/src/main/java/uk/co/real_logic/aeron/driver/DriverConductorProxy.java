@@ -36,7 +36,7 @@ public class DriverConductorProxy
     public boolean createConnectedSubscription(final UdpDestination udpDestination,
                                                final long sessionId,
                                                final long channelId,
-                                               final long termId,
+                                               final int termId,
                                                final InetSocketAddress controlAddress)
     {
         return commandQueue.offer(new CreateConnectedSubscriptionCmd(udpDestination,

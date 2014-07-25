@@ -23,10 +23,10 @@ import uk.co.real_logic.aeron.common.status.PositionIndicator;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
 import uk.co.real_logic.aeron.conductor.ManagedBuffer;
 
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static uk.co.real_logic.aeron.common.TermHelper.*;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.NEEDS_CLEANING;
 
 /**
  * Publication end of a channel for publishing messages to subscribers.
@@ -42,9 +42,9 @@ public class Publication
     private final ManagedBuffer[] managedBuffers;
     private final LogAppender[] logAppenders;
     private final PositionIndicator senderLimit;
-    private final AtomicLong activeTermId;
+    private final AtomicInteger activeTermId;
     private final int positionBitsToShift;
-    private final long initialPosition;
+    private final int initialTermId;
 
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private int refCount = 1;
@@ -54,7 +54,7 @@ public class Publication
                        final String destination,
                        final long channelId,
                        final long sessionId,
-                       final long initialTermId,
+                       final int initialTermId,
                        final LogAppender[] logAppenders,
                        final PositionIndicator senderLimit,
                        final ManagedBuffer[] managedBuffers)
@@ -65,13 +65,13 @@ public class Publication
         this.channelId = channelId;
         this.sessionId = sessionId;
         this.managedBuffers = managedBuffers;
-        this.activeTermId = new AtomicLong(initialTermId);
+        this.activeTermId = new AtomicInteger(initialTermId);
         this.logAppenders = logAppenders;
         this.senderLimit = senderLimit;
         this.activeIndex = termIdToBufferIndex(initialTermId);
 
         this.positionBitsToShift = Integer.numberOfTrailingZeros(logAppenders[0].capacity());
-        this.initialPosition = initialTermId << positionBitsToShift;
+        this.initialTermId = initialTermId;
     }
 
     /**
@@ -191,8 +191,8 @@ public class Publication
         final int nextIndex = rotateNext(activeIndex);
 
         final LogAppender nextAppender = logAppenders[nextIndex];
-        final long activeTermId = this.activeTermId.get();
-        final long newTermId = activeTermId + 1;
+        final int activeTermId = this.activeTermId.get();
+        final int newTermId = activeTermId + 1;
 
         ensureClean(nextAppender, destination, channelId, newTermId);
 
@@ -212,6 +212,6 @@ public class Publication
 
     private long position(final int currentTail)
     {
-        return TermHelper.calculatePosition(activeTermId.get(), currentTail, positionBitsToShift, initialPosition);
+        return TermHelper.calculatePosition(activeTermId.get(), currentTail, positionBitsToShift, initialTermId);
     }
 }

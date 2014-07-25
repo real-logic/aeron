@@ -15,7 +15,9 @@
  */
 package uk.co.real_logic.aeron.examples;
 
-import uk.co.real_logic.aeron.*;
+import uk.co.real_logic.aeron.Aeron;
+import uk.co.real_logic.aeron.DataHandler;
+import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.RateReporter;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.driver.MediaDriver;

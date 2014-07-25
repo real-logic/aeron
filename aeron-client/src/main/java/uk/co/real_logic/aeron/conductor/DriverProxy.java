@@ -15,7 +15,9 @@
  */
 package uk.co.real_logic.aeron.conductor;
 
-import uk.co.real_logic.aeron.common.command.*;
+import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
+import uk.co.real_logic.aeron.common.command.QualifiedMessageFlyweight;
+import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
 
@@ -105,7 +107,7 @@ public class DriverProxy
         return correlationId;
     }
 
-    public void requestTerm(final String destination, final long sessionId, final long channelId, final long termId)
+    public void requestTerm(final String destination, final long sessionId, final long channelId, final int termId)
     {
         qualifiedMessage.sessionId(sessionId);
         qualifiedMessage.channelId(channelId);

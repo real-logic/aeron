@@ -15,19 +15,29 @@
  */
 package uk.co.real_logic.aeron;
 
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 import uk.co.real_logic.aeron.common.BitUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.common.event.EventLogger;
-import uk.co.real_logic.aeron.common.protocol.*;
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.common.protocol.NakFlyweight;
+import uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
-import java.net.*;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
+import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -127,7 +137,7 @@ public class PubMulticastTest
             Thread.yield();
         }
 
-        final AtomicLong termId = new AtomicLong();
+        final AtomicInteger termId = new AtomicInteger();
         final AtomicLong receivedZeroLengthData = new AtomicLong(0);
 
         // should only see 0 length data until SM is sent
@@ -194,7 +204,7 @@ public class PubMulticastTest
             Thread.yield();
         }
 
-        final AtomicLong termId = new AtomicLong();
+        final AtomicInteger termId = new AtomicInteger();
         final AtomicLong receivedZeroLengthData = new AtomicLong();
         final AtomicLong receivedDataFrames = new AtomicLong();
 
@@ -271,7 +281,7 @@ public class PubMulticastTest
         EventLogger.logInvocation();
     }
 
-    private void sendSM(final long termId) throws Exception
+    private void sendSM(final int termId) throws Exception
     {
         final ByteBuffer smBuffer = ByteBuffer.allocate(StatusMessageFlyweight.HEADER_LENGTH);
         statusMessage.wrap(new AtomicBuffer(smBuffer), 0);
@@ -293,7 +303,7 @@ public class PubMulticastTest
         assertThat(bytesSent, is(StatusMessageFlyweight.HEADER_LENGTH));
     }
 
-    private void sendNak(final long termId, final long termOffset, final long length) throws Exception
+    private void sendNak(final int termId, final long termOffset, final long length) throws Exception
     {
         final ByteBuffer nakBuffer = ByteBuffer.allocate(NakFlyweight.HEADER_LENGTH);
         nakHeader.wrap(new AtomicBuffer(nakBuffer), 0);

@@ -100,9 +100,9 @@ public class QualifiedMessageFlyweight extends Flyweight
      *
      * @return termId field
      */
-    public long termId()
+    public int termId()
     {
-        return uint32Get(offset() + TERM_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return atomicBuffer().getInt(offset() + TERM_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
@@ -111,9 +111,9 @@ public class QualifiedMessageFlyweight extends Flyweight
      * @param termId field value
      * @return flyweight
      */
-    public QualifiedMessageFlyweight termId(final long termId)
+    public QualifiedMessageFlyweight termId(final int termId)
     {
-        uint32Put(offset() + TERM_ID_FIELD_OFFSET, termId, ByteOrder.LITTLE_ENDIAN);
+        atomicBuffer().putInt(offset() + TERM_ID_FIELD_OFFSET, termId, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 

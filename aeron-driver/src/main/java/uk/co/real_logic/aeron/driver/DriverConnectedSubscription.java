@@ -24,10 +24,10 @@ import uk.co.real_logic.aeron.common.status.PositionIndicator;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static uk.co.real_logic.aeron.common.TermHelper.*;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.IN_CLEANING;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.NEEDS_CLEANING;
 
 /**
  * State maintained for active sessionIds within a channel for receiver processing
@@ -43,9 +43,9 @@ public class DriverConnectedSubscription implements AutoCloseable
     private TermBuffers termBuffers;
     private PositionIndicator subscriberLimit;
 
-    private final AtomicLong activeTermId = new AtomicLong();
+    private final AtomicInteger activeTermId = new AtomicInteger();
     private int activeIndex;
-    private long hwmTermId;
+    private int hwmTermId;
     private int hwmIndex;
 
     private final LogRebuilder[] rebuilders;
@@ -53,7 +53,7 @@ public class DriverConnectedSubscription implements AutoCloseable
     private final StatusMessageSender statusMessageSender;
 
     private final int positionBitsToShift;
-    private final long initialPosition;
+    private final int initialTermId;
     private final int bufferLimit;
 
     private long lastSmTimestamp;
@@ -68,7 +68,7 @@ public class DriverConnectedSubscription implements AutoCloseable
     public DriverConnectedSubscription(final UdpDestination udpDestination,
                                        final long sessionId,
                                        final long channelId,
-                                       final long initialTermId,
+                                       final int initialTermId,
                                        final int initialWindow,
                                        final TermBuffers termBuffers,
                                        final LossHandler lossHandler,
@@ -101,7 +101,7 @@ public class DriverConnectedSubscription implements AutoCloseable
         this.currentWindowGain = currentWindowSize << 2; // window / 4
         this.bufferLimit = termCapacity / 2;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
-        this.initialPosition = initialTermId << positionBitsToShift;
+        this.initialTermId = initialTermId;
         this.termSizeSmGain = termCapacity / 4;
     }
 
@@ -155,11 +155,11 @@ public class DriverConnectedSubscription implements AutoCloseable
     public void insertIntoTerm(final DataHeaderFlyweight header, final AtomicBuffer buffer, final long length)
     {
         final LogRebuilder currentRebuilder = rebuilders[activeIndex];
-        final long termId = header.termId();
-        final long activeTermId = this.activeTermId.get();
+        final int termId = header.termId();
+        final int activeTermId = this.activeTermId.get();
 
         final int packetTail = (int)header.termOffset();
-        final long packetPosition = calculatePosition((int)termId, packetTail);
+        final long packetPosition = calculatePosition(termId, packetTail);
         final long position = position(currentRebuilder.tail());
 
         if (isOutOfBufferRange(packetPosition, length, position))
@@ -214,7 +214,7 @@ public class DriverConnectedSubscription implements AutoCloseable
          */
 
         final int currentSmTail = lossHandler.highestContiguousOffset();
-        final long currentSmTermId = lossHandler.activeTermId();
+        final int currentSmTermId = lossHandler.activeTermId();
 
         // not able to send yet because not added to dispatcher, anything received will be dropped (in progress)
         if (STATE_CREATED == state.get())
@@ -272,7 +272,7 @@ public class DriverConnectedSubscription implements AutoCloseable
         state.lazySet(STATE_READY_TO_SEND_SMS);
     }
 
-    private int sendStatusMessage(final long termId, final int termOffset, final int windowSize)
+    private int sendStatusMessage(final int termId, final int termOffset, final int windowSize)
     {
         statusMessageSender.send(termId, termOffset, windowSize);
         lastSmTermId = termId;
@@ -283,12 +283,12 @@ public class DriverConnectedSubscription implements AutoCloseable
 
     private long position(final int currentTail)
     {
-        return calculatePosition((int)activeTermId.get(), currentTail);
+        return calculatePosition(activeTermId.get(), currentTail);
     }
 
     private long calculatePosition(final int termId, final int tail)
     {
-        return TermHelper.calculatePosition(termId, tail, positionBitsToShift, initialPosition);
+        return TermHelper.calculatePosition(termId, tail, positionBitsToShift, initialTermId);
     }
 
     private boolean isBeyondFlowControlLimit(final long proposedPosition)
@@ -301,7 +301,7 @@ public class DriverConnectedSubscription implements AutoCloseable
         return proposedPosition < currentPosition || proposedPosition > (currentPosition + (bufferLimit - length));
     }
 
-    private int prepareForRotation(final long activeTermId)
+    private int prepareForRotation(final int activeTermId)
     {
         final int nextIndex = TermHelper.rotateNext(activeIndex);
         final LogRebuilder rebuilder = rebuilders[nextIndex];

@@ -19,7 +19,10 @@ import org.hamcrest.Matcher;
 import org.junit.Test;
 import uk.co.real_logic.aeron.driver.exceptions.InvalidDestinationException;
 
-import java.net.*;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 

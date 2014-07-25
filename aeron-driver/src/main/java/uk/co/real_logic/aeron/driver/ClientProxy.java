@@ -71,7 +71,7 @@ public class ClientProxy
     public void onNewTermBuffers(final int msgTypeId,
                                  final long sessionId,
                                  final long channelId,
-                                 final long termId,
+                                 final int termId,
                                  final String destination,
                                  final TermBuffers termBuffers,
                                  final long correlationId,

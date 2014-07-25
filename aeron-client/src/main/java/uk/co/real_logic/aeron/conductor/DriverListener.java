@@ -13,7 +13,7 @@ public interface DriverListener
     void onNewPublication(String destination,
                           long sessionId,
                           long channelId,
-                          long termId,
+                          int termId,
                           int positionIndicatorId,
                           LogBuffersMessageFlyweight logBuffersMessage) throws IOException;
 
@@ -21,7 +21,7 @@ public interface DriverListener
     void onNewConnectedSubscription(String destination,
                                     long sessionId,
                                     long channelId,
-                                    long termId,
+                                    int termId,
                                     LogBuffersMessageFlyweight logBuffersMessage) throws IOException;
 
 

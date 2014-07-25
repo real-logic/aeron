@@ -15,13 +15,21 @@
  */
 package uk.co.real_logic.aeron;
 
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.common.concurrent.broadcast.*;
+import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastBufferDescriptor;
+import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastReceiver;
+import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastTransmitter;
+import uk.co.real_logic.aeron.common.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
-import uk.co.real_logic.aeron.common.concurrent.ringbuffer.*;
+import uk.co.real_logic.aeron.common.concurrent.ringbuffer.ManyToOneRingBuffer;
+import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBufferDescriptor;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.ErrorFlyweight;
 
@@ -45,8 +53,8 @@ public class AeronTest extends MockBufferUsage
     public static final long CHANNEL_ID_1 = 2L;
     public static final long SESSION_ID_1 = 13L;
     public static final long SESSION_ID_2 = 15L;
-    public static final long TERM_ID_1 = 1L;
-    public static final long TERM_ID_2 = 11L;
+    public static final int TERM_ID_1 = 1;
+    public static final int TERM_ID_2 = 11;
     public static final int PACKET_VALUE = 37;
     public static final int SEND_BUFFER_CAPACITY = 1024;
     public static final int SCRATCH_BUFFER_CAPACITY = 1024;
@@ -236,7 +244,7 @@ public class AeronTest extends MockBufferUsage
         }
     }
 
-    private void sendNewBufferNotification(final int msgTypeId, final long sessionId, final long termId)
+    private void sendNewBufferNotification(final int msgTypeId, final long sessionId, final int termId)
     {
         newBufferMessage.wrap(atomicScratchBuffer, 0);
         newBufferMessage.channelId(CHANNEL_ID_1)

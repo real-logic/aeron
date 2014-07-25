@@ -35,20 +35,20 @@ public class DefaultMulticastSenderControlStrategy implements SenderControlStrat
     }
 
     /** {@inheritDoc} */
-    public long onStatusMessage(final long termId, final long highestContiguousSequenceNumber,
+    public long onStatusMessage(final int termId, final long highestContiguousSequenceNumber,
                                 final long receiverWindowSize, final InetSocketAddress address)
     {
-        final long positionLimit = (termId << shiftsForTermId) + receiverWindowSize;
+        final long positionLimit = ((long)termId << shiftsForTermId) + receiverWindowSize;
         this.positionLimit = Math.max(this.positionLimit, positionLimit);
 
         return this.positionLimit;
     }
 
     /** {@inheritDoc} */
-    public long initialPositionLimit(final long initialTermId, final int termBufferCapacity)
+    public long initialPositionLimit(final int initialTermId, final int termBufferCapacity)
     {
         shiftsForTermId = Long.numberOfTrailingZeros(termBufferCapacity);
-        positionLimit = (initialTermId << shiftsForTermId);
+        positionLimit = (long)initialTermId << shiftsForTermId;
 
         return positionLimit;
     }

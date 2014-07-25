@@ -57,7 +57,7 @@ public class SubMulticastTest
     private static final String DESTINATION = "udp://localhost@" + DATA_ADDRESS + ":" + DST_PORT;
     private static final long CHANNEL_ID = 1L;
     private static final long SESSION_ID = 2L;
-    private static final long TERM_ID = 3L;
+    private static final int TERM_ID = 3;
     private static final byte[] PAYLOAD = "Payload goes here!".getBytes();
     private static final byte[] NO_PAYLOAD = {};
     private static final int FRAME_COUNT_LIMIT = Integer.MAX_VALUE;

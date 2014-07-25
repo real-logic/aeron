@@ -23,7 +23,7 @@ import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.status.PositionReporter;
 import uk.co.real_logic.aeron.conductor.ManagedBuffer;
 
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static uk.co.real_logic.aeron.common.TermHelper.*;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.WORD_ALIGNMENT;
@@ -41,15 +41,15 @@ public class ConnectedSubscription
     private final DataHandler dataHandler;
     private PositionReporter positionReporter;
     private final ManagedBuffer[] managedBuffers;
-    private final AtomicLong activeTermId;
+    private final AtomicInteger activeTermId;
     private final int positionBitsToShift;
-    private final long initialPosition;
+    private final int initialTermId;
 
     private int activeIndex;
 
     public ConnectedSubscription(final LogReader[] readers,
                                  final long sessionId,
-                                 final long initialTermId,
+                                 final int initialTermId,
                                  final DataHandler dataHandler,
                                  final PositionReporter positionReporter,
                                  final ManagedBuffer[] managedBuffers)
@@ -59,11 +59,11 @@ public class ConnectedSubscription
         this.dataHandler = dataHandler;
         this.positionReporter = positionReporter;
         this.managedBuffers = managedBuffers;
-        this.activeTermId = new AtomicLong(initialTermId);
+        this.activeTermId = new AtomicInteger(initialTermId);
         this.activeIndex = termIdToBufferIndex(initialTermId);
 
         this.positionBitsToShift = Integer.numberOfTrailingZeros(logReaders[0].capacity());
-        this.initialPosition = initialTermId << positionBitsToShift;
+        this.initialTermId = initialTermId;
     }
 
     public long sessionId()
@@ -75,6 +75,7 @@ public class ConnectedSubscription
     {
         final int activeIndex = this.activeIndex;
         LogReader logReader = logReaders[activeIndex];
+        final int activeTermId = this.activeTermId.get();
 
         if (logReader.isComplete())
         {
@@ -85,7 +86,7 @@ public class ConnectedSubscription
                 return 0;
             }
 
-            activeTermId.lazySet(activeTermId.get() + 1);
+            this.activeTermId.lazySet(activeTermId + 1);
             this.activeIndex = nextIndex;
             logReader.seek(0);
         }
@@ -93,8 +94,7 @@ public class ConnectedSubscription
         final int messagesRead = logReader.read(this::onFrame, frameCountLimit);
         if (messagesRead > 0)
         {
-            positionReporter.position(
-                calculatePosition(activeTermId.get(), logReader.tail(), positionBitsToShift, initialPosition));
+            positionReporter.position(calculatePosition(activeTermId, logReader.tail(), positionBitsToShift, initialTermId));
         }
 
         return messagesRead;

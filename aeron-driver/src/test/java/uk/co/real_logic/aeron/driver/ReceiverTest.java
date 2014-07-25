@@ -15,14 +15,19 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.common.event.EventLogger;
-import uk.co.real_logic.aeron.common.protocol.*;
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight;
 import uk.co.real_logic.aeron.common.status.PositionIndicator;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
@@ -47,7 +52,7 @@ public class ReceiverTest
     private static final String URI = "udp://localhost:45678";
     private static final UdpDestination UDP_DESTINATION = UdpDestination.parse(URI);
     private static final long CHANNEL_ID = 10;
-    private static final long TERM_ID = 3;
+    private static final int TERM_ID = 3;
     private static final long SESSION_ID = 1;
     private static final byte[] FAKE_PAYLOAD = "Hello there, message!".getBytes();
     private static final byte[] NO_PAYLOAD = new byte[0];

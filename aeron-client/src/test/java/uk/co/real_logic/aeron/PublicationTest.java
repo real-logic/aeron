@@ -30,7 +30,7 @@ public class PublicationTest
     public static final String DESTINATION = "udp://localhost:40124";
     public static final long CHANNEL_ID_1 = 2L;
     public static final long SESSION_ID_1 = 13L;
-    public static final long TERM_ID_1 = 1L;
+    public static final int TERM_ID_1 = 1;
     public static final int SEND_BUFFER_CAPACITY = 1024;
 
     private final ByteBuffer sendBuffer = ByteBuffer.allocate(SEND_BUFFER_CAPACITY);

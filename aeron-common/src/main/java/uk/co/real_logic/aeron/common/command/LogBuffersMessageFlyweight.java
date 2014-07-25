@@ -217,9 +217,9 @@ public class LogBuffersMessageFlyweight extends Flyweight
      *
      * @return termId field
      */
-    public long termId()
+    public int termId()
     {
-        return uint32Get(offset() + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return atomicBuffer().getInt(offset() + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -228,9 +228,9 @@ public class LogBuffersMessageFlyweight extends Flyweight
      * @param termId field value
      * @return flyweight
      */
-    public LogBuffersMessageFlyweight termId(final long termId)
+    public LogBuffersMessageFlyweight termId(final int termId)
     {
-        uint32Put(offset() + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
+        atomicBuffer().putInt(offset() + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
         return this;
     }
 

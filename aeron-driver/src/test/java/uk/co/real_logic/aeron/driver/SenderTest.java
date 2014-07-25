@@ -15,7 +15,9 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.stubbing.Answer;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.concurrent.AtomicArray;
@@ -48,7 +50,7 @@ public class SenderTest
     public static final int MAX_FRAME_LENGTH = 1024;
     public static final long SESSION_ID = 1L;
     public static final long CHANNEL_ID = 2L;
-    public static final long INITIAL_TERM_ID = 3L;
+    public static final int INITIAL_TERM_ID = 3;
     public static final byte[] PAYLOAD = "Payload is here!".getBytes();
 
     public final byte[] HEADER = DataHeaderFlyweight.createDefaultHeader(SESSION_ID, CHANNEL_ID, INITIAL_TERM_ID);

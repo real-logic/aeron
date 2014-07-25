@@ -296,14 +296,13 @@ public class DriverConductor extends Agent
                                                    "destinations hash same, but destinations different");
             }
 
-            DriverPublication publication = endpoint.findPublication(sessionId, channelId);
-            if (null != publication)
+            if (null != endpoint.findPublication(sessionId, channelId))
             {
                 throw new ControlProtocolException(ErrorCode.PUBLICATION_CHANNEL_ALREADY_EXISTS,
                                                    "publication and session already exist on destination");
             }
 
-            final long initialTermId = generateTermId();
+            final int initialTermId = generateTermId();
             final TermBuffers termBuffers = termBuffersFactory.newPublication(srcDestination, sessionId, channelId);
             final SenderControlStrategy flowControlStrategy =
                 srcDestination.isMulticast() ? multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
@@ -312,17 +311,18 @@ public class DriverConductor extends Agent
             final BufferPositionReporter positionReporter =
                 new BufferPositionReporter(countersBuffer, positionCounterId, countersManager);
 
-            publication = new DriverPublication(endpoint,
-                                                timerWheel,
-                                                flowControlStrategy,
-                                                termBuffers,
-                                                positionReporter,
-                                                sessionId,
-                                                channelId,
-                                                initialTermId,
-                                                HEADER_LENGTH,
-                                                mtuLength,
-                                                new EventLogger());
+            final DriverPublication publication =
+                new DriverPublication(endpoint,
+                                      timerWheel,
+                                      flowControlStrategy,
+                                      termBuffers,
+                                      positionReporter,
+                                      sessionId,
+                                      channelId,
+                                      initialTermId,
+                                      HEADER_LENGTH,
+                                      mtuLength,
+                                      new EventLogger());
 
             endpoint.addPublication(publication);
 
@@ -479,7 +479,7 @@ public class DriverConductor extends Agent
         final UdpDestination udpDestination = cmd.udpDestination();
         final long sessionId = cmd.sessionId();
         final long channelId = cmd.channelId();
-        final long initialTermId = cmd.termId();
+        final int initialTermId = cmd.termId();
         final InetSocketAddress controlAddress = cmd.controlAddress();
 
         try
@@ -571,10 +571,17 @@ public class DriverConductor extends Agent
         rescheduleTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, heartbeatTimer);
     }
 
-    private long generateTermId()
+    private int generateTermId()
     {
         // term Id can be psuedo-random. Doesn't have to be perfect. But must be in the range [0, 0x7FFFFFFF]
-        return (int)(Math.random() * (double)0x7FFFFFFF);
+        final int value = (int)(Math.random() * 0x7FFFFFFF);
+
+        if (value < 0)
+        {
+            throw new IllegalStateException("Value cannot be negative value=" + value);
+        }
+
+        return value;
     }
 
     private int registerPositionCounter(final String type,

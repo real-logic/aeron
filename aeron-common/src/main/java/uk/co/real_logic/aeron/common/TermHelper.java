@@ -17,9 +17,7 @@ package uk.co.real_logic.aeron.common;
 
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBuffer;
 
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.CLEAN;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.IN_CLEANING;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.NEEDS_CLEANING;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 
 /**
  * Common helper for dealing with term buffers.
@@ -38,9 +36,9 @@ public class TermHelper
         return BitUtil.previous(current, BUFFER_COUNT);
     }
 
-    public static int termIdToBufferIndex(final long termId)
+    public static int termIdToBufferIndex(final int termId)
     {
-        return (int)(termId % BUFFER_COUNT);
+        return termId % BUFFER_COUNT;
     }
 
     /**
@@ -48,17 +46,18 @@ public class TermHelper
      *
      * @param activeTermId active term id.
      * @param currentTail in the term.
-     * @param positionBitsToShift number of times to left shift the activeTermId
-     * @param initialPosition that first activeTermId started at
+     * @param positionBitsToShift number of times to left shift the term count
+     * @param initialTermId the initial term id that this stream started on
      * @return the absolute position in bytes
      */
-    public static long calculatePosition(final long activeTermId,
+    public static long calculatePosition(final int activeTermId,
                                          final int currentTail,
                                          final int positionBitsToShift,
-                                         final long initialPosition)
+                                         final int initialTermId)
     {
-        // TODO: we need to deal with termId wrapping and going negative.
-        return ((activeTermId << positionBitsToShift) - initialPosition) + currentTail;
+        final long termCount = activeTermId - initialTermId; // copes with negative activeTermId on rollover
+
+        return (termCount << positionBitsToShift) + currentTail;
     }
 
     /**
@@ -73,7 +72,7 @@ public class TermHelper
     public static void ensureClean(final LogBuffer logBuffer,
                                    final String destination,
                                    final long channelId,
-                                   final long termId)
+                                   final int termId)
     {
         if (CLEAN != logBuffer.status())
         {

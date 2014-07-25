@@ -15,7 +15,10 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.driver.cmd.*;
+import uk.co.real_logic.aeron.driver.cmd.AddSubscriptionCmd;
+import uk.co.real_logic.aeron.driver.cmd.NewConnectedSubscriptionCmd;
+import uk.co.real_logic.aeron.driver.cmd.RegisterMediaSubscriptionEndpointCmd;
+import uk.co.real_logic.aeron.driver.cmd.RemoveSubscriptionCmd;
 
 import java.util.Queue;
 

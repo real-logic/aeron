@@ -127,9 +127,9 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      *
      * @return term id field
      */
-    public long termId()
+    public int termId()
     {
-        return uint32Get(offset() + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return atomicBuffer().getInt(offset() + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -138,9 +138,9 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      * @param termId field value
      * @return flyweight
      */
-    public DataHeaderFlyweight termId(final long termId)
+    public DataHeaderFlyweight termId(final int termId)
     {
-        uint32Put(offset() + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
+        atomicBuffer().putInt(offset() + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
         return this;
     }
 
@@ -185,7 +185,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      * @param termId for the header
      * @return byte array containing the header
      */
-    public static byte[] createDefaultHeader(final long sessionId, final long channelId, final long termId)
+    public static byte[] createDefaultHeader(final long sessionId, final long channelId, final int termId)
     {
         final byte[] hdr = new byte[HEADER_LENGTH];
         final AtomicBuffer buffer = new AtomicBuffer(hdr);
@@ -194,19 +194,8 @@ public class DataHeaderFlyweight extends HeaderFlyweight
         buffer.putBytes(0, DEFAULT_HEADER_NULL_IDS);
         buffer.putInt(SESSION_ID_FIELD_OFFSET, (int)sessionId, ByteOrder.LITTLE_ENDIAN);
         buffer.putInt(CHANNEL_ID_FIELD_OFFSET, (int)channelId, ByteOrder.LITTLE_ENDIAN);
-        buffer.putInt(TERM_ID_FIELD_OFFSET, (int) termId, ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(TERM_ID_FIELD_OFFSET, termId, ByteOrder.LITTLE_ENDIAN);
 
         return hdr;
-    }
-
-    /**
-     * Update the Term ID field of a header
-     *
-     * @param buffer to use for setting header field (must have already been wrapped)
-     * @param termId for the header
-     */
-    public static void updateDefaultHeaderTermId(final AtomicBuffer buffer, final long termId)
-    {
-        buffer.putInt(TERM_ID_FIELD_OFFSET, (int)termId, ByteOrder.LITTLE_ENDIAN);
     }
 }

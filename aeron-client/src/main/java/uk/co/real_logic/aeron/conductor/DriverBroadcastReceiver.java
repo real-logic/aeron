@@ -1,7 +1,9 @@
 package uk.co.real_logic.aeron.conductor;
 
 import uk.co.real_logic.aeron.common.ErrorCode;
-import uk.co.real_logic.aeron.common.command.*;
+import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
+import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
+import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.aeron.common.protocol.ErrorFlyweight;
@@ -45,7 +47,7 @@ public class DriverBroadcastReceiver
                             final String destination = logBuffersMessage.destination();
                             final long sessionId = logBuffersMessage.sessionId();
                             final long channelId = logBuffersMessage.channelId();
-                            final long termId = logBuffersMessage.termId();
+                            final int termId = logBuffersMessage.termId();
                             final int positionCounterId = logBuffersMessage.positionCounterId();
 
                             if (msgTypeId == ON_NEW_PUBLICATION && logBuffersMessage.correlationId() == activeCorrelationId)

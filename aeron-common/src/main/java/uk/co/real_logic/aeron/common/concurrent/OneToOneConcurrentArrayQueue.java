@@ -17,7 +17,10 @@ package uk.co.real_logic.aeron.common.concurrent;
 
 import uk.co.real_logic.aeron.common.BitUtil;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.Queue;
 import java.util.function.Consumer;
 
 import static uk.co.real_logic.aeron.common.UnsafeAccess.UNSAFE;

@@ -92,7 +92,7 @@ public class Subscription implements AutoCloseable
     }
 
     public void onTermBuffersMapped(final long sessionId,
-                                    final long termId,
+                                    final int termId,
                                     final LogReader[] logReaders,
                                     final PositionReporter positionReporter,
                                     final ManagedBuffer[] managedBuffers)

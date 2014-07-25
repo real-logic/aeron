@@ -28,20 +28,20 @@ public class UnicastSenderControlStrategy implements SenderControlStrategy
     }
 
     /** {@inheritDoc} */
-    public long onStatusMessage(final long termId, final long highestContiguousSequenceNumber,
+    public long onStatusMessage(final int termId, final long highestContiguousSequenceNumber,
                                 final long receiverWindow, final InetSocketAddress address)
     {
-        final long newPositionLimit = (termId << shiftsForTermId) + receiverWindow;
+        final long newPositionLimit = ((long)termId << shiftsForTermId) + receiverWindow;
         positionLimit = Math.max(positionLimit, newPositionLimit);
 
         return positionLimit;
     }
 
     /** {@inheritDoc} */
-    public long initialPositionLimit(final long initialTermId, final int termBufferCapacity)
+    public long initialPositionLimit(final int initialTermId, final int termBufferCapacity)
     {
         shiftsForTermId = Long.numberOfTrailingZeros(termBufferCapacity);
-        positionLimit = (initialTermId << shiftsForTermId);
+        positionLimit = (long)initialTermId << shiftsForTermId;
 
         return positionLimit;
     }

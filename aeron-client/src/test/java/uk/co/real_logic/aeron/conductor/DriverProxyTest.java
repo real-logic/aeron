@@ -16,7 +16,9 @@
 package uk.co.real_logic.aeron.conductor;
 
 import org.junit.Test;
-import uk.co.real_logic.aeron.common.command.*;
+import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
+import uk.co.real_logic.aeron.common.command.QualifiedMessageFlyweight;
+import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.MessageHandler;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.ManyToOneRingBuffer;
@@ -90,7 +92,7 @@ public class DriverProxyTest
     @Test
     public void threadSendsRequestTermBufferMessage()
     {
-        conductor.requestTerm(DESTINATION, SESSION_ID, 2L, 3L);
+        conductor.requestTerm(DESTINATION, SESSION_ID, 2, 3);
 
         assertReadsOneMessage(
             (msgTypeId, buffer, index, length) ->
@@ -102,7 +104,7 @@ public class DriverProxyTest
                 assertThat(qualifiedMessage.sessionId(), is(1L));
                 assertThat(qualifiedMessage.channelId(), is(2L));
                 assertThat(qualifiedMessage.destination(), is(DESTINATION));
-                assertThat(qualifiedMessage.termId(), is(3L));
+                assertThat(qualifiedMessage.termId(), is(3));
             }
         );
     }

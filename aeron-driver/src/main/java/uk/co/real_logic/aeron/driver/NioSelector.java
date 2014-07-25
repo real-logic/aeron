@@ -16,7 +16,9 @@
 package uk.co.real_logic.aeron.driver;
 
 import java.io.IOException;
-import java.nio.channels.*;
+import java.nio.channels.SelectableChannel;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.function.IntSupplier;

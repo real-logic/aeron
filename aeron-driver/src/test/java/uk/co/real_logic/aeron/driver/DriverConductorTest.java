@@ -15,12 +15,20 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import uk.co.real_logic.aeron.common.ErrorCode;
 import uk.co.real_logic.aeron.common.TimerWheel;
-import uk.co.real_logic.aeron.common.command.*;
-import uk.co.real_logic.aeron.common.concurrent.*;
-import uk.co.real_logic.aeron.common.concurrent.ringbuffer.*;
+import uk.co.real_logic.aeron.common.command.ControlProtocolEvents;
+import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
+import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
+import uk.co.real_logic.aeron.common.concurrent.AtomicArray;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.aeron.common.concurrent.ringbuffer.ManyToOneRingBuffer;
+import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBufferDescriptor;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.status.CountersManager;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
@@ -142,7 +150,7 @@ public class DriverConductorTest
         assertThat(publications.get(0).channelId(), is(2L));
 
         verify(mockClientProxy).onNewTermBuffers(eq(ControlProtocolEvents.ON_NEW_PUBLICATION),
-                                                 eq(1L), eq(2L), anyLong(), eq(DESTINATION_URI + 4000),
+                                                 eq(1L), eq(2L), anyInt(), eq(DESTINATION_URI + 4000),
                                                  any(), anyLong(), anyInt());
     }
 

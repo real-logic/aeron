@@ -18,7 +18,9 @@ package uk.co.real_logic.aeron.driver;
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.*;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBuffer;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogScanner;
 import uk.co.real_logic.aeron.common.event.EventCode;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
@@ -29,28 +31,24 @@ import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static uk.co.real_logic.aeron.common.BitUtil.align;
 import static uk.co.real_logic.aeron.common.TermHelper.termIdToBufferIndex;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.IN_CLEANING;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.NEEDS_CLEANING;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.PADDING_FRAME_TYPE;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 
 /**
  * Publication to be sent to registered subscribers.
  */
 public class DriverPublication implements AutoCloseable
 {
-    /**
-     * Initial heartbeat timeout (cancelled by SM)
-     */
+    /** Initial heartbeat timeout (cancelled by SM) */
     public static final int INITIAL_HEARTBEAT_TIMEOUT_MS = 100;
     public static final long INITIAL_HEARTBEAT_TIMEOUT_NS = MILLISECONDS.toNanos(INITIAL_HEARTBEAT_TIMEOUT_MS);
-    /**
-     * Heartbeat after data sent
-     */
+
+    /** Heartbeat after data sent */
     public static final int HEARTBEAT_TIMEOUT_MS = 500;
     public static final long HEARTBEAT_TIMEOUT_NS = MILLISECONDS.toNanos(HEARTBEAT_TIMEOUT_MS);
 
@@ -59,7 +57,7 @@ public class DriverPublication implements AutoCloseable
     private final long sessionId;
     private final long channelId;
 
-    private final AtomicLong activeTermId;
+    private final AtomicInteger activeTermId;
 
     private final AtomicLong timeOfLastSendOrHeartbeat;
 
@@ -84,7 +82,7 @@ public class DriverPublication implements AutoCloseable
     private final DataHeaderFlyweight sendDataHeader = new DataHeaderFlyweight();
 
     private final int positionBitsToShift;
-    private final long initialPosition;
+    private final int initialTermId;
     private final EventLogger logger;
 
     private int nextTermOffset = 0;
@@ -101,7 +99,7 @@ public class DriverPublication implements AutoCloseable
                              final BufferPositionReporter limitReporter,
                              final long sessionId,
                              final long channelId,
-                             final long initialTermId,
+                             final int initialTermId,
                              final int headerLength,
                              final int mtuLength,
                              final EventLogger logger)
@@ -132,11 +130,11 @@ public class DriverPublication implements AutoCloseable
         positionLimit = new AtomicLong(controlStrategy.initialPositionLimit(initialTermId, termCapacity));
         shiftsForTermId = Long.numberOfTrailingZeros(termCapacity);
 
-        activeTermId = new AtomicLong(initialTermId);
+        activeTermId = new AtomicInteger(initialTermId);
         timeOfLastSendOrHeartbeat = new AtomicLong(this.timerWheel.now());
 
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
-        this.initialPosition = initialTermId << positionBitsToShift;
+        this.initialTermId = initialTermId;
         limitReporter.position(termCapacity);
     }
 
@@ -187,20 +185,19 @@ public class DriverPublication implements AutoCloseable
     /**
      * This is performed on the {@link DriverConductor} thread
      */
-    public void onStatusMessage(final long termId,
+    public void onStatusMessage(final int termId,
                                 final long highestContiguousSequenceNumber,
                                 final long receiverWindow,
                                 final InetSocketAddress address)
     {
         positionLimit.lazySet(controlStrategy.onStatusMessage(termId, highestContiguousSequenceNumber, receiverWindow, address));
-
         statusMessagesSeen++;
     }
 
     /**
      * This is performed on the {@link DriverConductor} thread
      */
-    public void onNakFrame(final long termId, final long termOffset, final long length)
+    public void onNakFrame(final int termId, final long termOffset, final long length)
     {
         final int index = determineIndexByTermId(termId);
 
@@ -278,7 +275,7 @@ public class DriverPublication implements AutoCloseable
                                      mtuLength);
     }
 
-    private int determineIndexByTermId(final long termId)
+    private int determineIndexByTermId(final int termId)
     {
         if (termId == activeTermId.get())
         {
@@ -406,6 +403,6 @@ public class DriverPublication implements AutoCloseable
 
     private long calculatePosition(final int currentTail)
     {
-        return TermHelper.calculatePosition(activeTermId.get(), currentTail, positionBitsToShift, initialPosition);
+        return TermHelper.calculatePosition(activeTermId.get(), currentTail, positionBitsToShift, initialTermId);
     }
 }

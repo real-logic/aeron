@@ -15,7 +15,10 @@
  */
 package uk.co.real_logic.aeron.conductor;
 
-import uk.co.real_logic.aeron.*;
+import uk.co.real_logic.aeron.DataHandler;
+import uk.co.real_logic.aeron.NewSourceHandler;
+import uk.co.real_logic.aeron.Publication;
+import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.Agent;
 import uk.co.real_logic.aeron.common.BackoffIdleStrategy;
 import uk.co.real_logic.aeron.common.ErrorCode;
@@ -174,7 +177,7 @@ public class ClientConductor extends Agent implements DriverListener
     public void onNewPublication(final String destination,
                                  final long sessionId,
                                  final long channelId,
-                                 final long termId,
+                                 final int termId,
                                  final int limitPositionIndicatorOffset,
                                  final LogBuffersMessageFlyweight logBuffersMessage) throws IOException
     {
@@ -204,7 +207,7 @@ public class ClientConductor extends Agent implements DriverListener
     public void onNewConnectedSubscription(final String destination,
                                            final long sessionId,
                                            final long channelId,
-                                           final long initialTermId,
+                                           final int initialTermId,
                                            final LogBuffersMessageFlyweight message)
         throws IOException
     {

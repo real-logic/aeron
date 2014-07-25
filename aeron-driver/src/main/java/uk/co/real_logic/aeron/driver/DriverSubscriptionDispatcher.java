@@ -99,7 +99,7 @@ public class DriverSubscriptionDispatcher
         if (null != subscription)
         {
             final long sessionId = header.sessionId();
-            final long termId = header.termId();
+            final int termId = header.termId();
             final DriverConnectedSubscription connectedSubscription = subscription.getConnectedSubscription(sessionId);
 
             if (null != connectedSubscription)

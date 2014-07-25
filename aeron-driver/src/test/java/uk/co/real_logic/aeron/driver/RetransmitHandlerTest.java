@@ -16,7 +16,9 @@
 package uk.co.real_logic.aeron.driver;
 
 import org.junit.Test;
-import org.junit.experimental.theories.*;
+import org.junit.experimental.theories.DataPoint;
+import org.junit.experimental.theories.Theories;
+import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
@@ -47,7 +49,7 @@ public class RetransmitHandlerTest
     private static final int ALIGNED_FRAME_LENGTH = align(MESSAGE_LENGTH, FrameDescriptor.FRAME_ALIGNMENT);
     private static final long SESSION_ID = 0x5E55101DL;
     private static final long CHANNEL_ID = 0x5400EL;
-    private static final long TERM_ID = 0x7F003355L;
+    private static final int TERM_ID = 0x7F003355;
 
     public static final FeedbackDelayGenerator delayGenerator = () -> TimeUnit.MILLISECONDS.toNanos(20);
     public static final FeedbackDelayGenerator zeroDelayGenerator = () -> TimeUnit.MILLISECONDS.toNanos(0);

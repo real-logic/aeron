@@ -53,7 +53,7 @@ public class ClientConductorTest extends MockBufferUsage
     public static final String DESTINATION = "udp://localhost:40124";
     public static final long CHANNEL_ID_1 = 2L;
     public static final long CHANNEL_ID_2 = 4L;
-    public static final long TERM_ID_1 = 1L;
+    public static final int TERM_ID_1 = 1;
     public static final int SEND_BUFFER_CAPACITY = 1024;
 
     public static final int BROADCAST_BUFFER_SZ = (16 * 1024) + BroadcastBufferDescriptor.TRAILER_LENGTH;
@@ -279,7 +279,7 @@ public class ClientConductorTest extends MockBufferUsage
 
     private void sendNewBufferNotification(final int msgTypeId,
                                            final long sessionId,
-                                           final long termId)
+                                           final int termId)
     {
         newBufferMessage.channelId(CHANNEL_ID_1)
                         .sessionId(sessionId)

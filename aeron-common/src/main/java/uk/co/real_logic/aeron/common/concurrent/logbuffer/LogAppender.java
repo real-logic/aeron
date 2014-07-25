@@ -272,8 +272,7 @@ public class LogAppender extends LogBuffer
     {
         if (length > maxMessageLength)
         {
-            final String s = String.format("encoded message exceeds maxMessageLength of %d, length=%d",
-                                           maxMessageLength, length);
+            final String s = String.format("encoded message exceeds maxMessageLength of %d, length=%d", maxMessageLength, length);
 
             throw new IllegalArgumentException(s);
         }

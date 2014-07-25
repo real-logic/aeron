@@ -69,7 +69,7 @@ public class DriverConnectedSubscription implements AutoCloseable
                                        final int sessionId,
                                        final int channelId,
                                        final int initialTermId,
-                                       final int initialWindow,
+                                       final int initialWindowSize,
                                        final TermBuffers termBuffers,
                                        final LossHandler lossHandler,
                                        final StatusMessageSender statusMessageSender,
@@ -97,7 +97,7 @@ public class DriverConnectedSubscription implements AutoCloseable
         this.lastSmTimestamp = 0;
 
         final int termCapacity = rebuilders[0].capacity();
-        this.currentWindowSize = initialWindow;
+        this.currentWindowSize = initialWindowSize;
         this.currentWindowGain = currentWindowSize << 2; // window / 4
         this.bufferLimit = termCapacity / 2;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);

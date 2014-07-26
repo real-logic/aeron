@@ -112,22 +112,22 @@ public class MediaDriver implements AutoCloseable
     /**
      * Default buffer size for command buffers between threads
      */
-    public static final int COMMAND_BUFFER_SZ_DEFAULT = 65536;
+    public static final int COMMAND_BUFFER_SZ_DEFAULT = 1024 * 1024;
 
     /**
      * Default buffer size for conductor buffers between the media driver and the client
      */
-    public static final int CONDUCTOR_BUFFER_SZ_DEFAULT = 65536 + RingBufferDescriptor.TRAILER_LENGTH;
+    public static final int CONDUCTOR_BUFFER_SZ_DEFAULT = 1024 * 1024 + RingBufferDescriptor.TRAILER_LENGTH;
 
     /**
      * Default buffer size for broadcast buffers from the media driver to the clients
      */
-    public static final int TO_CLIENTS_BUFFER_SZ_DEFAULT = 65536 + BroadcastBufferDescriptor.TRAILER_LENGTH;
+    public static final int TO_CLIENTS_BUFFER_SZ_DEFAULT = 1024 * 1024 + BroadcastBufferDescriptor.TRAILER_LENGTH;
 
     /**
      * Size of the memory mapped buffers for the counters file
      */
-    public static final int COUNTERS_BUFFER_SZ_DEFAULT = 65536;
+    public static final int COUNTERS_BUFFER_SZ_DEFAULT = 1024 * 1024;
 
     /**
      * Default group size estimate for NAK delay randomization

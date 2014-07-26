@@ -17,13 +17,11 @@ public interface DriverListener
                           int positionIndicatorId,
                           LogBuffersMessageFlyweight logBuffersMessage) throws IOException;
 
-
     void onNewConnection(String channel,
                          int sessionId,
                          int streamId,
                          int termId,
                          LogBuffersMessageFlyweight logBuffersMessage) throws IOException;
-
 
     void onError(ErrorCode errorCode, String message);
 

@@ -30,8 +30,8 @@ import static uk.co.real_logic.aeron.common.BitUtil.*;
  */
 public class AtomicBuffer
 {
-    public static final String DISABLE_BOUNDS_CHECK_PROP_NAME = "aeron.disable.bounds.check";
-    public static final boolean DISABLE_BOUNDS_CHECK = Boolean.getBoolean(DISABLE_BOUNDS_CHECK_PROP_NAME);
+    public static final String DISABLE_BOUNDS_CHECKS_PROP_NAME = "aeron.disable.bounds.checks";
+    public static final boolean DISABLE_BOUNDS_CHECKS = Boolean.getBoolean(DISABLE_BOUNDS_CHECKS_PROP_NAME);
 
     private static final ByteOrder NATIVE_BYTE_ORDER = ByteOrder.nativeOrder();
     private static final Unsafe UNSAFE = UnsafeAccess.UNSAFE;
@@ -1043,7 +1043,7 @@ public class AtomicBuffer
 
     private void boundsCheck(final int index, final int length)
     {
-        if (DISABLE_BOUNDS_CHECK)
+        if (DISABLE_BOUNDS_CHECKS)
         {
             return;
         }

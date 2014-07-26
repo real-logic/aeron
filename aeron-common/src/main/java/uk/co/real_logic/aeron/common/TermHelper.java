@@ -38,7 +38,7 @@ public class TermHelper
 
     public static int termIdToBufferIndex(final int termId)
     {
-        return termId % BUFFER_COUNT;
+        return Math.abs(termId % BUFFER_COUNT);
     }
 
     /**

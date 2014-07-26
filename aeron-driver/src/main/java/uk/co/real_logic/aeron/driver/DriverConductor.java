@@ -301,7 +301,7 @@ public class DriverConductor extends Agent
                                                    "publication and session already exist on channel");
             }
 
-            final int initialTermId = generateTermId();
+            final int initialTermId = BitUtil.generateRandomizedId();
             final String canonicalRepresentation = udpChannel.canonicalRepresentation();
             final TermBuffers termBuffers = termBuffersFactory.newPublication(canonicalRepresentation, sessionId, streamId);
             final SenderControlStrategy flowControlStrategy =
@@ -556,12 +556,6 @@ public class DriverConductor extends Agent
     {
         publications.forEach(DriverPublication::heartbeatCheck);
         rescheduleTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, heartbeatTimer);
-    }
-
-    private int generateTermId()
-    {
-        // term Id can be psuedo-random. Doesn't have to be perfect. But must be in the range [0, 0x7FFFFFFF]
-        return (int)(Math.random() * 0x7FFFFFFF);
     }
 
     private int allocatePositionCounter(final String type, final String channelDirName, final int sessionId, final int streamId)

@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.common.Agent;
+import uk.co.real_logic.aeron.common.BitUtil;
 import uk.co.real_logic.aeron.common.CommonContext;
 import uk.co.real_logic.aeron.common.IoUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
@@ -158,7 +159,7 @@ public final class Aeron implements AutoCloseable, Runnable
 
         if (0 == sessionId)
         {
-            sessionIdToRequest = generateSessionId();
+            sessionIdToRequest = BitUtil.generateRandomizedId();
         }
 
         return conductor.addPublication(channel, sessionIdToRequest, streamId);
@@ -180,11 +181,6 @@ public final class Aeron implements AutoCloseable, Runnable
     public ClientConductor conductor()
     {
         return conductor;
-    }
-
-    private int generateSessionId()
-    {
-        return (int)(Math.random() * 0xFFFFFFF7);
     }
 
     public static class Context extends CommonContext

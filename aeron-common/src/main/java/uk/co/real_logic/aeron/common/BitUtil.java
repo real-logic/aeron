@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.common;
 
 import java.security.MessageDigest;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Miscellaneous useful functions for dealing with low level bits and bytes.
@@ -197,5 +198,16 @@ public class BitUtil
         {
             throw new IllegalArgumentException("Unknown pointer size");
         }
+    }
+
+    /**
+     * Generate a randomized integer over [{@link Integer#MIN_VALUE}, {@link Integer#MAX_VALUE}] suitable for
+     * use as an Aeron Id.
+     *
+     * @return randomized integer suitable as an Id.
+     */
+    public static int generateRandomizedId()
+    {
+        return ThreadLocalRandom.current().nextInt();
     }
 }

@@ -302,7 +302,8 @@ public class DriverConductor extends Agent
             }
 
             final int initialTermId = generateTermId();
-            final TermBuffers termBuffers = termBuffersFactory.newPublication(udpChannel, sessionId, streamId);
+            final String canonicalRepresentation = udpChannel.canonicalRepresentation();
+            final TermBuffers termBuffers = termBuffersFactory.newPublication(canonicalRepresentation, sessionId, streamId);
             final SenderControlStrategy flowControlStrategy =
                 udpChannel.isMulticast() ? multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
 
@@ -484,7 +485,8 @@ public class DriverConductor extends Agent
 
         try
         {
-            final TermBuffers termBuffers = termBuffersFactory.newConnection(udpChannel, sessionId, streamId);
+            final String canonicalRepresentation = udpChannel.canonicalRepresentation();
+            final TermBuffers termBuffers = termBuffersFactory.newConnection(canonicalRepresentation, sessionId, streamId);
 
             final int positionCounterId =
                 allocatePositionCounter("subscription", udpChannel.originalUriAsString(), sessionId, streamId);
@@ -562,8 +564,7 @@ public class DriverConductor extends Agent
         return (int)(Math.random() * 0x7FFFFFFF);
     }
 
-    private int allocatePositionCounter(final String type, final String channelDirName,
-                                        final int sessionId, final int streamId)
+    private int allocatePositionCounter(final String type, final String channelDirName, final int sessionId, final int streamId)
     {
         return countersManager.allocate(String.format("%s: %s %d %d", type, channelDirName, sessionId, streamId));
     }

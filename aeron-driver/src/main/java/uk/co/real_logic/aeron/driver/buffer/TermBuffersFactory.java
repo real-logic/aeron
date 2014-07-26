@@ -16,7 +16,6 @@
 package uk.co.real_logic.aeron.driver.buffer;
 
 import uk.co.real_logic.aeron.common.IoUtil;
-import uk.co.real_logic.aeron.driver.UdpChannel;
 
 import java.io.File;
 import java.io.IOException;
@@ -72,27 +71,27 @@ public class TermBuffersFactory implements AutoCloseable
     /**
      * Create new {@link TermBuffers} in the publications directory for the supplied triplet.
      *
-     * @param udpChannel address on the media to send to.
+     * @param channel address on the media to send to.
      * @param sessionId under which transmissions are made.
      * @param streamId within the channel address to separate message flows.
      * @return the newly allocated {@link TermBuffers}
      */
-    public TermBuffers newPublication(final UdpChannel udpChannel, final int sessionId, final int streamId)
+    public TermBuffers newPublication(final String channel, final int sessionId, final int streamId)
     {
-        return newInstance(udpChannel, sessionId, streamId, publicationsDir);
+        return newInstance(channel, sessionId, streamId, publicationsDir);
     }
 
     /**
      * Create new {@link TermBuffers} in the subscriptions directory for the supplied triplet.
      *
-     * @param udpChannel address on the media to listened to.
+     * @param channel address on the media to listened to.
      * @param sessionId under which transmissions are made.
      * @param streamId within the channel address to separate message flows.
      * @return the newly allocated {@link TermBuffers}
      */
-    public TermBuffers newConnection(final UdpChannel udpChannel, final int sessionId, final int streamId)
+    public TermBuffers newConnection(final String channel, final int sessionId, final int streamId)
     {
-        return newInstance(udpChannel, sessionId, streamId, subscriptionsDir);
+        return newInstance(channel, sessionId, streamId, subscriptionsDir);
     }
 
     private FileChannel createTemplateFile(final String dataDir, final String name, final long size)
@@ -109,9 +108,9 @@ public class TermBuffersFactory implements AutoCloseable
         }
     }
 
-    private TermBuffers newInstance(final UdpChannel udpChannel, final int sessionId, final int streamId, final File rootDir)
+    private TermBuffers newInstance(final String channel, final int sessionId, final int streamId, final File rootDir)
     {
-        final File dir = streamLocation(rootDir, sessionId, streamId, true, udpChannel.canonicalRepresentation());
+        final File dir = streamLocation(rootDir, sessionId, streamId, true, channel);
 
         return new MappedTermBuffers(dir, logTemplate, termBufferSize, stateTemplate, STATE_BUFFER_LENGTH);
     }

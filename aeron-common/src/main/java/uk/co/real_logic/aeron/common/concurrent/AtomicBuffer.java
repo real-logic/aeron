@@ -159,6 +159,7 @@ public class AtomicBuffer
     public void setMemory(final int index, final int length, final byte value)
     {
         boundsCheck(index, length);
+
         UNSAFE.setMemory(byteArray, addressOffset + index, length, value);
     }
 
@@ -242,6 +243,8 @@ public class AtomicBuffer
      */
     public long getLong(final int index, final ByteOrder byteOrder)
     {
+        boundsCheck(index, SIZE_OF_LONG);
+
         long bits = UNSAFE.getLong(byteArray, addressOffset + index);
         if (NATIVE_BYTE_ORDER != byteOrder)
         {

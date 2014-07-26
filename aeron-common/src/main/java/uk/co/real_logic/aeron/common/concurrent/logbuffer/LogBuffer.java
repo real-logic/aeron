@@ -117,7 +117,7 @@ public class LogBuffer
      */
     public int tailVolatile()
     {
-        return stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET);
+        return Math.min(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET), capacity);
     }
 
     /**
@@ -137,7 +137,7 @@ public class LogBuffer
      */
     public int tail()
     {
-        return stateBuffer.getInt(TAIL_COUNTER_OFFSET);
+        return Math.min(stateBuffer.getInt(TAIL_COUNTER_OFFSET), capacity);
     }
 
     /**

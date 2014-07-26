@@ -58,9 +58,7 @@ public class SelectorAndTransportTest
 
     private final DataFrameHandler mockDataFrameHandler = mock(DataFrameHandler.class);
     private final NakFrameHandler mockNakFrameHandler = mock(NakFrameHandler.class);
-    private final StatusMessageFrameHandler mockStatusMessageFrameHandler =
-        mock(StatusMessageFrameHandler.class);
-
+    private final StatusMessageFrameHandler mockStatusMessageFrameHandler = mock(StatusMessageFrameHandler.class);
 
     private NioSelector nioSelector;
     private UdpTransport src;

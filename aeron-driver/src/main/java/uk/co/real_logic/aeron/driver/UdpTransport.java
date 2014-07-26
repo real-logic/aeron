@@ -44,48 +44,6 @@ import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.HDR_TYPE_SM
  */
 public final class UdpTransport implements AutoCloseable
 {
-    @FunctionalInterface
-    public interface DataFrameHandler
-    {
-        /**
-         * Handle a Data Frame.
-         *
-         * @param header of the first Data Frame in the message (may be re-wrapped if needed)
-         * @param buffer holding the data (always starts at 0 offset)
-         * @param length of the Frame (may be longer than the header frame length)
-         * @param srcAddress of the Frame
-         */
-        void onFrame(DataHeaderFlyweight header, AtomicBuffer buffer, int length, InetSocketAddress srcAddress);
-    }
-
-    @FunctionalInterface
-    public interface StatusMessageFrameHandler
-    {
-        /**
-         * Handle a Status Message Frame
-         *
-         * @param header of the first Status Message Frame in the message (may be re-wrapped if needed)
-         * @param buffer holding the NAK (always starts at 0 offset)
-         * @param length of the Frame (may be longer than the header frame length)
-         * @param srcAddress of the Frame
-         */
-        void onFrame(StatusMessageFlyweight header, AtomicBuffer buffer, int length, InetSocketAddress srcAddress);
-    }
-
-    @FunctionalInterface
-    public interface NakFrameHandler
-    {
-        /**
-         * Handle a NAK Frame
-         *
-         * @param header the first NAK Frame in the message (may be re-wrapped if needed)
-         * @param buffer holding the Status Message (always starts at 0 offset)
-         * @param length of the Frame (may be longer than the header frame length)
-         * @param srcAddress of the Frame
-         */
-        void onFrame(NakFlyweight header, AtomicBuffer buffer, int length, InetSocketAddress srcAddress);
-    }
-
     private final DatagramChannel datagramChannel = DatagramChannel.open();
     private final UdpChannel udpChannel;
 

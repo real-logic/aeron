@@ -56,10 +56,10 @@ public class SelectorAndTransportTest
 
     private final EventLogger mockTransportLogger = new EventLogger();
 
-    private final UdpTransport.DataFrameHandler mockDataFrameHandler = mock(UdpTransport.DataFrameHandler.class);
-    private final UdpTransport.NakFrameHandler mockNakFrameHandler = mock(UdpTransport.NakFrameHandler.class);
-    private final UdpTransport.StatusMessageFrameHandler mockStatusMessageFrameHandler =
-        mock(UdpTransport.StatusMessageFrameHandler.class);
+    private final DataFrameHandler mockDataFrameHandler = mock(DataFrameHandler.class);
+    private final NakFrameHandler mockNakFrameHandler = mock(NakFrameHandler.class);
+    private final StatusMessageFrameHandler mockStatusMessageFrameHandler =
+        mock(StatusMessageFrameHandler.class);
 
 
     private NioSelector nioSelector;
@@ -111,7 +111,7 @@ public class SelectorAndTransportTest
     public void shouldSendEmptyDataFrameUnicastFromSourceToReceiver() throws Exception
     {
         final AtomicInteger dataHeadersReceived = new AtomicInteger(0);
-        final UdpTransport.DataFrameHandler dataFrameHandler =
+        final DataFrameHandler dataFrameHandler =
             (header, buffer, length, srcAddress) ->
             {
                 assertThat(header.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
@@ -157,7 +157,7 @@ public class SelectorAndTransportTest
     {
         final AtomicInteger dataHeadersReceived = new AtomicInteger(0);
 
-        final UdpTransport.DataFrameHandler dataFrameHandler =
+        final DataFrameHandler dataFrameHandler =
             (header, buffer, length, srcAddress) ->
             {
                 assertThat(header.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
@@ -212,7 +212,7 @@ public class SelectorAndTransportTest
     public void shouldHandleSmFrameFromReceiverToSender() throws Exception
     {
         final AtomicInteger controlHeadersReceived = new AtomicInteger(0);
-        final UdpTransport.StatusMessageFrameHandler statusMessageFrameHandler =
+        final StatusMessageFrameHandler statusMessageFrameHandler =
             (header, buffer, length, srcAddress) ->
             {
                 assertThat(header.version(), is((short)HeaderFlyweight.CURRENT_VERSION));

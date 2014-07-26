@@ -15,22 +15,22 @@
  */
 package uk.co.real_logic.aeron.driver.cmd;
 
-import uk.co.real_logic.aeron.driver.ReceiverChannelEndpoint;
+import uk.co.real_logic.aeron.driver.ChannelReceiveEndpoint;
 
 public class AddSubscriptionCmd
 {
-    private final ReceiverChannelEndpoint receiverChannelEndpoint;
+    private final ChannelReceiveEndpoint channelReceiveEndpoint;
     private final int streamId;
 
-    public AddSubscriptionCmd(final ReceiverChannelEndpoint receiverChannelEndpoint, final int streamId)
+    public AddSubscriptionCmd(final ChannelReceiveEndpoint channelReceiveEndpoint, final int streamId)
     {
-        this.receiverChannelEndpoint = receiverChannelEndpoint;
+        this.channelReceiveEndpoint = channelReceiveEndpoint;
         this.streamId = streamId;
     }
 
-    public ReceiverChannelEndpoint mediaSubscriptionEndpoint()
+    public ChannelReceiveEndpoint mediaSubscriptionEndpoint()
     {
-        return receiverChannelEndpoint;
+        return channelReceiveEndpoint;
     }
 
     public int streamId()

@@ -267,7 +267,7 @@ public class DriverConnection implements AutoCloseable
     /**
      * Called from the {@link Receiver} thread once added to dispatcher
      */
-    public void readyToSendSms()
+    public void enableStatusMessageSending()
     {
         state.lazySet(STATE_READY_TO_SEND_SMS);
     }

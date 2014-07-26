@@ -29,9 +29,9 @@ import java.nio.ByteBuffer;
 /**
  * Aggregator of multiple {@link DriverSubscription}s onto a single transport session for processing of data frames.
  */
-public class ReceiverChannelEndpoint implements AutoCloseable
+public class ChannelReceiveEndpoint implements AutoCloseable
 {
-    private final UdpTransport transport;
+    private final UdpTransport udpTransport;
     private final ConnectionDispatcher dispatcher;
 
     private final Int2ObjectHashMap<Integer> refCountByStreamIdMap = new Int2ObjectHashMap<>();
@@ -41,28 +41,34 @@ public class ReceiverChannelEndpoint implements AutoCloseable
     private final StatusMessageFlyweight smHeader = new StatusMessageFlyweight();
     private final NakFlyweight nakHeader = new NakFlyweight();
 
-    public ReceiverChannelEndpoint(final UdpChannel udpChannel,
-                                   final DriverConductorProxy conductorProxy,
-                                   final EventLogger logger)
+    public ChannelReceiveEndpoint(final UdpChannel udpChannel,
+                                  final DriverConductorProxy conductorProxy,
+                                  final EventLogger logger)
         throws Exception
     {
-        this.transport = new UdpTransport(udpChannel, this::onDataFrame, logger);
-        this.dispatcher = new ConnectionDispatcher(transport, udpChannel, conductorProxy);
 
         smHeader.wrap(smBuffer, 0);
         nakHeader.wrap(nakBuffer, 0);
+
+        this.udpTransport = new UdpTransport(udpChannel, this::onDataFrame, logger);
+        this.dispatcher = new ConnectionDispatcher(conductorProxy, this);
+    }
+
+    public UdpTransport udpTransport()
+    {
+        return udpTransport;
     }
 
     public void close()
     {
-        transport.close();
+        udpTransport.close();
     }
 
     public void registerForRead(final NioSelector nioSelector)
     {
         try
         {
-            transport.registerForRead(nioSelector);
+            udpTransport.registerForRead(nioSelector);
         }
         catch (final Exception ex)
         {
@@ -170,7 +176,7 @@ public class ReceiverChannelEndpoint implements AutoCloseable
 
         try
         {
-            if (transport.sendTo(smBuffer, controlAddress) < smHeader.frameLength())
+            if (udpTransport.sendTo(smBuffer, controlAddress) < smHeader.frameLength())
             {
                 throw new IllegalStateException("could not send all of SM");
             }
@@ -203,7 +209,7 @@ public class ReceiverChannelEndpoint implements AutoCloseable
 
         try
         {
-            if (transport.sendTo(nakBuffer, controlAddress) < nakHeader.frameLength())
+            if (udpTransport.sendTo(nakBuffer, controlAddress) < nakHeader.frameLength())
             {
                 throw new IllegalStateException("could not send all of NAK");
             }

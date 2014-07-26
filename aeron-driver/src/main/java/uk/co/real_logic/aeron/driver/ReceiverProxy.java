@@ -34,12 +34,12 @@ public class ReceiverProxy
         this.commandQueue = commandQueue;
     }
 
-    public boolean addSubscription(final ReceiverChannelEndpoint mediaEndpoint, final int streamId)
+    public boolean addSubscription(final ChannelReceiveEndpoint mediaEndpoint, final int streamId)
     {
         return commandQueue.offer(new AddSubscriptionCmd(mediaEndpoint, streamId));
     }
 
-    public boolean removeSubscription(final ReceiverChannelEndpoint mediaEndpoint, final int streamId)
+    public boolean removeSubscription(final ChannelReceiveEndpoint mediaEndpoint, final int streamId)
     {
         return commandQueue.offer(new RemoveSubscriptionCmd(mediaEndpoint, streamId));
     }
@@ -49,7 +49,7 @@ public class ReceiverProxy
         return commandQueue.offer(e);
     }
 
-    public boolean registerMediaEndpoint(final ReceiverChannelEndpoint mediaEndpoint)
+    public boolean registerMediaEndpoint(final ChannelReceiveEndpoint mediaEndpoint)
     {
         return commandQueue.offer(new RegisterReceiverChannelEndpointCmd(mediaEndpoint));
     }

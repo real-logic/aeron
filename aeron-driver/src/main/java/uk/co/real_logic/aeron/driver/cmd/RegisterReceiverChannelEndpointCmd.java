@@ -15,19 +15,19 @@
  */
 package uk.co.real_logic.aeron.driver.cmd;
 
-import uk.co.real_logic.aeron.driver.ReceiverChannelEndpoint;
+import uk.co.real_logic.aeron.driver.ChannelReceiveEndpoint;
 
 public class RegisterReceiverChannelEndpointCmd
 {
-    private final ReceiverChannelEndpoint receiverChannelEndpoint;
+    private final ChannelReceiveEndpoint channelReceiveEndpoint;
 
-    public RegisterReceiverChannelEndpointCmd(final ReceiverChannelEndpoint receiverChannelEndpoint)
+    public RegisterReceiverChannelEndpointCmd(final ChannelReceiveEndpoint channelReceiveEndpoint)
     {
-        this.receiverChannelEndpoint = receiverChannelEndpoint;
+        this.channelReceiveEndpoint = channelReceiveEndpoint;
     }
 
-    public ReceiverChannelEndpoint receiverChannelEndpoint()
+    public ChannelReceiveEndpoint receiverChannelEndpoint()
     {
-        return receiverChannelEndpoint;
+        return channelReceiveEndpoint;
     }
 }

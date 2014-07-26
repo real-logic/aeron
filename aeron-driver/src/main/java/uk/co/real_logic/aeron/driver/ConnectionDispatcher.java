@@ -32,20 +32,16 @@ public class ConnectionDispatcher
 {
     private static final String INIT_IN_PROGRESS = "Connection initialisation in progress";
 
-    private final UdpTransport transport;
-    private final UdpChannel udpChannel;
     private final Int2ObjectHashMap<String> initialisationInProgressMap = new Int2ObjectHashMap<>();
     private final Int2ObjectHashMap<DriverSubscription> subscriptionByStreamIdMap = new Int2ObjectHashMap<>();
     private final DriverConductorProxy conductorProxy;
+    private final ChannelReceiveEndpoint channelEndpoint;
 
-    public ConnectionDispatcher(final UdpTransport transport,
-                                final UdpChannel udpChannel,
-                                final DriverConductorProxy conductorProxy)
+    public ConnectionDispatcher(final DriverConductorProxy conductorProxy, final ChannelReceiveEndpoint channelEndpoint)
         throws Exception
     {
-        this.transport = transport;
-        this.udpChannel = udpChannel;
         this.conductorProxy = conductorProxy;
+        this.channelEndpoint = channelEndpoint;
     }
 
     public void addSubscription(final int streamId)
@@ -54,7 +50,7 @@ public class ConnectionDispatcher
 
         if (null == subscription)
         {
-            subscription = new DriverSubscription(udpChannel, streamId, conductorProxy);
+            subscription = new DriverSubscription(channelEndpoint.udpTransport().udpChannel(), streamId, conductorProxy);
             subscriptionByStreamIdMap.put(streamId, subscription);
         }
     }
@@ -84,49 +80,43 @@ public class ConnectionDispatcher
         subscription.putConnection(connection);
         initialisationInProgressMap.remove(connection.sessionId());
 
-        // update state of the subscription so that it will send SMs now
-        connection.readyToSendSms();
+        connection.enableStatusMessageSending();
     }
 
-    public void onDataFrame(final DataHeaderFlyweight header,
+    public void onDataFrame(final DataHeaderFlyweight headerFlyweight,
                             final AtomicBuffer buffer,
                             final int length,
                             final InetSocketAddress srcAddress)
     {
-        final int streamId = header.streamId();
+        final int streamId = headerFlyweight.streamId();
         final DriverSubscription subscription = subscriptionByStreamIdMap.get(streamId);
 
         if (null != subscription)
         {
-            final int sessionId = header.sessionId();
-            final int termId = header.termId();
+            final int sessionId = headerFlyweight.sessionId();
+            final int termId = headerFlyweight.termId();
             final DriverConnection connection = subscription.getConnection(sessionId);
 
             if (null != connection)
             {
                 if (length > DataHeaderFlyweight.HEADER_LENGTH)
                 {
-                    connection.insertIntoTerm(header, buffer, length);
+                    connection.insertIntoTerm(headerFlyweight, buffer, length);
                 }
-                else if ((header.flags() & DataHeaderFlyweight.PADDING_FLAG) == DataHeaderFlyweight.PADDING_FLAG)
+                else if ((headerFlyweight.flags() & DataHeaderFlyweight.PADDING_FLAG) == DataHeaderFlyweight.PADDING_FLAG)
                 {
-                    header.headerType(LogBufferDescriptor.PADDING_FRAME_TYPE);
-                    connection.insertIntoTerm(header, buffer, length);
+                    headerFlyweight.headerType(LogBufferDescriptor.PADDING_FRAME_TYPE);
+                    connection.insertIntoTerm(headerFlyweight, buffer, length);
                 }
             }
             else if (null == initialisationInProgressMap.get(sessionId))
             {
-                final InetSocketAddress controlAddress = transport.isMulticast() ? udpChannel.remoteControl() : srcAddress;
+                final UdpTransport transport = channelEndpoint.udpTransport();
+                final InetSocketAddress controlAddress =
+                    transport.isMulticast() ? transport.udpChannel().remoteControl() : srcAddress;
 
-                // TODO: need to clean up on timeout - how can this fail?
                 initialisationInProgressMap.put(sessionId, INIT_IN_PROGRESS);
-
-                conductorProxy.createConnection(
-                    subscription.udpChannel(),
-                    sessionId,
-                    streamId,
-                    termId,
-                    controlAddress);
+                conductorProxy.createConnection(sessionId, streamId, termId, controlAddress, channelEndpoint);
             }
         }
     }

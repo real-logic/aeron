@@ -86,7 +86,8 @@ public final class UdpTransport implements AutoCloseable
         void onFrame(NakFlyweight header, AtomicBuffer buffer, int length, InetSocketAddress srcAddress);
     }
 
-    private final DatagramChannel channel = DatagramChannel.open();
+    private final DatagramChannel datagramChannel = DatagramChannel.open();
+    private final UdpChannel udpChannel;
 
     private final ByteBuffer readByteBuffer = ByteBuffer.allocateDirect(MediaDriver.READ_BYTE_BUFFER_SZ);
     private final AtomicBuffer readBuffer = new AtomicBuffer(readByteBuffer);
@@ -147,6 +148,7 @@ public final class UdpTransport implements AutoCloseable
                          final InetSocketAddress bindAddress)
         throws Exception
     {
+        this.udpChannel = udpChannel;
         this.logger = logger;
         this.dataFrameHandler = dataFrameHandler;
         this.smFrameHandler = smFrameHandler;
@@ -163,19 +165,24 @@ public final class UdpTransport implements AutoCloseable
             final int dstPort = endPointSocketAddress.getPort();
             final NetworkInterface localInterface = udpChannel.localInterface();
 
-            channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
-            channel.bind(new InetSocketAddress(dstPort));
-            channel.join(endPointAddress, localInterface);
-            channel.setOption(StandardSocketOptions.IP_MULTICAST_IF, localInterface);
+            datagramChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
+            datagramChannel.bind(new InetSocketAddress(dstPort));
+            datagramChannel.join(endPointAddress, localInterface);
+            datagramChannel.setOption(StandardSocketOptions.IP_MULTICAST_IF, localInterface);
             multicast = true;
         }
         else
         {
-            channel.bind(bindAddress);
+            datagramChannel.bind(bindAddress);
             multicast = false;
         }
 
-        channel.configureBlocking(false);
+        datagramChannel.configureBlocking(false);
+    }
+
+    public UdpChannel udpChannel()
+    {
+        return udpChannel;
     }
 
     /**
@@ -190,7 +197,7 @@ public final class UdpTransport implements AutoCloseable
     {
         logger.log(EventCode.FRAME_OUT, buffer, buffer.position(), buffer.remaining(), remoteAddress);
 
-        return channel.send(buffer, remoteAddress);
+        return datagramChannel.send(buffer, remoteAddress);
     }
 
     /**
@@ -203,11 +210,11 @@ public final class UdpTransport implements AutoCloseable
     {
         if (null != dataFrameHandler)
         {
-            registeredKey = nioSelector.registerForRead(channel, this::onReadDataFrames);
+            registeredKey = nioSelector.registerForRead(datagramChannel, this::onReadDataFrames);
         }
         else
         {
-            registeredKey = nioSelector.registerForRead(channel, this::onReadControlFrames);
+            registeredKey = nioSelector.registerForRead(datagramChannel, this::onReadControlFrames);
         }
     }
 
@@ -223,7 +230,7 @@ public final class UdpTransport implements AutoCloseable
                 registeredKey.cancel();
             }
 
-            channel.close();
+            datagramChannel.close();
         }
         catch (final Exception ex)
         {
@@ -307,7 +314,7 @@ public final class UdpTransport implements AutoCloseable
 
         try
         {
-            final InetSocketAddress srcAddress = (InetSocketAddress) channel.receive(readByteBuffer);
+            final InetSocketAddress srcAddress = (InetSocketAddress)datagramChannel.receive(readByteBuffer);
 
             if (null != srcAddress)
             {

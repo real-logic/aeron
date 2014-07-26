@@ -50,9 +50,9 @@ public class PubAndSubTest
     private static final int STREAM_ID = 1;
     private static final int SESSION_ID = 2;
 
-    private final MediaDriver.DriverContext driverContext = new MediaDriver.DriverContext();
-    private final Aeron.ClientContext publishingAeronContext = new Aeron.ClientContext();
-    private final Aeron.ClientContext subscribingAeronContext = new Aeron.ClientContext();
+    private final MediaDriver.Context context = new MediaDriver.Context();
+    private final Aeron.Context publishingAeronContext = new Aeron.Context();
+    private final Aeron.Context subscribingAeronContext = new Aeron.Context();
 
     private Aeron publishingClient;
     private Aeron subscribingClient;
@@ -69,10 +69,10 @@ public class PubAndSubTest
     {
         executorService = Executors.newFixedThreadPool(2);
 
-        driverContext.dirsDeleteOnExit(true);
-        driverContext.warnIfDirectoriesExist(false);
+        context.dirsDeleteOnExit(true);
+        context.warnIfDirectoriesExist(false);
 
-        driver = new MediaDriver(driverContext);
+        driver = new MediaDriver(context);
 
         publishingClient = Aeron.newClient(publishingAeronContext);
         subscribingClient = Aeron.newClient(subscribingAeronContext);
@@ -149,7 +149,7 @@ public class PubAndSubTest
         final int messageLength = (termBufferSize / numMessagesInTermBuffer) - DataHeaderFlyweight.HEADER_LENGTH;
         final int numMessagesToSend = numMessagesInTermBuffer + 1;
 
-        driverContext.termBufferSize(termBufferSize);
+        context.termBufferSize(termBufferSize);
 
         setup(channel);
 
@@ -190,7 +190,7 @@ public class PubAndSubTest
         final int messageLength = (termBufferSize / numMessagesInTermBuffer) - DataHeaderFlyweight.HEADER_LENGTH;
         final int numMessagesToSend = numMessagesInTermBuffer + 1;
 
-        driverContext.termBufferSize(termBufferSize);
+        context.termBufferSize(termBufferSize);
 
         setup(channel);
 
@@ -252,7 +252,7 @@ public class PubAndSubTest
         final int messageLength = 1032 - DataHeaderFlyweight.HEADER_LENGTH;
         final int numMessagesToSend = 64;
 
-        driverContext.termBufferSize(termBufferSize);
+        context.termBufferSize(termBufferSize);
 
         setup(channel);
 
@@ -298,7 +298,7 @@ public class PubAndSubTest
         final int numBatchesPerTerm = 4;
         final int numMessagesPerBatch = numMessagesToSend / numBatchesPerTerm;
 
-        driverContext.termBufferSize(termBufferSize);
+        context.termBufferSize(termBufferSize);
 
         setup(channel);
 

@@ -84,7 +84,7 @@ public class PubMulticastTest
         receiverChannel.join(InetAddress.getByName(DATA_ADDRESS), ifc);
         receiverChannel.setOption(StandardSocketOptions.IP_MULTICAST_IF, ifc);
 
-        final MediaDriver.DriverContext ctx = new MediaDriver.DriverContext();
+        final MediaDriver.Context ctx = new MediaDriver.Context();
 
         ctx.dirsDeleteOnExit(true);
         ctx.warnIfDirectoriesExist(false);
@@ -103,9 +103,9 @@ public class PubMulticastTest
         publication = producingClient.addPublication(URI, STREAM_ID, SESSION_ID);
     }
 
-    private Aeron.ClientContext newAeronContext()
+    private Aeron.Context newAeronContext()
     {
-        return new Aeron.ClientContext();
+        return new Aeron.Context();
     }
 
     @After

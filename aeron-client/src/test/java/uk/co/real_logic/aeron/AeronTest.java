@@ -91,8 +91,8 @@ public class AeronTest extends MockBufferUsage
     @Before
     public void setUp() throws Exception
     {
-        final Aeron.ClientContext ctx =
-            new Aeron.ClientContext()
+        final Aeron.Context ctx =
+            new Aeron.Context()
                 .toClientBuffer(toClientReceiver)
                 .toDriverBuffer(toDriverBuffer)
                 .bufferManager(mockBufferUsage);

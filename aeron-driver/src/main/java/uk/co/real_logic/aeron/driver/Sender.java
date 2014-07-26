@@ -26,7 +26,7 @@ public class Sender extends Agent
     private final AtomicArray<DriverPublication> publications;
     private int roundRobinIndex = 0;
 
-    public Sender(final MediaDriver.DriverContext ctx)
+    public Sender(final MediaDriver.Context ctx)
     {
         super(ctx.senderIdleStrategy(), ctx.senderLogger()::logException);
 

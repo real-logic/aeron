@@ -221,7 +221,7 @@ public class MediaDriver implements AutoCloseable
     private final Sender sender;
     private final DriverConductor conductor;
     private final EventReader eventReader;
-    private final DriverContext ctx;
+    private final Context ctx;
 
     private ExecutorService executor;
 
@@ -261,7 +261,7 @@ public class MediaDriver implements AutoCloseable
      */
     public MediaDriver() throws Exception
     {
-        this(new DriverContext());
+        this(new Context());
     }
 
     /**
@@ -270,7 +270,7 @@ public class MediaDriver implements AutoCloseable
      * @param context for the media driver parameters
      * @throws Exception
      */
-    public MediaDriver(final DriverContext context) throws Exception
+    public MediaDriver(final Context context) throws Exception
     {
         ctx =
             context.unicastSenderFlowControl(UnicastSenderControlStrategy::new)
@@ -473,7 +473,7 @@ public class MediaDriver implements AutoCloseable
         }
     }
 
-    public static class DriverContext extends CommonContext
+    public static class Context extends CommonContext
     {
         private TermBuffersFactory termBuffersFactory;
         private NioSelector receiverNioSelector;
@@ -508,14 +508,14 @@ public class MediaDriver implements AutoCloseable
         private EventLogger senderLogger;
         private Consumer<String> eventConsumer;
 
-        public DriverContext()
+        public Context()
         {
             termBufferSize(getInteger(TERM_BUFFER_SZ_PROP_NAME, TERM_BUFFER_SZ_DEFAULT));
             initialWindowSize(getInteger(INITIAL_WINDOW_SIZE_PROP_NAME, INITIAL_WINDOW_SIZE_DEFAULT));
             warnIfDirectoriesExist = true;
         }
 
-        public DriverContext conclude() throws IOException
+        public Context conclude() throws IOException
         {
             super.conclude();
 
@@ -567,153 +567,153 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public DriverContext conductorCommandQueue(
+        public Context conductorCommandQueue(
             final OneToOneConcurrentArrayQueue<? super Object> conductorCommandQueue)
         {
             this.conductorCommandQueue = conductorCommandQueue;
             return this;
         }
 
-        public DriverContext termBuffersFactory(final TermBuffersFactory termBuffersFactory)
+        public Context termBuffersFactory(final TermBuffersFactory termBuffersFactory)
         {
             this.termBuffersFactory = termBuffersFactory;
             return this;
         }
 
-        public DriverContext receiverNioSelector(final NioSelector nioSelector)
+        public Context receiverNioSelector(final NioSelector nioSelector)
         {
             this.receiverNioSelector = nioSelector;
             return this;
         }
 
-        public DriverContext conductorNioSelector(final NioSelector nioSelector)
+        public Context conductorNioSelector(final NioSelector nioSelector)
         {
             this.conductorNioSelector = nioSelector;
             return this;
         }
 
-        public DriverContext unicastSenderFlowControl(final Supplier<SenderControlStrategy> senderFlowControl)
+        public Context unicastSenderFlowControl(final Supplier<SenderControlStrategy> senderFlowControl)
         {
             this.unicastSenderFlowControl = senderFlowControl;
             return this;
         }
 
-        public DriverContext multicastSenderFlowControl(final Supplier<SenderControlStrategy> senderFlowControl)
+        public Context multicastSenderFlowControl(final Supplier<SenderControlStrategy> senderFlowControl)
         {
             this.multicastSenderFlowControl = senderFlowControl;
             return this;
         }
 
-        public DriverContext conductorTimerWheel(final TimerWheel wheel)
+        public Context conductorTimerWheel(final TimerWheel wheel)
         {
             this.conductorTimerWheel = wheel;
             return this;
         }
 
-        public DriverContext receiverCommandQueue(
+        public Context receiverCommandQueue(
             final OneToOneConcurrentArrayQueue<? super Object> receiverCommandQueue)
         {
             this.receiverCommandQueue = receiverCommandQueue;
             return this;
         }
 
-        public DriverContext receiverProxy(final ReceiverProxy receiverProxy)
+        public Context receiverProxy(final ReceiverProxy receiverProxy)
         {
             this.receiverProxy = receiverProxy;
             return this;
         }
 
-        public DriverContext driverConductorProxy(final DriverConductorProxy driverConductorProxy)
+        public Context driverConductorProxy(final DriverConductorProxy driverConductorProxy)
         {
             this.driverConductorProxy = driverConductorProxy;
             return this;
         }
 
-        public DriverContext conductorIdleStrategy(final IdleStrategy strategy)
+        public Context conductorIdleStrategy(final IdleStrategy strategy)
         {
             this.conductorIdleStrategy = strategy;
             return this;
         }
 
-        public DriverContext senderIdleStrategy(final IdleStrategy strategy)
+        public Context senderIdleStrategy(final IdleStrategy strategy)
         {
             this.senderIdleStrategy = strategy;
             return this;
         }
 
-        public DriverContext receiverIdleStrategy(final IdleStrategy strategy)
+        public Context receiverIdleStrategy(final IdleStrategy strategy)
         {
             this.receiverIdleStrategy = strategy;
             return this;
         }
 
-        public DriverContext publications(final AtomicArray<DriverPublication> publications)
+        public Context publications(final AtomicArray<DriverPublication> publications)
         {
             this.publications = publications;
             return this;
         }
 
-        public DriverContext clientProxy(final ClientProxy clientProxy)
+        public Context clientProxy(final ClientProxy clientProxy)
         {
             this.clientProxy = clientProxy;
             return this;
         }
 
-        public DriverContext fromClientCommands(final RingBuffer fromClientCommands)
+        public Context fromClientCommands(final RingBuffer fromClientCommands)
         {
             this.fromClientCommands = fromClientCommands;
             return this;
         }
 
-        public DriverContext countersManager(final CountersManager countersManager)
+        public Context countersManager(final CountersManager countersManager)
         {
             this.countersManager = countersManager;
             return this;
         }
 
-        public DriverContext termBufferSize(final int termBufferSize)
+        public Context termBufferSize(final int termBufferSize)
         {
             this.termBufferSize = termBufferSize;
             return this;
         }
 
-        public DriverContext initialWindowSize(final int initialWindowSize)
+        public Context initialWindowSize(final int initialWindowSize)
         {
             this.initialWindowSize = initialWindowSize;
             return this;
         }
 
-        public DriverContext warnIfDirectoriesExist(final boolean value)
+        public Context warnIfDirectoriesExist(final boolean value)
         {
             this.warnIfDirectoriesExist = value;
             return this;
         }
 
-        public DriverContext conductorLogger(final EventLogger value)
+        public Context conductorLogger(final EventLogger value)
         {
             this.conductorLogger = value;
             return this;
         }
 
-        public DriverContext receiverLogger(final EventLogger value)
+        public Context receiverLogger(final EventLogger value)
         {
             this.receiverLogger = value;
             return this;
         }
 
-        public DriverContext driverLogger(final EventLogger value)
+        public Context driverLogger(final EventLogger value)
         {
             this.driverLogger = value;
             return this;
         }
 
-        public DriverContext senderLogger(final EventLogger value)
+        public Context senderLogger(final EventLogger value)
         {
             this.senderLogger = value;
             return this;
         }
 
-        public DriverContext eventConsumer(final Consumer<String> value)
+        public Context eventConsumer(final Consumer<String> value)
         {
             this.eventConsumer = value;
             return this;

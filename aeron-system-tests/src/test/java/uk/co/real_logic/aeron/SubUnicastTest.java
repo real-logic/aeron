@@ -100,7 +100,7 @@ public class SubUnicastTest
         senderChannel.configureBlocking(false);
         senderChannel.bind(srcAddress);
 
-        final MediaDriver.DriverContext ctx = new MediaDriver.DriverContext();
+        final MediaDriver.Context ctx = new MediaDriver.Context();
 
         ctx.dirsDeleteOnExit(true);
         ctx.warnIfDirectoriesExist(false);
@@ -119,9 +119,9 @@ public class SubUnicastTest
         subscription = consumingClient.addSubscription(URI, STREAM_ID, saveFrames);
     }
 
-    private Aeron.ClientContext newAeronContext()
+    private Aeron.Context newAeronContext()
     {
-        return new Aeron.ClientContext();
+        return new Aeron.Context();
     }
 
     @After

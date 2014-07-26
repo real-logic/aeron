@@ -55,7 +55,7 @@ public class ExampleUtil
      * @return {@link Aeron} instance
      * @throws Exception
      */
-    public static Aeron createAeron(final Aeron.ClientContext context, final ExecutorService executor) throws Exception
+    public static Aeron createAeron(final Aeron.Context context, final ExecutorService executor) throws Exception
     {
         final Aeron aeron = Aeron.newClient(context);
 
@@ -71,7 +71,7 @@ public class ExampleUtil
      * @return {@link Aeron} instance
      * @throws Exception
      */
-    public static Aeron createAeron(final Aeron.ClientContext context) throws Exception
+    public static Aeron createAeron(final Aeron.Context context) throws Exception
     {
         final Aeron aeron = Aeron.newClient(context);
 

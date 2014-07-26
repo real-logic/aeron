@@ -44,7 +44,7 @@ public class StreamingPublisher
     public static void main(final String[] args) throws Exception
     {
         final ExecutorService executor = Executors.newFixedThreadPool(2);
-        final Aeron.ClientContext context = new Aeron.ClientContext();
+        final Aeron.Context context = new Aeron.Context();
 
         MediaDriver driver = (EMBEDDED_MEDIA_DRIVER ? ExampleUtil.createEmbeddedMediaDriver() : null);
         Aeron aeron = ExampleUtil.createAeron(context, executor);

@@ -98,7 +98,7 @@ public class DriverConductor extends Agent
 
     private final EventLogger logger;
 
-    public DriverConductor(final DriverContext ctx)
+    public DriverConductor(final Context ctx)
     {
         super(ctx.conductorIdleStrategy(), ctx.conductorLogger()::logException);
 

@@ -59,7 +59,7 @@ public class SenderTest
     private final EventLogger mockLogger = mock(EventLogger.class);
 
     private final AtomicArray<DriverPublication> publications = new AtomicArray<>();
-    private final Sender sender = new Sender(new MediaDriver.DriverContext().publications(publications).senderLogger(mockLogger));
+    private final Sender sender = new Sender(new MediaDriver.Context().publications(publications).senderLogger(mockLogger));
 
     private final TermBuffers termBuffers =
         BufferAndFrameHelper.newTestTermBuffers(LOG_BUFFER_SIZE, LogBufferDescriptor.STATE_BUFFER_LENGTH);

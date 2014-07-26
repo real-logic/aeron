@@ -32,7 +32,7 @@ public class Receiver extends Agent
     private final OneToOneConcurrentArrayQueue<? super Object> commandQueue;
     private final EventLogger logger;
 
-    public Receiver(final MediaDriver.DriverContext ctx) throws Exception
+    public Receiver(final MediaDriver.Context ctx) throws Exception
     {
         super(ctx.receiverIdleStrategy(), ctx.receiverLogger()::logException);
 

@@ -81,7 +81,7 @@ public class PubUnicastTest
         receiverChannel.configureBlocking(false);
         receiverChannel.bind(new InetSocketAddress(HOST, PORT));
 
-        final MediaDriver.DriverContext ctx = new MediaDriver.DriverContext();
+        final MediaDriver.Context ctx = new MediaDriver.Context();
 
         ctx.termBufferSize(TERM_BUFFER_SIZE);
         ctx.dirsDeleteOnExit(true);
@@ -99,9 +99,9 @@ public class PubUnicastTest
         publication = producingClient.addPublication(URI, STREAM_ID, SESSION_ID);
     }
 
-    private Aeron.ClientContext newAeronContext()
+    private Aeron.Context newAeronContext()
     {
-        return new Aeron.ClientContext();
+        return new Aeron.Context();
     }
 
     @After

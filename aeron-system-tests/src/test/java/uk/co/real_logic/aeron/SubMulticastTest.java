@@ -106,7 +106,7 @@ public class SubMulticastTest
         senderChannel.join(InetAddress.getByName(CONTROL_ADDRESS), ifc);
         senderChannel.setOption(StandardSocketOptions.IP_MULTICAST_IF, ifc);
 
-        final MediaDriver.DriverContext ctx = new MediaDriver.DriverContext();
+        final MediaDriver.Context ctx = new MediaDriver.Context();
 
         ctx.dirsDeleteOnExit(true);
         ctx.warnIfDirectoriesExist(false);
@@ -124,9 +124,9 @@ public class SubMulticastTest
         subscription = consumingClient.addSubscription(URI, STREAM_ID, saveFrames);
     }
 
-    private Aeron.ClientContext newAeronContext()
+    private Aeron.Context newAeronContext()
     {
-        return new Aeron.ClientContext();
+        return new Aeron.Context();
     }
 
     @After

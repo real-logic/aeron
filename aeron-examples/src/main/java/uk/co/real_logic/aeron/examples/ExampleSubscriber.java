@@ -36,7 +36,7 @@ public class ExampleSubscriber
     public static void main(final String[] args) throws Exception
     {
         final ExecutorService executor = Executors.newFixedThreadPool(1);
-        final Aeron.ClientContext aeronContext = new Aeron.ClientContext();
+        final Aeron.Context aeronContext = new Aeron.Context();
 
         final MediaDriver driver = (EMBEDDED_MEDIA_DRIVER ? ExampleUtil.createEmbeddedMediaDriver() : null);
         final Aeron aeron = ExampleUtil.createAeron(aeronContext, executor);

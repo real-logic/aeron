@@ -92,7 +92,7 @@ public class DriverConductorTest
         final CountersManager countersManager =
             new CountersManager(new AtomicBuffer(new byte[4096]), counterBuffer);
 
-        final MediaDriver.DriverContext ctx = new MediaDriver.DriverContext()
+        final MediaDriver.Context ctx = new MediaDriver.Context()
             .receiverNioSelector(nioSelector)
             .conductorNioSelector(nioSelector)
             .unicastSenderFlowControl(UnicastSenderControlStrategy::new)

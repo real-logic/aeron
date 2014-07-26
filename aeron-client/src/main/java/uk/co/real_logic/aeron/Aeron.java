@@ -45,11 +45,11 @@ public final class Aeron implements AutoCloseable, Runnable
     public static final long AWAIT_TIMEOUT = 10_000;
 
     private final ClientConductor conductor;
-    private final ClientContext savedCtx;
+    private final Context savedCtx;
 
     private Future conductorFuture;
 
-    private Aeron(final ClientContext ctx)
+    private Aeron(final Context ctx)
     {
         try
         {
@@ -132,23 +132,12 @@ public final class Aeron implements AutoCloseable, Runnable
 
     /**
      * Creates an Aeron client associated with this Aeron instance that can be used to create sources and
-     * subscriptions on. Default configuration.
-     *
-     * @return Aeron instance
-     */
-    public static Aeron newClient()
-    {
-        return new Aeron(new ClientContext());
-    }
-
-    /**
-     * Creates an Aeron client associated with this Aeron instance that can be used to create sources and
      * subscriptions on.
      *
      * @param ctx of the media driver and Aeron configuration
      * @return Aeron instance
      */
-    public static Aeron newClient(final ClientContext ctx)
+    public static Aeron newClient(final Context ctx)
     {
         return new Aeron(ctx);
     }
@@ -198,7 +187,7 @@ public final class Aeron implements AutoCloseable, Runnable
         return (int)(Math.random() * 0xFFFFFFF7);
     }
 
-    public static class ClientContext extends CommonContext
+    public static class Context extends CommonContext
     {
         private CopyBroadcastReceiver toClientBuffer;
         private RingBuffer toDriverBuffer;
@@ -213,7 +202,7 @@ public final class Aeron implements AutoCloseable, Runnable
         private Consumer<Exception> errorHandler;
         private NewConnectionHandler newConnectionHandler;
 
-        public ClientContext conclude() throws IOException
+        public Context conclude() throws IOException
         {
             super.conclude();
 
@@ -262,31 +251,31 @@ public final class Aeron implements AutoCloseable, Runnable
             return this;
         }
 
-        public ClientContext toClientBuffer(final CopyBroadcastReceiver toClientBuffer)
+        public Context toClientBuffer(final CopyBroadcastReceiver toClientBuffer)
         {
             this.toClientBuffer = toClientBuffer;
             return this;
         }
 
-        public ClientContext toDriverBuffer(final RingBuffer toDriverBuffer)
+        public Context toDriverBuffer(final RingBuffer toDriverBuffer)
         {
             this.toDriverBuffer = toDriverBuffer;
             return this;
         }
 
-        public ClientContext bufferManager(final BufferManager bufferManager)
+        public Context bufferManager(final BufferManager bufferManager)
         {
             this.bufferManager = bufferManager;
             return this;
         }
 
-        public ClientContext errorHandler(final Consumer<Exception> handler)
+        public Context errorHandler(final Consumer<Exception> handler)
         {
             this.errorHandler = handler;
             return this;
         }
 
-        public ClientContext newSourceHandler(final NewConnectionHandler handler)
+        public Context newSourceHandler(final NewConnectionHandler handler)
         {
             this.newConnectionHandler = handler;
             return this;

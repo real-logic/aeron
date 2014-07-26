@@ -87,7 +87,7 @@ public class ReceiverTest
         when(POSITION_INDICATOR.position()).thenReturn(Long.MAX_VALUE - LOG_BUFFER_SIZE);
         when(mockLossHandler.activeTermId()).thenReturn(TERM_ID);
 
-        final MediaDriver.DriverContext ctx = new MediaDriver.DriverContext()
+        final MediaDriver.Context ctx = new MediaDriver.Context()
             .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .receiverNioSelector(mockNioSelector)
             .conductorNioSelector(mockNioSelector)

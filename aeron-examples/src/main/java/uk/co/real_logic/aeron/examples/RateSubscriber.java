@@ -30,8 +30,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class RateSubscriber
 {
-    public static final int CHANNEL_ID = ExampleConfiguration.CHANNEL_ID;
-    public static final String DESTINATION = ExampleConfiguration.DESTINATION;
+    public static final int STREAM_ID = ExampleConfiguration.STREAM_ID;
+    public static final String CHANNEL = ExampleConfiguration.CHANNEL;
     public static final int FRAME_COUNT_LIMIT = ExampleConfiguration.FRAME_COUNT_LIMIT;
     public static final boolean EMBEDDED_MEDIA_DRIVER = ExampleConfiguration.EMBEDDED_MEDIA_DRIVER;
 
@@ -43,12 +43,12 @@ public class RateSubscriber
         final MediaDriver driver = (EMBEDDED_MEDIA_DRIVER ? ExampleUtil.createEmbeddedMediaDriver() : null);
         final Aeron aeron = ExampleUtil.createAeron(aeronContext, executor);
 
-        System.out.println("Subscribing to " + DESTINATION + " on channel Id " + CHANNEL_ID);
+        System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), ExampleUtil::printRate);
 
         final Subscription subscription =
-            aeron.addSubscription(DESTINATION, CHANNEL_ID, ExampleUtil.rateReporterHandler(reporter));
+            aeron.addSubscription(CHANNEL, STREAM_ID, ExampleUtil.rateReporterHandler(reporter));
 
         executor.execute(() -> ExampleUtil.subscriberLoop(FRAME_COUNT_LIMIT).accept(subscription));
 

@@ -760,7 +760,7 @@ public class AtomicBuffer
      *
      * @param index in this buffer to begin getting the bytes.
      * @param dstBuffer to which the bytes will be copied.
-     * @param dstIndex in the destination buffer to which the byte copy will begin.
+     * @param dstIndex in the channel buffer to which the byte copy will begin.
      * @param length of the bytes to be copied.
      */
     public void getBytes(final int index, final AtomicBuffer dstBuffer, final int dstIndex, final int length)

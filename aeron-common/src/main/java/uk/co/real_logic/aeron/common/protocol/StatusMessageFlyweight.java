@@ -28,7 +28,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     public static final int HEADER_LENGTH = 28;
 
     private static final int SESSION_ID_FIELD_OFFSET = 8;
-    private static final int CHANNEL_ID_FIELD_OFFSET = 12;
+    private static final int STREAM_ID_FIELD_OFFSET = 12;
     private static final int TERM_ID_FIELD_OFFSET = 16;
     private static final int CONTIGUOUS_TERM_OFFSET_FIELD_OFFSET = 20;
     private static final int RECEIVER_WINDOW_FIELD_OFFSET = 24;
@@ -54,24 +54,24 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     }
 
     /**
-     * return channel id field
+     * return stream id field
      *
-     * @return channel id field
+     * @return stream id field
      */
-    public int channelId()
+    public int streamId()
     {
-        return atomicBuffer().getInt(offset() + CHANNEL_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return atomicBuffer().getInt(offset() + STREAM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
-     * set channel id field
+     * set stream id field
      *
-     * @param channelId field value
+     * @param streamId field value
      * @return flyweight
      */
-    public StatusMessageFlyweight channelId(final int channelId)
+    public StatusMessageFlyweight streamId(final int streamId)
     {
-        atomicBuffer().putInt(offset() + CHANNEL_ID_FIELD_OFFSET, channelId, LITTLE_ENDIAN);
+        atomicBuffer().putInt(offset() + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
         return this;
     }
 

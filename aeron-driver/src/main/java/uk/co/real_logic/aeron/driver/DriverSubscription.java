@@ -24,15 +24,15 @@ import java.util.Collection;
  */
 public class DriverSubscription
 {
-    private final UdpDestination udpDestination;
-    private final int channelId;
+    private final UdpChannel udpChannel;
+    private final int streamId;
     private final DriverConductorProxy conductorProxy;
     private final Int2ObjectHashMap<DriverConnectedSubscription> connectionBySessionIdMap = new Int2ObjectHashMap<>();
 
-    public DriverSubscription(final UdpDestination udpDestination, final int channelId, final DriverConductorProxy conductorProxy)
+    public DriverSubscription(final UdpChannel udpChannel, final int streamId, final DriverConductorProxy conductorProxy)
     {
-        this.udpDestination = udpDestination;
-        this.channelId = channelId;
+        this.udpChannel = udpChannel;
+        this.streamId = streamId;
         this.conductorProxy = conductorProxy;
     }
 
@@ -46,14 +46,14 @@ public class DriverSubscription
         return connectionBySessionIdMap.put(connectedSubscription.sessionId(), connectedSubscription);
     }
 
-    public int channelId()
+    public int streamId()
     {
-        return channelId;
+        return streamId;
     }
 
-    public UdpDestination udpDestination()
+    public UdpChannel udpChannel()
     {
-        return udpDestination;
+        return udpChannel;
     }
 
     public void close()

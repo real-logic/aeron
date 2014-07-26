@@ -31,8 +31,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class ExamplePublisher
 {
-    public static final int CHANNEL_ID = ExampleConfiguration.CHANNEL_ID;
-    public static final String DESTINATION = ExampleConfiguration.DESTINATION;
+    public static final int STREAM_ID = ExampleConfiguration.STREAM_ID;
+    public static final String CHANNEL = ExampleConfiguration.CHANNEL;
     public static final long NUMBER_OF_MESSAGES = ExampleConfiguration.NUMBER_OF_MESSAGES;
     public static final boolean EMBEDDED_MEDIA_DRIVER = ExampleConfiguration.EMBEDDED_MEDIA_DRIVER;
 
@@ -46,9 +46,9 @@ public class ExamplePublisher
         final MediaDriver driver = (EMBEDDED_MEDIA_DRIVER ? ExampleUtil.createEmbeddedMediaDriver() : null);
         final Aeron aeron = ExampleUtil.createAeron(context, executor);
 
-        System.out.println("Publishing to " + DESTINATION + " on channel Id " + CHANNEL_ID);
+        System.out.println("Publishing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
-        final Publication publication = aeron.addPublication(DESTINATION, CHANNEL_ID, 0);
+        final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID, 0);
 
         for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
         {

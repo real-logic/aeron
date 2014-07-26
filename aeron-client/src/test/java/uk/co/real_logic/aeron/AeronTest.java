@@ -49,8 +49,8 @@ public class AeronTest extends MockBufferUsage
 {
     public static final int COUNTER_BUFFER_SZ = 1024;
 
-    public static final String DESTINATION = "udp://localhost:40124";
-    public static final int CHANNEL_ID_1 = 2;
+    public static final String CHANNEL = "udp://localhost:40124";
+    public static final int STREAM_ID_1 = 2;
     public static final int SESSION_ID_1 = 13;
     public static final int SESSION_ID_2 = 15;
     public static final int TERM_ID_1 = 1;
@@ -117,7 +117,7 @@ public class AeronTest extends MockBufferUsage
     {
         channel1Handler = sessionAssertingHandler();
 
-        final Subscription subscription = aeron.addSubscription(DESTINATION, CHANNEL_ID_1, channel1Handler);
+        final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID_1, channel1Handler);
 
         sendNewBufferNotification(ON_NEW_CONNECTED_SUBSCRIPTION, SESSION_ID_1, TERM_ID_1);
 
@@ -135,7 +135,7 @@ public class AeronTest extends MockBufferUsage
     {
         channel1Handler = eitherSessionAssertingHandler();
 
-        final Subscription subscription = aeron.addSubscription(DESTINATION, CHANNEL_ID_1, channel1Handler);
+        final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID_1, channel1Handler);
 
         sendNewBufferNotification(ON_NEW_CONNECTED_SUBSCRIPTION, SESSION_ID_1, TERM_ID_1);
         sendNewBufferNotification(ON_NEW_CONNECTED_SUBSCRIPTION, SESSION_ID_2, TERM_ID_2);
@@ -154,7 +154,7 @@ public class AeronTest extends MockBufferUsage
     {
         channel1Handler = sessionAssertingHandler();
 
-        final Subscription subscription = aeron.addSubscription(DESTINATION, CHANNEL_ID_1, channel1Handler);
+        final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID_1, channel1Handler);
 
         sendNewBufferNotification(ON_NEW_CONNECTED_SUBSCRIPTION, SESSION_ID_1, TERM_ID_1);
 
@@ -195,7 +195,7 @@ public class AeronTest extends MockBufferUsage
         channel1Handler = eitherSessionAssertingHandler();
 
         final RingBuffer toMediaDriver = toDriverBuffer;
-        final Subscription subscription = aeron.addSubscription(DESTINATION, CHANNEL_ID_1, channel1Handler);
+        final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID_1, channel1Handler);
 
         sendNewBufferNotification(ON_NEW_CONNECTED_SUBSCRIPTION, SESSION_ID_1, TERM_ID_1);
         sendNewBufferNotification(ON_NEW_CONNECTED_SUBSCRIPTION, SESSION_ID_2, TERM_ID_2);
@@ -247,7 +247,7 @@ public class AeronTest extends MockBufferUsage
     private void sendNewBufferNotification(final int msgTypeId, final int sessionId, final int termId)
     {
         newBufferMessage.wrap(atomicScratchBuffer, 0);
-        newBufferMessage.channelId(CHANNEL_ID_1)
+        newBufferMessage.streamId(STREAM_ID_1)
                         .sessionId(sessionId)
                         .termId(termId);
 
@@ -265,7 +265,7 @@ public class AeronTest extends MockBufferUsage
             newBufferMessage.bufferLength(i + BUFFER_COUNT, STATE_BUFFER_LENGTH);
         }
 
-        newBufferMessage.destination(DESTINATION);
+        newBufferMessage.channel(CHANNEL);
 
         toClientTransmitter.transmit(msgTypeId, atomicScratchBuffer, 0, newBufferMessage.length());
     }

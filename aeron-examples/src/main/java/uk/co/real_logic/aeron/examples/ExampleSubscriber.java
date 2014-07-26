@@ -28,8 +28,8 @@ import java.util.concurrent.Executors;
  */
 public class ExampleSubscriber
 {
-    public static final int CHANNEL_ID = ExampleConfiguration.CHANNEL_ID;
-    public static final String DESTINATION = ExampleConfiguration.DESTINATION;
+    public static final int STREAM_ID = ExampleConfiguration.STREAM_ID;
+    public static final String CHANNEL = ExampleConfiguration.CHANNEL;
     public static final int FRAME_COUNT_LIMIT = ExampleConfiguration.FRAME_COUNT_LIMIT;
     public static final boolean EMBEDDED_MEDIA_DRIVER = ExampleConfiguration.EMBEDDED_MEDIA_DRIVER;
 
@@ -41,11 +41,11 @@ public class ExampleSubscriber
         final MediaDriver driver = (EMBEDDED_MEDIA_DRIVER ? ExampleUtil.createEmbeddedMediaDriver() : null);
         final Aeron aeron = ExampleUtil.createAeron(aeronContext, executor);
 
-        System.out.println("Subscribing to " + DESTINATION + " on channel Id " + CHANNEL_ID);
+        System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
         // subscription for channel Id 1
         final Subscription subscription =
-            aeron.addSubscription(DESTINATION, CHANNEL_ID, ExampleUtil.printStringMessage(CHANNEL_ID));
+            aeron.addSubscription(CHANNEL, STREAM_ID, ExampleUtil.printStringMessage(STREAM_ID));
 
         // run the subscriber thread from here
         ExampleUtil.subscriberLoop(FRAME_COUNT_LIMIT).accept(subscription);

@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.driver;
 import uk.co.real_logic.aeron.common.BitUtil;
 import uk.co.real_logic.aeron.common.event.EventCode;
 import uk.co.real_logic.aeron.common.event.EventLogger;
-import uk.co.real_logic.aeron.driver.exceptions.InvalidDestinationException;
+import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
 
 import java.net.*;
 import java.util.Enumeration;
@@ -26,14 +26,14 @@ import java.util.Enumeration;
 import static java.net.InetAddress.getByAddress;
 
 /**
- * Encapsulation of UDP destinations
+ * Encapsulation of UDP Channels
  * <p>
  * Format of URI:
  * <code>
  * udp://[interface[:port]@]ip:port
  * </code>
  */
-public class UdpDestination
+public class UdpChannel
 {
     private static final int LAST_MULTICAST_DIGIT = 3;
 
@@ -111,26 +111,26 @@ public class UdpDestination
     }
 
     /**
-     * Parse URI and create destination
+     * Parse URI and create channel
      *
-     * @param destinationUri to parse
-     * @return created destination
+     * @param uriStr to parse
+     * @return created channel
      */
-    public static UdpDestination parse(final String destinationUri)
+    public static UdpChannel parse(final String uriStr)
     {
         try
         {
-            final URI uri = new URI(destinationUri);
+            final URI uri = new URI(uriStr);
             final String userInfo = uri.getUserInfo();
             final int uriPort = uri.getPort();
 
             if (!"udp".equals(uri.getScheme()))
             {
-                return malformedUri(destinationUri);
+                return malformedUri(uriStr);
             }
 
             final Context context = new Context()
-                .uriStr(destinationUri);
+                .uriStr(uriStr);
 
             final InetAddress hostAddress = InetAddress.getByName(uri.getHost());
 
@@ -171,7 +171,7 @@ public class UdpDestination
             {
                 if (uriPort == -1)
                 {
-                    return malformedUri(destinationUri);
+                    return malformedUri(uriStr);
                 }
 
                 final InetSocketAddress remoteAddress = new InetSocketAddress(hostAddress, uriPort);
@@ -186,17 +186,17 @@ public class UdpDestination
 
             context.consistentHash(BitUtil.generateConsistentHash(context.canonicalRepresentation.getBytes()));
 
-            return new UdpDestination(context);
+            return new UdpChannel(context);
         }
         catch (final Exception ex)
         {
-            throw new InvalidDestinationException(ex);
+            throw new InvalidChannelException(ex);
         }
     }
 
-    private static UdpDestination malformedUri(final String destinationUri)
+    private static UdpChannel malformedUri(final String uriStr)
     {
-        throw new IllegalArgumentException("malformed destination URI: " + destinationUri);
+        throw new IllegalArgumentException("malformed channel URI: " + uriStr);
     }
 
     private static InetSocketAddress determineLocalAddressFromUserInfo(final String userInfo) throws Exception
@@ -260,7 +260,7 @@ public class UdpDestination
         return localControl;
     }
 
-    private UdpDestination(final Context context)
+    private UdpChannel(final Context context)
     {
         this.remoteData = context.remoteData;
         this.localData = context.localData;
@@ -273,11 +273,11 @@ public class UdpDestination
     }
 
     /**
-     * Return consistent hash of destination information
+     * Return consistent hash of channel information
      *
      * {@link BitUtil#generateConsistentHash(byte[])}
      *
-     * @return consistent hash of destination information
+     * @return consistent hash of channel information
      */
     public long consistentHash()
     {
@@ -285,11 +285,11 @@ public class UdpDestination
     }
 
     /**
-     * Return the canonical representation of the destination
+     * Return the canonical representation of the channel
      *
-     * {@link UdpDestination#generateCanonicalRepresentation(java.net.InetSocketAddress, java.net.InetSocketAddress)}
+     * {@link UdpChannel#generateCanonicalRepresentation(java.net.InetSocketAddress, java.net.InetSocketAddress)}
      *
-     * @return canonical representation of destination
+     * @return canonical representation of channel
      */
     public String canonicalRepresentation()
     {
@@ -305,9 +305,9 @@ public class UdpDestination
     /** {@inheritDoc} */
     public boolean equals(Object obj)
     {
-        if (null != obj && obj instanceof UdpDestination)
+        if (null != obj && obj instanceof UdpChannel)
         {
-            final UdpDestination rhs = (UdpDestination)obj;
+            final UdpChannel rhs = (UdpChannel)obj;
 
             return rhs.localData.equals(this.localData) && rhs.remoteData.equals(this.remoteData);
         }
@@ -322,7 +322,7 @@ public class UdpDestination
     }
 
     /**
-     * Return a string which is a canonical representation of the destination suitable for use as a file or directory
+     * Return a string which is a canonical representation of the channel suitable for use as a file or directory
      * name and also as a method of hashing, etc.
      *
      * A canonical representation:
@@ -332,7 +332,7 @@ public class UdpDestination
      * - uses "-" as all field separators
      *
      * The general format is:
-     * UDP-interface-localPort-destinationAddress-destinationPort
+     * UDP-interface-localPort-remoteAddress-remotePort
      *
      * @return canonical representation as a string
      */
@@ -347,9 +347,9 @@ public class UdpDestination
     }
 
     /**
-     * Does destination represent a multicast or not
+     * Does channel represent a multicast or not
      *
-     * @return does destination represent a multicast or not
+     * @return does channel represent a multicast or not
      */
     public boolean isMulticast()
     {
@@ -357,9 +357,9 @@ public class UdpDestination
     }
 
     /**
-     * Local interface to be used by the destination
+     * Local interface to be used by the channel
      *
-     * @return {@link NetworkInterface} for the local interface used by the destination
+     * @return {@link NetworkInterface} for the local interface used by the channel
      * @throws SocketException
      */
     public NetworkInterface localInterface() throws SocketException
@@ -368,7 +368,7 @@ public class UdpDestination
     }
 
     /**
-     * Original URI of the destination URI.
+     * Original URI of the channel URI.
      *
      * @return the original uri
      */

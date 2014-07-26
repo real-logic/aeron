@@ -55,7 +55,7 @@ public class LossHandlerTest
     private static final int MESSAGE_LENGTH = DataHeaderFlyweight.HEADER_LENGTH + DATA.length;
     private static final int ALIGNED_FRAME_LENGTH = align(MESSAGE_LENGTH, FrameDescriptor.FRAME_ALIGNMENT);
     private static final int SESSION_ID = 0x5E55101D;
-    private static final int CHANNEL_ID = 0xC400E;
+    private static final int STREAM_ID = 0xC400E;
     private static final int TERM_ID = 0xEE81D;
 
     public static final StaticDelayGenerator delayGenerator =
@@ -341,7 +341,7 @@ public class LossHandlerTest
     private void insertDataFrame(final int offset, final byte[] payload)
     {
         dataHeader.termId(TERM_ID)
-                  .channelId(CHANNEL_ID)
+                  .streamId(STREAM_ID)
                   .sessionId(SESSION_ID)
                   .termOffset(offset)
                   .frameLength(payload.length + DataHeaderFlyweight.HEADER_LENGTH)
@@ -357,7 +357,7 @@ public class LossHandlerTest
     private void insertPaddingFrame(final int offset)
     {
         dataHeader.termId(TERM_ID)
-                  .channelId(CHANNEL_ID)
+                  .streamId(STREAM_ID)
                   .sessionId(SESSION_ID)
                   .termOffset(offset)
                   .frameLength(LOG_BUFFER_SIZE - offset)

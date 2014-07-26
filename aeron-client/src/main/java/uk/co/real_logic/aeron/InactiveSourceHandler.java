@@ -23,8 +23,8 @@ public interface InactiveSourceHandler
     /**
      * Method called by Aeron to deliver notification that a source has gone inactive
      *
-     * @param channelId for the event
      * @param sessionId of the inactive source
+     * @param streamId of the inactive stream
      */
-    void onInactiveSource(final int channelId, final int sessionId);
+    void onInactiveSource(final int sessionId, final int streamId);
 }

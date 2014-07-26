@@ -32,19 +32,19 @@ import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_LONG;
  * +---------------------------------------------------------------+
  * |                          Session ID                           |
  * +---------------------------------------------------------------+
- * |                          Channel ID                           |
+ * |                          Stream ID                            |
  * +---------------------------------------------------------------+
- * |      Destination Length       |   Destination               ...
+ * |      Channel Length         |   Channel                     ...
  * |                                                             ...
  * +---------------------------------------------------------------+
  */
 public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
 {
     private static final int SESSION_ID_FIELD_OFFSET = CORRELATION_ID_FIELD_OFFSET + SIZE_OF_LONG;
-    private static final int CHANNEL_ID_FIELD_OFFSET = SESSION_ID_FIELD_OFFSET + SIZE_OF_INT;
-    private static final int DESTINATION_OFFSET = CHANNEL_ID_FIELD_OFFSET + SIZE_OF_INT;
+    private static final int STREAM_ID_FIELD_OFFSET = SESSION_ID_FIELD_OFFSET + SIZE_OF_INT;
+    private static final int CHANNEL_OFFSET = STREAM_ID_FIELD_OFFSET + SIZE_OF_INT;
 
-    private int lengthOfDestination;
+    private int lengthOfChannel;
 
     /**
      * Get the session id field
@@ -69,46 +69,46 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
     }
 
     /**
-     * Get the channel id field
+     * Get the stream id field
      *
-     * @return channel id field
+     * @return stream id field
      */
-    public int channelId()
+    public int streamId()
     {
-        return atomicBuffer().getInt(offset() + CHANNEL_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return atomicBuffer().getInt(offset() + STREAM_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
-     * Set the channel id field
+     * Set the stream id field
      *
-     * @param channelId field value
+     * @param streamId field value
      * @return flyweight
      */
-    public PublicationMessageFlyweight channelId(final int channelId)
+    public PublicationMessageFlyweight streamId(final int streamId)
     {
-        atomicBuffer().putInt(offset() + CHANNEL_ID_FIELD_OFFSET, channelId, ByteOrder.LITTLE_ENDIAN);
+        atomicBuffer().putInt(offset() + STREAM_ID_FIELD_OFFSET, streamId, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
     /**
-     * Get the destination field
+     * Get the channel field
      *
-     * @return destination field
+     * @return channel field
      */
-    public String destination()
+    public String channel()
     {
-        return stringGet(offset() + DESTINATION_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return stringGet(offset() + CHANNEL_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
-     * Set the destination field
+     * Set the channel field
      *
-     * @param destination field value
+     * @param channel field value
      * @return flyweight
      */
-    public PublicationMessageFlyweight destination(final String destination)
+    public PublicationMessageFlyweight channel(final String channel)
     {
-        lengthOfDestination = stringPut(offset() + DESTINATION_OFFSET, destination, ByteOrder.LITTLE_ENDIAN);
+        lengthOfChannel = stringPut(offset() + CHANNEL_OFFSET, channel, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
@@ -121,6 +121,6 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
      */
     public int length()
     {
-        return DESTINATION_OFFSET + lengthOfDestination;
+        return CHANNEL_OFFSET + lengthOfChannel;
     }
 }

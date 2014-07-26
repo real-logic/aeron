@@ -50,8 +50,8 @@ public class PubMulticastTest
     private static final String DATA_ADDRESS = "224.20.30.39";
     private static final String CONTROL_ADDRESS = "224.20.30.40";
     private static final int DST_PORT = 54321;
-    private static final String DESTINATION = "udp://localhost@" + DATA_ADDRESS + ":" + DST_PORT;
-    private static final int CHANNEL_ID = 1;
+    private static final String URI = "udp://localhost@" + DATA_ADDRESS + ":" + DST_PORT;
+    private static final int STREAM_ID = 1;
     private static final int SESSION_ID = 2;
     private static final byte[] PAYLOAD = "Payload goes here!".getBytes();
     public static final int ALIGNED_FRAME_LENGTH =
@@ -100,7 +100,7 @@ public class PubMulticastTest
         driver.invokeEmbedded();
         producingClient.invoke(executorService);
 
-        publication = producingClient.addPublication(DESTINATION, CHANNEL_ID, SESSION_ID);
+        publication = producingClient.addPublication(URI, STREAM_ID, SESSION_ID);
     }
 
     private Aeron.ClientContext newAeronContext()
@@ -145,7 +145,7 @@ public class PubMulticastTest
                 dataHeader.wrap(buffer, 0);
                 if (dataHeader.headerType() == HeaderFlyweight.HDR_TYPE_DATA)
                 {
-                    assertThat(dataHeader.channelId(), is(CHANNEL_ID));
+                    assertThat(dataHeader.streamId(), is(STREAM_ID));
                     assertThat(dataHeader.sessionId(), is(SESSION_ID));
                     termId.set(dataHeader.termId());
                     assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH));
@@ -170,7 +170,7 @@ public class PubMulticastTest
             {
                 dataHeader.wrap(buffer, 0);
                 assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
-                assertThat(dataHeader.channelId(), is(CHANNEL_ID));
+                assertThat(dataHeader.streamId(), is(STREAM_ID));
                 assertThat(dataHeader.sessionId(), is(SESSION_ID));
                 assertThat(dataHeader.termId(), is(termId.get()));
 
@@ -253,7 +253,7 @@ public class PubMulticastTest
             {
                 dataHeader.wrap(buffer, 0);
                 assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
-                assertThat(dataHeader.channelId(), is(CHANNEL_ID));
+                assertThat(dataHeader.streamId(), is(STREAM_ID));
                 assertThat(dataHeader.sessionId(), is(SESSION_ID));
                 assertThat(dataHeader.termId(), is(termId.get()));
 
@@ -279,7 +279,7 @@ public class PubMulticastTest
         statusMessage.receiverWindowSize(1000)
                 .highestContiguousTermOffset(0)
                 .termId(termId)
-                .channelId(CHANNEL_ID)
+                .streamId(STREAM_ID)
                 .sessionId(SESSION_ID)
                 .frameLength(StatusMessageFlyweight.HEADER_LENGTH)
                 .headerType(HeaderFlyweight.HDR_TYPE_SM)
@@ -301,7 +301,7 @@ public class PubMulticastTest
         nakHeader.length(length)
                 .termOffset(termOffset)
                 .termId(termId)
-                .channelId(CHANNEL_ID)
+                .streamId(STREAM_ID)
                 .sessionId(SESSION_ID)
                 .frameLength(NakFlyweight.HEADER_LENGTH)
                 .headerType(HeaderFlyweight.HDR_TYPE_NAK)

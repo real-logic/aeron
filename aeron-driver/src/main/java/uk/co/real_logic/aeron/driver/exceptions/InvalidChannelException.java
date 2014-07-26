@@ -15,9 +15,9 @@
  */
 package uk.co.real_logic.aeron.driver.exceptions;
 
-public class InvalidDestinationException extends IllegalArgumentException
+public class InvalidChannelException extends IllegalArgumentException
 {
-    public InvalidDestinationException(final Exception cause)
+    public InvalidChannelException(final Exception cause)
     {
         super(cause);
     }

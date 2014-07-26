@@ -48,8 +48,8 @@ public class PubUnicastTest
     private static final String HOST = "localhost";
     private static final int PORT = 54321;
     private static final int SRC_PORT = 54322;
-    private static final String DESTINATION = "udp://" + HOST + ":" + SRC_PORT + "@" + HOST + ":" + PORT;
-    private static final int CHANNEL_ID = 1;
+    private static final String URI = "udp://" + HOST + ":" + SRC_PORT + "@" + HOST + ":" + PORT;
+    private static final int STREAM_ID = 1;
     private static final int SESSION_ID = 2;
     private static final byte[] PAYLOAD = "Payload goes here!".getBytes();
     private static final int TERM_BUFFER_SIZE = LogBufferDescriptor.MIN_LOG_SIZE;
@@ -96,7 +96,7 @@ public class PubUnicastTest
         driver.invokeEmbedded();
         producingClient.invoke(executorService);
 
-        publication = producingClient.addPublication(DESTINATION, CHANNEL_ID, SESSION_ID);
+        publication = producingClient.addPublication(URI, STREAM_ID, SESSION_ID);
     }
 
     private Aeron.ClientContext newAeronContext()
@@ -142,7 +142,7 @@ public class PubUnicastTest
                 dataHeader.wrap(buffer, 0);
                 assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
                 assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH));
-                assertThat(dataHeader.channelId(), is(CHANNEL_ID));
+                assertThat(dataHeader.streamId(), is(STREAM_ID));
                 assertThat(dataHeader.sessionId(), is(SESSION_ID));
                 assertThat(buffer.position(), is(DataHeaderFlyweight.HEADER_LENGTH));
                 termId.set(dataHeader.termId());
@@ -161,7 +161,7 @@ public class PubUnicastTest
             {
                 dataHeader.wrap(buffer, 0);
                 assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
-                assertThat(dataHeader.channelId(), is(CHANNEL_ID));
+                assertThat(dataHeader.streamId(), is(STREAM_ID));
                 assertThat(dataHeader.sessionId(), is(SESSION_ID));
                 assertThat(dataHeader.termId(), is(termId.get()));
 
@@ -241,7 +241,7 @@ public class PubUnicastTest
                 dataHeader.wrap(buffer, 0);
                 assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
                 assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
-                assertThat(dataHeader.channelId(), is(CHANNEL_ID));
+                assertThat(dataHeader.streamId(), is(STREAM_ID));
                 assertThat(dataHeader.sessionId(), is(SESSION_ID));
                 assertThat(dataHeader.termId(), is(termId.get()));
 
@@ -267,7 +267,7 @@ public class PubUnicastTest
         statusMessage.receiverWindowSize(1000)
                      .highestContiguousTermOffset(0)
                      .termId(termId)
-                     .channelId(CHANNEL_ID)
+                     .streamId(STREAM_ID)
                      .sessionId(SESSION_ID)
                      .frameLength(StatusMessageFlyweight.HEADER_LENGTH)
                      .headerType(HeaderFlyweight.HDR_TYPE_SM)
@@ -289,7 +289,7 @@ public class PubUnicastTest
         nakHeader.length(length)
                  .termOffset(termOffset)
                  .termId(termId)
-                 .channelId(CHANNEL_ID)
+                 .streamId(STREAM_ID)
                  .sessionId(SESSION_ID)
                  .frameLength(NakFlyweight.HEADER_LENGTH)
                  .headerType(HeaderFlyweight.HDR_TYPE_NAK)

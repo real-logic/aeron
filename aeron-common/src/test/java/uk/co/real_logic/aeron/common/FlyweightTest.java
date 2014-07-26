@@ -124,7 +124,7 @@ public class FlyweightTest
         encodeDataHeader.headerType(HeaderFlyweight.HDR_TYPE_DATA);
         encodeDataHeader.frameLength(DataHeaderFlyweight.HEADER_LENGTH);
         encodeDataHeader.sessionId(0xdeadbeef);
-        encodeDataHeader.channelId(0x44332211);
+        encodeDataHeader.streamId(0x44332211);
         encodeDataHeader.termId(0x99887766);
 
         decodeDataHeader.wrap(aBuff, 0);
@@ -133,7 +133,7 @@ public class FlyweightTest
         assertThat(decodeDataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
         assertThat(decodeDataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH));
         assertThat(decodeDataHeader.sessionId(), is(0xdeadbeef));
-        assertThat(decodeDataHeader.channelId(), is(0x44332211));
+        assertThat(decodeDataHeader.streamId(), is(0x44332211));
         assertThat(decodeDataHeader.termId(), is(0x99887766));
         assertThat(decodeDataHeader.dataOffset(), is(DataHeaderFlyweight.HEADER_LENGTH));
     }
@@ -147,7 +147,7 @@ public class FlyweightTest
         encodeNakHeader.headerType(HeaderFlyweight.HDR_TYPE_NAK);
         encodeNakHeader.frameLength(NakFlyweight.HEADER_LENGTH);
         encodeNakHeader.sessionId(0xdeadbeef);
-        encodeNakHeader.channelId(0x44332211);
+        encodeNakHeader.streamId(0x44332211);
         encodeNakHeader.termId(0x99887766);
         encodeNakHeader.termOffset(0x22334);
         encodeNakHeader.length(512);
@@ -158,7 +158,7 @@ public class FlyweightTest
         assertThat(decodeNakHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_NAK));
         assertThat(decodeNakHeader.frameLength(), is(NakFlyweight.HEADER_LENGTH));
         assertThat(decodeNakHeader.sessionId(), is(0xdeadbeef));
-        assertThat(decodeNakHeader.channelId(), is(0x44332211));
+        assertThat(decodeNakHeader.streamId(), is(0x44332211));
         assertThat(decodeNakHeader.termId(), is(0x99887766));
         assertThat(decodeNakHeader.termOffset(), is(0x22334));
         assertThat(decodeNakHeader.length(), is(512));
@@ -170,11 +170,11 @@ public class FlyweightTest
         encodePublication.wrap(aBuff, 0);
 
         String example = "abcç̀漢字仮名交じり文";
-        encodePublication.destination(example);
+        encodePublication.channel(example);
 
         decodePublication.wrap(aBuff, 0);
 
-        assertThat(decodePublication.destination(), is(example));
+        assertThat(decodePublication.channel(), is(example));
     }
 
     @Test
@@ -189,7 +189,7 @@ public class FlyweightTest
         encodeDataHeader.headerType(HeaderFlyweight.HDR_TYPE_DATA);
         encodeDataHeader.frameLength(DataHeaderFlyweight.HEADER_LENGTH);
         encodeDataHeader.sessionId(0xdeadbeef);
-        encodeDataHeader.channelId(0x44332211);
+        encodeDataHeader.streamId(0x44332211);
         encodeDataHeader.termId(0x99887766);
 
         encodeError.wrap(aBuff, 0);
@@ -211,7 +211,7 @@ public class FlyweightTest
         assertThat(decodeDataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
         assertThat(decodeDataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH));
         assertThat(decodeDataHeader.sessionId(), is(0xdeadbeef));
-        assertThat(decodeDataHeader.channelId(), is(0x44332211));
+        assertThat(decodeDataHeader.streamId(), is(0x44332211));
         assertThat(decodeDataHeader.termId(), is(0x99887766));
         assertThat(decodeDataHeader.dataOffset(), is(encodeDataHeader.frameLength() + ErrorFlyweight.HEADER_LENGTH));
     }
@@ -229,7 +229,7 @@ public class FlyweightTest
         encodeDataHeader.headerType(HeaderFlyweight.HDR_TYPE_DATA);
         encodeDataHeader.frameLength(DataHeaderFlyweight.HEADER_LENGTH);
         encodeDataHeader.sessionId(0xdeadbeef);
-        encodeDataHeader.channelId(0x44332211);
+        encodeDataHeader.streamId(0x44332211);
         encodeDataHeader.termId(0x99887766);
 
         encodeError.wrap(aBuff, 0);
@@ -256,7 +256,7 @@ public class FlyweightTest
         assertThat(decodeDataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
         assertThat(decodeDataHeader.frameLength(), is(encodeDataHeader.frameLength()));
         assertThat(decodeDataHeader.sessionId(), is(0xdeadbeef));
-        assertThat(decodeDataHeader.channelId(), is(0x44332211));
+        assertThat(decodeDataHeader.streamId(), is(0x44332211));
         assertThat(decodeDataHeader.termId(), is(0x99887766));
         assertThat(decodeDataHeader.dataOffset(), is(encodeDataHeader.frameLength() + ErrorFlyweight.HEADER_LENGTH));
         assertThat(decodeError.errorMessageOffset(), is(encodeDataHeader.frameLength() + ErrorFlyweight.HEADER_LENGTH));
@@ -271,7 +271,7 @@ public class FlyweightTest
         assertLengthFindsNonZeroedBytes(0);
         encodeNewBuffer.wrap(aBuff, 0);
 
-        encodeNewBuffer.channelId(1)
+        encodeNewBuffer.streamId(1)
                        .sessionId(2)
                        .termId(3)
                        .bufferOffset(0, 1)
@@ -286,12 +286,12 @@ public class FlyweightTest
                        .location(3, "def")
                        .location(4, "ghi")
                        .location(5, "jkl")
-                       .destination("abc");
+                       .channel("abc");
 
         assertLengthFindsNonZeroedBytes(encodeNewBuffer.length());
         decodeNewBuffer.wrap(aBuff, 0);
 
-        assertThat(decodeNewBuffer.channelId(), is(1));
+        assertThat(decodeNewBuffer.streamId(), is(1));
         assertThat(decodeNewBuffer.sessionId(), is(2));
         assertThat(decodeNewBuffer.termId(), is(3));
 
@@ -311,7 +311,7 @@ public class FlyweightTest
         assertThat(decodeNewBuffer.location(4), is("ghi"));
         assertThat(decodeNewBuffer.location(5), is("jkl"));
 
-        assertThat(decodeNewBuffer.destination(), is("abc"));
+        assertThat(decodeNewBuffer.channel(), is("abc"));
     }
 
     private void assertLengthFindsNonZeroedBytes(final int length)

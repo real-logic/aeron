@@ -36,8 +36,8 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
 public class Publication
 {
     private final ClientConductor clientConductor;
-    private final String destination;
-    private final int channelId;
+    private final String channel;
+    private final int streamId;
     private final int sessionId;
     private final ManagedBuffer[] managedBuffers;
     private final LogAppender[] logAppenders;
@@ -51,8 +51,8 @@ public class Publication
     private int activeIndex;
 
     public Publication(final ClientConductor clientConductor,
-                       final String destination,
-                       final int channelId,
+                       final String channel,
+                       final int streamId,
                        final int sessionId,
                        final int initialTermId,
                        final LogAppender[] logAppenders,
@@ -61,8 +61,8 @@ public class Publication
     {
         this.clientConductor = clientConductor;
 
-        this.destination = destination;
-        this.channelId = channelId;
+        this.channel = channel;
+        this.streamId = streamId;
         this.sessionId = sessionId;
         this.managedBuffers = managedBuffers;
         this.activeTermId = new AtomicInteger(initialTermId);
@@ -75,23 +75,23 @@ public class Publication
     }
 
     /**
-     * Media address for delivery to the destination.
+     * Media address for delivery to the channel.
      *
-     * @return Media address for delivery to the destination.
+     * @return Media address for delivery to the channel.
      */
-    public String destination()
+    public String channel()
     {
-        return destination;
+        return channel;
     }
 
     /**
-     * Channel identity for scoping within the destination media address.
+     * Stream identity for scoping within the channel media address.
      *
-     * @return Channel identity for scoping within the destination media address.
+     * @return Stream identity for scoping within the channel media address.
      */
-    public int channelId()
+    public int streamId()
     {
-        return channelId;
+        return streamId;
     }
 
     /**
@@ -194,7 +194,7 @@ public class Publication
         final int activeTermId = this.activeTermId.get();
         final int newTermId = activeTermId + 1;
 
-        ensureClean(nextAppender, destination, channelId, newTermId);
+        ensureClean(nextAppender, channel, streamId, newTermId);
 
         dataHeader.wrap(nextAppender.defaultHeader());
         dataHeader.termId(newTermId);

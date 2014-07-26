@@ -23,9 +23,9 @@ public interface NewSourceHandler
     /**
      * Method called by Aeron to deliver notification of a new source session
      *
-     * @param destination for the source
+     * @param channel for the source
      * @param sessionId for the source
-     * @param channelId for the source
+     * @param streamId for the source
      */
-    void onNewSource(final String destination, final int sessionId, final int channelId);
+    void onNewSource(final String channel, final int sessionId, final int streamId);
 }

@@ -15,34 +15,34 @@
  */
 package uk.co.real_logic.aeron.driver.cmd;
 
-import uk.co.real_logic.aeron.driver.UdpDestination;
+import uk.co.real_logic.aeron.driver.UdpChannel;
 
 import java.net.InetSocketAddress;
 
 public class CreateConnectedSubscriptionCmd
 {
-    private final UdpDestination udpDestination;
+    private final UdpChannel udpChannel;
     private final int sessionId;
-    private final int channelId;
+    private final int streamId;
     private final int termId;
     private final InetSocketAddress controlAddress;
 
-    public CreateConnectedSubscriptionCmd(final UdpDestination udpDestination,
+    public CreateConnectedSubscriptionCmd(final UdpChannel udpChannel,
                                           final int sessionId,
-                                          final int channelId,
+                                          final int streamId,
                                           final int termId,
                                           final InetSocketAddress controlAddress)
     {
-        this.udpDestination = udpDestination;
+        this.udpChannel = udpChannel;
         this.sessionId = sessionId;
-        this.channelId = channelId;
+        this.streamId = streamId;
         this.termId = termId;
         this.controlAddress = controlAddress;
     }
 
-    public UdpDestination udpDestination()
+    public UdpChannel udpChannel()
     {
-        return udpDestination;
+        return udpChannel;
     }
 
     public int sessionId()
@@ -50,9 +50,9 @@ public class CreateConnectedSubscriptionCmd
         return sessionId;
     }
 
-    public int channelId()
+    public int streamId()
     {
-        return channelId;
+        return streamId;
     }
 
     public int termId()

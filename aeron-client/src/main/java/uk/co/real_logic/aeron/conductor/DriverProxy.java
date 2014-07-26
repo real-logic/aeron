@@ -51,34 +51,34 @@ public class DriverProxy
         qualifiedMessage.wrap(writeBuffer, 0);
     }
 
-    public long addPublication(final String destination, final int channelId, final int sessionId)
+    public long addPublication(final String channel, final int sessionId, final int streamId)
     {
-        return sendPublicationMessage(destination, sessionId, channelId, ADD_PUBLICATION);
+        return sendPublicationMessage(channel, sessionId, streamId, ADD_PUBLICATION);
     }
 
-    public long removePublication(final String destination, final int sessionId, final int channelId)
+    public long removePublication(final String channel, final int sessionId, final int streamId)
     {
-        return sendPublicationMessage(destination, sessionId, channelId, REMOVE_PUBLICATION);
+        return sendPublicationMessage(channel, sessionId, streamId, REMOVE_PUBLICATION);
     }
 
-    public long addSubscription(final String destination, final int channelId)
+    public long addSubscription(final String channel, final int streamId)
     {
-        return sendSubscriptionMessage(ADD_SUBSCRIPTION, destination, channelId);
+        return sendSubscriptionMessage(ADD_SUBSCRIPTION, channel, streamId);
     }
 
-    public long removeSubscription(final String destination, final int channelId)
+    public long removeSubscription(final String channel, final int streamId)
     {
-        return sendSubscriptionMessage(REMOVE_SUBSCRIPTION, destination, channelId);
+        return sendSubscriptionMessage(REMOVE_SUBSCRIPTION, channel, streamId);
     }
 
-    private long sendPublicationMessage(final String destination, final int sessionId, final int channelId, final int msgTypeId)
+    private long sendPublicationMessage(final String channel, final int sessionId, final int streamId, final int msgTypeId)
     {
         final long correlationId = mediaDriverCommandBuffer.nextCorrelationId();
 
         publicationMessage.correlationId(correlationId);
         publicationMessage.sessionId(sessionId);
-        publicationMessage.channelId(channelId);
-        publicationMessage.destination(destination);
+        publicationMessage.streamId(streamId);
+        publicationMessage.channel(channel);
 
         if (!mediaDriverCommandBuffer.write(msgTypeId, writeBuffer, 0, publicationMessage.length()))
         {
@@ -88,13 +88,13 @@ public class DriverProxy
         return correlationId;
     }
 
-    private long sendSubscriptionMessage(final int msgTypeId, final String destination, final int channelId)
+    private long sendSubscriptionMessage(final int msgTypeId, final String channel, final int streamId)
     {
         final long correlationId = mediaDriverCommandBuffer.nextCorrelationId();
 
         subscriptionMessage.correlationId(correlationId);
-        subscriptionMessage.channelId(channelId);
-        subscriptionMessage.destination(destination);
+        subscriptionMessage.streamId(streamId);
+        subscriptionMessage.channel(channel);
 
         if (!mediaDriverCommandBuffer.write(msgTypeId, writeBuffer, 0, subscriptionMessage.length()))
         {
@@ -104,12 +104,12 @@ public class DriverProxy
         return correlationId;
     }
 
-    public void requestTerm(final String destination, final int sessionId, final int channelId, final int termId)
+    public void requestTerm(final String channel, final int sessionId, final int streamId, final int termId)
     {
         qualifiedMessage.sessionId(sessionId);
-        qualifiedMessage.channelId(channelId);
+        qualifiedMessage.streamId(streamId);
         qualifiedMessage.termId(termId);
-        qualifiedMessage.destination(destination);
+        qualifiedMessage.channel(channel);
 
         if (!mediaDriverCommandBuffer.write(CLEAN_TERM_BUFFER, writeBuffer, 0, qualifiedMessage.length()))
         {

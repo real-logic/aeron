@@ -55,7 +55,7 @@ public class DriverPublication implements AutoCloseable
     private final TimerWheel timerWheel;
 
     private final int sessionId;
-    private final int channelId;
+    private final int streamId;
 
     private final AtomicInteger activeTermId;
 
@@ -98,7 +98,7 @@ public class DriverPublication implements AutoCloseable
                              final TermBuffers termBuffers,
                              final BufferPositionReporter limitReporter,
                              final int sessionId,
-                             final int channelId,
+                             final int streamId,
                              final int initialTermId,
                              final int headerLength,
                              final int mtuLength,
@@ -107,12 +107,12 @@ public class DriverPublication implements AutoCloseable
         this.mediaEndpoint = mediaEndpoint;
         this.termBuffers = termBuffers;
         this.logger = logger;
-        this.dstAddress = mediaEndpoint.destination().remoteData();
+        this.dstAddress = mediaEndpoint.udpChannel().remoteData();
         this.controlStrategy = controlStrategy;
         this.timerWheel = timerWheel;
         this.limitReporter = limitReporter;
         this.sessionId = sessionId;
-        this.channelId = channelId;
+        this.streamId = streamId;
         this.headerLength = headerLength;
         this.mtuLength = mtuLength;
         this.activeIndex = termIdToBufferIndex(initialTermId);
@@ -177,9 +177,9 @@ public class DriverPublication implements AutoCloseable
         return sessionId;
     }
 
-    public int channelId()
+    public int streamId()
     {
-        return channelId;
+        return streamId;
     }
 
     /**
@@ -373,7 +373,7 @@ public class DriverPublication implements AutoCloseable
         dataHeader.wrap(scratchAtomicBuffer, 0);
 
         dataHeader.sessionId(sessionId)
-                  .channelId(channelId)
+                  .streamId(streamId)
                   .termId(activeTermId.get())
                   .termOffset(nextTermOffset)
                   .frameLength(DataHeaderFlyweight.HEADER_LENGTH)

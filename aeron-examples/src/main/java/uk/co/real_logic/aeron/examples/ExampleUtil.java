@@ -110,18 +110,18 @@ public class ExampleUtil
     /**
      * Return a reusable, parameterized {@link uk.co.real_logic.aeron.DataHandler} that prints to stdout
      *
-     * @param channelId to show when printing
+     * @param streamId to show when printing
      * @return subscription data handler function that prints the message contents
      */
-    public static DataHandler printStringMessage(final int channelId)
+    public static DataHandler printStringMessage(final int streamId)
     {
         return (buffer, offset, length, sessionId, flags) ->
         {
             final byte[] data = new byte[length];
             buffer.getBytes(offset, data);
 
-            System.out.println(String.format("message to channel %d from session %d (%d@%d) <<%s>>",
-                                             channelId, sessionId, length, offset, new String(data)));
+            System.out.println(String.format("message to stream %d from session %d (%d@%d) <<%s>>",
+                                             streamId, sessionId, length, offset, new String(data)));
         };
     }
 
@@ -140,15 +140,15 @@ public class ExampleUtil
     /**
      * Generic error handler that just prints message to stdout.
      *
-     * @param destination for the error
+     * @param channel for the error
      * @param sessionId   for the error, if source
-     * @param channelId   for the error
+     * @param streamId   for the error
      * @param message     indicating what the error was
      * @param cause       of the error
      */
-    public static void printError(final String destination,
+    public static void printError(final String channel,
                                   final int sessionId,
-                                  final int channelId,
+                                  final int streamId,
                                   final String message,
                                   final HeaderFlyweight cause)
     {

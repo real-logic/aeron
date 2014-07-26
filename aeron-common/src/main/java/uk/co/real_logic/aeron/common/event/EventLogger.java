@@ -105,7 +105,7 @@ public class EventLogger
         }
     }
 
-    // TODO: in order to make this an instance field UdpDestination's initialisation needs to avoid
+    // TODO: in order to make this an instance field UdpChannel's initialisation needs to avoid
     // a static block
     public static void log(final EventCode code, final String value)
     {

@@ -107,15 +107,15 @@ public final class UdpTransport implements AutoCloseable
     /**
      * Construct a transport for use with receiving and processing data frames
      *
-     * @param destination of the transport
+     * @param udpChannel of the transport
      * @param dataFrameHandler to call when data frames are received
      * @param logger for logging
      * @throws Exception
      */
-    public UdpTransport(final UdpDestination destination, final DataFrameHandler dataFrameHandler, final EventLogger logger)
+    public UdpTransport(final UdpChannel udpChannel, final DataFrameHandler dataFrameHandler, final EventLogger logger)
         throws Exception
     {
-        this(destination, dataFrameHandler, null, null, logger, destination.remoteData(), destination.remoteData());
+        this(udpChannel, dataFrameHandler, null, null, logger, udpChannel.remoteData(), udpChannel.remoteData());
     }
 
     /**
@@ -123,22 +123,22 @@ public final class UdpTransport implements AutoCloseable
      *
      * Does not register
      *
-     * @param destination of the transport
+     * @param udpChannel of the transport
      * @param smFrameHandler to call when status message frames are received
      * @param nakFrameHandler to call when NAK frames are received
      * @param logger for logging
      * @throws Exception
      */
-    public UdpTransport(final UdpDestination destination,
+    public UdpTransport(final UdpChannel udpChannel,
                         final StatusMessageFrameHandler smFrameHandler,
                         final NakFrameHandler nakFrameHandler,
                         final EventLogger logger)
         throws Exception
     {
-        this(destination, null, smFrameHandler, nakFrameHandler, logger, destination.remoteControl(), destination.localControl());
+        this(udpChannel, null, smFrameHandler, nakFrameHandler, logger, udpChannel.remoteControl(), udpChannel.localControl());
     }
 
-    private UdpTransport(final UdpDestination destination,
+    private UdpTransport(final UdpChannel udpChannel,
                          final DataFrameHandler dataFrameHandler,
                          final StatusMessageFrameHandler smFrameHandler,
                          final NakFrameHandler nakFrameHandler,
@@ -157,11 +157,11 @@ public final class UdpTransport implements AutoCloseable
         nakHeader.wrap(readBuffer, 0);
         statusMessage.wrap(readBuffer, 0);
 
-        if (destination.isMulticast())
+        if (udpChannel.isMulticast())
         {
             final InetAddress endPointAddress = endPointSocketAddress.getAddress();
             final int dstPort = endPointSocketAddress.getPort();
-            final NetworkInterface localInterface = destination.localInterface();
+            final NetworkInterface localInterface = udpChannel.localInterface();
 
             channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
             channel.bind(new InetSocketAddress(dstPort));

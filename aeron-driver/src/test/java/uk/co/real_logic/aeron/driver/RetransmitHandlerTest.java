@@ -48,7 +48,7 @@ public class RetransmitHandlerTest
     private static final int MESSAGE_LENGTH = DataHeaderFlyweight.HEADER_LENGTH + DATA.length;
     private static final int ALIGNED_FRAME_LENGTH = align(MESSAGE_LENGTH, FrameDescriptor.FRAME_ALIGNMENT);
     private static final int SESSION_ID = 0x5E55101D;
-    private static final int CHANNEL_ID = 0x5400E;
+    private static final int STREAM_ID = 0x5400E;
     private static final int TERM_ID = 0x7F003355;
 
     public static final FeedbackDelayGenerator delayGenerator = () -> TimeUnit.MILLISECONDS.toNanos(20);
@@ -253,7 +253,7 @@ public class RetransmitHandlerTest
         dataHeader.wrap(rcvBuffer, 0);
 
         dataHeader.termId(TERM_ID)
-                  .channelId(CHANNEL_ID)
+                  .streamId(STREAM_ID)
                   .sessionId(SESSION_ID)
                   .termOffset(offsetOfMessage(msgNum))
                   .frameLength(MESSAGE_LENGTH)

@@ -32,8 +32,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class StreamingPublisher
 {
-    public static final int CHANNEL_ID = ExampleConfiguration.CHANNEL_ID;
-    public static final String DESTINATION = ExampleConfiguration.DESTINATION;
+    public static final int STREAM_ID = ExampleConfiguration.STREAM_ID;
+    public static final String CHANNEL = ExampleConfiguration.CHANNEL;
     public static final int MESSAGE_LENGTH = ExampleConfiguration.MESSAGE_LENGTH;
     public static final long NUMBER_OF_MESSAGES = ExampleConfiguration.NUMBER_OF_MESSAGES;
     public static final long LINGER_TIMEOUT_MS = ExampleConfiguration.LINGER_TIMEOUT_MS;
@@ -50,9 +50,9 @@ public class StreamingPublisher
         Aeron aeron = ExampleUtil.createAeron(context, executor);
 
         System.out.println("Streaming " + NUMBER_OF_MESSAGES + " messages of size " + MESSAGE_LENGTH +
-                           " bytes to " + DESTINATION + " on channel Id " + CHANNEL_ID);
+                           " bytes to " + CHANNEL + " on stream Id " + STREAM_ID);
 
-        final Publication publication = aeron.addPublication(DESTINATION, CHANNEL_ID, 0);
+        final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID, 0);
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), ExampleUtil::printRate);
 
         // report the rate we are sending

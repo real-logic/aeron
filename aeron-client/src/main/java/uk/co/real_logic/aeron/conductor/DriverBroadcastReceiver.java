@@ -59,20 +59,20 @@ public class DriverBroadcastReceiver
                         case ON_NEW_PUBLICATION:
                             logBuffersMessage.wrap(buffer, index);
 
-                            final String destination = logBuffersMessage.destination();
+                            final String channel = logBuffersMessage.channel();
                             final int sessionId = logBuffersMessage.sessionId();
-                            final int channelId = logBuffersMessage.channelId();
+                            final int streamId = logBuffersMessage.streamId();
                             final int termId = logBuffersMessage.termId();
                             final int positionCounterId = logBuffersMessage.positionCounterId();
 
                             if (msgTypeId == ON_NEW_PUBLICATION && logBuffersMessage.correlationId() == activeCorrelationId)
                             {
                                 listener.onNewPublication(
-                                    destination, sessionId, channelId, termId, positionCounterId, logBuffersMessage);
+                                    channel, sessionId, streamId, termId, positionCounterId, logBuffersMessage);
                             }
                             else
                             {
-                                listener.onNewConnectedSubscription(destination, sessionId, channelId, termId, logBuffersMessage);
+                                listener.onNewConnectedSubscription(channel, sessionId, streamId, termId, logBuffersMessage);
                             }
                             break;
 
@@ -109,10 +109,10 @@ public class DriverBroadcastReceiver
         switch (errorCode)
         {
             // Publication errors
-            case PUBLICATION_CHANNEL_ALREADY_EXISTS:
+            case PUBLICATION_STREAM_ALREADY_EXISTS:
             case GENERIC_ERROR_MESSAGE:
-            case INVALID_DESTINATION:
-            case PUBLICATION_CHANNEL_UNKNOWN:
+            case INVALID_CHANNEL:
+            case PUBLICATION_STREAM_UNKNOWN:
                 final long correlationId = correlationId(buffer, errorHeader.offendingHeaderOffset());
                 if (correlationId == activeCorrelationId)
                 {

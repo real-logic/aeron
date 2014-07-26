@@ -20,12 +20,12 @@ import uk.co.real_logic.aeron.driver.MediaSubscriptionEndpoint;
 public class AddSubscriptionCmd
 {
     private final MediaSubscriptionEndpoint mediaSubscriptionEndpoint;
-    private final int channelId;
+    private final int streamId;
 
-    public AddSubscriptionCmd(final MediaSubscriptionEndpoint mediaSubscriptionEndpoint, final int channelId)
+    public AddSubscriptionCmd(final MediaSubscriptionEndpoint mediaSubscriptionEndpoint, final int streamId)
     {
         this.mediaSubscriptionEndpoint = mediaSubscriptionEndpoint;
-        this.channelId = channelId;
+        this.streamId = streamId;
     }
 
     public MediaSubscriptionEndpoint mediaSubscriptionEndpoint()
@@ -33,8 +33,8 @@ public class AddSubscriptionCmd
         return mediaSubscriptionEndpoint;
     }
 
-    public int channelId()
+    public int streamId()
     {
-        return channelId;
+        return streamId;
     }
 }

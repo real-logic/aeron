@@ -49,11 +49,11 @@ public class SenderTest
     public static final long LOG_BUFFER_SIZE = LogBufferDescriptor.MIN_LOG_SIZE;
     public static final int MAX_FRAME_LENGTH = 1024;
     public static final int SESSION_ID = 1;
-    public static final int CHANNEL_ID = 2;
+    public static final int STREAM_ID = 2;
     public static final int INITIAL_TERM_ID = 3;
     public static final byte[] PAYLOAD = "Payload is here!".getBytes();
 
-    public final byte[] HEADER = DataHeaderFlyweight.createDefaultHeader(SESSION_ID, CHANNEL_ID, INITIAL_TERM_ID);
+    public final byte[] HEADER = DataHeaderFlyweight.createDefaultHeader(SESSION_ID, STREAM_ID, INITIAL_TERM_ID);
     public final int ALIGNED_FRAME_LENGTH = align(HEADER.length + PAYLOAD.length, FRAME_ALIGNMENT);
 
     private final EventLogger mockLogger = mock(EventLogger.class);
@@ -78,8 +78,8 @@ public class SenderTest
 
     private final Queue<ByteBuffer> receivedFrames = new ArrayDeque<>();
 
-    private final UdpDestination destination = UdpDestination.parse("udp://localhost:40123");
-    private final InetSocketAddress rcvAddress = destination.remoteData();
+    private final UdpChannel udpChannel = UdpChannel.parse("udp://localhost:40123");
+    private final InetSocketAddress rcvAddress = udpChannel.remoteData();
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
     private Answer<Integer> saveByteBufferAnswer =
@@ -102,11 +102,11 @@ public class SenderTest
 
         logAppenders =
             termBuffers.stream()
-                       .map((log) -> new LogAppender(log.logBuffer(), log.stateBuffer(),HEADER, MAX_FRAME_LENGTH))
+                       .map((log) -> new LogAppender(log.logBuffer(), log.stateBuffer(), HEADER, MAX_FRAME_LENGTH))
                        .toArray(LogAppender[]::new);
 
         final MediaPublicationEndpoint mockMediaPublicationEndpoint = mock(MediaPublicationEndpoint.class);
-        when(mockMediaPublicationEndpoint.destination()).thenReturn(destination);
+        when(mockMediaPublicationEndpoint.udpChannel()).thenReturn(udpChannel);
         when(mockMediaPublicationEndpoint.sendTo(anyObject(), anyObject())).thenAnswer(saveByteBufferAnswer);
 
         publication = new DriverPublication(mockMediaPublicationEndpoint,
@@ -115,7 +115,7 @@ public class SenderTest
                                             termBuffers,
                                             mock(BufferPositionReporter.class),
                                             SESSION_ID,
-                                            CHANNEL_ID,
+            STREAM_ID,
                                             INITIAL_TERM_ID,
                                             HEADER.length,
                                             MAX_FRAME_LENGTH,
@@ -152,7 +152,7 @@ public class SenderTest
         dataHeader.wrap(receivedFrames.remove(), 0);
         assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
-        assertThat(dataHeader.channelId(), is(CHANNEL_ID));
+        assertThat(dataHeader.streamId(), is(STREAM_ID));
         assertThat(dataHeader.sessionId(), is(SESSION_ID));
         assertThat(dataHeader.termOffset(), is(offsetOfMessage(1)));
         assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
@@ -211,7 +211,7 @@ public class SenderTest
 
         assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
-        assertThat(dataHeader.channelId(), is(CHANNEL_ID));
+        assertThat(dataHeader.streamId(), is(STREAM_ID));
         assertThat(dataHeader.sessionId(), is(SESSION_ID));
         assertThat(dataHeader.termOffset(), is(offsetOfMessage(1)));
         assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
@@ -240,7 +240,7 @@ public class SenderTest
 
         assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
-        assertThat(dataHeader.channelId(), is(CHANNEL_ID));
+        assertThat(dataHeader.streamId(), is(STREAM_ID));
         assertThat(dataHeader.sessionId(), is(SESSION_ID));
         assertThat(dataHeader.termOffset(), is(offsetOfMessage(1)));
         assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
@@ -250,7 +250,7 @@ public class SenderTest
         dataHeader.wrap(receivedFrames.remove(), 0);
         assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
-        assertThat(dataHeader.channelId(), is(CHANNEL_ID));
+        assertThat(dataHeader.streamId(), is(STREAM_ID));
         assertThat(dataHeader.sessionId(), is(SESSION_ID));
         assertThat(dataHeader.termOffset(), is(offsetOfMessage(2)));
         assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
@@ -278,7 +278,7 @@ public class SenderTest
         dataHeader.wrap(frame, 0);
         assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
-        assertThat(dataHeader.channelId(), is(CHANNEL_ID));
+        assertThat(dataHeader.streamId(), is(STREAM_ID));
         assertThat(dataHeader.sessionId(), is(SESSION_ID));
         assertThat(dataHeader.termOffset(), is(offsetOfMessage(1)));
         assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
@@ -288,7 +288,7 @@ public class SenderTest
         dataHeader.wrap(frame, offsetOfMessage(2));
         assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
-        assertThat(dataHeader.channelId(), is(CHANNEL_ID));
+        assertThat(dataHeader.streamId(), is(STREAM_ID));
         assertThat(dataHeader.sessionId(), is(SESSION_ID));
         assertThat(dataHeader.termOffset(), is(offsetOfMessage(2)));
         assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
@@ -317,7 +317,7 @@ public class SenderTest
 
         assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
-        assertThat(dataHeader.channelId(), is(CHANNEL_ID));
+        assertThat(dataHeader.streamId(), is(STREAM_ID));
         assertThat(dataHeader.sessionId(), is(SESSION_ID));
         assertThat(dataHeader.termOffset(), is(offsetOfMessage(1)));
         assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
@@ -343,7 +343,7 @@ public class SenderTest
 
         assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
-        assertThat(dataHeader.channelId(), is(CHANNEL_ID));
+        assertThat(dataHeader.streamId(), is(STREAM_ID));
         assertThat(dataHeader.sessionId(), is(SESSION_ID));
         assertThat(dataHeader.termOffset(), is(offsetOfMessage(1)));
         assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));

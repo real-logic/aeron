@@ -70,21 +70,21 @@ public class ClientProxy
 
     public void onNewTermBuffers(final int msgTypeId,
                                  final int sessionId,
-                                 final int channelId,
+                                 final int streamId,
                                  final int termId,
-                                 final String destination,
+                                 final String channel,
                                  final TermBuffers termBuffers,
                                  final long correlationId,
                                  final int positionCounterOffset)
     {
         logBuffersMessage.wrap(tmpBuffer, 0);
         logBuffersMessage.sessionId(sessionId)
-                         .channelId(channelId)
+                         .streamId(streamId)
                          .correlationId(correlationId)
                          .termId(termId)
                          .positionCounterOffset(positionCounterOffset);
         termBuffers.appendBufferLocationsTo(logBuffersMessage);
-        logBuffersMessage.destination(destination);
+        logBuffersMessage.channel(channel);
 
         logger.log(msgTypeId == ON_NEW_PUBLICATION ?
                    EventCode.CMD_OUT_NEW_PUBLICATION_BUFFER_NOTIFICATION :

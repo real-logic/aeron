@@ -33,16 +33,16 @@ public class DriverConductorProxy
         this.commandQueue = commandQueue;
     }
 
-    public boolean createConnectedSubscription(final UdpDestination udpDestination,
+    public boolean createConnectedSubscription(final UdpChannel udpChannel,
                                                final int sessionId,
-                                               final int channelId,
+                                               final int streamId,
                                                final int termId,
                                                final InetSocketAddress controlAddress)
     {
         return commandQueue.offer(
-            new CreateConnectedSubscriptionCmd(udpDestination,
+            new CreateConnectedSubscriptionCmd(udpChannel,
                                                sessionId,
-                                               channelId,
+                                               streamId,
                                                termId,
                                                controlAddress));
     }

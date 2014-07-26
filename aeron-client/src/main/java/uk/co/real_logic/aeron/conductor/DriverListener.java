@@ -10,17 +10,17 @@ import java.io.IOException;
  */
 public interface DriverListener
 {
-    void onNewPublication(String destination,
+    void onNewPublication(String channel,
                           int sessionId,
-                          int channelId,
+                          int streamId,
                           int termId,
                           int positionIndicatorId,
                           LogBuffersMessageFlyweight logBuffersMessage) throws IOException;
 
 
-    void onNewConnectedSubscription(String destination,
+    void onNewConnectedSubscription(String channel,
                                     int sessionId,
-                                    int channelId,
+                                    int streamId,
                                     int termId,
                                     LogBuffersMessageFlyweight logBuffersMessage) throws IOException;
 

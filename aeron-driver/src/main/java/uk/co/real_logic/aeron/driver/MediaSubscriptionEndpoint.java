@@ -35,20 +35,20 @@ public class MediaSubscriptionEndpoint implements AutoCloseable
     private final UdpTransport transport;
     private final DriverSubscriptionDispatcher dispatcher;
 
-    private final Int2ObjectHashMap<Integer> refCountByChannelIdMap = new Int2ObjectHashMap<>();
+    private final Int2ObjectHashMap<Integer> refCountByStreamIdMap = new Int2ObjectHashMap<>();
 
     private final ByteBuffer smBuffer = ByteBuffer.allocateDirect(StatusMessageFlyweight.HEADER_LENGTH);
     private final ByteBuffer nakBuffer = ByteBuffer.allocateDirect(NakFlyweight.HEADER_LENGTH);
     private final StatusMessageFlyweight smHeader = new StatusMessageFlyweight();
     private final NakFlyweight nakHeader = new NakFlyweight();
 
-    public MediaSubscriptionEndpoint(final UdpDestination udpDestination,
+    public MediaSubscriptionEndpoint(final UdpChannel udpChannel,
                                      final DriverConductorProxy conductorProxy,
                                      final EventLogger logger)
         throws Exception
     {
-        this.transport = new UdpTransport(udpDestination, this::onDataFrame, logger);
-        this.dispatcher = new DriverSubscriptionDispatcher(transport, udpDestination, conductorProxy);
+        this.transport = new UdpTransport(udpChannel, this::onDataFrame, logger);
+        this.dispatcher = new DriverSubscriptionDispatcher(transport, udpChannel, conductorProxy);
 
         smHeader.wrap(smBuffer, 0);
         nakHeader.wrap(nakBuffer, 0);
@@ -76,9 +76,9 @@ public class MediaSubscriptionEndpoint implements AutoCloseable
         return dispatcher;
     }
 
-    public int getRefCountByChannelId(final int channelId)
+    public int getRefCountByStreamId(final int streamId)
     {
-        final Integer count = refCountByChannelIdMap.get(channelId);
+        final Integer count = refCountByStreamIdMap.get(streamId);
 
         if (null == count)
         {
@@ -88,43 +88,43 @@ public class MediaSubscriptionEndpoint implements AutoCloseable
         return count;
     }
 
-    public int incRefToChannelId(final int channelId)
+    public int incRefToStreamId(final int streamId)
     {
-        Integer count = refCountByChannelIdMap.get(channelId);
+        Integer count = refCountByStreamIdMap.get(streamId);
 
         count = (null == count) ? 1 : count + 1;
 
-        refCountByChannelIdMap.put(channelId, count);
+        refCountByStreamIdMap.put(streamId, count);
 
         return count;
     }
 
-    public int decRefToChannelId(final int channelId)
+    public int decRefToStreamId(final int streamId)
     {
-        Integer count = refCountByChannelIdMap.get(channelId);
+        Integer count = refCountByStreamIdMap.get(streamId);
 
         if (null == count)
         {
-            throw new IllegalStateException("Could not find channel Id to decrement: " + channelId);
+            throw new IllegalStateException("Could not find channel Id to decrement: " + streamId);
         }
 
         count--;
 
         if (0 == count)
         {
-            refCountByChannelIdMap.remove(channelId);
+            refCountByStreamIdMap.remove(streamId);
         }
         else
         {
-            refCountByChannelIdMap.put(channelId, count);
+            refCountByStreamIdMap.put(streamId, count);
         }
 
         return count;
     }
 
-    public int channelCount()
+    public int streamCount()
     {
-        return refCountByChannelIdMap.size();
+        return refCountByStreamIdMap.size();
     }
 
     public void onDataFrame(final DataHeaderFlyweight header, final AtomicBuffer buffer,
@@ -135,29 +135,29 @@ public class MediaSubscriptionEndpoint implements AutoCloseable
 
     public StatusMessageSender composeStatusMessageSender(final InetSocketAddress controlAddress,
                                                           final int sessionId,
-                                                          final int channelId)
+                                                          final int streamId)
     {
         return (termId, termOffset, window) ->
-            sendStatusMessage(controlAddress, sessionId, channelId, termId, termOffset, window);
+            sendStatusMessage(controlAddress, sessionId, streamId, termId, termOffset, window);
     }
 
     public NakMessageSender composeNakMessageSender(final InetSocketAddress controlAddress,
                                                     final int sessionId,
-                                                    final int channelId)
+                                                    final int streamId)
     {
         return (termId, termOffset, length) ->
-            sendNak(controlAddress, sessionId, channelId, termId, termOffset, length);
+            sendNak(controlAddress, sessionId, streamId, termId, termOffset, length);
     }
 
     private void sendStatusMessage(final InetSocketAddress controlAddress,
                                    final int sessionId,
-                                   final int channelId,
+                                   final int streamId,
                                    final int termId,
                                    final int termOffset,
                                    final int window)
     {
         smHeader.sessionId(sessionId)
-                .channelId(channelId)
+                .streamId(streamId)
                 .termId(termId)
                 .highestContiguousTermOffset(termOffset)
                 .receiverWindowSize(window)
@@ -184,12 +184,12 @@ public class MediaSubscriptionEndpoint implements AutoCloseable
 
     private void sendNak(final InetSocketAddress controlAddress,
                          final int sessionId,
-                         final int channelId,
+                         final int streamId,
                          final int termId,
                          final int termOffset,
                          final int length)
     {
-        nakHeader.channelId(channelId)
+        nakHeader.streamId(streamId)
                  .sessionId(sessionId)
                  .termId(termId)
                  .termOffset(termOffset)

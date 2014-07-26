@@ -158,12 +158,12 @@ public final class Aeron implements AutoCloseable, Runnable
      *
      * If the sessionId is 0, then a random one will be generated.
      *
-     * @param destination for receiving the messages know to the media layer.
-     * @param channelId   within the destination scope.
-     * @param sessionId   to scope the source of the Publication.
+     * @param channel    for receiving the messages known to the media layer.
+     * @param streamId   within the channel scope.
+     * @param sessionId  to scope the source of the Publication.
      * @return the new Publication.
      */
-    public Publication addPublication(final String destination, final int channelId, final int sessionId)
+    public Publication addPublication(final String channel, final int streamId, final int sessionId)
     {
         int sessionIdToRequest = sessionId;
 
@@ -172,20 +172,20 @@ public final class Aeron implements AutoCloseable, Runnable
             sessionIdToRequest = generateSessionId();
         }
 
-        return conductor.addPublication(destination, channelId, sessionIdToRequest);
+        return conductor.addPublication(channel, sessionIdToRequest, streamId);
     }
 
     /**
      * Add a new {@link Subscription} for subscribing to messages from publishers.
      *
-     * @param destination for receiving the messages know to the media layer.
-     * @param channelId   within the destination scope.
-     * @param handler     to be called back for each message received.
-     * @return the {@link Subscription} for the destination and channelId pair.
+     * @param channel   for receiving the messages known to the media layer.
+     * @param streamId  within the channel scope.
+     * @param handler   to be called back for each message received.
+     * @return the {@link Subscription} for the channel and streamId pair.
      */
-    public Subscription addSubscription(final String destination, final int channelId, final DataHandler handler)
+    public Subscription addSubscription(final String channel, final int streamId, final DataHandler handler)
     {
-        return conductor.addSubscription(destination, channelId, handler);
+        return conductor.addSubscription(channel, streamId, handler);
     }
 
     public ClientConductor conductor()

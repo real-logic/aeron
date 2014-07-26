@@ -65,16 +65,16 @@ public class TermHelper
      * or this thread will wait for the conductor to complete the cleaning.
      *
      * @param logBuffer to be checked.
-     * @param destination used from the client to notify of unclean buffer.
-     * @param channelId used from the client to notify of unclean buffer.
+     * @param channel used from the client to notify of unclean buffer.
+     * @param streamId used from the client to notify of unclean buffer.
      * @param termId used from the client to notify of unclean buffer.
      */
-    public static void ensureClean(final LogBuffer logBuffer, final String destination, final int channelId, final int termId)
+    public static void ensureClean(final LogBuffer logBuffer, final String channel, final int streamId, final int termId)
     {
         if (CLEAN != logBuffer.status())
         {
-            System.err.println(String.format("Term not clean: destination=%s channelId=%d, required termId=%d",
-                                             destination, channelId, termId));
+            System.err.println(String.format("Term not clean: channel=%s streamId=%d, required termId=%d",
+                                             channel, streamId, termId));
 
             if (logBuffer.compareAndSetStatus(NEEDS_CLEANING, IN_CLEANING))
             {

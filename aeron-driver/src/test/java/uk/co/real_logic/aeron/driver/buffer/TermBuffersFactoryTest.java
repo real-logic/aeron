@@ -22,7 +22,7 @@ import uk.co.real_logic.aeron.common.IoUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.driver.MediaDriver;
-import uk.co.real_logic.aeron.driver.UdpDestination;
+import uk.co.real_logic.aeron.driver.UdpChannel;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,13 +32,13 @@ import static org.junit.Assert.assertThat;
 
 public class TermBuffersFactoryTest
 {
-    private static final String DESTINATION_URI = "udp://localhost:4321";
+    private static final String CHANNEL = "udp://localhost:4321";
     private static final int SESSION_ID = 100;
-    private static final int CHANNEL_ID = 100;
+    private static final int STREAM_ID = 100;
     private static final File DATA_DIR = new File(IoUtil.tmpDirName(), "dataDirName");
     private static final int TERM_BUFFER_SZ = MediaDriver.TERM_BUFFER_SZ_DEFAULT;
     private TermBuffersFactory termBuffersFactory;
-    private UdpDestination destination = UdpDestination.parse(DESTINATION_URI);
+    private UdpChannel udpChannel = UdpChannel.parse(CHANNEL);
 
     @Before
     public void createDataDir()
@@ -56,7 +56,7 @@ public class TermBuffersFactoryTest
     @Test
     public void mappedFilesAreCorrectSizeAndZeroed() throws Exception
     {
-        final TermBuffers termBuffers = termBuffersFactory.newPublication(destination, SESSION_ID, CHANNEL_ID);
+        final TermBuffers termBuffers = termBuffersFactory.newPublication(udpChannel, SESSION_ID, STREAM_ID);
 
         termBuffers.stream().forEach(
             (rawLog) ->

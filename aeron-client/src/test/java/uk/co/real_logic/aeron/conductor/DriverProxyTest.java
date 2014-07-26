@@ -33,9 +33,9 @@ import static uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBufferDesc
 
 public class DriverProxyTest
 {
-    public static final String DESTINATION = "udp://localhost:40123@localhost:40124";
+    public static final String CHANNEL = "udp://localhost:40123@localhost:40124";
 
-    private static final int CHANNEL_ID = 1;
+    private static final int STREAM_ID = 1;
     private static final int SESSION_ID = 1;
     private final RingBuffer conductorBuffer =
         new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocateDirect(TRAILER_LENGTH + 1024)));
@@ -44,13 +44,13 @@ public class DriverProxyTest
     @Test
     public void threadSendsAddChannelMessage()
     {
-        threadSendsChannelMessage(() -> conductor.addPublication(DESTINATION, 2, SESSION_ID), ADD_PUBLICATION);
+        threadSendsChannelMessage(() -> conductor.addPublication(CHANNEL, SESSION_ID, 2), ADD_PUBLICATION);
     }
 
     @Test
     public void threadSendsRemoveChannelMessage()
     {
-        threadSendsChannelMessage(() -> conductor.removePublication(DESTINATION, SESSION_ID, 2), REMOVE_PUBLICATION);
+        threadSendsChannelMessage(() -> conductor.removePublication(CHANNEL, SESSION_ID, 2), REMOVE_PUBLICATION);
     }
 
     private void threadSendsChannelMessage(final Runnable sendMessage, final int expectedMsgTypeId)
@@ -64,9 +64,9 @@ public class DriverProxyTest
                 publicationMessage.wrap(buffer, index);
 
                 assertThat(msgTypeId, is(expectedMsgTypeId));
-                assertThat(publicationMessage.destination(), is(DESTINATION));
+                assertThat(publicationMessage.channel(), is(CHANNEL));
                 assertThat(publicationMessage.sessionId(), is(1));
-                assertThat(publicationMessage.channelId(), is(2));
+                assertThat(publicationMessage.streamId(), is(2));
             }
         );
     }
@@ -74,7 +74,7 @@ public class DriverProxyTest
     @Test
     public void threadSendsRemoveSubscriberMessage()
     {
-        conductor.removeSubscription(DESTINATION, CHANNEL_ID);
+        conductor.removeSubscription(CHANNEL, STREAM_ID);
 
         assertReadsOneMessage(
             (msgTypeId, buffer, index, length) ->
@@ -83,8 +83,8 @@ public class DriverProxyTest
                 subscriberMessage.wrap(buffer, index);
 
                 assertThat(msgTypeId, is(REMOVE_SUBSCRIPTION));
-                assertThat(subscriberMessage.destination(), is(DESTINATION));
-                assertThat(subscriberMessage.channelId(), is(CHANNEL_ID));
+                assertThat(subscriberMessage.channel(), is(CHANNEL));
+                assertThat(subscriberMessage.streamId(), is(STREAM_ID));
             }
         );
     }
@@ -92,7 +92,7 @@ public class DriverProxyTest
     @Test
     public void threadSendsRequestTermBufferMessage()
     {
-        conductor.requestTerm(DESTINATION, SESSION_ID, 2, 3);
+        conductor.requestTerm(CHANNEL, SESSION_ID, 2, 3);
 
         assertReadsOneMessage(
             (msgTypeId, buffer, index, length) ->
@@ -102,8 +102,8 @@ public class DriverProxyTest
 
                 assertThat(msgTypeId, is(CLEAN_TERM_BUFFER));
                 assertThat(qualifiedMessage.sessionId(), is(1));
-                assertThat(qualifiedMessage.channelId(), is(2));
-                assertThat(qualifiedMessage.destination(), is(DESTINATION));
+                assertThat(qualifiedMessage.streamId(), is(2));
+                assertThat(qualifiedMessage.channel(), is(CHANNEL));
                 assertThat(qualifiedMessage.termId(), is(3));
             }
         );

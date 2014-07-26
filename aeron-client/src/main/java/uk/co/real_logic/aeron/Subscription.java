@@ -22,14 +22,14 @@ import uk.co.real_logic.aeron.conductor.ClientConductor;
 import uk.co.real_logic.aeron.conductor.ManagedBuffer;
 
 /**
- * Aeron Subscriber API for receiving messages from publishers on a given destination and channelId pair.
+ * Aeron Subscriber API for receiving messages from publishers on a given channel and streamId pair.
  * <p>
  * Subscriptions are not threadsafe and should not be shared between subscribers.
  */
 public class Subscription implements AutoCloseable
 {
-    private final String destination;
-    private final int channelId;
+    private final String channel;
+    private final int streamId;
     private final AtomicArray<ConnectedSubscription> connectedSubscriptions = new AtomicArray<>();
     private final DataHandler dataHandler;
     private final ClientConductor clientConductor;
@@ -38,23 +38,23 @@ public class Subscription implements AutoCloseable
 
     public Subscription(final ClientConductor clientConductor,
                         final DataHandler dataHandler,
-                        final String destination,
-                        final int channelId)
+                        final String channel,
+                        final int streamId)
     {
         this.clientConductor = clientConductor;
         this.dataHandler = dataHandler;
-        this.destination = destination;
-        this.channelId = channelId;
+        this.channel = channel;
+        this.streamId = streamId;
     }
 
-    public String destination()
+    public String channel()
     {
-        return destination;
+        return channel;
     }
 
-    public int channelId()
+    public int streamId()
     {
-        return channelId;
+        return streamId;
     }
 
     /**

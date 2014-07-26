@@ -54,8 +54,8 @@ public class SubMulticastTest
     private static final String DATA_ADDRESS = "224.20.30.39";
     private static final String CONTROL_ADDRESS = "224.20.30.40";
     private static final int DST_PORT = 54322;
-    private static final String DESTINATION = "udp://localhost@" + DATA_ADDRESS + ":" + DST_PORT;
-    private static final int CHANNEL_ID = 1;
+    private static final String URI = "udp://localhost@" + DATA_ADDRESS + ":" + DST_PORT;
+    private static final int STREAM_ID = 1;
     private static final int SESSION_ID = 2;
     private static final int TERM_ID = 3;
     private static final byte[] PAYLOAD = "Payload goes here!".getBytes();
@@ -121,7 +121,7 @@ public class SubMulticastTest
         driver.invokeEmbedded();
         consumingClient.invoke(executorService);
 
-        subscription = consumingClient.addSubscription(DESTINATION, CHANNEL_ID, saveFrames);
+        subscription = consumingClient.addSubscription(URI, STREAM_ID, saveFrames);
     }
 
     private Aeron.ClientContext newAeronContext()
@@ -161,7 +161,7 @@ public class SubMulticastTest
                 statusMessage.wrap(buffer, 0);
                 assertThat(statusMessage.headerType(), is(HeaderFlyweight.HDR_TYPE_SM));
                 assertThat(statusMessage.frameLength(), is(StatusMessageFlyweight.HEADER_LENGTH));
-                assertThat(statusMessage.channelId(), is(CHANNEL_ID));
+                assertThat(statusMessage.streamId(), is(STREAM_ID));
                 assertThat(statusMessage.sessionId(), is(SESSION_ID));
                 assertThat(statusMessage.termId(), is(TERM_ID));
                 assertThat(buffer.position(), is(StatusMessageFlyweight.HEADER_LENGTH));
@@ -272,7 +272,7 @@ public class SubMulticastTest
                 assertThat(nakHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_NAK));
                 assertThat(nakHeader.frameLength(), is(NakFlyweight.HEADER_LENGTH));
 //                    assertThat(buffer.position(), is(nakHeader.frameLength()));
-                assertThat(nakHeader.channelId(), is(CHANNEL_ID));
+                assertThat(nakHeader.streamId(), is(STREAM_ID));
                 assertThat(nakHeader.sessionId(), is(SESSION_ID));
                 assertThat(nakHeader.termId(), is(TERM_ID));
                 assertThat(nakHeader.termOffset(), is(ALIGNED_FRAME_LENGTH));
@@ -358,7 +358,7 @@ public class SubMulticastTest
 
         dataHeader.wrap(dataAtomicBuffer, 0);
         dataHeader.termId(TERM_ID)
-                  .channelId(CHANNEL_ID)
+                  .streamId(STREAM_ID)
                   .sessionId(SESSION_ID)
                   .termOffset(termOffset)
                   .frameLength(DataHeaderFlyweight.HEADER_LENGTH + payload.length)

@@ -26,7 +26,7 @@ import java.io.File;
  * Senders are under "${aeron.data.dir}/publications"
  * Receivers are under "${aeron.data.dir}/subscriptions"
  *
- * Both publications and subscriptions share the same structure of "sessionId/channelId/termId".
+ * Both publications and subscriptions share the same structure of "sessionId/streamId/termId".
  */
 public class FileMappingConvention
 {
@@ -64,21 +64,21 @@ public class FileMappingConvention
         return subscriptionsDir;
     }
 
-    public static File channelLocation(final File rootDir,
-                                       final int sessionId,
-                                       final int channelId,
-                                       final boolean createIfMissing,
-                                       final String destinationDirName)
+    public static File streamLocation(final File rootDir,
+                                      final int sessionId,
+                                      final int streamId,
+                                      final boolean createIfMissing,
+                                      final String channelDirName)
     {
-        final File destinationDir = new File(rootDir, destinationDirName);
-        final File sessionDir = new File(destinationDir, Integer.toString(sessionId));
-        final File channelDir = new File(sessionDir, Integer.toString(channelId));
+        final File channelDir = new File(rootDir, channelDirName);
+        final File sessionDir = new File(channelDir, Integer.toString(sessionId));
+        final File streamDir = new File(sessionDir, Integer.toString(streamId));
 
         if (createIfMissing)
         {
-            IoUtil.ensureDirectoryExists(channelDir, "channel");
+            IoUtil.ensureDirectoryExists(streamDir, "channel");
         }
 
-        return channelDir;
+        return streamDir;
     }
 }

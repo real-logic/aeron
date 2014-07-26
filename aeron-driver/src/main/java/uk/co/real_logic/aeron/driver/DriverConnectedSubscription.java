@@ -37,9 +37,9 @@ public class DriverConnectedSubscription implements AutoCloseable
     private static final int STATE_CREATED = 0;
     private static final int STATE_READY_TO_SEND_SMS = 1;
 
-    private final UdpDestination udpDestination;
+    private final UdpChannel udpChannel;
     private final int sessionId;
-    private final int channelId;
+    private final int streamId;
     private TermBuffers termBuffers;
     private PositionIndicator subscriberLimit;
 
@@ -65,9 +65,9 @@ public class DriverConnectedSubscription implements AutoCloseable
 
     private AtomicInteger state = new AtomicInteger(STATE_CREATED);
 
-    public DriverConnectedSubscription(final UdpDestination udpDestination,
+    public DriverConnectedSubscription(final UdpChannel udpChannel,
                                        final int sessionId,
-                                       final int channelId,
+                                       final int streamId,
                                        final int initialTermId,
                                        final int initialWindowSize,
                                        final TermBuffers termBuffers,
@@ -75,9 +75,9 @@ public class DriverConnectedSubscription implements AutoCloseable
                                        final StatusMessageSender statusMessageSender,
                                        final PositionIndicator subscriberLimit)
     {
-        this.udpDestination = udpDestination;
+        this.udpChannel = udpChannel;
         this.sessionId = sessionId;
-        this.channelId = channelId;
+        this.streamId = streamId;
         this.termBuffers = termBuffers;
         this.subscriberLimit = subscriberLimit;
 
@@ -110,9 +110,9 @@ public class DriverConnectedSubscription implements AutoCloseable
         return sessionId;
     }
 
-    public int channelId()
+    public int streamId()
     {
-        return channelId;
+        return streamId;
     }
 
     public void close()
@@ -308,7 +308,7 @@ public class DriverConnectedSubscription implements AutoCloseable
 
         if (nextIndex != hwmIndex)
         {
-            ensureClean(rebuilder, udpDestination.originalUriAsString(), channelId, activeTermId + 1);
+            ensureClean(rebuilder, udpChannel.originalUriAsString(), streamId, activeTermId + 1);
         }
 
         rebuilders[rotatePrevious(activeIndex)].statusOrdered(NEEDS_CLEANING);

@@ -25,8 +25,8 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
 
 public class PublicationTest
 {
-    public static final String DESTINATION = "udp://localhost:40124";
-    public static final int CHANNEL_ID_1 = 2;
+    public static final String CHANNEL = "udp://localhost:40124";
+    public static final int STREAM_ID_1 = 2;
     public static final int SESSION_ID_1 = 13;
     public static final int TERM_ID_1 = 1;
     public static final int SEND_BUFFER_CAPACITY = 1024;
@@ -66,7 +66,7 @@ public class PublicationTest
             managedBuffers[i] = mock(ManagedBuffer.class);
         }
 
-        publication = new Publication(conductor, DESTINATION, CHANNEL_ID_1, SESSION_ID_1,
+        publication = new Publication(conductor, CHANNEL, STREAM_ID_1, SESSION_ID_1,
                                       TERM_ID_1, appenders, limit, managedBuffers);
     }
 

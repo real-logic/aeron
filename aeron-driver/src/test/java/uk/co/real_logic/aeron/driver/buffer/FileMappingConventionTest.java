@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.driver.buffer;
 
 import org.junit.Test;
-import uk.co.real_logic.aeron.driver.UdpDestination;
+import uk.co.real_logic.aeron.driver.UdpChannel;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,22 +26,22 @@ import static org.junit.Assert.assertTrue;
 public class FileMappingConventionTest
 {
     @Test
-    public void destinationStringsAreValidFiles() throws IOException
+    public void uriStringsAreValidFiles() throws IOException
     {
-        assertIsValidFile(destinationToDir("udp://localhost:40123@localhost:40124"));
-        assertIsValidFile(destinationToDir("udp://localhost:40124"));
+        assertIsValidFile(uriToDir("udp://localhost:40123@localhost:40124"));
+        assertIsValidFile(uriToDir("udp://localhost:40124"));
     }
 
-    private String destinationToDir(final String uri)
+    private String uriToDir(final String uri)
     {
-        final UdpDestination destination = UdpDestination.parse(uri);
+        final UdpChannel udpChannel = UdpChannel.parse(uri);
 
-        return destination.canonicalRepresentation();
+        return udpChannel.canonicalRepresentation();
     }
 
-    private void assertIsValidFile(final String destinationDir) throws IOException
+    private void assertIsValidFile(final String channelDir) throws IOException
     {
-        final File file = new File(destinationDir);
+        final File file = new File(channelDir);
         assertTrue("Can't create a file", file.mkdir());
         assertTrue("Failed to clean up", file.delete());
     }

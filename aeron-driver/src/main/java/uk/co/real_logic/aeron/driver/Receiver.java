@@ -60,12 +60,12 @@ public class Receiver extends Agent
                     else if (obj instanceof AddSubscriptionCmd)
                     {
                         final AddSubscriptionCmd cmd = (AddSubscriptionCmd)obj;
-                        onAddSubscription(cmd.mediaSubscriptionEndpoint(), cmd.channelId());
+                        onAddSubscription(cmd.mediaSubscriptionEndpoint(), cmd.streamId());
                     }
                     else if (obj instanceof RemoveSubscriptionCmd)
                     {
                         final RemoveSubscriptionCmd cmd = (RemoveSubscriptionCmd)obj;
-                        onRemoveSubscription(cmd.mediaSubscriptionEndpoint(), cmd.channelId());
+                        onRemoveSubscription(cmd.mediaSubscriptionEndpoint(), cmd.streamId());
                     }
                     else if (obj instanceof RegisterMediaSubscriptionEndpointCmd)
                     {
@@ -98,15 +98,15 @@ public class Receiver extends Agent
         return nioSelector;
     }
 
-    private void onAddSubscription(final MediaSubscriptionEndpoint mediaSubscriptionEndpoint, final int channelId)
+    private void onAddSubscription(final MediaSubscriptionEndpoint mediaSubscriptionEndpoint, final int streamId)
         throws Exception
     {
-        mediaSubscriptionEndpoint.dispatcher().addSubscription(channelId);
+        mediaSubscriptionEndpoint.dispatcher().addSubscription(streamId);
     }
 
-    private void onRemoveSubscription(final MediaSubscriptionEndpoint mediaSubscriptionEndpoint, final int channelId)
+    private void onRemoveSubscription(final MediaSubscriptionEndpoint mediaSubscriptionEndpoint, final int streamId)
     {
-        mediaSubscriptionEndpoint.dispatcher().removeSubscription(channelId);
+        mediaSubscriptionEndpoint.dispatcher().removeSubscription(streamId);
     }
 
     private void onNewConnectedSubscription(final NewConnectedSubscriptionCmd cmd)

@@ -23,7 +23,7 @@ import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_INT;
 
 /**
  * Control message flyweight for any message that needs to
- * represent a Triple of Session ID/Channel Id/Term ID and a destination. These are:
+ * represent a Triple of Session ID/Channel Id/Term ID and a channel. These are:
  *
  * <ul>
  *     <li>Request Cleaned Term</li>
@@ -36,22 +36,22 @@ import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_INT;
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  * |                          Session ID                           |
  * +---------------------------------------------------------------+
- * |                          Channel ID                           |
+ * |                          Stream ID                            |
  * +---------------------------------------------------------------+
  * |                           Term ID                             |
  * +---------------------------------------------------------------+
- * |      Destination Length       |   Destination               ...
+ * |      Channel   Length       |   Channel                     ...
  * |                                                             ...
  * +---------------------------------------------------------------+
  */
 public class QualifiedMessageFlyweight extends Flyweight
 {
     private static final int SESSION_ID_OFFSET = 0;
-    private static final int CHANNEL_ID_FIELD_OFFSET = 4;
+    private static final int STREAM_ID_FIELD_OFFSET = 4;
     private static final int TERM_ID_FIELD_OFFSET = 8;
-    private static final int DESTINATION_OFFSET = 12;
+    private static final int CHANNEL_OFFSET = 12;
 
-    private int lengthOfDestination;
+    private int lengthOfChannel;
 
     /**
      * return session id field
@@ -74,24 +74,24 @@ public class QualifiedMessageFlyweight extends Flyweight
     }
 
     /**
-     * return channel id field
+     * return stream id field
      *
-     * @return channel id field
+     * @return stream id field
      */
-    public int channelId()
+    public int streamId()
     {
-        return atomicBuffer().getInt(offset() + CHANNEL_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return atomicBuffer().getInt(offset() + STREAM_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
-     * set channel id field
+     * set stream id field
      *
-     * @param channelId field value
+     * @param streamId field value
      * @return flyweight
      */
-    public QualifiedMessageFlyweight channelId(final int channelId)
+    public QualifiedMessageFlyweight streamId(final int streamId)
     {
-        atomicBuffer().putInt(offset() + CHANNEL_ID_FIELD_OFFSET, channelId, ByteOrder.LITTLE_ENDIAN);
+        atomicBuffer().putInt(offset() + STREAM_ID_FIELD_OFFSET, streamId, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
@@ -118,27 +118,27 @@ public class QualifiedMessageFlyweight extends Flyweight
     }
 
     /**
-     * return destination field
+     * return channel field
      *
-     * @return destination field
+     * @return channel field
      */
-    public String destination()
+    public String channel()
     {
-        final int destinationOffset = offset() + DESTINATION_OFFSET;
-        final int length = atomicBuffer().getInt(destinationOffset, ByteOrder.LITTLE_ENDIAN);
-        lengthOfDestination = SIZE_OF_INT + length;
-        return atomicBuffer().getString(destinationOffset, length);
+        final int channelOffset = offset() + CHANNEL_OFFSET;
+        final int length = atomicBuffer().getInt(channelOffset, ByteOrder.LITTLE_ENDIAN);
+        lengthOfChannel = SIZE_OF_INT + length;
+        return atomicBuffer().getString(channelOffset, length);
     }
 
     /**
-     * set destination field
+     * set channel field
      *
-     * @param destination field value
+     * @param channel field value
      * @return flyweight
      */
-    public QualifiedMessageFlyweight destination(final String destination)
+    public QualifiedMessageFlyweight channel(final String channel)
     {
-        lengthOfDestination = stringPut(offset() + DESTINATION_OFFSET, destination, ByteOrder.LITTLE_ENDIAN);
+        lengthOfChannel = stringPut(offset() + CHANNEL_OFFSET, channel, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
@@ -151,6 +151,6 @@ public class QualifiedMessageFlyweight extends Flyweight
      */
     public int length()
     {
-        return DESTINATION_OFFSET + lengthOfDestination;
+        return CHANNEL_OFFSET + lengthOfChannel;
     }
 }

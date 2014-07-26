@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import uk.co.real_logic.aeron.common.CommonContext;
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
@@ -42,8 +41,8 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
-import static uk.co.real_logic.aeron.common.ErrorCode.INVALID_DESTINATION;
-import static uk.co.real_logic.aeron.common.ErrorCode.PUBLICATION_CHANNEL_ALREADY_EXISTS;
+import static uk.co.real_logic.aeron.common.ErrorCode.INVALID_CHANNEL;
+import static uk.co.real_logic.aeron.common.ErrorCode.PUBLICATION_STREAM_ALREADY_EXISTS;
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ON_NEW_PUBLICATION;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
 
@@ -51,9 +50,9 @@ public class ClientConductorTest extends MockBufferUsage
 {
     public static final int COUNTER_BUFFER_SZ = 1024;
 
-    public static final String DESTINATION = "udp://localhost:40124";
-    public static final int CHANNEL_ID_1 = 2;
-    public static final int CHANNEL_ID_2 = 4;
+    public static final String CHANNEL = "udp://localhost:40124";
+    public static final int STREAM_ID_1 = 2;
+    public static final int STREAM_ID_2 = 4;
     public static final int TERM_ID_1 = 1;
     public static final int SEND_BUFFER_CAPACITY = 1024;
 
@@ -124,7 +123,7 @@ public class ClientConductorTest extends MockBufferUsage
     {
         addPublication();
 
-        verify(driverProxy).addPublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
+        verify(driverProxy).addPublication(CHANNEL, SESSION_ID_1, STREAM_ID_1);
     }
 
     @Test(expected = MediaDriverTimeoutException.class)
@@ -141,7 +140,7 @@ public class ClientConductorTest extends MockBufferUsage
         doAnswer(
             (invocation) ->
             {
-                conductor.onError(PUBLICATION_CHANNEL_ALREADY_EXISTS, "publication and session already exist on destination");
+                conductor.onError(PUBLICATION_STREAM_ALREADY_EXISTS, "publication and session already exist on channel");
                 return null;
             }).when(signal).await(anyLong());
 
@@ -165,7 +164,7 @@ public class ClientConductorTest extends MockBufferUsage
 
         publication.release();
 
-        (driverProxy).removePublication(DESTINATION, SESSION_ID_1, CHANNEL_ID_1);
+        (driverProxy).removePublication(CHANNEL, SESSION_ID_1, STREAM_ID_1);
     }
 
     @Test
@@ -191,7 +190,7 @@ public class ClientConductorTest extends MockBufferUsage
         doAnswer(
             (invocation) ->
             {
-                conductor.onError(INVALID_DESTINATION, "destination unknown");
+                conductor.onError(INVALID_CHANNEL, "channel unknown");
                 return null;
             }).when(signal).await(anyLong());
 
@@ -205,27 +204,27 @@ public class ClientConductorTest extends MockBufferUsage
         addPublication();
 
         publication.release();
-        verify(driverProxy, never()).removePublication(DESTINATION, SESSION_ID_1, CHANNEL_ID_1);
+        verify(driverProxy, never()).removePublication(CHANNEL, SESSION_ID_1, STREAM_ID_1);
 
         willNotifyOperationSucceeded();
 
         publication.release();
-        verify(driverProxy).removePublication(DESTINATION, SESSION_ID_1, CHANNEL_ID_1);
+        verify(driverProxy).removePublication(CHANNEL, SESSION_ID_1, STREAM_ID_1);
     }
 
     @Test
     public void closingAPublicationDoesNotRemoveOtherPublications() throws Exception
     {
-        Publication publication = conductor.addPublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
-        conductor.addPublication(DESTINATION, CHANNEL_ID_2, SESSION_ID_2);
+        Publication publication = conductor.addPublication(CHANNEL, SESSION_ID_1, STREAM_ID_1);
+        conductor.addPublication(CHANNEL, SESSION_ID_2, STREAM_ID_2);
 
         willNotifyOperationSucceeded();
 
         publication.release();
 
-        verify(driverProxy).removePublication(DESTINATION, SESSION_ID_1, CHANNEL_ID_1);
+        verify(driverProxy).removePublication(CHANNEL, SESSION_ID_1, STREAM_ID_1);
 
-        verify(driverProxy, never()).removePublication(DESTINATION, SESSION_ID_2, CHANNEL_ID_2);
+        verify(driverProxy, never()).removePublication(CHANNEL, SESSION_ID_2, STREAM_ID_2);
     }
 
     // ---------------------------------
@@ -239,7 +238,7 @@ public class ClientConductorTest extends MockBufferUsage
 
         addSubscription();
 
-        verify(driverProxy).addSubscription(DESTINATION, CHANNEL_ID_1);
+        verify(driverProxy).addSubscription(CHANNEL, STREAM_ID_1);
     }
 
     @Test
@@ -251,7 +250,7 @@ public class ClientConductorTest extends MockBufferUsage
 
         subscription.close();
 
-        verify(driverProxy).removeSubscription(DESTINATION, CHANNEL_ID_1);
+        verify(driverProxy).removeSubscription(CHANNEL, STREAM_ID_1);
     }
 
     @Test(expected = MediaDriverTimeoutException.class)
@@ -268,7 +267,7 @@ public class ClientConductorTest extends MockBufferUsage
         doAnswer(
             (invocation) ->
             {
-                conductor.onError(INVALID_DESTINATION, "Multicast data address must be odd");
+                conductor.onError(INVALID_CHANNEL, "Multicast data address must be odd");
                 return null;
             }).when(signal).await(anyLong());
 
@@ -277,12 +276,12 @@ public class ClientConductorTest extends MockBufferUsage
 
     private Subscription addSubscription()
     {
-        return conductor.addSubscription(DESTINATION, CHANNEL_ID_1, dataHandler);
+        return conductor.addSubscription(CHANNEL, STREAM_ID_1, dataHandler);
     }
 
     private void sendNewBufferNotification(final int msgTypeId, final int sessionId, final int termId)
     {
-        newBufferMessage.channelId(CHANNEL_ID_1)
+        newBufferMessage.streamId(STREAM_ID_1)
                         .sessionId(sessionId)
                         .correlationId(CORRELATION_ID)
                         .termId(termId);
@@ -305,7 +304,7 @@ public class ClientConductorTest extends MockBufferUsage
             }
         );
 
-        newBufferMessage.destination(DESTINATION);
+        newBufferMessage.channel(CHANNEL);
 
         toClientTransmitter.transmit(msgTypeId, atomicSendBuffer, 0, newBufferMessage.length());
     }
@@ -343,6 +342,6 @@ public class ClientConductorTest extends MockBufferUsage
 
     private Publication addPublication()
     {
-        return conductor.addPublication(DESTINATION, CHANNEL_ID_1, SESSION_ID_1);
+        return conductor.addPublication(CHANNEL, SESSION_ID_1, STREAM_ID_1);
     }
 }

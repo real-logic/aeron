@@ -37,7 +37,7 @@ import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_LONG;
  * +---------------------------------------------------------------+
  * |                          Session ID                           |
  * +---------------------------------------------------------------+
- * |                          Channel ID                           |
+ * |                           Stream ID                           |
  * +---------------------------------------------------------------+
  * |                           Term ID                             |
  * +---------------------------------------------------------------+
@@ -77,9 +77,9 @@ import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_LONG;
  * +---------------------------------------------------------------+
  * |                          Location 5 Start                     |
  * +---------------------------------------------------------------+
- * |                          Destination Start                    |
+ * |                           Channel Start                       |
  * +---------------------------------------------------------------+
- * |                          Destination End                      |
+ * |                           Channel End                         |
  * +---------------------------------------------------------------+
  * |                            Location 0                       ...
  * |                                                             ...
@@ -99,7 +99,7 @@ import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_LONG;
  * |                            Location 5                       ...
  * |                                                             ...
  * +---------------------------------------------------------------+
- * |                            Destination                      ...
+ * |                            Channel                          ...
  * |                                                             ...
  * +---------------------------------------------------------------+
  */
@@ -109,8 +109,8 @@ public class LogBuffersMessageFlyweight extends Flyweight
 
     private static final int CORRELATION_ID_OFFSET = 0;
     private static final int SESSION_ID_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
-    private static final int CHANNEL_ID_FIELD_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
-    private static final int TERM_ID_FIELD_OFFSET = CHANNEL_ID_FIELD_OFFSET + SIZE_OF_INT;
+    private static final int STREAM_ID_FIELD_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
+    private static final int TERM_ID_FIELD_OFFSET = STREAM_ID_FIELD_OFFSET + SIZE_OF_INT;
     private static final int POSITION_COUNTER_ID_OFFSET = TERM_ID_FIELD_OFFSET + SIZE_OF_INT;
     private static final int FILE_OFFSETS_FIELDS_OFFSET = POSITION_COUNTER_ID_OFFSET + SIZE_OF_INT;
     private static final int BUFFER_LENGTHS_FIELDS_OFFSET = FILE_OFFSETS_FIELDS_OFFSET + (NUM_FILES * SIZE_OF_INT);
@@ -123,10 +123,10 @@ public class LogBuffersMessageFlyweight extends Flyweight
     public static final int PAYLOAD_BUFFER_COUNT = TermHelper.BUFFER_COUNT * 2;
 
     /**
-     * The Destination sits at the end of the message, after the location strings for both the
+     * The Channel sits at the end of the message, after the location strings for both the
      * log and state buffers.
      */
-    private static final int DESTINATION_INDEX = PAYLOAD_BUFFER_COUNT;
+    private static final int CHANNEL_INDEX = PAYLOAD_BUFFER_COUNT;
 
     public int bufferOffset(final int index)
     {
@@ -191,24 +191,24 @@ public class LogBuffersMessageFlyweight extends Flyweight
     }
 
     /**
-     * return channel id field
+     * return stream id field
      *
-     * @return channel id field
+     * @return stream id field
      */
-    public int channelId()
+    public int streamId()
     {
-        return atomicBuffer().getInt(offset() + CHANNEL_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return atomicBuffer().getInt(offset() + STREAM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
-     * set channel id field
+     * set stream id field
      *
-     * @param channelId field value
+     * @param streamId field value
      * @return flyweight
      */
-    public LogBuffersMessageFlyweight channelId(final int channelId)
+    public LogBuffersMessageFlyweight streamId(final int streamId)
     {
-        atomicBuffer().putInt(offset() + CHANNEL_ID_FIELD_OFFSET, channelId, LITTLE_ENDIAN);
+        atomicBuffer().putInt(offset() + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
         return this;
     }
 
@@ -306,14 +306,14 @@ public class LogBuffersMessageFlyweight extends Flyweight
         return this;
     }
 
-    public String destination()
+    public String channel()
     {
-        return location(DESTINATION_INDEX);
+        return location(CHANNEL_INDEX);
     }
 
-    public LogBuffersMessageFlyweight destination(final String value)
+    public LogBuffersMessageFlyweight channel(final String value)
     {
-        return location(DESTINATION_INDEX, value);
+        return location(CHANNEL_INDEX, value);
     }
 
     /**
@@ -325,6 +325,6 @@ public class LogBuffersMessageFlyweight extends Flyweight
      */
     public int length()
     {
-        return locationPointer(DESTINATION_INDEX + 1);
+        return locationPointer(CHANNEL_INDEX + 1);
     }
 }

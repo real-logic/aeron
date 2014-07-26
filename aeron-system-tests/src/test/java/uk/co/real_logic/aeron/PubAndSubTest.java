@@ -42,12 +42,12 @@ import static org.mockito.Mockito.*;
 public class PubAndSubTest
 {
     @DataPoint
-    public static final String UNICAST_DESTINATION = "udp://localhost:54325";
+    public static final String UNICAST_URI = "udp://localhost:54325";
 
     @DataPoint
-    public static final String MULTICAST_DESTINATION = "udp://localhost@224.20.30.39:54326";
+    public static final String MULTICAST_URI = "udp://localhost@224.20.30.39:54326";
 
-    private static final int CHANNEL_ID = 1;
+    private static final int STREAM_ID = 1;
     private static final int SESSION_ID = 2;
 
     private final MediaDriver.DriverContext driverContext = new MediaDriver.DriverContext();
@@ -65,7 +65,7 @@ public class PubAndSubTest
 
     private ExecutorService executorService;
 
-    private void setup(final String destination) throws Exception
+    private void setup(final String channel) throws Exception
     {
         executorService = Executors.newFixedThreadPool(2);
 
@@ -81,8 +81,8 @@ public class PubAndSubTest
         publishingClient.invoke(executorService);
         subscribingClient.invoke(executorService);
 
-        publication = publishingClient.addPublication(destination, CHANNEL_ID, SESSION_ID);
-        subscription = subscribingClient.addSubscription(destination, CHANNEL_ID, dataHandler);
+        publication = publishingClient.addPublication(channel, STREAM_ID, SESSION_ID);
+        subscription = subscribingClient.addSubscription(channel, STREAM_ID, dataHandler);
     }
 
     @After
@@ -103,20 +103,20 @@ public class PubAndSubTest
 
     @Theory
     @Test(timeout = 1000)
-    public void shouldSpinUpAndShutdown(final String destination) throws Exception
+    public void shouldSpinUpAndShutdown(final String channel) throws Exception
     {
         EventLogger.logInvocation();
 
-        setup(destination);
+        setup(channel);
     }
 
     @Theory
     @Test(timeout = 1000)
-    public void shouldReceivePublishedMessage(final String destination) throws Exception
+    public void shouldReceivePublishedMessage(final String channel) throws Exception
     {
         EventLogger.logInvocation();
 
-        setup(destination);
+        setup(channel);
 
         buffer.putInt(0, 1);
 
@@ -142,7 +142,7 @@ public class PubAndSubTest
 
     @Theory
     @Test(timeout = 1000)
-    public void shouldContinueAfterBufferRollover(final String destination) throws Exception
+    public void shouldContinueAfterBufferRollover(final String channel) throws Exception
     {
         final int termBufferSize = 64 * 1024;
         final int numMessagesInTermBuffer = 64;
@@ -151,7 +151,7 @@ public class PubAndSubTest
 
         driverContext.termBufferSize(termBufferSize);
 
-        setup(destination);
+        setup(channel);
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
@@ -181,7 +181,7 @@ public class PubAndSubTest
 
     @Theory
     @Test(timeout = 1000)
-    public void shouldContinueAfterBufferRolloverBatched(final String destination) throws Exception
+    public void shouldContinueAfterBufferRolloverBatched(final String channel) throws Exception
     {
         final int termBufferSize = 64 * 1024;
         final int numBatchesPerTerm = 4;
@@ -192,7 +192,7 @@ public class PubAndSubTest
 
         driverContext.termBufferSize(termBufferSize);
 
-        setup(destination);
+        setup(channel);
 
         for (int i = 0; i < numBatchesPerTerm; i++)
         {
@@ -240,7 +240,7 @@ public class PubAndSubTest
 
     @Theory
     @Test(timeout = 1000)
-    public void shouldContinueAfterBufferRolloverWithPadding(final String destination) throws Exception
+    public void shouldContinueAfterBufferRolloverWithPadding(final String channel) throws Exception
     {
         /*
          * 65536 bytes in the buffer
@@ -254,7 +254,7 @@ public class PubAndSubTest
 
         driverContext.termBufferSize(termBufferSize);
 
-        setup(destination);
+        setup(channel);
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
@@ -284,7 +284,7 @@ public class PubAndSubTest
 
     @Theory
     @Test(timeout = 1000)
-    public void shouldContinueAfterBufferRolloverWithPaddingBatched(final String destination) throws Exception
+    public void shouldContinueAfterBufferRolloverWithPaddingBatched(final String channel) throws Exception
     {
         /*
          * 65536 bytes in the buffer
@@ -300,7 +300,7 @@ public class PubAndSubTest
 
         driverContext.termBufferSize(termBufferSize);
 
-        setup(destination);
+        setup(channel);
 
         for (int i = 0; i < numBatchesPerTerm; i++)
         {

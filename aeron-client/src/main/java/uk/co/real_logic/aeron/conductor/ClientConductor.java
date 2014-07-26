@@ -107,13 +107,13 @@ public class ClientConductor extends Agent implements DriverListener
         stop();
     }
 
-    public synchronized Publication addPublication(final String destination, final int channelId, final int sessionId)
+    public synchronized Publication addPublication(final String channel, final int sessionId, final int streamId)
     {
-        Publication publication = publicationMap.get(destination, sessionId, channelId);
+        Publication publication = publicationMap.get(channel, sessionId, streamId);
 
         if (publication == null)
         {
-            activeCorrelationId = driverProxy.addPublication(destination, channelId, sessionId);
+            activeCorrelationId = driverProxy.addPublication(channel, sessionId, streamId);
 
             final long startTime = System.currentTimeMillis();
             while (addedPublication == null)
@@ -122,7 +122,7 @@ public class ClientConductor extends Agent implements DriverListener
             }
 
             publication = addedPublication;
-            publicationMap.put(destination, sessionId, channelId, publication);
+            publicationMap.put(channel, sessionId, streamId, publication);
             addedPublication = null;
             activeCorrelationId = NO_CORRELATION_ID;
         }
@@ -136,30 +136,30 @@ public class ClientConductor extends Agent implements DriverListener
 
     public synchronized void releasePublication(final Publication publication)
     {
-        final String destination = publication.destination();
-        final int channelId = publication.channelId();
+        final String channel = publication.channel();
         final int sessionId = publication.sessionId();
+        final int streamId = publication.streamId();
 
-        activeCorrelationId = driverProxy.removePublication(destination, sessionId, channelId);
+        activeCorrelationId = driverProxy.removePublication(channel, sessionId, streamId);
 
         awaitOperationSucceeded();
 
-        publicationMap.remove(destination, sessionId, channelId);
+        publicationMap.remove(channel, sessionId, streamId);
     }
 
-    public synchronized Subscription addSubscription(final String destination,
-                                                     final int channelId,
+    public synchronized Subscription addSubscription(final String channel,
+                                                     final int streamId,
                                                      final DataHandler handler)
     {
-        Subscription subscription = subscriptionMap.get(destination, channelId);
+        Subscription subscription = subscriptionMap.get(channel, streamId);
 
         if (null == subscription)
         {
-            subscription = new Subscription(this, handler, destination, channelId);
+            subscription = new Subscription(this, handler, channel, streamId);
 
-            subscriptionMap.put(destination, channelId, subscription);
+            subscriptionMap.put(channel, streamId, subscription);
 
-            activeCorrelationId = driverProxy.addSubscription(destination, channelId);
+            activeCorrelationId = driverProxy.addSubscription(channel, streamId);
             awaitOperationSucceeded();
         }
 
@@ -168,16 +168,16 @@ public class ClientConductor extends Agent implements DriverListener
 
     public synchronized void releaseSubscription(final Subscription subscription)
     {
-        activeCorrelationId = driverProxy.removeSubscription(subscription.destination(), subscription.channelId());
+        activeCorrelationId = driverProxy.removeSubscription(subscription.channel(), subscription.streamId());
 
-        subscriptionMap.remove(subscription.destination(), subscription.channelId());
+        subscriptionMap.remove(subscription.channel(), subscription.streamId());
 
         awaitOperationSucceeded();
     }
 
-    public void onNewPublication(final String destination,
+    public void onNewPublication(final String channel,
                                  final int sessionId,
-                                 final int channelId,
+                                 final int streamId,
                                  final int termId,
                                  final int limitPositionIndicatorOffset,
                                  final LogBuffersMessageFlyweight logBuffersMessage) throws IOException
@@ -189,7 +189,7 @@ public class ClientConductor extends Agent implements DriverListener
         {
             final ManagedBuffer logBuffer = mapBuffer(logBuffersMessage, i);
             final ManagedBuffer stateBuffer = mapBuffer(logBuffersMessage, i + TermHelper.BUFFER_COUNT);
-            final byte[] header = DataHeaderFlyweight.createDefaultHeader(sessionId, channelId, termId);
+            final byte[] header = DataHeaderFlyweight.createDefaultHeader(sessionId, streamId, termId);
 
             logs[i] = new LogAppender(logBuffer.buffer(), stateBuffer.buffer(), header, mtuLength);
             managedBuffers[i * 2] = logBuffer;
@@ -199,20 +199,20 @@ public class ClientConductor extends Agent implements DriverListener
         final PositionIndicator senderLimit =
             new BufferPositionIndicator(counterValuesBuffer, limitPositionIndicatorOffset);
 
-        addedPublication = new Publication(this, destination, channelId, sessionId,
+        addedPublication = new Publication(this, channel, streamId, sessionId,
                                            termId, logs, senderLimit, managedBuffers);
 
         correlationSignal.signal();
     }
 
-    public void onNewConnectedSubscription(final String destination,
+    public void onNewConnectedSubscription(final String channel,
                                            final int sessionId,
-                                           final int channelId,
+                                           final int streamId,
                                            final int initialTermId,
                                            final LogBuffersMessageFlyweight message)
         throws IOException
     {
-        final Subscription subscription = subscriptionMap.get(destination, channelId);
+        final Subscription subscription = subscriptionMap.get(channel, streamId);
         if (null != subscription && !subscription.isConnected(sessionId))
         {
             final LogReader[] logs = new LogReader[BUFFER_COUNT];
@@ -234,7 +234,7 @@ public class ClientConductor extends Agent implements DriverListener
 
             if (null != newSourceHandler)
             {
-                newSourceHandler.onNewSource(destination, sessionId, channelId);
+                newSourceHandler.onNewSource(channel, sessionId, streamId);
             }
         }
     }

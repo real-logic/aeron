@@ -33,52 +33,52 @@ public class DriverSubscriptionDispatcher
     private static final String INIT_IN_PROGRESS = "Connection initialisation in progress";
 
     private final UdpTransport transport;
-    private final UdpDestination udpDestination;
+    private final UdpChannel udpChannel;
     private final Int2ObjectHashMap<String> initialisationInProgressMap = new Int2ObjectHashMap<>();
-    private final Int2ObjectHashMap<DriverSubscription> subscriptionByChannelIdMap = new Int2ObjectHashMap<>();
+    private final Int2ObjectHashMap<DriverSubscription> subscriptionByStreamIdMap = new Int2ObjectHashMap<>();
     private final DriverConductorProxy conductorProxy;
 
     public DriverSubscriptionDispatcher(final UdpTransport transport,
-                                        final UdpDestination udpDestination,
+                                        final UdpChannel udpChannel,
                                         final DriverConductorProxy conductorProxy)
         throws Exception
     {
         this.transport = transport;
-        this.udpDestination = udpDestination;
+        this.udpChannel = udpChannel;
         this.conductorProxy = conductorProxy;
     }
 
-    public void addSubscription(final int channelId)
+    public void addSubscription(final int streamId)
     {
-        DriverSubscription subscription = subscriptionByChannelIdMap.get(channelId);
+        DriverSubscription subscription = subscriptionByStreamIdMap.get(streamId);
 
         if (null == subscription)
         {
-            subscription = new DriverSubscription(udpDestination, channelId, conductorProxy);
-            subscriptionByChannelIdMap.put(channelId, subscription);
+            subscription = new DriverSubscription(udpChannel, streamId, conductorProxy);
+            subscriptionByStreamIdMap.put(streamId, subscription);
         }
     }
 
-    public void removeSubscription(final int channelId)
+    public void removeSubscription(final int streamId)
     {
-        final DriverSubscription subscription = subscriptionByChannelIdMap.get(channelId);
+        final DriverSubscription subscription = subscriptionByStreamIdMap.get(streamId);
 
         if (subscription == null)
         {
-            throw new UnknownSubscriptionException("No subscription registered on " + channelId);
+            throw new UnknownSubscriptionException("No subscription registered on " + streamId);
         }
 
-        subscriptionByChannelIdMap.remove(channelId);
+        subscriptionByStreamIdMap.remove(streamId);
         subscription.close();
     }
 
     public void addConnectedSubscription(final DriverConnectedSubscription connectedSubscription)
     {
-        final DriverSubscription subscription = subscriptionByChannelIdMap.get(connectedSubscription.channelId());
+        final DriverSubscription subscription = subscriptionByStreamIdMap.get(connectedSubscription.streamId());
 
         if (null == subscription)
         {
-            throw new IllegalStateException("No subscription registered on " + connectedSubscription.channelId());
+            throw new IllegalStateException("No subscription registered on " + connectedSubscription.streamId());
         }
 
         subscription.putConnectedSubscription(connectedSubscription);
@@ -93,8 +93,8 @@ public class DriverSubscriptionDispatcher
                             final int length,
                             final InetSocketAddress srcAddress)
     {
-        final int channelId = header.channelId();
-        final DriverSubscription subscription = subscriptionByChannelIdMap.get(channelId);
+        final int streamId = header.streamId();
+        final DriverSubscription subscription = subscriptionByStreamIdMap.get(streamId);
 
         if (null != subscription)
         {
@@ -116,16 +116,16 @@ public class DriverSubscriptionDispatcher
             }
             else if (null == initialisationInProgressMap.get(sessionId))
             {
-                final InetSocketAddress controlAddress = transport.isMulticast() ? udpDestination.remoteControl() : srcAddress;
+                final InetSocketAddress controlAddress = transport.isMulticast() ? udpChannel.remoteControl() : srcAddress;
 
                 // TODO: need to clean up on timeout - how can this fail?
                 initialisationInProgressMap.put(sessionId, INIT_IN_PROGRESS);
 
-                conductorProxy.createConnectedSubscription(subscription.udpDestination(),
-                                                           sessionId,
-                                                           channelId,
-                                                           termId,
-                                                           controlAddress);
+                conductorProxy.createConnectedSubscription(subscription.udpChannel(),
+                    sessionId,
+                    streamId,
+                    termId,
+                    controlAddress);
             }
         }
     }

@@ -400,31 +400,31 @@ public class EventCodec
     private static String dissect(final DataHeaderFlyweight header)
     {
         return String.format("DATA %x len %d %x:%x:%x @%x", header.flags(), header.frameLength(),
-                header.sessionId(), header.channelId(), header.termId(), header.termOffset());
+                header.sessionId(), header.streamId(), header.termId(), header.termOffset());
     }
 
     private static String dissect(final StatusMessageFlyweight header)
     {
         return String.format("SM %x len %d %x:%x:%x @%x %d", header.flags(), header.frameLength(),
-                header.sessionId(), header.channelId(), header.termId(), header.highestContiguousTermOffset(),
+                header.sessionId(), header.streamId(), header.termId(), header.highestContiguousTermOffset(),
                 header.receiverWindowSize());
     }
 
     private static String dissect(final NakFlyweight header)
     {
         return String.format("NAK %x len %d %x:%x:%x @%x %d", header.flags(), header.frameLength(),
-                header.sessionId(), header.channelId(), header.termId(), header.termOffset(), header.length());
+                header.sessionId(), header.streamId(), header.termId(), header.termOffset(), header.length());
     }
 
     private static String dissect(final PublicationMessageFlyweight command)
     {
-        return String.format("%3$s %1$x:%2$x [%4$x]", command.sessionId(), command.channelId(), command.destination(),
+        return String.format("%3$s %1$x:%2$x [%4$x]", command.sessionId(), command.streamId(), command.channel(),
                 command.correlationId());
     }
 
     private static String dissect(final SubscriptionMessageFlyweight command)
     {
-        return String.format("%s %d [%x]", command.destination(), command.channelId(), command.correlationId());
+        return String.format("%s %d [%x]", command.channel(), command.streamId(), command.correlationId());
     }
 
     private static String dissect(final LogBuffersMessageFlyweight command)
@@ -434,8 +434,8 @@ public class EventCodec
                         command.bufferLength(i), command.bufferOffset(i)))
                 .collect(Collectors.joining("\n    "));
 
-        return String.format("%s %x:%x:%x [%x]\n    %s", command.destination(), command.sessionId(),
-                command.channelId(), command.termId(), command.correlationId(), locations);
+        return String.format("%s %x:%x:%x [%x]\n    %s", command.channel(), command.sessionId(),
+                command.streamId(), command.termId(), command.correlationId(), locations);
     }
 
     private static String dissect(final CorrelatedMessageFlyweight command)

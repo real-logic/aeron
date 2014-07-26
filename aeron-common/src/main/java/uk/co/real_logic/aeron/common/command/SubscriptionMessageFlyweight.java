@@ -27,65 +27,65 @@ import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_LONG;
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  * |                         Correlation ID                        |
  * +---------------------------------------------------------------+
- * |                           Channel Id                          |
+ * |                           Stream Id                           |
  * +---------------------------------------------------------------+
- * |      Destination Length       |   Destination               ...
+ * |      Channel Length         |   Channel                     ...
  * |                                                             ...
  * +---------------------------------------------------------------+
  */
 public class SubscriptionMessageFlyweight extends CorrelatedMessageFlyweight
 {
-    private static final int CHANNEL_ID_OFFSET = CORRELATION_ID_FIELD_OFFSET + SIZE_OF_LONG;
-    private static final int DESTINATION_OFFSET = CHANNEL_ID_OFFSET + SIZE_OF_LONG;
+    private static final int STREAM_ID_OFFSET = CORRELATION_ID_FIELD_OFFSET + SIZE_OF_LONG;
+    private static final int CHANNEL_OFFSET = STREAM_ID_OFFSET + SIZE_OF_LONG;
 
-    private int lengthOfDestination;
+    private int lengthOfChannel;
 
     /**
-     * return the channel id
+     * return the stream id
      *
-     * @return the channel id
+     * @return the stream id
      */
-    public int channelId()
+    public int streamId()
     {
-        return atomicBuffer().getInt(offset() + CHANNEL_ID_OFFSET, LITTLE_ENDIAN);
+        return atomicBuffer().getInt(offset() + STREAM_ID_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
-     * Set the channel id
+     * Set the stream id
      *
-     * @param channelId the channel id
+     * @param streamId the channel id
      * @return flyweight
      */
-    public SubscriptionMessageFlyweight channelId(final int channelId)
+    public SubscriptionMessageFlyweight streamId(final int streamId)
     {
-        atomicBuffer().putInt(offset() + CHANNEL_ID_OFFSET, channelId, LITTLE_ENDIAN);
+        atomicBuffer().putInt(offset() + STREAM_ID_OFFSET, streamId, LITTLE_ENDIAN);
         return this;
     }
 
     /**
-     * return the destination field
+     * return the channel field
      *
-     * @return destination field
+     * @return channel field
      */
-    public String destination()
+    public String channel()
     {
-        return stringGet(offset() + DESTINATION_OFFSET, LITTLE_ENDIAN);
+        return stringGet(offset() + CHANNEL_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
-     * Set destination field
+     * Set channel field
      *
-     * @param destination field value
+     * @param channel field value
      * @return flyweight
      */
-    public SubscriptionMessageFlyweight destination(final String destination)
+    public SubscriptionMessageFlyweight channel(final String channel)
     {
-        lengthOfDestination = stringPut(offset() + DESTINATION_OFFSET, destination, LITTLE_ENDIAN);
+        lengthOfChannel = stringPut(offset() + CHANNEL_OFFSET, channel, LITTLE_ENDIAN);
         return this;
     }
 
     public int length()
     {
-        return SIZE_OF_LONG + SIZE_OF_LONG + lengthOfDestination;
+        return SIZE_OF_LONG + SIZE_OF_LONG + lengthOfChannel;
     }
 }

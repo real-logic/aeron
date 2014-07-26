@@ -124,14 +124,14 @@ public class DriverConductor extends Agent
         logger = ctx.conductorLogger();
     }
 
-    public MediaPublicationEndpoint publicationMediaEndpoint(final UdpDestination destination)
+    public MediaPublicationEndpoint publicationMediaEndpoint(final UdpChannel channel)
     {
-        return publicationEndpointByHash.get(destination.consistentHash());
+        return publicationEndpointByHash.get(channel.consistentHash());
     }
 
-    public MediaSubscriptionEndpoint subscriptionMediaEndpoint(final UdpDestination destination)
+    public MediaSubscriptionEndpoint subscriptionMediaEndpoint(final UdpChannel channel)
     {
-        return subscriptionEndpointByHash.get(destination.consistentHash());
+        return subscriptionEndpointByHash.get(channel.consistentHash());
     }
 
     public int doWork() throws Exception
@@ -276,38 +276,38 @@ public class DriverConductor extends Agent
 
     private void onAddPublication(final PublicationMessageFlyweight publicationMessage)
     {
-        final String destination = publicationMessage.destination();
+        final String channel = publicationMessage.channel();
         final int sessionId = publicationMessage.sessionId();
-        final int channelId = publicationMessage.channelId();
+        final int streamId = publicationMessage.streamId();
         final long correlationId = publicationMessage.correlationId();
 
         try
         {
-            final UdpDestination srcDestination = UdpDestination.parse(destination);
-            MediaPublicationEndpoint endpoint = publicationEndpointByHash.get(srcDestination.consistentHash());
+            final UdpChannel udpChannel = UdpChannel.parse(channel);
+            MediaPublicationEndpoint endpoint = publicationEndpointByHash.get(udpChannel.consistentHash());
             if (null == endpoint)
             {
-                endpoint = new MediaPublicationEndpoint(srcDestination, nioSelector, new EventLogger());
-                publicationEndpointByHash.put(srcDestination.consistentHash(), endpoint);
+                endpoint = new MediaPublicationEndpoint(udpChannel, nioSelector, new EventLogger());
+                publicationEndpointByHash.put(udpChannel.consistentHash(), endpoint);
             }
-            else if (!endpoint.destination().equals(srcDestination))
+            else if (!endpoint.udpChannel().equals(udpChannel))
             {
-                throw new ControlProtocolException(ErrorCode.PUBLICATION_CHANNEL_ALREADY_EXISTS,
-                                                   "destinations hash same, but destinations different");
+                throw new ControlProtocolException(ErrorCode.PUBLICATION_STREAM_ALREADY_EXISTS,
+                                                   "channels hash same, but channels actually different");
             }
 
-            if (null != endpoint.findPublication(sessionId, channelId))
+            if (null != endpoint.findPublication(sessionId, streamId))
             {
-                throw new ControlProtocolException(ErrorCode.PUBLICATION_CHANNEL_ALREADY_EXISTS,
-                                                   "publication and session already exist on destination");
+                throw new ControlProtocolException(ErrorCode.PUBLICATION_STREAM_ALREADY_EXISTS,
+                                                   "publication and session already exist on channel");
             }
 
             final int initialTermId = generateTermId();
-            final TermBuffers termBuffers = termBuffersFactory.newPublication(srcDestination, sessionId, channelId);
+            final TermBuffers termBuffers = termBuffersFactory.newPublication(udpChannel, sessionId, streamId);
             final SenderControlStrategy flowControlStrategy =
-                srcDestination.isMulticast() ? multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
+                udpChannel.isMulticast() ? multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
 
-            final int positionCounterId = registerPositionCounter("publication", destination, sessionId, channelId);
+            final int positionCounterId = registerPositionCounter("publication", channel, sessionId, streamId);
             final BufferPositionReporter positionReporter =
                 new BufferPositionReporter(countersBuffer, positionCounterId, countersManager);
 
@@ -318,7 +318,7 @@ public class DriverConductor extends Agent
                                       termBuffers,
                                       positionReporter,
                                       sessionId,
-                                      channelId,
+                                      streamId,
                                       initialTermId,
                                       HEADER_LENGTH,
                                       mtuLength,
@@ -326,7 +326,7 @@ public class DriverConductor extends Agent
 
             endpoint.addPublication(publication);
 
-            clientProxy.onNewTermBuffers(ON_NEW_PUBLICATION, sessionId, channelId, initialTermId, destination,
+            clientProxy.onNewTermBuffers(ON_NEW_PUBLICATION, sessionId, streamId, initialTermId, channel,
                                          termBuffers, correlationId, positionCounterId);
 
             publications.add(publication);
@@ -343,24 +343,24 @@ public class DriverConductor extends Agent
 
     private void onRemovePublication(final PublicationMessageFlyweight publicationMessage)
     {
-        final String destination = publicationMessage.destination();
+        final String channel = publicationMessage.channel();
         final int sessionId = publicationMessage.sessionId();
-        final int channelId = publicationMessage.channelId();
+        final int streamId = publicationMessage.streamId();
 
         try
         {
-            final UdpDestination srcDestination = UdpDestination.parse(destination);
-            final MediaPublicationEndpoint endpoint = publicationEndpointByHash.get(srcDestination.consistentHash());
+            final UdpChannel udpChannel = UdpChannel.parse(channel);
+            final MediaPublicationEndpoint endpoint = publicationEndpointByHash.get(udpChannel.consistentHash());
             if (null == endpoint)
             {
-                throw new ControlProtocolException(INVALID_DESTINATION, "destination unknown");
+                throw new ControlProtocolException(INVALID_CHANNEL, "channel unknown");
             }
 
-            final DriverPublication publication = endpoint.removePublication(sessionId, channelId);
+            final DriverPublication publication = endpoint.removePublication(sessionId, streamId);
             if (null == publication)
             {
-                throw new ControlProtocolException(PUBLICATION_CHANNEL_UNKNOWN,
-                                                   "session and publication unknown for destination");
+                throw new ControlProtocolException(PUBLICATION_STREAM_UNKNOWN,
+                                                   "session and publication unknown for channel");
             }
 
             publications.remove(publication);
@@ -368,7 +368,7 @@ public class DriverConductor extends Agent
 
             if (endpoint.sessionCount() == 0)
             {
-                publicationEndpointByHash.remove(srcDestination.consistentHash());
+                publicationEndpointByHash.remove(udpChannel.consistentHash());
                 endpoint.close();
             }
 
@@ -386,18 +386,18 @@ public class DriverConductor extends Agent
 
     private void onAddSubscription(final SubscriptionMessageFlyweight subscriptionMessage)
     {
-        final String destination = subscriptionMessage.destination();
-        final int channelId = subscriptionMessage.channelId();
+        final String channel = subscriptionMessage.channel();
+        final int streamId = subscriptionMessage.streamId();
 
         try
         {
-            final UdpDestination udpDestination = UdpDestination.parse(destination);
-            MediaSubscriptionEndpoint endpoint = subscriptionEndpointByHash.get(udpDestination.consistentHash());
+            final UdpChannel udpChannel = UdpChannel.parse(channel);
+            MediaSubscriptionEndpoint endpoint = subscriptionEndpointByHash.get(udpChannel.consistentHash());
 
             if (null == endpoint)
             {
-                endpoint = new MediaSubscriptionEndpoint(udpDestination, conductorProxy, new EventLogger());
-                subscriptionEndpointByHash.put(udpDestination.consistentHash(), endpoint);
+                endpoint = new MediaSubscriptionEndpoint(udpChannel, conductorProxy, new EventLogger());
+                subscriptionEndpointByHash.put(udpChannel.consistentHash(), endpoint);
 
                 while (!receiverProxy.registerMediaEndpoint(endpoint))
                 {
@@ -405,11 +405,11 @@ public class DriverConductor extends Agent
                 }
             }
 
-            final int initialCount = endpoint.incRefToChannelId(channelId);
+            final int initialCount = endpoint.incRefToStreamId(streamId);
 
             if (1 == initialCount)
             {
-                while (!receiverProxy.addSubscription(endpoint, channelId))
+                while (!receiverProxy.addSubscription(endpoint, streamId))
                 {
                     System.out.println("Error adding a subscription - add subscription");
                 }
@@ -419,7 +419,7 @@ public class DriverConductor extends Agent
         }
         catch (final IllegalArgumentException ex)
         {
-            clientProxy.onError(INVALID_DESTINATION, ex.getMessage(), subscriptionMessage, subscriptionMessage.length());
+            clientProxy.onError(INVALID_CHANNEL, ex.getMessage(), subscriptionMessage, subscriptionMessage.length());
             logger.logException(ex);
         }
         catch (final Exception ex)
@@ -430,35 +430,35 @@ public class DriverConductor extends Agent
 
     private void onRemoveSubscription(final SubscriptionMessageFlyweight subscriptionMessage)
     {
-        final String destination = subscriptionMessage.destination();
-        final int channelId = subscriptionMessage.channelId();
+        final String channel = subscriptionMessage.channel();
+        final int streamId = subscriptionMessage.streamId();
 
         try
         {
-            final UdpDestination udpDestination = UdpDestination.parse(destination);
-            final MediaSubscriptionEndpoint endpoint = subscriptionEndpointByHash.get(udpDestination.consistentHash());
+            final UdpChannel udpChannel = UdpChannel.parse(channel);
+            final MediaSubscriptionEndpoint endpoint = subscriptionEndpointByHash.get(udpChannel.consistentHash());
             if (null == endpoint)
             {
-                throw new ControlProtocolException(INVALID_DESTINATION, "destination unknown");
+                throw new ControlProtocolException(INVALID_CHANNEL, "channel unknown");
             }
 
-            if (endpoint.getRefCountByChannelId(channelId) == 0)
+            if (endpoint.getRefCountByStreamId(streamId) == 0)
             {
-                throw new ControlProtocolException(SUBSCRIBER_NOT_REGISTERED, "subscriptions unknown for destination");
+                throw new ControlProtocolException(SUBSCRIBER_NOT_REGISTERED, "subscriptions unknown for channel");
             }
 
-            final int count = endpoint.decRefToChannelId(channelId);
+            final int count = endpoint.decRefToStreamId(streamId);
             if (0 == count)
             {
-                while (!receiverProxy.removeSubscription(endpoint, channelId))
+                while (!receiverProxy.removeSubscription(endpoint, streamId))
                 {
                     System.out.println("Error removing a subscription");
                 }
             }
 
-            if (endpoint.channelCount() == 0)
+            if (endpoint.streamCount() == 0)
             {
-                subscriptionEndpointByHash.remove(udpDestination.consistentHash());
+                subscriptionEndpointByHash.remove(udpChannel.consistentHash());
                 endpoint.close();
             }
 
@@ -476,34 +476,34 @@ public class DriverConductor extends Agent
 
     private void onCreateConnectedSubscription(final CreateConnectedSubscriptionCmd cmd)
     {
-        final UdpDestination udpDestination = cmd.udpDestination();
+        final UdpChannel udpChannel = cmd.udpChannel();
         final int sessionId = cmd.sessionId();
-        final int channelId = cmd.channelId();
+        final int streamId = cmd.streamId();
         final int initialTermId = cmd.termId();
         final InetSocketAddress controlAddress = cmd.controlAddress();
 
         try
         {
-            final MediaSubscriptionEndpoint endpoint = subscriptionEndpointByHash.get(udpDestination.consistentHash());
+            final MediaSubscriptionEndpoint endpoint = subscriptionEndpointByHash.get(udpChannel.consistentHash());
             if (null == endpoint)
             {
-                throw new IllegalStateException("Could not find endpoint for " + udpDestination.toString());
+                throw new IllegalStateException("Could not find endpoint for " + udpChannel.toString());
             }
 
             final StatusMessageSender statusMessageSender =
-                endpoint.composeStatusMessageSender(controlAddress, sessionId, channelId);
+                endpoint.composeStatusMessageSender(controlAddress, sessionId, streamId);
 
             final NakMessageSender nakMessageSender =
-                endpoint.composeNakMessageSender(controlAddress, sessionId, channelId);
+                endpoint.composeNakMessageSender(controlAddress, sessionId, streamId);
 
             final TermBuffers termBuffers =
-                termBuffersFactory.newConnectedSubscription(udpDestination, sessionId, channelId);
+                termBuffersFactory.newConnectedSubscription(udpChannel, sessionId, streamId);
 
             final int positionCounterId = registerPositionCounter(
-                "subscription", udpDestination.originalUriAsString(), sessionId, channelId);
+                "subscription", udpChannel.originalUriAsString(), sessionId, streamId);
 
-            clientProxy.onNewTermBuffers(ON_NEW_CONNECTED_SUBSCRIPTION, sessionId, channelId, initialTermId,
-                                         udpDestination.originalUriAsString(), termBuffers, 0, positionCounterId);
+            clientProxy.onNewTermBuffers(ON_NEW_CONNECTED_SUBSCRIPTION, sessionId, streamId, initialTermId,
+                                         udpChannel.originalUriAsString(), termBuffers, 0, positionCounterId);
 
             final GapScanner[] gapScanners =
                 termBuffers.stream()
@@ -511,7 +511,7 @@ public class DriverConductor extends Agent
                            .toArray(GapScanner[]::new);
 
             final FeedbackDelayGenerator delayGenerator =
-                udpDestination.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR;
+                udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR;
 
             final LossHandler lossHandler =
                 new LossHandler(gapScanners, timerWheel, delayGenerator, nakMessageSender, initialTermId);
@@ -520,9 +520,9 @@ public class DriverConductor extends Agent
                 new BufferPositionIndicator(countersBuffer, positionCounterId, countersManager);
 
             final DriverConnectedSubscription connectedSubscription =
-                new DriverConnectedSubscription(udpDestination,
+                new DriverConnectedSubscription(udpChannel,
                                                 sessionId,
-                                                channelId,
+                                                streamId,
                                                 initialTermId,
                                                 initialWindowSize,
                                                 termBuffers,
@@ -577,9 +577,9 @@ public class DriverConductor extends Agent
         return (int)(Math.random() * 0x7FFFFFFF);
     }
 
-    private int registerPositionCounter(final String type, final String destinationDirName,
-                                        final int sessionId, final int channelId)
+    private int registerPositionCounter(final String type, final String channelDirName,
+                                        final int sessionId, final int streamId)
     {
-        return countersManager.allocate(String.format("%s: %s %d %d", type, destinationDirName, sessionId, channelId));
+        return countersManager.allocate(String.format("%s: %s %d %d", type, channelDirName, sessionId, streamId));
     }
 }

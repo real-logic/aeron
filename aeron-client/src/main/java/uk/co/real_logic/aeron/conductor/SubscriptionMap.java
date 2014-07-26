@@ -28,40 +28,40 @@ public class SubscriptionMap
 {
     private static final Function<String, Int2ObjectHashMap<Subscription>> SUPPLIER = (ignore) -> new Int2ObjectHashMap<>();
 
-    private final Map<String, Int2ObjectHashMap<Subscription>> channelMapByDestinationMap = new HashMap<>();
+    private final Map<String, Int2ObjectHashMap<Subscription>> subscriptionByChannelMap = new HashMap<>();
 
-    public Subscription get(final String destination, final int channelId)
+    public Subscription get(final String channel, final int streamId)
     {
-        final Int2ObjectHashMap<Subscription> channelMap = channelMapByDestinationMap.get(destination);
+        final Int2ObjectHashMap<Subscription> channelMap = subscriptionByChannelMap.get(channel);
         if (channelMap == null)
         {
             return null;
         }
 
-        return channelMap.get(channelId);
+        return channelMap.get(streamId);
     }
 
-    public void put(final String destination, final int channelId, final Subscription value)
+    public void put(final String channel, final int streamId, final Subscription value)
     {
-        getOrDefault(channelMapByDestinationMap, destination, SUPPLIER).put(channelId, value);
+        getOrDefault(subscriptionByChannelMap, channel, SUPPLIER).put(streamId, value);
     }
 
-    public Subscription remove(final String destination, final int channelId)
+    public Subscription remove(final String channel, final int streamId)
     {
-        final Int2ObjectHashMap<Subscription> channelMap = channelMapByDestinationMap.get(destination);
-        if (channelMap == null)
+        final Int2ObjectHashMap<Subscription> streamMap = subscriptionByChannelMap.get(channel);
+        if (streamMap == null)
         {
             return null;
         }
 
-        final Subscription value = channelMap.remove(channelId);
+        final Subscription value = streamMap.remove(streamId);
 
-        if (channelMap.isEmpty())
+        if (streamMap.isEmpty())
         {
-            channelMap.remove(channelId);
-            if (channelMap.isEmpty())
+            streamMap.remove(streamId);
+            if (streamMap.isEmpty())
             {
-                channelMapByDestinationMap.remove(destination);
+                subscriptionByChannelMap.remove(channel);
             }
         }
 

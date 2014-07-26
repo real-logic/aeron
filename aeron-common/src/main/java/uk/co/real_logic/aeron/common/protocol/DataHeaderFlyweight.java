@@ -59,7 +59,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
 
     private static final int TERM_OFFSET_FIELD_OFFSET = 8;
     private static final int SESSION_ID_FIELD_OFFSET = 12;
-    private static final int CHANNEL_ID_FIELD_OFFSET = 16;
+    private static final int STREAM_ID_FIELD_OFFSET = 16;
     private static final int TERM_ID_FIELD_OFFSET = 20;
     private static final int DATA_OFFSET = 24;
 
@@ -84,24 +84,24 @@ public class DataHeaderFlyweight extends HeaderFlyweight
     }
 
     /**
-     * return channel id field
+     * return stream id field
      *
-     * @return channel id field
+     * @return stream id field
      */
-    public int channelId()
+    public int streamId()
     {
-        return atomicBuffer().getInt(offset() + CHANNEL_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return atomicBuffer().getInt(offset() + STREAM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
-     * set channel id field
+     * set stream id field
      *
-     * @param channelId field value
+     * @param streamId field value
      * @return flyweight
      */
-    public DataHeaderFlyweight channelId(final int channelId)
+    public DataHeaderFlyweight streamId(final int streamId)
     {
-        atomicBuffer().putInt(offset() + CHANNEL_ID_FIELD_OFFSET, channelId, LITTLE_ENDIAN);
+        atomicBuffer().putInt(offset() + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
         return this;
     }
 
@@ -164,11 +164,11 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      * {@link uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender}
      *
      * @param sessionId for the header
-     * @param channelId for the header
+     * @param streamId for the header
      * @param termId for the header
      * @return byte array containing the header
      */
-    public static byte[] createDefaultHeader(final int sessionId, final int channelId, final int termId)
+    public static byte[] createDefaultHeader(final int sessionId, final int streamId, final int termId)
     {
         final byte[] hdr = new byte[HEADER_LENGTH];
         final AtomicBuffer buffer = new AtomicBuffer(hdr);
@@ -176,7 +176,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
         buffer.wrap(hdr);
         buffer.putBytes(0, DEFAULT_HEADER_NULL_IDS);
         buffer.putInt(SESSION_ID_FIELD_OFFSET, sessionId, ByteOrder.LITTLE_ENDIAN);
-        buffer.putInt(CHANNEL_ID_FIELD_OFFSET, channelId, ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(STREAM_ID_FIELD_OFFSET, streamId, ByteOrder.LITTLE_ENDIAN);
         buffer.putInt(TERM_ID_FIELD_OFFSET, termId, ByteOrder.LITTLE_ENDIAN);
 
         return hdr;

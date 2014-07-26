@@ -22,16 +22,16 @@ import java.util.concurrent.TimeUnit;
  */
 public class ExampleConfiguration
 {
-    public static final String DESTINATION_PROP = "aeron.example.destination";
-    public static final String CHANNEL_ID_PROP = "aeron.example.channelId";
+    public static final String CHANNEL_PROP = "aeron.example.channel";
+    public static final String STREAM_ID_PROP = "aeron.example.streamId";
     public static final String FRAME_COUNT_LIMIT_PROP = "aeron.example.frameCountLimit";
     public static final String MESSAGE_LENGTH_PROP = "aeron.example.messageLength";
     public static final String NUMBER_OF_MESSAGES_PROP = "aeron.example.numberOfMessages";
     public static final String LINGER_TIMEOUT_MS_PROP = "aeron.example.lingerTimeout";
     public static final String EMBEDDED_MEDIA_DRIVER_PROP = "aeron.example.embeddedMediaDriver";
 
-    public static final String DESTINATION;
-    public static final int CHANNEL_ID;
+    public static final String CHANNEL;
+    public static final int STREAM_ID;
     public static final int FRAME_COUNT_LIMIT;
     public static final int MESSAGE_LENGTH;
     public static final long NUMBER_OF_MESSAGES;
@@ -40,8 +40,8 @@ public class ExampleConfiguration
 
     static
     {
-        DESTINATION = System.getProperty(DESTINATION_PROP, "udp://localhost:40123");
-        CHANNEL_ID = Integer.getInteger(CHANNEL_ID_PROP, 10);
+        CHANNEL = System.getProperty(CHANNEL_PROP, "udp://localhost:40123");
+        STREAM_ID = Integer.getInteger(STREAM_ID_PROP, 10);
         FRAME_COUNT_LIMIT = Integer.getInteger(FRAME_COUNT_LIMIT_PROP, 10);
         MESSAGE_LENGTH = Integer.getInteger(MESSAGE_LENGTH_PROP, 256);
         NUMBER_OF_MESSAGES = Long.getLong(NUMBER_OF_MESSAGES_PROP, 100);

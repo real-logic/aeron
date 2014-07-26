@@ -38,12 +38,12 @@ public class SelectorAndTransportTest
     private static final int RCV_PORT = 40123;
     private static final int SRC_PORT = 40124;
     private static final int SESSION_ID = 0xdeadbeef;
-    private static final int CHANNEL_ID = 0x44332211;
+    private static final int STREAM_ID = 0x44332211;
     private static final int TERM_ID = 0x99887766;
     private static final int FRAME_LENGTH = 24;
 
-    private static final UdpDestination SRC_DST = UdpDestination.parse("udp://localhost:" + SRC_PORT + "@localhost:" + RCV_PORT);
-    private static final UdpDestination RCV_DST = UdpDestination.parse("udp://localhost:" + RCV_PORT);
+    private static final UdpChannel SRC_DST = UdpChannel.parse("udp://localhost:" + SRC_PORT + "@localhost:" + RCV_PORT);
+    private static final UdpChannel RCV_DST = UdpChannel.parse("udp://localhost:" + RCV_PORT);
 
     private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(256);
     private final AtomicBuffer buffer = new AtomicBuffer(byteBuffer);
@@ -119,7 +119,7 @@ public class SelectorAndTransportTest
                 assertThat(header.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
                 assertThat(header.frameLength(), is(FRAME_LENGTH));
                 assertThat(header.sessionId(), is(SESSION_ID));
-                assertThat(header.channelId(), is(CHANNEL_ID));
+                assertThat(header.streamId(), is(STREAM_ID));
                 assertThat(header.termId(), is(TERM_ID));
                 assertThat(header.dataOffset(), is(FRAME_LENGTH));
                 dataHeadersReceived.incrementAndGet();
@@ -138,7 +138,7 @@ public class SelectorAndTransportTest
                         .headerType(HeaderFlyweight.HDR_TYPE_DATA)
                         .frameLength(FRAME_LENGTH);
         encodeDataHeader.sessionId(SESSION_ID)
-                        .channelId(CHANNEL_ID)
+                        .streamId(STREAM_ID)
                         .termId(TERM_ID);
         byteBuffer.position(0).limit(FRAME_LENGTH);
 
@@ -165,7 +165,7 @@ public class SelectorAndTransportTest
                 assertThat(header.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
                 assertThat(header.frameLength(), is(FRAME_LENGTH));
                 assertThat(header.sessionId(), is(SESSION_ID));
-                assertThat(header.channelId(), is(CHANNEL_ID));
+                assertThat(header.streamId(), is(STREAM_ID));
                 assertThat(header.termId(), is(TERM_ID));
                 assertThat(length, is(2 * BitUtil.align(FRAME_LENGTH, FrameDescriptor.FRAME_ALIGNMENT)));
                 dataHeadersReceived.incrementAndGet();
@@ -184,7 +184,7 @@ public class SelectorAndTransportTest
                         .headerType(HeaderFlyweight.HDR_TYPE_DATA)
                         .frameLength(FRAME_LENGTH);
         encodeDataHeader.sessionId(SESSION_ID)
-                        .channelId(CHANNEL_ID)
+                        .streamId(STREAM_ID)
                         .termId(TERM_ID);
 
         encodeDataHeader.wrap(buffer, BitUtil.align(FRAME_LENGTH, FrameDescriptor.FRAME_ALIGNMENT));
@@ -193,7 +193,7 @@ public class SelectorAndTransportTest
                         .headerType(HeaderFlyweight.HDR_TYPE_DATA)
                         .frameLength(24);
         encodeDataHeader.sessionId(SESSION_ID)
-                        .channelId(CHANNEL_ID)
+                        .streamId(STREAM_ID)
                         .termId(TERM_ID);
 
         byteBuffer.position(0).limit(2 * BitUtil.align(FRAME_LENGTH, FrameDescriptor.FRAME_ALIGNMENT));
@@ -228,7 +228,7 @@ public class SelectorAndTransportTest
         src.registerForRead(nioSelector);
 
         statusMessage.wrap(buffer, 0);
-        statusMessage.channelId(CHANNEL_ID)
+        statusMessage.streamId(STREAM_ID)
                      .sessionId(SESSION_ID)
                      .termId(TERM_ID)
                      .receiverWindowSize(1000)

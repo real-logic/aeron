@@ -49,8 +49,8 @@ public class ReceiverTest
 {
     public static final long LOG_BUFFER_SIZE = LogBufferDescriptor.MIN_LOG_SIZE;
     private static final String URI = "udp://localhost:45678";
-    private static final UdpDestination UDP_DESTINATION = UdpDestination.parse(URI);
-    private static final int CHANNEL_ID = 10;
+    private static final UdpChannel UDP_CHANNEL = UdpChannel.parse(URI);
+    private static final int STREAM_ID = 10;
     private static final int TERM_ID = 3;
     private static final int SESSION_ID = 1;
     private static final byte[] FAKE_PAYLOAD = "Hello there, message!".getBytes();
@@ -115,7 +115,7 @@ public class ReceiverTest
                                 .map((rawLog) -> new LogReader(rawLog.logBuffer(), rawLog.stateBuffer()))
                                 .toArray(LogReader[]::new);
 
-        mediaSubscriptionEndpoint = new MediaSubscriptionEndpoint(UdpDestination.parse(URI), driverConductorProxy, mockLogger);
+        mediaSubscriptionEndpoint = new MediaSubscriptionEndpoint(UdpChannel.parse(URI), driverConductorProxy, mockLogger);
     }
 
     @After
@@ -133,7 +133,7 @@ public class ReceiverTest
         EventLogger.logInvocation();
 
         receiverProxy.registerMediaEndpoint(mediaSubscriptionEndpoint);
-        receiverProxy.addSubscription(mediaSubscriptionEndpoint, CHANNEL_ID);
+        receiverProxy.addSubscription(mediaSubscriptionEndpoint, STREAM_ID);
 
         receiver.doWork();
 
@@ -143,22 +143,22 @@ public class ReceiverTest
 
         final DriverConnectedSubscription connectedSubscription =
             new DriverConnectedSubscription(
-                UDP_DESTINATION,
+                UDP_CHANNEL,
                 SESSION_ID,
-                CHANNEL_ID,
+                STREAM_ID,
                 TERM_ID,
                 INITIAL_WINDOW_SIZE,
                 termBuffers,
                 mockLossHandler,
-                mediaSubscriptionEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID), POSITION_INDICATOR);
+                mediaSubscriptionEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID), POSITION_INDICATOR);
 
         final int messagesRead = toConductorQueue.drain(
             (e) ->
             {
                 final CreateConnectedSubscriptionCmd cmd = (CreateConnectedSubscriptionCmd)e;
 
-                assertThat(cmd.udpDestination(), is(UDP_DESTINATION));
-                assertThat(cmd.channelId(), is(CHANNEL_ID));
+                assertThat(cmd.udpChannel(), is(UDP_CHANNEL));
+                assertThat(cmd.streamId(), is(STREAM_ID));
                 assertThat(cmd.sessionId(), is(SESSION_ID));
                 assertThat(cmd.termId(), is(TERM_ID));
 
@@ -179,9 +179,9 @@ public class ReceiverTest
         statusHeader.wrap(rcvBuffer);
 
         assertNotNull(rcvAddress);
-        assertThat(rcvAddress.getPort(), is(UDP_DESTINATION.remoteData().getPort()));
+        assertThat(rcvAddress.getPort(), is(UDP_CHANNEL.remoteData().getPort()));
         assertThat(statusHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_SM));
-        assertThat(statusHeader.channelId(), is(CHANNEL_ID));
+        assertThat(statusHeader.streamId(), is(STREAM_ID));
         assertThat(statusHeader.sessionId(), is(SESSION_ID));
         assertThat(statusHeader.termId(), is(TERM_ID));
         assertThat(statusHeader.frameLength(), is(StatusMessageFlyweight.HEADER_LENGTH));
@@ -193,7 +193,7 @@ public class ReceiverTest
         EventLogger.logInvocation();
 
         receiverProxy.registerMediaEndpoint(mediaSubscriptionEndpoint);
-        receiverProxy.addSubscription(mediaSubscriptionEndpoint, CHANNEL_ID);
+        receiverProxy.addSubscription(mediaSubscriptionEndpoint, STREAM_ID);
 
         receiver.doWork();
 
@@ -210,14 +210,14 @@ public class ReceiverTest
                     new NewConnectedSubscriptionCmd(
                         mediaSubscriptionEndpoint,
                         new DriverConnectedSubscription(
-                            UDP_DESTINATION,
+                            UDP_CHANNEL,
                             SESSION_ID,
-                            CHANNEL_ID,
+                            STREAM_ID,
                             TERM_ID,
                             INITIAL_WINDOW_SIZE,
                             termBuffers,
                             mockLossHandler,
-                            mediaSubscriptionEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID),
+                            mediaSubscriptionEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
                             POSITION_INDICATOR)));
             });
 
@@ -234,7 +234,7 @@ public class ReceiverTest
                 dataHeader.wrap(buffer, offset);
                 assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
                 assertThat(dataHeader.termId(), is(TERM_ID));
-                assertThat(dataHeader.channelId(), is(CHANNEL_ID));
+                assertThat(dataHeader.streamId(), is(STREAM_ID));
                 assertThat(dataHeader.sessionId(), is(SESSION_ID));
                 assertThat(dataHeader.termOffset(), is(0));
                 assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
@@ -250,7 +250,7 @@ public class ReceiverTest
         EventLogger.logInvocation();
 
         receiverProxy.registerMediaEndpoint(mediaSubscriptionEndpoint);
-        receiverProxy.addSubscription(mediaSubscriptionEndpoint, CHANNEL_ID);
+        receiverProxy.addSubscription(mediaSubscriptionEndpoint, STREAM_ID);
 
         receiver.doWork();
 
@@ -267,14 +267,14 @@ public class ReceiverTest
                     new NewConnectedSubscriptionCmd
                         (mediaSubscriptionEndpoint,
                          new DriverConnectedSubscription(
-                             UDP_DESTINATION,
+                             UDP_CHANNEL,
                              SESSION_ID,
-                             CHANNEL_ID,
+                             STREAM_ID,
                              TERM_ID,
                              INITIAL_WINDOW_SIZE,
                              termBuffers,
                              mockLossHandler,
-                             mediaSubscriptionEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID),
+                             mediaSubscriptionEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
                              POSITION_INDICATOR)));
             });
 
@@ -294,7 +294,7 @@ public class ReceiverTest
                 dataHeader.wrap(buffer, offset);
                 assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
                 assertThat(dataHeader.termId(), is(TERM_ID));
-                assertThat(dataHeader.channelId(), is(CHANNEL_ID));
+                assertThat(dataHeader.streamId(), is(STREAM_ID));
                 assertThat(dataHeader.sessionId(), is(SESSION_ID));
                 assertThat(dataHeader.termOffset(), is(0));
                 assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
@@ -310,7 +310,7 @@ public class ReceiverTest
         EventLogger.logInvocation();
 
         receiverProxy.registerMediaEndpoint(mediaSubscriptionEndpoint);
-        receiverProxy.addSubscription(mediaSubscriptionEndpoint, CHANNEL_ID);
+        receiverProxy.addSubscription(mediaSubscriptionEndpoint, STREAM_ID);
 
         receiver.doWork();
 
@@ -327,14 +327,14 @@ public class ReceiverTest
                     new NewConnectedSubscriptionCmd(
                         mediaSubscriptionEndpoint,
                         new DriverConnectedSubscription(
-                            UDP_DESTINATION,
+                            UDP_CHANNEL,
                             SESSION_ID,
-                            CHANNEL_ID,
+                            STREAM_ID,
                             TERM_ID,
                             INITIAL_WINDOW_SIZE,
                             termBuffers,
                             mockLossHandler,
-                            mediaSubscriptionEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, CHANNEL_ID),
+                            mediaSubscriptionEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
                             POSITION_INDICATOR)));
             });
 
@@ -354,7 +354,7 @@ public class ReceiverTest
                 dataHeader.wrap(buffer, offset);
                 assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
                 assertThat(dataHeader.termId(), is(TERM_ID));
-                assertThat(dataHeader.channelId(), is(CHANNEL_ID));
+                assertThat(dataHeader.streamId(), is(STREAM_ID));
                 assertThat(dataHeader.sessionId(), is(SESSION_ID));
                 assertThat(dataHeader.termOffset(), is(0));
                 assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
@@ -369,7 +369,7 @@ public class ReceiverTest
         header.wrap(dataBuffer, 0);
         header.termOffset(termOffset)
               .termId(TERM_ID)
-              .channelId(CHANNEL_ID)
+              .streamId(STREAM_ID)
               .sessionId(SESSION_ID)
               .frameLength(DataHeaderFlyweight.HEADER_LENGTH + payload.length)
               .headerType(HeaderFlyweight.HDR_TYPE_DATA)

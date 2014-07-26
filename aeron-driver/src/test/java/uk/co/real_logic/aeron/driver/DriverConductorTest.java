@@ -40,8 +40,8 @@ import java.util.concurrent.TimeUnit;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
-import static uk.co.real_logic.aeron.common.ErrorCode.INVALID_DESTINATION;
-import static uk.co.real_logic.aeron.common.ErrorCode.PUBLICATION_CHANNEL_UNKNOWN;
+import static uk.co.real_logic.aeron.common.ErrorCode.INVALID_CHANNEL;
+import static uk.co.real_logic.aeron.common.ErrorCode.PUBLICATION_STREAM_UNKNOWN;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
 import static uk.co.real_logic.aeron.driver.MediaDriver.CONDUCTOR_TICKS_PER_WHEEL;
 import static uk.co.real_logic.aeron.driver.MediaDriver.CONDUCTOR_TICK_DURATION_US;
@@ -53,11 +53,11 @@ import static uk.co.real_logic.aeron.driver.MediaDriver.CONDUCTOR_TICK_DURATION_
  */
 public class DriverConductorTest
 {
-    private static final String DESTINATION_URI = "udp://localhost:";
+    private static final String CHANNEL_URI = "udp://localhost:";
     private static final String INVALID_URI = "udp://";
-    private static final int CHANNEL_1 = 10;
-    private static final int CHANNEL_2 = 20;
-    private static final int CHANNEL_3 = 30;
+    private static final int STREAM_ID_1 = 10;
+    private static final int STREAM_ID_2 = 20;
+    private static final int STREAM_ID_3 = 30;
     private static final int TERM_BUFFER_SZ = MediaDriver.TERM_BUFFER_SZ_DEFAULT;
     private static final long CORRELATION_ID = 1429;
 
@@ -134,17 +134,17 @@ public class DriverConductorTest
     {
         EventLogger.logInvocation();
 
-        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4000);
+        writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4000);
 
         driverConductor.doWork();
 
         assertThat(publications.size(), is(1));
         assertNotNull(publications.get(0));
         assertThat(publications.get(0).sessionId(), is(1));
-        assertThat(publications.get(0).channelId(), is(2));
+        assertThat(publications.get(0).streamId(), is(2));
 
         verify(mockClientProxy).onNewTermBuffers(eq(ControlProtocolEvents.ON_NEW_PUBLICATION),
-                                                 eq(1), eq(2), anyInt(), eq(DESTINATION_URI + 4000),
+                                                 eq(1), eq(2), anyInt(), eq(CHANNEL_URI + 4000),
                                                  any(), anyLong(), anyInt());
     }
 
@@ -153,14 +153,14 @@ public class DriverConductorTest
     {
         EventLogger.logInvocation();
 
-        writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_1);
+        writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1);
 
         driverConductor.doWork();
         receiver.doWork();
 
         verify(mockClientProxy).operationSucceeded(CORRELATION_ID);
 
-        assertNotNull(driverConductor.subscriptionMediaEndpoint(UdpDestination.parse(DESTINATION_URI + 4000)));
+        assertNotNull(driverConductor.subscriptionMediaEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
     }
 
     @Test
@@ -168,24 +168,24 @@ public class DriverConductorTest
     {
         EventLogger.logInvocation();
 
-        writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_1);
-        writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_1);
+        writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1);
+        writeSubscriptionMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1);
 
         driverConductor.doWork();
         receiver.doWork();
 
-        assertNull(driverConductor.subscriptionMediaEndpoint(UdpDestination.parse(DESTINATION_URI + 4000)));
+        assertNull(driverConductor.subscriptionMediaEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
     }
 
     @Test
-    public void shouldBeAbleToAddMultipleChannels() throws Exception
+    public void shouldBeAbleToAddMultipleStreams() throws Exception
     {
         EventLogger.logInvocation();
 
-        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4001);
-        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 3, 4002);
-        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 3, 2, 4003);
-        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 3, 4, 4004);
+        writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4001);
+        writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 3, 4002);
+        writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 3, 2, 4003);
+        writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 3, 4, 4004);
 
         driverConductor.doWork();
 
@@ -193,33 +193,33 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveSingleChannel() throws Exception
+    public void shouldBeAbleToRemoveSingleStream() throws Exception
     {
         EventLogger.logInvocation();
 
-        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4005);
-        writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1, 2, 4005);
+        writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4005);
+        writePublicationMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1, 2, 4005);
 
         driverConductor.doWork();
 
         assertThat(publications.size(), is(0));
-        assertNull(driverConductor.publicationMediaEndpoint(UdpDestination.parse(DESTINATION_URI + 4005)));
+        assertNull(driverConductor.publicationMediaEndpoint(UdpChannel.parse(CHANNEL_URI + 4005)));
     }
 
     @Test
-    public void shouldBeAbleToRemoveMultipleChannels() throws Exception
+    public void shouldBeAbleToRemoveMultipleStreams() throws Exception
     {
         EventLogger.logInvocation();
 
-        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4006);
-        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 3, 4007);
-        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 3, 2, 4008);
-        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 3, 4, 4008);
+        writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4006);
+        writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 3, 4007);
+        writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 3, 2, 4008);
+        writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 3, 4, 4008);
 
-        writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1, 2, 4006);
-        writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1, 3, 4007);
-        writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 3, 2, 4008);
-        writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 3, 4, 4008);
+        writePublicationMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1, 2, 4006);
+        writePublicationMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1, 3, 4007);
+        writePublicationMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 3, 2, 4008);
+        writePublicationMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 3, 4, 4008);
 
         driverConductor.doWork();
 
@@ -231,28 +231,28 @@ public class DriverConductorTest
     {
         EventLogger.logInvocation();
 
-        final UdpDestination destination = UdpDestination.parse(DESTINATION_URI + 4000);
+        final UdpChannel udpChannel = UdpChannel.parse(CHANNEL_URI + 4000);
 
-        writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_1);
-        writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_2);
-        writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_3);
+        writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1);
+        writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_2);
+        writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_3);
 
         driverConductor.doWork();
         receiver.doWork();
 
-        final MediaSubscriptionEndpoint mediaEndpoint = driverConductor.subscriptionMediaEndpoint(destination);
+        final MediaSubscriptionEndpoint mediaEndpoint = driverConductor.subscriptionMediaEndpoint(udpChannel);
 
         assertNotNull(mediaEndpoint);
-        assertThat(mediaEndpoint.channelCount(), is(3));
+        assertThat(mediaEndpoint.streamCount(), is(3));
 
-        writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_1);
-        writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_2);
+        writeSubscriptionMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1);
+        writeSubscriptionMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_2);
 
         driverConductor.doWork();
         receiver.doWork();
 
-        assertNotNull(driverConductor.subscriptionMediaEndpoint(destination));
-        assertThat(mediaEndpoint.channelCount(), is(1));
+        assertNotNull(driverConductor.subscriptionMediaEndpoint(udpChannel));
+        assertThat(mediaEndpoint.streamCount(), is(1));
     }
 
     @Test
@@ -260,35 +260,35 @@ public class DriverConductorTest
     {
         EventLogger.logInvocation();
 
-        final UdpDestination destination = UdpDestination.parse(DESTINATION_URI + 4000);
+        final UdpChannel udpChannel = UdpChannel.parse(CHANNEL_URI + 4000);
 
-        writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_1);
-        writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_2);
-        writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_3);
+        writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1);
+        writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_2);
+        writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_3);
 
         driverConductor.doWork();
         receiver.doWork();
 
-        final MediaSubscriptionEndpoint mediaEndpoint = driverConductor.subscriptionMediaEndpoint(destination);
+        final MediaSubscriptionEndpoint mediaEndpoint = driverConductor.subscriptionMediaEndpoint(udpChannel);
 
         assertNotNull(mediaEndpoint);
-        assertThat(mediaEndpoint.channelCount(), is(3));
+        assertThat(mediaEndpoint.streamCount(), is(3));
 
-        writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_2);
-        writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_3);
-
-        driverConductor.doWork();
-        receiver.doWork();
-
-        assertNotNull(driverConductor.subscriptionMediaEndpoint(destination));
-        assertThat(mediaEndpoint.channelCount(), is(1));
-
-        writeSubscriberMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, DESTINATION_URI + 4000, CHANNEL_1);
+        writeSubscriptionMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_2);
+        writeSubscriptionMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_3);
 
         driverConductor.doWork();
         receiver.doWork();
 
-        assertNull(driverConductor.subscriptionMediaEndpoint(destination));
+        assertNotNull(driverConductor.subscriptionMediaEndpoint(udpChannel));
+        assertThat(mediaEndpoint.streamCount(), is(1));
+
+        writeSubscriptionMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1);
+
+        driverConductor.doWork();
+        receiver.doWork();
+
+        assertNull(driverConductor.subscriptionMediaEndpoint(udpChannel));
     }
 
     @Test
@@ -296,34 +296,34 @@ public class DriverConductorTest
     {
         EventLogger.logInvocation();
 
-        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4000);
-        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4000);
+        writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4000);
+        writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4000);
 
         driverConductor.doWork();
 
         assertThat(publications.size(), is(1));
         assertNotNull(publications.get(0));
         assertThat(publications.get(0).sessionId(), is(1));
-        assertThat(publications.get(0).channelId(), is(2));
+        assertThat(publications.get(0).streamId(), is(2));
 
         verify(mockClientProxy)
-            .onError(eq(ErrorCode.PUBLICATION_CHANNEL_ALREADY_EXISTS), argThat(not(isEmptyOrNullString())), any(), anyInt());
+            .onError(eq(ErrorCode.PUBLICATION_STREAM_ALREADY_EXISTS), argThat(not(isEmptyOrNullString())), any(), anyInt());
         verifyNeverSucceeds();
         verifyExceptionLogged();
     }
 
     @Test
-    public void shouldErrorOnRemoveChannelOnUnknownDestination() throws Exception
+    public void shouldErrorOnRemoveChannelOnUnknownChannel() throws Exception
     {
         EventLogger.logInvocation();
 
-        writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1, 2, 4000);
+        writePublicationMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1, 2, 4000);
 
         driverConductor.doWork();
 
         assertThat(publications.size(), is(0));
 
-        verify(mockClientProxy).onError(eq(INVALID_DESTINATION), argThat(not(isEmptyOrNullString())), any(), anyInt());
+        verify(mockClientProxy).onError(eq(INVALID_CHANNEL), argThat(not(isEmptyOrNullString())), any(), anyInt());
         verifyNeverSucceeds();
         verifyExceptionLogged();
     }
@@ -333,37 +333,37 @@ public class DriverConductorTest
     {
         EventLogger.logInvocation();
 
-        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4000);
-        writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 2, 2, 4000);
+        writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4000);
+        writePublicationMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 2, 2, 4000);
 
         driverConductor.doWork();
 
         assertThat(publications.size(), is(1));
         assertNotNull(publications.get(0));
         assertThat(publications.get(0).sessionId(), is(1));
-        assertThat(publications.get(0).channelId(), is(2));
+        assertThat(publications.get(0).streamId(), is(2));
 
-        verify(mockClientProxy).onError(eq(PUBLICATION_CHANNEL_UNKNOWN), argThat(not(isEmptyOrNullString())), any(), anyInt());
+        verify(mockClientProxy).onError(eq(PUBLICATION_STREAM_UNKNOWN), argThat(not(isEmptyOrNullString())), any(), anyInt());
         verifyNeverSucceeds();
         verifyExceptionLogged();
     }
 
     @Test
-    public void shouldErrorOnRemoveChannelOnUnknownChannelId() throws Exception
+    public void shouldErrorOnRemoveChannelOnUnknownStreamId() throws Exception
     {
         EventLogger.logInvocation();
 
-        writeChannelMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4000);
-        writeChannelMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1, 3, 4000);
+        writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4000);
+        writePublicationMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1, 3, 4000);
 
         driverConductor.doWork();
 
         assertThat(publications.size(), is(1));
         assertNotNull(publications.get(0));
         assertThat(publications.get(0).sessionId(), is(1));
-        assertThat(publications.get(0).channelId(), is(2));
+        assertThat(publications.get(0).streamId(), is(2));
 
-        verify(mockClientProxy).onError(eq(PUBLICATION_CHANNEL_UNKNOWN), argThat(not(isEmptyOrNullString())), any(), anyInt());
+        verify(mockClientProxy).onError(eq(PUBLICATION_STREAM_UNKNOWN), argThat(not(isEmptyOrNullString())), any(), anyInt());
         verifyNeverSucceeds();
         verifyExceptionLogged();
     }
@@ -373,13 +373,13 @@ public class DriverConductorTest
     {
         EventLogger.logInvocation();
 
-        writeSubscriberMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, INVALID_URI, CHANNEL_1);
+        writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, INVALID_URI, STREAM_ID_1);
 
         driverConductor.doWork();
         receiver.doWork();
         driverConductor.doWork();
 
-        verify(mockClientProxy).onError(eq(INVALID_DESTINATION), argThat(not(isEmptyOrNullString())), any(), anyInt());
+        verify(mockClientProxy).onError(eq(INVALID_CHANNEL), argThat(not(isEmptyOrNullString())), any(), anyInt());
         verifyNeverSucceeds();
         verifyExceptionLogged();
     }
@@ -394,23 +394,23 @@ public class DriverConductorTest
         verify(mockClientProxy, never()).operationSucceeded(anyLong());
     }
 
-    private void writeChannelMessage(final int msgTypeId, final int sessionId, final int channelId, final int port)
+    private void writePublicationMessage(final int msgTypeId, final int sessionId, final int streamId, final int port)
         throws IOException
     {
         publicationMessage.wrap(writeBuffer, 0);
-        publicationMessage.channelId(channelId);
+        publicationMessage.streamId(streamId);
         publicationMessage.sessionId(sessionId);
-        publicationMessage.destination(DESTINATION_URI + port);
+        publicationMessage.channel(CHANNEL_URI + port);
 
         fromClientCommands.write(msgTypeId, writeBuffer, 0, publicationMessage.length());
     }
 
-    private void writeSubscriberMessage(final int msgTypeId, final String destination, final int channelId)
+    private void writeSubscriptionMessage(final int msgTypeId, final String channel, final int streamId)
         throws IOException
     {
         subscriptionMessage.wrap(writeBuffer, 0);
-        subscriptionMessage.channelId(channelId)
-                           .destination(destination)
+        subscriptionMessage.streamId(streamId)
+                           .channel(channel)
                            .correlationId(CORRELATION_ID);
 
         fromClientCommands.write(msgTypeId, writeBuffer, 0, subscriptionMessage.length());

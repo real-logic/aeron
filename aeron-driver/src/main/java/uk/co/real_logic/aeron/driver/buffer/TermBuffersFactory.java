@@ -16,14 +16,14 @@
 package uk.co.real_logic.aeron.driver.buffer;
 
 import uk.co.real_logic.aeron.common.IoUtil;
-import uk.co.real_logic.aeron.driver.UdpDestination;
+import uk.co.real_logic.aeron.driver.UdpChannel;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
-import static uk.co.real_logic.aeron.driver.buffer.FileMappingConvention.channelLocation;
+import static uk.co.real_logic.aeron.driver.buffer.FileMappingConvention.streamLocation;
 
 /**
  * Factory for creating new {@link TermBuffers} in publications or subscriptions directory as appropriate.
@@ -72,27 +72,27 @@ public class TermBuffersFactory implements AutoCloseable
     /**
      * Create new {@link TermBuffers} in the publications directory for the supplied triplet.
      *
-     * @param udpDestination address on the media to send to.
+     * @param udpChannel address on the media to send to.
      * @param sessionId under which transmissions are made.
-     * @param channelId within the destination address to separate message flows.
+     * @param streamId within the channel address to separate message flows.
      * @return the newly allocated {@link TermBuffers}
      */
-    public TermBuffers newPublication(final UdpDestination udpDestination, final int sessionId, final int channelId)
+    public TermBuffers newPublication(final UdpChannel udpChannel, final int sessionId, final int streamId)
     {
-        return newInstance(udpDestination, sessionId, channelId, publicationsDir);
+        return newInstance(udpChannel, sessionId, streamId, publicationsDir);
     }
 
     /**
      * Create new {@link TermBuffers} in the subscriptions directory for the supplied triplet.
      *
-     * @param udpDestination address on the media to listened to.
+     * @param udpChannel address on the media to listened to.
      * @param sessionId under which transmissions are made.
-     * @param channelId within the destination address to separate message flows.
+     * @param streamId within the channel address to separate message flows.
      * @return the newly allocated {@link TermBuffers}
      */
-    public TermBuffers newConnectedSubscription(final UdpDestination udpDestination, final int sessionId, final int channelId)
+    public TermBuffers newConnectedSubscription(final UdpChannel udpChannel, final int sessionId, final int streamId)
     {
-        return newInstance(udpDestination, sessionId, channelId, subscriptionsDir);
+        return newInstance(udpChannel, sessionId, streamId, subscriptionsDir);
     }
 
     private FileChannel createTemplateFile(final String dataDir, final String name, final long size)
@@ -109,10 +109,10 @@ public class TermBuffersFactory implements AutoCloseable
         }
     }
 
-    private TermBuffers newInstance(final UdpDestination udpDestination, final int sessionId,
-                                    final int channelId, final File rootDir)
+    private TermBuffers newInstance(final UdpChannel udpChannel, final int sessionId,
+                                    final int streamId, final File rootDir)
     {
-        final File dir = channelLocation(rootDir, sessionId, channelId, true, udpDestination.canonicalRepresentation());
+        final File dir = streamLocation(rootDir, sessionId, streamId, true, udpChannel.canonicalRepresentation());
 
         return new MappedTermBuffers(dir, logTemplate, termBufferSize, stateTemplate, STATE_BUFFER_LENGTH);
     }

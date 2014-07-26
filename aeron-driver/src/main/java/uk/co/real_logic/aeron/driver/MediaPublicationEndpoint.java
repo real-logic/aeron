@@ -31,20 +31,20 @@ import java.nio.ByteBuffer;
 public class MediaPublicationEndpoint implements AutoCloseable
 {
     private final UdpTransport transport;
-    private final UdpDestination destination;
+    private final UdpChannel udpChannel;
     private final Int2ObjectHashMap<Int2ObjectHashMap<DriverPublication>> publicationBySessionMap = new Int2ObjectHashMap<>();
 
-    public MediaPublicationEndpoint(final UdpDestination destination, final NioSelector nioSelector, final EventLogger logger)
+    public MediaPublicationEndpoint(final UdpChannel udpChannel, final NioSelector nioSelector, final EventLogger logger)
         throws Exception
     {
-        this.transport = new UdpTransport(destination, this::onStatusMessageFrame, this::onNakFrame, logger);
+        this.transport = new UdpTransport(udpChannel, this::onStatusMessageFrame, this::onNakFrame, logger);
         this.transport.registerForRead(nioSelector);
-        this.destination = destination;
+        this.udpChannel = udpChannel;
     }
 
     public int send(final ByteBuffer buffer) throws Exception
     {
-        return transport.sendTo(buffer, destination.remoteData());
+        return transport.sendTo(buffer, udpChannel.remoteData());
     }
 
     public int sendTo(final ByteBuffer buffer, final InetSocketAddress address) throws Exception
@@ -57,38 +57,38 @@ public class MediaPublicationEndpoint implements AutoCloseable
         transport.close();
     }
 
-    public UdpDestination destination()
+    public UdpChannel udpChannel()
     {
-        return destination;
+        return udpChannel;
     }
 
-    public DriverPublication findPublication(final int sessionId, final int channelId)
+    public DriverPublication findPublication(final int sessionId, final int streamId)
     {
-        final Int2ObjectHashMap<DriverPublication> publicationByChannelIdMap = publicationBySessionMap.get(sessionId);
-        if (null == publicationByChannelIdMap)
+        final Int2ObjectHashMap<DriverPublication> publicationByStreamIdMap = publicationBySessionMap.get(sessionId);
+        if (null == publicationByStreamIdMap)
         {
             return null;
         }
 
-        return publicationByChannelIdMap.get(channelId);
+        return publicationByStreamIdMap.get(streamId);
     }
 
     public void addPublication(final DriverPublication publication)
     {
         publicationBySessionMap.getOrDefault(publication.sessionId(), Int2ObjectHashMap::new)
-                               .put(publication.channelId(), publication);
+                               .put(publication.streamId(), publication);
     }
 
-    public DriverPublication removePublication(final int sessionId, final int channelId)
+    public DriverPublication removePublication(final int sessionId, final int streamId)
     {
-        final Int2ObjectHashMap<DriverPublication> publicationByChannelIdMap = publicationBySessionMap.get(sessionId);
-        if (null == publicationByChannelIdMap)
+        final Int2ObjectHashMap<DriverPublication> publicationByStreamIdMap = publicationBySessionMap.get(sessionId);
+        if (null == publicationByStreamIdMap)
         {
             return null;
         }
 
-        final DriverPublication publication = publicationByChannelIdMap.remove(channelId);
-        if (publicationByChannelIdMap.isEmpty())
+        final DriverPublication publication = publicationByStreamIdMap.remove(streamId);
+        if (publicationByStreamIdMap.isEmpty())
         {
             publicationBySessionMap.remove(sessionId);
         }
@@ -106,7 +106,7 @@ public class MediaPublicationEndpoint implements AutoCloseable
                                       final int length,
                                       final InetSocketAddress srcAddress)
     {
-        final DriverPublication publication = findPublication(header.sessionId(), header.channelId());
+        final DriverPublication publication = findPublication(header.sessionId(), header.streamId());
         publication.onStatusMessage(header.termId(),
                                     header.highestContiguousTermOffset(),
                                     header.receiverWindowSize(),
@@ -118,7 +118,7 @@ public class MediaPublicationEndpoint implements AutoCloseable
                             final int length,
                             final InetSocketAddress srcAddress)
     {
-        final DriverPublication publication = findPublication(nak.sessionId(), nak.channelId());
+        final DriverPublication publication = findPublication(nak.sessionId(), nak.streamId());
         publication.onNakFrame(nak.termId(), nak.termOffset(), nak.length());
     }
 }

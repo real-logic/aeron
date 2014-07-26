@@ -22,6 +22,7 @@ import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Tracking and handling of gaps in a stream
@@ -35,6 +36,9 @@ public class LossHandler
     private final Gap[] gaps = new Gap[2];
     private final Gap activeGap = new Gap();
     private final FeedbackDelayGenerator delayGenerator;
+    private final AtomicLong highPosition;
+    private final int positionBitsToShift;
+    private final int initialTermId;
 
     private NakMessageSender nakMessageSender;
     private TimerWheel.Timer timer;
@@ -65,6 +69,8 @@ public class LossHandler
         this.delayGenerator = delayGenerator;
         this.nakMessageSender = nakMessageSender;
         this.nakSentTimestamp = wheel.now();
+        this.positionBitsToShift = Integer.numberOfTrailingZeros(scanners[0].capacity());
+        this.highPosition = new AtomicLong(TermHelper.calculatePosition(activeTermId, 0, positionBitsToShift, activeTermId));
 
         for (int i = 0, max = gaps.length; i < max; i++)
         {
@@ -73,6 +79,7 @@ public class LossHandler
 
         this.activeIndex = TermHelper.termIdToBufferIndex(activeTermId);
         this.activeTermId = activeTermId;
+        this.initialTermId = activeTermId;
     }
 
     /**
@@ -88,13 +95,28 @@ public class LossHandler
         int numGaps = currentScanner.scan(this::onGap);
         onScanComplete();
 
-        if (0 == numGaps && isGapScannerComplete(currentScanner))
+        if (0 == numGaps)
         {
-            // current scanner is complete, move to next one
-            activeIndex = TermHelper.rotateNext(activeIndex);
-            activeTermId = activeTermId + 1;
+            if (isGapScannerComplete(currentScanner))
+            {
+                // current scanner is complete, move to next one
+                activeIndex = TermHelper.rotateNext(activeIndex);
+                activeTermId = activeTermId + 1;
 
-            return true; // signal another scan should be done soon
+                return true; // signal another scan should be done soon
+            }
+            else
+            {
+                final int tail = currentScanner.tailVolatile();
+                final long tailPosition =
+                    TermHelper.calculatePosition(activeTermId, tail, positionBitsToShift, initialTermId);
+                final long currentHighPosition = highPosition.get();
+
+                if (currentHighPosition > tailPosition)
+                {
+                    activateGap(activeTermId, tail, (int)(currentHighPosition - tailPosition));
+                }
+            }
         }
 
         return false;
@@ -144,6 +166,20 @@ public class LossHandler
         return activeIndex;
     }
 
+    /**
+     * A new high position may have been seen, handle that accordingly
+     *
+     * @param position new position in the stream
+     */
+    public void potentialHighPosition(final long position)
+    {
+        // only set from this method which comes from the Receiver thread!
+        if (highPosition.get() < position)
+        {
+            highPosition.lazySet(position);
+        }
+    }
+
     private static boolean isGapScannerComplete(final GapScanner activeScanner)
     {
         return (activeScanner.tailVolatile() >= activeScanner.capacity());
@@ -176,14 +212,15 @@ public class LossHandler
         {
             if (scanCursor > 0)
             {
-                activeGap.reset(firstGap.termId, firstGap.termOffset, firstGap.length);
-                scheduleTimer();
-                nakSentTimestamp = wheel.now();
-
-                if (delayGenerator.shouldFeedbackImmediately())
-                {
-                    nakMessageSender.send(activeGap.termId, activeGap.termOffset, activeGap.length);
-                }
+                activateGap(firstGap.termId, firstGap.termOffset, firstGap.length);
+//                activeGap.reset(firstGap.termId, firstGap.termOffset, firstGap.length);
+//                scheduleTimer();
+//                nakSentTimestamp = wheel.now();
+//
+//                if (delayGenerator.shouldFeedbackImmediately())
+//                {
+//                    nakMessageSender.send(activeGap.termId, activeGap.termOffset, activeGap.length);
+//                }
             }
         }
         else if (scanCursor == 0)
@@ -192,14 +229,27 @@ public class LossHandler
         }
         else if (!firstGap.matches(activeGap.termId, activeGap.termOffset))
         {
-            activeGap.reset(firstGap.termId, firstGap.termOffset, firstGap.length);
-            scheduleTimer();
-            nakSentTimestamp = wheel.now();
+            activateGap(firstGap.termId, firstGap.termOffset, firstGap.length);
+//            activeGap.reset(firstGap.termId, firstGap.termOffset, firstGap.length);
+//            scheduleTimer();
+//            nakSentTimestamp = wheel.now();
+//
+//            if (delayGenerator.shouldFeedbackImmediately())
+//            {
+//                nakMessageSender.send(activeGap.termId, activeGap.termOffset, activeGap.length);
+//            }
+        }
+    }
 
-            if (delayGenerator.shouldFeedbackImmediately())
-            {
-                nakMessageSender.send(activeGap.termId, activeGap.termOffset, activeGap.length);
-            }
+    private void activateGap(final int termId, final int termOffset, final int length)
+    {
+        activeGap.reset(termId, termOffset, length);
+        scheduleTimer();
+        nakSentTimestamp = wheel.now();
+
+        if (delayGenerator.shouldFeedbackImmediately())
+        {
+            nakMessageSender.send(activeGap.termId, activeGap.termOffset, activeGap.length);
         }
     }
 

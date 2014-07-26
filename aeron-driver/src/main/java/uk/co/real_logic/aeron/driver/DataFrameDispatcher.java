@@ -108,6 +108,11 @@ public class DataFrameDispatcher
                     headerFlyweight.headerType(LogBufferDescriptor.PADDING_FRAME_TYPE);
                     connection.insertIntoTerm(headerFlyweight, buffer, length);
                 }
+                else
+                {
+                    // this is a 0 length data frame, so pass on the info, but no need to insert it
+                    connection.potentialHighPosition(headerFlyweight);
+                }
             }
             else if (null == initialisationInProgressMap.get(sessionId))
             {

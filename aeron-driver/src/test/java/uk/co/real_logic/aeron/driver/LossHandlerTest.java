@@ -43,6 +43,7 @@ import static uk.co.real_logic.aeron.common.BitUtil.align;
 public class LossHandlerTest
 {
     private static final int LOG_BUFFER_SIZE = LogBufferDescriptor.MIN_LOG_SIZE;
+    private static final int POSITION_BITS_TO_SHIFT = Integer.numberOfTrailingZeros(LOG_BUFFER_SIZE);
     private static final byte[] DATA = new byte[36];
     static
     {
@@ -331,6 +332,57 @@ public class LossHandlerTest
 
         assertFalse(handler.scan());
         verifyNoMoreInteractions(nakMessageSender);
+    }
+
+    @Test
+    public void shouldDetectGapOnPotentialHighPositionChange()
+    {
+        handler = new LossHandler(scanners, wheel, delayGeneratorWithImmediate, nakMessageSender, TERM_ID);
+
+        assertThat(handler.activeIndex(), is(activeIndex));
+
+        insertDataFrame(offsetOfMessage(0));
+
+        final long highPosition = TermHelper.calculatePosition(TERM_ID, offsetOfMessage(2), POSITION_BITS_TO_SHIFT, TERM_ID);
+
+        handler.potentialHighPosition(highPosition);
+        assertFalse(handler.scan());
+
+        verify(nakMessageSender).send(TERM_ID, offsetOfMessage(1), gapLength());
+    }
+
+    @Test
+    public void shouldDetectGapOnPotentialHighPositionChangeFromRollover()
+    {
+        handler = new LossHandler(scanners, wheel, delayGeneratorWithImmediate, nakMessageSender, TERM_ID);
+
+        assertThat(handler.activeIndex(), is(activeIndex));
+
+        // fill term buffer except the padding frame
+        int offset = 0, i = 0;
+        while ((LOG_BUFFER_SIZE - 1024) > offset)
+        {
+            insertDataFrame(offsetOfMessage(i++));
+            offset += ALIGNED_FRAME_LENGTH;
+        }
+
+        assertFalse(rebuilders[activeIndex].isComplete());
+        assertFalse(handler.scan());
+
+        activeIndex = TermHelper.rotateNext(activeIndex);
+        assertThat(handler.activeIndex(), is(TermHelper.rotatePrevious(activeIndex)));
+
+        insertDataFrame(offsetOfMessage(0));
+
+        assertFalse(handler.scan());
+        verifyZeroInteractions(nakMessageSender);
+
+        final long highPosition = TermHelper.calculatePosition(TERM_ID + 1, offsetOfMessage(0), POSITION_BITS_TO_SHIFT, TERM_ID);
+
+        handler.potentialHighPosition(highPosition);
+        assertFalse(handler.scan());
+
+        verify(nakMessageSender).send(TERM_ID, offset, LOG_BUFFER_SIZE - offset);
     }
 
     private void insertDataFrame(final int offset)

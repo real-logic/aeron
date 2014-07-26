@@ -20,6 +20,7 @@ import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogRebuilder;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.common.status.PositionIndicator;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 
@@ -152,6 +153,13 @@ public class DriverConnection implements AutoCloseable
         return lossHandler.scan() ? 1 : 0;
     }
 
+    /**
+     * Insert frame into term buffer.
+     *
+     * @param header for the data frame
+     * @param buffer for the data frame
+     * @param length of the data frame on the wire
+     */
     public void insertIntoTerm(final DataHeaderFlyweight header, final AtomicBuffer buffer, final int length)
     {
         final LogRebuilder currentRebuilder = rebuilders[activeIndex];
@@ -192,10 +200,23 @@ public class DriverConnection implements AutoCloseable
             {
                 hwmIndex = prepareForRotation(activeTermId);
                 hwmTermId = termId;
+                lossHandler.potentialHighPosition(packetPosition);  // inform the
             }
 
             rebuilders[hwmIndex].insert(buffer, 0, length);
         }
+    }
+
+    /**
+     * Inform the loss handler that a potentially new high position in the stream has been reached.
+     *
+     * @param header for the data frame
+     */
+    public void potentialHighPosition(final DataHeaderFlyweight header)
+    {
+        final long packetPosition = calculatePosition(header.termId(), header.termOffset());
+
+        lossHandler.potentialHighPosition(packetPosition);
     }
 
     /**
@@ -296,7 +317,7 @@ public class DriverConnection implements AutoCloseable
         return proposedPosition > (subscriberLimit.position() + bufferLimit);
     }
 
-    public boolean isOutOfBufferRange(final long proposedPosition, final int length, final long currentPosition)
+    private boolean isOutOfBufferRange(final long proposedPosition, final int length, final long currentPosition)
     {
         return proposedPosition < currentPosition || proposedPosition > (currentPosition + (bufferLimit - length));
     }

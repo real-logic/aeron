@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron;
 /**
  * Interface for delivery of inactive source events to a {@link uk.co.real_logic.aeron.Subscription}
  */
-public interface InactiveSourceHandler
+public interface InactiveConnectionHandler
 {
     /**
      * Method called by Aeron to deliver notification that a source has gone inactive
@@ -26,5 +26,5 @@ public interface InactiveSourceHandler
      * @param sessionId of the inactive source
      * @param streamId of the inactive stream
      */
-    void onInactiveSource(final int sessionId, final int streamId);
+    void onInactiveConnection(final int sessionId, final int streamId);
 }

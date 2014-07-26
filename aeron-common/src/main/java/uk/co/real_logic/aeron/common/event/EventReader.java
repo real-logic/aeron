@@ -26,6 +26,8 @@ import java.io.File;
 import java.nio.MappedByteBuffer;
 import java.util.function.Consumer;
 
+import static uk.co.real_logic.aeron.common.IoUtil.deleteIfExists;
+
 /**
  * Event Log Reader
  */
@@ -34,12 +36,15 @@ public class EventReader extends Agent implements AutoCloseable
     private MappedByteBuffer buffer;
     private ManyToOneRingBuffer ringBuffer;
     private Consumer<String> handler;
+    private Context ctx;
 
     public EventReader(final Context context)
     {
         super(context.backoffStrategy(), Throwable::printStackTrace);
 
         handler = context.eventHandler();
+        ctx = context;
+
         try
         {
             final File eventsFile = context.eventsFile();
@@ -48,15 +53,13 @@ public class EventReader extends Agent implements AutoCloseable
             {
                 if (context.warnIfEventsFileExists)
                 {
-                    System.err.println("WARNING: using existing event buffer at: " + eventsFile);
+                    System.err.println("WARNING: existing event buffer at: " + eventsFile);
                 }
+            }
 
-                buffer = IoUtil.mapExistingFile(eventsFile, "event-buffer");
-            }
-            else
-            {
-                buffer = IoUtil.mapNewFile(eventsFile, context.size());
-            }
+            deleteIfExists(eventsFile);
+
+            buffer = IoUtil.mapNewFile(eventsFile, context.size());
 
             if (context.deleteOnExit())
             {
@@ -86,6 +89,11 @@ public class EventReader extends Agent implements AutoCloseable
     public void close() throws Exception
     {
         IoUtil.unmap(buffer);
+
+        if (ctx.deleteOnExit())
+        {
+            deleteIfExists(ctx.eventsFile());
+        }
     }
 
     public int doWork() throws Exception

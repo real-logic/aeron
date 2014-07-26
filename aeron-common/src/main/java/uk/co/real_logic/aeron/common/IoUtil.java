@@ -165,6 +165,21 @@ public class IoUtil
     }
 
     /**
+     * Delete file only if it already exists.
+     *
+     * @param file to delete
+     * @throws IOException
+     */
+    public static void deleteIfExists(final File file)
+        throws IOException
+    {
+        if (file.exists())
+        {
+            Files.delete(file.toPath());
+        }
+    }
+
+    /**
      * Create an empty file, fill with 0s, and return the {@link FileChannel}
      *
      * @param file to create

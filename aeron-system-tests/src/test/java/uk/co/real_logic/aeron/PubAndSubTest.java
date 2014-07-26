@@ -70,7 +70,6 @@ public class PubAndSubTest
         executorService = Executors.newFixedThreadPool(2);
 
         context.dirsDeleteOnExit(true);
-        context.warnIfDirectoriesExist(false);
 
         driver = new MediaDriver(context);
 

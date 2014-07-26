@@ -85,7 +85,6 @@ public class PubUnicastTest
 
         ctx.termBufferSize(TERM_BUFFER_SIZE);
         ctx.dirsDeleteOnExit(true);
-        ctx.warnIfDirectoriesExist(false);
 
         driver = new MediaDriver(ctx);
 

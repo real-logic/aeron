@@ -32,12 +32,14 @@ import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
 import java.io.File;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
+import java.nio.file.Files;
 import java.util.concurrent.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static java.lang.Integer.getInteger;
+import static uk.co.real_logic.aeron.common.IoUtil.deleteIfExists;
 import static uk.co.real_logic.aeron.common.IoUtil.mapNewFile;
 
 /**
@@ -272,28 +274,29 @@ public class MediaDriver implements AutoCloseable
      */
     public MediaDriver(final Context context) throws Exception
     {
-        ctx =
-            context.unicastSenderFlowControl(UnicastSenderControlStrategy::new)
-                   .multicastSenderFlowControl(UnicastSenderControlStrategy::new)
-                   .publications(new AtomicArray<>())
-                   .conductorTimerWheel(new TimerWheel(CONDUCTOR_TICK_DURATION_US,
-                                                       TimeUnit.MICROSECONDS,
-                                                       CONDUCTOR_TICKS_PER_WHEEL))
-                   .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
-                   .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
-                   .conductorIdleStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                                                                  AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
-                   .senderIdleStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                                                               AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
-                   .receiverIdleStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                                                                 AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
-                   .conclude();
+        this.ctx = context;
 
         this.adminDirFile = new File(ctx.adminDirName());
         this.dataDirFile = new File(ctx.dataDirName());
         this.countersDirFile = new File(ctx.countersDirName());
 
         ensureDirectoriesExist();
+
+        ctx.unicastSenderFlowControl(UnicastSenderControlStrategy::new)
+           .multicastSenderFlowControl(UnicastSenderControlStrategy::new)
+           .publications(new AtomicArray<>())
+           .conductorTimerWheel(new TimerWheel(CONDUCTOR_TICK_DURATION_US,
+               TimeUnit.MICROSECONDS,
+               CONDUCTOR_TICKS_PER_WHEEL))
+           .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
+           .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
+           .conductorIdleStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
+               AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
+           .senderIdleStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
+               AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
+           .receiverIdleStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
+               AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
+           .conclude();
 
         this.receiver = new Receiver(ctx);
         this.sender = new Sender(ctx);
@@ -302,8 +305,9 @@ public class MediaDriver implements AutoCloseable
         final EventReader.Context readerCtx =
             new EventReader.Context()
                 .backoffStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                                                         AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
+                    AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
                 .warnIfEventsFileExists(ctx.warnIfDirectoriesExist)
+                .deleteOnExit(ctx.dirsDeleteOnExit())
                 .eventHandler(ctx.eventConsumer);
 
         this.eventReader = new EventReader(readerCtx);
@@ -525,6 +529,16 @@ public class MediaDriver implements AutoCloseable
             validateTermBufferSize(termBufferSize());
             validateInitialWindowSize(initialWindowSize(), mtuLength());
 
+            // clean out existing files. We've warned about them already.
+            deleteIfExists(toClientsFile());
+            deleteIfExists(toDriverFile());
+
+            if (dirsDeleteOnExit())
+            {
+                toClientsFile().deleteOnExit();
+                toDriverFile().deleteOnExit();
+            }
+
             toClientsBuffer = mapNewFile(toClientsFile(), TO_CLIENTS_BUFFER_SZ);
 
             final BroadcastTransmitter transmitter = new BroadcastTransmitter(new AtomicBuffer(toClientsBuffer));
@@ -543,14 +557,32 @@ public class MediaDriver implements AutoCloseable
             {
                 if (counterLabelsBuffer() == null)
                 {
-                    counterLabelsByteBuffer = mapNewFile(new File(countersDirName(), LABELS_FILE), COUNTER_BUFFERS_SZ);
+                    final File counterLabelsFile = new File(countersDirName(), LABELS_FILE);
+
+                    deleteIfExists(counterLabelsFile);
+
+                    if (dirsDeleteOnExit())
+                    {
+                        counterLabelsFile.deleteOnExit();
+                    }
+
+                    counterLabelsByteBuffer = mapNewFile(counterLabelsFile, COUNTER_BUFFERS_SZ);
 
                     counterLabelsBuffer(new AtomicBuffer(counterLabelsByteBuffer));
                 }
 
                 if (countersBuffer() == null)
                 {
-                    counterValuesByteBuffer = mapNewFile(new File(countersDirName(), VALUES_FILE), COUNTER_BUFFERS_SZ);
+                    final File counterValuesFile = new File(countersDirName(), VALUES_FILE);
+
+                    deleteIfExists(counterValuesFile);
+
+                    if (dirsDeleteOnExit())
+                    {
+                        counterValuesFile.deleteOnExit();
+                    }
+
+                    counterValuesByteBuffer = mapNewFile(counterValuesFile, COUNTER_BUFFERS_SZ);
 
                     countersBuffer(new AtomicBuffer(counterValuesByteBuffer));
                 }

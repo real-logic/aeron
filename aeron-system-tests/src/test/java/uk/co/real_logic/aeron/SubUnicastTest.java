@@ -103,7 +103,6 @@ public class SubUnicastTest
         final MediaDriver.Context ctx = new MediaDriver.Context();
 
         ctx.dirsDeleteOnExit(true);
-        ctx.warnIfDirectoriesExist(false);
 
         driver = new MediaDriver(ctx);
 

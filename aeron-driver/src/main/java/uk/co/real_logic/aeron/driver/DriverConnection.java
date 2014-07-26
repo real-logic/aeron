@@ -178,7 +178,7 @@ public class DriverConnection implements AutoCloseable
 
         if (termId == activeTermId)
         {
-            currentRebuilder.insert(buffer, 0, (int)length);
+            currentRebuilder.insert(buffer, 0, length);
 
             if (currentRebuilder.isComplete())
             {
@@ -194,7 +194,7 @@ public class DriverConnection implements AutoCloseable
                 hwmTermId = termId;
             }
 
-            rebuilders[hwmIndex].insert(buffer, 0, (int)length);
+            rebuilders[hwmIndex].insert(buffer, 0, length);
         }
     }
 

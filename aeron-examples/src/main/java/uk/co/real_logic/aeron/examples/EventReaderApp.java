@@ -25,21 +25,21 @@ import java.util.concurrent.TimeUnit;
  */
 public class EventReaderApp
 {
-    public static final long AGENT_IDLE_MAX_SPINS = 100;
-    public static final long AGENT_IDLE_MAX_YIELDS = 100;
-    public static final long AGENT_IDLE_MIN_PARK_NS = TimeUnit.NANOSECONDS.toNanos(10);
-    public static final long AGENT_IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(100);
+    private static final long AGENT_IDLE_MAX_SPINS = 100;
+    private static final long AGENT_IDLE_MAX_YIELDS = 100;
+    private static final long AGENT_IDLE_MIN_PARK_NS = TimeUnit.NANOSECONDS.toNanos(10);
+    private static final long AGENT_IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(100);
 
     public static void main(final String args[]) throws Exception
     {
-        final EventReader.Context context =
+        final EventReader.Context ctx =
             new EventReader.Context()
                 .deleteOnExit(true)
                 .backoffStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
                                                          AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
                 .eventHandler(System.out::println);
 
-        try (final EventReader eventReader = new EventReader(context))
+        try (final EventReader eventReader = new EventReader(ctx))
         {
             eventReader.run();
         }

@@ -19,11 +19,11 @@ import static org.mockito.Mockito.when;
 
 public class MockBufferUsage
 {
-    public static final int MAX_FRAME_LENGTH = 1024;
-    public static final int LOG_BUFFER_SZ = LogBufferDescriptor.MIN_LOG_SIZE;
+    protected static final int MAX_FRAME_LENGTH = 1024;
+    protected static final int LOG_BUFFER_SZ = LogBufferDescriptor.MIN_LOG_SIZE;
 
-    public static final int SESSION_ID_1 = 13;
-    public static final int SESSION_ID_2 = 15;
+    protected static final int SESSION_ID_1 = 13;
+    protected static final int SESSION_ID_2 = 15;
 
     protected AtomicBuffer[] logBuffersSession1 = new AtomicBuffer[TermHelper.BUFFER_COUNT];
     protected AtomicBuffer[] logBuffersSession2 = new AtomicBuffer[TermHelper.BUFFER_COUNT];
@@ -44,22 +44,20 @@ public class MockBufferUsage
             stateBuffersSession2[i] = new AtomicBuffer(new byte[LogBufferDescriptor.STATE_BUFFER_LENGTH]);
 
             when(mockBufferUsage.newBuffer(eq(SESSION_ID_1 + "-log-" + i), anyInt(), anyInt()))
-                    .thenAnswer(answer(logBuffersSession1[i]));
+                .thenAnswer(answer(logBuffersSession1[i]));
             when(mockBufferUsage.newBuffer(eq(SESSION_ID_1 + "-state-" + i), anyInt(), anyInt()))
-                    .thenAnswer(answer(stateBuffersSession1[i]));
+                .thenAnswer(answer(stateBuffersSession1[i]));
             when(mockBufferUsage.newBuffer(eq(SESSION_ID_2 + "-log-" + i), anyInt(), anyInt()))
-                    .thenAnswer(answer(logBuffersSession2[i]));
+                .thenAnswer(answer(logBuffersSession2[i]));
             when(mockBufferUsage.newBuffer(eq(SESSION_ID_2 + "-state-" + i), anyInt(), anyInt()))
-                    .thenAnswer(answer(stateBuffersSession2[i]));
+                .thenAnswer(answer(stateBuffersSession2[i]));
 
             appendersSession1[i] = new LogAppender(logBuffersSession1[i], stateBuffersSession1[i],
-                    DataHeaderFlyweight.DEFAULT_HEADER_NULL_IDS, MAX_FRAME_LENGTH);
+                                                   DataHeaderFlyweight.DEFAULT_HEADER_NULL_IDS, MAX_FRAME_LENGTH);
             appendersSession2[i] = new LogAppender(logBuffersSession2[i], stateBuffersSession2[i],
-                    DataHeaderFlyweight.DEFAULT_HEADER_NULL_IDS, MAX_FRAME_LENGTH);
+                                                   DataHeaderFlyweight.DEFAULT_HEADER_NULL_IDS, MAX_FRAME_LENGTH);
         }
     }
-
-
 
     public Answer<ManagedBuffer> answer(final AtomicBuffer buffer)
     {

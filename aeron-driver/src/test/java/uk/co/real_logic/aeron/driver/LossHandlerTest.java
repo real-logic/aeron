@@ -58,10 +58,10 @@ public class LossHandlerTest
     private static final int STREAM_ID = 0xC400E;
     private static final int TERM_ID = 0xEE81D;
 
-    public static final StaticDelayGenerator delayGenerator =
+    private static final StaticDelayGenerator delayGenerator =
         new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(20), false);
 
-    public static final StaticDelayGenerator delayGeneratorWithImmediate =
+    private static final StaticDelayGenerator delayGeneratorWithImmediate =
         new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(20), true);
 
     private final LogRebuilder[] rebuilders = new LogRebuilder[TermHelper.BUFFER_COUNT];

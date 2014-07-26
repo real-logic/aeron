@@ -16,9 +16,10 @@
 package uk.co.real_logic.aeron.common.status;
 
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.CountersManager;
 
 /**
- * Indicates the position of some entity that stores its value in an buffer. The buffer is managed by a {@link CountersManager}.
+ * Indicates the position of some entity that stores its value in an buffer. The buffer is managed by a {@link uk.co.real_logic.aeron.common.concurrent.CountersManager}.
  */
 public class BufferPositionIndicator implements PositionIndicator
 {

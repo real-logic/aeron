@@ -25,9 +25,6 @@ import java.util.stream.Stream;
 
 import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
 
-/**
- * Buffer helper functions
- */
 public class BufferAndFrameHelper
 {
     public static TermBuffers newTestTermBuffers(final long logBufferSize, final long stateBufferSize)

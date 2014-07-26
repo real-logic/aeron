@@ -48,18 +48,18 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
 
 public class ClientConductorTest extends MockBufferUsage
 {
-    public static final int COUNTER_BUFFER_SZ = 1024;
+    private static final int COUNTER_BUFFER_SZ = 1024;
 
-    public static final String CHANNEL = "udp://localhost:40124";
-    public static final int STREAM_ID_1 = 2;
-    public static final int STREAM_ID_2 = 4;
-    public static final int TERM_ID_1 = 1;
-    public static final int SEND_BUFFER_CAPACITY = 1024;
+    private static final String CHANNEL = "udp://localhost:40124";
+    private static final int STREAM_ID_1 = 2;
+    private static final int STREAM_ID_2 = 4;
+    private static final int TERM_ID_1 = 1;
+    private static final int SEND_BUFFER_CAPACITY = 1024;
 
-    public static final int BROADCAST_BUFFER_SZ = (16 * 1024) + BroadcastBufferDescriptor.TRAILER_LENGTH;
-    public static final long CORRELATION_ID = 2000;
-    public static final int AWAIT_TIMEOUT = 100;
-    public static final int MTU_LENGTH = 1280; // from CommonContext
+    private static final int BROADCAST_BUFFER_SZ = (16 * 1024) + BroadcastBufferDescriptor.TRAILER_LENGTH;
+    private static final long CORRELATION_ID = 2000;
+    private static final int AWAIT_TIMEOUT = 100;
+    private static final int MTU_LENGTH = 1280; // from CommonContext
 
     private final LogBuffersMessageFlyweight newBufferMessage = new LogBuffersMessageFlyweight();
     private final ErrorFlyweight errorHeader = new ErrorFlyweight();
@@ -68,8 +68,7 @@ public class ClientConductorTest extends MockBufferUsage
     private final AtomicBuffer atomicSendBuffer = new AtomicBuffer(sendBuffer);
 
     private final AtomicBuffer toClientBuffer = new AtomicBuffer(new byte[BROADCAST_BUFFER_SZ]);
-    private final CopyBroadcastReceiver toClientReceiver =
-        new CopyBroadcastReceiver(new BroadcastReceiver(toClientBuffer));
+    private final CopyBroadcastReceiver toClientReceiver = new CopyBroadcastReceiver(new BroadcastReceiver(toClientBuffer));
     private final BroadcastTransmitter toClientTransmitter = new BroadcastTransmitter(toClientBuffer);
 
     private final AtomicBuffer counterValuesBuffer = new AtomicBuffer(new byte[COUNTER_BUFFER_SZ]);

@@ -8,11 +8,11 @@ import static org.junit.Assert.assertThat;
 
 public class EventCodecTest
 {
-    public static final String MESSAGE = "End of the world!";
-    public static final String DECLARING_CLASS = EventCodecTest.class.getName();
-    public static final String METHOD = "someMethod";
-    public static final String FILE = EventCodecTest.class.getSimpleName() + ".java";
-    public static final int LINE_NUMBER = 10;
+    private static final String MESSAGE = "End of the world!";
+    private static final String DECLARING_CLASS = EventCodecTest.class.getName();
+    private static final String METHOD = "someMethod";
+    private static final String FILE = EventCodecTest.class.getSimpleName() + ".java";
+    private static final int LINE_NUMBER = 10;
 
     private static final int BUFFER_SIZE = 1024 * 10;
 

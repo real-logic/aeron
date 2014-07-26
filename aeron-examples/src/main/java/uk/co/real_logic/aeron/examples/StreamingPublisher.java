@@ -32,14 +32,14 @@ import java.util.concurrent.TimeUnit;
  */
 public class StreamingPublisher
 {
-    public static final int STREAM_ID = ExampleConfiguration.STREAM_ID;
-    public static final String CHANNEL = ExampleConfiguration.CHANNEL;
-    public static final int MESSAGE_LENGTH = ExampleConfiguration.MESSAGE_LENGTH;
-    public static final long NUMBER_OF_MESSAGES = ExampleConfiguration.NUMBER_OF_MESSAGES;
-    public static final long LINGER_TIMEOUT_MS = ExampleConfiguration.LINGER_TIMEOUT_MS;
-    public static final boolean EMBEDDED_MEDIA_DRIVER = ExampleConfiguration.EMBEDDED_MEDIA_DRIVER;
+    private static final int STREAM_ID = ExampleConfiguration.STREAM_ID;
+    private static final String CHANNEL = ExampleConfiguration.CHANNEL;
+    private static final int MESSAGE_LENGTH = ExampleConfiguration.MESSAGE_LENGTH;
+    private static final long NUMBER_OF_MESSAGES = ExampleConfiguration.NUMBER_OF_MESSAGES;
+    private static final long LINGER_TIMEOUT_MS = ExampleConfiguration.LINGER_TIMEOUT_MS;
+    private static final boolean EMBEDDED_MEDIA_DRIVER = ExampleConfiguration.EMBEDDED_MEDIA_DRIVER;
 
-    private static final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
+    private static final AtomicBuffer ATOMIC_BUFFER = new AtomicBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
 
     public static void main(final String[] args) throws Exception
     {
@@ -60,14 +60,14 @@ public class StreamingPublisher
 
         for (long i = 0; i < NUMBER_OF_MESSAGES; i++)
         {
-            buffer.putLong(0, i);
+            ATOMIC_BUFFER.putLong(0, i);
 
-            while (!publication.offer(buffer, 0, buffer.capacity()))
+            while (!publication.offer(ATOMIC_BUFFER, 0, ATOMIC_BUFFER.capacity()))
             {
                 Thread.yield();
             }
 
-            reporter.onMessage(1, buffer.capacity());
+            reporter.onMessage(1, ATOMIC_BUFFER.capacity());
         }
 
         System.out.println("Done streaming.");

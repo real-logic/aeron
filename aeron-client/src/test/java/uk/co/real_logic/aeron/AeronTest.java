@@ -43,27 +43,26 @@ import static uk.co.real_logic.aeron.common.TermHelper.termIdToBufferIndex;
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ON_NEW_CONNECTED_SUBSCRIPTION;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender.AppendStatus.SUCCESS;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
-import static uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBufferTestUtil.skip;
 
 public class AeronTest extends MockBufferUsage
 {
-    public static final int COUNTER_BUFFER_SZ = 1024;
+    private static final int COUNTER_BUFFER_SZ = 1024;
 
-    public static final String CHANNEL = "udp://localhost:40124";
-    public static final int STREAM_ID_1 = 2;
-    public static final int SESSION_ID_1 = 13;
-    public static final int SESSION_ID_2 = 15;
-    public static final int TERM_ID_1 = 1;
-    public static final int TERM_ID_2 = 11;
-    public static final int PACKET_VALUE = 37;
-    public static final int SEND_BUFFER_CAPACITY = 1024;
-    public static final int SCRATCH_BUFFER_CAPACITY = 1024;
-    public static final DataHandler EMPTY_DATA_HANDLER = (buffer, offset, length, sessionId, flags) -> {};
+    private static final String CHANNEL = "udp://localhost:40124";
+    private static final int STREAM_ID_1 = 2;
+    private static final int SESSION_ID_1 = 13;
+    private static final int SESSION_ID_2 = 15;
+    private static final int TERM_ID_1 = 1;
+    private static final int TERM_ID_2 = 11;
+    private static final int PACKET_VALUE = 37;
+    private static final int SEND_BUFFER_CAPACITY = 1024;
+    private static final int SCRATCH_BUFFER_CAPACITY = 1024;
+    private static final DataHandler EMPTY_DATA_HANDLER = (buffer, offset, length, sessionId, flags) -> {};
 
-    public static final int RING_BUFFER_SZ = (16 * 1024) + RingBufferDescriptor.TRAILER_LENGTH;
-    public static final int BROADCAST_BUFFER_SZ = (16 * 1024) + BroadcastBufferDescriptor.TRAILER_LENGTH;
-    public static final int LOG_BUFFER_SIZE = LogBufferDescriptor.MIN_LOG_SIZE;
-    public static final int FRAME_COUNT_LIMIT = Integer.MAX_VALUE;
+    private static final int RING_BUFFER_SZ = (16 * 1024) + RingBufferDescriptor.TRAILER_LENGTH;
+    private static final int BROADCAST_BUFFER_SZ = (16 * 1024) + BroadcastBufferDescriptor.TRAILER_LENGTH;
+    private static final int LOG_BUFFER_SIZE = LogBufferDescriptor.MIN_LOG_SIZE;
+    private static final int FRAME_COUNT_LIMIT = Integer.MAX_VALUE;
 
     private DataHandler channel1Handler = EMPTY_DATA_HANDLER;
 
@@ -77,8 +76,7 @@ public class AeronTest extends MockBufferUsage
     private final AtomicBuffer atomicScratchBuffer = new AtomicBuffer(scratchBuffer);
 
     private final AtomicBuffer toClientBuffer = new AtomicBuffer(new byte[BROADCAST_BUFFER_SZ]);
-    private final CopyBroadcastReceiver toClientReceiver =
-        new CopyBroadcastReceiver(new BroadcastReceiver(toClientBuffer));
+    private final CopyBroadcastReceiver toClientReceiver = new CopyBroadcastReceiver(new BroadcastReceiver(toClientBuffer));
     private final BroadcastTransmitter toClientTransmitter = new BroadcastTransmitter(toClientBuffer);
 
     private final RingBuffer toDriverBuffer = new ManyToOneRingBuffer(new AtomicBuffer(new byte[RING_BUFFER_SZ]));
@@ -279,5 +277,10 @@ public class AeronTest extends MockBufferUsage
     {
         cleanBuffer(logBuffersSession1[index]);
         cleanBuffer(stateBuffersSession1[index]);
+    }
+
+    private static void skip(final RingBuffer ringBuffer, int count)
+    {
+        ringBuffer.read((msgTypeId, buffer, index, length) -> {}, count);
     }
 }

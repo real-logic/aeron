@@ -61,7 +61,7 @@ public class SubMulticastTest
     private static final byte[] PAYLOAD = "Payload goes here!".getBytes();
     private static final byte[] NO_PAYLOAD = {};
     private static final int FRAME_COUNT_LIMIT = Integer.MAX_VALUE;
-    public static final int ALIGNED_FRAME_LENGTH =
+    private static final int ALIGNED_FRAME_LENGTH =
         BitUtil.align(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT);
 
     private final AtomicBuffer payload = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));

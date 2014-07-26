@@ -28,10 +28,10 @@ import java.util.concurrent.Executors;
  */
 public class ExampleSubscriber
 {
-    public static final int STREAM_ID = ExampleConfiguration.STREAM_ID;
-    public static final String CHANNEL = ExampleConfiguration.CHANNEL;
-    public static final int FRAME_COUNT_LIMIT = ExampleConfiguration.FRAME_COUNT_LIMIT;
-    public static final boolean EMBEDDED_MEDIA_DRIVER = ExampleConfiguration.EMBEDDED_MEDIA_DRIVER;
+    private static final int STREAM_ID = ExampleConfiguration.STREAM_ID;
+    private static final String CHANNEL = ExampleConfiguration.CHANNEL;
+    private static final int FRAME_COUNT_LIMIT = ExampleConfiguration.FRAME_COUNT_LIMIT;
+    private static final boolean EMBEDDED_MEDIA_DRIVER = ExampleConfiguration.EMBEDDED_MEDIA_DRIVER;
 
     public static void main(final String[] args) throws Exception
     {
@@ -44,8 +44,7 @@ public class ExampleSubscriber
         System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
         // subscription for channel Id 1
-        final Subscription subscription =
-            aeron.addSubscription(CHANNEL, STREAM_ID, ExampleUtil.printStringMessage(STREAM_ID));
+        final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, ExampleUtil.printStringMessage(STREAM_ID));
 
         // run the subscriber thread from here
         ExampleUtil.subscriberLoop(FRAME_COUNT_LIMIT).accept(subscription);

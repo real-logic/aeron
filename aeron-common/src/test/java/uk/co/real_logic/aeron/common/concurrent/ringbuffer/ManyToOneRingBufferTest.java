@@ -30,11 +30,11 @@ import static uk.co.real_logic.aeron.common.concurrent.ringbuffer.RecordDescript
 
 public class ManyToOneRingBufferTest
 {
-    public static final int MSG_TYPE_ID = 7;
-    public static final int CAPACITY = 4096;
-    public static final int TOTAL_BUFFER_SIZE = CAPACITY + RingBufferDescriptor.TRAILER_LENGTH;
-    public static final int TAIL_COUNTER_INDEX = CAPACITY + RingBufferDescriptor.TAIL_COUNTER_OFFSET;
-    public static final int HEAD_COUNTER_INDEX = CAPACITY + RingBufferDescriptor.HEAD_COUNTER_OFFSET;
+    private static final int MSG_TYPE_ID = 7;
+    private static final int CAPACITY = 4096;
+    private static final int TOTAL_BUFFER_SIZE = CAPACITY + RingBufferDescriptor.TRAILER_LENGTH;
+    private static final int TAIL_COUNTER_INDEX = CAPACITY + RingBufferDescriptor.TAIL_COUNTER_OFFSET;
+    private static final int HEAD_COUNTER_INDEX = CAPACITY + RingBufferDescriptor.HEAD_COUNTER_OFFSET;
 
     private final AtomicBuffer buffer = mock(AtomicBuffer.class);
     private RingBuffer ringBuffer;

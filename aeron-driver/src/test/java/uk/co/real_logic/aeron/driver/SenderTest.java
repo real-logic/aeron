@@ -46,15 +46,15 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender.App
 
 public class SenderTest
 {
-    public static final long LOG_BUFFER_SIZE = LogBufferDescriptor.MIN_LOG_SIZE;
-    public static final int MAX_FRAME_LENGTH = 1024;
-    public static final int SESSION_ID = 1;
-    public static final int STREAM_ID = 2;
-    public static final int INITIAL_TERM_ID = 3;
-    public static final byte[] PAYLOAD = "Payload is here!".getBytes();
+    private static final long LOG_BUFFER_SIZE = LogBufferDescriptor.MIN_LOG_SIZE;
+    private static final int MAX_FRAME_LENGTH = 1024;
+    private static final int SESSION_ID = 1;
+    private static final int STREAM_ID = 2;
+    private static final int INITIAL_TERM_ID = 3;
+    private static final byte[] PAYLOAD = "Payload is here!".getBytes();
 
-    public final byte[] HEADER = DataHeaderFlyweight.createDefaultHeader(SESSION_ID, STREAM_ID, INITIAL_TERM_ID);
-    public final int ALIGNED_FRAME_LENGTH = align(HEADER.length + PAYLOAD.length, FRAME_ALIGNMENT);
+    private final byte[] HEADER = DataHeaderFlyweight.createDefaultHeader(SESSION_ID, STREAM_ID, INITIAL_TERM_ID);
+    private final int ALIGNED_FRAME_LENGTH = align(HEADER.length + PAYLOAD.length, FRAME_ALIGNMENT);
 
     private final EventLogger mockLogger = mock(EventLogger.class);
 

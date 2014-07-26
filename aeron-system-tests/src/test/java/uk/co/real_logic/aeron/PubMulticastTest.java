@@ -54,7 +54,7 @@ public class PubMulticastTest
     private static final int STREAM_ID = 1;
     private static final int SESSION_ID = 2;
     private static final byte[] PAYLOAD = "Payload goes here!".getBytes();
-    public static final int ALIGNED_FRAME_LENGTH =
+    private static final int ALIGNED_FRAME_LENGTH =
         align(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT);
 
     private final AtomicBuffer payload = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));

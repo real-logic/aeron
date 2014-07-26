@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.examples;
 import uk.co.real_logic.aeron.common.CommonContext;
 import uk.co.real_logic.aeron.common.IoUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.common.status.CountersManager;
+import uk.co.real_logic.aeron.common.concurrent.CountersManager;
 
 import java.io.File;
 import java.nio.MappedByteBuffer;

@@ -30,10 +30,10 @@ import java.util.concurrent.TimeUnit;
  */
 public class RateSubscriber
 {
-    public static final int STREAM_ID = ExampleConfiguration.STREAM_ID;
-    public static final String CHANNEL = ExampleConfiguration.CHANNEL;
-    public static final int FRAME_COUNT_LIMIT = ExampleConfiguration.FRAME_COUNT_LIMIT;
-    public static final boolean EMBEDDED_MEDIA_DRIVER = ExampleConfiguration.EMBEDDED_MEDIA_DRIVER;
+    private static final int STREAM_ID = ExampleConfiguration.STREAM_ID;
+    private static final String CHANNEL = ExampleConfiguration.CHANNEL;
+    private static final int FRAME_COUNT_LIMIT = ExampleConfiguration.FRAME_COUNT_LIMIT;
+    private static final boolean EMBEDDED_MEDIA_DRIVER = ExampleConfiguration.EMBEDDED_MEDIA_DRIVER;
 
     public static void main(final String[] args) throws Exception
     {

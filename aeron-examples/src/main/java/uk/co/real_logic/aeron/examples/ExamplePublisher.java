@@ -31,10 +31,10 @@ import java.util.concurrent.TimeUnit;
  */
 public class ExamplePublisher
 {
-    public static final int STREAM_ID = ExampleConfiguration.STREAM_ID;
-    public static final String CHANNEL = ExampleConfiguration.CHANNEL;
-    public static final long NUMBER_OF_MESSAGES = ExampleConfiguration.NUMBER_OF_MESSAGES;
-    public static final boolean EMBEDDED_MEDIA_DRIVER = ExampleConfiguration.EMBEDDED_MEDIA_DRIVER;
+    private static final int STREAM_ID = ExampleConfiguration.STREAM_ID;
+    private static final String CHANNEL = ExampleConfiguration.CHANNEL;
+    private static final long NUMBER_OF_MESSAGES = ExampleConfiguration.NUMBER_OF_MESSAGES;
+    private static final boolean EMBEDDED_MEDIA_DRIVER = ExampleConfiguration.EMBEDDED_MEDIA_DRIVER;
 
     private static final AtomicBuffer BUFFER = new AtomicBuffer(ByteBuffer.allocateDirect(256));
 

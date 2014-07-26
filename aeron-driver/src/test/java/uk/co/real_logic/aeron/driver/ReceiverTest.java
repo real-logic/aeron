@@ -48,7 +48,7 @@ import static uk.co.real_logic.aeron.driver.BufferAndFrameHelper.newTestTermBuff
 
 public class ReceiverTest
 {
-    public static final long LOG_BUFFER_SIZE = LogBufferDescriptor.MIN_LOG_SIZE;
+    private static final long LOG_BUFFER_SIZE = LogBufferDescriptor.MIN_LOG_SIZE;
     private static final String URI = "udp://localhost:45678";
     private static final UdpChannel UDP_CHANNEL = UdpChannel.parse(URI);
     private static final int STREAM_ID = 10;
@@ -59,7 +59,7 @@ public class ReceiverTest
     private static final int INITIAL_WINDOW_SIZE = MediaDriver.INITIAL_WINDOW_SIZE_DEFAULT;
     private static final PositionIndicator POSITION_INDICATOR = mock(PositionIndicator.class);
 
-    public final LossHandler mockLossHandler = mock(LossHandler.class);
+    private final LossHandler mockLossHandler = mock(LossHandler.class);
     private final NioSelector mockNioSelector = mock(NioSelector.class);
     private final TermBuffersFactory mockTermBuffersFactory = mock(TermBuffersFactory.class);
     private final ByteBuffer dataFrameBuffer = ByteBuffer.allocate(2 * 1024);

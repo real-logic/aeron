@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.common.status;
+package uk.co.real_logic.aeron.common.concurrent;
 
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.status.BufferPositionIndicator;
+import uk.co.real_logic.aeron.common.status.BufferPositionReporter;
 
 import java.util.function.BiConsumer;
 

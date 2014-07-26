@@ -51,9 +51,9 @@ public class RetransmitHandlerTest
     private static final int STREAM_ID = 0x5400E;
     private static final int TERM_ID = 0x7F003355;
 
-    public static final FeedbackDelayGenerator delayGenerator = () -> TimeUnit.MILLISECONDS.toNanos(20);
-    public static final FeedbackDelayGenerator zeroDelayGenerator = () -> TimeUnit.MILLISECONDS.toNanos(0);
-    public static final FeedbackDelayGenerator lingerGenerator = () -> TimeUnit.MILLISECONDS.toNanos(40);
+    private static final FeedbackDelayGenerator delayGenerator = () -> TimeUnit.MILLISECONDS.toNanos(20);
+    private static final FeedbackDelayGenerator zeroDelayGenerator = () -> TimeUnit.MILLISECONDS.toNanos(0);
+    private static final FeedbackDelayGenerator lingerGenerator = () -> TimeUnit.MILLISECONDS.toNanos(40);
 
     private final AtomicBuffer logBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(LOG_BUFFER_SIZE));
     private final AtomicBuffer stateBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(STATE_BUFFER_SIZE));

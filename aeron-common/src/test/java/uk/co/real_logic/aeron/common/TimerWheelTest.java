@@ -32,7 +32,7 @@ public class TimerWheelTest
 
     private long controlTimestamp;
 
-    public long getControlTimestamp()
+    private long getControlTimestamp()
     {
         return controlTimestamp;
     }

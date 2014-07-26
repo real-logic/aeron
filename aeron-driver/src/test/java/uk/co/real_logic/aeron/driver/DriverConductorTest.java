@@ -30,7 +30,7 @@ import uk.co.real_logic.aeron.common.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBufferDescriptor;
 import uk.co.real_logic.aeron.common.event.EventLogger;
-import uk.co.real_logic.aeron.common.status.CountersManager;
+import uk.co.real_logic.aeron.common.concurrent.CountersManager;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
 
 import java.io.IOException;

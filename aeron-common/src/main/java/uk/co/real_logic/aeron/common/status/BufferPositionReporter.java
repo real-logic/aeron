@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.common.status;
 
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.CountersManager;
 
 /**
  * .

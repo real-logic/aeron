@@ -14,11 +14,11 @@ import static uk.co.real_logic.aeron.common.concurrent.broadcast.RecordDescripto
 
 public class BroadcastReceiverTest
 {
-    public static final int MSG_TYPE_ID = 7;
-    public static final int CAPACITY = 1024;
-    public static final int TOTAL_BUFFER_SIZE = CAPACITY + BroadcastBufferDescriptor.TRAILER_LENGTH;
-    public static final int TAIL_COUNTER_INDEX = CAPACITY + BroadcastBufferDescriptor.TAIL_COUNTER_OFFSET;
-    public static final int LATEST_COUNTER_INDEX = CAPACITY + BroadcastBufferDescriptor.LATEST_COUNTER_OFFSET;
+    private static final int MSG_TYPE_ID = 7;
+    private static final int CAPACITY = 1024;
+    private static final int TOTAL_BUFFER_SIZE = CAPACITY + BroadcastBufferDescriptor.TRAILER_LENGTH;
+    private static final int TAIL_COUNTER_INDEX = CAPACITY + BroadcastBufferDescriptor.TAIL_COUNTER_OFFSET;
+    private static final int LATEST_COUNTER_INDEX = CAPACITY + BroadcastBufferDescriptor.LATEST_COUNTER_OFFSET;
 
     private final AtomicBuffer buffer = mock(AtomicBuffer.class);
     private BroadcastReceiver broadcastReceiver;

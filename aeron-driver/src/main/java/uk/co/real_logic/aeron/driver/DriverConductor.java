@@ -29,7 +29,7 @@ import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.status.BufferPositionIndicator;
 import uk.co.real_logic.aeron.common.status.BufferPositionReporter;
-import uk.co.real_logic.aeron.common.status.CountersManager;
+import uk.co.real_logic.aeron.common.concurrent.CountersManager;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
 import uk.co.real_logic.aeron.driver.cmd.CreateConnectionCmd;

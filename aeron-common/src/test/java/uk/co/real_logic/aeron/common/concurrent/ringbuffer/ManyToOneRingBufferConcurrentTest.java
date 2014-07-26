@@ -29,7 +29,7 @@ import static uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBufferDesc
 
 public class ManyToOneRingBufferConcurrentTest
 {
-    public static final int MSG_TYPE_ID = 7;
+    private static final int MSG_TYPE_ID = 7;
 
     private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect((16 * 1024) + TRAILER_LENGTH);
     private final AtomicBuffer atomicBuffer = new AtomicBuffer(byteBuffer);

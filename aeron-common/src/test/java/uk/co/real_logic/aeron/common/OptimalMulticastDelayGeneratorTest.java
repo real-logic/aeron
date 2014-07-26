@@ -24,11 +24,11 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 
 public class OptimalMulticastDelayGeneratorTest
 {
-    public static final long MAX_BACKOFF = 60;
-    public static final long GROUP_SIZE = 10;
-    public static final long GRTT = 10;
+    private static final long MAX_BACKOFF = 60;
+    private static final long GROUP_SIZE = 10;
+    private static final long GRTT = 10;
 
-    public OptimalMulticastDelayGenerator generator = new OptimalMulticastDelayGenerator(MAX_BACKOFF, GROUP_SIZE, GRTT);
+    private OptimalMulticastDelayGenerator generator = new OptimalMulticastDelayGenerator(MAX_BACKOFF, GROUP_SIZE, GRTT);
 
     @Test
     public void shouldNotExceedTmaxBackoff()

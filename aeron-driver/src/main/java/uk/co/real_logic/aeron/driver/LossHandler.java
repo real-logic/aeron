@@ -24,7 +24,7 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Tracking and handling of gaps in a channel
+ * Tracking and handling of gaps in a stream
  * <p>
  * This handler only sends a single NAK at a time.
  */

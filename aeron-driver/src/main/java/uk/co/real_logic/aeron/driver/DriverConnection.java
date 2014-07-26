@@ -98,11 +98,11 @@ public class DriverConnection implements AutoCloseable
 
         final int termCapacity = rebuilders[0].capacity();
         this.currentWindowSize = initialWindowSize;
-        this.currentWindowGain = currentWindowSize << 2; // window / 4
+        this.currentWindowGain = currentWindowSize / 4;
         this.bufferLimit = termCapacity / 2;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
         this.initialTermId = initialTermId;
-        this.termSizeSmGain = termCapacity / 4;
+        this.termSizeSmGain = termCapacity / 4;  // TODO: remove. unneeded.
     }
 
     public int sessionId()

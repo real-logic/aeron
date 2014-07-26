@@ -55,11 +55,13 @@ public class EventReader extends Agent implements AutoCloseable
                 {
                     System.err.println("WARNING: existing event buffer at: " + eventsFile);
                 }
+
+                buffer = IoUtil.mapExistingFile(eventsFile, "event buffer");
             }
-
-            deleteIfExists(eventsFile);
-
-            buffer = IoUtil.mapNewFile(eventsFile, context.size());
+            else
+            {
+                buffer = IoUtil.mapNewFile(eventsFile, context.size());
+            }
 
             if (context.deleteOnExit())
             {
@@ -89,11 +91,6 @@ public class EventReader extends Agent implements AutoCloseable
     public void close() throws Exception
     {
         IoUtil.unmap(buffer);
-
-        if (ctx.deleteOnExit())
-        {
-            deleteIfExists(ctx.eventsFile());
-        }
     }
 
     public int doWork() throws Exception
@@ -108,7 +105,7 @@ public class EventReader extends Agent implements AutoCloseable
         private long bufferSize = Long.getLong(EventConfiguration.BUFFER_SIZE_PROPERTY_NAME,
             EventConfiguration.BUFFER_SIZE_DEFAULT) + RingBufferDescriptor.TRAILER_LENGTH;
         private boolean deleteOnExit = Boolean.getBoolean(EventConfiguration.DELETE_ON_EXIT_PROPERTY_NAME);
-        private boolean warnIfEventsFileExists = true;
+        private boolean warnIfEventsFileExists = false;
 
         private IdleStrategy backoffStrategy;
         private Consumer<String> eventHandler;

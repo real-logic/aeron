@@ -106,15 +106,23 @@ public class PubUnicastTest
     @After
     public void closeEverything() throws Exception
     {
-        publication.release();
+        if (null != publication)
+        {
+            publication.release();
+        }
 
-        producingClient.shutdown();
-        driver.shutdown();
+        SystemTestHelper.shutdownAndClose(producingClient);
+        SystemTestHelper.shutdownAndClose(driver);
 
-        receiverChannel.close();
-        producingClient.close();
-        driver.close();
-        executorService.shutdown();
+        if (null != receiverChannel)
+        {
+            receiverChannel.close();
+        }
+
+        if (null != executorService)
+        {
+            executorService.shutdown();
+        }
     }
 
     @Test(timeout = 1000)

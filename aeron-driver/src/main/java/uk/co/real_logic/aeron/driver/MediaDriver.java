@@ -306,7 +306,6 @@ public class MediaDriver implements AutoCloseable
             new EventReader.Context()
                 .backoffStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
                     AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
-                .warnIfEventsFileExists(ctx.warnIfDirectoriesExist)
                 .deleteOnExit(ctx.dirsDeleteOnExit())
                 .eventHandler(ctx.eventConsumer);
 
@@ -423,9 +422,20 @@ public class MediaDriver implements AutoCloseable
     {
         if (ctx.dirsDeleteOnExit())
         {
-            IoUtil.delete(adminDirFile, false);
-            IoUtil.delete(dataDirFile, false);
-            IoUtil.delete(countersDirFile, false);
+            if (null != adminDirFile)
+            {
+                IoUtil.delete(adminDirFile, false);
+            }
+
+            if (null != dataDirFile)
+            {
+                IoUtil.delete(dataDirFile, false);
+            }
+
+            if (null != countersDirFile)
+            {
+                IoUtil.delete(countersDirFile, false);
+            }
         }
     }
 

@@ -87,17 +87,24 @@ public class PubAndSubTest
     @After
     public void closeEverything() throws Exception
     {
-        publication.release();
-        subscription.close();
+        if (null != publication)
+        {
+            publication.release();
+        }
 
-        subscribingClient.shutdown();
-        publishingClient.shutdown();
-        driver.shutdown();
+        if (null != subscription)
+        {
+            subscription.close();
+        }
 
-        subscribingClient.close();
-        publishingClient.close();
-        driver.close();
-        executorService.shutdown();
+        SystemTestHelper.shutdownAndClose(subscribingClient);
+        SystemTestHelper.shutdownAndClose(publishingClient);
+        SystemTestHelper.shutdownAndClose(driver);
+
+        if (null != executorService)
+        {
+            executorService.shutdown();
+        }
     }
 
     @Theory

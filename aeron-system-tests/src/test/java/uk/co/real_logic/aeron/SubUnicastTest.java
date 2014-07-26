@@ -126,15 +126,23 @@ public class SubUnicastTest
     @After
     public void closeEverything() throws Exception
     {
-        subscription.close();
+        if (null != subscription)
+        {
+            subscription.close();
+        }
 
-        consumingClient.shutdown();
-        driver.shutdown();
+        SystemTestHelper.shutdownAndClose(consumingClient);
+        SystemTestHelper.shutdownAndClose(driver);
 
-        senderChannel.close();
-        consumingClient.close();
-        driver.close();
-        executorService.shutdown();
+        if (null != senderChannel)
+        {
+            senderChannel.close();
+        }
+
+        if (null != executorService)
+        {
+            executorService.shutdown();
+        }
     }
 
     @Test(timeout = 1000)

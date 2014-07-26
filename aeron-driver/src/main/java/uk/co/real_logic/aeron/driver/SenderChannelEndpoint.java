@@ -25,16 +25,15 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 /**
- * Aggregator of multiple {@link DriverPublication}s onto a single transport session with processing of
- * control frames.
+ * Aggregator of multiple {@link DriverPublication}s onto a single transport session for processing of control frames.
  */
-public class MediaPublicationEndpoint implements AutoCloseable
+public class SenderChannelEndpoint implements AutoCloseable
 {
     private final UdpTransport transport;
     private final UdpChannel udpChannel;
-    private final Int2ObjectHashMap<Int2ObjectHashMap<DriverPublication>> publicationBySessionMap = new Int2ObjectHashMap<>();
+    private final Int2ObjectHashMap<Int2ObjectHashMap<DriverPublication>> publicationBySessionIdMap = new Int2ObjectHashMap<>();
 
-    public MediaPublicationEndpoint(final UdpChannel udpChannel, final NioSelector nioSelector, final EventLogger logger)
+    public SenderChannelEndpoint(final UdpChannel udpChannel, final NioSelector nioSelector, final EventLogger logger)
         throws Exception
     {
         this.transport = new UdpTransport(udpChannel, this::onStatusMessageFrame, this::onNakFrame, logger);
@@ -64,7 +63,7 @@ public class MediaPublicationEndpoint implements AutoCloseable
 
     public DriverPublication findPublication(final int sessionId, final int streamId)
     {
-        final Int2ObjectHashMap<DriverPublication> publicationByStreamIdMap = publicationBySessionMap.get(sessionId);
+        final Int2ObjectHashMap<DriverPublication> publicationByStreamIdMap = publicationBySessionIdMap.get(sessionId);
         if (null == publicationByStreamIdMap)
         {
             return null;
@@ -75,13 +74,13 @@ public class MediaPublicationEndpoint implements AutoCloseable
 
     public void addPublication(final DriverPublication publication)
     {
-        publicationBySessionMap.getOrDefault(publication.sessionId(), Int2ObjectHashMap::new)
-                               .put(publication.streamId(), publication);
+        publicationBySessionIdMap.getOrDefault(publication.sessionId(), Int2ObjectHashMap::new)
+                                 .put(publication.streamId(), publication);
     }
 
     public DriverPublication removePublication(final int sessionId, final int streamId)
     {
-        final Int2ObjectHashMap<DriverPublication> publicationByStreamIdMap = publicationBySessionMap.get(sessionId);
+        final Int2ObjectHashMap<DriverPublication> publicationByStreamIdMap = publicationBySessionIdMap.get(sessionId);
         if (null == publicationByStreamIdMap)
         {
             return null;
@@ -90,7 +89,7 @@ public class MediaPublicationEndpoint implements AutoCloseable
         final DriverPublication publication = publicationByStreamIdMap.remove(streamId);
         if (publicationByStreamIdMap.isEmpty())
         {
-            publicationBySessionMap.remove(sessionId);
+            publicationBySessionIdMap.remove(sessionId);
         }
 
         return publication;
@@ -98,7 +97,7 @@ public class MediaPublicationEndpoint implements AutoCloseable
 
     public int sessionCount()
     {
-        return publicationBySessionMap.size();
+        return publicationBySessionIdMap.size();
     }
 
     private void onStatusMessageFrame(final StatusMessageFlyweight header,

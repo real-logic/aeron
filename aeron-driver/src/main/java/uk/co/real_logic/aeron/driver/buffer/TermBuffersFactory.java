@@ -90,7 +90,7 @@ public class TermBuffersFactory implements AutoCloseable
      * @param streamId within the channel address to separate message flows.
      * @return the newly allocated {@link TermBuffers}
      */
-    public TermBuffers newConnectedSubscription(final UdpChannel udpChannel, final int sessionId, final int streamId)
+    public TermBuffers newConnection(final UdpChannel udpChannel, final int sessionId, final int streamId)
     {
         return newInstance(udpChannel, sessionId, streamId, subscriptionsDir);
     }

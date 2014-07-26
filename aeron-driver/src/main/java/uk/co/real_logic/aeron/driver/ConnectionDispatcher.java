@@ -24,11 +24,11 @@ import uk.co.real_logic.aeron.driver.exceptions.UnknownSubscriptionException;
 import java.net.InetSocketAddress;
 
 /**
- * Handling of dispatching data frames to {@link DriverConnectedSubscription}s
+ * Handling of dispatching data frames to {@link DriverConnection}s streams.
  * <p>
  * All methods should be called via {@link Receiver} thread
  */
-public class DriverSubscriptionDispatcher
+public class ConnectionDispatcher
 {
     private static final String INIT_IN_PROGRESS = "Connection initialisation in progress";
 
@@ -38,9 +38,9 @@ public class DriverSubscriptionDispatcher
     private final Int2ObjectHashMap<DriverSubscription> subscriptionByStreamIdMap = new Int2ObjectHashMap<>();
     private final DriverConductorProxy conductorProxy;
 
-    public DriverSubscriptionDispatcher(final UdpTransport transport,
-                                        final UdpChannel udpChannel,
-                                        final DriverConductorProxy conductorProxy)
+    public ConnectionDispatcher(final UdpTransport transport,
+                                final UdpChannel udpChannel,
+                                final DriverConductorProxy conductorProxy)
         throws Exception
     {
         this.transport = transport;
@@ -72,20 +72,20 @@ public class DriverSubscriptionDispatcher
         subscription.close();
     }
 
-    public void addConnectedSubscription(final DriverConnectedSubscription connectedSubscription)
+    public void addConnection(final DriverConnection connection)
     {
-        final DriverSubscription subscription = subscriptionByStreamIdMap.get(connectedSubscription.streamId());
+        final DriverSubscription subscription = subscriptionByStreamIdMap.get(connection.streamId());
 
         if (null == subscription)
         {
-            throw new IllegalStateException("No subscription registered on " + connectedSubscription.streamId());
+            throw new IllegalStateException("No subscription registered on " + connection.streamId());
         }
 
-        subscription.putConnectedSubscription(connectedSubscription);
-        initialisationInProgressMap.remove(connectedSubscription.sessionId());
+        subscription.putConnection(connection);
+        initialisationInProgressMap.remove(connection.sessionId());
 
         // update state of the subscription so that it will send SMs now
-        connectedSubscription.readyToSendSms();
+        connection.readyToSendSms();
     }
 
     public void onDataFrame(final DataHeaderFlyweight header,
@@ -100,18 +100,18 @@ public class DriverSubscriptionDispatcher
         {
             final int sessionId = header.sessionId();
             final int termId = header.termId();
-            final DriverConnectedSubscription connectedSubscription = subscription.getConnectedSubscription(sessionId);
+            final DriverConnection connection = subscription.getConnection(sessionId);
 
-            if (null != connectedSubscription)
+            if (null != connection)
             {
                 if (length > DataHeaderFlyweight.HEADER_LENGTH)
                 {
-                    connectedSubscription.insertIntoTerm(header, buffer, length);
+                    connection.insertIntoTerm(header, buffer, length);
                 }
                 else if ((header.flags() & DataHeaderFlyweight.PADDING_FLAG) == DataHeaderFlyweight.PADDING_FLAG)
                 {
                     header.headerType(LogBufferDescriptor.PADDING_FRAME_TYPE);
-                    connectedSubscription.insertIntoTerm(header, buffer, length);
+                    connection.insertIntoTerm(header, buffer, length);
                 }
             }
             else if (null == initialisationInProgressMap.get(sessionId))
@@ -121,7 +121,8 @@ public class DriverSubscriptionDispatcher
                 // TODO: need to clean up on timeout - how can this fail?
                 initialisationInProgressMap.put(sessionId, INIT_IN_PROGRESS);
 
-                conductorProxy.createConnectedSubscription(subscription.udpChannel(),
+                conductorProxy.createConnection(
+                    subscription.udpChannel(),
                     sessionId,
                     streamId,
                     termId,

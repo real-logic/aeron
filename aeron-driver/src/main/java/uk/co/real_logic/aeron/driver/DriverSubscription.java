@@ -27,7 +27,7 @@ public class DriverSubscription
     private final UdpChannel udpChannel;
     private final int streamId;
     private final DriverConductorProxy conductorProxy;
-    private final Int2ObjectHashMap<DriverConnectedSubscription> connectionBySessionIdMap = new Int2ObjectHashMap<>();
+    private final Int2ObjectHashMap<DriverConnection> connectionBySessionIdMap = new Int2ObjectHashMap<>();
 
     public DriverSubscription(final UdpChannel udpChannel, final int streamId, final DriverConductorProxy conductorProxy)
     {
@@ -36,14 +36,14 @@ public class DriverSubscription
         this.conductorProxy = conductorProxy;
     }
 
-    public DriverConnectedSubscription getConnectedSubscription(final int sessionId)
+    public DriverConnection getConnection(final int sessionId)
     {
         return connectionBySessionIdMap.get(sessionId);
     }
 
-    public DriverConnectedSubscription putConnectedSubscription(final DriverConnectedSubscription connectedSubscription)
+    public DriverConnection putConnection(final DriverConnection connection)
     {
-        return connectionBySessionIdMap.put(connectedSubscription.sessionId(), connectedSubscription);
+        return connectionBySessionIdMap.put(connection.sessionId(), connection);
     }
 
     public int streamId()
@@ -61,7 +61,7 @@ public class DriverSubscription
         conductorProxy.removeSubscription(this);
     }
 
-    public Collection<DriverConnectedSubscription> connectedSubscriptions()
+    public Collection<DriverConnection> connections()
     {
         return connectionBySessionIdMap.values();
     }

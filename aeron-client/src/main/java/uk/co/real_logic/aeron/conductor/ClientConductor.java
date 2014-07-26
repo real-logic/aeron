@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.conductor;
 
 import uk.co.real_logic.aeron.DataHandler;
-import uk.co.real_logic.aeron.NewSourceHandler;
+import uk.co.real_logic.aeron.NewConnectionHandler;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.Agent;
@@ -65,7 +65,7 @@ public class ClientConductor extends Agent implements DriverListener
     private final DriverProxy driverProxy;
     private final Signal correlationSignal;
 
-    private final NewSourceHandler newSourceHandler;
+    private final NewConnectionHandler newConnectionHandler;
     private final int mtuLength;
 
     private long activeCorrelationId = -1; // Guarded by this
@@ -79,7 +79,7 @@ public class ClientConductor extends Agent implements DriverListener
                            final DriverProxy driverProxy,
                            final Signal correlationSignal,
                            final Consumer<Exception> errorHandler,
-                           final NewSourceHandler newSourceHandler,
+                           final NewConnectionHandler newConnectionHandler,
                            final long awaitTimeout,
                            final int mtuLength)
     {
@@ -92,7 +92,7 @@ public class ClientConductor extends Agent implements DriverListener
         this.driverProxy = driverProxy;
         this.driverBroadcastReceiver = driverBroadcastReceiver;
         this.bufferManager = bufferManager;
-        this.newSourceHandler = newSourceHandler;
+        this.newConnectionHandler = newConnectionHandler;
         this.awaitTimeout = awaitTimeout;
         this.mtuLength = mtuLength;
     }
@@ -147,9 +147,7 @@ public class ClientConductor extends Agent implements DriverListener
         publicationMap.remove(channel, sessionId, streamId);
     }
 
-    public synchronized Subscription addSubscription(final String channel,
-                                                     final int streamId,
-                                                     final DataHandler handler)
+    public synchronized Subscription addSubscription(final String channel, final int streamId, final DataHandler handler)
     {
         Subscription subscription = subscriptionMap.get(channel, streamId);
 
@@ -205,11 +203,11 @@ public class ClientConductor extends Agent implements DriverListener
         correlationSignal.signal();
     }
 
-    public void onNewConnectedSubscription(final String channel,
-                                           final int sessionId,
-                                           final int streamId,
-                                           final int initialTermId,
-                                           final LogBuffersMessageFlyweight message)
+    public void onNewConnection(final String channel,
+                                final int sessionId,
+                                final int streamId,
+                                final int initialTermId,
+                                final LogBuffersMessageFlyweight message)
         throws IOException
     {
         final Subscription subscription = subscriptionMap.get(channel, streamId);
@@ -232,9 +230,9 @@ public class ClientConductor extends Agent implements DriverListener
                 new BufferPositionReporter(counterValuesBuffer, message.positionCounterId());
             subscription.onTermBuffersMapped(sessionId, initialTermId, logs, positionReporter, managedBuffers);
 
-            if (null != newSourceHandler)
+            if (null != newConnectionHandler)
             {
-                newSourceHandler.onNewSource(channel, sessionId, streamId);
+                newConnectionHandler.onNewConnection(channel, sessionId, streamId);
             }
         }
     }

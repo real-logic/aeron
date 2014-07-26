@@ -36,7 +36,7 @@ public class DefaultMulticastSenderControlStrategy implements SenderControlStrat
 
     /** {@inheritDoc} */
     public long onStatusMessage(final int termId, final long highestContiguousSequenceNumber,
-                                final long receiverWindowSize, final InetSocketAddress address)
+                                final int receiverWindowSize, final InetSocketAddress address)
     {
         final long positionLimit = ((long)termId << shiftsForTermId) + receiverWindowSize;
         this.positionLimit = Math.max(this.positionLimit, positionLimit);

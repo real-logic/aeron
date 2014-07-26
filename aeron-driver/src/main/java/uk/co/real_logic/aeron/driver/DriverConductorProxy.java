@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.driver.cmd.CreateConnectedSubscriptionCmd;
+import uk.co.real_logic.aeron.driver.cmd.CreateConnectionCmd;
 import uk.co.real_logic.aeron.driver.cmd.SubscriptionRemovedCmd;
 
 import java.net.InetSocketAddress;
@@ -33,18 +33,18 @@ public class DriverConductorProxy
         this.commandQueue = commandQueue;
     }
 
-    public boolean createConnectedSubscription(final UdpChannel udpChannel,
-                                               final int sessionId,
-                                               final int streamId,
-                                               final int termId,
-                                               final InetSocketAddress controlAddress)
+    public boolean createConnection(final UdpChannel udpChannel,
+                                    final int sessionId,
+                                    final int streamId,
+                                    final int termId,
+                                    final InetSocketAddress controlAddress)
     {
         return commandQueue.offer(
-            new CreateConnectedSubscriptionCmd(udpChannel,
-                                               sessionId,
-                                               streamId,
-                                               termId,
-                                               controlAddress));
+            new CreateConnectionCmd(udpChannel,
+                                    sessionId,
+                                    streamId,
+                                    termId,
+                                    controlAddress));
     }
 
     public boolean removeSubscription(final DriverSubscription subscription)

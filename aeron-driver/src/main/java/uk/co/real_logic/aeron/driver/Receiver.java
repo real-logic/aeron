@@ -19,8 +19,8 @@ import uk.co.real_logic.aeron.common.Agent;
 import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.driver.cmd.AddSubscriptionCmd;
-import uk.co.real_logic.aeron.driver.cmd.NewConnectedSubscriptionCmd;
-import uk.co.real_logic.aeron.driver.cmd.RegisterMediaSubscriptionEndpointCmd;
+import uk.co.real_logic.aeron.driver.cmd.NewConnectionCmd;
+import uk.co.real_logic.aeron.driver.cmd.RegisterReceiverChannelEndpointCmd;
 import uk.co.real_logic.aeron.driver.cmd.RemoveSubscriptionCmd;
 
 /**
@@ -53,9 +53,9 @@ public class Receiver extends Agent
             {
                 try
                 {
-                    if (obj instanceof NewConnectedSubscriptionCmd)
+                    if (obj instanceof NewConnectionCmd)
                     {
-                        onNewConnectedSubscription((NewConnectedSubscriptionCmd)obj);
+                        onNewConnection((NewConnectionCmd)obj);
                     }
                     else if (obj instanceof AddSubscriptionCmd)
                     {
@@ -67,10 +67,10 @@ public class Receiver extends Agent
                         final RemoveSubscriptionCmd cmd = (RemoveSubscriptionCmd)obj;
                         onRemoveSubscription(cmd.mediaSubscriptionEndpoint(), cmd.streamId());
                     }
-                    else if (obj instanceof RegisterMediaSubscriptionEndpointCmd)
+                    else if (obj instanceof RegisterReceiverChannelEndpointCmd)
                     {
-                        final RegisterMediaSubscriptionEndpointCmd cmd = (RegisterMediaSubscriptionEndpointCmd)obj;
-                        onRegisterMediaSubscriptionEndpoint(cmd.mediaSubscriptionEndpoint());
+                        final RegisterReceiverChannelEndpointCmd cmd = (RegisterReceiverChannelEndpointCmd)obj;
+                        onRegisterMediaSubscriptionEndpoint(cmd.receiverChannelEndpoint());
                     }
                 }
                 catch (final Exception ex)
@@ -98,26 +98,26 @@ public class Receiver extends Agent
         return nioSelector;
     }
 
-    private void onAddSubscription(final MediaSubscriptionEndpoint mediaSubscriptionEndpoint, final int streamId)
+    private void onAddSubscription(final ReceiverChannelEndpoint receiverChannelEndpoint, final int streamId)
         throws Exception
     {
-        mediaSubscriptionEndpoint.dispatcher().addSubscription(streamId);
+        receiverChannelEndpoint.dispatcher().addSubscription(streamId);
     }
 
-    private void onRemoveSubscription(final MediaSubscriptionEndpoint mediaSubscriptionEndpoint, final int streamId)
+    private void onRemoveSubscription(final ReceiverChannelEndpoint receiverChannelEndpoint, final int streamId)
     {
-        mediaSubscriptionEndpoint.dispatcher().removeSubscription(streamId);
+        receiverChannelEndpoint.dispatcher().removeSubscription(streamId);
     }
 
-    private void onNewConnectedSubscription(final NewConnectedSubscriptionCmd cmd)
+    private void onNewConnection(final NewConnectionCmd cmd)
     {
-        final MediaSubscriptionEndpoint mediaSubscriptionEndpoint = cmd.mediaSubscriptionEndpoint();
+        final ReceiverChannelEndpoint receiverChannelEndpoint = cmd.receiverChannelEndpoint();
 
-        mediaSubscriptionEndpoint.dispatcher().addConnectedSubscription(cmd.connectedSubscription());
+        receiverChannelEndpoint.dispatcher().addConnection(cmd.connection());
     }
 
-    private void onRegisterMediaSubscriptionEndpoint(final MediaSubscriptionEndpoint mediaSubscriptionEndpoint)
+    private void onRegisterMediaSubscriptionEndpoint(final ReceiverChannelEndpoint receiverChannelEndpoint)
     {
-        mediaSubscriptionEndpoint.registerForRead(nioSelector);
+        receiverChannelEndpoint.registerForRead(nioSelector);
     }
 }

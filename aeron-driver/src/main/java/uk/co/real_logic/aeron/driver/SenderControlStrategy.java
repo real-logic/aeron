@@ -26,7 +26,7 @@ public interface SenderControlStrategy
      */
     long onStatusMessage(final int termId,
                          final long highestContiguousSequenceNumber,
-                         final long receiverWindow,
+                         final int receiverWindowSize,
                          final InetSocketAddress address);
 
     /**

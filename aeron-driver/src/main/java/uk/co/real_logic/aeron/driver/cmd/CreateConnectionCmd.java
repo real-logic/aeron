@@ -19,7 +19,7 @@ import uk.co.real_logic.aeron.driver.UdpChannel;
 
 import java.net.InetSocketAddress;
 
-public class CreateConnectedSubscriptionCmd
+public class CreateConnectionCmd
 {
     private final UdpChannel udpChannel;
     private final int sessionId;
@@ -27,11 +27,11 @@ public class CreateConnectedSubscriptionCmd
     private final int termId;
     private final InetSocketAddress controlAddress;
 
-    public CreateConnectedSubscriptionCmd(final UdpChannel udpChannel,
-                                          final int sessionId,
-                                          final int streamId,
-                                          final int termId,
-                                          final InetSocketAddress controlAddress)
+    public CreateConnectionCmd(final UdpChannel udpChannel,
+                               final int sessionId,
+                               final int streamId,
+                               final int termId,
+                               final InetSocketAddress controlAddress)
     {
         this.udpChannel = udpChannel;
         this.sessionId = sessionId;

@@ -70,7 +70,7 @@ public final class Aeron implements AutoCloseable, Runnable
                                         driverProxy,
                                         correlationSignal,
                                         ctx.errorHandler,
-                                        ctx.newSourceHandler,
+                                        ctx.newConnectionHandler,
                                         AWAIT_TIMEOUT,
                                         ctx.mtuLength());
 
@@ -211,7 +211,7 @@ public final class Aeron implements AutoCloseable, Runnable
         private BufferManager bufferManager;
 
         private Consumer<Exception> errorHandler;
-        private NewSourceHandler newSourceHandler;
+        private NewConnectionHandler newConnectionHandler;
 
         public ClientContext conclude() throws IOException
         {
@@ -286,9 +286,9 @@ public final class Aeron implements AutoCloseable, Runnable
             return this;
         }
 
-        public ClientContext newSourceHandler(final NewSourceHandler handler)
+        public ClientContext newSourceHandler(final NewConnectionHandler handler)
         {
-            this.newSourceHandler = handler;
+            this.newConnectionHandler = handler;
             return this;
         }
 

@@ -160,7 +160,7 @@ public class DriverConductorTest
 
         verify(mockClientProxy).operationSucceeded(CORRELATION_ID);
 
-        assertNotNull(driverConductor.subscriptionMediaEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
+        assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
     }
 
     @Test
@@ -174,7 +174,7 @@ public class DriverConductorTest
         driverConductor.doWork();
         receiver.doWork();
 
-        assertNull(driverConductor.subscriptionMediaEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
+        assertNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
     }
 
     @Test
@@ -203,7 +203,7 @@ public class DriverConductorTest
         driverConductor.doWork();
 
         assertThat(publications.size(), is(0));
-        assertNull(driverConductor.publicationMediaEndpoint(UdpChannel.parse(CHANNEL_URI + 4005)));
+        assertNull(driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4005)));
     }
 
     @Test
@@ -240,7 +240,7 @@ public class DriverConductorTest
         driverConductor.doWork();
         receiver.doWork();
 
-        final MediaSubscriptionEndpoint mediaEndpoint = driverConductor.subscriptionMediaEndpoint(udpChannel);
+        final ReceiverChannelEndpoint mediaEndpoint = driverConductor.receiverChannelEndpoint(udpChannel);
 
         assertNotNull(mediaEndpoint);
         assertThat(mediaEndpoint.streamCount(), is(3));
@@ -251,7 +251,7 @@ public class DriverConductorTest
         driverConductor.doWork();
         receiver.doWork();
 
-        assertNotNull(driverConductor.subscriptionMediaEndpoint(udpChannel));
+        assertNotNull(driverConductor.receiverChannelEndpoint(udpChannel));
         assertThat(mediaEndpoint.streamCount(), is(1));
     }
 
@@ -269,7 +269,7 @@ public class DriverConductorTest
         driverConductor.doWork();
         receiver.doWork();
 
-        final MediaSubscriptionEndpoint mediaEndpoint = driverConductor.subscriptionMediaEndpoint(udpChannel);
+        final ReceiverChannelEndpoint mediaEndpoint = driverConductor.receiverChannelEndpoint(udpChannel);
 
         assertNotNull(mediaEndpoint);
         assertThat(mediaEndpoint.streamCount(), is(3));
@@ -280,7 +280,7 @@ public class DriverConductorTest
         driverConductor.doWork();
         receiver.doWork();
 
-        assertNotNull(driverConductor.subscriptionMediaEndpoint(udpChannel));
+        assertNotNull(driverConductor.receiverChannelEndpoint(udpChannel));
         assertThat(mediaEndpoint.streamCount(), is(1));
 
         writeSubscriptionMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1);
@@ -288,7 +288,7 @@ public class DriverConductorTest
         driverConductor.doWork();
         receiver.doWork();
 
-        assertNull(driverConductor.subscriptionMediaEndpoint(udpChannel));
+        assertNull(driverConductor.receiverChannelEndpoint(udpChannel));
     }
 
     @Test

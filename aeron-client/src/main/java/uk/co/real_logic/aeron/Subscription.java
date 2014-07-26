@@ -30,7 +30,7 @@ public class Subscription implements AutoCloseable
 {
     private final String channel;
     private final int streamId;
-    private final AtomicArray<ConnectedSubscription> connectedSubscriptions = new AtomicArray<>();
+    private final AtomicArray<Connection> connections = new AtomicArray<>();
     private final DataHandler dataHandler;
     private final ClientConductor clientConductor;
 
@@ -68,7 +68,7 @@ public class Subscription implements AutoCloseable
 
     private void closeBuffers()
     {
-        connectedSubscriptions.forEach(ConnectedSubscription::close);
+        connections.forEach(Connection::close);
     }
 
     /**
@@ -83,12 +83,12 @@ public class Subscription implements AutoCloseable
     public int poll(final int fragmentCountLimit)
     {
         roundRobinIndex++;
-        if (connectedSubscriptions.size() == roundRobinIndex)
+        if (connections.size() == roundRobinIndex)
         {
             roundRobinIndex = 0;
         }
 
-        return connectedSubscriptions.doLimitedAction(roundRobinIndex, fragmentCountLimit, ConnectedSubscription::poll);
+        return connections.doLimitedAction(roundRobinIndex, fragmentCountLimit, Connection::poll);
     }
 
     public void onTermBuffersMapped(final int sessionId,
@@ -97,12 +97,11 @@ public class Subscription implements AutoCloseable
                                     final PositionReporter positionReporter,
                                     final ManagedBuffer[] managedBuffers)
     {
-        connectedSubscriptions.add(
-            new ConnectedSubscription(logReaders, sessionId, termId, dataHandler, positionReporter, managedBuffers));
+        connections.add(new Connection(logReaders, sessionId, termId, dataHandler, positionReporter, managedBuffers));
     }
 
     public boolean isConnected(final int sessionId)
     {
-        return null != connectedSubscriptions.findFirst((e) -> e.sessionId() == sessionId);
+        return null != connections.findFirst((e) -> e.sessionId() == sessionId);
     }
 }

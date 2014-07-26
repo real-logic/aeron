@@ -29,9 +29,9 @@ public class UnicastSenderControlStrategy implements SenderControlStrategy
 
     /** {@inheritDoc} */
     public long onStatusMessage(final int termId, final long highestContiguousSequenceNumber,
-                                final long receiverWindow, final InetSocketAddress address)
+                                final int receiverWindowSize, final InetSocketAddress address)
     {
-        final long newPositionLimit = ((long)termId << shiftsForTermId) + receiverWindow;
+        final long newPositionLimit = ((long)termId << shiftsForTermId) + receiverWindowSize;
         positionLimit = Math.max(positionLimit, newPositionLimit);
 
         return positionLimit;

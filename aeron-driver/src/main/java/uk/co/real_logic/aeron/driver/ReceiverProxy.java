@@ -16,8 +16,8 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.driver.cmd.AddSubscriptionCmd;
-import uk.co.real_logic.aeron.driver.cmd.NewConnectedSubscriptionCmd;
-import uk.co.real_logic.aeron.driver.cmd.RegisterMediaSubscriptionEndpointCmd;
+import uk.co.real_logic.aeron.driver.cmd.NewConnectionCmd;
+import uk.co.real_logic.aeron.driver.cmd.RegisterReceiverChannelEndpointCmd;
 import uk.co.real_logic.aeron.driver.cmd.RemoveSubscriptionCmd;
 
 import java.util.Queue;
@@ -34,23 +34,23 @@ public class ReceiverProxy
         this.commandQueue = commandQueue;
     }
 
-    public boolean addSubscription(final MediaSubscriptionEndpoint mediaEndpoint, final int streamId)
+    public boolean addSubscription(final ReceiverChannelEndpoint mediaEndpoint, final int streamId)
     {
         return commandQueue.offer(new AddSubscriptionCmd(mediaEndpoint, streamId));
     }
 
-    public boolean removeSubscription(final MediaSubscriptionEndpoint mediaEndpoint, final int streamId)
+    public boolean removeSubscription(final ReceiverChannelEndpoint mediaEndpoint, final int streamId)
     {
         return commandQueue.offer(new RemoveSubscriptionCmd(mediaEndpoint, streamId));
     }
 
-    public boolean newConnectedSubscription(final NewConnectedSubscriptionCmd e)
+    public boolean newConnection(final NewConnectionCmd e)
     {
         return commandQueue.offer(e);
     }
 
-    public boolean registerMediaEndpoint(final MediaSubscriptionEndpoint mediaEndpoint)
+    public boolean registerMediaEndpoint(final ReceiverChannelEndpoint mediaEndpoint)
     {
-        return commandQueue.offer(new RegisterMediaSubscriptionEndpointCmd(mediaEndpoint));
+        return commandQueue.offer(new RegisterReceiverChannelEndpointCmd(mediaEndpoint));
     }
 }

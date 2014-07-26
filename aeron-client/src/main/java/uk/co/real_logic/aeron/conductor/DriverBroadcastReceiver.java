@@ -72,7 +72,7 @@ public class DriverBroadcastReceiver
                             }
                             else
                             {
-                                listener.onNewConnectedSubscription(channel, sessionId, streamId, termId, logBuffersMessage);
+                                listener.onNewConnection(channel, sessionId, streamId, termId, logBuffersMessage);
                             }
                             break;
 

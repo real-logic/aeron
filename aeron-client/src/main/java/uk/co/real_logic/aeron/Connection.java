@@ -30,9 +30,9 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.flagsOffset;
 
 /**
- * A subscription that has been connected to from a publisher session.
+ * A connection from a publisher to a subscriber.
  */
-public class ConnectedSubscription
+public class Connection
 {
     private static final int HEADER_LENGTH = BitUtil.align(DataHeaderFlyweight.HEADER_LENGTH, WORD_ALIGNMENT);
 
@@ -47,12 +47,12 @@ public class ConnectedSubscription
 
     private int activeIndex;
 
-    public ConnectedSubscription(final LogReader[] readers,
-                                 final int sessionId,
-                                 final int initialTermId,
-                                 final DataHandler dataHandler,
-                                 final PositionReporter positionReporter,
-                                 final ManagedBuffer[] managedBuffers)
+    public Connection(final LogReader[] readers,
+                      final int sessionId,
+                      final int initialTermId,
+                      final DataHandler dataHandler,
+                      final PositionReporter positionReporter,
+                      final ManagedBuffer[] managedBuffers)
     {
         this.logReaders = readers;
         this.sessionId = sessionId;

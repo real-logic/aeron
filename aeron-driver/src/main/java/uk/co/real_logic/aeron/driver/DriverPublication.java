@@ -73,7 +73,7 @@ public class DriverPublication implements AutoCloseable
 
     private final SenderControlStrategy controlStrategy;
     private final AtomicLong positionLimit;
-    private final MediaPublicationEndpoint mediaEndpoint;
+    private final SenderChannelEndpoint mediaEndpoint;
     private final TermBuffers termBuffers;
     private final BufferPositionReporter limitReporter;
 
@@ -92,7 +92,7 @@ public class DriverPublication implements AutoCloseable
 
     private final InetSocketAddress dstAddress;
 
-    public DriverPublication(final MediaPublicationEndpoint mediaEndpoint,
+    public DriverPublication(final SenderChannelEndpoint mediaEndpoint,
                              final TimerWheel timerWheel,
                              final SenderControlStrategy controlStrategy,
                              final TermBuffers termBuffers,
@@ -187,10 +187,11 @@ public class DriverPublication implements AutoCloseable
      */
     public void onStatusMessage(final int termId,
                                 final long highestContiguousSequenceNumber,
-                                final long receiverWindow,
+                                final int receiverWindowSize,
                                 final InetSocketAddress address)
     {
-        positionLimit.lazySet(controlStrategy.onStatusMessage(termId, highestContiguousSequenceNumber, receiverWindow, address));
+        positionLimit.lazySet(
+            controlStrategy.onStatusMessage(termId, highestContiguousSequenceNumber, receiverWindowSize, address));
         statusMessagesSeen++;
     }
 

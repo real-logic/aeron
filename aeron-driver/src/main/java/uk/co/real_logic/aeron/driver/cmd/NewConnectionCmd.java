@@ -15,19 +15,27 @@
  */
 package uk.co.real_logic.aeron.driver.cmd;
 
-import uk.co.real_logic.aeron.driver.MediaSubscriptionEndpoint;
+import uk.co.real_logic.aeron.driver.DriverConnection;
+import uk.co.real_logic.aeron.driver.ReceiverChannelEndpoint;
 
-public class RegisterMediaSubscriptionEndpointCmd
+public class NewConnectionCmd
 {
-    private final MediaSubscriptionEndpoint mediaSubscriptionEndpoint;
+    private final ReceiverChannelEndpoint receiverChannelEndpoint;
+    private final DriverConnection connection;
 
-    public RegisterMediaSubscriptionEndpointCmd(final MediaSubscriptionEndpoint mediaSubscriptionEndpoint)
+    public NewConnectionCmd(final ReceiverChannelEndpoint receiverChannelEndpoint, final DriverConnection connection)
     {
-        this.mediaSubscriptionEndpoint = mediaSubscriptionEndpoint;
+        this.receiverChannelEndpoint = receiverChannelEndpoint;
+        this.connection = connection;
     }
 
-    public MediaSubscriptionEndpoint mediaSubscriptionEndpoint()
+    public ReceiverChannelEndpoint receiverChannelEndpoint()
     {
-        return mediaSubscriptionEndpoint;
+        return receiverChannelEndpoint;
+    }
+
+    public DriverConnection connection()
+    {
+        return connection;
     }
 }

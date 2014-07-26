@@ -32,7 +32,7 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
 /**
  * State maintained for active sessionIds within a channel for receiver processing
  */
-public class DriverConnectedSubscription implements AutoCloseable
+public class DriverConnection implements AutoCloseable
 {
     private static final int STATE_CREATED = 0;
     private static final int STATE_READY_TO_SEND_SMS = 1;
@@ -65,15 +65,15 @@ public class DriverConnectedSubscription implements AutoCloseable
 
     private AtomicInteger state = new AtomicInteger(STATE_CREATED);
 
-    public DriverConnectedSubscription(final UdpChannel udpChannel,
-                                       final int sessionId,
-                                       final int streamId,
-                                       final int initialTermId,
-                                       final int initialWindowSize,
-                                       final TermBuffers termBuffers,
-                                       final LossHandler lossHandler,
-                                       final StatusMessageSender statusMessageSender,
-                                       final PositionIndicator subscriberLimit)
+    public DriverConnection(final UdpChannel udpChannel,
+                            final int sessionId,
+                            final int streamId,
+                            final int initialTermId,
+                            final int initialWindowSize,
+                            final TermBuffers termBuffers,
+                            final LossHandler lossHandler,
+                            final StatusMessageSender statusMessageSender,
+                            final PositionIndicator subscriberLimit)
     {
         this.udpChannel = udpChannel;
         this.sessionId = sessionId;

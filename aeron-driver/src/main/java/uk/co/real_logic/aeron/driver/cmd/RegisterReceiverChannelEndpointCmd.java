@@ -13,19 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron;
+package uk.co.real_logic.aeron.driver.cmd;
 
-/**
- * Interface for delivery of new source events to a {@link Aeron} instance.
- */
-public interface NewSourceHandler
+import uk.co.real_logic.aeron.driver.ReceiverChannelEndpoint;
+
+public class RegisterReceiverChannelEndpointCmd
 {
-    /**
-     * Method called by Aeron to deliver notification of a new source session
-     *
-     * @param channel for the source
-     * @param sessionId for the source
-     * @param streamId for the source
-     */
-    void onNewSource(final String channel, final int sessionId, final int streamId);
+    private final ReceiverChannelEndpoint receiverChannelEndpoint;
+
+    public RegisterReceiverChannelEndpointCmd(final ReceiverChannelEndpoint receiverChannelEndpoint)
+    {
+        this.receiverChannelEndpoint = receiverChannelEndpoint;
+    }
+
+    public ReceiverChannelEndpoint receiverChannelEndpoint()
+    {
+        return receiverChannelEndpoint;
+    }
 }

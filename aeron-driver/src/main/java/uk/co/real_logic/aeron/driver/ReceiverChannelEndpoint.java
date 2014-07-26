@@ -27,13 +27,12 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 /**
- * Aggregator of multiple {@link DriverSubscription}s onto a single transport session with processing of
- * data frames.
+ * Aggregator of multiple {@link DriverSubscription}s onto a single transport session for processing of data frames.
  */
-public class MediaSubscriptionEndpoint implements AutoCloseable
+public class ReceiverChannelEndpoint implements AutoCloseable
 {
     private final UdpTransport transport;
-    private final DriverSubscriptionDispatcher dispatcher;
+    private final ConnectionDispatcher dispatcher;
 
     private final Int2ObjectHashMap<Integer> refCountByStreamIdMap = new Int2ObjectHashMap<>();
 
@@ -42,13 +41,13 @@ public class MediaSubscriptionEndpoint implements AutoCloseable
     private final StatusMessageFlyweight smHeader = new StatusMessageFlyweight();
     private final NakFlyweight nakHeader = new NakFlyweight();
 
-    public MediaSubscriptionEndpoint(final UdpChannel udpChannel,
-                                     final DriverConductorProxy conductorProxy,
-                                     final EventLogger logger)
+    public ReceiverChannelEndpoint(final UdpChannel udpChannel,
+                                   final DriverConductorProxy conductorProxy,
+                                   final EventLogger logger)
         throws Exception
     {
         this.transport = new UdpTransport(udpChannel, this::onDataFrame, logger);
-        this.dispatcher = new DriverSubscriptionDispatcher(transport, udpChannel, conductorProxy);
+        this.dispatcher = new ConnectionDispatcher(transport, udpChannel, conductorProxy);
 
         smHeader.wrap(smBuffer, 0);
         nakHeader.wrap(nakBuffer, 0);
@@ -71,12 +70,12 @@ public class MediaSubscriptionEndpoint implements AutoCloseable
         }
     }
 
-    public DriverSubscriptionDispatcher dispatcher()
+    public ConnectionDispatcher dispatcher()
     {
         return dispatcher;
     }
 
-    public int getRefCountByStreamId(final int streamId)
+    public int getRefCountToStream(final int streamId)
     {
         final Integer count = refCountByStreamIdMap.get(streamId);
 
@@ -88,7 +87,7 @@ public class MediaSubscriptionEndpoint implements AutoCloseable
         return count;
     }
 
-    public int incRefToStreamId(final int streamId)
+    public int incRefToStream(final int streamId)
     {
         Integer count = refCountByStreamIdMap.get(streamId);
 
@@ -99,7 +98,7 @@ public class MediaSubscriptionEndpoint implements AutoCloseable
         return count;
     }
 
-    public int decRefToStreamId(final int streamId)
+    public int decRefToStream(final int streamId)
     {
         Integer count = refCountByStreamIdMap.get(streamId);
 

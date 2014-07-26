@@ -105,11 +105,11 @@ public class SenderTest
                        .map((log) -> new LogAppender(log.logBuffer(), log.stateBuffer(), HEADER, MAX_FRAME_LENGTH))
                        .toArray(LogAppender[]::new);
 
-        final MediaPublicationEndpoint mockMediaPublicationEndpoint = mock(MediaPublicationEndpoint.class);
-        when(mockMediaPublicationEndpoint.udpChannel()).thenReturn(udpChannel);
-        when(mockMediaPublicationEndpoint.sendTo(anyObject(), anyObject())).thenAnswer(saveByteBufferAnswer);
+        final SenderChannelEndpoint mockSenderChannelEndpoint = mock(SenderChannelEndpoint.class);
+        when(mockSenderChannelEndpoint.udpChannel()).thenReturn(udpChannel);
+        when(mockSenderChannelEndpoint.sendTo(anyObject(), anyObject())).thenAnswer(saveByteBufferAnswer);
 
-        publication = new DriverPublication(mockMediaPublicationEndpoint,
+        publication = new DriverPublication(mockSenderChannelEndpoint,
                                             wheel,
                                             spySenderControlStrategy,
                                             termBuffers,

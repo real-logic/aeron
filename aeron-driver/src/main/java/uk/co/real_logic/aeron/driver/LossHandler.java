@@ -108,7 +108,6 @@ public class LossHandler
      */
     public void onNak(final int termId, final int termOffset)
     {
-//        if (null != timer && timer.isActive() && activeGap.matches(termId, termOffset))
         if (timer.isActive() && activeGap.matches(termId, termOffset))
         {
             suppressNak();

@@ -282,8 +282,11 @@ public class DriverPublication implements AutoCloseable
         {
             return activeIndex;
         }
+        else if (termId == activeTermId.get() - 1)
+        {
+            return TermHelper.rotatePrevious(activeIndex);
+        }
 
-        // TODO: this needs to account for rotation
         return -1;
     }
 

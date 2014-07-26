@@ -87,11 +87,6 @@ public class MediaDriver implements AutoCloseable
     public static final String TO_CLIENTS_BUFFER_SZ_PROP_NAME = "aeron.clients.buffer.size";
 
     /**
-     * Name of the default multicast interface
-     */
-    public static final String MULTICAST_DEFAULT_INTERFACE_PROP_NAME = "aeron.multicast.default.interface";
-
-    /**
      * Property name for size of the memory mapped buffers for the counters file
      */
     public static final String COUNTER_BUFFERS_SZ_PROP_NAME = "aeron.dir.counters.size";

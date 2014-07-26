@@ -54,6 +54,9 @@ public class CommonContext implements AutoCloseable
     private static final String MTU_LENGTH_PROP_NAME = "aeron.mtu.length";
     private static final int MTU_LENGTH_DEFAULT = 1280;
 
+    /** Name of the default multicast interface */
+    public static final String MULTICAST_DEFAULT_INTERFACE_PROP_NAME = "aeron.multicast.default.interface";
+
     public static final String TO_DRIVER_FILE = "to-driver";
     public static final String TO_CLIENTS_FILE = "to-clients";
 

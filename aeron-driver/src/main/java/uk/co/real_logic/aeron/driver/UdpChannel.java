@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.BitUtil;
+import uk.co.real_logic.aeron.common.NetworkUtil;
 import uk.co.real_logic.aeron.common.event.EventCode;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
@@ -36,6 +37,7 @@ import static java.net.InetAddress.getByAddress;
 public class UdpChannel
 {
     private static final int LAST_MULTICAST_DIGIT = 3;
+    private static final NetworkInterface DEFAULT_MULTICAST_INTERFACE = NetworkUtil.determineDefaultMulticastInterface();
 
     private final InetSocketAddress remoteData;
     private final InetSocketAddress localData;
@@ -46,69 +48,6 @@ public class UdpChannel
     private final String canonicalRepresentation;
     private final long consistentHash;
     private final NetworkInterface localInterface;
-
-    private static final NetworkInterface DEFAULT_MULTICAST_INTERFACE;
-
-    // TODO: stop doing static initialisation in this class. Move this to its own NetworkUtil class
-    static
-    {
-        NetworkInterface savedIfc = null;
-
-        /*
-         * Try to set the default multicast interface.
-         * If the system property is set, try to find the interface by name and use it.
-         * If not set, then scan interfaces and pick one that is UP and MULTICAST. Prefer non-loopback, but settle
-         * for loopback if nothing else.
-         */
-        try
-        {
-            final String ifcName = System.getProperty(MediaDriver.MULTICAST_DEFAULT_INTERFACE_PROP_NAME);
-
-            if (null != ifcName)
-            {
-                savedIfc = NetworkInterface.getByName(ifcName);
-
-                if (null == savedIfc)
-                {
-                    EventLogger.log(EventCode.COULD_NOT_FIND_INTERFACE, ifcName);
-                }
-            }
-            else
-            {
-                final Enumeration<NetworkInterface> ifcs = NetworkInterface.getNetworkInterfaces();
-
-                while (ifcs.hasMoreElements())
-                {
-                    final NetworkInterface ifc = ifcs.nextElement();
-
-                    // search for UP, MULTICAST interface. Preferring non-loopback. But settle for loopback. Break
-                    // once we find one.
-                    if (ifc.isUp() && ifc.supportsMulticast())
-                    {
-                        savedIfc = ifc;
-
-                        if (ifc.isLoopback())
-                        {
-                            continue;
-                        }
-
-                        break;
-                    }
-                }
-            }
-        }
-        catch (final Exception ex)
-        {
-            new EventLogger().logException(ex);
-        }
-
-        DEFAULT_MULTICAST_INTERFACE = savedIfc;
-
-        if (null != savedIfc)
-        {
-            System.setProperty(MediaDriver.MULTICAST_DEFAULT_INTERFACE_PROP_NAME, savedIfc.getName());
-        }
-    }
 
     /**
      * Parse URI and create channel

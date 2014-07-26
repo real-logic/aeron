@@ -32,13 +32,13 @@ public class SubscriptionMap
 
     public Subscription get(final String channel, final int streamId)
     {
-        final Int2ObjectHashMap<Subscription> channelMap = subscriptionByChannelMap.get(channel);
-        if (channelMap == null)
+        final Int2ObjectHashMap<Subscription> subscriptionByStreamIdMap = subscriptionByChannelMap.get(channel);
+        if (subscriptionByStreamIdMap == null)
         {
             return null;
         }
 
-        return channelMap.get(streamId);
+        return subscriptionByStreamIdMap.get(streamId);
     }
 
     public void put(final String channel, final int streamId, final Subscription value)
@@ -48,18 +48,18 @@ public class SubscriptionMap
 
     public Subscription remove(final String channel, final int streamId)
     {
-        final Int2ObjectHashMap<Subscription> streamMap = subscriptionByChannelMap.get(channel);
-        if (streamMap == null)
+        final Int2ObjectHashMap<Subscription> subscriptionByStreamIdMap = subscriptionByChannelMap.get(channel);
+        if (subscriptionByStreamIdMap == null)
         {
             return null;
         }
 
-        final Subscription value = streamMap.remove(streamId);
+        final Subscription value = subscriptionByStreamIdMap.remove(streamId);
 
-        if (streamMap.isEmpty())
+        if (subscriptionByStreamIdMap.isEmpty())
         {
-            streamMap.remove(streamId);
-            if (streamMap.isEmpty())
+            subscriptionByStreamIdMap.remove(streamId);
+            if (subscriptionByStreamIdMap.isEmpty())
             {
                 subscriptionByChannelMap.remove(channel);
             }

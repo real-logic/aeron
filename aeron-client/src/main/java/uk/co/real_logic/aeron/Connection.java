@@ -71,7 +71,7 @@ public class Connection
         return sessionId;
     }
 
-    public int poll(final int frameCountLimit)
+    public int poll(final int fragmentCountLimit)
     {
         final int activeIndex = this.activeIndex;
         LogReader logReader = logReaders[activeIndex];
@@ -91,7 +91,7 @@ public class Connection
             logReader.seek(0);
         }
 
-        final int messagesRead = logReader.read(this::onFrame, frameCountLimit);
+        final int messagesRead = logReader.read(this::onFrame, fragmentCountLimit);
         if (messagesRead > 0)
         {
             positionReporter.position(calculatePosition(activeTermId, logReader.tail(), positionBitsToShift, initialTermId));

@@ -28,7 +28,7 @@ import java.net.InetSocketAddress;
  * <p>
  * All methods should be called via {@link Receiver} thread
  */
-public class ConnectionDispatcher
+public class DataFrameDispatcher
 {
     private static final String INIT_IN_PROGRESS = "Connection initialisation in progress";
 
@@ -37,7 +37,7 @@ public class ConnectionDispatcher
     private final DriverConductorProxy conductorProxy;
     private final ChannelReceiveEndpoint channelEndpoint;
 
-    public ConnectionDispatcher(final DriverConductorProxy conductorProxy, final ChannelReceiveEndpoint channelEndpoint)
+    public DataFrameDispatcher(final DriverConductorProxy conductorProxy, final ChannelReceiveEndpoint channelEndpoint)
         throws Exception
     {
         this.conductorProxy = conductorProxy;

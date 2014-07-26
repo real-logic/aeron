@@ -32,7 +32,7 @@ import java.nio.ByteBuffer;
 public class ChannelReceiveEndpoint implements AutoCloseable
 {
     private final UdpTransport udpTransport;
-    private final ConnectionDispatcher dispatcher;
+    private final DataFrameDispatcher dispatcher;
 
     private final Int2ObjectHashMap<Integer> refCountByStreamIdMap = new Int2ObjectHashMap<>();
 
@@ -51,7 +51,7 @@ public class ChannelReceiveEndpoint implements AutoCloseable
         nakHeader.wrap(nakBuffer, 0);
 
         this.udpTransport = new UdpTransport(udpChannel, this::onDataFrame, logger);
-        this.dispatcher = new ConnectionDispatcher(conductorProxy, this);
+        this.dispatcher = new DataFrameDispatcher(conductorProxy, this);
     }
 
     public UdpTransport udpTransport()
@@ -76,7 +76,7 @@ public class ChannelReceiveEndpoint implements AutoCloseable
         }
     }
 
-    public ConnectionDispatcher dispatcher()
+    public DataFrameDispatcher dispatcher()
     {
         return dispatcher;
     }

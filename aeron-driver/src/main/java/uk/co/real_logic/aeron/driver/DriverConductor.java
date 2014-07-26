@@ -476,31 +476,19 @@ public class DriverConductor extends Agent
 
     private void onCreateConnection(final CreateConnectionCmd cmd)
     {
-        final UdpChannel udpChannel = cmd.udpChannel();
         final int sessionId = cmd.sessionId();
         final int streamId = cmd.streamId();
         final int initialTermId = cmd.termId();
         final InetSocketAddress controlAddress = cmd.controlAddress();
+        final ReceiverChannelEndpoint channelEndpoint = cmd.channelEndpoint();
+        final UdpChannel udpChannel = channelEndpoint.udpTransport().udpChannel();
 
         try
         {
-            final ReceiverChannelEndpoint channelEndpoint = receiverChannelEndpointByHash.get(udpChannel.consistentHash());
-            if (null == channelEndpoint)
-            {
-                throw new IllegalStateException("Could not find channelEndpoint for " + udpChannel.toString());
-            }
+            final TermBuffers termBuffers = termBuffersFactory.newConnection(udpChannel, sessionId, streamId);
 
-            final StatusMessageSender statusMessageSender =
-                channelEndpoint.composeStatusMessageSender(controlAddress, sessionId, streamId);
-
-            final NakMessageSender nakMessageSender =
-                channelEndpoint.composeNakMessageSender(controlAddress, sessionId, streamId);
-
-            final TermBuffers termBuffers =
-                termBuffersFactory.newConnection(udpChannel, sessionId, streamId);
-
-            final int positionCounterId = allocatePositionCounter(
-                "subscription", udpChannel.originalUriAsString(), sessionId, streamId);
+            final int positionCounterId =
+                allocatePositionCounter("subscription", udpChannel.originalUriAsString(), sessionId, streamId);
 
             clientProxy.onNewTermBuffers(ON_NEW_CONNECTED_SUBSCRIPTION, sessionId, streamId, initialTermId,
                                          udpChannel.originalUriAsString(), termBuffers, 0, positionCounterId);
@@ -510,30 +498,29 @@ public class DriverConductor extends Agent
                            .map((rawLog) -> new GapScanner(rawLog.logBuffer(), rawLog.stateBuffer()))
                            .toArray(GapScanner[]::new);
 
-            final FeedbackDelayGenerator delayGenerator =
-                udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR;
-
             final LossHandler lossHandler =
-                new LossHandler(gapScanners, timerWheel, delayGenerator, nakMessageSender, initialTermId);
-
-            final PositionIndicator indicator =
-                new BufferPositionIndicator(countersBuffer, positionCounterId, countersManager);
+                new LossHandler(
+                    gapScanners,
+                    timerWheel,
+                    udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
+                    channelEndpoint.composeNakMessageSender(controlAddress, sessionId, streamId),
+                    initialTermId);
 
             final DriverConnection connection =
-                new DriverConnection(udpChannel,
-                                     sessionId,
-                                     streamId,
-                                     initialTermId,
-                                     initialWindowSize,
-                                     termBuffers,
-                                     lossHandler,
-                                     statusMessageSender,
-                                     indicator);
+                new DriverConnection(
+                    udpChannel,
+                    sessionId,
+                    streamId,
+                    initialTermId,
+                    initialWindowSize,
+                    termBuffers,
+                    lossHandler,
+                    channelEndpoint.composeStatusMessageSender(controlAddress, sessionId, streamId),
+                    new BufferPositionIndicator(countersBuffer, positionCounterId, countersManager));
 
             connections.add(connection);
 
             final NewConnectionCmd newConnectionCmd = new NewConnectionCmd(channelEndpoint, connection);
-
             while (!receiverProxy.newConnection(newConnectionCmd))
             {
                 // TODO: count errors

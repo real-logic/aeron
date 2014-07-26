@@ -109,8 +109,7 @@ public class TermBuffersFactory implements AutoCloseable
         }
     }
 
-    private TermBuffers newInstance(final UdpChannel udpChannel, final int sessionId,
-                                    final int streamId, final File rootDir)
+    private TermBuffers newInstance(final UdpChannel udpChannel, final int sessionId, final int streamId, final File rootDir)
     {
         final File dir = streamLocation(rootDir, sessionId, streamId, true, udpChannel.canonicalRepresentation());
 

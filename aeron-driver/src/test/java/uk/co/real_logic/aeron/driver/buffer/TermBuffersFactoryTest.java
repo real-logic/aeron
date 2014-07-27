@@ -56,8 +56,8 @@ public class TermBuffersFactoryTest
     @Test
     public void mappedFilesAreCorrectSizeAndZeroed() throws Exception
     {
-        final String canonicalRepresentation = udpChannel.canonicalRepresentation();
-        final TermBuffers termBuffers = termBuffersFactory.newPublication(canonicalRepresentation, SESSION_ID, STREAM_ID);
+        final String canonicalForm = udpChannel.canonicalForm();
+        final TermBuffers termBuffers = termBuffersFactory.newPublication(canonicalForm, SESSION_ID, STREAM_ID);
 
         termBuffers.stream().forEach(
             (rawLog) ->

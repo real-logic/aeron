@@ -42,7 +42,7 @@ public class UdpChannel
     private final InetSocketAddress localControl;
 
     private final String uriStr;
-    private final String canonicalRepresentation;
+    private final String canonicalForm;
     private final long consistentHash;
     private final NetworkInterface localInterface;
 
@@ -101,7 +101,7 @@ public class UdpChannel
                        .localDataAddress(localAddress)
                        .remoteDataAddress(dataAddress)
                        .localInterface(localInterface)
-                       .canonicalRepresentation(generateCanonicalRepresentation(localAddress, dataAddress));
+                       .canonicalForm(canonicalise(localAddress, dataAddress));
             }
             else
             {
@@ -117,10 +117,10 @@ public class UdpChannel
                        .remoteDataAddress(remoteAddress)
                        .localControlAddress(localAddress)
                        .localDataAddress(localAddress)
-                       .canonicalRepresentation(generateCanonicalRepresentation(localAddress, remoteAddress));
+                       .canonicalForm(canonicalise(localAddress, remoteAddress));
             }
 
-            context.consistentHash(BitUtil.generateConsistentHash(context.canonicalRepresentation.getBytes()));
+            context.consistentHash(BitUtil.generateConsistentHash(context.canonicalForm.getBytes()));
 
             return new UdpChannel(context);
         }
@@ -204,7 +204,7 @@ public class UdpChannel
         this.localControl = context.localControl;
         this.uriStr = context.uriStr;
         this.consistentHash = context.consistentHash;
-        this.canonicalRepresentation = context.canonicalRepresentation;
+        this.canonicalForm = context.canonicalForm;
         this.localInterface = context.localInterface;
     }
 
@@ -221,15 +221,15 @@ public class UdpChannel
     }
 
     /**
-     * Return the canonical representation of the channel
+     * The canonical form for the channel
      *
-     * {@link UdpChannel#generateCanonicalRepresentation(java.net.InetSocketAddress, java.net.InetSocketAddress)}
+     * {@link UdpChannel#canonicalise(java.net.InetSocketAddress, java.net.InetSocketAddress)}
      *
-     * @return canonical representation of channel
+     * @return canonical form for channel
      */
-    public String canonicalRepresentation()
+    public String canonicalForm()
     {
-        return canonicalRepresentation;
+        return canonicalForm;
     }
 
     /** {@inheritDoc} */
@@ -254,14 +254,14 @@ public class UdpChannel
     /** {@inheritDoc} */
     public String toString()
     {
-        return canonicalRepresentation;
+        return canonicalForm;
     }
 
     /**
-     * Return a string which is a canonical representation of the channel suitable for use as a file or directory
+     * Return a string which is a canonical form of the channel suitable for use as a file or directory
      * name and also as a method of hashing, etc.
      *
-     * A canonical representation:
+     * A canonical form:
      * - begins with the string "UDP-"
      * - has all hostnames converted to hexadecimal
      * - has all fields expanded out
@@ -272,7 +272,7 @@ public class UdpChannel
      *
      * @return canonical representation as a string
      */
-    public static String generateCanonicalRepresentation(final InetSocketAddress localData, final InetSocketAddress remoteData)
+    public static String canonicalise(final InetSocketAddress localData, final InetSocketAddress remoteData)
         throws Exception
     {
         return String.format("UDP-%1$s-%2$d-%3$s-%4$d",
@@ -320,7 +320,7 @@ public class UdpChannel
         private InetSocketAddress remoteControl;
         private InetSocketAddress localControl;
         private String uriStr;
-        private String canonicalRepresentation;
+        private String canonicalForm;
         private long consistentHash;
         private NetworkInterface localInterface;
 
@@ -360,9 +360,9 @@ public class UdpChannel
             return this;
         }
 
-        public Context canonicalRepresentation(final String canonicalRepresentation)
+        public Context canonicalForm(final String canonicalForm)
         {
-            this.canonicalRepresentation = canonicalRepresentation;
+            this.canonicalForm = canonicalForm;
             return this;
         }
 

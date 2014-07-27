@@ -36,7 +36,7 @@ public class FileMappingConventionTest
     {
         final UdpChannel udpChannel = UdpChannel.parse(uri);
 
-        return udpChannel.canonicalRepresentation();
+        return udpChannel.canonicalForm();
     }
 
     private void assertIsValidFile(final String channelDir) throws IOException

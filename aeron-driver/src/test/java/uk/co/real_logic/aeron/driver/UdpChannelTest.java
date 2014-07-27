@@ -140,7 +140,7 @@ public class UdpChannelTest
     }
 
     @Test
-    public void shouldHandleCanonicalRepresentationForUnicastCorrectly() throws Exception
+    public void shouldHandleCanonicalFormForUnicastCorrectly() throws Exception
     {
         final UdpChannel udpChannel = UdpChannel.parse("udp://192.168.0.1:40456");
         final UdpChannel udpChannelLocal = UdpChannel.parse("udp://127.0.0.1@192.168.0.1:40456");
@@ -149,24 +149,24 @@ public class UdpChannelTest
         // should resolve to 93.184.216.119
         final UdpChannel udpChannelExampleCom = UdpChannel.parse("udp://example.com:40456");
 
-        assertThat(udpChannel.canonicalRepresentation(), is("UDP-00000000-0-c0a80001-40456"));
-        assertThat(udpChannelLocal.canonicalRepresentation(), is("UDP-7f000001-0-c0a80001-40456"));
-        assertThat(udpChannelLocalPort.canonicalRepresentation(), is("UDP-7f000001-40455-c0a80001-40456"));
-        assertThat(udpChannelLocalhost.canonicalRepresentation(), is("UDP-7f000001-0-7f000001-40456"));
-        assertThat(udpChannelExampleCom.canonicalRepresentation(), is("UDP-00000000-0-5db8d877-40456"));
+        assertThat(udpChannel.canonicalForm(), is("UDP-00000000-0-c0a80001-40456"));
+        assertThat(udpChannelLocal.canonicalForm(), is("UDP-7f000001-0-c0a80001-40456"));
+        assertThat(udpChannelLocalPort.canonicalForm(), is("UDP-7f000001-40455-c0a80001-40456"));
+        assertThat(udpChannelLocalhost.canonicalForm(), is("UDP-7f000001-0-7f000001-40456"));
+        assertThat(udpChannelExampleCom.canonicalForm(), is("UDP-00000000-0-5db8d877-40456"));
     }
 
     @Test
-    public void shouldHandleCanonicalRepresentationForMulticastCorrectly() throws Exception
+    public void shouldHandleCanonicalFormForMulticastCorrectly() throws Exception
     {
         final UdpChannel udpChannel = UdpChannel.parse("udp://localhost@224.0.1.1:40456");
         final UdpChannel udpChannelLocal = UdpChannel.parse("udp://127.0.0.1@224.0.1.1:40456");
         final UdpChannel udpChannelLocalPort = UdpChannel.parse("udp://127.0.0.1:40455@224.0.1.1:40456");
         final UdpChannel udpChannelAllSystems = UdpChannel.parse("udp://localhost@all-systems.mcast.net:40456");
 
-        assertThat(udpChannel.canonicalRepresentation(), is("UDP-7f000001-0-e0000101-40456"));
-        assertThat(udpChannelLocal.canonicalRepresentation(), is("UDP-7f000001-0-e0000101-40456"));
-        assertThat(udpChannelLocalPort.canonicalRepresentation(), is("UDP-7f000001-40455-e0000101-40456"));
-        assertThat(udpChannelAllSystems.canonicalRepresentation(), is("UDP-7f000001-0-e0000001-40456"));
+        assertThat(udpChannel.canonicalForm(), is("UDP-7f000001-0-e0000101-40456"));
+        assertThat(udpChannelLocal.canonicalForm(), is("UDP-7f000001-0-e0000101-40456"));
+        assertThat(udpChannelLocalPort.canonicalForm(), is("UDP-7f000001-40455-e0000101-40456"));
+        assertThat(udpChannelAllSystems.canonicalForm(), is("UDP-7f000001-0-e0000001-40456"));
     }
 }

@@ -302,8 +302,8 @@ public class DriverConductor extends Agent
             }
 
             final int initialTermId = BitUtil.generateRandomizedId();
-            final String canonicalRepresentation = udpChannel.canonicalRepresentation();
-            final TermBuffers termBuffers = termBuffersFactory.newPublication(canonicalRepresentation, sessionId, streamId);
+            final String canonicalForm = udpChannel.canonicalForm();
+            final TermBuffers termBuffers = termBuffersFactory.newPublication(canonicalForm, sessionId, streamId);
             final SenderControlStrategy flowControlStrategy =
                 udpChannel.isMulticast() ? multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
 
@@ -485,8 +485,8 @@ public class DriverConductor extends Agent
 
         try
         {
-            final String canonicalRepresentation = udpChannel.canonicalRepresentation();
-            final TermBuffers termBuffers = termBuffersFactory.newConnection(canonicalRepresentation, sessionId, streamId);
+            final String canonicalForm = udpChannel.canonicalForm();
+            final TermBuffers termBuffers = termBuffersFactory.newConnection(canonicalForm, sessionId, streamId);
 
             final int positionCounterId =
                 allocatePositionCounter("subscription", udpChannel.originalUriAsString(), sessionId, streamId);

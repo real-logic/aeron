@@ -89,6 +89,7 @@ public class DriverPublication implements AutoCloseable
     private int activeIndex = 0;
     private int statusMessagesSeen = 0;
     private int shiftsForTermId;
+    private long nextOffsetPosition = 0;
 
     private final InetSocketAddress dstAddress;
 
@@ -149,8 +150,7 @@ public class DriverPublication implements AutoCloseable
         int workCount = 0;
         try
         {
-            final long nextOffset = (activeTermId.get() << shiftsForTermId) + nextTermOffset;
-            final int availableWindow = (int)(positionLimit.get() - nextOffset);
+            final int availableWindow = (int)(positionLimit.get() - nextOffsetPosition);
             final int scanLimit = Math.min(availableWindow, mtuLength);
 
             final LogScanner scanner = logScanners[activeIndex];
@@ -330,6 +330,9 @@ public class DriverPublication implements AutoCloseable
             timeOfLastSendOrHeartbeat.lazySet(timerWheel.now());
 
             nextTermOffset = align(offset + length, FrameDescriptor.FRAME_ALIGNMENT);
+
+            nextOffsetPosition =
+                TermHelper.calculatePosition(activeTermId.get(), nextTermOffset, positionBitsToShift, initialTermId);
         }
         catch (final Exception ex)
         {

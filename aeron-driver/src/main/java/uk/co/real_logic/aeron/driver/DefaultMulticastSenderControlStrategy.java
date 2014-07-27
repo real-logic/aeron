@@ -15,6 +15,8 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import uk.co.real_logic.aeron.common.TermHelper;
+
 import java.net.InetSocketAddress;
 
 /**
@@ -27,7 +29,8 @@ import java.net.InetSocketAddress;
 public class DefaultMulticastSenderControlStrategy implements SenderControlStrategy
 {
     private long positionLimit;
-    private int shiftsForTermId;
+    private int positionBitsToShift;
+    private int initialTermId;
 
     public DefaultMulticastSenderControlStrategy()
     {
@@ -38,17 +41,22 @@ public class DefaultMulticastSenderControlStrategy implements SenderControlStrat
     public long onStatusMessage(final int termId, final long highestContiguousSequenceNumber,
                                 final int receiverWindowSize, final InetSocketAddress address)
     {
-        final long positionLimit = ((long)termId << shiftsForTermId) + receiverWindowSize;
-        this.positionLimit = Math.max(this.positionLimit, positionLimit);
+        final long position =
+                TermHelper.calculatePosition(termId, (int) highestContiguousSequenceNumber, positionBitsToShift, initialTermId);
+        final long newPositionLimit = position + receiverWindowSize;
 
-        return this.positionLimit;
+        positionLimit = Math.max(positionLimit, newPositionLimit);
+
+        return positionLimit;
     }
 
     /** {@inheritDoc} */
     public long initialPositionLimit(final int initialTermId, final int termBufferCapacity)
     {
-        shiftsForTermId = Long.numberOfTrailingZeros(termBufferCapacity);
-        positionLimit = (long)initialTermId << shiftsForTermId;
+        this.initialTermId = initialTermId;
+        positionBitsToShift = Long.numberOfTrailingZeros(termBufferCapacity);
+
+        positionLimit = TermHelper.calculatePosition(initialTermId, 0, positionBitsToShift, initialTermId);
 
         return positionLimit;
     }

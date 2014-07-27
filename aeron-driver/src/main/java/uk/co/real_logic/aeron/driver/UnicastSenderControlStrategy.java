@@ -15,12 +15,15 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import uk.co.real_logic.aeron.common.TermHelper;
+
 import java.net.InetSocketAddress;
 
 public class UnicastSenderControlStrategy implements SenderControlStrategy
 {
     private long positionLimit;
-    private int shiftsForTermId;
+    private int positionBitsToShift;
+    private int initialTermId;
 
     public UnicastSenderControlStrategy()
     {
@@ -31,7 +34,10 @@ public class UnicastSenderControlStrategy implements SenderControlStrategy
     public long onStatusMessage(final int termId, final long highestContiguousSequenceNumber,
                                 final int receiverWindowSize, final InetSocketAddress address)
     {
-        final long newPositionLimit = ((long)termId << shiftsForTermId) + receiverWindowSize;
+        final long position =
+            TermHelper.calculatePosition(termId, (int)highestContiguousSequenceNumber, positionBitsToShift, initialTermId);
+        final long newPositionLimit = position + receiverWindowSize;
+
         positionLimit = Math.max(positionLimit, newPositionLimit);
 
         return positionLimit;
@@ -40,8 +46,10 @@ public class UnicastSenderControlStrategy implements SenderControlStrategy
     /** {@inheritDoc} */
     public long initialPositionLimit(final int initialTermId, final int termBufferCapacity)
     {
-        shiftsForTermId = Long.numberOfTrailingZeros(termBufferCapacity);
-        positionLimit = (long)initialTermId << shiftsForTermId;
+        this.initialTermId = initialTermId;
+        positionBitsToShift = Long.numberOfTrailingZeros(termBufferCapacity);
+
+        positionLimit = TermHelper.calculatePosition(initialTermId, 0, positionBitsToShift, initialTermId);
 
         return positionLimit;
     }

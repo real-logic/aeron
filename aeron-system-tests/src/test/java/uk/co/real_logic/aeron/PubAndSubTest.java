@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron;
 
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
@@ -335,5 +336,49 @@ public class PubAndSubTest
                 eq(messageLength),
                 eq(SESSION_ID),
                 eq((byte) DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+    }
+
+    @Theory
+    @Test(timeout = 1000)
+    @Ignore("not working reliably yet")
+    public void shouldReceiveOnlyAfterSendingEntireBuffer(final String channel) throws Exception
+    {
+        /*
+         * The subscriber will flow control the driver publication after about 1/2 term.
+         * But the app should be able to send 1 more term size before it is flow controlled. Total of 1.5 terms.
+         * When the receiver starts receiving, it will free up more and allow it to drain.
+         */
+        final int termBufferSize = 64 * 1024;
+        final int numMessagesToSend = 64;
+        final int messageLength = (termBufferSize / numMessagesToSend) - DataHeaderFlyweight.HEADER_LENGTH;
+
+        context.termBufferSize(termBufferSize);
+
+        setup(channel);
+
+        for (int i = 0; i < numMessagesToSend; i++)
+        {
+            while (!publication.offer(buffer, 0, messageLength))
+            {
+                Thread.yield();
+            }
+        }
+
+        final int fragmentsRead[] = new int[1];
+        SystemTestHelper.executeUntil(
+            () -> fragmentsRead[0] >= numMessagesToSend,
+            (j) ->
+            {
+                fragmentsRead[0] += subscription.poll(10);
+                Thread.yield();
+            },
+            Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
+
+        verify(dataHandler, times(numMessagesToSend))
+                .onData(anyObject(),
+                        anyInt(),
+                        eq(messageLength),
+                        eq(SESSION_ID),
+                        eq((byte) DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
     }
 }

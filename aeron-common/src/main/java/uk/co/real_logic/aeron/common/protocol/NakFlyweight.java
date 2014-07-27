@@ -20,7 +20,9 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 /**
  * Flyweight for a Nak Packet
  *
- * <a href="https://github.com/real-logic/Aeron/wiki/Protocol-Specification#data-recovery-via-retransmit-request">Data Recovery</a>
+ * <a href="https://github.com/real-logic/Aeron/wiki/Protocol-Specification#data-recovery-via-retransmit-request">
+ *     Data Recovery
+ * </a>
  */
 public class NakFlyweight extends HeaderFlyweight
 {

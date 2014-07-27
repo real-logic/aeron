@@ -340,7 +340,7 @@ public class PubAndSubTest
 
     @Theory
     @Test(timeout = 1000)
-    @Ignore("not working reliably yet")
+//    @Ignore("not working reliably yet")
     public void shouldReceiveOnlyAfterSendingEntireBuffer(final String channel) throws Exception
     {
         /*

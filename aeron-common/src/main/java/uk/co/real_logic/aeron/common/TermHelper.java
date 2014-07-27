@@ -61,6 +61,35 @@ public class TermHelper
     }
 
     /**
+     * Calculate the term id from a position.
+     *
+     * @param position             to calculate from
+     * @param positionBitsToShift  number of times to right shift the position
+     * @param initialTermId        the initial term id that this stream started on
+     * @return the term id according to the position
+     */
+    public static int calculateTermIdFromPosition(final long position,
+                                                  final int positionBitsToShift,
+                                                  final int initialTermId)
+    {
+        return ((int)(position >>> positionBitsToShift) + initialTermId);
+    }
+
+    /**
+     * Calculate the term offset from a given position.
+     *
+     * @param position            to calculate from
+     * @param positionBitsToShift number of times to right shift the position
+     * @return the offset within the term that represents the position
+     */
+    public static int calculateTermOffsetFromPosition(final long position,
+                                                      final int positionBitsToShift)
+    {
+        final int mask = (1 << positionBitsToShift) - 1;
+        return (int)(position & mask);
+    }
+
+    /**
      * Check that has been cleaned and is ready for use. If it is not clean it will be cleaned on this thread
      * or this thread will wait for the conductor to complete the cleaning.
      *

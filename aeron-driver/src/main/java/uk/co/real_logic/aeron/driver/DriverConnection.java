@@ -234,8 +234,14 @@ public class DriverConnection implements AutoCloseable
          * - send SM when currentTail > lastTail && timeOfLastSM too long
          */
 
-        final int currentSmTail = lossHandler.highestContiguousOffset();
-        final int currentSmTermId = lossHandler.activeTermId();
+        // TODO: update comments to account for changes to check subscriber state
+
+//        final int currentSmTail = lossHandler.highestContiguousOffset();
+//        final int currentSmTermId = lossHandler.activeTermId();
+
+        final long subscriberPosition = subscriberLimit.position();
+        final int currentSmTermId = TermHelper.calculateTermIdFromPosition(subscriberPosition, positionBitsToShift, initialTermId);
+        final int currentSmTail = TermHelper.calculateTermOffsetFromPosition(subscriberPosition, positionBitsToShift);
 
         // not able to send yet because not added to dispatcher, anything received will be dropped (in progress)
         if (STATE_CREATED == state.get())

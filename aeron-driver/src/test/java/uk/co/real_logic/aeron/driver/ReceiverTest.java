@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.driver;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
@@ -48,7 +49,7 @@ import static uk.co.real_logic.aeron.driver.BufferAndFrameHelper.newTestTermBuff
 
 public class ReceiverTest
 {
-    private static final long LOG_BUFFER_SIZE = LogBufferDescriptor.MIN_LOG_SIZE;
+    private static final int LOG_BUFFER_SIZE = LogBufferDescriptor.MIN_LOG_SIZE;
     private static final String URI = "udp://localhost:45678";
     private static final UdpChannel UDP_CHANNEL = UdpChannel.parse(URI);
     private static final int STREAM_ID = 10;
@@ -84,7 +85,8 @@ public class ReceiverTest
     @Before
     public void setUp() throws Exception
     {
-        when(POSITION_INDICATOR.position()).thenReturn(Long.MAX_VALUE - LOG_BUFFER_SIZE);
+        when(POSITION_INDICATOR.position())
+            .thenReturn(TermHelper.calculatePosition(TERM_ID, 0, Integer.numberOfTrailingZeros(LOG_BUFFER_SIZE), TERM_ID));
         when(mockLossHandler.activeTermId()).thenReturn(TERM_ID);
 
         final MediaDriver.Context ctx = new MediaDriver.Context()

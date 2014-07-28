@@ -400,7 +400,33 @@ public class DriverConductor extends Agent
 
     private void onHeartbeatPublication(final PublicationMessageFlyweight publicationMessage)
     {
-        // TODO: finish
+        final String channel = publicationMessage.channel();
+        final int sessionId = publicationMessage.sessionId();
+        final int streamId = publicationMessage.streamId();
+        final long correlationId = publicationMessage.correlationId();
+
+        try
+        {
+            final UdpChannel udpChannel = UdpChannel.parse(channel);
+            final SendChannelEndpoint channelEndpoint = sendChannelEndpointByHash.get(udpChannel.consistentHash());
+            if (null == channelEndpoint)
+            {
+                return; // channel unknown
+            }
+
+            final DriverPublication publication = channelEndpoint.findPublication(sessionId, streamId);
+            if (null == publication)
+            {
+                return; // publication (sessionId and streamId) unknown
+            }
+
+            // TODO: refactor storage of ref counts to account for correlationIds
+            // TODO: keep publication alive for this correlationId by passing timerWheel.now() to it as last active time
+        }
+        catch (final Exception ex)
+        {
+            logger.logException(ex);
+        }
     }
 
     private void onAddSubscription(final SubscriptionMessageFlyweight subscriptionMessage)
@@ -495,7 +521,30 @@ public class DriverConductor extends Agent
 
     private void onHeartbeatSubscription(final SubscriptionMessageFlyweight subscriptionMessage)
     {
-        // TODO: finish
+        final String channel = subscriptionMessage.channel();
+        final int streamId = subscriptionMessage.streamId();
+        final long correlationId = subscriptionMessage.correlationId();
+
+        try
+        {
+            final UdpChannel udpChannel = UdpChannel.parse(channel);
+            final ReceiveChannelEndpoint channelEndpoint = receiveChannelEndpointByHash.get(udpChannel.consistentHash());
+            if (null == channelEndpoint)
+            {
+                return; // unknown channel
+            }
+
+            if (channelEndpoint.getRefCountToStream(streamId) == 0)
+            {
+                return; // unknown subscription (streamId)
+            }
+
+            // TODO: refactor this to hold lastHeartbeatTimestamps for each correlationId
+        }
+        catch (final Exception ex)
+        {
+            logger.logException(ex);
+        }
     }
 
     private void onCreateConnection(final CreateConnectionCmd cmd)

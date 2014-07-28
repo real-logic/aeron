@@ -25,6 +25,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import static uk.co.real_logic.aeron.examples.ExampleUtil.rateReporterHandler;
+
 /**
  * Example that displays current rate while receiving data
  */
@@ -47,12 +49,13 @@ public class RateSubscriber
 
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), ExampleUtil::printRate);
 
-        final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, ExampleUtil.rateReporterHandler(reporter));
+        try (final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, rateReporterHandler(reporter)))
+        {
+            executor.execute(() -> ExampleUtil.subscriberLoop(FRAME_COUNT_LIMIT).accept(subscription));
 
-        executor.execute(() -> ExampleUtil.subscriberLoop(FRAME_COUNT_LIMIT).accept(subscription));
-
-        // run the rate reporter loop
-        reporter.run();
+            // run the rate reporter loop
+            reporter.run();
+        }
 
         CloseHelper.quietClose(aeron);
         CloseHelper.quietClose(driver);

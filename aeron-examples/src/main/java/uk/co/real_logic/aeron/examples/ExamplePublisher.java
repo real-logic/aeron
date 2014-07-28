@@ -48,26 +48,27 @@ public class ExamplePublisher
 
         System.out.println("Publishing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
-        final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID, 0);
-
-        for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
+        try (final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID, 0))
         {
-            final String message = "Hello World! " + i;
-            BUFFER.putBytes(0, message.getBytes());
-
-            System.out.print("offering " + i + "/" + NUMBER_OF_MESSAGES);
-            final boolean result = publication.offer(BUFFER, 0, message.getBytes().length);
-
-            if (!result)
+            for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
             {
-                System.out.println(" ah?!");
-            }
-            else
-            {
-                System.out.println(" yay!");
-            }
+                final String message = "Hello World! " + i;
+                BUFFER.putBytes(0, message.getBytes());
 
-            Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+                System.out.print("offering " + i + "/" + NUMBER_OF_MESSAGES);
+                final boolean result = publication.offer(BUFFER, 0, message.getBytes().length);
+
+                if (!result)
+                {
+                    System.out.println(" ah?!");
+                }
+                else
+                {
+                    System.out.println(" yay!");
+                }
+
+                Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+            }
         }
 
         aeron.shutdown();

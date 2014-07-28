@@ -48,26 +48,27 @@ public class StreamingPublisher
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? ExampleUtil.createEmbeddedMediaDriver() : null;
         final Aeron aeron = ExampleUtil.createAeron(context, executor);
+        final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), ExampleUtil::printRate);
 
         System.out.println("Streaming " + NUMBER_OF_MESSAGES + " messages of size " + MESSAGE_LENGTH +
                            " bytes to " + CHANNEL + " on stream Id " + STREAM_ID);
 
-        final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID, 0);
-        final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), ExampleUtil::printRate);
-
-        // report the rate we are sending
-        executor.execute(reporter);
-
-        for (long i = 0; i < NUMBER_OF_MESSAGES; i++)
+        try (final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID, 0))
         {
-            ATOMIC_BUFFER.putLong(0, i);
+            // report the rate we are sending
+            executor.execute(reporter);
 
-            while (!publication.offer(ATOMIC_BUFFER, 0, ATOMIC_BUFFER.capacity()))
+            for (long i = 0; i < NUMBER_OF_MESSAGES; i++)
             {
-                Thread.yield();
-            }
+                ATOMIC_BUFFER.putLong(0, i);
 
-            reporter.onMessage(1, ATOMIC_BUFFER.capacity());
+                while (!publication.offer(ATOMIC_BUFFER, 0, ATOMIC_BUFFER.capacity()))
+                {
+                    Thread.yield();
+                }
+
+                reporter.onMessage(1, ATOMIC_BUFFER.capacity());
+            }
         }
 
         System.out.println("Done streaming.");

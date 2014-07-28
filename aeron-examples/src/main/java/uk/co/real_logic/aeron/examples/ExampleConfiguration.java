@@ -44,7 +44,7 @@ public class ExampleConfiguration
         STREAM_ID = Integer.getInteger(STREAM_ID_PROP, 10);
         FRAME_COUNT_LIMIT = Integer.getInteger(FRAME_COUNT_LIMIT_PROP, 10);
         MESSAGE_LENGTH = Integer.getInteger(MESSAGE_LENGTH_PROP, 256);
-        NUMBER_OF_MESSAGES = Long.getLong(NUMBER_OF_MESSAGES_PROP, 100);
+        NUMBER_OF_MESSAGES = Long.getLong(NUMBER_OF_MESSAGES_PROP, 10_000_000);
         LINGER_TIMEOUT_MS = Long.getLong(LINGER_TIMEOUT_MS_PROP, TimeUnit.SECONDS.toMillis(5));
         EMBEDDED_MEDIA_DRIVER = Boolean.getBoolean(EMBEDDED_MEDIA_DRIVER_PROP);
     }

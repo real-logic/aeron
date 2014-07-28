@@ -33,7 +33,7 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
  * <p>
  * Note: Publication instances are threadsafe and can be shared between publisher threads.
  */
-public class Publication
+public class Publication implements AutoCloseable
 {
     private final ClientConductor clientConductor;
     private final String channel;
@@ -102,6 +102,11 @@ public class Publication
     public int sessionId()
     {
         return sessionId;
+    }
+
+    public void close()
+    {
+        release();
     }
 
     /**

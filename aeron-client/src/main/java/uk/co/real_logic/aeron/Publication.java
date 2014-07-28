@@ -48,7 +48,6 @@ public class Publication implements AutoCloseable
     private final int initialTermId;
 
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
-    private final PublicationHeartbeatInfo publicationHeartbeatInfo;
 
     private int refCount = 1;
     private int activeIndex;
@@ -74,8 +73,6 @@ public class Publication implements AutoCloseable
         this.logAppenders = logAppenders;
         this.senderLimit = senderLimit;
         this.activeIndex = termIdToBufferIndex(initialTermId);
-
-        this.publicationHeartbeatInfo = new PublicationHeartbeatInfo(channel, sessionId, streamId, correlationId);
 
         this.positionBitsToShift = Integer.numberOfTrailingZeros(logAppenders[0].capacity());
         this.initialTermId = initialTermId;
@@ -112,13 +109,13 @@ public class Publication implements AutoCloseable
     }
 
     /**
-     * Return heartbeat info state.
+     * Correlation Id used when registering the publication with the media driver.
      *
-     * @return heartbeat info
+     * @return the correlation id for this publication.
      */
-    public PublicationHeartbeatInfo heartbeatInfo()
+    public long correlationId()
     {
-        return publicationHeartbeatInfo;
+        return correlationId;
     }
 
     public void close()
@@ -235,47 +232,5 @@ public class Publication implements AutoCloseable
     private long position(final int currentTail)
     {
         return TermHelper.calculatePosition(activeTermId.get(), currentTail, positionBitsToShift, initialTermId);
-    }
-
-    /**
-     * Stores heartbeat info for this Publication
-     */
-    public static class PublicationHeartbeatInfo
-    {
-        private final String channel;
-        private final int sessionId;
-        private final int streamId;
-        private final long correlationId;
-
-        public PublicationHeartbeatInfo(final String channel,
-                                        final int sessionId,
-                                        final int streamId,
-                                        final long correlationId)
-        {
-            this.channel = channel;
-            this.sessionId = sessionId;
-            this.streamId = streamId;
-            this.correlationId = correlationId;
-        }
-
-        public String channel()
-        {
-            return channel;
-        }
-
-        public int sessionId()
-        {
-            return sessionId;
-        }
-
-        public int streamId()
-        {
-            return streamId;
-        }
-
-        public long correlationId()
-        {
-            return correlationId;
-        }
     }
 }

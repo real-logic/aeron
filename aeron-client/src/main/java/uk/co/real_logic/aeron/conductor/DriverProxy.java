@@ -81,12 +81,12 @@ public class DriverProxy
         return sendSubscriptionMessage(REMOVE_SUBSCRIPTION, channel, streamId);
     }
 
-    public void heartbeatPublication(final Publication.PublicationHeartbeatInfo heartbeatInfo)
+    public void heartbeatPublication(final Publication publication)
     {
-        heartbeatPublicationMessage.correlationId(heartbeatInfo.correlationId());
-        heartbeatPublicationMessage.sessionId(heartbeatInfo.sessionId());
-        heartbeatPublicationMessage.streamId(heartbeatInfo.streamId());
-        heartbeatPublicationMessage.channel(heartbeatInfo.channel());
+        heartbeatPublicationMessage.correlationId(publication.correlationId());
+        heartbeatPublicationMessage.sessionId(publication.sessionId());
+        heartbeatPublicationMessage.streamId(publication.streamId());
+        heartbeatPublicationMessage.channel(publication.channel());
 
         if (!mediaDriverCommandBuffer.write(HEARTBEAT_PUBLICATION, heartbeatBuffer, 0, heartbeatPublicationMessage.length()))
         {
@@ -94,11 +94,11 @@ public class DriverProxy
         }
     }
 
-    public void heartbeatSubscription(final Subscription.SubscriptionHeartbeatInfo heartbeatInfo)
+    public void heartbeatSubscription(final Subscription subscription)
     {
-        heartbeatSubscriptionMessage.correlationId(heartbeatInfo.correlationId());
-        heartbeatSubscriptionMessage.streamId(heartbeatInfo.streamId());
-        heartbeatSubscriptionMessage.channel(heartbeatInfo.channel());
+        heartbeatSubscriptionMessage.correlationId(subscription.correlationId());
+        heartbeatSubscriptionMessage.streamId(subscription.streamId());
+        heartbeatSubscriptionMessage.channel(subscription.channel());
 
         if (!mediaDriverCommandBuffer.write(HEARTBEAT_SUBSCRIPTION, heartbeatBuffer, 0, heartbeatSubscriptionMessage.length()))
         {

@@ -59,8 +59,8 @@ public class ClientConductor extends Agent implements DriverListener
     private final long awaitTimeout;
     private final ConnectionMap<String, Publication> publicationMap = new ConnectionMap<>(); // Guarded by this
     private final SubscriptionMap subscriptionMap = new SubscriptionMap();
-    private final AtomicArray<Publication.PublicationHeartbeatInfo> publicationHeartbeatInfos = new AtomicArray<>();
-    private final AtomicArray<Subscription.SubscriptionHeartbeatInfo> subscriptionHeartbeatInfos = new AtomicArray<>();
+    private final AtomicArray<Publication> publicationHeartbeatInfos = new AtomicArray<>();
+    private final AtomicArray<Subscription> subscriptionHeartbeatInfos = new AtomicArray<>();
 
     private final AtomicBuffer counterValuesBuffer;
     private final DriverProxy driverProxy;
@@ -135,7 +135,7 @@ public class ClientConductor extends Agent implements DriverListener
 
             publication = addedPublication;
             publicationMap.put(channel, sessionId, streamId, publication);
-            publicationHeartbeatInfos.add(publication.heartbeatInfo());
+            publicationHeartbeatInfos.add(publication);
             addedPublication = null;
             activeCorrelationId = NO_CORRELATION_ID;
         }
@@ -158,7 +158,7 @@ public class ClientConductor extends Agent implements DriverListener
         awaitOperationSucceeded();
 
         publicationMap.remove(channel, sessionId, streamId);
-        publicationHeartbeatInfos.remove(publication.heartbeatInfo());
+        publicationHeartbeatInfos.remove(publication);
     }
 
     public synchronized Subscription addSubscription(final String channel, final int streamId, final DataHandler handler)
@@ -172,7 +172,7 @@ public class ClientConductor extends Agent implements DriverListener
             subscription = new Subscription(this, handler, channel, streamId, activeCorrelationId);
 
             subscriptionMap.put(channel, streamId, subscription);
-            subscriptionHeartbeatInfos.add(subscription.heartbeatInfo());
+            subscriptionHeartbeatInfos.add(subscription);
 
             awaitOperationSucceeded();
         }
@@ -185,7 +185,7 @@ public class ClientConductor extends Agent implements DriverListener
         activeCorrelationId = driverProxy.removeSubscription(subscription.channel(), subscription.streamId());
 
         subscriptionMap.remove(subscription.channel(), subscription.streamId());
-        subscriptionHeartbeatInfos.remove(subscription.heartbeatInfo());
+        subscriptionHeartbeatInfos.remove(subscription);
 
         awaitOperationSucceeded();
     }

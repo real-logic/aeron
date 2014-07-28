@@ -16,7 +16,6 @@
 package uk.co.real_logic.aeron;
 
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
@@ -130,21 +129,21 @@ public class PubAndSubTest
         assertTrue(publication.offer(buffer, 0, BitUtil.SIZE_OF_INT));
 
         final int fragmentsRead[] = new int[1];
-        SystemTestHelper.executeUntil
-            (() -> fragmentsRead[0] > 0,
-             (i) ->
-             {
-                 fragmentsRead[0] += subscription.poll(10);
-                 Thread.yield();
-             },
-             Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
+        SystemTestHelper.executeUntil(
+            () -> fragmentsRead[0] > 0,
+            (i) ->
+            {
+                fragmentsRead[0] += subscription.poll(10);
+                Thread.yield();
+            },
+            Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
 
         verify(dataHandler)
             .onData(anyObject(),
-                eq(DataHeaderFlyweight.HEADER_LENGTH),
-                eq(BitUtil.SIZE_OF_INT),
-                eq(SESSION_ID),
-                eq((byte) DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+                    eq(DataHeaderFlyweight.HEADER_LENGTH),
+                    eq(BitUtil.SIZE_OF_INT),
+                    eq(SESSION_ID),
+                    eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
     }
 
     @Theory
@@ -180,10 +179,10 @@ public class PubAndSubTest
 
         verify(dataHandler, times(numMessagesToSend))
             .onData(anyObject(),
-                anyInt(),
-                eq(messageLength),
-                eq(SESSION_ID),
-                eq((byte) DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+                    anyInt(),
+                    eq(messageLength),
+                    eq(SESSION_ID),
+                    eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
     }
 
     @Theory
@@ -283,10 +282,10 @@ public class PubAndSubTest
 
         verify(dataHandler, times(numMessagesToSend))
             .onData(anyObject(),
-                anyInt(),
-                eq(messageLength),
-                eq(SESSION_ID),
-                eq((byte) DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+                    anyInt(),
+                    eq(messageLength),
+                    eq(SESSION_ID),
+                    eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
     }
 
     @Theory
@@ -332,10 +331,10 @@ public class PubAndSubTest
 
         verify(dataHandler, times(numMessagesToSend))
             .onData(anyObject(),
-                anyInt(),
-                eq(messageLength),
-                eq(SESSION_ID),
-                eq((byte) DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+                    anyInt(),
+                    eq(messageLength),
+                    eq(SESSION_ID),
+                    eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
     }
 
     @Theory
@@ -375,10 +374,10 @@ public class PubAndSubTest
             Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
 
         verify(dataHandler, times(numMessagesToSend))
-                .onData(anyObject(),
-                        anyInt(),
-                        eq(messageLength),
-                        eq(SESSION_ID),
-                        eq((byte) DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+            .onData(anyObject(),
+                    anyInt(),
+                    eq(messageLength),
+                    eq(SESSION_ID),
+                    eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
     }
 }

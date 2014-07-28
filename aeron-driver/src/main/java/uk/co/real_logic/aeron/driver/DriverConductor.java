@@ -403,7 +403,6 @@ public class DriverConductor extends Agent
         final String channel = publicationMessage.channel();
         final int sessionId = publicationMessage.sessionId();
         final int streamId = publicationMessage.streamId();
-        final long correlationId = publicationMessage.correlationId();
 
         try
         {
@@ -420,7 +419,8 @@ public class DriverConductor extends Agent
                 return; // publication (sessionId and streamId) unknown
             }
 
-            // TODO: refactor storage of ref counts to account for correlationIds
+            // sessionId and streamId must be specific to a client publication, so correlation Id should not be needed.
+
             // TODO: keep publication alive for this correlationId by passing timerWheel.now() to it as last active time
         }
         catch (final Exception ex)
@@ -539,7 +539,8 @@ public class DriverConductor extends Agent
                 return; // unknown subscription (streamId)
             }
 
-            // TODO: refactor this to hold lastHeartbeatTimestamps for each correlationId
+            // TODO: refactor this to hold lastHeartbeatTimestamps for each correlationId for each streamId
+            // map(streamId -> map(correlationId -> timestamp))
         }
         catch (final Exception ex)
         {

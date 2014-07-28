@@ -43,7 +43,7 @@ public class ExamplePublisher
         final ExecutorService executor = Executors.newSingleThreadExecutor();
         final Aeron.Context context = new Aeron.Context();
 
-        final MediaDriver driver = (EMBEDDED_MEDIA_DRIVER ? ExampleUtil.createEmbeddedMediaDriver() : null);
+        final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? ExampleUtil.createEmbeddedMediaDriver() : null;
         final Aeron aeron = ExampleUtil.createAeron(context, executor);
 
         System.out.println("Publishing to " + CHANNEL + " on stream Id " + STREAM_ID);

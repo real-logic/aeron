@@ -38,7 +38,7 @@ public class ExampleSubscriber
         final ExecutorService executor = Executors.newFixedThreadPool(1);
         final Aeron.Context aeronContext = new Aeron.Context();
 
-        final MediaDriver driver = (EMBEDDED_MEDIA_DRIVER ? ExampleUtil.createEmbeddedMediaDriver() : null);
+        final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? ExampleUtil.createEmbeddedMediaDriver() : null;
         final Aeron aeron = ExampleUtil.createAeron(aeronContext, executor);
 
         System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID);

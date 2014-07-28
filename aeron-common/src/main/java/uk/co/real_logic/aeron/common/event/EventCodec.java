@@ -191,6 +191,7 @@ public class EventCodec
         {
             case CMD_IN_ADD_PUBLICATION:
             case CMD_IN_REMOVE_PUBLICATION:
+            case CMD_IN_HEARTBEAT_PUBLICATION:
                 final PublicationMessageFlyweight pubCommand = pubMessage.get();
                 pubCommand.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(pubCommand));
@@ -198,6 +199,7 @@ public class EventCodec
 
             case CMD_IN_ADD_SUBSCRIPTION:
             case CMD_IN_REMOVE_SUBSCRIPTION:
+            case CMD_IN_HEARTBEAT_SUBSCRIPTION:
                 final SubscriptionMessageFlyweight subCommand = subMessage.get();
                 subCommand.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(subCommand));

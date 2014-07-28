@@ -24,6 +24,7 @@ import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBufferDescriptor;
+import uk.co.real_logic.aeron.common.event.EventConfiguration;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.event.EventReader;
 import uk.co.real_logic.aeron.common.concurrent.CountersManager;
@@ -277,6 +278,15 @@ public class MediaDriver implements AutoCloseable
 
         ensureDirectoriesExist();
 
+        final EventReader.Context readerCtx =
+            new EventReader.Context()
+                .backoffStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
+                    AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
+                .deleteOnExit(ctx.dirsDeleteOnExit())
+                .eventHandler(ctx.eventConsumer);
+
+        this.eventReader = new EventReader(readerCtx);
+
         ctx.unicastSenderFlowControl(UnicastSenderControlStrategy::new)
            .multicastSenderFlowControl(UnicastSenderControlStrategy::new)
            .publications(new AtomicArray<>())
@@ -296,15 +306,6 @@ public class MediaDriver implements AutoCloseable
         this.receiver = new Receiver(ctx);
         this.sender = new Sender(ctx);
         this.conductor = new DriverConductor(ctx);
-
-        final EventReader.Context readerCtx =
-            new EventReader.Context()
-                .backoffStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                    AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
-                .deleteOnExit(ctx.dirsDeleteOnExit())
-                .eventHandler(ctx.eventConsumer);
-
-        this.eventReader = new EventReader(readerCtx);
     }
 
     /**
@@ -478,7 +479,7 @@ public class MediaDriver implements AutoCloseable
         }
         catch (final Exception ex)
         {
-            ctx.driverLogger().logException(ex);
+            ctx.eventLogger().logException(ex);
         }
     }
 
@@ -511,22 +512,27 @@ public class MediaDriver implements AutoCloseable
         private int initialWindowSize;
 
         private boolean warnIfDirectoriesExist;
-        private EventLogger conductorLogger;
-        private EventLogger receiverLogger;
-        private EventLogger driverLogger;
-        private EventLogger senderLogger;
+        private EventLogger eventLogger;
         private Consumer<String> eventConsumer;
 
         public Context()
         {
             termBufferSize(getInteger(TERM_BUFFER_SZ_PROP_NAME, TERM_BUFFER_SZ_DEFAULT));
             initialWindowSize(getInteger(INITIAL_WINDOW_SIZE_PROP_NAME, INITIAL_WINDOW_SIZE_DEFAULT));
+
+            eventConsumer = System.out::println;
             warnIfDirectoriesExist = true;
         }
 
         public Context conclude() throws IOException
         {
             super.conclude();
+
+            if (null == eventLogger)
+            {
+                eventLogger = new EventLogger(new File(System.getProperty(EventConfiguration.LOCATION_PROPERTY_NAME,
+                    EventConfiguration.LOCATION_DEFAULT)), EventConfiguration.getEnabledEventCodes());
+            }
 
             receiverNioSelector(new NioSelector());
             conductorNioSelector(new NioSelector());
@@ -547,7 +553,7 @@ public class MediaDriver implements AutoCloseable
             toClientsBuffer = mapNewFile(toClientsFile(), TO_CLIENTS_BUFFER_SZ);
 
             final BroadcastTransmitter transmitter = new BroadcastTransmitter(new AtomicBuffer(toClientsBuffer));
-            clientProxy(new ClientProxy(transmitter, new EventLogger()));
+            clientProxy(new ClientProxy(transmitter, eventLogger));
 
             toDriverBuffer = mapNewFile(toDriverFile(), CONDUCTOR_BUFFER_SZ);
 
@@ -594,12 +600,6 @@ public class MediaDriver implements AutoCloseable
 
                 countersManager(new CountersManager(counterLabelsBuffer(), countersBuffer()));
             }
-
-            conductorLogger(new EventLogger());
-            driverLogger(new EventLogger());
-            receiverLogger(new EventLogger());
-            senderLogger(new EventLogger());
-            eventConsumer(System.out::println);
 
             return this;
         }
@@ -726,33 +726,15 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context conductorLogger(final EventLogger value)
-        {
-            this.conductorLogger = value;
-            return this;
-        }
-
-        public Context receiverLogger(final EventLogger value)
-        {
-            this.receiverLogger = value;
-            return this;
-        }
-
-        public Context driverLogger(final EventLogger value)
-        {
-            this.driverLogger = value;
-            return this;
-        }
-
-        public Context senderLogger(final EventLogger value)
-        {
-            this.senderLogger = value;
-            return this;
-        }
-
         public Context eventConsumer(final Consumer<String> value)
         {
             this.eventConsumer = value;
+            return this;
+        }
+
+        public Context eventLogger(final EventLogger value)
+        {
+            this.eventLogger = value;
             return this;
         }
 
@@ -856,6 +838,16 @@ public class MediaDriver implements AutoCloseable
             return warnIfDirectoriesExist;
         }
 
+        public EventLogger eventLogger()
+        {
+            return eventLogger;
+        }
+
+        public Consumer<Exception> eventLoggerException()
+        {
+            return eventLogger::logException;
+        }
+
         public void close()
         {
             if (null != toClientsBuffer)
@@ -878,6 +870,11 @@ public class MediaDriver implements AutoCloseable
                 IoUtil.unmap(counterValuesByteBuffer);
             }
 
+            if (null != eventLogger)
+            {
+                eventLogger.close();
+            }
+
             super.close();
         }
 
@@ -895,26 +892,6 @@ public class MediaDriver implements AutoCloseable
             {
                 throw new IllegalStateException("Initial window size must be >= to MTU length: " + mtuLength);
             }
-        }
-
-        public EventLogger conductorLogger()
-        {
-            return conductorLogger;
-        }
-
-        public EventLogger receiverLogger()
-        {
-            return receiverLogger;
-        }
-
-        public EventLogger senderLogger()
-        {
-            return senderLogger;
-        }
-
-        public EventLogger driverLogger()
-        {
-            return driverLogger;
         }
     }
 }

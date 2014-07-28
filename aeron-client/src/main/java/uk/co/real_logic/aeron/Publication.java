@@ -39,6 +39,7 @@ public class Publication implements AutoCloseable
     private final String channel;
     private final int streamId;
     private final int sessionId;
+    private final long correlationId;
     private final ManagedBuffer[] managedBuffers;
     private final LogAppender[] logAppenders;
     private final PositionIndicator senderLimit;
@@ -47,6 +48,8 @@ public class Publication implements AutoCloseable
     private final int initialTermId;
 
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
+    private final PublicationHeartbeatInfo publicationHeartbeatInfo;
+
     private int refCount = 1;
     private int activeIndex;
 
@@ -55,6 +58,7 @@ public class Publication implements AutoCloseable
                        final int streamId,
                        final int sessionId,
                        final int initialTermId,
+                       final long correlationId,
                        final LogAppender[] logAppenders,
                        final PositionIndicator senderLimit,
                        final ManagedBuffer[] managedBuffers)
@@ -64,11 +68,14 @@ public class Publication implements AutoCloseable
         this.channel = channel;
         this.streamId = streamId;
         this.sessionId = sessionId;
+        this.correlationId = correlationId;
         this.managedBuffers = managedBuffers;
         this.activeTermId = new AtomicInteger(initialTermId);
         this.logAppenders = logAppenders;
         this.senderLimit = senderLimit;
         this.activeIndex = termIdToBufferIndex(initialTermId);
+
+        this.publicationHeartbeatInfo = new PublicationHeartbeatInfo(channel, sessionId, streamId, correlationId);
 
         this.positionBitsToShift = Integer.numberOfTrailingZeros(logAppenders[0].capacity());
         this.initialTermId = initialTermId;
@@ -102,6 +109,16 @@ public class Publication implements AutoCloseable
     public int sessionId()
     {
         return sessionId;
+    }
+
+    /**
+     * Return heartbeat info state.
+     *
+     * @return heartbeat info
+     */
+    public PublicationHeartbeatInfo heartbeatInfo()
+    {
+        return publicationHeartbeatInfo;
     }
 
     public void close()
@@ -218,5 +235,47 @@ public class Publication implements AutoCloseable
     private long position(final int currentTail)
     {
         return TermHelper.calculatePosition(activeTermId.get(), currentTail, positionBitsToShift, initialTermId);
+    }
+
+    /**
+     * Stores heartbeat info for this Publication
+     */
+    public static class PublicationHeartbeatInfo
+    {
+        private final String channel;
+        private final int sessionId;
+        private final int streamId;
+        private final long correlationId;
+
+        public PublicationHeartbeatInfo(final String channel,
+                                        final int sessionId,
+                                        final int streamId,
+                                        final long correlationId)
+        {
+            this.channel = channel;
+            this.sessionId = sessionId;
+            this.streamId = streamId;
+            this.correlationId = correlationId;
+        }
+
+        public String channel()
+        {
+            return channel;
+        }
+
+        public int sessionId()
+        {
+            return sessionId;
+        }
+
+        public int streamId()
+        {
+            return streamId;
+        }
+
+        public long correlationId()
+        {
+            return correlationId;
+        }
     }
 }

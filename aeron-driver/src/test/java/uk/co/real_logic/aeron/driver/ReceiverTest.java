@@ -98,7 +98,7 @@ public class ReceiverTest
                                                 TimeUnit.MICROSECONDS,
                                                 MediaDriver.CONDUCTOR_TICKS_PER_WHEEL))
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
-            .receiverLogger(mockLogger);
+            .eventLogger(mockLogger);
 
         toConductorQueue = ctx.conductorCommandQueue();
         final DriverConductorProxy driverConductorProxy = new DriverConductorProxy(toConductorQueue);
@@ -131,8 +131,6 @@ public class ReceiverTest
     @Test
     public void shouldCreateRcvTermAndSendSmOnZeroLengthData() throws Exception
     {
-        EventLogger.logInvocation();
-
         receiverProxy.registerMediaEndpoint(receiveChannelEndpoint);
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
 
@@ -190,8 +188,6 @@ public class ReceiverTest
     @Test
     public void shouldInsertDataIntoLogAfterInitialExchange() throws Exception
     {
-        EventLogger.logInvocation();
-
         receiverProxy.registerMediaEndpoint(receiveChannelEndpoint);
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
 
@@ -247,8 +243,6 @@ public class ReceiverTest
     @Test
     public void shouldNotOverwriteDataFrameWithHeartbeat() throws Exception
     {
-        EventLogger.logInvocation();
-
         receiverProxy.registerMediaEndpoint(receiveChannelEndpoint);
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
 
@@ -307,8 +301,6 @@ public class ReceiverTest
     @Test
     public void shouldOverwriteHeartbeatWithDataFrame() throws Exception
     {
-        EventLogger.logInvocation();
-
         receiverProxy.registerMediaEndpoint(receiveChannelEndpoint);
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
 

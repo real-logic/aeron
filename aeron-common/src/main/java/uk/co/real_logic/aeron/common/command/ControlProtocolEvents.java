@@ -33,15 +33,21 @@ public class ControlProtocolEvents
     public static final int REMOVE_SUBSCRIPTION = 0x05;
     /** Request Term */
     public static final int CLEAN_TERM_BUFFER = 0x06;
+    /** Heartbeat for Publication */
+    public static final int HEARTBEAT_PUBLICATION = 0x07;
+    /** Heartbeat for Subscriber */
+    public static final int HEARTBEAT_SUBSCRIPTION = 0x08;
 
     // Media Driver to Clients
 
     /** Error Response */
-    public static final int ON_ERROR = 0x07;
+    public static final int ON_ERROR = 0x0F01;
     /** New subscription Buffer Notification */
-    public static final int ON_NEW_CONNECTED_SUBSCRIPTION = 0x09;
+    public static final int ON_NEW_CONNECTED_SUBSCRIPTION = 0x0F02;
     /** New publication Buffer Notification */
-    public static final int ON_NEW_PUBLICATION = 0x0A;
+    public static final int ON_NEW_PUBLICATION = 0x0F03;
     /** Operation Succeeded */
-    public static final int ON_OPERATION_SUCCESS = 0x0B;
+    public static final int ON_OPERATION_SUCCESS = 0x0F04;
+    /** Heartbeat from driver to clients */
+    public static final int ON_DRIVER_HEARTBEAT = 0x0F05;
 }

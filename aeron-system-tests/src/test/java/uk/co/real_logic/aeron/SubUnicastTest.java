@@ -148,8 +148,6 @@ public class SubUnicastTest
     @Test(timeout = 1000)
     public void shouldReceiveCorrectlyFormedSingleDataFrame() throws Exception
     {
-        EventLogger.logInvocation();
-
         // send some 0 length data frame
         sendDataFrame(0, NO_PAYLOAD);
 
@@ -190,8 +188,6 @@ public class SubUnicastTest
     @Test(timeout = 1000)
     public void shouldReceiveMultipleDataFrames() throws Exception
     {
-        EventLogger.logInvocation();
-
         // send some 0 length data frame
         sendDataFrame(0, NO_PAYLOAD);
 
@@ -232,8 +228,6 @@ public class SubUnicastTest
     @Test(timeout = 1000)
     public void shouldSendNaksForMissingData() throws Exception
     {
-        EventLogger.logInvocation();
-
         // send some 0 length data frame
         sendDataFrame(0, NO_PAYLOAD);
 
@@ -289,8 +283,6 @@ public class SubUnicastTest
     @Test(timeout = 1000)
     public void shouldReceiveRetransmitAndDeliver() throws Exception
     {
-        EventLogger.logInvocation();
-
         // send some 0 length data frame
         sendDataFrame(0, NO_PAYLOAD);
 

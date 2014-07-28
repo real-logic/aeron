@@ -132,8 +132,6 @@ public class PubMulticastTest
     @Test(timeout = 1000)
     public void shouldSendCorrectlyFormedSingleDataFrames() throws Exception
     {
-        EventLogger.logInvocation();
-
         // let buffers get connected
 
         // this will not be sent yet
@@ -198,8 +196,6 @@ public class PubMulticastTest
     @Test(timeout = 1000)
     public void shouldHandleNak() throws Exception
     {
-        EventLogger.logInvocation();
-
         // let buffers get connected
 
         // this will not be sent yet

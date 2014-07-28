@@ -15,10 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.common.Agent;
-import uk.co.real_logic.aeron.common.BitUtil;
-import uk.co.real_logic.aeron.common.CommonContext;
-import uk.co.real_logic.aeron.common.IoUtil;
+import uk.co.real_logic.aeron.common.*;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastReceiver;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.CopyBroadcastReceiver;
@@ -45,6 +42,9 @@ public final class Aeron implements AutoCloseable, Runnable
     // TODO: make configurable
     public static final long AWAIT_TIMEOUT = 10_000;
 
+    private static final int CONDUCTOR_TICKS_PER_WHEEL = 1024;
+    private static final int CONDUCTOR_TICK_DURATION_US = 10 * 1000;
+
     private final ClientConductor conductor;
     private final Context savedCtx;
 
@@ -64,12 +64,15 @@ public final class Aeron implements AutoCloseable, Runnable
         final DriverProxy driverProxy = new DriverProxy(ctx.toDriverBuffer);
         final Signal correlationSignal = new Signal();
         final DriverBroadcastReceiver receiver = new DriverBroadcastReceiver(ctx.toClientBuffer, ctx.errorHandler);
+        final TimerWheel wheel =
+            new TimerWheel(CONDUCTOR_TICK_DURATION_US, TimeUnit.MICROSECONDS, CONDUCTOR_TICKS_PER_WHEEL);
 
         conductor = new ClientConductor(receiver,
                                         ctx.bufferManager,
                                         ctx.countersBuffer(),
                                         driverProxy,
                                         correlationSignal,
+                                        wheel,
                                         ctx.errorHandler,
                                         ctx.newConnectionHandler,
                                         AWAIT_TIMEOUT,

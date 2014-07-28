@@ -32,10 +32,8 @@ import static uk.co.real_logic.aeron.common.event.EventCode.INVOCATION;
  */
 public class EventLogger
 {
-    /** A bitset storing the enabled event codes */
-    private static final long enabledEventCodes;
-    private static final ManyToOneRingBuffer ringBuffer;
-    private static final ThreadLocal<AtomicBuffer> encodingBuffer;
+    private static final ThreadLocal<AtomicBuffer> encodingBuffer = ThreadLocal.withInitial(
+        () -> new AtomicBuffer(ByteBuffer.allocateDirect(EventConfiguration.MAX_EVENT_LENGTH)));
 
     /**
      *  The index in the stack trace of the method that called logException().
@@ -45,46 +43,48 @@ public class EventLogger
      */
     private static final int INVOKING_METHOD_INDEX = 2;
 
-    static
-    {
-        ManyToOneRingBuffer tmpRingBuffer;
-        MappedByteBuffer tmpBuffer;
-        ThreadLocal<AtomicBuffer> tmpEncodingBuffer;
-        final File bufferLocation = new File(System.getProperty(EventConfiguration.LOCATION_PROPERTY_NAME,
-                                                                EventConfiguration.LOCATION_DEFAULT));
+    private final MappedByteBuffer eventBuffer;
+    private final ManyToOneRingBuffer ringBuffer;
+    private final long enabledEventCodes;
 
-        // if can't map existing file, then turn logging off
+    public EventLogger(final File bufferLocation, final long enabledEventCodes)
+    {
+        MappedByteBuffer tmpEventBuffer;
 
         try
         {
-            tmpBuffer = IoUtil.mapExistingFile(bufferLocation, "event-buffer");
-            tmpRingBuffer = new ManyToOneRingBuffer(new AtomicBuffer(tmpBuffer));
-            tmpEncodingBuffer = ThreadLocal.withInitial(
-                () -> new AtomicBuffer(ByteBuffer.allocateDirect(EventConfiguration.MAX_EVENT_LENGTH)));
+            tmpEventBuffer = IoUtil.mapExistingFile(bufferLocation, "event-buffer");
         }
         catch (final Exception ex)
         {
-            tmpRingBuffer = null;
-            tmpEncodingBuffer = null;
+            tmpEventBuffer = null;
         }
 
-        ringBuffer = tmpRingBuffer;
-        encodingBuffer = tmpEncodingBuffer;
-
-        // TODO: other config - like snaplen (tcpdump style)
-        if (tmpRingBuffer == null)
+        if (null != tmpEventBuffer)
         {
-            enabledEventCodes = 0L;
+            this.eventBuffer = tmpEventBuffer;
+            this.ringBuffer = new ManyToOneRingBuffer(new AtomicBuffer(eventBuffer));
+            this.enabledEventCodes = enabledEventCodes;
         }
         else
         {
-            enabledEventCodes = EventConfiguration.getEnabledEventCodes();
+            this.eventBuffer = null;
+            this.ringBuffer = null;
+            this.enabledEventCodes = 0L;
+        }
+    }
+
+    public void close()
+    {
+        if (null != eventBuffer)
+        {
+            IoUtil.unmap(eventBuffer);
         }
     }
 
     public void log(final EventCode code, final AtomicBuffer buffer, final int offset, final int length)
     {
-        if (isEnabled(code))
+        if (isEnabled(code, enabledEventCodes))
         {
             final AtomicBuffer encodedBuffer = encodingBuffer.get();
             final int encodedLength = EventCodec.encode(encodedBuffer, buffer, offset, length);
@@ -96,7 +96,7 @@ public class EventLogger
     public void log(final EventCode code, final ByteBuffer buffer, final int offset,
                     final int length, final InetSocketAddress dstAddress)
     {
-        if (isEnabled(code))
+        if (isEnabled(code, enabledEventCodes))
         {
             final AtomicBuffer encodedBuffer = encodingBuffer.get();
             final int encodedLength = EventCodec.encode(encodedBuffer, buffer, offset, length, dstAddress);
@@ -105,11 +105,9 @@ public class EventLogger
         }
     }
 
-    // TODO: in order to make this an instance field UdpChannel's initialisation needs to avoid
-    // a static block
-    public static void log(final EventCode code, final String value)
+    public void log(final EventCode code, final String value)
     {
-        if (isEnabled(code))
+        if (isEnabled(code, enabledEventCodes))
         {
             final AtomicBuffer encodedBuffer = encodingBuffer.get();
             final int encodingLength = EventCodec.encode(encodedBuffer, value);
@@ -118,12 +116,9 @@ public class EventLogger
         }
     }
 
-    /**
-     * Method static because its currently only used in tests.
-     */
-    public static void logInvocation()
+    public void logInvocation()
     {
-        if (isEnabled(INVOCATION))
+        if (isEnabled(INVOCATION, enabledEventCodes))
         {
             final StackTraceElement[] stack = Thread.currentThread().getStackTrace();
 
@@ -136,7 +131,7 @@ public class EventLogger
 
     public void logException(final Exception ex)
     {
-        if (isEnabled(EXCEPTION))
+        if (isEnabled(EXCEPTION, enabledEventCodes))
         {
             final AtomicBuffer encodedBuffer = encodingBuffer.get();
             final int encodedLength = EventCodec.encode(encodedBuffer, ex);
@@ -145,7 +140,7 @@ public class EventLogger
         }
     }
 
-    private static boolean isEnabled(final EventCode code)
+    private static boolean isEnabled(final EventCode code, final long enabledEventCodes)
     {
         final long tagBit = code.tagBit();
         return (enabledEventCodes & tagBit) == tagBit;

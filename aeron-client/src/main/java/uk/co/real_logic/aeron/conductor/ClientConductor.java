@@ -19,12 +19,10 @@ import uk.co.real_logic.aeron.DataHandler;
 import uk.co.real_logic.aeron.NewConnectionHandler;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.aeron.common.Agent;
-import uk.co.real_logic.aeron.common.BackoffIdleStrategy;
-import uk.co.real_logic.aeron.common.ErrorCode;
-import uk.co.real_logic.aeron.common.TermHelper;
+import uk.co.real_logic.aeron.common.*;
 import uk.co.real_logic.aeron.common.collections.ConnectionMap;
 import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
+import uk.co.real_logic.aeron.common.concurrent.AtomicArray;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
@@ -52,6 +50,7 @@ public class ClientConductor extends Agent implements DriverListener
     public static final long AGENT_IDLE_MAX_YIELDS = 100;
     public static final long AGENT_IDLE_MIN_PARK_NS = TimeUnit.NANOSECONDS.toNanos(10);
     public static final long AGENT_IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(100);
+    public static final int HEARTBEAT_TIMEOUT_MS = 200;
 
     private static final long NO_CORRELATION_ID = -1;
 
@@ -60,10 +59,13 @@ public class ClientConductor extends Agent implements DriverListener
     private final long awaitTimeout;
     private final ConnectionMap<String, Publication> publicationMap = new ConnectionMap<>(); // Guarded by this
     private final SubscriptionMap subscriptionMap = new SubscriptionMap();
+    private final AtomicArray<Publication.PublicationHeartbeatInfo> publicationHeartbeatInfos = new AtomicArray<>();
+    private final AtomicArray<Subscription.SubscriptionHeartbeatInfo> subscriptionHeartbeatInfos = new AtomicArray<>();
 
     private final AtomicBuffer counterValuesBuffer;
     private final DriverProxy driverProxy;
     private final Signal correlationSignal;
+    private final TimerWheel timerWheel;
 
     private final NewConnectionHandler newConnectionHandler;
     private final int mtuLength;
@@ -73,11 +75,14 @@ public class ClientConductor extends Agent implements DriverListener
     private boolean operationSucceeded = false; // Guarded by this
     private RegistrationException registrationException; // Guarded by this
 
+    private final TimerWheel.Timer heartbeatTimer;
+
     public ClientConductor(final DriverBroadcastReceiver driverBroadcastReceiver,
                            final BufferManager bufferManager,
                            final AtomicBuffer counterValuesBuffer,
                            final DriverProxy driverProxy,
                            final Signal correlationSignal,
+                           final TimerWheel timerWheel,
                            final Consumer<Exception> errorHandler,
                            final NewConnectionHandler newConnectionHandler,
                            final long awaitTimeout,
@@ -92,14 +97,21 @@ public class ClientConductor extends Agent implements DriverListener
         this.driverProxy = driverProxy;
         this.driverBroadcastReceiver = driverBroadcastReceiver;
         this.bufferManager = bufferManager;
+        this.timerWheel = timerWheel;
         this.newConnectionHandler = newConnectionHandler;
         this.awaitTimeout = awaitTimeout;
         this.mtuLength = mtuLength;
+
+        this.heartbeatTimer = timerWheel.newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeat);
     }
 
     public int doWork()
     {
-        return driverBroadcastReceiver.receive(this, activeCorrelationId);
+        int workCount = driverBroadcastReceiver.receive(this, activeCorrelationId);
+
+        workCount += processTimers();
+
+        return workCount;
     }
 
     public void close()
@@ -123,6 +135,7 @@ public class ClientConductor extends Agent implements DriverListener
 
             publication = addedPublication;
             publicationMap.put(channel, sessionId, streamId, publication);
+            publicationHeartbeatInfos.add(publication.heartbeatInfo());
             addedPublication = null;
             activeCorrelationId = NO_CORRELATION_ID;
         }
@@ -145,6 +158,7 @@ public class ClientConductor extends Agent implements DriverListener
         awaitOperationSucceeded();
 
         publicationMap.remove(channel, sessionId, streamId);
+        publicationHeartbeatInfos.remove(publication.heartbeatInfo());
     }
 
     public synchronized Subscription addSubscription(final String channel, final int streamId, final DataHandler handler)
@@ -153,11 +167,13 @@ public class ClientConductor extends Agent implements DriverListener
 
         if (null == subscription)
         {
-            subscription = new Subscription(this, handler, channel, streamId);
+            activeCorrelationId = driverProxy.addSubscription(channel, streamId);
+
+            subscription = new Subscription(this, handler, channel, streamId, activeCorrelationId);
 
             subscriptionMap.put(channel, streamId, subscription);
+            subscriptionHeartbeatInfos.add(subscription.heartbeatInfo());
 
-            activeCorrelationId = driverProxy.addSubscription(channel, streamId);
             awaitOperationSucceeded();
         }
 
@@ -169,6 +185,7 @@ public class ClientConductor extends Agent implements DriverListener
         activeCorrelationId = driverProxy.removeSubscription(subscription.channel(), subscription.streamId());
 
         subscriptionMap.remove(subscription.channel(), subscription.streamId());
+        subscriptionHeartbeatInfos.remove(subscription.heartbeatInfo());
 
         awaitOperationSucceeded();
     }
@@ -197,12 +214,13 @@ public class ClientConductor extends Agent implements DriverListener
         final PositionIndicator senderLimit =
             new BufferPositionIndicator(counterValuesBuffer, limitPositionIndicatorOffset);
 
-        addedPublication = new Publication(this, channel, streamId, sessionId,
-                                           termId, logs, senderLimit, managedBuffers);
+        addedPublication = new Publication(this, channel, streamId, sessionId, termId,
+                                           logBuffersMessage.correlationId(), logs, senderLimit, managedBuffers);
 
         correlationSignal.signal();
     }
 
+    // TODO: as this can come in async and accesses the subscriptionMap, shouldn't it be protected (synchronized)?
     public void onNewConnection(final String channel,
                                 final int sessionId,
                                 final int streamId,
@@ -295,5 +313,25 @@ public class ClientConductor extends Agent implements DriverListener
         final int length = logBuffersMessage.bufferLength(index);
 
         return bufferManager.newBuffer(location, offset, length);
+    }
+
+    private int processTimers()
+    {
+        int workCount = 0;
+
+        if (timerWheel.calculateDelayInMs() <= 0)
+        {
+            workCount = timerWheel.expireTimers();
+        }
+
+        return workCount;
+    }
+
+    private void onHeartbeat()
+    {
+        publicationHeartbeatInfos.forEach(driverProxy::heartbeatPublication);
+        subscriptionHeartbeatInfos.forEach(driverProxy::heartbeatSubscription);
+
+        timerWheel.rescheduleTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, heartbeatTimer);
     }
 }

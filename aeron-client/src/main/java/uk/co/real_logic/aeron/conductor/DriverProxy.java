@@ -15,6 +15,8 @@
  */
 package uk.co.real_logic.aeron.conductor;
 
+import uk.co.real_logic.aeron.Publication;
+import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.QualifiedMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
@@ -40,6 +42,11 @@ public class DriverProxy
     private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
     private final QualifiedMessageFlyweight qualifiedMessage = new QualifiedMessageFlyweight();
 
+    // the heartbeats come from the client conductor thread, so keep the flyweights and buffer separate
+    private final AtomicBuffer heartbeatBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(MSG_BUFFER_CAPACITY));
+    private final PublicationMessageFlyweight heartbeatPublicationMessage = new PublicationMessageFlyweight();
+    private final SubscriptionMessageFlyweight heartbeatSubscriptionMessage = new SubscriptionMessageFlyweight();
+
     private final RingBuffer mediaDriverCommandBuffer;
 
     public DriverProxy(final RingBuffer mediaDriverCommandBuffer)
@@ -49,6 +56,9 @@ public class DriverProxy
         publicationMessage.wrap(writeBuffer, 0);
         subscriptionMessage.wrap(writeBuffer, 0);
         qualifiedMessage.wrap(writeBuffer, 0);
+
+        heartbeatPublicationMessage.wrap(heartbeatBuffer, 0);
+        heartbeatSubscriptionMessage.wrap(heartbeatBuffer, 0);
     }
 
     public long addPublication(final String channel, final int sessionId, final int streamId)
@@ -71,6 +81,31 @@ public class DriverProxy
         return sendSubscriptionMessage(REMOVE_SUBSCRIPTION, channel, streamId);
     }
 
+    public void heartbeatPublication(final Publication.PublicationHeartbeatInfo heartbeatInfo)
+    {
+        heartbeatPublicationMessage.correlationId(heartbeatInfo.correlationId());
+        heartbeatPublicationMessage.sessionId(heartbeatInfo.sessionId());
+        heartbeatPublicationMessage.streamId(heartbeatInfo.streamId());
+        heartbeatPublicationMessage.channel(heartbeatInfo.channel());
+
+        if (!mediaDriverCommandBuffer.write(HEARTBEAT_PUBLICATION, heartbeatBuffer, 0, heartbeatPublicationMessage.length()))
+        {
+            throw new IllegalStateException("could not write publication heartbeat");
+        }
+    }
+
+    public void heartbeatSubscription(final Subscription.SubscriptionHeartbeatInfo heartbeatInfo)
+    {
+        heartbeatSubscriptionMessage.correlationId(heartbeatInfo.correlationId());
+        heartbeatSubscriptionMessage.streamId(heartbeatInfo.streamId());
+        heartbeatSubscriptionMessage.channel(heartbeatInfo.channel());
+
+        if (!mediaDriverCommandBuffer.write(HEARTBEAT_SUBSCRIPTION, heartbeatBuffer, 0, heartbeatSubscriptionMessage.length()))
+        {
+            throw new IllegalStateException("could not write subscription heartbeat");
+        }
+    }
+
     private long sendPublicationMessage(final String channel, final int sessionId, final int streamId, final int msgTypeId)
     {
         final long correlationId = mediaDriverCommandBuffer.nextCorrelationId();
@@ -82,7 +117,7 @@ public class DriverProxy
 
         if (!mediaDriverCommandBuffer.write(msgTypeId, writeBuffer, 0, publicationMessage.length()))
         {
-            throw new IllegalStateException("could not write channel message");
+            throw new IllegalStateException("could not write publication message");
         }
 
         return correlationId;

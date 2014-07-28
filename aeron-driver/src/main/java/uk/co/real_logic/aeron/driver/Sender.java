@@ -28,7 +28,7 @@ public class Sender extends Agent
 
     public Sender(final MediaDriver.Context ctx)
     {
-        super(ctx.senderIdleStrategy(), ctx.senderLogger()::logException);
+        super(ctx.senderIdleStrategy(), ctx.eventLoggerException());
 
         publications = ctx.publications();
     }

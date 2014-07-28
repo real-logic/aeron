@@ -19,6 +19,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import uk.co.real_logic.aeron.common.TermHelper;
+import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastBufferDescriptor;
@@ -73,6 +74,8 @@ public class ClientConductorTest extends MockBufferUsage
 
     private final AtomicBuffer counterValuesBuffer = new AtomicBuffer(new byte[COUNTER_BUFFER_SZ]);
 
+    private final TimerWheel timerWheel = mock(TimerWheel.class);
+
     private final Consumer<Exception> mockReceiverErrorHandler = Throwable::printStackTrace;
     private final Consumer<Exception> mockClientErrorHandler = Throwable::printStackTrace;
 
@@ -98,6 +101,7 @@ public class ClientConductorTest extends MockBufferUsage
             counterValuesBuffer,
             driverProxy,
             signal,
+            timerWheel,
             mockClientErrorHandler,
             null,
             AWAIT_TIMEOUT,

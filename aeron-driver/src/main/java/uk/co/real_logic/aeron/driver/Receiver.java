@@ -34,11 +34,11 @@ public class Receiver extends Agent
 
     public Receiver(final MediaDriver.Context ctx) throws Exception
     {
-        super(ctx.receiverIdleStrategy(), ctx.receiverLogger()::logException);
+        super(ctx.receiverIdleStrategy(), ctx.eventLoggerException());
 
         this.nioSelector = ctx.receiverNioSelector();
         this.commandQueue = ctx.receiverCommandQueue();
-        this.logger = ctx.receiverLogger();
+        this.logger = ctx.eventLogger();
     }
 
     public int doWork() throws Exception

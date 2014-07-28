@@ -77,7 +77,6 @@ public class DriverConductorTest
 
     private final AtomicArray<DriverPublication> publications = new AtomicArray<>();
     private final EventLogger mockConductorLogger = mock(EventLogger.class);
-    private final EventLogger mockReceiverLogger = mock(EventLogger.class);
 
     private DriverConductor driverConductor;
     private Receiver receiver;
@@ -103,11 +102,9 @@ public class DriverConductorTest
             .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .publications(publications)
-
+            .eventLogger(mockConductorLogger)
             .termBuffersFactory(mockTermBuffersFactory)
-            .countersManager(countersManager)
-            .conductorLogger(mockConductorLogger)
-            .receiverLogger(mockReceiverLogger);
+            .countersManager(countersManager);
 
         ctx.fromClientCommands(fromClientCommands);
         ctx.clientProxy(mockClientProxy);
@@ -132,8 +129,6 @@ public class DriverConductorTest
     @Test
     public void shouldBeAbleToAddSinglePublication() throws Exception
     {
-        EventLogger.logInvocation();
-
         writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4000);
 
         driverConductor.doWork();
@@ -151,8 +146,6 @@ public class DriverConductorTest
     @Test
     public void shouldBeAbleToAddSingleSubscription() throws Exception
     {
-        EventLogger.logInvocation();
-
         writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1);
 
         driverConductor.doWork();
@@ -166,8 +159,6 @@ public class DriverConductorTest
     @Test
     public void shouldBeAbleToAddAndRemoveSingleSubscription() throws Exception
     {
-        EventLogger.logInvocation();
-
         writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1);
         writeSubscriptionMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1);
 
@@ -180,8 +171,6 @@ public class DriverConductorTest
     @Test
     public void shouldBeAbleToAddMultipleStreams() throws Exception
     {
-        EventLogger.logInvocation();
-
         writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4001);
         writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 3, 4002);
         writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 3, 2, 4003);
@@ -195,8 +184,6 @@ public class DriverConductorTest
     @Test
     public void shouldBeAbleToRemoveSingleStream() throws Exception
     {
-        EventLogger.logInvocation();
-
         writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4005);
         writePublicationMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1, 2, 4005);
 
@@ -209,8 +196,6 @@ public class DriverConductorTest
     @Test
     public void shouldBeAbleToRemoveMultipleStreams() throws Exception
     {
-        EventLogger.logInvocation();
-
         writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4006);
         writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 3, 4007);
         writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 3, 2, 4008);
@@ -229,8 +214,6 @@ public class DriverConductorTest
     @Test
     public void shouldKeepSubscriptionMediaEndpointUponRemovalOfAllButOneSubscriber() throws Exception
     {
-        EventLogger.logInvocation();
-
         final UdpChannel udpChannel = UdpChannel.parse(CHANNEL_URI + 4000);
 
         writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1);
@@ -258,8 +241,6 @@ public class DriverConductorTest
     @Test
     public void shouldOnlyRemoveSubscriptionMediaEndpointUponRemovalOfAllSubscribers() throws Exception
     {
-        EventLogger.logInvocation();
-
         final UdpChannel udpChannel = UdpChannel.parse(CHANNEL_URI + 4000);
 
         writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1);
@@ -294,8 +275,6 @@ public class DriverConductorTest
     @Test
     public void shouldErrorOnAddDuplicateChannelOnExistingSession() throws Exception
     {
-        EventLogger.logInvocation();
-
         writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4000);
         writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4000);
 
@@ -315,8 +294,6 @@ public class DriverConductorTest
     @Test
     public void shouldErrorOnRemoveChannelOnUnknownChannel() throws Exception
     {
-        EventLogger.logInvocation();
-
         writePublicationMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1, 2, 4000);
 
         driverConductor.doWork();
@@ -331,8 +308,6 @@ public class DriverConductorTest
     @Test
     public void shouldErrorOnRemoveChannelOnUnknownSessionId() throws Exception
     {
-        EventLogger.logInvocation();
-
         writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4000);
         writePublicationMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 2, 2, 4000);
 
@@ -351,8 +326,6 @@ public class DriverConductorTest
     @Test
     public void shouldErrorOnRemoveChannelOnUnknownStreamId() throws Exception
     {
-        EventLogger.logInvocation();
-
         writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4000);
         writePublicationMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1, 3, 4000);
 
@@ -371,8 +344,6 @@ public class DriverConductorTest
     @Test
     public void shouldErrorOnAddSubscriptionWithInvalidUri() throws Exception
     {
-        EventLogger.logInvocation();
-
         writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, INVALID_URI, STREAM_ID_1);
 
         driverConductor.doWork();

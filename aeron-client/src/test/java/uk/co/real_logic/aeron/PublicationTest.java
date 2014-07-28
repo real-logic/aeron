@@ -29,6 +29,7 @@ public class PublicationTest
     private static final int STREAM_ID_1 = 2;
     private static final int SESSION_ID_1 = 13;
     private static final int TERM_ID_1 = 1;
+    private static final long CORRELATION_ID = 100;
     private static final int SEND_BUFFER_CAPACITY = 1024;
 
     private final ByteBuffer sendBuffer = ByteBuffer.allocate(SEND_BUFFER_CAPACITY);
@@ -67,7 +68,7 @@ public class PublicationTest
         }
 
         publication = new Publication(conductor, CHANNEL, STREAM_ID_1, SESSION_ID_1,
-                                      TERM_ID_1, appenders, limit, managedBuffers);
+                                      TERM_ID_1, CORRELATION_ID, appenders, limit, managedBuffers);
     }
 
     @Test

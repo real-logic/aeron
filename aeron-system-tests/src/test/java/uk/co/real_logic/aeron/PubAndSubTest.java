@@ -111,8 +111,6 @@ public class PubAndSubTest
     @Test(timeout = 1000)
     public void shouldSpinUpAndShutdown(final String channel) throws Exception
     {
-        EventLogger.logInvocation();
-
         setup(channel);
     }
 
@@ -120,8 +118,6 @@ public class PubAndSubTest
     @Test(timeout = 1000)
     public void shouldReceivePublishedMessage(final String channel) throws Exception
     {
-        EventLogger.logInvocation();
-
         setup(channel);
 
         buffer.putInt(0, 1);

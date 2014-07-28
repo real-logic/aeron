@@ -100,7 +100,7 @@ public class DriverConductor extends Agent
 
     public DriverConductor(final Context ctx)
     {
-        super(ctx.conductorIdleStrategy(), ctx.conductorLogger()::logException);
+        super(ctx.conductorIdleStrategy(), ctx.eventLoggerException());
 
         this.commandQueue = ctx.conductorCommandQueue();
         this.receiverProxy = ctx.receiverProxy();
@@ -120,7 +120,7 @@ public class DriverConductor extends Agent
         fromClientCommands = ctx.fromClientCommands();
         clientProxy = ctx.clientProxy();
         conductorProxy = ctx.driverConductorProxy();
-        logger = ctx.conductorLogger();
+        logger = ctx.eventLogger();
     }
 
     public SendChannelEndpoint senderChannelEndpoint(final UdpChannel channel)
@@ -236,6 +236,20 @@ public class DriverConductor extends Agent
                             flyweight = subscriptionMessage;
                             onRemoveSubscription(subscriptionMessage);
                             break;
+
+                        case HEARTBEAT_PUBLICATION:
+                            publicationMessage.wrap(buffer, index);
+                            logger.log(EventCode.CMD_IN_HEARTBEAT_PUBLICATION, buffer, index, length);
+                            flyweight = publicationMessage;
+                            onHeartbeatPublication(publicationMessage);
+                            break;
+
+                        case HEARTBEAT_SUBSCRIPTION:
+                            subscriptionMessage.wrap(buffer, index);
+                            logger.log(EventCode.CMD_IN_HEARTBEAT_SUBSCRIPTION, buffer, index, length);
+                            flyweight = subscriptionMessage;
+                            onHeartbeatSubscription(subscriptionMessage);
+                            break;
                     }
                 }
                 catch (final ControlProtocolException ex)
@@ -286,7 +300,7 @@ public class DriverConductor extends Agent
             SendChannelEndpoint channelEndpoint = sendChannelEndpointByHash.get(udpChannel.consistentHash());
             if (null == channelEndpoint)
             {
-                channelEndpoint = new SendChannelEndpoint(udpChannel, nioSelector, new EventLogger());
+                channelEndpoint = new SendChannelEndpoint(udpChannel, nioSelector, logger);
                 sendChannelEndpointByHash.put(udpChannel.consistentHash(), channelEndpoint);
             }
             else if (!channelEndpoint.udpChannel().equals(udpChannel))
@@ -322,7 +336,7 @@ public class DriverConductor extends Agent
                                       initialTermId,
                                       HEADER_LENGTH,
                                       mtuLength,
-                                      new EventLogger());
+                                      logger);
 
             channelEndpoint.addPublication(publication);
 
@@ -384,6 +398,11 @@ public class DriverConductor extends Agent
         }
     }
 
+    private void onHeartbeatPublication(final PublicationMessageFlyweight publicationMessage)
+    {
+        // TODO: finish
+    }
+
     private void onAddSubscription(final SubscriptionMessageFlyweight subscriptionMessage)
     {
         final String channel = subscriptionMessage.channel();
@@ -396,7 +415,7 @@ public class DriverConductor extends Agent
 
             if (null == channelEndpoint)
             {
-                channelEndpoint = new ReceiveChannelEndpoint(udpChannel, conductorProxy, new EventLogger());
+                channelEndpoint = new ReceiveChannelEndpoint(udpChannel, conductorProxy, logger);
                 receiveChannelEndpointByHash.put(udpChannel.consistentHash(), channelEndpoint);
 
                 while (!receiverProxy.registerMediaEndpoint(channelEndpoint))
@@ -472,6 +491,11 @@ public class DriverConductor extends Agent
         {
             throw new ControlProtocolException(GENERIC_ERROR_MESSAGE, ex.getMessage(), ex);
         }
+    }
+
+    private void onHeartbeatSubscription(final SubscriptionMessageFlyweight subscriptionMessage)
+    {
+        // TODO: finish
     }
 
     private void onCreateConnection(final CreateConnectionCmd cmd)

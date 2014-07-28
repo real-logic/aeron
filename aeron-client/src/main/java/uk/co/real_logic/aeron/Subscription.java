@@ -30,21 +30,27 @@ public class Subscription implements AutoCloseable
 {
     private final String channel;
     private final int streamId;
+    private final long correlationId;
     private final AtomicArray<Connection> connections = new AtomicArray<>();
     private final DataHandler dataHandler;
     private final ClientConductor clientConductor;
+    private final SubscriptionHeartbeatInfo subscriptionHeartbeatInfo;
 
     private int roundRobinIndex = 0;
 
     public Subscription(final ClientConductor clientConductor,
                         final DataHandler dataHandler,
                         final String channel,
-                        final int streamId)
+                        final int streamId,
+                        final long correlationId)
     {
         this.clientConductor = clientConductor;
         this.dataHandler = dataHandler;
         this.channel = channel;
         this.streamId = streamId;
+        this.correlationId = correlationId;
+
+        this.subscriptionHeartbeatInfo = new SubscriptionHeartbeatInfo(channel, streamId, correlationId);
     }
 
     public String channel()
@@ -55,6 +61,16 @@ public class Subscription implements AutoCloseable
     public int streamId()
     {
         return streamId;
+    }
+
+    /**
+     * Return heartbeat information
+     *
+     * @return heartbeat information
+     */
+    public SubscriptionHeartbeatInfo heartbeatInfo()
+    {
+        return subscriptionHeartbeatInfo;
     }
 
     /**
@@ -103,5 +119,39 @@ public class Subscription implements AutoCloseable
     public boolean isConnected(final int sessionId)
     {
         return null != connections.findFirst((e) -> e.sessionId() == sessionId);
+    }
+
+    /**
+     * Stores heartbeat info for this Subscription
+     */
+    public static class SubscriptionHeartbeatInfo
+    {
+        private String channel;
+        private int streamId;
+        private long correlationId;
+
+        public SubscriptionHeartbeatInfo(final String channel,
+                                         final int streamId,
+                                         final long correlationId)
+        {
+            this.channel = channel;
+            this.streamId = streamId;
+            this.correlationId = correlationId;
+        }
+
+        public String channel()
+        {
+            return channel;
+        }
+
+        public int streamId()
+        {
+            return streamId;
+        }
+
+        public long correlationId()
+        {
+            return correlationId;
+        }
     }
 }

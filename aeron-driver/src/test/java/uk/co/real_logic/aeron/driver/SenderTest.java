@@ -59,7 +59,7 @@ public class SenderTest
     private final EventLogger mockLogger = mock(EventLogger.class);
 
     private final AtomicArray<DriverPublication> publications = new AtomicArray<>();
-    private final Sender sender = new Sender(new MediaDriver.Context().publications(publications).senderLogger(mockLogger));
+    private final Sender sender = new Sender(new MediaDriver.Context().publications(publications).eventLogger(mockLogger));
 
     private final TermBuffers termBuffers =
         BufferAndFrameHelper.newTestTermBuffers(LOG_BUFFER_SIZE, LogBufferDescriptor.STATE_BUFFER_LENGTH);
@@ -132,16 +132,12 @@ public class SenderTest
     @Test
     public void shouldAddAndRemovePublication()
     {
-        EventLogger.logInvocation();
-
         publications.remove(publication);
     }
 
     @Test
     public void shouldSendZeroLengthDataFrameOnChannelWhenTimeoutWithoutStatusMessage() throws Exception
     {
-        EventLogger.logInvocation();
-
         currentTimestamp += TimeUnit.MILLISECONDS.toNanos(DriverPublication.INITIAL_HEARTBEAT_TIMEOUT_MS) - 1;
         publications.forEach(DriverPublication::heartbeatCheck);
         assertThat(receivedFrames.size(), is(0));
@@ -163,8 +159,6 @@ public class SenderTest
     @Test
     public void shouldSendMultipleZeroLengthDataFrameOnChannelWhenTimeoutWithoutStatusMessage() throws Exception
     {
-        EventLogger.logInvocation();
-
         currentTimestamp += TimeUnit.MILLISECONDS.toNanos(DriverPublication.INITIAL_HEARTBEAT_TIMEOUT_MS) - 1;
         publications.forEach(DriverPublication::heartbeatCheck);
         assertThat(receivedFrames.size(), is(0));
@@ -183,8 +177,6 @@ public class SenderTest
     @Test
     public void shouldNotSendZeroLengthDataFrameAfterReceivingStatusMessage() throws Exception
     {
-        EventLogger.logInvocation();
-
         currentTimestamp += TimeUnit.MILLISECONDS.toNanos(DriverPublication.HEARTBEAT_TIMEOUT_MS);
         publication.onStatusMessage(INITIAL_TERM_ID, 0, 0, rcvAddress);
         publications.forEach(DriverPublication::heartbeatCheck);
@@ -195,8 +187,6 @@ public class SenderTest
     @Test
     public void shouldBeAbleToSendOnChannel() throws Exception
     {
-        EventLogger.logInvocation();
-
         publication.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress);
 
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
@@ -222,8 +212,6 @@ public class SenderTest
     @Test
     public void shouldBeAbleToSendOnChannelTwice() throws Exception
     {
-        EventLogger.logInvocation();
-
         publication.onStatusMessage(INITIAL_TERM_ID, 0, (2 * ALIGNED_FRAME_LENGTH), rcvAddress);
 
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
@@ -261,8 +249,6 @@ public class SenderTest
     @Test
     public void shouldBeAbleToSendOnChannelTwiceAsBatch() throws Exception
     {
-        EventLogger.logInvocation();
-
         publication.onStatusMessage(INITIAL_TERM_ID, 0, (2 * ALIGNED_FRAME_LENGTH), rcvAddress);
 
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
@@ -299,8 +285,6 @@ public class SenderTest
     @Test
     public void shouldNotSendUntilStatusMessageReceived() throws Exception
     {
-        EventLogger.logInvocation();
-
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
         assertThat(logAppenders[0].append(buffer, 0, PAYLOAD.length), is(SUCCESS));
@@ -328,8 +312,6 @@ public class SenderTest
     @Test
     public void shouldNotBeAbleToSendAfterUsingUpYourWindow() throws Exception
     {
-        EventLogger.logInvocation();
-
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
         assertThat(logAppenders[0].append(buffer, 0, PAYLOAD.length), is(SUCCESS));
@@ -359,8 +341,6 @@ public class SenderTest
     @Test
     public void shouldSend0LengthDataFrameAsHeartbeatWhenIdle() throws Exception
     {
-        EventLogger.logInvocation();
-
         publication.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress);
 
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
@@ -389,8 +369,6 @@ public class SenderTest
     @Test
     public void shouldSendMultiple0LengthDataFrameAsHeartbeatsWhenIdle()
     {
-        EventLogger.logInvocation();
-
         publication.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress);
 
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));

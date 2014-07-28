@@ -54,7 +54,7 @@ public class SelectorAndTransportTest
     private final InetSocketAddress rcvRemoteAddress = new InetSocketAddress("localhost", SRC_PORT);
     private final InetSocketAddress srcRemoteAddress = new InetSocketAddress("localhost", RCV_PORT);
 
-    private final EventLogger mockTransportLogger = new EventLogger();
+    private final EventLogger mockTransportLogger = mock(EventLogger.class);
 
     private final DataFrameHandler mockDataFrameHandler = mock(DataFrameHandler.class);
     private final NakFrameHandler mockNakFrameHandler = mock(NakFrameHandler.class);

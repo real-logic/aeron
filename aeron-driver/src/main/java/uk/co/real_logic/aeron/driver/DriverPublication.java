@@ -73,7 +73,7 @@ public class DriverPublication implements AutoCloseable
 
     private final SenderControlStrategy controlStrategy;
     private final AtomicLong positionLimit;
-    private final ChannelSendEndpoint mediaEndpoint;
+    private final SendChannelEndpoint mediaEndpoint;
     private final TermBuffers termBuffers;
     private final BufferPositionReporter limitReporter;
 
@@ -93,7 +93,7 @@ public class DriverPublication implements AutoCloseable
 
     private final InetSocketAddress dstAddress;
 
-    public DriverPublication(final ChannelSendEndpoint mediaEndpoint,
+    public DriverPublication(final SendChannelEndpoint mediaEndpoint,
                              final TimerWheel timerWheel,
                              final SenderControlStrategy controlStrategy,
                              final TermBuffers termBuffers,

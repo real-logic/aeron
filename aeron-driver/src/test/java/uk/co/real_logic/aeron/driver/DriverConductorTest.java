@@ -240,7 +240,7 @@ public class DriverConductorTest
         driverConductor.doWork();
         receiver.doWork();
 
-        final ChannelReceiveEndpoint mediaEndpoint = driverConductor.receiverChannelEndpoint(udpChannel);
+        final ReceiveChannelEndpoint mediaEndpoint = driverConductor.receiverChannelEndpoint(udpChannel);
 
         assertNotNull(mediaEndpoint);
         assertThat(mediaEndpoint.streamCount(), is(3));
@@ -269,7 +269,7 @@ public class DriverConductorTest
         driverConductor.doWork();
         receiver.doWork();
 
-        final ChannelReceiveEndpoint mediaEndpoint = driverConductor.receiverChannelEndpoint(udpChannel);
+        final ReceiveChannelEndpoint mediaEndpoint = driverConductor.receiverChannelEndpoint(udpChannel);
 
         assertNotNull(mediaEndpoint);
         assertThat(mediaEndpoint.streamCount(), is(3));

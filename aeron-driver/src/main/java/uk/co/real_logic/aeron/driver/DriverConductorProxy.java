@@ -37,7 +37,7 @@ public class DriverConductorProxy
                                     final int streamId,
                                     final int termId,
                                     final InetSocketAddress controlAddress,
-                                    final ChannelReceiveEndpoint channelEndpoint)
+                                    final ReceiveChannelEndpoint channelEndpoint)
     {
         return commandQueue.offer(new CreateConnectionCmd(sessionId, streamId, termId, controlAddress, channelEndpoint));
     }

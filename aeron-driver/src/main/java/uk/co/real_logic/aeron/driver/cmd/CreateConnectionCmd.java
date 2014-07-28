@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver.cmd;
 
-import uk.co.real_logic.aeron.driver.ChannelReceiveEndpoint;
+import uk.co.real_logic.aeron.driver.ReceiveChannelEndpoint;
 
 import java.net.InetSocketAddress;
 
@@ -25,13 +25,13 @@ public class CreateConnectionCmd
     private final int streamId;
     private final int termId;
     private final InetSocketAddress controlAddress;
-    private final ChannelReceiveEndpoint channelEndpoint;
+    private final ReceiveChannelEndpoint channelEndpoint;
 
     public CreateConnectionCmd(final int sessionId,
                                final int streamId,
                                final int termId,
                                final InetSocketAddress controlAddress,
-                               final ChannelReceiveEndpoint channelEndpoint)
+                               final ReceiveChannelEndpoint channelEndpoint)
     {
         this.sessionId = sessionId;
         this.streamId = streamId;
@@ -60,7 +60,7 @@ public class CreateConnectionCmd
         return controlAddress;
     }
 
-    public ChannelReceiveEndpoint channelEndpoint()
+    public ReceiveChannelEndpoint channelEndpoint()
     {
         return channelEndpoint;
     }

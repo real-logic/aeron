@@ -98,26 +98,26 @@ public class Receiver extends Agent
         return nioSelector;
     }
 
-    private void onAddSubscription(final ChannelReceiveEndpoint channelReceiveEndpoint, final int streamId)
+    private void onAddSubscription(final ReceiveChannelEndpoint receiveChannelEndpoint, final int streamId)
         throws Exception
     {
-        channelReceiveEndpoint.dispatcher().addSubscription(streamId);
+        receiveChannelEndpoint.dispatcher().addSubscription(streamId);
     }
 
-    private void onRemoveSubscription(final ChannelReceiveEndpoint channelReceiveEndpoint, final int streamId)
+    private void onRemoveSubscription(final ReceiveChannelEndpoint receiveChannelEndpoint, final int streamId)
     {
-        channelReceiveEndpoint.dispatcher().removeSubscription(streamId);
+        receiveChannelEndpoint.dispatcher().removeSubscription(streamId);
     }
 
     private void onNewConnection(final NewConnectionCmd cmd)
     {
-        final ChannelReceiveEndpoint channelReceiveEndpoint = cmd.receiverChannelEndpoint();
+        final ReceiveChannelEndpoint receiveChannelEndpoint = cmd.receiverChannelEndpoint();
 
-        channelReceiveEndpoint.dispatcher().addConnection(cmd.connection());
+        receiveChannelEndpoint.dispatcher().addConnection(cmd.connection());
     }
 
-    private void onRegisterMediaSubscriptionEndpoint(final ChannelReceiveEndpoint channelReceiveEndpoint)
+    private void onRegisterMediaSubscriptionEndpoint(final ReceiveChannelEndpoint receiveChannelEndpoint)
     {
-        channelReceiveEndpoint.registerForRead(nioSelector);
+        receiveChannelEndpoint.registerForRead(nioSelector);
     }
 }

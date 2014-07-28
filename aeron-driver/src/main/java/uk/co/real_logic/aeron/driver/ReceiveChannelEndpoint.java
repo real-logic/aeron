@@ -29,7 +29,7 @@ import java.nio.ByteBuffer;
 /**
  * Aggregator of multiple {@link DriverSubscription}s onto a single transport session for processing of data frames.
  */
-public class ChannelReceiveEndpoint implements AutoCloseable
+public class ReceiveChannelEndpoint implements AutoCloseable
 {
     private final UdpTransport udpTransport;
     private final DataFrameDispatcher dispatcher;
@@ -41,7 +41,7 @@ public class ChannelReceiveEndpoint implements AutoCloseable
     private final StatusMessageFlyweight smHeader = new StatusMessageFlyweight();
     private final NakFlyweight nakHeader = new NakFlyweight();
 
-    public ChannelReceiveEndpoint(final UdpChannel udpChannel,
+    public ReceiveChannelEndpoint(final UdpChannel udpChannel,
                                   final DriverConductorProxy conductorProxy,
                                   final EventLogger logger)
         throws Exception

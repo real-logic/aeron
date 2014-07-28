@@ -35,9 +35,9 @@ public class DataFrameDispatcher
     private final Int2ObjectHashMap<String> initialisationInProgressMap = new Int2ObjectHashMap<>();
     private final Int2ObjectHashMap<DriverSubscription> subscriptionByStreamIdMap = new Int2ObjectHashMap<>();
     private final DriverConductorProxy conductorProxy;
-    private final ChannelReceiveEndpoint channelEndpoint;
+    private final ReceiveChannelEndpoint channelEndpoint;
 
-    public DataFrameDispatcher(final DriverConductorProxy conductorProxy, final ChannelReceiveEndpoint channelEndpoint)
+    public DataFrameDispatcher(final DriverConductorProxy conductorProxy, final ReceiveChannelEndpoint channelEndpoint)
         throws Exception
     {
         this.conductorProxy = conductorProxy;

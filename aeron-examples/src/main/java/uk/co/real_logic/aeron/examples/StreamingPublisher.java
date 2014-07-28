@@ -46,8 +46,8 @@ public class StreamingPublisher
         final ExecutorService executor = Executors.newFixedThreadPool(2);
         final Aeron.Context context = new Aeron.Context();
 
-        MediaDriver driver = (EMBEDDED_MEDIA_DRIVER ? ExampleUtil.createEmbeddedMediaDriver() : null);
-        Aeron aeron = ExampleUtil.createAeron(context, executor);
+        final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? ExampleUtil.createEmbeddedMediaDriver() : null;
+        final Aeron aeron = ExampleUtil.createAeron(context, executor);
 
         System.out.println("Streaming " + NUMBER_OF_MESSAGES + " messages of size " + MESSAGE_LENGTH +
                            " bytes to " + CHANNEL + " on stream Id " + STREAM_ID);

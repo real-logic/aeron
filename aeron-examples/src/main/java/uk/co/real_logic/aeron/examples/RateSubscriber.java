@@ -40,15 +40,14 @@ public class RateSubscriber
         final ExecutorService executor = Executors.newFixedThreadPool(2);
         final Aeron.Context aeronContext = new Aeron.Context();
 
-        final MediaDriver driver = (EMBEDDED_MEDIA_DRIVER ? ExampleUtil.createEmbeddedMediaDriver() : null);
+        final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? ExampleUtil.createEmbeddedMediaDriver() : null;
         final Aeron aeron = ExampleUtil.createAeron(aeronContext, executor);
 
         System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), ExampleUtil::printRate);
 
-        final Subscription subscription =
-            aeron.addSubscription(CHANNEL, STREAM_ID, ExampleUtil.rateReporterHandler(reporter));
+        final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, ExampleUtil.rateReporterHandler(reporter));
 
         executor.execute(() -> ExampleUtil.subscriberLoop(FRAME_COUNT_LIMIT).accept(subscription));
 

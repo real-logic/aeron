@@ -220,7 +220,6 @@ public class ClientConductor extends Agent implements DriverListener
         correlationSignal.signal();
     }
 
-    // TODO: as this can come in async and accesses the subscriptionMap, shouldn't it be protected (synchronized)?
     public void onNewConnection(final String channel,
                                 final int sessionId,
                                 final int streamId,

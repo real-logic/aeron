@@ -176,6 +176,11 @@ public class DriverPublication implements AutoCloseable
         return workCount;
     }
 
+    public SendChannelEndpoint sendChannelEndpoint()
+    {
+        return mediaEndpoint;
+    }
+
     public int sessionId()
     {
         return sessionId;

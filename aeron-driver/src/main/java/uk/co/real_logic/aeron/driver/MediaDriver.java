@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.driver;
 import uk.co.real_logic.aeron.common.*;
 import uk.co.real_logic.aeron.common.concurrent.AtomicArray;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.CountersManager;
 import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastBufferDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastTransmitter;
@@ -27,13 +28,11 @@ import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBufferDescriptor;
 import uk.co.real_logic.aeron.common.event.EventConfiguration;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.event.EventReader;
-import uk.co.real_logic.aeron.common.concurrent.CountersManager;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
-import java.nio.file.Files;
 import java.util.concurrent.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -276,7 +275,7 @@ public class MediaDriver implements AutoCloseable
         this.dataDirFile = new File(ctx.dataDirName());
         this.countersDirFile = new File(ctx.countersDirName());
 
-        ensureDirectoriesExist();
+        ensureDirectoriesAreRecreated();
 
         final EventReader.Context readerCtx =
             new EventReader.Context()
@@ -398,7 +397,7 @@ public class MediaDriver implements AutoCloseable
         }
     }
 
-    private void ensureDirectoriesExist() throws Exception
+    private void ensureDirectoriesAreRecreated() throws Exception
     {
         final BiConsumer<String, String> callback =
             (path, name) ->
@@ -409,9 +408,9 @@ public class MediaDriver implements AutoCloseable
                 }
             };
 
-        IoUtil.ensureDirectoryExists(adminDirFile, "conductor", callback);
-        IoUtil.ensureDirectoryExists(dataDirFile, "data", callback);
-        IoUtil.ensureDirectoryExists(countersDirFile, "counters", callback);
+        IoUtil.ensureDirectoryIsRecreated(adminDirFile, "conductor", callback);
+        IoUtil.ensureDirectoryIsRecreated(dataDirFile, "data", callback);
+        IoUtil.ensureDirectoryIsRecreated(countersDirFile, "counters", callback);
     }
 
     private void deleteDirectories() throws Exception

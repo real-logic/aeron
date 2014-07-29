@@ -123,28 +123,33 @@ public class IoUtil
     }
 
     /**
-     * Create a directory if it doesn't already exist and call callback if it does exist.
+     * Create a directory, removing previous directory if it already exists.
+     *
+     * Call callback if it does exist.
      *
      * @param directory the directory which definitely exists after this method call.
      * @param name to associate with the directory for any exceptions and callback.
      * @param callback to call if directory exists passing back absolute path and name.
      * @throws IllegalArgumentException thrown if the directory cannot be created
      */
-    public static void ensureDirectoryExists(final File directory,
-                                             final String name,
-                                             final BiConsumer<String, String> callback)
+    public static void ensureDirectoryIsRecreated(final File directory,
+                                                  final String name,
+                                                  final BiConsumer<String, String> callback)
         throws IllegalArgumentException
     {
-        if (!directory.exists())
+        if (directory.exists())
         {
-            if (!directory.mkdirs())
+            if (!directory.delete())
             {
-                throw new IllegalArgumentException("could not create " + name + " directory: " + directory);
+                throw new IllegalArgumentException("could not delete old " + name + " directory: " + directory);
             }
-        }
-        else
-        {
+
             callback.accept(directory.getAbsolutePath(), name);
+        }
+
+        if (!directory.mkdirs())
+        {
+            throw new IllegalArgumentException("could not create " + name + " directory: " + directory);
         }
     }
 

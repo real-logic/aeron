@@ -28,6 +28,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.nio.ByteOrder.nativeOrder;
+import static uk.co.real_logic.aeron.common.CommonContext.*;
 
 /**
  * Goal: test for resource leaks in the control/admin side of things.
@@ -48,6 +49,14 @@ public class AdminSoakTestRunner
 
     public static void main(String[] args) throws Exception
     {
+        // use shared memory to avoid Disk I/O bottleneck
+        if ("Linux".equals(System.getProperty("os.name")))
+        {
+            System.setProperty(ADMIN_DIR_PROP_NAME, "/dev/shm/aeron/conductor");
+            System.setProperty(COUNTERS_DIR_PROP_NAME, "/dev/shm/aeron/counters");
+            System.setProperty(DATA_DIR_PROP_NAME, "/dev/shm/aeron/data");
+        }
+
         final MediaDriver driver = new MediaDriver();
         driver.invokeEmbedded();
 
@@ -55,7 +64,7 @@ public class AdminSoakTestRunner
         {
             exchangeMessagesBetweenClients();
 
-            Thread.sleep(1);
+            Thread.yield();
         }
     }
 

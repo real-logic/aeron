@@ -213,26 +213,14 @@ public class DriverPublication implements AutoCloseable
      */
     public boolean heartbeatCheck()
     {
-        boolean heartbeatSent = false;
-
-        if (statusMessagesSeen > 0)
+        final long timeout = statusMessagesSeen > 0 ? HEARTBEAT_TIMEOUT_NS : INITIAL_HEARTBEAT_TIMEOUT_NS;
+        if ((timerWheel.now() - timeOfLastSendOrHeartbeat.get()) > timeout)
         {
-            if ((timerWheel.now() - timeOfLastSendOrHeartbeat.get()) > HEARTBEAT_TIMEOUT_NS)
-            {
-                sendHeartbeat();
-                heartbeatSent = true;
-            }
-        }
-        else
-        {
-            if ((timerWheel.now() - timeOfLastSendOrHeartbeat.get()) > INITIAL_HEARTBEAT_TIMEOUT_NS)
-            {
-                sendHeartbeat();
-                heartbeatSent = true;
-            }
+            sendHeartbeat();
+            return true;
         }
 
-        return heartbeatSent;
+        return false;
     }
 
     /**

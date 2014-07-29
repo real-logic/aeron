@@ -316,7 +316,7 @@ public class DriverPublication implements AutoCloseable
                 throw new IllegalStateException("could not send all of message: " + bytesSent + "/" + length);
             }
 
-            timeOfLastSendOrHeartbeat.lazySet(timerWheel.now());
+            keepHeartBeatAliveUntil(timerWheel.now());
 
             nextTermOffset = align(offset + length, FrameDescriptor.FRAME_ALIGNMENT);
 
@@ -389,7 +389,7 @@ public class DriverPublication implements AutoCloseable
                            DataHeaderFlyweight.HEADER_LENGTH, dstAddress);
             }
 
-            timeOfLastSendOrHeartbeat.lazySet(timerWheel.now());
+            keepHeartBeatAliveUntil(timerWheel.now());
         }
         catch (final Exception ex)
         {
@@ -400,5 +400,10 @@ public class DriverPublication implements AutoCloseable
     private long calculatePosition(final int currentTail)
     {
         return TermHelper.calculatePosition(activeTermId.get(), currentTail, positionBitsToShift, initialTermId);
+    }
+
+    public void keepHeartBeatAliveUntil(final long time)
+    {
+        timeOfLastSendOrHeartbeat.lazySet(time);
     }
 }

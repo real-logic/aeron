@@ -512,8 +512,8 @@ public class DriverConductor extends Agent
             }
 
             // sessionId and streamId must be specific to a client publication, so correlation Id should not be needed.
-
-            // TODO: keep publication alive for this correlationId by passing timerWheel.now() to it as last active time
+            // keep publication alive for this correlationId by passing timerWheel.now() to it as last active time
+            publication.keepHeartBeatAliveUntil(timerWheel.now());
         }
         catch (final Exception ex)
         {

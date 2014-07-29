@@ -21,6 +21,7 @@ import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.AtomicArray;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.CountersManager;
 import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
@@ -29,7 +30,6 @@ import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.status.BufferPositionIndicator;
 import uk.co.real_logic.aeron.common.status.BufferPositionReporter;
-import uk.co.real_logic.aeron.common.concurrent.CountersManager;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
 import uk.co.real_logic.aeron.driver.cmd.CreateConnectionCmd;
@@ -398,37 +398,6 @@ public class DriverConductor extends Agent
         }
     }
 
-    private void onHeartbeatPublication(final PublicationMessageFlyweight publicationMessage)
-    {
-        final String channel = publicationMessage.channel();
-        final int sessionId = publicationMessage.sessionId();
-        final int streamId = publicationMessage.streamId();
-
-        try
-        {
-            final UdpChannel udpChannel = UdpChannel.parse(channel);
-            final SendChannelEndpoint channelEndpoint = sendChannelEndpointByHash.get(udpChannel.consistentHash());
-            if (null == channelEndpoint)
-            {
-                return; // channel unknown
-            }
-
-            final DriverPublication publication = channelEndpoint.findPublication(sessionId, streamId);
-            if (null == publication)
-            {
-                return; // publication (sessionId and streamId) unknown
-            }
-
-            // sessionId and streamId must be specific to a client publication, so correlation Id should not be needed.
-
-            // TODO: keep publication alive for this correlationId by passing timerWheel.now() to it as last active time
-        }
-        catch (final Exception ex)
-        {
-            logger.logException(ex);
-        }
-    }
-
     private void onAddSubscription(final SubscriptionMessageFlyweight subscriptionMessage)
     {
         final String channel = subscriptionMessage.channel();
@@ -519,6 +488,39 @@ public class DriverConductor extends Agent
         }
     }
 
+    // ----------------------- Heartbeats -----------------------
+
+    private void onHeartbeatPublication(final PublicationMessageFlyweight publicationMessage)
+    {
+        final String channel = publicationMessage.channel();
+        final int sessionId = publicationMessage.sessionId();
+        final int streamId = publicationMessage.streamId();
+
+        try
+        {
+            final UdpChannel udpChannel = UdpChannel.parse(channel);
+            final SendChannelEndpoint channelEndpoint = sendChannelEndpointByHash.get(udpChannel.consistentHash());
+            if (null == channelEndpoint)
+            {
+                return; // channel unknown
+            }
+
+            final DriverPublication publication = channelEndpoint.findPublication(sessionId, streamId);
+            if (null == publication)
+            {
+                return; // publication (sessionId and streamId) unknown
+            }
+
+            // sessionId and streamId must be specific to a client publication, so correlation Id should not be needed.
+
+            // TODO: keep publication alive for this correlationId by passing timerWheel.now() to it as last active time
+        }
+        catch (final Exception ex)
+        {
+            logger.logException(ex);
+        }
+    }
+
     private void onHeartbeatSubscription(final SubscriptionMessageFlyweight subscriptionMessage)
     {
         final String channel = subscriptionMessage.channel();
@@ -547,6 +549,14 @@ public class DriverConductor extends Agent
             logger.logException(ex);
         }
     }
+
+    private void onHeartbeatCheck()
+    {
+        publications.forEach(DriverPublication::heartbeatCheck);
+        rescheduleTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, heartbeatTimer);
+    }
+
+    // ----------------------- End Heartbeats -----------------------
 
     private void onCreateConnection(final CreateConnectionCmd cmd)
     {
@@ -624,12 +634,6 @@ public class DriverConductor extends Agent
                 logger.logException(ex);
             }
         }
-    }
-
-    private void onHeartbeatCheck()
-    {
-        publications.forEach(DriverPublication::heartbeatCheck);
-        rescheduleTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, heartbeatTimer);
     }
 
     private int allocatePositionCounter(final String type, final String dirName, final int sessionId, final int streamId)

@@ -20,18 +20,16 @@ import uk.co.real_logic.aeron.common.collections.Int2ObjectHashMap;
 import java.util.Collection;
 
 /**
- * Subscriptions maintained per channel for receiver processing
+ * Subscriptions maintained per stream for receiver processing from dispatcher
  */
-public class DriverSubscription
+public class DataFrameDispatcherSubscription
 {
-    private final UdpChannel udpChannel;
     private final int streamId;
     private final DriverConductorProxy conductorProxy;
     private final Int2ObjectHashMap<DriverConnection> connectionBySessionIdMap = new Int2ObjectHashMap<>();
 
-    public DriverSubscription(final UdpChannel udpChannel, final int streamId, final DriverConductorProxy conductorProxy)
+    public DataFrameDispatcherSubscription(final int streamId, final DriverConductorProxy conductorProxy)
     {
-        this.udpChannel = udpChannel;
         this.streamId = streamId;
         this.conductorProxy = conductorProxy;
     }
@@ -49,11 +47,6 @@ public class DriverSubscription
     public int streamId()
     {
         return streamId;
-    }
-
-    public UdpChannel udpChannel()
-    {
-        return udpChannel;
     }
 
     public void close()

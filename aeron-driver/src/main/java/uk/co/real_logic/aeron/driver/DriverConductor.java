@@ -94,7 +94,7 @@ public class DriverConductor extends Agent
     private final int mtuLength;
     private final int initialWindowSize;
     private final TimerWheel.Timer heartbeatTimer;
-    private final TimerWheel.Timer livenessCheckTimer;
+    private final TimerWheel.Timer publicationLivenessCheckTimer;
     private final CountersManager countersManager;
     private final AtomicBuffer countersBuffer;
 
@@ -117,7 +117,8 @@ public class DriverConductor extends Agent
 
         timerWheel = ctx.conductorTimerWheel();
         heartbeatTimer = newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheck);
-        livenessCheckTimer = newTimeout(LIVENESS_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onLivenessCheckPublications);
+        publicationLivenessCheckTimer =
+            newTimeout(LIVENESS_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onLivenessCheckPublications);
 
         publications = ctx.publications();
         fromClientCommands = ctx.fromClientCommands();
@@ -568,7 +569,7 @@ public class DriverConductor extends Agent
         publications.forEach(
             (publication) ->
             {
-                if (publication.timeOfLastKeepaliveFromClient() + LIVENESS_CHECK_TIMEOUT_MS < now)
+                if (publication.timeOfLastKeepaliveFromClient() + LIVENESS_TIMEOUT_MS < now)
                 {
                     final SendChannelEndpoint channelEndpoint = publication.sendChannelEndpoint();
                     channelEndpoint.removePublication(publication.sessionId(), publication.streamId());
@@ -649,7 +650,7 @@ public class DriverConductor extends Agent
 
     private void onRemovedSubscription(final SubscriptionRemovedCmd cmd)
     {
-        final DriverSubscription subscription = cmd.driverSubscription();
+        final DataFrameDispatcherSubscription subscription = cmd.driverSubscription();
 
         for (final DriverConnection connection : subscription.connections())
         {

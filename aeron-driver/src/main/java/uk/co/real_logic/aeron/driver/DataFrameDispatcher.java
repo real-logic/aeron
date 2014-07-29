@@ -33,7 +33,7 @@ public class DataFrameDispatcher
     private static final String INIT_IN_PROGRESS = "Connection initialisation in progress";
 
     private final Int2ObjectHashMap<String> initialisationInProgressMap = new Int2ObjectHashMap<>();
-    private final Int2ObjectHashMap<DriverSubscription> subscriptionByStreamIdMap = new Int2ObjectHashMap<>();
+    private final Int2ObjectHashMap<DataFrameDispatcherSubscription> subscriptionByStreamIdMap = new Int2ObjectHashMap<>();
     private final DriverConductorProxy conductorProxy;
     private final ReceiveChannelEndpoint channelEndpoint;
 
@@ -46,18 +46,18 @@ public class DataFrameDispatcher
 
     public void addSubscription(final int streamId)
     {
-        DriverSubscription subscription = subscriptionByStreamIdMap.get(streamId);
+        DataFrameDispatcherSubscription subscription = subscriptionByStreamIdMap.get(streamId);
 
         if (null == subscription)
         {
-            subscription = new DriverSubscription(channelEndpoint.udpTransport().udpChannel(), streamId, conductorProxy);
+            subscription = new DataFrameDispatcherSubscription(streamId, conductorProxy);
             subscriptionByStreamIdMap.put(streamId, subscription);
         }
     }
 
     public void removeSubscription(final int streamId)
     {
-        final DriverSubscription subscription = subscriptionByStreamIdMap.get(streamId);
+        final DataFrameDispatcherSubscription subscription = subscriptionByStreamIdMap.get(streamId);
 
         if (subscription == null)
         {
@@ -70,7 +70,7 @@ public class DataFrameDispatcher
 
     public void addConnection(final DriverConnection connection)
     {
-        final DriverSubscription subscription = subscriptionByStreamIdMap.get(connection.streamId());
+        final DataFrameDispatcherSubscription subscription = subscriptionByStreamIdMap.get(connection.streamId());
 
         if (null == subscription)
         {
@@ -89,7 +89,7 @@ public class DataFrameDispatcher
                             final InetSocketAddress srcAddress)
     {
         final int streamId = headerFlyweight.streamId();
-        final DriverSubscription subscription = subscriptionByStreamIdMap.get(streamId);
+        final DataFrameDispatcherSubscription subscription = subscriptionByStreamIdMap.get(streamId);
 
         if (null != subscription)
         {

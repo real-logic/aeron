@@ -34,9 +34,9 @@ public class ControlProtocolEvents
     /** Request Term */
     public static final int CLEAN_TERM_BUFFER = 0x06;
     /** Heartbeat for Publication */
-    public static final int HEARTBEAT_PUBLICATION = 0x07;
+    public static final int KEEPALIVE_PUBLICATION = 0x07;
     /** Heartbeat for Subscriber */
-    public static final int HEARTBEAT_SUBSCRIPTION = 0x08;
+    public static final int KEEPALIVE_SUBSCRIPTION = 0x08;
 
     // Media Driver to Clients
 

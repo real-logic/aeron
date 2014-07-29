@@ -50,7 +50,7 @@ public class ClientConductor extends Agent implements DriverListener
     public static final long AGENT_IDLE_MAX_YIELDS = 100;
     public static final long AGENT_IDLE_MIN_PARK_NS = TimeUnit.NANOSECONDS.toNanos(10);
     public static final long AGENT_IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(100);
-    public static final int HEARTBEAT_TIMEOUT_MS = 200;
+    public static final int KEEPALIVE_TIMEOUT_MS = 200;
 
     private static final long NO_CORRELATION_ID = -1;
 
@@ -59,8 +59,8 @@ public class ClientConductor extends Agent implements DriverListener
     private final long awaitTimeout;
     private final ConnectionMap<String, Publication> publicationMap = new ConnectionMap<>(); // Guarded by this
     private final SubscriptionMap subscriptionMap = new SubscriptionMap();
-    private final AtomicArray<Publication> publicationHeartbeatInfos = new AtomicArray<>();
-    private final AtomicArray<Subscription> subscriptionHeartbeatInfos = new AtomicArray<>();
+    private final AtomicArray<Publication> publicationKeepaliveArray = new AtomicArray<>();
+    private final AtomicArray<Subscription> subscriptionKeepaliveArray = new AtomicArray<>();
 
     private final AtomicBuffer counterValuesBuffer;
     private final DriverProxy driverProxy;
@@ -75,7 +75,7 @@ public class ClientConductor extends Agent implements DriverListener
     private boolean operationSucceeded = false; // Guarded by this
     private RegistrationException registrationException; // Guarded by this
 
-    private final TimerWheel.Timer heartbeatTimer;
+    private final TimerWheel.Timer keepaliveTimer;
 
     public ClientConductor(final DriverBroadcastReceiver driverBroadcastReceiver,
                            final BufferManager bufferManager,
@@ -89,8 +89,7 @@ public class ClientConductor extends Agent implements DriverListener
                            final int mtuLength)
     {
         super(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                                      AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS),
-            errorHandler);
+                                      AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS), errorHandler);
 
         this.counterValuesBuffer = counterValuesBuffer;
         this.correlationSignal = correlationSignal;
@@ -102,7 +101,7 @@ public class ClientConductor extends Agent implements DriverListener
         this.awaitTimeout = awaitTimeout;
         this.mtuLength = mtuLength;
 
-        this.heartbeatTimer = timerWheel.newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeat);
+        this.keepaliveTimer = timerWheel.newTimeout(KEEPALIVE_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onKeepalive);
     }
 
     public int doWork()
@@ -135,7 +134,7 @@ public class ClientConductor extends Agent implements DriverListener
 
             publication = addedPublication;
             publicationMap.put(channel, sessionId, streamId, publication);
-            publicationHeartbeatInfos.add(publication);
+            publicationKeepaliveArray.add(publication);
             addedPublication = null;
             activeCorrelationId = NO_CORRELATION_ID;
         }
@@ -158,7 +157,7 @@ public class ClientConductor extends Agent implements DriverListener
         awaitOperationSucceeded();
 
         publicationMap.remove(channel, sessionId, streamId);
-        publicationHeartbeatInfos.remove(publication);
+        publicationKeepaliveArray.remove(publication);
     }
 
     public synchronized Subscription addSubscription(final String channel, final int streamId, final DataHandler handler)
@@ -172,7 +171,7 @@ public class ClientConductor extends Agent implements DriverListener
             subscription = new Subscription(this, handler, channel, streamId, activeCorrelationId);
 
             subscriptionMap.put(channel, streamId, subscription);
-            subscriptionHeartbeatInfos.add(subscription);
+            subscriptionKeepaliveArray.add(subscription);
 
             awaitOperationSucceeded();
         }
@@ -185,7 +184,7 @@ public class ClientConductor extends Agent implements DriverListener
         activeCorrelationId = driverProxy.removeSubscription(subscription.channel(), subscription.streamId());
 
         subscriptionMap.remove(subscription.channel(), subscription.streamId());
-        subscriptionHeartbeatInfos.remove(subscription);
+        subscriptionKeepaliveArray.remove(subscription);
 
         awaitOperationSucceeded();
     }
@@ -326,11 +325,11 @@ public class ClientConductor extends Agent implements DriverListener
         return workCount;
     }
 
-    private void onHeartbeat()
+    private void onKeepalive()
     {
-        publicationHeartbeatInfos.forEach(driverProxy::heartbeatPublication);
-        subscriptionHeartbeatInfos.forEach(driverProxy::heartbeatSubscription);
+        publicationKeepaliveArray.forEach(driverProxy::keepalivePublication);
+        subscriptionKeepaliveArray.forEach(driverProxy::keepaliveSubscription);
 
-        timerWheel.rescheduleTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, heartbeatTimer);
+        timerWheel.rescheduleTimeout(KEEPALIVE_TIMEOUT_MS, TimeUnit.MILLISECONDS, keepaliveTimer);
     }
 }

@@ -43,9 +43,9 @@ public class DriverProxy
     private final QualifiedMessageFlyweight qualifiedMessage = new QualifiedMessageFlyweight();
 
     // the heartbeats come from the client conductor thread, so keep the flyweights and buffer separate
-    private final AtomicBuffer heartbeatBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(MSG_BUFFER_CAPACITY));
-    private final PublicationMessageFlyweight heartbeatPublicationMessage = new PublicationMessageFlyweight();
-    private final SubscriptionMessageFlyweight heartbeatSubscriptionMessage = new SubscriptionMessageFlyweight();
+    private final AtomicBuffer keepaliveBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(MSG_BUFFER_CAPACITY));
+    private final PublicationMessageFlyweight keepalivePublicationMessage = new PublicationMessageFlyweight();
+    private final SubscriptionMessageFlyweight keepaliveSubscriptionMessage = new SubscriptionMessageFlyweight();
 
     private final RingBuffer mediaDriverCommandBuffer;
 
@@ -57,8 +57,8 @@ public class DriverProxy
         subscriptionMessage.wrap(writeBuffer, 0);
         qualifiedMessage.wrap(writeBuffer, 0);
 
-        heartbeatPublicationMessage.wrap(heartbeatBuffer, 0);
-        heartbeatSubscriptionMessage.wrap(heartbeatBuffer, 0);
+        keepalivePublicationMessage.wrap(keepaliveBuffer, 0);
+        keepaliveSubscriptionMessage.wrap(keepaliveBuffer, 0);
     }
 
     public long addPublication(final String channel, final int sessionId, final int streamId)
@@ -81,26 +81,26 @@ public class DriverProxy
         return sendSubscriptionMessage(REMOVE_SUBSCRIPTION, channel, streamId);
     }
 
-    public void heartbeatPublication(final Publication publication)
+    public void keepalivePublication(final Publication publication)
     {
-        heartbeatPublicationMessage.correlationId(publication.correlationId());
-        heartbeatPublicationMessage.sessionId(publication.sessionId());
-        heartbeatPublicationMessage.streamId(publication.streamId());
-        heartbeatPublicationMessage.channel(publication.channel());
+        keepalivePublicationMessage.correlationId(publication.correlationId());
+        keepalivePublicationMessage.sessionId(publication.sessionId());
+        keepalivePublicationMessage.streamId(publication.streamId());
+        keepalivePublicationMessage.channel(publication.channel());
 
-        if (!mediaDriverCommandBuffer.write(HEARTBEAT_PUBLICATION, heartbeatBuffer, 0, heartbeatPublicationMessage.length()))
+        if (!mediaDriverCommandBuffer.write(KEEPALIVE_PUBLICATION, keepaliveBuffer, 0, keepalivePublicationMessage.length()))
         {
             throw new IllegalStateException("could not write publication heartbeat");
         }
     }
 
-    public void heartbeatSubscription(final Subscription subscription)
+    public void keepaliveSubscription(final Subscription subscription)
     {
-        heartbeatSubscriptionMessage.correlationId(subscription.correlationId());
-        heartbeatSubscriptionMessage.streamId(subscription.streamId());
-        heartbeatSubscriptionMessage.channel(subscription.channel());
+        keepaliveSubscriptionMessage.correlationId(subscription.correlationId());
+        keepaliveSubscriptionMessage.streamId(subscription.streamId());
+        keepaliveSubscriptionMessage.channel(subscription.channel());
 
-        if (!mediaDriverCommandBuffer.write(HEARTBEAT_SUBSCRIPTION, heartbeatBuffer, 0, heartbeatSubscriptionMessage.length()))
+        if (!mediaDriverCommandBuffer.write(KEEPALIVE_SUBSCRIPTION, keepaliveBuffer, 0, keepaliveSubscriptionMessage.length()))
         {
             throw new IllegalStateException("could not write subscription heartbeat");
         }

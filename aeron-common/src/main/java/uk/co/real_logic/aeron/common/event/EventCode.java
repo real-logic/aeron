@@ -42,8 +42,8 @@ public enum EventCode
     ERROR_SENDING_HEARTBEAT_PACKET(15, EventCodec::dissectAsFrame),
     COULD_NOT_SEND_ENTIRE_RETRANSMIT(16, EventCodec::dissectAsFrame),
     CMD_OUT_ON_OPERATION_SUCCESS(17, EventCodec::dissectAsCommand),
-    CMD_IN_HEARTBEAT_PUBLICATION(18, EventCodec::dissectAsCommand),
-    CMD_IN_HEARTBEAT_SUBSCRIPTION(19, EventCodec::dissectAsCommand);
+    CMD_IN_KEEPALIVE_PUBLICATION(18, EventCodec::dissectAsCommand),
+    CMD_IN_KEEPALIVE_SUBSCRIPTION(19, EventCodec::dissectAsCommand);
 
     private static final Int2ObjectHashMap<EventCode> EVENT_CODE_BY_ID_MAP = new Int2ObjectHashMap<>();
 

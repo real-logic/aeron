@@ -60,6 +60,7 @@ public class DriverPublication implements AutoCloseable
     private final AtomicInteger activeTermId;
 
     private final AtomicLong timeOfLastSendOrHeartbeat;
+    private long timeOfLastKeepaliveFromClient;
 
     private final int headerLength;
     private final int mtuLength;
@@ -132,7 +133,10 @@ public class DriverPublication implements AutoCloseable
         shiftsForTermId = Long.numberOfTrailingZeros(termCapacity);
 
         activeTermId = new AtomicInteger(initialTermId);
-        timeOfLastSendOrHeartbeat = new AtomicLong(this.timerWheel.now());
+
+        final long now = timerWheel.now();
+        timeOfLastSendOrHeartbeat = new AtomicLong(now);
+        timeOfLastKeepaliveFromClient = now;
 
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
         this.initialTermId = initialTermId;
@@ -242,6 +246,16 @@ public class DriverPublication implements AutoCloseable
         return 0;
     }
 
+    public long timeOfLastKeepaliveFromClient()
+    {
+        return timeOfLastKeepaliveFromClient;
+    }
+
+    public void timeOfLastKeepaliveFromClient(final long time)
+    {
+        timeOfLastKeepaliveFromClient = time;
+    }
+
     private ByteBuffer duplicateLogBuffer(final RawLog log)
     {
         final ByteBuffer buffer = log.logBuffer().duplicateByteBuffer();
@@ -316,7 +330,7 @@ public class DriverPublication implements AutoCloseable
                 throw new IllegalStateException("could not send all of message: " + bytesSent + "/" + length);
             }
 
-            keepHeartBeatAliveUntil(timerWheel.now());
+            updateTimeOfLastSendOrHeartbeat(timerWheel.now());
 
             nextTermOffset = align(offset + length, FrameDescriptor.FRAME_ALIGNMENT);
 
@@ -389,7 +403,7 @@ public class DriverPublication implements AutoCloseable
                            DataHeaderFlyweight.HEADER_LENGTH, dstAddress);
             }
 
-            keepHeartBeatAliveUntil(timerWheel.now());
+            updateTimeOfLastSendOrHeartbeat(timerWheel.now());
         }
         catch (final Exception ex)
         {
@@ -402,7 +416,7 @@ public class DriverPublication implements AutoCloseable
         return TermHelper.calculatePosition(activeTermId.get(), currentTail, positionBitsToShift, initialTermId);
     }
 
-    public void keepHeartBeatAliveUntil(final long time)
+    private void updateTimeOfLastSendOrHeartbeat(final long time)
     {
         timeOfLastSendOrHeartbeat.lazySet(time);
     }

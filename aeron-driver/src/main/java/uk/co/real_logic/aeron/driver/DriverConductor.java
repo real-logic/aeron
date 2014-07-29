@@ -53,6 +53,7 @@ public class DriverConductor extends Agent
 {
     public static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
     public static final int HEARTBEAT_TIMEOUT_MS = 100;
+    public static final int LIVENESS_CHECK_TIMEOUT_MS = 1000;
 
     /**
      * Unicast NAK delay is immediate initial with delayed subsequent delay
@@ -93,6 +94,7 @@ public class DriverConductor extends Agent
     private final int mtuLength;
     private final int initialWindowSize;
     private final TimerWheel.Timer heartbeatTimer;
+    private final TimerWheel.Timer livenessCheckTimer;
     private final CountersManager countersManager;
     private final AtomicBuffer countersBuffer;
 
@@ -115,6 +117,7 @@ public class DriverConductor extends Agent
 
         timerWheel = ctx.conductorTimerWheel();
         heartbeatTimer = newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheck);
+        livenessCheckTimer = newTimeout(LIVENESS_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onLivenessCheck);
 
         publications = ctx.publications();
         fromClientCommands = ctx.fromClientCommands();
@@ -184,14 +187,13 @@ public class DriverConductor extends Agent
                 {
                     if (obj instanceof CreateConnectionCmd)
                     {
-                        onCreateConnection((CreateConnectionCmd)obj);
+                        onCreateConnection((CreateConnectionCmd) obj);
                     }
                     else if (obj instanceof SubscriptionRemovedCmd)
                     {
-                        onRemovedSubscription((SubscriptionRemovedCmd)obj);
+                        onRemovedSubscription((SubscriptionRemovedCmd) obj);
                     }
-                }
-                catch (final Exception ex)
+                } catch (final Exception ex)
                 {
                     logger.logException(ex);
                 }
@@ -237,18 +239,18 @@ public class DriverConductor extends Agent
                             onRemoveSubscription(subscriptionMessage);
                             break;
 
-                        case HEARTBEAT_PUBLICATION:
+                        case KEEPALIVE_PUBLICATION:
                             publicationMessage.wrap(buffer, index);
-                            logger.log(EventCode.CMD_IN_HEARTBEAT_PUBLICATION, buffer, index, length);
+                            logger.log(EventCode.CMD_IN_KEEPALIVE_PUBLICATION, buffer, index, length);
                             flyweight = publicationMessage;
-                            onHeartbeatPublication(publicationMessage);
+                            onKeepalivePublication(publicationMessage);
                             break;
 
-                        case HEARTBEAT_SUBSCRIPTION:
+                        case KEEPALIVE_SUBSCRIPTION:
                             subscriptionMessage.wrap(buffer, index);
-                            logger.log(EventCode.CMD_IN_HEARTBEAT_SUBSCRIPTION, buffer, index, length);
+                            logger.log(EventCode.CMD_IN_KEEPALIVE_SUBSCRIPTION, buffer, index, length);
                             flyweight = subscriptionMessage;
-                            onHeartbeatSubscription(subscriptionMessage);
+                            onKeepaliveSubscription(subscriptionMessage);
                             break;
                     }
                 }
@@ -488,9 +490,9 @@ public class DriverConductor extends Agent
         }
     }
 
-    // ----------------------- Heartbeats -----------------------
+    // ----------------------- Heartbeats from Clients -----------------------
 
-    private void onHeartbeatPublication(final PublicationMessageFlyweight publicationMessage)
+    private void onKeepalivePublication(final PublicationMessageFlyweight publicationMessage)
     {
         final String channel = publicationMessage.channel();
         final int sessionId = publicationMessage.sessionId();
@@ -513,7 +515,7 @@ public class DriverConductor extends Agent
 
             // sessionId and streamId must be specific to a client publication, so correlation Id should not be needed.
             // keep publication alive for this correlationId by passing timerWheel.now() to it as last active time
-            publication.keepHeartBeatAliveUntil(timerWheel.now());
+            publication.timeOfLastKeepaliveFromClient(timerWheel.now());
         }
         catch (final Exception ex)
         {
@@ -521,7 +523,7 @@ public class DriverConductor extends Agent
         }
     }
 
-    private void onHeartbeatSubscription(final SubscriptionMessageFlyweight subscriptionMessage)
+    private void onKeepaliveSubscription(final SubscriptionMessageFlyweight subscriptionMessage)
     {
         final String channel = subscriptionMessage.channel();
         final int streamId = subscriptionMessage.streamId();
@@ -550,10 +552,17 @@ public class DriverConductor extends Agent
         }
     }
 
+    // heartbeat check for Publications sending heartbeats to Subscriptions
     private void onHeartbeatCheck()
     {
         publications.forEach(DriverPublication::heartbeatCheck);
         rescheduleTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, heartbeatTimer);
+    }
+
+    // liveness check for Publications and Subscriptions from clients
+    private void onLivenessCheck()
+    {
+
     }
 
     // ----------------------- End Heartbeats -----------------------

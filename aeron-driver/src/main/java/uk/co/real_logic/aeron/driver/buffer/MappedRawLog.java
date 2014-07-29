@@ -78,14 +78,17 @@ class MappedRawLog implements RawLog
         {
             logFileChannel.close();
             stateFileChannel.close();
+
+            IoUtil.unmap(mappedLogBuffer);
+            IoUtil.unmap(mappedStateBuffer);
+
+            IoUtil.deleteIfExists(logFile);
+            IoUtil.deleteIfExists(stateFile);
         }
         catch (final IOException ex)
         {
             throw new RuntimeException(ex);
         }
-
-        IoUtil.unmap(mappedLogBuffer);
-        IoUtil.unmap(mappedStateBuffer);
     }
 
     public void logBufferInformation(final int index, final LogBuffersMessageFlyweight newBufferMessage)

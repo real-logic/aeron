@@ -60,9 +60,14 @@ public class AdminSoakTestRunner
         final MediaDriver driver = new MediaDriver();
         driver.invokeEmbedded();
 
-        while (true)
+        for (int i = 0; true; i++)
         {
             exchangeMessagesBetweenClients();
+
+            if ((i % 100) == 0)
+            {
+                System.out.println("Completed Iteration " + i);
+            }
 
             Thread.yield();
         }

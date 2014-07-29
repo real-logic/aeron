@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.benchmarks;
 
 import uk.co.real_logic.aeron.Aeron;
+import uk.co.real_logic.aeron.DataHandler;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
@@ -40,9 +41,10 @@ public class AdminSoakTestRunner
 {
     private static final String CHANNEL = "udp://localhost:40123";
     private static final int STREAM_ID = 10;
+    private static final int MESSAGES_PER_RUN = 10;
 
     private static final ExecutorService executor = Executors.newFixedThreadPool(2);
-    public static final int MESSAGES_PER_RUN = 10;
+    private static final AtomicBuffer publishingBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(256));
 
     public static void main(String[] args) throws Exception
     {
@@ -59,57 +61,57 @@ public class AdminSoakTestRunner
 
     private static void exchangeMessagesBetweenClients()
     {
+        publishingBuffer.setMemory(0, publishingBuffer.capacity(), (byte) 0);
+
         final Aeron publishingClient = Aeron.newClient(new Aeron.Context());
         final Aeron consumingClient = Aeron.newClient(new Aeron.Context());
 
         consumingClient.invoke(executor);
         publishingClient.invoke(executor);
 
-        final AtomicBuffer publishingBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(256));
-
-        final AtomicBuffer consumingBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(256));
-
-
         try (final Publication publication = publishingClient.addPublication(CHANNEL, STREAM_ID, 0))
         {
             AtomicInteger receivedCount = new AtomicInteger(0);
 
-            final Subscription subscription = consumingClient.addSubscription(CHANNEL, STREAM_ID,
-                                                (buffer, offset, length, sessionId, flags) ->
-                                                {
-                                                    final int expectedValue = receivedCount.get();
-                                                    final int value = buffer.getInt(offset, nativeOrder());
-                                                    if (value != expectedValue)
-                                                    {
-                                                        System.err.println("Unexpected value: " + value);
-                                                    }
-                                                    receivedCount.incrementAndGet();
-                                                });
-
-            for (int i = 0; i < MESSAGES_PER_RUN; i++)
-            {
-                publishingBuffer.putInt(0, i, nativeOrder());
-                if (!publication.offer(publishingBuffer))
+            final DataHandler handler =
+                (buffer, offset, length, sessionId, flags) ->
                 {
-                    System.err.println("Unable to send " + i);
+                    final int expectedValue = receivedCount.get();
+                    final int value = buffer.getInt(offset, nativeOrder());
+                    if (value != expectedValue)
+                    {
+                        System.err.println("Unexpected value: " + value);
+                    }
+                    receivedCount.incrementAndGet();
+                };
+
+            try (final Subscription subscription = consumingClient.addSubscription(CHANNEL, STREAM_ID, handler))
+            {
+                for (int i = 0; i < MESSAGES_PER_RUN; i++)
+                {
+                    publishingBuffer.putInt(0, i, nativeOrder());
+                    if (!publication.offer(publishingBuffer))
+                    {
+                        System.err.println("Unable to send " + i);
+                    }
                 }
-            }
 
-            int read = 0;
-            do
-            {
-                read += subscription.poll(MESSAGES_PER_RUN);
-            }
-            while (read < MESSAGES_PER_RUN);
+                int read = 0;
+                do
+                {
+                    read += subscription.poll(MESSAGES_PER_RUN);
+                }
+                while (read < MESSAGES_PER_RUN);
 
-            if (read > MESSAGES_PER_RUN)
-            {
-                System.err.println("We've read too many messages: " + read);
-            }
+                if (read > MESSAGES_PER_RUN)
+                {
+                    System.err.println("We've read too many messages: " + read);
+                }
 
-            if (receivedCount.get() != MESSAGES_PER_RUN)
-            {
-                System.err.println("Data Handler has " + read + " messages");
+                if (receivedCount.get() != MESSAGES_PER_RUN)
+                {
+                    System.err.println("Data Handler has " + read + " messages");
+                }
             }
         }
 

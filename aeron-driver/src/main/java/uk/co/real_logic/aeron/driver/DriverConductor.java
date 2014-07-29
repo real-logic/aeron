@@ -684,6 +684,7 @@ public class DriverConductor extends Agent
                     }
 
                     connections.remove(connection);
+                    connection.close();
                 }
             }
         );

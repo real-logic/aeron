@@ -44,6 +44,11 @@ public class DispatcherSubscription
         return connectionBySessionIdMap.put(connection.sessionId(), connection);
     }
 
+    public DriverConnection removeConnection(final int sessionId)
+    {
+        return connectionBySessionIdMap.remove(sessionId);
+    }
+
     public int streamId()
     {
         return streamId;

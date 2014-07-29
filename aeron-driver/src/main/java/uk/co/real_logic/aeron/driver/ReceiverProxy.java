@@ -15,10 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.driver.cmd.AddSubscriptionCmd;
-import uk.co.real_logic.aeron.driver.cmd.NewConnectionCmd;
-import uk.co.real_logic.aeron.driver.cmd.RegisterReceiverChannelEndpointCmd;
-import uk.co.real_logic.aeron.driver.cmd.RemoveSubscriptionCmd;
+import uk.co.real_logic.aeron.driver.cmd.*;
 
 import java.util.Queue;
 
@@ -47,6 +44,11 @@ public class ReceiverProxy
     public boolean newConnection(final NewConnectionCmd e)
     {
         return commandQueue.offer(e);
+    }
+
+    public boolean removeConnection(final DriverConnection connection)
+    {
+        return commandQueue.offer(new RemoveConnectionCmd(connection.receiveChannelEndpoint(), connection));
     }
 
     public boolean registerMediaEndpoint(final ReceiveChannelEndpoint mediaEndpoint)

@@ -377,7 +377,7 @@ public class DriverConductorTest
         assertThat(publications.get(0).sessionId(), is(1));
         assertThat(publications.get(0).streamId(), is(2));
 
-        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_TIMEOUT_NS * 2));
+        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_CLIENT_TIMEOUT_NS * 2));
 
         assertThat(publications.size(), is(0));
         assertNull(driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
@@ -395,15 +395,15 @@ public class DriverConductorTest
         assertThat(publications.get(0).sessionId(), is(1));
         assertThat(publications.get(0).streamId(), is(2));
 
-        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_TIMEOUT_NS / 2));
+        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_CLIENT_TIMEOUT_NS / 2));
 
         writePublicationMessage(ControlProtocolEvents.KEEPALIVE_PUBLICATION, 1, 2, 4000, CORRELATION_ID_1);
 
-        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_TIMEOUT_NS + 1000));
+        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_CLIENT_TIMEOUT_NS + 1000));
 
         writePublicationMessage(ControlProtocolEvents.KEEPALIVE_PUBLICATION, 1, 2, 4000, CORRELATION_ID_1);
 
-        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_TIMEOUT_NS * 2));
+        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_CLIENT_TIMEOUT_NS * 2));
 
         assertThat(publications.size(), is(1));
     }
@@ -419,7 +419,7 @@ public class DriverConductorTest
         assertThat(subscriptions.size(), is(1));
         assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
 
-        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_TIMEOUT_NS * 2));
+        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_CLIENT_TIMEOUT_NS * 2));
 
         assertThat(subscriptions.size(), is(0));
         assertNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
@@ -436,15 +436,15 @@ public class DriverConductorTest
         assertThat(subscriptions.size(), is(1));
         assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
 
-        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_TIMEOUT_NS / 1));
+        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_CLIENT_TIMEOUT_NS / 1));
 
         writeSubscriptionMessage(ControlProtocolEvents.KEEPALIVE_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, CORRELATION_ID_1);
 
-        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_TIMEOUT_NS + 1000));
+        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_CLIENT_TIMEOUT_NS + 1000));
 
         writeSubscriptionMessage(ControlProtocolEvents.KEEPALIVE_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, CORRELATION_ID_1);
 
-        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_TIMEOUT_NS * 2));
+        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_CLIENT_TIMEOUT_NS * 2));
 
         assertThat(subscriptions.size(), is(1));
         assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));

@@ -55,7 +55,10 @@ public class DriverConductor extends Agent
     public static final int LIVENESS_CHECK_TIMEOUT_MS = 1000;  // how often to check liveness
 
     // how long without keepalive/heartbeat before remove
-    public static final long LIVENESS_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(2000);
+    public static final long LIVENESS_CLIENT_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(2000);
+    // how long without frames before removing
+    public static final long LIVENESS_FRAME_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(10);
+
     /**
      * Unicast NAK delay is immediate initial with delayed subsequent delay
      */
@@ -99,6 +102,7 @@ public class DriverConductor extends Agent
     private final TimerWheel.Timer heartbeatTimer;
     private final TimerWheel.Timer publicationLivenessCheckTimer;
     private final TimerWheel.Timer subscriptionLivenessCheckTimer;
+    private final TimerWheel.Timer connectionLivenessCheckTimer;
     private final CountersManager countersManager;
     private final AtomicBuffer countersBuffer;
 
@@ -125,6 +129,8 @@ public class DriverConductor extends Agent
             newTimeout(LIVENESS_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onLivenessCheckPublications);
         subscriptionLivenessCheckTimer =
             newTimeout(LIVENESS_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onLivenessCheckSubscriptions);
+        connectionLivenessCheckTimer =
+            newTimeout(LIVENESS_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onLivenessCheckConnections);
 
         publications = ctx.publications();
         subscriptions = ctx.subscriptions();
@@ -594,9 +600,14 @@ public class DriverConductor extends Agent
         publications.forEach(
             (publication) ->
             {
-                if (publication.timeOfLastKeepaliveFromClient() + LIVENESS_TIMEOUT_NS < now)
+                if (publication.timeOfLastKeepaliveFromClient() + LIVENESS_CLIENT_TIMEOUT_NS < now)
                 {
                     final SendChannelEndpoint channelEndpoint = publication.sendChannelEndpoint();
+
+                    logger.log(EventCode.REMOVE_PUBLICATION_TIMEOUT, String.format("%s %x:%x",
+                        channelEndpoint.udpChannel().originalUriAsString(), publication.sessionId(),
+                        publication.streamId()));
+
                     channelEndpoint.removePublication(publication.sessionId(), publication.streamId());
                     publications.remove(publication);
                     publication.close();
@@ -613,6 +624,7 @@ public class DriverConductor extends Agent
         rescheduleTimeout(LIVENESS_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, publicationLivenessCheckTimer);
     }
 
+    // liveness check for Subscriptions from clients
     private void onLivenessCheckSubscriptions()
     {
         final long now = timerWheel.now();
@@ -621,10 +633,14 @@ public class DriverConductor extends Agent
         subscriptions.forEach(
             (subscription) ->
             {
-                if (subscription.timeOfLastKeepaliveFromClient() + LIVENESS_TIMEOUT_NS < now)
+                if (subscription.timeOfLastKeepaliveFromClient() + LIVENESS_CLIENT_TIMEOUT_NS < now)
                 {
                     final ReceiveChannelEndpoint channelEndpoint = subscription.receiveChannelEndpoint();
                     final int streamId = subscription.streamId();
+
+                    logger.log(EventCode.REMOVE_SUBSCRIPTION_TIMEOUT, String.format("%s %x [%x]",
+                        channelEndpoint.udpChannel().originalUriAsString(), subscription.streamId(),
+                        subscription.correlationId()));
 
                     subscriptions.remove(subscription);
 
@@ -646,6 +662,33 @@ public class DriverConductor extends Agent
         );
 
         rescheduleTimeout(LIVENESS_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, subscriptionLivenessCheckTimer);
+    }
+
+    // liveness check for Connections
+    private void onLivenessCheckConnections()
+    {
+        final long now = timerWheel.now();
+
+        connections.forEach(
+            (connection) ->
+            {
+                if (connection.timeOfLastFrame() + LIVENESS_FRAME_TIMEOUT_NS < now)
+                {
+                    logger.log(EventCode.REMOVE_CONNECTION_TIMEOUT, String.format("%s %x:%x",
+                        connection.receiveChannelEndpoint().udpChannel().originalUriAsString(), connection.sessionId(),
+                        connection.streamId()));
+
+                    while (!receiverProxy.removeConnection(connection))
+                    {
+                        System.out.println("Error removing connection");
+                    }
+
+                    connections.remove(connection);
+                }
+            }
+        );
+
+        rescheduleTimeout(LIVENESS_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, connectionLivenessCheckTimer);
     }
 
     private void onCreateConnection(final CreateConnectionCmd cmd)
@@ -683,7 +726,7 @@ public class DriverConductor extends Agent
 
             final DriverConnection connection =
                 new DriverConnection(
-                    udpChannel,
+                    channelEndpoint,
                     sessionId,
                     streamId,
                     initialTermId,
@@ -691,7 +734,8 @@ public class DriverConductor extends Agent
                     termBuffers,
                     lossHandler,
                     channelEndpoint.composeStatusMessageSender(controlAddress, sessionId, streamId),
-                    new BufferPositionIndicator(countersBuffer, positionCounterId, countersManager));
+                    new BufferPositionIndicator(countersBuffer, positionCounterId, countersManager),
+                    timerWheel::now);
 
             connections.add(connection);
 

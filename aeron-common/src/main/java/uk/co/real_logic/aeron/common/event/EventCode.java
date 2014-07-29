@@ -43,7 +43,10 @@ public enum EventCode
     COULD_NOT_SEND_ENTIRE_RETRANSMIT(16, EventCodec::dissectAsFrame),
     CMD_OUT_ON_OPERATION_SUCCESS(17, EventCodec::dissectAsCommand),
     CMD_IN_KEEPALIVE_PUBLICATION(18, EventCodec::dissectAsCommand),
-    CMD_IN_KEEPALIVE_SUBSCRIPTION(19, EventCodec::dissectAsCommand);
+    CMD_IN_KEEPALIVE_SUBSCRIPTION(19, EventCodec::dissectAsCommand),
+    REMOVE_PUBLICATION_TIMEOUT(20, EventCodec::dissectAsString),
+    REMOVE_SUBSCRIPTION_TIMEOUT(21, EventCodec::dissectAsString),
+    REMOVE_CONNECTION_TIMEOUT(22, EventCodec::dissectAsString);
 
     private static final Int2ObjectHashMap<EventCode> EVENT_CODE_BY_ID_MAP = new Int2ObjectHashMap<>();
 

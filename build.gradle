@@ -131,6 +131,10 @@ project(':aeron-driver') {
         systemProperties('aeron.event.log': System.properties['aeron.event.log'])
     }
 
+    run {
+        systemProperties('aeron.event.log': System.properties['aeron.event.log'])
+    }
+
     build.doLast {
         tasks.startScripts.execute()
         tasks.installApp.execute()

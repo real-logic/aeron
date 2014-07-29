@@ -38,6 +38,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.util.concurrent.TimeUnit;
+import java.util.function.LongSupplier;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -69,8 +70,14 @@ public class ReceiverTest
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final StatusMessageFlyweight statusHeader = new StatusMessageFlyweight();
 
+    private long currentTime;
+    private final LongSupplier clock = () -> currentTime;
+
     private final TermBuffers termBuffers = newTestTermBuffers(LOG_BUFFER_SIZE, LogBufferDescriptor.STATE_BUFFER_LENGTH);
     private final EventLogger mockLogger = mock(EventLogger.class);
+    private final TimerWheel timerWheel =
+        new TimerWheel(clock, MediaDriver.CONDUCTOR_TICK_DURATION_US,
+            TimeUnit.MICROSECONDS, MediaDriver.CONDUCTOR_TICKS_PER_WHEEL);
 
     private LogReader[] logReaders;
     private DatagramChannel senderChannel;
@@ -89,14 +96,14 @@ public class ReceiverTest
             .thenReturn(TermHelper.calculatePosition(TERM_ID, 0, Integer.numberOfTrailingZeros(LOG_BUFFER_SIZE), TERM_ID));
         when(mockLossHandler.activeTermId()).thenReturn(TERM_ID);
 
+        currentTime = 0;
+
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .receiverNioSelector(mockNioSelector)
             .conductorNioSelector(mockNioSelector)
             .termBuffersFactory(mockTermBuffersFactory)
-            .conductorTimerWheel(new TimerWheel(MediaDriver.CONDUCTOR_TICK_DURATION_US,
-                                                TimeUnit.MICROSECONDS,
-                                                MediaDriver.CONDUCTOR_TICKS_PER_WHEEL))
+            .conductorTimerWheel(timerWheel)
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .eventLogger(mockLogger);
 
@@ -142,14 +149,16 @@ public class ReceiverTest
 
         final DriverConnection connection =
             new DriverConnection(
-                UDP_CHANNEL,
+                receiveChannelEndpoint,
                 SESSION_ID,
                 STREAM_ID,
                 TERM_ID,
                 INITIAL_WINDOW_SIZE,
                 termBuffers,
                 mockLossHandler,
-                receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID), POSITION_INDICATOR);
+                receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
+                POSITION_INDICATOR,
+                clock);
 
         final int messagesRead = toConductorQueue.drain(
             (e) ->
@@ -206,7 +215,7 @@ public class ReceiverTest
                     new NewConnectionCmd(
                         receiveChannelEndpoint,
                         new DriverConnection(
-                            UDP_CHANNEL,
+                            receiveChannelEndpoint,
                             SESSION_ID,
                             STREAM_ID,
                             TERM_ID,
@@ -214,7 +223,8 @@ public class ReceiverTest
                             termBuffers,
                             mockLossHandler,
                             receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
-                            POSITION_INDICATOR)));
+                            POSITION_INDICATOR,
+                            clock)));
             });
 
         assertThat(messagesRead, is(1));
@@ -260,16 +270,17 @@ public class ReceiverTest
                 receiverProxy.newConnection(
                     new NewConnectionCmd
                         (receiveChannelEndpoint,
-                         new DriverConnection(
-                             UDP_CHANNEL,
-                             SESSION_ID,
-                             STREAM_ID,
-                             TERM_ID,
-                             INITIAL_WINDOW_SIZE,
-                             termBuffers,
-                             mockLossHandler,
-                             receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
-                             POSITION_INDICATOR)));
+                            new DriverConnection(
+                                receiveChannelEndpoint,
+                                SESSION_ID,
+                                STREAM_ID,
+                                TERM_ID,
+                                INITIAL_WINDOW_SIZE,
+                                termBuffers,
+                                mockLossHandler,
+                                receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
+                                POSITION_INDICATOR,
+                                clock)));
             });
 
         assertThat(messagesRead, is(1));
@@ -319,7 +330,7 @@ public class ReceiverTest
                     new NewConnectionCmd(
                         receiveChannelEndpoint,
                         new DriverConnection(
-                            UDP_CHANNEL,
+                            receiveChannelEndpoint,
                             SESSION_ID,
                             STREAM_ID,
                             TERM_ID,
@@ -327,7 +338,8 @@ public class ReceiverTest
                             termBuffers,
                             mockLossHandler,
                             receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
-                            POSITION_INDICATOR)));
+                            POSITION_INDICATOR,
+                            clock)));
             });
 
         assertThat(messagesRead, is(1));

@@ -59,6 +59,11 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         return udpTransport;
     }
 
+    public UdpChannel udpChannel()
+    {
+        return udpTransport.udpChannel();
+    }
+
     public void close()
     {
         udpTransport.close();

@@ -18,10 +18,7 @@ package uk.co.real_logic.aeron.driver;
 import uk.co.real_logic.aeron.common.Agent;
 import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.common.event.EventLogger;
-import uk.co.real_logic.aeron.driver.cmd.AddSubscriptionCmd;
-import uk.co.real_logic.aeron.driver.cmd.NewConnectionCmd;
-import uk.co.real_logic.aeron.driver.cmd.RegisterReceiverChannelEndpointCmd;
-import uk.co.real_logic.aeron.driver.cmd.RemoveSubscriptionCmd;
+import uk.co.real_logic.aeron.driver.cmd.*;
 
 /**
  * Receiver service for JVM based media driver, uses an event loop with command buffer
@@ -55,7 +52,7 @@ public class Receiver extends Agent
                 {
                     if (obj instanceof NewConnectionCmd)
                     {
-                        onNewConnection((NewConnectionCmd)obj);
+                        onNewConnection((NewConnectionCmd) obj);
                     }
                     else if (obj instanceof AddSubscriptionCmd)
                     {
@@ -71,6 +68,10 @@ public class Receiver extends Agent
                     {
                         final RegisterReceiverChannelEndpointCmd cmd = (RegisterReceiverChannelEndpointCmd)obj;
                         onRegisterMediaSubscriptionEndpoint(cmd.receiverChannelEndpoint());
+                    }
+                    else if (obj instanceof RemoveConnectionCmd)
+                    {
+                        onRemoveConnection((RemoveConnectionCmd) obj);
                     }
                 }
                 catch (final Exception ex)
@@ -114,6 +115,13 @@ public class Receiver extends Agent
         final ReceiveChannelEndpoint receiveChannelEndpoint = cmd.receiverChannelEndpoint();
 
         receiveChannelEndpoint.dispatcher().addConnection(cmd.connection());
+    }
+
+    private void onRemoveConnection(final RemoveConnectionCmd cmd)
+    {
+        final ReceiveChannelEndpoint receiveChannelEndpoint = cmd.receiverChannelEndpoint();
+
+        receiveChannelEndpoint.dispatcher().removeConnection(cmd.connection());
     }
 
     private void onRegisterMediaSubscriptionEndpoint(final ReceiveChannelEndpoint receiveChannelEndpoint)

@@ -83,6 +83,19 @@ public class DataFrameDispatcher
         connection.enableStatusMessageSending();
     }
 
+    public void removeConnection(final DriverConnection connection)
+    {
+        final DispatcherSubscription subscription = subscriptionByStreamIdMap.get(connection.streamId());
+
+        if (null == subscription)
+        {
+            throw new IllegalStateException("No subscription registered on " + connection.streamId());
+        }
+
+        subscription.removeConnection(connection.sessionId());
+        initialisationInProgressMap.remove(connection.sessionId());
+    }
+
     public void onDataFrame(final DataHeaderFlyweight headerFlyweight,
                             final AtomicBuffer buffer,
                             final int length,

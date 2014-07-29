@@ -24,6 +24,8 @@ import uk.co.real_logic.aeron.common.status.PositionIndicator;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.LongSupplier;
 
 import static uk.co.real_logic.aeron.common.TermHelper.*;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.IN_CLEANING;
@@ -37,13 +39,15 @@ public class DriverConnection implements AutoCloseable
     private static final int STATE_CREATED = 0;
     private static final int STATE_READY_TO_SEND_SMS = 1;
 
-    private final UdpChannel udpChannel;
+    private final ReceiveChannelEndpoint receiveChannelEndpoint;
     private final int sessionId;
     private final int streamId;
     private TermBuffers termBuffers;
     private PositionIndicator subscriberLimit;
+    private LongSupplier clock;
 
     private final AtomicInteger activeTermId = new AtomicInteger();
+    private final AtomicLong timeOfLastFrame = new AtomicLong();
     private int activeIndex;
     private int hwmTermId;
     private int hwmIndex;
@@ -65,7 +69,7 @@ public class DriverConnection implements AutoCloseable
 
     private AtomicInteger state = new AtomicInteger(STATE_CREATED);
 
-    public DriverConnection(final UdpChannel udpChannel,
+    public DriverConnection(final ReceiveChannelEndpoint receiveChannelEndpoint,
                             final int sessionId,
                             final int streamId,
                             final int initialTermId,
@@ -73,15 +77,18 @@ public class DriverConnection implements AutoCloseable
                             final TermBuffers termBuffers,
                             final LossHandler lossHandler,
                             final StatusMessageSender statusMessageSender,
-                            final PositionIndicator subscriberLimit)
+                            final PositionIndicator subscriberLimit,
+                            final LongSupplier clock)
     {
-        this.udpChannel = udpChannel;
+        this.receiveChannelEndpoint = receiveChannelEndpoint;
         this.sessionId = sessionId;
         this.streamId = streamId;
         this.termBuffers = termBuffers;
         this.subscriberLimit = subscriberLimit;
 
+        this.clock = clock;
         activeTermId.lazySet(initialTermId);
+        timeOfLastFrame.lazySet(clock.getAsLong());
         this.hwmIndex = this.activeIndex = termIdToBufferIndex(initialTermId);
         this.hwmTermId = initialTermId;
 
@@ -103,6 +110,11 @@ public class DriverConnection implements AutoCloseable
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
         this.initialTermId = initialTermId;
         this.termSizeSmGain = termCapacity / 4;  // TODO: remove. unneeded.
+    }
+
+    public ReceiveChannelEndpoint receiveChannelEndpoint()
+    {
+        return receiveChannelEndpoint;
     }
 
     public int sessionId()
@@ -169,6 +181,8 @@ public class DriverConnection implements AutoCloseable
         final long packetPosition = calculatePosition(termId, packetTail);
         final long position = position(currentRebuilder.tail());
 
+        timeOfLastFrame.lazySet(clock.getAsLong());
+
         if (isOutOfBufferRange(packetPosition, length, position))
         {
             // TODO: invalid packet we probably want to update an error counter
@@ -214,6 +228,8 @@ public class DriverConnection implements AutoCloseable
     public void potentialHighPosition(final DataHeaderFlyweight header)
     {
         final long packetPosition = calculatePosition(header.termId(), header.termOffset());
+
+        timeOfLastFrame.lazySet(clock.getAsLong());
 
         lossHandler.potentialHighPosition(packetPosition);
     }
@@ -298,6 +314,15 @@ public class DriverConnection implements AutoCloseable
         state.lazySet(STATE_READY_TO_SEND_SMS);
     }
 
+    /**
+     * Called from the {@link DriverConductor} thread to grab the time of the last frame for liveness
+     * @return time of last frame from the source
+     */
+    public long timeOfLastFrame()
+    {
+        return timeOfLastFrame.get();
+    }
+
     private int sendStatusMessage(final int termId, final int termOffset, final int windowSize)
     {
         statusMessageSender.send(termId, termOffset, windowSize);
@@ -334,7 +359,7 @@ public class DriverConnection implements AutoCloseable
 
         if (nextIndex != hwmIndex)
         {
-            ensureClean(rebuilder, udpChannel.originalUriAsString(), streamId, activeTermId + 1);
+            ensureClean(rebuilder, receiveChannelEndpoint.udpChannel().originalUriAsString(), streamId, activeTermId + 1);
         }
 
         rebuilders[rotatePrevious(activeIndex)].statusOrdered(NEEDS_CLEANING);

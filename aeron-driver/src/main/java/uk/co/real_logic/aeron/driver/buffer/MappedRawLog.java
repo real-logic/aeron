@@ -31,6 +31,7 @@ import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
  */
 class MappedRawLog implements RawLog
 {
+    public static final int MAX_TREE_DEPTH = 3;
     private final File logFile;
     private final File stateFile;
 
@@ -82,12 +83,39 @@ class MappedRawLog implements RawLog
             IoUtil.unmap(mappedLogBuffer);
             IoUtil.unmap(mappedStateBuffer);
 
-            IoUtil.deleteIfExists(logFile);
-            IoUtil.deleteIfExists(stateFile);
+            if (logFile.delete() && stateFile.delete())
+            {
+                final File directory = stateFile.getParentFile();
+                recursivelyDeleteUpTree(directory, MAX_TREE_DEPTH);
+            }
+            else
+            {
+                // TODO: increment counter or log
+            }
         }
         catch (final IOException ex)
         {
             throw new RuntimeException(ex);
+        }
+    }
+
+    private void recursivelyDeleteUpTree(final File directory, int remainingTreeDepth)
+    {
+        if (remainingTreeDepth == 0)
+        {
+            return;
+        }
+
+        if (directory.list().length == 0)
+        {
+            if (directory.delete())
+            {
+                recursivelyDeleteUpTree(directory.getParentFile(), remainingTreeDepth - 1);
+            }
+            else
+            {
+                // TODO: increment counter or log
+            }
         }
     }
 

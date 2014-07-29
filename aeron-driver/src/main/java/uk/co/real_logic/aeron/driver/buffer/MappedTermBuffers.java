@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.driver.buffer;
 
 import uk.co.real_logic.aeron.common.IoUtil;
 import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
+import uk.co.real_logic.aeron.common.event.EventLogger;
 
 import java.io.File;
 import java.io.FileNotFoundException;

@@ -38,7 +38,6 @@ import uk.co.real_logic.aeron.driver.cmd.SubscriptionRemovedCmd;
 import uk.co.real_logic.aeron.driver.exceptions.ControlProtocolException;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -53,7 +52,8 @@ public class DriverConductor extends Agent
 {
     public static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
     public static final int HEARTBEAT_TIMEOUT_MS = 100;
-    public static final int LIVENESS_CHECK_TIMEOUT_MS = 1000;
+    public static final int LIVENESS_CHECK_TIMEOUT_MS = 1000;  // how often to check liveness
+    public static final int LIVENESS_TIMEOUT_MS = 2000;        // how long without keepalive/heartbeat before remove
 
     /**
      * Unicast NAK delay is immediate initial with delayed subsequent delay
@@ -82,7 +82,7 @@ public class DriverConductor extends Agent
     private final Long2ObjectHashMap<SendChannelEndpoint> sendChannelEndpointByHash = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<ReceiveChannelEndpoint> receiveChannelEndpointByHash = new Long2ObjectHashMap<>();
     private final TimerWheel timerWheel;
-    private final ArrayList<DriverConnection> connections = new ArrayList<>();
+    private final AtomicArray<DriverConnection> connections = new AtomicArray<>();
     private final AtomicArray<DriverPublication> publications;
 
     private final Supplier<SenderControlStrategy> unicastSenderFlowControl;
@@ -117,7 +117,7 @@ public class DriverConductor extends Agent
 
         timerWheel = ctx.conductorTimerWheel();
         heartbeatTimer = newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheck);
-        livenessCheckTimer = newTimeout(LIVENESS_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onLivenessCheck);
+        livenessCheckTimer = newTimeout(LIVENESS_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onLivenessCheckPublications);
 
         publications = ctx.publications();
         fromClientCommands = ctx.fromClientCommands();
@@ -559,10 +559,30 @@ public class DriverConductor extends Agent
         rescheduleTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, heartbeatTimer);
     }
 
-    // liveness check for Publications and Subscriptions from clients
-    private void onLivenessCheck()
+    // liveness check for Publications from clients
+    private void onLivenessCheckPublications()
     {
+        final long now = timerWheel.now();
 
+        // the array can be removed from safely
+        publications.forEach(
+            (publication) ->
+            {
+                if (publication.timeOfLastKeepaliveFromClient() + LIVENESS_CHECK_TIMEOUT_MS < now)
+                {
+                    final SendChannelEndpoint channelEndpoint = publication.sendChannelEndpoint();
+                    channelEndpoint.removePublication(publication.sessionId(), publication.streamId());
+                    publications.remove(publication);
+                    publication.close();
+
+                    if (channelEndpoint.sessionCount() == 0)
+                    {
+                        sendChannelEndpointByHash.remove(channelEndpoint.udpChannel().consistentHash());
+                        channelEndpoint.close();
+                    }
+                }
+            }
+        );
     }
 
     // ----------------------- End Heartbeats -----------------------

@@ -39,11 +39,11 @@ import static uk.co.real_logic.aeron.common.IoUtil.mapExistingFile;
  */
 public final class Aeron implements AutoCloseable, Runnable
 {
-    // TODO: make configurable
-    public static final long AWAIT_TIMEOUT = 10_000;
-
     private static final int CONDUCTOR_TICKS_PER_WHEEL = 1024;
     private static final int CONDUCTOR_TICK_DURATION_US = 10 * 1000;
+
+    private static final long UNSET_TIMEOUT = -1;
+    private static final long DEFAULT_MEDIA_DRIVER_TIMEOUT = 10_000;
 
     private final ClientConductor conductor;
     private final Context savedCtx;
@@ -75,7 +75,7 @@ public final class Aeron implements AutoCloseable, Runnable
                                         wheel,
                                         ctx.errorHandler,
                                         ctx.newConnectionHandler,
-                                        AWAIT_TIMEOUT,
+                                        ctx.mediaDriverTimeout(),
                                         ctx.mtuLength());
 
         this.savedCtx = ctx;
@@ -200,10 +200,16 @@ public final class Aeron implements AutoCloseable, Runnable
 
         private Consumer<Exception> errorHandler;
         private NewConnectionHandler newConnectionHandler;
+        private long mediaDriverTimeout = UNSET_TIMEOUT;
 
         public Context conclude() throws IOException
         {
             super.conclude();
+
+            if (mediaDriverTimeout == UNSET_TIMEOUT)
+            {
+                mediaDriverTimeout = DEFAULT_MEDIA_DRIVER_TIMEOUT;
+            }
 
             try
             {
@@ -280,6 +286,12 @@ public final class Aeron implements AutoCloseable, Runnable
             return this;
         }
 
+        public Context mediaDriverTimeout(final long value)
+        {
+            this.mediaDriverTimeout = value;
+            return this;
+        }
+
         public void close()
         {
             if (null != defaultToDriverBuffer)
@@ -310,6 +322,11 @@ public final class Aeron implements AutoCloseable, Runnable
             {
                 throw new RuntimeException(ex);
             }
+        }
+
+        public long mediaDriverTimeout()
+        {
+            return mediaDriverTimeout;
         }
     }
 }

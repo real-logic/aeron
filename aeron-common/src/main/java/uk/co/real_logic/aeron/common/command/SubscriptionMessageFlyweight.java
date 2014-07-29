@@ -25,7 +25,9 @@ import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_LONG;
  * 0                   1                   2                   3
  * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |                         Correlation ID                        |
+ * |                    Command Correlation ID                     |
+ * +---------------------------------------------------------------+
+ * |                  Registration Correlation ID                  |
  * +---------------------------------------------------------------+
  * |                           Stream Id                           |
  * +---------------------------------------------------------------+
@@ -35,10 +37,33 @@ import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_LONG;
  */
 public class SubscriptionMessageFlyweight extends CorrelatedMessageFlyweight
 {
-    private static final int STREAM_ID_OFFSET = CORRELATION_ID_FIELD_OFFSET + SIZE_OF_LONG;
+    private static final int REGISTRATION_CORRELATION_ID_OFFSET = CORRELATION_ID_FIELD_OFFSET + SIZE_OF_LONG;
+    private static final int STREAM_ID_OFFSET = REGISTRATION_CORRELATION_ID_OFFSET + SIZE_OF_LONG;
     private static final int CHANNEL_OFFSET = STREAM_ID_OFFSET + SIZE_OF_LONG;
 
     private int lengthOfChannel;
+
+    /**
+     * return correlation id used in registration field
+     *
+     * @return correlation id field
+     */
+    public long registrationCorrelationId()
+    {
+        return atomicBuffer().getLong(offset() + REGISTRATION_CORRELATION_ID_OFFSET, LITTLE_ENDIAN);
+    }
+
+    /**
+     * set registration correlation id field
+     *
+     * @param correlationId field value
+     * @return flyweight
+     */
+    public SubscriptionMessageFlyweight registrationCorrelationId(final long correlationId)
+    {
+        atomicBuffer().putLong(offset() + REGISTRATION_CORRELATION_ID_OFFSET, correlationId, LITTLE_ENDIAN);
+        return this;
+    }
 
     /**
      * return the stream id
@@ -86,6 +111,6 @@ public class SubscriptionMessageFlyweight extends CorrelatedMessageFlyweight
 
     public int length()
     {
-        return SIZE_OF_LONG + SIZE_OF_LONG + lengthOfChannel;
+        return SIZE_OF_LONG + SIZE_OF_LONG + SIZE_OF_LONG + lengthOfChannel;
     }
 }

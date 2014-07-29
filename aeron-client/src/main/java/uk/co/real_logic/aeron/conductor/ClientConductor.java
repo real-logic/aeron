@@ -181,7 +181,8 @@ public class ClientConductor extends Agent implements DriverListener
 
     public synchronized void releaseSubscription(final Subscription subscription)
     {
-        activeCorrelationId = driverProxy.removeSubscription(subscription.channel(), subscription.streamId());
+        activeCorrelationId =
+            driverProxy.removeSubscription(subscription.channel(), subscription.streamId(), subscription.correlationId());
 
         subscriptionMap.remove(subscription.channel(), subscription.streamId());
         subscriptionKeepaliveArray.remove(subscription);

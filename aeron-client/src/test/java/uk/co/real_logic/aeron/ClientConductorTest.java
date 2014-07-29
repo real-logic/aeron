@@ -92,6 +92,7 @@ public class ClientConductorTest extends MockBufferUsage
         signal = mock(Signal.class);
 
         when(driverProxy.addPublication(any(), anyInt(), anyInt())).thenReturn(CORRELATION_ID);
+        when(driverProxy.addSubscription(any(), anyInt())).thenReturn(CORRELATION_ID);
 
         willNotifyNewBuffer();
 
@@ -253,7 +254,7 @@ public class ClientConductorTest extends MockBufferUsage
 
         subscription.close();
 
-        verify(driverProxy).removeSubscription(CHANNEL, STREAM_ID_1);
+        verify(driverProxy).removeSubscription(CHANNEL, STREAM_ID_1, CORRELATION_ID);
     }
 
     @Test(expected = MediaDriverTimeoutException.class)

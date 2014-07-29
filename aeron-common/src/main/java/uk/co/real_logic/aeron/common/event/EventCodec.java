@@ -426,7 +426,8 @@ public class EventCodec
 
     private static String dissect(final SubscriptionMessageFlyweight command)
     {
-        return String.format("%s %d [%x]", command.channel(), command.streamId(), command.correlationId());
+        return String.format("%s %d [%x][%x]", command.channel(), command.streamId(),
+                command.registrationCorrelationId(), command.correlationId());
     }
 
     private static String dissect(final LogBuffersMessageFlyweight command)

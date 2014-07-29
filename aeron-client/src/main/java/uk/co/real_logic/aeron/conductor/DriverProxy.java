@@ -73,12 +73,12 @@ public class DriverProxy
 
     public long addSubscription(final String channel, final int streamId)
     {
-        return sendSubscriptionMessage(ADD_SUBSCRIPTION, channel, streamId);
+        return sendSubscriptionMessage(ADD_SUBSCRIPTION, channel, streamId, -1);
     }
 
-    public long removeSubscription(final String channel, final int streamId)
+    public long removeSubscription(final String channel, final int streamId, final long registrationCorrelationId)
     {
-        return sendSubscriptionMessage(REMOVE_SUBSCRIPTION, channel, streamId);
+        return sendSubscriptionMessage(REMOVE_SUBSCRIPTION, channel, streamId, registrationCorrelationId);
     }
 
     public void keepalivePublication(final Publication publication)
@@ -96,6 +96,7 @@ public class DriverProxy
 
     public void keepaliveSubscription(final Subscription subscription)
     {
+        keepaliveSubscriptionMessage.registrationCorrelationId(subscription.correlationId());
         keepaliveSubscriptionMessage.correlationId(subscription.correlationId());
         keepaliveSubscriptionMessage.streamId(subscription.streamId());
         keepaliveSubscriptionMessage.channel(subscription.channel());
@@ -123,10 +124,14 @@ public class DriverProxy
         return correlationId;
     }
 
-    private long sendSubscriptionMessage(final int msgTypeId, final String channel, final int streamId)
+    private long sendSubscriptionMessage(final int msgTypeId,
+                                         final String channel,
+                                         final int streamId,
+                                         final long registrationCorrelationId)
     {
         final long correlationId = mediaDriverCommandBuffer.nextCorrelationId();
 
+        subscriptionMessage.registrationCorrelationId(registrationCorrelationId);
         subscriptionMessage.correlationId(correlationId);
         subscriptionMessage.streamId(streamId);
         subscriptionMessage.channel(channel);
@@ -139,7 +144,10 @@ public class DriverProxy
         return correlationId;
     }
 
-    public void requestTerm(final String channel, final int sessionId, final int streamId, final int termId)
+    public void requestTerm(final String channel,
+                            final int sessionId,
+                            final int streamId,
+                            final int termId)
     {
         qualifiedMessage.sessionId(sessionId);
         qualifiedMessage.streamId(streamId);

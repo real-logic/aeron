@@ -53,8 +53,9 @@ public class DriverConductor extends Agent
     public static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
     public static final int HEARTBEAT_TIMEOUT_MS = 100;
     public static final int LIVENESS_CHECK_TIMEOUT_MS = 1000;  // how often to check liveness
-    public static final int LIVENESS_TIMEOUT_MS = 2000;        // how long without keepalive/heartbeat before remove
 
+    // how long without keepalive/heartbeat before remove
+    public static final long LIVENESS_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(2000);
     /**
      * Unicast NAK delay is immediate initial with delayed subsequent delay
      */
@@ -81,8 +82,10 @@ public class DriverConductor extends Agent
     private final RingBuffer fromClientCommands;
     private final Long2ObjectHashMap<SendChannelEndpoint> sendChannelEndpointByHash = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<ReceiveChannelEndpoint> receiveChannelEndpointByHash = new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<DriverSubscription> subscriptionByCorrelationId = new Long2ObjectHashMap<>();
     private final TimerWheel timerWheel;
     private final AtomicArray<DriverConnection> connections = new AtomicArray<>();
+    private final AtomicArray<DriverSubscription> subscriptions;
     private final AtomicArray<DriverPublication> publications;
 
     private final Supplier<SenderControlStrategy> unicastSenderFlowControl;
@@ -95,6 +98,7 @@ public class DriverConductor extends Agent
     private final int initialWindowSize;
     private final TimerWheel.Timer heartbeatTimer;
     private final TimerWheel.Timer publicationLivenessCheckTimer;
+    private final TimerWheel.Timer subscriptionLivenessCheckTimer;
     private final CountersManager countersManager;
     private final AtomicBuffer countersBuffer;
 
@@ -119,8 +123,11 @@ public class DriverConductor extends Agent
         heartbeatTimer = newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheck);
         publicationLivenessCheckTimer =
             newTimeout(LIVENESS_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onLivenessCheckPublications);
+        subscriptionLivenessCheckTimer =
+            newTimeout(LIVENESS_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onLivenessCheckSubscriptions);
 
         publications = ctx.publications();
+        subscriptions = ctx.subscriptions();
         fromClientCommands = ctx.fromClientCommands();
         clientProxy = ctx.clientProxy();
         conductorProxy = ctx.driverConductorProxy();
@@ -405,6 +412,7 @@ public class DriverConductor extends Agent
     {
         final String channel = subscriptionMessage.channel();
         final int streamId = subscriptionMessage.streamId();
+        final long correlationId = subscriptionMessage.correlationId();
 
         try
         {
@@ -432,7 +440,12 @@ public class DriverConductor extends Agent
                 }
             }
 
-            clientProxy.operationSucceeded(subscriptionMessage.correlationId());
+            final DriverSubscription subscription =
+                new DriverSubscription(channelEndpoint, streamId, correlationId, timerWheel.now());
+            subscriptionByCorrelationId.put(correlationId, subscription);
+            subscriptions.add(subscription);
+
+            clientProxy.operationSucceeded(correlationId);
         }
         catch (final IllegalArgumentException ex)
         {
@@ -449,6 +462,7 @@ public class DriverConductor extends Agent
     {
         final String channel = subscriptionMessage.channel();
         final int streamId = subscriptionMessage.streamId();
+        final long registrationCorrelationId = subscriptionMessage.registrationCorrelationId();
 
         try
         {
@@ -461,8 +475,15 @@ public class DriverConductor extends Agent
 
             if (channelEndpoint.getRefCountToStream(streamId) == 0)
             {
-                throw new ControlProtocolException(SUBSCRIBER_NOT_REGISTERED, "subscriptions unknown for channel");
+                throw new ControlProtocolException(SUBSCRIBER_NOT_REGISTERED, "subscriptions unknown for stream");
             }
+
+            final DriverSubscription subscription = subscriptionByCorrelationId.remove(registrationCorrelationId);
+            if (null == subscription)
+            {
+                throw new ControlProtocolException(SUBSCRIBER_NOT_REGISTERED, "subscription not registered");
+            }
+            subscriptions.remove(subscription);
 
             final int count = channelEndpoint.decRefToStream(streamId);
             if (0 == count)
@@ -527,8 +548,7 @@ public class DriverConductor extends Agent
     private void onKeepaliveSubscription(final SubscriptionMessageFlyweight subscriptionMessage)
     {
         final String channel = subscriptionMessage.channel();
-        final int streamId = subscriptionMessage.streamId();
-        final long correlationId = subscriptionMessage.correlationId();
+        final long correlationId = subscriptionMessage.registrationCorrelationId();
 
         try
         {
@@ -539,13 +559,15 @@ public class DriverConductor extends Agent
                 return; // unknown channel
             }
 
-            if (channelEndpoint.getRefCountToStream(streamId) == 0)
+            final DriverSubscription subscription = subscriptionByCorrelationId.get(correlationId);
+
+            if (null == subscription)
             {
-                return; // unknown subscription (streamId)
+                return; // subscription unknown
             }
 
-            // TODO: refactor this to hold lastHeartbeatTimestamps for each correlationId for each streamId
-            // map(streamId -> map(correlationId -> timestamp))
+            // keep this subscription alive by updating the time
+            subscription.timeOfLastKeepaliveFromClient(timerWheel.now());
         }
         catch (final Exception ex)
         {
@@ -569,7 +591,7 @@ public class DriverConductor extends Agent
         publications.forEach(
             (publication) ->
             {
-                if (publication.timeOfLastKeepaliveFromClient() + LIVENESS_TIMEOUT_MS < now)
+                if (publication.timeOfLastKeepaliveFromClient() + LIVENESS_TIMEOUT_NS < now)
                 {
                     final SendChannelEndpoint channelEndpoint = publication.sendChannelEndpoint();
                     channelEndpoint.removePublication(publication.sessionId(), publication.streamId());
@@ -584,6 +606,43 @@ public class DriverConductor extends Agent
                 }
             }
         );
+
+        rescheduleTimeout(LIVENESS_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, publicationLivenessCheckTimer);
+    }
+
+    private void onLivenessCheckSubscriptions()
+    {
+        final long now = timerWheel.now();
+
+        // the array should be removed from safely
+        subscriptions.forEach(
+            (subscription) ->
+            {
+                if (subscription.timeOfLastKeepaliveFromClient() + LIVENESS_TIMEOUT_NS < now)
+                {
+                    final ReceiveChannelEndpoint channelEndpoint = subscription.receiveChannelEndpoint();
+                    final int streamId = subscription.streamId();
+
+                    subscriptions.remove(subscription);
+
+                    if (0 == channelEndpoint.decRefToStream(streamId))
+                    {
+                        while (!receiverProxy.removeSubscription(channelEndpoint, streamId))
+                        {
+                            System.out.println("Error removing a subscription");
+                        }
+                    }
+
+                    if (channelEndpoint.streamCount() == 0)
+                    {
+                        receiveChannelEndpointByHash.remove(channelEndpoint.udpTransport().udpChannel().consistentHash());
+                        channelEndpoint.close();
+                    }
+                }
+            }
+        );
+
+        rescheduleTimeout(LIVENESS_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, subscriptionLivenessCheckTimer);
     }
 
     // ----------------------- End Heartbeats -----------------------

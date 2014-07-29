@@ -128,8 +128,8 @@ public class DriverBroadcastReceiver
 
     private long correlationId(final AtomicBuffer buffer, final int offset)
     {
-        publicationMessage.wrap(buffer, offset);
+        correlatedMessage.wrap(buffer, offset);
 
-        return publicationMessage.correlationId();
+        return correlatedMessage.correlationId();
     }
 }

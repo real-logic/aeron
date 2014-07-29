@@ -139,9 +139,13 @@ public class IoUtil
     {
         if (directory.exists())
         {
-            if (!directory.delete())
+            try
             {
-                throw new IllegalArgumentException("could not delete old " + name + " directory: " + directory);
+                delete(directory, false);
+            }
+            catch (IOException e)
+            {
+                throw new IllegalArgumentException("could not create " + name + " directory: " + directory, e);
             }
 
             callback.accept(directory.getAbsolutePath(), name);

@@ -22,13 +22,13 @@ import java.util.Collection;
 /**
  * Subscriptions maintained per stream for receiver processing from dispatcher
  */
-public class DataFrameDispatcherSubscription
+public class DispatcherSubscription
 {
     private final int streamId;
     private final DriverConductorProxy conductorProxy;
     private final Int2ObjectHashMap<DriverConnection> connectionBySessionIdMap = new Int2ObjectHashMap<>();
 
-    public DataFrameDispatcherSubscription(final int streamId, final DriverConductorProxy conductorProxy)
+    public DispatcherSubscription(final int streamId, final DriverConductorProxy conductorProxy)
     {
         this.streamId = streamId;
         this.conductorProxy = conductorProxy;

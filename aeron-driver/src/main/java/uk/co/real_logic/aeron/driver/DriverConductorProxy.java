@@ -42,7 +42,7 @@ public class DriverConductorProxy
         return commandQueue.offer(new CreateConnectionCmd(sessionId, streamId, termId, controlAddress, channelEndpoint));
     }
 
-    public boolean removeSubscription(final DataFrameDispatcherSubscription subscription)
+    public boolean removeSubscription(final DispatcherSubscription subscription)
     {
         return commandQueue.offer(new SubscriptionRemovedCmd(subscription));
     }

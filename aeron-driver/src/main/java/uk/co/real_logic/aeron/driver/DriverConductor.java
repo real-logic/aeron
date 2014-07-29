@@ -575,6 +575,9 @@ public class DriverConductor extends Agent
         }
     }
 
+    // ----------------------- End Heartbeats -----------------------
+
+
     // heartbeat check for Publications sending heartbeats to Subscriptions
     private void onHeartbeatCheck()
     {
@@ -645,8 +648,6 @@ public class DriverConductor extends Agent
         rescheduleTimeout(LIVENESS_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, subscriptionLivenessCheckTimer);
     }
 
-    // ----------------------- End Heartbeats -----------------------
-
     private void onCreateConnection(final CreateConnectionCmd cmd)
     {
         final int sessionId = cmd.sessionId();
@@ -709,7 +710,7 @@ public class DriverConductor extends Agent
 
     private void onRemovedSubscription(final SubscriptionRemovedCmd cmd)
     {
-        final DataFrameDispatcherSubscription subscription = cmd.driverSubscription();
+        final DispatcherSubscription subscription = cmd.dispatcherSubscription();
 
         for (final DriverConnection connection : subscription.connections())
         {

@@ -15,19 +15,19 @@
  */
 package uk.co.real_logic.aeron.driver.cmd;
 
-import uk.co.real_logic.aeron.driver.DataFrameDispatcherSubscription;
+import uk.co.real_logic.aeron.driver.DispatcherSubscription;
 
 public class SubscriptionRemovedCmd
 {
-    final DataFrameDispatcherSubscription dataFrameDispatcherSubscription;
+    final DispatcherSubscription dispatcherSubscription;
 
-    public SubscriptionRemovedCmd(final DataFrameDispatcherSubscription dataFrameDispatcherSubscription)
+    public SubscriptionRemovedCmd(final DispatcherSubscription dispatcherSubscription)
     {
-        this.dataFrameDispatcherSubscription = dataFrameDispatcherSubscription;
+        this.dispatcherSubscription = dispatcherSubscription;
     }
 
-    public DataFrameDispatcherSubscription driverSubscription()
+    public DispatcherSubscription dispatcherSubscription()
     {
-        return dataFrameDispatcherSubscription;
+        return dispatcherSubscription;
     }
 }

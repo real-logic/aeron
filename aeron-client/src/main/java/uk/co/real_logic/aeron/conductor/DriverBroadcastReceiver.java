@@ -105,24 +105,9 @@ public class DriverBroadcastReceiver
     {
         errorHeader.wrap(buffer, index);
         final ErrorCode errorCode = errorHeader.errorCode();
-
-        switch (errorCode)
+        if (activeCorrelationId == correlationId(buffer, errorHeader.offendingHeaderOffset()))
         {
-            // Publication errors
-            case PUBLICATION_STREAM_ALREADY_EXISTS:
-            case GENERIC_ERROR_MESSAGE:
-            case INVALID_CHANNEL:
-            case PUBLICATION_STREAM_UNKNOWN:
-                final long correlationId = correlationId(buffer, errorHeader.offendingHeaderOffset());
-                if (correlationId == activeCorrelationId)
-                {
-                    listener.onError(errorCode, errorHeader.errorMessage());
-                }
-                break;
-
-            default:
-                // TODO
-                break;
+            listener.onError(errorCode, errorHeader.errorMessage());
         }
     }
 

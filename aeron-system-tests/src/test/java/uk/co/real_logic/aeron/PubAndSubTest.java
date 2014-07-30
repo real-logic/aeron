@@ -108,14 +108,14 @@ public class PubAndSubTest
     }
 
     @Theory
-    @Test(timeout = 1000)
+    @Test(timeout = 10000)
     public void shouldSpinUpAndShutdown(final String channel) throws Exception
     {
         setup(channel);
     }
 
     @Theory
-    @Test(timeout = 1000)
+    @Test(timeout = 10000)
     public void shouldReceivePublishedMessage(final String channel) throws Exception
     {
         setup(channel);
@@ -132,7 +132,7 @@ public class PubAndSubTest
                 fragmentsRead[0] += subscription.poll(10);
                 Thread.yield();
             },
-            Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
+            Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(900));
 
         verify(dataHandler)
             .onData(anyObject(),
@@ -143,7 +143,7 @@ public class PubAndSubTest
     }
 
     @Theory
-    @Test(timeout = 1000)
+    @Test(timeout = 10000)
     public void shouldContinueAfterBufferRollover(final String channel) throws Exception
     {
         final int termBufferSize = 64 * 1024;
@@ -182,7 +182,7 @@ public class PubAndSubTest
     }
 
     @Theory
-    @Test(timeout = 1000)
+    @Test(timeout = 10000)
     public void shouldContinueAfterBufferRolloverBatched(final String channel) throws Exception
     {
         final int termBufferSize = 64 * 1024;
@@ -241,7 +241,7 @@ public class PubAndSubTest
     }
 
     @Theory
-    @Test(timeout = 1000)
+    @Test(timeout = 10000)
     public void shouldContinueAfterBufferRolloverWithPadding(final String channel) throws Exception
     {
         /*
@@ -285,7 +285,7 @@ public class PubAndSubTest
     }
 
     @Theory
-    @Test(timeout = 1000)
+    @Test(timeout = 10000)
     public void shouldContinueAfterBufferRolloverWithPaddingBatched(final String channel) throws Exception
     {
         /*
@@ -334,7 +334,7 @@ public class PubAndSubTest
     }
 
     @Theory
-    @Test(timeout = 1000)
+    @Test(timeout = 10000)
 //    @Ignore("not working reliably yet")
     public void shouldReceiveOnlyAfterSendingEntireBuffer(final String channel) throws Exception
     {

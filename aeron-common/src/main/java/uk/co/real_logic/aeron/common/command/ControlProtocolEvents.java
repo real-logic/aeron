@@ -31,12 +31,10 @@ public class ControlProtocolEvents
     public static final int ADD_SUBSCRIPTION = 0x04;
     /** Remove Subscriber */
     public static final int REMOVE_SUBSCRIPTION = 0x05;
-    /** Request Term */
-    public static final int CLEAN_TERM_BUFFER = 0x06;
     /** Heartbeat for Publication */
-    public static final int KEEPALIVE_PUBLICATION = 0x07;
+    public static final int KEEPALIVE_PUBLICATION = 0x06;
     /** Heartbeat for Subscriber */
-    public static final int KEEPALIVE_SUBSCRIPTION = 0x08;
+    public static final int KEEPALIVE_SUBSCRIPTION = 0x07;
 
     // Media Driver to Clients
 
@@ -48,6 +46,6 @@ public class ControlProtocolEvents
     public static final int ON_NEW_PUBLICATION = 0x0F03;
     /** Operation Succeeded */
     public static final int ON_OPERATION_SUCCESS = 0x0F04;
-    /** Heartbeat from driver to clients */
-    public static final int ON_DRIVER_HEARTBEAT = 0x0F05;
+    /** Inform client of timeout and removal of inactive connection */
+    public static final int ON_INACTIVE_CONNECTION = 0x0F05;
 }

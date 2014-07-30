@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.ErrorCode;
 import uk.co.real_logic.aeron.common.Flyweight;
+import uk.co.real_logic.aeron.common.command.ConnectionMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
@@ -43,6 +44,7 @@ public class ClientProxy
     private final ErrorFlyweight errorFlyweight = new ErrorFlyweight();
     private final LogBuffersMessageFlyweight logBuffersMessage = new LogBuffersMessageFlyweight();
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
+    private final ConnectionMessageFlyweight connectionMessage = new ConnectionMessageFlyweight();
     private final EventLogger logger;
 
     public ClientProxy(final BroadcastTransmitter transmitter, final EventLogger logger)
@@ -102,5 +104,19 @@ public class ClientProxy
         logger.log(EventCode.CMD_OUT_ON_OPERATION_SUCCESS, tmpBuffer, 0, CorrelatedMessageFlyweight.LENGTH);
 
         transmitter.transmit(ON_OPERATION_SUCCESS, tmpBuffer, 0, CorrelatedMessageFlyweight.LENGTH);
+    }
+
+    public void onInactiveConnection(final int sessionId,
+                                     final int streamId,
+                                     final String channel)
+    {
+        connectionMessage.wrap(tmpBuffer, 0);
+        connectionMessage.sessionId(sessionId)
+                         .streamId(streamId)
+                         .channel(channel);
+
+        logger.log(EventCode.CMD_OUT_ON_INACTIVE_CONNECTION, tmpBuffer, 0, connectionMessage.length());
+
+        transmitter.transmit(ON_INACTIVE_CONNECTION, tmpBuffer, 0, connectionMessage.length());
     }
 }

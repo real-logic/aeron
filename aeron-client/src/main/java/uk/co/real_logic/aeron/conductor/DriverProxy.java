@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron.conductor;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
-import uk.co.real_logic.aeron.common.command.QualifiedMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
@@ -40,7 +39,6 @@ public class DriverProxy
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(MSG_BUFFER_CAPACITY));
     private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
     private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
-    private final QualifiedMessageFlyweight qualifiedMessage = new QualifiedMessageFlyweight();
 
     // the heartbeats come from the client conductor thread, so keep the flyweights and buffer separate
     private final AtomicBuffer keepaliveBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(MSG_BUFFER_CAPACITY));
@@ -55,7 +53,6 @@ public class DriverProxy
 
         publicationMessage.wrap(writeBuffer, 0);
         subscriptionMessage.wrap(writeBuffer, 0);
-        qualifiedMessage.wrap(writeBuffer, 0);
 
         keepalivePublicationMessage.wrap(keepaliveBuffer, 0);
         keepaliveSubscriptionMessage.wrap(keepaliveBuffer, 0);
@@ -142,21 +139,5 @@ public class DriverProxy
         }
 
         return correlationId;
-    }
-
-    public void requestTerm(final String channel,
-                            final int sessionId,
-                            final int streamId,
-                            final int termId)
-    {
-        qualifiedMessage.sessionId(sessionId);
-        qualifiedMessage.streamId(streamId);
-        qualifiedMessage.termId(termId);
-        qualifiedMessage.channel(channel);
-
-        if (!mediaDriverCommandBuffer.write(CLEAN_TERM_BUFFER, writeBuffer, 0, qualifiedMessage.length()))
-        {
-            throw new IllegalStateException("could not write request terms message");
-        }
     }
 }

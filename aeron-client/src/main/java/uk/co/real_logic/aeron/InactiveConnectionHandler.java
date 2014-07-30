@@ -23,8 +23,9 @@ public interface InactiveConnectionHandler
     /**
      * Method called by Aeron to deliver notification that a source has gone inactive
      *
+     * @param channel of the inactive source
      * @param sessionId of the inactive source
      * @param streamId of the inactive stream
      */
-    void onInactiveConnection(final int sessionId, final int streamId);
+    void onInactiveConnection(final String channel, final int sessionId, final int streamId);
 }

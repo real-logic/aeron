@@ -46,7 +46,8 @@ public enum EventCode
     CMD_IN_KEEPALIVE_SUBSCRIPTION(19, EventCodec::dissectAsCommand),
     REMOVE_PUBLICATION_TIMEOUT(20, EventCodec::dissectAsString),
     REMOVE_SUBSCRIPTION_TIMEOUT(21, EventCodec::dissectAsString),
-    REMOVE_CONNECTION_TIMEOUT(22, EventCodec::dissectAsString);
+    REMOVE_CONNECTION_TIMEOUT(22, EventCodec::dissectAsString),
+    CMD_OUT_ON_INACTIVE_CONNECTION(23, EventCodec::dissectAsCommand);
 
     private static final Int2ObjectHashMap<EventCode> EVENT_CODE_BY_ID_MAP = new Int2ObjectHashMap<>();
 

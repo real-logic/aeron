@@ -105,6 +105,7 @@ public class ClientConductorTest extends MockBufferUsage
             timerWheel,
             mockClientErrorHandler,
             null,
+            null,
             AWAIT_TIMEOUT,
             MTU_LENGTH);
 

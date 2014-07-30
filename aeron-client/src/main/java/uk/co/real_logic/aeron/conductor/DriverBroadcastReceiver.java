@@ -16,9 +16,9 @@
 package uk.co.real_logic.aeron.conductor;
 
 import uk.co.real_logic.aeron.common.ErrorCode;
+import uk.co.real_logic.aeron.common.command.ConnectionMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
-import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.aeron.common.protocol.ErrorFlyweight;
@@ -35,10 +35,10 @@ public class DriverBroadcastReceiver
     private final CopyBroadcastReceiver broadcastReceiver;
     private final Consumer<Exception> errorHandler;
 
-    private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
     private final ErrorFlyweight errorHeader = new ErrorFlyweight();
     private final LogBuffersMessageFlyweight logBuffersMessage = new LogBuffersMessageFlyweight();
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
+    private final ConnectionMessageFlyweight connectionMessage = new ConnectionMessageFlyweight();
 
     public DriverBroadcastReceiver(final CopyBroadcastReceiver broadcastReceiver, final Consumer<Exception> errorHandler)
     {
@@ -82,6 +82,12 @@ public class DriverBroadcastReceiver
                             {
                                 listener.operationSucceeded();
                             }
+                            break;
+
+                        case ON_INACTIVE_CONNECTION:
+                            connectionMessage.wrap(buffer, index);
+                            listener.onInactiveConnection(connectionMessage.channel(),
+                                connectionMessage.sessionId(), connectionMessage.streamId(), connectionMessage);
                             break;
 
                         case ON_ERROR:

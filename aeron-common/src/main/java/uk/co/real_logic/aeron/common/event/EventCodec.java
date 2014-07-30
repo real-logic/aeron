@@ -16,10 +16,7 @@
 package uk.co.real_logic.aeron.common.event;
 
 import uk.co.real_logic.aeron.common.BitUtil;
-import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
-import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
-import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
-import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
+import uk.co.real_logic.aeron.common.command.*;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
@@ -57,6 +54,9 @@ public class EventCodec
             ThreadLocal.withInitial(LogBuffersMessageFlyweight::new);
     private final static ThreadLocal<CorrelatedMessageFlyweight> correlatedMsg =
             ThreadLocal.withInitial(CorrelatedMessageFlyweight::new);
+    private final static ThreadLocal<ConnectionMessageFlyweight> connectionMsg =
+            ThreadLocal.withInitial(ConnectionMessageFlyweight::new);
+
 
     private final static int LOG_HEADER_LENGTH = 16;
     private final static int SOCKET_ADDRESS_MAX_LENGTH = 24;
@@ -216,6 +216,12 @@ public class EventCodec
                 final CorrelatedMessageFlyweight correlatedCmd = correlatedMsg.get();
                 correlatedCmd.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(correlatedCmd));
+                break;
+
+            case CMD_OUT_ON_INACTIVE_CONNECTION:
+                final ConnectionMessageFlyweight connectionCmd = connectionMsg.get();
+                connectionCmd.wrap(buffer, offset + relativeOffset);
+                builder.append(dissect(connectionCmd));
                 break;
 
             default:
@@ -444,5 +450,10 @@ public class EventCodec
     private static String dissect(final CorrelatedMessageFlyweight command)
     {
         return String.format("[%x]", command.correlationId());
+    }
+
+    private static String dissect(final ConnectionMessageFlyweight command)
+    {
+        return String.format("%s %x:%x", command.channel(), command.sessionId(), command.streamId());
     }
 }

@@ -15,12 +15,10 @@
  */
 package uk.co.real_logic.aeron.conductor;
 
-import uk.co.real_logic.aeron.DataHandler;
-import uk.co.real_logic.aeron.NewConnectionHandler;
-import uk.co.real_logic.aeron.Publication;
-import uk.co.real_logic.aeron.Subscription;
+import uk.co.real_logic.aeron.*;
 import uk.co.real_logic.aeron.common.*;
 import uk.co.real_logic.aeron.common.collections.ConnectionMap;
+import uk.co.real_logic.aeron.common.command.ConnectionMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.AtomicArray;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
@@ -68,6 +66,7 @@ public class ClientConductor extends Agent implements DriverListener
     private final TimerWheel timerWheel;
 
     private final NewConnectionHandler newConnectionHandler;
+    private final InactiveConnectionHandler inactiveConnectionHandler;
     private final int mtuLength;
 
     private long activeCorrelationId = -1; // Guarded by this
@@ -85,6 +84,7 @@ public class ClientConductor extends Agent implements DriverListener
                            final TimerWheel timerWheel,
                            final Consumer<Exception> errorHandler,
                            final NewConnectionHandler newConnectionHandler,
+                           final InactiveConnectionHandler inactiveConnectionHandler,
                            final long awaitTimeout,
                            final int mtuLength)
     {
@@ -98,6 +98,7 @@ public class ClientConductor extends Agent implements DriverListener
         this.bufferManager = bufferManager;
         this.timerWheel = timerWheel;
         this.newConnectionHandler = newConnectionHandler;
+        this.inactiveConnectionHandler = inactiveConnectionHandler;
         this.awaitTimeout = awaitTimeout;
         this.mtuLength = mtuLength;
 
@@ -264,6 +265,24 @@ public class ClientConductor extends Agent implements DriverListener
     {
         operationSucceeded = true;
         correlationSignal.signal();
+    }
+
+    public void onInactiveConnection(final String channel,
+                                     final int sessionId,
+                                     final int streamId,
+                                     final ConnectionMessageFlyweight connectionMessage)
+    {
+        final Subscription subscription = subscriptionMap.get(channel, streamId);
+
+        if (null != subscription && subscription.isConnected(sessionId))
+        {
+            // TODO: clean up connection
+
+            if (null != inactiveConnectionHandler)
+            {
+                inactiveConnectionHandler.onInactiveConnection(channel, sessionId, streamId);
+            }
+        }
     }
 
     private void await(final long startTime)

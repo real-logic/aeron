@@ -75,6 +75,7 @@ public final class Aeron implements AutoCloseable, Runnable
                                         wheel,
                                         ctx.errorHandler,
                                         ctx.newConnectionHandler,
+                                        ctx.inactiveConnectionHandler,
                                         ctx.mediaDriverTimeout(),
                                         ctx.mtuLength());
 
@@ -200,6 +201,7 @@ public final class Aeron implements AutoCloseable, Runnable
 
         private Consumer<Exception> errorHandler;
         private NewConnectionHandler newConnectionHandler;
+        private InactiveConnectionHandler inactiveConnectionHandler;
         private long mediaDriverTimeout = UNSET_TIMEOUT;
 
         public Context conclude() throws IOException
@@ -280,9 +282,15 @@ public final class Aeron implements AutoCloseable, Runnable
             return this;
         }
 
-        public Context newSourceHandler(final NewConnectionHandler handler)
+        public Context newConnectionHandler(final NewConnectionHandler handler)
         {
             this.newConnectionHandler = handler;
+            return this;
+        }
+
+        public Context inactiveConnectionHandler(final InactiveConnectionHandler handler)
+        {
+            this.inactiveConnectionHandler = handler;
             return this;
         }
 

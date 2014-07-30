@@ -680,6 +680,9 @@ public class DriverConductor extends Agent
                         connection.receiveChannelEndpoint().udpChannel().originalUriAsString(), connection.sessionId(),
                         connection.streamId()));
 
+                    clientProxy.onInactiveConnection(connection.sessionId(), connection.streamId(),
+                        connection.receiveChannelEndpoint().udpChannel().originalUriAsString());
+
                     while (!receiverProxy.removeConnection(connection))
                     {
                         System.out.println("Error removing connection");

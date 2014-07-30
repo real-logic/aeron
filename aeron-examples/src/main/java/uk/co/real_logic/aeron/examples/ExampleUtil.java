@@ -120,7 +120,7 @@ public class ExampleUtil
             final byte[] data = new byte[length];
             buffer.getBytes(offset, data);
 
-            System.out.println(String.format("message to stream %d from session %d (%d@%d) <<%s>>",
+            System.out.println(String.format("message to stream %d from session %x (%d@%d) <<%s>>",
                                              streamId, sessionId, length, offset, new String(data)));
         };
     }
@@ -164,5 +164,29 @@ public class ExampleUtil
     public static void printRate(final double messagesPerSec, final double bytesPerSec)
     {
         System.out.println(String.format("%.02g msgs/sec, %.02g bytes/sec", messagesPerSec, bytesPerSec));
+    }
+
+    /**
+     * Print the information for a new connection to stdout.
+     *
+     * @param channel for the connection
+     * @param sessionId for the connection publication
+     * @param streamId for the stream
+     */
+    public static void printNewConnection(final String channel, final int sessionId, final int streamId)
+    {
+        System.out.println(String.format("new connection on %s streamId %d sessionId %x", channel, streamId, sessionId));
+    }
+
+    /**
+     * Print the information for an inactive connection to stdout.
+     *
+     * @param channel for the connection
+     * @param sessionId for the connection publication
+     * @param streamId for the stream
+     */
+    public static void printInactiveConnection(final String channel, final int sessionId, final int streamId)
+    {
+        System.out.println(String.format("inactive connection on %s streamId %d sessionId %x", channel, streamId, sessionId));
     }
 }

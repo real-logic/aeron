@@ -22,13 +22,7 @@ import java.nio.ByteOrder;
 import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_INT;
 
 /**
- * Control message flyweight for any message that needs to
- * represent a Triple of Session ID/Channel Id/Term ID and a channel. These are:
- *
- * <ul>
- *     <li>Request Cleaned Term</li>
- *     <li>{@link LogBuffersMessageFlyweight}</li>
- * </ul>
+ * Control message flyweight for any message that needs to represent a connection
  *
  * <p>
  * 0                   1                   2                   3
@@ -38,18 +32,15 @@ import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_INT;
  * +---------------------------------------------------------------+
  * |                          Stream ID                            |
  * +---------------------------------------------------------------+
- * |                           Term ID                             |
- * +---------------------------------------------------------------+
  * |      Channel   Length       |   Channel                     ...
  * |                                                             ...
  * +---------------------------------------------------------------+
  */
-public class QualifiedMessageFlyweight extends Flyweight
+public class ConnectionMessageFlyweight extends Flyweight
 {
     private static final int SESSION_ID_OFFSET = 0;
     private static final int STREAM_ID_FIELD_OFFSET = 4;
-    private static final int TERM_ID_FIELD_OFFSET = 8;
-    private static final int CHANNEL_OFFSET = 12;
+    private static final int CHANNEL_OFFSET = 8;
 
     private int lengthOfChannel;
 
@@ -67,7 +58,7 @@ public class QualifiedMessageFlyweight extends Flyweight
      * @param sessionId field value
      * @return flyweight
      */
-    public QualifiedMessageFlyweight sessionId(final int sessionId)
+    public ConnectionMessageFlyweight sessionId(final int sessionId)
     {
         atomicBuffer().putInt(offset() + SESSION_ID_OFFSET, sessionId, ByteOrder.LITTLE_ENDIAN);
         return this;
@@ -89,31 +80,9 @@ public class QualifiedMessageFlyweight extends Flyweight
      * @param streamId field value
      * @return flyweight
      */
-    public QualifiedMessageFlyweight streamId(final int streamId)
+    public ConnectionMessageFlyweight streamId(final int streamId)
     {
         atomicBuffer().putInt(offset() + STREAM_ID_FIELD_OFFSET, streamId, ByteOrder.LITTLE_ENDIAN);
-        return this;
-    }
-
-    /**
-     * return termId field
-     *
-     * @return termId field
-     */
-    public int termId()
-    {
-        return atomicBuffer().getInt(offset() + TERM_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
-    }
-
-    /**
-     * set termId field
-     *
-     * @param termId field value
-     * @return flyweight
-     */
-    public QualifiedMessageFlyweight termId(final int termId)
-    {
-        atomicBuffer().putInt(offset() + TERM_ID_FIELD_OFFSET, termId, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
@@ -136,7 +105,7 @@ public class QualifiedMessageFlyweight extends Flyweight
      * @param channel field value
      * @return flyweight
      */
-    public QualifiedMessageFlyweight channel(final String channel)
+    public ConnectionMessageFlyweight channel(final String channel)
     {
         lengthOfChannel = stringPut(offset() + CHANNEL_OFFSET, channel, ByteOrder.LITTLE_ENDIAN);
         return this;

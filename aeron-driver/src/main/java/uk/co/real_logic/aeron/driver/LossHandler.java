@@ -213,14 +213,6 @@ public class LossHandler
             if (scanCursor > 0)
             {
                 activateGap(firstGap.termId, firstGap.termOffset, firstGap.length);
-//                activeGap.reset(firstGap.termId, firstGap.termOffset, firstGap.length);
-//                scheduleTimer();
-//                nakSentTimestamp = wheel.now();
-//
-//                if (delayGenerator.shouldFeedbackImmediately())
-//                {
-//                    nakMessageSender.send(activeGap.termId, activeGap.termOffset, activeGap.length);
-//                }
             }
         }
         else if (scanCursor == 0)
@@ -230,14 +222,6 @@ public class LossHandler
         else if (!firstGap.matches(activeGap.termId, activeGap.termOffset))
         {
             activateGap(firstGap.termId, firstGap.termOffset, firstGap.length);
-//            activeGap.reset(firstGap.termId, firstGap.termOffset, firstGap.length);
-//            scheduleTimer();
-//            nakSentTimestamp = wheel.now();
-//
-//            if (delayGenerator.shouldFeedbackImmediately())
-//            {
-//                nakMessageSender.send(activeGap.termId, activeGap.termOffset, activeGap.length);
-//            }
         }
     }
 

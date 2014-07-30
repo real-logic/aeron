@@ -99,6 +99,7 @@ public class DriverConductor extends Agent
 
     private final int mtuLength;
     private final int initialWindowSize;
+    private final long statusMessageTimeout;
     private final TimerWheel.Timer heartbeatTimer;
     private final TimerWheel.Timer publicationLivenessCheckTimer;
     private final TimerWheel.Timer subscriptionLivenessCheckTimer;
@@ -118,6 +119,7 @@ public class DriverConductor extends Agent
         this.nioSelector = ctx.conductorNioSelector();
         this.mtuLength = ctx.mtuLength();
         this.initialWindowSize = ctx.initialWindowSize();
+        this.statusMessageTimeout = ctx.statusMessageTimeout();
         this.unicastSenderFlowControl = ctx.unicastSenderFlowControl();
         this.multicastSenderFlowControl = ctx.multicastSenderFlowControl();
         this.countersManager = ctx.countersManager();
@@ -732,6 +734,7 @@ public class DriverConductor extends Agent
                     streamId,
                     initialTermId,
                     initialWindowSize,
+                    statusMessageTimeout,
                     termBuffers,
                     lossHandler,
                     channelEndpoint.composeStatusMessageSender(controlAddress, sessionId, streamId),

@@ -39,6 +39,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static java.lang.Integer.getInteger;
+import static java.lang.Long.getLong;
 import static uk.co.real_logic.aeron.common.IoUtil.deleteIfExists;
 import static uk.co.real_logic.aeron.common.IoUtil.mapNewFile;
 
@@ -95,6 +96,11 @@ public class MediaDriver implements AutoCloseable
      * Property name for size of the initial window
      */
     public static final String INITIAL_WINDOW_SIZE_PROP_NAME = "aeron.rcv.initial.window.size";
+
+    /**
+     * Property name for status message timeout in nanoseconds
+     */
+    public static final String STATUS_MESSAGE_TIMEOUT_PROP_NAME = "aeron.rcv.status.message.timeout";
 
     /**
      * Default byte buffer size for reads
@@ -183,6 +189,11 @@ public class MediaDriver implements AutoCloseable
      * Round to 128KB
      */
     public static final int INITIAL_WINDOW_SIZE_DEFAULT = 128 * 1024;
+
+    /**
+     * Max timeout between SMs.
+     */
+    public static final long STATUS_MESSAGE_TIMEOUT_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(200);
 
     /**
      * Estimated RTT in nanoseconds.
@@ -511,6 +522,7 @@ public class MediaDriver implements AutoCloseable
 
         private int termBufferSize;
         private int initialWindowSize;
+        private long statusMessageTimeout;
 
         private boolean warnIfDirectoriesExist;
         private EventLogger eventLogger;
@@ -520,6 +532,7 @@ public class MediaDriver implements AutoCloseable
         {
             termBufferSize(getInteger(TERM_BUFFER_SZ_PROP_NAME, TERM_BUFFER_SZ_DEFAULT));
             initialWindowSize(getInteger(INITIAL_WINDOW_SIZE_PROP_NAME, INITIAL_WINDOW_SIZE_DEFAULT));
+            statusMessageTimeout(getLong(STATUS_MESSAGE_TIMEOUT_PROP_NAME, STATUS_MESSAGE_TIMEOUT_DEFAULT_NS));
 
             eventConsumer = System.out::println;
             warnIfDirectoriesExist = true;
@@ -727,6 +740,12 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
+        public Context statusMessageTimeout(final long statusMessageTimeout)
+        {
+            this.statusMessageTimeout = statusMessageTimeout;
+            return this;
+        }
+
         public Context warnIfDirectoriesExist(final boolean value)
         {
             this.warnIfDirectoriesExist = value;
@@ -843,6 +862,11 @@ public class MediaDriver implements AutoCloseable
         public int initialWindowSize()
         {
             return initialWindowSize;
+        }
+
+        public long statusMessageTimeout()
+        {
+            return statusMessageTimeout;
         }
 
         public boolean warnIfDirectoriesExist()

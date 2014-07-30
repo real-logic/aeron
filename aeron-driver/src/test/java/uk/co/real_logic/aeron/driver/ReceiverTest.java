@@ -59,6 +59,7 @@ public class ReceiverTest
     private static final byte[] FAKE_PAYLOAD = "Hello there, message!".getBytes();
     private static final byte[] NO_PAYLOAD = new byte[0];
     private static final int INITIAL_WINDOW_SIZE = MediaDriver.INITIAL_WINDOW_SIZE_DEFAULT;
+    private static final long STATUS_MESSAGE_TIMEOUT = MediaDriver.STATUS_MESSAGE_TIMEOUT_DEFAULT_NS;
     private static final PositionIndicator POSITION_INDICATOR = mock(PositionIndicator.class);
 
     private final LossHandler mockLossHandler = mock(LossHandler.class);
@@ -154,6 +155,7 @@ public class ReceiverTest
                 STREAM_ID,
                 TERM_ID,
                 INITIAL_WINDOW_SIZE,
+                STATUS_MESSAGE_TIMEOUT,
                 termBuffers,
                 mockLossHandler,
                 receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
@@ -220,6 +222,7 @@ public class ReceiverTest
                             STREAM_ID,
                             TERM_ID,
                             INITIAL_WINDOW_SIZE,
+                            STATUS_MESSAGE_TIMEOUT,
                             termBuffers,
                             mockLossHandler,
                             receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
@@ -276,6 +279,7 @@ public class ReceiverTest
                                 STREAM_ID,
                                 TERM_ID,
                                 INITIAL_WINDOW_SIZE,
+                                STATUS_MESSAGE_TIMEOUT,
                                 termBuffers,
                                 mockLossHandler,
                                 receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
@@ -335,6 +339,7 @@ public class ReceiverTest
                             STREAM_ID,
                             TERM_ID,
                             INITIAL_WINDOW_SIZE,
+                            STATUS_MESSAGE_TIMEOUT,
                             termBuffers,
                             mockLossHandler,
                             receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),

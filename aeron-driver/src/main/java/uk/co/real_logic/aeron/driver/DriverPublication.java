@@ -157,13 +157,14 @@ public class DriverPublication implements AutoCloseable
             final int availableWindow = (int)(positionLimit.get() - nextOffsetPosition);
             final int scanLimit = Math.min(availableWindow, mtuLength);
 
-            final LogScanner scanner = logScanners[activeIndex];
+            LogScanner scanner = logScanners[activeIndex];
             workCount += scanner.scanNext(this::onSendFrame, scanLimit);
 
             if (scanner.isComplete())
             {
                 activeIndex = TermHelper.rotateNext(activeIndex);
                 activeTermId.lazySet(activeTermId.get() + 1);
+                scanner = logScanners[activeIndex];
             }
 
             limitReporter.position(calculatePosition(scanner.tail()) + scanner.capacity());

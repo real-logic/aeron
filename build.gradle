@@ -132,7 +132,7 @@ project(':aeron-driver') {
     }
 
     run {
-        systemProperties('aeron.event.log': System.properties['aeron.event.log'])
+        systemProperties(System.properties)
     }
 
     build.doLast {

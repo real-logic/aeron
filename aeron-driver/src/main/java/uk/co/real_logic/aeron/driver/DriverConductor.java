@@ -779,6 +779,6 @@ public class DriverConductor extends Agent
 
     private int allocatePositionCounter(final String type, final String dirName, final int sessionId, final int streamId)
     {
-        return countersManager.allocate(String.format("%s: %s %d %d", type, dirName, sessionId, streamId));
+        return countersManager.allocate(String.format("%s: %s %x %x", type, dirName, sessionId, streamId));
     }
 }

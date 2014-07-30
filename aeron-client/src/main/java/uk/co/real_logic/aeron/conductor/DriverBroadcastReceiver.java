@@ -70,7 +70,7 @@ public class DriverBroadcastReceiver
                                 listener.onNewPublication(
                                     channel, sessionId, streamId, termId, positionCounterId, logBuffersMessage);
                             }
-                            else
+                            else if (msgTypeId == ON_NEW_CONNECTED_SUBSCRIPTION)
                             {
                                 listener.onNewConnection(channel, sessionId, streamId, termId, logBuffersMessage);
                             }

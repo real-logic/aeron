@@ -235,9 +235,9 @@ public class LogBuffersMessageFlyweight extends Flyweight
     }
 
     /**
-     * return position counter offset field
+     * return position counter id field
      *
-     * @return position counter offset field
+     * @return position counter id field
      */
     public int positionCounterId()
     {
@@ -245,14 +245,14 @@ public class LogBuffersMessageFlyweight extends Flyweight
     }
 
     /**
-     * set position counter offset field
+     * set position counter id field
      *
-     * @param positionCounterOffset field value
+     * @param positionCounterId field value
      * @return flyweight
      */
-    public LogBuffersMessageFlyweight positionCounterOffset(final int positionCounterOffset)
+    public LogBuffersMessageFlyweight positionCounterId(final int positionCounterId)
     {
-        atomicBuffer().putInt(offset() + POSITION_COUNTER_ID_OFFSET, positionCounterOffset, LITTLE_ENDIAN);
+        atomicBuffer().putInt(offset() + POSITION_COUNTER_ID_OFFSET, positionCounterId, LITTLE_ENDIAN);
         return this;
     }
 

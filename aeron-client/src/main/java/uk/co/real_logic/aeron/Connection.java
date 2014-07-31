@@ -34,7 +34,7 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor
  */
 public class Connection
 {
-    private static final int HEADER_LENGTH = BitUtil.align(DataHeaderFlyweight.HEADER_LENGTH, WORD_ALIGNMENT);
+    public static final int HEADER_LENGTH = BitUtil.align(DataHeaderFlyweight.HEADER_LENGTH, WORD_ALIGNMENT);
 
     private final LogReader[] logReaders;
     private final int sessionId;

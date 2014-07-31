@@ -48,6 +48,7 @@ public class DriverBroadcastReceiver
 
     public int receive(final DriverListener listener, final long activeCorrelationId)
     {
+        // Capturing Lambda, causes allocation
         return broadcastReceiver.receive(
             (msgTypeId, buffer, index, length) ->
             {

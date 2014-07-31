@@ -34,11 +34,14 @@ import static uk.co.real_logic.aeron.common.CommonContext.*;
  * Goal: test for resource leaks in the control/admin side of things.
  *
  * For infinite amount of time:
- *  1. Create new clients
+ *  1. Create a publication & a subscription.
  *  2. Send a few messages
- *  3. Close the clients down.
+ *  3. Close the publication & a subscription.
+ *
+ *  This differs from the MediaDriverAdminSoakTestRunner by keeping the same two client
+ *  instances. It thus detects resource leaks in the client admin.
  */
-public class AdminSoakTestRunner
+public class ClientAdminSoakTestRunner
 {
     private static final String CHANNEL = "udp://localhost:40123";
     private static final int STREAM_ID = 10;
@@ -60,9 +63,15 @@ public class AdminSoakTestRunner
         final MediaDriver driver = new MediaDriver();
         driver.invokeEmbedded();
 
+        final Aeron publishingClient = Aeron.newClient(new Aeron.Context());
+        final Aeron consumingClient = Aeron.newClient(new Aeron.Context());
+
+        consumingClient.invoke(executor);
+        publishingClient.invoke(executor);
+
         for (int i = 0; true; i++)
         {
-            exchangeMessagesBetweenClients();
+            exchangeMessagesBetweenClients(publishingClient, consumingClient);
 
             if ((i % 100) == 0)
             {
@@ -73,15 +82,10 @@ public class AdminSoakTestRunner
         }
     }
 
-    private static void exchangeMessagesBetweenClients()
+    private static void exchangeMessagesBetweenClients(final Aeron publishingClient, final Aeron consumingClient)
     {
         publishingBuffer.setMemory(0, publishingBuffer.capacity(), (byte) 0);
 
-        final Aeron publishingClient = Aeron.newClient(new Aeron.Context());
-        final Aeron consumingClient = Aeron.newClient(new Aeron.Context());
-
-        consumingClient.invoke(executor);
-        publishingClient.invoke(executor);
 
         try (final Publication publication = publishingClient.addPublication(CHANNEL, STREAM_ID, 0))
         {
@@ -128,23 +132,6 @@ public class AdminSoakTestRunner
                 }
             }
         }
-
-        shutdownAndClose(consumingClient);
-        shutdownAndClose(publishingClient);
     }
-
-    public static void shutdownAndClose(final Aeron aeron)
-    {
-        try
-        {
-            aeron.shutdown();
-            aeron.close();
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
-    }
-
 
 }

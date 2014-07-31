@@ -274,10 +274,8 @@ public class ClientConductor extends Agent implements DriverListener
     {
         final Subscription subscription = subscriptionMap.get(channel, streamId);
 
-        if (null != subscription && subscription.isConnected(sessionId))
+        if (null != subscription && subscription.removeConnection(sessionId))
         {
-            // TODO: clean up connection
-
             if (null != inactiveConnectionHandler)
             {
                 inactiveConnectionHandler.onInactiveConnection(channel, sessionId, streamId);

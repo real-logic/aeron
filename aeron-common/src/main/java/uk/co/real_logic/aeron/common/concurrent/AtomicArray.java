@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -56,18 +57,6 @@ public class AtomicArray<T> implements Collection<T>
         int apply(T value, int limit);
     }
 
-    @FunctionalInterface
-    public interface MatchFunction<T>
-    {
-        /**
-         * Does an element match the supplied match function?
-         *
-         * @param value to be checked for a match.
-         * @return true if the value matches otherwise false.
-         */
-        boolean matches(T value);
-    }
-
     /**
      * Return the given element of the array
      *
@@ -81,19 +70,19 @@ public class AtomicArray<T> implements Collection<T>
     }
 
     /**
-     * Find the first element that matches via a supplied {@link MatchFunction} function.
+     * Find the first element that matches via a supplied {@link java.util.function.Predicate} function.
      *
      * @param function to match on.
      * @return the first element to match or null if no matches.
      */
-    public T findFirst(final MatchFunction<T> function)
+    public T findFirst(final Predicate<T> function)
     {
         @SuppressWarnings("unchecked")
         final T[] array = (T[])arrayRef.get();
 
         for (final T e : array)
         {
-            if (function.matches(e))
+            if (function.test(e))
             {
                 return e;
             }
@@ -242,8 +231,13 @@ public class AtomicArray<T> implements Collection<T>
      */
     public boolean remove(final Object element)
     {
+        return remove(element::equals);
+    }
+
+    public boolean remove(final Predicate<T> predicate)
+    {
         final Object[] oldArray = arrayRef.get();
-        final Object[] newArray = remove(oldArray, element);
+        final Object[] newArray = remove(oldArray, predicate);
 
         arrayRef.lazySet(newArray);
 
@@ -262,7 +256,6 @@ public class AtomicArray<T> implements Collection<T>
 
     private final static class ArrayIterator<T> implements Iterator<T>
     {
-
         private final Object[] array;
         private int index;
         private ArrayIterator(final Object[] array)
@@ -290,8 +283,8 @@ public class AtomicArray<T> implements Collection<T>
         {
             throw new UnsupportedOperationException();
         }
-
     }
+
     public boolean isEmpty()
     {
         return arrayRef.get().length == 0;
@@ -360,9 +353,14 @@ public class AtomicArray<T> implements Collection<T>
 
     private static int find(final Object[] array, final Object item)
     {
+        return find(array, item::equals);
+    }
+
+    private static int find(final Object[] array, final Predicate item)
+    {
         for (int i = 0; i < array.length; i++)
         {
-            if (item.equals(array[i]))
+            if (item.test(array[i]))
             {
                 return i;
             }
@@ -379,14 +377,14 @@ public class AtomicArray<T> implements Collection<T>
         return newArray;
     }
 
-    private static Object[] remove(final Object[] oldArray, final Object oldElement)
+    private static Object[] remove(final Object[] oldArray, final Predicate predicate)
     {
-        if (null == oldArray || (oldArray.length == 1 && oldArray[0].equals(oldElement)))
+        if (null == oldArray || (oldArray.length == 1 && predicate.test(oldArray[0])))
         {
             return EMPTY_ARRAY;
         }
 
-        int index = find(oldArray, oldElement);
+        int index = find(oldArray, predicate);
 
         if (-1 == index)
         {

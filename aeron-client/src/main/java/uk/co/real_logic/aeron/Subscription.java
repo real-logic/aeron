@@ -112,4 +112,22 @@ public class Subscription implements AutoCloseable
     {
         return null != connections.findFirst((e) -> e.sessionId() == sessionId);
     }
+
+    /**
+     * Remove a connection with the given sessionId
+     *
+     * @param sessionId
+     * @return true if it removed something, false otherwise
+     */
+    public boolean removeConnection(final int sessionId)
+    {
+        final boolean connection = connections.remove(connection -> connection.sessionId() == sessionId);
+        // TODO: return object
+        return false;
+    }
+
+    public boolean hasNoConnections()
+    {
+        return connections.isEmpty();
+    }
 }

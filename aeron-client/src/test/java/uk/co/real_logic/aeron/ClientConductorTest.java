@@ -40,10 +40,13 @@ import java.util.stream.IntStream;
 
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.common.ErrorCode.INVALID_CHANNEL;
 import static uk.co.real_logic.aeron.common.ErrorCode.PUBLICATION_STREAM_ALREADY_EXISTS;
+import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ON_NEW_CONNECTED_SUBSCRIPTION;
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ON_NEW_PUBLICATION;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
 
@@ -83,6 +86,7 @@ public class ClientConductorTest extends MockBufferUsage
     private DriverProxy driverProxy;
     private ClientConductor conductor;
     private DataHandler dataHandler = mock(DataHandler.class);
+    private InactiveConnectionHandler mockInactiveConnectionHandler = mock(InactiveConnectionHandler.class);
 
     @Before
     public void setUp() throws Exception
@@ -105,7 +109,7 @@ public class ClientConductorTest extends MockBufferUsage
             timerWheel,
             mockClientErrorHandler,
             null,
-            null,
+            mockInactiveConnectionHandler,
             AWAIT_TIMEOUT,
             MTU_LENGTH);
 
@@ -277,6 +281,25 @@ public class ClientConductorTest extends MockBufferUsage
             }).when(signal).await(anyLong());
 
         addSubscription();
+    }
+
+    @Test
+    public void clientNotifiedOfInactiveConnections()
+    {
+        willNotifyOperationSucceeded();
+
+        Subscription subscription = addSubscription();
+
+        sendNewBufferNotification(ON_NEW_CONNECTED_SUBSCRIPTION, SESSION_ID_1, TERM_ID_1);
+        conductor.doWork();
+
+        assertFalse(subscription.hasNoConnections());
+
+        conductor.onInactiveConnection(CHANNEL, SESSION_ID_1, STREAM_ID_1, null);
+
+        verify(mockInactiveConnectionHandler).onInactiveConnection(CHANNEL, SESSION_ID_1, STREAM_ID_1);
+        assertTrue(subscription.hasNoConnections());
+        assertFalse(subscription.isConnected(SESSION_ID_1));
     }
 
     private Subscription addSubscription()

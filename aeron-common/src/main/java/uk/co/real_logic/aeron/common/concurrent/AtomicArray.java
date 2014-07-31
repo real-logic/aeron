@@ -231,17 +231,58 @@ public class AtomicArray<T> implements Collection<T>
      */
     public boolean remove(final Object element)
     {
-        return remove(element::equals);
+        return remove(element::equals) != null;
     }
 
-    public boolean remove(final Predicate<T> predicate)
+    /**
+     * Remove an element if it matches a predicate
+     *
+     * @param predicate
+     * @return the element removed or null if nothing was removed
+     */
+    public T remove(final Predicate<T> predicate)
     {
         final Object[] oldArray = arrayRef.get();
-        final Object[] newArray = remove(oldArray, predicate);
+        //final Object[] newArray = remove(oldArray, predicate);
 
-        arrayRef.lazySet(newArray);
+        if (oldArray == null || oldArray == EMPTY_ARRAY)
+        {
+            arrayRef(EMPTY_ARRAY);
+            return null;
+        }
 
-        return oldArray != newArray;
+        if (oldArray.length == 1)
+        {
+            T element = (T) oldArray[0];
+            if (predicate.test(element))
+            {
+                arrayRef(EMPTY_ARRAY);
+                return element;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        int index = find(oldArray, predicate);
+
+        if (-1 == index)
+        {
+            return null;
+        }
+
+        final Object[] newArray = new Object[oldArray.length - 1];
+        System.arraycopy(oldArray, 0, newArray, 0, index);
+        System.arraycopy(oldArray, index + 1, newArray, index, newArray.length - index);
+
+        arrayRef(newArray);
+        return (T) oldArray[index];
+    }
+
+    private void arrayRef(final Object[] emptyArray)
+    {
+        arrayRef.lazySet(emptyArray);
     }
 
     public int size()
@@ -373,27 +414,6 @@ public class AtomicArray<T> implements Collection<T>
     {
         final Object[] newArray = Arrays.copyOf(oldArray, oldArray.length + 1);
         newArray[oldArray.length] = newElement;
-
-        return newArray;
-    }
-
-    private static Object[] remove(final Object[] oldArray, final Predicate predicate)
-    {
-        if (null == oldArray || (oldArray.length == 1 && predicate.test(oldArray[0])))
-        {
-            return EMPTY_ARRAY;
-        }
-
-        int index = find(oldArray, predicate);
-
-        if (-1 == index)
-        {
-            return oldArray;
-        }
-
-        final Object[] newArray = new Object[oldArray.length - 1];
-        System.arraycopy(oldArray, 0, newArray, 0, index);
-        System.arraycopy(oldArray, index + 1, newArray, index, newArray.length - index);
 
         return newArray;
     }

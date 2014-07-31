@@ -116,10 +116,11 @@ public class EventCodec
     public static int encode(final AtomicBuffer encodingBuffer, final Exception ex)
     {
         final StackTraceElement stack = ex.getStackTrace()[0];
+        final String msg = (null != ex.getMessage() ? ex.getMessage() : "exception message not set");
 
         int relativeOffset = LOG_HEADER_LENGTH;
         relativeOffset += encodingBuffer.putString(relativeOffset, ex.getClass().getName(), LITTLE_ENDIAN);
-        relativeOffset += encodingBuffer.putString(relativeOffset, ex.getMessage(), LITTLE_ENDIAN);
+        relativeOffset += encodingBuffer.putString(relativeOffset, msg, LITTLE_ENDIAN);
         relativeOffset = putStackTraceElement(encodingBuffer, stack, relativeOffset);
 
         final int recordLength = relativeOffset - LOG_HEADER_LENGTH;

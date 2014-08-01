@@ -24,6 +24,7 @@ public class SubscriptionTest
     private static final String CHANNEL = "udp://localhost:40124";
     private static final int STREAM_ID_1 = 2;
     private static final int SESSION_ID_1 = 13;
+    private static final int SESSION_ID_2 = 14;
     private static final int TERM_ID_1 = 1;
     private static final long CORRELATION_ID = 100;
     private static final int READ_BUFFER_CAPACITY = 1024;
@@ -69,7 +70,7 @@ public class SubscriptionTest
     @Test
     public void shouldReadNothingWhenTheresNoData()
     {
-        onTermBuffersMapped();
+        onTermBuffersMapped(SESSION_ID_1);
 
         assertThat(subscription.poll(1), is(0));
     }
@@ -77,7 +78,7 @@ public class SubscriptionTest
     @Test
     public void shouldReadData()
     {
-        onTermBuffersMapped();
+        onTermBuffersMapped(SESSION_ID_1);
 
         when(readers[1].read(any(), anyInt())).then(
             invocation ->
@@ -91,9 +92,26 @@ public class SubscriptionTest
         verify(dataHandler).onData(atomicReadBuffer, HEADER_LENGTH, READ_BUFFER_CAPACITY - HEADER_LENGTH, SESSION_ID_1, FLAGS);
     }
 
-    private void onTermBuffersMapped()
+    @Test
+    public void shouldReadDataFromMultipleSources()
     {
-        subscription.onTermBuffersMapped(SESSION_ID_1, TERM_ID_1, readers, reporter, managedBuffers);
+        onTermBuffersMapped(SESSION_ID_1);
+        onTermBuffersMapped(SESSION_ID_2);
+
+        when(readers[1].read(any(), anyInt())).then(
+            invocation ->
+            {
+                FrameHandler handler = (FrameHandler) invocation.getArguments()[0];
+                handler.onFrame(atomicReadBuffer, 0, READ_BUFFER_CAPACITY);
+                return 1;
+            });
+
+        assertThat(subscription.poll(FRAGMENT_COUNT_LIMIT), is(2));
+    }
+
+    private void onTermBuffersMapped(final int sessionId1)
+    {
+        subscription.onTermBuffersMapped(sessionId1, TERM_ID_1, readers, reporter, managedBuffers);
     }
 
     private void verifyBuffersUnmapped(final VerificationMode times) throws Exception

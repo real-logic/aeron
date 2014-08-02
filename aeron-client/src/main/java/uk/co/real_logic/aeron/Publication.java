@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.status.PositionIndicator;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
@@ -26,7 +27,6 @@ import uk.co.real_logic.aeron.conductor.ManagedBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static uk.co.real_logic.aeron.common.TermHelper.*;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.NEEDS_CLEANING;
 
 /**
  * Publication end of a channel for publishing messages to subscribers.
@@ -221,7 +221,7 @@ public class Publication implements AutoCloseable
         this.activeTermId.lazySet(newTermId);
         final int previousIndex = rotatePrevious(activeIndex);
         activeIndex = nextIndex;
-        logAppenders[previousIndex].statusOrdered(NEEDS_CLEANING);
+        logAppenders[previousIndex].statusOrdered(LogBufferDescriptor.NEEDS_CLEANING);
     }
 
     private boolean limitNotReachedFor(final int currentTail)

@@ -167,7 +167,7 @@ public class DriverPublication implements AutoCloseable
                 scanner = logScanners[activeIndex];
             }
 
-            limitReporter.position(calculatePosition(scanner.tail()) + scanner.capacity());
+            limitReporter.position(calculatePosition(scanner.offset()) + scanner.capacity());
         }
         catch (final Exception ex)
         {

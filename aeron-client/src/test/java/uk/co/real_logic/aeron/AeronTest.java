@@ -111,25 +111,6 @@ public class AeronTest extends MockBufferUsage
 
     @Ignore("port to a proper unit test")
     @Test
-    public void subscriberCanReceivePacketsFromMultipleSessions() throws Exception
-    {
-        channel1Handler = eitherSessionAssertingHandler();
-
-        final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID_1, channel1Handler);
-
-        sendNewBufferNotification(ON_NEW_CONNECTED_SUBSCRIPTION, SESSION_ID_1, TERM_ID_1);
-        sendNewBufferNotification(ON_NEW_CONNECTED_SUBSCRIPTION, SESSION_ID_2, TERM_ID_2);
-
-        aeron.conductor().doWork();
-        skip(toDriverBuffer, 1);
-
-        writePackets(appendersSession1[termIdToBufferIndex(TERM_ID_1)], 1);
-        writePackets(appendersSession2[termIdToBufferIndex(TERM_ID_2)], 1);
-        assertThat(subscription.poll(FRAME_COUNT_LIMIT), is(2));
-    }
-
-    @Ignore("port to a proper unit test")
-    @Test
     public void receivingEnoughPacketsCausesSubscriberBufferRoll() throws Exception
     {
         channel1Handler = sessionAssertingHandler();

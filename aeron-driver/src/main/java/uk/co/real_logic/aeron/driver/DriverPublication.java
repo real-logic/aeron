@@ -89,7 +89,6 @@ public class DriverPublication implements AutoCloseable
     private int nextTermOffset = 0;
     private int activeIndex = 0;
     private int statusMessagesSeen = 0;
-    private int shiftsForTermId;
     private long nextOffsetPosition = 0;
 
     private final InetSocketAddress dstAddress;
@@ -130,7 +129,6 @@ public class DriverPublication implements AutoCloseable
 
         final int termCapacity = logScanners[0].capacity();
         positionLimit = new AtomicLong(controlStrategy.initialPositionLimit(initialTermId, termCapacity));
-        shiftsForTermId = Long.numberOfTrailingZeros(termCapacity);
 
         activeTermId = new AtomicInteger(initialTermId);
 
@@ -140,7 +138,7 @@ public class DriverPublication implements AutoCloseable
 
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
         this.initialTermId = initialTermId;
-        limitReporter.position(termCapacity);
+        limitReporter.position(termCapacity / 2);
     }
 
     public void close()

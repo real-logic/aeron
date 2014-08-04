@@ -25,7 +25,7 @@ public interface SenderControlStrategy
      * @return the calculated rightEdgeOfWindow
      */
     long onStatusMessage(final int termId,
-                         final long highestContiguousSequenceNumber,
+                         final int highestContiguousTermOffset,
                          final int receiverWindowSize,
                          final InetSocketAddress address);
 
@@ -36,5 +36,6 @@ public interface SenderControlStrategy
      * @param termBufferCapacity to use as the size of each term buffer
      * @return limit to which the position can go.
      */
-    long initialPositionLimit(final int initialTermId, final int termBufferCapacity);
+    long initialPositionLimit(final int initialTermId,
+                              final int termBufferCapacity);
 }

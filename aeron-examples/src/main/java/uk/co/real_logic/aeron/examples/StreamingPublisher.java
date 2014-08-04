@@ -44,31 +44,29 @@ public class StreamingPublisher
     public static void main(final String[] args) throws Exception
     {
         final ExecutorService executor = Executors.newFixedThreadPool(2);
+
         final Aeron.Context context = new Aeron.Context();
+        System.out.println("Streaming " + NUMBER_OF_MESSAGES + " messages of size " + MESSAGE_LENGTH +
+            " bytes to " + CHANNEL + " on stream Id " + STREAM_ID);
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? ExampleUtil.createEmbeddedMediaDriver() : null;
         final Aeron aeron = ExampleUtil.createAeron(context, executor);
+        final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID, 0);
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), ExampleUtil::printRate);
 
-        System.out.println("Streaming " + NUMBER_OF_MESSAGES + " messages of size " + MESSAGE_LENGTH +
-                           " bytes to " + CHANNEL + " on stream Id " + STREAM_ID);
+        // report the rate we are sending
+        executor.execute(reporter);
 
-        try (final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID, 0))
+        for (long i = 0; i < NUMBER_OF_MESSAGES; i++)
         {
-            // report the rate we are sending
-            executor.execute(reporter);
+            ATOMIC_BUFFER.putLong(0, i);
 
-            for (long i = 0; i < NUMBER_OF_MESSAGES; i++)
+            while (!publication.offer(ATOMIC_BUFFER, 0, ATOMIC_BUFFER.capacity()))
             {
-                ATOMIC_BUFFER.putLong(0, i);
-
-                while (!publication.offer(ATOMIC_BUFFER, 0, ATOMIC_BUFFER.capacity()))
-                {
-                    Thread.yield();
-                }
-
-                reporter.onMessage(1, ATOMIC_BUFFER.capacity());
+                Thread.yield();
             }
+
+            reporter.onMessage(1, ATOMIC_BUFFER.capacity());
         }
 
         System.out.println("Done streaming.");
@@ -78,6 +76,8 @@ public class StreamingPublisher
             System.out.println("Lingering for " + LINGER_TIMEOUT_MS + " milliseconds...");
             Thread.sleep(LINGER_TIMEOUT_MS);
         }
+
+        publication.release();
 
         reporter.done();
         aeron.shutdown();

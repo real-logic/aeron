@@ -31,11 +31,13 @@ public class UnicastSenderControlStrategy implements SenderControlStrategy
     }
 
     /** {@inheritDoc} */
-    public long onStatusMessage(final int termId, final long highestContiguousSequenceNumber,
-                                final int receiverWindowSize, final InetSocketAddress address)
+    public long onStatusMessage(final int termId,
+                                final int highestContiguousTermOffset,
+                                final int receiverWindowSize,
+                                final InetSocketAddress address)
     {
         final long position =
-            TermHelper.calculatePosition(termId, (int)highestContiguousSequenceNumber, positionBitsToShift, initialTermId);
+            TermHelper.calculatePosition(termId, highestContiguousTermOffset, positionBitsToShift, initialTermId);
         final long newPositionLimit = position + receiverWindowSize;
 
         positionLimit = Math.max(positionLimit, newPositionLimit);
@@ -44,7 +46,8 @@ public class UnicastSenderControlStrategy implements SenderControlStrategy
     }
 
     /** {@inheritDoc} */
-    public long initialPositionLimit(final int initialTermId, final int termBufferCapacity)
+    public long initialPositionLimit(final int initialTermId,
+                                     final int termBufferCapacity)
     {
         this.initialTermId = initialTermId;
         positionBitsToShift = Long.numberOfTrailingZeros(termBufferCapacity);

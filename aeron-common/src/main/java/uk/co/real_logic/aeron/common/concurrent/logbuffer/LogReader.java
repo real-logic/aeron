@@ -48,6 +48,16 @@ public class LogReader extends LogBuffer
     }
 
     /**
+     * Return the read cursor
+     *
+     * @return cursor
+     */
+    public int cursor()
+    {
+        return cursor;
+    }
+
+    /**
      * Move the read cursor to the specified offset.
      *
      * @param offset the location to move the read cursor to.

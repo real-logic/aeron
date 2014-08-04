@@ -64,6 +64,25 @@ public class EventConfiguration
                    MALFORMED_FRAME_LENGTH,
                    UNKNOWN_HEADER_TYPE);
 
+    public static final Set<EventCode> ADMIN_ONLY_EVENT_CODES =
+        EnumSet.of(EXCEPTION,
+            ERROR_SENDING_HEARTBEAT_PACKET,
+            COULD_NOT_FIND_FRAME_HANDLER_FOR_NEW_CONNECTED_SUBSCRIPTION,
+            COULD_NOT_FIND_INTERFACE,
+            COULD_NOT_SEND_ENTIRE_RETRANSMIT,
+            MALFORMED_FRAME_LENGTH,
+            UNKNOWN_HEADER_TYPE,
+            CMD_IN_ADD_PUBLICATION,
+            CMD_IN_ADD_SUBSCRIPTION,
+            CMD_IN_KEEPALIVE_PUBLICATION,
+            CMD_IN_KEEPALIVE_SUBSCRIPTION,
+            CMD_IN_REMOVE_PUBLICATION,
+            CMD_IN_REMOVE_SUBSCRIPTION,
+            CMD_OUT_NEW_PUBLICATION_BUFFER_NOTIFICATION,
+            CMD_OUT_NEW_SUBSCRIPTION_BUFFER_NOTIFICATION,
+            CMD_OUT_ON_INACTIVE_CONNECTION,
+            CMD_OUT_ON_OPERATION_SUCCESS);
+
     public static final Set<EventCode> ALL_LOGGER_EVENT_CODES = EnumSet.allOf(EventCode.class);
 
     /**
@@ -115,6 +134,9 @@ public class EventConfiguration
 
             case "prod":
                 return PRODUCTION_LOGGER_EVENT_CODES;
+
+            case "admin":
+                return ADMIN_ONLY_EVENT_CODES;
 
             default:
                 return COMMA.splitAsStream(enabledLoggerEventCodes)

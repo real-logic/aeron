@@ -163,6 +163,7 @@ public class DriverPublication implements AutoCloseable
                 activeIndex = TermHelper.rotateNext(activeIndex);
                 activeTermId.lazySet(activeTermId.get() + 1);
                 scanner = logScanners[activeIndex];
+                scanner.seek(0);
             }
 
             limitReporter.position(calculatePosition(scanner.offset()) + scanner.capacity());
@@ -194,12 +195,12 @@ public class DriverPublication implements AutoCloseable
      * This is performed on the {@link DriverConductor} thread
      */
     public void onStatusMessage(final int termId,
-                                final long highestContiguousSequenceNumber,
+                                final int highestContiguousTermOffset,
                                 final int receiverWindowSize,
                                 final InetSocketAddress address)
     {
         positionLimit.lazySet(
-            controlStrategy.onStatusMessage(termId, highestContiguousSequenceNumber, receiverWindowSize, address));
+            controlStrategy.onStatusMessage(termId, highestContiguousTermOffset, receiverWindowSize, address));
         statusMessagesSeen++;
     }
 

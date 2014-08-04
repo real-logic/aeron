@@ -530,6 +530,7 @@ public class DriverConductor extends Agent
 
         try
         {
+            // TODO: use lookup via correlationId instead.
             final UdpChannel udpChannel = UdpChannel.parse(channel);
             final SendChannelEndpoint channelEndpoint = sendChannelEndpointByHash.get(udpChannel.consistentHash());
             if (null == channelEndpoint)
@@ -560,6 +561,7 @@ public class DriverConductor extends Agent
 
         try
         {
+            // TODO: channel lookup is probably immaterial and can be removed.
             final UdpChannel udpChannel = UdpChannel.parse(channel);
             final ReceiveChannelEndpoint channelEndpoint = receiveChannelEndpointByHash.get(udpChannel.consistentHash());
             if (null == channelEndpoint)

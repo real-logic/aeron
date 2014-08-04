@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.examples;
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.DataHandler;
 import uk.co.real_logic.aeron.Subscription;
+import uk.co.real_logic.aeron.common.BackoffIdleStrategy;
 import uk.co.real_logic.aeron.common.RateReporter;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.driver.MediaDriver;
@@ -89,15 +90,16 @@ public class ExampleUtil
         return
             (subscription) ->
             {
+                final BackoffIdleStrategy idler = new BackoffIdleStrategy(100, 100,
+                    TimeUnit.MICROSECONDS.toNanos(1),
+                    TimeUnit.MICROSECONDS.toNanos(100));
+
                 try
                 {
                     while (true)
                     {
                         final int messagesRead = subscription.poll(limit);
-                        if (0 == messagesRead)
-                        {
-                            Thread.sleep(TimeUnit.MILLISECONDS.toMillis(100)); // if no data, then sleep for 100 millis
-                        }
+                        idler.idle(messagesRead);
                     }
                 }
                 catch (final Exception ex)

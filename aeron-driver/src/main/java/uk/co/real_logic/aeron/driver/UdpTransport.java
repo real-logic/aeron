@@ -135,6 +135,11 @@ public final class UdpTransport implements AutoCloseable
             multicast = false;
         }
 
+        if (0 != MediaDriver.SOCKET_RCVBUF)
+        {
+            datagramChannel.setOption(StandardSocketOptions.SO_RCVBUF, MediaDriver.SOCKET_RCVBUF);
+        }
+
         datagramChannel.configureBlocking(false);
     }
 

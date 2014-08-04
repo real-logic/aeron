@@ -103,6 +103,11 @@ public class MediaDriver implements AutoCloseable
     public static final String STATUS_MESSAGE_TIMEOUT_PROP_NAME = "aeron.rcv.status.message.timeout";
 
     /**
+     * Property name for SO_RCVBUF setting on UDP sockets
+     */
+    public static final String SOCKET_RCVBUF_PROP_NAME = "aeron.socket.so_rcvbuf";
+
+    /**
      * Default byte buffer size for reads
      */
     public static final int READ_BYTE_BUFFER_SZ_DEFAULT = 4096;
@@ -196,6 +201,11 @@ public class MediaDriver implements AutoCloseable
     public static final long STATUS_MESSAGE_TIMEOUT_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(200);
 
     /**
+     * 0 means use OS default.
+     */
+    public static final int SOCKET_RCVBUF_DEFAULT = 0;
+
+    /**
      * Estimated RTT in nanoseconds.
      */
     public static final long ESTIMATED_RTT_NS = TimeUnit.MICROSECONDS.toNanos(100);
@@ -205,6 +215,7 @@ public class MediaDriver implements AutoCloseable
     public static final int CONDUCTOR_BUFFER_SZ = getInteger(CONDUCTOR_BUFFER_SZ_PROP_NAME, CONDUCTOR_BUFFER_SZ_DEFAULT);
     public static final int TO_CLIENTS_BUFFER_SZ = getInteger(TO_CLIENTS_BUFFER_SZ_PROP_NAME, TO_CLIENTS_BUFFER_SZ_DEFAULT);
     public static final int COUNTER_BUFFERS_SZ = getInteger(COUNTER_BUFFERS_SZ_PROP_NAME, COUNTERS_BUFFER_SZ_DEFAULT);
+    public static final int SOCKET_RCVBUF = getInteger(SOCKET_RCVBUF_PROP_NAME, SOCKET_RCVBUF_DEFAULT);
 
     /**
      * ticksPerWheel for TimerWheel in conductor thread

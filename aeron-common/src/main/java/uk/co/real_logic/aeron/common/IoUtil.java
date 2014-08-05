@@ -143,9 +143,9 @@ public class IoUtil
             {
                 delete(directory, false);
             }
-            catch (IOException e)
+            catch (final IOException ex)
             {
-                throw new IllegalArgumentException("could not create " + name + " directory: " + directory, e);
+                throw new IllegalArgumentException("could not create " + name + " directory: " + directory, ex);
             }
 
             callback.accept(directory.getAbsolutePath(), name);
@@ -154,22 +154,6 @@ public class IoUtil
         if (!directory.mkdirs())
         {
             throw new IllegalArgumentException("could not create " + name + " directory: " + directory);
-        }
-    }
-
-    /**
-     * Check that a directory exists.
-     *
-     * @param directory to check for.
-     * @param name to be used for exception information.
-     * @throws java.lang.IllegalArgumentException if the directory does not exist
-     */
-    public static void checkDirectoryExists(final File directory, final String name)
-        throws IllegalArgumentException
-    {
-        if (!directory.exists() || !directory.isDirectory())
-        {
-            throw new IllegalArgumentException(name + " does not exist or is not a directory: " + directory);
         }
     }
 

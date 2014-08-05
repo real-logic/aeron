@@ -203,13 +203,14 @@ public class DriverConductor extends Agent
                 {
                     if (obj instanceof CreateConnectionCmd)
                     {
-                        onCreateConnection((CreateConnectionCmd) obj);
+                        onCreateConnection((CreateConnectionCmd)obj);
                     }
                     else if (obj instanceof SubscriptionRemovedCmd)
                     {
-                        onRemovedSubscription((SubscriptionRemovedCmd) obj);
+                        onRemovedSubscription((SubscriptionRemovedCmd)obj);
                     }
-                } catch (final Exception ex)
+                }
+                catch (final Exception ex)
                 {
                     logger.logException(ex);
                 }
@@ -391,8 +392,7 @@ public class DriverConductor extends Agent
             final DriverPublication publication = channelEndpoint.removePublication(sessionId, streamId);
             if (null == publication)
             {
-                throw new ControlProtocolException(PUBLICATION_STREAM_UNKNOWN,
-                                                   "session and publication unknown for channel");
+                throw new ControlProtocolException(PUBLICATION_STREAM_UNKNOWN, "session and publication unknown for channel");
             }
 
             publications.remove(publication);
@@ -588,19 +588,16 @@ public class DriverConductor extends Agent
     // ----------------------- End Heartbeats -----------------------
 
 
-    // heartbeat check for Publications sending heartbeats to Subscriptions
     private void onHeartbeatCheck()
     {
         publications.forEach(DriverPublication::heartbeatCheck);
         rescheduleTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, heartbeatTimer);
     }
 
-    // liveness check for Publications from clients
     private void onLivenessCheckPublications()
     {
         final long now = timerWheel.now();
 
-        // the array can be removed from safely
         publications.forEach(
             (publication) ->
             {
@@ -608,9 +605,11 @@ public class DriverConductor extends Agent
                 {
                     final SendChannelEndpoint channelEndpoint = publication.sendChannelEndpoint();
 
-                    logger.log(EventCode.REMOVE_PUBLICATION_TIMEOUT, String.format("%s %x:%x",
-                        channelEndpoint.udpChannel().originalUriAsString(), publication.sessionId(),
-                        publication.streamId()));
+                    logger.log(EventCode.REMOVE_PUBLICATION_TIMEOUT,
+                               String.format("%s %x:%x",
+                                             channelEndpoint.udpChannel().originalUriAsString(),
+                                             publication.sessionId(),
+                                             publication.streamId()));
 
                     channelEndpoint.removePublication(publication.sessionId(), publication.streamId());
                     publications.remove(publication);
@@ -642,9 +641,11 @@ public class DriverConductor extends Agent
                     final ReceiveChannelEndpoint channelEndpoint = subscription.receiveChannelEndpoint();
                     final int streamId = subscription.streamId();
 
-                    logger.log(EventCode.REMOVE_SUBSCRIPTION_TIMEOUT, String.format("%s %x [%x]",
-                        channelEndpoint.udpChannel().originalUriAsString(), subscription.streamId(),
-                        subscription.correlationId()));
+                    logger.log(EventCode.REMOVE_SUBSCRIPTION_TIMEOUT,
+                               String.format("%s %x [%x]",
+                                             channelEndpoint.udpChannel().originalUriAsString(),
+                                             subscription.streamId(),
+                                             subscription.correlationId()));
 
                     subscriptions.remove(subscription);
 
@@ -678,12 +679,15 @@ public class DriverConductor extends Agent
             {
                 if (connection.timeOfLastFrame() + LIVENESS_FRAME_TIMEOUT_NS < now)
                 {
-                    logger.log(EventCode.REMOVE_CONNECTION_TIMEOUT, String.format("%s %x:%x",
-                        connection.receiveChannelEndpoint().udpChannel().originalUriAsString(), connection.sessionId(),
-                        connection.streamId()));
+                    logger.log(EventCode.REMOVE_CONNECTION_TIMEOUT,
+                               String.format("%s %x:%x",
+                                             connection.receiveChannelEndpoint().udpChannel().originalUriAsString(),
+                                             connection.sessionId(),
+                                             connection.streamId()));
 
-                    clientProxy.onInactiveConnection(connection.sessionId(), connection.streamId(),
-                        connection.receiveChannelEndpoint().udpChannel().originalUriAsString());
+                    clientProxy.onInactiveConnection(connection.sessionId(),
+                                                     connection.streamId(),
+                                                     connection.receiveChannelEndpoint().udpChannel().originalUriAsString());
 
                     while (!receiverProxy.removeConnection(connection))
                     {

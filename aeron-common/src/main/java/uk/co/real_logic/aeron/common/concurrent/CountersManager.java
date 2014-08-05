@@ -76,6 +76,11 @@ public class CountersManager
         return counterId;
     }
 
+    public Counter newCounter(final String label)
+    {
+        return new Counter(countersBuffer, allocate(label), this);
+    }
+
     /**
      * Free the counter identified by counterId.
      *

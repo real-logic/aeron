@@ -19,10 +19,7 @@ import uk.co.real_logic.aeron.common.*;
 import uk.co.real_logic.aeron.common.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
-import uk.co.real_logic.aeron.common.concurrent.AtomicArray;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.common.concurrent.CountersManager;
-import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.aeron.common.concurrent.*;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.common.event.EventCode;
@@ -106,6 +103,7 @@ public class DriverConductor extends Agent
     private final TimerWheel.Timer connectionLivenessCheckTimer;
     private final CountersManager countersManager;
     private final AtomicBuffer countersBuffer;
+    private final Counter receiverProxyIgnores;
 
     private final EventLogger logger;
 
@@ -140,6 +138,8 @@ public class DriverConductor extends Agent
         clientProxy = ctx.clientProxy();
         conductorProxy = ctx.driverConductorProxy();
         logger = ctx.eventLogger();
+
+        receiverProxyIgnores = countersManager.newCounter("Failed offers to ReceiverProxy");
     }
 
     public SendChannelEndpoint senderChannelEndpoint(final UdpChannel channel)
@@ -182,6 +182,7 @@ public class DriverConductor extends Agent
         connections.forEach(DriverConnection::close);
         sendChannelEndpointByHash.forEach((hash, endpoint) -> endpoint.close());
         receiveChannelEndpointByHash.forEach((hash, endpoint) -> endpoint.close());
+        receiverProxyIgnores.close();
     }
 
     /**
@@ -434,7 +435,7 @@ public class DriverConductor extends Agent
 
                 while (!receiverProxy.registerMediaEndpoint(channelEndpoint))
                 {
-                    System.out.println("Error adding a subscription - registering media channelEndpoint");
+                    receiverProxyIgnores.increment();
                 }
             }
 
@@ -498,7 +499,7 @@ public class DriverConductor extends Agent
             {
                 while (!receiverProxy.removeSubscription(channelEndpoint, streamId))
                 {
-                    System.out.println("Error removing a subscription");
+                    receiverProxyIgnores.increment();
                 }
             }
 
@@ -653,7 +654,7 @@ public class DriverConductor extends Agent
                     {
                         while (!receiverProxy.removeSubscription(channelEndpoint, streamId))
                         {
-                            System.out.println("Error removing a subscription");
+                            receiverProxyIgnores.increment();
                         }
                     }
 
@@ -691,7 +692,7 @@ public class DriverConductor extends Agent
 
                     while (!receiverProxy.removeConnection(connection))
                     {
-                        System.out.println("Error removing connection");
+                        receiverProxyIgnores.increment();
                     }
 
                     connections.remove(connection);
@@ -755,8 +756,7 @@ public class DriverConductor extends Agent
             final NewConnectionCmd newConnectionCmd = new NewConnectionCmd(channelEndpoint, connection);
             while (!receiverProxy.newConnection(newConnectionCmd))
             {
-                // TODO: count errors
-                System.out.println("Error adding a connected subscription");
+                receiverProxyIgnores.increment();
             }
         }
         catch (final Exception ex)

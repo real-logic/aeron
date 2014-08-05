@@ -26,8 +26,6 @@ import java.io.File;
 import java.nio.MappedByteBuffer;
 import java.util.function.Consumer;
 
-import static uk.co.real_logic.aeron.common.IoUtil.deleteIfExists;
-
 /**
  * Event Log Reader
  */

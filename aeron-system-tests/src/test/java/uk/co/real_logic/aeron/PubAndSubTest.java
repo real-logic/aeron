@@ -23,7 +23,6 @@ import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import uk.co.real_logic.aeron.common.BitUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 

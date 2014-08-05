@@ -21,7 +21,6 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.common.BitUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
-import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.NakFlyweight;

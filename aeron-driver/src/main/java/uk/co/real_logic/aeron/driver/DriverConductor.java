@@ -606,10 +606,10 @@ public class DriverConductor extends Agent
                     final SendChannelEndpoint channelEndpoint = publication.sendChannelEndpoint();
 
                     logger.log(EventCode.REMOVE_PUBLICATION_TIMEOUT,
-                               String.format("%s %x:%x",
-                                             channelEndpoint.udpChannel().originalUriAsString(),
-                                             publication.sessionId(),
-                                             publication.streamId()));
+                               "%s %x:%x",
+                               channelEndpoint.udpChannel().originalUriAsString(),
+                               publication.sessionId(),
+                               publication.streamId());
 
                     channelEndpoint.removePublication(publication.sessionId(), publication.streamId());
                     publications.remove(publication);
@@ -642,10 +642,10 @@ public class DriverConductor extends Agent
                     final int streamId = subscription.streamId();
 
                     logger.log(EventCode.REMOVE_SUBSCRIPTION_TIMEOUT,
-                               String.format("%s %x [%x]",
-                                             channelEndpoint.udpChannel().originalUriAsString(),
-                                             subscription.streamId(),
-                                             subscription.correlationId()));
+                               "%s %x [%x]",
+                               channelEndpoint.udpChannel().originalUriAsString(),
+                               subscription.streamId(),
+                               subscription.correlationId());
 
                     subscriptions.remove(subscription);
 
@@ -680,10 +680,10 @@ public class DriverConductor extends Agent
                 if (connection.timeOfLastFrame() + LIVENESS_FRAME_TIMEOUT_NS < now)
                 {
                     logger.log(EventCode.REMOVE_CONNECTION_TIMEOUT,
-                               String.format("%s %x:%x",
-                                             connection.receiveChannelEndpoint().udpChannel().originalUriAsString(),
-                                             connection.sessionId(),
-                                             connection.streamId()));
+                               "%s %x:%x",
+                               connection.receiveChannelEndpoint().udpChannel().originalUriAsString(),
+                               connection.sessionId(),
+                               connection.streamId());
 
                     clientProxy.onInactiveConnection(connection.sessionId(),
                                                      connection.streamId(),

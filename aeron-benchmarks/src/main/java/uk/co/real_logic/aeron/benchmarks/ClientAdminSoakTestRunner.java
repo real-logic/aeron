@@ -86,7 +86,6 @@ public class ClientAdminSoakTestRunner
     {
         publishingBuffer.setMemory(0, publishingBuffer.capacity(), (byte) 0);
 
-
         try (final Publication publication = publishingClient.addPublication(CHANNEL, STREAM_ID, 0))
         {
             AtomicInteger receivedCount = new AtomicInteger(0);

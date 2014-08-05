@@ -109,11 +109,28 @@ public class EventLogger
     {
         if (isEnabled(code, enabledEventCodes))
         {
-            final AtomicBuffer encodedBuffer = encodingBuffer.get();
-            final int encodingLength = EventCodec.encode(encodedBuffer, value);
-
-            ringBuffer.write(code.id(), encodedBuffer, 0, encodingLength);
+            logString(code, value);
         }
+    }
+
+    public void log(
+            final EventCode code,
+            final String format,
+            final Object first,
+            final Object second,
+            final Object third)
+    {
+        if (isEnabled(code, enabledEventCodes))
+        {
+            logString(code, String.format(format, first, second, third));
+        }
+    }
+
+    private void logString(final EventCode code, final String value)
+    {
+        final AtomicBuffer encodedBuffer = encodingBuffer.get();
+        final int encodingLength = EventCodec.encode(encodedBuffer, value);
+        ringBuffer.write(code.id(), encodedBuffer, 0, encodingLength);
     }
 
     public void logInvocation()

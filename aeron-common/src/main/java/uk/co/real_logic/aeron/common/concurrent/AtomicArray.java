@@ -22,6 +22,7 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
 /**
@@ -30,20 +31,9 @@ import java.util.stream.Collectors;
 public class AtomicArray<T> implements Collection<T>
 {
     private static final Object[] EMPTY_ARRAY = new Object[0];
+
     private final AtomicReference<Object[]> arrayRef = new AtomicReference<>(EMPTY_ARRAY);
-
-    @FunctionalInterface
-    public interface ToIntFunction<T>
-    {
-        /**
-         * Applies this function to the given argument.
-         *
-         * @param value the function argument
-         * @return a value to indicate the number of actions that have occurred.
-         */
-        int apply(T value);
-    }
-
+    
     @FunctionalInterface
     public interface ToIntLimitedFunction<T>
     {
@@ -147,7 +137,7 @@ public class AtomicArray<T> implements Collection<T>
         int i = fromIndex;
         do
         {
-            actionCount += action.apply(array[i]);
+            actionCount += action.applyAsInt(array[i]);
 
             if (++i == array.length)
             {
@@ -338,31 +328,11 @@ public class AtomicArray<T> implements Collection<T>
         return Arrays.copyOf(theArray, theArray.length);
     }
 
-    public <E> E[] toArray(final E[] a)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    public boolean containsAll(final Collection<?> c)
-    {
-        throw new UnsupportedOperationException();
-    }
-
     public boolean addAll(final Collection<? extends T> c)
     {
         addAll(c.stream().collect(Collectors.toList()));
 
         return true;
-    }
-
-    public boolean removeAll(final Collection<?> c)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    public boolean retainAll(final Collection<?> c)
-    {
-        throw new UnsupportedOperationException();
     }
 
     public void clear()
@@ -411,5 +381,25 @@ public class AtomicArray<T> implements Collection<T>
         newArray[oldArray.length] = newElement;
 
         return newArray;
+    }
+
+    public boolean removeAll(final Collection<?> c)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    public boolean retainAll(final Collection<?> c)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    public <E> E[] toArray(final E[] a)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    public boolean containsAll(final Collection<?> c)
+    {
+        throw new UnsupportedOperationException();
     }
 }

@@ -31,6 +31,7 @@ public class AtomicArray<T> implements Collection<T>
 {
     private static final Object[] EMPTY_ARRAY = new Object[0];
 
+    @SuppressWarnings("unchecked")
     private final AtomicReference<T[]> arrayRef = new AtomicReference<>((T[]) EMPTY_ARRAY);
 
     @FunctionalInterface
@@ -221,7 +222,7 @@ public class AtomicArray<T> implements Collection<T>
     /**
      * Remove an element if it matches a predicate
      *
-     * @param predicate
+     * @param predicate to check against
      * @return the element removed or null if nothing was removed
      */
     public T remove(final Predicate<T> predicate)
@@ -263,6 +264,7 @@ public class AtomicArray<T> implements Collection<T>
         return oldArray[index];
     }
 
+    @SuppressWarnings("unchecked")
     private void arrayRef(final Object[] emptyArray)
     {
         arrayRef.lazySet((T[]) emptyArray);
@@ -368,6 +370,7 @@ public class AtomicArray<T> implements Collection<T>
         return newArray;
     }
 
+    @SuppressWarnings("unchecked")
     public <E> E[] toArray(final E[] a)
     {
         return (E[]) toArray();

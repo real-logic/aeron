@@ -319,11 +319,6 @@ public class AtomicArray<T> implements Collection<T>
 
             return (T)array[index++];
         }
-
-        public void remove()
-        {
-            throw new UnsupportedOperationException();
-        }
     }
 
     public boolean isEmpty()

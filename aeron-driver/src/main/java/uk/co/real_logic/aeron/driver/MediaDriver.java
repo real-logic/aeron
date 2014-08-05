@@ -317,6 +317,7 @@ public class MediaDriver implements AutoCloseable
                CONDUCTOR_TICKS_PER_WHEEL))
            .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
            .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
+           .senderCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
            .conductorIdleStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
                AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
            .senderIdleStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
@@ -515,7 +516,9 @@ public class MediaDriver implements AutoCloseable
         private TimerWheel conductorTimerWheel;
         private OneToOneConcurrentArrayQueue<? super Object> conductorCommandQueue;
         private OneToOneConcurrentArrayQueue<? super Object> receiverCommandQueue;
+        private OneToOneConcurrentArrayQueue<? super Object> senderCommandQueue;
         private ReceiverProxy receiverProxy;
+        private SenderProxy senderProxy;
         private DriverConductorProxy driverConductorProxy;
         private IdleStrategy conductorIdleStrategy;
         private IdleStrategy senderIdleStrategy;
@@ -585,6 +588,7 @@ public class MediaDriver implements AutoCloseable
             fromClientCommands(new ManyToOneRingBuffer(new AtomicBuffer(toDriverBuffer)));
 
             receiverProxy(new ReceiverProxy(receiverCommandQueue()));
+            senderProxy(new SenderProxy(senderCommandQueue()));
             driverConductorProxy(new DriverConductorProxy(conductorCommandQueue));
 
             termBuffersFactory(new TermBuffersFactory(dataDirName(), termBufferSize, eventLogger));
@@ -679,9 +683,22 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
+        public Context senderCommandQueue(
+            final OneToOneConcurrentArrayQueue<? super Object> senderCommandQueue)
+        {
+            this.senderCommandQueue = senderCommandQueue;
+            return this;
+        }
+
         public Context receiverProxy(final ReceiverProxy receiverProxy)
         {
             this.receiverProxy = receiverProxy;
+            return this;
+        }
+
+        public Context senderProxy(final SenderProxy senderProxy)
+        {
+            this.senderProxy = senderProxy;
             return this;
         }
 
@@ -815,9 +832,19 @@ public class MediaDriver implements AutoCloseable
             return receiverCommandQueue;
         }
 
+        public OneToOneConcurrentArrayQueue<? super Object> senderCommandQueue()
+        {
+            return senderCommandQueue;
+        }
+
         public ReceiverProxy receiverProxy()
         {
             return receiverProxy;
+        }
+
+        public SenderProxy senderProxy()
+        {
+            return senderProxy;
         }
 
         public DriverConductorProxy driverConductorProxy()

@@ -17,6 +17,9 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.Agent;
 import uk.co.real_logic.aeron.common.concurrent.AtomicArray;
+import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.aeron.common.event.EventLogger;
+import uk.co.real_logic.aeron.driver.cmd.*;
 
 /**
  * Agent that iterates over publications for sending them to registered subscribers.
@@ -24,13 +27,17 @@ import uk.co.real_logic.aeron.common.concurrent.AtomicArray;
 public class Sender extends Agent
 {
     private final AtomicArray<DriverPublication> publications;
+    private final OneToOneConcurrentArrayQueue<? super Object> commandQueue;
+    private final EventLogger logger;
     private int roundRobinIndex = 0;
 
     public Sender(final MediaDriver.Context ctx)
     {
         super(ctx.senderIdleStrategy(), ctx.eventLoggerException());
 
-        publications = ctx.publications();
+        this.publications = ctx.publications();
+        this.commandQueue = ctx.senderCommandQueue();
+        this.logger = ctx.eventLogger();
     }
 
     public int doWork()
@@ -41,6 +48,25 @@ public class Sender extends Agent
             roundRobinIndex = 0;
         }
 
-        return publications.doAction(roundRobinIndex, DriverPublication::send);
+        return publications.doAction(roundRobinIndex, DriverPublication::send) +
+            commandQueue.drain(this::processConductorCommands);
+    }
+
+    private void processConductorCommands(final Object obj)
+    {
+        try
+        {
+            if (obj instanceof RetransmitPublicationCmd)
+            {
+                final RetransmitPublicationCmd cmd = (RetransmitPublicationCmd)obj;
+                final DriverPublication driverPublication = cmd.driverPublication();
+
+                // TODO: finish
+            }
+        }
+        catch (final Exception ex)
+        {
+            logger.logException(ex);
+        }
     }
 }

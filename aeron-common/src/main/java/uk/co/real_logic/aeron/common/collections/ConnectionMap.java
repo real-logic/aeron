@@ -26,57 +26,41 @@ import static uk.co.real_logic.aeron.common.collections.CollectionUtil.getOrDefa
  */
 public class ConnectionMap<D, C>
 {
-    private final Map<D, Int2ObjectHashMap<Int2ObjectHashMap<C>>> channelMap = new HashMap<>();
+    private final Map<D, CompoundIdMap<C>> channelMap = new HashMap<>();
 
     public C get(final D channel, final int sessionId, final int streamId)
     {
-        final Int2ObjectHashMap<Int2ObjectHashMap<C>> sessionMap = channelMap.get(channel);
-        if (sessionMap == null)
+        final CompoundIdMap<C> idMap = channelMap.get(channel);
+
+        if (null == idMap)
         {
             return null;
         }
 
-        final Int2ObjectHashMap<C> channelMap = sessionMap.get(sessionId);
-        if (channelMap == null)
-        {
-            return null;
-        }
-
-        return channelMap.get(streamId);
+        return idMap.get(sessionId, streamId);
     }
 
     public C put(final D channel, final int sessionId, final int streamId, final C value)
     {
-        final Int2ObjectHashMap<Int2ObjectHashMap<C>> endPointMap
-            = getOrDefault(channelMap, channel, ignore -> new Int2ObjectHashMap<>());
-        final Int2ObjectHashMap<C> channelMap = endPointMap.getOrDefault(sessionId, Int2ObjectHashMap::new);
+        final CompoundIdMap<C> idMap = getOrDefault(channelMap, channel, ignore -> new CompoundIdMap<>());
 
-        return channelMap.put(streamId, value);
+        return idMap.put(sessionId, streamId, value);
     }
 
     public C remove(final D channel, final int sessionId, final int streamId)
     {
-        final Int2ObjectHashMap<Int2ObjectHashMap<C>> sessionMap = channelMap.get(channel);
-        if (sessionMap == null)
+        final CompoundIdMap<C> idMap = channelMap.get(channel);
+
+        if (null == idMap)
         {
             return null;
         }
 
-        final Int2ObjectHashMap<C> channelMap = sessionMap.get(sessionId);
-        if (channelMap == null)
-        {
-            return null;
-        }
+        final C value = idMap.remove(sessionId, streamId);
 
-        final C value = channelMap.remove(streamId);
-
-        if (channelMap.isEmpty())
+        if (idMap.isEmpty())
         {
-            sessionMap.remove(sessionId);
-            if (sessionMap.isEmpty())
-            {
-                this.channelMap.remove(channel);
-            }
+            channelMap.remove(channel);
         }
 
         return value;
@@ -87,14 +71,11 @@ public class ConnectionMap<D, C>
         void accept(final D channel, final Integer sessionId, final Integer streamId, final T value);
     }
 
-    @SuppressWarnings("unchecked")
-    public void forEach(final ConnectionHandler connectionHandler)
+    public void forEach(final ConnectionHandler<D, C> connectionHandler)
     {
         channelMap.forEach(
-            (channel, sessionMap) ->
-                sessionMap.forEach(
-                    (sessionId, channelMap) ->
-                        channelMap.forEach(
-                            (streamId, value) -> connectionHandler.accept(channel, sessionId, streamId, value))));
+            (channel, idMap) ->
+                idMap.forEach(
+                    (sessionId, streamId, value) -> connectionHandler.accept(channel, sessionId, streamId, value)));
     }
 }

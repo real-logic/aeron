@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import uk.co.real_logic.aeron.common.collections.CompoundIdMap;
 import uk.co.real_logic.aeron.common.collections.Int2ObjectHashMap;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.event.EventLogger;
@@ -31,7 +32,7 @@ public class SendChannelEndpoint implements AutoCloseable
 {
     private final UdpTransport transport;
     private final UdpChannel udpChannel;
-    private final Int2ObjectHashMap<Int2ObjectHashMap<DriverPublication>> publicationBySessionIdMap = new Int2ObjectHashMap<>();
+    private final CompoundIdMap<DriverPublication> publicationByCompoundIdMap = new CompoundIdMap<>();
 
     public SendChannelEndpoint(final UdpChannel udpChannel, final NioSelector nioSelector, final EventLogger logger)
         throws Exception
@@ -63,41 +64,22 @@ public class SendChannelEndpoint implements AutoCloseable
 
     public DriverPublication findPublication(final int sessionId, final int streamId)
     {
-        final Int2ObjectHashMap<DriverPublication> publicationByStreamIdMap = publicationBySessionIdMap.get(sessionId);
-        if (null == publicationByStreamIdMap)
-        {
-            return null;
-        }
-
-        return publicationByStreamIdMap.get(streamId);
+        return publicationByCompoundIdMap.get(sessionId, streamId);
     }
 
     public void addPublication(final DriverPublication publication)
     {
-        publicationBySessionIdMap.getOrDefault(publication.sessionId(), Int2ObjectHashMap::new)
-                                 .put(publication.streamId(), publication);
+        publicationByCompoundIdMap.put(publication.sessionId(), publication.streamId(), publication);
     }
 
     public DriverPublication removePublication(final int sessionId, final int streamId)
     {
-        final Int2ObjectHashMap<DriverPublication> publicationByStreamIdMap = publicationBySessionIdMap.get(sessionId);
-        if (null == publicationByStreamIdMap)
-        {
-            return null;
-        }
-
-        final DriverPublication publication = publicationByStreamIdMap.remove(streamId);
-        if (publicationByStreamIdMap.isEmpty())
-        {
-            publicationBySessionIdMap.remove(sessionId);
-        }
-
-        return publication;
+        return publicationByCompoundIdMap.remove(sessionId, streamId);
     }
 
     public int sessionCount()
     {
-        return publicationBySessionIdMap.size();
+        return publicationByCompoundIdMap.size();
     }
 
     private void onStatusMessageFrame(final StatusMessageFlyweight header,

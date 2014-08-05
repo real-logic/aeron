@@ -75,6 +75,7 @@ public class DriverConductor extends Agent
 
     private final OneToOneConcurrentArrayQueue<? super Object> commandQueue;
     private final ReceiverProxy receiverProxy;
+    private final SenderProxy senderProxy;
     private final ClientProxy clientProxy;
     private final DriverConductorProxy conductorProxy;
     private final NioSelector nioSelector;
@@ -113,6 +114,7 @@ public class DriverConductor extends Agent
 
         this.commandQueue = ctx.conductorCommandQueue();
         this.receiverProxy = ctx.receiverProxy();
+        this.senderProxy = ctx.senderProxy();
         this.termBuffersFactory = ctx.termBuffersFactory();
         this.nioSelector = ctx.conductorNioSelector();
         this.mtuLength = ctx.mtuLength();

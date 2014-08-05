@@ -22,6 +22,7 @@ import org.mockito.stubbing.Answer;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.concurrent.AtomicArray;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.event.EventLogger;
@@ -59,13 +60,13 @@ public class SenderTest
     private final EventLogger mockLogger = mock(EventLogger.class);
 
     private final AtomicArray<DriverPublication> publications = new AtomicArray<>();
-    private final Sender sender = new Sender(new MediaDriver.Context().publications(publications).eventLogger(mockLogger));
 
     private final TermBuffers termBuffers =
         BufferAndFrameHelper.newTestTermBuffers(LOG_BUFFER_SIZE, LogBufferDescriptor.STATE_BUFFER_LENGTH);
 
     private LogAppender[] logAppenders;
     private DriverPublication publication;
+    private Sender sender;
 
     private final SenderControlStrategy spySenderControlStrategy = spy(new UnicastSenderControlStrategy());
 
@@ -100,6 +101,11 @@ public class SenderTest
     {
         currentTimestamp = 0;
 
+        sender = new Sender(new MediaDriver.Context()
+            .senderCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
+            .publications(publications)
+            .eventLogger(mockLogger));
+
         logAppenders =
             termBuffers.stream()
                        .map((log) -> new LogAppender(log.logBuffer(), log.stateBuffer(), HEADER, MAX_FRAME_LENGTH))
@@ -115,7 +121,7 @@ public class SenderTest
                                             termBuffers,
                                             mock(BufferPositionReporter.class),
                                             SESSION_ID,
-            STREAM_ID,
+                                            STREAM_ID,
                                             INITIAL_TERM_ID,
                                             HEADER.length,
                                             MAX_FRAME_LENGTH,

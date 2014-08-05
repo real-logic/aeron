@@ -15,15 +15,11 @@
  */
 package uk.co.real_logic.aeron.common.concurrent;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.ToIntFunction;
-import java.util.stream.Collectors;
 
 /**
  * A dynamic array that can be used concurrently with a single writer and many readers. All operations are lock-free.
@@ -32,8 +28,8 @@ public class AtomicArray<T> implements Collection<T>
 {
     private static final Object[] EMPTY_ARRAY = new Object[0];
 
-    private final AtomicReference<Object[]> arrayRef = new AtomicReference<>(EMPTY_ARRAY);
-    
+    private final AtomicReference<T[]> arrayRef = new AtomicReference<>((T[]) EMPTY_ARRAY);
+
     @FunctionalInterface
     public interface ToIntLimitedFunction<T>
     {
@@ -53,10 +49,9 @@ public class AtomicArray<T> implements Collection<T>
      * @param index of the element to return
      * @return the element
      */
-    @SuppressWarnings("unchecked")
     public T get(final int index)
     {
-        return (T)arrayRef.get()[index];
+        return arrayRef.get()[index];
     }
 
     /**
@@ -67,8 +62,7 @@ public class AtomicArray<T> implements Collection<T>
      */
     public T findFirst(final Predicate<T> function)
     {
-        @SuppressWarnings("unchecked")
-        final T[] array = (T[])arrayRef.get();
+        final T[] array = arrayRef.get();
 
         for (final T e : array)
         {
@@ -88,8 +82,7 @@ public class AtomicArray<T> implements Collection<T>
      */
     public void forEach(final Consumer<? super T> action)
     {
-        @SuppressWarnings("unchecked")
-        final T[] array = (T[])arrayRef.get();
+        final T[] array = arrayRef.get();
 
         for (final T e : array)
         {
@@ -123,8 +116,7 @@ public class AtomicArray<T> implements Collection<T>
      */
     public int doAction(int fromIndex, final ToIntFunction<? super T> action)
     {
-        @SuppressWarnings("unchecked")
-        final T[] array = (T[])arrayRef.get();
+        final T[] array = arrayRef.get();
 
         if (array.length == 0)
         {
@@ -162,8 +154,7 @@ public class AtomicArray<T> implements Collection<T>
      */
     public int doLimitedAction(int fromIndex, final int actionCountLimit, final ToIntLimitedFunction<? super T> action)
     {
-        @SuppressWarnings("unchecked")
-        final T[] array = (T[])arrayRef.get();
+        final T[] array = arrayRef.get();
 
         if (array.length == 0)
         {
@@ -209,7 +200,7 @@ public class AtomicArray<T> implements Collection<T>
         final Object[] oldArray = arrayRef.get();
         final Object[] newArray = append(oldArray, element);
 
-        arrayRef.lazySet(newArray);
+        arrayRef(newArray);
 
         return true;
     }
@@ -232,8 +223,7 @@ public class AtomicArray<T> implements Collection<T>
      */
     public T remove(final Predicate<T> predicate)
     {
-        final Object[] oldArray = arrayRef.get();
-        //final Object[] newArray = remove(oldArray, predicate);
+        final T[] oldArray = arrayRef.get();
 
         if (oldArray == null || oldArray == EMPTY_ARRAY)
         {
@@ -243,7 +233,7 @@ public class AtomicArray<T> implements Collection<T>
 
         if (oldArray.length == 1)
         {
-            T element = (T) oldArray[0];
+            T element = oldArray[0];
             if (predicate.test(element))
             {
                 arrayRef(EMPTY_ARRAY);
@@ -267,12 +257,12 @@ public class AtomicArray<T> implements Collection<T>
         System.arraycopy(oldArray, index + 1, newArray, index, newArray.length - index);
 
         arrayRef(newArray);
-        return (T) oldArray[index];
+        return oldArray[index];
     }
 
     private void arrayRef(final Object[] emptyArray)
     {
-        arrayRef.lazySet(emptyArray);
+        arrayRef.lazySet((T[]) emptyArray);
     }
 
     public int size()
@@ -287,9 +277,10 @@ public class AtomicArray<T> implements Collection<T>
 
     private final static class ArrayIterator<T> implements Iterator<T>
     {
-        private final Object[] array;
+        private final T[] array;
         private int index;
-        private ArrayIterator(final Object[] array)
+
+        private ArrayIterator(final T[] array)
         {
             this.array = array;
         }
@@ -299,7 +290,6 @@ public class AtomicArray<T> implements Collection<T>
             return index < array.length;
         }
 
-        @SuppressWarnings("unchecked")
         public T next()
         {
             if (!hasNext())
@@ -307,7 +297,7 @@ public class AtomicArray<T> implements Collection<T>
                 throw new NoSuchElementException();
             }
 
-            return (T)array[index++];
+            return array[index++];
         }
     }
 
@@ -324,20 +314,12 @@ public class AtomicArray<T> implements Collection<T>
     public Object[] toArray()
     {
         final Object[] theArray = arrayRef.get();
-
         return Arrays.copyOf(theArray, theArray.length);
-    }
-
-    public boolean addAll(final Collection<? extends T> c)
-    {
-        addAll(c.stream().collect(Collectors.toList()));
-
-        return true;
     }
 
     public void clear()
     {
-        arrayRef.set(EMPTY_ARRAY);
+        arrayRef(EMPTY_ARRAY);
     }
 
     public String toString()
@@ -357,12 +339,12 @@ public class AtomicArray<T> implements Collection<T>
         return index;
     }
 
-    private static int find(final Object[] array, final Object item)
+    private int find(final T[] array, final Object item)
     {
         return find(array, item::equals);
     }
 
-    private static int find(final Object[] array, final Predicate item)
+    private int find(final T[] array, final Predicate<T> item)
     {
         for (int i = 0; i < array.length; i++)
         {
@@ -383,23 +365,29 @@ public class AtomicArray<T> implements Collection<T>
         return newArray;
     }
 
-    public boolean removeAll(final Collection<?> c)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    public boolean retainAll(final Collection<?> c)
-    {
-        throw new UnsupportedOperationException();
-    }
-
     public <E> E[] toArray(final E[] a)
     {
-        throw new UnsupportedOperationException();
+        return (E[]) toArray();
     }
 
-    public boolean containsAll(final Collection<?> c)
+    public boolean removeAll(final Collection<?> collection)
     {
         throw new UnsupportedOperationException();
     }
+
+    public boolean retainAll(final Collection<?> collection)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    public boolean containsAll(final Collection<?> collection)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    public boolean addAll(final Collection<? extends T> collection)
+    {
+        throw new UnsupportedOperationException();
+    }
+
 }

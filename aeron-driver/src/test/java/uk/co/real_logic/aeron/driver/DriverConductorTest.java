@@ -101,7 +101,7 @@ public class DriverConductorTest
 
         final AtomicBuffer counterBuffer = new AtomicBuffer(new byte[4096]);
         final CountersManager countersManager =
-            new CountersManager(new AtomicBuffer(new byte[4096]), counterBuffer);
+            new CountersManager(new AtomicBuffer(new byte[8192]), counterBuffer);
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .receiverNioSelector(nioSelector)

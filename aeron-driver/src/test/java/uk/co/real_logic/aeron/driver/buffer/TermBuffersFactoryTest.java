@@ -21,6 +21,7 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.common.IoUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
+import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.driver.UdpChannel;
 
@@ -29,6 +30,7 @@ import java.io.IOException;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
 
 public class TermBuffersFactoryTest
 {
@@ -39,12 +41,13 @@ public class TermBuffersFactoryTest
     private static final int TERM_BUFFER_SZ = MediaDriver.TERM_BUFFER_SZ_DEFAULT;
     private TermBuffersFactory termBuffersFactory;
     private UdpChannel udpChannel = UdpChannel.parse(CHANNEL);
+    private EventLogger logger = mock(EventLogger.class);
 
     @Before
     public void createDataDir()
     {
         IoUtil.ensureDirectoryExists(DATA_DIR, "data");
-        termBuffersFactory = new TermBuffersFactory(DATA_DIR.getAbsolutePath(), TERM_BUFFER_SZ);
+        termBuffersFactory = new TermBuffersFactory(DATA_DIR.getAbsolutePath(), TERM_BUFFER_SZ, logger);
     }
 
     @After

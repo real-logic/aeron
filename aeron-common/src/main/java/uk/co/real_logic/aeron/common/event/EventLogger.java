@@ -113,6 +113,22 @@ public class EventLogger
         }
     }
 
+    public void log(final EventCode code, final String format, final Object first)
+    {
+        if (isEnabled(code, enabledEventCodes))
+        {
+            logString(code, String.format(format, first));
+        }
+    }
+
+    public void log(final EventCode code, final String format, final Object first, final Object second)
+    {
+        if (isEnabled(code, enabledEventCodes))
+        {
+            logString(code, String.format(format, first, second));
+        }
+    }
+
     public void log(
             final EventCode code,
             final String format,

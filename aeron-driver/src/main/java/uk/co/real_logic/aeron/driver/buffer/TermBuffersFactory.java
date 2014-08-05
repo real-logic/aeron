@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.driver.buffer;
 
 import uk.co.real_logic.aeron.common.IoUtil;
+import uk.co.real_logic.aeron.common.event.EventLogger;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,9 +37,12 @@ public class TermBuffersFactory implements AutoCloseable
     private final File subscriptionsDir;
 
     private final int termBufferSize;
+    private final EventLogger logger;
 
-    public TermBuffersFactory(final String dataDirectoryName, final int termBufferSize)
+    public TermBuffersFactory(final String dataDirectoryName, final int termBufferSize, final EventLogger logger)
     {
+        this.logger = logger;
+
         final FileMappingConvention fileConvention = new FileMappingConvention(dataDirectoryName);
         publicationsDir = fileConvention.publicationsDir();
         subscriptionsDir = fileConvention.subscriptionsDir();
@@ -112,6 +116,6 @@ public class TermBuffersFactory implements AutoCloseable
     {
         final File dir = streamLocation(rootDir, sessionId, streamId, true, channel);
 
-        return new MappedTermBuffers(dir, logTemplate, termBufferSize, stateTemplate, STATE_BUFFER_LENGTH);
+        return new MappedTermBuffers(dir, logTemplate, termBufferSize, stateTemplate, STATE_BUFFER_LENGTH, logger);
     }
 }

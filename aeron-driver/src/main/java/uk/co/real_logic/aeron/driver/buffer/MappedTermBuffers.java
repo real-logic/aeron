@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.driver.buffer;
 
 import uk.co.real_logic.aeron.common.IoUtil;
 import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
+import uk.co.real_logic.aeron.common.event.EventLogger;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -43,13 +44,16 @@ class MappedTermBuffers implements TermBuffers
     private final int logBufferLength;
     private final int stateBufferLength;
     private final MappedRawLog[] buffers;
+    private final EventLogger logger;
 
     MappedTermBuffers(final File directory,
                       final FileChannel logTemplate,
                       final int logBufferLength,
                       final FileChannel stateTemplate,
-                      final int stateBufferSize)
+                      final int stateBufferSize,
+                      final EventLogger logger)
     {
+        this.logger = logger;
         IoUtil.ensureDirectoryExists(directory, "buffer directory");
 
         this.logTemplate = logTemplate;
@@ -128,7 +132,8 @@ class MappedTermBuffers implements TermBuffers
                                 logFileChannel,
                                 stateFileChannel,
                                 mapBufferFile(logFileChannel, logBufferLength),
-                                mapBufferFile(stateFileChannel, stateBufferLength));
+                                mapBufferFile(stateFileChannel, stateBufferLength),
+                                logger);
     }
 
     private FileChannel openBufferFile(final File file) throws FileNotFoundException

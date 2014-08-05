@@ -18,6 +18,8 @@ package uk.co.real_logic.aeron.driver.buffer;
 import uk.co.real_logic.aeron.common.IoUtil;
 import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.event.EventCode;
+import uk.co.real_logic.aeron.common.event.EventLogger;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,6 +34,7 @@ import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
 class MappedRawLog implements RawLog
 {
     public static final int MAX_TREE_DEPTH = 3;
+
     private final File logFile;
     private final File stateFile;
 
@@ -44,12 +47,15 @@ class MappedRawLog implements RawLog
     private final AtomicBuffer logBuffer;
     private final AtomicBuffer stateBuffer;
 
+    private final EventLogger logger;
+
     MappedRawLog(final File logFile,
                  final File stateFile,
                  final FileChannel logFileChannel,
                  final FileChannel stateFileChannel,
                  final MappedByteBuffer logBuffer,
-                 final MappedByteBuffer stateBuffer)
+                 final MappedByteBuffer stateBuffer,
+                 final EventLogger logger)
     {
         this.logFile = logFile;
         this.stateFile = stateFile;
@@ -58,6 +64,7 @@ class MappedRawLog implements RawLog
 
         this.mappedLogBuffer = logBuffer;
         this.mappedStateBuffer = stateBuffer;
+        this.logger = logger;
 
         this.stateBuffer = new AtomicBuffer(stateBuffer);
         this.logBuffer = new AtomicBuffer(logBuffer);
@@ -90,7 +97,7 @@ class MappedRawLog implements RawLog
             }
             else
             {
-                // TODO: increment counter or log
+                logger.log(EventCode.ERROR_DELETING_FILE, "Unable to delete %s or %s", logFile, stateFile);
             }
         }
         catch (final IOException ex)
@@ -114,7 +121,7 @@ class MappedRawLog implements RawLog
             }
             else
             {
-                // TODO: increment counter or log
+                logger.log(EventCode.ERROR_DELETING_FILE, "Unable to delete %s", directory);
             }
         }
     }

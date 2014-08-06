@@ -147,7 +147,7 @@ public class LogAppender extends LogBuffer
         final int frameOffset = getTailAndAdd(alignedLength);
 
         final int capacity = capacity();
-        if (isOverLogBufferCapacity(frameOffset, alignedLength, capacity))
+        if (isBeyondLogBufferCapacity(frameOffset, alignedLength, capacity))
         {
             if (frameOffset < capacity)
             {
@@ -181,7 +181,7 @@ public class LogAppender extends LogBuffer
         int frameOffset = getTailAndAdd(requiredCapacity);
 
         final int capacity = capacity();
-        if (isOverLogBufferCapacity(frameOffset, requiredCapacity, capacity))
+        if (isBeyondLogBufferCapacity(frameOffset, requiredCapacity, capacity))
         {
             if (frameOffset < capacity)
             {
@@ -228,7 +228,7 @@ public class LogAppender extends LogBuffer
         return AppendStatus.SUCCESS;
     }
 
-    private boolean isOverLogBufferCapacity(final int frameOffset, final int alignedFrameLength, final int capacity)
+    private boolean isBeyondLogBufferCapacity(final int frameOffset, final int alignedFrameLength, final int capacity)
     {
         return (frameOffset + alignedFrameLength + headerLength) > capacity;
     }

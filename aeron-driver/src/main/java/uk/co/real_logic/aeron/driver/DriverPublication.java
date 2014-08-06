@@ -33,7 +33,6 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiConsumer;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static uk.co.real_logic.aeron.common.BitUtil.align;

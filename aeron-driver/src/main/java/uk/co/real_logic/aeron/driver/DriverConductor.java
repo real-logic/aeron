@@ -805,10 +805,10 @@ public class DriverConductor extends Agent
 
     private RetransmitSender composeNewRetransmitSender(final DriverPublication publication)
     {
-        return (termId, termOffset, length) ->
+        return
+            (termId, termOffset, length) ->
             {
-                final RetransmitPublicationCmd cmd =
-                    new RetransmitPublicationCmd(publication, termId, termOffset, length);
+                final RetransmitPublicationCmd cmd = new RetransmitPublicationCmd(publication, termId, termOffset, length);
 
                 while (!senderProxy.retransmit(cmd))
                 {

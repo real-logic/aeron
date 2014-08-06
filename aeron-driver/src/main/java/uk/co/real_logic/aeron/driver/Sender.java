@@ -59,9 +59,8 @@ public class Sender extends Agent
             if (obj instanceof RetransmitPublicationCmd)
             {
                 final RetransmitPublicationCmd cmd = (RetransmitPublicationCmd)obj;
-                final DriverPublication driverPublication = cmd.driverPublication();
 
-                // TODO: finish
+                cmd.driverPublication().onRetransmit(cmd.termId(), cmd.termOffset(), cmd.length());
             }
         }
         catch (final Exception ex)

@@ -33,6 +33,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static uk.co.real_logic.aeron.common.BitUtil.align;
@@ -67,12 +68,10 @@ public class DriverPublication implements AutoCloseable
     private final ByteBuffer scratchByteBuffer = ByteBuffer.allocateDirect(DataHeaderFlyweight.HEADER_LENGTH);
     private final AtomicBuffer scratchAtomicBuffer = new AtomicBuffer(scratchByteBuffer);
     private final LogScanner[] logScanners = new LogScanner[TermHelper.BUFFER_COUNT];
-    private final RetransmitHandler[] retransmitHandlers = new RetransmitHandler[TermHelper.BUFFER_COUNT];
+    private final LogScanner[] retransmitLogScanners = new LogScanner[TermHelper.BUFFER_COUNT];
 
     private final ByteBuffer[] sendBuffers = new ByteBuffer[TermHelper.BUFFER_COUNT];
-    private final ByteBuffer[] retransmitBuffers = new ByteBuffer[TermHelper.BUFFER_COUNT];
 
-    private final SenderControlStrategy controlStrategy;
     private final AtomicLong positionLimit;
     private final SendChannelEndpoint mediaEndpoint;
     private final TermBuffers termBuffers;
@@ -88,6 +87,7 @@ public class DriverPublication implements AutoCloseable
 
     private int nextTermOffset = 0;
     private int activeIndex = 0;
+    private int retransmitIndex = 0;
     private int statusMessagesSeen = 0;
     private long nextOffsetPosition = 0;
 
@@ -95,7 +95,6 @@ public class DriverPublication implements AutoCloseable
 
     public DriverPublication(final SendChannelEndpoint mediaEndpoint,
                              final TimerWheel timerWheel,
-                             final SenderControlStrategy controlStrategy,
                              final TermBuffers termBuffers,
                              final BufferPositionReporter limitReporter,
                              final int sessionId,
@@ -103,13 +102,13 @@ public class DriverPublication implements AutoCloseable
                              final int initialTermId,
                              final int headerLength,
                              final int mtuLength,
+                             final long initialPositionLimit,
                              final EventLogger logger)
     {
         this.mediaEndpoint = mediaEndpoint;
         this.termBuffers = termBuffers;
         this.logger = logger;
         this.dstAddress = mediaEndpoint.udpChannel().remoteData();
-        this.controlStrategy = controlStrategy;
         this.timerWheel = timerWheel;
         this.limitReporter = limitReporter;
         this.sessionId = sessionId;
@@ -122,14 +121,12 @@ public class DriverPublication implements AutoCloseable
         for (int i = 0; i < rawLogs.length; i++)
         {
             logScanners[i] = newScanner(rawLogs[i]);
+            retransmitLogScanners[i] = newScanner(rawLogs[i]);
             sendBuffers[i] = duplicateLogBuffer(rawLogs[i]);
-            retransmitBuffers[i] = duplicateLogBuffer(rawLogs[i]);
-            retransmitHandlers[i] = newRetransmitHandler(rawLogs[i]);
         }
 
         final int termCapacity = logScanners[0].capacity();
-        positionLimit = new AtomicLong(controlStrategy.initialPositionLimit(initialTermId, termCapacity));
-
+        positionLimit = new AtomicLong(initialPositionLimit);
         activeTermId = new AtomicInteger(initialTermId);
 
         final long now = timerWheel.now();
@@ -191,30 +188,10 @@ public class DriverPublication implements AutoCloseable
         return streamId;
     }
 
-    /**
-     * This is performed on the {@link DriverConductor} thread
-     */
-    public void onStatusMessage(final int termId,
-                                final int highestContiguousTermOffset,
-                                final int receiverWindowSize,
-                                final InetSocketAddress address)
+    public void updatePositionLimitFromSm(final long limit)
     {
-        positionLimit.lazySet(
-            controlStrategy.onStatusMessage(termId, highestContiguousTermOffset, receiverWindowSize, address));
-        statusMessagesSeen++;
-    }
-
-    /**
-     * This is performed on the {@link DriverConductor} thread
-     */
-    public void onNakFrame(final int termId, final long termOffset, final long length)
-    {
-        final int index = determineIndexByTermId(termId);
-
-        if (-1 != index)
-        {
-            retransmitHandlers[index].onNak((int)termOffset, (int)length);
-        }
+        positionLimit.lazySet(limit);
+        statusMessagesSeen++;  // we also got an SM, so w00t!
     }
 
     /**
@@ -261,6 +238,24 @@ public class DriverPublication implements AutoCloseable
         timeOfLastKeepaliveFromClient = time;
     }
 
+    public void onRetransmit(final int termId, final int termOffset, final int length)
+    {
+        retransmitIndex = determineIndexByTermId(termId);
+
+        if (-1 != retransmitIndex)
+        {
+            final LogScanner scanner = retransmitLogScanners[retransmitIndex];
+            scanner.seek(termOffset);
+
+            int remainingBytes = length;
+            do
+            {
+                remainingBytes -= scanner.scanNext(this::onSendRetransmit, Math.min(remainingBytes, mtuLength));
+            }
+            while (remainingBytes > 0);
+        }
+    }
+
     private ByteBuffer duplicateLogBuffer(final RawLog log)
     {
         final ByteBuffer buffer = log.logBuffer().duplicateByteBuffer();
@@ -272,16 +267,6 @@ public class DriverPublication implements AutoCloseable
     private LogScanner newScanner(final RawLog log)
     {
         return new LogScanner(log.logBuffer(), log.stateBuffer(), headerLength);
-    }
-
-    private RetransmitHandler newRetransmitHandler(final RawLog rawLog)
-    {
-        return new RetransmitHandler(new LogScanner(rawLog.logBuffer(), rawLog.stateBuffer(), headerLength),
-                                     timerWheel,
-                                     DriverConductor.RETRANS_UNICAST_DELAY_GENERATOR,
-                                     DriverConductor.RETRANS_UNICAST_LINGER_GENERATOR,
-                                     this::onSendRetransmit,
-                                     mtuLength);
     }
 
     private int determineIndexByTermId(final int termId)
@@ -348,36 +333,32 @@ public class DriverPublication implements AutoCloseable
         }
     }
 
-    /**
-     * This is performed on the {@link DriverConductor} thread via the RetransmitHandler
-     */
     private void onSendRetransmit(final AtomicBuffer buffer, final int offset, final int length)
     {
         // use retransmitBuffers, but need to know which one... so, use DataHeaderFlyweight to grab it
         retransmitDataHeader.wrap(buffer, offset);
-        final int index = determineIndexByTermId(retransmitDataHeader.termId());
 
-        if (-1 != index)
+        final ByteBuffer termRetransmitBuffer = sendBuffers[retransmitIndex];
+        termRetransmitBuffer.position(offset);
+        termRetransmitBuffer.limit(offset + length);
+
+        try
         {
-            final ByteBuffer termRetransmitBuffer = retransmitBuffers[index];
-            termRetransmitBuffer.position(offset);
-            termRetransmitBuffer.limit(offset + length);
-
-            try
+            final int bytesSent = mediaEndpoint.sendTo(termRetransmitBuffer, dstAddress);
+            if (bytesSent != length)
             {
-                final int bytesSent = mediaEndpoint.sendTo(termRetransmitBuffer, dstAddress);
-                if (bytesSent != length)
-                {
-                    logger.log(EventCode.COULD_NOT_FIND_INTERFACE, termRetransmitBuffer, offset, length, dstAddress);
-                }
+                logger.log(EventCode.COULD_NOT_FIND_INTERFACE, termRetransmitBuffer, offset, length, dstAddress);
             }
-            catch (final Exception ex)
-            {
-                logger.logException(ex);
-            }
+        }
+        catch (final Exception ex)
+        {
+            logger.logException(ex);
         }
     }
 
+    /**
+     * This is performed on the {@link DriverConductor} thread
+     */
     private void sendHeartbeat()
     {
         // called from conductor thread on timeout

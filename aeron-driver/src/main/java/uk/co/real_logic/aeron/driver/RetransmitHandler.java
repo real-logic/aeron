@@ -16,13 +16,15 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
+import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.TimerWheel;
-import uk.co.real_logic.aeron.common.collections.Int2ObjectHashMap;
+import uk.co.real_logic.aeron.common.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogScanner;
+import uk.co.real_logic.aeron.driver.cmd.RetransmitPublicationCmd;
 
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 
 /**
@@ -36,57 +38,75 @@ public class RetransmitHandler
     /** Maximum number of concurrent retransmits */
     public static final int MAX_RETRANSMITS = MediaDriver.MAX_RETRANSMITS_DEFAULT;
 
-    private final LogScanner scanner;
     private final TimerWheel timerWheel;
-    private final LogScanner.AvailabilityHandler sendRetransmitHandler;
     private final Queue<RetransmitAction> retransmitActionPool = new OneToOneConcurrentArrayQueue<>(MAX_RETRANSMITS);
-    private final Int2ObjectHashMap<RetransmitAction> activeRetransmitByTermOffsetMap = new Int2ObjectHashMap<>();
+    private final Long2ObjectHashMap<RetransmitAction>  activeRetransmitByPositionMap = new Long2ObjectHashMap<>();
     private final FeedbackDelayGenerator delayGenerator;
     private final FeedbackDelayGenerator lingerTimeoutGenerator;
-    private final int mtuLength;
+    private final AtomicLong lowestPosition = new AtomicLong();
+    private final RetransmitSender retransmitSender;
+    private final int initialTermId;
+    private final int capacity;
+    private final int positionBitsToShift;
 
     /**
-     * Create a retransmit handler for a log buffer.
+     * Create a retransmit handler.
      *
-     * @param scanner to read frames from for retransmission
      * @param timerWheel for timers
      * @param delayGenerator to use for delay determination
      * @param lingerTimeoutGenerator to use for linger timeout
-     * @param retransmitHandler for sending retransmits
-     * @param mtuLength for the media packet
      */
-    public RetransmitHandler(final LogScanner scanner,
-                             final TimerWheel timerWheel,
+    public RetransmitHandler(final TimerWheel timerWheel,
                              final FeedbackDelayGenerator delayGenerator,
                              final FeedbackDelayGenerator lingerTimeoutGenerator,
-                             final LogScanner.AvailabilityHandler retransmitHandler,
-                             final int mtuLength)
+                             final RetransmitSender retransmitSender,
+                             final int initialTermId,
+                             final int capacity)
     {
-        this.scanner = scanner;
         this.timerWheel = timerWheel;
         this.delayGenerator = delayGenerator;
         this.lingerTimeoutGenerator = lingerTimeoutGenerator;
-        this.sendRetransmitHandler = retransmitHandler;
-        this.mtuLength = mtuLength;
+        this.retransmitSender = retransmitSender;
+        this.initialTermId = initialTermId;
+        this.capacity = capacity;
+        this.positionBitsToShift = Integer.numberOfTrailingZeros(capacity);
+        this.lowestPosition.lazySet(0);
 
         IntStream.range(0, MAX_RETRANSMITS).forEach((i) -> retransmitActionPool.offer(new RetransmitAction()));
+    }
+
+    public void close()
+    {
+        activeRetransmitByPositionMap.forEach(
+            (position, retransmitAction) ->
+            {
+                retransmitAction.delayTimer.cancel();
+                retransmitAction.lingerTimer.cancel();
+            }
+        );
     }
 
     /**
      * Called on reception of a NAK to start retransmits handling.
      *
+     * @param termId from the NAK and the term id of the buffer to retransmit from
      * @param termOffset from the NAK and the offset of the data to retransmit
      * @param length of the missing data
      */
-    public void onNak(final int termOffset, final int length)
+    public void onNak(final int termId, final int termOffset, final int length)
     {
+        final long position = TermHelper.calculatePosition(termId, termOffset, positionBitsToShift, initialTermId);
+
         if (!retransmitActionPool.isEmpty() &&
-            null == activeRetransmitByTermOffsetMap.get(termOffset) &&
-            scanner.tailVolatile() > termOffset)
+            null == activeRetransmitByPositionMap.get(position) &&
+            capacity > termOffset &&
+            lowestPosition.get() <= termOffset)
         {
             final RetransmitAction retransmitAction = retransmitActionPool.poll();
+            retransmitAction.termId = termId;
             retransmitAction.termOffset = termOffset;
-            retransmitAction.length = length;
+            retransmitAction.length = Math.min(length, capacity - termOffset);
+            retransmitAction.position = position;
 
             final long delay = determineRetransmitDelay();
             if (0 == delay)
@@ -99,7 +119,7 @@ public class RetransmitHandler
                 retransmitAction.delay(delay);
             }
 
-            activeRetransmitByTermOffsetMap.put(termOffset, retransmitAction);
+            activeRetransmitByPositionMap.put(position, retransmitAction);
         }
     }
 
@@ -108,20 +128,32 @@ public class RetransmitHandler
      *
      * NOTE: Currently only called from unit tests. Would be used for retransmitting from receivers for NAK suppression
      *
+     * @param termId of the data
      * @param termOffset of the data
      */
-    public void onRetransmitReceived(final int termOffset)
+    public void onRetransmitReceived(final int termId, final int termOffset)
     {
-        final RetransmitAction retransmitAction = activeRetransmitByTermOffsetMap.get(termOffset);
+        final long position = TermHelper.calculatePosition(termId, termOffset, positionBitsToShift, initialTermId);
+        final RetransmitAction retransmitAction = activeRetransmitByPositionMap.get(position);
 
         if (null != retransmitAction && State.DELAYED == retransmitAction.state)
         {
-            activeRetransmitByTermOffsetMap.remove(termOffset);
+            activeRetransmitByPositionMap.remove(position);
             retransmitAction.state = State.INACTIVE;
             retransmitActionPool.offer(retransmitAction);
             retransmitAction.delayTimer.cancel();
             // do not go into linger
         }
+    }
+
+    /**
+     * Inform handler of term rotation by informing it of a new high term id value
+     *
+     * @param termId of the new high
+     */
+    public void highTermId(final int termId)
+    {
+        lowestPosition.lazySet(TermHelper.calculatePosition(termId - 1, 0, positionBitsToShift, initialTermId));
     }
 
     private long determineRetransmitDelay()
@@ -136,14 +168,7 @@ public class RetransmitHandler
 
     private void perform(final RetransmitAction retransmitAction)
     {
-        scanner.seek(retransmitAction.termOffset);
-
-        int remainingBytes = retransmitAction.length;
-        do
-        {
-            remainingBytes -= scanner.scanNext(sendRetransmitHandler, Math.min(remainingBytes, mtuLength));
-        }
-        while (remainingBytes > 0);
+        retransmitSender.send(retransmitAction.termId, retransmitAction.termOffset, retransmitAction.length);
     }
 
     private enum State
@@ -155,8 +180,10 @@ public class RetransmitHandler
 
     class RetransmitAction
     {
+        int termId;
         int termOffset;
         int length;
+        long position;
         State state = State.INACTIVE;
         TimerWheel.Timer delayTimer = timerWheel.newBlankTimer();
         TimerWheel.Timer lingerTimer = timerWheel.newBlankTimer();
@@ -182,7 +209,7 @@ public class RetransmitHandler
         public void onLingerTimeout()
         {
             state = State.INACTIVE;
-            activeRetransmitByTermOffsetMap.remove(termOffset);
+            activeRetransmitByPositionMap.remove(position);
             retransmitActionPool.offer(this);
         }
     }

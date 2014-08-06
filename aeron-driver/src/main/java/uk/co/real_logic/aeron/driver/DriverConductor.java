@@ -31,6 +31,7 @@ import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
 import uk.co.real_logic.aeron.driver.cmd.CreateConnectionCmd;
 import uk.co.real_logic.aeron.driver.cmd.NewConnectionCmd;
+import uk.co.real_logic.aeron.driver.cmd.RetransmitPublicationCmd;
 import uk.co.real_logic.aeron.driver.cmd.SubscriptionRemovedCmd;
 import uk.co.real_logic.aeron.driver.exceptions.ControlProtocolException;
 
@@ -96,6 +97,7 @@ public class DriverConductor extends Agent
     private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
 
     private final int mtuLength;
+    private final int capacity;
     private final int initialWindowSize;
     private final long statusMessageTimeout;
     private final TimerWheel.Timer heartbeatTimer;
@@ -105,6 +107,7 @@ public class DriverConductor extends Agent
     private final CountersManager countersManager;
     private final AtomicBuffer countersBuffer;
     private final Counter receiverProxyIgnores;
+    private final Counter senderProxyIgnores;
 
     private final EventLogger logger;
 
@@ -119,6 +122,7 @@ public class DriverConductor extends Agent
         this.nioSelector = ctx.conductorNioSelector();
         this.mtuLength = ctx.mtuLength();
         this.initialWindowSize = ctx.initialWindowSize();
+        this.capacity = ctx.termBufferSize();
         this.statusMessageTimeout = ctx.statusMessageTimeout();
         this.unicastSenderFlowControl = ctx.unicastSenderFlowControl();
         this.multicastSenderFlowControl = ctx.multicastSenderFlowControl();
@@ -142,6 +146,7 @@ public class DriverConductor extends Agent
         logger = ctx.eventLogger();
 
         receiverProxyIgnores = countersManager.newCounter("Failed offers to ReceiverProxy");
+        senderProxyIgnores = countersManager.newCounter("Failed offers to SenderProxy");
     }
 
     public SendChannelEndpoint senderChannelEndpoint(final UdpChannel channel)
@@ -350,7 +355,6 @@ public class DriverConductor extends Agent
             final DriverPublication publication =
                 new DriverPublication(channelEndpoint,
                                       timerWheel,
-                                      flowControlStrategy,
                                       termBuffers,
                                       positionReporter,
                                       sessionId,
@@ -358,9 +362,18 @@ public class DriverConductor extends Agent
                                       initialTermId,
                                       HEADER_LENGTH,
                                       mtuLength,
+                                      flowControlStrategy.initialPositionLimit(initialTermId, capacity),
                                       logger);
 
-            channelEndpoint.addPublication(publication);
+            final RetransmitHandler retransmitHandler =
+                new RetransmitHandler(timerWheel,
+                                      DriverConductor.RETRANS_UNICAST_DELAY_GENERATOR,
+                                      DriverConductor.RETRANS_UNICAST_LINGER_GENERATOR,
+                                      composeNewRetransmitSender(publication),
+                                      initialTermId,
+                                      capacity);
+
+            channelEndpoint.addPublication(publication, retransmitHandler, flowControlStrategy);
 
             clientProxy.onNewTermBuffers(ON_NEW_PUBLICATION, sessionId, streamId, initialTermId, channel,
                                          termBuffers, correlationId, positionCounterId);
@@ -788,5 +801,19 @@ public class DriverConductor extends Agent
     private int allocatePositionCounter(final String type, final String dirName, final int sessionId, final int streamId)
     {
         return countersManager.allocate(String.format("%s: %s %x %x", type, dirName, sessionId, streamId));
+    }
+
+    private RetransmitSender composeNewRetransmitSender(final DriverPublication publication)
+    {
+        return (termId, termOffset, length) ->
+            {
+                final RetransmitPublicationCmd cmd =
+                    new RetransmitPublicationCmd(publication, termId, termOffset, length);
+
+                while (!senderProxy.retransmit(cmd))
+                {
+                    senderProxyIgnores.increment();
+                }
+            };
     }
 }

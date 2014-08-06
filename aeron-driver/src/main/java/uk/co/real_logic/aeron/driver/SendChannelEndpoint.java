@@ -32,7 +32,7 @@ public class SendChannelEndpoint implements AutoCloseable
 {
     private final UdpTransport transport;
     private final UdpChannel udpChannel;
-    private final CompoundIdMap<DriverPublication> publicationByCompoundIdMap = new CompoundIdMap<>();
+    private final CompoundIdMap<PublicationComponents> publicationByCompoundIdMap = new CompoundIdMap<>();
 
     public SendChannelEndpoint(final UdpChannel udpChannel, final NioSelector nioSelector, final EventLogger logger)
         throws Exception
@@ -64,17 +64,36 @@ public class SendChannelEndpoint implements AutoCloseable
 
     public DriverPublication findPublication(final int sessionId, final int streamId)
     {
-        return publicationByCompoundIdMap.get(sessionId, streamId);
+        final PublicationComponents components = publicationByCompoundIdMap.get(sessionId, streamId);
+
+        if (null != components)
+        {
+            return components.publication;
+        }
+
+        return null;
     }
 
-    public void addPublication(final DriverPublication publication)
+    public void addPublication(final DriverPublication publication,
+                               final RetransmitHandler retransmitHandler,
+                               final SenderControlStrategy senderControlStrategy)
     {
-        publicationByCompoundIdMap.put(publication.sessionId(), publication.streamId(), publication);
+        publicationByCompoundIdMap.put(publication.sessionId(),
+                                       publication.streamId(),
+                                       new PublicationComponents(publication, retransmitHandler, senderControlStrategy));
     }
 
     public DriverPublication removePublication(final int sessionId, final int streamId)
     {
-        return publicationByCompoundIdMap.remove(sessionId, streamId);
+        final PublicationComponents components = publicationByCompoundIdMap.remove(sessionId, streamId);
+
+        if (null != components)
+        {
+            components.retransmitHandler.close();
+            return components.publication;
+        }
+
+        return null;
     }
 
     public int sessionCount()
@@ -87,11 +106,16 @@ public class SendChannelEndpoint implements AutoCloseable
                                       final int length,
                                       final InetSocketAddress srcAddress)
     {
-        final DriverPublication publication = findPublication(header.sessionId(), header.streamId());
-        publication.onStatusMessage(header.termId(),
-                                    header.highestContiguousTermOffset(),
-                                    header.receiverWindowSize(),
-                                    srcAddress);
+        final PublicationComponents components = publicationByCompoundIdMap.get(header.sessionId(), header.streamId());
+
+        if (null != components)
+        {
+            final long limit =
+                components.flowControlStrategy.onStatusMessage(header.termId(),
+                    header.highestContiguousTermOffset(), header.receiverWindowSize(), srcAddress);
+
+            components.publication.updatePositionLimitFromSm(limit);
+        }
     }
 
     private void onNakFrame(final NakFlyweight nak,
@@ -99,7 +123,27 @@ public class SendChannelEndpoint implements AutoCloseable
                             final int length,
                             final InetSocketAddress srcAddress)
     {
-        final DriverPublication publication = findPublication(nak.sessionId(), nak.streamId());
-        publication.onNakFrame(nak.termId(), nak.termOffset(), nak.length());
+        final PublicationComponents components = publicationByCompoundIdMap.get(nak.sessionId(), nak.streamId());
+
+        if (null != components)
+        {
+            components.retransmitHandler.onNak(nak.termId(), nak.termOffset(), nak.length());
+        }
+    }
+
+    class PublicationComponents
+    {
+        private final DriverPublication publication;
+        private final RetransmitHandler retransmitHandler;
+        private final SenderControlStrategy flowControlStrategy;
+
+        PublicationComponents(final DriverPublication publication,
+                              final RetransmitHandler retransmitHandler,
+                              final SenderControlStrategy flowControlStrategy)
+        {
+            this.publication = publication;
+            this.retransmitHandler = retransmitHandler;
+            this.flowControlStrategy = flowControlStrategy;
+        }
     }
 }

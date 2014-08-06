@@ -15,8 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.collections.CompoundIdMap;
-import uk.co.real_logic.aeron.common.collections.Int2ObjectHashMap;
+import uk.co.real_logic.aeron.common.collections.BiInt2ObjectMap;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.NakFlyweight;
@@ -32,7 +31,7 @@ public class SendChannelEndpoint implements AutoCloseable
 {
     private final UdpTransport transport;
     private final UdpChannel udpChannel;
-    private final CompoundIdMap<PublicationComponents> publicationByCompoundIdMap = new CompoundIdMap<>();
+    private final BiInt2ObjectMap<SendEndComponents> sendEndByStreamAndSessionIdMap = new BiInt2ObjectMap<>();
 
     public SendChannelEndpoint(final UdpChannel udpChannel, final NioSelector nioSelector, final EventLogger logger)
         throws Exception
@@ -64,7 +63,7 @@ public class SendChannelEndpoint implements AutoCloseable
 
     public DriverPublication findPublication(final int sessionId, final int streamId)
     {
-        final PublicationComponents components = publicationByCompoundIdMap.get(sessionId, streamId);
+        final SendEndComponents components = sendEndByStreamAndSessionIdMap.get(sessionId, streamId);
 
         if (null != components)
         {
@@ -78,14 +77,14 @@ public class SendChannelEndpoint implements AutoCloseable
                                final RetransmitHandler retransmitHandler,
                                final SenderControlStrategy senderControlStrategy)
     {
-        publicationByCompoundIdMap.put(publication.sessionId(),
-                                       publication.streamId(),
-                                       new PublicationComponents(publication, retransmitHandler, senderControlStrategy));
+        sendEndByStreamAndSessionIdMap.put(publication.sessionId(),
+                                           publication.streamId(),
+                                           new SendEndComponents(publication, retransmitHandler, senderControlStrategy));
     }
 
     public DriverPublication removePublication(final int sessionId, final int streamId)
     {
-        final PublicationComponents components = publicationByCompoundIdMap.remove(sessionId, streamId);
+        final SendEndComponents components = sendEndByStreamAndSessionIdMap.remove(sessionId, streamId);
 
         if (null != components)
         {
@@ -98,7 +97,7 @@ public class SendChannelEndpoint implements AutoCloseable
 
     public int sessionCount()
     {
-        return publicationByCompoundIdMap.size();
+        return sendEndByStreamAndSessionIdMap.size();
     }
 
     private void onStatusMessageFrame(final StatusMessageFlyweight header,
@@ -106,13 +105,13 @@ public class SendChannelEndpoint implements AutoCloseable
                                       final int length,
                                       final InetSocketAddress srcAddress)
     {
-        final PublicationComponents components = publicationByCompoundIdMap.get(header.sessionId(), header.streamId());
+        final SendEndComponents components = sendEndByStreamAndSessionIdMap.get(header.sessionId(), header.streamId());
 
         if (null != components)
         {
             final long limit =
-                components.flowControlStrategy.onStatusMessage(header.termId(),
-                    header.highestContiguousTermOffset(), header.receiverWindowSize(), srcAddress);
+                components.flowControlStrategy.onStatusMessage(
+                    header.termId(), header.highestContiguousTermOffset(), header.receiverWindowSize(), srcAddress);
 
             components.publication.updatePositionLimitFromSm(limit);
         }
@@ -123,7 +122,7 @@ public class SendChannelEndpoint implements AutoCloseable
                             final int length,
                             final InetSocketAddress srcAddress)
     {
-        final PublicationComponents components = publicationByCompoundIdMap.get(nak.sessionId(), nak.streamId());
+        final SendEndComponents components = sendEndByStreamAndSessionIdMap.get(nak.sessionId(), nak.streamId());
 
         if (null != components)
         {
@@ -131,15 +130,15 @@ public class SendChannelEndpoint implements AutoCloseable
         }
     }
 
-    class PublicationComponents
+    class SendEndComponents
     {
         private final DriverPublication publication;
         private final RetransmitHandler retransmitHandler;
         private final SenderControlStrategy flowControlStrategy;
 
-        PublicationComponents(final DriverPublication publication,
-                              final RetransmitHandler retransmitHandler,
-                              final SenderControlStrategy flowControlStrategy)
+        SendEndComponents(final DriverPublication publication,
+                          final RetransmitHandler retransmitHandler,
+                          final SenderControlStrategy flowControlStrategy)
         {
             this.publication = publication;
             this.retransmitHandler = retransmitHandler;

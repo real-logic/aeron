@@ -21,14 +21,14 @@ import java.util.function.Consumer;
 /**
  * Map that takes a sessionId and streamId and associates with an object
  */
-public class CompoundIdMap<V>
+public class BiInt2ObjectMap<V>
 {
     private final Long2ObjectHashMap<V> map;
 
     /**
      * Construct an empty map
      */
-    public CompoundIdMap()
+    public BiInt2ObjectMap()
     {
         map = new Long2ObjectHashMap<>();
     }
@@ -39,7 +39,7 @@ public class CompoundIdMap<V>
      * @param initialCapacity for the underlying hash map
      * @param loadFactor for the underlying hash map
      */
-    public CompoundIdMap(final int initialCapacity, final double loadFactor)
+    public BiInt2ObjectMap(final int initialCapacity, final double loadFactor)
     {
         map = new Long2ObjectHashMap<>(initialCapacity, loadFactor);
     }
@@ -101,7 +101,7 @@ public class CompoundIdMap<V>
      *
      * @param <V> for the map
      */
-    public interface CompoundIdHandler<V>
+    public interface EntryConsumer<V>
     {
         /**
          * A map entry
@@ -118,7 +118,7 @@ public class CompoundIdMap<V>
      *
      * @param consumer to apply to each value in the map
      */
-    public void forEach(final CompoundIdHandler<V> consumer)
+    public void forEach(final EntryConsumer<V> consumer)
     {
         map.forEach(
             (compoundKey, value) ->

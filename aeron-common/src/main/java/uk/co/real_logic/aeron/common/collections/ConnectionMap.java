@@ -26,11 +26,11 @@ import static uk.co.real_logic.aeron.common.collections.CollectionUtil.getOrDefa
  */
 public class ConnectionMap<D, C>
 {
-    private final Map<D, CompoundIdMap<C>> channelMap = new HashMap<>();
+    private final Map<D, BiInt2ObjectMap<C>> channelMap = new HashMap<>();
 
     public C get(final D channel, final int sessionId, final int streamId)
     {
-        final CompoundIdMap<C> idMap = channelMap.get(channel);
+        final BiInt2ObjectMap<C> idMap = channelMap.get(channel);
 
         if (null == idMap)
         {
@@ -42,14 +42,14 @@ public class ConnectionMap<D, C>
 
     public C put(final D channel, final int sessionId, final int streamId, final C value)
     {
-        final CompoundIdMap<C> idMap = getOrDefault(channelMap, channel, ignore -> new CompoundIdMap<>());
+        final BiInt2ObjectMap<C> idMap = getOrDefault(channelMap, channel, (ignore) -> new BiInt2ObjectMap<>());
 
         return idMap.put(sessionId, streamId, value);
     }
 
     public C remove(final D channel, final int sessionId, final int streamId)
     {
-        final CompoundIdMap<C> idMap = channelMap.get(channel);
+        final BiInt2ObjectMap<C> idMap = channelMap.get(channel);
 
         if (null == idMap)
         {
@@ -66,16 +66,16 @@ public class ConnectionMap<D, C>
         return value;
     }
 
-    public interface ConnectionHandler<D, T>
+    public interface ConnectionConsumer<D, T>
     {
         void accept(final D channel, final Integer sessionId, final Integer streamId, final T value);
     }
 
-    public void forEach(final ConnectionHandler<D, C> connectionHandler)
+    public void forEach(final ConnectionConsumer<D, C> connectionConsumer)
     {
         channelMap.forEach(
             (channel, idMap) ->
                 idMap.forEach(
-                    (sessionId, streamId, value) -> connectionHandler.accept(channel, sessionId, streamId, value)));
+                    (sessionId, streamId, value) -> connectionConsumer.accept(channel, sessionId, streamId, value)));
     }
 }

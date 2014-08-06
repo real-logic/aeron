@@ -36,8 +36,8 @@ import java.util.concurrent.Executors;
  */
 public class MediaDriverAdminSoakTestRunner
 {
-    private static final ExecutorService executor = Executors.newFixedThreadPool(2);
-    private static final AtomicBuffer publishingBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(256));
+    private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(2);
+    private static final AtomicBuffer PUBLISHING_BUFFER = new AtomicBuffer(ByteBuffer.allocateDirect(256));
 
     public static void main(String[] args) throws Exception
     {
@@ -64,10 +64,10 @@ public class MediaDriverAdminSoakTestRunner
         final Aeron publishingClient = Aeron.newClient(new Aeron.Context());
         final Aeron consumingClient = Aeron.newClient(new Aeron.Context());
 
-        consumingClient.invoke(executor);
-        publishingClient.invoke(executor);
+        consumingClient.invoke(EXECUTOR);
+        publishingClient.invoke(EXECUTOR);
 
-        SoakTestHelper.exchangeMessagesBetweenClients(publishingClient, consumingClient, publishingBuffer);
+        SoakTestHelper.exchangeMessagesBetweenClients(publishingClient, consumingClient, PUBLISHING_BUFFER);
 
         shutdownAndClose(consumingClient);
         shutdownAndClose(publishingClient);
@@ -80,10 +80,9 @@ public class MediaDriverAdminSoakTestRunner
             aeron.shutdown();
             aeron.close();
         }
-        catch (Exception e)
+        catch (final Exception ex)
         {
-            e.printStackTrace();
+            ex.printStackTrace();
         }
     }
-
 }

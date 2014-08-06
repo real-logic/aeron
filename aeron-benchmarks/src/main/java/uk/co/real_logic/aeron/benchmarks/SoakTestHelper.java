@@ -13,9 +13,6 @@ import static uk.co.real_logic.aeron.common.CommonContext.ADMIN_DIR_PROP_NAME;
 import static uk.co.real_logic.aeron.common.CommonContext.COUNTERS_DIR_PROP_NAME;
 import static uk.co.real_logic.aeron.common.CommonContext.DATA_DIR_PROP_NAME;
 
-/**
- * .
- */
 public class SoakTestHelper
 {
     public static final String CHANNEL = "udp://localhost:40123";
@@ -25,7 +22,7 @@ public class SoakTestHelper
     public static void useSharedMemoryOnLinux()
     {
         // use shared memory to avoid Disk I/O bottleneck
-        if ("Linux".equals(System.getProperty("os.name")))
+        if ("Linux".equalsIgnoreCase(System.getProperty("os.name")))
         {
             System.setProperty(ADMIN_DIR_PROP_NAME, "/dev/shm/aeron/conductor");
             System.setProperty(COUNTERS_DIR_PROP_NAME, "/dev/shm/aeron/counters");
@@ -33,13 +30,15 @@ public class SoakTestHelper
         }
     }
 
-    public static void exchangeMessagesBetweenClients(final Aeron publishingClient, final Aeron consumingClient, final AtomicBuffer publishingBuffer)
+    public static void exchangeMessagesBetweenClients(final Aeron publishingClient,
+                                                      final Aeron consumingClient,
+                                                      final AtomicBuffer publishingBuffer)
     {
-        publishingBuffer.setMemory(0, publishingBuffer.capacity(), (byte) 0);
+        publishingBuffer.setMemory(0, publishingBuffer.capacity(), (byte)0);
 
         try (final Publication publication = publishingClient.addPublication(CHANNEL, STREAM_ID, 0))
         {
-            AtomicInteger receivedCount = new AtomicInteger(0);
+            final AtomicInteger receivedCount = new AtomicInteger(0);
 
             final DataHandler handler =
                 (buffer, offset, length, sessionId, flags) ->

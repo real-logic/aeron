@@ -16,19 +16,12 @@
 package uk.co.real_logic.aeron.benchmarks;
 
 import uk.co.real_logic.aeron.Aeron;
-import uk.co.real_logic.aeron.DataHandler;
-import uk.co.real_logic.aeron.Publication;
-import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static java.nio.ByteOrder.nativeOrder;
-import static uk.co.real_logic.aeron.common.CommonContext.*;
 
 /**
  * Goal: test for resource leaks in the control/admin side of things.
@@ -43,8 +36,8 @@ import static uk.co.real_logic.aeron.common.CommonContext.*;
  */
 public class ClientAdminSoakTestRunner
 {
-    private static final ExecutorService executor = Executors.newFixedThreadPool(2);
-    private static final AtomicBuffer publishingBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(256));
+    private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(2);
+    private static final AtomicBuffer PUBLISHING_BUFFER = new AtomicBuffer(ByteBuffer.allocateDirect(256));
 
     public static void main(String[] args) throws Exception
     {
@@ -56,12 +49,12 @@ public class ClientAdminSoakTestRunner
         final Aeron publishingClient = Aeron.newClient(new Aeron.Context());
         final Aeron consumingClient = Aeron.newClient(new Aeron.Context());
 
-        consumingClient.invoke(executor);
-        publishingClient.invoke(executor);
+        consumingClient.invoke(EXECUTOR);
+        publishingClient.invoke(EXECUTOR);
 
         for (int i = 0; true; i++)
         {
-            SoakTestHelper.exchangeMessagesBetweenClients(publishingClient, consumingClient, publishingBuffer);
+            SoakTestHelper.exchangeMessagesBetweenClients(publishingClient, consumingClient, PUBLISHING_BUFFER);
 
             if ((i % 100) == 0)
             {

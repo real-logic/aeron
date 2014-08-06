@@ -240,7 +240,30 @@ public class LogAppenderTest
         final int msgLength = 120;
         final int headerLength = DEFAULT_HEADER.length;
         final int requiredFrameSize = align(headerLength + msgLength, FRAME_ALIGNMENT);
-        final int tailValue = logAppender.capacity() - FRAME_ALIGNMENT;
+        final int tailValue = logAppender.capacity() - align(msgLength, FRAME_ALIGNMENT);
+        final AtomicBuffer buffer = new AtomicBuffer(new byte[128]);
+
+        when(stateBuffer.getAndAddInt(TAIL_COUNTER_OFFSET, requiredFrameSize))
+            .thenReturn(tailValue);
+
+        assertThat(logAppender.append(buffer, 0, msgLength), is(TRIPPED));
+
+        final InOrder inOrder = inOrder(logBuffer, stateBuffer);
+        inOrder.verify(stateBuffer, times(1)).getAndAddInt(TAIL_COUNTER_OFFSET, requiredFrameSize);
+        inOrder.verify(logBuffer, times(1)).putBytes(tailValue, DEFAULT_HEADER, 0, headerLength);
+        inOrder.verify(logBuffer, times(1)).putShort(typeOffset(tailValue), (short)PADDING_FRAME_TYPE, LITTLE_ENDIAN);
+        inOrder.verify(logBuffer, times(1)).putByte(flagsOffset(tailValue), UNFRAGMENTED);
+        inOrder.verify(logBuffer, times(1)).putInt(termOffsetOffset(tailValue), tailValue, LITTLE_ENDIAN);
+        inOrder.verify(logBuffer, times(1)).putIntOrdered(lengthOffset(tailValue), LOG_BUFFER_CAPACITY - tailValue);
+    }
+
+    @Test
+    public void shouldPadLogAndTripWhenAppendingWithInsufficientRemainingCapacityIncludingHeader()
+    {
+        final int headerLength = DEFAULT_HEADER.length;
+        final int msgLength = 120;
+        final int requiredFrameSize = align(headerLength + msgLength, FRAME_ALIGNMENT);
+        final int tailValue = logAppender.capacity() - (requiredFrameSize + (headerLength - FRAME_ALIGNMENT));
         final AtomicBuffer buffer = new AtomicBuffer(new byte[128]);
 
         when(stateBuffer.getAndAddInt(TAIL_COUNTER_OFFSET, requiredFrameSize))

@@ -48,8 +48,12 @@ public class Sender extends Agent
             roundRobinIndex = 0;
         }
 
-        return publications.doAction(roundRobinIndex, DriverPublication::send) +
-            commandQueue.drain(this::processConductorCommands);
+        int workCount = 0;
+
+        workCount += publications.doAction(roundRobinIndex, DriverPublication::send);
+        workCount += commandQueue.drain(this::processConductorCommands);
+
+        return  workCount;
     }
 
     private void processConductorCommands(final Object obj)

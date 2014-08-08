@@ -23,17 +23,17 @@ public class DriverSubscription
     private final ReceiveChannelEndpoint receiveChannelEndpoint;
     private final int streamId;
     private final long correlationId;
-    private long timeOfLastKeepaliveFromClient;
+    private final ClientLiveness clientLiveness;
 
     public DriverSubscription(final ReceiveChannelEndpoint channelEndpoint,
+                              final ClientLiveness clientLiveness,
                               final int streamId,
-                              final long correlationId,
-                              final long now)
+                              final long correlationId)
     {
         this.receiveChannelEndpoint = channelEndpoint;
         this.streamId = streamId;
         this.correlationId = correlationId;
-        this.timeOfLastKeepaliveFromClient = now;
+        this.clientLiveness = clientLiveness;
     }
 
     public ReceiveChannelEndpoint receiveChannelEndpoint()
@@ -53,11 +53,6 @@ public class DriverSubscription
 
     public long timeOfLastKeepaliveFromClient()
     {
-        return timeOfLastKeepaliveFromClient;
-    }
-
-    public void timeOfLastKeepaliveFromClient(final long now)
-    {
-        timeOfLastKeepaliveFromClient = now;
+        return clientLiveness.timeOfLastKeepalive();
     }
 }

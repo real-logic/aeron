@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.conductor;
 
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
+import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
@@ -42,10 +43,11 @@ public class DriverProxy
 
     // the heartbeats come from the client conductor thread, so keep the flyweights and buffer separate
     private final AtomicBuffer keepaliveBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(MSG_BUFFER_CAPACITY));
-    private final PublicationMessageFlyweight keepalivePublicationMessage = new PublicationMessageFlyweight();
-    private final SubscriptionMessageFlyweight keepaliveSubscriptionMessage = new SubscriptionMessageFlyweight();
+    private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
 
     private final RingBuffer mediaDriverCommandBuffer;
+
+    private final long clientId;
 
     public DriverProxy(final RingBuffer mediaDriverCommandBuffer)
     {
@@ -54,8 +56,9 @@ public class DriverProxy
         publicationMessage.wrap(writeBuffer, 0);
         subscriptionMessage.wrap(writeBuffer, 0);
 
-        keepalivePublicationMessage.wrap(keepaliveBuffer, 0);
-        keepaliveSubscriptionMessage.wrap(keepaliveBuffer, 0);
+        correlatedMessage.wrap(keepaliveBuffer, 0);
+
+        clientId = mediaDriverCommandBuffer.nextCorrelationId();
     }
 
     public long addPublication(final String channel, final int sessionId, final int streamId)
@@ -78,29 +81,14 @@ public class DriverProxy
         return sendSubscriptionMessage(REMOVE_SUBSCRIPTION, channel, streamId, registrationCorrelationId);
     }
 
-    public void keepalivePublication(final Publication publication)
+    public void keepaliveClient()
     {
-        keepalivePublicationMessage.correlationId(publication.correlationId());
-        keepalivePublicationMessage.sessionId(publication.sessionId());
-        keepalivePublicationMessage.streamId(publication.streamId());
-        keepalivePublicationMessage.channel(publication.channel());
+        correlatedMessage.clientId(clientId);
+        correlatedMessage.correlationId(0);
 
-        if (!mediaDriverCommandBuffer.write(KEEPALIVE_PUBLICATION, keepaliveBuffer, 0, keepalivePublicationMessage.length()))
+        if (!mediaDriverCommandBuffer.write(KEEPALIVE_CLIENT, keepaliveBuffer, 0, CorrelatedMessageFlyweight.LENGTH))
         {
-            throw new IllegalStateException("could not write publication heartbeat");
-        }
-    }
-
-    public void keepaliveSubscription(final Subscription subscription)
-    {
-        keepaliveSubscriptionMessage.registrationCorrelationId(subscription.correlationId());
-        keepaliveSubscriptionMessage.correlationId(subscription.correlationId());
-        keepaliveSubscriptionMessage.streamId(subscription.streamId());
-        keepaliveSubscriptionMessage.channel(subscription.channel());
-
-        if (!mediaDriverCommandBuffer.write(KEEPALIVE_SUBSCRIPTION, keepaliveBuffer, 0, keepaliveSubscriptionMessage.length()))
-        {
-            throw new IllegalStateException("could not write subscription heartbeat");
+            throw new IllegalStateException("could not write keepalive");
         }
     }
 
@@ -108,6 +96,7 @@ public class DriverProxy
     {
         final long correlationId = mediaDriverCommandBuffer.nextCorrelationId();
 
+        publicationMessage.clientId(clientId);
         publicationMessage.correlationId(correlationId);
         publicationMessage.sessionId(sessionId);
         publicationMessage.streamId(streamId);
@@ -128,6 +117,7 @@ public class DriverProxy
     {
         final long correlationId = mediaDriverCommandBuffer.nextCorrelationId();
 
+        subscriptionMessage.clientId(clientId);
         subscriptionMessage.registrationCorrelationId(registrationCorrelationId);
         subscriptionMessage.correlationId(correlationId);
         subscriptionMessage.streamId(streamId);

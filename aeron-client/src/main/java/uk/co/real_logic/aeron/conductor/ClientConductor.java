@@ -20,7 +20,6 @@ import uk.co.real_logic.aeron.common.*;
 import uk.co.real_logic.aeron.common.collections.ConnectionMap;
 import uk.co.real_logic.aeron.common.command.ConnectionMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
-import uk.co.real_logic.aeron.common.concurrent.AtomicArray;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
@@ -48,7 +47,7 @@ public class ClientConductor extends Agent implements DriverListener
     public static final long AGENT_IDLE_MAX_YIELDS = 100;
     public static final long AGENT_IDLE_MIN_PARK_NS = TimeUnit.NANOSECONDS.toNanos(10);
     public static final long AGENT_IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(100);
-    public static final int KEEPALIVE_TIMEOUT_MS = 200;
+    public static final int KEEPALIVE_TIMEOUT_MS = 500;
 
     private static final long NO_CORRELATION_ID = -1;
 
@@ -57,8 +56,6 @@ public class ClientConductor extends Agent implements DriverListener
     private final long awaitTimeout;
     private final ConnectionMap<String, Publication> publicationMap = new ConnectionMap<>(); // Guarded by this
     private final SubscriptionMap subscriptionMap = new SubscriptionMap();
-    private final AtomicArray<Publication> publicationKeepaliveArray = new AtomicArray<>();
-    private final AtomicArray<Subscription> subscriptionKeepaliveArray = new AtomicArray<>();
 
     private final AtomicBuffer counterValuesBuffer;
     private final DriverProxy driverProxy;
@@ -135,7 +132,6 @@ public class ClientConductor extends Agent implements DriverListener
 
             publication = addedPublication;
             publicationMap.put(channel, sessionId, streamId, publication);
-            publicationKeepaliveArray.add(publication);
             addedPublication = null;
             activeCorrelationId = NO_CORRELATION_ID;
         }
@@ -158,7 +154,6 @@ public class ClientConductor extends Agent implements DriverListener
         awaitOperationSucceeded();
 
         publicationMap.remove(channel, sessionId, streamId);
-        publicationKeepaliveArray.remove(publication);
     }
 
     public synchronized Subscription addSubscription(final String channel, final int streamId, final DataHandler handler)
@@ -172,7 +167,6 @@ public class ClientConductor extends Agent implements DriverListener
             subscription = new Subscription(this, handler, channel, streamId, activeCorrelationId);
 
             subscriptionMap.put(channel, streamId, subscription);
-            subscriptionKeepaliveArray.add(subscription);
 
             awaitOperationSucceeded();
         }
@@ -186,7 +180,6 @@ public class ClientConductor extends Agent implements DriverListener
             driverProxy.removeSubscription(subscription.channel(), subscription.streamId(), subscription.correlationId());
 
         subscriptionMap.remove(subscription.channel(), subscription.streamId());
-        subscriptionKeepaliveArray.remove(subscription);
 
         awaitOperationSucceeded();
     }
@@ -345,8 +338,7 @@ public class ClientConductor extends Agent implements DriverListener
 
     private void onKeepalive()
     {
-        publicationKeepaliveArray.forEach(driverProxy::keepalivePublication);
-        subscriptionKeepaliveArray.forEach(driverProxy::keepaliveSubscription);
+        driverProxy.keepaliveClient();
 
         timerWheel.rescheduleTimeout(KEEPALIVE_TIMEOUT_MS, TimeUnit.MILLISECONDS, keepaliveTimer);
     }

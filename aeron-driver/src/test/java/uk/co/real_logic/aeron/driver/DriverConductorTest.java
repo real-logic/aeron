@@ -21,6 +21,7 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.common.ErrorCode;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.command.ControlProtocolEvents;
+import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.AtomicArray;
@@ -65,6 +66,7 @@ public class DriverConductorTest
     private static final long CORRELATION_ID_2 = 1430;
     private static final long CORRELATION_ID_3 = 1431;
     private static final long CORRELATION_ID_4 = 1432;
+    private static final long CLIENT_ID = 1433;
 
     private final ByteBuffer toDriverBuffer =
         ByteBuffer.allocate(MediaDriver.COMMAND_BUFFER_SZ + RingBufferDescriptor.TRAILER_LENGTH);
@@ -76,8 +78,8 @@ public class DriverConductorTest
     private final ClientProxy mockClientProxy = mock(ClientProxy.class);
 
     private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
-
     private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
+    private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(256));
 
     private final AtomicArray<DriverPublication> publications = new AtomicArray<>();
@@ -398,11 +400,11 @@ public class DriverConductorTest
 
         processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_CLIENT_TIMEOUT_NS / 2));
 
-        writePublicationMessage(ControlProtocolEvents.KEEPALIVE_PUBLICATION, 1, 2, 4000, CORRELATION_ID_1);
+        writeKeepaliveClientMessage();
 
         processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_CLIENT_TIMEOUT_NS + 1000));
 
-        writePublicationMessage(ControlProtocolEvents.KEEPALIVE_PUBLICATION, 1, 2, 4000, CORRELATION_ID_1);
+        writeKeepaliveClientMessage();
 
         processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_CLIENT_TIMEOUT_NS * 2));
 
@@ -439,11 +441,11 @@ public class DriverConductorTest
 
         processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_CLIENT_TIMEOUT_NS / 1));
 
-        writeSubscriptionMessage(ControlProtocolEvents.KEEPALIVE_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, CORRELATION_ID_1);
+        writeKeepaliveClientMessage();
 
         processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_CLIENT_TIMEOUT_NS + 1000));
 
-        writeSubscriptionMessage(ControlProtocolEvents.KEEPALIVE_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, CORRELATION_ID_1);
+        writeKeepaliveClientMessage();
 
         processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_CLIENT_TIMEOUT_NS * 2));
 
@@ -473,6 +475,7 @@ public class DriverConductorTest
         publicationMessage.streamId(streamId);
         publicationMessage.sessionId(sessionId);
         publicationMessage.channel(CHANNEL_URI + port);
+        publicationMessage.clientId(CLIENT_ID);
         publicationMessage.correlationId(correlationId);
 
         fromClientCommands.write(msgTypeId, writeBuffer, 0, publicationMessage.length());
@@ -488,9 +491,20 @@ public class DriverConductorTest
         subscriptionMessage.streamId(streamId)
                            .channel(channel)
                            .registrationCorrelationId(registrationCorrelationId)
-                           .correlationId(registrationCorrelationId);
+                           .correlationId(registrationCorrelationId)
+                           .clientId(CLIENT_ID);
 
         fromClientCommands.write(msgTypeId, writeBuffer, 0, subscriptionMessage.length());
+    }
+
+    private void writeKeepaliveClientMessage()
+        throws IOException
+    {
+        correlatedMessage.wrap(writeBuffer, 0);
+        correlatedMessage.clientId(CLIENT_ID);
+        correlatedMessage.correlationId(0);
+
+        fromClientCommands.write(ControlProtocolEvents.KEEPALIVE_CLIENT, writeBuffer, 0, CorrelatedMessageFlyweight.LENGTH);
     }
 
     private long processTimersUntil(final BooleanSupplier condition) throws Exception

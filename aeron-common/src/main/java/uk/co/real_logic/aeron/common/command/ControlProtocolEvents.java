@@ -31,10 +31,8 @@ public class ControlProtocolEvents
     public static final int ADD_SUBSCRIPTION = 0x04;
     /** Remove Subscriber */
     public static final int REMOVE_SUBSCRIPTION = 0x05;
-    /** Heartbeat for Publication */
-    public static final int KEEPALIVE_PUBLICATION = 0x06;
-    /** Heartbeat for Subscriber */
-    public static final int KEEPALIVE_SUBSCRIPTION = 0x07;
+    /** Keepalive from Client */
+    public static final int KEEPALIVE_CLIENT = 0x06;
 
     // Media Driver to Clients
 

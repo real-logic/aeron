@@ -192,7 +192,6 @@ public class EventCodec
         {
             case CMD_IN_ADD_PUBLICATION:
             case CMD_IN_REMOVE_PUBLICATION:
-            case CMD_IN_KEEPALIVE_PUBLICATION:
                 final PublicationMessageFlyweight pubCommand = pubMessage.get();
                 pubCommand.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(pubCommand));
@@ -200,7 +199,6 @@ public class EventCodec
 
             case CMD_IN_ADD_SUBSCRIPTION:
             case CMD_IN_REMOVE_SUBSCRIPTION:
-            case CMD_IN_KEEPALIVE_SUBSCRIPTION:
                 final SubscriptionMessageFlyweight subCommand = subMessage.get();
                 subCommand.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(subCommand));
@@ -214,6 +212,7 @@ public class EventCodec
                 break;
 
             case CMD_OUT_ON_OPERATION_SUCCESS:
+            case CMD_IN_KEEPALIVE_CLIENT:
                 final CorrelatedMessageFlyweight correlatedCmd = correlatedMsg.get();
                 correlatedCmd.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(correlatedCmd));
@@ -427,14 +426,14 @@ public class EventCodec
 
     private static String dissect(final PublicationMessageFlyweight command)
     {
-        return String.format("%3$s %1$x:%2$x [%4$x]", command.sessionId(), command.streamId(), command.channel(),
-                command.correlationId());
+        return String.format("%3$s %1$x:%2$x [%5$x:%4$x]", command.sessionId(),
+                command.streamId(), command.channel(), command.correlationId(), command.clientId());
     }
 
     private static String dissect(final SubscriptionMessageFlyweight command)
     {
-        return String.format("%s %d [%x][%x]", command.channel(), command.streamId(),
-                command.registrationCorrelationId(), command.correlationId());
+        return String.format("%s %d [%x][%x:%x]", command.channel(), command.streamId(),
+                command.registrationCorrelationId(), command.clientId(), command.correlationId());
     }
 
     private static String dissect(final LogBuffersMessageFlyweight command)
@@ -450,7 +449,7 @@ public class EventCodec
 
     private static String dissect(final CorrelatedMessageFlyweight command)
     {
-        return String.format("[%x]", command.correlationId());
+        return String.format("[%x:%x]", command.clientId(), command.correlationId());
     }
 
     private static String dissect(final ConnectionMessageFlyweight command)

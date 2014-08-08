@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.*;
 import uk.co.real_logic.aeron.common.collections.Long2ObjectHashMap;
+import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.*;
@@ -50,10 +51,10 @@ public class DriverConductor extends Agent
 {
     public static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
     public static final int HEARTBEAT_TIMEOUT_MS = 100;
-    public static final int LIVENESS_CHECK_TIMEOUT_MS = 1000;  // how often to check liveness
+    public static final int CHECK_TIMEOUT_MS = 1000;  // how often to check liveness
 
     // how long without keepalive/heartbeat before remove
-    public static final long LIVENESS_CLIENT_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(2000);
+    public static final long LIVENESS_CLIENT_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(5000);
     // how long without frames before removing
     public static final long LIVENESS_FRAME_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(10);
 
@@ -82,11 +83,13 @@ public class DriverConductor extends Agent
     private final NioSelector nioSelector;
     private final TermBuffersFactory termBuffersFactory;
     private final RingBuffer fromClientCommands;
+    private final Long2ObjectHashMap<ClientLiveness> clientLivenessByClientId = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<SendChannelEndpoint> sendChannelEndpointByHash = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<ReceiveChannelEndpoint> receiveChannelEndpointByHash = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<DriverSubscription> subscriptionByCorrelationId = new Long2ObjectHashMap<>();
     private final TimerWheel timerWheel;
     private final AtomicArray<DriverConnection> connections = new AtomicArray<>();
+    private final AtomicArray<ClientLiveness> clients = new AtomicArray<>();
     private final AtomicArray<DriverSubscription> subscriptions;
     private final AtomicArray<DriverPublication> publications;
 
@@ -95,15 +98,17 @@ public class DriverConductor extends Agent
 
     private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
     private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
+    private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
 
     private final int mtuLength;
     private final int capacity;
     private final int initialWindowSize;
     private final long statusMessageTimeout;
     private final TimerWheel.Timer heartbeatTimer;
-    private final TimerWheel.Timer publicationLivenessCheckTimer;
-    private final TimerWheel.Timer subscriptionLivenessCheckTimer;
-    private final TimerWheel.Timer connectionLivenessCheckTimer;
+    private final TimerWheel.Timer publicationCheckTimer;
+    private final TimerWheel.Timer subscriptionCheckTimer;
+    private final TimerWheel.Timer connectionCheckTimer;
+    private final TimerWheel.Timer clientLivenessCheckTimer;
     private final CountersManager countersManager;
     private final AtomicBuffer countersBuffer;
     private final Counter receiverProxyIgnores;
@@ -131,12 +136,14 @@ public class DriverConductor extends Agent
 
         timerWheel = ctx.conductorTimerWheel();
         heartbeatTimer = newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheck);
-        publicationLivenessCheckTimer =
-            newTimeout(LIVENESS_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onLivenessCheckPublications);
-        subscriptionLivenessCheckTimer =
-            newTimeout(LIVENESS_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onLivenessCheckSubscriptions);
-        connectionLivenessCheckTimer =
-            newTimeout(LIVENESS_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onLivenessCheckConnections);
+        publicationCheckTimer =
+            newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onCheckPublications);
+        subscriptionCheckTimer =
+            newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onCheckSubscriptions);
+        connectionCheckTimer =
+            newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onCheckConnections);
+        clientLivenessCheckTimer =
+            newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onLivenessCheckClients);
 
         publications = ctx.publications();
         subscriptions = ctx.subscriptions();
@@ -264,18 +271,11 @@ public class DriverConductor extends Agent
                             onRemoveSubscription(subscriptionMessage);
                             break;
 
-                        case KEEPALIVE_PUBLICATION:
-                            publicationMessage.wrap(buffer, index);
-                            logger.log(EventCode.CMD_IN_KEEPALIVE_PUBLICATION, buffer, index, length);
-                            flyweight = publicationMessage;
-                            onKeepalivePublication(publicationMessage);
-                            break;
-
-                        case KEEPALIVE_SUBSCRIPTION:
-                            subscriptionMessage.wrap(buffer, index);
-                            logger.log(EventCode.CMD_IN_KEEPALIVE_SUBSCRIPTION, buffer, index, length);
-                            flyweight = subscriptionMessage;
-                            onKeepaliveSubscription(subscriptionMessage);
+                        case KEEPALIVE_CLIENT:
+                            correlatedMessage.wrap(buffer, index);
+                            logger.log(EventCode.CMD_IN_KEEPALIVE_CLIENT, buffer, index, length);
+                            flyweight = correlatedMessage;
+                            onKeepaliveClient(correlatedMessage);
                             break;
                     }
                 }
@@ -314,12 +314,27 @@ public class DriverConductor extends Agent
         timerWheel.rescheduleTimeout(delay, timeUnit, timer);
     }
 
+    private ClientLiveness getOrAddClient(final long clientId)
+    {
+        ClientLiveness clientLiveness = clientLivenessByClientId.get(clientId);
+
+        if (null == clientLiveness)
+        {
+            clientLiveness = new ClientLiveness(clientId, timerWheel.now());
+            clientLivenessByClientId.put(clientId, clientLiveness);
+            clients.add(clientLiveness);
+        }
+
+        return clientLiveness;
+    }
+
     private void onAddPublication(final PublicationMessageFlyweight publicationMessage)
     {
         final String channel = publicationMessage.channel();
         final int sessionId = publicationMessage.sessionId();
         final int streamId = publicationMessage.streamId();
         final long correlationId = publicationMessage.correlationId();
+        final long clientId = publicationMessage.clientId();
 
         try
         {
@@ -342,21 +357,24 @@ public class DriverConductor extends Agent
                                                    "publication and session already exist on channel");
             }
 
+            final ClientLiveness clientLiveness = getOrAddClient(clientId);
             final int initialTermId = BitUtil.generateRandomizedId();
             final String canonicalForm = udpChannel.canonicalForm();
             final TermBuffers termBuffers = termBuffersFactory.newPublication(canonicalForm, sessionId, streamId);
-            final SenderControlStrategy flowControlStrategy =
-                udpChannel.isMulticast() ? multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
 
             final int positionCounterId = allocatePositionCounter("publication", channel, sessionId, streamId);
             final BufferPositionReporter positionReporter =
                 new BufferPositionReporter(countersBuffer, positionCounterId, countersManager);
+
+            final SenderControlStrategy flowControlStrategy =
+                udpChannel.isMulticast() ? multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
 
             final DriverPublication publication =
                 new DriverPublication(channelEndpoint,
                                       timerWheel,
                                       termBuffers,
                                       positionReporter,
+                                      clientLiveness,
                                       sessionId,
                                       streamId,
                                       initialTermId,
@@ -437,6 +455,7 @@ public class DriverConductor extends Agent
         final String channel = subscriptionMessage.channel();
         final int streamId = subscriptionMessage.streamId();
         final long correlationId = subscriptionMessage.correlationId();
+        final long clientId = subscriptionMessage.clientId();
 
         try
         {
@@ -454,18 +473,19 @@ public class DriverConductor extends Agent
                 }
             }
 
+            final ClientLiveness clientLiveness = getOrAddClient(clientId);
             final int initialCount = channelEndpoint.incRefToStream(streamId);
 
             if (1 == initialCount)
             {
                 while (!receiverProxy.addSubscription(channelEndpoint, streamId))
                 {
-                    System.out.println("Error adding a subscription - add subscription");
+                    receiverProxyIgnores.increment();
                 }
             }
 
             final DriverSubscription subscription =
-                new DriverSubscription(channelEndpoint, streamId, correlationId, timerWheel.now());
+                new DriverSubscription(channelEndpoint, clientLiveness, streamId, correlationId);
             subscriptionByCorrelationId.put(correlationId, subscription);
             subscriptions.add(subscription);
 
@@ -536,73 +556,38 @@ public class DriverConductor extends Agent
         }
     }
 
-    // ----------------------- Heartbeats from Clients -----------------------
+    /*
+     * DriverPublication has reference to clientEntry for liveness check
+     * - on liveness check, if time has expired (set EOF on buffers) AND buffers are drained by Sender, then can unmap
+     * - time out of client implicitly sets EOF on buffers
+     *
+     * REMOVE_PUBLICATION doesn't unmap. It just lets things timeout. Client has set EOF on the buffers.
+     * Liveness check always does cleanup.
+     * ONLY remove once time of last activity and ALL state buffers in correct state and Sender has drained.
+     *
+     * DriverSubscription has reference to clientEntry for liveness check
+     * - on liveness check, if time has expired, then REMOVE_SUBSCRIPTION
+     *
+     * REMOVE_SUBSCRIPTION doesn't remove connections. Those time out naturally once no data is received because
+     * endpoint has removed subscription info, etc.
+     *
+     * DriverConnection liveness based on time of last frame, position of clients (optionally?), and client mapping
+     * -
+     *
+     * client needs to use correlationId for clientId upon first message to driver
+     * - can grab id in constructor (driverProxy can have method to generate id)
+     */
 
-    private void onKeepalivePublication(final PublicationMessageFlyweight publicationMessage)
+    private void onKeepaliveClient(final CorrelatedMessageFlyweight correlatedMessage)
     {
-        final String channel = publicationMessage.channel();
-        final int sessionId = publicationMessage.sessionId();
-        final int streamId = publicationMessage.streamId();
+        final long clientId = correlatedMessage.clientId();
+        final ClientLiveness clientLiveness = clientLivenessByClientId.get(clientId);
 
-        try
+        if (null != clientLiveness)
         {
-            // TODO: use lookup via correlationId instead.
-            final UdpChannel udpChannel = UdpChannel.parse(channel);
-            final SendChannelEndpoint channelEndpoint = sendChannelEndpointByHash.get(udpChannel.consistentHash());
-            if (null == channelEndpoint)
-            {
-                return; // channel unknown
-            }
-
-            final DriverPublication publication = channelEndpoint.findPublication(sessionId, streamId);
-            if (null == publication)
-            {
-                return; // publication (sessionId and streamId) unknown
-            }
-
-            // sessionId and streamId must be specific to a client publication, so correlation Id should not be needed.
-            // keep publication alive for this correlationId by passing timerWheel.now() to it as last active time
-            publication.timeOfLastKeepaliveFromClient(timerWheel.now());
-        }
-        catch (final Exception ex)
-        {
-            logger.logException(ex);
+            clientLiveness.timeOfLastKeepalive(timerWheel.now());
         }
     }
-
-    private void onKeepaliveSubscription(final SubscriptionMessageFlyweight subscriptionMessage)
-    {
-        final String channel = subscriptionMessage.channel();
-        final long correlationId = subscriptionMessage.registrationCorrelationId();
-
-        try
-        {
-            // TODO: channel lookup is probably immaterial and can be removed.
-            final UdpChannel udpChannel = UdpChannel.parse(channel);
-            final ReceiveChannelEndpoint channelEndpoint = receiveChannelEndpointByHash.get(udpChannel.consistentHash());
-            if (null == channelEndpoint)
-            {
-                return; // unknown channel
-            }
-
-            final DriverSubscription subscription = subscriptionByCorrelationId.get(correlationId);
-
-            if (null == subscription)
-            {
-                return; // subscription unknown
-            }
-
-            // keep this subscription alive by updating the time
-            subscription.timeOfLastKeepaliveFromClient(timerWheel.now());
-        }
-        catch (final Exception ex)
-        {
-            logger.logException(ex);
-        }
-    }
-
-    // ----------------------- End Heartbeats -----------------------
-
 
     private void onHeartbeatCheck()
     {
@@ -610,7 +595,8 @@ public class DriverConductor extends Agent
         rescheduleTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, heartbeatTimer);
     }
 
-    private void onLivenessCheckPublications()
+    // check of publications
+    private void onCheckPublications()
     {
         final long now = timerWheel.now();
 
@@ -640,11 +626,11 @@ public class DriverConductor extends Agent
             }
         );
 
-        rescheduleTimeout(LIVENESS_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, publicationLivenessCheckTimer);
+        rescheduleTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, publicationCheckTimer);
     }
 
-    // liveness check for Subscriptions from clients
-    private void onLivenessCheckSubscriptions()
+    // check of Subscriptions
+    private void onCheckSubscriptions()
     {
         final long now = timerWheel.now();
 
@@ -682,11 +668,11 @@ public class DriverConductor extends Agent
             }
         );
 
-        rescheduleTimeout(LIVENESS_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, subscriptionLivenessCheckTimer);
+        rescheduleTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, subscriptionCheckTimer);
     }
 
-    // liveness check for Connections
-    private void onLivenessCheckConnections()
+    // check of Connections
+    private void onCheckConnections()
     {
         final long now = timerWheel.now();
 
@@ -716,7 +702,26 @@ public class DriverConductor extends Agent
             }
         );
 
-        rescheduleTimeout(LIVENESS_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, connectionLivenessCheckTimer);
+        rescheduleTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, connectionCheckTimer);
+    }
+
+    // clean up clientId map, clientLiveness objects will still be kept around for any pubs and subs until they timeout
+    private void onLivenessCheckClients()
+    {
+        final long now = timerWheel.now();
+
+        clients.forEach(
+            (clientLiveness) ->
+            {
+                if (clientLiveness.timeOfLastKeepalive() + LIVENESS_CLIENT_TIMEOUT_NS < now)
+                {
+                    clientLivenessByClientId.remove(clientLiveness.clientId());
+                    clients.remove(clientLiveness);
+                }
+            }
+        );
+
+        rescheduleTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, clientLivenessCheckTimer);
     }
 
     private void onCreateConnection(final CreateConnectionCmd cmd)

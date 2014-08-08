@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.common.command;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_LONG;
+import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_INT;
 
 /**
  * Control message for adding or removing a subscription.
@@ -39,7 +40,7 @@ public class SubscriptionMessageFlyweight extends CorrelatedMessageFlyweight
 {
     private static final int REGISTRATION_CORRELATION_ID_OFFSET = CORRELATION_ID_FIELD_OFFSET + SIZE_OF_LONG;
     private static final int STREAM_ID_OFFSET = REGISTRATION_CORRELATION_ID_OFFSET + SIZE_OF_LONG;
-    private static final int CHANNEL_OFFSET = STREAM_ID_OFFSET + SIZE_OF_LONG;
+    private static final int CHANNEL_OFFSET = STREAM_ID_OFFSET + SIZE_OF_INT;
 
     private int lengthOfChannel;
 
@@ -111,6 +112,6 @@ public class SubscriptionMessageFlyweight extends CorrelatedMessageFlyweight
 
     public int length()
     {
-        return SIZE_OF_LONG + SIZE_OF_LONG + SIZE_OF_LONG + lengthOfChannel;
+        return CHANNEL_OFFSET + lengthOfChannel;
     }
 }

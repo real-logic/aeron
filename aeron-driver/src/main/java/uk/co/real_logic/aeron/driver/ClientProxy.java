@@ -99,6 +99,7 @@ public class ClientProxy
     public void operationSucceeded(final long correlationId)
     {
         correlatedMessage.wrap(tmpBuffer, 0);
+        correlatedMessage.clientId(0);
         correlatedMessage.correlationId(correlationId);
 
         logger.log(EventCode.CMD_OUT_ON_OPERATION_SUCCESS, tmpBuffer, 0, CorrelatedMessageFlyweight.LENGTH);

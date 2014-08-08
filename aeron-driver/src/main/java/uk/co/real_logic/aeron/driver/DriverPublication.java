@@ -75,6 +75,7 @@ public class DriverPublication implements AutoCloseable
     private final SendChannelEndpoint mediaEndpoint;
     private final TermBuffers termBuffers;
     private final BufferPositionReporter limitReporter;
+    private final ClientLiveness clientLiveness;
 
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final DataHeaderFlyweight retransmitDataHeader = new DataHeaderFlyweight();
@@ -96,6 +97,7 @@ public class DriverPublication implements AutoCloseable
                              final TimerWheel timerWheel,
                              final TermBuffers termBuffers,
                              final BufferPositionReporter limitReporter,
+                             final ClientLiveness clientLiveness,
                              final int sessionId,
                              final int streamId,
                              final int initialTermId,
@@ -110,6 +112,7 @@ public class DriverPublication implements AutoCloseable
         this.dstAddress = mediaEndpoint.udpChannel().remoteData();
         this.timerWheel = timerWheel;
         this.limitReporter = limitReporter;
+        this.clientLiveness = clientLiveness;
         this.sessionId = sessionId;
         this.streamId = streamId;
         this.headerLength = headerLength;
@@ -229,12 +232,7 @@ public class DriverPublication implements AutoCloseable
 
     public long timeOfLastKeepaliveFromClient()
     {
-        return timeOfLastKeepaliveFromClient;
-    }
-
-    public void timeOfLastKeepaliveFromClient(final long time)
-    {
-        timeOfLastKeepaliveFromClient = time;
+        return clientLiveness.timeOfLastKeepalive();
     }
 
     public void onRetransmit(final int termId, final int termOffset, final int length)

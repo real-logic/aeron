@@ -108,8 +108,8 @@ public class DriverConductor extends Agent
     private final TimerWheel.Timer clientLivenessCheckTimer;
     private final CountersManager countersManager;
     private final AtomicBuffer countersBuffer;
-    private final Counter receiverProxyIgnores;
-    private final Counter senderProxyIgnores;
+    private final Counter receiverProxyFails;
+    private final Counter senderProxyFails;
 
     private final EventLogger logger;
 
@@ -149,8 +149,8 @@ public class DriverConductor extends Agent
         conductorProxy = ctx.driverConductorProxy();
         logger = ctx.eventLogger();
 
-        receiverProxyIgnores = countersManager.newCounter("Failed offers to ReceiverProxy");
-        senderProxyIgnores = countersManager.newCounter("Failed offers to SenderProxy");
+        receiverProxyFails = countersManager.newCounter("Failed offers to ReceiverProxy");
+        senderProxyFails = countersManager.newCounter("Failed offers to SenderProxy");
     }
 
     public SendChannelEndpoint senderChannelEndpoint(final UdpChannel channel)
@@ -193,7 +193,7 @@ public class DriverConductor extends Agent
         connections.forEach(DriverConnection::close);
         sendChannelEndpointByHash.forEach((hash, endpoint) -> endpoint.close());
         receiveChannelEndpointByHash.forEach((hash, endpoint) -> endpoint.close());
-        receiverProxyIgnores.close();
+        receiverProxyFails.close();
     }
 
     /**
@@ -426,15 +426,13 @@ public class DriverConductor extends Agent
                 throw new ControlProtocolException(PUBLICATION_STREAM_UNKNOWN, "session and publication unknown for channel");
             }
 
-            publication.state(DriverPublication.STATE_CLIENT_EOF);
+            publication.status(DriverPublication.EOF);
 
             if (publication.isFlushed() || publication.statusMessagesSeen() == 0)
             {
-                publication.state(DriverPublication.STATE_FLUSHED);
+                publication.status(DriverPublication.FLUSHED);
                 publication.timeOfFlush(timerWheel.now());
             }
-
-            // check publications will do the rest of the cleanup after linger
 
             clientProxy.operationSucceeded(publicationMessage.correlationId());
         }
@@ -467,7 +465,7 @@ public class DriverConductor extends Agent
 
                 while (!receiverProxy.registerMediaEndpoint(channelEndpoint))
                 {
-                    receiverProxyIgnores.increment();
+                    receiverProxyFails.increment();
                 }
             }
 
@@ -478,7 +476,8 @@ public class DriverConductor extends Agent
             {
                 while (!receiverProxy.addSubscription(channelEndpoint, streamId))
                 {
-                    receiverProxyIgnores.increment();
+                    receiverProxyFails.increment();
+                    Thread.yield();
                 }
             }
 
@@ -532,7 +531,7 @@ public class DriverConductor extends Agent
             {
                 while (!receiverProxy.removeSubscription(channelEndpoint, streamId))
                 {
-                    receiverProxyIgnores.increment();
+                    receiverProxyFails.increment();
                 }
             }
 
@@ -571,7 +570,6 @@ public class DriverConductor extends Agent
         rescheduleTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, heartbeatTimer);
     }
 
-    // check of publications and clean up
     private void onCheckPublications()
     {
         final long now = timerWheel.now();
@@ -579,53 +577,56 @@ public class DriverConductor extends Agent
         publications.forEach(
             (publication) ->
             {
-                if (publication.state() == DriverPublication.STATE_ACTIVE)
+                switch (publication.status())
                 {
-                    if (publication.timeOfLastKeepaliveFromClient() + LIVENESS_CLIENT_TIMEOUT_NS < now)
-                    {
-                        publication.state(DriverPublication.STATE_CLIENT_EOF);
+                    case DriverPublication.ACTIVE:
+                        if (publication.timeOfLastKeepaliveFromClient() + LIVENESS_CLIENT_TIMEOUT_NS < now)
+                        {
+                            publication.status(DriverPublication.EOF);
+                            if (publication.isFlushed() || publication.statusMessagesSeen() == 0)
+                            {
+                                publication.status(DriverPublication.FLUSHED);
+                                publication.timeOfFlush(now);
+                            }
+                        }
+                        break;
+
+                    case DriverPublication.EOF:
                         if (publication.isFlushed() || publication.statusMessagesSeen() == 0)
                         {
-                            publication.state(DriverPublication.STATE_FLUSHED);
+                            publication.status(DriverPublication.FLUSHED);
                             publication.timeOfFlush(now);
                         }
-                    }
-                }
-                else if (publication.state() == DriverPublication.STATE_CLIENT_EOF)
-                {
-                    if (publication.isFlushed() || publication.statusMessagesSeen() == 0)
-                    {
-                        publication.state(DriverPublication.STATE_FLUSHED);
-                        publication.timeOfFlush(now);
-                    }
-                }
-                else if (publication.state() == DriverPublication.STATE_FLUSHED)
-                {
-                    if (publication.timeOfFlush() + MediaDriver.PUBLICATION_LINGER_NS < now)
-                    {
-                        final SendChannelEndpoint channelEndpoint = publication.sendChannelEndpoint();
+                        break;
 
-                        logger.log(EventCode.REMOVE_PUBLICATION_CLEANUP,
-                            "%s %x:%x",
-                            channelEndpoint.udpChannel().originalUriAsString(),
-                            publication.sessionId(),
-                            publication.streamId());
-
-                        channelEndpoint.removePublication(publication.sessionId(), publication.streamId());
-                        publications.remove(publication);
-
-                        final ClosePublicationCmd cmd = new ClosePublicationCmd(publication);
-                        while (!senderProxy.closePublication(cmd))
+                    case DriverPublication.FLUSHED:
+                        if (publication.timeOfFlush() + MediaDriver.PUBLICATION_LINGER_NS < now)
                         {
-                            senderProxyIgnores.increment();
-                        }
+                            final SendChannelEndpoint channelEndpoint = publication.sendChannelEndpoint();
 
-                        if (channelEndpoint.sessionCount() == 0)
-                        {
-                            sendChannelEndpointByHash.remove(channelEndpoint.udpChannel().consistentHash());
-                            channelEndpoint.close();
+                            logger.log(EventCode.REMOVE_PUBLICATION_CLEANUP,
+                                       "%s %x:%x",
+                                       channelEndpoint.udpChannel().originalUriAsString(),
+                                       publication.sessionId(),
+                                       publication.streamId());
+
+                            channelEndpoint.removePublication(publication.sessionId(), publication.streamId());
+                            publications.remove(publication);
+
+                            final ClosePublicationCmd cmd = new ClosePublicationCmd(publication);
+                            while (!senderProxy.closePublication(cmd))
+                            {
+                                senderProxyFails.increment();
+                                Thread.yield();
+                            }
+
+                            if (channelEndpoint.sessionCount() == 0)
+                            {
+                                sendChannelEndpointByHash.remove(channelEndpoint.udpChannel().consistentHash());
+                                channelEndpoint.close();
+                            }
                         }
-                    }
+                        break;
                 }
             }
         );
@@ -659,7 +660,7 @@ public class DriverConductor extends Agent
                     {
                         while (!receiverProxy.removeSubscription(channelEndpoint, streamId))
                         {
-                            receiverProxyIgnores.increment();
+                            receiverProxyFails.increment();
                         }
                     }
 
@@ -697,7 +698,8 @@ public class DriverConductor extends Agent
 
                     while (!receiverProxy.removeConnection(connection))
                     {
-                        receiverProxyIgnores.increment();
+                        receiverProxyFails.increment();
+                        Thread.yield();
                     }
 
                     connections.remove(connection);
@@ -780,7 +782,8 @@ public class DriverConductor extends Agent
             final NewConnectionCmd newConnectionCmd = new NewConnectionCmd(channelEndpoint, connection);
             while (!receiverProxy.newConnection(newConnectionCmd))
             {
-                receiverProxyIgnores.increment();
+                receiverProxyFails.increment();
+                Thread.yield();
             }
         }
         catch (final Exception ex)
@@ -821,7 +824,8 @@ public class DriverConductor extends Agent
 
                 while (!senderProxy.retransmit(cmd))
                 {
-                    senderProxyIgnores.increment();
+                    senderProxyFails.increment();
+                    Thread.yield();
                 }
             };
     }

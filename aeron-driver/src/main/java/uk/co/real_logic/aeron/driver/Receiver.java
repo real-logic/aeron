@@ -82,7 +82,7 @@ public class Receiver extends Agent
     }
 
     /**
-     * Close ReceiverThread down. Returns immediately.
+     * Close Receiver thread down. Returns immediately.
      */
     public void close()
     {

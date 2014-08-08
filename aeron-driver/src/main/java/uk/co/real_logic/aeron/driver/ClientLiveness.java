@@ -16,8 +16,6 @@
 
 package uk.co.real_logic.aeron.driver;
 
-import java.util.concurrent.atomic.AtomicLong;
-
 /**
  * Client status tracking
  */

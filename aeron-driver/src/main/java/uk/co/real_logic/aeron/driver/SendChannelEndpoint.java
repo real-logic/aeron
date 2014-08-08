@@ -113,7 +113,7 @@ public class SendChannelEndpoint implements AutoCloseable
                 components.flowControlStrategy.onStatusMessage(
                     header.termId(), header.highestContiguousTermOffset(), header.receiverWindowSize(), srcAddress);
 
-            components.publication.updatePositionLimitFromSm(limit);
+            components.publication.updatePositionLimitFromStatusMessage(limit);
         }
     }
 

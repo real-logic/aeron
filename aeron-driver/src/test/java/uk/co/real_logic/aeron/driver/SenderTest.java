@@ -186,7 +186,7 @@ public class SenderTest
     {
         currentTimestamp += TimeUnit.MILLISECONDS.toNanos(DriverPublication.HEARTBEAT_TIMEOUT_MS);
 
-        publication.updatePositionLimitFromSm(spySenderControlStrategy.onStatusMessage(INITIAL_TERM_ID, 0, 0, rcvAddress));
+        publication.updatePositionLimitFromStatusMessage(spySenderControlStrategy.onStatusMessage(INITIAL_TERM_ID, 0, 0, rcvAddress));
         publications.forEach(DriverPublication::heartbeatCheck);
 
         assertThat(receivedFrames.size(), is(0));
@@ -195,8 +195,8 @@ public class SenderTest
     @Test
     public void shouldBeAbleToSendOnChannel() throws Exception
     {
-        publication.updatePositionLimitFromSm(spySenderControlStrategy.onStatusMessage(INITIAL_TERM_ID, 0,
-            ALIGNED_FRAME_LENGTH, rcvAddress));
+        publication.updatePositionLimitFromStatusMessage(spySenderControlStrategy.onStatusMessage(INITIAL_TERM_ID, 0,
+                                                                                                  ALIGNED_FRAME_LENGTH, rcvAddress));
 
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -221,8 +221,8 @@ public class SenderTest
     @Test
     public void shouldBeAbleToSendOnChannelTwice() throws Exception
     {
-        publication.updatePositionLimitFromSm(spySenderControlStrategy.onStatusMessage(INITIAL_TERM_ID, 0,
-            (2 * ALIGNED_FRAME_LENGTH), rcvAddress));
+        publication.updatePositionLimitFromStatusMessage(spySenderControlStrategy.onStatusMessage(INITIAL_TERM_ID, 0,
+                                                                                                  (2 * ALIGNED_FRAME_LENGTH), rcvAddress));
 
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -259,8 +259,8 @@ public class SenderTest
     @Test
     public void shouldBeAbleToSendOnChannelTwiceAsBatch() throws Exception
     {
-        publication.updatePositionLimitFromSm(spySenderControlStrategy.onStatusMessage(INITIAL_TERM_ID, 0,
-            (2 * ALIGNED_FRAME_LENGTH), rcvAddress));
+        publication.updatePositionLimitFromStatusMessage(spySenderControlStrategy.onStatusMessage(INITIAL_TERM_ID, 0,
+                                                                                                  (2 * ALIGNED_FRAME_LENGTH), rcvAddress));
 
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -303,8 +303,8 @@ public class SenderTest
         sender.doWork();
         assertThat(receivedFrames.size(), is(0));
 
-        publication.updatePositionLimitFromSm(spySenderControlStrategy.onStatusMessage(INITIAL_TERM_ID, 0,
-            ALIGNED_FRAME_LENGTH, rcvAddress));
+        publication.updatePositionLimitFromStatusMessage(spySenderControlStrategy.onStatusMessage(INITIAL_TERM_ID, 0,
+                                                                                                  ALIGNED_FRAME_LENGTH, rcvAddress));
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(1));
@@ -327,8 +327,8 @@ public class SenderTest
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
         assertThat(logAppenders[0].append(buffer, 0, PAYLOAD.length), is(SUCCESS));
-        publication.updatePositionLimitFromSm(spySenderControlStrategy.onStatusMessage(INITIAL_TERM_ID, 0,
-            ALIGNED_FRAME_LENGTH, rcvAddress));
+        publication.updatePositionLimitFromStatusMessage(spySenderControlStrategy.onStatusMessage(INITIAL_TERM_ID, 0,
+                                                                                                  ALIGNED_FRAME_LENGTH, rcvAddress));
 
         sender.doWork();
 
@@ -354,8 +354,8 @@ public class SenderTest
     @Test
     public void shouldSend0LengthDataFrameAsHeartbeatWhenIdle() throws Exception
     {
-        publication.updatePositionLimitFromSm(spySenderControlStrategy.onStatusMessage(INITIAL_TERM_ID, 0,
-            ALIGNED_FRAME_LENGTH, rcvAddress));
+        publication.updatePositionLimitFromStatusMessage(spySenderControlStrategy.onStatusMessage(INITIAL_TERM_ID, 0,
+                                                                                                  ALIGNED_FRAME_LENGTH, rcvAddress));
 
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -383,8 +383,8 @@ public class SenderTest
     @Test
     public void shouldSendMultiple0LengthDataFrameAsHeartbeatsWhenIdle()
     {
-        publication.updatePositionLimitFromSm(spySenderControlStrategy.onStatusMessage(INITIAL_TERM_ID, 0,
-            ALIGNED_FRAME_LENGTH, rcvAddress));
+        publication.updatePositionLimitFromStatusMessage(spySenderControlStrategy.onStatusMessage(INITIAL_TERM_ID, 0,
+                                                                                                  ALIGNED_FRAME_LENGTH, rcvAddress));
 
         final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);

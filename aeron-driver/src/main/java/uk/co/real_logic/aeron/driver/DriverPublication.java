@@ -52,9 +52,12 @@ public class DriverPublication implements AutoCloseable
     public static final int HEARTBEAT_TIMEOUT_MS = 500;
     public static final long HEARTBEAT_TIMEOUT_NS = MILLISECONDS.toNanos(HEARTBEAT_TIMEOUT_MS);
 
-    public static final int STATE_ACTIVE = 1;
-    public static final int STATE_CLIENT_EOF = 2;
-    public static final int STATE_FLUSHED = 3;
+    /** Publication is still active. */
+    public static final int ACTIVE = 1;
+    /** Client is now closed and stream should be flushed and then cleaned up. */
+    public static final int EOF = 2;
+    /** Publication has been flushed to the media. */
+    public static final int FLUSHED = 3;
 
     private final TimerWheel timerWheel;
 
@@ -87,7 +90,7 @@ public class DriverPublication implements AutoCloseable
     private final int positionBitsToShift;
     private final int initialTermId;
     private final EventLogger logger;
-    private final AtomicInteger state;
+    private final AtomicInteger status = new AtomicInteger(ACTIVE);
 
     private int nextTermOffset = 0;
     private int activeIndex = 0;
@@ -142,8 +145,6 @@ public class DriverPublication implements AutoCloseable
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
         this.initialTermId = initialTermId;
         limitReporter.position(termCapacity / 2);
-
-        this.state = new AtomicInteger(STATE_ACTIVE); // start out ready to go!
     }
 
     public void close()
@@ -196,7 +197,7 @@ public class DriverPublication implements AutoCloseable
         return streamId;
     }
 
-    public void updatePositionLimitFromSm(final long limit)
+    public void updatePositionLimitFromStatusMessage(final long limit)
     {
         positionLimit.lazySet(limit);
         statusMessagesSeen++;  // we also got an SM, so w00t!
@@ -241,26 +242,21 @@ public class DriverPublication implements AutoCloseable
         return clientLiveness.timeOfLastKeepalive();
     }
 
-    public int state()
+    public int status()
     {
-        return state.get();
+        return status.get();
     }
 
     // set by the driver conductor
-    public void state(final int newState)
+    public void status(final int status)
     {
-        state.lazySet(newState);
+        this.status.lazySet(status);
     }
 
     // called by the driver conductor - only valid if not active
     public boolean isFlushed()
     {
-        if (state() != STATE_ACTIVE)
-        {
-            return logScanners[activeIndex].isFlushed();
-        }
-
-        return false;
+        return status() != ACTIVE && logScanners[activeIndex].isFlushed();
     }
 
     // called by the driver conductor
@@ -325,7 +321,7 @@ public class DriverPublication implements AutoCloseable
     }
 
     /*
-     * Function used as a lambda for LogScanner.AvailabilityHandler
+     * Function used as a callback for LogScanner.AvailabilityHandler
      */
     private void onSendFrame(final AtomicBuffer buffer, final int offset, final int length)
     {
@@ -403,9 +399,7 @@ public class DriverPublication implements AutoCloseable
     private void sendHeartbeat()
     {
         // called from conductor thread on timeout
-
         // used for both initial setup 0 length data as well as heartbeats
-
         // send 0 length data frame with current termOffset
         dataHeader.wrap(scratchAtomicBuffer, 0);
 

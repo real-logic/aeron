@@ -15,8 +15,6 @@
  */
 package uk.co.real_logic.aeron.conductor;
 
-import uk.co.real_logic.aeron.Publication;
-import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
@@ -45,20 +43,20 @@ public class DriverProxy
     private final AtomicBuffer keepaliveBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(MSG_BUFFER_CAPACITY));
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
 
-    private final RingBuffer mediaDriverCommandBuffer;
+    private final RingBuffer driverCommandBuffer;
 
     private final long clientId;
 
-    public DriverProxy(final RingBuffer mediaDriverCommandBuffer)
+    public DriverProxy(final RingBuffer driverCommandBuffer)
     {
-        this.mediaDriverCommandBuffer = mediaDriverCommandBuffer;
+        this.driverCommandBuffer = driverCommandBuffer;
 
         publicationMessage.wrap(writeBuffer, 0);
         subscriptionMessage.wrap(writeBuffer, 0);
 
         correlatedMessage.wrap(keepaliveBuffer, 0);
 
-        clientId = mediaDriverCommandBuffer.nextCorrelationId();
+        clientId = driverCommandBuffer.nextCorrelationId();
     }
 
     public long addPublication(final String channel, final int sessionId, final int streamId)
@@ -86,15 +84,15 @@ public class DriverProxy
         correlatedMessage.clientId(clientId);
         correlatedMessage.correlationId(0);
 
-        if (!mediaDriverCommandBuffer.write(KEEPALIVE_CLIENT, keepaliveBuffer, 0, CorrelatedMessageFlyweight.LENGTH))
+        if (!driverCommandBuffer.write(KEEPALIVE_CLIENT, keepaliveBuffer, 0, CorrelatedMessageFlyweight.LENGTH))
         {
-            throw new IllegalStateException("could not write keepalive");
+            throw new IllegalStateException("could not write keepalive message");
         }
     }
 
     private long sendPublicationMessage(final String channel, final int sessionId, final int streamId, final int msgTypeId)
     {
-        final long correlationId = mediaDriverCommandBuffer.nextCorrelationId();
+        final long correlationId = driverCommandBuffer.nextCorrelationId();
 
         publicationMessage.clientId(clientId);
         publicationMessage.correlationId(correlationId);
@@ -102,7 +100,7 @@ public class DriverProxy
         publicationMessage.streamId(streamId);
         publicationMessage.channel(channel);
 
-        if (!mediaDriverCommandBuffer.write(msgTypeId, writeBuffer, 0, publicationMessage.length()))
+        if (!driverCommandBuffer.write(msgTypeId, writeBuffer, 0, publicationMessage.length()))
         {
             throw new IllegalStateException("could not write publication message");
         }
@@ -115,7 +113,7 @@ public class DriverProxy
                                          final int streamId,
                                          final long registrationCorrelationId)
     {
-        final long correlationId = mediaDriverCommandBuffer.nextCorrelationId();
+        final long correlationId = driverCommandBuffer.nextCorrelationId();
 
         subscriptionMessage.clientId(clientId);
         subscriptionMessage.registrationCorrelationId(registrationCorrelationId);
@@ -123,7 +121,7 @@ public class DriverProxy
         subscriptionMessage.streamId(streamId);
         subscriptionMessage.channel(channel);
 
-        if (!mediaDriverCommandBuffer.write(msgTypeId, writeBuffer, 0, subscriptionMessage.length()))
+        if (!driverCommandBuffer.write(msgTypeId, writeBuffer, 0, subscriptionMessage.length()))
         {
             throw new IllegalStateException("could not write subscription message");
         }

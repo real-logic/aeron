@@ -501,20 +501,41 @@ public class MediaDriver implements AutoCloseable
 
     private void shutdownExecutorThread(final Future future, final Agent agent)
     {
-        agent.stop();
+        int timeouts = 0;
 
-        try
+        do
         {
-            future.get(100, TimeUnit.MILLISECONDS);
+            try
+            {
+                agent.stop();
+
+                future.get(100, TimeUnit.MILLISECONDS);
+
+                if (future.isDone())
+                {
+                    break;
+                }
+            }
+            catch (final TimeoutException ex)
+            {
+                System.err.println("Executor thread timeout. Retrying...");
+
+                if (++timeouts > 5)
+                {
+                    System.err.println("... cancelling thread.");
+                    future.cancel(true);
+                }
+            }
+            catch (final CancellationException ex)
+            {
+                break;
+            }
+            catch (final Exception ex)
+            {
+                ctx.eventLogger().logException(ex);
+            }
         }
-        catch (final TimeoutException ex)
-        {
-            future.cancel(true);
-        }
-        catch (final Exception ex)
-        {
-            ctx.eventLogger().logException(ex);
-        }
+        while (true);
     }
 
     public static class Context extends CommonContext

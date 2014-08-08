@@ -194,6 +194,7 @@ public class DriverConductor extends Agent
         sendChannelEndpointByHash.forEach((hash, endpoint) -> endpoint.close());
         receiveChannelEndpointByHash.forEach((hash, endpoint) -> endpoint.close());
         receiverProxyFails.close();
+        senderProxyFails.close();
     }
 
     /**

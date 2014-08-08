@@ -43,7 +43,7 @@ public class Sender extends Agent
     public int doWork()
     {
         roundRobinIndex++;
-        if (roundRobinIndex == publications.size())
+        if (publications.size() < roundRobinIndex)
         {
             roundRobinIndex = 0;
         }

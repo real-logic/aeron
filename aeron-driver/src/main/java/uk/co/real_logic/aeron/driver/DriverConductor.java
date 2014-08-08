@@ -554,28 +554,6 @@ public class DriverConductor extends Agent
         }
     }
 
-    /*
-     * DriverPublication has reference to clientEntry for liveness check
-     * - on liveness check, if time has expired (set EOF on buffers) AND buffers are drained by Sender, then can unmap
-     * - time out of client implicitly sets EOF on buffers
-     *
-     * REMOVE_PUBLICATION doesn't unmap. It just lets things timeout. Client has set EOF on the buffers.
-     * Liveness check always does cleanup.
-     * ONLY remove once time of last activity and ALL state buffers in correct state and Sender has drained.
-     *
-     * DriverSubscription has reference to clientEntry for liveness check
-     * - on liveness check, if time has expired, then REMOVE_SUBSCRIPTION
-     *
-     * REMOVE_SUBSCRIPTION doesn't remove connections. Those time out naturally once no data is received because
-     * endpoint has removed subscription info, etc.
-     *
-     * DriverConnection liveness based on time of last frame, position of clients (optionally?), and client mapping
-     * -
-     *
-     * client needs to use correlationId for clientId upon first message to driver
-     * - can grab id in constructor (driverProxy can have method to generate id)
-     */
-
     private void onKeepaliveClient(final CorrelatedMessageFlyweight correlatedMessage)
     {
         final long clientId = correlatedMessage.clientId();

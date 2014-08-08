@@ -31,7 +31,7 @@ import uk.co.real_logic.aeron.conductor.ClientConductor;
 import uk.co.real_logic.aeron.conductor.DriverBroadcastReceiver;
 import uk.co.real_logic.aeron.conductor.DriverProxy;
 import uk.co.real_logic.aeron.conductor.Signal;
-import uk.co.real_logic.aeron.exceptions.MediaDriverTimeoutException;
+import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
 import uk.co.real_logic.aeron.exceptions.RegistrationException;
 
 import java.nio.ByteBuffer;
@@ -133,7 +133,7 @@ public class ClientConductorTest extends MockBufferUsage
         verify(driverProxy).addPublication(CHANNEL, SESSION_ID_1, STREAM_ID_1);
     }
 
-    @Test(expected = MediaDriverTimeoutException.class)
+    @Test(expected = DriverTimeoutException.class)
     public void cannotCreatePublisherUntilBuffersMapped()
     {
         willSignalTimeOut();
@@ -260,7 +260,7 @@ public class ClientConductorTest extends MockBufferUsage
         verify(driverProxy).removeSubscription(CHANNEL, STREAM_ID_1, CORRELATION_ID);
     }
 
-    @Test(expected = MediaDriverTimeoutException.class)
+    @Test(expected = DriverTimeoutException.class)
     public void cannotCreateSubscriberIfMediaDriverDoesNotReply()
     {
         willSignalTimeOut();

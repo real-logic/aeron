@@ -3,9 +3,9 @@ package uk.co.real_logic.aeron.exceptions;
 /**
  * A timeout has occurred while waiting on the media driver responding to an operation.
  */
-public class MediaDriverTimeoutException extends RuntimeException
+public class DriverTimeoutException extends RuntimeException
 {
-    public MediaDriverTimeoutException(final String message)
+    public DriverTimeoutException(final String message)
     {
         super(message);
     }

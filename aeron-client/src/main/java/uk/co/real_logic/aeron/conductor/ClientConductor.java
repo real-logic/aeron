@@ -28,7 +28,7 @@ import uk.co.real_logic.aeron.common.status.BufferPositionIndicator;
 import uk.co.real_logic.aeron.common.status.BufferPositionReporter;
 import uk.co.real_logic.aeron.common.status.PositionIndicator;
 import uk.co.real_logic.aeron.common.status.PositionReporter;
-import uk.co.real_logic.aeron.exceptions.MediaDriverTimeoutException;
+import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
 import uk.co.real_logic.aeron.exceptions.RegistrationException;
 
 import java.io.IOException;
@@ -279,7 +279,7 @@ public class ClientConductor extends Agent implements DriverListener
     private void await(final long startTime)
     {
         correlationSignal.await(awaitTimeout);
-        checkMediaDriverTimeout(startTime);
+        checkDriverTimeout(startTime);
         checkRegistrationException();
     }
 
@@ -304,13 +304,13 @@ public class ClientConductor extends Agent implements DriverListener
         }
     }
 
-    private void checkMediaDriverTimeout(final long startTime)
-        throws MediaDriverTimeoutException
+    private void checkDriverTimeout(final long startTime)
+        throws DriverTimeoutException
     {
         if ((System.currentTimeMillis() - startTime) > awaitTimeout)
         {
             final String msg = String.format("No response from media driver within %d ms", awaitTimeout);
-            throw new MediaDriverTimeoutException(msg);
+            throw new DriverTimeoutException(msg);
         }
     }
 

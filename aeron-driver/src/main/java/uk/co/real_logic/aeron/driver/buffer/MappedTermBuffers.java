@@ -38,7 +38,7 @@ import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
 class MappedTermBuffers implements TermBuffers
 {
     private static final String LOG_SUFFIX = "-log";
-    private static final String STATE_SUFFIX = "-status";
+    private static final String STATE_SUFFIX = "-state";
 
     private final FileChannel logTemplate;
     private final int logBufferLength;

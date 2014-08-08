@@ -84,6 +84,16 @@ public class LogScanner extends LogBuffer
     }
 
     /**
+     * Is the buffer fully received up to current tail?
+     *
+     * @return is the buffer fully received up to the current tail?
+     */
+    public boolean isFlushed()
+    {
+        return (Math.min(tailVolatile(), capacity()) <= offset);
+    }
+
+    /**
      * Scan forward in the buffer for available frames limited by what will fit in bytesLimit.
      *
      * @param handler called back if a frame is available.

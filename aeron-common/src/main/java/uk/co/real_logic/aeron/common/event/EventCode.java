@@ -43,9 +43,9 @@ public enum EventCode
     COULD_NOT_SEND_ENTIRE_RETRANSMIT(16, EventCodec::dissectAsFrame),
     CMD_OUT_ON_OPERATION_SUCCESS(17, EventCodec::dissectAsCommand),
     CMD_IN_KEEPALIVE_CLIENT(18, EventCodec::dissectAsCommand),
-    REMOVE_PUBLICATION_TIMEOUT(19, EventCodec::dissectAsString),
-    REMOVE_SUBSCRIPTION_TIMEOUT(20, EventCodec::dissectAsString),
-    REMOVE_CONNECTION_TIMEOUT(21, EventCodec::dissectAsString),
+    REMOVE_PUBLICATION_CLEANUP(19, EventCodec::dissectAsString),
+    REMOVE_SUBSCRIPTION_CLEANUP(20, EventCodec::dissectAsString),
+    REMOVE_CONNECTION_CLEANUP(21, EventCodec::dissectAsString),
     CMD_OUT_ON_INACTIVE_CONNECTION(22, EventCodec::dissectAsCommand),
 
     ERROR_DELETING_FILE(24, EventCodec::dissectAsString);

@@ -13,31 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.driver;
+ package uk.co.real_logic.aeron.driver.cmd;
 
-import uk.co.real_logic.aeron.driver.cmd.*;
+import uk.co.real_logic.aeron.driver.DriverPublication;
 
-import java.util.Queue;
-
-/**
- * Proxy for writing into the Sender Thread's command buffer.
- */
-public class SenderProxy
+public class ClosePublicationCmd
 {
-    private final Queue<? super Object> commandQueue;
+    private final DriverPublication publication;
 
-    public SenderProxy(final Queue<? super Object> commandQueue)
+    public ClosePublicationCmd(final DriverPublication publication)
     {
-        this.commandQueue = commandQueue;
+        this.publication = publication;
     }
 
-    public boolean retransmit(final RetransmitPublicationCmd cmd)
+    public DriverPublication publication()
     {
-        return commandQueue.offer(cmd);
-    }
-
-    public boolean closePublication(final ClosePublicationCmd cmd)
-    {
-        return commandQueue.offer(cmd);
+        return publication;
     }
 }

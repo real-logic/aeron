@@ -52,6 +52,10 @@ public class DriverPublication implements AutoCloseable
     public static final int HEARTBEAT_TIMEOUT_MS = 500;
     public static final long HEARTBEAT_TIMEOUT_NS = MILLISECONDS.toNanos(HEARTBEAT_TIMEOUT_MS);
 
+    public static final int STATE_ACTIVE = 1;
+    public static final int STATE_CLIENT_EOF = 2;
+    public static final int STATE_FLUSHED = 3;
+
     private final TimerWheel timerWheel;
 
     private final int sessionId;
@@ -60,7 +64,6 @@ public class DriverPublication implements AutoCloseable
     private final AtomicInteger activeTermId;
 
     private final AtomicLong timeOfLastSendOrHeartbeat;
-    private long timeOfLastKeepaliveFromClient;
 
     private final int headerLength;
     private final int mtuLength;
@@ -84,12 +87,14 @@ public class DriverPublication implements AutoCloseable
     private final int positionBitsToShift;
     private final int initialTermId;
     private final EventLogger logger;
+    private final AtomicInteger state;
 
     private int nextTermOffset = 0;
     private int activeIndex = 0;
     private int retransmitIndex = 0;
     private int statusMessagesSeen = 0;
     private long nextOffsetPosition = 0;
+    private long timeOfFlush = 0;
 
     private final InetSocketAddress dstAddress;
 
@@ -133,11 +138,12 @@ public class DriverPublication implements AutoCloseable
 
         final long now = timerWheel.now();
         timeOfLastSendOrHeartbeat = new AtomicLong(now);
-        timeOfLastKeepaliveFromClient = now;
 
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
         this.initialTermId = initialTermId;
         limitReporter.position(termCapacity / 2);
+
+        this.state = new AtomicInteger(STATE_ACTIVE); // start out ready to go!
     }
 
     public void close()
@@ -233,6 +239,44 @@ public class DriverPublication implements AutoCloseable
     public long timeOfLastKeepaliveFromClient()
     {
         return clientLiveness.timeOfLastKeepalive();
+    }
+
+    public int state()
+    {
+        return state.get();
+    }
+
+    // set by the driver conductor
+    public void state(final int newState)
+    {
+        state.lazySet(newState);
+    }
+
+    // called by the driver conductor - only valid if not active
+    public boolean isFlushed()
+    {
+        if (state() != STATE_ACTIVE)
+        {
+            return logScanners[activeIndex].isFlushed();
+        }
+
+        return false;
+    }
+
+    // called by the driver conductor
+    public int statusMessagesSeen()
+    {
+        return statusMessagesSeen;
+    }
+
+    public void timeOfFlush(final long timestamp)
+    {
+        timeOfFlush = timestamp;
+    }
+
+    public long timeOfFlush()
+    {
+        return timeOfFlush;
     }
 
     public void onRetransmit(final int termId, final int termOffset, final int length)

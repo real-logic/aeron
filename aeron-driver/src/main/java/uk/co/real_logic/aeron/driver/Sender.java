@@ -66,6 +66,12 @@ public class Sender extends Agent
 
                 cmd.driverPublication().onRetransmit(cmd.termId(), cmd.termOffset(), cmd.length());
             }
+            else if (obj instanceof ClosePublicationCmd)
+            {
+                final ClosePublicationCmd cmd = (ClosePublicationCmd)obj;
+
+                cmd.publication().close();
+            }
         }
         catch (final Exception ex)
         {

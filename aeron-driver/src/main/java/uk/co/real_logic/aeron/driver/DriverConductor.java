@@ -30,10 +30,7 @@ import uk.co.real_logic.aeron.common.status.BufferPositionIndicator;
 import uk.co.real_logic.aeron.common.status.BufferPositionReporter;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
-import uk.co.real_logic.aeron.driver.cmd.CreateConnectionCmd;
-import uk.co.real_logic.aeron.driver.cmd.NewConnectionCmd;
-import uk.co.real_logic.aeron.driver.cmd.RetransmitPublicationCmd;
-import uk.co.real_logic.aeron.driver.cmd.SubscriptionRemovedCmd;
+import uk.co.real_logic.aeron.driver.cmd.*;
 import uk.co.real_logic.aeron.driver.exceptions.ControlProtocolException;
 
 import java.net.InetSocketAddress;
@@ -423,20 +420,21 @@ public class DriverConductor extends Agent
                 throw new ControlProtocolException(INVALID_CHANNEL, "channel unknown");
             }
 
-            final DriverPublication publication = channelEndpoint.removePublication(sessionId, streamId);
+            final DriverPublication publication = channelEndpoint.findPublication(sessionId, streamId);
             if (null == publication)
             {
                 throw new ControlProtocolException(PUBLICATION_STREAM_UNKNOWN, "session and publication unknown for channel");
             }
 
-            publications.remove(publication);
-            publication.close();
+            publication.state(DriverPublication.STATE_CLIENT_EOF);
 
-            if (channelEndpoint.sessionCount() == 0)
+            if (publication.isFlushed() || publication.statusMessagesSeen() == 0)
             {
-                sendChannelEndpointByHash.remove(udpChannel.consistentHash());
-                channelEndpoint.close();
+                publication.state(DriverPublication.STATE_FLUSHED);
+                publication.timeOfFlush(timerWheel.now());
             }
+
+            // check publications will do the rest of the cleanup after linger
 
             clientProxy.operationSucceeded(publicationMessage.correlationId());
         }
@@ -595,7 +593,7 @@ public class DriverConductor extends Agent
         rescheduleTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, heartbeatTimer);
     }
 
-    // check of publications
+    // check of publications and clean up
     private void onCheckPublications()
     {
         final long now = timerWheel.now();
@@ -603,24 +601,52 @@ public class DriverConductor extends Agent
         publications.forEach(
             (publication) ->
             {
-                if (publication.timeOfLastKeepaliveFromClient() + LIVENESS_CLIENT_TIMEOUT_NS < now)
+                if (publication.state() == DriverPublication.STATE_ACTIVE)
                 {
-                    final SendChannelEndpoint channelEndpoint = publication.sendChannelEndpoint();
-
-                    logger.log(EventCode.REMOVE_PUBLICATION_TIMEOUT,
-                               "%s %x:%x",
-                               channelEndpoint.udpChannel().originalUriAsString(),
-                               publication.sessionId(),
-                               publication.streamId());
-
-                    channelEndpoint.removePublication(publication.sessionId(), publication.streamId());
-                    publications.remove(publication);
-                    publication.close();
-
-                    if (channelEndpoint.sessionCount() == 0)
+                    if (publication.timeOfLastKeepaliveFromClient() + LIVENESS_CLIENT_TIMEOUT_NS < now)
                     {
-                        sendChannelEndpointByHash.remove(channelEndpoint.udpChannel().consistentHash());
-                        channelEndpoint.close();
+                        publication.state(DriverPublication.STATE_CLIENT_EOF);
+                        if (publication.isFlushed() || publication.statusMessagesSeen() == 0)
+                        {
+                            publication.state(DriverPublication.STATE_FLUSHED);
+                            publication.timeOfFlush(now);
+                        }
+                    }
+                }
+                else if (publication.state() == DriverPublication.STATE_CLIENT_EOF)
+                {
+                    if (publication.isFlushed() || publication.statusMessagesSeen() == 0)
+                    {
+                        publication.state(DriverPublication.STATE_FLUSHED);
+                        publication.timeOfFlush(now);
+                    }
+                }
+                else if (publication.state() == DriverPublication.STATE_FLUSHED)
+                {
+                    if (publication.timeOfFlush() + MediaDriver.PUBLICATION_LINGER_NS < now)
+                    {
+                        final SendChannelEndpoint channelEndpoint = publication.sendChannelEndpoint();
+
+                        logger.log(EventCode.REMOVE_PUBLICATION_CLEANUP,
+                            "%s %x:%x",
+                            channelEndpoint.udpChannel().originalUriAsString(),
+                            publication.sessionId(),
+                            publication.streamId());
+
+                        channelEndpoint.removePublication(publication.sessionId(), publication.streamId());
+                        publications.remove(publication);
+
+                        final ClosePublicationCmd cmd = new ClosePublicationCmd(publication);
+                        while (!senderProxy.closePublication(cmd))
+                        {
+                            senderProxyIgnores.increment();
+                        }
+
+                        if (channelEndpoint.sessionCount() == 0)
+                        {
+                            sendChannelEndpointByHash.remove(channelEndpoint.udpChannel().consistentHash());
+                            channelEndpoint.close();
+                        }
                     }
                 }
             }
@@ -643,7 +669,7 @@ public class DriverConductor extends Agent
                     final ReceiveChannelEndpoint channelEndpoint = subscription.receiveChannelEndpoint();
                     final int streamId = subscription.streamId();
 
-                    logger.log(EventCode.REMOVE_SUBSCRIPTION_TIMEOUT,
+                    logger.log(EventCode.REMOVE_SUBSCRIPTION_CLEANUP,
                                "%s %x [%x]",
                                channelEndpoint.udpChannel().originalUriAsString(),
                                subscription.streamId(),
@@ -681,7 +707,7 @@ public class DriverConductor extends Agent
             {
                 if (connection.timeOfLastFrame() + LIVENESS_FRAME_TIMEOUT_NS < now)
                 {
-                    logger.log(EventCode.REMOVE_CONNECTION_TIMEOUT,
+                    logger.log(EventCode.REMOVE_CONNECTION_CLEANUP,
                                "%s %x:%x",
                                connection.receiveChannelEndpoint().udpChannel().originalUriAsString(),
                                connection.sessionId(),

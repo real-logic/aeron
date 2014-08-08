@@ -113,6 +113,7 @@ public class DriverConductorTest
             .conductorTimerWheel(wheel)
             .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
+            .senderCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .publications(publications)
             .subscriptions(subscriptions)
             .eventLogger(mockConductorLogger)
@@ -124,6 +125,7 @@ public class DriverConductorTest
         ctx.countersBuffer(counterBuffer);
 
         ctx.receiverProxy(new ReceiverProxy(ctx.receiverCommandQueue()));
+        ctx.senderProxy(new SenderProxy(ctx.senderCommandQueue()));
         ctx.driverConductorProxy(new DriverConductorProxy(ctx.conductorCommandQueue()));
 
         receiver = new Receiver(ctx);
@@ -202,6 +204,9 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
+        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_CLIENT_TIMEOUT_NS));
+        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_CLIENT_TIMEOUT_NS * 2));
+
         assertThat(publications.size(), is(0));
         assertNull(driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4005)));
     }
@@ -220,6 +225,9 @@ public class DriverConductorTest
         writePublicationMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 3, 4, 4008, CORRELATION_ID_4);
 
         driverConductor.doWork();
+
+        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_CLIENT_TIMEOUT_NS));
+        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_CLIENT_TIMEOUT_NS * 2));
 
         assertThat(publications.size(), is(0));
     }
@@ -380,14 +388,15 @@ public class DriverConductorTest
         assertThat(publications.get(0).sessionId(), is(1));
         assertThat(publications.get(0).streamId(), is(2));
 
-        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_CLIENT_TIMEOUT_NS * 2));
+        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(MediaDriver.PUBLICATION_LINGER_NS +
+            DriverConductor.LIVENESS_CLIENT_TIMEOUT_NS * 2));
 
         assertThat(publications.size(), is(0));
         assertNull(driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
     }
 
     @Test
-    public void shouldntTimeoutPublicationOnKeepAlive() throws Exception
+    public void shouldNotTimeoutPublicationOnKeepAlive() throws Exception
     {
         writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4000, CORRELATION_ID_1);
 
@@ -429,7 +438,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldntTimeoutSubscriptionOnKeepAlive() throws Exception
+    public void shouldNotTimeoutSubscriptionOnKeepAlive() throws Exception
     {
         writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, CORRELATION_ID_1);
 

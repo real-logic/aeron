@@ -425,7 +425,7 @@ public class DriverConductor extends Agent
 
             publication.status(DriverPublication.EOF);
 
-            if (publication.isFlushed() || publication.statusMessagesSeen() == 0)
+            if (publication.isFlushed() || publication.statusMessagesSeenCount() == 0)
             {
                 publication.status(DriverPublication.FLUSHED);
                 publication.timeOfFlush(timerWheel.now());
@@ -581,7 +581,7 @@ public class DriverConductor extends Agent
                         if (publication.timeOfLastKeepaliveFromClient() + LIVENESS_CLIENT_TIMEOUT_NS < now)
                         {
                             publication.status(DriverPublication.EOF);
-                            if (publication.isFlushed() || publication.statusMessagesSeen() == 0)
+                            if (publication.isFlushed() || publication.statusMessagesSeenCount() == 0)
                             {
                                 publication.status(DriverPublication.FLUSHED);
                                 publication.timeOfFlush(now);
@@ -590,7 +590,7 @@ public class DriverConductor extends Agent
                         break;
 
                     case DriverPublication.EOF:
-                        if (publication.isFlushed() || publication.statusMessagesSeen() == 0)
+                        if (publication.isFlushed() || publication.statusMessagesSeenCount() == 0)
                         {
                             publication.status(DriverPublication.FLUSHED);
                             publication.timeOfFlush(now);

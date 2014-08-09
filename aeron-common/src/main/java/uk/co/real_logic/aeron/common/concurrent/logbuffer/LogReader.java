@@ -40,7 +40,7 @@ public class LogReader extends LogBuffer
         void onFrame(AtomicBuffer buffer, int offset, int length);
     }
 
-    private int cursor = 0;
+    private int offset = 0;
 
     public LogReader(final AtomicBuffer logBuffer, final AtomicBuffer stateBuffer)
     {
@@ -48,26 +48,26 @@ public class LogReader extends LogBuffer
     }
 
     /**
-     * Return the read cursor
+     * Return the read offset
      *
-     * @return cursor
+     * @return offset
      */
-    public int cursor()
+    public int offset()
     {
-        return cursor;
+        return offset;
     }
 
     /**
-     * Move the read cursor to the specified offset.
+     * Move the read offset to the specified offset.
      *
-     * @param offset the location to move the read cursor to.
+     * @param offset the location to move the read offset to.
      */
     public void seek(final int offset)
     {
         checkOffset(offset, tailVolatile());
         checkOffsetAlignment(offset);
 
-        cursor = offset;
+        this.offset = offset;
     }
 
     /**
@@ -82,21 +82,21 @@ public class LogReader extends LogBuffer
         int framesCounter = 0;
         final int tail = tailVolatile();
 
-        while (tail > cursor && framesCounter < framesCountLimit)
+        while (tail > offset && framesCounter < framesCountLimit)
         {
-            final int frameLength = waitForFrameLength(logBuffer(), cursor);
+            final int frameLength = waitForFrameLength(logBuffer(), offset);
             try
             {
-                if (frameType(cursor) != PADDING_FRAME_TYPE)
+                if (frameType(offset) != PADDING_FRAME_TYPE)
                 {
                     ++framesCounter;
-                    handler.onFrame(logBuffer(), cursor, frameLength);
+                    handler.onFrame(logBuffer(), offset, frameLength);
 
                 }
             }
             finally
             {
-                cursor += BitUtil.align(frameLength, FRAME_ALIGNMENT);
+                offset += BitUtil.align(frameLength, FRAME_ALIGNMENT);
             }
         }
 
@@ -106,11 +106,11 @@ public class LogReader extends LogBuffer
     /**
      * Has the buffer been read right to the end?
      *
-     * @return true if the whole buffer has been read otherwise false if read cursor has not yet reached capacity.
+     * @return true if the whole buffer has been read otherwise false if read offset has not yet reached capacity.
      */
     public boolean isComplete()
     {
-        return cursor >= capacity();
+        return offset >= capacity();
     }
 
     private int frameType(final int frameOffset)

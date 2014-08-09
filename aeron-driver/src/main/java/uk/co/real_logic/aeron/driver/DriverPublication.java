@@ -54,22 +54,21 @@ public class DriverPublication implements AutoCloseable
 
     /** Publication is still active. */
     public static final int ACTIVE = 1;
+
     /** Client is now closed and stream should be flushed and then cleaned up. */
     public static final int EOF = 2;
+
     /** Publication has been flushed to the media. */
     public static final int FLUSHED = 3;
 
     private final TimerWheel timerWheel;
-
     private final int sessionId;
     private final int streamId;
-
     private final AtomicInteger activeTermId;
-
     private final AtomicLong timeOfLastSendOrHeartbeat;
-
     private final int headerLength;
     private final int mtuLength;
+
     private final ByteBuffer scratchByteBuffer = ByteBuffer.allocateDirect(DataHeaderFlyweight.HEADER_LENGTH);
     private final AtomicBuffer scratchAtomicBuffer = new AtomicBuffer(scratchByteBuffer);
     private final LogScanner[] logScanners = new LogScanner[TermHelper.BUFFER_COUNT];
@@ -95,7 +94,7 @@ public class DriverPublication implements AutoCloseable
     private int nextTermOffset = 0;
     private int activeIndex = 0;
     private int retransmitIndex = 0;
-    private int statusMessagesSeen = 0;
+    private int statusMessagesSeenCount = 0;
     private long nextOffsetPosition = 0;
     private long timeOfFlush = 0;
 
@@ -161,7 +160,7 @@ public class DriverPublication implements AutoCloseable
         {
             try
             {
-                final int availableWindow = (int) (positionLimit.get() - nextOffsetPosition);
+                final int availableWindow = (int)(positionLimit.get() - nextOffsetPosition);
                 final int scanLimit = Math.min(availableWindow, mtuLength);
 
                 LogScanner scanner = logScanners[activeIndex];
@@ -176,7 +175,8 @@ public class DriverPublication implements AutoCloseable
                 }
 
                 limitReporter.position(calculatePosition(scanner.offset()) + scanner.capacity());
-            } catch (final Exception ex)
+            }
+            catch (final Exception ex)
             {
                 logger.logException(ex);
             }
@@ -203,7 +203,7 @@ public class DriverPublication implements AutoCloseable
     public void updatePositionLimitFromStatusMessage(final long limit)
     {
         positionLimit.lazySet(limit);
-        statusMessagesSeen++;  // we also got an SM, so w00t!
+        statusMessagesSeenCount++;  // we also got an SM, so w00t!
     }
 
     /**
@@ -211,7 +211,7 @@ public class DriverPublication implements AutoCloseable
      */
     public boolean heartbeatCheck()
     {
-        final long timeout = statusMessagesSeen > 0 ? HEARTBEAT_TIMEOUT_NS : INITIAL_HEARTBEAT_TIMEOUT_NS;
+        final long timeout = statusMessagesSeenCount > 0 ? HEARTBEAT_TIMEOUT_NS : INITIAL_HEARTBEAT_TIMEOUT_NS;
         final long timeSinceLastHeartbeat = timerWheel.now() - timeOfLastSendOrHeartbeat.get();
         if (timeSinceLastHeartbeat > timeout)
         {
@@ -250,22 +250,19 @@ public class DriverPublication implements AutoCloseable
         return status.get();
     }
 
-    // set by the driver conductor
     public void status(final int status)
     {
         this.status.lazySet(status);
     }
 
-    // called by the driver conductor - only valid if not active
     public boolean isFlushed()
     {
         return status() != ACTIVE && logScanners[activeIndex].isFlushed();
     }
 
-    // called by the driver conductor
-    public int statusMessagesSeen()
+    public int statusMessagesSeenCount()
     {
-        return statusMessagesSeen;
+        return statusMessagesSeenCount;
     }
 
     public void timeOfFlush(final long timestamp)
@@ -323,8 +320,8 @@ public class DriverPublication implements AutoCloseable
         return -1;
     }
 
-    /*
-     * Function used as a callback for LogScanner.AvailabilityHandler
+    /**
+     * Function used as a callback for {@link LogScanner.AvailabilityHandler}
      */
     private void onSendFrame(final AtomicBuffer buffer, final int offset, final int length)
     {
@@ -376,7 +373,7 @@ public class DriverPublication implements AutoCloseable
     private void onSendRetransmit(final AtomicBuffer buffer, final int offset, final int length)
     {
         // use retransmitBuffers, but need to know which one... so, use DataHeaderFlyweight to grab it
-        retransmitDataHeader.wrap(buffer, offset);
+        retransmitDataHeader.wrap(buffer, offset); // TODO: Is this really used?
 
         final ByteBuffer termRetransmitBuffer = sendBuffers[retransmitIndex];
         termRetransmitBuffer.position(offset);

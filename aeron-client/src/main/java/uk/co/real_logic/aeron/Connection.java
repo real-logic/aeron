@@ -94,7 +94,7 @@ public class Connection
         final int messagesRead = logReader.read(this::onFrame, fragmentCountLimit);
         if (messagesRead > 0)
         {
-            positionReporter.position(calculatePosition(this.activeTermId.get(), logReader.cursor(), positionBitsToShift, initialTermId));
+            positionReporter.position(calculatePosition(this.activeTermId.get(), logReader.offset(), positionBitsToShift, initialTermId));
         }
 
         return messagesRead;

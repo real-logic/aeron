@@ -61,7 +61,7 @@ public class DriverConnection implements AutoCloseable
     private final int termWindowSize;
     private final long statusMessageTimeout;
 
-    private long lastSmSubscriberPosition;
+    private long lastSmSubscriberPosition;  // TODO: Is this the actual subscriber position or Receiver position?
     private long lastSmTimestamp;
     private int lastSmTermId;
     private int currentWindowSize;

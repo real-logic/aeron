@@ -90,6 +90,7 @@ public class DriverPublication implements AutoCloseable
     private final int initialTermId;
     private final EventLogger logger;
     private final AtomicInteger status = new AtomicInteger(ACTIVE);
+    private final int termWindowSize;
 
     private int nextTermOffset = 0;
     private int activeIndex = 0;
@@ -143,7 +144,8 @@ public class DriverPublication implements AutoCloseable
 
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
         this.initialTermId = initialTermId;
-        limitReporter.position(termCapacity / 2);
+        termWindowSize = termCapacity; // TODO: Why do we crash system test if this is halved?
+        limitReporter.position(termWindowSize);
     }
 
     public void close()
@@ -174,7 +176,7 @@ public class DriverPublication implements AutoCloseable
                     scanner.seek(0);
                 }
 
-                limitReporter.position(positionForActiveTerm(scanner.offset()) + scanner.capacity());
+                limitReporter.position(positionForActiveTerm(scanner.offset()) + termWindowSize);
             }
             catch (final Exception ex)
             {

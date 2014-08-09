@@ -360,9 +360,7 @@ public class DriverPublication implements AutoCloseable
             updateTimeOfLastSendOrHeartbeat(timerWheel.now());
 
             nextTermOffset = align(offset + length, FrameDescriptor.FRAME_ALIGNMENT);
-
-            nextOffsetPosition =
-                TermHelper.calculatePosition(activeTermId.get(), nextTermOffset, positionBitsToShift, initialTermId);
+            nextOffsetPosition = calculatePosition(nextTermOffset);
         }
         catch (final Exception ex)
         {

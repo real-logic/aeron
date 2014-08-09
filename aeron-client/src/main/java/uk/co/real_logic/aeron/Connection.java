@@ -73,7 +73,6 @@ public class Connection
 
     public int poll(final int fragmentCountLimit)
     {
-        final int activeIndex = this.activeIndex;
         LogReader logReader = logReaders[activeIndex];
         int activeTermId = this.activeTermId.get();
 

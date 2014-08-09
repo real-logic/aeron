@@ -24,15 +24,7 @@ import java.util.Collection;
  */
 public class DispatcherSubscription
 {
-    private final int streamId;
-    private final DriverConductorProxy conductorProxy;
     private final Int2ObjectHashMap<DriverConnection> connectionBySessionIdMap = new Int2ObjectHashMap<>();
-
-    public DispatcherSubscription(final int streamId, final DriverConductorProxy conductorProxy)
-    {
-        this.streamId = streamId;
-        this.conductorProxy = conductorProxy;
-    }
 
     public DriverConnection getConnection(final int sessionId)
     {
@@ -47,16 +39,6 @@ public class DispatcherSubscription
     public DriverConnection removeConnection(final int sessionId)
     {
         return connectionBySessionIdMap.remove(sessionId);
-    }
-
-    public int streamId()
-    {
-        return streamId;
-    }
-
-    public void close()
-    {
-        conductorProxy.removeSubscription(this);
     }
 
     public Collection<DriverConnection> connections()

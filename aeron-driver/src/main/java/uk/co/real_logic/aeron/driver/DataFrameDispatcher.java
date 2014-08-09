@@ -50,22 +50,24 @@ public class DataFrameDispatcher
 
         if (null == subscription)
         {
-            subscription = new DispatcherSubscription(streamId, conductorProxy);
+            subscription = new DispatcherSubscription();
             subscriptionByStreamIdMap.put(streamId, subscription);
         }
     }
 
     public void removeSubscription(final int streamId)
     {
-        final DispatcherSubscription subscription = subscriptionByStreamIdMap.get(streamId);
+        final DispatcherSubscription subscription = subscriptionByStreamIdMap.remove(streamId);
 
-        if (subscription == null)
+        if (null == subscription)
         {
             throw new UnknownSubscriptionException("No subscription registered on " + streamId);
         }
 
-        subscriptionByStreamIdMap.remove(streamId);
-        subscription.close();
+        for (final DriverConnection connection : subscription.connections())
+        {
+            connection.disableStatusMessageSending();
+        }
     }
 
     public void addConnection(final DriverConnection connection)
@@ -89,7 +91,7 @@ public class DataFrameDispatcher
 
         if (null == subscription)
         {
-            throw new IllegalStateException("No subscription registered on " + connection.streamId());
+            return;
         }
 
         subscription.removeConnection(connection.sessionId());

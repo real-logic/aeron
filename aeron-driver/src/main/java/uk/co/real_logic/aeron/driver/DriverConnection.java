@@ -36,8 +36,8 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
  */
 public class DriverConnection implements AutoCloseable
 {
-    private static final int STATE_CREATED = 0;
-    private static final int STATE_READY_TO_SEND_SMS = 1;
+    private static final int STATE_NO_SEND_SMS = 0;
+    private static final int STATE_SEND_SMS = 1;
 
     private final ReceiveChannelEndpoint receiveChannelEndpoint;
     private final int sessionId;
@@ -67,7 +67,7 @@ public class DriverConnection implements AutoCloseable
     private int currentWindowSize;
     private int currentGain;
 
-    private AtomicInteger state = new AtomicInteger(STATE_CREATED);
+    private AtomicInteger state = new AtomicInteger(STATE_NO_SEND_SMS);
 
     public DriverConnection(final ReceiveChannelEndpoint receiveChannelEndpoint,
                             final int sessionId,
@@ -262,7 +262,7 @@ public class DriverConnection implements AutoCloseable
         final int currentSmTail = TermHelper.calculateTermOffsetFromPosition(subscriberPosition, positionBitsToShift);
 
         // not able to send yet because not added to dispatcher, anything received will be dropped (in progress)
-        if (STATE_CREATED == state.get())
+        if (STATE_NO_SEND_SMS == state.get())
         {
             return 0;
         }
@@ -300,7 +300,15 @@ public class DriverConnection implements AutoCloseable
      */
     public void enableStatusMessageSending()
     {
-        state.lazySet(STATE_READY_TO_SEND_SMS);
+        state.lazySet(STATE_SEND_SMS);
+    }
+
+    /**
+     * Called from the {@link Receiver} thread once removed from dispatcher to stop sending SMs
+     */
+    public void disableStatusMessageSending()
+    {
+        state.lazySet(STATE_NO_SEND_SMS);
     }
 
     /**

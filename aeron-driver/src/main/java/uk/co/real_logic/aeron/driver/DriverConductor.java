@@ -218,10 +218,6 @@ public class DriverConductor extends Agent
                     {
                         onCreateConnection((CreateConnectionCmd)obj);
                     }
-                    else if (obj instanceof SubscriptionRemovedCmd)
-                    {
-                        onRemovedSubscription((SubscriptionRemovedCmd)obj);
-                    }
                 }
                 catch (final Exception ex)
                 {
@@ -500,6 +496,7 @@ public class DriverConductor extends Agent
         }
     }
 
+    // remove subscription from endpoint, but leave connections to time out
     private void onRemoveSubscription(final SubscriptionMessageFlyweight subscriptionMessage)
     {
         final String channel = subscriptionMessage.channel();
@@ -636,6 +633,7 @@ public class DriverConductor extends Agent
     }
 
     // check of Subscriptions
+    // remove from dispatcher, but leave connections to timeout independently
     private void onCheckSubscriptions()
     {
         final long now = timerWheel.now();
@@ -677,7 +675,7 @@ public class DriverConductor extends Agent
         rescheduleTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, subscriptionCheckTimer);
     }
 
-    // check of Connections
+    // check of connections
     private void onCheckConnections()
     {
         final long now = timerWheel.now();
@@ -790,24 +788,6 @@ public class DriverConductor extends Agent
         catch (final Exception ex)
         {
             logger.logException(ex);
-        }
-    }
-
-    private void onRemovedSubscription(final SubscriptionRemovedCmd cmd)
-    {
-        final DispatcherSubscription subscription = cmd.dispatcherSubscription();
-
-        for (final DriverConnection connection : subscription.connections())
-        {
-            try
-            {
-                connections.remove(connection);
-                connection.close();
-            }
-            catch (final Exception ex)
-            {
-                logger.logException(ex);
-            }
         }
     }
 

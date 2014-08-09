@@ -218,7 +218,7 @@ public class DriverConnection implements AutoCloseable
             {
                 hwmIndex = prepareForRotation(activeTermId);
                 hwmTermId = termId;
-                lossHandler.potentialHighPosition(packetPosition);  // inform the
+                lossHandler.potentialHighPosition(packetPosition);
             }
 
             rebuilders[hwmIndex].insert(buffer, 0, length);

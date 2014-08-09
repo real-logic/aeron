@@ -430,9 +430,9 @@ public class DriverPublication implements AutoCloseable
         }
     }
 
-    private long calculatePosition(final int currentTail)
+    private long calculatePosition(final int termOffset)
     {
-        return TermHelper.calculatePosition(activeTermId.get(), currentTail, positionBitsToShift, initialTermId);
+        return TermHelper.calculatePosition(activeTermId.get(), termOffset, positionBitsToShift, initialTermId);
     }
 
     private void updateTimeOfLastSendOrHeartbeat(final long time)

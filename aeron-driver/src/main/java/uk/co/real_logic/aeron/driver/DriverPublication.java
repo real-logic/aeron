@@ -174,7 +174,7 @@ public class DriverPublication implements AutoCloseable
                     scanner.seek(0);
                 }
 
-                limitReporter.position(calculatePosition(scanner.offset()) + scanner.capacity());
+                limitReporter.position(positionForActiveTerm(scanner.offset()) + scanner.capacity());
             }
             catch (final Exception ex)
             {
@@ -360,7 +360,7 @@ public class DriverPublication implements AutoCloseable
             updateTimeOfLastSendOrHeartbeat(timerWheel.now());
 
             nextTermOffset = align(offset + length, FrameDescriptor.FRAME_ALIGNMENT);
-            nextOffsetPosition = calculatePosition(nextTermOffset);
+            nextOffsetPosition = positionForActiveTerm(nextTermOffset);
         }
         catch (final Exception ex)
         {
@@ -430,7 +430,7 @@ public class DriverPublication implements AutoCloseable
         }
     }
 
-    private long calculatePosition(final int termOffset)
+    private long positionForActiveTerm(final int termOffset)
     {
         return TermHelper.calculatePosition(activeTermId.get(), termOffset, positionBitsToShift, initialTermId);
     }

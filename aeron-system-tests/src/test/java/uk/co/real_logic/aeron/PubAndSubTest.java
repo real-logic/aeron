@@ -334,33 +334,46 @@ public class PubAndSubTest
 
     @Theory
     @Test(timeout = 10000)
-//    @Ignore("not working reliably yet")
-    public void shouldReceiveOnlyAfterSendingEntireBuffer(final String channel) throws Exception
+    public void shouldReceiveOnlyAfterSendingUpToFlowControlLimit(final String channel) throws Exception
     {
         /*
-         * The subscriber will flow control the driver publication after about 1/2 term.
-         * But the app should be able to send 1 more term size before it is flow controlled. Total of 1.5 terms.
-         * When the receiver starts receiving, it will free up more and allow it to drain.
+         * The subscriber will flow control before an entire term buffer. So, send until can't send no 'more.
+         * Then start up subscriber to drain.
          */
         final int termBufferSize = 64 * 1024;
-        final int numMessagesToSend = 64;
-        final int messageLength = (termBufferSize / numMessagesToSend) - DataHeaderFlyweight.HEADER_LENGTH;
+        final int numMessagesPerTerm = 64;
+        final int messageLength = (termBufferSize / numMessagesPerTerm) - DataHeaderFlyweight.HEADER_LENGTH;
+        final int maxFails = 10000;
+        int messagesSent = 0;
 
         context.termBufferSize(termBufferSize);
 
         setup(channel);
 
-        for (int i = 0; i < numMessagesToSend; i++)
+        for (int i = 0; i < numMessagesPerTerm; i++)
         {
+            int offerFails = 0;
+
             while (!publication.offer(buffer, 0, messageLength))
             {
+                if (++offerFails > maxFails)
+                {
+                    break;
+                }
                 Thread.yield();
             }
+
+            if (offerFails > maxFails)
+            {
+                break;
+            }
+            messagesSent++;
         }
 
         final int fragmentsRead[] = new int[1];
+        final int messagesToReceive = messagesSent;
         SystemTestHelper.executeUntil(
-            () -> fragmentsRead[0] >= numMessagesToSend,
+            () -> fragmentsRead[0] >= messagesToReceive,
             (j) ->
             {
                 fragmentsRead[0] += subscription.poll(10);
@@ -368,7 +381,7 @@ public class PubAndSubTest
             },
             Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
 
-        verify(dataHandler, times(numMessagesToSend))
+        verify(dataHandler, times(messagesToReceive))
             .onData(anyObject(),
                     anyInt(),
                     eq(messageLength),

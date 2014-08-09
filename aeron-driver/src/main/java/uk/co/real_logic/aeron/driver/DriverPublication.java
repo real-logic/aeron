@@ -82,7 +82,7 @@ public class DriverPublication implements AutoCloseable
     private final ClientLiveness clientLiveness;
 
     private final DataHeaderFlyweight heartbeatHeader = new DataHeaderFlyweight();
-    private final DataHeaderFlyweight sendDataHeader = new DataHeaderFlyweight();
+    private final DataHeaderFlyweight transmitHeader = new DataHeaderFlyweight();
 
     private final int positionBitsToShift;
     private final int initialTermId;
@@ -142,7 +142,7 @@ public class DriverPublication implements AutoCloseable
 
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
         this.initialTermId = initialTermId;
-        termWindowSize = termCapacity; // TODO: Why do we crash system test if this is halved?
+        termWindowSize = termCapacity / 2;
         limitReporter.position(termWindowSize);
     }
 
@@ -336,14 +336,14 @@ public class DriverPublication implements AutoCloseable
         // a padding frame may be embedded in a batch that is received. Don't need to adjust that one.
         if (DataHeaderFlyweight.HEADER_LENGTH == length)
         {
-            sendDataHeader.wrap(buffer, offset);
+            transmitHeader.wrap(buffer, offset);
 
-            if (sendDataHeader.headerType() == PADDING_FRAME_TYPE)
+            if (transmitHeader.headerType() == PADDING_FRAME_TYPE)
             {
-                final short flags = (short)(sendDataHeader.flags() | DataHeaderFlyweight.PADDING_FLAG);
+                final short flags = (short)(transmitHeader.flags() | DataHeaderFlyweight.PADDING_FLAG);
 
-                sendDataHeader.flags(flags);
-                sendDataHeader.headerType(HeaderFlyweight.HDR_TYPE_DATA);
+                transmitHeader.flags(flags);
+                transmitHeader.headerType(HeaderFlyweight.HDR_TYPE_DATA);
                 // the frameLength field will be the length of the padding. But the PADDING flag tells the receiver
                 // what to do.
             }

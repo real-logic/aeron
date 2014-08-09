@@ -88,15 +88,14 @@ public class LossHandler
     public boolean scan()
     {
         scanCursor = 0;
-        final GapScanner currentScanner = scanners[activeIndex];
-        int numGaps = currentScanner.scan(this::onGap);
+        final GapScanner scanner = scanners[activeIndex];
+        final int numGaps = scanner.scan(this::onGap);
         onScanComplete();
 
         if (0 == numGaps)
         {
-            if (isGapScannerComplete(currentScanner))
+            if (scanner.isComplete())
             {
-                // current scanner is complete, move to next one
                 activeIndex = TermHelper.rotateNext(activeIndex);
                 activeTermId = activeTermId + 1;
 
@@ -104,7 +103,7 @@ public class LossHandler
             }
             else
             {
-                final int tail = currentScanner.tailVolatile();
+                final int tail = scanner.tailVolatile();
                 final long tailPosition =
                     TermHelper.calculatePosition(activeTermId, tail, positionBitsToShift, initialTermId);
                 final long currentHighPosition = highPosition.get();
@@ -131,16 +130,6 @@ public class LossHandler
         {
             suppressNak();
         }
-    }
-
-    /**
-     * Return the tail of the current GapScanner
-     *
-     * @return tail of the current buffer being scanned
-     */
-    public int highestContiguousOffset()
-    {
-        return scanners[activeIndex].tailVolatile();
     }
 
     /**
@@ -175,11 +164,6 @@ public class LossHandler
         {
             highPosition.lazySet(position);
         }
-    }
-
-    private static boolean isGapScannerComplete(final GapScanner activeScanner)
-    {
-        return (activeScanner.tailVolatile() >= activeScanner.capacity());
     }
 
     private void suppressNak()

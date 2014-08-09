@@ -87,6 +87,16 @@ public class GapScanner extends LogBuffer
         return count;
     }
 
+    /**
+     * Is the log complete with now gaps?
+     *
+     * @return true is he log is complete with no gaps otherwise false.
+     */
+    public boolean isComplete()
+    {
+        return tailVolatile() >= capacity();
+    }
+
     private int scanGap(final GapHandler handler, final int offset, final int highWaterMark)
     {
         int gapLength = 0;

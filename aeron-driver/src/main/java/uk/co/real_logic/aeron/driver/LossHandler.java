@@ -239,7 +239,7 @@ public class LossHandler
         wheel.rescheduleTimeout(delay, TimeUnit.NANOSECONDS, timer, this::onTimerExpire);
     }
 
-    private static class Gap
+    static class Gap
     {
         private int termId;
         private int termOffset;

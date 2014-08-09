@@ -40,7 +40,7 @@ public class DriverConnection implements AutoCloseable
     private final int sessionId;
     private final int streamId;
     private final TermBuffers termBuffers;
-    private final PositionIndicator subscriberLimit;
+    private final PositionIndicator receiverLimit;
     private final LongSupplier clock;
 
     private final AtomicInteger activeTermId = new AtomicInteger();
@@ -58,7 +58,7 @@ public class DriverConnection implements AutoCloseable
     private final int termWindowSize;
     private final long statusMessageTimeout;
 
-    private long lastSmSubscriberPosition;  // TODO: Is this the actual subscriber position or Receiver limit?
+    private long lastSmPosition;
     private long lastSmTimestamp;
     private int lastSmTermId;
     private int currentWindowSize;
@@ -75,14 +75,14 @@ public class DriverConnection implements AutoCloseable
                             final TermBuffers termBuffers,
                             final LossHandler lossHandler,
                             final StatusMessageSender statusMessageSender,
-                            final PositionIndicator subscriberLimit,
+                            final PositionIndicator receiverLimit,
                             final LongSupplier clock)
     {
         this.receiveChannelEndpoint = receiveChannelEndpoint;
         this.sessionId = sessionId;
         this.streamId = streamId;
         this.termBuffers = termBuffers;
-        this.subscriberLimit = subscriberLimit;
+        this.receiverLimit = receiverLimit;
 
         this.clock = clock;
         activeTermId.lazySet(initialTermId);
@@ -114,7 +114,7 @@ public class DriverConnection implements AutoCloseable
 
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
         this.initialTermId = initialTermId;
-        this.lastSmSubscriberPosition = TermHelper.calculatePosition(initialTermId, 0, positionBitsToShift, initialTermId);
+        this.lastSmPosition = TermHelper.calculatePosition(initialTermId, 0, positionBitsToShift, initialTermId);
     }
 
     public ReceiveChannelEndpoint receiveChannelEndpoint()
@@ -135,7 +135,7 @@ public class DriverConnection implements AutoCloseable
     public void close()
     {
         termBuffers.close();
-        subscriberLimit.close();
+        receiverLimit.close();
     }
 
     /**
@@ -259,32 +259,32 @@ public class DriverConnection implements AutoCloseable
          * - send SM when haven't sent an SM in status message timeout
          */
 
-        final long subscriberPosition = subscriberLimit.position();
-        final int currentSmTermId = TermHelper.calculateTermIdFromPosition(subscriberPosition, positionBitsToShift, initialTermId);
-        final int currentSmTail = TermHelper.calculateTermOffsetFromPosition(subscriberPosition, positionBitsToShift);
+        final long position = receiverLimit.position();
+        final int currentSmTermId = TermHelper.calculateTermIdFromPosition(position, positionBitsToShift, initialTermId);
+        final int currentSmTail = TermHelper.calculateTermOffsetFromPosition(position, positionBitsToShift);
 
         // send initial SM
         if (0 == lastSmTimestamp)
         {
-            return sendStatusMessage(currentSmTermId, currentSmTail, subscriberPosition, currentWindowSize, now);
+            return sendStatusMessage(currentSmTermId, currentSmTail, position, currentWindowSize, now);
         }
 
         // if term has rotated for the subscriber position, then send an SM
         if (currentSmTermId != lastSmTermId)
         {
-            return sendStatusMessage(currentSmTermId, currentSmTail, subscriberPosition, currentWindowSize, now);
+            return sendStatusMessage(currentSmTermId, currentSmTail, position, currentWindowSize, now);
         }
 
         // see if we have made enough progress to make sense to send an SM
-        if ((subscriberPosition - lastSmSubscriberPosition) > currentGain)
+        if ((position - lastSmPosition) > currentGain)
         {
-            return sendStatusMessage(currentSmTermId, currentSmTail, subscriberPosition, currentWindowSize, now);
+            return sendStatusMessage(currentSmTermId, currentSmTail, position, currentWindowSize, now);
         }
 
         // make sure to send on timeout to prevent a stall on lost SM
         if ((lastSmTimestamp + statusMessageTimeout) < now)
         {
-            return sendStatusMessage(currentSmTermId, currentSmTail, subscriberPosition, currentWindowSize, now);
+            return sendStatusMessage(currentSmTermId, currentSmTail, position, currentWindowSize, now);
         }
 
         // invert the work count logic. We want to appear to be less busy once we send an SM
@@ -318,14 +318,14 @@ public class DriverConnection implements AutoCloseable
 
     private int sendStatusMessage(final int termId,
                                   final int termOffset,
-                                  final long subscriberPosition,
+                                  final long position,
                                   final int windowSize,
                                   final long now)
     {
         statusMessageSender.send(termId, termOffset, windowSize);
         lastSmTermId = termId;
         lastSmTimestamp = now;
-        lastSmSubscriberPosition = subscriberPosition;
+        lastSmPosition = position;
 
         return 0;
     }
@@ -342,7 +342,7 @@ public class DriverConnection implements AutoCloseable
 
     private boolean isBeyondFlowControlLimit(final long proposedPosition)
     {
-        return proposedPosition > (subscriberLimit.position() + termWindowSize);
+        return proposedPosition > (receiverLimit.position() + termWindowSize);
     }
 
     private boolean isOutOfBufferRange(final long proposedPosition, final int length, final long currentPosition)

@@ -68,9 +68,7 @@ public class TermHelper
      * @param initialTermId        the initial term id that this stream started on
      * @return the term id according to the position
      */
-    public static int calculateTermIdFromPosition(final long position,
-                                                  final int positionBitsToShift,
-                                                  final int initialTermId)
+    public static int calculateTermIdFromPosition(final long position, final int positionBitsToShift, final int initialTermId)
     {
         return ((int)(position >>> positionBitsToShift) + initialTermId);
     }
@@ -82,8 +80,7 @@ public class TermHelper
      * @param positionBitsToShift number of times to right shift the position
      * @return the offset within the term that represents the position
      */
-    public static int calculateTermOffsetFromPosition(final long position,
-                                                      final int positionBitsToShift)
+    public static int calculateTermOffsetFromPosition(final long position, final int positionBitsToShift)
     {
         final int mask = (1 << positionBitsToShift) - 1;
         return (int)(position & mask);

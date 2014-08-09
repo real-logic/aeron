@@ -66,7 +66,7 @@ public class DataFrameDispatcher
 
         for (final DriverConnection connection : subscription.connections())
         {
-            connection.disableStatusMessageSending();
+            connection.disableStatusMessages();
         }
     }
 
@@ -82,7 +82,7 @@ public class DataFrameDispatcher
         subscription.putConnection(connection);
         initialisationInProgressMap.remove(connection.sessionId());
 
-        connection.enableStatusMessageSending();
+        connection.enableStatusMessages();
     }
 
     public void removeConnection(final DriverConnection connection)

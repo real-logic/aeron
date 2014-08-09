@@ -36,15 +36,12 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
  */
 public class DriverConnection implements AutoCloseable
 {
-    private static final int STATE_NO_SEND_SMS = 0;
-    private static final int STATE_SEND_SMS = 1;
-
     private final ReceiveChannelEndpoint receiveChannelEndpoint;
     private final int sessionId;
     private final int streamId;
-    private TermBuffers termBuffers;
-    private PositionIndicator subscriberLimit;
-    private LongSupplier clock;
+    private final TermBuffers termBuffers;
+    private final PositionIndicator subscriberLimit;
+    private final LongSupplier clock;
 
     private final AtomicInteger activeTermId = new AtomicInteger();
     private final AtomicLong timeOfLastFrame = new AtomicLong();
@@ -61,13 +58,13 @@ public class DriverConnection implements AutoCloseable
     private final int termWindowSize;
     private final long statusMessageTimeout;
 
-    private long lastSmSubscriberPosition;  // TODO: Is this the actual subscriber position or Receiver position?
+    private long lastSmSubscriberPosition;  // TODO: Is this the actual subscriber position or Receiver limit?
     private long lastSmTimestamp;
     private int lastSmTermId;
     private int currentWindowSize;
     private int currentGain;
 
-    private AtomicInteger state = new AtomicInteger(STATE_NO_SEND_SMS);
+    private volatile boolean statusMessagesEnabled = false;
 
     public DriverConnection(final ReceiveChannelEndpoint receiveChannelEndpoint,
                             final int sessionId,
@@ -238,7 +235,6 @@ public class DriverConnection implements AutoCloseable
         final long packetPosition = calculatePosition(header.termId(), header.termOffset());
 
         timeOfLastFrame.lazySet(clock.getAsLong());
-
         lossHandler.potentialHighPosition(packetPosition);
     }
 
@@ -250,6 +246,12 @@ public class DriverConnection implements AutoCloseable
      */
     public int sendPendingStatusMessages(final long now)
     {
+        // not able to send yet because not added to dispatcher, anything received will be dropped (in progress)
+        if (!statusMessagesEnabled)
+        {
+            return 0;
+        }
+
         /*
          * General approach is to check subscriber position and see if it has moved enough to warrant sending an SM.
          * - send SM when termId has moved (i.e. buffer rotation)
@@ -260,12 +262,6 @@ public class DriverConnection implements AutoCloseable
         final long subscriberPosition = subscriberLimit.position();
         final int currentSmTermId = TermHelper.calculateTermIdFromPosition(subscriberPosition, positionBitsToShift, initialTermId);
         final int currentSmTail = TermHelper.calculateTermOffsetFromPosition(subscriberPosition, positionBitsToShift);
-
-        // not able to send yet because not added to dispatcher, anything received will be dropped (in progress)
-        if (STATE_NO_SEND_SMS == state.get())
-        {
-            return 0;
-        }
 
         // send initial SM
         if (0 == lastSmTimestamp)
@@ -298,17 +294,17 @@ public class DriverConnection implements AutoCloseable
     /**
      * Called from the {@link Receiver} thread once added to dispatcher
      */
-    public void enableStatusMessageSending()
+    public void enableStatusMessages()
     {
-        state.lazySet(STATE_SEND_SMS);
+        statusMessagesEnabled = true;
     }
 
     /**
      * Called from the {@link Receiver} thread once removed from dispatcher to stop sending SMs
      */
-    public void disableStatusMessageSending()
+    public void disableStatusMessages()
     {
-        state.lazySet(STATE_NO_SEND_SMS);
+        statusMessagesEnabled = false;
     }
 
     /**

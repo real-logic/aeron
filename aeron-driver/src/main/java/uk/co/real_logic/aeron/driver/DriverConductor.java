@@ -683,26 +683,64 @@ public class DriverConductor extends Agent
         connections.forEach(
             (connection) ->
             {
-                if (connection.timeOfLastFrame() + LIVENESS_FRAME_TIMEOUT_NS < now)
+                /*
+                 *  Stage 1: initial timeout of publisher (after timeout): ACTIVE -> INACTIVE
+                 *  Stage 2: check for remaining == 0 OR timeout: INACTIVE -> LINGER (ON_INACTIVE_CONNECTION sent)
+                 *  Stage 3: timeout (cleanup)
+                 */
+
+                switch (connection.status())
                 {
-                    logger.log(EventCode.REMOVE_CONNECTION_CLEANUP,
-                               "%s %x:%x",
-                               connection.receiveChannelEndpoint().udpChannel().originalUriAsString(),
-                               connection.sessionId(),
-                               connection.streamId());
+                    case DriverConnection.ACTIVE:
+                        if (connection.timeOfLastFrame() + LIVENESS_FRAME_TIMEOUT_NS < now)
+                        {
+                            while (!receiverProxy.removeConnection(connection))
+                            {
+                                receiverProxyFails.increment();
+                            }
+                                Thread.yield();
 
-                    clientProxy.onInactiveConnection(connection.sessionId(),
-                                                     connection.streamId(),
-                                                     connection.receiveChannelEndpoint().udpChannel().originalUriAsString());
+                            connection.status(DriverConnection.INACTIVE);
+                            connection.timeOfLastStatusChange(timerWheel.now());
 
-                    while (!receiverProxy.removeConnection(connection))
-                    {
-                        receiverProxyFails.increment();
-                        Thread.yield();
-                    }
+                            if (connection.remaining() == 0)
+                            {
+                                connection.status(DriverConnection.LINGER);
+                                connection.timeOfLastStatusChange(timerWheel.now());
 
-                    connections.remove(connection);
-                    connection.close();
+                                clientProxy.onInactiveConnection(connection.sessionId(),
+                                        connection.streamId(),
+                                        connection.receiveChannelEndpoint().udpChannel().originalUriAsString());
+                            }
+                        }
+                        break;
+
+                    case DriverConnection.INACTIVE:
+                        if (connection.remaining() == 0 ||
+                            (connection.timeOfLastStatusChange() + LIVENESS_FRAME_TIMEOUT_NS < now))
+                        {
+                            connection.status(DriverConnection.LINGER);
+                            connection.timeOfLastStatusChange(timerWheel.now());
+
+                            clientProxy.onInactiveConnection(connection.sessionId(),
+                                    connection.streamId(),
+                                    connection.receiveChannelEndpoint().udpChannel().originalUriAsString());
+                        }
+                        break;
+
+                    case DriverConnection.LINGER:
+                        if (connection.timeOfLastStatusChange() + LIVENESS_FRAME_TIMEOUT_NS < now)
+                        {
+                            logger.log(EventCode.REMOVE_CONNECTION_CLEANUP,
+                                    "%s %x:%x",
+                                    connection.receiveChannelEndpoint().udpChannel().originalUriAsString(),
+                                    connection.sessionId(),
+                                    connection.streamId());
+
+                            connections.remove(connection);
+                            connection.close();
+                        }
+                        break;
                 }
             }
         );

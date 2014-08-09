@@ -166,6 +166,17 @@ public class LossHandler
         }
     }
 
+    /**
+     * Return the current position of the tail
+     *
+     * @return current tail position
+     */
+    public long tailPosition()
+    {
+        final int tail = scanners[activeIndex].tailVolatile();
+        return TermHelper.calculatePosition(activeTermId, tail, positionBitsToShift, initialTermId);
+    }
+
     private void suppressNak()
     {
         scheduleTimer();

@@ -36,6 +36,15 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
  */
 public class DriverConnection implements AutoCloseable
 {
+    /** connection is active */
+    public static final int ACTIVE = 1;
+
+    /** connection is inactive. Publication side has timed out. */
+    public static final int INACTIVE = 2;
+
+    /** connection has been drained or timeout has occurred and is being lingered */
+    public static final int LINGER = 3;
+
     private final ReceiveChannelEndpoint receiveChannelEndpoint;
     private final int sessionId;
     private final int streamId;
@@ -48,6 +57,8 @@ public class DriverConnection implements AutoCloseable
     private int activeIndex;
     private int hwmTermId;
     private int hwmIndex;
+    private int status;
+    private long timeOfLastStatusChange;
 
     private final LogRebuilder[] rebuilders;
     private final LossHandler lossHandler;
@@ -83,6 +94,8 @@ public class DriverConnection implements AutoCloseable
         this.streamId = streamId;
         this.termBuffers = termBuffers;
         this.receiverLimit = receiverLimit;
+        this.status = ACTIVE;
+        this.timeOfLastStatusChange = clock.getAsLong();
 
         this.clock = clock;
         activeTermId.lazySet(initialTermId);
@@ -132,6 +145,47 @@ public class DriverConnection implements AutoCloseable
         return streamId;
     }
 
+    /**
+     * Return status of the connection. Retrieved by {@link DriverConductor}.
+     *
+     * @return status of the connection
+     */
+    public int status()
+    {
+        return status;
+    }
+
+    /**
+     * Set status of the connection. Set by {@link DriverConductor}.
+     *
+     * @param status of the connection
+     */
+    public void status(final int status)
+    {
+        this.status = status;
+    }
+
+    /**
+     * Return time of last status change. Retrieved by {@link DriverConductor}.
+     *
+     * @return time of last status change
+     */
+    public long timeOfLastStatusChange()
+    {
+        return timeOfLastStatusChange;
+    }
+
+    /**
+     * Set time of last status change. Set by {@link DriverConductor}.
+     *
+     * @param now timestamp to use for time
+     */
+    public void timeOfLastStatusChange(final long now)
+    {
+        timeOfLastStatusChange = now;
+    }
+
+    /** {@inheritDoc} */
     public void close()
     {
         termBuffers.close();
@@ -167,6 +221,17 @@ public class DriverConnection implements AutoCloseable
     {
         // if scan() returns true, loss handler moved to new GapScanner, it should be serviced soon, else be lazy
         return lossHandler.scan() ? 1 : 0;
+    }
+
+    /**
+     * Called from the {@link DriverConductor} to determine what is remaining for the subscriber to drain.
+     *
+     * @return remaining bytes to drain
+     */
+    public long remaining()
+    {
+        // TODO: needs to account for multiple receiverLimit values (multiple subscribers) when needed
+        return Math.min(lossHandler.tailPosition() - receiverLimit.position(), 0);
     }
 
     /**

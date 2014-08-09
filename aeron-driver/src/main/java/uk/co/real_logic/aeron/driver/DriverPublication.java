@@ -73,7 +73,6 @@ public class DriverPublication implements AutoCloseable
     private final AtomicBuffer scratchAtomicBuffer = new AtomicBuffer(scratchByteBuffer);
     private final LogScanner[] logScanners = new LogScanner[TermHelper.BUFFER_COUNT];
     private final LogScanner[] retransmitLogScanners = new LogScanner[TermHelper.BUFFER_COUNT];
-
     private final ByteBuffer[] sendBuffers = new ByteBuffer[TermHelper.BUFFER_COUNT];
 
     private final AtomicLong positionLimit;
@@ -82,8 +81,7 @@ public class DriverPublication implements AutoCloseable
     private final BufferPositionReporter limitReporter;
     private final ClientLiveness clientLiveness;
 
-    private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
-    private final DataHeaderFlyweight retransmitDataHeader = new DataHeaderFlyweight();
+    private final DataHeaderFlyweight heartbeatHeader = new DataHeaderFlyweight();
     private final DataHeaderFlyweight sendDataHeader = new DataHeaderFlyweight();
 
     private final int positionBitsToShift;
@@ -372,9 +370,6 @@ public class DriverPublication implements AutoCloseable
 
     private void onSendRetransmit(final AtomicBuffer buffer, final int offset, final int length)
     {
-        // use retransmitBuffers, but need to know which one... so, use DataHeaderFlyweight to grab it
-        retransmitDataHeader.wrap(buffer, offset); // TODO: Is this really used?
-
         final ByteBuffer termRetransmitBuffer = sendBuffers[retransmitIndex];
         termRetransmitBuffer.position(offset);
         termRetransmitBuffer.limit(offset + length);
@@ -401,9 +396,9 @@ public class DriverPublication implements AutoCloseable
         // called from conductor thread on timeout
         // used for both initial setup 0 length data as well as heartbeats
         // send 0 length data frame with current termOffset
-        dataHeader.wrap(scratchAtomicBuffer, 0);
+        heartbeatHeader.wrap(scratchAtomicBuffer, 0);
 
-        dataHeader.sessionId(sessionId)
+        heartbeatHeader.sessionId(sessionId)
                   .streamId(streamId)
                   .termId(activeTermId.get())
                   .termOffset(nextTermOffset)

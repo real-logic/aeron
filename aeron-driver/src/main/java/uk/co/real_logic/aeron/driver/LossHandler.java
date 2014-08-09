@@ -47,8 +47,6 @@ public class LossHandler
     private int scanCursor = 0;
     private int activeTermId;
 
-    private long nakSentTimestamp;
-
     /**
      * Create a loss handler for a channel.
      *
@@ -68,7 +66,6 @@ public class LossHandler
         this.timer = wheel.newBlankTimer();
         this.delayGenerator = delayGenerator;
         this.nakMessageSender = nakMessageSender;
-        this.nakSentTimestamp = wheel.now();
         this.positionBitsToShift = Integer.numberOfTrailingZeros(scanners[0].capacity());
         this.highPosition = new AtomicLong(TermHelper.calculatePosition(activeTermId, 0, positionBitsToShift, activeTermId));
 
@@ -187,7 +184,6 @@ public class LossHandler
 
     private void suppressNak()
     {
-        nakSentTimestamp = wheel.now();
         scheduleTimer();
     }
 
@@ -229,7 +225,6 @@ public class LossHandler
     {
         activeGap.reset(termId, termOffset, length);
         scheduleTimer();
-        nakSentTimestamp = wheel.now();
 
         if (delayGenerator.shouldFeedbackImmediately())
         {
@@ -241,7 +236,6 @@ public class LossHandler
     {
         nakMessageSender.send(activeGap.termId, activeGap.termOffset, activeGap.length);
         scheduleTimer();
-        nakSentTimestamp = wheel.now();
     }
 
     private long determineNakDelay()

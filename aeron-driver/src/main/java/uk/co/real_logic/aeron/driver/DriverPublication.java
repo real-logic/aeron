@@ -164,7 +164,7 @@ public class DriverPublication implements AutoCloseable
                 final int scanLimit = Math.min(availableWindow, mtuLength);
 
                 LogScanner scanner = logScanners[activeIndex];
-                workCount += scanner.scanNext(this::onSendFrame, scanLimit);
+                workCount += scanner.scanNext(this::sendTransmissionUnit, scanLimit);
 
                 if (scanner.isComplete())
                 {
@@ -257,7 +257,7 @@ public class DriverPublication implements AutoCloseable
 
     public boolean isFlushed()
     {
-        return status() != ACTIVE && logScanners[activeIndex].isFlushed();
+        return status() != ACTIVE && logScanners[activeIndex].remaining() == 0;
     }
 
     public int statusMessagesSeenCount()
@@ -323,7 +323,7 @@ public class DriverPublication implements AutoCloseable
     /**
      * Function used as a callback for {@link LogScanner.AvailabilityHandler}
      */
-    private void onSendFrame(final AtomicBuffer buffer, final int offset, final int length)
+    private void sendTransmissionUnit(final AtomicBuffer buffer, final int offset, final int length)
     {
         // at this point sendBuffer wraps the same underlying
         // ByteBuffer as the buffer parameter

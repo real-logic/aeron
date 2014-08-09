@@ -24,7 +24,7 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.PADDING_FRAME_TYPE;
 
 /**
- * Cursor that scans a log buffer reading MTU (Maximum Transmission Unit) ranges of messages
+ * Scans a log buffer reading MTU (Maximum Transmission Unit) ranges of messages
  * as they become available due to the tail progressing. This scanner makes the assumption that
  * the buffer is built in an append only fashion with no gaps.
  *
@@ -33,7 +33,7 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
 public class LogScanner extends LogBuffer
 {
     /**
-     * Handler for notifying availability from latest offset.
+     * Handler for notifying an available chuck from latest offset.
      */
     @FunctionalInterface
     public interface AvailabilityHandler
@@ -62,7 +62,6 @@ public class LogScanner extends LogBuffer
         alignedHeaderLength = align(headerLength, FRAME_ALIGNMENT);
     }
 
-
     /**
      * The offset at which the next frame begins.
      *
@@ -84,33 +83,32 @@ public class LogScanner extends LogBuffer
     }
 
     /**
-     * Is the buffer fully received up to current tail?
+     * Number of available bytes remaining in the buffer to be scanned.
      *
-     * @return is the buffer fully received up to the current tail?
+     * @return the number of bytes remaining in the buffer to be scanned.
      */
-    public boolean isFlushed()
+    public int remaining()
     {
-        return (Math.min(tailVolatile(), capacity()) <= offset);
+        return tailVolatile() - offset;
     }
 
     /**
-     * Scan forward in the buffer for available frames limited by what will fit in bytesLimit.
+     * Scan forward in the buffer for available frames limited by what will fit in mtuLength.
      *
      * @param handler called back if a frame is available.
-     * @param bytesLimit in bytes to scan.
+     * @param mtuLength in bytes to scan.
      * @return number of bytes notified available
      */
-    public int scanNext(final AvailabilityHandler handler, final int bytesLimit)
+    public int scanNext(final AvailabilityHandler handler, final int mtuLength)
     {
-        int bytesCount = 0;
+        int length = 0;
 
         if (!isComplete())
         {
-            final int tail = Math.min(tailVolatile(), capacity());
+            final int tail = tailVolatile();
             final int offset = this.offset;
             if (tail > offset)
             {
-                int length = 0;
                 int padding = 0;
 
                 do
@@ -125,13 +123,12 @@ public class LogScanner extends LogBuffer
 
                     length += alignedFrameLength;
 
-                    if (length > bytesLimit)
+                    if (length > mtuLength)
                     {
                         length -= alignedFrameLength;
+                        padding = 0;
                         break;
                     }
-
-                    bytesCount += length;
                 }
                 while ((offset + length + padding) < tail);
 
@@ -143,7 +140,7 @@ public class LogScanner extends LogBuffer
             }
         }
 
-        return bytesCount;
+        return length;
     }
 
     /**

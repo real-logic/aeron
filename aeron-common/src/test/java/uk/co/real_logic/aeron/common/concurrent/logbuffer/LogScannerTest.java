@@ -264,4 +264,32 @@ public class LogScannerTest
 
         verify(handler, times(1)).onAvailable(logBuffer, frameOffset, alignedFrameLength * 2);
     }
+
+    @Test
+    public void shouldScanLastMessageInBufferMinusPaddingLimitedByMtu()
+    {
+        final int alignedFrameLength = align(HEADER_LENGTH, FRAME_ALIGNMENT);
+        final int frameOffset = LOG_BUFFER_CAPACITY - align(HEADER_LENGTH * 3, FRAME_ALIGNMENT);
+        final int mtu = alignedFrameLength + 8;
+
+        when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))
+            .thenReturn(LOG_BUFFER_CAPACITY - FRAME_ALIGNMENT);
+        when(valueOf(logBuffer.getIntVolatile(lengthOffset(frameOffset))))
+            .thenReturn(alignedFrameLength);
+        when(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN))
+            .thenReturn((short)HDR_TYPE_DATA);
+        when(logBuffer.getIntVolatile(lengthOffset(frameOffset + alignedFrameLength)))
+            .thenReturn(alignedFrameLength * 2);
+        when(logBuffer.getShort(typeOffset(frameOffset + alignedFrameLength), LITTLE_ENDIAN))
+            .thenReturn((short)PADDING_FRAME_TYPE);
+
+        scanner.seek(frameOffset);
+
+        assertThat(scanner.scanNext(handler, mtu), is(alignedFrameLength));
+        assertTrue(!scanner.isComplete());
+        assertThat(scanner.remaining(), greaterThan(0));
+
+        verify(handler, times(1)).onAvailable(logBuffer, frameOffset, alignedFrameLength);
+        verifyZeroInteractions(handler);
+    }
 }

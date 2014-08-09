@@ -30,7 +30,7 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.flagsOffset;
 
 /**
- * A connection from a publisher to a subscriber.
+ * A Connection from a publisher to a subscriber.
  */
 public class Connection
 {
@@ -75,7 +75,7 @@ public class Connection
     {
         final int activeIndex = this.activeIndex;
         LogReader logReader = logReaders[activeIndex];
-        final int activeTermId = this.activeTermId.get();
+        int activeTermId = this.activeTermId.get();
 
         if (logReader.isComplete())
         {
@@ -86,7 +86,7 @@ public class Connection
                 return 0;
             }
 
-            this.activeTermId.lazySet(activeTermId + 1);
+            this.activeTermId.lazySet(++activeTermId);
             this.activeIndex = nextIndex;
             logReader.seek(0);
         }
@@ -94,7 +94,8 @@ public class Connection
         final int messagesRead = logReader.read(this::onFrame, fragmentCountLimit);
         if (messagesRead > 0)
         {
-            positionReporter.position(calculatePosition(this.activeTermId.get(), logReader.offset(), positionBitsToShift, initialTermId));
+            final long position = calculatePosition(activeTermId, logReader.offset(), positionBitsToShift, initialTermId);
+            positionReporter.position(position);
         }
 
         return messagesRead;

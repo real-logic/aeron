@@ -142,7 +142,8 @@ public class DriverPublication implements AutoCloseable
 
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
         this.initialTermId = initialTermId;
-        termWindowSize = termCapacity / 2;
+        termWindowSize =
+            (0 != MediaDriver.PUBLICATION_TERM_WINDOW_SIZE) ? MediaDriver.PUBLICATION_TERM_WINDOW_SIZE : termCapacity / 2;
         limitReporter.position(termWindowSize);
     }
 

@@ -113,6 +113,16 @@ public class MediaDriver implements AutoCloseable
     public static final String PUBLICATION_LINGER_PROP_NAME = "aeron.publication.linger.timeout";
 
     /**
+     * Property name for window limit on publication side
+     */
+    public static final String PUBLICATION_TERM_WINDOW_SIZE_PROP_NAME = "aeron.publication.term.window.size";
+
+    /**
+     * Property name for window limit on subscription side
+     */
+    public static final String SUBSCRIPTION_TERM_WINDOW_SIZE_PROP_NAME = "aeron.subscription.term.window.size";
+
+    /**
      * Default byte buffer size for reads
      */
     public static final int READ_BYTE_BUFFER_SZ_DEFAULT = 4096;
@@ -227,6 +237,8 @@ public class MediaDriver implements AutoCloseable
     public static final int COUNTER_BUFFERS_SZ = getInteger(COUNTER_BUFFERS_SZ_PROP_NAME, COUNTERS_BUFFER_SZ_DEFAULT);
     public static final int SOCKET_RCVBUF = getInteger(SOCKET_RCVBUF_PROP_NAME, SOCKET_RCVBUF_DEFAULT);
     public static final long PUBLICATION_LINGER_NS = getLong(PUBLICATION_LINGER_PROP_NAME, PUBLICATION_LINGER_DEFAULT_NS);
+    public static final int PUBLICATION_TERM_WINDOW_SIZE = getInteger(PUBLICATION_TERM_WINDOW_SIZE_PROP_NAME, 0);
+    public static final int SUBSCRIPTION_TERM_WINDOW_SIZE = getInteger(SUBSCRIPTION_TERM_WINDOW_SIZE_PROP_NAME, 0);
 
     /**
      * ticksPerWheel for TimerWheel in conductor thread

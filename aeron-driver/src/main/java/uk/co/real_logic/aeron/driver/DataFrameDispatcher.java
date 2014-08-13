@@ -95,6 +95,7 @@ public class DataFrameDispatcher
         }
 
         subscription.removeConnection(connection.sessionId());
+        connection.disableStatusMessages();
         initialisationInProgressMap.remove(connection.sessionId());
     }
 

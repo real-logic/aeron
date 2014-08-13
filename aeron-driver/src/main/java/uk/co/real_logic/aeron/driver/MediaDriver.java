@@ -123,6 +123,16 @@ public class MediaDriver implements AutoCloseable
     public static final String SUBSCRIPTION_TERM_WINDOW_SIZE_PROP_NAME = "aeron.subscription.term.window.size";
 
     /**
+     * Property name for client liveness timeout
+     */
+    public static final String CLIENT_LIVENESS_TIMEOUT_PROP_NAME = "aeron.client.liveness.timeout";
+
+    /**
+     * Property name for connection liveness timeout
+     */
+    public static final String CONNECTION_LIVENESS_TIMEOUT_PROP_NAME = "aeron.connection.liveness.timeout";
+
+    /**
      * Default byte buffer size for reads
      */
     public static final int READ_BYTE_BUFFER_SZ_DEFAULT = 4096;
@@ -226,6 +236,16 @@ public class MediaDriver implements AutoCloseable
     public static final long PUBLICATION_LINGER_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
 
     /**
+     * Timeout for client liveness in nanoseconds
+     */
+    public static final long CLIENT_LIVENESS_TIMEOUT_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(5000);
+
+    /**
+     * Timeout for connection liveness in nanoseconds
+     */
+    public static final long CONNECTION_LIVENESS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
+
+    /**
      * Estimated RTT in nanoseconds.
      */
     public static final long ESTIMATED_RTT_NS = TimeUnit.MICROSECONDS.toNanos(100);
@@ -236,9 +256,14 @@ public class MediaDriver implements AutoCloseable
     public static final int TO_CLIENTS_BUFFER_SZ = getInteger(TO_CLIENTS_BUFFER_SZ_PROP_NAME, TO_CLIENTS_BUFFER_SZ_DEFAULT);
     public static final int COUNTER_BUFFERS_SZ = getInteger(COUNTER_BUFFERS_SZ_PROP_NAME, COUNTERS_BUFFER_SZ_DEFAULT);
     public static final int SOCKET_RCVBUF = getInteger(SOCKET_RCVBUF_PROP_NAME, SOCKET_RCVBUF_DEFAULT);
-    public static final long PUBLICATION_LINGER_NS = getLong(PUBLICATION_LINGER_PROP_NAME, PUBLICATION_LINGER_DEFAULT_NS);
     public static final int PUBLICATION_TERM_WINDOW_SIZE = getInteger(PUBLICATION_TERM_WINDOW_SIZE_PROP_NAME, 0);
     public static final int SUBSCRIPTION_TERM_WINDOW_SIZE = getInteger(SUBSCRIPTION_TERM_WINDOW_SIZE_PROP_NAME, 0);
+
+    public static final long PUBLICATION_LINGER_NS = getLong(PUBLICATION_LINGER_PROP_NAME, PUBLICATION_LINGER_DEFAULT_NS);
+    public static final long CLIENT_LIVENESS_TIMEOUT_NS =
+        getLong(CLIENT_LIVENESS_TIMEOUT_PROP_NAME, CLIENT_LIVENESS_TIMEOUT_DEFAULT_NS);
+    public static final long CONNECTION_LIVENESS_TIMEOUT_NS =
+        getLong(CONNECTION_LIVENESS_TIMEOUT_PROP_NAME, CONNECTION_LIVENESS_TIMEOUT_DEFAULT_NS);
 
     /**
      * ticksPerWheel for TimerWheel in conductor thread

@@ -46,6 +46,7 @@ import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.common.ErrorCode.INVALID_CHANNEL;
 import static uk.co.real_logic.aeron.common.ErrorCode.PUBLICATION_STREAM_UNKNOWN;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
+import static uk.co.real_logic.aeron.driver.MediaDriver.CLIENT_LIVENESS_TIMEOUT_NS;
 import static uk.co.real_logic.aeron.driver.MediaDriver.CONDUCTOR_TICKS_PER_WHEEL;
 import static uk.co.real_logic.aeron.driver.MediaDriver.CONDUCTOR_TICK_DURATION_US;
 
@@ -204,8 +205,8 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_CLIENT_TIMEOUT_NS));
-        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_CLIENT_TIMEOUT_NS * 2));
+        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(CLIENT_LIVENESS_TIMEOUT_NS));
+        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(CLIENT_LIVENESS_TIMEOUT_NS * 2));
 
         assertThat(publications.size(), is(0));
         assertNull(driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4005)));
@@ -226,8 +227,8 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_CLIENT_TIMEOUT_NS));
-        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_CLIENT_TIMEOUT_NS * 2));
+        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(CLIENT_LIVENESS_TIMEOUT_NS));
+        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(CLIENT_LIVENESS_TIMEOUT_NS * 2));
 
         assertThat(publications.size(), is(0));
     }
@@ -389,7 +390,7 @@ public class DriverConductorTest
         assertThat(publications.get(0).streamId(), is(2));
 
         processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(MediaDriver.PUBLICATION_LINGER_NS +
-            DriverConductor.LIVENESS_CLIENT_TIMEOUT_NS * 2));
+            CLIENT_LIVENESS_TIMEOUT_NS * 2));
 
         assertThat(publications.size(), is(0));
         assertNull(driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
@@ -407,15 +408,15 @@ public class DriverConductorTest
         assertThat(publications.get(0).sessionId(), is(1));
         assertThat(publications.get(0).streamId(), is(2));
 
-        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_CLIENT_TIMEOUT_NS / 2));
+        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(CLIENT_LIVENESS_TIMEOUT_NS / 2));
 
         writeKeepaliveClientMessage();
 
-        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_CLIENT_TIMEOUT_NS + 1000));
+        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(CLIENT_LIVENESS_TIMEOUT_NS + 1000));
 
         writeKeepaliveClientMessage();
 
-        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_CLIENT_TIMEOUT_NS * 2));
+        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(CLIENT_LIVENESS_TIMEOUT_NS * 2));
 
         assertThat(publications.size(), is(1));
     }
@@ -431,7 +432,7 @@ public class DriverConductorTest
         assertThat(subscriptions.size(), is(1));
         assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
 
-        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_CLIENT_TIMEOUT_NS * 2));
+        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(CLIENT_LIVENESS_TIMEOUT_NS * 2));
 
         assertThat(subscriptions.size(), is(0));
         assertNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
@@ -448,15 +449,15 @@ public class DriverConductorTest
         assertThat(subscriptions.size(), is(1));
         assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
 
-        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_CLIENT_TIMEOUT_NS / 1));
+        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(CLIENT_LIVENESS_TIMEOUT_NS / 1));
 
         writeKeepaliveClientMessage();
 
-        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_CLIENT_TIMEOUT_NS + 1000));
+        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(CLIENT_LIVENESS_TIMEOUT_NS + 1000));
 
         writeKeepaliveClientMessage();
 
-        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(DriverConductor.LIVENESS_CLIENT_TIMEOUT_NS * 2));
+        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(CLIENT_LIVENESS_TIMEOUT_NS * 2));
 
         assertThat(subscriptions.size(), is(1));
         assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));

@@ -102,7 +102,7 @@ public class MediaDriver implements AutoCloseable
     }
 
     /**
-     * Initiatlize a media driver with default parameters.
+     * Construct a media driver with default parameters.
      *
      * @throws Exception
      */

@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
@@ -70,9 +69,9 @@ public class RetransmitHandlerTest
     private long currentTime;
 
     private final TimerWheel wheel = new TimerWheel(() -> currentTime,
-                                                    MediaDriver.CONDUCTOR_TICK_DURATION_US,
+                                                    Configuration.CONDUCTOR_TICK_DURATION_US,
                                                     TimeUnit.MICROSECONDS,
-                                                    MediaDriver.CONDUCTOR_TICKS_PER_WHEEL);
+                                                    Configuration.CONDUCTOR_TICKS_PER_WHEEL);
 
     private final RetransmitSender retransmitSender = mock(RetransmitSender.class);
 
@@ -264,7 +263,7 @@ public class RetransmitHandlerTest
         {
             if (wheel.calculateDelayInMs() > 0)
             {
-                currentTime += TimeUnit.MICROSECONDS.toNanos(MediaDriver.CONDUCTOR_TICK_DURATION_US);
+                currentTime += TimeUnit.MICROSECONDS.toNanos(Configuration.CONDUCTOR_TICK_DURATION_US);
             }
 
             wheel.expireTimers();

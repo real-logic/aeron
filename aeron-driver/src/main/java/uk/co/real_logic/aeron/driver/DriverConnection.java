@@ -117,7 +117,7 @@ public class DriverConnection implements AutoCloseable
         final int termCapacity = rebuilders[0].capacity();
 
         // how far ahead of subscriber position to allow
-        this.termWindowSize = MediaDriver.subscriptionTermWindowSize(termCapacity);
+        this.termWindowSize = Configuration.subscriptionTermWindowSize(termCapacity);
 
         // how big of a window to advertise to the sender
         this.currentWindowSize = Math.min(termWindowSize, initialWindowSize);

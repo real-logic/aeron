@@ -87,9 +87,9 @@ public class LossHandlerTest
         }
 
         wheel = new TimerWheel(() -> currentTime,
-                               MediaDriver.CONDUCTOR_TICK_DURATION_US,
+                               Configuration.CONDUCTOR_TICK_DURATION_US,
                                TimeUnit.MICROSECONDS,
-                               MediaDriver.CONDUCTOR_TICKS_PER_WHEEL);
+                               Configuration.CONDUCTOR_TICKS_PER_WHEEL);
 
         nakMessageSender = mock(NakMessageSender.class);
 
@@ -438,7 +438,7 @@ public class LossHandlerTest
         {
             if (wheel.calculateDelayInMs() > 0)
             {
-                currentTime += TimeUnit.MICROSECONDS.toNanos(MediaDriver.CONDUCTOR_TICK_DURATION_US);
+                currentTime += TimeUnit.MICROSECONDS.toNanos(Configuration.CONDUCTOR_TICK_DURATION_US);
             }
 
             wheel.expireTimers();

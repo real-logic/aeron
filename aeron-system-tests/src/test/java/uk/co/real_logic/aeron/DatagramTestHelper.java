@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.driver.MediaDriver;
+import uk.co.real_logic.aeron.driver.Configuration;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -26,7 +26,7 @@ public class DatagramTestHelper
 {
     public static void receiveUntil(final DatagramChannel channel, final Function<ByteBuffer, Boolean> handler)
     {
-        final ByteBuffer buffer = ByteBuffer.allocate(MediaDriver.READ_BYTE_BUFFER_SZ);
+        final ByteBuffer buffer = ByteBuffer.allocate(Configuration.READ_BYTE_BUFFER_SZ);
         boolean done = false;
 
         while (!done)

@@ -54,18 +54,18 @@ public class DriverConductor extends Agent
      * Unicast NAK delay is immediate initial with delayed subsequent delay
      */
     public static final StaticDelayGenerator NAK_UNICAST_DELAY_GENERATOR =
-        new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(NAK_UNICAST_DELAY_DEFAULT_NS), true);
+        new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(Configuration.NAK_UNICAST_DELAY_DEFAULT_NS), true);
 
     public static final OptimalMulticastDelayGenerator NAK_MULTICAST_DELAY_GENERATOR =
-        new OptimalMulticastDelayGenerator(MediaDriver.NAK_MAX_BACKOFF_DEFAULT,
-                                           MediaDriver.NAK_GROUPSIZE_DEFAULT,
-                                           MediaDriver.NAK_GRTT_DEFAULT);
+        new OptimalMulticastDelayGenerator(Configuration.NAK_MAX_BACKOFF_DEFAULT,
+                                           Configuration.NAK_GROUPSIZE_DEFAULT,
+                                           Configuration.NAK_GRTT_DEFAULT);
 
     /**
      * Source uses same for unicast and multicast. For now.
      */
-    public static final FeedbackDelayGenerator RETRANS_UNICAST_DELAY_GENERATOR = () -> RETRANS_UNICAST_DELAY_DEFAULT_NS;
-    public static final FeedbackDelayGenerator RETRANS_UNICAST_LINGER_GENERATOR = () -> RETRANS_UNICAST_LINGER_DEFAULT_NS;
+    public static final FeedbackDelayGenerator RETRANS_UNICAST_DELAY_GENERATOR = () -> Configuration.RETRANS_UNICAST_DELAY_DEFAULT_NS;
+    public static final FeedbackDelayGenerator RETRANS_UNICAST_LINGER_GENERATOR = () -> Configuration.RETRANS_UNICAST_LINGER_DEFAULT_NS;
 
     private final OneToOneConcurrentArrayQueue<? super Object> commandQueue;
     private final ReceiverProxy receiverProxy;
@@ -573,7 +573,7 @@ public class DriverConductor extends Agent
                 switch (publication.status())
                 {
                     case DriverPublication.ACTIVE:
-                        if (publication.timeOfLastKeepaliveFromClient() + CLIENT_LIVENESS_TIMEOUT_NS < now)
+                        if (publication.timeOfLastKeepaliveFromClient() + Configuration.CLIENT_LIVENESS_TIMEOUT_NS < now)
                         {
                             publication.status(DriverPublication.EOF);
                             if (publication.isFlushed() || publication.statusMessagesSeenCount() == 0)
@@ -593,7 +593,7 @@ public class DriverConductor extends Agent
                         break;
 
                     case DriverPublication.FLUSHED:
-                        if (publication.timeOfFlush() + MediaDriver.PUBLICATION_LINGER_NS < now)
+                        if (publication.timeOfFlush() + Configuration.PUBLICATION_LINGER_NS < now)
                         {
                             final SendChannelEndpoint channelEndpoint = publication.sendChannelEndpoint();
 
@@ -637,7 +637,7 @@ public class DriverConductor extends Agent
         subscriptions.forEach(
             (subscription) ->
             {
-                if (subscription.timeOfLastKeepaliveFromClient() + CLIENT_LIVENESS_TIMEOUT_NS < now)
+                if (subscription.timeOfLastKeepaliveFromClient() + Configuration.CLIENT_LIVENESS_TIMEOUT_NS < now)
                 {
                     final ReceiveChannelEndpoint channelEndpoint = subscription.receiveChannelEndpoint();
                     final int streamId = subscription.streamId();
@@ -687,7 +687,7 @@ public class DriverConductor extends Agent
                 switch (connection.status())
                 {
                     case DriverConnection.ACTIVE:
-                        if (connection.timeOfLastFrame() + CONNECTION_LIVENESS_TIMEOUT_NS < now)
+                        if (connection.timeOfLastFrame() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS < now)
                         {
                             while (!receiverProxy.removeConnection(connection))
                             {
@@ -712,7 +712,7 @@ public class DriverConductor extends Agent
 
                     case DriverConnection.INACTIVE:
                         if (connection.remaining() == 0 ||
-                            (connection.timeOfLastStatusChange() + CONNECTION_LIVENESS_TIMEOUT_NS < now))
+                            (connection.timeOfLastStatusChange() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS < now))
                         {
                             connection.status(DriverConnection.LINGER);
                             connection.timeOfLastStatusChange(timerWheel.now());
@@ -724,7 +724,7 @@ public class DriverConductor extends Agent
                         break;
 
                     case DriverConnection.LINGER:
-                        if (connection.timeOfLastStatusChange() + CONNECTION_LIVENESS_TIMEOUT_NS < now)
+                        if (connection.timeOfLastStatusChange() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS < now)
                         {
                             logger.log(EventCode.REMOVE_CONNECTION_CLEANUP,
                                     "%s %x:%x",
@@ -751,7 +751,7 @@ public class DriverConductor extends Agent
         clients.forEach(
             (clientLiveness) ->
             {
-                if (clientLiveness.timeOfLastKeepalive() + CONNECTION_LIVENESS_TIMEOUT_NS < now)
+                if (clientLiveness.timeOfLastKeepalive() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS < now)
                 {
                     clientLivenessByClientId.remove(clientLiveness.clientId());
                     clients.remove(clientLiveness);

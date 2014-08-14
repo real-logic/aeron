@@ -22,7 +22,7 @@ import uk.co.real_logic.aeron.common.IoUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.event.EventLogger;
-import uk.co.real_logic.aeron.driver.MediaDriver;
+import uk.co.real_logic.aeron.driver.Configuration;
 import uk.co.real_logic.aeron.driver.UdpChannel;
 
 import java.io.File;
@@ -38,7 +38,7 @@ public class TermBuffersFactoryTest
     private static final int SESSION_ID = 100;
     private static final int STREAM_ID = 100;
     private static final File DATA_DIR = new File(IoUtil.tmpDirName(), "dataDirName");
-    private static final int TERM_BUFFER_SZ = MediaDriver.TERM_BUFFER_SZ_DEFAULT;
+    private static final int TERM_BUFFER_SZ = Configuration.TERM_BUFFER_SZ_DEFAULT;
     private TermBuffersFactory termBuffersFactory;
     private UdpChannel udpChannel = UdpChannel.parse(CHANNEL);
     private EventLogger logger = mock(EventLogger.class);

@@ -20,7 +20,6 @@ import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.aeron.driver.cmd.RetransmitPublicationCmd;
 
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
@@ -36,7 +35,7 @@ import java.util.stream.IntStream;
 public class RetransmitHandler
 {
     /** Maximum number of concurrent retransmits */
-    public static final int MAX_RETRANSMITS = MediaDriver.MAX_RETRANSMITS_DEFAULT;
+    public static final int MAX_RETRANSMITS = Configuration.MAX_RETRANSMITS_DEFAULT;
 
     private final TimerWheel timerWheel;
     private final Queue<RetransmitAction> retransmitActionPool = new OneToOneConcurrentArrayQueue<>(MAX_RETRANSMITS);

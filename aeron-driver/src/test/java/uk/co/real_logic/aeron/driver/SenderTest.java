@@ -73,9 +73,9 @@ public class SenderTest
     private long currentTimestamp;
 
     private final TimerWheel wheel = new TimerWheel(() -> currentTimestamp,
-                                                    MediaDriver.CONDUCTOR_TICK_DURATION_US,
+                                                    Configuration.CONDUCTOR_TICK_DURATION_US,
                                                     TimeUnit.MICROSECONDS,
-                                                    MediaDriver.CONDUCTOR_TICKS_PER_WHEEL);
+                                                    Configuration.CONDUCTOR_TICKS_PER_WHEEL);
 
     private final Queue<ByteBuffer> receivedFrames = new ArrayDeque<>();
 

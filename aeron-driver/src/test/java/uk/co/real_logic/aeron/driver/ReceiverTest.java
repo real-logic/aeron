@@ -58,8 +58,8 @@ public class ReceiverTest
     private static final int SESSION_ID = 1;
     private static final byte[] FAKE_PAYLOAD = "Hello there, message!".getBytes();
     private static final byte[] NO_PAYLOAD = new byte[0];
-    private static final int INITIAL_WINDOW_SIZE = MediaDriver.INITIAL_WINDOW_SIZE_DEFAULT;
-    private static final long STATUS_MESSAGE_TIMEOUT = MediaDriver.STATUS_MESSAGE_TIMEOUT_DEFAULT_NS;
+    private static final int INITIAL_WINDOW_SIZE = Configuration.INITIAL_WINDOW_SIZE_DEFAULT;
+    private static final long STATUS_MESSAGE_TIMEOUT = Configuration.STATUS_MESSAGE_TIMEOUT_DEFAULT_NS;
     private static final PositionIndicator POSITION_INDICATOR = mock(PositionIndicator.class);
 
     private final LossHandler mockLossHandler = mock(LossHandler.class);
@@ -77,8 +77,8 @@ public class ReceiverTest
     private final TermBuffers termBuffers = newTestTermBuffers(LOG_BUFFER_SIZE, LogBufferDescriptor.STATE_BUFFER_LENGTH);
     private final EventLogger mockLogger = mock(EventLogger.class);
     private final TimerWheel timerWheel =
-        new TimerWheel(clock, MediaDriver.CONDUCTOR_TICK_DURATION_US,
-            TimeUnit.MICROSECONDS, MediaDriver.CONDUCTOR_TICKS_PER_WHEEL);
+        new TimerWheel(clock, Configuration.CONDUCTOR_TICK_DURATION_US,
+            TimeUnit.MICROSECONDS, Configuration.CONDUCTOR_TICKS_PER_WHEEL);
 
     private LogReader[] logReaders;
     private DatagramChannel senderChannel;

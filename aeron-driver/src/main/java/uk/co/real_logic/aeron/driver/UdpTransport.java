@@ -47,7 +47,7 @@ public final class UdpTransport implements AutoCloseable
     private final DatagramChannel datagramChannel = DatagramChannel.open();
     private final UdpChannel udpChannel;
 
-    private final ByteBuffer readByteBuffer = ByteBuffer.allocateDirect(MediaDriver.READ_BYTE_BUFFER_SZ);
+    private final ByteBuffer readByteBuffer = ByteBuffer.allocateDirect(Configuration.READ_BYTE_BUFFER_SZ);
     private final AtomicBuffer readBuffer = new AtomicBuffer(readByteBuffer);
 
     private final HeaderFlyweight header = new HeaderFlyweight();
@@ -135,9 +135,9 @@ public final class UdpTransport implements AutoCloseable
             multicast = false;
         }
 
-        if (0 != MediaDriver.SOCKET_RCVBUF)
+        if (0 != Configuration.SOCKET_RCVBUF)
         {
-            datagramChannel.setOption(StandardSocketOptions.SO_RCVBUF, MediaDriver.SOCKET_RCVBUF);
+            datagramChannel.setOption(StandardSocketOptions.SO_RCVBUF, Configuration.SOCKET_RCVBUF);
         }
 
         datagramChannel.configureBlocking(false);
@@ -233,7 +233,6 @@ public final class UdpTransport implements AutoCloseable
             return 1;
         }
 
-//        logger.log(EventCode.UNKNOWN_HEADER_TYPE, readBuffer, 0, HeaderFlyweight.HEADER_LENGTH);
         return 0;
     }
 
@@ -294,14 +293,12 @@ public final class UdpTransport implements AutoCloseable
 
     private boolean isValidFrame(final int length)
     {
-        // drop a version we don't know
         if (header.version() != HeaderFlyweight.CURRENT_VERSION)
         {
             logger.log(EventCode.MALFORMED_FRAME_LENGTH, readBuffer, 0, header.frameLength());
             return false;
         }
 
-        // too short
         if (length <= FrameDescriptor.BASE_HEADER_LENGTH)
         {
             logger.log(EventCode.MALFORMED_FRAME_LENGTH, readBuffer, 0, length);

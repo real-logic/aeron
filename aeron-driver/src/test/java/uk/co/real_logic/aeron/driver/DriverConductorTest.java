@@ -46,9 +46,9 @@ import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.common.ErrorCode.INVALID_CHANNEL;
 import static uk.co.real_logic.aeron.common.ErrorCode.PUBLICATION_STREAM_UNKNOWN;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
-import static uk.co.real_logic.aeron.driver.MediaDriver.CLIENT_LIVENESS_TIMEOUT_NS;
-import static uk.co.real_logic.aeron.driver.MediaDriver.CONDUCTOR_TICKS_PER_WHEEL;
-import static uk.co.real_logic.aeron.driver.MediaDriver.CONDUCTOR_TICK_DURATION_US;
+import static uk.co.real_logic.aeron.driver.Configuration.CLIENT_LIVENESS_TIMEOUT_NS;
+import static uk.co.real_logic.aeron.driver.Configuration.CONDUCTOR_TICKS_PER_WHEEL;
+import static uk.co.real_logic.aeron.driver.Configuration.CONDUCTOR_TICK_DURATION_US;
 
 /**
  * Test the Media Driver Conductor in isolation
@@ -62,7 +62,7 @@ public class DriverConductorTest
     private static final int STREAM_ID_1 = 10;
     private static final int STREAM_ID_2 = 20;
     private static final int STREAM_ID_3 = 30;
-    private static final int TERM_BUFFER_SZ = MediaDriver.TERM_BUFFER_SZ_DEFAULT;
+    private static final int TERM_BUFFER_SZ = Configuration.TERM_BUFFER_SZ_DEFAULT;
     private static final long CORRELATION_ID_1 = 1429;
     private static final long CORRELATION_ID_2 = 1430;
     private static final long CORRELATION_ID_3 = 1431;
@@ -70,7 +70,7 @@ public class DriverConductorTest
     private static final long CLIENT_ID = 1433;
 
     private final ByteBuffer toDriverBuffer =
-        ByteBuffer.allocate(MediaDriver.COMMAND_BUFFER_SZ + RingBufferDescriptor.TRAILER_LENGTH);
+        ByteBuffer.allocate(Configuration.COMMAND_BUFFER_SZ + RingBufferDescriptor.TRAILER_LENGTH);
 
     private final NioSelector nioSelector = mock(NioSelector.class);
     private final TermBuffersFactory mockTermBuffersFactory = mock(TermBuffersFactory.class);
@@ -103,8 +103,7 @@ public class DriverConductorTest
         currentTime = 0;
 
         final AtomicBuffer counterBuffer = new AtomicBuffer(new byte[4096]);
-        final CountersManager countersManager =
-            new CountersManager(new AtomicBuffer(new byte[8192]), counterBuffer);
+        final CountersManager countersManager = new CountersManager(new AtomicBuffer(new byte[8192]), counterBuffer);
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .receiverNioSelector(nioSelector)
@@ -389,7 +388,7 @@ public class DriverConductorTest
         assertThat(publications.get(0).sessionId(), is(1));
         assertThat(publications.get(0).streamId(), is(2));
 
-        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(MediaDriver.PUBLICATION_LINGER_NS +
+        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(Configuration.PUBLICATION_LINGER_NS +
             CLIENT_LIVENESS_TIMEOUT_NS * 2));
 
         assertThat(publications.size(), is(0));
@@ -525,12 +524,12 @@ public class DriverConductorTest
         {
             if (wheel.calculateDelayInMs() > 0)
             {
-                currentTime += TimeUnit.MICROSECONDS.toNanos(MediaDriver.CONDUCTOR_TICK_DURATION_US);
+                currentTime += TimeUnit.MICROSECONDS.toNanos(Configuration.CONDUCTOR_TICK_DURATION_US);
             }
 
             driverConductor.doWork();
         }
 
-        return (wheel.now() - startTime);
+        return wheel.now() - startTime;
     }
 }

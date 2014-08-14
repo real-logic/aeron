@@ -86,7 +86,6 @@ public class MediaDriver implements AutoCloseable
      * Start Media Driver as a stand-alone process.
      *
      * @param args command line arguments
-     * @throws Exception
      */
     public static void main(final String[] args) throws Exception
     {
@@ -112,10 +111,9 @@ public class MediaDriver implements AutoCloseable
     }
 
     /**
-     * Initialize a media driver with the given parameters.
+     * Construct a media driver with the given context.
      *
      * @param context for the media driver parameters
-     * @throws Exception
      */
     public MediaDriver(final Context context) throws Exception
     {

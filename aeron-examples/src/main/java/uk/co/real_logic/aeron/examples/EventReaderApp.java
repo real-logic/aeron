@@ -35,8 +35,8 @@ public class EventReaderApp
         final EventReader.Context ctx =
             new EventReader.Context()
                 .deleteOnExit(true)
-                .backoffStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                                                         AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
+                .idleStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
+                                                      AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
                 .eventHandler(System.out::println);
 
         try (final EventReader eventReader = new EventReader(ctx))

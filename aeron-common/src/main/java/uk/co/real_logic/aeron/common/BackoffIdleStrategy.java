@@ -15,12 +15,13 @@
  */
 package uk.co.real_logic.aeron.common;
 
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.LockSupport;
 
 /**
- * Idling strategy for Agent spin loop
+ * Idling strategy for Agent work loop
  *
- * Spin for maxSpins,
+ * Spin for maxSpins, then
  * {@link Thread#yield()} for maxYields, then
  * {@link LockSupport#parkNanos(long)} on an exponential backoff to maxParkPeriodNs
  */
@@ -38,6 +39,7 @@ public class BackoffIdleStrategy implements IdleStrategy
 
     private State state;
 
+    private int dummyCounter;
     private long spins;
     private long yields;
     private long parkPeriodNs;
@@ -60,8 +62,6 @@ public class BackoffIdleStrategy implements IdleStrategy
         this.minParkPeriodNs = minParkPeriodNs;
         this.maxParkPeriodNs = maxParkPeriodNs;
 
-        this.spins = 0;
-        this.yields = 0;
         this.state = State.NOT_IDLE;
     }
 
@@ -88,6 +88,21 @@ public class BackoffIdleStrategy implements IdleStrategy
                 {
                     state = State.YIELDING;
                     yields = 0;
+                }
+                else
+                {
+                    // Trick speculative execution into not progressing
+                    if (dummyCounter > 0)
+                    {
+                        if (ThreadLocalRandom.current().nextInt() > 0)
+                        {
+                            --dummyCounter;
+                        }
+                    }
+                    else
+                    {
+                        dummyCounter = 64;
+                    }
                 }
                 break;
 

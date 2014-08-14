@@ -34,14 +34,12 @@ public class EventReader extends Agent implements AutoCloseable
     private MappedByteBuffer buffer;
     private ManyToOneRingBuffer ringBuffer;
     private Consumer<String> handler;
-    private Context ctx;
 
     public EventReader(final Context context)
     {
-        super(context.backoffStrategy(), Throwable::printStackTrace);
+        super(context.idleStrategy(), Throwable::printStackTrace);
 
         handler = context.eventHandler();
-        ctx = context;
 
         try
         {
@@ -105,7 +103,7 @@ public class EventReader extends Agent implements AutoCloseable
         private boolean deleteOnExit = Boolean.getBoolean(EventConfiguration.DELETE_ON_EXIT_PROPERTY_NAME);
         private boolean warnIfEventsFileExists = false;
 
-        private IdleStrategy backoffStrategy;
+        private IdleStrategy idleStrategy;
         private Consumer<String> eventHandler;
 
         public Context eventsFile(final File eventsFile)
@@ -126,15 +124,15 @@ public class EventReader extends Agent implements AutoCloseable
             return this;
         }
 
-        public Context backoffStrategy(final IdleStrategy value)
+        public Context idleStrategy(final IdleStrategy idleStrategy)
         {
-            this.backoffStrategy = value;
+            this.idleStrategy = idleStrategy;
             return this;
         }
 
-        public Context eventHandler(final Consumer<String> value)
+        public Context eventHandler(final Consumer<String> eventHandler)
         {
-            this.eventHandler = value;
+            this.eventHandler = eventHandler;
             return this;
         }
 
@@ -159,9 +157,9 @@ public class EventReader extends Agent implements AutoCloseable
             return deleteOnExit;
         }
 
-        public IdleStrategy backoffStrategy()
+        public IdleStrategy idleStrategy()
         {
-            return backoffStrategy;
+            return idleStrategy;
         }
 
         public Consumer<String> eventHandler()

@@ -127,9 +127,7 @@ public class MediaDriver implements AutoCloseable
 
         final EventReader.Context readerCtx =
             new EventReader.Context()
-                .backoffStrategy(
-                    new BackoffIdleStrategy(Configuration.AGENT_IDLE_MAX_SPINS, Configuration.AGENT_IDLE_MAX_YIELDS,
-                                            Configuration.AGENT_IDLE_MIN_PARK_NS, Configuration.AGENT_IDLE_MAX_PARK_NS))
+                .idleStrategy(Configuration.agentIdleStrategy())
                 .deleteOnExit(ctx.dirsDeleteOnExit())
                 .eventHandler(ctx.eventConsumer);
 
@@ -145,15 +143,6 @@ public class MediaDriver implements AutoCloseable
            .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
            .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
            .senderCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
-           .conductorIdleStrategy(
-               new BackoffIdleStrategy(Configuration.AGENT_IDLE_MAX_SPINS, Configuration.AGENT_IDLE_MAX_YIELDS,
-                                       Configuration.AGENT_IDLE_MIN_PARK_NS, Configuration.AGENT_IDLE_MAX_PARK_NS))
-           .senderIdleStrategy(
-               new BackoffIdleStrategy(Configuration.AGENT_IDLE_MAX_SPINS, Configuration.AGENT_IDLE_MAX_YIELDS,
-                                       Configuration.AGENT_IDLE_MIN_PARK_NS, Configuration.AGENT_IDLE_MAX_PARK_NS))
-           .receiverIdleStrategy
-               (new BackoffIdleStrategy(Configuration.AGENT_IDLE_MAX_SPINS, Configuration.AGENT_IDLE_MAX_YIELDS,
-                                        Configuration.AGENT_IDLE_MIN_PARK_NS, Configuration.AGENT_IDLE_MAX_PARK_NS))
            .conclude();
 
         this.receiver = new Receiver(ctx);
@@ -481,6 +470,21 @@ public class MediaDriver implements AutoCloseable
                 }
 
                 countersManager(new CountersManager(counterLabelsBuffer(), countersBuffer()));
+            }
+
+            if (null == conductorIdleStrategy)
+            {
+                conductorIdleStrategy(Configuration.agentIdleStrategy());
+            }
+
+            if (null == senderIdleStrategy)
+            {
+                senderIdleStrategy(Configuration.agentIdleStrategy());
+            }
+
+            if (null == receiverIdleStrategy)
+            {
+                receiverIdleStrategy(Configuration.agentIdleStrategy());
             }
 
             return this;

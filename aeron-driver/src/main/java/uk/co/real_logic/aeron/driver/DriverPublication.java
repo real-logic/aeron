@@ -38,6 +38,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static uk.co.real_logic.aeron.common.BitUtil.align;
 import static uk.co.real_logic.aeron.common.TermHelper.termIdToBufferIndex;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
+import static uk.co.real_logic.aeron.driver.MediaDriver.PUBLICATION_TERM_WINDOW_SZ;
 
 /**
  * Publication to be sent to registered subscribers.
@@ -142,8 +143,7 @@ public class DriverPublication implements AutoCloseable
 
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
         this.initialTermId = initialTermId;
-        termWindowSize =
-            (0 != MediaDriver.PUBLICATION_TERM_WINDOW_SIZE) ? MediaDriver.PUBLICATION_TERM_WINDOW_SIZE : termCapacity / 2;
+        termWindowSize = 0 != PUBLICATION_TERM_WINDOW_SZ ? PUBLICATION_TERM_WINDOW_SZ : termCapacity / 2;
         limitReporter.position(termWindowSize);
     }
 

@@ -181,18 +181,6 @@ public class MediaDriver implements AutoCloseable
     public static final long NAK_UNICAST_DELAY_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(60);
 
     /**
-     * Default group size estimate for retransmit delay randomization
-     */
-    public static final int RETRANS_GROUPSIZE_DEFAULT = 10;
-    /**
-     * Default group RTT estimate for retransmit delay randomization in msec
-     */
-    public static final int RETRANS_GRTT_DEFAULT = 10;
-    /**
-     * Default max backoff for retransmit delay randomization in msec
-     */
-    public static final int RETRANS_MAX_BACKOFF_DEFAULT = 60;
-    /**
      * Default delay for retransmission of data for unicast
      */
     public static final long RETRANS_UNICAST_DELAY_DEFAULT_NS = TimeUnit.NANOSECONDS.toNanos(0);
@@ -245,10 +233,6 @@ public class MediaDriver implements AutoCloseable
      */
     public static final long CONNECTION_LIVENESS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
 
-    /**
-     * Estimated RTT in nanoseconds.
-     */
-    public static final long ESTIMATED_RTT_NS = TimeUnit.MICROSECONDS.toNanos(100);
 
     public static final int READ_BYTE_BUFFER_SZ = getInteger(READ_BUFFER_SZ_PROP_NAME, READ_BYTE_BUFFER_SZ_DEFAULT);
     public static final int COMMAND_BUFFER_SZ = getInteger(COMMAND_BUFFER_SZ_PROP_NAME, COMMAND_BUFFER_SZ_DEFAULT);
@@ -256,8 +240,8 @@ public class MediaDriver implements AutoCloseable
     public static final int TO_CLIENTS_BUFFER_SZ = getInteger(TO_CLIENTS_BUFFER_SZ_PROP_NAME, TO_CLIENTS_BUFFER_SZ_DEFAULT);
     public static final int COUNTER_BUFFERS_SZ = getInteger(COUNTER_BUFFERS_SZ_PROP_NAME, COUNTERS_BUFFER_SZ_DEFAULT);
     public static final int SOCKET_RCVBUF = getInteger(SOCKET_RCVBUF_PROP_NAME, SOCKET_RCVBUF_DEFAULT);
-    public static final int PUBLICATION_TERM_WINDOW_SIZE = getInteger(PUBLICATION_TERM_WINDOW_SIZE_PROP_NAME, 0);
-    public static final int SUBSCRIPTION_TERM_WINDOW_SIZE = getInteger(SUBSCRIPTION_TERM_WINDOW_SIZE_PROP_NAME, 0);
+    public static final int PUBLICATION_TERM_WINDOW_SZ = getInteger(PUBLICATION_TERM_WINDOW_SIZE_PROP_NAME, 0);
+    public static final int SUBSCRIPTION_TERM_WINDOW_SZ = getInteger(SUBSCRIPTION_TERM_WINDOW_SIZE_PROP_NAME, 0);
 
     public static final long PUBLICATION_LINGER_NS = getLong(PUBLICATION_LINGER_PROP_NAME, PUBLICATION_LINGER_DEFAULT_NS);
     public static final long CLIENT_LIVENESS_TIMEOUT_NS =
@@ -350,7 +334,7 @@ public class MediaDriver implements AutoCloseable
         final EventReader.Context readerCtx =
             new EventReader.Context()
                 .backoffStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                    AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
+                                                         AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
                 .deleteOnExit(ctx.dirsDeleteOnExit())
                 .eventHandler(ctx.eventConsumer);
 
@@ -361,17 +345,17 @@ public class MediaDriver implements AutoCloseable
            .publications(new AtomicArray<>())
            .subscriptions(new AtomicArray<>())
            .conductorTimerWheel(new TimerWheel(CONDUCTOR_TICK_DURATION_US,
-               TimeUnit.MICROSECONDS,
-               CONDUCTOR_TICKS_PER_WHEEL))
+                                               TimeUnit.MICROSECONDS,
+                                               CONDUCTOR_TICKS_PER_WHEEL))
            .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
            .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
            .senderCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
            .conductorIdleStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-               AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
+                                                          AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
            .senderIdleStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-               AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
+                                                       AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
            .receiverIdleStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-               AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
+                                                         AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
            .conclude();
 
         this.receiver = new Receiver(ctx);
@@ -627,8 +611,9 @@ public class MediaDriver implements AutoCloseable
 
             if (null == eventLogger)
             {
-                eventLogger = new EventLogger(new File(System.getProperty(EventConfiguration.LOCATION_PROPERTY_NAME,
-                    EventConfiguration.LOCATION_DEFAULT)), EventConfiguration.getEnabledEventCodes());
+                eventLogger = new EventLogger(
+                    new File(System.getProperty(EventConfiguration.LOCATION_PROPERTY_NAME, EventConfiguration.LOCATION_DEFAULT)),
+                    EventConfiguration.getEnabledEventCodes());
             }
 
             receiverNioSelector(new NioSelector());

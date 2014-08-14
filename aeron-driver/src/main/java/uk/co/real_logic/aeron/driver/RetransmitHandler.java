@@ -145,16 +145,6 @@ public class RetransmitHandler
         }
     }
 
-    /**
-     * Inform handler of term rotation by informing it of a new high term id value
-     *
-     * @param termId of the new high
-     */
-    public void highTermId(final int termId)
-    {
-        lowestPosition.lazySet(TermHelper.calculatePosition(termId - 1, 0, positionBitsToShift, initialTermId));
-    }
-
     private long determineRetransmitDelay()
     {
         return delayGenerator.generateDelay();

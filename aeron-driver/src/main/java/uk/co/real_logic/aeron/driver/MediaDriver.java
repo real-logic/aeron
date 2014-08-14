@@ -364,6 +364,28 @@ public class MediaDriver implements AutoCloseable
     }
 
     /**
+     * How far ahead the receiver can get from the subscriber position.
+     *
+     * @param termCapacity to be used when {@link #SUBSCRIPTION_TERM_WINDOW_SZ} is not set.
+     * @return the size to be used for the subscription window.
+     */
+    public static int subscriptionTermWindowSize(final int termCapacity)
+    {
+        return 0 != SUBSCRIPTION_TERM_WINDOW_SZ ? SUBSCRIPTION_TERM_WINDOW_SZ : termCapacity / 2;
+    }
+
+    /**
+     * How far ahead the publisher can get from the sender position.
+     *
+     * @param termCapacity to be used when {@link #PUBLICATION_TERM_WINDOW_SZ} is not set.
+     * @return the size to be used for the publication window.
+     */
+    public static int publicationTermWindowSize(final int termCapacity)
+    {
+        return 0 != PUBLICATION_TERM_WINDOW_SZ ? PUBLICATION_TERM_WINDOW_SZ : termCapacity / 2;
+    }
+
+    /**
      * Spin up all {@link Agent}s as Daemon threads.
      */
     public void invokeDaemonized()

@@ -30,7 +30,6 @@ import java.util.function.LongSupplier;
 import static uk.co.real_logic.aeron.common.TermHelper.*;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.IN_CLEANING;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.NEEDS_CLEANING;
-import static uk.co.real_logic.aeron.driver.MediaDriver.SUBSCRIPTION_TERM_WINDOW_SZ;
 
 /**
  * State maintained for active sessionIds within a channel for receiver processing
@@ -118,9 +117,9 @@ public class DriverConnection implements AutoCloseable
         final int termCapacity = rebuilders[0].capacity();
 
         // how far ahead of subscriber position to allow
-        this.termWindowSize = 0 != SUBSCRIPTION_TERM_WINDOW_SZ ? SUBSCRIPTION_TERM_WINDOW_SZ : termCapacity / 2;
+        this.termWindowSize = MediaDriver.subscriptionTermWindowSize(termCapacity);
 
-        // how big of a window to advertise to the publisher
+        // how big of a window to advertise to the sender
         this.currentWindowSize = Math.min(termWindowSize, initialWindowSize);
 
         // trip of sending an SM as messages come in

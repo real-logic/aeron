@@ -50,8 +50,8 @@ public class Sender extends Agent
 
         int workCount = 0;
 
-        workCount += publications.doAction(roundRobinIndex, DriverPublication::send);
         workCount += commandQueue.drain(this::processConductorCommands);
+        workCount += publications.doAction(roundRobinIndex, DriverPublication::send);
 
         return  workCount;
     }
@@ -63,13 +63,11 @@ public class Sender extends Agent
             if (obj instanceof RetransmitPublicationCmd)
             {
                 final RetransmitPublicationCmd cmd = (RetransmitPublicationCmd)obj;
-
                 cmd.driverPublication().onRetransmit(cmd.termId(), cmd.termOffset(), cmd.length());
             }
             else if (obj instanceof ClosePublicationCmd)
             {
                 final ClosePublicationCmd cmd = (ClosePublicationCmd)obj;
-
                 cmd.publication().close();
             }
         }

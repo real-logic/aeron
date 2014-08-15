@@ -84,9 +84,8 @@ public class EventReader extends Agent
                 handler.accept(EventCode.get(typeId).decode(buffer, index, length)), limit);
     }
 
-    public void close()
+    public void onClose()
     {
-        super.close();
         IoUtil.unmap(buffer);
     }
 

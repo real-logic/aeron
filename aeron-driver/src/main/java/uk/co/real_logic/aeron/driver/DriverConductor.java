@@ -177,10 +177,8 @@ public class DriverConductor extends Agent
         return workCount;
     }
 
-    public void close()
+    public void onClose()
     {
-        super.close();
-
         termBuffersFactory.close();
         publications.forEach(DriverPublication::close);
         connections.forEach(DriverConnection::close);

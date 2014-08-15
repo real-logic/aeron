@@ -64,9 +64,18 @@ public abstract class Agent implements Runnable, AutoCloseable
     /**
      * Stop the running Agent and cleanup. Not waiting for the agent run loop to stop before returning.
      */
-    public void close()
+    public final void close()
     {
         running = false;
+
+        onClose();
+    }
+
+    /**
+     * To be overridden by Agents that which to do resource cleanup on close.
+     */
+    public void onClose()
+    {
     }
 
     /**

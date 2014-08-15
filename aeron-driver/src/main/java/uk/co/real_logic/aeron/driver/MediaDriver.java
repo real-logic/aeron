@@ -140,9 +140,9 @@ public class MediaDriver implements AutoCloseable
            .conductorTimerWheel(new TimerWheel(Configuration.CONDUCTOR_TICK_DURATION_US,
                                                TimeUnit.MICROSECONDS,
                                                Configuration.CONDUCTOR_TICKS_PER_WHEEL))
-           .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
-           .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
-           .senderCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
+           .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
+           .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
+           .senderCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
            .conclude();
 
         this.receiver = new Receiver(ctx);
@@ -153,7 +153,7 @@ public class MediaDriver implements AutoCloseable
     /**
      * Spin up all {@link Agent}s as Daemon threads.
      */
-    public void invokeDaemonized()
+    private void invokeDaemonized()
     {
         conductorThread = new Thread(conductor);
         invokeDaemonized(conductorThread, "driver-conductor");
@@ -174,7 +174,7 @@ public class MediaDriver implements AutoCloseable
      * @param agentThread thread to Daemonize
      * @param name        to associate with thread
      */
-    public void invokeDaemonized(final Thread agentThread, final String name)
+    private void invokeDaemonized(final Thread agentThread, final String name)
     {
         agentThread.setName(name);
         agentThread.setDaemon(true);

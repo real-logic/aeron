@@ -240,6 +240,9 @@ public class Configuration
     public static final long AGENT_IDLE_MIN_PARK_NS = TimeUnit.NANOSECONDS.toNanos(1);
     public static final long AGENT_IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(100);
 
+    /** Capacity for the command queues used between driver agents. */
+    public static final int CMD_QUEUE_CAPACITY = 1024;
+
     /**
      * How far ahead the receiver can get from the subscriber position.
      *

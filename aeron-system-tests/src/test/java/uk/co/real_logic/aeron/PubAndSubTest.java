@@ -96,8 +96,8 @@ public class PubAndSubTest
             subscription.close();
         }
 
-        SystemTestHelper.shutdownAndClose(subscribingClient);
-        SystemTestHelper.shutdownAndClose(publishingClient);
+        subscribingClient.close();
+        publishingClient.close();
         SystemTestHelper.shutdownAndClose(driver);
 
         if (null != executorService)

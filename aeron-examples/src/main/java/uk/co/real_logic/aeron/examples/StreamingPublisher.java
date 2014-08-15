@@ -80,7 +80,7 @@ public class StreamingPublisher
         publication.release();
 
         reporter.done();
-        aeron.shutdown();
+        aeron.close();
 
         if (null != driver)
         {

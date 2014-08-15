@@ -61,28 +61,13 @@ public class MediaDriverAdminSoakTestRunner
 
     private static void createClientsAndExchangeMessages()
     {
-        final Aeron publishingClient = Aeron.newClient(new Aeron.Context());
-        final Aeron consumingClient = Aeron.newClient(new Aeron.Context());
-
-        consumingClient.invoke(EXECUTOR);
-        publishingClient.invoke(EXECUTOR);
-
-        SoakTestHelper.exchangeMessagesBetweenClients(publishingClient, consumingClient, PUBLISHING_BUFFER);
-
-        shutdownAndClose(consumingClient);
-        shutdownAndClose(publishingClient);
-    }
-
-    public static void shutdownAndClose(final Aeron aeron)
-    {
-        try
+        try (final Aeron publishingClient = Aeron.newClient(new Aeron.Context());
+             final Aeron consumingClient = Aeron.newClient(new Aeron.Context()))
         {
-            aeron.shutdown();
-            aeron.close();
-        }
-        catch (final Exception ex)
-        {
-            ex.printStackTrace();
+            consumingClient.invoke(EXECUTOR);
+            publishingClient.invoke(EXECUTOR);
+
+            SoakTestHelper.exchangeMessagesBetweenClients(publishingClient, consumingClient, PUBLISHING_BUFFER);
         }
     }
 }

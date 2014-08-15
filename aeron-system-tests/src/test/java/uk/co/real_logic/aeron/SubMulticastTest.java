@@ -135,7 +135,7 @@ public class SubMulticastTest
             subscription.close();
         }
 
-        SystemTestHelper.shutdownAndClose(consumingClient);
+        consumingClient.close();
         SystemTestHelper.shutdownAndClose(driver);
 
         if (null != senderChannel)

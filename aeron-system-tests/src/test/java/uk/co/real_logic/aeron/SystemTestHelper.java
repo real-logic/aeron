@@ -22,8 +22,10 @@ import java.util.function.IntConsumer;
 
 public class SystemTestHelper
 {
-    public static void executeUntil(final BooleanSupplier condition, final IntConsumer body,
-                                    final int maxIterations, final long timeout)
+    public static void executeUntil(final BooleanSupplier condition,
+                                    final IntConsumer body,
+                                    final int maxIterations,
+                                    final long timeout)
     {
         final long start = System.nanoTime();
         long end;
@@ -35,15 +37,6 @@ public class SystemTestHelper
             end = System.nanoTime();
         }
         while (!condition.getAsBoolean() && ((end - start) < timeout) && iteration++ < maxIterations);
-    }
-
-    public static void shutdownAndClose(final Aeron aeron) throws Exception
-    {
-        if (null != aeron)
-        {
-            aeron.shutdown();
-            aeron.close();
-        }
     }
 
     public static void shutdownAndClose(final MediaDriver driver) throws Exception

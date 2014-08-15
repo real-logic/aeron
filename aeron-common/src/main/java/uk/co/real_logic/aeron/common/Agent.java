@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.common;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 
 /**
@@ -24,6 +25,7 @@ public abstract class Agent implements Runnable, AutoCloseable
 {
     private final IdleStrategy idleStrategy;
     private final Consumer<Exception> exceptionHandler;
+    private volatile CountDownLatch latch;
 
     private volatile boolean running;
 
@@ -43,10 +45,12 @@ public abstract class Agent implements Runnable, AutoCloseable
     /**
      * Run the Agent logic
      *
-     * This method does not return until the run loop is stopped via {@link #stop()} or {@link #close()}.
+     * This method does not return until the run loop is stopped via {@link #close()} or {@link Thread#interrupt()}.
      */
     public void run()
     {
+        latch = new CountDownLatch(1);
+
         while (running)
         {
             try
@@ -54,11 +58,17 @@ public abstract class Agent implements Runnable, AutoCloseable
                 final int workCount = doWork();
                 idleStrategy.idle(workCount);
             }
+            catch (final InterruptedException ignore)
+            {
+                break;
+            }
             catch (final Exception ex)
             {
                 exceptionHandler.accept(ex);
             }
         }
+
+        latch.countDown();
     }
 
     /**
@@ -68,6 +78,17 @@ public abstract class Agent implements Runnable, AutoCloseable
     {
         running = false;
 
+        try
+        {
+            if (null != latch)
+            {
+                latch.await();
+            }
+        }
+        catch (final InterruptedException ignore)
+        {
+        }
+
         onClose();
     }
 
@@ -76,14 +97,6 @@ public abstract class Agent implements Runnable, AutoCloseable
      */
     public void onClose()
     {
-    }
-
-    /**
-     * Stop the running agent. Not waiting for the agent run loop to stop before returning.
-     */
-    public void stop()
-    {
-        running = false;
     }
 
     /**

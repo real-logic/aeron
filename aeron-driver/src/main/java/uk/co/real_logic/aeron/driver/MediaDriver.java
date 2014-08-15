@@ -284,7 +284,7 @@ public class MediaDriver implements AutoCloseable
             return;
         }
 
-        agent.stop();
+        agent.close();
         thread.interrupt();
 
         do
@@ -315,7 +315,7 @@ public class MediaDriver implements AutoCloseable
         {
             try
             {
-                agent.stop();
+                agent.close();
 
                 future.get(100, TimeUnit.MILLISECONDS);
 

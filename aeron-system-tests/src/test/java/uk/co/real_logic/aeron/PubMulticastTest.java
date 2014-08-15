@@ -114,7 +114,7 @@ public class PubMulticastTest
             publication.release();
         }
 
-        SystemTestHelper.shutdownAndClose(producingClient);
+        producingClient.close();
         SystemTestHelper.shutdownAndClose(driver);
 
         if (null != receiverChannel)

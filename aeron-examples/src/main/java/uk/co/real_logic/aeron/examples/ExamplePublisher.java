@@ -44,11 +44,11 @@ public class ExamplePublisher
         final Aeron.Context context = new Aeron.Context();
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? ExampleUtil.createEmbeddedMediaDriver() : null;
-        final Aeron aeron = ExampleUtil.createAeron(context, executor);
 
         System.out.println("Publishing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
-        try (final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID, 0))
+        try (final Aeron aeron = ExampleUtil.createAeron(context, executor);
+             final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID, 0))
         {
             for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
             {
@@ -71,14 +71,11 @@ public class ExamplePublisher
             }
         }
 
-        aeron.shutdown();
-
         if (null != driver)
         {
             driver.shutdown();
         }
 
-        CloseHelper.quietClose(aeron);
         CloseHelper.quietClose(driver);
         executor.shutdown();
     }

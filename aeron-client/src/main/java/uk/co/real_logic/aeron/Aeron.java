@@ -27,9 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 import static uk.co.real_logic.aeron.common.IoUtil.mapExistingFile;
@@ -48,8 +46,6 @@ public final class Aeron implements AutoCloseable, Runnable
     private final ClientConductor conductor;
     private final Context savedCtx;
 
-    private Future conductorFuture;
-
     private Aeron(final Context ctx)
     {
         try
@@ -63,11 +59,11 @@ public final class Aeron implements AutoCloseable, Runnable
 
         final DriverProxy driverProxy = new DriverProxy(ctx.toDriverBuffer);
         final Signal correlationSignal = new Signal();
-        final DriverBroadcastReceiver receiver = new DriverBroadcastReceiver(ctx.toClientBuffer, ctx.errorHandler);
+        final DriverBroadcastReceiver broadcastReceiver = new DriverBroadcastReceiver(ctx.toClientBuffer, ctx.errorHandler);
         final TimerWheel wheel =
             new TimerWheel(CONDUCTOR_TICK_DURATION_US, TimeUnit.MICROSECONDS, CONDUCTOR_TICKS_PER_WHEEL);
 
-        conductor = new ClientConductor(receiver,
+        conductor = new ClientConductor(broadcastReceiver,
                                         ctx.bufferManager,
                                         ctx.countersBuffer(),
                                         driverProxy,
@@ -97,33 +93,7 @@ public final class Aeron implements AutoCloseable, Runnable
      */
     public void invoke(final ExecutorService executor)
     {
-        conductorFuture = executor.submit(conductor);
-    }
-
-    /**
-     * Stop running Aeron {@link Agent}s. Waiting for termination if started from an executor.
-     *
-     * @throws Exception
-     */
-    public void shutdown() throws Exception
-    {
-        if (null != conductorFuture)
-        {
-            conductor.stop();
-
-            try
-            {
-                conductorFuture.get(100, TimeUnit.MILLISECONDS);
-            }
-            catch (final TimeoutException ex)
-            {
-                conductorFuture.cancel(true);
-            }
-        }
-        else
-        {
-            conductor.stop();
-        }
+        executor.submit(conductor);
     }
 
     /**

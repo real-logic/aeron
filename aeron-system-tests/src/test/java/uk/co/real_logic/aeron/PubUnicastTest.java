@@ -110,7 +110,7 @@ public class PubUnicastTest
             publication.release();
         }
 
-        SystemTestHelper.shutdownAndClose(producingClient);
+        producingClient.close();
         SystemTestHelper.shutdownAndClose(driver);
 
         if (null != receiverChannel)

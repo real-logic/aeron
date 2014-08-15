@@ -39,6 +39,8 @@ import java.util.function.Supplier;
 
 import static uk.co.real_logic.aeron.common.ErrorCode.*;
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.*;
+import static uk.co.real_logic.aeron.driver.Configuration.RETRANS_UNICAST_DELAY_DEFAULT_NS;
+import static uk.co.real_logic.aeron.driver.Configuration.RETRANS_UNICAST_LINGER_DEFAULT_NS;
 import static uk.co.real_logic.aeron.driver.MediaDriver.*;
 
 /**
@@ -64,8 +66,8 @@ public class DriverConductor extends Agent
     /**
      * Source uses same for unicast and multicast. For now.
      */
-    public static final FeedbackDelayGenerator RETRANS_UNICAST_DELAY_GENERATOR = () -> Configuration.RETRANS_UNICAST_DELAY_DEFAULT_NS;
-    public static final FeedbackDelayGenerator RETRANS_UNICAST_LINGER_GENERATOR = () -> Configuration.RETRANS_UNICAST_LINGER_DEFAULT_NS;
+    public static final FeedbackDelayGenerator RETRANS_UNICAST_DELAY_GENERATOR = () -> RETRANS_UNICAST_DELAY_DEFAULT_NS;
+    public static final FeedbackDelayGenerator RETRANS_UNICAST_LINGER_GENERATOR = () -> RETRANS_UNICAST_LINGER_DEFAULT_NS;
 
     private final OneToOneConcurrentArrayQueue<? super Object> commandQueue;
     private final ReceiverProxy receiverProxy;
@@ -128,14 +130,10 @@ public class DriverConductor extends Agent
 
         timerWheel = ctx.conductorTimerWheel();
         heartbeatTimer = newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheck);
-        publicationCheckTimer =
-            newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onCheckPublications);
-        subscriptionCheckTimer =
-            newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onCheckSubscriptions);
-        connectionCheckTimer =
-            newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onCheckConnections);
-        clientLivenessCheckTimer =
-            newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onLivenessCheckClients);
+        publicationCheckTimer = newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onCheckPublications);
+        subscriptionCheckTimer = newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onCheckSubscriptions);
+        connectionCheckTimer = newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onCheckConnections);
+        clientLivenessCheckTimer = newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onLivenessCheckClients);
 
         publications = ctx.publications();
         subscriptions = ctx.subscriptions();
@@ -181,7 +179,7 @@ public class DriverConductor extends Agent
 
     public void close()
     {
-        stop();
+        super.close();
 
         termBuffersFactory.close();
         publications.forEach(DriverPublication::close);

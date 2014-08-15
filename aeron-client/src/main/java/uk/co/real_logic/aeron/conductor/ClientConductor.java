@@ -111,11 +111,6 @@ public class ClientConductor extends Agent implements DriverListener
         return workCount;
     }
 
-    public void close()
-    {
-        stop();
-    }
-
     public synchronized Publication addPublication(final String channel, final int sessionId, final int streamId)
     {
         Publication publication = publicationMap.get(channel, sessionId, streamId);

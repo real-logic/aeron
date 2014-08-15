@@ -29,11 +29,11 @@ import java.util.function.Consumer;
 /**
  * Event Log Reader
  */
-public class EventReader extends Agent implements AutoCloseable
+public class EventReader extends Agent
 {
-    private MappedByteBuffer buffer;
-    private ManyToOneRingBuffer ringBuffer;
-    private Consumer<String> handler;
+    private final MappedByteBuffer buffer;
+    private final ManyToOneRingBuffer ringBuffer;
+    private final Consumer<String> handler;
 
     public EventReader(final Context context)
     {
@@ -73,7 +73,7 @@ public class EventReader extends Agent implements AutoCloseable
         }
         catch (final Exception ex)
         {
-            ex.printStackTrace();
+            throw new RuntimeException(ex);
         }
     }
 
@@ -84,8 +84,9 @@ public class EventReader extends Agent implements AutoCloseable
                 handler.accept(EventCode.get(typeId).decode(buffer, index, length)), limit);
     }
 
-    public void close() throws Exception
+    public void close()
     {
+        super.close();
         IoUtil.unmap(buffer);
     }
 

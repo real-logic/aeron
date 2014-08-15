@@ -49,25 +49,22 @@ public abstract class Agent implements Runnable, AutoCloseable
     {
         while (running)
         {
-            int workCount;
             try
             {
-                workCount = doWork();
+                final int workCount = doWork();
+                idleStrategy.idle(workCount);
             }
             catch (final Exception ex)
             {
                 exceptionHandler.accept(ex);
-                workCount = 0;
             }
-
-            idleStrategy.idle(workCount);
         }
     }
 
     /**
      * Stop the running Agent and cleanup. Not waiting for the agent run loop to stop before returning.
      */
-    public void close() throws Exception
+    public void close()
     {
         running = false;
     }

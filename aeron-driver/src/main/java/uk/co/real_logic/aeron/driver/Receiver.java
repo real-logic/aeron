@@ -82,14 +82,6 @@ public class Receiver extends Agent
     }
 
     /**
-     * Close Receiver thread down. Returns immediately.
-     */
-    public void close()
-    {
-        stop();
-    }
-
-    /**
      * Return the {@link NioSelector} in use by the thread
      *
      * @return the {@link NioSelector} in use by the thread

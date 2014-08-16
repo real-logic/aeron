@@ -80,7 +80,7 @@ public class RateReporter implements Runnable
     /**
      * Signal the run loop to exit. Does not block.
      */
-    public void done()
+    public void halt()
     {
         done = true;
     }

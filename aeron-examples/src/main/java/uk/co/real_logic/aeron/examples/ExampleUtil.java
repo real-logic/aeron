@@ -42,7 +42,7 @@ public class ExampleUtil
     {
         final MediaDriver mediaDriver = new MediaDriver();
 
-        mediaDriver.invokeEmbedded();
+        mediaDriver.start();
 
         return mediaDriver;
     }
@@ -60,21 +60,7 @@ public class ExampleUtil
     {
         final Aeron aeron = Aeron.newClient(context);
 
-        aeron.invoke(executor);
-
-        return aeron;
-    }
-
-    /**
-     * Create an {@link Aeron} instance with the given context
-     *
-     * @param context to use for instance creation
-     * @return {@link Aeron} instance
-     * @throws Exception
-     */
-    public static Aeron createAeron(final Aeron.Context context) throws Exception
-    {
-        final Aeron aeron = Aeron.newClient(context);
+        aeron.start(executor);
 
         return aeron;
     }

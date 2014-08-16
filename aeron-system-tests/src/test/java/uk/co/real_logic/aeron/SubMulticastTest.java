@@ -116,8 +116,8 @@ public class SubMulticastTest
         consumingClient = Aeron.newClient(newAeronContext());
 
         executorService = Executors.newSingleThreadExecutor();
-        driver.invokeEmbedded();
-        consumingClient.invoke(executorService);
+        driver.start();
+        consumingClient.start(executorService);
 
         subscription = consumingClient.addSubscription(URI, STREAM_ID, saveFrames);
     }
@@ -136,7 +136,7 @@ public class SubMulticastTest
         }
 
         consumingClient.close();
-        SystemTestHelper.shutdownAndClose(driver);
+        driver.close();
 
         if (null != senderChannel)
         {

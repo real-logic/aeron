@@ -111,8 +111,8 @@ public class SubUnicastTest
 
         executorService = Executors.newSingleThreadExecutor();
 
-        driver.invokeEmbedded();
-        consumingClient.invoke(executorService);
+        driver.start();
+        consumingClient.start(executorService);
 
         subscription = consumingClient.addSubscription(URI, STREAM_ID, saveFrames);
     }
@@ -131,7 +131,7 @@ public class SubUnicastTest
         }
 
         consumingClient.close();
-        SystemTestHelper.shutdownAndClose(driver);
+        driver.close();
 
         if (null != senderChannel)
         {

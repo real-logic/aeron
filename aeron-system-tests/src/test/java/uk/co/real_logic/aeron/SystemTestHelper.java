@@ -15,8 +15,6 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.driver.MediaDriver;
-
 import java.util.function.BooleanSupplier;
 import java.util.function.IntConsumer;
 
@@ -37,14 +35,5 @@ public class SystemTestHelper
             end = System.nanoTime();
         }
         while (!condition.getAsBoolean() && ((end - start) < timeout) && iteration++ < maxIterations);
-    }
-
-    public static void shutdownAndClose(final MediaDriver driver) throws Exception
-    {
-        if (null != driver)
-        {
-            driver.shutdown();
-            driver.close();
-        }
     }
 }

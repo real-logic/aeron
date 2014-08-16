@@ -43,53 +43,45 @@ public class StreamingPublisher
 
     public static void main(final String[] args) throws Exception
     {
-        final ExecutorService executor = Executors.newFixedThreadPool(2);
-
-        final Aeron.Context context = new Aeron.Context();
         System.out.println("Streaming " + NUMBER_OF_MESSAGES + " messages of size " + MESSAGE_LENGTH +
-            " bytes to " + CHANNEL + " on stream Id " + STREAM_ID);
+                           " bytes to " + CHANNEL + " on stream Id " + STREAM_ID);
 
+        final ExecutorService executor = Executors.newFixedThreadPool(2);
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? ExampleUtil.createEmbeddedMediaDriver() : null;
-        final Aeron aeron = ExampleUtil.createAeron(context, executor);
-        final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID, 0);
-        final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), ExampleUtil::printRate);
+        final Aeron.Context context = new Aeron.Context();
 
-        // report the rate we are sending
-        executor.execute(reporter);
-
-        for (long i = 0; i < NUMBER_OF_MESSAGES; i++)
+        try (final Aeron aeron = ExampleUtil.createAeron(context, executor);
+             final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID, 0))
         {
-            ATOMIC_BUFFER.putLong(0, i);
+            final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), ExampleUtil::printRate);
 
-            while (!publication.offer(ATOMIC_BUFFER, 0, ATOMIC_BUFFER.capacity()))
+            // report the rate we are sending
+            executor.execute(reporter);
+
+            for (long i = 0; i < NUMBER_OF_MESSAGES; i++)
             {
-                Thread.yield();
+                ATOMIC_BUFFER.putLong(0, i);
+
+                while (!publication.offer(ATOMIC_BUFFER, 0, ATOMIC_BUFFER.capacity()))
+                {
+                    Thread.yield();
+                }
+
+                reporter.onMessage(1, ATOMIC_BUFFER.capacity());
             }
 
-            reporter.onMessage(1, ATOMIC_BUFFER.capacity());
+            System.out.println("Done streaming.");
+
+            if (0 < LINGER_TIMEOUT_MS)
+            {
+                System.out.println("Lingering for " + LINGER_TIMEOUT_MS + " milliseconds...");
+                Thread.sleep(LINGER_TIMEOUT_MS);
+            }
+
+            reporter.halt();
         }
 
-        System.out.println("Done streaming.");
-
-        if (0 < LINGER_TIMEOUT_MS)
-        {
-            System.out.println("Lingering for " + LINGER_TIMEOUT_MS + " milliseconds...");
-            Thread.sleep(LINGER_TIMEOUT_MS);
-        }
-
-        publication.release();
-
-        reporter.done();
-        aeron.close();
-
-        if (null != driver)
-        {
-            driver.shutdown();
-        }
-
-        CloseHelper.quietClose(aeron);
         CloseHelper.quietClose(driver);
-
         executor.shutdown();
     }
 }

@@ -78,6 +78,7 @@ public final class Aeron implements AutoCloseable, Runnable
         this.savedCtx = ctx;
     }
 
+    // TODO: Should this not be start and create a thread?
     /**
      * Run Aeron {@link Agent}s from the calling thread.
      */
@@ -87,11 +88,11 @@ public final class Aeron implements AutoCloseable, Runnable
     }
 
     /**
-     * Invoke Aeron {@link uk.co.real_logic.aeron.common.Agent}s from the executor.
+     * Run Aeron {@link uk.co.real_logic.aeron.common.Agent}s from a provided executor.
      *
-     * @param executor to execute from
+     * @param executor to start from
      */
-    public void invoke(final ExecutorService executor)
+    public void start(final ExecutorService executor)
     {
         executor.submit(conductor);
     }

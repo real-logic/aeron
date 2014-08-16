@@ -70,17 +70,10 @@ public class MediaDriver implements AutoCloseable
     private final EventReader eventReader;
     private final Context ctx;
 
-    private ExecutorService executor;
-
     private Thread conductorThread;
     private Thread senderThread;
     private Thread receiverThread;
     private Thread eventReaderThread;
-
-    private Future conductorFuture;
-    private Future senderFuture;
-    private Future receiverFuture;
-    private Future eventReaderFuture;
 
     /**
      * Start Media Driver as a stand-alone process.
@@ -91,7 +84,7 @@ public class MediaDriver implements AutoCloseable
     {
         try (final MediaDriver mediaDriver = new MediaDriver())
         {
-            mediaDriver.invokeDaemonized();
+            mediaDriver.start();
 
             while (true)
             {
@@ -127,7 +120,7 @@ public class MediaDriver implements AutoCloseable
 
         final EventReader.Context readerCtx =
             new EventReader.Context()
-                .idleStrategy(Configuration.agentIdleStrategy())
+                .idleStrategy(Configuration.eventReaderIdleStrategy())
                 .deleteOnExit(ctx.dirsDeleteOnExit())
                 .eventHandler(ctx.eventConsumer);
 
@@ -151,87 +144,51 @@ public class MediaDriver implements AutoCloseable
     }
 
     /**
-     * Spin up all {@link Agent}s as Daemon threads.
+     * Start up all {@link Agent}s as Daemon threads.
      */
-    private void invokeDaemonized()
+    public void start()
     {
         conductorThread = new Thread(conductor);
-        invokeDaemonized(conductorThread, "driver-conductor");
+        startThread(conductorThread, "driver-conductor");
 
         senderThread = new Thread(sender);
-        invokeDaemonized(senderThread, "driver-sender");
+        startThread(senderThread, "driver-sender");
 
         receiverThread = new Thread(receiver);
-        invokeDaemonized(receiverThread, "driver-receiver");
+        startThread(receiverThread, "driver-receiver");
 
         eventReaderThread = new Thread(eventReader);
-        invokeDaemonized(eventReaderThread, "event-reader");
+        startThread(eventReaderThread, "event-reader");
     }
 
     /**
-     * Spin up specific thread as a Daemon thread.
+     * Spin up specific thread.
      *
-     * @param agentThread thread to Daemonize
+     * @param agentThread thread to start
      * @param name        to associate with thread
      */
-    private void invokeDaemonized(final Thread agentThread, final String name)
+    private void startThread(final Thread agentThread, final String name)
     {
         agentThread.setName(name);
-        agentThread.setDaemon(true);
         agentThread.start();
     }
 
     /**
-     * Invoke and start all {@link uk.co.real_logic.aeron.common.Agent}s internal to the media driver using
-     * a fixed size thread pool internal to the media driver.
-     */
-    public void invokeEmbedded()
-    {
-        executor = Executors.newFixedThreadPool(4);
-
-        conductorFuture = executor.submit(conductor);
-        senderFuture = executor.submit(sender);
-        receiverFuture = executor.submit(receiver);
-        eventReaderFuture = executor.submit(eventReader);
-    }
-
-    /**
-     * Stop running {@link uk.co.real_logic.aeron.common.Agent}s. Waiting for each to finish.
-     *
-     * @throws Exception
-     */
-    public void shutdown() throws Exception
-    {
-        shutdown(senderThread, sender);
-        shutdown(receiverThread, receiver);
-        shutdown(conductorThread, conductor);
-        shutdown(eventReaderThread, eventReader);
-
-        if (null != executor)
-        {
-            shutdownExecutorThread(senderFuture, sender);
-            shutdownExecutorThread(receiverFuture, receiver);
-            shutdownExecutorThread(conductorFuture, conductor);
-            shutdownExecutorThread(eventReaderFuture, eventReader);
-
-            executor.shutdown();
-        }
-    }
-
-    /**
-     * Close and cleanup all resources for media driver
+     * Shutdown the media driver by stopping all threads and freeing resources.
      */
     public void close()
     {
         try
         {
-            receiver.close();
+            shutdown(senderThread, sender);
+            shutdown(receiverThread, receiver);
+            shutdown(conductorThread, conductor);
+
             receiver.nioSelector().selectNowWithoutProcessing();
-            sender.close();
-            conductor.close();
             conductor.nioSelector().selectNowWithoutProcessing();
             ctx.close();
-            eventReader.close();
+
+            shutdown(eventReaderThread, eventReader);
             deleteDirectories();
         }
         catch (final Exception ex)
@@ -302,45 +259,6 @@ public class MediaDriver implements AutoCloseable
             {
                 System.err.println("Daemon Thread <" + thread.getName() + "> interrupted stop. Retrying...");
                 thread.interrupt();
-            }
-        }
-        while (true);
-    }
-
-    private void shutdownExecutorThread(final Future future, final Agent agent)
-    {
-        int timeouts = 0;
-
-        do
-        {
-            try
-            {
-                agent.close();
-
-                future.get(100, TimeUnit.MILLISECONDS);
-
-                if (future.isDone())
-                {
-                    break;
-                }
-            }
-            catch (final TimeoutException ex)
-            {
-                System.err.println("Executor thread timeout. Retrying...");
-
-                if (++timeouts > 5)
-                {
-                    System.err.println("... cancelling thread.");
-                    future.cancel(true);
-                }
-            }
-            catch (final CancellationException ex)
-            {
-                break;
-            }
-            catch (final Exception ex)
-            {
-                ctx.eventLogger().logException(ex);
             }
         }
         while (true);

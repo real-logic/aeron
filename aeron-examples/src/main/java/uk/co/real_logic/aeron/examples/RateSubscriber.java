@@ -40,20 +40,19 @@ public class RateSubscriber
     public static void main(final String[] args) throws Exception
     {
         final ExecutorService executor = Executors.newFixedThreadPool(2);
-        final Aeron.Context aeronContext = new Aeron.Context();
-
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? ExampleUtil.createEmbeddedMediaDriver() : null;
 
-        aeronContext.newConnectionHandler(ExampleUtil::printNewConnection);
-        aeronContext.inactiveConnectionHandler(ExampleUtil::printInactiveConnection);
-
-        final Aeron aeron = ExampleUtil.createAeron(aeronContext, executor);
+        final Aeron.Context ctx =
+            new Aeron.Context()
+                .newConnectionHandler(ExampleUtil::printNewConnection)
+                .inactiveConnectionHandler(ExampleUtil::printInactiveConnection);
 
         System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), ExampleUtil::printRate);
 
-        try (final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, rateReporterHandler(reporter)))
+        try (final Aeron aeron = ExampleUtil.createAeron(ctx, executor);
+             final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, rateReporterHandler(reporter)))
         {
             executor.execute(() -> ExampleUtil.subscriberLoop(FRAME_COUNT_LIMIT).accept(subscription));
 
@@ -61,9 +60,7 @@ public class RateSubscriber
             reporter.run();
         }
 
-        CloseHelper.quietClose(aeron);
         CloseHelper.quietClose(driver);
-
         executor.shutdown();
     }
 }

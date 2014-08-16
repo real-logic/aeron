@@ -75,9 +75,9 @@ public class PubAndSubTest
         publishingClient = Aeron.newClient(publishingAeronContext);
         subscribingClient = Aeron.newClient(subscribingAeronContext);
 
-        driver.invokeEmbedded();
-        publishingClient.invoke(executorService);
-        subscribingClient.invoke(executorService);
+        driver.start();
+        publishingClient.start(executorService);
+        subscribingClient.start(executorService);
 
         publication = publishingClient.addPublication(channel, STREAM_ID, SESSION_ID);
         subscription = subscribingClient.addSubscription(channel, STREAM_ID, dataHandler);
@@ -98,7 +98,7 @@ public class PubAndSubTest
 
         subscribingClient.close();
         publishingClient.close();
-        SystemTestHelper.shutdownAndClose(driver);
+        driver.close();
 
         if (null != executorService)
         {

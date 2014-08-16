@@ -44,13 +44,13 @@ public class ClientAdminSoakTestRunner
         SoakTestHelper.useSharedMemoryOnLinux();
 
         final MediaDriver driver = new MediaDriver();
-        driver.invokeEmbedded();
+        driver.start();
 
         final Aeron publishingClient = Aeron.newClient(new Aeron.Context());
         final Aeron consumingClient = Aeron.newClient(new Aeron.Context());
 
-        consumingClient.invoke(EXECUTOR);
-        publishingClient.invoke(EXECUTOR);
+        consumingClient.start(EXECUTOR);
+        publishingClient.start(EXECUTOR);
 
         for (int i = 0; true; i++)
         {

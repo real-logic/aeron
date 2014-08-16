@@ -292,6 +292,12 @@ public class Configuration
         }
     }
 
+    public static IdleStrategy eventReaderIdleStrategy()
+    {
+        return new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
+                                       AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS);
+    }
+
     public static IdleStrategy agentIdleStrategy()
     {
         switch (AGENT_IDLE_STRATEGY)
@@ -307,7 +313,7 @@ public class Configuration
                 }
                 catch (final Exception ex)
                 {
-                   throw new RuntimeException(ex);
+                    throw new RuntimeException(ex);
                 }
         }
     }

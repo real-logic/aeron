@@ -45,18 +45,16 @@ public class ExampleSubscriber
         aeronContext.newConnectionHandler(ExampleUtil::printNewConnection);
         aeronContext.inactiveConnectionHandler(ExampleUtil::printInactiveConnection);
 
-        final Aeron aeron = ExampleUtil.createAeron(aeronContext, executor);
-
         System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
         // subscription for channel Id 1
-        try (final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, printStringMessage(STREAM_ID)))
+        try (final Aeron aeron = ExampleUtil.createAeron(aeronContext, executor);
+             final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, printStringMessage(STREAM_ID)))
         {
             // run the subscriber thread from here
             ExampleUtil.subscriberLoop(FRAME_COUNT_LIMIT).accept(subscription);
         }
 
-        CloseHelper.quietClose(aeron);
         CloseHelper.quietClose(driver);
         executor.shutdown();
     }

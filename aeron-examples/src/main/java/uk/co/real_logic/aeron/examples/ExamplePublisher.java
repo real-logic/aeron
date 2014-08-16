@@ -71,11 +71,6 @@ public class ExamplePublisher
             }
         }
 
-        if (null != driver)
-        {
-            driver.shutdown();
-        }
-
         CloseHelper.quietClose(driver);
         executor.shutdown();
     }

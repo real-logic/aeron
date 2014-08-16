@@ -15,28 +15,20 @@
  */
 package uk.co.real_logic.aeron.examples;
 
-import uk.co.real_logic.aeron.common.BackoffIdleStrategy;
 import uk.co.real_logic.aeron.common.event.EventReader;
-
-import java.util.concurrent.TimeUnit;
+import uk.co.real_logic.aeron.driver.Configuration;
 
 /**
  * Simple application for reading of event log
  */
 public class EventReaderApp
 {
-    private static final long AGENT_IDLE_MAX_SPINS = 100;
-    private static final long AGENT_IDLE_MAX_YIELDS = 100;
-    private static final long AGENT_IDLE_MIN_PARK_NS = TimeUnit.NANOSECONDS.toNanos(10);
-    private static final long AGENT_IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(100);
-
     public static void main(final String args[]) throws Exception
     {
         final EventReader.Context ctx =
             new EventReader.Context()
                 .deleteOnExit(true)
-                .idleStrategy(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                                                      AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS))
+                .idleStrategy(Configuration.eventReaderIdleStrategy())
                 .eventHandler(System.out::println);
 
         try (final EventReader eventReader = new EventReader(ctx))

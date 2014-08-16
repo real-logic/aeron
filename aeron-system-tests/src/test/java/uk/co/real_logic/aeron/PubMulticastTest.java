@@ -95,8 +95,8 @@ public class PubMulticastTest
 
         executorService = Executors.newSingleThreadExecutor();
 
-        driver.invokeEmbedded();
-        producingClient.invoke(executorService);
+        driver.start();
+        producingClient.start(executorService);
 
         publication = producingClient.addPublication(URI, STREAM_ID, SESSION_ID);
     }
@@ -115,7 +115,7 @@ public class PubMulticastTest
         }
 
         producingClient.close();
-        SystemTestHelper.shutdownAndClose(driver);
+        driver.close();
 
         if (null != receiverChannel)
         {

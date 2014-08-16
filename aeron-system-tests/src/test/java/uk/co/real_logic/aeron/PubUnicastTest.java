@@ -91,8 +91,8 @@ public class PubUnicastTest
 
         payload.putBytes(0, PAYLOAD);
 
-        driver.invokeEmbedded();
-        producingClient.invoke(executorService);
+        driver.start();
+        producingClient.start(executorService);
 
         publication = producingClient.addPublication(URI, STREAM_ID, SESSION_ID);
     }
@@ -111,7 +111,7 @@ public class PubUnicastTest
         }
 
         producingClient.close();
-        SystemTestHelper.shutdownAndClose(driver);
+        driver.close();
 
         if (null != receiverChannel)
         {

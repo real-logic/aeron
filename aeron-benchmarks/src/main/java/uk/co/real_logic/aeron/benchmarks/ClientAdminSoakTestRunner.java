@@ -43,26 +43,24 @@ public class ClientAdminSoakTestRunner
     {
         SoakTestHelper.useSharedMemoryOnLinux();
 
-        final MediaDriver driver = new MediaDriver();
-        driver.start();
-
-        final Aeron publishingClient = Aeron.newClient(new Aeron.Context());
-        final Aeron consumingClient = Aeron.newClient(new Aeron.Context());
-
-        consumingClient.start(EXECUTOR);
-        publishingClient.start(EXECUTOR);
-
-        for (int i = 0; true; i++)
+        try (final MediaDriver driver = MediaDriver.launch();
+             final Aeron publishingClient = Aeron.newClient(new Aeron.Context());
+             final Aeron consumingClient = Aeron.newClient(new Aeron.Context()))
         {
-            SoakTestHelper.exchangeMessagesBetweenClients(publishingClient, consumingClient, PUBLISHING_BUFFER);
+            consumingClient.start(EXECUTOR);
+            publishingClient.start(EXECUTOR);
 
-            if ((i % 100) == 0)
+            for (int i = 0; true; i++)
             {
-                System.out.println("Completed Iteration " + i);
-            }
+                SoakTestHelper.exchangeMessagesBetweenClients(publishingClient, consumingClient, PUBLISHING_BUFFER);
 
-            Thread.yield();
+                if ((i % 100) == 0)
+                {
+                    System.out.println("Completed Iteration " + i);
+                }
+
+                Thread.yield();
+            }
         }
     }
-
 }

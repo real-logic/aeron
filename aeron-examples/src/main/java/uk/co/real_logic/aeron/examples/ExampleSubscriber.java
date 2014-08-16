@@ -40,7 +40,7 @@ public class ExampleSubscriber
         final ExecutorService executor = Executors.newFixedThreadPool(1);
         final Aeron.Context aeronContext = new Aeron.Context();
 
-        final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? ExampleUtil.createEmbeddedMediaDriver() : null;
+        final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
 
         aeronContext.newConnectionHandler(ExampleUtil::printNewConnection);
         aeronContext.inactiveConnectionHandler(ExampleUtil::printInactiveConnection);

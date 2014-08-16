@@ -85,13 +85,12 @@ public class PubUnicastTest
         ctx.termBufferSize(TERM_BUFFER_SIZE);
         ctx.dirsDeleteOnExit(true);
 
-        driver = new MediaDriver(ctx);
+        driver = MediaDriver.launch(ctx);
 
         producingClient = Aeron.newClient(newAeronContext());
 
         payload.putBytes(0, PAYLOAD);
 
-        driver.start();
         producingClient.start(executorService);
 
         publication = producingClient.addPublication(URI, STREAM_ID, SESSION_ID);

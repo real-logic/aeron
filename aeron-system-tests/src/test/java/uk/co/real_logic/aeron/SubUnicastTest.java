@@ -103,15 +103,13 @@ public class SubUnicastTest
 
         ctx.dirsDeleteOnExit(true);
 
-        driver = new MediaDriver(ctx);
+        driver = MediaDriver.launch(ctx);
 
         consumingClient = Aeron.newClient(newAeronContext());
 
         payload.putBytes(0, PAYLOAD);
 
         executorService = Executors.newSingleThreadExecutor();
-
-        driver.start();
         consumingClient.start(executorService);
 
         subscription = consumingClient.addSubscription(URI, STREAM_ID, saveFrames);

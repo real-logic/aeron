@@ -84,10 +84,9 @@ public class PubMulticastTest
         receiverChannel.setOption(StandardSocketOptions.IP_MULTICAST_IF, ifc);
 
         final MediaDriver.Context ctx = new MediaDriver.Context();
-
         ctx.dirsDeleteOnExit(true);
 
-        driver = new MediaDriver(ctx);
+        driver = MediaDriver.launch(ctx);
 
         producingClient = Aeron.newClient(newAeronContext());
 
@@ -95,7 +94,6 @@ public class PubMulticastTest
 
         executorService = Executors.newSingleThreadExecutor();
 
-        driver.start();
         producingClient.start(executorService);
 
         publication = producingClient.addPublication(URI, STREAM_ID, SESSION_ID);

@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron.common;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 
 import java.io.File;
-import java.io.IOException;
 
 import static java.lang.Boolean.getBoolean;
 import static java.lang.Integer.getInteger;
@@ -85,7 +84,7 @@ public class CommonContext implements AutoCloseable
         dirsDeleteOnExit(getBoolean(DIRS_DELETE_ON_EXIT_PROP_NAME));
     }
 
-    public CommonContext conclude() throws IOException
+    public CommonContext conclude()
     {
         toDriverFile(new File(adminDirName(), TO_DRIVER_FILE));
         toClientsFile(new File(adminDirName(), TO_CLIENTS_FILE));

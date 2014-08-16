@@ -29,15 +29,11 @@ import uk.co.real_logic.aeron.common.event.EventReader;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.MappedByteBuffer;
-import java.util.concurrent.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import static java.lang.Integer.getInteger;
-import static java.lang.Long.getLong;
 import static uk.co.real_logic.aeron.common.IoUtil.deleteIfExists;
 import static uk.co.real_logic.aeron.common.IoUtil.mapNewFile;
 
@@ -82,10 +78,8 @@ public class MediaDriver implements AutoCloseable
      */
     public static void main(final String[] args) throws Exception
     {
-        try (final MediaDriver mediaDriver = new MediaDriver())
+        try (final MediaDriver mediaDriver = MediaDriver.launch())
         {
-            mediaDriver.start();
-
             while (true)
             {
                 Thread.sleep(1000);
@@ -94,21 +88,11 @@ public class MediaDriver implements AutoCloseable
     }
 
     /**
-     * Construct a media driver with default parameters.
-     *
-     * @throws Exception
-     */
-    public MediaDriver() throws Exception
-    {
-        this(new Context());
-    }
-
-    /**
      * Construct a media driver with the given context.
      *
      * @param context for the media driver parameters
      */
-    public MediaDriver(final Context context) throws Exception
+    private MediaDriver(final Context context)
     {
         this.ctx = context;
 
@@ -130,9 +114,7 @@ public class MediaDriver implements AutoCloseable
            .multicastSenderFlowControl(UnicastSenderControlStrategy::new)
            .publications(new AtomicArray<>())
            .subscriptions(new AtomicArray<>())
-           .conductorTimerWheel(new TimerWheel(Configuration.CONDUCTOR_TICK_DURATION_US,
-                                               TimeUnit.MICROSECONDS,
-                                               Configuration.CONDUCTOR_TICKS_PER_WHEEL))
+           .conductorTimerWheel(Configuration.newConductorTimerWheel())
            .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
            .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
            .senderCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
@@ -144,33 +126,24 @@ public class MediaDriver implements AutoCloseable
     }
 
     /**
-     * Start up all {@link Agent}s as Daemon threads.
+     * Launch a MediaDriver embedded in the current process with default configuration.
+     *
+     * @return the newly started MediaDriver.
      */
-    public void start()
+    public static MediaDriver launch()
     {
-        conductorThread = new Thread(conductor);
-        startThread(conductorThread, "driver-conductor");
-
-        senderThread = new Thread(sender);
-        startThread(senderThread, "driver-sender");
-
-        receiverThread = new Thread(receiver);
-        startThread(receiverThread, "driver-receiver");
-
-        eventReaderThread = new Thread(eventReader);
-        startThread(eventReaderThread, "event-reader");
+        return launch(new Context());
     }
 
     /**
-     * Spin up specific thread.
+     * Launch a MediaDriver embedded in the current process and provided a configuration context.
      *
-     * @param agentThread thread to start
-     * @param name        to associate with thread
+     * @param ctx containing the configuration options.
+     * @return the newly created MediaDriver.
      */
-    private void startThread(final Thread agentThread, final String name)
+    public static MediaDriver launch(final Context ctx)
     {
-        agentThread.setName(name);
-        agentThread.start();
+        return new MediaDriver(ctx).start();
     }
 
     /**
@@ -197,7 +170,30 @@ public class MediaDriver implements AutoCloseable
         }
     }
 
-    private void ensureDirectoriesAreRecreated() throws Exception
+    private MediaDriver start()
+    {
+        conductorThread = new Thread(conductor);
+        startThread(conductorThread, "driver-conductor");
+
+        senderThread = new Thread(sender);
+        startThread(senderThread, "sender");
+
+        receiverThread = new Thread(receiver);
+        startThread(receiverThread, "receiver");
+
+        eventReaderThread = new Thread(eventReader);
+        startThread(eventReaderThread, "event-reader");
+
+        return this;
+    }
+
+    private void startThread(final Thread agentThread, final String name)
+    {
+        agentThread.setName(name);
+        agentThread.start();
+    }
+
+    private void ensureDirectoriesAreRecreated()
     {
         final BiConsumer<String, String> callback =
             (path, name) ->
@@ -217,20 +213,9 @@ public class MediaDriver implements AutoCloseable
     {
         if (ctx.dirsDeleteOnExit())
         {
-            if (null != adminDirFile)
-            {
-                IoUtil.delete(adminDirFile, false);
-            }
-
-            if (null != dataDirFile)
-            {
-                IoUtil.delete(dataDirFile, false);
-            }
-
-            if (null != countersDirFile)
-            {
-                IoUtil.delete(countersDirFile, false);
-            }
+            IoUtil.delete(adminDirFile, false);
+            IoUtil.delete(dataDirFile, false);
+            IoUtil.delete(countersDirFile, false);
         }
     }
 
@@ -302,107 +287,113 @@ public class MediaDriver implements AutoCloseable
 
         public Context()
         {
-            termBufferSize(getInteger(Configuration.TERM_BUFFER_SZ_PROP_NAME, Configuration.TERM_BUFFER_SZ_DEFAULT));
-            initialWindowSize(getInteger(Configuration.INITIAL_WINDOW_SIZE_PROP_NAME, Configuration.INITIAL_WINDOW_SIZE_DEFAULT));
-            statusMessageTimeout(
-                getLong(Configuration.STATUS_MESSAGE_TIMEOUT_PROP_NAME, Configuration.STATUS_MESSAGE_TIMEOUT_DEFAULT_NS));
+            termBufferSize(Configuration.termBufferSize());
+            initialWindowSize(Configuration.initialWindowSize());
+            statusMessageTimeout(Configuration.statusMessageTimeout());
 
             eventConsumer = System.out::println;
             warnIfDirectoriesExist = true;
         }
 
-        public Context conclude() throws IOException
+        public Context conclude()
         {
-            super.conclude();
-
-            if (null == eventLogger)
+            try
             {
-                eventLogger = new EventLogger(
-                    new File(System.getProperty(EventConfiguration.LOCATION_PROPERTY_NAME, EventConfiguration.LOCATION_DEFAULT)),
-                    EventConfiguration.getEnabledEventCodes());
-            }
+                super.conclude();
 
-            receiverNioSelector(new NioSelector());
-            conductorNioSelector(new NioSelector());
-
-            Configuration.validateTermBufferSize(termBufferSize());
-            Configuration.validateInitialWindowSize(initialWindowSize(), mtuLength());
-
-            // clean out existing files. We've warned about them already.
-            deleteIfExists(toClientsFile());
-            deleteIfExists(toDriverFile());
-
-            if (dirsDeleteOnExit())
-            {
-                toClientsFile().deleteOnExit();
-                toDriverFile().deleteOnExit();
-            }
-
-            toClientsBuffer = mapNewFile(toClientsFile(), Configuration.TO_CLIENTS_BUFFER_SZ);
-
-            final BroadcastTransmitter transmitter = new BroadcastTransmitter(new AtomicBuffer(toClientsBuffer));
-            clientProxy(new ClientProxy(transmitter, eventLogger));
-
-            toDriverBuffer = mapNewFile(toDriverFile(), Configuration.CONDUCTOR_BUFFER_SZ);
-
-            fromClientCommands(new ManyToOneRingBuffer(new AtomicBuffer(toDriverBuffer)));
-
-            receiverProxy(new ReceiverProxy(receiverCommandQueue()));
-            senderProxy(new SenderProxy(senderCommandQueue()));
-            driverConductorProxy(new DriverConductorProxy(conductorCommandQueue));
-
-            termBuffersFactory(new TermBuffersFactory(dataDirName(), termBufferSize, eventLogger));
-
-            if (countersManager() == null)
-            {
-                if (counterLabelsBuffer() == null)
+                if (null == eventLogger)
                 {
-                    final File counterLabelsFile = new File(countersDirName(), LABELS_FILE);
-
-                    deleteIfExists(counterLabelsFile);
-
-                    if (dirsDeleteOnExit())
-                    {
-                        counterLabelsFile.deleteOnExit();
-                    }
-
-                    counterLabelsByteBuffer = mapNewFile(counterLabelsFile, Configuration.COUNTER_BUFFERS_SZ);
-
-                    counterLabelsBuffer(new AtomicBuffer(counterLabelsByteBuffer));
+                    eventLogger = new EventLogger(
+                        EventConfiguration.bufferLocationFile(),
+                        EventConfiguration.getEnabledEventCodes());
                 }
 
-                if (countersBuffer() == null)
+                receiverNioSelector(new NioSelector());
+                conductorNioSelector(new NioSelector());
+
+                Configuration.validateTermBufferSize(termBufferSize());
+                Configuration.validateInitialWindowSize(initialWindowSize(), mtuLength());
+
+                // clean out existing files. We've warned about them already.
+                deleteIfExists(toClientsFile());
+                deleteIfExists(toDriverFile());
+
+                if (dirsDeleteOnExit())
                 {
-                    final File counterValuesFile = new File(countersDirName(), VALUES_FILE);
-
-                    deleteIfExists(counterValuesFile);
-
-                    if (dirsDeleteOnExit())
-                    {
-                        counterValuesFile.deleteOnExit();
-                    }
-
-                    counterValuesByteBuffer = mapNewFile(counterValuesFile, Configuration.COUNTER_BUFFERS_SZ);
-
-                    countersBuffer(new AtomicBuffer(counterValuesByteBuffer));
+                    toClientsFile().deleteOnExit();
+                    toDriverFile().deleteOnExit();
                 }
 
-                countersManager(new CountersManager(counterLabelsBuffer(), countersBuffer()));
-            }
+                toClientsBuffer = mapNewFile(toClientsFile(), Configuration.TO_CLIENTS_BUFFER_SZ);
 
-            if (null == conductorIdleStrategy)
-            {
-                conductorIdleStrategy(Configuration.agentIdleStrategy());
-            }
+                final BroadcastTransmitter transmitter = new BroadcastTransmitter(new AtomicBuffer(toClientsBuffer));
+                clientProxy(new ClientProxy(transmitter, eventLogger));
 
-            if (null == senderIdleStrategy)
-            {
-                senderIdleStrategy(Configuration.agentIdleStrategy());
-            }
+                toDriverBuffer = mapNewFile(toDriverFile(), Configuration.CONDUCTOR_BUFFER_SZ);
 
-            if (null == receiverIdleStrategy)
+                fromClientCommands(new ManyToOneRingBuffer(new AtomicBuffer(toDriverBuffer)));
+
+                receiverProxy(new ReceiverProxy(receiverCommandQueue()));
+                senderProxy(new SenderProxy(senderCommandQueue()));
+                driverConductorProxy(new DriverConductorProxy(conductorCommandQueue));
+
+                termBuffersFactory(new TermBuffersFactory(dataDirName(), termBufferSize, eventLogger));
+
+                if (countersManager() == null)
+                {
+                    if (counterLabelsBuffer() == null)
+                    {
+                        final File counterLabelsFile = new File(countersDirName(), LABELS_FILE);
+
+                        deleteIfExists(counterLabelsFile);
+
+                        if (dirsDeleteOnExit())
+                        {
+                            counterLabelsFile.deleteOnExit();
+                        }
+
+                        counterLabelsByteBuffer = mapNewFile(counterLabelsFile, Configuration.COUNTER_BUFFERS_SZ);
+
+                        counterLabelsBuffer(new AtomicBuffer(counterLabelsByteBuffer));
+                    }
+
+                    if (countersBuffer() == null)
+                    {
+                        final File counterValuesFile = new File(countersDirName(), VALUES_FILE);
+
+                        deleteIfExists(counterValuesFile);
+
+                        if (dirsDeleteOnExit())
+                        {
+                            counterValuesFile.deleteOnExit();
+                        }
+
+                        counterValuesByteBuffer = mapNewFile(counterValuesFile, Configuration.COUNTER_BUFFERS_SZ);
+
+                        countersBuffer(new AtomicBuffer(counterValuesByteBuffer));
+                    }
+
+                    countersManager(new CountersManager(counterLabelsBuffer(), countersBuffer()));
+                }
+
+                if (null == conductorIdleStrategy)
+                {
+                    conductorIdleStrategy(Configuration.agentIdleStrategy());
+                }
+
+                if (null == senderIdleStrategy)
+                {
+                    senderIdleStrategy(Configuration.agentIdleStrategy());
+                }
+
+                if (null == receiverIdleStrategy)
+                {
+                    receiverIdleStrategy(Configuration.agentIdleStrategy());
+                }
+            }
+            catch (final Exception ex)
             {
-                receiverIdleStrategy(Configuration.agentIdleStrategy());
+                throw new RuntimeException(ex);
             }
 
             return this;

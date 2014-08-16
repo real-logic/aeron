@@ -111,6 +111,11 @@ public class EventConfiguration
         return makeTagBitSet(getEnabledEventCodes(System.getProperty(ENABLED_LOGGER_EVENT_CODES_PROPERTY_NAME)));
     }
 
+    public static File bufferLocationFile()
+    {
+        return new File(System.getProperty(LOCATION_PROPERTY_NAME, LOCATION_DEFAULT));
+    }
+
     static long makeTagBitSet(final Set<EventCode> eventCodes)
     {
         return eventCodes.stream()
@@ -148,5 +153,4 @@ public class EventConfiguration
                             .collect(Collectors.toSet());
         }
     }
-
 }

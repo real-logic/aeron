@@ -109,14 +109,13 @@ public class SubMulticastTest
 
         ctx.dirsDeleteOnExit(true);
 
-        driver = new MediaDriver(ctx);
+        driver = MediaDriver.launch(ctx);
 
         payload.putBytes(0, PAYLOAD);
 
         consumingClient = Aeron.newClient(newAeronContext());
 
         executorService = Executors.newSingleThreadExecutor();
-        driver.start();
         consumingClient.start(executorService);
 
         subscription = consumingClient.addSubscription(URI, STREAM_ID, saveFrames);

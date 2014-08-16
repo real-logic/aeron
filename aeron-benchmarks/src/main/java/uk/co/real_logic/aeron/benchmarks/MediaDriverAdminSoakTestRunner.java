@@ -43,19 +43,19 @@ public class MediaDriverAdminSoakTestRunner
     {
         SoakTestHelper.useSharedMemoryOnLinux();
 
-        final MediaDriver driver = new MediaDriver();
-        driver.start();
-
-        for (int i = 0; true; i++)
+        try (final MediaDriver driver = MediaDriver.launch())
         {
-            createClientsAndExchangeMessages();
-
-            if ((i % 100) == 0)
+            for (int i = 0; true; i++)
             {
-                System.out.println("Completed Iteration " + i);
-            }
+                createClientsAndExchangeMessages();
 
-            Thread.yield();
+                if ((i % 100) == 0)
+                {
+                    System.out.println("Completed Iteration " + i);
+                }
+
+                Thread.yield();
+            }
         }
     }
 

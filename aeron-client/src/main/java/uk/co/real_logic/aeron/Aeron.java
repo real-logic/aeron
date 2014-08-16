@@ -48,14 +48,7 @@ public final class Aeron implements AutoCloseable, Runnable
 
     private Aeron(final Context ctx)
     {
-        try
-        {
-            ctx.conclude();
-        }
-        catch (final IOException ex)
-        {
-            throw new IllegalStateException("Unable to start Aeron", ex);
-        }
+        ctx.conclude();
 
         final DriverProxy driverProxy = new DriverProxy(ctx.toDriverBuffer);
         final Signal correlationSignal = new Signal();
@@ -175,7 +168,7 @@ public final class Aeron implements AutoCloseable, Runnable
         private InactiveConnectionHandler inactiveConnectionHandler;
         private long mediaDriverTimeout = UNSET_TIMEOUT;
 
-        public Context conclude() throws IOException
+        public Context conclude()
         {
             super.conclude();
 

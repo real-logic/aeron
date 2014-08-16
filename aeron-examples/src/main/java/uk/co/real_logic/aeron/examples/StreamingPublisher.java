@@ -47,7 +47,7 @@ public class StreamingPublisher
                            " bytes to " + CHANNEL + " on stream Id " + STREAM_ID);
 
         final ExecutorService executor = Executors.newFixedThreadPool(2);
-        final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? ExampleUtil.createEmbeddedMediaDriver() : null;
+        final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
         final Aeron.Context context = new Aeron.Context();
 
         try (final Aeron aeron = ExampleUtil.createAeron(context, executor);

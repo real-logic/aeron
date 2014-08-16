@@ -33,21 +33,6 @@ import java.util.function.Consumer;
 public class ExampleUtil
 {
     /**
-     * Create an embedded {@link MediaDriver}
-     *
-     * @return {@link MediaDriver}
-     * @throws Exception
-     */
-    public static MediaDriver createEmbeddedMediaDriver() throws Exception
-    {
-        final MediaDriver mediaDriver = new MediaDriver();
-
-        mediaDriver.start();
-
-        return mediaDriver;
-    }
-
-    /**
      * Create an Aeron instance with the given context and use the given {@link ExecutorService} to spawn any
      * needed threads.
      *

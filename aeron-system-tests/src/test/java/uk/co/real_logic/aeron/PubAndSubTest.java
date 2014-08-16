@@ -70,12 +70,11 @@ public class PubAndSubTest
 
         context.dirsDeleteOnExit(true);
 
-        driver = new MediaDriver(context);
+        driver = MediaDriver.launch(context);
 
         publishingClient = Aeron.newClient(publishingAeronContext);
         subscribingClient = Aeron.newClient(subscribingAeronContext);
 
-        driver.start();
         publishingClient.start(executorService);
         subscribingClient.start(executorService);
 

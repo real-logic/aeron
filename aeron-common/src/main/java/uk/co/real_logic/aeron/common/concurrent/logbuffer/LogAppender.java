@@ -146,12 +146,13 @@ public class LogAppender extends LogBuffer
         final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
         final int frameOffset = getTailAndAdd(alignedLength);
 
+        final AtomicBuffer logBuffer = logBuffer();
         final int capacity = capacity();
         if (isBeyondLogBufferCapacity(frameOffset, alignedLength, capacity))
         {
             if (frameOffset < capacity)
             {
-                appendPaddingFrame(frameOffset);
+                appendPaddingFrame(logBuffer, frameOffset);
                 return AppendStatus.TRIPPED;
             }
             else if (frameOffset == capacity)
@@ -162,12 +163,12 @@ public class LogAppender extends LogBuffer
             return AppendStatus.FAILURE;
         }
 
-        logBuffer().putBytes(frameOffset, defaultHeader, 0, headerLength);
-        logBuffer().putBytes(frameOffset + headerLength, srcBuffer, srcOffset, length);
+        logBuffer.putBytes(frameOffset, defaultHeader, 0, headerLength);
+        logBuffer.putBytes(frameOffset + headerLength, srcBuffer, srcOffset, length);
 
-        putFlags(frameOffset, UNFRAGMENTED);
-        putTermOffset(frameOffset, frameOffset);
-        putLengthOrdered(frameOffset, frameLength);
+        putFlags(logBuffer, frameOffset, UNFRAGMENTED);
+        putTermOffset(logBuffer, frameOffset, frameOffset);
+        putLengthOrdered(logBuffer, frameOffset, frameLength);
 
         return AppendStatus.SUCCESS;
     }
@@ -180,12 +181,13 @@ public class LogAppender extends LogBuffer
             align(remainingPayload + headerLength, FRAME_ALIGNMENT) + (numMaxPayloads * maxFrameLength);
         int frameOffset = getTailAndAdd(requiredCapacity);
 
+        final AtomicBuffer logBuffer = logBuffer();
         final int capacity = capacity();
         if (isBeyondLogBufferCapacity(frameOffset, requiredCapacity, capacity))
         {
             if (frameOffset < capacity)
             {
-                appendPaddingFrame(frameOffset);
+                appendPaddingFrame(logBuffer, frameOffset);
                 return AppendStatus.TRIPPED;
             }
             else if (frameOffset == capacity)
@@ -204,20 +206,20 @@ public class LogAppender extends LogBuffer
             final int frameLength = bytesToWrite + headerLength;
             final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
 
-            logBuffer().putBytes(frameOffset, defaultHeader, 0, headerLength);
-            logBuffer().putBytes(frameOffset + headerLength,
-                                 srcBuffer,
-                                 srcOffset + (length - remaining),
-                                 bytesToWrite);
+            logBuffer.putBytes(frameOffset, defaultHeader, 0, headerLength);
+            logBuffer.putBytes(frameOffset + headerLength,
+                              srcBuffer,
+                              srcOffset + (length - remaining),
+                              bytesToWrite);
 
             if (remaining <= maxPayload)
             {
                 flags |= END_FRAG;
             }
 
-            putFlags(frameOffset, flags);
-            putTermOffset(frameOffset, frameOffset);
-            putLengthOrdered(frameOffset, frameLength);
+            putFlags(logBuffer, frameOffset, flags);
+            putTermOffset(logBuffer, frameOffset, frameOffset);
+            putLengthOrdered(logBuffer, frameOffset, frameLength);
 
             flags = 0;
             frameOffset += alignedLength;
@@ -233,39 +235,39 @@ public class LogAppender extends LogBuffer
         return (frameOffset + alignedFrameLength + headerLength) > capacity;
     }
 
-    private void appendPaddingFrame(final int frameOffset)
+    private void appendPaddingFrame(final AtomicBuffer logBuffer, final int frameOffset)
     {
-        logBuffer().putBytes(frameOffset, defaultHeader, 0, headerLength);
+        logBuffer.putBytes(frameOffset, defaultHeader, 0, headerLength);
 
-        putFrameType(frameOffset, PADDING_FRAME_TYPE);
-        putFlags(frameOffset, UNFRAGMENTED);
-        putTermOffset(frameOffset, frameOffset);
-        putLengthOrdered(frameOffset, capacity() - frameOffset);
+        putFrameType(logBuffer, frameOffset, PADDING_FRAME_TYPE);
+        putFlags(logBuffer, frameOffset, UNFRAGMENTED);
+        putTermOffset(logBuffer, frameOffset, frameOffset);
+        putLengthOrdered(logBuffer, frameOffset, capacity() - frameOffset);
     }
 
-    private void putFrameType(final int frameOffset, final int type)
+    private static void putFrameType(final AtomicBuffer logBuffer, final int frameOffset, final int type)
     {
-        logBuffer().putShort(typeOffset(frameOffset), (short)type, LITTLE_ENDIAN);
+        logBuffer.putShort(typeOffset(frameOffset), (short)type, LITTLE_ENDIAN);
     }
 
-    private void putFlags(final int frameOffset, final byte flags)
+    private static void putFlags(final AtomicBuffer logBuffer, final int frameOffset, final byte flags)
     {
-        logBuffer().putByte(flagsOffset(frameOffset), flags);
+        logBuffer.putByte(flagsOffset(frameOffset), flags);
     }
 
-    private void putTermOffset(final int frameOffset, final int termOffset)
+    private static void putTermOffset(final AtomicBuffer logBuffer, final int frameOffset, final int termOffset)
     {
-        logBuffer().putInt(termOffsetOffset(frameOffset), termOffset, LITTLE_ENDIAN);
+        logBuffer.putInt(termOffsetOffset(frameOffset), termOffset, LITTLE_ENDIAN);
     }
 
-    private void putLengthOrdered(final int frameOffset, int frameLength)
+    private static void putLengthOrdered(final AtomicBuffer logBuffer, final int frameOffset, int frameLength)
     {
         if (LITTLE_ENDIAN != ByteOrder.nativeOrder())
         {
             frameLength = Integer.reverseBytes(frameLength);
         }
 
-        logBuffer().putIntOrdered(lengthOffset(frameOffset), frameLength);
+        logBuffer.putIntOrdered(lengthOffset(frameOffset), frameLength);
     }
 
     private int getTailAndAdd(final int delta)

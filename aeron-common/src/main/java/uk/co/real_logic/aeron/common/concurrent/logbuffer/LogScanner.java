@@ -107,15 +107,16 @@ public class LogScanner extends LogBuffer
         {
             final int tail = tailVolatile();
             final int offset = this.offset;
+            final AtomicBuffer logBuffer = logBuffer();
             if (tail > offset)
             {
                 int padding = 0;
 
                 do
                 {
-                    int alignedFrameLength = align(waitForFrameLength(offset + length), FRAME_ALIGNMENT);
+                    int alignedFrameLength = align(waitForFrameLength(logBuffer, offset + length), FRAME_ALIGNMENT);
 
-                    if (PADDING_FRAME_TYPE == frameType(offset + length))
+                    if (PADDING_FRAME_TYPE == frameType(logBuffer, offset + length))
                     {
                         padding = alignedFrameLength - alignedHeaderLength;
                         alignedFrameLength = alignedHeaderLength;
@@ -135,7 +136,7 @@ public class LogScanner extends LogBuffer
                 if (length > 0)
                 {
                     this.offset += (length + padding);
-                    handler.onAvailable(logBuffer(), offset, length);
+                    handler.onAvailable(logBuffer, offset, length);
                 }
             }
         }
@@ -160,13 +161,13 @@ public class LogScanner extends LogBuffer
         this.offset = offset;
     }
 
-    private int waitForFrameLength(final int frameOffset)
+    private static int waitForFrameLength(final AtomicBuffer logBuffer, final int frameOffset)
     {
-        return FrameDescriptor.waitForFrameLength(logBuffer(), frameOffset);
+        return FrameDescriptor.waitForFrameLength(logBuffer, frameOffset);
     }
 
-    private int frameType(final int frameOffset)
+    private static int frameType(final AtomicBuffer logBuffer, final int frameOffset)
     {
-        return logBuffer().getShort(typeOffset(frameOffset), ByteOrder.LITTLE_ENDIAN) & 0xFFFF;
+        return logBuffer.getShort(typeOffset(frameOffset), ByteOrder.LITTLE_ENDIAN) & 0xFFFF;
     }
 }

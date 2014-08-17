@@ -61,21 +61,23 @@ public class LogRebuilder extends LogBuffer
 
         if (termOffset >= tail)
         {
-            logBuffer().putBytes(termOffset, packet, srcOffset, length);
+            final AtomicBuffer logBuffer = logBuffer();
+            logBuffer.putBytes(termOffset, packet, srcOffset, length);
 
             final int capacity = capacity();
             int alignedFrameLength;
-            while ((tail < capacity) && (alignedFrameLength = alignedFrameLength(tail)) != 0)
+            while ((tail < capacity) && (alignedFrameLength = alignedFrameLength(logBuffer, tail)) != 0)
             {
                 tail += alignedFrameLength;
             }
 
-            putTailOrdered(tail);
+            final AtomicBuffer stateBuffer = stateBuffer();
+            putTailOrdered(stateBuffer, tail);
 
             final int endOfFrame = termOffset + length;
             if (endOfFrame > highWaterMark())
             {
-                putHighWaterMark(endOfFrame);
+                putHighWaterMark(stateBuffer, endOfFrame);
             }
         }
     }
@@ -90,18 +92,18 @@ public class LogRebuilder extends LogBuffer
         return stateBuffer().getIntVolatile(TAIL_COUNTER_OFFSET) >= capacity();
     }
 
-    private int alignedFrameLength(final int tail)
+    private static int alignedFrameLength(final AtomicBuffer logBuffer, final int tail)
     {
-        return BitUtil.align(logBuffer().getInt(lengthOffset(tail), ByteOrder.LITTLE_ENDIAN), FRAME_ALIGNMENT);
+        return BitUtil.align(logBuffer.getInt(lengthOffset(tail), ByteOrder.LITTLE_ENDIAN), FRAME_ALIGNMENT);
     }
 
-    private void putTailOrdered(int tail)
+    private static void putTailOrdered(final AtomicBuffer stateBuffer, final int tail)
     {
-        stateBuffer().putIntOrdered(TAIL_COUNTER_OFFSET, tail);
+        stateBuffer.putIntOrdered(TAIL_COUNTER_OFFSET, tail);
     }
 
-    private void putHighWaterMark(final int highWaterMark)
+    private static void putHighWaterMark(final AtomicBuffer stateBuffer, final int highWaterMark)
     {
-        stateBuffer().putIntOrdered(HIGH_WATER_MARK_OFFSET, highWaterMark);
+        stateBuffer.putIntOrdered(HIGH_WATER_MARK_OFFSET, highWaterMark);
     }
 }

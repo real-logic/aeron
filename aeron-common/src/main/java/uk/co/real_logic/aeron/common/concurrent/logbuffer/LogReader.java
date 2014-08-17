@@ -81,16 +81,17 @@ public class LogReader extends LogBuffer
     {
         int framesCounter = 0;
         final int tail = tailVolatile();
+        final AtomicBuffer logBuffer = logBuffer();
 
         while (tail > offset && framesCounter < framesCountLimit)
         {
-            final int frameLength = waitForFrameLength(logBuffer(), offset);
+            final int frameLength = waitForFrameLength(logBuffer, offset);
             try
             {
-                if (frameType(offset) != PADDING_FRAME_TYPE)
+                if (frameType(logBuffer, offset) != PADDING_FRAME_TYPE)
                 {
                     ++framesCounter;
-                    handler.onFrame(logBuffer(), offset, frameLength);
+                    handler.onFrame(logBuffer, offset, frameLength);
 
                 }
             }
@@ -113,8 +114,8 @@ public class LogReader extends LogBuffer
         return offset >= capacity();
     }
 
-    private int frameType(final int frameOffset)
+    private static int frameType(final AtomicBuffer logBuffer, final int frameOffset)
     {
-        return logBuffer().getShort(typeOffset(frameOffset), ByteOrder.LITTLE_ENDIAN) & 0xFFFF;
+        return logBuffer.getShort(typeOffset(frameOffset), ByteOrder.LITTLE_ENDIAN) & 0xFFFF;
     }
 }

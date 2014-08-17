@@ -69,17 +69,18 @@ public class GapScanner extends LogBuffer
         int count = 0;
         final int highWaterMark = highWaterMarkVolatile();
         int offset = tailVolatile();
+        final AtomicBuffer logBuffer = logBuffer();
 
         while (offset < highWaterMark)
         {
-            final int frameLength = alignedFrameLength(offset);
+            final int frameLength = alignedFrameLength(logBuffer, offset);
             if (frameLength > 0)
             {
                 offset += frameLength;
             }
             else
             {
-                offset = scanGap(handler, offset, highWaterMark);
+                offset = scanGap(logBuffer, handler, offset, highWaterMark);
                 ++count;
             }
         }
@@ -97,22 +98,22 @@ public class GapScanner extends LogBuffer
         return tailVolatile() >= capacity();
     }
 
-    private int scanGap(final GapHandler handler, final int offset, final int highWaterMark)
+    private static int scanGap(final AtomicBuffer logBuffer, final GapHandler handler, final int offset, final int highWaterMark)
     {
         int gapLength = 0;
         int alignedFrameLength;
         do
         {
             gapLength += FRAME_ALIGNMENT;
-            alignedFrameLength = alignedFrameLength(offset + gapLength);
+            alignedFrameLength = alignedFrameLength(logBuffer, offset + gapLength);
         }
         while (0 == alignedFrameLength);
 
-        return handler.onGap(logBuffer(), offset, gapLength) ? (offset + gapLength) : highWaterMark;
+        return handler.onGap(logBuffer, offset, gapLength) ? (offset + gapLength) : highWaterMark;
     }
 
-    private int alignedFrameLength(final int cursor)
+    private static int alignedFrameLength(final AtomicBuffer logBuffer, final int cursor)
     {
-        return BitUtil.align(logBuffer().getInt(lengthOffset(cursor), LITTLE_ENDIAN), FRAME_ALIGNMENT);
+        return BitUtil.align(logBuffer.getInt(lengthOffset(cursor), LITTLE_ENDIAN), FRAME_ALIGNMENT);
     }
 }

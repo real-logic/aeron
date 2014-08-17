@@ -16,10 +16,7 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.*;
-import uk.co.real_logic.aeron.common.concurrent.AtomicArray;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.common.concurrent.CountersManager;
-import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.aeron.common.concurrent.*;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
@@ -78,12 +75,9 @@ public class MediaDriver implements AutoCloseable
      */
     public static void main(final String[] args) throws Exception
     {
-        try (final MediaDriver mediaDriver = MediaDriver.launch())
+        try (final MediaDriver ignored = MediaDriver.launch())
         {
-            while (true)
-            {
-                Thread.sleep(1000);
-            }
+            new CommandBarrier("Type 'quit' to terminate", System.in, System.out).await("quit");
         }
     }
 

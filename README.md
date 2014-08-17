@@ -51,7 +51,7 @@ You require the following to build Aeron:
 
 ### Gradle Build
 
-The preferred way to build is using the gradle script included.
+The preferred way to build is using the Gradle script included.
 
 Full clean and build of all modules
 
@@ -60,9 +60,9 @@ Full clean and build of all modules
 Running Examples
 ----------------
 
-Start up a media driver via Gradle
+Start up a media driver
 
-    $ ./gradlew aeron-driver:run
+    $ java -cp aeron-examples/build/libs/examples.jar uk.co.real_logic.aeron.driver.MediaDriver
 
 You can run the `ExamplePublisher` from a command line
 
@@ -79,6 +79,3 @@ The Media Driver is packaged by the default build into an application that can b
 
     aeron-driver/build/distributions/aeron-driver-${VERSION}.zip
 
-The Media Driver can also be run directly from Gradle
-
-    $ ./gradlew aeron-driver:run

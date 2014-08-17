@@ -44,7 +44,7 @@ public final class Aeron implements AutoCloseable
     private static final long DEFAULT_MEDIA_DRIVER_TIMEOUT = 10_000;
 
     private final ClientConductor conductor;
-    private final Context savedCtx;
+    private final Context ctx;
 
     private Thread conductorThread;
 
@@ -68,7 +68,7 @@ public final class Aeron implements AutoCloseable
                                 ctx.mediaDriverTimeout(),
                                 ctx.mtuLength());
 
-        this.savedCtx = ctx;
+        this.ctx = ctx;
     }
 
     /**
@@ -110,7 +110,7 @@ public final class Aeron implements AutoCloseable
             conductorThread = null;
         }
 
-        savedCtx.close();
+        ctx.close();
     }
 
     /**

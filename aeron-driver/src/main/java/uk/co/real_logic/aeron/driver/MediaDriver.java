@@ -88,27 +88,25 @@ public class MediaDriver implements AutoCloseable
     }
 
     /**
-     * Construct a media driver with the given context.
+     * Construct a media driver with the given ctx.
      *
-     * @param context for the media driver parameters
+     * @param ctx for the media driver parameters
      */
-    private MediaDriver(final Context context)
+    private MediaDriver(final Context ctx)
     {
-        this.ctx = context;
+        this.ctx = ctx;
 
-        this.adminDirFile = new File(ctx.adminDirName());
-        this.dataDirFile = new File(ctx.dataDirName());
-        this.countersDirFile = new File(ctx.countersDirName());
+        adminDirFile = new File(ctx.adminDirName());
+        dataDirFile = new File(ctx.dataDirName());
+        countersDirFile = new File(ctx.countersDirName());
 
         ensureDirectoriesAreRecreated();
 
-        final EventReader.Context readerCtx =
+        eventReader = new EventReader(
             new EventReader.Context()
                 .idleStrategy(Configuration.eventReaderIdleStrategy())
                 .deleteOnExit(ctx.dirsDeleteOnExit())
-                .eventHandler(ctx.eventConsumer);
-
-        this.eventReader = new EventReader(readerCtx);
+                .eventHandler(ctx.eventConsumer));
 
         ctx.unicastSenderFlowControl(UnicastSenderControlStrategy::new)
            .multicastSenderFlowControl(UnicastSenderControlStrategy::new)
@@ -120,9 +118,9 @@ public class MediaDriver implements AutoCloseable
            .senderCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
            .conclude();
 
-        this.receiver = new Receiver(ctx);
-        this.sender = new Sender(ctx);
-        this.conductor = new DriverConductor(ctx);
+        receiver = new Receiver(ctx);
+        sender = new Sender(ctx);
+        conductor = new DriverConductor(ctx);
     }
 
     /**

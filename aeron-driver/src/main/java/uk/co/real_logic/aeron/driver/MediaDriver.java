@@ -56,9 +56,9 @@ import static uk.co.real_logic.aeron.common.IoUtil.mapNewFile;
  */
 public class MediaDriver implements AutoCloseable
 {
-    private final File adminDirFile;
-    private final File dataDirFile;
-    private final File countersDirFile;
+    private final File adminDirectory;
+    private final File dataDirectory;
+    private final File countersDirectory;
 
     private final Receiver receiver;
     private final Sender sender;
@@ -96,9 +96,9 @@ public class MediaDriver implements AutoCloseable
     {
         this.ctx = ctx;
 
-        adminDirFile = new File(ctx.adminDirName());
-        dataDirFile = new File(ctx.dataDirName());
-        countersDirFile = new File(ctx.countersDirName());
+        adminDirectory = new File(ctx.adminDirName());
+        dataDirectory = new File(ctx.dataDirName());
+        countersDirectory = new File(ctx.countersDirName());
 
         ensureDirectoriesAreRecreated();
 
@@ -202,18 +202,18 @@ public class MediaDriver implements AutoCloseable
                 }
             };
 
-        IoUtil.ensureDirectoryIsRecreated(adminDirFile, "conductor", callback);
-        IoUtil.ensureDirectoryIsRecreated(dataDirFile, "data", callback);
-        IoUtil.ensureDirectoryIsRecreated(countersDirFile, "counters", callback);
+        IoUtil.ensureDirectoryIsRecreated(adminDirectory, "conductor", callback);
+        IoUtil.ensureDirectoryIsRecreated(dataDirectory, "data", callback);
+        IoUtil.ensureDirectoryIsRecreated(countersDirectory, "counters", callback);
     }
 
     private void deleteDirectories() throws Exception
     {
         if (ctx.dirsDeleteOnExit())
         {
-            IoUtil.delete(adminDirFile, false);
-            IoUtil.delete(dataDirFile, false);
-            IoUtil.delete(countersDirFile, false);
+            IoUtil.delete(adminDirectory, false);
+            IoUtil.delete(dataDirectory, false);
+            IoUtil.delete(countersDirectory, false);
         }
     }
 

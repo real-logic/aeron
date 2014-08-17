@@ -40,6 +40,7 @@ public class StreamingPublisher
     private static final boolean EMBEDDED_MEDIA_DRIVER = ExampleConfiguration.EMBEDDED_MEDIA_DRIVER;
 
     private static final AtomicBuffer ATOMIC_BUFFER = new AtomicBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
+    private static final int SESSION_ID = 0;
 
     public static void main(final String[] args) throws Exception
     {
@@ -52,11 +53,9 @@ public class StreamingPublisher
         final Aeron.Context context = new Aeron.Context();
 
         try (final Aeron aeron = Aeron.connect(context, executor);
-             final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID, 0))
+             final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID, SESSION_ID))
         {
             final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), ExampleUtil::printRate);
-
-            // report the rate we are sending
             executor.execute(reporter);
 
             for (long i = 0; i < NUMBER_OF_MESSAGES; i++)

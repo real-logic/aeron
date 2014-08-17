@@ -44,7 +44,6 @@ public class ExampleSubscriber
 
         System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
-        // subscription for channel Id 1
         final DataHandler dataHandler = printStringMessage(STREAM_ID);
         try (final Aeron aeron = Aeron.connect(ctx);
              final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, dataHandler))

@@ -30,12 +30,8 @@ public class StatusInfo
 {
     public static void main(final String[] args) throws Exception
     {
-        final File labelsFile = new File(System.getProperty(CommonContext.COUNTERS_DIR_PROP_NAME,
-                                                            CommonContext.COUNTERS_DIR_PROP_DEFAULT),
-                                         CommonContext.LABELS_FILE);
-        final File valuesFile = new File(System.getProperty(CommonContext.COUNTERS_DIR_PROP_NAME,
-                                                            CommonContext.COUNTERS_DIR_PROP_DEFAULT),
-                                         CommonContext.VALUES_FILE);
+        final File labelsFile = CommonContext.newDefaultLabelsFile();
+        final File valuesFile = CommonContext.newDefaultValuesFile();
 
         System.out.println("Labels file " + labelsFile);
         System.out.println("Values file " + valuesFile);
@@ -44,7 +40,6 @@ public class StatusInfo
         final MappedByteBuffer valuesByteBuffer = IoUtil.mapExistingFile(valuesFile, "values");
 
         final AtomicBuffer valuesBuffer = new AtomicBuffer(valuesByteBuffer);
-
         final CountersManager countersManager = new CountersManager(new AtomicBuffer(labelsByteBuffer), valuesBuffer);
 
         while (true)

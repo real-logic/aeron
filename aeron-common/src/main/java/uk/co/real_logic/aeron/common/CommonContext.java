@@ -125,6 +125,16 @@ public class CommonContext implements AutoCloseable
         return this;
     }
 
+    public static File newDefaultValuesFile()
+    {
+        return new File(getProperty(COUNTERS_DIR_PROP_NAME, COUNTERS_DIR_PROP_DEFAULT), VALUES_FILE);
+    }
+
+    public static File newDefaultLabelsFile()
+    {
+        return new File(getProperty(COUNTERS_DIR_PROP_NAME, COUNTERS_DIR_PROP_DEFAULT), LABELS_FILE);
+    }
+
     public boolean dirsDeleteOnExit()
     {
         return dirsDeleteOnExit;

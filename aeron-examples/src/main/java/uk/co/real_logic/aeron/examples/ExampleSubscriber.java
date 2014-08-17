@@ -16,12 +16,10 @@
 package uk.co.real_logic.aeron.examples;
 
 import uk.co.real_logic.aeron.Aeron;
+import uk.co.real_logic.aeron.DataHandler;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.CloseHelper;
 import uk.co.real_logic.aeron.driver.MediaDriver;
-
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import static uk.co.real_logic.aeron.examples.ExampleUtil.printStringMessage;
 
@@ -37,25 +35,24 @@ public class ExampleSubscriber
 
     public static void main(final String[] args) throws Exception
     {
-        final ExecutorService executor = Executors.newFixedThreadPool(1);
-        final Aeron.Context aeronContext = new Aeron.Context();
-
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
 
-        aeronContext.newConnectionHandler(ExampleUtil::printNewConnection);
-        aeronContext.inactiveConnectionHandler(ExampleUtil::printInactiveConnection);
+        final Aeron.Context ctx =
+            new Aeron.Context()
+                .newConnectionHandler(ExampleUtil::printNewConnection)
+                .inactiveConnectionHandler(ExampleUtil::printInactiveConnection);
 
         System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
         // subscription for channel Id 1
-        try (final Aeron aeron = ExampleUtil.createAeron(aeronContext, executor);
-             final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, printStringMessage(STREAM_ID)))
+        final DataHandler dataHandler = printStringMessage(STREAM_ID);
+        try (final Aeron aeron = Aeron.connect(ctx);
+             final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, dataHandler))
         {
             // run the subscriber thread from here
             ExampleUtil.subscriberLoop(FRAME_COUNT_LIMIT).accept(subscription);
         }
 
         CloseHelper.quietClose(driver);
-        executor.shutdown();
     }
 }

@@ -26,19 +26,19 @@ import uk.co.real_logic.aeron.conductor.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static uk.co.real_logic.aeron.common.IoUtil.mapExistingFile;
 
 /**
- * Encapsulation of media driver and client for source and receiver construction
+ * Aeron entry point for communicating to the Media Driver for creating {@link Publication}s and {@link Subscription}s.
  */
-public final class Aeron implements AutoCloseable, Runnable
+public final class Aeron implements AutoCloseable
 {
     private static final int CONDUCTOR_TICKS_PER_WHEEL = 1024;
-    private static final int CONDUCTOR_TICK_DURATION_US = 10 * 1000;
+    private static final int CONDUCTOR_TICK_DURATION_US = 10_000;
 
     private static final long UNSET_TIMEOUT = -1;
     private static final long DEFAULT_MEDIA_DRIVER_TIMEOUT = 10_000;
@@ -46,79 +46,81 @@ public final class Aeron implements AutoCloseable, Runnable
     private final ClientConductor conductor;
     private final Context savedCtx;
 
-    private Aeron(final Context ctx)
+    private Thread conductorThread;
+
+    Aeron(final Context ctx)
     {
         ctx.conclude();
 
-        final DriverProxy driverProxy = new DriverProxy(ctx.toDriverBuffer);
-        final Signal correlationSignal = new Signal();
-        final DriverBroadcastReceiver broadcastReceiver = new DriverBroadcastReceiver(ctx.toClientBuffer, ctx.errorHandler);
         final TimerWheel wheel =
             new TimerWheel(CONDUCTOR_TICK_DURATION_US, TimeUnit.MICROSECONDS, CONDUCTOR_TICKS_PER_WHEEL);
 
-        conductor = new ClientConductor(broadcastReceiver,
-                                        ctx.bufferManager,
-                                        ctx.countersBuffer(),
-                                        driverProxy,
-                                        correlationSignal,
-                                        wheel,
-                                        ctx.errorHandler,
-                                        ctx.newConnectionHandler,
-                                        ctx.inactiveConnectionHandler,
-                                        ctx.mediaDriverTimeout(),
-                                        ctx.mtuLength());
+        conductor =
+            new ClientConductor(new DriverBroadcastReceiver(ctx.toClientBuffer, ctx.errorHandler),
+                                ctx.bufferManager,
+                                ctx.countersBuffer(),
+                                new DriverProxy(ctx.toDriverBuffer),
+                                new Signal(),
+                                wheel,
+                                ctx.errorHandler,
+                                ctx.newConnectionHandler,
+                                ctx.inactiveConnectionHandler,
+                                ctx.mediaDriverTimeout(),
+                                ctx.mtuLength());
 
         this.savedCtx = ctx;
     }
 
-    // TODO: Should this not be start and create a thread?
     /**
-     * Run Aeron {@link Agent}s from the calling thread.
-     */
-    public void run()
-    {
-        conductor.run();
-    }
-
-    /**
-     * Run Aeron {@link uk.co.real_logic.aeron.common.Agent}s from a provided executor.
+     * Create an Aeron instance and connect to the media driver.
      *
-     * @param executor to start from
+     * Threads required for interacting with the media driver are created and managed within the Aeron instance.
+     *
+     * @param ctx for configuration of the client.
+     * @return the new {@link Aeron} instance connected to the Media Driver.
      */
-    public void start(final ExecutorService executor)
+    public static Aeron connect(final Context ctx)
     {
-        executor.submit(conductor);
+        return new Aeron(ctx).start();
     }
 
     /**
-     * Clean up and release all Aeron internal resources
+     * Create an Aeron instance and connect to the media driver.
+     *
+     * Threads for interacting with the media driver are run via the the provided {@link Executor}.
+     *
+     * @param ctx for configuration of the client.
+     * @param executor to run the internal threads for communicating with the media driver.
+     * @return the new {@link Aeron} instance connected to the Media Driver.
+     */
+    public static Aeron connect(final Context ctx, final Executor executor)
+    {
+        return new Aeron(ctx).start(executor);
+    }
+
+    /**
+     * Clean up and release all Aeron internal resources and shutdown threads.
      */
     public void close()
     {
         conductor.close();
+        if (null != conductorThread)
+        {
+            conductorThread.interrupt();
+            conductorThread = null;
+        }
+
         savedCtx.close();
     }
 
     /**
-     * Creates an Aeron client associated with this Aeron instance that can be used to create sources and
-     * subscriptions on.
-     *
-     * @param ctx of the media driver and Aeron configuration
-     * @return Aeron instance
-     */
-    public static Aeron newClient(final Context ctx)
-    {
-        return new Aeron(ctx);
-    }
-
-    /**
      * Add a {@link Publication} for publishing messages to subscribers.
-     *
+     * <p>
      * If the sessionId is 0, then a random one will be generated.
      *
-     * @param channel    for receiving the messages known to the media layer.
-     * @param streamId   within the channel scope.
-     * @param sessionId  to scope the source of the Publication.
+     * @param channel   for receiving the messages known to the media layer.
+     * @param streamId  within the channel scope.
+     * @param sessionId to scope the source of the Publication.
      * @return the new Publication.
      */
     public Publication addPublication(final String channel, final int streamId, final int sessionId)
@@ -136,9 +138,9 @@ public final class Aeron implements AutoCloseable, Runnable
     /**
      * Add a new {@link Subscription} for subscribing to messages from publishers.
      *
-     * @param channel   for receiving the messages known to the media layer.
-     * @param streamId  within the channel scope.
-     * @param handler   to be called back for each message received.
+     * @param channel  for receiving the messages known to the media layer.
+     * @param streamId within the channel scope.
+     * @param handler  to be called back for each message received.
      * @return the {@link Subscription} for the channel and streamId pair.
      */
     public Subscription addSubscription(final String channel, final int streamId, final DataHandler handler)
@@ -146,9 +148,28 @@ public final class Aeron implements AutoCloseable, Runnable
         return conductor.addSubscription(channel, streamId, handler);
     }
 
-    public ClientConductor conductor()
+    /**
+     * Used for testing.
+     */
+    ClientConductor conductor()
     {
         return conductor;
+    }
+
+    private Aeron start()
+    {
+        conductorThread = new Thread(conductor);
+        conductorThread.setName("aeron-client-conductor");
+        conductorThread.start();
+
+        return this;
+    }
+
+    private Aeron start(final Executor executor)
+    {
+        executor.execute(conductor);
+
+        return this;
     }
 
     public static class Context extends CommonContext
@@ -216,7 +237,7 @@ public final class Aeron implements AutoCloseable, Runnable
             }
             catch (final IOException ex)
             {
-                throw new IllegalStateException("Could not initialise buffers", ex);
+                throw new IllegalStateException("Could not initialise communication buffers", ex);
             }
 
             return this;
@@ -264,27 +285,17 @@ public final class Aeron implements AutoCloseable, Runnable
             return this;
         }
 
+        public long mediaDriverTimeout()
+        {
+            return mediaDriverTimeout;
+        }
+
         public void close()
         {
-            if (null != defaultToDriverBuffer)
-            {
-                IoUtil.unmap(defaultToDriverBuffer);
-            }
-
-            if (null != defaultToClientBuffer)
-            {
-                IoUtil.unmap(defaultToClientBuffer);
-            }
-
-            if (null != defaultCounterLabelsBuffer)
-            {
-                IoUtil.unmap(defaultCounterLabelsBuffer);
-            }
-
-            if (null != defaultCounterValuesBuffer)
-            {
-                IoUtil.unmap(defaultCounterValuesBuffer);
-            }
+            IoUtil.unmap(defaultToDriverBuffer);
+            IoUtil.unmap(defaultToClientBuffer);
+            IoUtil.unmap(defaultCounterLabelsBuffer);
+            IoUtil.unmap(defaultCounterValuesBuffer);
 
             try
             {
@@ -294,11 +305,6 @@ public final class Aeron implements AutoCloseable, Runnable
             {
                 throw new RuntimeException(ex);
             }
-        }
-
-        public long mediaDriverTimeout()
-        {
-            return mediaDriverTimeout;
         }
     }
 }

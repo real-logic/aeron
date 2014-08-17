@@ -47,7 +47,7 @@ public class IoUtil
      * @param position    at which to start writing.
      * @param length      of the region to write.
      * @param value       to fill the region with.
-     * @throws java.io.IOException
+     * @throws IOException
      */
     public static void fill(final FileChannel fileChannel, final long position, final long length, final byte value)
         throws IOException
@@ -106,34 +106,34 @@ public class IoUtil
     /**
      * Create a directory if it doesn't already exist.
      *
-     * @param directory the directory which definitely exists after this method call.
-     * @param name to associate with the directory for any exceptions.
+     * @param directory        the directory which definitely exists after this method call.
+     * @param descriptionLabel to associate with the directory for any exceptions.
      * @throws IllegalArgumentException thrown if the directory cannot be created
      */
-    public static void ensureDirectoryExists(final File directory, final String name)
+    public static void ensureDirectoryExists(final File directory, final String descriptionLabel)
         throws IllegalArgumentException
     {
         if (!directory.exists())
         {
             if (!directory.mkdirs())
             {
-                throw new IllegalArgumentException("could not create " + name + " directory: " + directory);
+                throw new IllegalArgumentException("could not create " + descriptionLabel + " directory: " + directory);
             }
         }
     }
 
     /**
      * Create a directory, removing previous directory if it already exists.
-     *
+     * <p>
      * Call callback if it does exist.
      *
-     * @param directory the directory which definitely exists after this method call.
-     * @param name to associate with the directory for any exceptions and callback.
-     * @param callback to call if directory exists passing back absolute path and name.
+     * @param directory        the directory which definitely exists after this method call.
+     * @param descriptionLabel to associate with the directory for any exceptions and callback.
+     * @param callback         to call if directory exists passing back absolute path and descriptionLabel.
      * @throws IllegalArgumentException thrown if the directory cannot be created
      */
     public static void ensureDirectoryIsRecreated(final File directory,
-                                                  final String name,
+                                                  final String descriptionLabel,
                                                   final BiConsumer<String, String> callback)
         throws IllegalArgumentException
     {
@@ -145,15 +145,15 @@ public class IoUtil
             }
             catch (final IOException ex)
             {
-                throw new IllegalArgumentException("could not create " + name + " directory: " + directory, ex);
+                throw new IllegalArgumentException("could not create " + descriptionLabel + " directory: " + directory, ex);
             }
 
-            callback.accept(directory.getAbsolutePath(), name);
+            callback.accept(directory.getAbsolutePath(), descriptionLabel);
         }
 
         if (!directory.mkdirs())
         {
-            throw new IllegalArgumentException("could not create " + name + " directory: " + directory);
+            throw new IllegalArgumentException("could not create " + descriptionLabel + " directory: " + directory);
         }
     }
 
@@ -197,15 +197,15 @@ public class IoUtil
      * <p>
      * The file itself will be closed, but the mapping will persist.
      *
-     * @param location of the file to map
-     * @param name     to be associated for any exceptions
+     * @param location         of the file to map
+     * @param descriptionLabel to be associated for any exceptions
      * @return {@link java.nio.MappedByteBuffer} for the file
      * @throws IOException for any errors
      */
-    public static MappedByteBuffer mapExistingFile(final File location, final String name)
+    public static MappedByteBuffer mapExistingFile(final File location, final String descriptionLabel)
         throws IOException
     {
-        checkFileExists(location, name);
+        checkFileExists(location, descriptionLabel);
         try (final RandomAccessFile file = new RandomAccessFile(location, "rw"))
         {
             final FileChannel channel = file.getChannel();
@@ -215,23 +215,23 @@ public class IoUtil
 
     /**
      * Check that file exists, open file, and return MappedByteBuffer for only region specified
-     *
+     * <p>
      * The file itself will be closed, but the mapping will persist.
      *
-     * @param location  of the file to map
-     * @param name      to be associated for an exceptions
-     * @param offset    offset to start mapping at
-     * @param size      length to map region
-     * @return          {@link java.nio.MappedByteBuffer} for the file
+     * @param location         of the file to map
+     * @param descriptionLabel to be associated for an exceptions
+     * @param offset           offset to start mapping at
+     * @param size             length to map region
+     * @return {@link java.nio.MappedByteBuffer} for the file
      * @throws IOException for any errors
      */
     public static MappedByteBuffer mapExistingFile(final File location,
-                                                   final String name,
+                                                   final String descriptionLabel,
                                                    final int offset,
                                                    final int size)
         throws IOException
     {
-        checkFileExists(location, name);
+        checkFileExists(location, descriptionLabel);
 
         try (final RandomAccessFile file = new RandomAccessFile(location, "rw"))
         {

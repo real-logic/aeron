@@ -98,7 +98,7 @@ public class AeronTest extends MockBufferUsage
         ctx.counterLabelsBuffer(counterLabelsBuffer)
            .countersBuffer(counterValuesBuffer);
 
-        aeron = Aeron.newClient(ctx);
+        aeron = new Aeron(ctx);
 
         errorHeader.wrap(atomicScratchBuffer, 0);
     }

@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.examples;
 
 import uk.co.real_logic.aeron.Aeron;
+import uk.co.real_logic.aeron.DataHandler;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.CloseHelper;
 import uk.co.real_logic.aeron.common.RateReporter;
@@ -39,8 +40,9 @@ public class RateSubscriber
 
     public static void main(final String[] args) throws Exception
     {
-        final ExecutorService executor = Executors.newFixedThreadPool(2);
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
+
+        final ExecutorService executor = Executors.newFixedThreadPool(2);
 
         final Aeron.Context ctx =
             new Aeron.Context()
@@ -50,9 +52,10 @@ public class RateSubscriber
         System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), ExampleUtil::printRate);
+        final DataHandler rateReporterHandler = rateReporterHandler(reporter);
 
-        try (final Aeron aeron = ExampleUtil.createAeron(ctx, executor);
-             final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, rateReporterHandler(reporter)))
+        try (final Aeron aeron = Aeron.connect(ctx, executor);
+             final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, rateReporterHandler))
         {
             executor.execute(() -> ExampleUtil.subscriberLoop(FRAME_COUNT_LIMIT).accept(subscription));
 

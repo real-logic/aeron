@@ -30,8 +30,6 @@ import uk.co.real_logic.aeron.driver.MediaDriver;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -69,12 +67,10 @@ public class PubUnicastTest
     private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
     private final NakFlyweight nakHeader = new NakFlyweight();
 
-    private ExecutorService executorService;
-
     @Before
     public void setupClientAndMediaDriver() throws Exception
     {
-        executorService = Executors.newSingleThreadExecutor();
+        payload.putBytes(0, PAYLOAD);
 
         receiverChannel = DatagramChannel.open();
         receiverChannel.configureBlocking(false);
@@ -87,12 +83,7 @@ public class PubUnicastTest
 
         driver = MediaDriver.launch(ctx);
 
-        producingClient = Aeron.newClient(newAeronContext());
-
-        payload.putBytes(0, PAYLOAD);
-
-        producingClient.start(executorService);
-
+        producingClient = Aeron.connect(newAeronContext());
         publication = producingClient.addPublication(URI, STREAM_ID, SESSION_ID);
     }
 
@@ -115,11 +106,6 @@ public class PubUnicastTest
         if (null != receiverChannel)
         {
             receiverChannel.close();
-        }
-
-        if (null != executorService)
-        {
-            executorService.shutdown();
         }
     }
 

@@ -20,8 +20,6 @@ import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * Goal: test for resource leaks in the control/admin side of things.
@@ -36,7 +34,6 @@ import java.util.concurrent.Executors;
  */
 public class MediaDriverAdminSoakTestRunner
 {
-    private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(2);
     private static final AtomicBuffer PUBLISHING_BUFFER = new AtomicBuffer(ByteBuffer.allocateDirect(256));
 
     public static void main(String[] args) throws Exception
@@ -61,12 +58,9 @@ public class MediaDriverAdminSoakTestRunner
 
     private static void createClientsAndExchangeMessages()
     {
-        try (final Aeron publishingClient = Aeron.newClient(new Aeron.Context());
-             final Aeron consumingClient = Aeron.newClient(new Aeron.Context()))
+        try (final Aeron publishingClient = Aeron.connect(new Aeron.Context());
+             final Aeron consumingClient = Aeron.connect(new Aeron.Context()))
         {
-            consumingClient.start(EXECUTOR);
-            publishingClient.start(EXECUTOR);
-
             SoakTestHelper.exchangeMessagesBetweenClients(publishingClient, consumingClient, PUBLISHING_BUFFER);
         }
     }

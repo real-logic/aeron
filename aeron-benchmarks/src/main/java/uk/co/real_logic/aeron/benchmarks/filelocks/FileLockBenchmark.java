@@ -24,7 +24,6 @@ import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 
 public class FileLockBenchmark
 {
-
     public static final String TMPFS_FILE = "/dev/shm/filelock_benchmark";
     public static final String PING_FILE = "/dev/shm/ping_condition_file";
     public static final String PONG_FILE = "/dev/shm/pong_condition_file";
@@ -170,11 +169,10 @@ public class FileLockBenchmark
         return totalTime / NANOTIME_ESTIMATE_COUNT;
     }
 
-    public static void main(String[] args) throws IOException, InterruptedException
+    public static void main(final String[] args) throws IOException, InterruptedException
     {
         boolean isPinger = args.length == 1 && Boolean.parseBoolean(args[0]);
         Runnable toRun = isPinger ? new Pinger() : new Ponger();
         toRun.run();
     }
-
 }

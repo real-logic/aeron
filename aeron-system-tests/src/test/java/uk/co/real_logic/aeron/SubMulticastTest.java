@@ -35,8 +35,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.util.ArrayDeque;
 import java.util.Queue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntConsumer;
@@ -92,11 +90,11 @@ public class SubMulticastTest
             Thread.yield();
         };
 
-    private ExecutorService executorService;
-
     @Before
     public void setupClientAndMediaDriver() throws Exception
     {
+        payload.putBytes(0, PAYLOAD);
+
         final NetworkInterface ifc = NetworkInterface.getByInetAddress(InetAddress.getByName("localhost"));
         senderChannel = DatagramChannel.open();
         senderChannel.configureBlocking(false);
@@ -110,14 +108,7 @@ public class SubMulticastTest
         ctx.dirsDeleteOnExit(true);
 
         driver = MediaDriver.launch(ctx);
-
-        payload.putBytes(0, PAYLOAD);
-
-        consumingClient = Aeron.newClient(newAeronContext());
-
-        executorService = Executors.newSingleThreadExecutor();
-        consumingClient.start(executorService);
-
+        consumingClient = Aeron.connect(newAeronContext());
         subscription = consumingClient.addSubscription(URI, STREAM_ID, saveFrames);
     }
 
@@ -140,11 +131,6 @@ public class SubMulticastTest
         if (null != senderChannel)
         {
             senderChannel.close();
-        }
-
-        if (null != executorService)
-        {
-            executorService.shutdown();
         }
     }
 

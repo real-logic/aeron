@@ -15,15 +15,12 @@
  */
 package uk.co.real_logic.aeron.examples;
 
-import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.DataHandler;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.BackoffIdleStrategy;
 import uk.co.real_logic.aeron.common.RateReporter;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
-import uk.co.real_logic.aeron.driver.MediaDriver;
 
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -32,24 +29,6 @@ import java.util.function.Consumer;
  */
 public class ExampleUtil
 {
-    /**
-     * Create an Aeron instance with the given context and use the given {@link ExecutorService} to spawn any
-     * needed threads.
-     *
-     * @param context  to use for instance creation
-     * @param executor to use for invoking conductor thread
-     * @return {@link Aeron} instance
-     * @throws Exception
-     */
-    public static Aeron createAeron(final Aeron.Context context, final ExecutorService executor) throws Exception
-    {
-        final Aeron aeron = Aeron.newClient(context);
-
-        aeron.start(executor);
-
-        return aeron;
-    }
-
     /**
      * Return a reusable, parameterized event loop that calls {@link Thread#yield()} when no messages are received
      *
@@ -61,16 +40,18 @@ public class ExampleUtil
         return
             (subscription) ->
             {
-                final BackoffIdleStrategy idler = new BackoffIdleStrategy(100, 100,
-                    TimeUnit.MICROSECONDS.toNanos(1),
-                    TimeUnit.MICROSECONDS.toNanos(100));
+                final BackoffIdleStrategy idleStrategy =
+                    new BackoffIdleStrategy(100,
+                                            100,
+                                            TimeUnit.MICROSECONDS.toNanos(1),
+                                            TimeUnit.MICROSECONDS.toNanos(100));
 
                 try
                 {
                     while (true)
                     {
-                        final int messagesRead = subscription.poll(limit);
-                        idler.idle(messagesRead);
+                        final int fragmentsRead = subscription.poll(limit);
+                        idleStrategy.idle(fragmentsRead);
                     }
                 }
                 catch (final Exception ex)
@@ -113,11 +94,11 @@ public class ExampleUtil
     /**
      * Generic error handler that just prints message to stdout.
      *
-     * @param channel for the error
-     * @param sessionId   for the error, if source
-     * @param streamId   for the error
-     * @param message     indicating what the error was
-     * @param cause       of the error
+     * @param channel   for the error
+     * @param sessionId for the error, if source
+     * @param streamId  for the error
+     * @param message   indicating what the error was
+     * @param cause     of the error
      */
     public static void printError(final String channel,
                                   final int sessionId,
@@ -142,9 +123,9 @@ public class ExampleUtil
     /**
      * Print the information for a new connection to stdout.
      *
-     * @param channel for the connection
+     * @param channel   for the connection
      * @param sessionId for the connection publication
-     * @param streamId for the stream
+     * @param streamId  for the stream
      */
     public static void printNewConnection(final String channel, final int sessionId, final int streamId)
     {
@@ -154,9 +135,9 @@ public class ExampleUtil
     /**
      * Print the information for an inactive connection to stdout.
      *
-     * @param channel for the connection
+     * @param channel   for the connection
      * @param sessionId for the connection publication
-     * @param streamId for the stream
+     * @param streamId  for the stream
      */
     public static void printInactiveConnection(final String channel, final int sessionId, final int streamId)
     {

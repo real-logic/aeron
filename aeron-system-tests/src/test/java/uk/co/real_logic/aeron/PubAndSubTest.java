@@ -26,8 +26,6 @@ import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertTrue;
@@ -62,22 +60,13 @@ public class PubAndSubTest
     private AtomicBuffer buffer = new AtomicBuffer(new byte[4096]);
     private DataHandler dataHandler = mock(DataHandler.class);
 
-    private ExecutorService executorService;
-
     private void setup(final String channel) throws Exception
     {
-        executorService = Executors.newFixedThreadPool(2);
-
         context.dirsDeleteOnExit(true);
 
         driver = MediaDriver.launch(context);
-
-        publishingClient = Aeron.newClient(publishingAeronContext);
-        subscribingClient = Aeron.newClient(subscribingAeronContext);
-
-        publishingClient.start(executorService);
-        subscribingClient.start(executorService);
-
+        publishingClient = Aeron.connect(publishingAeronContext);
+        subscribingClient = Aeron.connect(subscribingAeronContext);
         publication = publishingClient.addPublication(channel, STREAM_ID, SESSION_ID);
         subscription = subscribingClient.addSubscription(channel, STREAM_ID, dataHandler);
     }
@@ -98,11 +87,6 @@ public class PubAndSubTest
         subscribingClient.close();
         publishingClient.close();
         driver.close();
-
-        if (null != executorService)
-        {
-            executorService.shutdown();
-        }
     }
 
     @Theory

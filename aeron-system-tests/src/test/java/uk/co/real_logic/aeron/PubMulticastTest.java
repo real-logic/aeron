@@ -32,8 +32,6 @@ import java.net.NetworkInterface;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -70,11 +68,11 @@ public class PubMulticastTest
     private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
     private final NakFlyweight nakHeader = new NakFlyweight();
 
-    private ExecutorService executorService;
-
     @Before
     public void setupClientAndMediaDriver() throws Exception
     {
+        payload.putBytes(0, PAYLOAD);
+
         final NetworkInterface ifc = NetworkInterface.getByInetAddress(InetAddress.getByName("localhost"));
         receiverChannel = DatagramChannel.open();
         receiverChannel.configureBlocking(false);
@@ -87,15 +85,7 @@ public class PubMulticastTest
         ctx.dirsDeleteOnExit(true);
 
         driver = MediaDriver.launch(ctx);
-
-        producingClient = Aeron.newClient(newAeronContext());
-
-        payload.putBytes(0, PAYLOAD);
-
-        executorService = Executors.newSingleThreadExecutor();
-
-        producingClient.start(executorService);
-
+        producingClient = Aeron.connect(newAeronContext());
         publication = producingClient.addPublication(URI, STREAM_ID, SESSION_ID);
     }
 
@@ -118,11 +108,6 @@ public class PubMulticastTest
         if (null != receiverChannel)
         {
             receiverChannel.close();
-        }
-
-        if (null != executorService)
-        {
-            executorService.shutdown();
         }
     }
 

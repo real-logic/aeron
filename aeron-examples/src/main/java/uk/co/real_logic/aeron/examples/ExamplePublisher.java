@@ -22,8 +22,6 @@ import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -40,14 +38,13 @@ public class ExamplePublisher
 
     public static void main(final String[] args) throws Exception
     {
-        final ExecutorService executor = Executors.newSingleThreadExecutor();
-        final Aeron.Context context = new Aeron.Context();
-
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
+
+        final Aeron.Context ctx = new Aeron.Context();
 
         System.out.println("Publishing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
-        try (final Aeron aeron = ExampleUtil.createAeron(context, executor);
+        try (final Aeron aeron = Aeron.connect(ctx);
              final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID, 0))
         {
             for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
@@ -72,6 +69,5 @@ public class ExamplePublisher
         }
 
         CloseHelper.quietClose(driver);
-        executor.shutdown();
     }
 }

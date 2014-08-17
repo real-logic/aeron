@@ -108,6 +108,7 @@ public class LogScanner extends LogBuffer
             final int tail = tailVolatile();
             final int offset = this.offset;
             final AtomicBuffer logBuffer = logBuffer();
+
             if (tail > offset)
             {
                 int padding = 0;

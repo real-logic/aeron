@@ -26,10 +26,10 @@ import static uk.co.real_logic.aeron.common.concurrent.broadcast.RecordDescripto
 /**
  * Receive messages broadcast from a {@link BroadcastTransmitter} via an underlying buffer. Receivers can join
  * a transmission stream at any point by consuming the latest message at the point of joining and forward.
- *
+ * <p>
  * If a Receiver cannot keep up with the transmission stream then loss will be experienced. Loss is not an
  * error condition.
- *
+ * <p>
  * <b>Note:</b> Each Receiver is not threadsafe but there can be zero or many receivers to a transmission stream.
  */
 public class BroadcastReceiver
@@ -79,7 +79,7 @@ public class BroadcastReceiver
     /**
      * Get the number of times the transmitter has lapped this receiver around the buffer. On each lap
      * as least a buffer's worth of loss will be experienced.
-     *
+     * <p>
      * <b>Note:</b> This method is threadsafe for calling from an external monitoring thread.
      *
      * @return the capacity of the underlying broadcast buffer.
@@ -131,14 +131,15 @@ public class BroadcastReceiver
 
     /**
      * Non-blocking receive of next message from the transmission stream.
-     *
+     * <p>
      * If loss has occurred then {@link #lappedCount()} will be incremented.
      *
      * @return true if transmission is available with {@link #offset()}, {@link #length()} and {@link #typeId()}
-     *         set for the next message to be consumed. If no transmission is available then false.
+     * set for the next message to be consumed. If no transmission is available then false.
      */
     public boolean receiveNext()
     {
+        final AtomicBuffer buffer = this.buffer;
         final long tail = buffer.getLongVolatile(tailCounterIndex);
         long cursor = this.nextRecord;
 
@@ -146,7 +147,7 @@ public class BroadcastReceiver
         {
             recordOffset = (int)cursor & mask;
 
-            if (!validate(cursor))
+            if (!validate(buffer, cursor))
             {
                 lappedCount.lazySet(lappedCount.get() + 1);
 
@@ -172,7 +173,7 @@ public class BroadcastReceiver
 
     /**
      * Validate that the current received record is still valid and has not been overwritten.
-     *
+     * <p>
      * If the receiver is not consuming messages fast enough to keep up with the transmitter then loss
      * can be experienced resulting in messages being overwritten thus making them no longer valid.
      *
@@ -182,10 +183,10 @@ public class BroadcastReceiver
     {
         UNSAFE.loadFence(); // Needed to prevent older loads being moved ahead of the validate, see StampedLock.
 
-        return validate(cursor);
+        return validate(buffer, cursor);
     }
 
-    private boolean validate(final long cursor)
+    private boolean validate(final AtomicBuffer buffer, final long cursor)
     {
         return cursor == buffer.getLongVolatile(tailSequenceOffset(recordOffset));
     }

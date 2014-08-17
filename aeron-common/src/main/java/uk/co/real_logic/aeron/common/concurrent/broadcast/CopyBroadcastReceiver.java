@@ -23,11 +23,12 @@ public class CopyBroadcastReceiver
         this.receiver = receiver;
         scratchBuffer = new AtomicBuffer(new byte[SCRATCH_BUFFER_SIZE]);
 
-        // If we're reconnecting to a broadcast buffer then we need to
-        // scan ourselves up todate, otherwise we risk "falling behind"
-        // the buffer due to the time taken to catchup.
-        while(receiver.receiveNext())
-            ;
+        while (receiver.receiveNext())
+        {
+            // If we're reconnecting to a broadcast buffer then we need to
+            // scan ourselves up to date, otherwise we risk "falling behind"
+            // the buffer due to the time taken to catchup.
+        }
     }
 
     /**
@@ -39,6 +40,7 @@ public class CopyBroadcastReceiver
     public int receive(final MessageHandler handler)
     {
         int messagesReceived = 0;
+        final BroadcastReceiver receiver = this.receiver;
         final long lastSeenLappedCount = receiver.lappedCount();
 
         if (receiver.receiveNext())

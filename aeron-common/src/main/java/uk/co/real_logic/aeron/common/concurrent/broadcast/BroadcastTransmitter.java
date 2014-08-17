@@ -92,6 +92,7 @@ public class BroadcastTransmitter
         checkMsgTypeId(msgTypeId);
         checkMessageLength(length);
 
+        final AtomicBuffer buffer = this.buffer;
         long tail = buffer.getLong(tailCounterIndex);
         int recordOffset = (int)tail & mask;
         final int recordLength = BitUtil.align(length + HEADER_LENGTH, RECORD_ALIGNMENT);
@@ -99,7 +100,7 @@ public class BroadcastTransmitter
         final int remainingBuffer = capacity - recordOffset;
         if (remainingBuffer < recordLength)
         {
-            insertPaddingRecord(tail, recordOffset, remainingBuffer);
+            insertPaddingRecord(buffer, tail, recordOffset, remainingBuffer);
 
             tail += remainingBuffer;
             recordOffset = 0;
@@ -112,21 +113,22 @@ public class BroadcastTransmitter
 
         buffer.putBytes(msgOffset(recordOffset), srcBuffer, srcIndex, length);
 
-        putLatestCounter(tail);
-        incrementTailOrdered(tail, recordLength);
+        putLatestCounter(buffer, tail);
+        incrementTailOrdered(buffer, tail, recordLength);
     }
 
-    private void putLatestCounter(final long tail)
+    private void putLatestCounter(final AtomicBuffer buffer, final long tail)
     {
         buffer.putLong(latestCounterIndex, tail);
     }
 
-    private void incrementTailOrdered(final long tail, final int recordLength)
+    private void incrementTailOrdered(final AtomicBuffer buffer, final long tail, final int recordLength)
     {
         buffer.putLongOrdered(tailCounterIndex, tail + recordLength);
     }
 
-    private void insertPaddingRecord(final long tail, final int recordOffset, final int remainingBuffer)
+    private static void insertPaddingRecord(final AtomicBuffer buffer, final long tail,
+                                            final int recordOffset, final int remainingBuffer)
     {
         buffer.putLongOrdered(tailSequenceOffset(recordOffset), tail);
         buffer.putInt(recLengthOffset(recordOffset), remainingBuffer);

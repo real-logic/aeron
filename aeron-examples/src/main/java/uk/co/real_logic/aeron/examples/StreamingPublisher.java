@@ -46,11 +46,12 @@ public class StreamingPublisher
         System.out.println("Streaming " + NUMBER_OF_MESSAGES + " messages of size " + MESSAGE_LENGTH +
                            " bytes to " + CHANNEL + " on stream Id " + STREAM_ID);
 
-        final ExecutorService executor = Executors.newFixedThreadPool(2);
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
+
+        final ExecutorService executor = Executors.newFixedThreadPool(2);
         final Aeron.Context context = new Aeron.Context();
 
-        try (final Aeron aeron = ExampleUtil.createAeron(context, executor);
+        try (final Aeron aeron = Aeron.connect(context, executor);
              final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID, 0))
         {
             final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), ExampleUtil::printRate);
@@ -81,7 +82,7 @@ public class StreamingPublisher
             reporter.halt();
         }
 
-        CloseHelper.quietClose(driver);
         executor.shutdown();
+        CloseHelper.quietClose(driver);
     }
 }

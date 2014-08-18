@@ -34,7 +34,7 @@ public class LossHandler
 {
     private final GapScanner[] scanners;
     private final TimerWheel wheel;
-    private Counter naksSent;
+    private final Counter naksSent;
     private final Gap[] gaps = new Gap[2];
     private final Gap activeGap = new Gap();
     private final FeedbackDelayGenerator delayGenerator;
@@ -46,7 +46,7 @@ public class LossHandler
     private TimerWheel.Timer timer;
 
     private int activeIndex = 0;
-    private int scanCursor = 0;
+    private int gapIndex = 0;
     private int activeTermId;
 
     /**
@@ -91,7 +91,7 @@ public class LossHandler
      */
     public boolean scan()
     {
-        scanCursor = 0;
+        gapIndex = 0;
         final GapScanner scanner = scanners[activeIndex];
         final int numGaps = scanner.scan(this::onGap);
         onScanComplete();
@@ -107,6 +107,7 @@ public class LossHandler
             }
             else
             {
+                // TODO: is this else statement even possible and if so why?
                 final int tail = scanner.tailVolatile();
                 final long tailPosition =
                     TermHelper.calculatePosition(activeTermId, tail, positionBitsToShift, initialTermId);
@@ -161,7 +162,7 @@ public class LossHandler
      *
      * @param position new position in the stream
      */
-    public void potentialHighestPosition(final long position)
+    public void highestPositionCandidate(final long position)
     {
         // only set from this method which comes from the Receiver thread!
         if (highestPosition.get() < position)
@@ -198,13 +199,13 @@ public class LossHandler
 
     private boolean onGap(final AtomicBuffer buffer, final int offset, final int length)
     {
-        if (scanCursor < gaps.length)
+        if (gapIndex < gaps.length)
         {
-            gaps[scanCursor].reset(activeTermId, offset, length);
+            gaps[gapIndex].reset(activeTermId, offset, length);
 
-            scanCursor++;
+            gapIndex++;
 
-            return scanCursor == gaps.length;
+            return gapIndex == gaps.length;
         }
 
         return false;
@@ -215,15 +216,17 @@ public class LossHandler
         final Gap firstGap = gaps[0];
         if (!timer.isActive())
         {
-            if (scanCursor > 0)
+            if (gapIndex > 0)
             {
                 activateGap(firstGap.termId, firstGap.termOffset, firstGap.length);
             }
         }
-        else if (scanCursor == 0)
+        // if there are no gaps then the gap has probably been filled in
+        else if (gapIndex == 0)
         {
             timer.cancel();
         }
+        // there's a new gap to fill
         else if (!firstGap.matches(activeGap.termId, activeGap.termOffset))
         {
             activateGap(firstGap.termId, firstGap.termOffset, firstGap.length);

@@ -304,12 +304,12 @@ public class DriverConnection implements AutoCloseable
             {
                 hwmIndex = prepareForRotation(activeTermId);
                 hwmTermId = termId;
-                lossHandler.potentialHighestPosition(packetPosition);
             }
 
             rebuilders[hwmIndex].insert(buffer, 0, length);
         }
 
+        lossHandler.highestPositionCandidate(packetPosition);
         highestReceivedPosition.position(lossHandler.highestPosition());
     }
 
@@ -323,7 +323,7 @@ public class DriverConnection implements AutoCloseable
         final long packetPosition = calculatePosition(header.termId(), header.termOffset());
 
         timeOfLastFrame.lazySet(clock.getAsLong());
-        lossHandler.potentialHighestPosition(packetPosition);
+        lossHandler.highestPositionCandidate(packetPosition);
     }
 
     /**

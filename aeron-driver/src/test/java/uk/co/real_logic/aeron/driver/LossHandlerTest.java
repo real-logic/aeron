@@ -347,7 +347,7 @@ public class LossHandlerTest
 
         final long highPosition = TermHelper.calculatePosition(TERM_ID, offsetOfMessage(2), POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        handler.potentialHighestPosition(highPosition);
+        handler.highestPositionCandidate(highPosition);
         assertFalse(handler.scan());
 
         verify(nakMessageSender).send(TERM_ID, offsetOfMessage(1), gapLength());
@@ -381,7 +381,7 @@ public class LossHandlerTest
 
         final long highPosition = TermHelper.calculatePosition(TERM_ID + 1, offsetOfMessage(0), POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        handler.potentialHighestPosition(highPosition);
+        handler.highestPositionCandidate(highPosition);
         assertFalse(handler.scan());
 
         verify(nakMessageSender).send(TERM_ID, offset, LOG_BUFFER_SIZE - offset);

@@ -22,6 +22,7 @@ import org.mockito.stubbing.Answer;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.concurrent.AtomicArray;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.Counter;
 import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
@@ -82,6 +83,7 @@ public class SenderTest
     private final UdpChannel udpChannel = UdpChannel.parse("udp://localhost:40123");
     private final InetSocketAddress rcvAddress = udpChannel.remoteData();
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
+    private final Counter mockHeartbeatsSentCounter = mock(Counter.class);
 
     private Answer<Integer> saveByteBufferAnswer =
         (invocation) ->
@@ -95,6 +97,7 @@ public class SenderTest
             // we don't pass on the args, so don't reset buffer.position() back
             return size;
         };
+
 
     @Before
     public void setUp() throws Exception
@@ -126,7 +129,8 @@ public class SenderTest
                                             HEADER.length,
                                             MAX_FRAME_LENGTH,
                                             spySenderControlStrategy.initialPositionLimit(INITIAL_TERM_ID, (int)LOG_BUFFER_SIZE),
-                                            mockLogger);
+                                            mockLogger,
+                                            mockHeartbeatsSentCounter);
         publications.add(publication);
     }
 

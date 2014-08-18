@@ -105,15 +105,15 @@ public class DriverConductor extends Agent
     private final TimerWheel.Timer clientLivenessCheckTimer;
     private final CountersManager countersManager;
     private final AtomicBuffer countersBuffer;
-    private final Counter receiverProxyFails;
-    private final Counter senderProxyFails;
-
     private final EventLogger logger;
 
+    private final Counter receiverProxyFails;
+    private final Counter senderProxyFails;
     private final Counter naksSentCounter;
     private final Counter statusMessagesSentCounter;
     private final Counter naksReceivedCounter;
     private final Counter statusMessagesReceivedCounter;
+    private final Counter heartbeatsSentCounter;
 
     public DriverConductor(final Context ctx)
     {
@@ -153,6 +153,7 @@ public class DriverConductor extends Agent
         statusMessagesSentCounter = countersManager.newCounter("SMs sent");
         naksReceivedCounter = countersManager.newCounter("NAKs received");
         statusMessagesReceivedCounter = countersManager.newCounter("SMs received");
+        heartbeatsSentCounter = countersManager.newCounter("Heartbeats sent");
     }
 
     public SendChannelEndpoint senderChannelEndpoint(final UdpChannel channel)
@@ -376,7 +377,8 @@ public class DriverConductor extends Agent
                                       HEADER_LENGTH,
                                       mtuLength,
                                       flowControlStrategy.initialPositionLimit(initialTermId, capacity),
-                                      logger);
+                                      logger,
+                                      heartbeatsSentCounter);
 
             final RetransmitHandler retransmitHandler =
                 new RetransmitHandler(timerWheel,

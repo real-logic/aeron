@@ -60,6 +60,7 @@ public class EventCodec
 
     private final static int LOG_HEADER_LENGTH = 16;
     private final static int SOCKET_ADDRESS_MAX_LENGTH = 24;
+    public static final int STACK_DEPTH = 5;
 
     public static int encode(final AtomicBuffer encodingBuffer, final AtomicBuffer buffer,
                              final int offset, final int bufferLength)
@@ -115,13 +116,16 @@ public class EventCodec
 
     public static int encode(final AtomicBuffer encodingBuffer, final Exception ex)
     {
-        final StackTraceElement stack = ex.getStackTrace()[0];
         final String msg = (null != ex.getMessage() ? ex.getMessage() : "exception message not set");
 
         int relativeOffset = LOG_HEADER_LENGTH;
         relativeOffset += encodingBuffer.putString(relativeOffset, ex.getClass().getName(), LITTLE_ENDIAN);
         relativeOffset += encodingBuffer.putString(relativeOffset, msg, LITTLE_ENDIAN);
-        relativeOffset = putStackTraceElement(encodingBuffer, stack, relativeOffset);
+
+        StackTraceElement[] stackTrace = ex.getStackTrace();
+        for (int i = 0;i < Math.min(STACK_DEPTH, stackTrace.length); i++) {
+            relativeOffset = putStackTraceElement(encodingBuffer, stackTrace[i], relativeOffset);
+        }
 
         final int recordLength = relativeOffset - LOG_HEADER_LENGTH;
         encodeLogHeader(encodingBuffer, recordLength, recordLength);
@@ -264,7 +268,11 @@ public class EventCodec
         offset += strLength + SIZE_OF_INT;
         builder.append(")");
 
-        readStackTraceElement(buffer, offset, builder);
+        for (int i = 0; i < STACK_DEPTH; i++)
+        {
+            builder.append('\n');
+            offset = readStackTraceElement(buffer, offset, builder);
+        }
 
         return builder.toString();
     }

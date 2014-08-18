@@ -110,6 +110,11 @@ public class DriverConductor extends Agent
 
     private final EventLogger logger;
 
+    private final Counter naksSentCounter;
+    private final Counter statusMessagesSentCounter;
+    private final Counter naksReceivedCounter;
+    private final Counter statusMessagesReceivedCounter;
+
     public DriverConductor(final Context ctx)
     {
         super(ctx.conductorIdleStrategy(), ctx.eventLoggerException());
@@ -144,6 +149,10 @@ public class DriverConductor extends Agent
 
         receiverProxyFails = countersManager.newCounter("Failed offers to ReceiverProxy");
         senderProxyFails = countersManager.newCounter("Failed offers to SenderProxy");
+        naksSentCounter = countersManager.newCounter("NAKs sent");
+        statusMessagesSentCounter = countersManager.newCounter("SMs sent");
+        naksReceivedCounter = countersManager.newCounter("NAKs received");
+        statusMessagesReceivedCounter = countersManager.newCounter("SMs received");
     }
 
     public SendChannelEndpoint senderChannelEndpoint(final UdpChannel channel)
@@ -327,7 +336,8 @@ public class DriverConductor extends Agent
             SendChannelEndpoint channelEndpoint = sendChannelEndpointByHash.get(udpChannel.consistentHash());
             if (null == channelEndpoint)
             {
-                channelEndpoint = new SendChannelEndpoint(udpChannel, nioSelector, logger);
+                channelEndpoint =
+                    new SendChannelEndpoint(udpChannel, nioSelector, logger, naksReceivedCounter, statusMessagesReceivedCounter);
                 sendChannelEndpointByHash.put(udpChannel.consistentHash(), channelEndpoint);
             }
             else if (!channelEndpoint.udpChannel().equals(udpChannel))
@@ -347,7 +357,7 @@ public class DriverConductor extends Agent
             final String canonicalForm = udpChannel.canonicalForm();
             final TermBuffers termBuffers = termBuffersFactory.newPublication(canonicalForm, sessionId, streamId);
 
-            final int positionCounterId = allocatePositionCounter("publication", channel, sessionId, streamId);
+            final int positionCounterId = allocatePositionCounter("publisher limit", channel, sessionId, streamId);
             final BufferPositionReporter positionReporter =
                 new BufferPositionReporter(countersBuffer, positionCounterId, countersManager);
 
@@ -772,11 +782,17 @@ public class DriverConductor extends Agent
             final String canonicalForm = udpChannel.canonicalForm();
             final TermBuffers termBuffers = termBuffersFactory.newConnection(canonicalForm, sessionId, streamId);
 
-            final int positionCounterId =
-                allocatePositionCounter("subscription", udpChannel.originalUriAsString(), sessionId, streamId);
+            final int subscriberPositionCounterId =
+                allocatePositionCounter("subscriber", udpChannel.originalUriAsString(), sessionId, streamId);
+
+            final int contiguousReceivedCounterId =
+                allocatePositionCounter("contiguous received", udpChannel.originalUriAsString(), sessionId, streamId);
+
+            final int highestReceivedCounterId =
+                allocatePositionCounter("highest received", udpChannel.originalUriAsString(), sessionId, streamId);
 
             clientProxy.onNewTermBuffers(ON_NEW_CONNECTED_SUBSCRIPTION, sessionId, streamId, initialTermId,
-                                         udpChannel.originalUriAsString(), termBuffers, 0, positionCounterId);
+                                         udpChannel.originalUriAsString(), termBuffers, 0, subscriberPositionCounterId);
 
             final GapScanner[] gapScanners =
                 termBuffers.stream()
@@ -789,7 +805,8 @@ public class DriverConductor extends Agent
                     timerWheel,
                     udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
                     channelEndpoint.composeNakMessageSender(controlAddress, sessionId, streamId),
-                    initialTermId);
+                    initialTermId,
+                    naksSentCounter);
 
             final DriverConnection connection =
                 new DriverConnection(
@@ -802,8 +819,11 @@ public class DriverConductor extends Agent
                     termBuffers,
                     lossHandler,
                     channelEndpoint.composeStatusMessageSender(controlAddress, sessionId, streamId),
-                    new BufferPositionIndicator(countersBuffer, positionCounterId, countersManager),
-                    timerWheel::now);
+                    newPositionIndicator(subscriberPositionCounterId),
+                    new BufferPositionReporter(countersBuffer, contiguousReceivedCounterId, countersManager),
+                    new BufferPositionReporter(countersBuffer, highestReceivedCounterId, countersManager)
+                    , timerWheel::now,
+                    statusMessagesSentCounter);
 
             connections.add(connection);
 
@@ -820,9 +840,14 @@ public class DriverConductor extends Agent
         }
     }
 
+    private BufferPositionIndicator newPositionIndicator(final int subscriberPositionCounterId)
+    {
+        return new BufferPositionIndicator(countersBuffer, subscriberPositionCounterId, countersManager);
+    }
+
     private int allocatePositionCounter(final String type, final String dirName, final int sessionId, final int streamId)
     {
-        return countersManager.allocate(String.format("%s: %s %x %x", type, dirName, sessionId, streamId));
+        return countersManager.allocate(String.format("%s position: %s %x %x", type, dirName, sessionId, streamId));
     }
 
     private RetransmitSender composeNewRetransmitSender(final DriverPublication publication)

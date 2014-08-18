@@ -22,6 +22,7 @@ import uk.co.real_logic.aeron.common.StaticDelayGenerator;
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.Counter;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
@@ -75,6 +76,7 @@ public class LossHandlerTest
     private NakMessageSender nakMessageSender;
     private long currentTime;
     private int activeIndex = TermHelper.termIdToBufferIndex(TERM_ID);
+    private Counter mockCounter = mock(Counter.class);
 
     public LossHandlerTest()
     {
@@ -94,7 +96,7 @@ public class LossHandlerTest
         nakMessageSender = mock(NakMessageSender.class);
 
         final AtomicBuffer rcvBuffer = new AtomicBuffer(new byte[MESSAGE_LENGTH]);
-        handler = new LossHandler(scanners, wheel, delayGenerator, nakMessageSender, TERM_ID);
+        handler = new LossHandler(scanners, wheel, delayGenerator, nakMessageSender, TERM_ID, mockCounter);
         dataHeader.wrap(rcvBuffer, 0);
     }
 
@@ -204,7 +206,7 @@ public class LossHandlerTest
     @Test
     public void shouldHandleImmediateNak()
     {
-        handler = new LossHandler(scanners, wheel, delayGeneratorWithImmediate, nakMessageSender, TERM_ID);
+        handler = getLossHandlerWithImmediate();
 
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
@@ -228,7 +230,7 @@ public class LossHandlerTest
     @Test
     public void shouldOnlySendNaksOnceOnMultipleScans()
     {
-        handler = new LossHandler(scanners, wheel, delayGeneratorWithImmediate, nakMessageSender, TERM_ID);
+        handler = getLossHandlerWithImmediate();
 
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
@@ -243,7 +245,7 @@ public class LossHandlerTest
     public void shouldRotateToNewTermIdCorrectlyOnNoGapsNoPadding()
     {
         // use immediate NAKs for simplicity
-        handler = new LossHandler(scanners, wheel, delayGeneratorWithImmediate, nakMessageSender, TERM_ID);
+        handler = getLossHandlerWithImmediate();
 
         assertThat(handler.activeIndex(), is(activeIndex));
 
@@ -272,7 +274,7 @@ public class LossHandlerTest
     public void shouldRotateToNewTermIdCorrectlyOnNoGaps()
     {
         // use immediate NAKs for simplicity
-        handler = new LossHandler(scanners, wheel, delayGeneratorWithImmediate, nakMessageSender, TERM_ID);
+        handler = getLossHandlerWithImmediate();
 
         assertThat(handler.activeIndex(), is(activeIndex));
 
@@ -301,7 +303,7 @@ public class LossHandlerTest
     public void shouldRotateToNewTermIdCorrectlyOnReceivingDataAfterGap()
     {
         // use immediate NAKs for simplicity
-        handler = new LossHandler(scanners, wheel, delayGeneratorWithImmediate, nakMessageSender, TERM_ID);
+        handler = getLossHandlerWithImmediate();
 
         assertThat(handler.activeIndex(), is(activeIndex));
 
@@ -337,7 +339,7 @@ public class LossHandlerTest
     @Test
     public void shouldDetectGapOnPotentialHighPositionChange()
     {
-        handler = new LossHandler(scanners, wheel, delayGeneratorWithImmediate, nakMessageSender, TERM_ID);
+        handler = getLossHandlerWithImmediate();
 
         assertThat(handler.activeIndex(), is(activeIndex));
 
@@ -345,7 +347,7 @@ public class LossHandlerTest
 
         final long highPosition = TermHelper.calculatePosition(TERM_ID, offsetOfMessage(2), POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        handler.potentialHighPosition(highPosition);
+        handler.potentialHighestPosition(highPosition);
         assertFalse(handler.scan());
 
         verify(nakMessageSender).send(TERM_ID, offsetOfMessage(1), gapLength());
@@ -354,7 +356,7 @@ public class LossHandlerTest
     @Test
     public void shouldDetectGapOnPotentialHighPositionChangeFromRollover()
     {
-        handler = new LossHandler(scanners, wheel, delayGeneratorWithImmediate, nakMessageSender, TERM_ID);
+        handler = getLossHandlerWithImmediate();
 
         assertThat(handler.activeIndex(), is(activeIndex));
 
@@ -379,10 +381,15 @@ public class LossHandlerTest
 
         final long highPosition = TermHelper.calculatePosition(TERM_ID + 1, offsetOfMessage(0), POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        handler.potentialHighPosition(highPosition);
+        handler.potentialHighestPosition(highPosition);
         assertFalse(handler.scan());
 
         verify(nakMessageSender).send(TERM_ID, offset, LOG_BUFFER_SIZE - offset);
+    }
+
+    private LossHandler getLossHandlerWithImmediate()
+    {
+        return new LossHandler(scanners, wheel, delayGeneratorWithImmediate, nakMessageSender, TERM_ID, mockCounter);
     }
 
     private void insertDataFrame(final int offset)

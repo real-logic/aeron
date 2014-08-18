@@ -136,7 +136,7 @@ public class Configuration
     /**
      * Size of the memory mapped buffers for the counters file
      */
-    public static final int COUNTERS_BUFFER_SZ_DEFAULT = 1024 * 1024;
+    public static final int COUNTERS_BUFFER_SZ_DEFAULT = 64 * 1024 * 1024;
     public static final int COUNTER_BUFFERS_SZ = getInteger(COUNTER_BUFFERS_SZ_PROP_NAME, COUNTERS_BUFFER_SZ_DEFAULT);
 
     /**

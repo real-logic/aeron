@@ -17,10 +17,12 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.Counter;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogRebuilder;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.status.PositionIndicator;
+import uk.co.real_logic.aeron.common.status.PositionReporter;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -49,8 +51,11 @@ public class DriverConnection implements AutoCloseable
     private final int sessionId;
     private final int streamId;
     private final TermBuffers termBuffers;
-    private final PositionIndicator receiverLimit;
+    private final PositionIndicator subscriberPosition;
     private final LongSupplier clock;
+    private final PositionReporter contiguousReceivedPosition;
+    private final PositionReporter highestReceivedPosition;
+    private final Counter statusMessagesSentCounter;
 
     private final AtomicInteger activeTermId = new AtomicInteger();
     private final AtomicLong timeOfLastFrame = new AtomicLong();
@@ -86,14 +91,20 @@ public class DriverConnection implements AutoCloseable
                             final TermBuffers termBuffers,
                             final LossHandler lossHandler,
                             final StatusMessageSender statusMessageSender,
-                            final PositionIndicator receiverLimit,
-                            final LongSupplier clock)
+                            final PositionIndicator subscriberPosition,
+                            final PositionReporter contiguousReceivedPosition,
+                            final PositionReporter highestReceivedPosition,
+                            final LongSupplier clock,
+                            final Counter statusMessagesSentCounter)
     {
         this.receiveChannelEndpoint = receiveChannelEndpoint;
         this.sessionId = sessionId;
         this.streamId = streamId;
         this.termBuffers = termBuffers;
-        this.receiverLimit = receiverLimit;
+        this.subscriberPosition = subscriberPosition;
+        this.contiguousReceivedPosition = contiguousReceivedPosition;
+        this.highestReceivedPosition = highestReceivedPosition;
+        this.statusMessagesSentCounter = statusMessagesSentCounter;
         this.status = ACTIVE;
         this.timeOfLastStatusChange = clock.getAsLong();
 
@@ -189,7 +200,7 @@ public class DriverConnection implements AutoCloseable
     public void close()
     {
         termBuffers.close();
-        receiverLimit.close();
+        subscriberPosition.close();
     }
 
     /**
@@ -230,8 +241,9 @@ public class DriverConnection implements AutoCloseable
      */
     public long remaining()
     {
-        // TODO: needs to account for multiple receiverLimit values (multiple subscribers) when needed
-        return Math.min(lossHandler.tailPosition() - receiverLimit.position(), 0);
+        // TODO: needs to account for multiple subscriberPosition values (multiple subscribers) when needed
+        final long contiguousReceivedPosition = lossHandler.tailPosition();
+        return Math.max(contiguousReceivedPosition - subscriberPosition.position(), 0);
     }
 
     /**
@@ -253,10 +265,18 @@ public class DriverConnection implements AutoCloseable
 
         timeOfLastFrame.lazySet(clock.getAsLong());
 
-        if (isOutOfBufferRange(packetPosition, length, position))
+        if (packetPosition < position)
         {
             // TODO: invalid packet we probably want to update an error counter
-            System.out.println(String.format("isOutOfBufferRange %x %d %x", packetPosition, length, position));
+            System.out.println(String.format("possible resend below current position %d : packet %d", position, packetPosition));
+            return;
+        }
+
+        if (isBeyondTermWindow(packetPosition, length, position))
+        {
+            // TODO: invalid packet we probably want to update an error counter
+            System.out.println(String.format("isBeyondTermWindow packet=%d length=%d position=%d",
+                                             packetPosition, length, position));
             return;
         }
 
@@ -270,6 +290,7 @@ public class DriverConnection implements AutoCloseable
         if (termId == activeTermId)
         {
             currentRebuilder.insert(buffer, 0, length);
+            contiguousReceivedPosition.position(lossHandler.tailPosition());
 
             if (currentRebuilder.isComplete())
             {
@@ -283,11 +304,13 @@ public class DriverConnection implements AutoCloseable
             {
                 hwmIndex = prepareForRotation(activeTermId);
                 hwmTermId = termId;
-                lossHandler.potentialHighPosition(packetPosition);
+                lossHandler.potentialHighestPosition(packetPosition);
             }
 
             rebuilders[hwmIndex].insert(buffer, 0, length);
         }
+
+        highestReceivedPosition.position(lossHandler.highestPosition());
     }
 
     /**
@@ -300,7 +323,7 @@ public class DriverConnection implements AutoCloseable
         final long packetPosition = calculatePosition(header.termId(), header.termOffset());
 
         timeOfLastFrame.lazySet(clock.getAsLong());
-        lossHandler.potentialHighPosition(packetPosition);
+        lossHandler.potentialHighestPosition(packetPosition);
     }
 
     /**
@@ -324,7 +347,7 @@ public class DriverConnection implements AutoCloseable
          * - send SM when haven't sent an SM in status message timeout
          */
 
-        final long position = receiverLimit.position();
+        final long position = subscriberPosition.position();
         final int currentSmTermId = TermHelper.calculateTermIdFromPosition(position, positionBitsToShift, initialTermId);
         final int currentSmTail = TermHelper.calculateTermOffsetFromPosition(position, positionBitsToShift);
 
@@ -387,6 +410,8 @@ public class DriverConnection implements AutoCloseable
                                   final int windowSize,
                                   final long now)
     {
+        statusMessagesSentCounter.increment();
+
         statusMessageSender.send(termId, termOffset, windowSize);
         lastSmTermId = termId;
         lastSmTimestamp = now;
@@ -407,12 +432,12 @@ public class DriverConnection implements AutoCloseable
 
     private boolean isBeyondFlowControlLimit(final long proposedPosition)
     {
-        return proposedPosition > (receiverLimit.position() + termWindowSize);
+        return proposedPosition > (subscriberPosition.position() + termWindowSize);
     }
 
-    private boolean isOutOfBufferRange(final long proposedPosition, final int length, final long currentPosition)
+    private boolean isBeyondTermWindow(final long proposedPosition, final int length, final long currentPosition)
     {
-        return proposedPosition < currentPosition || proposedPosition > (currentPosition + (termWindowSize - length));
+        return proposedPosition > (currentPosition + (termWindowSize - length));
     }
 
     private int prepareForRotation(final int activeTermId)

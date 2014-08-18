@@ -68,6 +68,7 @@ public class DriverConductorTest
     private static final long CORRELATION_ID_3 = 1431;
     private static final long CORRELATION_ID_4 = 1432;
     private static final long CLIENT_ID = 1433;
+    public static final int BUFFER_SIZE = 1024 * 1024;
 
     private final ByteBuffer toDriverBuffer =
         ByteBuffer.allocate(Configuration.COMMAND_BUFFER_SZ + RingBufferDescriptor.TRAILER_LENGTH);
@@ -102,8 +103,8 @@ public class DriverConductorTest
 
         currentTime = 0;
 
-        final AtomicBuffer counterBuffer = new AtomicBuffer(new byte[4096]);
-        final CountersManager countersManager = new CountersManager(new AtomicBuffer(new byte[8192]), counterBuffer);
+        final AtomicBuffer counterBuffer = new AtomicBuffer(new byte[BUFFER_SIZE]);
+        final CountersManager countersManager = new CountersManager(new AtomicBuffer(new byte[BUFFER_SIZE]), counterBuffer);
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .receiverNioSelector(nioSelector)

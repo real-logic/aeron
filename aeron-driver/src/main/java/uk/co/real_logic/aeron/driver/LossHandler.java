@@ -19,6 +19,7 @@ import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.Counter;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner;
 
 import java.util.concurrent.TimeUnit;
@@ -33,10 +34,11 @@ public class LossHandler
 {
     private final GapScanner[] scanners;
     private final TimerWheel wheel;
+    private Counter naksSent;
     private final Gap[] gaps = new Gap[2];
     private final Gap activeGap = new Gap();
     private final FeedbackDelayGenerator delayGenerator;
-    private final AtomicLong highPosition;
+    private final AtomicLong highestPosition;
     private final int positionBitsToShift;
     private final int initialTermId;
 
@@ -59,15 +61,17 @@ public class LossHandler
                        final TimerWheel wheel,
                        final FeedbackDelayGenerator delayGenerator,
                        final NakMessageSender nakMessageSender,
-                       final int activeTermId)
+                       final int activeTermId,
+                       final Counter naksSent)
     {
         this.scanners = scanners;
         this.wheel = wheel;
+        this.naksSent = naksSent;
         this.timer = wheel.newBlankTimer();
         this.delayGenerator = delayGenerator;
         this.nakMessageSender = nakMessageSender;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(scanners[0].capacity());
-        this.highPosition = new AtomicLong(TermHelper.calculatePosition(activeTermId, 0, positionBitsToShift, activeTermId));
+        this.highestPosition = new AtomicLong(TermHelper.calculatePosition(activeTermId, 0, positionBitsToShift, activeTermId));
 
         for (int i = 0, max = gaps.length; i < max; i++)
         {
@@ -106,7 +110,7 @@ public class LossHandler
                 final int tail = scanner.tailVolatile();
                 final long tailPosition =
                     TermHelper.calculatePosition(activeTermId, tail, positionBitsToShift, initialTermId);
-                final long currentHighPosition = highPosition.get();
+                final long currentHighPosition = highestPosition.get();
 
                 if (currentHighPosition > tailPosition)
                 {
@@ -157,12 +161,12 @@ public class LossHandler
      *
      * @param position new position in the stream
      */
-    public void potentialHighPosition(final long position)
+    public void potentialHighestPosition(final long position)
     {
         // only set from this method which comes from the Receiver thread!
-        if (highPosition.get() < position)
+        if (highestPosition.get() < position)
         {
-            highPosition.lazySet(position);
+            highestPosition.lazySet(position);
         }
     }
 
@@ -175,6 +179,16 @@ public class LossHandler
     {
         final int tail = scanners[activeIndex].tailVolatile();
         return TermHelper.calculatePosition(activeTermId, tail, positionBitsToShift, initialTermId);
+    }
+
+    /**
+     * The highest position seen by the Receiver for this connection.
+     *
+     * @return the highest position seen by the Receiver for this connection.
+     */
+    public long highestPosition()
+    {
+        return highestPosition.get();
     }
 
     private void suppressNak()
@@ -223,14 +237,20 @@ public class LossHandler
 
         if (delayGenerator.shouldFeedbackImmediately())
         {
-            nakMessageSender.send(activeGap.termId, activeGap.termOffset, activeGap.length);
+            sendNakMessage();
         }
     }
 
     private void onTimerExpire()
     {
-        nakMessageSender.send(activeGap.termId, activeGap.termOffset, activeGap.length);
+        sendNakMessage();
         scheduleTimer();
+    }
+
+    private void sendNakMessage()
+    {
+        naksSent.increment();
+        nakMessageSender.send(activeGap.termId, activeGap.termOffset, activeGap.length);
     }
 
     private long determineNakDelay()

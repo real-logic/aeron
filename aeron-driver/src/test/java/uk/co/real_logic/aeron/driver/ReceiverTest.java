@@ -21,6 +21,7 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.Counter;
 import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
@@ -29,6 +30,7 @@ import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight;
 import uk.co.real_logic.aeron.common.status.PositionIndicator;
+import uk.co.real_logic.aeron.common.status.PositionReporter;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
 import uk.co.real_logic.aeron.driver.cmd.CreateConnectionCmd;
@@ -64,7 +66,10 @@ public class ReceiverTest
 
     private final LossHandler mockLossHandler = mock(LossHandler.class);
     private final NioSelector mockNioSelector = mock(NioSelector.class);
+    private final Counter mockStatusMessagesSentCounter = mock(Counter.class);
     private final TermBuffersFactory mockTermBuffersFactory = mock(TermBuffersFactory.class);
+    private final PositionReporter mockContiguousReceivedPosition = mock(PositionReporter.class);
+    private final PositionReporter mockHighestReceivedPosition = mock(PositionReporter.class);
     private final ByteBuffer dataFrameBuffer = ByteBuffer.allocate(2 * 1024);
     private final AtomicBuffer dataBuffer = new AtomicBuffer(dataFrameBuffer);
 
@@ -160,7 +165,10 @@ public class ReceiverTest
                 mockLossHandler,
                 receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
                 POSITION_INDICATOR,
-                clock);
+                mockContiguousReceivedPosition,
+                mockHighestReceivedPosition,
+                clock,
+                mockStatusMessagesSentCounter);
 
         final int messagesRead = toConductorQueue.drain(
             (e) ->
@@ -227,7 +235,10 @@ public class ReceiverTest
                             mockLossHandler,
                             receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
                             POSITION_INDICATOR,
-                            clock)));
+                            mockContiguousReceivedPosition,
+                            mockHighestReceivedPosition,
+                            clock,
+                            mockStatusMessagesSentCounter)));
             });
 
         assertThat(messagesRead, is(1));
@@ -284,7 +295,10 @@ public class ReceiverTest
                                 mockLossHandler,
                                 receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
                                 POSITION_INDICATOR,
-                                clock)));
+                                mockContiguousReceivedPosition,
+                                mockHighestReceivedPosition,
+                                clock,
+                                mockStatusMessagesSentCounter)));
             });
 
         assertThat(messagesRead, is(1));
@@ -344,7 +358,10 @@ public class ReceiverTest
                             mockLossHandler,
                             receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
                             POSITION_INDICATOR,
-                            clock)));
+                            mockContiguousReceivedPosition,
+                            mockHighestReceivedPosition,
+                            clock,
+                            mockStatusMessagesSentCounter)));
             });
 
         assertThat(messagesRead, is(1));

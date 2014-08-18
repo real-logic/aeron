@@ -78,7 +78,7 @@ public class DriverPublication implements AutoCloseable
     private final AtomicLong positionLimit;
     private final SendChannelEndpoint mediaEndpoint;
     private final TermBuffers termBuffers;
-    private final BufferPositionReporter limitReporter;
+    private final BufferPositionReporter publisherLimitReporter;
     private final ClientLiveness clientLiveness;
 
     private final DataHeaderFlyweight heartbeatHeader = new DataHeaderFlyweight();
@@ -93,7 +93,7 @@ public class DriverPublication implements AutoCloseable
     private int nextTermOffset = 0;
     private int activeIndex = 0;
     private int retransmitIndex = 0;
-    private int statusMessagesSeenCount = 0;
+    private int statusMessagesReceivedCount = 0;
     private long nextOffsetPosition = 0;
     private long timeOfFlush = 0;
 
@@ -102,7 +102,7 @@ public class DriverPublication implements AutoCloseable
     public DriverPublication(final SendChannelEndpoint mediaEndpoint,
                              final TimerWheel timerWheel,
                              final TermBuffers termBuffers,
-                             final BufferPositionReporter limitReporter,
+                             final BufferPositionReporter publisherLimitReporter,
                              final ClientLiveness clientLiveness,
                              final int sessionId,
                              final int streamId,
@@ -117,7 +117,7 @@ public class DriverPublication implements AutoCloseable
         this.logger = logger;
         this.dstAddress = mediaEndpoint.udpChannel().remoteData();
         this.timerWheel = timerWheel;
-        this.limitReporter = limitReporter;
+        this.publisherLimitReporter = publisherLimitReporter;
         this.clientLiveness = clientLiveness;
         this.sessionId = sessionId;
         this.streamId = streamId;
@@ -143,13 +143,13 @@ public class DriverPublication implements AutoCloseable
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
         this.initialTermId = initialTermId;
         termWindowSize = Configuration.publicationTermWindowSize(termCapacity);
-        limitReporter.position(termWindowSize);
+        publisherLimitReporter.position(termWindowSize);
     }
 
     public void close()
     {
         termBuffers.close();
-        limitReporter.close();
+        publisherLimitReporter.close();
     }
 
     public int send()
@@ -174,7 +174,7 @@ public class DriverPublication implements AutoCloseable
                     scanner.seek(0);
                 }
 
-                limitReporter.position(positionForActiveTerm(scanner.offset()) + termWindowSize);
+                publisherLimitReporter.position(positionForActiveTerm(scanner.offset()) + termWindowSize);
             }
             catch (final Exception ex)
             {
@@ -203,7 +203,7 @@ public class DriverPublication implements AutoCloseable
     public void updatePositionLimitFromStatusMessage(final long limit)
     {
         positionLimit.lazySet(limit);
-        statusMessagesSeenCount++;  // we also got an SM, so w00t!
+        statusMessagesReceivedCount++;
     }
 
     /**
@@ -211,7 +211,7 @@ public class DriverPublication implements AutoCloseable
      */
     public boolean heartbeatCheck()
     {
-        final long timeout = statusMessagesSeenCount > 0 ? HEARTBEAT_TIMEOUT_NS : INITIAL_HEARTBEAT_TIMEOUT_NS;
+        final long timeout = statusMessagesReceivedCount > 0 ? HEARTBEAT_TIMEOUT_NS : INITIAL_HEARTBEAT_TIMEOUT_NS;
         final long timeSinceLastHeartbeat = timerWheel.now() - timeOfLastSendOrHeartbeat.get();
         if (timeSinceLastHeartbeat > timeout)
         {
@@ -262,7 +262,7 @@ public class DriverPublication implements AutoCloseable
 
     public int statusMessagesSeenCount()
     {
-        return statusMessagesSeenCount;
+        return statusMessagesReceivedCount;
     }
 
     public void timeOfFlush(final long timestamp)

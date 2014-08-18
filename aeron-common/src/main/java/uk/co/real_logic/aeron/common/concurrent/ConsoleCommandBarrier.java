@@ -18,14 +18,14 @@ package uk.co.real_logic.aeron.common.concurrent;
 import java.io.*;
 
 /**
- * Barrier to block the calling thread until a command is given on the provided {@link InputStream}.
+ * Barrier to block the calling thread until a command is given on the {@link Console}
  */
 public class ConsoleCommandBarrier
 {
     final String label;
 
     /**
-     * Create a barrier that will display the provided label and interact via the provided streams.
+     * Create a barrier that will display the provided label and interact via the {@link Console}.
      *
      * @param label to prompt the user.
      */

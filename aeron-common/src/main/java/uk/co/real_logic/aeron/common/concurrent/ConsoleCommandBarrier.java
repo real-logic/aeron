@@ -15,32 +15,23 @@
  */
 package uk.co.real_logic.aeron.common.concurrent;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PrintStream;
+import java.io.*;
 
 /**
  * Barrier to block the calling thread until a command is given on the provided {@link InputStream}.
  */
-public class CommandBarrier
+public class ConsoleCommandBarrier
 {
     final String label;
-    final InputStream in;
-    final PrintStream out;
 
     /**
      * Create a barrier that will display the provided label and interact via the provided streams.
      *
      * @param label to prompt the user.
-     * @param in from which commands will be read.
-     * @param out to which the prompt will be written.
      */
-    public CommandBarrier(final String label, final InputStream in, final PrintStream out)
+    public ConsoleCommandBarrier(final String label)
     {
         this.label = label;
-        this.in = in;
-        this.out = out;
     }
 
     /**
@@ -50,22 +41,21 @@ public class CommandBarrier
      */
     public void await(final String cmd)
     {
-        try (final BufferedReader reader = new BufferedReader(new InputStreamReader(in)))
+        final Console console = System.console();
+        if (null == console)
         {
-            while (true)
-            {
-                out.printf("\n%s : ", label).flush();
-
-                final String line = reader.readLine();
-                if (cmd.equalsIgnoreCase(line))
-                {
-                    break;
-                }
-            }
+            throw new IllegalStateException("Console is not available");
         }
-        catch (final Exception ex)
+
+        while (true)
         {
-            throw new RuntimeException(ex);
+            console.printf("\n%s : ", label).flush();
+
+            final String line = console.readLine();
+            if (cmd.equalsIgnoreCase(line))
+            {
+                break;
+            }
         }
     }
 }

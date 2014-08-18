@@ -77,7 +77,7 @@ public class MediaDriver implements AutoCloseable
     {
         try (final MediaDriver ignored = MediaDriver.launch())
         {
-            new CommandBarrier("Type 'quit' to terminate", System.in, System.out).await("quit");
+            new ConsoleCommandBarrier("Type 'quit' to terminate").await("quit");
         }
     }
 

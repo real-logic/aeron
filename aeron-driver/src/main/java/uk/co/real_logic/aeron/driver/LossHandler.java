@@ -107,7 +107,7 @@ public class LossHandler
             }
             else
             {
-                // TODO: is this else statement even possible and if so why?
+                // Account for 0 length heartbeat packet
                 final int tail = scanner.tailVolatile();
                 final long tailPosition =
                     TermHelper.calculatePosition(activeTermId, tail, positionBitsToShift, initialTermId);
@@ -214,15 +214,13 @@ public class LossHandler
     private void onScanComplete()
     {
         final Gap firstGap = gaps[0];
-        if (!timer.isActive())
+        final boolean hasGap = gapIndex > 0;
+        if (!timer.isActive() && hasGap)
         {
-            if (gapIndex > 0)
-            {
-                activateGap(firstGap.termId, firstGap.termOffset, firstGap.length);
-            }
+            activateGap(firstGap.termId, firstGap.termOffset, firstGap.length);
         }
         // if there are no gaps then the gap has probably been filled in
-        else if (gapIndex == 0)
+        else if (!hasGap)
         {
             timer.cancel();
         }

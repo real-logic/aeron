@@ -263,8 +263,6 @@ public class DriverConnection implements AutoCloseable
         final long packetPosition = calculatePosition(termId, packetTail);
         final long position = position(currentRebuilder.tail());
 
-        timeOfLastFrame.lazySet(clock.getAsLong());
-
         if (packetPosition < position)
         {
             // TODO: invalid packet we probably want to update an error counter
@@ -309,6 +307,7 @@ public class DriverConnection implements AutoCloseable
             rebuilders[hwmIndex].insert(buffer, 0, length);
         }
 
+        timeOfLastFrame.lazySet(clock.getAsLong());
         lossHandler.highestPositionCandidate(packetPosition);
         highestReceivedPosition.position(lossHandler.highestPosition());
     }

@@ -165,16 +165,16 @@ public class MediaDriver implements AutoCloseable
     private MediaDriver start()
     {
         conductorThread = new Thread(conductor);
-        startThread(conductorThread, "driver-conductor");
+        startThread(conductorThread, "aeron-driver-conductor");
 
         senderThread = new Thread(sender);
-        startThread(senderThread, "sender");
+        startThread(senderThread, "aeron-sender");
 
         receiverThread = new Thread(receiver);
-        startThread(receiverThread, "receiver");
+        startThread(receiverThread, "aeron-receiver");
 
         eventReaderThread = new Thread(eventReader);
-        startThread(eventReaderThread, "event-reader");
+        startThread(eventReaderThread, "aeron-event-reader");
 
         return this;
     }

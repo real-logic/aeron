@@ -115,7 +115,7 @@ public class LossHandler
 
                 if (currentHighPosition > tailPosition)
                 {
-                    activateGap(activeTermId, tail, (int)(currentHighPosition - tailPosition));
+                    activateGap(activeTermId, tail, (int) (currentHighPosition - tailPosition));
                 }
             }
         }
@@ -263,12 +263,10 @@ public class LossHandler
     {
         final long delay = determineNakDelay();
 
-        if (timer.isActive())
+        if (!timer.isActive())
         {
-            timer.cancel();
+            wheel.rescheduleTimeout(delay, TimeUnit.NANOSECONDS, timer, this::onTimerExpire);
         }
-
-        wheel.rescheduleTimeout(delay, TimeUnit.NANOSECONDS, timer, this::onTimerExpire);
     }
 
     static class Gap
@@ -287,6 +285,15 @@ public class LossHandler
         public boolean matches(final int termId, final int termOffset)
         {
             return termId == this.termId && termOffset == this.termOffset;
+        }
+
+        public String toString()
+        {
+            return "Gap{" +
+                    "termId=" + termId +
+                    ", termOffset=" + termOffset +
+                    ", length=" + length +
+                    '}';
         }
     }
 }

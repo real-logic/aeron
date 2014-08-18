@@ -56,7 +56,7 @@ public class DriverConductor extends Agent
      * Unicast NAK delay is immediate initial with delayed subsequent delay
      */
     public static final StaticDelayGenerator NAK_UNICAST_DELAY_GENERATOR =
-        new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(Configuration.NAK_UNICAST_DELAY_DEFAULT_NS), true);
+        new StaticDelayGenerator(Configuration.NAK_UNICAST_DELAY_DEFAULT_NS, true);
 
     public static final OptimalMulticastDelayGenerator NAK_MULTICAST_DELAY_GENERATOR =
         new OptimalMulticastDelayGenerator(Configuration.NAK_MAX_BACKOFF_DEFAULT,
@@ -110,8 +110,9 @@ public class DriverConductor extends Agent
     private final Counter receiverProxyFails;
     private final Counter senderProxyFails;
     private final Counter naksSentCounter;
-    private final Counter statusMessagesSentCounter;
     private final Counter naksReceivedCounter;
+    private final Counter retransmitsSentCounter;
+    private final Counter statusMessagesSentCounter;
     private final Counter statusMessagesReceivedCounter;
     private final Counter heartbeatsSentCounter;
 
@@ -150,10 +151,11 @@ public class DriverConductor extends Agent
         receiverProxyFails = countersManager.newCounter("Failed offers to ReceiverProxy");
         senderProxyFails = countersManager.newCounter("Failed offers to SenderProxy");
         naksSentCounter = countersManager.newCounter("NAKs sent");
-        statusMessagesSentCounter = countersManager.newCounter("SMs sent");
         naksReceivedCounter = countersManager.newCounter("NAKs received");
+        statusMessagesSentCounter = countersManager.newCounter("SMs sent");
         statusMessagesReceivedCounter = countersManager.newCounter("SMs received");
         heartbeatsSentCounter = countersManager.newCounter("Heartbeats sent");
+        retransmitsSentCounter = countersManager.newCounter("Retransmits sent");
     }
 
     public SendChannelEndpoint senderChannelEndpoint(final UdpChannel channel)
@@ -170,6 +172,10 @@ public class DriverConductor extends Agent
     {
         int workCount = nioSelector.processKeys();
 
+        workCount += processFromClientCommandBuffer();
+        workCount += processFromReceiverCommandQueue();
+        workCount += processTimers();
+
         workCount += publications.doAction(DriverPublication::cleanLogBuffer);
 
         final long now = timerWheel.now();
@@ -179,10 +185,6 @@ public class DriverConductor extends Agent
             workCount += connection.scanForGaps();
             workCount += connection.sendPendingStatusMessages(now);
         }
-
-        workCount += processFromClientCommandBuffer();
-        workCount += processFromReceiverCommandQueue();
-        workCount += processTimers();
 
         return workCount;
     }
@@ -378,7 +380,8 @@ public class DriverConductor extends Agent
                                       mtuLength,
                                       flowControlStrategy.initialPositionLimit(initialTermId, capacity),
                                       logger,
-                                      heartbeatsSentCounter);
+                                      heartbeatsSentCounter,
+                                      retransmitsSentCounter);
 
             final RetransmitHandler retransmitHandler =
                 new RetransmitHandler(timerWheel,

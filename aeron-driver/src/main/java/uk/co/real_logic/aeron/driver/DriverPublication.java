@@ -89,6 +89,7 @@ public class DriverPublication implements AutoCloseable
     private final int initialTermId;
     private final EventLogger logger;
     private final Counter heartbeatsSentCounter;
+    private final Counter retransmitsSentCounter;
     private final AtomicInteger status = new AtomicInteger(ACTIVE);
     private final int termWindowSize;
 
@@ -113,12 +114,14 @@ public class DriverPublication implements AutoCloseable
                              final int mtuLength,
                              final long initialPositionLimit,
                              final EventLogger logger,
-                             final Counter heartbeatsSentCounter)
+                             final Counter heartbeatsSentCounter,
+                             final Counter retransmitsSentCounter)
     {
         this.mediaEndpoint = mediaEndpoint;
         this.termBuffers = termBuffers;
         this.logger = logger;
         this.heartbeatsSentCounter = heartbeatsSentCounter;
+        this.retransmitsSentCounter = retransmitsSentCounter;
         this.dstAddress = mediaEndpoint.udpChannel().remoteData();
         this.timerWheel = timerWheel;
         this.publisherLimitReporter = publisherLimitReporter;
@@ -294,6 +297,8 @@ public class DriverPublication implements AutoCloseable
                 remainingBytes -= scanner.scanNext(this::onSendRetransmit, Math.min(remainingBytes, mtuLength));
             }
             while (remainingBytes > 0);
+
+            retransmitsSentCounter.increment();
         }
     }
 

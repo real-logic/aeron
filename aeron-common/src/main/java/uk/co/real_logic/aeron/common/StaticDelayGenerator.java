@@ -20,25 +20,25 @@ package uk.co.real_logic.aeron.common;
  */
 public class StaticDelayGenerator implements FeedbackDelayGenerator
 {
-    private final long delay;
+    private final long delayInNs;
     private final boolean immediateFeedback;
 
     /**
-     * Create a delay generator that uses the specified delay.
+     * Create a delayInNs generator that uses the specified delayInNs.
      *
-     * @param delay to return
+     * @param delayInNs to return
      * @param immediateFeedback or not
      */
-    public StaticDelayGenerator(final long delay, final boolean immediateFeedback)
+    public StaticDelayGenerator(final long delayInNs, final boolean immediateFeedback)
     {
-        this.delay = delay;
+        this.delayInNs = delayInNs;
         this.immediateFeedback = immediateFeedback;
     }
 
     /** {@inheritDoc} */
     public long generateDelay()
     {
-        return delay;
+        return delayInNs;
     }
 
     /** {@inheritDoc} */

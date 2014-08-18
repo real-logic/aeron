@@ -84,6 +84,7 @@ public class SenderTest
     private final InetSocketAddress rcvAddress = udpChannel.remoteData();
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final Counter mockHeartbeatsSentCounter = mock(Counter.class);
+    private final Counter mockRetransmitsSentCounter = mock(Counter.class);
 
     private Answer<Integer> saveByteBufferAnswer =
         (invocation) ->
@@ -130,7 +131,8 @@ public class SenderTest
                                             MAX_FRAME_LENGTH,
                                             spySenderControlStrategy.initialPositionLimit(INITIAL_TERM_ID, (int)LOG_BUFFER_SIZE),
                                             mockLogger,
-                                            mockHeartbeatsSentCounter);
+                                            mockHeartbeatsSentCounter,
+                                            mockRetransmitsSentCounter);
         publications.add(publication);
     }
 

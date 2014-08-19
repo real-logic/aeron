@@ -199,6 +199,8 @@ public class DriverConnection implements AutoCloseable
     /** {@inheritDoc} */
     public void close()
     {
+        contiguousReceivedPosition.close();
+        highestReceivedPosition.close();
         termBuffers.close();
         subscriberPosition.close();
     }

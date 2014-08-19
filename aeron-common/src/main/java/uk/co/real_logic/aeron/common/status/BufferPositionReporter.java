@@ -19,11 +19,10 @@ import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.CountersManager;
 
 /**
- * .
+ * Reports a position by recording it in an {@link AtomicBuffer}.
  */
 public class BufferPositionReporter implements PositionReporter
 {
-
     private final AtomicBuffer buffer;
     private final int counterId;
     private final CountersManager countersManager;
@@ -51,5 +50,4 @@ public class BufferPositionReporter implements PositionReporter
     {
         countersManager.free(counterId);
     }
-
 }

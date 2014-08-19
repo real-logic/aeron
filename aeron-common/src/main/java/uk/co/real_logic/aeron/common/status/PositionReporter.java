@@ -22,7 +22,6 @@ package uk.co.real_logic.aeron.common.status;
  */
 public interface PositionReporter extends AutoCloseable
 {
-
     /**
      * Sets the current position of the component
      *
@@ -30,6 +29,8 @@ public interface PositionReporter extends AutoCloseable
      */
     void position(long value);
 
+    /**
+     * Close down and free any underlying resouces.
+     */
     void close();
-
 }

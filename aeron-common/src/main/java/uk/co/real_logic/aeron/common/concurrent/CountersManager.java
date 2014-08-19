@@ -117,7 +117,6 @@ public class CountersManager
 
         while ((size = labelsBuffer.getInt(labelsOffset)) != 0)
         {
-
             if (size != UNREGISTERED_LABEL_SIZE)
             {
                 final String label = labelsBuffer.getString(labelsOffset, nativeOrder());

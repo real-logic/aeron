@@ -57,35 +57,27 @@ public class EventConfiguration
 
     public static final Set<EventCode> PRODUCTION_LOGGER_EVENT_CODES =
         EnumSet.of(EXCEPTION,
-                   ERROR_SENDING_HEARTBEAT_PACKET,
-                   COULD_NOT_FIND_FRAME_HANDLER_FOR_NEW_CONNECTED_SUBSCRIPTION,
-                   COULD_NOT_FIND_INTERFACE,
-                   COULD_NOT_SEND_ENTIRE_RETRANSMIT,
                    MALFORMED_FRAME_LENGTH,
-                   UNKNOWN_HEADER_TYPE,
-                   ERROR_DELETING_FILE);
+                   ERROR_DELETING_FILE,
+                   FRAME_OUT_INCOMPLETE_SENDTO);
 
     public static final Set<EventCode> ADMIN_ONLY_EVENT_CODES =
         EnumSet.of(EXCEPTION,
-            ERROR_SENDING_HEARTBEAT_PACKET,
-            COULD_NOT_FIND_FRAME_HANDLER_FOR_NEW_CONNECTED_SUBSCRIPTION,
-            COULD_NOT_FIND_INTERFACE,
-            COULD_NOT_SEND_ENTIRE_RETRANSMIT,
-            MALFORMED_FRAME_LENGTH,
-            UNKNOWN_HEADER_TYPE,
-            CMD_IN_ADD_PUBLICATION,
-            CMD_IN_ADD_SUBSCRIPTION,
-            CMD_IN_KEEPALIVE_CLIENT,
-            CMD_IN_REMOVE_PUBLICATION,
-            CMD_IN_REMOVE_SUBSCRIPTION,
-            REMOVE_CONNECTION_CLEANUP,
-            REMOVE_PUBLICATION_CLEANUP,
-            REMOVE_SUBSCRIPTION_CLEANUP,
-            CMD_OUT_NEW_PUBLICATION_BUFFER_NOTIFICATION,
-            CMD_OUT_NEW_SUBSCRIPTION_BUFFER_NOTIFICATION,
-            CMD_OUT_ON_INACTIVE_CONNECTION,
-            CMD_OUT_ON_OPERATION_SUCCESS,
-            ERROR_DELETING_FILE);
+                   MALFORMED_FRAME_LENGTH,
+                   CMD_IN_ADD_PUBLICATION,
+                   CMD_IN_ADD_SUBSCRIPTION,
+                   CMD_IN_KEEPALIVE_CLIENT,
+                   CMD_IN_REMOVE_PUBLICATION,
+                   CMD_IN_REMOVE_SUBSCRIPTION,
+                   REMOVE_CONNECTION_CLEANUP,
+                   REMOVE_PUBLICATION_CLEANUP,
+                   REMOVE_SUBSCRIPTION_CLEANUP,
+                   CMD_OUT_NEW_PUBLICATION_BUFFER_NOTIFICATION,
+                   CMD_OUT_NEW_SUBSCRIPTION_BUFFER_NOTIFICATION,
+                   CMD_OUT_ON_INACTIVE_CONNECTION,
+                   CMD_OUT_ON_OPERATION_SUCCESS,
+                   ERROR_DELETING_FILE,
+                   FRAME_OUT_INCOMPLETE_SENDTO);
 
     public static final Set<EventCode> ALL_LOGGER_EVENT_CODES = EnumSet.allOf(EventCode.class);
 

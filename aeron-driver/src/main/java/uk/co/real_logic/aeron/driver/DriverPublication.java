@@ -349,7 +349,7 @@ public class DriverPublication implements AutoCloseable
             final int bytesSent = mediaEndpoint.sendTo(sendBuffer, dstAddress);
             if (length != bytesSent)
             {
-                throw new IllegalStateException("could not send all of message: " + bytesSent + "/" + length);
+                logger.log(EventCode.FRAME_OUT_INCOMPLETE_SENDTO, "sendTransmissionUnit %d/%d", bytesSent, length);
             }
 
             updateTimeOfLastSendOrHeartbeat(timerWheel.now());
@@ -371,7 +371,7 @@ public class DriverPublication implements AutoCloseable
             final int bytesSent = mediaEndpoint.sendTo(termRetransmitBuffer, dstAddress);
             if (bytesSent != length)
             {
-                logger.log(EventCode.COULD_NOT_FIND_INTERFACE, termRetransmitBuffer, offset, length, dstAddress);
+                logger.log(EventCode.FRAME_OUT_INCOMPLETE_SENDTO, "onSendRetransmit %d/%d", bytesSent, length);
             }
         }
         catch (final Exception ex)
@@ -409,8 +409,8 @@ public class DriverPublication implements AutoCloseable
 
             if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
             {
-                logger.log(EventCode.ERROR_SENDING_HEARTBEAT_PACKET, scratchByteBuffer, 0,
-                           DataHeaderFlyweight.HEADER_LENGTH, dstAddress);
+                logger.log(EventCode.FRAME_OUT_INCOMPLETE_SENDTO, "sendHeartbeat %d/%d",
+                    bytesSent, DataHeaderFlyweight.HEADER_LENGTH);
             }
 
             updateTimeOfLastSendOrHeartbeat(timerWheel.now());

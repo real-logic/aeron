@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.collections.Int2ObjectHashMap;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.event.EventCode;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
@@ -33,6 +34,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
 {
     private final UdpTransport udpTransport;
     private final DataFrameDispatcher dispatcher;
+    private final EventLogger logger;
 
     private final Int2ObjectHashMap<Integer> refCountByStreamIdMap = new Int2ObjectHashMap<>();
 
@@ -51,6 +53,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         smHeader.wrap(smBuffer, 0);
         nakHeader.wrap(nakBuffer, 0);
 
+        this.logger = logger;
         this.udpTransport = new UdpTransport(udpChannel, this::onDataFrame, logger, lossGenerator);
         this.dispatcher = new DataFrameDispatcher(conductorProxy, this);
     }
@@ -182,14 +185,17 @@ public class ReceiveChannelEndpoint implements AutoCloseable
 
         try
         {
-            if (udpTransport.sendTo(smBuffer, controlAddress) < smHeader.frameLength())
+            final int bytesSent = udpTransport.sendTo(smBuffer, controlAddress);
+
+            if (bytesSent < smHeader.frameLength())
             {
-                throw new IllegalStateException("could not send all of SM");
+                logger.log(EventCode.FRAME_OUT_INCOMPLETE_SENDTO, "sendStatusMessage %d/%d",
+                    bytesSent, smHeader.frameLength());
             }
         }
         catch (final Exception ex)
         {
-            throw new RuntimeException(ex);
+            logger.logException(ex);
         }
     }
 
@@ -215,14 +221,16 @@ public class ReceiveChannelEndpoint implements AutoCloseable
 
         try
         {
-            if (udpTransport.sendTo(nakBuffer, controlAddress) < nakHeader.frameLength())
+            final int bytesSent = udpTransport.sendTo(nakBuffer, controlAddress);
+
+            if (bytesSent < nakHeader.frameLength())
             {
-                throw new IllegalStateException("could not send all of NAK");
+                logger.log(EventCode.FRAME_OUT_INCOMPLETE_SENDTO, "sendNak %d/%d", bytesSent, nakHeader.frameLength());
             }
         }
         catch (final Exception ex)
         {
-            throw new RuntimeException(ex);
+            logger.logException(ex);
         }
     }
 }

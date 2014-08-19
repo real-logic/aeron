@@ -130,12 +130,11 @@ public class EventLogger
         }
     }
 
-    public void log(
-            final EventCode code,
-            final String format,
-            final Object first,
-            final Object second,
-            final Object third)
+    public void log(final EventCode code,
+                    final String format,
+                    final Object first,
+                    final Object second,
+                    final Object third)
     {
         if (isEnabled(code, enabledEventCodes))
         {

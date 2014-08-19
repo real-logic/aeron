@@ -28,28 +28,24 @@ public enum EventCode
     CMD_IN_ADD_PUBLICATION(3, EventCodec::dissectAsCommand),
     CMD_IN_REMOVE_PUBLICATION(4, EventCodec::dissectAsCommand),
     CMD_IN_ADD_SUBSCRIPTION(5, EventCodec::dissectAsCommand),
+
     CMD_IN_REMOVE_SUBSCRIPTION(6, EventCodec::dissectAsCommand),
     CMD_OUT_NEW_PUBLICATION_BUFFER_NOTIFICATION(7, EventCodec::dissectAsCommand),
     CMD_OUT_NEW_SUBSCRIPTION_BUFFER_NOTIFICATION(8, EventCodec::dissectAsCommand),
     INVOCATION(9, EventCodec::dissectAsInvocation),
     EXCEPTION(10, EventCodec::dissectAsException),
+
     MALFORMED_FRAME_LENGTH(11, EventCodec::dissectAsCommand),
-    UNKNOWN_HEADER_TYPE(12, EventCodec::dissectAsCommand),
+    CMD_OUT_ON_OPERATION_SUCCESS(12, EventCodec::dissectAsCommand),
+    CMD_IN_KEEPALIVE_CLIENT(13, EventCodec::dissectAsCommand),
+    REMOVE_PUBLICATION_CLEANUP(14, EventCodec::dissectAsString),
+    REMOVE_SUBSCRIPTION_CLEANUP(15, EventCodec::dissectAsString),
 
-    /** Probably means MULTICAST_DEFAULT_INTERFACE_PROP_NAME wasn't set properly */
-    COULD_NOT_FIND_INTERFACE(13, EventCodec::dissectAsString),
-    COULD_NOT_FIND_FRAME_HANDLER_FOR_NEW_CONNECTED_SUBSCRIPTION(14, EventCodec::dissectAsString),
-    ERROR_SENDING_HEARTBEAT_PACKET(15, EventCodec::dissectAsFrame),
-    COULD_NOT_SEND_ENTIRE_RETRANSMIT(16, EventCodec::dissectAsFrame),
-    CMD_OUT_ON_OPERATION_SUCCESS(17, EventCodec::dissectAsCommand),
-    CMD_IN_KEEPALIVE_CLIENT(18, EventCodec::dissectAsCommand),
-    REMOVE_PUBLICATION_CLEANUP(19, EventCodec::dissectAsString),
-    REMOVE_SUBSCRIPTION_CLEANUP(20, EventCodec::dissectAsString),
-    REMOVE_CONNECTION_CLEANUP(21, EventCodec::dissectAsString),
-    CMD_OUT_ON_INACTIVE_CONNECTION(22, EventCodec::dissectAsCommand),
-    FRAME_IN_DROPPED(23, EventCodec::dissectAsFrame),
-
-    ERROR_DELETING_FILE(24, EventCodec::dissectAsString);
+    REMOVE_CONNECTION_CLEANUP(16, EventCodec::dissectAsString),
+    CMD_OUT_ON_INACTIVE_CONNECTION(17, EventCodec::dissectAsCommand),
+    FRAME_IN_DROPPED(18, EventCodec::dissectAsFrame),
+    ERROR_DELETING_FILE(19, EventCodec::dissectAsString),
+    FRAME_OUT_INCOMPLETE_SENDTO(20, EventCodec::dissectAsString);
 
     private static final Int2ObjectHashMap<EventCode> EVENT_CODE_BY_ID_MAP = new Int2ObjectHashMap<>();
 

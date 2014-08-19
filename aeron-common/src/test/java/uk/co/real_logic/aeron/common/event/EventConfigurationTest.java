@@ -7,7 +7,7 @@ import java.util.Set;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static uk.co.real_logic.aeron.common.event.EventCode.ERROR_SENDING_HEARTBEAT_PACKET;
+import static uk.co.real_logic.aeron.common.event.EventCode.FRAME_IN;
 import static uk.co.real_logic.aeron.common.event.EventCode.EXCEPTION;
 import static uk.co.real_logic.aeron.common.event.EventConfiguration.*;
 
@@ -34,15 +34,15 @@ public class EventConfigurationTest
     @Test
     public void eventCodesPropertyShouldBeParsedAsAListOfEventCodes()
     {
-        final Set<EventCode> expectedCodes = EnumSet.of(EXCEPTION, ERROR_SENDING_HEARTBEAT_PACKET);
-        assertThat(getEnabledEventCodes("EXCEPTION,ERROR_SENDING_HEARTBEAT_PACKET"), is(expectedCodes));
+        final Set<EventCode> expectedCodes = EnumSet.of(EXCEPTION, FRAME_IN);
+        assertThat(getEnabledEventCodes("EXCEPTION,FRAME_IN"), is(expectedCodes));
     }
 
     @Test
     public void makeTagBitSet()
     {
-        final Set<EventCode> eventCodes = EnumSet.of(EXCEPTION, ERROR_SENDING_HEARTBEAT_PACKET);
+        final Set<EventCode> eventCodes = EnumSet.of(EXCEPTION, FRAME_IN);
         final long bitSet = EventConfiguration.makeTagBitSet(eventCodes);
-        assertThat(bitSet, is(EXCEPTION.tagBit() | ERROR_SENDING_HEARTBEAT_PACKET.tagBit()));
+        assertThat(bitSet, is(EXCEPTION.tagBit() | FRAME_IN.tagBit()));
     }
 }

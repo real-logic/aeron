@@ -89,7 +89,7 @@ public class CountersManager
     public void free(final int counterId)
     {
         labelsBuffer.putInt(labelOffset(counterId), UNREGISTERED_LABEL_SIZE);
-        countersBuffer.putLong(counterOffset(counterId), 0L);
+        countersBuffer.putLongOrdered(counterOffset(counterId), 0L);
         freeList.push(counterId);
     }
 

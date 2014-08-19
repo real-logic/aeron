@@ -43,10 +43,10 @@ import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
  */
 public class ClientConductor extends Agent implements DriverListener
 {
-    public static final long AGENT_IDLE_MAX_SPINS = 10;
-    public static final long AGENT_IDLE_MAX_YIELDS = 10;
-    public static final long AGENT_IDLE_MIN_PARK_NS = TimeUnit.NANOSECONDS.toNanos(1);
-    public static final long AGENT_IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(100);
+    public static final long IDLE_MAX_SPINS = 0;
+    public static final long IDLE_MAX_YIELDS = 0;
+    public static final long IDLE_MIN_PARK_NS = TimeUnit.NANOSECONDS.toNanos(1);
+    public static final long IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(100);
     public static final int KEEPALIVE_TIMEOUT_MS = 500;
 
     private static final long NO_CORRELATION_ID = -1;
@@ -85,8 +85,7 @@ public class ClientConductor extends Agent implements DriverListener
                            final long awaitTimeout,
                            final int mtuLength)
     {
-        super(new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                                      AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS), errorHandler);
+        super(new BackoffIdleStrategy(IDLE_MAX_SPINS, IDLE_MAX_YIELDS, IDLE_MIN_PARK_NS, IDLE_MAX_PARK_NS), errorHandler);
 
         this.counterValuesBuffer = counterValuesBuffer;
         this.correlationSignal = correlationSignal;

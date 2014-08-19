@@ -315,7 +315,7 @@ public class Configuration
 
     public static IdleStrategy eventReaderIdleStrategy()
     {
-        return new BackoffIdleStrategy(1, 1, AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS);
+        return new BackoffIdleStrategy(0, 0, AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS);
     }
 
     public static IdleStrategy agentIdleStrategy()

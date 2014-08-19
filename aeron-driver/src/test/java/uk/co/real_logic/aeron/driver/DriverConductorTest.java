@@ -46,9 +46,7 @@ import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.common.ErrorCode.INVALID_CHANNEL;
 import static uk.co.real_logic.aeron.common.ErrorCode.PUBLICATION_STREAM_UNKNOWN;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
-import static uk.co.real_logic.aeron.driver.Configuration.CLIENT_LIVENESS_TIMEOUT_NS;
-import static uk.co.real_logic.aeron.driver.Configuration.CONDUCTOR_TICKS_PER_WHEEL;
-import static uk.co.real_logic.aeron.driver.Configuration.CONDUCTOR_TICK_DURATION_US;
+import static uk.co.real_logic.aeron.driver.Configuration.*;
 
 /**
  * Test the Media Driver Conductor in isolation

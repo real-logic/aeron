@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.common.concurrent;
 
-import java.io.*;
+import java.io.Console;
 
 /**
  * Barrier to block the calling thread until a command is given on the {@link Console}

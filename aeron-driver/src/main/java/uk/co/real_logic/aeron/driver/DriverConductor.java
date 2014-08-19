@@ -20,7 +20,10 @@ import uk.co.real_logic.aeron.common.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
-import uk.co.real_logic.aeron.common.concurrent.*;
+import uk.co.real_logic.aeron.common.concurrent.AtomicArray;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.CountersManager;
+import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.common.event.EventCode;
@@ -209,20 +212,19 @@ public class DriverConductor extends Agent
     private int processFromReceiverCommandQueue()
     {
         return commandQueue.drain(
-            (obj) ->
-            {
-                try
+                (obj) ->
                 {
-                    if (obj instanceof CreateConnectionCmd)
+                    try
                     {
-                        onCreateConnection((CreateConnectionCmd)obj);
+                        if (obj instanceof CreateConnectionCmd)
+                        {
+                            onCreateConnection((CreateConnectionCmd) obj);
+                        }
+                    } catch (final Exception ex)
+                    {
+                        logger.logException(ex);
                     }
-                }
-                catch (final Exception ex)
-                {
-                    logger.logException(ex);
-                }
-            });
+                });
     }
 
     private int processFromClientCommandBuffer()

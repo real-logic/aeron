@@ -123,7 +123,8 @@ public class EventCodec
         relativeOffset += encodingBuffer.putString(relativeOffset, msg, LITTLE_ENDIAN);
 
         StackTraceElement[] stackTrace = ex.getStackTrace();
-        for (int i = 0;i < Math.min(STACK_DEPTH, stackTrace.length); i++) {
+        for (int i = 0;i < Math.min(STACK_DEPTH, stackTrace.length); i++)
+        {
             relativeOffset = putStackTraceElement(encodingBuffer, stackTrace[i], relativeOffset);
         }
 
@@ -137,6 +138,8 @@ public class EventCodec
         encodingBuffer.putInt(relativeOffset, stack.getLineNumber(), LITTLE_ENDIAN);
         relativeOffset += SIZE_OF_INT;
         relativeOffset += encodingBuffer.putString(relativeOffset, stack.getClassName(), LITTLE_ENDIAN);
+        String methodName = stack.getMethodName();
+        methodName = methodName == null ? "lambda": methodName;
         relativeOffset += encodingBuffer.putString(relativeOffset, stack.getMethodName(), LITTLE_ENDIAN);
         relativeOffset += encodingBuffer.putString(relativeOffset, stack.getFileName(), LITTLE_ENDIAN);
         return relativeOffset;

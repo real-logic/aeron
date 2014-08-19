@@ -26,7 +26,7 @@ import java.nio.MappedByteBuffer;
 /**
  * App to print out status counters and labels
  */
-public class StatusInfo
+public class AeronStat
 {
     public static void main(final String[] args) throws Exception
     {
@@ -52,7 +52,7 @@ public class StatusInfo
                     final int offset = CountersManager.counterOffset(id);
                     final long value = valuesBuffer.getLongVolatile(offset);
 
-                    System.out.println(String.format("[%f] %d[%d]: <%s>: %,d", timestamp, id, offset, label, value));
+                    System.out.println(String.format("[%f] %d[%d]:\t%s: %,d", timestamp, id, offset, label, value));
                 });
 
             Thread.sleep(1000);

@@ -424,9 +424,9 @@ public class DriverConnection implements AutoCloseable
         return isFlowControlUnderRun;
     }
 
-    private boolean isFlowControlOverRun(final long proposedPosition, final int length)
+    private boolean isFlowControlOverRun(final long packetPosition, final int length)
     {
-        final boolean isFlowControlOverRun = proposedPosition > (subscriberPosition.position() + (termWindowSize - length));
+        final boolean isFlowControlOverRun = packetPosition > (subscriberPosition.position() + (termWindowSize - length));
 
         if (isFlowControlOverRun)
         {

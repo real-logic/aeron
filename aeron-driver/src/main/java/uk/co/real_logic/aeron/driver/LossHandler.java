@@ -210,11 +210,7 @@ public class LossHandler
         {
             final Gap firstGap = gaps[0];
 
-            if (!timer.isActive())
-            {
-                activateGap(firstGap.termId, firstGap.termOffset, firstGap.length);
-            }
-            else if (!firstGap.matches(activeGap.termId, activeGap.termOffset))
+            if (!timer.isActive() || !firstGap.matches(activeGap.termId, activeGap.termOffset))
             {
                 activateGap(firstGap.termId, firstGap.termOffset, firstGap.length);
             }

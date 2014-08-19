@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.collections.BiInt2ObjectMap;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.common.concurrent.Counter;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.NakFlyweight;
 import uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight;
@@ -33,19 +32,16 @@ public class SendChannelEndpoint implements AutoCloseable
     private final UdpTransport transport;
     private final UdpChannel udpChannel;
     private final BiInt2ObjectMap<SendEndComponents> sendEndByStreamAndSessionIdMap = new BiInt2ObjectMap<>();
-    private final Counter naksReceivedCounter;
-    private final Counter statusMessagesReceivedCounter;
+    private final SystemCounters systemCounters;
 
     public SendChannelEndpoint(final UdpChannel udpChannel,
                                final NioSelector nioSelector,
                                final EventLogger logger,
                                final LossGenerator lossGenerator,
-                               final Counter naksReceivedCounter,
-                               final Counter statusMessagesReceivedCounter)
+                               final SystemCounters systemCounters)
         throws Exception
     {
-        this.naksReceivedCounter = naksReceivedCounter;
-        this.statusMessagesReceivedCounter = statusMessagesReceivedCounter;
+        this.systemCounters = systemCounters;
         this.transport = new UdpTransport(udpChannel, this::onStatusMessageFrame, this::onNakFrame, logger, lossGenerator);
         this.transport.registerForRead(nioSelector);
         this.udpChannel = udpChannel;
@@ -124,7 +120,7 @@ public class SendChannelEndpoint implements AutoCloseable
                     header.termId(), header.highestContiguousTermOffset(), header.receiverWindowSize(), srcAddress);
 
             components.publication.updatePositionLimitFromStatusMessage(limit);
-            statusMessagesReceivedCounter.increment();
+            systemCounters.statusMessagesReceived().increment();
         }
     }
 
@@ -138,7 +134,7 @@ public class SendChannelEndpoint implements AutoCloseable
         if (null != components)
         {
             components.retransmitHandler.onNak(nak.termId(), nak.termOffset(), nak.length());
-            naksReceivedCounter.increment();
+            systemCounters.naksReceived().increment();
         }
     }
 

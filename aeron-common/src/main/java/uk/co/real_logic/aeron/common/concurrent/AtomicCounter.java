@@ -1,13 +1,13 @@
 package uk.co.real_logic.aeron.common.concurrent;
 
-public class Counter
+public class AtomicCounter implements AutoCloseable
 {
     private final AtomicBuffer buffer;
     private final int counterId;
     private final CountersManager countersManager;
     private final int offset;
 
-    Counter(final AtomicBuffer buffer, final int counterId, final CountersManager countersManager)
+    AtomicCounter(final AtomicBuffer buffer, final int counterId, final CountersManager countersManager)
     {
         this.buffer = buffer;
         this.counterId = counterId;
@@ -19,6 +19,11 @@ public class Counter
     public void increment()
     {
         buffer.getAndAddLong(offset, 1);
+    }
+
+    public long get()
+    {
+        return buffer.getLongVolatile(offset);
     }
 
     public void close()

@@ -76,9 +76,9 @@ public class CountersManager
         return counterId;
     }
 
-    public Counter newCounter(final String label)
+    public AtomicCounter newCounter(final String label)
     {
-        return new Counter(countersBuffer, allocate(label), this);
+        return new AtomicCounter(countersBuffer, allocate(label), this);
     }
 
     /**

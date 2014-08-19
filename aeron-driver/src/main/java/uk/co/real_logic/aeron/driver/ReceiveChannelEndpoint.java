@@ -27,7 +27,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 /**
- * Aggregator of multiple {@link DispatcherSubscription}s onto a single transport session for processing of data frames.
+ * Aggregator of multiple subscriptions onto a single transport session for processing of data frames.
  */
 public class ReceiveChannelEndpoint implements AutoCloseable
 {

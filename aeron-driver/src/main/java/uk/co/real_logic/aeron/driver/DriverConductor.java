@@ -113,15 +113,7 @@ public class DriverConductor extends Agent
     private final CountersManager countersManager;
     private final AtomicBuffer countersBuffer;
     private final EventLogger logger;
-
-    private final Counter receiverProxyFails;
-    private final Counter senderProxyFails;
-    private final Counter naksSentCounter;
-    private final Counter naksReceivedCounter;
-    private final Counter retransmitsSentCounter;
-    private final Counter statusMessagesSentCounter;
-    private final Counter statusMessagesReceivedCounter;
-    private final Counter heartbeatsSentCounter;
+    private final SystemCounters systemCounters;
 
     public DriverConductor(final Context ctx)
     {
@@ -159,14 +151,7 @@ public class DriverConductor extends Agent
         controlLossRate = ctx.controlLossRate();
         controlLossSeed = ctx.controlLossSeed();
 
-        receiverProxyFails = countersManager.newCounter("Failed offers to ReceiverProxy");
-        senderProxyFails = countersManager.newCounter("Failed offers to SenderProxy");
-        naksSentCounter = countersManager.newCounter("NAKs sent");
-        naksReceivedCounter = countersManager.newCounter("NAKs received");
-        statusMessagesSentCounter = countersManager.newCounter("SMs sent");
-        statusMessagesReceivedCounter = countersManager.newCounter("SMs received");
-        heartbeatsSentCounter = countersManager.newCounter("Heartbeats sent");
-        retransmitsSentCounter = countersManager.newCounter("Retransmits sent");
+        systemCounters = new SystemCounters(countersManager);
     }
 
     public SendChannelEndpoint senderChannelEndpoint(final UdpChannel channel)
@@ -187,15 +172,15 @@ public class DriverConductor extends Agent
         workCount += processFromReceiverCommandQueue();
         workCount += processTimers();
 
-        workCount += publications.doAction(DriverPublication::cleanLogBuffer);
-
         final long now = timerWheel.now();
         for (final DriverConnection connection : connections)
         {
-            workCount += connection.cleanLogBuffer();
             workCount += connection.scanForGaps();
             workCount += connection.sendPendingStatusMessages(now);
+            workCount += connection.cleanLogBuffer();
         }
+
+        workCount += publications.doAction(DriverPublication::cleanLogBuffer);
 
         return workCount;
     }
@@ -207,8 +192,7 @@ public class DriverConductor extends Agent
         connections.forEach(DriverConnection::close);
         sendChannelEndpointByHash.forEach((hash, endpoint) -> endpoint.close());
         receiveChannelEndpointByHash.forEach((hash, endpoint) -> endpoint.close());
-        receiverProxyFails.close();
-        senderProxyFails.close();
+        systemCounters.close();
     }
 
     /**
@@ -286,11 +270,13 @@ public class DriverConductor extends Agent
                             onKeepaliveClient(correlatedMessage);
                             break;
                     }
-                } catch (final ControlProtocolException ex)
+                }
+                catch (final ControlProtocolException ex)
                 {
                     clientProxy.onError(ex.errorCode(), ex.getMessage(), flyweight, length);
                     logger.logException(ex);
-                } catch (final Exception ex)
+                }
+                catch (final Exception ex)
                 {
                     clientProxy.onError(GENERIC_ERROR, ex.getMessage(), flyweight, length);
                     logger.logException(ex);
@@ -353,8 +339,7 @@ public class DriverConductor extends Agent
                                             nioSelector,
                                             logger,
                                             Configuration.createLossGenerator(controlLossRate, controlLossSeed),
-                                            naksReceivedCounter,
-                                            statusMessagesReceivedCounter);
+                                            systemCounters);
 
                 sendChannelEndpointByHash.put(udpChannel.consistentHash(), channelEndpoint);
             }
@@ -395,8 +380,7 @@ public class DriverConductor extends Agent
                                       mtuLength,
                                       flowControlStrategy.initialPositionLimit(initialTermId, capacity),
                                       logger,
-                                      heartbeatsSentCounter,
-                                      retransmitsSentCounter);
+                                      systemCounters);
 
             final RetransmitHandler retransmitHandler =
                 new RetransmitHandler(timerWheel,
@@ -487,7 +471,7 @@ public class DriverConductor extends Agent
 
                 while (!receiverProxy.registerMediaEndpoint(channelEndpoint))
                 {
-                    receiverProxyFails.increment();
+                    systemCounters.receiverProxyFails().increment();
                 }
             }
 
@@ -498,7 +482,7 @@ public class DriverConductor extends Agent
             {
                 while (!receiverProxy.addSubscription(channelEndpoint, streamId))
                 {
-                    receiverProxyFails.increment();
+                    systemCounters.receiverProxyFails().increment();
                     Thread.yield();
                 }
             }
@@ -554,7 +538,7 @@ public class DriverConductor extends Agent
             {
                 while (!receiverProxy.removeSubscription(channelEndpoint, streamId))
                 {
-                    receiverProxyFails.increment();
+                    systemCounters.receiverProxyFails().increment();
                 }
             }
 
@@ -639,7 +623,7 @@ public class DriverConductor extends Agent
                             final ClosePublicationCmd cmd = new ClosePublicationCmd(publication);
                             while (!senderProxy.closePublication(cmd))
                             {
-                                senderProxyFails.increment();
+                                systemCounters.senderProxyFails().increment();
                                 Thread.yield();
                             }
 
@@ -684,7 +668,7 @@ public class DriverConductor extends Agent
                     {
                         while (!receiverProxy.removeSubscription(channelEndpoint, streamId))
                         {
-                            receiverProxyFails.increment();
+                            systemCounters.receiverProxyFails().increment();
                         }
                     }
 
@@ -700,7 +684,6 @@ public class DriverConductor extends Agent
         rescheduleTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, subscriptionCheckTimer);
     }
 
-    // check of connections
     private void onCheckConnections()
     {
         final long now = timerWheel.now();
@@ -721,9 +704,9 @@ public class DriverConductor extends Agent
                         {
                             while (!receiverProxy.removeConnection(connection))
                             {
-                                receiverProxyFails.increment();
-                            }
+                                systemCounters.receiverProxyFails().increment();
                                 Thread.yield();
+                            }
 
                             connection.status(DriverConnection.INACTIVE);
                             connection.timeOfLastStatusChange(timerWheel.now());
@@ -733,9 +716,10 @@ public class DriverConductor extends Agent
                                 connection.status(DriverConnection.LINGER);
                                 connection.timeOfLastStatusChange(timerWheel.now());
 
-                                clientProxy.onInactiveConnection(connection.sessionId(),
-                                        connection.streamId(),
-                                        connection.receiveChannelEndpoint().udpChannel().originalUriAsString());
+                                clientProxy.onInactiveConnection(
+                                    connection.sessionId(),
+                                    connection.streamId(),
+                                    connection.receiveChannelEndpoint().udpChannel().originalUriAsString());
                             }
                         }
                         break;
@@ -747,9 +731,10 @@ public class DriverConductor extends Agent
                             connection.status(DriverConnection.LINGER);
                             connection.timeOfLastStatusChange(timerWheel.now());
 
-                            clientProxy.onInactiveConnection(connection.sessionId(),
-                                    connection.streamId(),
-                                    connection.receiveChannelEndpoint().udpChannel().originalUriAsString());
+                            clientProxy.onInactiveConnection(
+                                connection.sessionId(),
+                                connection.streamId(),
+                                connection.receiveChannelEndpoint().udpChannel().originalUriAsString());
                         }
                         break;
 
@@ -757,10 +742,10 @@ public class DriverConductor extends Agent
                         if (connection.timeOfLastStatusChange() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS < now)
                         {
                             logger.log(EventCode.REMOVE_CONNECTION_CLEANUP,
-                                    "%s %x:%x",
-                                    connection.receiveChannelEndpoint().udpChannel().originalUriAsString(),
-                                    connection.sessionId(),
-                                    connection.streamId());
+                                       "%s %x:%x",
+                                       connection.receiveChannelEndpoint().udpChannel().originalUriAsString(),
+                                       connection.sessionId(),
+                                       connection.streamId());
 
                             connections.remove(connection);
                             connection.close();
@@ -830,7 +815,7 @@ public class DriverConductor extends Agent
                     udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
                     channelEndpoint.composeNakMessageSender(controlAddress, sessionId, streamId),
                     initialTermId,
-                    naksSentCounter);
+                    systemCounters);
 
             final DriverConnection connection =
                 new DriverConnection(
@@ -845,16 +830,16 @@ public class DriverConductor extends Agent
                     channelEndpoint.composeStatusMessageSender(controlAddress, sessionId, streamId),
                     newPositionIndicator(subscriberPositionCounterId),
                     new BufferPositionReporter(countersBuffer, contiguousReceivedCounterId, countersManager),
-                    new BufferPositionReporter(countersBuffer, highestReceivedCounterId, countersManager)
-                    , timerWheel::now,
-                    statusMessagesSentCounter);
+                    new BufferPositionReporter(countersBuffer, highestReceivedCounterId, countersManager),
+                    timerWheel::now,
+                    systemCounters);
 
             connections.add(connection);
 
             final NewConnectionCmd newConnectionCmd = new NewConnectionCmd(channelEndpoint, connection);
             while (!receiverProxy.newConnection(newConnectionCmd))
             {
-                receiverProxyFails.increment();
+                systemCounters.receiverProxyFails().increment();
                 Thread.yield();
             }
         }
@@ -883,7 +868,7 @@ public class DriverConductor extends Agent
 
                 while (!senderProxy.retransmit(cmd))
                 {
-                    senderProxyFails.increment();
+                    systemCounters.senderProxyFails().increment();
                     Thread.yield();
                 }
             };

@@ -33,7 +33,7 @@ public class DataFrameDispatcher
     private static final String INIT_IN_PROGRESS = "Connection initialisation in progress";
 
     private final Int2ObjectHashMap<String> initialisationInProgressMap = new Int2ObjectHashMap<>();
-    private final Int2ObjectHashMap<DispatcherSubscription> subscriptionByStreamIdMap = new Int2ObjectHashMap<>();
+    private final Int2ObjectHashMap<Int2ObjectHashMap<DriverConnection>> connectionsByStreamIdMap = new Int2ObjectHashMap<>();
     private final DriverConductorProxy conductorProxy;
     private final ReceiveChannelEndpoint channelEndpoint;
 
@@ -46,25 +46,25 @@ public class DataFrameDispatcher
 
     public void addSubscription(final int streamId)
     {
-        DispatcherSubscription subscription = subscriptionByStreamIdMap.get(streamId);
+        Int2ObjectHashMap<DriverConnection> connectionBySessionIdMap = connectionsByStreamIdMap.get(streamId);
 
-        if (null == subscription)
+        if (null == connectionBySessionIdMap)
         {
-            subscription = new DispatcherSubscription();
-            subscriptionByStreamIdMap.put(streamId, subscription);
+            connectionBySessionIdMap = new Int2ObjectHashMap<>();
+            connectionsByStreamIdMap.put(streamId, connectionBySessionIdMap);
         }
     }
 
     public void removeSubscription(final int streamId)
     {
-        final DispatcherSubscription subscription = subscriptionByStreamIdMap.remove(streamId);
+        final Int2ObjectHashMap<DriverConnection> connectionBySessionIdMap = connectionsByStreamIdMap.remove(streamId);
 
-        if (null == subscription)
+        if (null == connectionBySessionIdMap)
         {
-            throw new UnknownSubscriptionException("No subscription registered on " + streamId);
+            throw new UnknownSubscriptionException("No connectionBySessionIdMap registered on " + streamId);
         }
 
-        for (final DriverConnection connection : subscription.connections())
+        for (final DriverConnection connection : connectionBySessionIdMap.values())
         {
             connection.disableStatusMessages();
         }
@@ -72,14 +72,14 @@ public class DataFrameDispatcher
 
     public void addConnection(final DriverConnection connection)
     {
-        final DispatcherSubscription subscription = subscriptionByStreamIdMap.get(connection.streamId());
+        final Int2ObjectHashMap<DriverConnection> connectionBySessionIdMap = connectionsByStreamIdMap.get(connection.streamId());
 
-        if (null == subscription)
+        if (null == connectionBySessionIdMap)
         {
-            throw new IllegalStateException("No subscription registered on " + connection.streamId());
+            throw new IllegalStateException("No connectionBySessionIdMap registered on " + connection.streamId());
         }
 
-        subscription.putConnection(connection);
+        connectionBySessionIdMap.put(connection.sessionId(), connection);
         initialisationInProgressMap.remove(connection.sessionId());
 
         connection.enableStatusMessages();
@@ -87,14 +87,14 @@ public class DataFrameDispatcher
 
     public void removeConnection(final DriverConnection connection)
     {
-        final DispatcherSubscription subscription = subscriptionByStreamIdMap.get(connection.streamId());
+        final Int2ObjectHashMap<DriverConnection> connectionBySessionIdMap = connectionsByStreamIdMap.get(connection.streamId());
 
-        if (null == subscription)
+        if (null == connectionBySessionIdMap)
         {
             return;
         }
 
-        subscription.removeConnection(connection.sessionId());
+        connectionBySessionIdMap.remove(connection.sessionId());
         connection.disableStatusMessages();
         initialisationInProgressMap.remove(connection.sessionId());
     }
@@ -105,13 +105,13 @@ public class DataFrameDispatcher
                             final InetSocketAddress srcAddress)
     {
         final int streamId = headerFlyweight.streamId();
-        final DispatcherSubscription subscription = subscriptionByStreamIdMap.get(streamId);
+        final Int2ObjectHashMap<DriverConnection> connectionBySessionIdMap = connectionsByStreamIdMap.get(streamId);
 
-        if (null != subscription)
+        if (null != connectionBySessionIdMap)
         {
             final int sessionId = headerFlyweight.sessionId();
             final int termId = headerFlyweight.termId();
-            final DriverConnection connection = subscription.getConnection(sessionId);
+            final DriverConnection connection = connectionBySessionIdMap.get(sessionId);
 
             if (null != connection)
             {
@@ -127,7 +127,7 @@ public class DataFrameDispatcher
                 else
                 {
                     // this is a 0 length data frame, so pass on the info, but no need to insert it
-                    connection.potentialHighPosition(headerFlyweight);
+                    connection.highestPositionCandidate(headerFlyweight);
                 }
             }
             else if (null == initialisationInProgressMap.get(sessionId))

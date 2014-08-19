@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.common.concurrent.Counter;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogRebuilder;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
@@ -55,7 +54,7 @@ public class DriverConnection implements AutoCloseable
     private final LongSupplier clock;
     private final PositionReporter contiguousReceivedPosition;
     private final PositionReporter highestReceivedPosition;
-    private final Counter statusMessagesSentCounter;
+    private final SystemCounters systemCounters;
 
     private final AtomicInteger activeTermId = new AtomicInteger();
     private final AtomicLong timeOfLastFrame = new AtomicLong();
@@ -95,7 +94,7 @@ public class DriverConnection implements AutoCloseable
                             final PositionReporter contiguousReceivedPosition,
                             final PositionReporter highestReceivedPosition,
                             final LongSupplier clock,
-                            final Counter statusMessagesSentCounter)
+                            final SystemCounters systemCounters)
     {
         this.receiveChannelEndpoint = receiveChannelEndpoint;
         this.sessionId = sessionId;
@@ -104,7 +103,7 @@ public class DriverConnection implements AutoCloseable
         this.subscriberPosition = subscriberPosition;
         this.contiguousReceivedPosition = contiguousReceivedPosition;
         this.highestReceivedPosition = highestReceivedPosition;
-        this.statusMessagesSentCounter = statusMessagesSentCounter;
+        this.systemCounters = systemCounters;
         this.status = ACTIVE;
         this.timeOfLastStatusChange = clock.getAsLong();
 
@@ -319,7 +318,7 @@ public class DriverConnection implements AutoCloseable
      *
      * @param header for the data frame
      */
-    public void potentialHighPosition(final DataHeaderFlyweight header)
+    public void highestPositionCandidate(final DataHeaderFlyweight header)
     {
         final long packetPosition = calculatePosition(header.termId(), header.termOffset());
 
@@ -411,7 +410,7 @@ public class DriverConnection implements AutoCloseable
                                   final int windowSize,
                                   final long now)
     {
-        statusMessagesSentCounter.increment();
+        systemCounters.statusMessagesSent().increment();
 
         statusMessageSender.send(termId, termOffset, windowSize);
         lastSmTermId = termId;

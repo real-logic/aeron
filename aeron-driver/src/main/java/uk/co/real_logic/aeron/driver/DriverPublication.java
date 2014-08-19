@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron.driver;
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.common.concurrent.Counter;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogScanner;
@@ -88,8 +87,7 @@ public class DriverPublication implements AutoCloseable
     private final int positionBitsToShift;
     private final int initialTermId;
     private final EventLogger logger;
-    private final Counter heartbeatsSentCounter;
-    private final Counter retransmitsSentCounter;
+    private final SystemCounters systemCounters;
     private final AtomicInteger status = new AtomicInteger(ACTIVE);
     private final int termWindowSize;
 
@@ -114,14 +112,12 @@ public class DriverPublication implements AutoCloseable
                              final int mtuLength,
                              final long initialPositionLimit,
                              final EventLogger logger,
-                             final Counter heartbeatsSentCounter,
-                             final Counter retransmitsSentCounter)
+                             final SystemCounters systemCounters)
     {
         this.mediaEndpoint = mediaEndpoint;
         this.termBuffers = termBuffers;
         this.logger = logger;
-        this.heartbeatsSentCounter = heartbeatsSentCounter;
-        this.retransmitsSentCounter = retransmitsSentCounter;
+        this.systemCounters = systemCounters;
         this.dstAddress = mediaEndpoint.udpChannel().remoteData();
         this.timerWheel = timerWheel;
         this.publisherLimitReporter = publisherLimitReporter;
@@ -298,7 +294,7 @@ public class DriverPublication implements AutoCloseable
             }
             while (remainingBytes > 0);
 
-            retransmitsSentCounter.increment();
+            systemCounters.retransmitsSent().increment();
         }
     }
 
@@ -422,7 +418,8 @@ public class DriverPublication implements AutoCloseable
         try
         {
             final int bytesSent = mediaEndpoint.sendTo(scratchByteBuffer, dstAddress);
-            heartbeatsSentCounter.increment();
+            systemCounters.heartbeatsSent().increment();
+
             if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
             {
                 logger.log(EventCode.ERROR_SENDING_HEARTBEAT_PACKET, scratchByteBuffer, 0,

@@ -21,7 +21,7 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.common.concurrent.Counter;
+import uk.co.real_logic.aeron.common.concurrent.AtomicCounter;
 import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
@@ -66,7 +66,7 @@ public class ReceiverTest
 
     private final LossHandler mockLossHandler = mock(LossHandler.class);
     private final NioSelector mockNioSelector = mock(NioSelector.class);
-    private final Counter mockStatusMessagesSentCounter = mock(Counter.class);
+    private final SystemCounters mockSystemCounters = mock(SystemCounters.class);
     private final TermBuffersFactory mockTermBuffersFactory = mock(TermBuffersFactory.class);
     private final PositionReporter mockContiguousReceivedPosition = mock(PositionReporter.class);
     private final PositionReporter mockHighestReceivedPosition = mock(PositionReporter.class);
@@ -76,7 +76,7 @@ public class ReceiverTest
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final StatusMessageFlyweight statusHeader = new StatusMessageFlyweight();
 
-    private long currentTime;
+    private long currentTime = 0;
     private final LongSupplier clock = () -> currentTime;
 
     private final TermBuffers termBuffers = newTestTermBuffers(LOG_BUFFER_SIZE, LogBufferDescriptor.STATE_BUFFER_LENGTH);
@@ -101,8 +101,8 @@ public class ReceiverTest
         when(POSITION_INDICATOR.position())
             .thenReturn(TermHelper.calculatePosition(TERM_ID, 0, Integer.numberOfTrailingZeros(LOG_BUFFER_SIZE), TERM_ID));
         when(mockLossHandler.activeTermId()).thenReturn(TERM_ID);
+        when(mockSystemCounters.statusMessagesSent()).thenReturn(mock(AtomicCounter.class));
 
-        currentTime = 0;
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
@@ -171,7 +171,7 @@ public class ReceiverTest
                 mockContiguousReceivedPosition,
                 mockHighestReceivedPosition,
                 clock,
-                mockStatusMessagesSentCounter);
+                mockSystemCounters);
 
         final int messagesRead = toConductorQueue.drain(
             (e) ->
@@ -241,7 +241,7 @@ public class ReceiverTest
                             mockContiguousReceivedPosition,
                             mockHighestReceivedPosition,
                             clock,
-                            mockStatusMessagesSentCounter)));
+                            mockSystemCounters)));
             });
 
         assertThat(messagesRead, is(1));
@@ -301,7 +301,7 @@ public class ReceiverTest
                                 mockContiguousReceivedPosition,
                                 mockHighestReceivedPosition,
                                 clock,
-                                mockStatusMessagesSentCounter)));
+                                mockSystemCounters)));
             });
 
         assertThat(messagesRead, is(1));
@@ -364,7 +364,7 @@ public class ReceiverTest
                             mockContiguousReceivedPosition,
                             mockHighestReceivedPosition,
                             clock,
-                            mockStatusMessagesSentCounter)));
+                            mockSystemCounters)));
             });
 
         assertThat(messagesRead, is(1));

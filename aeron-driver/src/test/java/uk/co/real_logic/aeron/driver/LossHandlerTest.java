@@ -22,7 +22,7 @@ import uk.co.real_logic.aeron.common.StaticDelayGenerator;
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.common.concurrent.Counter;
+import uk.co.real_logic.aeron.common.concurrent.AtomicCounter;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
@@ -74,9 +74,9 @@ public class LossHandlerTest
     private final TimerWheel wheel;
     private LossHandler handler;
     private NakMessageSender nakMessageSender;
-    private long currentTime;
+    private long currentTime = 0;
     private int activeIndex = TermHelper.termIdToBufferIndex(TERM_ID);
-    private Counter mockCounter = mock(Counter.class);
+    private SystemCounters mockSystemCounters = mock(SystemCounters.class);
 
     public LossHandlerTest()
     {
@@ -96,14 +96,14 @@ public class LossHandlerTest
         nakMessageSender = mock(NakMessageSender.class);
 
         final AtomicBuffer rcvBuffer = new AtomicBuffer(new byte[MESSAGE_LENGTH]);
-        handler = new LossHandler(scanners, wheel, delayGenerator, nakMessageSender, TERM_ID, mockCounter);
+        handler = new LossHandler(scanners, wheel, delayGenerator, nakMessageSender, TERM_ID, mockSystemCounters);
         dataHeader.wrap(rcvBuffer, 0);
     }
 
     @Before
     public void setUp()
     {
-        currentTime = 0;
+        when(mockSystemCounters.naksSent()).thenReturn(mock(AtomicCounter.class));
     }
 
     @Test
@@ -389,7 +389,7 @@ public class LossHandlerTest
 
     private LossHandler getLossHandlerWithImmediate()
     {
-        return new LossHandler(scanners, wheel, delayGeneratorWithImmediate, nakMessageSender, TERM_ID, mockCounter);
+        return new LossHandler(scanners, wheel, delayGeneratorWithImmediate, nakMessageSender, TERM_ID, mockSystemCounters);
     }
 
     private void insertDataFrame(final int offset)

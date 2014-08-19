@@ -19,7 +19,6 @@ import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.common.concurrent.Counter;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner;
 
 import java.util.concurrent.TimeUnit;
@@ -34,7 +33,7 @@ public class LossHandler
 {
     private final GapScanner[] scanners;
     private final TimerWheel wheel;
-    private final Counter naksSent;
+    private final SystemCounters systemCounters;
     private final Gap[] gaps = new Gap[2];
     private final Gap activeGap = new Gap();
     private final FeedbackDelayGenerator delayGenerator;
@@ -62,11 +61,11 @@ public class LossHandler
                        final FeedbackDelayGenerator delayGenerator,
                        final NakMessageSender nakMessageSender,
                        final int activeTermId,
-                       final Counter naksSent)
+                       final SystemCounters systemCounters)
     {
         this.scanners = scanners;
         this.wheel = wheel;
-        this.naksSent = naksSent;
+        this.systemCounters = systemCounters;
         this.timer = wheel.newBlankTimer();
         this.delayGenerator = delayGenerator;
         this.nakMessageSender = nakMessageSender;
@@ -250,7 +249,7 @@ public class LossHandler
 
     private void sendNakMessage()
     {
-        naksSent.increment();
+        systemCounters.naksSent().increment();
         nakMessageSender.send(activeGap.termId, activeGap.termOffset, activeGap.length);
     }
 

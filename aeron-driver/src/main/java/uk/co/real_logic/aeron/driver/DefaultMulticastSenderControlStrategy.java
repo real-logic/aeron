@@ -28,14 +28,9 @@ import java.net.InetSocketAddress;
  */
 public class DefaultMulticastSenderControlStrategy implements SenderControlStrategy
 {
-    private long positionLimit;
+    private long positionLimit = 0;
     private int positionBitsToShift;
     private int initialTermId;
-
-    public DefaultMulticastSenderControlStrategy()
-    {
-        positionLimit = 0;
-    }
 
     /** {@inheritDoc} */
     public long onStatusMessage(final int termId,
@@ -53,8 +48,7 @@ public class DefaultMulticastSenderControlStrategy implements SenderControlStrat
     }
 
     /** {@inheritDoc} */
-    public long initialPositionLimit(final int initialTermId,
-                                     final int termBufferCapacity)
+    public long initialPositionLimit(final int initialTermId, final int termBufferCapacity)
     {
         this.initialTermId = initialTermId;
         positionBitsToShift = Long.numberOfTrailingZeros(termBufferCapacity);

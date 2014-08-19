@@ -28,6 +28,7 @@ import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.status.BufferPositionIndicator;
 import uk.co.real_logic.aeron.common.status.BufferPositionReporter;
+import uk.co.real_logic.aeron.common.status.PositionReporter;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
 import uk.co.real_logic.aeron.driver.cmd.ClosePublicationCmd;
@@ -361,7 +362,7 @@ public class DriverConductor extends Agent
             final TermBuffers termBuffers = termBuffersFactory.newPublication(canonicalForm, sessionId, streamId);
 
             final int positionCounterId = allocatePositionCounter("publisher limit", channel, sessionId, streamId);
-            final BufferPositionReporter positionReporter =
+            final PositionReporter positionReporter =
                 new BufferPositionReporter(countersBuffer, positionCounterId, countersManager);
 
             final SenderControlStrategy flowControlStrategy =
@@ -791,17 +792,13 @@ public class DriverConductor extends Agent
             final String canonicalForm = udpChannel.canonicalForm();
             final TermBuffers termBuffers = termBuffersFactory.newConnection(canonicalForm, sessionId, streamId);
 
-            final int subscriberPositionCounterId =
-                allocatePositionCounter("subscriber", udpChannel.originalUriAsString(), sessionId, streamId);
-
-            final int contiguousReceivedCounterId =
-                allocatePositionCounter("contiguous received", udpChannel.originalUriAsString(), sessionId, streamId);
-
-            final int highestReceivedCounterId =
-                allocatePositionCounter("highest received", udpChannel.originalUriAsString(), sessionId, streamId);
+            final String channel = udpChannel.originalUriAsString();
+            final int subscriberPositionCounterId = allocatePositionCounter("subscriber", channel, sessionId, streamId);
+            final int contiguousReceivedCounterId = allocatePositionCounter("contiguous received", channel, sessionId, streamId);
+            final int highestReceivedCounterId = allocatePositionCounter("highest received", channel, sessionId, streamId);
 
             clientProxy.onNewTermBuffers(ON_NEW_CONNECTED_SUBSCRIPTION, sessionId, streamId, initialTermId,
-                                         udpChannel.originalUriAsString(), termBuffers, 0, subscriberPositionCounterId);
+                                         channel, termBuffers, 0, subscriberPositionCounterId);
 
             final GapScanner[] gapScanners =
                 termBuffers.stream()
@@ -828,7 +825,7 @@ public class DriverConductor extends Agent
                     termBuffers,
                     lossHandler,
                     channelEndpoint.composeStatusMessageSender(controlAddress, sessionId, streamId),
-                    newPositionIndicator(subscriberPositionCounterId),
+                    new BufferPositionIndicator(countersBuffer, subscriberPositionCounterId, countersManager),
                     new BufferPositionReporter(countersBuffer, contiguousReceivedCounterId, countersManager),
                     new BufferPositionReporter(countersBuffer, highestReceivedCounterId, countersManager),
                     timerWheel::now,
@@ -847,11 +844,6 @@ public class DriverConductor extends Agent
         {
             logger.logException(ex);
         }
-    }
-
-    private BufferPositionIndicator newPositionIndicator(final int counterId)
-    {
-        return new BufferPositionIndicator(countersBuffer, counterId, countersManager);
     }
 
     private int allocatePositionCounter(final String type, final String dirName, final int sessionId, final int streamId)

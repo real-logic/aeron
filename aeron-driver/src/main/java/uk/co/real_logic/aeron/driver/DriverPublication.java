@@ -25,7 +25,7 @@ import uk.co.real_logic.aeron.common.event.EventCode;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
-import uk.co.real_logic.aeron.common.status.BufferPositionReporter;
+import uk.co.real_logic.aeron.common.status.PositionReporter;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 
@@ -78,7 +78,7 @@ public class DriverPublication implements AutoCloseable
     private final AtomicLong positionLimit;
     private final SendChannelEndpoint mediaEndpoint;
     private final TermBuffers termBuffers;
-    private final BufferPositionReporter publisherLimitReporter;
+    private final PositionReporter publisherLimitReporter;
     private final ClientLiveness clientLiveness;
 
     private final DataHeaderFlyweight heartbeatHeader = new DataHeaderFlyweight();
@@ -103,7 +103,7 @@ public class DriverPublication implements AutoCloseable
     public DriverPublication(final SendChannelEndpoint mediaEndpoint,
                              final TimerWheel timerWheel,
                              final TermBuffers termBuffers,
-                             final BufferPositionReporter publisherLimitReporter,
+                             final PositionReporter publisherLimitReporter,
                              final ClientLiveness clientLiveness,
                              final int sessionId,
                              final int streamId,

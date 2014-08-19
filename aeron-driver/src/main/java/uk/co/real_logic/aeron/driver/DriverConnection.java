@@ -327,8 +327,7 @@ public class DriverConnection implements AutoCloseable
             return 0;
         }
 
-        /*
-         * General approach is to check subscriber position and see if it has moved enough to warrant sending an SM.
+        /* General approach is to check subscriber position and see if it has moved enough to warrant sending an SM.
          * - send SM when termId has moved (i.e. buffer rotation)
          * - send SM when subscriber position has moved more than the gain (min of term or window)
          * - send SM when haven't sent an SM in status message timeout
@@ -338,26 +337,8 @@ public class DriverConnection implements AutoCloseable
         final int currentSmTermId = TermHelper.calculateTermIdFromPosition(position, positionBitsToShift, initialTermId);
         final int currentSmTail = TermHelper.calculateTermOffsetFromPosition(position, positionBitsToShift);
 
-        // send initial SM
-        if (0 == lastSmTimestamp)
-        {
-            return sendStatusMessage(currentSmTermId, currentSmTail, position, currentWindowSize, now);
-        }
-
-        // if term has rotated for the subscriber position, then send an SM
-        if (currentSmTermId != lastSmTermId)
-        {
-            return sendStatusMessage(currentSmTermId, currentSmTail, position, currentWindowSize, now);
-        }
-
-        // see if we have made enough progress to make sense to send an SM
-        if ((position - lastSmPosition) > currentGain)
-        {
-            return sendStatusMessage(currentSmTermId, currentSmTail, position, currentWindowSize, now);
-        }
-
-        // make sure to send on timeout to prevent a stall on lost SM
-        if ((lastSmTimestamp + statusMessageTimeout) < now)
+        if (0 == lastSmTimestamp ||  currentSmTermId != lastSmTermId ||
+            (position - lastSmPosition) > currentGain || (lastSmTimestamp + statusMessageTimeout) < now)
         {
             return sendStatusMessage(currentSmTermId, currentSmTail, position, currentWindowSize, now);
         }
@@ -397,9 +378,9 @@ public class DriverConnection implements AutoCloseable
                                   final int windowSize,
                                   final long now)
     {
-        systemCounters.statusMessagesSent().inc();
-
         statusMessageSender.send(termId, termOffset, windowSize);
+
+        systemCounters.statusMessagesSent().inc();
         lastSmTermId = termId;
         lastSmTimestamp = now;
         lastSmPosition = position;

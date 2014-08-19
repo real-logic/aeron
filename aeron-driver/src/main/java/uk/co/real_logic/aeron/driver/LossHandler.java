@@ -31,10 +31,12 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class LossHandler
 {
+    private static final int MAX_GAPS = 2;
+
     private final GapScanner[] scanners;
     private final TimerWheel wheel;
     private final SystemCounters systemCounters;
-    private final Gap[] gaps = new Gap[2];
+    private final Gap[] gaps = new Gap[MAX_GAPS];
     private final Gap activeGap = new Gap();
     private final FeedbackDelayGenerator delayGenerator;
     private final AtomicLong highestPosition;
@@ -51,9 +53,9 @@ public class LossHandler
     /**
      * Create a loss handler for a channel.
      *
-     * @param scanners       for the gaps attached to LogBuffers
-     * @param wheel          for timer management
-     * @param delayGenerator to use for delay determination
+     * @param scanners         for the gaps attached to LogBuffers
+     * @param wheel            for timer management
+     * @param delayGenerator   to use for delay determination
      * @param nakMessageSender to call when sending a NAK is indicated
      */
     public LossHandler(final GapScanner[] scanners,
@@ -72,7 +74,7 @@ public class LossHandler
         this.positionBitsToShift = Integer.numberOfTrailingZeros(scanners[0].capacity());
         this.highestPosition = new AtomicLong(TermHelper.calculatePosition(activeTermId, 0, positionBitsToShift, activeTermId));
 
-        for (int i = 0, max = gaps.length; i < max; i++)
+        for (int i = 0; i < MAX_GAPS; i++)
         {
             this.gaps[i] = new Gap();
         }
@@ -86,9 +88,10 @@ public class LossHandler
      * Scan for gaps and handle received data.
      * <p>
      * The handler keeps track from scan to scan what is a gap and what must have been repaired.
+     *
      * @return whether a scan should be done soon or could wait
      */
-    public boolean scan()
+    public int scan()
     {
         gapIndex = 0;
         final GapScanner scanner = scanners[activeIndex];
@@ -102,7 +105,7 @@ public class LossHandler
                 activeIndex = TermHelper.rotateNext(activeIndex);
                 activeTermId = activeTermId + 1;
 
-                return true; // signal another scan should be done soon
+                return 1; // signal another scan should be done soon
             }
             else
             {
@@ -114,12 +117,12 @@ public class LossHandler
 
                 if (currentHighPosition > tailPosition)
                 {
-                    activateGap(activeTermId, tail, (int) (currentHighPosition - tailPosition));
+                    activateGap(activeTermId, tail, (int)(currentHighPosition - tailPosition));
                 }
             }
         }
 
-        return false;
+        return 0; // We processed gaps so don't do it again too soon.
     }
 
     /**
@@ -181,16 +184,6 @@ public class LossHandler
         return TermHelper.calculatePosition(activeTermId, tail, positionBitsToShift, initialTermId);
     }
 
-    /**
-     * The highest position seen by the Receiver for this connection.
-     *
-     * @return the highest position seen by the Receiver for this connection.
-     */
-    public long highestPosition()
-    {
-        return highestPosition.get();
-    }
-
     private void suppressNak()
     {
         scheduleTimer();
@@ -198,13 +191,12 @@ public class LossHandler
 
     private boolean onGap(final AtomicBuffer buffer, final int offset, final int length)
     {
-        if (gapIndex < gaps.length)
+        if (gapIndex < MAX_GAPS)
         {
             gaps[gapIndex].reset(activeTermId, offset, length);
-
             gapIndex++;
 
-            return gapIndex == gaps.length;
+            return gapIndex == MAX_GAPS;
         }
 
         return false;
@@ -212,21 +204,24 @@ public class LossHandler
 
     private void onScanComplete()
     {
-        final Gap firstGap = gaps[0];
         final boolean hasGap = gapIndex > 0;
-        if (!timer.isActive() && hasGap)
+
+        if (hasGap)
         {
-            activateGap(firstGap.termId, firstGap.termOffset, firstGap.length);
+            final Gap firstGap = gaps[0];
+
+            if (!timer.isActive())
+            {
+                activateGap(firstGap.termId, firstGap.termOffset, firstGap.length);
+            }
+            else if (!firstGap.matches(activeGap.termId, activeGap.termOffset))
+            {
+                activateGap(firstGap.termId, firstGap.termOffset, firstGap.length);
+            }
         }
-        // if there are no gaps then the gap has probably been filled in
-        else if (!hasGap)
+        else if (timer.isActive())
         {
             timer.cancel();
-        }
-        // there's a new gap to fill
-        else if (!firstGap.matches(activeGap.termId, activeGap.termOffset))
-        {
-            activateGap(firstGap.termId, firstGap.termOffset, firstGap.length);
         }
     }
 
@@ -284,15 +279,6 @@ public class LossHandler
         public boolean matches(final int termId, final int termOffset)
         {
             return termId == this.termId && termOffset == this.termOffset;
-        }
-
-        public String toString()
-        {
-            return "Gap{" +
-                    "termId=" + termId +
-                    ", termOffset=" + termOffset +
-                    ", length=" + length +
-                    '}';
         }
     }
 }

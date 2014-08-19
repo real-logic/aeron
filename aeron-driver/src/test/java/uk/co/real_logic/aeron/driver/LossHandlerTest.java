@@ -259,14 +259,14 @@ public class LossHandlerTest
 
         assertThat(offset, is(LOG_BUFFER_SIZE));  // sanity check the fill to make sure it doesn't need padding
         assertTrue(rebuilders[activeIndex].isComplete());
-        assertTrue(handler.scan());
+        assertThat(handler.scan(), is(1));
 
         activeIndex = TermHelper.rotateNext(activeIndex);
         assertThat(handler.activeIndex(), is(activeIndex));
 
         insertDataFrame(offsetOfMessage(0));
 
-        assertFalse(handler.scan());
+        assertThat(handler.scan(), is(0));
         verifyZeroInteractions(nakMessageSender);
     }
 
@@ -288,14 +288,14 @@ public class LossHandlerTest
         insertPaddingFrame(offsetOfMessage(i));  // and now pad to end of buffer
 
         assertTrue(rebuilders[activeIndex].isComplete());
-        assertTrue(handler.scan());
+        assertThat(handler.scan(), is(1));
 
         activeIndex = TermHelper.rotateNext(activeIndex);
         assertThat(handler.activeIndex(), is(activeIndex));
 
         insertDataFrame(offsetOfMessage(0));
 
-        assertFalse(handler.scan());
+        assertThat(handler.scan(), is(0));
         verifyZeroInteractions(nakMessageSender);
     }
 
@@ -318,21 +318,21 @@ public class LossHandlerTest
 
         assertThat(offset, is(LOG_BUFFER_SIZE));  // sanity check the fill to make sure it doesn't need padding
         assertFalse(rebuilders[activeIndex].isComplete());
-        assertFalse(handler.scan());
+        assertThat(handler.scan(), is(0));
 
         verify(nakMessageSender).send(TERM_ID, offsetOfMessage(1), gapLength());
 
         insertDataFrame(offsetOfMessage(1));
 
         assertTrue(rebuilders[activeIndex].isComplete());
-        assertTrue(handler.scan());
+        assertThat(handler.scan(), is(1));
 
         activeIndex = TermHelper.rotateNext(activeIndex);
         assertThat(handler.activeIndex(), is(activeIndex));
 
         insertDataFrame(offsetOfMessage(0));
 
-        assertFalse(handler.scan());
+        assertThat(handler.scan(), is(0));
         verifyNoMoreInteractions(nakMessageSender);
     }
 
@@ -348,7 +348,7 @@ public class LossHandlerTest
         final long highPosition = TermHelper.calculatePosition(TERM_ID, offsetOfMessage(2), POSITION_BITS_TO_SHIFT, TERM_ID);
 
         handler.highestPositionCandidate(highPosition);
-        assertFalse(handler.scan());
+        assertThat(handler.scan(), is(0));
 
         verify(nakMessageSender).send(TERM_ID, offsetOfMessage(1), gapLength());
     }
@@ -369,20 +369,20 @@ public class LossHandlerTest
         }
 
         assertFalse(rebuilders[activeIndex].isComplete());
-        assertFalse(handler.scan());
+        assertThat(handler.scan(), is(0));
 
         activeIndex = TermHelper.rotateNext(activeIndex);
         assertThat(handler.activeIndex(), is(TermHelper.rotatePrevious(activeIndex)));
 
         insertDataFrame(offsetOfMessage(0));
 
-        assertFalse(handler.scan());
+        assertThat(handler.scan(), is(0));
         verifyZeroInteractions(nakMessageSender);
 
         final long highPosition = TermHelper.calculatePosition(TERM_ID + 1, offsetOfMessage(0), POSITION_BITS_TO_SHIFT, TERM_ID);
 
         handler.highestPositionCandidate(highPosition);
-        assertFalse(handler.scan());
+        assertThat(handler.scan(), is(0));
 
         verify(nakMessageSender).send(TERM_ID, offset, LOG_BUFFER_SIZE - offset);
     }

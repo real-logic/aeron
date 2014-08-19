@@ -158,30 +158,23 @@ public class DriverPublication implements AutoCloseable
 
         if (status() != FLUSHED)
         {
-            try
+            final int availableWindow = (int)(positionLimit.get() - sentPosition);
+            final int scanLimit = Math.min(availableWindow, mtuLength);
+
+            LogScanner scanner = logScanners[activeIndex];
+            workCount += scanner.scanNext(this::sendTransmissionUnit, scanLimit);
+
+            if (scanner.isComplete())
             {
-                final int availableWindow = (int)(positionLimit.get() - sentPosition);
-                final int scanLimit = Math.min(availableWindow, mtuLength);
-
-                LogScanner scanner = logScanners[activeIndex];
-                workCount += scanner.scanNext(this::sendTransmissionUnit, scanLimit);
-
-                if (scanner.isComplete())
-                {
-                    activeIndex = TermHelper.rotateNext(activeIndex);
-                    activeTermId.lazySet(activeTermId.get() + 1);
-                    scanner = logScanners[activeIndex];
-                    scanner.seek(0);
-                }
-
-                final long position = positionForActiveTerm(scanner.offset());
-                sentPosition = position;
-                publisherLimitReporter.position(position + termWindowSize);
+                activeIndex = TermHelper.rotateNext(activeIndex);
+                activeTermId.lazySet(activeTermId.get() + 1);
+                scanner = logScanners[activeIndex];
+                scanner.seek(0);
             }
-            catch (final Exception ex)
-            {
-                logger.logException(ex);
-            }
+
+            final long position = positionForActiveTerm(scanner.offset());
+            sentPosition = position;
+            publisherLimitReporter.position(position + termWindowSize);
         }
 
         return workCount;

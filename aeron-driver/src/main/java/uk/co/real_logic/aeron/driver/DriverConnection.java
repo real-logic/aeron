@@ -70,7 +70,6 @@ public class DriverConnection implements AutoCloseable
 
     private final int positionBitsToShift;
     private final int initialTermId;
-    private final int termWindowSize;
     private final long statusMessageTimeout;
 
     private long lastSmPosition;
@@ -126,11 +125,8 @@ public class DriverConnection implements AutoCloseable
 
         final int termCapacity = rebuilders[0].capacity();
 
-        // how far ahead of subscriber position to allow
-        this.termWindowSize = Configuration.subscriptionTermWindowSize(termCapacity);
-
         // how big of a window to advertise to the sender
-        this.currentWindowSize = Math.min(termWindowSize, initialWindowSize);
+        this.currentWindowSize = Math.min(termCapacity, initialWindowSize);
 
         // trip of sending an SM as messages come in
         this.currentGain = Math.min(currentWindowSize / 4, termCapacity / 4);
@@ -435,7 +431,7 @@ public class DriverConnection implements AutoCloseable
 
     private boolean isFlowControlOverRun(final long proposedPosition)
     {
-        final boolean isFlowControlOverRun = proposedPosition > (subscriberPosition.position() + termWindowSize);
+        final boolean isFlowControlOverRun = proposedPosition > (subscriberPosition.position() + currentWindowSize);
 
         if (isFlowControlOverRun)
         {

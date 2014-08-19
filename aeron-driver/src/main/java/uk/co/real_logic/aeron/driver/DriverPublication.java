@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron.driver;
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogScanner;
 import uk.co.real_logic.aeron.common.event.EventCode;
@@ -35,7 +34,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static uk.co.real_logic.aeron.common.BitUtil.align;
 import static uk.co.real_logic.aeron.common.TermHelper.termIdToBufferIndex;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 
@@ -91,11 +89,10 @@ public class DriverPublication implements AutoCloseable
     private final AtomicInteger status = new AtomicInteger(ACTIVE);
     private final int termWindowSize;
 
-    private int nextTermOffset = 0;
     private int activeIndex = 0;
     private int retransmitIndex = 0;
     private int statusMessagesReceivedCount = 0;
-    private long nextOffsetPosition = 0;
+    private long sentPosition = 0;
     private long timeOfFlush = 0;
 
     private final InetSocketAddress dstAddress;
@@ -163,7 +160,7 @@ public class DriverPublication implements AutoCloseable
         {
             try
             {
-                final int availableWindow = (int)(positionLimit.get() - nextOffsetPosition);
+                final int availableWindow = (int)(positionLimit.get() - sentPosition);
                 final int scanLimit = Math.min(availableWindow, mtuLength);
 
                 LogScanner scanner = logScanners[activeIndex];
@@ -177,7 +174,9 @@ public class DriverPublication implements AutoCloseable
                     scanner.seek(0);
                 }
 
-                publisherLimitReporter.position(positionForActiveTerm(scanner.offset()) + termWindowSize);
+                final long position = positionForActiveTerm(scanner.offset());
+                sentPosition = position;
+                publisherLimitReporter.position(position + termWindowSize);
             }
             catch (final Exception ex)
             {
@@ -349,8 +348,6 @@ public class DriverPublication implements AutoCloseable
 
                 transmitHeader.flags(flags);
                 transmitHeader.headerType(HeaderFlyweight.HDR_TYPE_DATA);
-                // the frameLength field will be the length of the padding. But the PADDING flag tells the receiver
-                // what to do.
             }
         }
 
@@ -363,9 +360,6 @@ public class DriverPublication implements AutoCloseable
             }
 
             updateTimeOfLastSendOrHeartbeat(timerWheel.now());
-
-            nextTermOffset = align(offset + length, FrameDescriptor.FRAME_ALIGNMENT);
-            nextOffsetPosition = positionForActiveTerm(nextTermOffset);
         }
         catch (final Exception ex)
         {
@@ -406,7 +400,7 @@ public class DriverPublication implements AutoCloseable
         heartbeatHeader.sessionId(sessionId)
                   .streamId(streamId)
                   .termId(activeTermId.get())
-                  .termOffset(nextTermOffset)
+                  .termOffset(logScanners[activeIndex].offset())
                   .frameLength(DataHeaderFlyweight.HEADER_LENGTH)
                   .headerType(HeaderFlyweight.HDR_TYPE_DATA)
                   .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)

@@ -68,6 +68,7 @@ public class EventLogger
         }
         else
         {
+            System.out.println("Event buffer not found");
             this.eventBuffer = null;
             this.ringBuffer = null;
             this.enabledEventCodes = 0L;
@@ -169,7 +170,14 @@ public class EventLogger
             final AtomicBuffer encodedBuffer = encodingBuffer.get();
             final int encodedLength = EventCodec.encode(encodedBuffer, ex);
 
-            ringBuffer.write(EXCEPTION.id(), encodedBuffer, 0, encodedLength);
+            while (!ringBuffer.write(EXCEPTION.id(), encodedBuffer, 0, encodedLength))
+            {
+                Thread.yield();
+            }
+        }
+        else
+        {
+            ex.printStackTrace();
         }
     }
 

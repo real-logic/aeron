@@ -96,6 +96,13 @@ public class MediaDriver implements AutoCloseable
 
         ensureDirectoriesAreRecreated();
 
+        // event reader needs to be created before the event logger gets created or we could disabled logging prematurely
+        eventReader = new EventReader(
+            new EventReader.Context()
+                .idleStrategy(Configuration.eventReaderIdleStrategy())
+                .deleteOnExit(ctx.dirsDeleteOnExit())
+                .eventHandler(ctx.eventConsumer));
+
         ctx.unicastSenderFlowControl(UnicastSenderControlStrategy::new)
            .multicastSenderFlowControl(UnicastSenderControlStrategy::new)
            .publications(new AtomicArray<>())
@@ -105,12 +112,6 @@ public class MediaDriver implements AutoCloseable
            .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
            .senderCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
            .conclude();
-
-        eventReader = new EventReader(
-            new EventReader.Context()
-                .idleStrategy(Configuration.eventReaderIdleStrategy())
-                .deleteOnExit(ctx.dirsDeleteOnExit())
-                .eventHandler(ctx.eventConsumer));
 
         receiver = new Receiver(ctx);
         sender = new Sender(ctx);

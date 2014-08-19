@@ -47,6 +47,7 @@ public enum EventCode
     REMOVE_SUBSCRIPTION_CLEANUP(20, EventCodec::dissectAsString),
     REMOVE_CONNECTION_CLEANUP(21, EventCodec::dissectAsString),
     CMD_OUT_ON_INACTIVE_CONNECTION(22, EventCodec::dissectAsCommand),
+    FRAME_IN_DROPPED(23, EventCodec::dissectAsFrame),
 
     ERROR_DELETING_FILE(24, EventCodec::dissectAsString);
 

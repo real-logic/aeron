@@ -231,10 +231,18 @@ public final class UdpTransport implements AutoCloseable
         final InetSocketAddress srcAddress = receiveFrame();
         final int length = readByteBuffer.position();
 
-        if (null == srcAddress || dataLossGenerator.shouldDropFrame(srcAddress, length))
+        if (null == srcAddress)
         {
             return 0;
         }
+
+        if (dataLossGenerator.shouldDropFrame(srcAddress, length))
+        {
+            logger.log(EventCode.FRAME_IN_DROPPED, readByteBuffer, 0, readByteBuffer.position(), srcAddress);
+            return 0;
+        }
+
+        logger.log(EventCode.FRAME_IN, readByteBuffer, 0, readByteBuffer.position(), srcAddress);
 
         if (!isValidFrame(length))
         {
@@ -255,10 +263,18 @@ public final class UdpTransport implements AutoCloseable
         final InetSocketAddress srcAddress = receiveFrame();
         final int length = readByteBuffer.position();
 
-        if (null == srcAddress || controlLossGenerator.shouldDropFrame(srcAddress, length))
+        if (null == srcAddress)
         {
             return 0;
         }
+
+        if (controlLossGenerator.shouldDropFrame(srcAddress, length))
+        {
+            logger.log(EventCode.FRAME_IN_DROPPED, readByteBuffer, 0, readByteBuffer.position(), srcAddress);
+            return 0;
+        }
+
+        logger.log(EventCode.FRAME_IN, readByteBuffer, 0, readByteBuffer.position(), srcAddress);
 
         if (!isValidFrame(length))
         {
@@ -274,10 +290,6 @@ public final class UdpTransport implements AutoCloseable
             case HDR_TYPE_SM:
                 smFrameHandler.onFrame(statusMessage, readBuffer, length, srcAddress);
                 return 1;
-
-            default:
-//                logger.log(EventCode.UNKNOWN_HEADER_TYPE, readBuffer, 0, HeaderFlyweight.HEADER_LENGTH);
-                break;
         }
 
         return 0;
@@ -289,14 +301,7 @@ public final class UdpTransport implements AutoCloseable
 
         try
         {
-            final InetSocketAddress srcAddress = (InetSocketAddress)datagramChannel.receive(readByteBuffer);
-
-            if (null != srcAddress)
-            {
-                logger.log(EventCode.FRAME_IN, readByteBuffer, 0, readByteBuffer.position(), srcAddress);
-            }
-
-            return srcAddress;
+            return (InetSocketAddress)datagramChannel.receive(readByteBuffer);
         }
         catch (final Exception ex)
         {

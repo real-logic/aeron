@@ -1,5 +1,8 @@
 package uk.co.real_logic.aeron.common.concurrent;
 
+/**
+ * Atomic counter that is backed by an {@link AtomicBuffer} that can be read across threads and processes.
+ */
 public class AtomicCounter implements AutoCloseable
 {
     private final AtomicBuffer buffer;
@@ -16,16 +19,35 @@ public class AtomicCounter implements AutoCloseable
         buffer.putLong(offset, 0);
     }
 
-    public void increment()
+    /**
+     * Perform an atomic increment that will not lose updates across threads.
+     */
+    public void inc()
     {
         buffer.getAndAddLong(offset, 1);
     }
 
+    /**
+     * Perform an atomic increment that is not safe across threads.
+     */
+    public void lazyInc()
+    {
+        buffer.putLongOrdered(offset, buffer.getLongVolatile(offset) + 1);
+    }
+
+    /**
+     * Get the latest value for the counter.
+     *
+     * @return the latest value for the counter.
+     */
     public long get()
     {
         return buffer.getLongVolatile(offset);
     }
 
+    /**
+     * Free the counter slot for reuse.
+     */
     public void close()
     {
         countersManager.free(counterId);

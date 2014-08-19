@@ -120,7 +120,7 @@ public class SendChannelEndpoint implements AutoCloseable
                     header.termId(), header.highestContiguousTermOffset(), header.receiverWindowSize(), srcAddress);
 
             components.publication.updatePositionLimitFromStatusMessage(limit);
-            systemCounters.statusMessagesReceived().increment();
+            systemCounters.statusMessagesReceived().inc();
         }
     }
 
@@ -134,7 +134,7 @@ public class SendChannelEndpoint implements AutoCloseable
         if (null != components)
         {
             components.retransmitHandler.onNak(nak.termId(), nak.termOffset(), nak.length());
-            systemCounters.naksReceived().increment();
+            systemCounters.naksReceived().inc();
         }
     }
 

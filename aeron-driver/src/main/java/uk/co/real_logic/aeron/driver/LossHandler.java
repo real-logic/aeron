@@ -160,14 +160,14 @@ public class LossHandler
      * A new high position may have been seen, handle that accordingly
      *
      * @param position new position in the stream
+     * @return the highest position after checking the new candidate
      */
-    public void highestPositionCandidate(final long position)
+    public long highestPositionCandidate(final long position)
     {
-        // only set from this method which comes from the Receiver thread!
-        if (highestPosition.get() < position)
-        {
-            highestPosition.lazySet(position);
-        }
+        final long highestPosition = Math.max(this.highestPosition.get(), position);
+        this.highestPosition.lazySet(highestPosition);
+
+        return highestPosition;
     }
 
     /**
@@ -249,7 +249,7 @@ public class LossHandler
 
     private void sendNakMessage()
     {
-        systemCounters.naksSent().increment();
+        systemCounters.naksSent().inc();
         nakMessageSender.send(activeGap.termId, activeGap.termOffset, activeGap.length);
     }
 

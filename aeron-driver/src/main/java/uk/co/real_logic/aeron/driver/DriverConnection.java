@@ -264,25 +264,8 @@ public class DriverConnection implements AutoCloseable
         final long packetPosition = calculatePosition(termId, packetTail);
         final long position = position(currentRebuilder.tail());
 
-        if (packetPosition < position)
+        if (isFlowControlUnderRun(packetPosition, position) || isFlowControlOverRun(packetPosition, length))
         {
-            // TODO: invalid packet we probably want to update an error counter
-            System.out.println(String.format("possible resend below current position %d : packet %d", position, packetPosition));
-            return;
-        }
-
-        if (isBeyondTermWindow(packetPosition, length, position))
-        {
-            // TODO: invalid packet we probably want to update an error counter
-            System.out.println(String.format("isBeyondTermWindow packet=%d length=%d position=%d",
-                                             packetPosition, length, position));
-            return;
-        }
-
-        if (isBeyondFlowControlLimit(packetPosition + length))
-        {
-            // TODO: increment a counter to say subscriber is not keeping up
-            System.out.println(String.format("isBeyondFlowControlLimit %x %d", packetPosition, length));
             return;
         }
 
@@ -309,8 +292,7 @@ public class DriverConnection implements AutoCloseable
         }
 
         timeOfLastFrame.lazySet(clock.getAsLong());
-        lossHandler.highestPositionCandidate(packetPosition);
-        highestReceivedPosition.position(lossHandler.highestPosition());
+        highestReceivedPosition.position(lossHandler.highestPositionCandidate(packetPosition));
     }
 
     /**
@@ -410,7 +392,7 @@ public class DriverConnection implements AutoCloseable
                                   final int windowSize,
                                   final long now)
     {
-        systemCounters.statusMessagesSent().increment();
+        systemCounters.statusMessagesSent().inc();
 
         statusMessageSender.send(termId, termOffset, windowSize);
         lastSmTermId = termId;
@@ -430,14 +412,28 @@ public class DriverConnection implements AutoCloseable
         return TermHelper.calculatePosition(termId, tail, positionBitsToShift, initialTermId);
     }
 
-    private boolean isBeyondFlowControlLimit(final long proposedPosition)
+    private boolean isFlowControlUnderRun(final long packetPosition, final long position)
     {
-        return proposedPosition > (subscriberPosition.position() + termWindowSize);
+        final boolean isFlowControlUnderRun = packetPosition < position;
+
+        if (isFlowControlUnderRun)
+        {
+            systemCounters.flowControlUnderRuns().inc();
+        }
+
+        return isFlowControlUnderRun;
     }
 
-    private boolean isBeyondTermWindow(final long proposedPosition, final int length, final long currentPosition)
+    private boolean isFlowControlOverRun(final long proposedPosition, final int length)
     {
-        return proposedPosition > (currentPosition + (termWindowSize - length));
+        final boolean isFlowControlOverRun = proposedPosition > (subscriberPosition.position() + (termWindowSize - length));
+
+        if (isFlowControlOverRun)
+        {
+            systemCounters.flowControlOverRuns().inc();
+        }
+
+        return isFlowControlOverRun;
     }
 
     private int prepareForRotation(final int activeTermId)

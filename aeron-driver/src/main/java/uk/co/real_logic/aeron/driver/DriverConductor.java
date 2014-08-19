@@ -472,7 +472,7 @@ public class DriverConductor extends Agent
 
                 while (!receiverProxy.registerMediaEndpoint(channelEndpoint))
                 {
-                    systemCounters.receiverProxyFails().increment();
+                    systemCounters.receiverProxyFails().inc();
                 }
             }
 
@@ -483,7 +483,7 @@ public class DriverConductor extends Agent
             {
                 while (!receiverProxy.addSubscription(channelEndpoint, streamId))
                 {
-                    systemCounters.receiverProxyFails().increment();
+                    systemCounters.receiverProxyFails().inc();
                     Thread.yield();
                 }
             }
@@ -539,7 +539,7 @@ public class DriverConductor extends Agent
             {
                 while (!receiverProxy.removeSubscription(channelEndpoint, streamId))
                 {
-                    systemCounters.receiverProxyFails().increment();
+                    systemCounters.receiverProxyFails().inc();
                 }
             }
 
@@ -624,7 +624,7 @@ public class DriverConductor extends Agent
                             final ClosePublicationCmd cmd = new ClosePublicationCmd(publication);
                             while (!senderProxy.closePublication(cmd))
                             {
-                                systemCounters.senderProxyFails().increment();
+                                systemCounters.senderProxyFails().inc();
                                 Thread.yield();
                             }
 
@@ -669,7 +669,7 @@ public class DriverConductor extends Agent
                     {
                         while (!receiverProxy.removeSubscription(channelEndpoint, streamId))
                         {
-                            systemCounters.receiverProxyFails().increment();
+                            systemCounters.receiverProxyFails().inc();
                         }
                     }
 
@@ -705,7 +705,7 @@ public class DriverConductor extends Agent
                         {
                             while (!receiverProxy.removeConnection(connection))
                             {
-                                systemCounters.receiverProxyFails().increment();
+                                systemCounters.receiverProxyFails().inc();
                                 Thread.yield();
                             }
 
@@ -835,7 +835,7 @@ public class DriverConductor extends Agent
             final NewConnectionCmd newConnectionCmd = new NewConnectionCmd(channelEndpoint, connection);
             while (!receiverProxy.newConnection(newConnectionCmd))
             {
-                systemCounters.receiverProxyFails().increment();
+                systemCounters.receiverProxyFails().inc();
                 Thread.yield();
             }
         }
@@ -859,7 +859,7 @@ public class DriverConductor extends Agent
 
                 while (!senderProxy.retransmit(cmd))
                 {
-                    systemCounters.senderProxyFails().increment();
+                    systemCounters.senderProxyFails().inc();
                     Thread.yield();
                 }
             };

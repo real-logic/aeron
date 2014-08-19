@@ -294,7 +294,7 @@ public class DriverPublication implements AutoCloseable
             }
             while (remainingBytes > 0);
 
-            systemCounters.retransmitsSent().increment();
+            systemCounters.retransmitsSent().inc();
         }
     }
 
@@ -418,7 +418,7 @@ public class DriverPublication implements AutoCloseable
         try
         {
             final int bytesSent = mediaEndpoint.sendTo(scratchByteBuffer, dstAddress);
-            systemCounters.heartbeatsSent().increment();
+            systemCounters.heartbeatsSent().inc();
 
             if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
             {

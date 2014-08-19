@@ -38,24 +38,24 @@ import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_INT;
 public class EventCodec
 {
     private final static ThreadLocal<HeaderFlyweight> headerFlyweight =
-            ThreadLocal.withInitial(HeaderFlyweight::new);
+        ThreadLocal.withInitial(HeaderFlyweight::new);
     private final static ThreadLocal<DataHeaderFlyweight> dataHeader =
-            ThreadLocal.withInitial(DataHeaderFlyweight::new);
+        ThreadLocal.withInitial(DataHeaderFlyweight::new);
     private final static ThreadLocal<StatusMessageFlyweight> smHeader =
-            ThreadLocal.withInitial(StatusMessageFlyweight::new);
+        ThreadLocal.withInitial(StatusMessageFlyweight::new);
     private final static ThreadLocal<NakFlyweight> nakHeader =
-            ThreadLocal.withInitial(NakFlyweight::new);
+        ThreadLocal.withInitial(NakFlyweight::new);
 
     private final static ThreadLocal<PublicationMessageFlyweight> pubMessage =
-            ThreadLocal.withInitial(PublicationMessageFlyweight::new);
+        ThreadLocal.withInitial(PublicationMessageFlyweight::new);
     private final static ThreadLocal<SubscriptionMessageFlyweight> subMessage =
-            ThreadLocal.withInitial(SubscriptionMessageFlyweight::new);
+        ThreadLocal.withInitial(SubscriptionMessageFlyweight::new);
     private final static ThreadLocal<LogBuffersMessageFlyweight> newBufferMessage =
-            ThreadLocal.withInitial(LogBuffersMessageFlyweight::new);
+        ThreadLocal.withInitial(LogBuffersMessageFlyweight::new);
     private final static ThreadLocal<CorrelatedMessageFlyweight> correlatedMsg =
-            ThreadLocal.withInitial(CorrelatedMessageFlyweight::new);
+        ThreadLocal.withInitial(CorrelatedMessageFlyweight::new);
     private final static ThreadLocal<ConnectionMessageFlyweight> connectionMsg =
-            ThreadLocal.withInitial(ConnectionMessageFlyweight::new);
+        ThreadLocal.withInitial(ConnectionMessageFlyweight::new);
 
 
     private final static int LOG_HEADER_LENGTH = 16;
@@ -111,6 +111,7 @@ public class EventCodec
         final int relativeOffset = putStackTraceElement(encodingBuffer, stack, LOG_HEADER_LENGTH);
         final int captureLength = relativeOffset;
         encodeLogHeader(encodingBuffer, captureLength, captureLength);
+
         return relativeOffset;
     }
 
@@ -122,14 +123,15 @@ public class EventCodec
         relativeOffset += encodingBuffer.putString(relativeOffset, ex.getClass().getName(), LITTLE_ENDIAN);
         relativeOffset += encodingBuffer.putString(relativeOffset, msg, LITTLE_ENDIAN);
 
-        StackTraceElement[] stackTrace = ex.getStackTrace();
-        for (int i = 0;i < Math.min(STACK_DEPTH, stackTrace.length); i++)
+        final StackTraceElement[] stackTrace = ex.getStackTrace();
+        for (int i = 0; i < Math.min(STACK_DEPTH, stackTrace.length); i++)
         {
             relativeOffset = putStackTraceElement(encodingBuffer, stackTrace[i], relativeOffset);
         }
 
         final int recordLength = relativeOffset - LOG_HEADER_LENGTH;
         encodeLogHeader(encodingBuffer, recordLength, recordLength);
+
         return relativeOffset;
     }
 
@@ -138,10 +140,9 @@ public class EventCodec
         encodingBuffer.putInt(relativeOffset, stack.getLineNumber(), LITTLE_ENDIAN);
         relativeOffset += SIZE_OF_INT;
         relativeOffset += encodingBuffer.putString(relativeOffset, stack.getClassName(), LITTLE_ENDIAN);
-        String methodName = stack.getMethodName();
-        methodName = methodName == null ? "lambda": methodName;
         relativeOffset += encodingBuffer.putString(relativeOffset, stack.getMethodName(), LITTLE_ENDIAN);
         relativeOffset += encodingBuffer.putString(relativeOffset, stack.getFileName(), LITTLE_ENDIAN);
+
         return relativeOffset;
     }
 
@@ -191,7 +192,7 @@ public class EventCodec
                                           final int offset, final int length)
     {
         final StringBuilder builder = new StringBuilder();
-        int relativeOffset = dissectLogHeader(code, buffer, offset, builder);
+        final int relativeOffset = dissectLogHeader(code, buffer, offset, builder);
 
         builder.append(": ");
 
@@ -243,7 +244,7 @@ public class EventCodec
                                              final int initialOffset, final int length)
     {
         final StringBuilder builder = new StringBuilder();
-        int relativeOffset = dissectLogHeader(code, buffer, initialOffset, builder);
+        final int relativeOffset = dissectLogHeader(code, buffer, initialOffset, builder);
         builder.append(": ");
 
         readStackTraceElement(buffer, initialOffset + relativeOffset, builder);
@@ -252,10 +253,10 @@ public class EventCodec
     }
 
     public static String dissectAsException(
-            final EventCode code,
-            final AtomicBuffer buffer,
-            final int initialOffset,
-            final int length)
+        final EventCode code,
+        final AtomicBuffer buffer,
+        final int initialOffset,
+        final int length)
     {
         final StringBuilder builder = new StringBuilder();
         int offset = initialOffset + dissectLogHeader(code, buffer, initialOffset, builder);
@@ -281,10 +282,10 @@ public class EventCodec
     }
 
     public static String dissectAsString(
-            final EventCode code,
-            final AtomicBuffer buffer,
-            final int offset,
-            final int length)
+        final EventCode code,
+        final AtomicBuffer buffer,
+        final int offset,
+        final int length)
     {
         final StringBuilder builder = new StringBuilder();
         final int relativeOffset = dissectLogHeader(code, buffer, offset, builder);
@@ -294,9 +295,9 @@ public class EventCodec
     }
 
     private static int readStackTraceElement(
-            final AtomicBuffer buffer,
-            int offset,
-            final StringBuilder builder)
+        final AtomicBuffer buffer,
+        int offset,
+        final StringBuilder builder)
     {
         final int lineNumber = buffer.getInt(offset, LITTLE_ENDIAN);
         offset += SIZE_OF_INT;
@@ -319,9 +320,9 @@ public class EventCodec
     }
 
     private static int encodeLogHeader(
-            final AtomicBuffer encodingBuffer,
-            final int captureLength,
-            final int bufferLength)
+        final AtomicBuffer encodingBuffer,
+        final int captureLength,
+        final int bufferLength)
     {
         int relativeOffset = 0;
         /*
@@ -344,8 +345,9 @@ public class EventCodec
         return relativeOffset;
     }
 
-    private static int encodeSocketAddress(final AtomicBuffer encodingBuffer, final int offset,
-                                           final InetSocketAddress dstAddr)
+    private static int encodeSocketAddress(final AtomicBuffer encodingBuffer,
+                                           final int offset,
+                                           final InetSocketAddress dstAddress)
     {
         int relativeOffset = 0;
         /*
@@ -355,10 +357,10 @@ public class EventCodec
          * - IP address (4 or 16 bytes)
          */
 
-        encodingBuffer.putInt(offset + relativeOffset, dstAddr.getPort(), LITTLE_ENDIAN);
+        encodingBuffer.putInt(offset + relativeOffset, dstAddress.getPort(), LITTLE_ENDIAN);
         relativeOffset += SIZE_OF_INT;
 
-        final byte[] addrBuffer = dstAddr.getAddress().getAddress();
+        final byte[] addrBuffer = dstAddress.getAddress().getAddress();
         encodingBuffer.putInt(offset + relativeOffset, addrBuffer.length, LITTLE_ENDIAN);
         relativeOffset += SIZE_OF_INT;
 
@@ -372,7 +374,9 @@ public class EventCodec
         return Math.min(bufferLength, EventConfiguration.MAX_EVENT_LENGTH - LOG_HEADER_LENGTH - SOCKET_ADDRESS_MAX_LENGTH);
     }
 
-    private static int dissectLogHeader(final EventCode code, final AtomicBuffer buffer, final int offset,
+    private static int dissectLogHeader(final EventCode code,
+                                        final AtomicBuffer buffer,
+                                        final int offset,
                                         final StringBuilder builder)
     {
         int relativeOffset = 0;
@@ -387,7 +391,7 @@ public class EventCodec
         relativeOffset += BitUtil.SIZE_OF_LONG;
 
         builder.append(String.format("[%1$f] %2$s [%3$d/%4$d]", (double)timestamp / 1000000000.0, code.name(),
-                captureLength, bufferLength));
+                                     captureLength, bufferLength));
 
         return relativeOffset;
     }
@@ -419,43 +423,45 @@ public class EventCodec
     private static String dissect(final DataHeaderFlyweight header)
     {
         return String.format("DATA %x len %d %x:%x:%x @%x", header.flags(), header.frameLength(),
-                header.sessionId(), header.streamId(), header.termId(), header.termOffset());
+                             header.sessionId(), header.streamId(), header.termId(), header.termOffset());
     }
 
     private static String dissect(final StatusMessageFlyweight header)
     {
         return String.format("SM %x len %d %x:%x:%x @%x %d", header.flags(), header.frameLength(),
-                header.sessionId(), header.streamId(), header.termId(), header.highestContiguousTermOffset(),
-                header.receiverWindowSize());
+                             header.sessionId(), header.streamId(), header.termId(), header.highestContiguousTermOffset(),
+                             header.receiverWindowSize());
     }
 
     private static String dissect(final NakFlyweight header)
     {
         return String.format("NAK %x len %d %x:%x:%x @%x %d", header.flags(), header.frameLength(),
-                header.sessionId(), header.streamId(), header.termId(), header.termOffset(), header.length());
+                             header.sessionId(), header.streamId(), header.termId(), header.termOffset(), header.length());
     }
 
     private static String dissect(final PublicationMessageFlyweight command)
     {
         return String.format("%3$s %1$x:%2$x [%5$x:%4$x]", command.sessionId(),
-                command.streamId(), command.channel(), command.correlationId(), command.clientId());
+                             command.streamId(), command.channel(), command.correlationId(), command.clientId());
     }
 
     private static String dissect(final SubscriptionMessageFlyweight command)
     {
         return String.format("%s %d [%x][%x:%x]", command.channel(), command.streamId(),
-                command.registrationCorrelationId(), command.clientId(), command.correlationId());
+                             command.registrationCorrelationId(), command.clientId(), command.correlationId());
     }
 
     private static String dissect(final LogBuffersMessageFlyweight command)
     {
-        final String locations = IntStream.range(0, 6)
-                .mapToObj((i) -> String.format("{%s, %d@%x}", command.location(i),
-                        command.bufferLength(i), command.bufferOffset(i)))
-                .collect(Collectors.joining("\n    "));
+        final String locations =
+            IntStream.range(0, 6)
+                     .mapToObj((i) -> String.format("{%s, %d@%x}", command.location(i),
+                                                    command.bufferLength(i), command.bufferOffset(i)))
+                     .collect(Collectors.joining("\n    "));
 
         return String.format("%s %x:%x:%x %x [%x]\n    %s", command.channel(), command.sessionId(),
-                command.streamId(), command.termId(), command.positionCounterId(), command.correlationId(), locations);
+                             command.streamId(), command.termId(), command.positionCounterId(),
+                             command.correlationId(), locations);
     }
 
     private static String dissect(final CorrelatedMessageFlyweight command)

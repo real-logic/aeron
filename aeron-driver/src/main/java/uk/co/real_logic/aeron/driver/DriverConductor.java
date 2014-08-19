@@ -687,7 +687,7 @@ public class DriverConductor extends Agent
 
     private void onCheckConnections()
     {
-        final long now = timerWheel.now();
+        final long now = timerWheel.now(); // TODO: Why the mix of timerWheel usage below?
 
         connections.forEach(
             (connection) ->
@@ -759,7 +759,6 @@ public class DriverConductor extends Agent
         rescheduleTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, connectionCheckTimer);
     }
 
-    // clean up clientId map, clientLiveness objects will still be kept around for any pubs and subs until they timeout
     private void onLivenessCheckClients()
     {
         final long now = timerWheel.now();

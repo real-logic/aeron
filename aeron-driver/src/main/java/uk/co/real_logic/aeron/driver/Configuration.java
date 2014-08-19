@@ -256,8 +256,8 @@ public class Configuration
     public static final String AGENT_IDLE_STRATEGY =
         getProperty(AGENT_IDLE_STRATEGY_PROP_NAME, "uk.co.real_logic.aeron.common.BackoffIdleStrategy");
 
-    public static final long AGENT_IDLE_MAX_SPINS = 100;
-    public static final long AGENT_IDLE_MAX_YIELDS = 100;
+    public static final long AGENT_IDLE_MAX_SPINS = 20;
+    public static final long AGENT_IDLE_MAX_YIELDS = 50;
     public static final long AGENT_IDLE_MIN_PARK_NS = TimeUnit.NANOSECONDS.toNanos(1);
     public static final long AGENT_IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(100);
 
@@ -315,8 +315,7 @@ public class Configuration
 
     public static IdleStrategy eventReaderIdleStrategy()
     {
-        return new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                                       AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS);
+        return new BackoffIdleStrategy(1, 1, AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS);
     }
 
     public static IdleStrategy agentIdleStrategy()

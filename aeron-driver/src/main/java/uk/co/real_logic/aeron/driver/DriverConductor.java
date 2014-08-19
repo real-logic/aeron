@@ -849,9 +849,9 @@ public class DriverConductor extends Agent
         }
     }
 
-    private BufferPositionIndicator newPositionIndicator(final int subscriberPositionCounterId)
+    private BufferPositionIndicator newPositionIndicator(final int counterId)
     {
-        return new BufferPositionIndicator(countersBuffer, subscriberPositionCounterId, countersManager);
+        return new BufferPositionIndicator(countersBuffer, counterId, countersManager);
     }
 
     private int allocatePositionCounter(final String type, final String dirName, final int sessionId, final int streamId)

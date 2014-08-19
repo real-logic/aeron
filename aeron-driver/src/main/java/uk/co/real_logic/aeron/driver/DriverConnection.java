@@ -262,9 +262,10 @@ public class DriverConnection implements AutoCloseable
 
         final int packetTail = header.termOffset();
         final long packetPosition = calculatePosition(termId, packetTail);
-        final long position = position(currentRebuilder.tail());
+        final long currentPosition = position(currentRebuilder.tail());
+        final long proposedPosition = packetPosition + length;
 
-        if (isFlowControlUnderRun(packetPosition, position) || isFlowControlOverRun(packetPosition, length))
+        if (isFlowControlUnderRun(packetPosition, currentPosition) || isFlowControlOverRun(proposedPosition))
         {
             return;
         }
@@ -291,21 +292,29 @@ public class DriverConnection implements AutoCloseable
             rebuilders[hwmIndex].insert(buffer, 0, length);
         }
 
-        timeOfLastFrame.lazySet(clock.getAsLong());
-        highestReceivedPosition.position(lossHandler.highestPositionCandidate(packetPosition));
+        highestPositionCandidate(proposedPosition);
     }
 
     /**
      * Inform the loss handler that a potentially new high position in the stream has been reached.
      *
-     * @param header for the data frame
+     * @param termId of the proposed position
+     * @param termOffset of the proposed position
      */
-    public void highestPositionCandidate(final DataHeaderFlyweight header)
+    public void highestPositionCandidate(final int termId, final int termOffset)
     {
-        final long packetPosition = calculatePosition(header.termId(), header.termOffset());
+        highestPositionCandidate(calculatePosition(termId, termOffset));
+    }
 
+    /**
+     * Inform the loss handler that a potentially new high position in the stream has been reached.
+     *
+     * @param proposedPosition for the new candidate high position.
+     */
+    private void highestPositionCandidate(final long proposedPosition)
+    {
         timeOfLastFrame.lazySet(clock.getAsLong());
-        lossHandler.highestPositionCandidate(packetPosition);
+        highestReceivedPosition.position(lossHandler.highestPositionCandidate(proposedPosition));
     }
 
     /**
@@ -424,9 +433,9 @@ public class DriverConnection implements AutoCloseable
         return isFlowControlUnderRun;
     }
 
-    private boolean isFlowControlOverRun(final long packetPosition, final int length)
+    private boolean isFlowControlOverRun(final long proposedPosition)
     {
-        final boolean isFlowControlOverRun = packetPosition > (subscriberPosition.position() + (termWindowSize - length));
+        final boolean isFlowControlOverRun = proposedPosition > (subscriberPosition.position() + termWindowSize);
 
         if (isFlowControlOverRun)
         {

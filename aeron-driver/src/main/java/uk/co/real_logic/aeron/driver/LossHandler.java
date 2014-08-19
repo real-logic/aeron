@@ -41,8 +41,8 @@ public class LossHandler
     private final int positionBitsToShift;
     private final int initialTermId;
 
-    private NakMessageSender nakMessageSender;
-    private TimerWheel.Timer timer;
+    private final NakMessageSender nakMessageSender;
+    private final TimerWheel.Timer timer;
 
     private int activeIndex = 0;
     private int gapIndex = 0;

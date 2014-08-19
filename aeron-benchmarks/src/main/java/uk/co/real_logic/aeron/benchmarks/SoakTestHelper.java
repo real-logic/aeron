@@ -9,9 +9,7 @@ import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.nio.ByteOrder.nativeOrder;
-import static uk.co.real_logic.aeron.common.CommonContext.ADMIN_DIR_PROP_NAME;
-import static uk.co.real_logic.aeron.common.CommonContext.COUNTERS_DIR_PROP_NAME;
-import static uk.co.real_logic.aeron.common.CommonContext.DATA_DIR_PROP_NAME;
+import static uk.co.real_logic.aeron.common.CommonContext.*;
 
 public class SoakTestHelper
 {

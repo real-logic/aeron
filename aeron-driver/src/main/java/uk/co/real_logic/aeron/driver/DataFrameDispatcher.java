@@ -126,7 +126,7 @@ public class DataFrameDispatcher
                 }
                 else
                 {
-                    // this is a 0 length data frame, so pass on the info, but no need to insert it
+                    // this is a 0 length data frame (Heartbeat), so pass on the info, but no need to insert it
                     connection.highestPositionCandidate(headerFlyweight.termId(), headerFlyweight.termOffset());
                 }
             }

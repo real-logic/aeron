@@ -379,7 +379,7 @@ public class DriverConnection implements AutoCloseable
     {
         statusMessageSender.send(termId, termOffset, windowSize);
 
-        systemCounters.statusMessagesSent().inc();
+        systemCounters.statusMessagesSent().orderedIncrement();
         lastSmTermId = termId;
         lastSmTimestamp = now;
         lastSmPosition = position;
@@ -403,7 +403,7 @@ public class DriverConnection implements AutoCloseable
 
         if (isFlowControlUnderRun)
         {
-            systemCounters.flowControlUnderRuns().inc();
+            systemCounters.flowControlUnderRuns().orderedIncrement();
         }
 
         return isFlowControlUnderRun;
@@ -415,7 +415,7 @@ public class DriverConnection implements AutoCloseable
 
         if (isFlowControlOverRun)
         {
-            systemCounters.flowControlOverRuns().inc();
+            systemCounters.flowControlOverRuns().orderedIncrement();
         }
 
         return isFlowControlOverRun;

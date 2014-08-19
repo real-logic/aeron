@@ -240,7 +240,7 @@ public class LossHandler
 
     private void sendNakMessage()
     {
-        systemCounters.naksSent().inc();
+        systemCounters.naksSent().orderedIncrement();
         nakMessageSender.send(activeGap.termId, activeGap.termOffset, activeGap.length);
     }
 

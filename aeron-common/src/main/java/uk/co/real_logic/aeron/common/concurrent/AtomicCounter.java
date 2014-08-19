@@ -22,7 +22,7 @@ public class AtomicCounter implements AutoCloseable
     /**
      * Perform an atomic increment that will not lose updates across threads.
      */
-    public void inc()
+    public void increment()
     {
         buffer.getAndAddLong(offset, 1);
     }
@@ -30,7 +30,7 @@ public class AtomicCounter implements AutoCloseable
     /**
      * Perform an atomic increment that is not safe across threads.
      */
-    public void lazyInc()
+    public void orderedIncrement()
     {
         buffer.putLongOrdered(offset, buffer.getLongVolatile(offset) + 1);
     }

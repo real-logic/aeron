@@ -165,6 +165,47 @@ public class PubAndSubTest
 
     @Theory
     @Test(timeout = 10000)
+    public void shouldReceivePublishedMessagesWithDataLoss(final String channel) throws Exception
+    {
+        final int termBufferSize = 64 * 1024;
+        final int numMessagesInTermBuffer = 64;
+        final int messageLength = (termBufferSize / numMessagesInTermBuffer) - DataHeaderFlyweight.HEADER_LENGTH;
+        final int numMessagesToSend = 2 * numMessagesInTermBuffer;
+
+        context.termBufferSize(termBufferSize);
+        context.dataLossRate(0.10);                // 10% data loss
+        context.dataLossSeed(0xdeadbeefL);         // predictable seed
+
+        setup(channel);
+
+        for (int i = 0; i < numMessagesToSend; i++)
+        {
+            while (!publication.offer(buffer, 0, messageLength))
+            {
+                Thread.yield();
+            }
+
+            final int fragmentsRead[] = new int[1];
+            SystemTestHelper.executeUntil(
+                () -> fragmentsRead[0] > 0,
+                (j) ->
+                {
+                    fragmentsRead[0] += subscription.poll(10);
+                    Thread.yield();
+                },
+                Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
+        }
+
+        verify(dataHandler, times(numMessagesToSend))
+            .onData(anyObject(),
+                anyInt(),
+                eq(messageLength),
+                eq(SESSION_ID),
+                eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+    }
+
+    @Theory
+    @Test(timeout = 10000)
     public void shouldContinueAfterBufferRolloverBatched(final String channel) throws Exception
     {
         final int termBufferSize = 64 * 1024;

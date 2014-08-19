@@ -272,6 +272,10 @@ public class MediaDriver implements AutoCloseable
         private int termBufferSize;
         private int initialWindowSize;
         private long statusMessageTimeout;
+        private long dataLossSeed;
+        private long controlLossSeed;
+        private double dataLossRate;
+        private double controlLossRate;
 
         private boolean warnIfDirectoriesExist;
         private EventLogger eventLogger;
@@ -282,6 +286,10 @@ public class MediaDriver implements AutoCloseable
             termBufferSize(Configuration.termBufferSize());
             initialWindowSize(Configuration.initialWindowSize());
             statusMessageTimeout(Configuration.statusMessageTimeout());
+            dataLossRate(Configuration.dataLossRate());
+            dataLossSeed(Configuration.dataLossSeed());
+            controlLossRate(Configuration.controlLossRate());
+            controlLossSeed(Configuration.controlLossSeed());
 
             eventConsumer = System.out::println;
             warnIfDirectoriesExist = true;
@@ -547,6 +555,30 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
+        public Context dataLossRate(final double lossRate)
+        {
+            this.dataLossRate = lossRate;
+            return this;
+        }
+
+        public Context dataLossSeed(final long lossSeed)
+        {
+            this.dataLossSeed = lossSeed;
+            return this;
+        }
+
+        public Context controlLossRate(final double lossRate)
+        {
+            this.controlLossRate = lossRate;
+            return this;
+        }
+
+        public Context controlLossSeed(final long lossSeed)
+        {
+            this.controlLossSeed = lossSeed;
+            return this;
+        }
+
         public OneToOneConcurrentArrayQueue<? super Object> conductorCommandQueue()
         {
             return conductorCommandQueue;
@@ -675,6 +707,26 @@ public class MediaDriver implements AutoCloseable
         public Consumer<Exception> eventLoggerException()
         {
             return eventLogger::logException;
+        }
+
+        public double dataLossRate()
+        {
+            return dataLossRate;
+        }
+
+        public long dataLossSeed()
+        {
+            return dataLossSeed;
+        }
+
+        public double controlLossRate()
+        {
+            return controlLossRate;
+        }
+
+        public long controlLossSeed()
+        {
+            return controlLossSeed;
         }
 
         public void close()

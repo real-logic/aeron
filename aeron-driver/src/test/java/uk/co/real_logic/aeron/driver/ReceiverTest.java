@@ -129,7 +129,10 @@ public class ReceiverTest
                                 .map((rawLog) -> new LogReader(rawLog.logBuffer(), rawLog.stateBuffer()))
                                 .toArray(LogReader[]::new);
 
-        receiveChannelEndpoint = new ReceiveChannelEndpoint(UdpChannel.parse(URI), driverConductorProxy, mockLogger);
+        receiveChannelEndpoint = new ReceiveChannelEndpoint(UdpChannel.parse(URI),
+                                                            driverConductorProxy,
+                                                            mockLogger,
+                                                            (address, length) -> false);
     }
 
     @After

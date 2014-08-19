@@ -30,7 +30,10 @@ import uk.co.real_logic.aeron.common.status.BufferPositionIndicator;
 import uk.co.real_logic.aeron.common.status.BufferPositionReporter;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
-import uk.co.real_logic.aeron.driver.cmd.*;
+import uk.co.real_logic.aeron.driver.cmd.ClosePublicationCmd;
+import uk.co.real_logic.aeron.driver.cmd.CreateConnectionCmd;
+import uk.co.real_logic.aeron.driver.cmd.NewConnectionCmd;
+import uk.co.real_logic.aeron.driver.cmd.RetransmitPublicationCmd;
 import uk.co.real_logic.aeron.driver.exceptions.ControlProtocolException;
 
 import java.net.InetSocketAddress;
@@ -41,7 +44,7 @@ import static uk.co.real_logic.aeron.common.ErrorCode.*;
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.driver.Configuration.RETRANS_UNICAST_DELAY_DEFAULT_NS;
 import static uk.co.real_logic.aeron.driver.Configuration.RETRANS_UNICAST_LINGER_DEFAULT_NS;
-import static uk.co.real_logic.aeron.driver.MediaDriver.*;
+import static uk.co.real_logic.aeron.driver.MediaDriver.Context;
 
 /**
  * Driver Conductor to take commands from publishers and subscribers as well as handle NAKs and retransmissions
@@ -98,6 +101,10 @@ public class DriverConductor extends Agent
     private final int capacity;
     private final int initialWindowSize;
     private final long statusMessageTimeout;
+    private final long dataLossSeed;
+    private final long controlLossSeed;
+    private final double dataLossRate;
+    private final double controlLossRate;
     private final TimerWheel.Timer heartbeatTimer;
     private final TimerWheel.Timer publicationCheckTimer;
     private final TimerWheel.Timer subscriptionCheckTimer;
@@ -147,6 +154,10 @@ public class DriverConductor extends Agent
         clientProxy = ctx.clientProxy();
         conductorProxy = ctx.driverConductorProxy();
         logger = ctx.eventLogger();
+        dataLossRate = ctx.dataLossRate();
+        dataLossSeed = ctx.dataLossSeed();
+        controlLossRate = ctx.controlLossRate();
+        controlLossSeed = ctx.controlLossSeed();
 
         receiverProxyFails = countersManager.newCounter("Failed offers to ReceiverProxy");
         senderProxyFails = countersManager.newCounter("Failed offers to SenderProxy");
@@ -275,13 +286,11 @@ public class DriverConductor extends Agent
                             onKeepaliveClient(correlatedMessage);
                             break;
                     }
-                }
-                catch (final ControlProtocolException ex)
+                } catch (final ControlProtocolException ex)
                 {
                     clientProxy.onError(ex.errorCode(), ex.getMessage(), flyweight, length);
                     logger.logException(ex);
-                }
-                catch (final Exception ex)
+                } catch (final Exception ex)
                 {
                     clientProxy.onError(GENERIC_ERROR, ex.getMessage(), flyweight, length);
                     logger.logException(ex);
@@ -340,7 +349,13 @@ public class DriverConductor extends Agent
             if (null == channelEndpoint)
             {
                 channelEndpoint =
-                    new SendChannelEndpoint(udpChannel, nioSelector, logger, naksReceivedCounter, statusMessagesReceivedCounter);
+                    new SendChannelEndpoint(udpChannel,
+                                            nioSelector,
+                                            logger,
+                                            Configuration.createLossGenerator(controlLossRate, controlLossSeed),
+                                            naksReceivedCounter,
+                                            statusMessagesReceivedCounter);
+
                 sendChannelEndpointByHash.put(udpChannel.consistentHash(), channelEndpoint);
             }
             else if (!channelEndpoint.udpChannel().equals(udpChannel))
@@ -463,7 +478,11 @@ public class DriverConductor extends Agent
 
             if (null == channelEndpoint)
             {
-                channelEndpoint = new ReceiveChannelEndpoint(udpChannel, conductorProxy, logger);
+                channelEndpoint = new ReceiveChannelEndpoint(udpChannel,
+                                                             conductorProxy,
+                                                             logger,
+                                                             Configuration.createLossGenerator(dataLossRate, dataLossSeed));
+
                 receiveChannelEndpointByHash.put(udpChannel.consistentHash(), channelEndpoint);
 
                 while (!receiverProxy.registerMediaEndpoint(channelEndpoint))

@@ -105,6 +105,26 @@ public class Configuration
     public static final String CONNECTION_LIVENESS_TIMEOUT_PROP_NAME = "aeron.connection.liveness.timeout";
 
     /**
+     * Property name for data loss rate
+     */
+    public static final String DATA_LOSS_RATE_PROP_NAME = "aeron.debug.data.loss.rate";
+
+    /**
+     * Property name for data loss seed
+     */
+    public static final String DATA_LOSS_SEED_PROP_NAME = "aeron.debug.data.loss.seed";
+
+    /**
+     * Property name for control loss rate
+     */
+    public static final String CONTROL_LOSS_RATE_PROP_NAME = "aeron.debug.control.loss.rate";
+
+    /**
+     * Property name for control loss seed
+     */
+    public static final String CONTROL_LOSS_SEED_PROP_NAME = "aeron.debug.control.loss.seed";
+
+    /**
      * Default byte buffer size for reads
      */
     public static final int READ_BYTE_BUFFER_SZ_DEFAULT = 4096;
@@ -337,5 +357,35 @@ public class Configuration
     public static long statusMessageTimeout()
     {
         return getLong(STATUS_MESSAGE_TIMEOUT_PROP_NAME, STATUS_MESSAGE_TIMEOUT_DEFAULT_NS);
+    }
+
+    public static long dataLossSeed()
+    {
+        return getLong(DATA_LOSS_SEED_PROP_NAME, -1);
+    }
+
+    public static long controlLossSeed()
+    {
+        return getLong(CONTROL_LOSS_SEED_PROP_NAME, -1);
+    }
+
+    public static double dataLossRate()
+    {
+        return Double.parseDouble(getProperty(DATA_LOSS_RATE_PROP_NAME, "0.0"));
+    }
+
+    public static double controlLossRate()
+    {
+        return Double.parseDouble(getProperty(CONTROL_LOSS_RATE_PROP_NAME, "0.0"));
+    }
+
+    public static LossGenerator createLossGenerator(final double lossRate, final long lossSeed)
+    {
+        if (0 == lossRate)
+        {
+            return (address, length) -> false;
+        }
+
+        return new RandomLossGenerator(lossRate, lossSeed);
     }
 }

@@ -59,6 +59,9 @@ public final class UdpTransport implements AutoCloseable
     private final StatusMessageFrameHandler smFrameHandler;
     private final NakFrameHandler nakFrameHandler;
 
+    private final LossGenerator dataLossGenerator;
+    private final LossGenerator controlLossGenerator;
+
     private final EventLogger logger;
     private final boolean multicast;
     private SelectionKey registeredKey;
@@ -69,12 +72,17 @@ public final class UdpTransport implements AutoCloseable
      * @param udpChannel of the transport
      * @param dataFrameHandler to call when data frames are received
      * @param logger for logging
+     * @param lossGenerator for loss generation
      * @throws Exception
      */
-    public UdpTransport(final UdpChannel udpChannel, final DataFrameHandler dataFrameHandler, final EventLogger logger)
+    public UdpTransport(final UdpChannel udpChannel,
+                        final DataFrameHandler dataFrameHandler,
+                        final EventLogger logger,
+                        final LossGenerator lossGenerator)
         throws Exception
     {
-        this(udpChannel, dataFrameHandler, null, null, logger, udpChannel.remoteData(), udpChannel.remoteData());
+        this(udpChannel, dataFrameHandler, null, null, logger,
+             udpChannel.remoteData(), udpChannel.remoteData(), lossGenerator, null);
     }
 
     /**
@@ -86,15 +94,18 @@ public final class UdpTransport implements AutoCloseable
      * @param smFrameHandler to call when status message frames are received
      * @param nakFrameHandler to call when NAK frames are received
      * @param logger for logging
+     * @param lossGenerator for loss generation
      * @throws Exception
      */
     public UdpTransport(final UdpChannel udpChannel,
                         final StatusMessageFrameHandler smFrameHandler,
                         final NakFrameHandler nakFrameHandler,
-                        final EventLogger logger)
+                        final EventLogger logger,
+                        final LossGenerator lossGenerator)
         throws Exception
     {
-        this(udpChannel, null, smFrameHandler, nakFrameHandler, logger, udpChannel.remoteControl(), udpChannel.localControl());
+        this(udpChannel, null, smFrameHandler, nakFrameHandler, logger,
+             udpChannel.remoteControl(), udpChannel.localControl(), null, lossGenerator);
     }
 
     private UdpTransport(final UdpChannel udpChannel,
@@ -103,7 +114,9 @@ public final class UdpTransport implements AutoCloseable
                          final NakFrameHandler nakFrameHandler,
                          final EventLogger logger,
                          final InetSocketAddress endPointSocketAddress,
-                         final InetSocketAddress bindAddress)
+                         final InetSocketAddress bindAddress,
+                         final LossGenerator dataLossGenerator,
+                         final LossGenerator controlLossGenerator)
         throws Exception
     {
         this.udpChannel = udpChannel;
@@ -111,6 +124,8 @@ public final class UdpTransport implements AutoCloseable
         this.dataFrameHandler = dataFrameHandler;
         this.smFrameHandler = smFrameHandler;
         this.nakFrameHandler = nakFrameHandler;
+        this.dataLossGenerator = dataLossGenerator;
+        this.controlLossGenerator = controlLossGenerator;
 
         header.wrap(readBuffer, 0);
         dataHeader.wrap(readBuffer, 0);
@@ -214,13 +229,12 @@ public final class UdpTransport implements AutoCloseable
     private int onReadDataFrames()
     {
         final InetSocketAddress srcAddress = receiveFrame();
+        final int length = readByteBuffer.position();
 
-        if (null == srcAddress)
+        if (null == srcAddress || dataLossGenerator.shouldDropFrame(srcAddress, length))
         {
             return 0;
         }
-
-        final int length = readByteBuffer.position();
 
         if (!isValidFrame(length))
         {
@@ -239,13 +253,12 @@ public final class UdpTransport implements AutoCloseable
     private int onReadControlFrames()
     {
         final InetSocketAddress srcAddress = receiveFrame();
+        final int length = readByteBuffer.position();
 
-        if (null == srcAddress)
+        if (null == srcAddress || controlLossGenerator.shouldDropFrame(srcAddress, length))
         {
             return 0;
         }
-
-        final int length = readByteBuffer.position();
 
         if (!isValidFrame(length))
         {

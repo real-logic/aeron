@@ -43,14 +43,15 @@ public class ReceiveChannelEndpoint implements AutoCloseable
 
     public ReceiveChannelEndpoint(final UdpChannel udpChannel,
                                   final DriverConductorProxy conductorProxy,
-                                  final EventLogger logger)
+                                  final EventLogger logger,
+                                  final LossGenerator lossGenerator)
         throws Exception
     {
 
         smHeader.wrap(smBuffer, 0);
         nakHeader.wrap(nakBuffer, 0);
 
-        this.udpTransport = new UdpTransport(udpChannel, this::onDataFrame, logger);
+        this.udpTransport = new UdpTransport(udpChannel, this::onDataFrame, logger, lossGenerator);
         this.dispatcher = new DataFrameDispatcher(conductorProxy, this);
     }
 

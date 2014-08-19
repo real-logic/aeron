@@ -39,13 +39,14 @@ public class SendChannelEndpoint implements AutoCloseable
     public SendChannelEndpoint(final UdpChannel udpChannel,
                                final NioSelector nioSelector,
                                final EventLogger logger,
+                               final LossGenerator lossGenerator,
                                final Counter naksReceivedCounter,
                                final Counter statusMessagesReceivedCounter)
         throws Exception
     {
         this.naksReceivedCounter = naksReceivedCounter;
         this.statusMessagesReceivedCounter = statusMessagesReceivedCounter;
-        this.transport = new UdpTransport(udpChannel, this::onStatusMessageFrame, this::onNakFrame, logger);
+        this.transport = new UdpTransport(udpChannel, this::onStatusMessageFrame, this::onNakFrame, logger, lossGenerator);
         this.transport.registerForRead(nioSelector);
         this.udpChannel = udpChannel;
     }

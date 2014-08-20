@@ -119,7 +119,7 @@ public class DataFrameDispatcher
                 {
                     connection.insertIntoTerm(headerFlyweight, buffer, length);
                 }
-                else if ((headerFlyweight.flags() & DataHeaderFlyweight.PADDING_FLAG) == DataHeaderFlyweight.PADDING_FLAG)
+                else if (headerFlyweight.hasPaddingFlag())
                 {
                     headerFlyweight.headerType(LogBufferDescriptor.PADDING_FRAME_TYPE);
                     connection.insertIntoTerm(headerFlyweight, buffer, length);

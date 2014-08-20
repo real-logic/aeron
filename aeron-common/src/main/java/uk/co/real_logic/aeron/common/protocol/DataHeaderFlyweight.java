@@ -44,7 +44,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
     public static final short PADDING_FLAG = 0x10;
 
     /** Begin and End Flags */
-    public static final short BEGIN_AND_END_FLAGS = (BEGIN_FLAG | END_FLAG);
+    public static final short BEGIN_AND_END_FLAGS = BEGIN_FLAG | END_FLAG;
 
     /** Default header for a Data Frame (for ease of use with LogAppender) */
     public static final byte[] DEFAULT_HEADER_NULL_IDS =
@@ -157,6 +157,15 @@ public class DataHeaderFlyweight extends HeaderFlyweight
     public int dataOffset()
     {
         return offset() + DATA_OFFSET;
+    }
+
+    /**
+     * Checks whether the padding flag is set.
+     *
+     * @return true iff the padding flag is set, false otherwise.
+     */
+    public boolean hasPaddingFlag() {
+        return (flags() & PADDING_FLAG) == PADDING_FLAG;
     }
 
     /**

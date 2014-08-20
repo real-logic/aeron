@@ -19,6 +19,8 @@ import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogRebuilder;
+import uk.co.real_logic.aeron.common.event.EventCode;
+import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.status.PositionIndicator;
 import uk.co.real_logic.aeron.common.status.PositionReporter;
@@ -55,6 +57,7 @@ public class DriverConnection implements AutoCloseable
     private final PositionReporter contiguousReceivedPosition;
     private final PositionReporter highestReceivedPosition;
     private final SystemCounters systemCounters;
+    private final EventLogger logger;
 
     private final AtomicInteger activeTermId = new AtomicInteger();
     private final AtomicLong timeOfLastFrame = new AtomicLong();
@@ -93,7 +96,8 @@ public class DriverConnection implements AutoCloseable
                             final PositionReporter contiguousReceivedPosition,
                             final PositionReporter highestReceivedPosition,
                             final LongSupplier clock,
-                            final SystemCounters systemCounters)
+                            final SystemCounters systemCounters,
+                            final EventLogger logger)
     {
         this.receiveChannelEndpoint = receiveChannelEndpoint;
         this.sessionId = sessionId;
@@ -103,6 +107,7 @@ public class DriverConnection implements AutoCloseable
         this.contiguousReceivedPosition = contiguousReceivedPosition;
         this.highestReceivedPosition = highestReceivedPosition;
         this.systemCounters = systemCounters;
+        this.logger = logger;
         this.status = ACTIVE;
         this.timeOfLastStatusChange = clock.getAsLong();
 
@@ -262,7 +267,6 @@ public class DriverConnection implements AutoCloseable
 
         if (isFlowControlUnderRun(packetPosition, currentPosition) || isFlowControlOverRun(proposedPosition))
         {
-            System.out.println("dropping due to overrun or underrun");
             return;
         }
 
@@ -416,6 +420,8 @@ public class DriverConnection implements AutoCloseable
 
         if (isFlowControlOverRun)
         {
+            logger.log(EventCode.FLOW_CONTROL_OVERRUN,
+                String.format("overrun %x > %x + %d", proposedPosition, subscriberPosition.position(), currentWindowSize));
             systemCounters.flowControlOverRuns().orderedIncrement();
         }
 

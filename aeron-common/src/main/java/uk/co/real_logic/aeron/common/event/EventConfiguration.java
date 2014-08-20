@@ -59,7 +59,8 @@ public class EventConfiguration
         EnumSet.of(EXCEPTION,
                    MALFORMED_FRAME_LENGTH,
                    ERROR_DELETING_FILE,
-                   FRAME_OUT_INCOMPLETE_SENDTO);
+                   FRAME_OUT_INCOMPLETE_SENDTO,
+                   FLOW_CONTROL_OVERRUN);
 
     public static final Set<EventCode> ADMIN_ONLY_EVENT_CODES =
         EnumSet.of(EXCEPTION,
@@ -77,7 +78,8 @@ public class EventConfiguration
                    CMD_OUT_ON_INACTIVE_CONNECTION,
                    CMD_OUT_ON_OPERATION_SUCCESS,
                    ERROR_DELETING_FILE,
-                   FRAME_OUT_INCOMPLETE_SENDTO);
+                   FRAME_OUT_INCOMPLETE_SENDTO,
+                   FLOW_CONTROL_OVERRUN);
 
     public static final Set<EventCode> ALL_LOGGER_EVENT_CODES = EnumSet.allOf(EventCode.class);
 

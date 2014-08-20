@@ -830,7 +830,8 @@ public class DriverConductor extends Agent
                     new BufferPositionReporter(countersBuffer, contiguousReceivedCounterId, countersManager),
                     new BufferPositionReporter(countersBuffer, highestReceivedCounterId, countersManager),
                     timerWheel::now,
-                    systemCounters);
+                    systemCounters,
+                    logger);
 
             connections.add(connection);
 

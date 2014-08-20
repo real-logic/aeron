@@ -45,7 +45,9 @@ public enum EventCode
     CMD_OUT_ON_INACTIVE_CONNECTION(17, EventCodec::dissectAsCommand),
     FRAME_IN_DROPPED(18, EventCodec::dissectAsFrame),
     ERROR_DELETING_FILE(19, EventCodec::dissectAsString),
-    FRAME_OUT_INCOMPLETE_SENDTO(20, EventCodec::dissectAsString);
+    FRAME_OUT_INCOMPLETE_SENDTO(20, EventCodec::dissectAsString),
+
+    FLOW_CONTROL_OVERRUN(21, EventCodec::dissectAsString);
 
     private static final Int2ObjectHashMap<EventCode> EVENT_CODE_BY_ID_MAP = new Int2ObjectHashMap<>();
 

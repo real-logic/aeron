@@ -171,7 +171,8 @@ public class ReceiverTest
                 mockContiguousReceivedPosition,
                 mockHighestReceivedPosition,
                 clock,
-                mockSystemCounters);
+                mockSystemCounters,
+                mockLogger);
 
         final int messagesRead = toConductorQueue.drain(
             (e) ->
@@ -241,7 +242,8 @@ public class ReceiverTest
                             mockContiguousReceivedPosition,
                             mockHighestReceivedPosition,
                             clock,
-                            mockSystemCounters)));
+                            mockSystemCounters,
+                            mockLogger)));
             });
 
         assertThat(messagesRead, is(1));
@@ -301,7 +303,8 @@ public class ReceiverTest
                                 mockContiguousReceivedPosition,
                                 mockHighestReceivedPosition,
                                 clock,
-                                mockSystemCounters)));
+                                mockSystemCounters,
+                                mockLogger)));
             });
 
         assertThat(messagesRead, is(1));
@@ -364,7 +367,8 @@ public class ReceiverTest
                             mockContiguousReceivedPosition,
                             mockHighestReceivedPosition,
                             clock,
-                            mockSystemCounters)));
+                            mockSystemCounters,
+                            mockLogger)));
             });
 
         assertThat(messagesRead, is(1));

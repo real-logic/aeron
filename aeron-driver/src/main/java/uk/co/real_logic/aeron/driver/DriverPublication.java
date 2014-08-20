@@ -280,11 +280,14 @@ public class DriverPublication implements AutoCloseable
             scanner.seek(termOffset);
 
             int remainingBytes = length;
+            int sent = 0;
             do
             {
-                remainingBytes -= scanner.scanNext(this::onSendRetransmit, Math.min(remainingBytes, mtuLength));
+                sent = scanner.scanNext(this::onSendRetransmit, Math.min(remainingBytes, mtuLength));
+
+                remainingBytes -= sent;
             }
-            while (remainingBytes > 0);
+            while (remainingBytes > 0 && sent > 0);
 
             systemCounters.retransmitsSent().orderedIncrement();
         }
@@ -365,6 +368,21 @@ public class DriverPublication implements AutoCloseable
         final ByteBuffer termRetransmitBuffer = sendBuffers[retransmitIndex];
         termRetransmitBuffer.limit(offset + length);
         termRetransmitBuffer.position(offset);
+
+        // if we have a 0 length data message, it is most likely padding, so we will want to adjust it before sending.
+        // a padding frame may be embedded in a batch that is received. Don't need to adjust that one.
+        if (DataHeaderFlyweight.HEADER_LENGTH == length)
+        {
+            transmitHeader.wrap(buffer, offset);
+
+            if (transmitHeader.headerType() == PADDING_FRAME_TYPE)
+            {
+                final short flags = (short)(transmitHeader.flags() | DataHeaderFlyweight.PADDING_FLAG);
+
+                transmitHeader.flags(flags);
+                transmitHeader.headerType(HeaderFlyweight.HDR_TYPE_DATA);
+            }
+        }
 
         try
         {

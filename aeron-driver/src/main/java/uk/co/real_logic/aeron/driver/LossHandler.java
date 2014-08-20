@@ -31,12 +31,10 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class LossHandler
 {
-    private static final int MAX_GAPS = 2;
-
     private final GapScanner[] scanners;
     private final TimerWheel wheel;
     private final SystemCounters systemCounters;
-    private final Gap[] gaps = new Gap[MAX_GAPS];
+    private final Gap scannedGap = new Gap();
     private final Gap activeGap = new Gap();
     private final FeedbackDelayGenerator delayGenerator;
     private final AtomicLong highestPosition;
@@ -47,7 +45,6 @@ public class LossHandler
     private final TimerWheel.Timer timer;
 
     private int activeIndex = 0;
-    private int gapIndex = 0;
     private int activeTermId;
 
     /**
@@ -74,11 +71,6 @@ public class LossHandler
         this.positionBitsToShift = Integer.numberOfTrailingZeros(scanners[0].capacity());
         this.highestPosition = new AtomicLong(TermHelper.calculatePosition(activeTermId, 0, positionBitsToShift, activeTermId));
 
-        for (int i = 0; i < MAX_GAPS; i++)
-        {
-            this.gaps[i] = new Gap();
-        }
-
         this.activeIndex = TermHelper.termIdToBufferIndex(activeTermId);
         this.activeTermId = activeTermId;
         this.initialTermId = activeTermId;
@@ -93,17 +85,14 @@ public class LossHandler
      */
     public int scan()
     {
-        gapIndex = 0;
         final GapScanner scanner = scanners[activeIndex];
         final int numGaps = scanner.scan(this::onGap);
 
         if (numGaps > 0)
         {
-            final Gap firstGap = gaps[0];
-
-            if (!timer.isActive() || !firstGap.matches(activeGap.termId, activeGap.termOffset))
+            if (!timer.isActive() || !scannedGap.matches(activeGap.termId, activeGap.termOffset))
             {
-                activateGap(firstGap.termId, firstGap.termOffset, firstGap.length);
+                activateGap(scannedGap.termId, scannedGap.termOffset, scannedGap.length);
             }
 
             return 0; // got a gap to handle, we are good until this is fixed
@@ -205,15 +194,9 @@ public class LossHandler
 
     private boolean onGap(final AtomicBuffer buffer, final int offset, final int length)
     {
-        if (gapIndex < MAX_GAPS)
-        {
-            gaps[gapIndex].reset(activeTermId, offset, length);
-            gapIndex++;
+        scannedGap.reset(activeTermId, offset, length);
 
-            return gapIndex == MAX_GAPS;
-        }
-
-        return false;
+        return false;  // only do one gap and have it stop
     }
 
     private void activateGap(final int termId, final int termOffset, final int length)

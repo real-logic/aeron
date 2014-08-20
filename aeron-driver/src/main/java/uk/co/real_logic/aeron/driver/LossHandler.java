@@ -90,9 +90,10 @@ public class LossHandler
 
         if (numGaps > 0)
         {
-            if (!timer.isActive() || !scannedGap.matches(activeGap.termId, activeGap.termOffset))
+            final Gap gap = scannedGap;
+            if (!timer.isActive() || !gap.matches(activeGap.termId, activeGap.termOffset))
             {
-                activateGap(scannedGap.termId, scannedGap.termOffset, scannedGap.length);
+                activateGap(gap.termId, gap.termOffset, gap.length);
             }
 
             return 0; // got a gap to handle, we are good until this is fixed
@@ -116,7 +117,7 @@ public class LossHandler
             {
                 if (!timer.isActive() || !activeGap.matches(activeTermId, tail))
                 {
-                    activateGap(activeTermId, tail, (int) (currentHighPosition - tailPosition));
+                    activateGap(activeTermId, tail, (int)(currentHighPosition - tailPosition));
                 }
             }
             else if (timer.isActive())

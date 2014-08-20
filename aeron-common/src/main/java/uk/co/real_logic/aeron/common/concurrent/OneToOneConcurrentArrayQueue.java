@@ -280,7 +280,10 @@ public class OneToOneConcurrentArrayQueue<E>
 
     public boolean addAll(final Collection<? extends E> c)
     {
-        addAll(c);
+        for (final E e : c)
+        {
+            add(e);
+        }
 
         return true;
     }

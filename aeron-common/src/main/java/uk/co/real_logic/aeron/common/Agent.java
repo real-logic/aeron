@@ -51,8 +51,9 @@ public abstract class Agent implements Runnable, AutoCloseable
     {
         running = true;
         latch = new CountDownLatch(1);
+        final Thread thread = Thread.currentThread();
 
-        while (running)
+        while (running && !thread.isInterrupted())
         {
             try
             {

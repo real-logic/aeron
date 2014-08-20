@@ -215,32 +215,8 @@ public class MediaDriver implements AutoCloseable
 
     private void shutdown(final Thread thread, final Agent agent)
     {
-        if (thread == null)
-        {
-            return;
-        }
-
-        agent.close();
         thread.interrupt();
-
-        do
-        {
-            try
-            {
-                thread.join(100);
-
-                if (!thread.isAlive())
-                {
-                    break;
-                }
-            }
-            catch (final InterruptedException ex)
-            {
-                System.err.println("Daemon Thread <" + thread.getName() + "> interrupted stop. Retrying...");
-                thread.interrupt();
-            }
-        }
-        while (true);
+        agent.close();
     }
 
     public static class Context extends CommonContext

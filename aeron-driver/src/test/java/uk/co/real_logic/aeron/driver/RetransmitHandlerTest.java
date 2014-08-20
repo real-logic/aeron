@@ -56,7 +56,6 @@ public class RetransmitHandlerTest
 
     private final AtomicBuffer logBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(LOG_BUFFER_SIZE));
     private final AtomicBuffer stateBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(STATE_BUFFER_SIZE));
-    private final LogScanner scanner = new LogScanner(logBuffer, stateBuffer, DataHeaderFlyweight.HEADER_LENGTH);
 
     private final LogAppender logAppender =
         new LogAppender(logBuffer, stateBuffer, DataHeaderFlyweight.DEFAULT_HEADER_NULL_IDS, 1024);
@@ -74,9 +73,10 @@ public class RetransmitHandlerTest
                                                     Configuration.CONDUCTOR_TICKS_PER_WHEEL);
 
     private final RetransmitSender retransmitSender = mock(RetransmitSender.class);
+    private final SystemCounters systemCounters = mock(SystemCounters.class);
 
     private RetransmitHandler handler =
-        new RetransmitHandler(wheel, delayGenerator, lingerGenerator, retransmitSender, TERM_ID, LOG_BUFFER_SIZE);
+        new RetransmitHandler(wheel, systemCounters, delayGenerator, lingerGenerator, retransmitSender, TERM_ID, LOG_BUFFER_SIZE);
 
     @DataPoint
     public static final BiConsumer<RetransmitHandlerTest, Integer> senderAddDataFrame = (h, i) -> h.addSentDataFrame();
@@ -210,20 +210,12 @@ public class RetransmitHandlerTest
 
     private RetransmitHandler newZeroDelayRetransmitHandler()
     {
-        return new RetransmitHandler(wheel, zeroDelayGenerator, lingerGenerator, retransmitSender, TERM_ID, LOG_BUFFER_SIZE);
+        return new RetransmitHandler(wheel, systemCounters, zeroDelayGenerator, lingerGenerator, retransmitSender, TERM_ID, LOG_BUFFER_SIZE);
     }
 
     private void createTermBuffer(final BiConsumer<RetransmitHandlerTest, Integer> creator, final int num)
     {
         IntStream.range(0, num).forEach((i) -> creator.accept(this, i));
-    }
-
-    private void createTermBufferWithGap(final BiConsumer<RetransmitHandlerTest, Integer> creator,
-                                         final int num,
-                                         final int gap)
-    {
-        IntStream.range(0, gap).forEach((i) -> creator.accept(this, i));
-        IntStream.range(gap + 1, num).forEach((i) -> creator.accept(this, i));
     }
 
     private static int offsetOfMessage(final int index)

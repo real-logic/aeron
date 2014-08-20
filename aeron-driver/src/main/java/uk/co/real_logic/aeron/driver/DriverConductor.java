@@ -387,7 +387,7 @@ public class DriverConductor extends Agent
 
             final RetransmitHandler retransmitHandler =
                 new RetransmitHandler(timerWheel,
-                                      DriverConductor.RETRANS_UNICAST_DELAY_GENERATOR,
+                                      systemCounters, DriverConductor.RETRANS_UNICAST_DELAY_GENERATOR,
                                       DriverConductor.RETRANS_UNICAST_LINGER_GENERATOR,
                                       composeNewRetransmitSender(publication),
                                       initialTermId,

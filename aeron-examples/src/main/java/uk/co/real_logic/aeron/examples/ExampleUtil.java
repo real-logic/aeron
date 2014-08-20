@@ -114,10 +114,16 @@ public class ExampleUtil
      *
      * @param messagesPerSec being reported
      * @param bytesPerSec    being reported
+     * @param totalMessages  being reported
+     * @param totalBytes     being reported
      */
-    public static void printRate(final double messagesPerSec, final double bytesPerSec)
+    public static void printRate(final double messagesPerSec,
+                                 final double bytesPerSec,
+                                 final long totalMessages,
+                                 final long totalBytes)
     {
-        System.out.println(String.format("%.02g msgs/sec, %.02g bytes/sec", messagesPerSec, bytesPerSec));
+        System.out.println(String.format("%.02g msgs/sec, %.02g bytes/sec, totals %d messages %d MB",
+            messagesPerSec, bytesPerSec, totalMessages, totalBytes / (1024 * 1024)));
     }
 
     /**

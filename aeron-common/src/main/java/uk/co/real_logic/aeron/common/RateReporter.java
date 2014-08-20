@@ -25,9 +25,27 @@ import java.util.function.BiConsumer;
  */
 public class RateReporter implements Runnable
 {
+    /**
+     * Interface for reporting of rate information
+     */
+    @FunctionalInterface
+    public interface Reporter
+    {
+        /**
+         * Called for a rate report.
+         *
+         * @param messagesPerSec since last report
+         * @param bytesPerSec since last report
+         * @param totalMessages since beginning of reporting
+         * @param totalBytes since beginning of reporting
+         */
+        void onReport(final double messagesPerSec, final double bytesPerSec,
+                      final long totalMessages, final long totalBytes);
+    }
+
     private final long reportIntervalNs;
     private final long parkNs;
-    private final BiConsumer<Double, Double> reportingFunction;
+    private final Reporter reportingFunction;
 
     private volatile boolean done = false;
     private volatile long totalBytes;
@@ -42,7 +60,7 @@ public class RateReporter implements Runnable
      * @param reportInterval in nanoseconds
      * @param reportingFunction to call for reporting rates
      */
-    public RateReporter(final long reportInterval, final BiConsumer<Double, Double> reportingFunction)
+    public RateReporter(final long reportInterval, final Reporter reportingFunction)
     {
         this.reportIntervalNs = reportInterval;
         this.parkNs = reportInterval;
@@ -68,7 +86,7 @@ public class RateReporter implements Runnable
             final double messagesPerSec = ((currentTotalMessages - lastTotalMessages) * reportIntervalNs) / (double)timeSpanNs;
             final double bytesPerSec = ((currentTotalBytes - lastTotalBytes) * reportIntervalNs) / (double)timeSpanNs;
 
-            reportingFunction.accept(messagesPerSec, bytesPerSec);
+            reportingFunction.onReport(messagesPerSec, bytesPerSec, currentTotalMessages, currentTotalBytes);
 
             lastTotalBytes = currentTotalBytes;
             lastTotalMessages = currentTotalMessages;

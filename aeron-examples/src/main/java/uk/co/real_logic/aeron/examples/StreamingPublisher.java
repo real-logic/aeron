@@ -99,11 +99,15 @@ public class StreamingPublisher
         CloseHelper.quietClose(driver);
     }
 
-    public static void printRate(final double messagesPerSec, final double bytesPerSec)
+    public static void printRate(final double messagesPerSec,
+                                 final double bytesPerSec,
+                                 final long totalMessages,
+                                 final long totalBytes)
     {
         if (PRINTING_ACTIVE)
         {
-            System.out.println(String.format("%.02g msgs/sec, %.02g bytes/sec", messagesPerSec, bytesPerSec));
+            System.out.println(String.format("%.02g msgs/sec, %.02g bytes/sec, totals %d messages %d MB",
+                messagesPerSec, bytesPerSec, totalMessages, totalBytes / (1024 * 1024)));
         }
     }
 }

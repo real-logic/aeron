@@ -277,7 +277,7 @@ public class DriverConnection implements AutoCloseable
 
             if (currentRebuilder.isComplete())
             {
-                activeIndex = hwmIndex = prepareForRotation(activeTermId);
+                activeIndex = hwmIndex = prepareForRotation();
                 this.activeTermId.lazySet(activeTermId + 1);
             }
         }
@@ -285,7 +285,7 @@ public class DriverConnection implements AutoCloseable
         {
             if (termId != hwmTermId)
             {
-                hwmIndex = prepareForRotation(activeTermId);
+                hwmIndex = prepareForRotation();
                 hwmTermId = termId;
             }
 
@@ -428,14 +428,17 @@ public class DriverConnection implements AutoCloseable
         return isFlowControlOverRun;
     }
 
-    private int prepareForRotation(final int activeTermId)
+    private int prepareForRotation()
     {
         final int nextIndex = TermHelper.rotateNext(activeIndex);
         final LogRebuilder rebuilder = rebuilders[nextIndex];
 
         if (nextIndex != hwmIndex)
         {
-            ensureClean(rebuilder, receiveChannelEndpoint.udpChannel().originalUriAsString(), streamId, activeTermId + 1);
+            if (!ensureClean(rebuilder))
+            {
+                systemCounters.subscriptionCleaningLate().orderedIncrement();
+            }
         }
 
         rebuilders[rotatePrevious(activeIndex)].statusOrdered(NEEDS_CLEANING);

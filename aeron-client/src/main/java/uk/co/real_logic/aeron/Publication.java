@@ -39,7 +39,6 @@ public class Publication implements AutoCloseable
     private final String channel;
     private final int streamId;
     private final int sessionId;
-    private final long correlationId;
     private final ManagedBuffer[] managedBuffers;
     private final LogAppender[] logAppenders;
     private final PositionIndicator senderLimit;
@@ -57,7 +56,6 @@ public class Publication implements AutoCloseable
                        final int streamId,
                        final int sessionId,
                        final int initialTermId,
-                       final long correlationId,
                        final LogAppender[] logAppenders,
                        final PositionIndicator senderLimit,
                        final ManagedBuffer[] managedBuffers)
@@ -67,7 +65,6 @@ public class Publication implements AutoCloseable
         this.channel = channel;
         this.streamId = streamId;
         this.sessionId = sessionId;
-        this.correlationId = correlationId;
         this.managedBuffers = managedBuffers;
         this.activeTermId = new AtomicInteger(initialTermId);
         this.logAppenders = logAppenders;
@@ -106,16 +103,6 @@ public class Publication implements AutoCloseable
     public int sessionId()
     {
         return sessionId;
-    }
-
-    /**
-     * Correlation Id used when registering the publication with the media driver.
-     *
-     * @return the correlation id for this publication.
-     */
-    public long correlationId()
-    {
-        return correlationId;
     }
 
     public void close()
@@ -213,7 +200,7 @@ public class Publication implements AutoCloseable
         final int activeTermId = this.activeTermId.get();
         final int newTermId = activeTermId + 1;
 
-        ensureClean(nextAppender, channel, streamId, newTermId);
+        ensureClean(nextAppender);
 
         dataHeader.wrap(nextAppender.defaultHeader());
         dataHeader.termId(newTermId);

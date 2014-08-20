@@ -202,8 +202,7 @@ public class ClientConductor extends Agent implements DriverListener
         final PositionIndicator senderLimit =
             new BufferPositionIndicator(counterValuesBuffer, limitPositionIndicatorOffset);
 
-        addedPublication = new Publication(this, channel, streamId, sessionId, termId,
-                                           logBuffersMessage.correlationId(), logs, senderLimit, managedBuffers);
+        addedPublication = new Publication(this, channel, streamId, sessionId, termId, logs, senderLimit, managedBuffers);
 
         correlationSignal.signal();
     }

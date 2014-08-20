@@ -30,6 +30,7 @@ public class SystemCounters implements AutoCloseable
     private final AtomicCounter heartbeatsSent;
     private final AtomicCounter flowControlUnderRuns;
     private final AtomicCounter flowControlOverRuns;
+    private final AtomicCounter subscriptionCleaningLate;
 
     public SystemCounters(final CountersManager countersManager)
     {
@@ -43,6 +44,7 @@ public class SystemCounters implements AutoCloseable
         retransmitsSent = countersManager.newCounter("Retransmits sent");
         flowControlUnderRuns = countersManager.newCounter("Flow control under runs");
         flowControlOverRuns = countersManager.newCounter("Flow control over runs");
+        subscriptionCleaningLate = countersManager.newCounter("Subscription cleaning late");
     }
 
     public void close()
@@ -107,5 +109,10 @@ public class SystemCounters implements AutoCloseable
     public AtomicCounter flowControlOverRuns()
     {
         return flowControlOverRuns;
+    }
+
+    public AtomicCounter subscriptionCleaningLate()
+    {
+        return subscriptionCleaningLate;
     }
 }

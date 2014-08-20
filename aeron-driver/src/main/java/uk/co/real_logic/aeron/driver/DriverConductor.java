@@ -54,7 +54,6 @@ import static uk.co.real_logic.aeron.driver.MediaDriver.Context;
 public class DriverConductor extends Agent
 {
     public static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
-    public static final int HEARTBEAT_TIMEOUT_MS = 100;
     public static final int CHECK_TIMEOUT_MS = 1000;  // how often to check liveness
 
     /**
@@ -107,7 +106,6 @@ public class DriverConductor extends Agent
     private final long controlLossSeed;
     private final double dataLossRate;
     private final double controlLossRate;
-    private final TimerWheel.Timer heartbeatTimer;
     private final TimerWheel.Timer publicationCheckTimer;
     private final TimerWheel.Timer subscriptionCheckTimer;
     private final TimerWheel.Timer connectionCheckTimer;
@@ -139,7 +137,6 @@ public class DriverConductor extends Agent
         this.countersBuffer = ctx.countersBuffer();
 
         timerWheel = ctx.conductorTimerWheel();
-        heartbeatTimer = newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheck);
         publicationCheckTimer = newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onCheckPublications);
         subscriptionCheckTimer = newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onCheckSubscriptions);
         connectionCheckTimer = newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onCheckConnections);
@@ -582,12 +579,6 @@ public class DriverConductor extends Agent
         }
     }
 
-    private void onHeartbeatCheck()
-    {
-        publications.forEach(DriverPublication::heartbeatCheck);
-        rescheduleTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, heartbeatTimer);
-    }
-
     private void onCheckPublications()
     {
         final long now = timerWheel.now();
@@ -697,7 +688,7 @@ public class DriverConductor extends Agent
 
     private void onCheckConnections()
     {
-        final long now = timerWheel.now(); // TODO: Why the mix of timerWheel usage below?
+        final long now = timerWheel.now();
 
         connections.forEach(
             (connection) ->
@@ -720,12 +711,12 @@ public class DriverConductor extends Agent
                             }
 
                             connection.status(DriverConnection.INACTIVE);
-                            connection.timeOfLastStatusChange(timerWheel.now());
+                            connection.timeOfLastStatusChange(now);
 
                             if (connection.remaining() == 0)
                             {
                                 connection.status(DriverConnection.LINGER);
-                                connection.timeOfLastStatusChange(timerWheel.now());
+                                connection.timeOfLastStatusChange(now);
 
                                 clientProxy.onInactiveConnection(
                                     connection.sessionId(),
@@ -740,7 +731,7 @@ public class DriverConductor extends Agent
                             (connection.timeOfLastStatusChange() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS < now))
                         {
                             connection.status(DriverConnection.LINGER);
-                            connection.timeOfLastStatusChange(timerWheel.now());
+                            connection.timeOfLastStatusChange(now);
 
                             clientProxy.onInactiveConnection(
                                 connection.sessionId(),

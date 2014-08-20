@@ -181,6 +181,11 @@ public class DriverPublication implements AutoCloseable
             final long position = positionForActiveTerm(scanner.offset());
             sentPosition = position;
             publisherLimitReporter.position(position + termWindowSize);
+
+            if (0 == workCount)
+            {
+                heartbeatCheck();
+            }
         }
 
         return workCount;
@@ -205,22 +210,6 @@ public class DriverPublication implements AutoCloseable
     {
         positionLimit.lazySet(limit);
         statusMessagesReceivedCount++;
-    }
-
-    /**
-     * This is performed on the {@link DriverConductor} thread
-     */
-    public boolean heartbeatCheck()
-    {
-        final long timeout = statusMessagesReceivedCount > 0 ? HEARTBEAT_TIMEOUT_NS : INITIAL_HEARTBEAT_TIMEOUT_NS;
-        final long timeSinceLastHeartbeat = timerWheel.now() - timeOfLastSendOrHeartbeat.get();
-        if (timeSinceLastHeartbeat > timeout)
-        {
-            sendHeartbeat();
-            return true;
-        }
-
-        return false;
     }
 
     /**
@@ -296,6 +285,19 @@ public class DriverPublication implements AutoCloseable
 
             systemCounters.retransmitsSent().orderedIncrement();
         }
+    }
+
+    private boolean heartbeatCheck()
+    {
+        final long timeout = statusMessagesReceivedCount > 0 ? HEARTBEAT_TIMEOUT_NS : INITIAL_HEARTBEAT_TIMEOUT_NS;
+        final long timeSinceLastHeartbeat = timerWheel.now() - timeOfLastSendOrHeartbeat.get();
+        if (timeSinceLastHeartbeat > timeout)
+        {
+            sendHeartbeat();
+            return true;
+        }
+
+        return false;
     }
 
     private ByteBuffer duplicateLogBuffer(final RawLog log)
@@ -403,9 +405,6 @@ public class DriverPublication implements AutoCloseable
         }
     }
 
-    /**
-     * This is performed on the {@link DriverConductor} thread
-     */
     private void sendHeartbeat()
     {
         // called from conductor thread on timeout

@@ -152,10 +152,10 @@ public class SenderTest
     public void shouldSendZeroLengthDataFrameOnChannelWhenTimeoutWithoutStatusMessage() throws Exception
     {
         currentTimestamp += TimeUnit.MILLISECONDS.toNanos(DriverPublication.INITIAL_HEARTBEAT_TIMEOUT_MS) - 1;
-        publications.forEach(DriverPublication::heartbeatCheck);
+        sender.doWork();
         assertThat(receivedFrames.size(), is(0));
         currentTimestamp += 10;
-        publications.forEach(DriverPublication::heartbeatCheck);
+        sender.doWork();
         assertThat(receivedFrames.size(), is(1));
 
         dataHeader.wrap(receivedFrames.remove(), 0);
@@ -173,16 +173,16 @@ public class SenderTest
     public void shouldSendMultipleZeroLengthDataFramesOnChannelWhenTimeoutWithoutStatusMessage() throws Exception
     {
         currentTimestamp += TimeUnit.MILLISECONDS.toNanos(DriverPublication.INITIAL_HEARTBEAT_TIMEOUT_MS) - 1;
-        publications.forEach(DriverPublication::heartbeatCheck);
+        sender.doWork();
         assertThat(receivedFrames.size(), is(0));
         currentTimestamp += 10;
-        publications.forEach(DriverPublication::heartbeatCheck);
+        sender.doWork();
         assertThat(receivedFrames.size(), is(1));
 
         currentTimestamp += TimeUnit.MILLISECONDS.toNanos(DriverPublication.INITIAL_HEARTBEAT_TIMEOUT_MS) - 1;
-        publications.forEach(DriverPublication::heartbeatCheck);
+        sender.doWork();
         currentTimestamp += 10;
-        publications.forEach(DriverPublication::heartbeatCheck);
+        sender.doWork();
 
         assertThat(receivedFrames.size(), is(2));
     }
@@ -194,7 +194,7 @@ public class SenderTest
 
         publication.updatePositionLimitFromStatusMessage(
             spySenderControlStrategy.onStatusMessage(INITIAL_TERM_ID, 0, 0, rcvAddress));
-        publications.forEach(DriverPublication::heartbeatCheck);
+        sender.doWork();
 
         assertThat(receivedFrames.size(), is(0));
     }
@@ -374,11 +374,11 @@ public class SenderTest
         receivedFrames.remove();                   // skip data frame
 
         currentTimestamp += TimeUnit.MILLISECONDS.toNanos(DriverPublication.HEARTBEAT_TIMEOUT_MS) - 1;
-        publications.forEach(DriverPublication::heartbeatCheck);
+        sender.doWork();
 
         assertThat(receivedFrames.size(), is(0));  // should not send yet
         currentTimestamp += 10;
-        publications.forEach(DriverPublication::heartbeatCheck);
+        sender.doWork();
 
         assertThat(receivedFrames.size(), greaterThanOrEqualTo(1));  // should send now
 
@@ -403,10 +403,10 @@ public class SenderTest
         receivedFrames.remove();                   // skip data frame
 
         currentTimestamp += TimeUnit.MILLISECONDS.toNanos(DriverPublication.HEARTBEAT_TIMEOUT_MS) - 1;
-        publications.forEach(DriverPublication::heartbeatCheck);
+        sender.doWork();
         assertThat(receivedFrames.size(), is(0));  // should not send yet
         currentTimestamp += 10;
-        publications.forEach(DriverPublication::heartbeatCheck);
+        sender.doWork();
         assertThat(receivedFrames.size(), greaterThanOrEqualTo(1));  // should send now
 
         dataHeader.wrap(new AtomicBuffer(receivedFrames.remove()), 0);
@@ -414,10 +414,10 @@ public class SenderTest
         assertThat(dataHeader.termOffset(), is(offsetOfMessage(2)));
 
         currentTimestamp += TimeUnit.MILLISECONDS.toNanos(DriverPublication.HEARTBEAT_TIMEOUT_MS) - 1;
-        publications.forEach(DriverPublication::heartbeatCheck);
+        sender.doWork();
         assertThat(receivedFrames.size(), is(0));  // should not send yet
         currentTimestamp += 10;
-        publications.forEach(DriverPublication::heartbeatCheck);
+        sender.doWork();
         assertThat(receivedFrames.size(), greaterThanOrEqualTo(1));  // should send now
 
         dataHeader.wrap(new AtomicBuffer(receivedFrames.remove()), 0);

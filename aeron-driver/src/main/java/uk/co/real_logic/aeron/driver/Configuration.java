@@ -172,7 +172,7 @@ public class Configuration
     /**
      * Default max backoff for NAK delay randomization in msec
      */
-    public static final int NAK_MAX_BACKOFF_DEFAULT = 60;
+    public static final long NAK_MAX_BACKOFF_DEFAULT = TimeUnit.MILLISECONDS.toNanos(60);
 
     /**
      * Default Unicast NAK delay in nanoseconds

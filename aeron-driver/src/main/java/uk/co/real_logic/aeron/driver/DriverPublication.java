@@ -47,7 +47,7 @@ public class DriverPublication implements AutoCloseable
     public static final long INITIAL_HEARTBEAT_TIMEOUT_NS = MILLISECONDS.toNanos(INITIAL_HEARTBEAT_TIMEOUT_MS);
 
     /** Heartbeat after data sent */
-    public static final int HEARTBEAT_TIMEOUT_MS = 500;
+    public static final int HEARTBEAT_TIMEOUT_MS = 200;
     public static final long HEARTBEAT_TIMEOUT_NS = MILLISECONDS.toNanos(HEARTBEAT_TIMEOUT_MS);
 
     /** Publication is still active. */
@@ -363,8 +363,8 @@ public class DriverPublication implements AutoCloseable
     private void onSendRetransmit(final AtomicBuffer buffer, final int offset, final int length)
     {
         final ByteBuffer termRetransmitBuffer = sendBuffers[retransmitIndex];
-        termRetransmitBuffer.position(offset);
         termRetransmitBuffer.limit(offset + length);
+        termRetransmitBuffer.position(offset);
 
         try
         {

@@ -96,29 +96,43 @@ public class LossHandler
         gapIndex = 0;
         final GapScanner scanner = scanners[activeIndex];
         final int numGaps = scanner.scan(this::onGap);
-        onScanComplete();
 
-        if (0 == numGaps)
+        if (numGaps > 0)
         {
-            if (scanner.isComplete())
-            {
-                activeIndex = TermHelper.rotateNext(activeIndex);
-                activeTermId = activeTermId + 1;
+            final Gap firstGap = gaps[0];
 
-                return 1; // signal another scan should be done soon
+            if (!timer.isActive() || !firstGap.matches(activeGap.termId, activeGap.termOffset))
+            {
+                activateGap(firstGap.termId, firstGap.termOffset, firstGap.length);
             }
-            else
-            {
-                // Account for 0 length heartbeat packet
-                final int tail = scanner.tailVolatile();
-                final long tailPosition =
-                    TermHelper.calculatePosition(activeTermId, tail, positionBitsToShift, initialTermId);
-                final long currentHighPosition = highestPosition.get();
 
-                if (currentHighPosition > tailPosition)
+            return 0; // got a gap to handle, we are good until this is fixed
+        }
+        else if (scanner.isComplete())
+        {
+            activeIndex = TermHelper.rotateNext(activeIndex);
+            activeTermId = activeTermId + 1;
+
+            return 1; // signal another scan should be done soon
+        }
+        else
+        {
+            // Account for 0 length heartbeat packet
+            final int tail = scanner.tailVolatile();
+            final long tailPosition =
+                TermHelper.calculatePosition(activeTermId, tail, positionBitsToShift, initialTermId);
+            final long currentHighPosition = highestPosition.get();
+
+            if (currentHighPosition > tailPosition)
+            {
+                if (!timer.isActive() || !activeGap.matches(activeTermId, tail))
                 {
-                    activateGap(activeTermId, tail, (int)(currentHighPosition - tailPosition));
+                    activateGap(activeTermId, tail, (int) (currentHighPosition - tailPosition));
                 }
+            }
+            else if (timer.isActive())
+            {
+                timer.cancel();
             }
         }
 
@@ -202,25 +216,6 @@ public class LossHandler
         return false;
     }
 
-    private void onScanComplete()
-    {
-        final boolean hasGap = gapIndex > 0;
-
-        if (hasGap)
-        {
-            final Gap firstGap = gaps[0];
-
-            if (!timer.isActive() || !firstGap.matches(activeGap.termId, activeGap.termOffset))
-            {
-                activateGap(firstGap.termId, firstGap.termOffset, firstGap.length);
-            }
-        }
-        else if (timer.isActive())
-        {
-            timer.cancel();
-        }
-    }
-
     private void activateGap(final int termId, final int termOffset, final int length)
     {
         activeGap.reset(termId, termOffset, length);
@@ -253,10 +248,12 @@ public class LossHandler
     {
         final long delay = determineNakDelay();
 
-        if (!timer.isActive())
+        if (timer.isActive())
         {
-            wheel.rescheduleTimeout(delay, TimeUnit.NANOSECONDS, timer, this::onTimerExpire);
+            timer.cancel();
         }
+
+        wheel.rescheduleTimeout(delay, TimeUnit.NANOSECONDS, timer, this::onTimerExpire);
     }
 
     static class Gap

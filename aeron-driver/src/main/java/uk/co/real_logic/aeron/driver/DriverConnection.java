@@ -262,6 +262,7 @@ public class DriverConnection implements AutoCloseable
 
         if (isFlowControlUnderRun(packetPosition, currentPosition) || isFlowControlOverRun(proposedPosition))
         {
+            System.out.println("dropping due to overrun or underrun");
             return;
         }
 

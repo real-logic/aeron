@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.common;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
@@ -78,15 +79,23 @@ public abstract class Agent implements Runnable, AutoCloseable
     {
         running = false;
 
-        try
+        if (null != latch)
         {
-            if (null != latch)
+            while (true)
             {
-                latch.await();
+                try
+                {
+                    if (latch.await(500, TimeUnit.MILLISECONDS))
+                    {
+                        break;
+                    }
+                    System.err.println("timeout await for agent. Retrying...");
+                }
+                catch (final InterruptedException ignore)
+                {
+                }
+
             }
-        }
-        catch (final InterruptedException ignore)
-        {
         }
 
         onClose();

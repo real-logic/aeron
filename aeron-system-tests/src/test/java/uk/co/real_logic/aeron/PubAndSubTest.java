@@ -165,7 +165,7 @@ public class PubAndSubTest
 
     @Theory
     @Test(timeout = 10000)
-    public void shouldReceivePublishedMessagesWithDataLoss(final String channel) throws Exception
+    public void shouldReceivePublishedMessageOneForOneWithDataLoss(final String channel) throws Exception
     {
         final int termBufferSize = 64 * 1024;
         final int numMessagesInTermBuffer = 64;
@@ -193,7 +193,53 @@ public class PubAndSubTest
                     fragmentsRead[0] += subscription.poll(10);
                     Thread.yield();
                 },
-                Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
+                Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(900));
+        }
+
+        verify(dataHandler, times(numMessagesToSend))
+            .onData(anyObject(),
+                anyInt(),
+                eq(messageLength),
+                eq(SESSION_ID),
+                eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+    }
+
+    @Theory
+    @Test(timeout = 10000)
+    public void shouldReceivePublishedMessageBatchedWithDataLoss(final String channel) throws Exception
+    {
+        final int termBufferSize = 64 * 1024;
+        final int numMessagesInTermBuffer = 64;
+        final int messageLength = (termBufferSize / numMessagesInTermBuffer) - DataHeaderFlyweight.HEADER_LENGTH;
+        final int numMessagesToSend = 2 * numMessagesInTermBuffer;
+        final int numBatches = 4;
+        final int numMessagesPerBatch = numMessagesToSend / numBatches;
+
+        context.termBufferSize(termBufferSize);
+        context.dataLossRate(0.10);                // 10% data loss
+        context.dataLossSeed(0xcafebabeL);         // predictable seed
+
+        setup(channel);
+
+        for (int i = 0; i < numBatches; i++)
+        {
+            for (int j = 0; j < numMessagesPerBatch; j++)
+            {
+                while (!publication.offer(buffer, 0, messageLength))
+                {
+                    Thread.yield();
+                }
+            }
+
+            final int fragmentsRead[] = new int[1];
+            SystemTestHelper.executeUntil(
+                () -> fragmentsRead[0] >= numMessagesPerBatch,
+                (j) ->
+                {
+                    fragmentsRead[0] += subscription.poll(10);
+                    Thread.yield();
+                },
+                Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(900));
         }
 
         verify(dataHandler, times(numMessagesToSend))

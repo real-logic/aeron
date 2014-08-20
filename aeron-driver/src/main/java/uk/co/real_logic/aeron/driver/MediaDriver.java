@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.driver;
 import uk.co.real_logic.aeron.common.*;
 import uk.co.real_logic.aeron.common.concurrent.*;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastTransmitter;
+import uk.co.real_logic.aeron.common.concurrent.console.CommandBarrier;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.common.event.EventConfiguration;
@@ -77,7 +78,7 @@ public class MediaDriver implements AutoCloseable
     {
         try (final MediaDriver ignored = MediaDriver.launch())
         {
-            new ConsoleCommandBarrier("Type 'quit' to terminate").await("quit");
+            new CommandBarrier("Type 'quit' to terminate").await("quit");
         }
     }
 

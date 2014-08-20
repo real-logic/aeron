@@ -20,6 +20,7 @@ import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.common.CloseHelper;
 import uk.co.real_logic.aeron.common.RateReporter;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.console.ContinueBarrier;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.nio.ByteBuffer;
@@ -42,11 +43,10 @@ public class StreamingPublisher
     private static final AtomicBuffer ATOMIC_BUFFER = new AtomicBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
     private static final int SESSION_ID = 0;
 
+    private static volatile boolean PRINTING_ACTIVE = true;
+
     public static void main(final String[] args) throws Exception
     {
-        System.out.println("Streaming " + NUMBER_OF_MESSAGES + " messages of size " + MESSAGE_LENGTH +
-                           " bytes to " + CHANNEL + " on stream Id " + STREAM_ID);
-
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
 
         final ExecutorService executor = Executors.newFixedThreadPool(2);
@@ -55,33 +55,55 @@ public class StreamingPublisher
         try (final Aeron aeron = Aeron.connect(context, executor);
              final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID, SESSION_ID))
         {
-            final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), ExampleUtil::printRate);
+            final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), StreamingPublisher::printRate);
             executor.execute(reporter);
 
-            for (long i = 0; i < NUMBER_OF_MESSAGES; i++)
-            {
-                ATOMIC_BUFFER.putLong(0, i);
+            final ContinueBarrier barrier = new ContinueBarrier("Execute again?");
 
-                while (!publication.offer(ATOMIC_BUFFER, 0, ATOMIC_BUFFER.capacity()))
+            do
+            {
+                PRINTING_ACTIVE = true;
+
+                System.out.format("\nStreaming %,d messages of size %d bytes to %s on stream Id %d\n",
+                                  NUMBER_OF_MESSAGES, MESSAGE_LENGTH, CHANNEL, STREAM_ID);
+
+                for (long i = 0; i < NUMBER_OF_MESSAGES; i++)
                 {
-                    Thread.yield();
+                    ATOMIC_BUFFER.putLong(0, i);
+
+                    while (!publication.offer(ATOMIC_BUFFER, 0, ATOMIC_BUFFER.capacity()))
+                    {
+                        Thread.yield();
+                    }
+
+                    reporter.onMessage(1, ATOMIC_BUFFER.capacity());
                 }
 
-                reporter.onMessage(1, ATOMIC_BUFFER.capacity());
-            }
+                System.out.println("Done streaming.");
 
-            System.out.println("Done streaming.");
+                if (0 < LINGER_TIMEOUT_MS)
+                {
+                    System.out.println("Lingering for " + LINGER_TIMEOUT_MS + " milliseconds...");
+                    Thread.sleep(LINGER_TIMEOUT_MS);
+                }
 
-            if (0 < LINGER_TIMEOUT_MS)
-            {
-                System.out.println("Lingering for " + LINGER_TIMEOUT_MS + " milliseconds...");
-                Thread.sleep(LINGER_TIMEOUT_MS);
+                PRINTING_ACTIVE = false;
             }
+            while (barrier.await());
+
 
             reporter.halt();
         }
 
         executor.shutdown();
         CloseHelper.quietClose(driver);
+    }
+
+    public static void printRate(final double messagesPerSec, final double bytesPerSec)
+    {
+        if (PRINTING_ACTIVE)
+        {
+            System.out.println(String.format("%.02g msgs/sec, %.02g bytes/sec", messagesPerSec, bytesPerSec));
+        }
     }
 }

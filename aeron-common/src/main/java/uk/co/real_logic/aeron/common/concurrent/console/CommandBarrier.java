@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.common.concurrent;
+package uk.co.real_logic.aeron.common.concurrent.console;
 
 import java.io.Console;
 
 /**
  * Barrier to block the calling thread until a command is given on the {@link Console}
  */
-public class ConsoleCommandBarrier
+public class CommandBarrier
 {
     final String label;
 
@@ -29,7 +29,7 @@ public class ConsoleCommandBarrier
      *
      * @param label to prompt the user.
      */
-    public ConsoleCommandBarrier(final String label)
+    public CommandBarrier(final String label)
     {
         this.label = label;
     }

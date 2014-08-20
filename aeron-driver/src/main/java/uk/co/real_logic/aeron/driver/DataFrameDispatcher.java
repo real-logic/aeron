@@ -19,6 +19,7 @@ import uk.co.real_logic.aeron.common.collections.Int2ObjectHashMap;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.driver.exceptions.UnknownSubscriptionException;
 
 import java.net.InetSocketAddress;
@@ -119,9 +120,8 @@ public class DataFrameDispatcher
                 {
                     connection.insertIntoTerm(headerFlyweight, buffer, length);
                 }
-                else if (headerFlyweight.hasPaddingFlag())
+                else if (headerFlyweight.headerType() == HeaderFlyweight.HDR_TYPE_PAD)
                 {
-                    headerFlyweight.headerType(LogBufferDescriptor.PADDING_FRAME_TYPE);
                     connection.insertIntoTerm(headerFlyweight, buffer, length);
                 }
                 else

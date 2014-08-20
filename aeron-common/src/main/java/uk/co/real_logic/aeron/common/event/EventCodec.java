@@ -162,6 +162,7 @@ public class EventCodec
         frame.wrap(buffer, offset + relativeOffset);
         switch (frame.headerType())
         {
+            case HeaderFlyweight.HDR_TYPE_PAD:
             case HeaderFlyweight.HDR_TYPE_DATA:
                 final DataHeaderFlyweight dataFrame = dataHeader.get();
                 dataFrame.wrap(buffer, offset + relativeOffset);
@@ -422,8 +423,10 @@ public class EventCodec
 
     private static String dissect(final DataHeaderFlyweight header)
     {
-        return String.format("DATA %x len %d %x:%x:%x @%x", header.flags(), header.frameLength(),
-                             header.sessionId(), header.streamId(), header.termId(), header.termOffset());
+        return String.format("%s %x len %d %x:%x:%x @%x",
+                             (header.headerType() == HeaderFlyweight.HDR_TYPE_PAD) ? "PAD" : "DATA",
+                             header.flags(), header.frameLength(), header.sessionId(), header.streamId(),
+                             header.termId(), header.termOffset());
     }
 
     private static String dissect(final StatusMessageFlyweight header)

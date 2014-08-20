@@ -44,6 +44,8 @@ import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_INT;
  */
 public class HeaderFlyweight extends Flyweight
 {
+    /** header type PAD */
+    public static final int HDR_TYPE_PAD = 0x00;
     /** header type DATA */
     public static final int HDR_TYPE_DATA = 0x01;
     /** header type NAK */

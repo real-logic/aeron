@@ -81,7 +81,6 @@ public class DriverPublication implements AutoCloseable
     private final ClientLiveness clientLiveness;
 
     private final DataHeaderFlyweight heartbeatHeader = new DataHeaderFlyweight();
-    private final DataHeaderFlyweight transmitHeader = new DataHeaderFlyweight();
 
     private final int positionBitsToShift;
     private final int initialTermId;
@@ -327,32 +326,13 @@ public class DriverPublication implements AutoCloseable
         return -1;
     }
 
-    /**
-     * Function used as a callback for {@link AvailabilityHandler}
-     */
     private void sendTransmissionUnit(final AtomicBuffer buffer, final int offset, final int length)
     {
         // at this point sendBuffer wraps the same underlying
         // ByteBuffer as the buffer parameter
         final ByteBuffer sendBuffer = sendBuffers[activeIndex];
-
         sendBuffer.limit(offset + length);
         sendBuffer.position(offset);
-
-        // if we have a 0 length data message, it is most likely padding, so we will want to adjust it before sending.
-        // a padding frame may be embedded in a batch that is received. Don't need to adjust that one.
-        if (DataHeaderFlyweight.HEADER_LENGTH == length)
-        {
-            transmitHeader.wrap(buffer, offset);
-
-            if (transmitHeader.headerType() == PADDING_FRAME_TYPE)
-            {
-                final short flags = (short)(transmitHeader.flags() | DataHeaderFlyweight.PADDING_FLAG);
-
-                transmitHeader.flags(flags);
-                transmitHeader.headerType(HeaderFlyweight.HDR_TYPE_DATA);
-            }
-        }
 
         try
         {
@@ -375,21 +355,6 @@ public class DriverPublication implements AutoCloseable
         final ByteBuffer termRetransmitBuffer = sendBuffers[retransmitIndex];
         termRetransmitBuffer.limit(offset + length);
         termRetransmitBuffer.position(offset);
-
-        // if we have a 0 length data message, it is most likely padding, so we will want to adjust it before sending.
-        // a padding frame may be embedded in a batch that is received. Don't need to adjust that one.
-        if (DataHeaderFlyweight.HEADER_LENGTH == length)
-        {
-            transmitHeader.wrap(buffer, offset);
-
-            if (transmitHeader.headerType() == PADDING_FRAME_TYPE)
-            {
-                final short flags = (short)(transmitHeader.flags() | DataHeaderFlyweight.PADDING_FLAG);
-
-                transmitHeader.flags(flags);
-                transmitHeader.headerType(HeaderFlyweight.HDR_TYPE_DATA);
-            }
-        }
 
         try
         {

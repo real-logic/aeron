@@ -249,7 +249,7 @@ public final class UdpTransport implements AutoCloseable
             return 0;
         }
 
-        if (header.headerType() == HeaderFlyweight.HDR_TYPE_DATA)
+        if (header.headerType() == HeaderFlyweight.HDR_TYPE_DATA || header.headerType() == HeaderFlyweight.HDR_TYPE_PAD)
         {
             dataFrameHandler.onFrame(dataHeader, readBuffer, length, srcAddress);
             return 1;

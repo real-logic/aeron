@@ -68,7 +68,6 @@ public class EventLogger
         }
         else
         {
-            System.out.println("Event buffer not found");
             this.eventBuffer = null;
             this.ringBuffer = null;
             this.enabledEventCodes = 0L;

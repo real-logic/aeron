@@ -20,10 +20,10 @@ import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
 
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 
 /**
@@ -40,9 +40,9 @@ public class RetransmitHandler
     private final TimerWheel timerWheel;
     private final Queue<RetransmitAction> retransmitActionPool = new OneToOneConcurrentArrayQueue<>(MAX_RETRANSMITS);
     private final Long2ObjectHashMap<RetransmitAction>  activeRetransmitByPositionMap = new Long2ObjectHashMap<>();
+    private final SystemCounters systemCounters;
     private final FeedbackDelayGenerator delayGenerator;
     private final FeedbackDelayGenerator lingerTimeoutGenerator;
-    private final AtomicLong lowestPosition = new AtomicLong();
     private final RetransmitSender retransmitSender;
     private final int initialTermId;
     private final int capacity;
@@ -50,12 +50,13 @@ public class RetransmitHandler
 
     /**
      * Create a retransmit handler.
-     *
-     * @param timerWheel for timers
+     *  @param timerWheel for timers
+     * @param systemCounters for recording significant events.
      * @param delayGenerator to use for delay determination
      * @param lingerTimeoutGenerator to use for linger timeout
      */
     public RetransmitHandler(final TimerWheel timerWheel,
+                             final SystemCounters systemCounters,
                              final FeedbackDelayGenerator delayGenerator,
                              final FeedbackDelayGenerator lingerTimeoutGenerator,
                              final RetransmitSender retransmitSender,
@@ -63,13 +64,13 @@ public class RetransmitHandler
                              final int capacity)
     {
         this.timerWheel = timerWheel;
+        this.systemCounters = systemCounters;
         this.delayGenerator = delayGenerator;
         this.lingerTimeoutGenerator = lingerTimeoutGenerator;
         this.retransmitSender = retransmitSender;
         this.initialTermId = initialTermId;
         this.capacity = capacity;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(capacity);
-        this.lowestPosition.lazySet(0);
 
         IntStream.range(0, MAX_RETRANSMITS).forEach((i) -> retransmitActionPool.offer(new RetransmitAction()));
     }
@@ -94,12 +95,14 @@ public class RetransmitHandler
      */
     public void onNak(final int termId, final int termOffset, final int length)
     {
+        if (isInvalid(termOffset))
+        {
+            return;
+        }
+
         final long position = TermHelper.calculatePosition(termId, termOffset, positionBitsToShift, initialTermId);
 
-        if (!retransmitActionPool.isEmpty() &&
-            null == activeRetransmitByPositionMap.get(position) &&
-            capacity > termOffset &&
-            lowestPosition.get() <= termOffset)
+        if (!retransmitActionPool.isEmpty() && null == activeRetransmitByPositionMap.get(position))
         {
             final RetransmitAction retransmitAction = retransmitActionPool.poll();
             retransmitAction.termId = termId;
@@ -143,6 +146,18 @@ public class RetransmitHandler
             retransmitAction.delayTimer.cancel();
             // do not go into linger
         }
+    }
+
+    private boolean isInvalid(final int termOffset)
+    {
+        final boolean isInvalid = termOffset >= (capacity - FrameDescriptor.BASE_HEADER_LENGTH);
+
+        if (isInvalid)
+        {
+            systemCounters.invalidPackets().orderedIncrement();
+        }
+
+        return isInvalid;
     }
 
     private long determineRetransmitDelay()

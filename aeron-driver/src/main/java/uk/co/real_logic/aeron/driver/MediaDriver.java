@@ -227,9 +227,9 @@ public class MediaDriver implements AutoCloseable
         private Supplier<SenderControlStrategy> unicastSenderFlowControl;
         private Supplier<SenderControlStrategy> multicastSenderFlowControl;
         private TimerWheel conductorTimerWheel;
-        private OneToOneConcurrentArrayQueue<? super Object> conductorCommandQueue;
-        private OneToOneConcurrentArrayQueue<? super Object> receiverCommandQueue;
-        private OneToOneConcurrentArrayQueue<? super Object> senderCommandQueue;
+        private OneToOneConcurrentArrayQueue<Object> conductorCommandQueue;
+        private OneToOneConcurrentArrayQueue<Object> receiverCommandQueue;
+        private OneToOneConcurrentArrayQueue<Object> senderCommandQueue;
         private ReceiverProxy receiverProxy;
         private SenderProxy senderProxy;
         private DriverConductorProxy driverConductorProxy;
@@ -377,7 +377,7 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context conductorCommandQueue(final OneToOneConcurrentArrayQueue<? super Object> conductorCommandQueue)
+        public Context conductorCommandQueue(final OneToOneConcurrentArrayQueue<Object> conductorCommandQueue)
         {
             this.conductorCommandQueue = conductorCommandQueue;
             return this;
@@ -419,13 +419,13 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context receiverCommandQueue(final OneToOneConcurrentArrayQueue<? super Object> receiverCommandQueue)
+        public Context receiverCommandQueue(final OneToOneConcurrentArrayQueue<Object> receiverCommandQueue)
         {
             this.receiverCommandQueue = receiverCommandQueue;
             return this;
         }
 
-        public Context senderCommandQueue(final OneToOneConcurrentArrayQueue<? super Object> senderCommandQueue)
+        public Context senderCommandQueue(final OneToOneConcurrentArrayQueue<Object> senderCommandQueue)
         {
             this.senderCommandQueue = senderCommandQueue;
             return this;
@@ -557,7 +557,7 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public OneToOneConcurrentArrayQueue<? super Object> conductorCommandQueue()
+        public OneToOneConcurrentArrayQueue<Object> conductorCommandQueue()
         {
             return conductorCommandQueue;
         }
@@ -592,12 +592,12 @@ public class MediaDriver implements AutoCloseable
             return conductorTimerWheel;
         }
 
-        public OneToOneConcurrentArrayQueue<? super Object> receiverCommandQueue()
+        public OneToOneConcurrentArrayQueue<Object> receiverCommandQueue()
         {
             return receiverCommandQueue;
         }
 
-        public OneToOneConcurrentArrayQueue<? super Object> senderCommandQueue()
+        public OneToOneConcurrentArrayQueue<Object> senderCommandQueue()
         {
             return senderCommandQueue;
         }

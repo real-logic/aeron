@@ -41,8 +41,7 @@ public class Sender extends Agent
         super(ctx.senderIdleStrategy(), ctx.eventLoggerException());
 
         this.publications = ctx.publications();
-        // TODO: fix cast
-        this.commandQueue = (OneToOneConcurrentArrayQueue<Object>) ctx.senderCommandQueue();
+        this.commandQueue = ctx.senderCommandQueue();
         this.logger = ctx.eventLogger();
         processConductorCommands = this::processConductorCommands;
     }

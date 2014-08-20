@@ -124,8 +124,7 @@ public class DriverConductor extends Agent
     {
         super(ctx.conductorIdleStrategy(), ctx.eventLoggerException());
 
-        // TODO: fix
-        this.commandQueue = (OneToOneConcurrentArrayQueue<Object>) ctx.conductorCommandQueue();
+        this.commandQueue = ctx.conductorCommandQueue();
         this.receiverProxy = ctx.receiverProxy();
         this.senderProxy = ctx.senderProxy();
         this.termBuffersFactory = ctx.termBuffersFactory();
@@ -253,7 +252,7 @@ public class DriverConductor extends Agent
         workCount += processTimers();
 
         final long now = timerWheel.now();
-        
+
         workCount += connections.doAction(connection ->
         {
             return connection.scanForGaps()

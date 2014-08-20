@@ -37,8 +37,7 @@ public class Receiver extends Agent
         super(ctx.receiverIdleStrategy(), ctx.eventLoggerException());
 
         this.nioSelector = ctx.receiverNioSelector();
-        // TODO: fix cast
-        this.commandQueue = (OneToOneConcurrentArrayQueue<Object>) ctx.receiverCommandQueue();
+        this.commandQueue = ctx.receiverCommandQueue();
         this.logger = ctx.eventLogger();
         onConductorCommand = this::onConductorCommand;
     }

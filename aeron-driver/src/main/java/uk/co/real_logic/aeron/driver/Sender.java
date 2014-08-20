@@ -22,23 +22,29 @@ import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.driver.cmd.ClosePublicationCmd;
 import uk.co.real_logic.aeron.driver.cmd.RetransmitPublicationCmd;
 
+import java.util.function.Consumer;
+
 /**
  * Agent that iterates over publications for sending them to registered subscribers.
  */
 public class Sender extends Agent
 {
     private final AtomicArray<DriverPublication> publications;
-    private final OneToOneConcurrentArrayQueue<? super Object> commandQueue;
+    private final OneToOneConcurrentArrayQueue<Object> commandQueue;
     private final EventLogger logger;
     private int roundRobinIndex = 0;
+
+    private Consumer<Object> processConductorCommands;
 
     public Sender(final MediaDriver.Context ctx)
     {
         super(ctx.senderIdleStrategy(), ctx.eventLoggerException());
 
         this.publications = ctx.publications();
-        this.commandQueue = ctx.senderCommandQueue();
+        // TODO: fix cast
+        this.commandQueue = (OneToOneConcurrentArrayQueue<Object>) ctx.senderCommandQueue();
         this.logger = ctx.eventLogger();
+        processConductorCommands = this::processConductorCommands;
     }
 
     public int doWork()
@@ -51,7 +57,7 @@ public class Sender extends Agent
 
         int workCount = 0;
 
-        workCount += commandQueue.drain(this::processConductorCommands);
+        workCount += commandQueue.drain(processConductorCommands);
         workCount += publications.doAction(roundRobinIndex, DriverPublication::send);
 
         return  workCount;

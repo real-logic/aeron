@@ -24,6 +24,8 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner.GapHandler;
+
 /**
  * Tracking and handling of gaps in a stream
  * <p>
@@ -45,10 +47,12 @@ public class LossHandler
 
     private final NakMessageSender nakMessageSender;
     private final TimerWheel.Timer timer;
+    private final GapHandler onGap;
 
     private int activeIndex = 0;
     private int gapIndex = 0;
     private int activeTermId;
+
 
     /**
      * Create a loss handler for a channel.
@@ -82,6 +86,7 @@ public class LossHandler
         this.activeIndex = TermHelper.termIdToBufferIndex(activeTermId);
         this.activeTermId = activeTermId;
         this.initialTermId = activeTermId;
+        onGap = this::onGap;
     }
 
     /**
@@ -95,7 +100,7 @@ public class LossHandler
     {
         gapIndex = 0;
         final GapScanner scanner = scanners[activeIndex];
-        final int numGaps = scanner.scan(this::onGap);
+        final int numGaps = scanner.scan(onGap);
 
         if (numGaps > 0)
         {

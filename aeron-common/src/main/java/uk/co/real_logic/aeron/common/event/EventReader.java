@@ -79,6 +79,7 @@ public class EventReader extends Agent
 
     public int read(final Consumer<String> handler, final int limit)
     {
+        // Capturing Lambda: allocates
         return ringBuffer.read(
             (typeId, buffer, index, length) ->
                 handler.accept(EventCode.get(typeId).decode(buffer, index, length)), limit);

@@ -20,10 +20,7 @@ import uk.co.real_logic.aeron.common.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
-import uk.co.real_logic.aeron.common.concurrent.AtomicArray;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.common.concurrent.CountersManager;
-import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.aeron.common.concurrent.*;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.common.event.EventCode;
@@ -42,6 +39,7 @@ import uk.co.real_logic.aeron.driver.exceptions.ControlProtocolException;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static uk.co.real_logic.aeron.common.ErrorCode.*;
@@ -76,7 +74,7 @@ public class DriverConductor extends Agent
     public static final FeedbackDelayGenerator RETRANS_UNICAST_DELAY_GENERATOR = () -> RETRANS_UNICAST_DELAY_DEFAULT_NS;
     public static final FeedbackDelayGenerator RETRANS_UNICAST_LINGER_GENERATOR = () -> RETRANS_UNICAST_LINGER_DEFAULT_NS;
 
-    private final OneToOneConcurrentArrayQueue<? super Object> commandQueue;
+    private final OneToOneConcurrentArrayQueue<Object> commandQueue;
     private final ReceiverProxy receiverProxy;
     private final SenderProxy senderProxy;
     private final ClientProxy clientProxy;
@@ -119,11 +117,15 @@ public class DriverConductor extends Agent
     private final EventLogger logger;
     private final SystemCounters systemCounters;
 
+    private final Consumer<Object> onReceiverCommand;
+    private final MessageHandler onClientCommand;
+
     public DriverConductor(final Context ctx)
     {
         super(ctx.conductorIdleStrategy(), ctx.eventLoggerException());
 
-        this.commandQueue = ctx.conductorCommandQueue();
+        // TODO: fix
+        this.commandQueue = (OneToOneConcurrentArrayQueue<Object>) ctx.conductorCommandQueue();
         this.receiverProxy = ctx.receiverProxy();
         this.senderProxy = ctx.senderProxy();
         this.termBuffersFactory = ctx.termBuffersFactory();
@@ -156,6 +158,80 @@ public class DriverConductor extends Agent
         controlLossSeed = ctx.controlLossSeed();
 
         systemCounters = new SystemCounters(countersManager);
+
+        onReceiverCommand = this::onReceiverCommand;
+        onClientCommand = this::onClientCommand;
+    }
+
+    public void onReceiverCommand(Object obj)
+    {
+        try
+        {
+            if (obj instanceof CreateConnectionCmd)
+            {
+                onCreateConnection((CreateConnectionCmd) obj);
+            }
+        }
+        catch (final Exception ex)
+        {
+            logger.logException(ex);
+        }
+    }
+
+    public void onClientCommand(final int msgTypeId, final AtomicBuffer buffer, final int index, final int length)
+    {
+        Flyweight flyweight = publicationMessage;
+
+        try
+        {
+            switch (msgTypeId)
+            {
+                case ADD_PUBLICATION:
+                    publicationMessage.wrap(buffer, index);
+                    logger.log(EventCode.CMD_IN_ADD_PUBLICATION, buffer, index, length);
+                    flyweight = publicationMessage;
+                    onAddPublication(publicationMessage);
+                    break;
+
+                case REMOVE_PUBLICATION:
+                    publicationMessage.wrap(buffer, index);
+                    logger.log(EventCode.CMD_IN_REMOVE_PUBLICATION, buffer, index, length);
+                    flyweight = publicationMessage;
+                    onRemovePublication(publicationMessage);
+                    break;
+
+                case ADD_SUBSCRIPTION:
+                    subscriptionMessage.wrap(buffer, index);
+                    logger.log(EventCode.CMD_IN_ADD_SUBSCRIPTION, buffer, index, length);
+                    flyweight = subscriptionMessage;
+                    onAddSubscription(subscriptionMessage);
+                    break;
+
+                case REMOVE_SUBSCRIPTION:
+                    subscriptionMessage.wrap(buffer, index);
+                    logger.log(EventCode.CMD_IN_REMOVE_SUBSCRIPTION, buffer, index, length);
+                    flyweight = subscriptionMessage;
+                    onRemoveSubscription(subscriptionMessage);
+                    break;
+
+                case KEEPALIVE_CLIENT:
+                    correlatedMessage.wrap(buffer, index);
+                    logger.log(EventCode.CMD_IN_KEEPALIVE_CLIENT, buffer, index, length);
+                    flyweight = correlatedMessage;
+                    onKeepaliveClient(correlatedMessage);
+                    break;
+            }
+        }
+        catch (final ControlProtocolException ex)
+        {
+            clientProxy.onError(ex.errorCode(), ex.getMessage(), flyweight, length);
+            logger.logException(ex);
+        }
+        catch (final Exception ex)
+        {
+            clientProxy.onError(GENERIC_ERROR, ex.getMessage(), flyweight, length);
+            logger.logException(ex);
+        }
     }
 
     public SendChannelEndpoint senderChannelEndpoint(final UdpChannel channel)
@@ -177,12 +253,13 @@ public class DriverConductor extends Agent
         workCount += processTimers();
 
         final long now = timerWheel.now();
-        for (final DriverConnection connection : connections)
+        
+        workCount += connections.doAction(connection ->
         {
-            workCount += connection.scanForGaps();
-            workCount += connection.sendPendingStatusMessages(now);
-            workCount += connection.cleanLogBuffer();
-        }
+            return connection.scanForGaps()
+                 + connection.sendPendingStatusMessages(now)
+                 + connection.cleanLogBuffer();
+        });
 
         workCount += publications.doAction(DriverPublication::cleanLogBuffer);
 
@@ -211,80 +288,12 @@ public class DriverConductor extends Agent
 
     private int processFromReceiverCommandQueue()
     {
-        return commandQueue.drain(
-                (obj) ->
-                {
-                    try
-                    {
-                        if (obj instanceof CreateConnectionCmd)
-                        {
-                            onCreateConnection((CreateConnectionCmd) obj);
-                        }
-                    } catch (final Exception ex)
-                    {
-                        logger.logException(ex);
-                    }
-                });
+        return commandQueue.drain(onReceiverCommand);
     }
 
     private int processFromClientCommandBuffer()
     {
-        return fromClientCommands.read(
-            (msgTypeId, buffer, index, length) ->
-            {
-                Flyweight flyweight = publicationMessage;
-
-                try
-                {
-                    switch (msgTypeId)
-                    {
-                        case ADD_PUBLICATION:
-                            publicationMessage.wrap(buffer, index);
-                            logger.log(EventCode.CMD_IN_ADD_PUBLICATION, buffer, index, length);
-                            flyweight = publicationMessage;
-                            onAddPublication(publicationMessage);
-                            break;
-
-                        case REMOVE_PUBLICATION:
-                            publicationMessage.wrap(buffer, index);
-                            logger.log(EventCode.CMD_IN_REMOVE_PUBLICATION, buffer, index, length);
-                            flyweight = publicationMessage;
-                            onRemovePublication(publicationMessage);
-                            break;
-
-                        case ADD_SUBSCRIPTION:
-                            subscriptionMessage.wrap(buffer, index);
-                            logger.log(EventCode.CMD_IN_ADD_SUBSCRIPTION, buffer, index, length);
-                            flyweight = subscriptionMessage;
-                            onAddSubscription(subscriptionMessage);
-                            break;
-
-                        case REMOVE_SUBSCRIPTION:
-                            subscriptionMessage.wrap(buffer, index);
-                            logger.log(EventCode.CMD_IN_REMOVE_SUBSCRIPTION, buffer, index, length);
-                            flyweight = subscriptionMessage;
-                            onRemoveSubscription(subscriptionMessage);
-                            break;
-
-                        case KEEPALIVE_CLIENT:
-                            correlatedMessage.wrap(buffer, index);
-                            logger.log(EventCode.CMD_IN_KEEPALIVE_CLIENT, buffer, index, length);
-                            flyweight = correlatedMessage;
-                            onKeepaliveClient(correlatedMessage);
-                            break;
-                    }
-                }
-                catch (final ControlProtocolException ex)
-                {
-                    clientProxy.onError(ex.errorCode(), ex.getMessage(), flyweight, length);
-                    logger.logException(ex);
-                }
-                catch (final Exception ex)
-                {
-                    clientProxy.onError(GENERIC_ERROR, ex.getMessage(), flyweight, length);
-                    logger.logException(ex);
-                }
-            });
+        return fromClientCommands.read(onClientCommand);
     }
 
     private int processTimers()

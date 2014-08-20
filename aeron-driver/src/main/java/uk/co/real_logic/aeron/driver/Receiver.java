@@ -20,22 +20,61 @@ import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.driver.cmd.*;
 
+import java.util.function.Consumer;
+
 /**
  * Receiver service for JVM based media driver, uses an event loop with command buffer
  */
 public class Receiver extends Agent
 {
     private final NioSelector nioSelector;
-    private final OneToOneConcurrentArrayQueue<? super Object> commandQueue;
+    private final OneToOneConcurrentArrayQueue<Object> commandQueue;
     private final EventLogger logger;
+    private final Consumer<Object> onConductorCommand;
 
     public Receiver(final MediaDriver.Context ctx)
     {
         super(ctx.receiverIdleStrategy(), ctx.eventLoggerException());
 
         this.nioSelector = ctx.receiverNioSelector();
-        this.commandQueue = ctx.receiverCommandQueue();
+        // TODO: fix cast
+        this.commandQueue = (OneToOneConcurrentArrayQueue<Object>) ctx.receiverCommandQueue();
         this.logger = ctx.eventLogger();
+        onConductorCommand = this::onConductorCommand;
+    }
+
+    private void onConductorCommand(final Object obj)
+    {
+        try
+        {
+            if (obj instanceof NewConnectionCmd)
+            {
+                onNewConnection((NewConnectionCmd) obj);
+            }
+            else if (obj instanceof AddSubscriptionCmd)
+            {
+                final AddSubscriptionCmd cmd = (AddSubscriptionCmd)obj;
+                onAddSubscription(cmd.mediaSubscriptionEndpoint(), cmd.streamId());
+            }
+            else if (obj instanceof RemoveSubscriptionCmd)
+            {
+                final RemoveSubscriptionCmd cmd = (RemoveSubscriptionCmd)obj;
+                onRemoveSubscription(cmd.mediaSubscriptionEndpoint(), cmd.streamId());
+            }
+            else if (obj instanceof RegisterReceiverChannelEndpointCmd)
+            {
+                final RegisterReceiverChannelEndpointCmd cmd = (RegisterReceiverChannelEndpointCmd)obj;
+                onRegisterMediaSubscriptionEndpoint(cmd.receiverChannelEndpoint());
+            }
+            else if (obj instanceof RemoveConnectionCmd)
+            {
+                onRemoveConnection((RemoveConnectionCmd) obj);
+            }
+        }
+        catch (final Exception ex)
+        {
+            logger.logException(ex);
+        }
     }
 
     public int doWork() throws Exception
@@ -45,40 +84,7 @@ public class Receiver extends Agent
 
     private int processConductorCommands()
     {
-        return commandQueue.drain(
-            (obj) ->
-            {
-                try
-                {
-                    if (obj instanceof NewConnectionCmd)
-                    {
-                        onNewConnection((NewConnectionCmd) obj);
-                    }
-                    else if (obj instanceof AddSubscriptionCmd)
-                    {
-                        final AddSubscriptionCmd cmd = (AddSubscriptionCmd)obj;
-                        onAddSubscription(cmd.mediaSubscriptionEndpoint(), cmd.streamId());
-                    }
-                    else if (obj instanceof RemoveSubscriptionCmd)
-                    {
-                        final RemoveSubscriptionCmd cmd = (RemoveSubscriptionCmd)obj;
-                        onRemoveSubscription(cmd.mediaSubscriptionEndpoint(), cmd.streamId());
-                    }
-                    else if (obj instanceof RegisterReceiverChannelEndpointCmd)
-                    {
-                        final RegisterReceiverChannelEndpointCmd cmd = (RegisterReceiverChannelEndpointCmd)obj;
-                        onRegisterMediaSubscriptionEndpoint(cmd.receiverChannelEndpoint());
-                    }
-                    else if (obj instanceof RemoveConnectionCmd)
-                    {
-                        onRemoveConnection((RemoveConnectionCmd) obj);
-                    }
-                }
-                catch (final Exception ex)
-                {
-                    logger.logException(ex);
-                }
-            });
+        return commandQueue.drain(onConductorCommand);
     }
 
     /**

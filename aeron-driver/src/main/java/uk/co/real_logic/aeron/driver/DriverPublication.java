@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static uk.co.real_logic.aeron.common.TermHelper.termIdToBufferIndex;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogScanner.AvailabilityHandler;
 
 /**
  * Publication to be sent to registered subscribers.
@@ -88,14 +89,16 @@ public class DriverPublication implements AutoCloseable
     private final SystemCounters systemCounters;
     private final AtomicInteger status = new AtomicInteger(ACTIVE);
     private final int termWindowSize;
+    private final InetSocketAddress dstAddress;
+
+    private final AvailabilityHandler sendTransmissionUnit;
+    private final AvailabilityHandler onSendRetransmit;
 
     private int activeIndex = 0;
     private int retransmitIndex = 0;
     private int statusMessagesReceivedCount = 0;
     private long sentPosition = 0;
     private long timeOfFlush = 0;
-
-    private final InetSocketAddress dstAddress;
 
     public DriverPublication(final SendChannelEndpoint mediaEndpoint,
                              final TimerWheel timerWheel,
@@ -144,6 +147,9 @@ public class DriverPublication implements AutoCloseable
         this.initialTermId = initialTermId;
         termWindowSize = Configuration.publicationTermWindowSize(termCapacity);
         publisherLimitReporter.position(termWindowSize);
+
+        sendTransmissionUnit = this::sendTransmissionUnit;
+        onSendRetransmit = this::onSendRetransmit;
     }
 
     public void close()
@@ -162,7 +168,7 @@ public class DriverPublication implements AutoCloseable
             final int scanLimit = Math.min(availableWindow, mtuLength);
 
             LogScanner scanner = logScanners[activeIndex];
-            workCount += scanner.scanNext(this::sendTransmissionUnit, scanLimit);
+            workCount += scanner.scanNext(sendTransmissionUnit, scanLimit);
 
             if (scanner.isComplete())
             {
@@ -283,7 +289,7 @@ public class DriverPublication implements AutoCloseable
             int sent;
             do
             {
-                sent = scanner.scanNext(this::onSendRetransmit, Math.min(remainingBytes, mtuLength));
+                sent = scanner.scanNext(onSendRetransmit, Math.min(remainingBytes, mtuLength));
                 remainingBytes -= sent;
             }
             while (remainingBytes > 0 && sent > 0);
@@ -320,7 +326,7 @@ public class DriverPublication implements AutoCloseable
     }
 
     /**
-     * Function used as a callback for {@link LogScanner.AvailabilityHandler}
+     * Function used as a callback for {@link AvailabilityHandler}
      */
     private void sendTransmissionUnit(final AtomicBuffer buffer, final int offset, final int length)
     {

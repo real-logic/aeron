@@ -80,7 +80,9 @@ public class AtomicArray<T> implements Collection<T>
     }
 
     /**
-     * Iterate over each element applying a supplied action.
+     * Iterate over each element applying a supplied action
+     * <p>
+     * Allocation-free if action doesn't capture.
      *
      * @param action to be applied to each element.
      */
@@ -99,6 +101,8 @@ public class AtomicArray<T> implements Collection<T>
      * <p>
      * The count of resulting changes is returned, which can be greater than the number of elements if actions
      * are recursive.
+     * <p>
+     * Allocation-free if action doesn't capture.
      *
      * @param action to call and pass each element to
      * @return the number of actions that have been applied.
@@ -113,6 +117,8 @@ public class AtomicArray<T> implements Collection<T>
      * <p>
      * The count of resulting changes is returned, which can be greater than the number of elements if actions
      * are recursive.
+     * <p>
+     * Allocation-free if action doesn't capture.
      *
      * @param fromIndex the index to fromIndex iterating at
      * @param action    to call and pass each element to

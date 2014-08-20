@@ -162,11 +162,6 @@ public class LogScanner extends LogBuffer
         this.offset = offset;
     }
 
-    private static int waitForFrameLength(final AtomicBuffer logBuffer, final int frameOffset)
-    {
-        return FrameDescriptor.waitForFrameLength(logBuffer, frameOffset);
-    }
-
     private static int frameType(final AtomicBuffer logBuffer, final int frameOffset)
     {
         return logBuffer.getShort(typeOffset(frameOffset), ByteOrder.LITTLE_ENDIAN) & 0xFFFF;

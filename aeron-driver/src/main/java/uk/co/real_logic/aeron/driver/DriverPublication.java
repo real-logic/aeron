@@ -280,11 +280,10 @@ public class DriverPublication implements AutoCloseable
             scanner.seek(termOffset);
 
             int remainingBytes = length;
-            int sent = 0;
+            int sent;
             do
             {
                 sent = scanner.scanNext(this::onSendRetransmit, Math.min(remainingBytes, mtuLength));
-
                 remainingBytes -= sent;
             }
             while (remainingBytes > 0 && sent > 0);

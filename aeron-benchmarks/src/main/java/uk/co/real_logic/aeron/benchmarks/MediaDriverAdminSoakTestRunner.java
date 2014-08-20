@@ -38,7 +38,7 @@ public class MediaDriverAdminSoakTestRunner
 
     public static void main(String[] args) throws Exception
     {
-        SoakTestHelper.useSharedMemoryOnLinux();
+        BenchmarkUtil.useSharedMemoryOnLinux();
 
         try (final MediaDriver driver = MediaDriver.launch())
         {
@@ -61,7 +61,7 @@ public class MediaDriverAdminSoakTestRunner
         try (final Aeron publishingClient = Aeron.connect(new Aeron.Context());
              final Aeron consumingClient = Aeron.connect(new Aeron.Context()))
         {
-            SoakTestHelper.exchangeMessagesBetweenClients(publishingClient, consumingClient, PUBLISHING_BUFFER);
+            BenchmarkUtil.exchangeMessagesBetweenClients(publishingClient, consumingClient, PUBLISHING_BUFFER);
         }
     }
 }

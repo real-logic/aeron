@@ -40,7 +40,6 @@ public abstract class Agent implements Runnable, AutoCloseable
     {
         this.idleStrategy = idleStrategy;
         this.exceptionHandler = exceptionHandler;
-        this.running = true;
     }
 
     /**
@@ -50,6 +49,7 @@ public abstract class Agent implements Runnable, AutoCloseable
      */
     public void run()
     {
+        running = true;
         latch = new CountDownLatch(1);
 
         while (running)
@@ -89,12 +89,12 @@ public abstract class Agent implements Runnable, AutoCloseable
                     {
                         break;
                     }
+
                     System.err.println("timeout await for agent. Retrying...");
                 }
                 catch (final InterruptedException ignore)
                 {
                 }
-
             }
         }
 

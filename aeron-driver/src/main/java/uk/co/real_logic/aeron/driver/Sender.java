@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron.driver;
 import uk.co.real_logic.aeron.common.Agent;
 import uk.co.real_logic.aeron.common.concurrent.AtomicArray;
 import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.driver.cmd.ClosePublicationCmd;
 import uk.co.real_logic.aeron.driver.cmd.RetransmitPublicationCmd;
 
@@ -31,7 +30,6 @@ public class Sender extends Agent
 {
     private final AtomicArray<DriverPublication> publications;
     private final OneToOneConcurrentArrayQueue<Object> commandQueue;
-    private final EventLogger logger;
     private int roundRobinIndex = 0;
 
     private Consumer<Object> processConductorCommandsFunc;
@@ -42,7 +40,6 @@ public class Sender extends Agent
 
         this.publications = ctx.publications();
         this.commandQueue = ctx.senderCommandQueue();
-        this.logger = ctx.eventLogger();
         processConductorCommandsFunc = this::processConductorCommands;
     }
 
@@ -64,22 +61,15 @@ public class Sender extends Agent
 
     private void processConductorCommands(final Object obj)
     {
-        try
+        if (obj instanceof RetransmitPublicationCmd)
         {
-            if (obj instanceof RetransmitPublicationCmd)
-            {
-                final RetransmitPublicationCmd cmd = (RetransmitPublicationCmd)obj;
-                cmd.driverPublication().onRetransmit(cmd.termId(), cmd.termOffset(), cmd.length());
-            }
-            else if (obj instanceof ClosePublicationCmd)
-            {
-                final ClosePublicationCmd cmd = (ClosePublicationCmd)obj;
-                cmd.publication().close();
-            }
+            final RetransmitPublicationCmd cmd = (RetransmitPublicationCmd)obj;
+            cmd.driverPublication().onRetransmit(cmd.termId(), cmd.termOffset(), cmd.length());
         }
-        catch (final Exception ex)
+        else if (obj instanceof ClosePublicationCmd)
         {
-            logger.logException(ex);
+            final ClosePublicationCmd cmd = (ClosePublicationCmd)obj;
+            cmd.publication().close();
         }
     }
 }

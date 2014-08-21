@@ -81,9 +81,16 @@ public class NioSelector implements AutoCloseable
     /**
      * Explicit event loop processing as poll
      */
-    public int processKeys() throws Exception
+    public int processKeys()
     {
-        selector.selectNow();
+        try
+        {
+            selector.selectNow();
+        }
+        catch (final IOException ex)
+        {
+            throw new RuntimeException(ex);
+        }
 
         return handleSelectedKeys();
     }
@@ -91,9 +98,16 @@ public class NioSelector implements AutoCloseable
     /**
      * Explicit call to selectNow but without processing of selected keys.
      */
-    public void selectNowWithoutProcessing() throws Exception
+    public void selectNowWithoutProcessing()
     {
-        selector.selectNow();
+        try
+        {
+            selector.selectNow();
+        }
+        catch (final IOException ex)
+        {
+            throw new RuntimeException(ex);
+        }
     }
 
     private int handleSelectedKeys()

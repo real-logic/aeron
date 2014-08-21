@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.common;
 
+import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.ThreadLocalRandom;
@@ -51,6 +52,8 @@ public class BitUtil
                                                     '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
 
     private static final int LAST_DIGIT_MASK = 0b1;
+
+    private static final Charset UTF8_CHARSET = Charset.forName("UTF-8");
 
     private final static ThreadLocal<MessageDigest> MESSAGE_DIGEST =
         new ThreadLocal<MessageDigest>()
@@ -124,11 +127,10 @@ public class BitUtil
      *
      * @param buffer to convert to a hex representation
      * @return new String holding the hex representation (in Big Endian) of the passed array
-     * @throws Exception
      */
-    public static String toHex(final byte[] buffer) throws Exception
+    public static String toHex(final byte[] buffer)
     {
-        return new String(toHexByteArray(buffer), "UTF-8");
+        return new String(toHexByteArray(buffer), UTF8_CHARSET);
     }
 
     /**

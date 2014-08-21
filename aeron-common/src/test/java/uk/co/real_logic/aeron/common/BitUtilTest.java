@@ -59,9 +59,9 @@ public class BitUtilTest
     }
 
     @Test
-    public void shouldConvertToHexCorrectly() throws Exception
+    public void shouldConvertToHexCorrectly()
     {
-        final byte[] buffer = { 0x01, 0x23, 0x45, 0x69, 0x78, (byte)0xBC, (byte)0xDA, (byte)0xEF, 0x5F };
+        final byte[] buffer = {0x01, 0x23, 0x45, 0x69, 0x78, (byte)0xBC, (byte)0xDA, (byte)0xEF, 0x5F};
         final byte[] converted = toHexByteArray(buffer);
         final String hexStr = toHex(buffer);
 

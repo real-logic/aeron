@@ -42,40 +42,33 @@ public class EventReader extends Agent implements MessageHandler
 
         handler = context.eventHandler();
 
-        try
+        final File eventsFile = context.eventsFile();
+
+        if (eventsFile.exists())
         {
-            final File eventsFile = context.eventsFile();
-
-            if (eventsFile.exists())
+            if (context.warnIfEventsFileExists)
             {
-                if (context.warnIfEventsFileExists)
-                {
-                    System.err.println("WARNING: existing event buffer at: " + eventsFile);
-                }
-
-                buffer = IoUtil.mapExistingFile(eventsFile, "event buffer");
-            }
-            else
-            {
-                buffer = IoUtil.mapNewFile(eventsFile, context.size());
+                System.err.println("WARNING: existing event buffer at: " + eventsFile);
             }
 
-            if (context.deleteOnExit())
-            {
-                eventsFile.deleteOnExit();
-            }
-
-            final AtomicBuffer atomicBuffer = new AtomicBuffer(buffer);
-
-            // fill with 0 (this should not be that big, so no big deal to do it here)
-            atomicBuffer.setMemory(0, buffer.capacity(), (byte)0);
-
-            ringBuffer = new ManyToOneRingBuffer(atomicBuffer);
+            buffer = IoUtil.mapExistingFile(eventsFile, "event buffer");
         }
-        catch (final Exception ex)
+        else
         {
-            throw new RuntimeException(ex);
+            buffer = IoUtil.mapNewFile(eventsFile, context.size());
         }
+
+        if (context.deleteOnExit())
+        {
+            eventsFile.deleteOnExit();
+        }
+
+        final AtomicBuffer atomicBuffer = new AtomicBuffer(buffer);
+
+        // fill with 0 (this should not be that big, so no big deal to do it here)
+        atomicBuffer.setMemory(0, buffer.capacity(), (byte)0);
+
+        ringBuffer = new ManyToOneRingBuffer(atomicBuffer);
     }
 
     public int read(final int limit)

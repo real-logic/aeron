@@ -75,7 +75,7 @@ public class ManyToOneRingBufferConcurrentTest
     }
 
     @Test
-    public void shouldExchangeMessages() throws Exception
+    public void shouldExchangeMessages()
     {
         final int reps = 10 * 1000 * 1000;
         final int numProducers = 2;

@@ -135,25 +135,32 @@ public class UdpChannel
         throw new IllegalArgumentException("malformed channel URI: " + uriStr);
     }
 
-    private static InetSocketAddress determineLocalAddressFromUserInfo(final String userInfo) throws Exception
+    private static InetSocketAddress determineLocalAddressFromUserInfo(final String userInfo)
     {
-        InetSocketAddress localAddress = new InetSocketAddress(0);
-        if (null != userInfo)
+        try
         {
-            final int colonIndex = userInfo.indexOf(":");
-            if (-1 == colonIndex)
+            InetSocketAddress localAddress = new InetSocketAddress(0);
+            if (null != userInfo)
             {
-                localAddress = new InetSocketAddress(InetAddress.getByName(userInfo), 0);
+                final int colonIndex = userInfo.indexOf(":");
+                if (-1 == colonIndex)
+                {
+                    localAddress = new InetSocketAddress(InetAddress.getByName(userInfo), 0);
+                }
+                else
+                {
+                    final InetAddress specifiedLocalHost = InetAddress.getByName(userInfo.substring(0, colonIndex));
+                    final int localPort = Integer.parseInt(userInfo.substring(colonIndex + 1));
+                    localAddress = new InetSocketAddress(specifiedLocalHost, localPort);
+                }
             }
-            else
-            {
-                final InetAddress specifiedLocalHost = InetAddress.getByName(userInfo.substring(0, colonIndex));
-                final int localPort = Integer.parseInt(userInfo.substring(colonIndex + 1));
-                localAddress = new InetSocketAddress(specifiedLocalHost, localPort);
-            }
-        }
 
-        return localAddress;
+            return localAddress;
+        }
+        catch (final Exception ex)
+        {
+            throw new RuntimeException(ex);
+        }
     }
 
     /**
@@ -273,7 +280,6 @@ public class UdpChannel
      * @return canonical representation as a string
      */
     public static String canonicalise(final InetSocketAddress localData, final InetSocketAddress remoteData)
-        throws Exception
     {
         return String.format("UDP-%1$s-%2$d-%3$s-%4$d",
                              BitUtil.toHex(localData.getAddress().getAddress()),

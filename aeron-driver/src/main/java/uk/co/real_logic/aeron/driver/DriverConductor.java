@@ -165,16 +165,9 @@ public class DriverConductor extends Agent
 
     public void onReceiverCommand(Object obj)
     {
-        try
+        if (obj instanceof CreateConnectionCmd)
         {
-            if (obj instanceof CreateConnectionCmd)
-            {
-                onCreateConnection((CreateConnectionCmd)obj);
-            }
-        }
-        catch (final Exception ex)
-        {
-            logger.logException(ex);
+            onCreateConnection((CreateConnectionCmd)obj);
         }
     }
 

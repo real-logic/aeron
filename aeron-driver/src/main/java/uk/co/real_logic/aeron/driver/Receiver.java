@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.Agent;
 import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.driver.cmd.*;
 
 import java.util.function.Consumer;
@@ -29,7 +28,6 @@ public class Receiver extends Agent
 {
     private final NioSelector nioSelector;
     private final OneToOneConcurrentArrayQueue<Object> commandQueue;
-    private final EventLogger logger;
     private final Consumer<Object> onConductorCommandFunc;
 
     public Receiver(final MediaDriver.Context ctx)
@@ -38,41 +36,33 @@ public class Receiver extends Agent
 
         this.nioSelector = ctx.receiverNioSelector();
         this.commandQueue = ctx.receiverCommandQueue();
-        this.logger = ctx.eventLogger();
         onConductorCommandFunc = this::onConductorCommand;
     }
 
     private void onConductorCommand(final Object obj)
     {
-        try
+        if (obj instanceof NewConnectionCmd)
         {
-            if (obj instanceof NewConnectionCmd)
-            {
-                onNewConnection((NewConnectionCmd) obj);
-            }
-            else if (obj instanceof AddSubscriptionCmd)
-            {
-                final AddSubscriptionCmd cmd = (AddSubscriptionCmd)obj;
-                onAddSubscription(cmd.mediaSubscriptionEndpoint(), cmd.streamId());
-            }
-            else if (obj instanceof RemoveSubscriptionCmd)
-            {
-                final RemoveSubscriptionCmd cmd = (RemoveSubscriptionCmd)obj;
-                onRemoveSubscription(cmd.mediaSubscriptionEndpoint(), cmd.streamId());
-            }
-            else if (obj instanceof RegisterReceiverChannelEndpointCmd)
-            {
-                final RegisterReceiverChannelEndpointCmd cmd = (RegisterReceiverChannelEndpointCmd)obj;
-                onRegisterMediaSubscriptionEndpoint(cmd.receiverChannelEndpoint());
-            }
-            else if (obj instanceof RemoveConnectionCmd)
-            {
-                onRemoveConnection((RemoveConnectionCmd) obj);
-            }
+            onNewConnection((NewConnectionCmd) obj);
         }
-        catch (final Exception ex)
+        else if (obj instanceof AddSubscriptionCmd)
         {
-            logger.logException(ex);
+            final AddSubscriptionCmd cmd = (AddSubscriptionCmd)obj;
+            onAddSubscription(cmd.mediaSubscriptionEndpoint(), cmd.streamId());
+        }
+        else if (obj instanceof RemoveSubscriptionCmd)
+        {
+            final RemoveSubscriptionCmd cmd = (RemoveSubscriptionCmd)obj;
+            onRemoveSubscription(cmd.mediaSubscriptionEndpoint(), cmd.streamId());
+        }
+        else if (obj instanceof RegisterReceiverChannelEndpointCmd)
+        {
+            final RegisterReceiverChannelEndpointCmd cmd = (RegisterReceiverChannelEndpointCmd)obj;
+            onRegisterMediaSubscriptionEndpoint(cmd.receiverChannelEndpoint());
+        }
+        else if (obj instanceof RemoveConnectionCmd)
+        {
+            onRemoveConnection((RemoveConnectionCmd) obj);
         }
     }
 
@@ -97,7 +87,6 @@ public class Receiver extends Agent
     }
 
     private void onAddSubscription(final ReceiveChannelEndpoint receiveChannelEndpoint, final int streamId)
-        throws Exception
     {
         receiveChannelEndpoint.dispatcher().addSubscription(streamId);
     }

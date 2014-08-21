@@ -36,6 +36,7 @@ import uk.co.real_logic.aeron.driver.cmd.CreateConnectionCmd;
 import uk.co.real_logic.aeron.driver.cmd.NewConnectionCmd;
 import uk.co.real_logic.aeron.driver.cmd.RetransmitPublicationCmd;
 import uk.co.real_logic.aeron.driver.exceptions.ControlProtocolException;
+import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
@@ -226,6 +227,11 @@ public class DriverConductor extends Agent
             clientProxy.onError(ex.errorCode(), ex.getMessage(), flyweight, length);
             logger.logException(ex);
         }
+        catch (final InvalidChannelException ex)
+        {
+            clientProxy.onError(INVALID_CHANNEL, ex.getMessage(), flyweight, length);
+            logger.logException(ex);
+        }
         catch (final Exception ex)
         {
             clientProxy.onError(GENERIC_ERROR, ex.getMessage(), flyweight, length);
@@ -333,84 +339,72 @@ public class DriverConductor extends Agent
         final int streamId = publicationMessage.streamId();
         final long correlationId = publicationMessage.correlationId();
         final long clientId = publicationMessage.clientId();
-
-        try
+        final UdpChannel udpChannel = UdpChannel.parse(channel);
+        SendChannelEndpoint channelEndpoint = sendChannelEndpointByHash.get(udpChannel.consistentHash());
+        if (null == channelEndpoint)
         {
-            final UdpChannel udpChannel = UdpChannel.parse(channel);
-            SendChannelEndpoint channelEndpoint = sendChannelEndpointByHash.get(udpChannel.consistentHash());
-            if (null == channelEndpoint)
-            {
-                channelEndpoint =
-                    new SendChannelEndpoint(udpChannel,
-                                            nioSelector,
-                                            logger,
-                                            Configuration.createLossGenerator(controlLossRate, controlLossSeed),
-                                            systemCounters);
+            channelEndpoint =
+                new SendChannelEndpoint(udpChannel,
+                                        nioSelector,
+                                        logger,
+                                        Configuration.createLossGenerator(controlLossRate, controlLossSeed),
+                                        systemCounters);
 
-                sendChannelEndpointByHash.put(udpChannel.consistentHash(), channelEndpoint);
-            }
-            else if (!channelEndpoint.udpChannel().equals(udpChannel))
-            {
-                throw new ControlProtocolException(ErrorCode.PUBLICATION_STREAM_ALREADY_EXISTS,
-                                                   "channels hash same, but channels actually different");
-            }
-
-            if (null != channelEndpoint.findPublication(sessionId, streamId))
-            {
-                throw new ControlProtocolException(ErrorCode.PUBLICATION_STREAM_ALREADY_EXISTS,
-                                                   "publication and session already exist on channel");
-            }
-
-            final ClientLiveness clientLiveness = getOrAddClient(clientId);
-            final int initialTermId = BitUtil.generateRandomizedId();
-            final String canonicalForm = udpChannel.canonicalForm();
-            final TermBuffers termBuffers = termBuffersFactory.newPublication(canonicalForm, sessionId, streamId);
-
-            final int positionCounterId = allocatePositionCounter("publisher limit", channel, sessionId, streamId);
-            final PositionReporter positionReporter =
-                new BufferPositionReporter(countersBuffer, positionCounterId, countersManager);
-
-            final SenderControlStrategy flowControlStrategy =
-                udpChannel.isMulticast() ? multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
-
-            final DriverPublication publication =
-                new DriverPublication(channelEndpoint,
-                                      timerWheel,
-                                      termBuffers,
-                                      positionReporter,
-                                      clientLiveness,
-                                      sessionId,
-                                      streamId,
-                                      initialTermId,
-                                      HEADER_LENGTH,
-                                      mtuLength,
-                                      flowControlStrategy.initialPositionLimit(initialTermId, capacity),
-                                      logger,
-                                      systemCounters);
-
-            final RetransmitHandler retransmitHandler =
-                new RetransmitHandler(timerWheel,
-                                      systemCounters, DriverConductor.RETRANS_UNICAST_DELAY_GENERATOR,
-                                      DriverConductor.RETRANS_UNICAST_LINGER_GENERATOR,
-                                      composeNewRetransmitSender(publication),
-                                      initialTermId,
-                                      capacity);
-
-            channelEndpoint.addPublication(publication, retransmitHandler, flowControlStrategy);
-
-            clientProxy.onNewTermBuffers(
-                ON_NEW_PUBLICATION, sessionId, streamId, initialTermId, channel, termBuffers, correlationId, positionCounterId);
-
-            publications.add(publication);
+            sendChannelEndpointByHash.put(udpChannel.consistentHash(), channelEndpoint);
         }
-        catch (final ControlProtocolException ex)
+        else if (!channelEndpoint.udpChannel().equals(udpChannel))
         {
-            throw ex;
+            throw new ControlProtocolException(ErrorCode.PUBLICATION_STREAM_ALREADY_EXISTS,
+                                               "channels hash same, but channels actually different");
         }
-        catch (final Exception ex)
+
+        if (null != channelEndpoint.findPublication(sessionId, streamId))
         {
-            throw new ControlProtocolException(GENERIC_ERROR_MESSAGE, ex.getMessage(), ex);
+            throw new ControlProtocolException(ErrorCode.PUBLICATION_STREAM_ALREADY_EXISTS,
+                                               "publication and session already exist on channel");
         }
+
+        final ClientLiveness clientLiveness = getOrAddClient(clientId);
+        final int initialTermId = BitUtil.generateRandomizedId();
+        final String canonicalForm = udpChannel.canonicalForm();
+        final TermBuffers termBuffers = termBuffersFactory.newPublication(canonicalForm, sessionId, streamId);
+
+        final int positionCounterId = allocatePositionCounter("publisher limit", channel, sessionId, streamId);
+        final PositionReporter positionReporter =
+            new BufferPositionReporter(countersBuffer, positionCounterId, countersManager);
+
+        final SenderControlStrategy flowControlStrategy =
+            udpChannel.isMulticast() ? multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
+
+        final DriverPublication publication =
+            new DriverPublication(channelEndpoint,
+                                  timerWheel,
+                                  termBuffers,
+                                  positionReporter,
+                                  clientLiveness,
+                                  sessionId,
+                                  streamId,
+                                  initialTermId,
+                                  HEADER_LENGTH,
+                                  mtuLength,
+                                  flowControlStrategy.initialPositionLimit(initialTermId, capacity),
+                                  logger,
+                                  systemCounters);
+
+        final RetransmitHandler retransmitHandler =
+            new RetransmitHandler(timerWheel,
+                                  systemCounters, DriverConductor.RETRANS_UNICAST_DELAY_GENERATOR,
+                                  DriverConductor.RETRANS_UNICAST_LINGER_GENERATOR,
+                                  composeNewRetransmitSender(publication),
+                                  initialTermId,
+                                  capacity);
+
+        channelEndpoint.addPublication(publication, retransmitHandler, flowControlStrategy);
+
+        clientProxy.onNewTermBuffers(
+            ON_NEW_PUBLICATION, sessionId, streamId, initialTermId, channel, termBuffers, correlationId, positionCounterId);
+
+        publications.add(publication);
     }
 
     private void onRemovePublication(final PublicationMessageFlyweight publicationMessage)
@@ -419,39 +413,28 @@ public class DriverConductor extends Agent
         final int sessionId = publicationMessage.sessionId();
         final int streamId = publicationMessage.streamId();
 
-        try
+        final UdpChannel udpChannel = UdpChannel.parse(channel);
+        final SendChannelEndpoint channelEndpoint = sendChannelEndpointByHash.get(udpChannel.consistentHash());
+        if (null == channelEndpoint)
         {
-            final UdpChannel udpChannel = UdpChannel.parse(channel);
-            final SendChannelEndpoint channelEndpoint = sendChannelEndpointByHash.get(udpChannel.consistentHash());
-            if (null == channelEndpoint)
-            {
-                throw new ControlProtocolException(INVALID_CHANNEL, "channel unknown");
-            }
-
-            final DriverPublication publication = channelEndpoint.findPublication(sessionId, streamId);
-            if (null == publication)
-            {
-                throw new ControlProtocolException(PUBLICATION_STREAM_UNKNOWN, "session and publication unknown for channel");
-            }
-
-            publication.status(DriverPublication.EOF);
-
-            if (publication.isFlushed() || publication.statusMessagesSeenCount() == 0)
-            {
-                publication.status(DriverPublication.FLUSHED);
-                publication.timeOfFlush(timerWheel.now());
-            }
-
-            clientProxy.operationSucceeded(publicationMessage.correlationId());
+            throw new ControlProtocolException(INVALID_CHANNEL, "channel unknown");
         }
-        catch (final ControlProtocolException ex)
+
+        final DriverPublication publication = channelEndpoint.findPublication(sessionId, streamId);
+        if (null == publication)
         {
-            throw ex;
+            throw new ControlProtocolException(PUBLICATION_STREAM_UNKNOWN, "session and publication unknown for channel");
         }
-        catch (final Exception ex)
+
+        publication.status(DriverPublication.EOF);
+
+        if (publication.isFlushed() || publication.statusMessagesSeenCount() == 0)
         {
-            throw new ControlProtocolException(GENERIC_ERROR_MESSAGE, ex.getMessage(), ex);
+            publication.status(DriverPublication.FLUSHED);
+            publication.timeOfFlush(timerWheel.now());
         }
+
+        clientProxy.operationSucceeded(publicationMessage.correlationId());
     }
 
     private void onAddSubscription(final SubscriptionMessageFlyweight subscriptionMessage)
@@ -461,8 +444,6 @@ public class DriverConductor extends Agent
         final long correlationId = subscriptionMessage.correlationId();
         final long clientId = subscriptionMessage.clientId();
 
-        try
-        {
             final UdpChannel udpChannel = UdpChannel.parse(channel);
             ReceiveChannelEndpoint channelEndpoint = receiveChannelEndpointByHash.get(udpChannel.consistentHash());
 
@@ -500,16 +481,6 @@ public class DriverConductor extends Agent
             subscriptions.add(subscription);
 
             clientProxy.operationSucceeded(correlationId);
-        }
-        catch (final IllegalArgumentException ex)
-        {
-            clientProxy.onError(INVALID_CHANNEL, ex.getMessage(), subscriptionMessage, subscriptionMessage.length());
-            logger.logException(ex);
-        }
-        catch (final Exception ex)
-        {
-            throw new ControlProtocolException(GENERIC_ERROR_MESSAGE, ex.getMessage(), ex);
-        }
     }
 
     // remove subscription from endpoint, but leave connections to time out
@@ -519,52 +490,41 @@ public class DriverConductor extends Agent
         final int streamId = subscriptionMessage.streamId();
         final long registrationCorrelationId = subscriptionMessage.registrationCorrelationId();
 
-        try
+        final UdpChannel udpChannel = UdpChannel.parse(channel);
+        final ReceiveChannelEndpoint channelEndpoint = receiveChannelEndpointByHash.get(udpChannel.consistentHash());
+        if (null == channelEndpoint)
         {
-            final UdpChannel udpChannel = UdpChannel.parse(channel);
-            final ReceiveChannelEndpoint channelEndpoint = receiveChannelEndpointByHash.get(udpChannel.consistentHash());
-            if (null == channelEndpoint)
-            {
-                throw new ControlProtocolException(INVALID_CHANNEL, "channel unknown");
-            }
-
-            if (channelEndpoint.getRefCountToStream(streamId) == 0)
-            {
-                throw new ControlProtocolException(SUBSCRIBER_NOT_REGISTERED, "subscriptions unknown for stream");
-            }
-
-            final DriverSubscription subscription = subscriptionByCorrelationIdMap.remove(registrationCorrelationId);
-            if (null == subscription)
-            {
-                throw new ControlProtocolException(SUBSCRIBER_NOT_REGISTERED, "subscription not registered");
-            }
-            subscriptions.remove(subscription);
-
-            final int count = channelEndpoint.decRefToStream(streamId);
-            if (0 == count)
-            {
-                while (!receiverProxy.removeSubscription(channelEndpoint, streamId))
-                {
-                    systemCounters.receiverProxyFails().orderedIncrement();
-                }
-            }
-
-            if (channelEndpoint.streamCount() == 0)
-            {
-                receiveChannelEndpointByHash.remove(udpChannel.consistentHash());
-                channelEndpoint.close();
-            }
-
-            clientProxy.operationSucceeded(subscriptionMessage.correlationId());
+            throw new ControlProtocolException(INVALID_CHANNEL, "channel unknown");
         }
-        catch (final ControlProtocolException ex)
+
+        if (channelEndpoint.getRefCountToStream(streamId) == 0)
         {
-            throw ex;
+            throw new ControlProtocolException(SUBSCRIBER_NOT_REGISTERED, "subscriptions unknown for stream");
         }
-        catch (final Exception ex)
+
+        final DriverSubscription subscription = subscriptionByCorrelationIdMap.remove(registrationCorrelationId);
+        if (null == subscription)
         {
-            throw new ControlProtocolException(GENERIC_ERROR_MESSAGE, ex.getMessage(), ex);
+            throw new ControlProtocolException(SUBSCRIBER_NOT_REGISTERED, "subscription not registered");
         }
+        subscriptions.remove(subscription);
+
+        final int count = channelEndpoint.decRefToStream(streamId);
+        if (0 == count)
+        {
+            while (!receiverProxy.removeSubscription(channelEndpoint, streamId))
+            {
+                systemCounters.receiverProxyFails().orderedIncrement();
+            }
+        }
+
+        if (channelEndpoint.streamCount() == 0)
+        {
+            receiveChannelEndpointByHash.remove(udpChannel.consistentHash());
+            channelEndpoint.close();
+        }
+
+        clientProxy.operationSucceeded(subscriptionMessage.correlationId());
     }
 
     private void onKeepaliveClient(final CorrelatedMessageFlyweight correlatedMessage)
@@ -786,63 +746,56 @@ public class DriverConductor extends Agent
         final ReceiveChannelEndpoint channelEndpoint = cmd.channelEndpoint();
         final UdpChannel udpChannel = channelEndpoint.udpTransport().udpChannel();
 
-        try
+        final String canonicalForm = udpChannel.canonicalForm();
+        final TermBuffers termBuffers = termBuffersFactory.newConnection(canonicalForm, sessionId, streamId);
+
+        final String channel = udpChannel.originalUriAsString();
+        final int subscriberPositionCounterId = allocatePositionCounter("subscriber", channel, sessionId, streamId);
+        final int contiguousReceivedCounterId = allocatePositionCounter("contiguous received", channel, sessionId, streamId);
+        final int highestReceivedCounterId = allocatePositionCounter("highest received", channel, sessionId, streamId);
+
+        clientProxy.onNewTermBuffers(
+            ON_NEW_CONNECTION, sessionId, streamId, initialTermId, channel, termBuffers, 0, subscriberPositionCounterId);
+
+        final GapScanner[] gapScanners =
+            termBuffers.stream()
+                       .map((rawLog) -> new GapScanner(rawLog.logBuffer(), rawLog.stateBuffer()))
+                       .toArray(GapScanner[]::new);
+
+        final LossHandler lossHandler =
+            new LossHandler(
+                gapScanners,
+                timerWheel,
+                udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
+                channelEndpoint.composeNakMessageSender(controlAddress, sessionId, streamId),
+                initialTermId,
+                systemCounters);
+
+        final DriverConnection connection =
+            new DriverConnection(
+                channelEndpoint,
+                sessionId,
+                streamId,
+                initialTermId,
+                initialWindowSize,
+                statusMessageTimeout,
+                termBuffers,
+                lossHandler,
+                channelEndpoint.composeStatusMessageSender(controlAddress, sessionId, streamId),
+                new BufferPositionIndicator(countersBuffer, subscriberPositionCounterId, countersManager),
+                new BufferPositionReporter(countersBuffer, contiguousReceivedCounterId, countersManager),
+                new BufferPositionReporter(countersBuffer, highestReceivedCounterId, countersManager),
+                timerWheel::now,
+                systemCounters,
+                logger);
+
+        connections.add(connection);
+
+        final NewConnectionCmd newConnectionCmd = new NewConnectionCmd(channelEndpoint, connection);
+        while (!receiverProxy.newConnection(newConnectionCmd))
         {
-            final String canonicalForm = udpChannel.canonicalForm();
-            final TermBuffers termBuffers = termBuffersFactory.newConnection(canonicalForm, sessionId, streamId);
-
-            final String channel = udpChannel.originalUriAsString();
-            final int subscriberPositionCounterId = allocatePositionCounter("subscriber", channel, sessionId, streamId);
-            final int contiguousReceivedCounterId = allocatePositionCounter("contiguous received", channel, sessionId, streamId);
-            final int highestReceivedCounterId = allocatePositionCounter("highest received", channel, sessionId, streamId);
-
-            clientProxy.onNewTermBuffers(
-                ON_NEW_CONNECTION, sessionId, streamId, initialTermId, channel, termBuffers, 0, subscriberPositionCounterId);
-
-            final GapScanner[] gapScanners =
-                termBuffers.stream()
-                           .map((rawLog) -> new GapScanner(rawLog.logBuffer(), rawLog.stateBuffer()))
-                           .toArray(GapScanner[]::new);
-
-            final LossHandler lossHandler =
-                new LossHandler(
-                    gapScanners,
-                    timerWheel,
-                    udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
-                    channelEndpoint.composeNakMessageSender(controlAddress, sessionId, streamId),
-                    initialTermId,
-                    systemCounters);
-
-            final DriverConnection connection =
-                new DriverConnection(
-                    channelEndpoint,
-                    sessionId,
-                    streamId,
-                    initialTermId,
-                    initialWindowSize,
-                    statusMessageTimeout,
-                    termBuffers,
-                    lossHandler,
-                    channelEndpoint.composeStatusMessageSender(controlAddress, sessionId, streamId),
-                    new BufferPositionIndicator(countersBuffer, subscriberPositionCounterId, countersManager),
-                    new BufferPositionReporter(countersBuffer, contiguousReceivedCounterId, countersManager),
-                    new BufferPositionReporter(countersBuffer, highestReceivedCounterId, countersManager),
-                    timerWheel::now,
-                    systemCounters,
-                    logger);
-
-            connections.add(connection);
-
-            final NewConnectionCmd newConnectionCmd = new NewConnectionCmd(channelEndpoint, connection);
-            while (!receiverProxy.newConnection(newConnectionCmd))
-            {
-                systemCounters.receiverProxyFails().orderedIncrement();
-                Thread.yield();
-            }
-        }
-        catch (final Exception ex)
-        {
-            logger.logException(ex);
+            systemCounters.receiverProxyFails().orderedIncrement();
+            Thread.yield();
         }
     }
 

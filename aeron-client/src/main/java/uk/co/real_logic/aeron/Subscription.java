@@ -116,7 +116,7 @@ public class Subscription implements AutoCloseable
     /**
      * Remove a connection with the given sessionId
      *
-     * @param sessionId
+     * @param sessionId for connection to be removed.
      * @return true if it removed something, false otherwise
      */
     public boolean removeConnection(final int sessionId)
@@ -126,6 +126,7 @@ public class Subscription implements AutoCloseable
         {
             connection.close();
         }
+
         return connection != null;
     }
 

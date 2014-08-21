@@ -39,7 +39,6 @@ public class SendChannelEndpoint implements AutoCloseable
                                final EventLogger logger,
                                final LossGenerator lossGenerator,
                                final SystemCounters systemCounters)
-        throws Exception
     {
         this.systemCounters = systemCounters;
         this.transport = new UdpTransport(udpChannel, this::onStatusMessageFrame, this::onNakFrame, logger, lossGenerator);

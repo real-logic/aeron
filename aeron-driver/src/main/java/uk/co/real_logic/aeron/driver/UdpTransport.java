@@ -24,6 +24,7 @@ import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.NakFlyweight;
 import uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
@@ -44,7 +45,7 @@ import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.HDR_TYPE_SM
  */
 public final class UdpTransport implements AutoCloseable
 {
-    private final DatagramChannel datagramChannel = DatagramChannel.open();
+    private final DatagramChannel datagramChannel;
     private final UdpChannel udpChannel;
 
     private final ByteBuffer readByteBuffer = ByteBuffer.allocateDirect(Configuration.READ_BYTE_BUFFER_SZ);
@@ -73,13 +74,11 @@ public final class UdpTransport implements AutoCloseable
      * @param dataFrameHandler to call when data frames are received
      * @param logger for logging
      * @param lossGenerator for loss generation
-     * @throws Exception
      */
     public UdpTransport(final UdpChannel udpChannel,
                         final DataFrameHandler dataFrameHandler,
                         final EventLogger logger,
                         final LossGenerator lossGenerator)
-        throws Exception
     {
         this(udpChannel, dataFrameHandler, null, null, logger,
              udpChannel.remoteData(), udpChannel.remoteData(), lossGenerator, null);
@@ -95,14 +94,12 @@ public final class UdpTransport implements AutoCloseable
      * @param nakFrameHandler to call when NAK frames are received
      * @param logger for logging
      * @param lossGenerator for loss generation
-     * @throws Exception
      */
     public UdpTransport(final UdpChannel udpChannel,
                         final StatusMessageFrameHandler smFrameHandler,
                         final NakFrameHandler nakFrameHandler,
                         final EventLogger logger,
                         final LossGenerator lossGenerator)
-        throws Exception
     {
         this(udpChannel, null, smFrameHandler, nakFrameHandler, logger,
              udpChannel.remoteControl(), udpChannel.localControl(), null, lossGenerator);
@@ -117,7 +114,6 @@ public final class UdpTransport implements AutoCloseable
                          final InetSocketAddress bindAddress,
                          final LossGenerator dataLossGenerator,
                          final LossGenerator controlLossGenerator)
-        throws Exception
     {
         this.udpChannel = udpChannel;
         this.logger = logger;
@@ -132,30 +128,39 @@ public final class UdpTransport implements AutoCloseable
         nakHeader.wrap(readBuffer, 0);
         statusMessage.wrap(readBuffer, 0);
 
-        if (udpChannel.isMulticast())
+        try
         {
-            final InetAddress endPointAddress = endPointSocketAddress.getAddress();
-            final int dstPort = endPointSocketAddress.getPort();
-            final NetworkInterface localInterface = udpChannel.localInterface();
+            datagramChannel = DatagramChannel.open();
+            if (udpChannel.isMulticast())
+            {
+                final InetAddress endPointAddress = endPointSocketAddress.getAddress();
+                final int dstPort = endPointSocketAddress.getPort();
+                final NetworkInterface localInterface = udpChannel.localInterface();
 
-            datagramChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
-            datagramChannel.bind(new InetSocketAddress(dstPort));
-            datagramChannel.join(endPointAddress, localInterface);
-            datagramChannel.setOption(StandardSocketOptions.IP_MULTICAST_IF, localInterface);
-            multicast = true;
+                datagramChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
+                datagramChannel.bind(new InetSocketAddress(dstPort));
+                datagramChannel.join(endPointAddress, localInterface);
+                datagramChannel.setOption(StandardSocketOptions.IP_MULTICAST_IF, localInterface);
+                multicast = true;
+            }
+            else
+            {
+                datagramChannel.bind(bindAddress);
+                multicast = false;
+            }
+
+            if (0 != Configuration.SOCKET_RCVBUF)
+            {
+                datagramChannel.setOption(StandardSocketOptions.SO_RCVBUF, Configuration.SOCKET_RCVBUF);
+            }
+
+            datagramChannel.configureBlocking(false);
+
         }
-        else
+        catch (final IOException ex)
         {
-            datagramChannel.bind(bindAddress);
-            multicast = false;
+            throw new RuntimeException(ex);
         }
-
-        if (0 != Configuration.SOCKET_RCVBUF)
-        {
-            datagramChannel.setOption(StandardSocketOptions.SO_RCVBUF, Configuration.SOCKET_RCVBUF);
-        }
-
-        datagramChannel.configureBlocking(false);
     }
 
     public UdpChannel udpChannel()
@@ -169,22 +174,27 @@ public final class UdpTransport implements AutoCloseable
      * @param buffer to send
      * @param remoteAddress to send to
      * @return number of bytes sent
-     * @throws Exception
      */
-    public int sendTo(final ByteBuffer buffer, final InetSocketAddress remoteAddress) throws Exception
+    public int sendTo(final ByteBuffer buffer, final InetSocketAddress remoteAddress)
     {
         logger.log(EventCode.FRAME_OUT, buffer, buffer.position(), buffer.remaining(), remoteAddress);
 
-        return datagramChannel.send(buffer, remoteAddress);
+        try
+        {
+            return datagramChannel.send(buffer, remoteAddress);
+        }
+        catch (final IOException ex)
+        {
+            throw new RuntimeException(ex);
+        }
     }
 
     /**
      * Register transport with {@link NioSelector} for reading from the channel
      *
      * @param nioSelector to register read with
-     * @throws Exception
      */
-    public void registerForRead(final NioSelector nioSelector) throws Exception
+    public void registerForRead(final NioSelector nioSelector)
     {
         if (null != dataFrameHandler)
         {

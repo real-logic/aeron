@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.driver;
 
 import java.io.IOException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -36,7 +37,7 @@ public class NioSelector implements AutoCloseable
         {
             this.selector = Selector.open(); // yes, SelectorProvider, blah, blah
         }
-        catch (final Exception ex)
+        catch (final IOException ex)
         {
             throw new RuntimeException(ex);
         }
@@ -48,20 +49,33 @@ public class NioSelector implements AutoCloseable
      * @param channel to select for read
      * @param obj to associate with read
      * @return SelectionKey for registration for cancel
-     * @throws Exception
      */
-    public SelectionKey registerForRead(final SelectableChannel channel, final IntSupplier obj) throws Exception
+    public SelectionKey registerForRead(final SelectableChannel channel, final IntSupplier obj)
     {
-        return channel.register(selector, SelectionKey.OP_READ, obj);
+        try
+        {
+            return channel.register(selector, SelectionKey.OP_READ, obj);
+        }
+        catch (final ClosedChannelException ex)
+        {
+            throw new RuntimeException(ex);
+        }
     }
 
     /**
      * Close NioSelector down. Returns immediately.
      */
-    public void close() throws IOException
+    public void close()
     {
         selector.wakeup();
-        selector.close();
+        try
+        {
+            selector.close();
+        }
+        catch (final IOException ex)
+        {
+            throw new RuntimeException(ex);
+        }
     }
 
     /**
@@ -82,7 +96,7 @@ public class NioSelector implements AutoCloseable
         selector.selectNow();
     }
 
-    private int handleSelectedKeys() throws Exception
+    private int handleSelectedKeys()
     {
         int handledFrames = 0;
         final Set<SelectionKey> selectedKeys = selector.selectedKeys();

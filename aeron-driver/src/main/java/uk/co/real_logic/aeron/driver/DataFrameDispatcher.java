@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.collections.Int2ObjectHashMap;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.driver.exceptions.UnknownSubscriptionException;
@@ -39,7 +38,6 @@ public class DataFrameDispatcher
     private final ReceiveChannelEndpoint channelEndpoint;
 
     public DataFrameDispatcher(final DriverConductorProxy conductorProxy, final ReceiveChannelEndpoint channelEndpoint)
-        throws Exception
     {
         this.conductorProxy = conductorProxy;
         this.channelEndpoint = channelEndpoint;

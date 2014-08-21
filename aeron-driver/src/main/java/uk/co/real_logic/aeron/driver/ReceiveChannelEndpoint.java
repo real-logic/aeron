@@ -47,7 +47,6 @@ public class ReceiveChannelEndpoint implements AutoCloseable
                                   final DriverConductorProxy conductorProxy,
                                   final EventLogger logger,
                                   final LossGenerator lossGenerator)
-        throws Exception
     {
 
         smHeader.wrap(smBuffer, 0);

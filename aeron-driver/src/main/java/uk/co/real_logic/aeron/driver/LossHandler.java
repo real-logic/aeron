@@ -45,11 +45,11 @@ public class LossHandler
 
     private final NakMessageSender nakMessageSender;
     private final TimerWheel.Timer timer;
-    private final GapHandler onGap;
+    private final GapHandler onGapFunc;
+    private final Runnable onTimerExpireFunc;
 
     private int activeIndex = 0;
     private int activeTermId;
-
 
     /**
      * Create a loss handler for a channel.
@@ -78,7 +78,8 @@ public class LossHandler
         this.activeIndex = TermHelper.termIdToBufferIndex(activeTermId);
         this.activeTermId = activeTermId;
         this.initialTermId = activeTermId;
-        onGap = this::onGap;
+        onGapFunc = this::onGap;
+        onTimerExpireFunc = this::onTimerExpire;
     }
 
     /**
@@ -91,7 +92,7 @@ public class LossHandler
     public int scan()
     {
         final GapScanner scanner = scanners[activeIndex];
-        final int numGaps = scanner.scan(onGap);
+        final int numGaps = scanner.scan(onGapFunc);
 
         if (numGaps > 0)
         {
@@ -242,7 +243,7 @@ public class LossHandler
             timer.cancel();
         }
 
-        wheel.rescheduleTimeout(delay, TimeUnit.NANOSECONDS, timer, this::onTimerExpire);
+        wheel.rescheduleTimeout(delay, TimeUnit.NANOSECONDS, timer, onTimerExpireFunc);
     }
 
     static class Gap

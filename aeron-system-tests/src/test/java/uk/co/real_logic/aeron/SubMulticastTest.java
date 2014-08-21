@@ -178,10 +178,10 @@ public class SubMulticastTest
     @Test(timeout = 1000)
     public void shouldReceiveMultipleDataFrames() throws Exception
     {
+        final AtomicInteger statusMessagesSeen = new AtomicInteger();
+
         // send some 0 length data frame
         sendDataFrame(0, NO_PAYLOAD);
-
-        final AtomicInteger statusMessagesSeen = new AtomicInteger();
 
         DatagramTestHelper.receiveUntil(
             senderChannel,

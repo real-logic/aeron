@@ -238,8 +238,11 @@ public final class Aeron implements AutoCloseable
                     errorHandler = Throwable::printStackTrace;
                 }
             }
-            catch (final IOException ex)
+            catch (final Exception ex)
             {
+                System.err.printf(
+                    "\n***\n*** Failed to connect to the Media Driver - is it currently running?\n***\n");
+
                 throw new IllegalStateException("Could not initialise communication buffers", ex);
             }
 

@@ -89,8 +89,8 @@ public class DriverPublication implements AutoCloseable
     private final int termWindowSize;
     private final InetSocketAddress dstAddress;
 
-    private final AvailabilityHandler sendTransmissionUnit;
-    private final AvailabilityHandler onSendRetransmit;
+    private final AvailabilityHandler sendTransmissionUnitFunc;
+    private final AvailabilityHandler onSendRetransmitFunc;
 
     private int activeIndex = 0;
     private int retransmitIndex = 0;
@@ -151,8 +151,8 @@ public class DriverPublication implements AutoCloseable
         termWindowSize = Configuration.publicationTermWindowSize(termCapacity);
         publisherLimitReporter.position(termWindowSize);
 
-        sendTransmissionUnit = this::onSendTransmissionUnit;
-        onSendRetransmit = this::onSendRetransmit;
+        sendTransmissionUnitFunc = this::onSendTransmissionUnit;
+        onSendRetransmitFunc = this::onSendRetransmit;
 
         lastSentTermId = initialTermId;
         lastSentTermOffset = 0;
@@ -175,7 +175,7 @@ public class DriverPublication implements AutoCloseable
             final int scanLimit = Math.min(availableWindow, mtuLength);
 
             LogScanner scanner = logScanners[activeIndex];
-            workCount += scanner.scanNext(sendTransmissionUnit, scanLimit);
+            workCount += scanner.scanNext(sendTransmissionUnitFunc, scanLimit);
 
             if (scanner.isComplete())
             {
@@ -285,7 +285,7 @@ public class DriverPublication implements AutoCloseable
             int sent;
             do
             {
-                sent = scanner.scanNext(onSendRetransmit, Math.min(remainingBytes, mtuLength));
+                sent = scanner.scanNext(onSendRetransmitFunc, Math.min(remainingBytes, mtuLength));
                 remainingBytes -= sent;
             }
             while (remainingBytes > 0 && sent > 0);
@@ -396,7 +396,7 @@ public class DriverPublication implements AutoCloseable
                 final LogScanner scanner = retransmitLogScanners[retransmitIndex];
                 scanner.seek(lastSentTermOffset);
 
-                scanner.scanNext(onSendRetransmit, Math.min(lastSentLength, mtuLength));
+                scanner.scanNext(onSendRetransmitFunc, Math.min(lastSentLength, mtuLength));
 
                 updateTimeOfLastSendOrHeartbeat(timerWheel.now());
             }

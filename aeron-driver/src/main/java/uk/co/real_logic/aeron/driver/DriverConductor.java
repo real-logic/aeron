@@ -249,9 +249,8 @@ public class DriverConductor extends Agent
         workCount += processTimers();
 
         final long now = timerWheel.now();
-
-        workCount += connections.doAction(DriverConnection::scanForGaps);
         workCount += connections.doAction((connection) -> connection.sendPendingStatusMessages(now));
+        workCount += connections.doAction(DriverConnection::scanForGaps);
         workCount += connections.doAction(DriverConnection::cleanLogBuffer);
 
         workCount += publications.doAction(DriverPublication::cleanLogBuffer);

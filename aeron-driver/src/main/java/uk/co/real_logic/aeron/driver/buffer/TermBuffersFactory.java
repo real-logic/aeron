@@ -19,7 +19,6 @@ import uk.co.real_logic.aeron.common.IoUtil;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.channels.FileChannel;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
@@ -102,14 +101,8 @@ public class TermBuffersFactory implements AutoCloseable
     {
         final File templateFile = new File(dataDir, name);
         templateFile.deleteOnExit();
-        try
-        {
-            return IoUtil.createEmptyFile(templateFile, size);
-        }
-        catch (final IOException ex)
-        {
-            throw new IllegalStateException("Cannot create template file", ex);
-        }
+
+        return IoUtil.createEmptyFile(templateFile, size);
     }
 
     private TermBuffers newInstance(final String channel, final int sessionId, final int streamId, final File rootDir)

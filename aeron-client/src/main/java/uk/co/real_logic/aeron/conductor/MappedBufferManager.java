@@ -33,7 +33,6 @@ import static uk.co.real_logic.aeron.common.IoUtil.mapExistingFile;
 public class MappedBufferManager implements BufferManager
 {
     public ManagedBuffer newBuffer(final String location, final int offset, final int length)
-        throws IOException
     {
         final MappedByteBuffer buffer = mapExistingFile(new File(location), "Term Buffer");
         if (requiresIndirection(buffer, offset, length))

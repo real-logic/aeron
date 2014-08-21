@@ -58,7 +58,7 @@ public final class Aeron implements AutoCloseable
             new TimerWheel(CONDUCTOR_TICK_DURATION_US, TimeUnit.MICROSECONDS, CONDUCTOR_TICKS_PER_WHEEL);
 
         conductor =
-            new ClientConductor(new DriverBroadcastReceiver(ctx.toClientBuffer, ctx.errorHandler),
+            new ClientConductor(ctx.toClientBuffer,
                                 ctx.bufferManager,
                                 ctx.countersBuffer(),
                                 new DriverProxy(ctx.toDriverBuffer),

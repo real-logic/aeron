@@ -21,6 +21,7 @@ import uk.co.real_logic.aeron.common.collections.ConnectionMap;
 import uk.co.real_logic.aeron.common.command.ConnectionMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
@@ -31,7 +32,6 @@ import uk.co.real_logic.aeron.common.status.PositionReporter;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
 import uk.co.real_logic.aeron.exceptions.RegistrationException;
 
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -51,7 +51,7 @@ public class ClientConductor extends Agent implements DriverListener
 
     private static final long NO_CORRELATION_ID = -1;
 
-    private final DriverBroadcastReceiver driverBroadcastReceiver;
+    private final DriverListenerAdapter driverListenerAdapter;
     private final BufferManager bufferManager;
     private final long awaitTimeout;
     private final ConnectionMap<String, Publication> publicationMap = new ConnectionMap<>(); // Guarded by this
@@ -73,7 +73,7 @@ public class ClientConductor extends Agent implements DriverListener
 
     private final TimerWheel.Timer keepaliveTimer;
 
-    public ClientConductor(final DriverBroadcastReceiver driverBroadcastReceiver,
+    public ClientConductor(final CopyBroadcastReceiver broadcastReceiver,
                            final BufferManager bufferManager,
                            final AtomicBuffer counterValuesBuffer,
                            final DriverProxy driverProxy,
@@ -90,7 +90,6 @@ public class ClientConductor extends Agent implements DriverListener
         this.counterValuesBuffer = counterValuesBuffer;
         this.correlationSignal = correlationSignal;
         this.driverProxy = driverProxy;
-        this.driverBroadcastReceiver = driverBroadcastReceiver;
         this.bufferManager = bufferManager;
         this.timerWheel = timerWheel;
         this.newConnectionHandler = newConnectionHandler;
@@ -98,13 +97,15 @@ public class ClientConductor extends Agent implements DriverListener
         this.awaitTimeout = awaitTimeout;
         this.mtuLength = mtuLength;
 
+        this.driverListenerAdapter = new DriverListenerAdapter(broadcastReceiver, this);
         this.keepaliveTimer = timerWheel.newTimeout(KEEPALIVE_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onKeepalive);
     }
 
     public int doWork()
     {
-        int workCount = driverBroadcastReceiver.receive(this, activeCorrelationId);
+        int workCount = 0;
 
+        workCount += driverListenerAdapter.receiveMessages(activeCorrelationId);
         workCount += processTimers();
 
         return workCount;
@@ -183,7 +184,7 @@ public class ClientConductor extends Agent implements DriverListener
                                  final int streamId,
                                  final int termId,
                                  final int limitPositionIndicatorOffset,
-                                 final LogBuffersMessageFlyweight logBuffersMessage) throws IOException
+                                 final LogBuffersMessageFlyweight logBuffersMessage)
     {
         final LogAppender[] logs = new LogAppender[BUFFER_COUNT];
         final ManagedBuffer[] managedBuffers = new ManagedBuffer[BUFFER_COUNT * 2];
@@ -212,7 +213,6 @@ public class ClientConductor extends Agent implements DriverListener
                                 final int streamId,
                                 final int initialTermId,
                                 final LogBuffersMessageFlyweight message)
-        throws IOException
     {
         final Subscription subscription = subscriptionMap.get(channel, streamId);
         if (null != subscription && !subscription.isConnected(sessionId))
@@ -298,7 +298,6 @@ public class ClientConductor extends Agent implements DriverListener
     }
 
     private void checkDriverTimeout(final long startTime)
-        throws DriverTimeoutException
     {
         if ((System.currentTimeMillis() - startTime) > awaitTimeout)
         {
@@ -308,7 +307,6 @@ public class ClientConductor extends Agent implements DriverListener
     }
 
     private ManagedBuffer mapBuffer(final LogBuffersMessageFlyweight logBuffersMessage, final int index)
-        throws IOException
     {
         final String location = logBuffersMessage.location(index);
         final int offset = logBuffersMessage.bufferOffset(index);

@@ -28,7 +28,6 @@ import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.aeron.common.protocol.ErrorFlyweight;
 import uk.co.real_logic.aeron.conductor.ClientConductor;
-import uk.co.real_logic.aeron.conductor.DriverBroadcastReceiver;
 import uk.co.real_logic.aeron.conductor.DriverProxy;
 import uk.co.real_logic.aeron.conductor.Signal;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
@@ -77,7 +76,6 @@ public class ClientConductorTest extends MockBufferUsage
 
     private final TimerWheel timerWheel = mock(TimerWheel.class);
 
-    private final Consumer<Exception> mockReceiverErrorHandler = Throwable::printStackTrace;
     private final Consumer<Exception> mockClientErrorHandler = Throwable::printStackTrace;
 
     private Signal signal;
@@ -89,7 +87,6 @@ public class ClientConductorTest extends MockBufferUsage
     @Before
     public void setUp() throws Exception
     {
-
         driverProxy = mock(DriverProxy.class);
         signal = mock(Signal.class);
 
@@ -99,7 +96,7 @@ public class ClientConductorTest extends MockBufferUsage
         willNotifyNewBuffer();
 
         conductor = new ClientConductor(
-            new DriverBroadcastReceiver(toClientReceiver, mockReceiverErrorHandler),
+            toClientReceiver,
             mockBufferUsage,
             counterValuesBuffer,
             driverProxy,

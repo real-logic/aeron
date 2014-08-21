@@ -22,5 +22,5 @@ import java.io.IOException;
  */
 public interface BufferManager
 {
-    ManagedBuffer newBuffer(final String location, final int offset, final int length) throws IOException;
+    ManagedBuffer newBuffer(final String location, final int offset, final int length);
 }

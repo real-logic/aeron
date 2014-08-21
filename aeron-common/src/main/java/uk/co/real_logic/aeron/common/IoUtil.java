@@ -47,30 +47,35 @@ public class IoUtil
      * @param position    at which to start writing.
      * @param length      of the region to write.
      * @param value       to fill the region with.
-     * @throws IOException
      */
     public static void fill(final FileChannel fileChannel, final long position, final long length, final byte value)
-        throws IOException
     {
-        final byte[] filler = new byte[BLOCK_SIZE];
-        Arrays.fill(filler, value);
-        final ByteBuffer byteBuffer = ByteBuffer.wrap(filler);
-        fileChannel.position(position);
-
-        final int blocks = (int)(length / BLOCK_SIZE);
-        final int blockRemainder = (int)(length % BLOCK_SIZE);
-
-        for (int i = 0; i < blocks; i++)
+        try
         {
-            byteBuffer.position(0);
-            fileChannel.write(byteBuffer);
+            final byte[] filler = new byte[BLOCK_SIZE];
+            Arrays.fill(filler, value);
+            final ByteBuffer byteBuffer = ByteBuffer.wrap(filler);
+            fileChannel.position(position);
+
+            final int blocks = (int)(length / BLOCK_SIZE);
+            final int blockRemainder = (int)(length % BLOCK_SIZE);
+
+            for (int i = 0; i < blocks; i++)
+            {
+                byteBuffer.position(0);
+                fileChannel.write(byteBuffer);
+            }
+
+            if (blockRemainder > 0)
+            {
+                byteBuffer.position(0);
+                byteBuffer.limit(blockRemainder);
+                fileChannel.write(byteBuffer);
+            }
         }
-
-        if (blockRemainder > 0)
+        catch (final IOException ex)
         {
-            byteBuffer.position(0);
-            byteBuffer.limit(blockRemainder);
-            fileChannel.write(byteBuffer);
+            throw new RuntimeException(ex);
         }
     }
 
@@ -79,10 +84,8 @@ public class IoUtil
      *
      * @param file           to be deleted.
      * @param ignoreFailures don't throw an exception if a delete fails.
-     * @throws IOException if an error occurs while trying to delete the files.
      */
     public static void delete(final File file, final boolean ignoreFailures)
-        throws IOException
     {
         if (file.isDirectory())
         {
@@ -98,8 +101,14 @@ public class IoUtil
 
         if (!file.delete() && !ignoreFailures)
         {
-            Files.delete(file.toPath());
-            // throw new FileNotFoundException("Failed to delete file: " + file);
+            try
+            {
+                Files.delete(file.toPath());
+            }
+            catch (final IOException ex)
+            {
+                throw new RuntimeException(ex);
+            }
         }
     }
 
@@ -108,10 +117,8 @@ public class IoUtil
      *
      * @param directory        the directory which definitely exists after this method call.
      * @param descriptionLabel to associate with the directory for any exceptions.
-     * @throws IllegalArgumentException thrown if the directory cannot be created
      */
     public static void ensureDirectoryExists(final File directory, final String descriptionLabel)
-        throws IllegalArgumentException
     {
         if (!directory.exists())
         {
@@ -130,24 +137,14 @@ public class IoUtil
      * @param directory        the directory which definitely exists after this method call.
      * @param descriptionLabel to associate with the directory for any exceptions and callback.
      * @param callback         to call if directory exists passing back absolute path and descriptionLabel.
-     * @throws IllegalArgumentException thrown if the directory cannot be created
      */
     public static void ensureDirectoryIsRecreated(final File directory,
                                                   final String descriptionLabel,
                                                   final BiConsumer<String, String> callback)
-        throws IllegalArgumentException
     {
         if (directory.exists())
         {
-            try
-            {
-                delete(directory, false);
-            }
-            catch (final IOException ex)
-            {
-                throw new IllegalArgumentException("could not create " + descriptionLabel + " directory: " + directory, ex);
-            }
-
+            delete(directory, false);
             callback.accept(directory.getAbsolutePath(), descriptionLabel);
         }
 
@@ -161,14 +158,19 @@ public class IoUtil
      * Delete file only if it already exists.
      *
      * @param file to delete
-     * @throws IOException
      */
     public static void deleteIfExists(final File file)
-        throws IOException
     {
         if (file.exists())
         {
-            Files.delete(file.toPath());
+            try
+            {
+                Files.delete(file.toPath());
+            }
+            catch (final IOException ex)
+            {
+                throw new RuntimeException(ex);
+            }
         }
     }
 
@@ -178,18 +180,23 @@ public class IoUtil
      * @param file to create
      * @param size of the file to create
      * @return {@link java.nio.channels.FileChannel} for the file
-     * @throws IOException if file can not be created or filled with 0s.
      */
     public static FileChannel createEmptyFile(final File file, final long size)
-        throws IOException
     {
         ensureDirectoryExists(file.getParentFile(), file.getParent());
 
-        final RandomAccessFile randomAccessFile = new RandomAccessFile(file, "rw");
-        final FileChannel templateFile = randomAccessFile.getChannel();
-        fill(templateFile, 0, size, (byte)0);
+        try
+        {
+            final RandomAccessFile randomAccessFile = new RandomAccessFile(file, "rw");
+            final FileChannel templateFile = randomAccessFile.getChannel();
+            fill(templateFile, 0, size, (byte)0);
 
-        return templateFile;
+            return templateFile;
+        }
+        catch (final IOException ex)
+        {
+            throw new RuntimeException(ex);
+        }
     }
 
     /**
@@ -200,16 +207,18 @@ public class IoUtil
      * @param location         of the file to map
      * @param descriptionLabel to be associated for any exceptions
      * @return {@link java.nio.MappedByteBuffer} for the file
-     * @throws IOException for any errors
      */
     public static MappedByteBuffer mapExistingFile(final File location, final String descriptionLabel)
-        throws IOException
     {
         checkFileExists(location, descriptionLabel);
         try (final RandomAccessFile file = new RandomAccessFile(location, "rw"))
         {
             final FileChannel channel = file.getChannel();
             return channel.map(READ_WRITE, 0, channel.size());
+        }
+        catch (final IOException ex)
+        {
+            throw new RuntimeException(ex);
         }
     }
 
@@ -223,13 +232,11 @@ public class IoUtil
      * @param offset           offset to start mapping at
      * @param size             length to map region
      * @return {@link java.nio.MappedByteBuffer} for the file
-     * @throws IOException for any errors
      */
     public static MappedByteBuffer mapExistingFile(final File location,
                                                    final String descriptionLabel,
                                                    final int offset,
                                                    final int size)
-        throws IOException
     {
         checkFileExists(location, descriptionLabel);
 
@@ -237,6 +244,10 @@ public class IoUtil
         {
             final FileChannel channel = file.getChannel();
             return channel.map(READ_WRITE, offset, size);
+        }
+        catch (final IOException ex)
+        {
+            throw new RuntimeException(ex);
         }
     }
 
@@ -248,14 +259,16 @@ public class IoUtil
      * @param location of the file to create and map
      * @param size     of the file to create and map
      * @return {@link java.nio.MappedByteBuffer} for the file
-     * @throws IOException for any errors
      */
     public static MappedByteBuffer mapNewFile(final File location, final long size)
-        throws IOException
     {
         try (final FileChannel channel = createEmptyFile(location, size))
         {
             return channel.map(READ_WRITE, 0, size);
+        }
+        catch (final IOException ex)
+        {
+            throw new RuntimeException(ex);
         }
     }
 
@@ -264,10 +277,8 @@ public class IoUtil
      *
      * @param file to check existence of.
      * @param name to associate for the exception
-     * @throws java.lang.IllegalStateException if file does not exist
      */
     public static void checkFileExists(final File file, final String name)
-        throws IllegalStateException
     {
         if (!file.exists())
         {

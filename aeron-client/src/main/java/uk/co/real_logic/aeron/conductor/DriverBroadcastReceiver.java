@@ -20,6 +20,7 @@ import uk.co.real_logic.aeron.common.command.ConnectionMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.MessageHandler;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.aeron.common.protocol.ErrorFlyweight;
 
@@ -40,71 +41,20 @@ public class DriverBroadcastReceiver
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
     private final ConnectionMessageFlyweight connectionMessage = new ConnectionMessageFlyweight();
 
+    private final BroadcastMessageHandler messageHandlerFunc;
+
     public DriverBroadcastReceiver(final CopyBroadcastReceiver broadcastReceiver, final Consumer<Exception> errorHandler)
     {
         this.broadcastReceiver = broadcastReceiver;
         this.errorHandler = errorHandler;
+        messageHandlerFunc = new BroadcastMessageHandler();
     }
 
     public int receive(final DriverListener listener, final long activeCorrelationId)
     {
-        // Capturing Lambda, causes allocation
-        return broadcastReceiver.receive(
-            (msgTypeId, buffer, index, length) ->
-            {
-                try
-                {
-                    switch (msgTypeId)
-                    {
-                        case ON_NEW_CONNECTION:
-                        case ON_NEW_PUBLICATION:
-                            logBuffersMessage.wrap(buffer, index);
-
-                            final String channel = logBuffersMessage.channel();
-                            final int sessionId = logBuffersMessage.sessionId();
-                            final int streamId = logBuffersMessage.streamId();
-                            final int termId = logBuffersMessage.termId();
-                            final int positionCounterId = logBuffersMessage.positionCounterId();
-
-                            if (msgTypeId == ON_NEW_PUBLICATION && logBuffersMessage.correlationId() == activeCorrelationId)
-                            {
-                                listener.onNewPublication(
-                                    channel, sessionId, streamId, termId, positionCounterId, logBuffersMessage);
-                            }
-                            else if (msgTypeId == ON_NEW_CONNECTION)
-                            {
-                                listener.onNewConnection(channel, sessionId, streamId, termId, logBuffersMessage);
-                            }
-                            break;
-
-                        case ON_OPERATION_SUCCESS:
-                            correlatedMessage.wrap(buffer, index);
-                            if (correlatedMessage.correlationId() == activeCorrelationId)
-                            {
-                                listener.operationSucceeded();
-                            }
-                            break;
-
-                        case ON_INACTIVE_CONNECTION:
-                            connectionMessage.wrap(buffer, index);
-                            listener.onInactiveConnection(connectionMessage.channel(),
-                                connectionMessage.sessionId(), connectionMessage.streamId(), connectionMessage);
-                            break;
-
-                        case ON_ERROR:
-                            onError(buffer, index, listener, activeCorrelationId);
-                            break;
-
-                        default:
-                            break;
-                    }
-                }
-                catch (final Exception ex)
-                {
-                    errorHandler.accept(ex);
-                }
-            }
-        );
+        messageHandlerFunc.listener = listener;
+        messageHandlerFunc.activeCorrelationId = activeCorrelationId;
+        return broadcastReceiver.receive(messageHandlerFunc);
     }
 
     private void onError(final AtomicBuffer buffer, final int index,
@@ -124,4 +74,66 @@ public class DriverBroadcastReceiver
 
         return correlatedMessage.correlationId();
     }
+
+    private class BroadcastMessageHandler implements MessageHandler
+    {
+        private DriverListener listener;
+        private long activeCorrelationId;
+
+        public void onMessage(final int msgTypeId, final AtomicBuffer buffer, final int index, final int length)
+        {
+            try
+            {
+                switch (msgTypeId)
+                {
+                    case ON_NEW_CONNECTION:
+                    case ON_NEW_PUBLICATION:
+                        logBuffersMessage.wrap(buffer, index);
+
+                        final String channel = logBuffersMessage.channel();
+                        final int sessionId = logBuffersMessage.sessionId();
+                        final int streamId = logBuffersMessage.streamId();
+                        final int termId = logBuffersMessage.termId();
+                        final int positionCounterId = logBuffersMessage.positionCounterId();
+
+                        if (msgTypeId == ON_NEW_PUBLICATION && logBuffersMessage.correlationId() == activeCorrelationId)
+                        {
+                            listener.onNewPublication(
+                                    channel, sessionId, streamId, termId, positionCounterId, logBuffersMessage);
+                        }
+                        else if (msgTypeId == ON_NEW_CONNECTION)
+                        {
+                            listener.onNewConnection(channel, sessionId, streamId, termId, logBuffersMessage);
+                        }
+                        break;
+
+                    case ON_OPERATION_SUCCESS:
+                        correlatedMessage.wrap(buffer, index);
+                        if (correlatedMessage.correlationId() == activeCorrelationId)
+                        {
+                            listener.operationSucceeded();
+                        }
+                        break;
+
+                    case ON_INACTIVE_CONNECTION:
+                        connectionMessage.wrap(buffer, index);
+                        listener.onInactiveConnection(connectionMessage.channel(),
+                                connectionMessage.sessionId(), connectionMessage.streamId(), connectionMessage);
+                        break;
+
+                    case ON_ERROR:
+                        onError(buffer, index, listener, activeCorrelationId);
+                        break;
+
+                    default:
+                        break;
+                }
+            }
+            catch (final Exception ex)
+            {
+                errorHandler.accept(ex);
+            }
+        }
+    }
+
 }

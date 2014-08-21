@@ -41,6 +41,7 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.function.ToIntFunction;
 
 import static uk.co.real_logic.aeron.common.ErrorCode.*;
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.*;
@@ -117,6 +118,7 @@ public class DriverConductor extends Agent
 
     private final Consumer<Object> onReceiverCommand;
     private final MessageHandler onClientCommand;
+    private ToIntFunction<DriverConnection> sendPendingStatusMessagesFunc;
 
     public DriverConductor(final Context ctx)
     {
@@ -157,6 +159,7 @@ public class DriverConductor extends Agent
 
         onReceiverCommand = this::onReceiverCommand;
         onClientCommand = this::onClientCommand;
+        sendPendingStatusMessagesFunc = (connection) -> connection.sendPendingStatusMessages(timerWheel.now());
     }
 
     public void onReceiverCommand(Object obj)
@@ -248,8 +251,7 @@ public class DriverConductor extends Agent
         workCount += processFromReceiverCommandQueue();
         workCount += processTimers();
 
-        final long now = timerWheel.now();
-        workCount += connections.doAction((connection) -> connection.sendPendingStatusMessages(now));
+        workCount += connections.doAction(sendPendingStatusMessagesFunc);
         workCount += connections.doAction(DriverConnection::scanForGaps);
         workCount += connections.doAction(DriverConnection::cleanLogBuffer);
 

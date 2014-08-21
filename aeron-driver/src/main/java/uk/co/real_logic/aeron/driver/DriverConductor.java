@@ -118,7 +118,7 @@ public class DriverConductor extends Agent
 
     private final Consumer<Object> onReceiverCommandFunc;
     private final MessageHandler onClientCommandFunc;
-    private ToIntFunction<DriverConnection> sendPendingStatusMessagesFunc;
+    private final ToIntFunction<DriverConnection> sendPendingStatusMessagesFunc;
 
     public DriverConductor(final Context ctx)
     {

@@ -64,7 +64,6 @@ public class DriverPublication implements AutoCloseable
     private final int sessionId;
     private final int streamId;
     private final AtomicInteger activeTermId;
-    private final AtomicLong timeOfLastSendOrHeartbeat;
     private final int headerLength;
     private final int mtuLength;
 
@@ -96,8 +95,14 @@ public class DriverPublication implements AutoCloseable
     private int activeIndex = 0;
     private int retransmitIndex = 0;
     private int statusMessagesReceivedCount = 0;
+
+    private long timeOfLastSendOrHeartbeat;
     private long sentPosition = 0;
     private long timeOfFlush = 0;
+
+    private int lastSentTermId;
+    private int lastSentTermOffset;
+    private int lastSentLength;
 
     public DriverPublication(final SendChannelEndpoint mediaEndpoint,
                              final TimerWheel timerWheel,
@@ -139,16 +144,19 @@ public class DriverPublication implements AutoCloseable
         positionLimit = new AtomicLong(initialPositionLimit);
         activeTermId = new AtomicInteger(initialTermId);
 
-        final long now = timerWheel.now();
-        timeOfLastSendOrHeartbeat = new AtomicLong(now);
+        timeOfLastSendOrHeartbeat = timerWheel.now();
 
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
         this.initialTermId = initialTermId;
         termWindowSize = Configuration.publicationTermWindowSize(termCapacity);
         publisherLimitReporter.position(termWindowSize);
 
-        sendTransmissionUnit = this::sendTransmissionUnit;
+        sendTransmissionUnit = this::onSendTransmissionUnit;
         onSendRetransmit = this::onSendRetransmit;
+
+        lastSentTermId = initialTermId;
+        lastSentTermOffset = 0;
+        lastSentLength = 0;
     }
 
     public void close()
@@ -289,8 +297,8 @@ public class DriverPublication implements AutoCloseable
     private boolean heartbeatCheck()
     {
         final long timeout = statusMessagesReceivedCount > 0 ? HEARTBEAT_TIMEOUT_NS : INITIAL_HEARTBEAT_TIMEOUT_NS;
-        final long timeSinceLastHeartbeat = timerWheel.now() - timeOfLastSendOrHeartbeat.get();
-        if (timeSinceLastHeartbeat > timeout)
+
+        if (timeOfLastSendOrHeartbeat + timeout < timerWheel.now())
         {
             sendHeartbeat();
             return true;
@@ -326,7 +334,7 @@ public class DriverPublication implements AutoCloseable
         return -1;
     }
 
-    private void sendTransmissionUnit(final AtomicBuffer buffer, final int offset, final int length)
+    private void onSendTransmissionUnit(final AtomicBuffer buffer, final int offset, final int length)
     {
         // at this point sendBuffer wraps the same underlying
         // ByteBuffer as the buffer parameter
@@ -339,10 +347,13 @@ public class DriverPublication implements AutoCloseable
             final int bytesSent = mediaEndpoint.sendTo(sendBuffer, dstAddress);
             if (length != bytesSent)
             {
-                logger.log(EventCode.FRAME_OUT_INCOMPLETE_SENDTO, "sendTransmissionUnit %d/%d", bytesSent, length);
+                logger.log(EventCode.FRAME_OUT_INCOMPLETE_SENDTO, "onSendTransmissionUnit %d/%d", bytesSent, length);
             }
 
             updateTimeOfLastSendOrHeartbeat(timerWheel.now());
+            lastSentTermId = activeTermId.get();
+            lastSentTermOffset = offset;
+            lastSentLength = length;
         }
         catch (final Exception ex)
         {
@@ -371,6 +382,28 @@ public class DriverPublication implements AutoCloseable
     }
 
     private void sendHeartbeat()
+    {
+        if (initialTermId == lastSentTermId && 0 == lastSentTermOffset)
+        {
+            sendZeroLengthDataFrame();
+        }
+        else
+        {
+            retransmitIndex = determineIndexByTermId(lastSentTermId);
+
+            if (-1 != retransmitIndex)
+            {
+                final LogScanner scanner = retransmitLogScanners[retransmitIndex];
+                scanner.seek(lastSentTermOffset);
+
+                scanner.scanNext(onSendRetransmit, Math.min(lastSentLength, mtuLength));
+
+                updateTimeOfLastSendOrHeartbeat(timerWheel.now());
+            }
+        }
+    }
+
+    private void sendZeroLengthDataFrame()
     {
         // called from conductor thread on timeout
         // used for both initial setup 0 length data as well as heartbeats
@@ -415,6 +448,6 @@ public class DriverPublication implements AutoCloseable
 
     private void updateTimeOfLastSendOrHeartbeat(final long time)
     {
-        timeOfLastSendOrHeartbeat.lazySet(time);
+        timeOfLastSendOrHeartbeat = time;
     }
 }

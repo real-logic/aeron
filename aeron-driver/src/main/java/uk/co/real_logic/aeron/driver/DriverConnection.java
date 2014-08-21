@@ -298,17 +298,6 @@ public class DriverConnection implements AutoCloseable
     /**
      * Inform the loss handler that a potentially new high position in the stream has been reached.
      *
-     * @param termId of the proposed position
-     * @param termOffset of the proposed position
-     */
-    public void highestPositionCandidate(final int termId, final int termOffset)
-    {
-        highestPositionCandidate(calculatePosition(termId, termOffset));
-    }
-
-    /**
-     * Inform the loss handler that a potentially new high position in the stream has been reached.
-     *
      * @param proposedPosition for the new candidate high position.
      */
     private void highestPositionCandidate(final long proposedPosition)

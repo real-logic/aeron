@@ -27,7 +27,6 @@ import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.conductor.*;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;

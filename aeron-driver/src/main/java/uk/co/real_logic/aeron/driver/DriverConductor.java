@@ -120,9 +120,6 @@ public class DriverConductor extends Agent
     private final Consumer<Object> onReceiverCommandFunc;
     private final MessageHandler onClientCommandFunc;
     private final ToIntFunction<DriverConnection> sendPendingStatusMessagesFunc;
-    private ToIntFunction<DriverConnection> scanForGapsFunc;
-    private ToIntFunction<DriverConnection> cleanConnectionLogBufferFunc;
-    private ToIntFunction<DriverPublication> cleanPublicationLogBufferFunc;
 
     public DriverConductor(final Context ctx)
     {
@@ -164,9 +161,6 @@ public class DriverConductor extends Agent
         onReceiverCommandFunc = this::onReceiverCommand;
         onClientCommandFunc = this::onClientCommand;
         sendPendingStatusMessagesFunc = (connection) -> connection.sendPendingStatusMessages(timerWheel.now());
-        scanForGapsFunc = DriverConnection::scanForGaps;
-        cleanConnectionLogBufferFunc = DriverConnection::cleanLogBuffer;
-        cleanPublicationLogBufferFunc = DriverPublication::cleanLogBuffer;
     }
 
     public void onReceiverCommand(Object obj)
@@ -264,10 +258,10 @@ public class DriverConductor extends Agent
         workCount += processTimers();
 
         workCount += connections.doAction(sendPendingStatusMessagesFunc);
-        workCount += connections.doAction(scanForGapsFunc);
-        workCount += connections.doAction(cleanConnectionLogBufferFunc);
+        workCount += connections.doAction(DriverConnection::scanForGaps);
+        workCount += connections.doAction(DriverConnection::cleanLogBuffer);
 
-        workCount += publications.doAction(cleanPublicationLogBufferFunc);
+        workCount += publications.doAction(DriverPublication::cleanLogBuffer);
 
         return workCount;
     }

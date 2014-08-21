@@ -131,7 +131,7 @@ public final class Aeron implements AutoCloseable
 
         if (0 == sessionId)
         {
-            sessionIdToRequest = BitUtil.generateRandomizedId();
+            sessionIdToRequest = BitUtil.generateRandomisedId();
         }
 
         return conductor.addPublication(channel, sessionIdToRequest, streamId);

@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.common;
 
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -50,6 +51,22 @@ public class BitUtil
                                                     '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
 
     private static final int LAST_DIGIT_MASK = 0b1;
+
+    private final static ThreadLocal<MessageDigest> MESSAGE_DIGEST =
+        new ThreadLocal<MessageDigest>()
+        {
+            protected MessageDigest initialValue()
+            {
+                try
+                {
+                    return MessageDigest.getInstance("SHA-1");
+                }
+                catch (final NoSuchAlgorithmException ex)
+                {
+                    throw new RuntimeException(ex);
+                }
+            }
+        };
 
     /**
      * Fast method of finding the next power of 2 greater than or equal to the supplied value.
@@ -121,11 +138,10 @@ public class BitUtil
      *
      * @param bytes bytes to hash over
      * @return long representation of hash
-     * @throws Exception if no known digest method
      */
-    public static long generateConsistentHash(final byte[] bytes) throws Exception
+    public static long generateConsistentHash(final byte[] bytes)
     {
-        final byte[] digest = MessageDigest.getInstance("SHA-1").digest(bytes);
+        final byte[] digest = MESSAGE_DIGEST.get().digest(bytes);
 
         // truncate by taking first 8 bytes
         return ((long)digest[0] << 56) |
@@ -206,7 +222,7 @@ public class BitUtil
      *
      * @return randomized integer suitable as an Id.
      */
-    public static int generateRandomizedId()
+    public static int generateRandomisedId()
     {
         return ThreadLocalRandom.current().nextInt();
     }

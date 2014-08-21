@@ -366,7 +366,7 @@ public class DriverConductor extends Agent
         }
 
         final ClientLiveness clientLiveness = getOrAddClient(clientId);
-        final int initialTermId = BitUtil.generateRandomizedId();
+        final int initialTermId = BitUtil.generateRandomisedId();
         final String canonicalForm = udpChannel.canonicalForm();
         final TermBuffers termBuffers = termBuffersFactory.newPublication(canonicalForm, sessionId, streamId);
 

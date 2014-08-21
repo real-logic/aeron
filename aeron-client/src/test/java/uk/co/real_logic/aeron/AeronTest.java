@@ -40,7 +40,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
 import static uk.co.real_logic.aeron.common.TermHelper.termIdToBufferIndex;
-import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ON_NEW_CONNECTED_SUBSCRIPTION;
+import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ON_NEW_CONNECTION;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender.AppendStatus.SUCCESS;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
 
@@ -117,7 +117,7 @@ public class AeronTest extends MockBufferUsage
 
         final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID_1, channel1Handler);
 
-        sendNewBufferNotification(ON_NEW_CONNECTED_SUBSCRIPTION, SESSION_ID_1, TERM_ID_1);
+        sendNewBufferNotification(ON_NEW_CONNECTION, SESSION_ID_1, TERM_ID_1);
 
         aeron.conductor().doWork();
         skip(toDriverBuffer, 1);
@@ -158,8 +158,8 @@ public class AeronTest extends MockBufferUsage
         final RingBuffer toMediaDriver = toDriverBuffer;
         final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID_1, channel1Handler);
 
-        sendNewBufferNotification(ON_NEW_CONNECTED_SUBSCRIPTION, SESSION_ID_1, TERM_ID_1);
-        sendNewBufferNotification(ON_NEW_CONNECTED_SUBSCRIPTION, SESSION_ID_2, TERM_ID_2);
+        sendNewBufferNotification(ON_NEW_CONNECTION, SESSION_ID_1, TERM_ID_1);
+        sendNewBufferNotification(ON_NEW_CONNECTION, SESSION_ID_2, TERM_ID_2);
 
         aeron.conductor().doWork();
         skip(toMediaDriver, 1);

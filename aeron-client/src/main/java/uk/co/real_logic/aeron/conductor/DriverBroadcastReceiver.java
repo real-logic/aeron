@@ -56,7 +56,7 @@ public class DriverBroadcastReceiver
                 {
                     switch (msgTypeId)
                     {
-                        case ON_NEW_CONNECTED_SUBSCRIPTION:
+                        case ON_NEW_CONNECTION:
                         case ON_NEW_PUBLICATION:
                             logBuffersMessage.wrap(buffer, index);
 
@@ -71,7 +71,7 @@ public class DriverBroadcastReceiver
                                 listener.onNewPublication(
                                     channel, sessionId, streamId, termId, positionCounterId, logBuffersMessage);
                             }
-                            else if (msgTypeId == ON_NEW_CONNECTED_SUBSCRIPTION)
+                            else if (msgTypeId == ON_NEW_CONNECTION)
                             {
                                 listener.onNewConnection(channel, sessionId, streamId, termId, logBuffersMessage);
                             }

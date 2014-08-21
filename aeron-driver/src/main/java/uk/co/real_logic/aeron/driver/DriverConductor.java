@@ -85,7 +85,7 @@ public class DriverConductor extends Agent
     private final Long2ObjectHashMap<ClientLiveness> clientLivenessByClientId = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<SendChannelEndpoint> sendChannelEndpointByHash = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<ReceiveChannelEndpoint> receiveChannelEndpointByHash = new Long2ObjectHashMap<>();
-    private final Long2ObjectHashMap<DriverSubscription> subscriptionByCorrelationId = new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<DriverSubscription> subscriptionByCorrelationIdMap = new Long2ObjectHashMap<>();
     private final TimerWheel timerWheel;
     private final AtomicArray<DriverConnection> connections = new AtomicArray<>();
     private final AtomicArray<ClientLiveness> clients = new AtomicArray<>();
@@ -116,8 +116,8 @@ public class DriverConductor extends Agent
     private final EventLogger logger;
     private final SystemCounters systemCounters;
 
-    private final Consumer<Object> onReceiverCommand;
-    private final MessageHandler onClientCommand;
+    private final Consumer<Object> onReceiverCommandFunc;
+    private final MessageHandler onClientCommandFunc;
     private ToIntFunction<DriverConnection> sendPendingStatusMessagesFunc;
 
     public DriverConductor(final Context ctx)
@@ -157,8 +157,8 @@ public class DriverConductor extends Agent
 
         systemCounters = new SystemCounters(countersManager);
 
-        onReceiverCommand = this::onReceiverCommand;
-        onClientCommand = this::onClientCommand;
+        onReceiverCommandFunc = this::onReceiverCommand;
+        onClientCommandFunc = this::onClientCommand;
         sendPendingStatusMessagesFunc = (connection) -> connection.sendPendingStatusMessages(timerWheel.now());
     }
 
@@ -168,7 +168,7 @@ public class DriverConductor extends Agent
         {
             if (obj instanceof CreateConnectionCmd)
             {
-                onCreateConnection((CreateConnectionCmd) obj);
+                onCreateConnection((CreateConnectionCmd)obj);
             }
         }
         catch (final Exception ex)
@@ -282,12 +282,12 @@ public class DriverConductor extends Agent
 
     private int processFromReceiverCommandQueue()
     {
-        return commandQueue.drain(onReceiverCommand);
+        return commandQueue.drain(onReceiverCommandFunc);
     }
 
     private int processFromClientCommandBuffer()
     {
-        return fromClientCommands.read(onClientCommand);
+        return fromClientCommands.read(onClientCommandFunc);
     }
 
     private int processTimers()
@@ -398,8 +398,8 @@ public class DriverConductor extends Agent
 
             channelEndpoint.addPublication(publication, retransmitHandler, flowControlStrategy);
 
-            clientProxy.onNewTermBuffers(ON_NEW_PUBLICATION, sessionId, streamId, initialTermId, channel,
-                                         termBuffers, correlationId, positionCounterId);
+            clientProxy.onNewTermBuffers(
+                ON_NEW_PUBLICATION, sessionId, streamId, initialTermId, channel, termBuffers, correlationId, positionCounterId);
 
             publications.add(publication);
         }
@@ -468,10 +468,11 @@ public class DriverConductor extends Agent
 
             if (null == channelEndpoint)
             {
-                channelEndpoint = new ReceiveChannelEndpoint(udpChannel,
-                                                             conductorProxy,
-                                                             logger,
-                                                             Configuration.createLossGenerator(dataLossRate, dataLossSeed));
+                channelEndpoint = new ReceiveChannelEndpoint(
+                    udpChannel,
+                    conductorProxy,
+                    logger,
+                    Configuration.createLossGenerator(dataLossRate, dataLossSeed));
 
                 receiveChannelEndpointByHash.put(udpChannel.consistentHash(), channelEndpoint);
 
@@ -495,7 +496,7 @@ public class DriverConductor extends Agent
 
             final DriverSubscription subscription =
                 new DriverSubscription(channelEndpoint, clientLiveness, streamId, correlationId);
-            subscriptionByCorrelationId.put(correlationId, subscription);
+            subscriptionByCorrelationIdMap.put(correlationId, subscription);
             subscriptions.add(subscription);
 
             clientProxy.operationSucceeded(correlationId);
@@ -532,7 +533,7 @@ public class DriverConductor extends Agent
                 throw new ControlProtocolException(SUBSCRIBER_NOT_REGISTERED, "subscriptions unknown for stream");
             }
 
-            final DriverSubscription subscription = subscriptionByCorrelationId.remove(registrationCorrelationId);
+            final DriverSubscription subscription = subscriptionByCorrelationIdMap.remove(registrationCorrelationId);
             if (null == subscription)
             {
                 throw new ControlProtocolException(SUBSCRIBER_NOT_REGISTERED, "subscription not registered");
@@ -726,7 +727,7 @@ public class DriverConductor extends Agent
 
                     case DriverConnection.INACTIVE:
                         if (connection.remaining() == 0 ||
-                            (connection.timeOfLastStatusChange() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS < now))
+                            connection.timeOfLastStatusChange() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS < now)
                         {
                             connection.status(DriverConnection.LINGER);
                             connection.timeOfLastStatusChange(now);
@@ -795,8 +796,8 @@ public class DriverConductor extends Agent
             final int contiguousReceivedCounterId = allocatePositionCounter("contiguous received", channel, sessionId, streamId);
             final int highestReceivedCounterId = allocatePositionCounter("highest received", channel, sessionId, streamId);
 
-            clientProxy.onNewTermBuffers(ON_NEW_CONNECTED_SUBSCRIPTION, sessionId, streamId, initialTermId,
-                                         channel, termBuffers, 0, subscriberPositionCounterId);
+            clientProxy.onNewTermBuffers(
+                ON_NEW_CONNECTION, sessionId, streamId, initialTermId, channel, termBuffers, 0, subscriberPositionCounterId);
 
             final GapScanner[] gapScanners =
                 termBuffers.stream()

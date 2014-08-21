@@ -44,7 +44,7 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.common.ErrorCode.INVALID_CHANNEL;
 import static uk.co.real_logic.aeron.common.ErrorCode.PUBLICATION_STREAM_ALREADY_EXISTS;
-import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ON_NEW_CONNECTED_SUBSCRIPTION;
+import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ON_NEW_CONNECTION;
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ON_NEW_PUBLICATION;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
 
@@ -288,7 +288,7 @@ public class ClientConductorTest extends MockBufferUsage
 
         Subscription subscription = addSubscription();
 
-        sendNewBufferNotification(ON_NEW_CONNECTED_SUBSCRIPTION, SESSION_ID_1, TERM_ID_1);
+        sendNewBufferNotification(ON_NEW_CONNECTION, SESSION_ID_1, TERM_ID_1);
         conductor.doWork();
 
         assertFalse(subscription.hasNoConnections());

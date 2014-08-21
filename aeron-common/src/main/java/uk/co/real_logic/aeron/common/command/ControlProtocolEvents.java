@@ -39,7 +39,7 @@ public class ControlProtocolEvents
     /** Error Response */
     public static final int ON_ERROR = 0x0F01;
     /** New subscription Buffer Notification */
-    public static final int ON_NEW_CONNECTED_SUBSCRIPTION = 0x0F02;
+    public static final int ON_NEW_CONNECTION = 0x0F02;
     /** New publication Buffer Notification */
     public static final int ON_NEW_PUBLICATION = 0x0F03;
     /** Operation Succeeded */

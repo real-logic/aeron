@@ -34,7 +34,7 @@ public class Sender extends Agent
     private final EventLogger logger;
     private int roundRobinIndex = 0;
 
-    private Consumer<Object> processConductorCommands;
+    private Consumer<Object> processConductorCommandsFunc;
 
     public Sender(final MediaDriver.Context ctx)
     {
@@ -43,7 +43,7 @@ public class Sender extends Agent
         this.publications = ctx.publications();
         this.commandQueue = ctx.senderCommandQueue();
         this.logger = ctx.eventLogger();
-        processConductorCommands = this::processConductorCommands;
+        processConductorCommandsFunc = this::processConductorCommands;
     }
 
     public int doWork()
@@ -56,7 +56,7 @@ public class Sender extends Agent
 
         int workCount = 0;
 
-        workCount += commandQueue.drain(processConductorCommands);
+        workCount += commandQueue.drain(processConductorCommandsFunc);
         workCount += publications.doAction(roundRobinIndex, DriverPublication::send);
 
         return  workCount;

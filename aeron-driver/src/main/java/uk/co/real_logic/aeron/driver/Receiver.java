@@ -30,7 +30,7 @@ public class Receiver extends Agent
     private final NioSelector nioSelector;
     private final OneToOneConcurrentArrayQueue<Object> commandQueue;
     private final EventLogger logger;
-    private final Consumer<Object> onConductorCommand;
+    private final Consumer<Object> onConductorCommandFunc;
 
     public Receiver(final MediaDriver.Context ctx)
     {
@@ -39,7 +39,7 @@ public class Receiver extends Agent
         this.nioSelector = ctx.receiverNioSelector();
         this.commandQueue = ctx.receiverCommandQueue();
         this.logger = ctx.eventLogger();
-        onConductorCommand = this::onConductorCommand;
+        onConductorCommandFunc = this::onConductorCommand;
     }
 
     private void onConductorCommand(final Object obj)
@@ -83,7 +83,7 @@ public class Receiver extends Agent
 
     private int processConductorCommands()
     {
-        return commandQueue.drain(onConductorCommand);
+        return commandQueue.drain(onConductorCommandFunc);
     }
 
     /**

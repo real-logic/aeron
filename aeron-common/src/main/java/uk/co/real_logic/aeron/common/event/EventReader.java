@@ -19,6 +19,7 @@ import uk.co.real_logic.aeron.common.Agent;
 import uk.co.real_logic.aeron.common.IdleStrategy;
 import uk.co.real_logic.aeron.common.IoUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.MessageHandler;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBufferDescriptor;
 
@@ -29,7 +30,7 @@ import java.util.function.Consumer;
 /**
  * Event Log Reader
  */
-public class EventReader extends Agent
+public class EventReader extends Agent implements MessageHandler
 {
     private final MappedByteBuffer buffer;
     private final ManyToOneRingBuffer ringBuffer;
@@ -77,12 +78,14 @@ public class EventReader extends Agent
         }
     }
 
-    public int read(final Consumer<String> handler, final int limit)
+    public int read(final int limit)
     {
-        // Capturing Lambda: allocates
-        return ringBuffer.read(
-            (typeId, buffer, index, length) ->
-                handler.accept(EventCode.get(typeId).decode(buffer, index, length)), limit);
+        return ringBuffer.read(this, limit);
+    }
+
+    public void onMessage(final int typeId, final AtomicBuffer buffer, final int index, final int length)
+    {
+        handler.accept(EventCode.get(typeId).decode(buffer, index, length));
     }
 
     public void onClose()
@@ -92,7 +95,7 @@ public class EventReader extends Agent
 
     public int doWork() throws Exception
     {
-        return read(handler, 1);
+        return read(1);
     }
 
     public static class Context

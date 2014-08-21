@@ -120,6 +120,9 @@ public class DriverConductor extends Agent
     private final Consumer<Object> onReceiverCommandFunc;
     private final MessageHandler onClientCommandFunc;
     private final ToIntFunction<DriverConnection> sendPendingStatusMessagesFunc;
+    private ToIntFunction<DriverConnection> scanForGapsFunc;
+    private ToIntFunction<DriverConnection> cleanConnectionLogBufferFunc;
+    private ToIntFunction<DriverPublication> cleanPublicationLogBufferFunc;
 
     public DriverConductor(final Context ctx)
     {
@@ -161,6 +164,9 @@ public class DriverConductor extends Agent
         onReceiverCommandFunc = this::onReceiverCommand;
         onClientCommandFunc = this::onClientCommand;
         sendPendingStatusMessagesFunc = (connection) -> connection.sendPendingStatusMessages(timerWheel.now());
+        scanForGapsFunc = DriverConnection::scanForGaps;
+        cleanConnectionLogBufferFunc = DriverConnection::cleanLogBuffer;
+        cleanPublicationLogBufferFunc = DriverPublication::cleanLogBuffer;
     }
 
     public void onReceiverCommand(Object obj)
@@ -180,7 +186,7 @@ public class DriverConductor extends Agent
 
     public void onClientCommand(final int msgTypeId, final AtomicBuffer buffer, final int index, final int length)
     {
-        Flyweight flyweight = publicationMessage;
+        Flyweight flyweight = null;
 
         try
         {
@@ -258,10 +264,10 @@ public class DriverConductor extends Agent
         workCount += processTimers();
 
         workCount += connections.doAction(sendPendingStatusMessagesFunc);
-        workCount += connections.doAction(DriverConnection::scanForGaps);
-        workCount += connections.doAction(DriverConnection::cleanLogBuffer);
+        workCount += connections.doAction(scanForGapsFunc);
+        workCount += connections.doAction(cleanConnectionLogBufferFunc);
 
-        workCount += publications.doAction(DriverPublication::cleanLogBuffer);
+        workCount += publications.doAction(cleanPublicationLogBufferFunc);
 
         return workCount;
     }
@@ -339,6 +345,7 @@ public class DriverConductor extends Agent
         final int streamId = publicationMessage.streamId();
         final long correlationId = publicationMessage.correlationId();
         final long clientId = publicationMessage.clientId();
+
         final UdpChannel udpChannel = UdpChannel.parse(channel);
         SendChannelEndpoint channelEndpoint = sendChannelEndpointByHash.get(udpChannel.consistentHash());
         if (null == channelEndpoint)

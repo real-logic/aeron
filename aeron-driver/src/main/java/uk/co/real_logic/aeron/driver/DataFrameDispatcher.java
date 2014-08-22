@@ -88,14 +88,12 @@ public class DataFrameDispatcher
     {
         final Int2ObjectHashMap<DriverConnection> connectionBySessionIdMap = connectionsByStreamIdMap.get(connection.streamId());
 
-        if (null == connectionBySessionIdMap)
+        if (null != connectionBySessionIdMap)
         {
-            return;
+            connection.disableStatusMessages();
+            connectionBySessionIdMap.remove(connection.sessionId());
+            initialisationInProgressMap.remove(connection.sessionId());
         }
-
-        connectionBySessionIdMap.remove(connection.sessionId());
-        connection.disableStatusMessages();
-        initialisationInProgressMap.remove(connection.sessionId());
     }
 
     public void onDataFrame(final DataHeaderFlyweight headerFlyweight,
@@ -114,11 +112,8 @@ public class DataFrameDispatcher
 
             if (null != connection)
             {
-                if (length > DataHeaderFlyweight.HEADER_LENGTH)
-                {
-                    connection.insertIntoTerm(headerFlyweight, buffer, length);
-                }
-                else if (headerFlyweight.headerType() == HeaderFlyweight.HDR_TYPE_PAD)
+                if (length > DataHeaderFlyweight.HEADER_LENGTH ||
+                    headerFlyweight.headerType() == HeaderFlyweight.HDR_TYPE_PAD)
                 {
                     connection.insertIntoTerm(headerFlyweight, buffer, length);
                 }

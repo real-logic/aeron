@@ -96,26 +96,26 @@ public class DataFrameDispatcher
         }
     }
 
-    public void onDataFrame(final DataHeaderFlyweight headerFlyweight,
+    public void onDataFrame(final DataHeaderFlyweight dataHeader,
                             final AtomicBuffer buffer,
                             final int length,
                             final InetSocketAddress srcAddress)
     {
-        final int streamId = headerFlyweight.streamId();
+        final int streamId = dataHeader.streamId();
         final Int2ObjectHashMap<DriverConnection> connectionBySessionIdMap = connectionsByStreamIdMap.get(streamId);
 
         if (null != connectionBySessionIdMap)
         {
-            final int sessionId = headerFlyweight.sessionId();
-            final int termId = headerFlyweight.termId();
+            final int sessionId = dataHeader.sessionId();
+            final int termId = dataHeader.termId();
             final DriverConnection connection = connectionBySessionIdMap.get(sessionId);
 
             if (null != connection)
             {
                 if (length > DataHeaderFlyweight.HEADER_LENGTH ||
-                    headerFlyweight.headerType() == HeaderFlyweight.HDR_TYPE_PAD)
+                    dataHeader.headerType() == HeaderFlyweight.HDR_TYPE_PAD)
                 {
-                    connection.insertIntoTerm(termId, headerFlyweight.termOffset(), buffer, length);
+                    connection.insertIntoTerm(termId, dataHeader.termOffset(), buffer, length);
                 }
             }
             else if (null == initialisationInProgressMap.get(sessionId))

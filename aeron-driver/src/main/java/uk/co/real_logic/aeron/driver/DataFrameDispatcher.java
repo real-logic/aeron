@@ -115,7 +115,7 @@ public class DataFrameDispatcher
                 if (length > DataHeaderFlyweight.HEADER_LENGTH ||
                     headerFlyweight.headerType() == HeaderFlyweight.HDR_TYPE_PAD)
                 {
-                    connection.insertIntoTerm(headerFlyweight.termId(), headerFlyweight.termOffset(), buffer, length);
+                    connection.insertIntoTerm(termId, headerFlyweight.termOffset(), buffer, length);
                 }
             }
             else if (null == initialisationInProgressMap.get(sessionId))

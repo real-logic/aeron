@@ -21,7 +21,6 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogRebuilder;
 import uk.co.real_logic.aeron.common.event.EventCode;
 import uk.co.real_logic.aeron.common.event.EventLogger;
-import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.status.PositionIndicator;
 import uk.co.real_logic.aeron.common.status.PositionReporter;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
@@ -250,18 +249,15 @@ public class DriverConnection implements AutoCloseable
     /**
      * Insert frame into term buffer.
      *
-     * @param header for the data frame
      * @param buffer for the data frame
      * @param length of the data frame on the wire
      */
-    public void insertIntoTerm(final DataHeaderFlyweight header, final AtomicBuffer buffer, final int length)
+    public void insertIntoTerm(final int termId, final int termOffset, final AtomicBuffer buffer, final int length)
     {
         final LogRebuilder currentRebuilder = rebuilders[activeIndex];
-        final int termId = header.termId();
         final int activeTermId = this.activeTermId.get();
 
-        final int packetTail = header.termOffset();
-        final long packetPosition = calculatePosition(termId, packetTail);
+        final long packetPosition = calculatePosition(termId, termOffset);
         final long currentPosition = position(currentRebuilder.tail());
         final long proposedPosition = packetPosition + length;
 

@@ -120,13 +120,18 @@ public class DataFrameDispatcher
             }
             else if (null == initialisationInProgressMap.get(sessionId))
             {
-                final UdpTransport transport = channelEndpoint.udpTransport();
-                final InetSocketAddress controlAddress =
-                    transport.isMulticast() ? transport.udpChannel().remoteControl() : srcAddress;
-
-                initialisationInProgressMap.put(sessionId, INIT_IN_PROGRESS);
-                conductorProxy.createConnection(sessionId, streamId, termId, controlAddress, channelEndpoint);
+                createConnection(srcAddress, streamId, sessionId, termId);
             }
         }
+    }
+
+    private void createConnection(final InetSocketAddress srcAddress, final int streamId, final int sessionId, final int termId)
+    {
+        final UdpTransport transport = channelEndpoint.udpTransport();
+        final InetSocketAddress controlAddress =
+            transport.isMulticast() ? transport.udpChannel().remoteControl() : srcAddress;
+
+        initialisationInProgressMap.put(sessionId, INIT_IN_PROGRESS);
+        conductorProxy.createConnection(sessionId, streamId, termId, controlAddress, channelEndpoint);
     }
 }

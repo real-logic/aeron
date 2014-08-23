@@ -48,7 +48,6 @@ public class ReceiveChannelEndpoint implements AutoCloseable
                                   final EventLogger logger,
                                   final LossGenerator lossGenerator)
     {
-
         smHeader.wrap(smBuffer, 0);
         nakHeader.wrap(nakBuffer, 0);
 
@@ -74,14 +73,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
 
     public void registerForRead(final NioSelector nioSelector)
     {
-        try
-        {
-            udpTransport.registerForRead(nioSelector);
-        }
-        catch (final Exception ex)
-        {
-            throw new RuntimeException(ex);
-        }
+        udpTransport.registerForRead(nioSelector);
     }
 
     public DataFrameDispatcher dispatcher()
@@ -150,16 +142,14 @@ public class ReceiveChannelEndpoint implements AutoCloseable
                                                           final int sessionId,
                                                           final int streamId)
     {
-        return (termId, termOffset, window) ->
-            sendStatusMessage(controlAddress, sessionId, streamId, termId, termOffset, window);
+        return (termId, termOffset, window) -> sendStatusMessage(controlAddress, sessionId, streamId, termId, termOffset, window);
     }
 
     public NakMessageSender composeNakMessageSender(final InetSocketAddress controlAddress,
                                                     final int sessionId,
                                                     final int streamId)
     {
-        return (termId, termOffset, length) ->
-            sendNak(controlAddress, sessionId, streamId, termId, termOffset, length);
+        return (termId, termOffset, length) -> sendNak(controlAddress, sessionId, streamId, termId, termOffset, length);
     }
 
     private void sendStatusMessage(final InetSocketAddress controlAddress,
@@ -179,22 +169,14 @@ public class ReceiveChannelEndpoint implements AutoCloseable
                 .flags((byte)0)
                 .version(HeaderFlyweight.CURRENT_VERSION);
 
+        final int frameLength = smHeader.frameLength();
         smBuffer.position(0);
-        smBuffer.limit(smHeader.frameLength());
+        smBuffer.limit(frameLength);
 
-        try
+        final int bytesSent = udpTransport.sendTo(smBuffer, controlAddress);
+        if (bytesSent < frameLength)
         {
-            final int bytesSent = udpTransport.sendTo(smBuffer, controlAddress);
-
-            if (bytesSent < smHeader.frameLength())
-            {
-                logger.log(EventCode.FRAME_OUT_INCOMPLETE_SENDTO, "sendStatusMessage %d/%d",
-                    bytesSent, smHeader.frameLength());
-            }
-        }
-        catch (final Exception ex)
-        {
-            logger.logException(ex);
+            logger.log(EventCode.FRAME_OUT_INCOMPLETE_SENDTO, "sendStatusMessage %d/%d", bytesSent, frameLength);
         }
     }
 
@@ -218,18 +200,11 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         nakBuffer.position(0);
         nakBuffer.limit(nakHeader.frameLength());
 
-        try
-        {
-            final int bytesSent = udpTransport.sendTo(nakBuffer, controlAddress);
+        final int bytesSent = udpTransport.sendTo(nakBuffer, controlAddress);
 
-            if (bytesSent < nakHeader.frameLength())
-            {
-                logger.log(EventCode.FRAME_OUT_INCOMPLETE_SENDTO, "sendNak %d/%d", bytesSent, nakHeader.frameLength());
-            }
-        }
-        catch (final Exception ex)
+        if (bytesSent < nakHeader.frameLength())
         {
-            logger.logException(ex);
+            logger.log(EventCode.FRAME_OUT_INCOMPLETE_SENDTO, "sendNak %d/%d", bytesSent, nakHeader.frameLength());
         }
     }
 }

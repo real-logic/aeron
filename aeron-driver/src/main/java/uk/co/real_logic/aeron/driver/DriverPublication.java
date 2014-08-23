@@ -322,11 +322,12 @@ public class DriverPublication implements AutoCloseable
 
     private int determineIndexByTermId(final int termId)
     {
-        if (termId == activeTermId.get())
+        final int activeTermId = this.activeTermId.get();
+        if (termId == activeTermId)
         {
             return activeIndex;
         }
-        else if (termId == activeTermId.get() - 1)
+        else if (termId == activeTermId - 1)
         {
             return TermHelper.rotatePrevious(activeIndex);
         }

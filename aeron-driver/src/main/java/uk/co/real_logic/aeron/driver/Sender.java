@@ -64,7 +64,7 @@ public class Sender extends Agent
         if (obj instanceof RetransmitPublicationCmd)
         {
             final RetransmitPublicationCmd cmd = (RetransmitPublicationCmd)obj;
-            cmd.driverPublication().onRetransmit(cmd.termId(), cmd.termOffset(), cmd.length());
+            cmd.publication().onRetransmit(cmd.termId(), cmd.termOffset(), cmd.length());
         }
         else if (obj instanceof ClosePublicationCmd)
         {

@@ -20,25 +20,25 @@ import uk.co.real_logic.aeron.driver.DriverPublication;
 
 public class RetransmitPublicationCmd
 {
-    private final DriverPublication driverPublication;
+    private final DriverPublication publication;
     private final int termId;
     private final int termOffset;
     private final int length;
 
-    public RetransmitPublicationCmd(final DriverPublication driverPublication,
+    public RetransmitPublicationCmd(final DriverPublication publication,
                                     final int termId,
                                     final int termOffset,
                                     final int length)
     {
-        this.driverPublication = driverPublication;
+        this.publication = publication;
         this.termId = termId;
         this.termOffset = termOffset;
         this.length = length;
     }
 
-    public DriverPublication driverPublication()
+    public DriverPublication publication()
     {
-        return driverPublication;
+        return publication;
     }
 
     public int termId()

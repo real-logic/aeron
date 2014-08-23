@@ -132,15 +132,14 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         return refCountByStreamIdMap.size();
     }
 
-    public void onDataFrame(final DataHeaderFlyweight header, final AtomicBuffer buffer,
-                            final int length, final InetSocketAddress srcAddress)
+    public void onDataFrame(
+        final DataHeaderFlyweight header, final AtomicBuffer buffer, final int length, final InetSocketAddress srcAddress)
     {
         dispatcher.onDataFrame(header, buffer, length, srcAddress);
     }
 
-    public StatusMessageSender composeStatusMessageSender(final InetSocketAddress controlAddress,
-                                                          final int sessionId,
-                                                          final int streamId)
+    public StatusMessageSender composeStatusMessageSender(
+        final InetSocketAddress controlAddress, final int sessionId, final int streamId)
     {
         return (termId, termOffset, window) -> sendStatusMessage(controlAddress, sessionId, streamId, termId, termOffset, window);
     }
@@ -197,14 +196,15 @@ public class ReceiveChannelEndpoint implements AutoCloseable
                  .flags((byte)0)
                  .version(HeaderFlyweight.CURRENT_VERSION);
 
+        final int frameLength = nakHeader.frameLength();
         nakBuffer.position(0);
-        nakBuffer.limit(nakHeader.frameLength());
+        nakBuffer.limit(frameLength);
 
         final int bytesSent = udpTransport.sendTo(nakBuffer, controlAddress);
 
-        if (bytesSent < nakHeader.frameLength())
+        if (bytesSent < frameLength)
         {
-            logger.log(EventCode.FRAME_OUT_INCOMPLETE_SENDTO, "sendNak %d/%d", bytesSent, nakHeader.frameLength());
+            logger.log(EventCode.FRAME_OUT_INCOMPLETE_SENDTO, "sendNak %d/%d", bytesSent, frameLength);
         }
     }
 }

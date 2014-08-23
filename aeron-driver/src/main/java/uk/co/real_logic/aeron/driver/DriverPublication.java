@@ -342,23 +342,16 @@ public class DriverPublication implements AutoCloseable
         sendBuffer.limit(offset + length);
         sendBuffer.position(offset);
 
-        try
+        final int bytesSent = mediaEndpoint.sendTo(sendBuffer, dstAddress);
+        if (length != bytesSent)
         {
-            final int bytesSent = mediaEndpoint.sendTo(sendBuffer, dstAddress);
-            if (length != bytesSent)
-            {
-                logger.log(EventCode.FRAME_OUT_INCOMPLETE_SENDTO, "onSendTransmissionUnit %d/%d", bytesSent, length);
-            }
+            logger.log(EventCode.FRAME_OUT_INCOMPLETE_SENDTO, "onSendTransmissionUnit %d/%d", bytesSent, length);
+        }
 
-            updateTimeOfLastSendOrHeartbeat(timerWheel.now());
-            lastSentTermId = activeTermId.get();
-            lastSentTermOffset = offset;
-            lastSentLength = length;
-        }
-        catch (final Exception ex)
-        {
-            logger.logException(ex);
-        }
+        updateTimeOfLastSendOrHeartbeat(timerWheel.now());
+        lastSentTermId = activeTermId.get();
+        lastSentTermOffset = offset;
+        lastSentLength = length;
     }
 
     private void onSendRetransmit(final AtomicBuffer buffer, final int offset, final int length)
@@ -367,17 +360,10 @@ public class DriverPublication implements AutoCloseable
         termRetransmitBuffer.limit(offset + length);
         termRetransmitBuffer.position(offset);
 
-        try
+        final int bytesSent = mediaEndpoint.sendTo(termRetransmitBuffer, dstAddress);
+        if (bytesSent != length)
         {
-            final int bytesSent = mediaEndpoint.sendTo(termRetransmitBuffer, dstAddress);
-            if (bytesSent != length)
-            {
-                logger.log(EventCode.FRAME_OUT_INCOMPLETE_SENDTO, "onSendRetransmit %d/%d", bytesSent, length);
-            }
-        }
-        catch (final Exception ex)
-        {
-            logger.logException(ex);
+            logger.log(EventCode.FRAME_OUT_INCOMPLETE_SENDTO, "onSendRetransmit %d/%d", bytesSent, length);
         }
     }
 
@@ -422,23 +408,16 @@ public class DriverPublication implements AutoCloseable
         scratchByteBuffer.position(0);
         scratchByteBuffer.limit(DataHeaderFlyweight.HEADER_LENGTH);
 
-        try
-        {
-            final int bytesSent = mediaEndpoint.sendTo(scratchByteBuffer, dstAddress);
-            systemCounters.heartbeatsSent().orderedIncrement();
+        final int bytesSent = mediaEndpoint.sendTo(scratchByteBuffer, dstAddress);
+        systemCounters.heartbeatsSent().orderedIncrement();
 
-            if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
-            {
-                logger.log(EventCode.FRAME_OUT_INCOMPLETE_SENDTO, "sendHeartbeat %d/%d",
-                    bytesSent, DataHeaderFlyweight.HEADER_LENGTH);
-            }
-
-            updateTimeOfLastSendOrHeartbeat(timerWheel.now());
-        }
-        catch (final Exception ex)
+        if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
         {
-            logger.logException(ex);
+            logger.log(EventCode.FRAME_OUT_INCOMPLETE_SENDTO, "sendHeartbeat %d/%d",
+                       bytesSent, DataHeaderFlyweight.HEADER_LENGTH);
         }
+
+        updateTimeOfLastSendOrHeartbeat(timerWheel.now());
     }
 
     private long positionForActiveTerm(final int termOffset)

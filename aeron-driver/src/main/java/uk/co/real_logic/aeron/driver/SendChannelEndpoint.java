@@ -51,7 +51,7 @@ public class SendChannelEndpoint implements AutoCloseable
         return transport.sendTo(buffer, udpChannel.remoteData());
     }
 
-    public int sendTo(final ByteBuffer buffer, final InetSocketAddress address) throws Exception
+    public int sendTo(final ByteBuffer buffer, final InetSocketAddress address)
     {
         return transport.sendTo(buffer, address);
     }

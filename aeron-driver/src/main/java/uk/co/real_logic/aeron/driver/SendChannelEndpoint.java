@@ -31,7 +31,7 @@ public class SendChannelEndpoint implements AutoCloseable
 {
     private final UdpTransport transport;
     private final UdpChannel udpChannel;
-    private final BiInt2ObjectMap<SendEndComponents> sendEndByStreamAndSessionIdMap = new BiInt2ObjectMap<>();
+    private final BiInt2ObjectMap<PublicationAssembly> assemblyByStreamAndSessionIdMap = new BiInt2ObjectMap<>();
     private final SystemCounters systemCounters;
 
     public SendChannelEndpoint(final UdpChannel udpChannel,
@@ -68,11 +68,11 @@ public class SendChannelEndpoint implements AutoCloseable
 
     public DriverPublication findPublication(final int sessionId, final int streamId)
     {
-        final SendEndComponents components = sendEndByStreamAndSessionIdMap.get(sessionId, streamId);
+        final PublicationAssembly assembly = assemblyByStreamAndSessionIdMap.get(sessionId, streamId);
 
-        if (null != components)
+        if (null != assembly)
         {
-            return components.publication;
+            return assembly.publication;
         }
 
         return null;
@@ -82,19 +82,19 @@ public class SendChannelEndpoint implements AutoCloseable
                                final RetransmitHandler retransmitHandler,
                                final SenderControlStrategy senderControlStrategy)
     {
-        sendEndByStreamAndSessionIdMap.put(publication.sessionId(),
-                                           publication.streamId(),
-                                           new SendEndComponents(publication, retransmitHandler, senderControlStrategy));
+        assemblyByStreamAndSessionIdMap.put(
+            publication.sessionId(), publication.streamId(),
+            new PublicationAssembly(publication, retransmitHandler, senderControlStrategy));
     }
 
     public DriverPublication removePublication(final int sessionId, final int streamId)
     {
-        final SendEndComponents components = sendEndByStreamAndSessionIdMap.remove(sessionId, streamId);
+        final PublicationAssembly assembly = assemblyByStreamAndSessionIdMap.remove(sessionId, streamId);
 
-        if (null != components)
+        if (null != assembly)
         {
-            components.retransmitHandler.close();
-            return components.publication;
+            assembly.retransmitHandler.close();
+            return assembly.publication;
         }
 
         return null;
@@ -102,7 +102,7 @@ public class SendChannelEndpoint implements AutoCloseable
 
     public int sessionCount()
     {
-        return sendEndByStreamAndSessionIdMap.size();
+        return assemblyByStreamAndSessionIdMap.size();
     }
 
     private void onStatusMessageFrame(final StatusMessageFlyweight header,
@@ -110,15 +110,15 @@ public class SendChannelEndpoint implements AutoCloseable
                                       final int length,
                                       final InetSocketAddress srcAddress)
     {
-        final SendEndComponents components = sendEndByStreamAndSessionIdMap.get(header.sessionId(), header.streamId());
+        final PublicationAssembly assembly = assemblyByStreamAndSessionIdMap.get(header.sessionId(), header.streamId());
 
-        if (null != components)
+        if (null != assembly)
         {
             final long limit =
-                components.flowControlStrategy.onStatusMessage(
+                assembly.flowControlStrategy.onStatusMessage(
                     header.termId(), header.highestContiguousTermOffset(), header.receiverWindowSize(), srcAddress);
 
-            components.publication.updatePositionLimitFromStatusMessage(limit);
+            assembly.publication.updatePositionLimitFromStatusMessage(limit);
             systemCounters.statusMessagesReceived().orderedIncrement();
         }
     }
@@ -128,24 +128,24 @@ public class SendChannelEndpoint implements AutoCloseable
                             final int length,
                             final InetSocketAddress srcAddress)
     {
-        final SendEndComponents components = sendEndByStreamAndSessionIdMap.get(nak.sessionId(), nak.streamId());
+        final PublicationAssembly assembly = assemblyByStreamAndSessionIdMap.get(nak.sessionId(), nak.streamId());
 
-        if (null != components)
+        if (null != assembly)
         {
-            components.retransmitHandler.onNak(nak.termId(), nak.termOffset(), nak.length());
+            assembly.retransmitHandler.onNak(nak.termId(), nak.termOffset(), nak.length());
             systemCounters.naksReceived().orderedIncrement();
         }
     }
 
-    class SendEndComponents
+    private static class PublicationAssembly
     {
-        private final DriverPublication publication;
-        private final RetransmitHandler retransmitHandler;
-        private final SenderControlStrategy flowControlStrategy;
+        final DriverPublication publication;
+        final RetransmitHandler retransmitHandler;
+        final SenderControlStrategy flowControlStrategy;
 
-        SendEndComponents(final DriverPublication publication,
-                          final RetransmitHandler retransmitHandler,
-                          final SenderControlStrategy flowControlStrategy)
+        public PublicationAssembly(final DriverPublication publication,
+                                   final RetransmitHandler retransmitHandler,
+                                   final SenderControlStrategy flowControlStrategy)
         {
             this.publication = publication;
             this.retransmitHandler = retransmitHandler;

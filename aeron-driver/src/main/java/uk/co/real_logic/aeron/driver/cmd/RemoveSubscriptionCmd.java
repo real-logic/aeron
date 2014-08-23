@@ -19,18 +19,18 @@ import uk.co.real_logic.aeron.driver.ReceiveChannelEndpoint;
 
 public class RemoveSubscriptionCmd
 {
-    private final ReceiveChannelEndpoint receiveChannelEndpoint;
+    private final ReceiveChannelEndpoint channelEndpoint;
     private final int streamId;
 
-    public RemoveSubscriptionCmd(final ReceiveChannelEndpoint receiveChannelEndpoint, final int streamId)
+    public RemoveSubscriptionCmd(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
     {
-        this.receiveChannelEndpoint = receiveChannelEndpoint;
+        this.channelEndpoint = channelEndpoint;
         this.streamId = streamId;
     }
 
-    public ReceiveChannelEndpoint mediaSubscriptionEndpoint()
+    public ReceiveChannelEndpoint receiveChannelEndpoint()
     {
-        return receiveChannelEndpoint;
+        return channelEndpoint;
     }
 
     public int streamId()

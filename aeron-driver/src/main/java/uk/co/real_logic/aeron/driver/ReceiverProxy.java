@@ -53,6 +53,6 @@ public class ReceiverProxy
 
     public boolean registerMediaEndpoint(final ReceiveChannelEndpoint mediaEndpoint)
     {
-        return commandQueue.offer(new RegisterReceiverChannelEndpointCmd(mediaEndpoint));
+        return commandQueue.offer(new RegisterReceiveChannelEndpointCmd(mediaEndpoint));
     }
 }

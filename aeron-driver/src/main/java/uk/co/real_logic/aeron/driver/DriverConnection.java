@@ -47,7 +47,7 @@ public class DriverConnection implements AutoCloseable
     /** connection has been drained or timeout has occurred and is being lingered */
     public static final int LINGER = 3;
 
-    private final ReceiveChannelEndpoint receiveChannelEndpoint;
+    private final ReceiveChannelEndpoint channelEndpoint;
     private final int sessionId;
     private final int streamId;
     private final TermBuffers termBuffers;
@@ -82,7 +82,7 @@ public class DriverConnection implements AutoCloseable
 
     private volatile boolean statusMessagesEnabled = false;
 
-    public DriverConnection(final ReceiveChannelEndpoint receiveChannelEndpoint,
+    public DriverConnection(final ReceiveChannelEndpoint channelEndpoint,
                             final int sessionId,
                             final int streamId,
                             final int initialTermId,
@@ -98,7 +98,7 @@ public class DriverConnection implements AutoCloseable
                             final SystemCounters systemCounters,
                             final EventLogger logger)
     {
-        this.receiveChannelEndpoint = receiveChannelEndpoint;
+        this.channelEndpoint = channelEndpoint;
         this.sessionId = sessionId;
         this.streamId = streamId;
         this.termBuffers = termBuffers;
@@ -142,7 +142,7 @@ public class DriverConnection implements AutoCloseable
 
     public ReceiveChannelEndpoint receiveChannelEndpoint()
     {
-        return receiveChannelEndpoint;
+        return channelEndpoint;
     }
 
     public int sessionId()

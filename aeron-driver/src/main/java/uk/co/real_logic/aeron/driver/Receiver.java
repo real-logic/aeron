@@ -53,12 +53,12 @@ public class Receiver extends Agent
         else if (obj instanceof RemoveSubscriptionCmd)
         {
             final RemoveSubscriptionCmd cmd = (RemoveSubscriptionCmd)obj;
-            onRemoveSubscription(cmd.mediaSubscriptionEndpoint(), cmd.streamId());
+            onRemoveSubscription(cmd.receiveChannelEndpoint(), cmd.streamId());
         }
-        else if (obj instanceof RegisterReceiverChannelEndpointCmd)
+        else if (obj instanceof RegisterReceiveChannelEndpointCmd)
         {
-            final RegisterReceiverChannelEndpointCmd cmd = (RegisterReceiverChannelEndpointCmd)obj;
-            onRegisterMediaSubscriptionEndpoint(cmd.receiverChannelEndpoint());
+            final RegisterReceiveChannelEndpointCmd cmd = (RegisterReceiveChannelEndpointCmd)obj;
+            onRegisterMediaSubscriptionEndpoint(cmd.receiveChannelEndpoint());
         }
         else if (obj instanceof RemoveConnectionCmd)
         {
@@ -86,32 +86,32 @@ public class Receiver extends Agent
         return nioSelector;
     }
 
-    private void onAddSubscription(final ReceiveChannelEndpoint receiveChannelEndpoint, final int streamId)
+    private void onAddSubscription(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
     {
-        receiveChannelEndpoint.dispatcher().addSubscription(streamId);
+        channelEndpoint.dispatcher().addSubscription(streamId);
     }
 
-    private void onRemoveSubscription(final ReceiveChannelEndpoint receiveChannelEndpoint, final int streamId)
+    private void onRemoveSubscription(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
     {
-        receiveChannelEndpoint.dispatcher().removeSubscription(streamId);
+        channelEndpoint.dispatcher().removeSubscription(streamId);
     }
 
     private void onNewConnection(final NewConnectionCmd cmd)
     {
-        final ReceiveChannelEndpoint receiveChannelEndpoint = cmd.receiverChannelEndpoint();
+        final ReceiveChannelEndpoint channelEndpoint = cmd.receiveChannelEndpoint();
 
-        receiveChannelEndpoint.dispatcher().addConnection(cmd.connection());
+        channelEndpoint.dispatcher().addConnection(cmd.connection());
     }
 
     private void onRemoveConnection(final RemoveConnectionCmd cmd)
     {
-        final ReceiveChannelEndpoint receiveChannelEndpoint = cmd.receiverChannelEndpoint();
+        final ReceiveChannelEndpoint channelEndpoint = cmd.receiveChannelEndpoint();
 
-        receiveChannelEndpoint.dispatcher().removeConnection(cmd.connection());
+        channelEndpoint.dispatcher().removeConnection(cmd.connection());
     }
 
-    private void onRegisterMediaSubscriptionEndpoint(final ReceiveChannelEndpoint receiveChannelEndpoint)
+    private void onRegisterMediaSubscriptionEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
-        receiveChannelEndpoint.registerForRead(nioSelector);
+        channelEndpoint.registerForRead(nioSelector);
     }
 }

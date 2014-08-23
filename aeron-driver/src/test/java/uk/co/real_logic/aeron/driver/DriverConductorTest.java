@@ -243,10 +243,10 @@ public class DriverConductorTest
         driverConductor.doWork();
         receiver.doWork();
 
-        final ReceiveChannelEndpoint mediaEndpoint = driverConductor.receiverChannelEndpoint(udpChannel);
+        final ReceiveChannelEndpoint channelEndpoint = driverConductor.receiverChannelEndpoint(udpChannel);
 
-        assertNotNull(mediaEndpoint);
-        assertThat(mediaEndpoint.streamCount(), is(3));
+        assertNotNull(channelEndpoint);
+        assertThat(channelEndpoint.streamCount(), is(3));
 
         writeSubscriptionMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, CORRELATION_ID_1);
         writeSubscriptionMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_2, CORRELATION_ID_2);
@@ -255,7 +255,7 @@ public class DriverConductorTest
         receiver.doWork();
 
         assertNotNull(driverConductor.receiverChannelEndpoint(udpChannel));
-        assertThat(mediaEndpoint.streamCount(), is(1));
+        assertThat(channelEndpoint.streamCount(), is(1));
     }
 
     @Test
@@ -270,10 +270,10 @@ public class DriverConductorTest
         driverConductor.doWork();
         receiver.doWork();
 
-        final ReceiveChannelEndpoint mediaEndpoint = driverConductor.receiverChannelEndpoint(udpChannel);
+        final ReceiveChannelEndpoint channelEndpoint = driverConductor.receiverChannelEndpoint(udpChannel);
 
-        assertNotNull(mediaEndpoint);
-        assertThat(mediaEndpoint.streamCount(), is(3));
+        assertNotNull(channelEndpoint);
+        assertThat(channelEndpoint.streamCount(), is(3));
 
         writeSubscriptionMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_2, CORRELATION_ID_2);
         writeSubscriptionMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_3, CORRELATION_ID_3);
@@ -282,7 +282,7 @@ public class DriverConductorTest
         receiver.doWork();
 
         assertNotNull(driverConductor.receiverChannelEndpoint(udpChannel));
-        assertThat(mediaEndpoint.streamCount(), is(1));
+        assertThat(channelEndpoint.streamCount(), is(1));
 
         writeSubscriptionMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, CORRELATION_ID_1);
 

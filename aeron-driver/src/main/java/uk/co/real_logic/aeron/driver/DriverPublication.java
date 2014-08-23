@@ -74,7 +74,7 @@ public class DriverPublication implements AutoCloseable
     private final ByteBuffer[] sendBuffers = new ByteBuffer[TermHelper.BUFFER_COUNT];
 
     private final AtomicLong positionLimit;
-    private final SendChannelEndpoint mediaEndpoint;
+    private final SendChannelEndpoint channelEndpoint;
     private final TermBuffers termBuffers;
     private final PositionReporter publisherLimitReporter;
     private final ClientLiveness clientLiveness;
@@ -104,7 +104,7 @@ public class DriverPublication implements AutoCloseable
     private int lastSentTermOffset;
     private int lastSentLength;
 
-    public DriverPublication(final SendChannelEndpoint mediaEndpoint,
+    public DriverPublication(final SendChannelEndpoint channelEndpoint,
                              final TimerWheel timerWheel,
                              final TermBuffers termBuffers,
                              final PositionReporter publisherLimitReporter,
@@ -118,11 +118,11 @@ public class DriverPublication implements AutoCloseable
                              final EventLogger logger,
                              final SystemCounters systemCounters)
     {
-        this.mediaEndpoint = mediaEndpoint;
+        this.channelEndpoint = channelEndpoint;
         this.termBuffers = termBuffers;
         this.logger = logger;
         this.systemCounters = systemCounters;
-        this.dstAddress = mediaEndpoint.udpChannel().remoteData();
+        this.dstAddress = channelEndpoint.udpChannel().remoteData();
         this.timerWheel = timerWheel;
         this.publisherLimitReporter = publisherLimitReporter;
         this.clientLiveness = clientLiveness;
@@ -200,7 +200,7 @@ public class DriverPublication implements AutoCloseable
 
     public SendChannelEndpoint sendChannelEndpoint()
     {
-        return mediaEndpoint;
+        return channelEndpoint;
     }
 
     public int sessionId()
@@ -343,7 +343,7 @@ public class DriverPublication implements AutoCloseable
         sendBuffer.limit(offset + length);
         sendBuffer.position(offset);
 
-        final int bytesSent = mediaEndpoint.sendTo(sendBuffer, dstAddress);
+        final int bytesSent = channelEndpoint.sendTo(sendBuffer, dstAddress);
         if (length != bytesSent)
         {
             logger.log(EventCode.FRAME_OUT_INCOMPLETE_SENDTO, "onSendTransmissionUnit %d/%d", bytesSent, length);
@@ -361,7 +361,7 @@ public class DriverPublication implements AutoCloseable
         termRetransmitBuffer.limit(offset + length);
         termRetransmitBuffer.position(offset);
 
-        final int bytesSent = mediaEndpoint.sendTo(termRetransmitBuffer, dstAddress);
+        final int bytesSent = channelEndpoint.sendTo(termRetransmitBuffer, dstAddress);
         if (bytesSent != length)
         {
             logger.log(EventCode.FRAME_OUT_INCOMPLETE_SENDTO, "onSendRetransmit %d/%d", bytesSent, length);
@@ -409,7 +409,7 @@ public class DriverPublication implements AutoCloseable
         scratchByteBuffer.position(0);
         scratchByteBuffer.limit(DataHeaderFlyweight.HEADER_LENGTH);
 
-        final int bytesSent = mediaEndpoint.sendTo(scratchByteBuffer, dstAddress);
+        final int bytesSent = channelEndpoint.sendTo(scratchByteBuffer, dstAddress);
         systemCounters.heartbeatsSent().orderedIncrement();
 
         if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)

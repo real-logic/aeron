@@ -20,7 +20,7 @@ package uk.co.real_logic.aeron.driver;
  */
 public class DriverSubscription
 {
-    private final ReceiveChannelEndpoint receiveChannelEndpoint;
+    private final ReceiveChannelEndpoint channelEndpoint;
     private final int streamId;
     private final long correlationId;
     private final ClientLiveness clientLiveness;
@@ -30,7 +30,7 @@ public class DriverSubscription
                               final int streamId,
                               final long correlationId)
     {
-        this.receiveChannelEndpoint = channelEndpoint;
+        this.channelEndpoint = channelEndpoint;
         this.streamId = streamId;
         this.correlationId = correlationId;
         this.clientLiveness = clientLiveness;
@@ -38,7 +38,7 @@ public class DriverSubscription
 
     public ReceiveChannelEndpoint receiveChannelEndpoint()
     {
-        return receiveChannelEndpoint;
+        return channelEndpoint;
     }
 
     public int streamId()

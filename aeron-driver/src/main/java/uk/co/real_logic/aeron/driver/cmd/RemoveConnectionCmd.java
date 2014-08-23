@@ -20,18 +20,18 @@ import uk.co.real_logic.aeron.driver.ReceiveChannelEndpoint;
 
 public class RemoveConnectionCmd
 {
-    private final ReceiveChannelEndpoint receiveChannelEndpoint;
+    private final ReceiveChannelEndpoint channelEndpoint;
     private final DriverConnection connection;
 
-    public RemoveConnectionCmd(final ReceiveChannelEndpoint receiveChannelEndpoint, final DriverConnection connection)
+    public RemoveConnectionCmd(final ReceiveChannelEndpoint channelEndpoint, final DriverConnection connection)
     {
-        this.receiveChannelEndpoint = receiveChannelEndpoint;
+        this.channelEndpoint = channelEndpoint;
         this.connection = connection;
     }
 
-    public ReceiveChannelEndpoint receiverChannelEndpoint()
+    public ReceiveChannelEndpoint receiveChannelEndpoint()
     {
-        return receiveChannelEndpoint;
+        return channelEndpoint;
     }
 
     public DriverConnection connection()

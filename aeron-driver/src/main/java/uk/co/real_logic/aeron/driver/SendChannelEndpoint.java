@@ -66,7 +66,7 @@ public class SendChannelEndpoint implements AutoCloseable
         return udpChannel;
     }
 
-    public DriverPublication findPublication(final int sessionId, final int streamId)
+    public DriverPublication getPublication(final int sessionId, final int streamId)
     {
         final PublicationAssembly assembly = assemblyByStreamAndSessionIdMap.get(sessionId, streamId);
 

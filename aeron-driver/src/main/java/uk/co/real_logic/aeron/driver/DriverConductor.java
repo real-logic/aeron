@@ -352,7 +352,7 @@ public class DriverConductor extends Agent
                                                "channels hash same, but channels actually different");
         }
 
-        if (null != channelEndpoint.findPublication(sessionId, streamId))
+        if (null != channelEndpoint.getPublication(sessionId, streamId))
         {
             throw new ControlProtocolException(ErrorCode.PUBLICATION_STREAM_ALREADY_EXISTS,
                                                "publication and session already exist on channel");
@@ -414,7 +414,7 @@ public class DriverConductor extends Agent
             throw new ControlProtocolException(INVALID_CHANNEL, "channel unknown");
         }
 
-        final DriverPublication publication = channelEndpoint.findPublication(sessionId, streamId);
+        final DriverPublication publication = channelEndpoint.getPublication(sessionId, streamId);
         if (null == publication)
         {
             throw new ControlProtocolException(PUBLICATION_STREAM_UNKNOWN, "session and publication unknown for channel");

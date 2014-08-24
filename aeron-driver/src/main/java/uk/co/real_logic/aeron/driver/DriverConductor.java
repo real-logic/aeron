@@ -438,46 +438,42 @@ public class DriverConductor extends Agent
         final long correlationId = subscriptionMessage.correlationId();
         final long clientId = subscriptionMessage.clientId();
 
-            final UdpChannel udpChannel = UdpChannel.parse(channel);
-            ReceiveChannelEndpoint channelEndpoint = receiveChannelEndpointByHash.get(udpChannel.consistentHash());
+        final UdpChannel udpChannel = UdpChannel.parse(channel);
+        ReceiveChannelEndpoint channelEndpoint = receiveChannelEndpointByHash.get(udpChannel.consistentHash());
 
-            if (null == channelEndpoint)
+        if (null == channelEndpoint)
+        {
+            channelEndpoint = new ReceiveChannelEndpoint(
+                udpChannel, conductorProxy, logger, Configuration.createLossGenerator(dataLossRate, dataLossSeed));
+
+            receiveChannelEndpointByHash.put(udpChannel.consistentHash(), channelEndpoint);
+
+            while (!receiverProxy.registerMediaEndpoint(channelEndpoint))
             {
-                channelEndpoint = new ReceiveChannelEndpoint(
-                    udpChannel,
-                    conductorProxy,
-                    logger,
-                    Configuration.createLossGenerator(dataLossRate, dataLossSeed));
-
-                receiveChannelEndpointByHash.put(udpChannel.consistentHash(), channelEndpoint);
-
-                while (!receiverProxy.registerMediaEndpoint(channelEndpoint))
-                {
-                    systemCounters.receiverProxyFails().orderedIncrement();
-                }
+                systemCounters.receiverProxyFails().orderedIncrement();
+                Thread.yield();
             }
+        }
 
-            final ClientLiveness clientLiveness = getOrAddClient(clientId);
-            final int initialCount = channelEndpoint.incRefToStream(streamId);
+        final ClientLiveness clientLiveness = getOrAddClient(clientId);
+        final int initialCount = channelEndpoint.incRefToStream(streamId);
 
-            if (1 == initialCount)
+        if (1 == initialCount)
+        {
+            while (!receiverProxy.addSubscription(channelEndpoint, streamId))
             {
-                while (!receiverProxy.addSubscription(channelEndpoint, streamId))
-                {
-                    systemCounters.receiverProxyFails().orderedIncrement();
-                    Thread.yield();
-                }
+                systemCounters.receiverProxyFails().orderedIncrement();
+                Thread.yield();
             }
+        }
 
-            final DriverSubscription subscription =
-                new DriverSubscription(channelEndpoint, clientLiveness, streamId, correlationId);
-            subscriptionByCorrelationIdMap.put(correlationId, subscription);
-            subscriptions.add(subscription);
+        final DriverSubscription subscription = new DriverSubscription(channelEndpoint, clientLiveness, streamId, correlationId);
+        subscriptionByCorrelationIdMap.put(correlationId, subscription);
+        subscriptions.add(subscription);
 
-            clientProxy.operationSucceeded(correlationId);
+        clientProxy.operationSucceeded(correlationId);
     }
 
-    // remove subscription from endpoint, but leave connections to time out
     private void onRemoveSubscription(final SubscriptionMessageFlyweight subscriptionMessage)
     {
         final String channel = subscriptionMessage.channel();
@@ -509,6 +505,7 @@ public class DriverConductor extends Agent
             while (!receiverProxy.removeSubscription(channelEndpoint, streamId))
             {
                 systemCounters.receiverProxyFails().orderedIncrement();
+                Thread.yield();
             }
         }
 
@@ -624,6 +621,7 @@ public class DriverConductor extends Agent
                         while (!receiverProxy.removeSubscription(channelEndpoint, streamId))
                         {
                             systemCounters.receiverProxyFails().orderedIncrement();
+                            Thread.yield();
                         }
                     }
 

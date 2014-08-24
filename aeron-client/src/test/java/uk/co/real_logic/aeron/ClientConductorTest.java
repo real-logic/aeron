@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import uk.co.real_logic.aeron.common.IdleStrategy;
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
@@ -50,7 +51,6 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
 public class ClientConductorTest extends MockBufferUsage
 {
     private static final int COUNTER_BUFFER_SZ = 1024;
-
     private static final String CHANNEL = "udp://localhost:40124";
     private static final int STREAM_ID_1 = 2;
     private static final int STREAM_ID_2 = 4;
@@ -75,6 +75,7 @@ public class ClientConductorTest extends MockBufferUsage
     private final AtomicBuffer counterValuesBuffer = new AtomicBuffer(new byte[COUNTER_BUFFER_SZ]);
 
     private final TimerWheel timerWheel = mock(TimerWheel.class);
+    private final IdleStrategy idleStrategy = mock(IdleStrategy.class);
 
     private final Consumer<Exception> mockClientErrorHandler = Throwable::printStackTrace;
 
@@ -96,6 +97,7 @@ public class ClientConductorTest extends MockBufferUsage
         willNotifyNewBuffer();
 
         conductor = new ClientConductor(
+            idleStrategy,
             toClientReceiver,
             mockBufferUsage,
             counterValuesBuffer,
@@ -127,7 +129,7 @@ public class ClientConductorTest extends MockBufferUsage
     {
         addPublication();
 
-        verify(driverProxy).addPublication(CHANNEL, SESSION_ID_1, STREAM_ID_1);
+        verify(driverProxy).addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
     }
 
     @Test(expected = DriverTimeoutException.class)
@@ -168,7 +170,7 @@ public class ClientConductorTest extends MockBufferUsage
 
         publication.release();
 
-        (driverProxy).removePublication(CHANNEL, SESSION_ID_1, STREAM_ID_1);
+        (driverProxy).removePublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
     }
 
     @Test
@@ -208,12 +210,12 @@ public class ClientConductorTest extends MockBufferUsage
         addPublication();
 
         publication.release();
-        verify(driverProxy, never()).removePublication(CHANNEL, SESSION_ID_1, STREAM_ID_1);
+        verify(driverProxy, never()).removePublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
 
         willNotifyOperationSucceeded();
 
         publication.release();
-        verify(driverProxy).removePublication(CHANNEL, SESSION_ID_1, STREAM_ID_1);
+        verify(driverProxy).removePublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
     }
 
     @Test
@@ -226,9 +228,9 @@ public class ClientConductorTest extends MockBufferUsage
 
         publication.release();
 
-        verify(driverProxy).removePublication(CHANNEL, SESSION_ID_1, STREAM_ID_1);
+        verify(driverProxy).removePublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
 
-        verify(driverProxy, never()).removePublication(CHANNEL, SESSION_ID_2, STREAM_ID_2);
+        verify(driverProxy, never()).removePublication(CHANNEL, STREAM_ID_2, SESSION_ID_2);
     }
 
     // ---------------------------------

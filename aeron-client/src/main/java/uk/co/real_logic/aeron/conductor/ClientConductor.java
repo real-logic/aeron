@@ -43,10 +43,6 @@ import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
  */
 public class ClientConductor extends Agent implements DriverListener
 {
-    public static final long IDLE_MAX_SPINS = 0;
-    public static final long IDLE_MAX_YIELDS = 0;
-    public static final long IDLE_MIN_PARK_NS = TimeUnit.NANOSECONDS.toNanos(1);
-    public static final long IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(100);
     public static final int KEEPALIVE_TIMEOUT_MS = 500;
 
     private static final long NO_CORRELATION_ID = -1;
@@ -73,7 +69,8 @@ public class ClientConductor extends Agent implements DriverListener
 
     private final TimerWheel.Timer keepaliveTimer;
 
-    public ClientConductor(final CopyBroadcastReceiver broadcastReceiver,
+    public ClientConductor(final IdleStrategy idleStrategy,
+                           final CopyBroadcastReceiver broadcastReceiver,
                            final BufferManager bufferManager,
                            final AtomicBuffer counterValuesBuffer,
                            final DriverProxy driverProxy,
@@ -85,7 +82,7 @@ public class ClientConductor extends Agent implements DriverListener
                            final long awaitTimeout,
                            final int mtuLength)
     {
-        super(new BackoffIdleStrategy(IDLE_MAX_SPINS, IDLE_MAX_YIELDS, IDLE_MIN_PARK_NS, IDLE_MAX_PARK_NS), errorHandler);
+        super(idleStrategy, errorHandler);
 
         this.counterValuesBuffer = counterValuesBuffer;
         this.correlationSignal = correlationSignal;
@@ -117,7 +114,7 @@ public class ClientConductor extends Agent implements DriverListener
 
         if (publication == null)
         {
-            activeCorrelationId = driverProxy.addPublication(channel, sessionId, streamId);
+            activeCorrelationId = driverProxy.addPublication(channel, streamId, sessionId);
 
             final long startTime = System.currentTimeMillis();
             while (addedPublication == null)
@@ -141,10 +138,10 @@ public class ClientConductor extends Agent implements DriverListener
     public synchronized void releasePublication(final Publication publication)
     {
         final String channel = publication.channel();
-        final int sessionId = publication.sessionId();
         final int streamId = publication.streamId();
+        final int sessionId = publication.sessionId();
 
-        activeCorrelationId = driverProxy.removePublication(channel, sessionId, streamId);
+        activeCorrelationId = driverProxy.removePublication(channel, streamId, sessionId);
 
         awaitOperationSucceeded();
 
@@ -171,10 +168,11 @@ public class ClientConductor extends Agent implements DriverListener
 
     public synchronized void releaseSubscription(final Subscription subscription)
     {
-        activeCorrelationId =
-            driverProxy.removeSubscription(subscription.channel(), subscription.streamId(), subscription.correlationId());
+        final String channel = subscription.channel();
+        final int streamId = subscription.streamId();
 
-        subscriptionMap.remove(subscription.channel(), subscription.streamId());
+        activeCorrelationId = driverProxy.removeSubscription(channel, streamId, subscription.correlationId());
+        subscriptionMap.remove(channel, streamId);
 
         awaitOperationSucceeded();
     }
@@ -200,10 +198,8 @@ public class ClientConductor extends Agent implements DriverListener
             managedBuffers[i * 2 + 1] = stateBuffer;
         }
 
-        final PositionIndicator senderLimit =
-            new BufferPositionIndicator(counterValuesBuffer, limitPositionIndicatorOffset);
-
-        addedPublication = new Publication(this, channel, streamId, sessionId, termId, logs, senderLimit, managedBuffers);
+        final PositionIndicator limit = new BufferPositionIndicator(counterValuesBuffer, limitPositionIndicatorOffset);
+        addedPublication = new Publication(this, channel, streamId, sessionId, termId, logs, limit, managedBuffers);
 
         correlationSignal.signal();
     }

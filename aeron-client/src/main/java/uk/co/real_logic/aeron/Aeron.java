@@ -15,10 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.common.BitUtil;
-import uk.co.real_logic.aeron.common.CommonContext;
-import uk.co.real_logic.aeron.common.IoUtil;
-import uk.co.real_logic.aeron.common.TimerWheel;
+import uk.co.real_logic.aeron.common.*;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastReceiver;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.CopyBroadcastReceiver;
@@ -39,6 +36,11 @@ import static uk.co.real_logic.aeron.common.IoUtil.mapExistingFile;
  */
 public final class Aeron implements AutoCloseable
 {
+    private static final long IDLE_MAX_SPINS = 0;
+    private static final long IDLE_MAX_YIELDS = 0;
+    private static final long IDLE_MIN_PARK_NS = TimeUnit.NANOSECONDS.toNanos(1);
+    private static final long IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(100);
+
     private static final int CONDUCTOR_TICKS_PER_WHEEL = 1024;
     private static final int CONDUCTOR_TICK_DURATION_US = 10_000;
 
@@ -54,11 +56,11 @@ public final class Aeron implements AutoCloseable
     {
         ctx.conclude();
 
-        final TimerWheel wheel =
-            new TimerWheel(CONDUCTOR_TICK_DURATION_US, TimeUnit.MICROSECONDS, CONDUCTOR_TICKS_PER_WHEEL);
+        final TimerWheel wheel = new TimerWheel(CONDUCTOR_TICK_DURATION_US, TimeUnit.MICROSECONDS, CONDUCTOR_TICKS_PER_WHEEL);
 
         conductor =
-            new ClientConductor(ctx.toClientBuffer,
+            new ClientConductor(ctx.idleStrategy,
+                                ctx.toClientBuffer,
                                 ctx.bufferManager,
                                 ctx.countersBuffer(),
                                 new DriverProxy(ctx.toDriverBuffer),
@@ -176,6 +178,7 @@ public final class Aeron implements AutoCloseable
 
     public static class Context extends CommonContext
     {
+        private IdleStrategy idleStrategy;
         private CopyBroadcastReceiver toClientBuffer;
         private RingBuffer toDriverBuffer;
 
@@ -202,6 +205,11 @@ public final class Aeron implements AutoCloseable
 
             try
             {
+                if (null == idleStrategy)
+                {
+                    idleStrategy = new BackoffIdleStrategy(IDLE_MAX_SPINS, IDLE_MAX_YIELDS, IDLE_MIN_PARK_NS, IDLE_MAX_PARK_NS);
+                }
+
                 if (null == toClientBuffer)
                 {
                     defaultToClientBuffer = mapExistingFile(toClientsFile(), TO_CLIENTS_FILE);
@@ -245,6 +253,12 @@ public final class Aeron implements AutoCloseable
                 throw new IllegalStateException("Could not initialise communication buffers", ex);
             }
 
+            return this;
+        }
+
+        public Context idleStrategy(final IdleStrategy idleStrategy)
+        {
+            this.idleStrategy = idleStrategy;
             return this;
         }
 

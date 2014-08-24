@@ -41,7 +41,7 @@ public class Publication implements AutoCloseable
     private final int sessionId;
     private final ManagedBuffer[] managedBuffers;
     private final LogAppender[] logAppenders;
-    private final PositionIndicator senderLimit;
+    private final PositionIndicator limit;
     private final AtomicInteger activeTermId;
     private final int positionBitsToShift;
     private final int initialTermId;
@@ -57,7 +57,7 @@ public class Publication implements AutoCloseable
                        final int sessionId,
                        final int initialTermId,
                        final LogAppender[] logAppenders,
-                       final PositionIndicator senderLimit,
+                       final PositionIndicator limit,
                        final ManagedBuffer[] managedBuffers)
     {
         this.clientConductor = clientConductor;
@@ -68,7 +68,7 @@ public class Publication implements AutoCloseable
         this.managedBuffers = managedBuffers;
         this.activeTermId = new AtomicInteger(initialTermId);
         this.logAppenders = logAppenders;
-        this.senderLimit = senderLimit;
+        this.limit = limit;
         this.activeIndex = termIdToBufferIndex(initialTermId);
 
         this.positionBitsToShift = Integer.numberOfTrailingZeros(logAppenders[0].capacity());
@@ -161,7 +161,7 @@ public class Publication implements AutoCloseable
         final LogAppender logAppender = logAppenders[activeIndex];
         final int currentTail = logAppender.tailVolatile();
 
-        if (limitNotReachedFor(currentTail))
+        if (isWithinLimit(currentTail))
         {
             switch (logAppender.append(buffer, offset, length))
             {
@@ -211,9 +211,9 @@ public class Publication implements AutoCloseable
         logAppenders[previousIndex].statusOrdered(LogBufferDescriptor.NEEDS_CLEANING);
     }
 
-    private boolean limitNotReachedFor(final int currentTail)
+    private boolean isWithinLimit(final int currentTail)
     {
-        return position(currentTail) < senderLimit.position();
+        return position(currentTail) < limit.position();
     }
 
     private long position(final int currentTail)

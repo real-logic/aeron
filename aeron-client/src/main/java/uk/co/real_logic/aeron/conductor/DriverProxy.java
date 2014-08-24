@@ -59,14 +59,14 @@ public class DriverProxy
         clientId = driverCommandBuffer.nextCorrelationId();
     }
 
-    public long addPublication(final String channel, final int sessionId, final int streamId)
+    public long addPublication(final String channel, final int streamId, final int sessionId)
     {
-        return sendPublicationMessage(channel, sessionId, streamId, ADD_PUBLICATION);
+        return sendPublicationMessage(channel, streamId, sessionId, ADD_PUBLICATION);
     }
 
-    public long removePublication(final String channel, final int sessionId, final int streamId)
+    public long removePublication(final String channel, final int streamId, final int sessionId)
     {
-        return sendPublicationMessage(channel, sessionId, streamId, REMOVE_PUBLICATION);
+        return sendPublicationMessage(channel, streamId, sessionId, REMOVE_PUBLICATION);
     }
 
     public long addSubscription(final String channel, final int streamId)
@@ -90,7 +90,7 @@ public class DriverProxy
         }
     }
 
-    private long sendPublicationMessage(final String channel, final int sessionId, final int streamId, final int msgTypeId)
+    private long sendPublicationMessage(final String channel, final int streamId, final int sessionId, final int msgTypeId)
     {
         final long correlationId = driverCommandBuffer.nextCorrelationId();
 

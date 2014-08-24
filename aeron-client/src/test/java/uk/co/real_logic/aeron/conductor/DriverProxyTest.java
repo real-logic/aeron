@@ -45,13 +45,13 @@ public class DriverProxyTest
     @Test
     public void threadSendsAddChannelMessage()
     {
-        threadSendsChannelMessage(() -> conductor.addPublication(CHANNEL, SESSION_ID, STREAM_ID), ADD_PUBLICATION);
+        threadSendsChannelMessage(() -> conductor.addPublication(CHANNEL, STREAM_ID, SESSION_ID), ADD_PUBLICATION);
     }
 
     @Test
     public void threadSendsRemoveChannelMessage()
     {
-        threadSendsChannelMessage(() -> conductor.removePublication(CHANNEL, SESSION_ID, STREAM_ID), REMOVE_PUBLICATION);
+        threadSendsChannelMessage(() -> conductor.removePublication(CHANNEL, STREAM_ID, SESSION_ID), REMOVE_PUBLICATION);
     }
 
     private void threadSendsChannelMessage(final Runnable sendMessage, final int expectedMsgTypeId)

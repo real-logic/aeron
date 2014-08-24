@@ -80,11 +80,11 @@ public class SendChannelEndpoint implements AutoCloseable
 
     public void addPublication(final DriverPublication publication,
                                final RetransmitHandler retransmitHandler,
-                               final SenderControlStrategy senderControlStrategy)
+                               final SenderFlowControl senderFlowControl)
     {
         assemblyByStreamAndSessionIdMap.put(
             publication.sessionId(), publication.streamId(),
-            new PublicationAssembly(publication, retransmitHandler, senderControlStrategy));
+            new PublicationAssembly(publication, retransmitHandler, senderFlowControl));
     }
 
     public DriverPublication removePublication(final int sessionId, final int streamId)
@@ -115,7 +115,7 @@ public class SendChannelEndpoint implements AutoCloseable
         if (null != assembly)
         {
             final long limit =
-                assembly.flowControlStrategy.onStatusMessage(
+                assembly.senderFlowControl.onStatusMessage(
                     header.termId(), header.highestContiguousTermOffset(), header.receiverWindowSize(), srcAddress);
 
             assembly.publication.updatePositionLimitFromStatusMessage(limit);
@@ -141,15 +141,15 @@ public class SendChannelEndpoint implements AutoCloseable
     {
         final DriverPublication publication;
         final RetransmitHandler retransmitHandler;
-        final SenderControlStrategy flowControlStrategy;
+        final SenderFlowControl senderFlowControl;
 
         public PublicationAssembly(final DriverPublication publication,
                                    final RetransmitHandler retransmitHandler,
-                                   final SenderControlStrategy flowControlStrategy)
+                                   final SenderFlowControl senderFlowControl)
         {
             this.publication = publication;
             this.retransmitHandler = retransmitHandler;
-            this.flowControlStrategy = flowControlStrategy;
+            this.senderFlowControl = senderFlowControl;
         }
     }
 }

@@ -19,7 +19,14 @@ import uk.co.real_logic.aeron.common.TermHelper;
 
 import java.net.InetSocketAddress;
 
-public class UnicastSenderControlStrategy implements SenderControlStrategy
+/**
+ * Default multicast sender flow control strategy.
+ *
+ * Max of right edges.
+ * No tracking of receivers.
+ *
+ */
+public class DefaultMulticastSenderFlowControl implements SenderFlowControl
 {
     private long positionLimit = 0;
     private int positionBitsToShift;
@@ -32,7 +39,7 @@ public class UnicastSenderControlStrategy implements SenderControlStrategy
                                 final InetSocketAddress address)
     {
         final long position =
-            TermHelper.calculatePosition(termId, highestContiguousTermOffset, positionBitsToShift, initialTermId);
+                TermHelper.calculatePosition(termId, highestContiguousTermOffset, positionBitsToShift, initialTermId);
         final long newPositionLimit = position + receiverWindowSize;
 
         positionLimit = Math.max(positionLimit, newPositionLimit);

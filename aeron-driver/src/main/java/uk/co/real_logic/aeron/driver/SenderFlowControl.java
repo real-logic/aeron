@@ -18,19 +18,20 @@ package uk.co.real_logic.aeron.driver;
 import java.net.InetSocketAddress;
 
 /**
- * Control strategy for applying flow control to the {@link Sender}.
+ * Strategy for applying flow control to the {@link Sender}.
  */
-public interface SenderControlStrategy
+public interface SenderFlowControl
 {
     /**
-     * Updates the highest position to which the {@link Sender} can progress.
+     * Update the sender flow control strategy based on a status message from the receiver.
      *
-     * @return the highest position to which the {@link Sender} can progress.
+     * @param termId currently active for the receiver.
+     * @param highestContiguousTermOffset within the current active term for the receiver.
+     * @param receiverWindowSize supported by the receiver.
+     * @param address of the receiver.
+     * @return the new position limit to be employed by the sender.
      */
-    long onStatusMessage(int termId,
-                         int highestContiguousTermOffset,
-                         int receiverWindowSize,
-                         InetSocketAddress address);
+    long onStatusMessage(int termId, int highestContiguousTermOffset, int receiverWindowSize, InetSocketAddress address);
 
     /**
      * Initial limit to which the {@link Sender} position can progress.

@@ -104,8 +104,8 @@ public class MediaDriver implements AutoCloseable
                 .deleteOnExit(ctx.dirsDeleteOnExit())
                 .eventHandler(ctx.eventConsumer));
 
-        ctx.unicastSenderFlowControl(UnicastSenderControlStrategy::new)
-           .multicastSenderFlowControl(UnicastSenderControlStrategy::new)
+        ctx.unicastSenderFlowControl(UnicastSenderFlowControl::new)
+           .multicastSenderFlowControl(UnicastSenderFlowControl::new)
            .publications(new AtomicArray<>())
            .subscriptions(new AtomicArray<>())
            .conductorTimerWheel(Configuration.newConductorTimerWheel())
@@ -224,8 +224,8 @@ public class MediaDriver implements AutoCloseable
         private TermBuffersFactory termBuffersFactory;
         private NioSelector receiverNioSelector;
         private NioSelector conductorNioSelector;
-        private Supplier<SenderControlStrategy> unicastSenderFlowControl;
-        private Supplier<SenderControlStrategy> multicastSenderFlowControl;
+        private Supplier<SenderFlowControl> unicastSenderFlowControl;
+        private Supplier<SenderFlowControl> multicastSenderFlowControl;
         private TimerWheel conductorTimerWheel;
         private OneToOneConcurrentArrayQueue<Object> conductorCommandQueue;
         private OneToOneConcurrentArrayQueue<Object> receiverCommandQueue;
@@ -401,13 +401,13 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context unicastSenderFlowControl(final Supplier<SenderControlStrategy> senderFlowControl)
+        public Context unicastSenderFlowControl(final Supplier<SenderFlowControl> senderFlowControl)
         {
             this.unicastSenderFlowControl = senderFlowControl;
             return this;
         }
 
-        public Context multicastSenderFlowControl(final Supplier<SenderControlStrategy> senderFlowControl)
+        public Context multicastSenderFlowControl(final Supplier<SenderFlowControl> senderFlowControl)
         {
             this.multicastSenderFlowControl = senderFlowControl;
             return this;
@@ -577,12 +577,12 @@ public class MediaDriver implements AutoCloseable
             return conductorNioSelector;
         }
 
-        public Supplier<SenderControlStrategy> unicastSenderFlowControl()
+        public Supplier<SenderFlowControl> unicastSenderFlowControl()
         {
             return unicastSenderFlowControl;
         }
 
-        public Supplier<SenderControlStrategy> multicastSenderFlowControl()
+        public Supplier<SenderFlowControl> multicastSenderFlowControl()
         {
             return multicastSenderFlowControl;
         }

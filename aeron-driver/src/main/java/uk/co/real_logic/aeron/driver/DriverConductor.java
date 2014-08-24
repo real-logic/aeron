@@ -93,8 +93,8 @@ public class DriverConductor extends Agent
     private final AtomicArray<DriverSubscription> subscriptions;
     private final AtomicArray<DriverPublication> publications;
 
-    private final Supplier<SenderControlStrategy> unicastSenderFlowControl;
-    private final Supplier<SenderControlStrategy> multicastSenderFlowControl;
+    private final Supplier<SenderFlowControl> unicastSenderFlowControl;
+    private final Supplier<SenderFlowControl> multicastSenderFlowControl;
 
     private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
     private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
@@ -367,7 +367,7 @@ public class DriverConductor extends Agent
         final PositionReporter positionReporter =
             new BufferPositionReporter(countersBuffer, positionCounterId, countersManager);
 
-        final SenderControlStrategy flowControlStrategy =
+        final SenderFlowControl senderFlowControl =
             udpChannel.isMulticast() ? multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
 
         final DriverPublication publication =
@@ -381,7 +381,7 @@ public class DriverConductor extends Agent
                                   initialTermId,
                                   HEADER_LENGTH,
                                   mtuLength,
-                                  flowControlStrategy.initialPositionLimit(initialTermId, capacity),
+                                  senderFlowControl.initialPositionLimit(initialTermId, capacity),
                                   logger,
                                   systemCounters);
 
@@ -393,7 +393,7 @@ public class DriverConductor extends Agent
                                   initialTermId,
                                   capacity);
 
-        channelEndpoint.addPublication(publication, retransmitHandler, flowControlStrategy);
+        channelEndpoint.addPublication(publication, retransmitHandler, senderFlowControl);
 
         clientProxy.onNewTermBuffers(
             ON_NEW_PUBLICATION, sessionId, streamId, initialTermId, channel, termBuffers, correlationId, positionCounterId);

@@ -27,7 +27,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class UdpChannelTest
@@ -126,17 +125,6 @@ public class UdpChannelTest
     public void shouldThrowExceptionWhenNoPortSpecified() throws Exception
     {
         UdpChannel.parse("udp://localhost");
-    }
-
-    @Test
-    public void shouldHandleConsistentHashCorrectly() throws Exception
-    {
-        final UdpChannel udpChannel1 = UdpChannel.parse("udp://localhost:40124");
-        final UdpChannel udpChannel2 = UdpChannel.parse("udp://localhost:40124");
-        final UdpChannel udpChannel3 = UdpChannel.parse("udp://localhost:40123");
-
-        assertThat(udpChannel1.consistentHash(), is(udpChannel2.consistentHash()));
-        assertThat(udpChannel2.consistentHash(), not(udpChannel3.consistentHash()));
     }
 
     @Test

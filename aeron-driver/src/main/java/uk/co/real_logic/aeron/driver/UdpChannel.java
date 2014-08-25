@@ -43,7 +43,6 @@ public class UdpChannel
 
     private final String uriStr;
     private final String canonicalForm;
-    private final long consistentHash;
     private final NetworkInterface localInterface;
 
     /**
@@ -119,8 +118,6 @@ public class UdpChannel
                        .localDataAddress(localAddress)
                        .canonicalForm(canonicalise(localAddress, remoteAddress));
             }
-
-            context.consistentHash(BitUtil.generateConsistentHash(context.canonicalForm.getBytes()));
 
             return new UdpChannel(context);
         }
@@ -210,21 +207,8 @@ public class UdpChannel
         this.remoteControl = context.remoteControl;
         this.localControl = context.localControl;
         this.uriStr = context.uriStr;
-        this.consistentHash = context.consistentHash;
         this.canonicalForm = context.canonicalForm;
         this.localInterface = context.localInterface;
-    }
-
-    /**
-     * Return consistent hash of channel information
-     *
-     * {@link BitUtil#generateConsistentHash(byte[])}
-     *
-     * @return consistent hash of channel information
-     */
-    public long consistentHash()
-    {
-        return consistentHash;
     }
 
     /**
@@ -239,27 +223,21 @@ public class UdpChannel
         return canonicalForm;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public int hashCode()
+    public boolean equals(final Object o)
     {
-        return (int)(consistentHash ^ (consistentHash >>> 32));
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        final UdpChannel that = (UdpChannel)o;
+
+        if (canonicalForm != null ? !canonicalForm.equals(that.canonicalForm) : that.canonicalForm != null) return false;
+
+        return true;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public boolean equals(Object obj)
+    public int hashCode()
     {
-        if (null != obj && obj instanceof UdpChannel)
-        {
-            final UdpChannel rhs = (UdpChannel)obj;
-
-            return rhs.localData.equals(this.localData) && rhs.remoteData.equals(this.remoteData);
-        }
-
-        return false;
+        return canonicalForm != null ? canonicalForm.hashCode() : 0;
     }
 
     /**
@@ -334,18 +312,11 @@ public class UdpChannel
         private InetSocketAddress localControl;
         private String uriStr;
         private String canonicalForm;
-        private long consistentHash;
         private NetworkInterface localInterface;
 
         public Context uriStr(final String uri)
         {
             uriStr = uri;
-            return this;
-        }
-
-        public Context consistentHash(final long hash)
-        {
-            consistentHash = hash;
             return this;
         }
 

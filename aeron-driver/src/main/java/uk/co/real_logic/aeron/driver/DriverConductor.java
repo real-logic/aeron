@@ -39,6 +39,7 @@ import uk.co.real_logic.aeron.driver.exceptions.ControlProtocolException;
 import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
 
 import java.net.InetSocketAddress;
+import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -82,8 +83,8 @@ public class DriverConductor extends Agent
     private final TermBuffersFactory termBuffersFactory;
     private final RingBuffer fromClientCommands;
     private final Long2ObjectHashMap<ClientLiveness> clientLivenessByClientId = new Long2ObjectHashMap<>();
-    private final Long2ObjectHashMap<SendChannelEndpoint> sendChannelEndpointByHash = new Long2ObjectHashMap<>();
-    private final Long2ObjectHashMap<ReceiveChannelEndpoint> receiveChannelEndpointByHash = new Long2ObjectHashMap<>();
+    private final HashMap<String, SendChannelEndpoint> sendChannelEndpointByChannelMap = new HashMap<>();
+    private final HashMap<String, ReceiveChannelEndpoint> receiveChannelEndpointByChannelMap = new HashMap<>();
     private final Long2ObjectHashMap<DriverSubscription> subscriptionByCorrelationIdMap = new Long2ObjectHashMap<>();
     private final TimerWheel timerWheel;
     private final AtomicArray<DriverConnection> connections = new AtomicArray<>();
@@ -232,12 +233,12 @@ public class DriverConductor extends Agent
 
     public SendChannelEndpoint senderChannelEndpoint(final UdpChannel channel)
     {
-        return sendChannelEndpointByHash.get(channel.consistentHash());
+        return sendChannelEndpointByChannelMap.get(channel.canonicalForm());
     }
 
     public ReceiveChannelEndpoint receiverChannelEndpoint(final UdpChannel channel)
     {
-        return receiveChannelEndpointByHash.get(channel.consistentHash());
+        return receiveChannelEndpointByChannelMap.get(channel.canonicalForm());
     }
 
     public int doWork() throws Exception
@@ -262,8 +263,8 @@ public class DriverConductor extends Agent
         termBuffersFactory.close();
         publications.forEach(DriverPublication::close);
         connections.forEach(DriverConnection::close);
-        sendChannelEndpointByHash.forEach((hash, endpoint) -> endpoint.close());
-        receiveChannelEndpointByHash.forEach((hash, endpoint) -> endpoint.close());
+        sendChannelEndpointByChannelMap.values().forEach(SendChannelEndpoint::close);
+        receiveChannelEndpointByChannelMap.values().forEach(ReceiveChannelEndpoint::close);
         systemCounters.close();
     }
 
@@ -332,7 +333,7 @@ public class DriverConductor extends Agent
         final long clientId = publicationMessage.clientId();
 
         final UdpChannel udpChannel = UdpChannel.parse(channel);
-        SendChannelEndpoint channelEndpoint = sendChannelEndpointByHash.get(udpChannel.consistentHash());
+        SendChannelEndpoint channelEndpoint = sendChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
         if (null == channelEndpoint)
         {
             channelEndpoint = new SendChannelEndpoint(
@@ -342,12 +343,7 @@ public class DriverConductor extends Agent
                 Configuration.createLossGenerator(controlLossRate, controlLossSeed),
                 systemCounters);
 
-            sendChannelEndpointByHash.put(udpChannel.consistentHash(), channelEndpoint);
-        }
-        else if (!channelEndpoint.udpChannel().equals(udpChannel))
-        {
-            throw new ControlProtocolException(
-                ErrorCode.PUBLICATION_STREAM_ALREADY_EXISTS, "channels hash same, but channels actually different");
+            sendChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
         }
 
         if (null != channelEndpoint.getPublication(sessionId, streamId))
@@ -406,7 +402,7 @@ public class DriverConductor extends Agent
         final int streamId = publicationMessage.streamId();
 
         final UdpChannel udpChannel = UdpChannel.parse(channel);
-        final SendChannelEndpoint channelEndpoint = sendChannelEndpointByHash.get(udpChannel.consistentHash());
+        final SendChannelEndpoint channelEndpoint = sendChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
         if (null == channelEndpoint)
         {
             throw new ControlProtocolException(INVALID_CHANNEL, "channel unknown");
@@ -437,14 +433,14 @@ public class DriverConductor extends Agent
         final long clientId = subscriptionMessage.clientId();
 
         final UdpChannel udpChannel = UdpChannel.parse(channel);
-        ReceiveChannelEndpoint channelEndpoint = receiveChannelEndpointByHash.get(udpChannel.consistentHash());
+        ReceiveChannelEndpoint channelEndpoint = receiveChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
 
         if (null == channelEndpoint)
         {
             channelEndpoint = new ReceiveChannelEndpoint(
                 udpChannel, conductorProxy, logger, Configuration.createLossGenerator(dataLossRate, dataLossSeed));
 
-            receiveChannelEndpointByHash.put(udpChannel.consistentHash(), channelEndpoint);
+            receiveChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
 
             while (!receiverProxy.registerMediaEndpoint(channelEndpoint))
             {
@@ -479,7 +475,7 @@ public class DriverConductor extends Agent
         final long registrationCorrelationId = subscriptionMessage.registrationCorrelationId();
 
         final UdpChannel udpChannel = UdpChannel.parse(channel);
-        final ReceiveChannelEndpoint channelEndpoint = receiveChannelEndpointByHash.get(udpChannel.consistentHash());
+        final ReceiveChannelEndpoint channelEndpoint = receiveChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
         if (null == channelEndpoint)
         {
             throw new ControlProtocolException(INVALID_CHANNEL, "channel unknown");
@@ -509,7 +505,7 @@ public class DriverConductor extends Agent
 
         if (channelEndpoint.streamCount() == 0)
         {
-            receiveChannelEndpointByHash.remove(udpChannel.consistentHash());
+            receiveChannelEndpointByChannelMap.remove(udpChannel.canonicalForm());
             channelEndpoint.close();
         }
 
@@ -580,7 +576,7 @@ public class DriverConductor extends Agent
 
                             if (channelEndpoint.sessionCount() == 0)
                             {
-                                sendChannelEndpointByHash.remove(channelEndpoint.udpChannel().consistentHash());
+                                sendChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
                                 channelEndpoint.close();
                             }
                         }
@@ -628,7 +624,7 @@ public class DriverConductor extends Agent
 
                     if (channelEndpoint.streamCount() == 0)
                     {
-                        receiveChannelEndpointByHash.remove(channelEndpoint.udpTransport().udpChannel().consistentHash());
+                        receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
                         channelEndpoint.close();
                     }
                 }

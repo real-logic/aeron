@@ -734,7 +734,7 @@ public class DriverConductor extends Agent
         final int initialTermId = cmd.termId();
         final InetSocketAddress controlAddress = cmd.controlAddress();
         final ReceiveChannelEndpoint channelEndpoint = cmd.channelEndpoint();
-        final UdpChannel udpChannel = channelEndpoint.udpTransport().udpChannel();
+        final UdpChannel udpChannel = channelEndpoint.udpChannel();
 
         final String canonicalForm = udpChannel.canonicalForm();
         final TermBuffers termBuffers = termBuffersFactory.newConnection(canonicalForm, sessionId, streamId);

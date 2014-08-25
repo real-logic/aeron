@@ -138,6 +138,7 @@ public class PubMulticastTest
                     assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH));
                     assertThat(buffer.position(), is(DataHeaderFlyweight.HEADER_LENGTH));
                     receivedZeroLengthData.incrementAndGet();
+
                     return true;
                 }
 
@@ -166,6 +167,7 @@ public class PubMulticastTest
                     assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
                     assertThat(buffer.position(), is(ALIGNED_FRAME_LENGTH));
                     receivedDataFrames.incrementAndGet();
+
                     return true;
                 }
 
@@ -200,6 +202,7 @@ public class PubMulticastTest
                 {
                     termId.set(dataHeader.termId());
                     receivedZeroLengthData.incrementAndGet();
+
                     return true;
                 }
 
@@ -221,6 +224,7 @@ public class PubMulticastTest
                 if (dataHeader.frameLength() > DataHeaderFlyweight.HEADER_LENGTH)
                 {
                     receivedDataFrames.incrementAndGet();
+
                     return true;
                 }
 
@@ -247,6 +251,7 @@ public class PubMulticastTest
                     assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
                     assertThat(buffer.position(), is(ALIGNED_FRAME_LENGTH));
                     receivedDataFrames.incrementAndGet();
+
                     return true;
                 }
 
@@ -262,14 +267,14 @@ public class PubMulticastTest
         statusMessage.wrap(new AtomicBuffer(smBuffer), 0);
 
         statusMessage.receiverWindowSize(1000)
-                .highestContiguousTermOffset(0)
-                .termId(termId)
-                .streamId(STREAM_ID)
-                .sessionId(SESSION_ID)
-                .frameLength(StatusMessageFlyweight.HEADER_LENGTH)
-                .headerType(HeaderFlyweight.HDR_TYPE_SM)
-                .flags((short) 0)
-                .version(HeaderFlyweight.CURRENT_VERSION);
+                     .highestContiguousTermOffset(0)
+                     .termId(termId)
+                     .streamId(STREAM_ID)
+                     .sessionId(SESSION_ID)
+                     .frameLength(StatusMessageFlyweight.HEADER_LENGTH)
+                     .headerType(HeaderFlyweight.HDR_TYPE_SM)
+                     .flags((short)0)
+                     .version(HeaderFlyweight.CURRENT_VERSION);
 
         smBuffer.position(0);
         smBuffer.limit(StatusMessageFlyweight.HEADER_LENGTH);
@@ -284,14 +289,14 @@ public class PubMulticastTest
         nakHeader.wrap(new AtomicBuffer(nakBuffer), 0);
 
         nakHeader.length(length)
-                .termOffset(termOffset)
-                .termId(termId)
-                .streamId(STREAM_ID)
-                .sessionId(SESSION_ID)
-                .frameLength(NakFlyweight.HEADER_LENGTH)
-                .headerType(HeaderFlyweight.HDR_TYPE_NAK)
-                .flags((short) 0)
-                .version(HeaderFlyweight.CURRENT_VERSION);
+                 .termOffset(termOffset)
+                 .termId(termId)
+                 .streamId(STREAM_ID)
+                 .sessionId(SESSION_ID)
+                 .frameLength(NakFlyweight.HEADER_LENGTH)
+                 .headerType(HeaderFlyweight.HDR_TYPE_NAK)
+                 .flags((short)0)
+                 .version(HeaderFlyweight.CURRENT_VERSION);
 
         nakBuffer.position(0);
         nakBuffer.limit(NakFlyweight.HEADER_LENGTH);

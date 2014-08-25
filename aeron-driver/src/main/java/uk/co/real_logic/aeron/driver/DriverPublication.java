@@ -43,21 +43,31 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogScanner.Avai
  */
 public class DriverPublication implements AutoCloseable
 {
-    /** Initial heartbeat timeout (cancelled by SM) */
+    /**
+     * Initial heartbeat timeout (cancelled by SM)
+     */
     public static final int INITIAL_HEARTBEAT_TIMEOUT_MS = 100;
     public static final long INITIAL_HEARTBEAT_TIMEOUT_NS = MILLISECONDS.toNanos(INITIAL_HEARTBEAT_TIMEOUT_MS);
 
-    /** Heartbeat after data sent */
+    /**
+     * Heartbeat after data sent
+     */
     public static final int HEARTBEAT_TIMEOUT_MS = 200;
     public static final long HEARTBEAT_TIMEOUT_NS = MILLISECONDS.toNanos(HEARTBEAT_TIMEOUT_MS);
 
-    /** Publication is still active. */
+    /**
+     * Publication is still active.
+     */
     public static final int ACTIVE = 1;
 
-    /** Client is now closed and stream should be flushed and then cleaned up. */
+    /**
+     * Client is now closed and stream should be flushed and then cleaned up.
+     */
     public static final int EOF = 2;
 
-    /** Publication has been flushed to the media. */
+    /**
+     * Publication has been flushed to the media.
+     */
     public static final int FLUSHED = 3;
 
     private final TimerWheel timerWheel;
@@ -104,19 +114,20 @@ public class DriverPublication implements AutoCloseable
     private int lastSentTermOffset;
     private int lastSentLength;
 
-    public DriverPublication(final SendChannelEndpoint channelEndpoint,
-                             final TimerWheel timerWheel,
-                             final TermBuffers termBuffers,
-                             final PositionReporter publisherLimitReporter,
-                             final ClientLiveness clientLiveness,
-                             final int sessionId,
-                             final int streamId,
-                             final int initialTermId,
-                             final int headerLength,
-                             final int mtuLength,
-                             final long initialPositionLimit,
-                             final EventLogger logger,
-                             final SystemCounters systemCounters)
+    public DriverPublication(
+        final SendChannelEndpoint channelEndpoint,
+        final TimerWheel timerWheel,
+        final TermBuffers termBuffers,
+        final PositionReporter publisherLimitReporter,
+        final ClientLiveness clientLiveness,
+        final int sessionId,
+        final int streamId,
+        final int initialTermId,
+        final int headerLength,
+        final int mtuLength,
+        final long initialPositionLimit,
+        final EventLogger logger,
+        final SystemCounters systemCounters)
     {
         this.channelEndpoint = channelEndpoint;
         this.termBuffers = termBuffers;
@@ -346,7 +357,7 @@ public class DriverPublication implements AutoCloseable
         final int bytesSent = channelEndpoint.sendTo(sendBuffer, dstAddress);
         if (length != bytesSent)
         {
-            logger.log(EventCode.FRAME_OUT_INCOMPLETE_SENDTO, "onSendTransmissionUnit %d/%d", bytesSent, length);
+            logger.log(EventCode.FRAME_OUT_INCOMPLETE_SEND, "onSendTransmissionUnit %d/%d", bytesSent, length);
         }
 
         updateTimeOfLastSendOrHeartbeat(timerWheel.now());
@@ -364,7 +375,7 @@ public class DriverPublication implements AutoCloseable
         final int bytesSent = channelEndpoint.sendTo(termRetransmitBuffer, dstAddress);
         if (bytesSent != length)
         {
-            logger.log(EventCode.FRAME_OUT_INCOMPLETE_SENDTO, "onSendRetransmit %d/%d", bytesSent, length);
+            logger.log(EventCode.FRAME_OUT_INCOMPLETE_SEND, "onSendRetransmit %d/%d", bytesSent, length);
         }
     }
 
@@ -398,13 +409,13 @@ public class DriverPublication implements AutoCloseable
         heartbeatHeader.wrap(scratchAtomicBuffer, 0);
 
         heartbeatHeader.sessionId(sessionId)
-                  .streamId(streamId)
-                  .termId(activeTermId.get())
-                  .termOffset(logScanners[activeIndex].offset())
-                  .frameLength(DataHeaderFlyweight.HEADER_LENGTH)
-                  .headerType(HeaderFlyweight.HDR_TYPE_DATA)
-                  .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
-                  .version(HeaderFlyweight.CURRENT_VERSION);
+                       .streamId(streamId)
+                       .termId(activeTermId.get())
+                       .termOffset(logScanners[activeIndex].offset())
+                       .frameLength(DataHeaderFlyweight.HEADER_LENGTH)
+                       .headerType(HeaderFlyweight.HDR_TYPE_DATA)
+                       .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
+                       .version(HeaderFlyweight.CURRENT_VERSION);
 
         scratchByteBuffer.position(0);
         scratchByteBuffer.limit(DataHeaderFlyweight.HEADER_LENGTH);
@@ -414,8 +425,11 @@ public class DriverPublication implements AutoCloseable
 
         if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
         {
-            logger.log(EventCode.FRAME_OUT_INCOMPLETE_SENDTO, "sendHeartbeat %d/%d",
-                       bytesSent, DataHeaderFlyweight.HEADER_LENGTH);
+            logger.log(
+                EventCode.FRAME_OUT_INCOMPLETE_SEND,
+                "sendHeartbeat %d/%d",
+                bytesSent,
+                DataHeaderFlyweight.HEADER_LENGTH);
         }
 
         updateTimeOfLastSendOrHeartbeat(timerWheel.now());

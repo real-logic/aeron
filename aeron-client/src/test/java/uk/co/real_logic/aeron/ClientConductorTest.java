@@ -317,8 +317,7 @@ public class ClientConductorTest extends MockBufferUsage
                 newBufferMessage.location(i, sessionId + "-log-" + i);
                 newBufferMessage.bufferOffset(i, 0);
                 newBufferMessage.bufferLength(i, LOG_BUFFER_SZ);
-            }
-        );
+            });
 
         IntStream.range(0, TermHelper.BUFFER_COUNT).forEach(
             (i) ->
@@ -326,8 +325,7 @@ public class ClientConductorTest extends MockBufferUsage
                 newBufferMessage.location(i + TermHelper.BUFFER_COUNT, sessionId + "-state-" + i);
                 newBufferMessage.bufferOffset(i + TermHelper.BUFFER_COUNT, 0);
                 newBufferMessage.bufferLength(i + TermHelper.BUFFER_COUNT, STATE_BUFFER_LENGTH);
-            }
-        );
+            });
 
         newBufferMessage.channel(CHANNEL);
 

@@ -57,7 +57,8 @@ public class AeronTest extends MockBufferUsage
     private static final int PACKET_VALUE = 37;
     private static final int SEND_BUFFER_CAPACITY = 1024;
     private static final int SCRATCH_BUFFER_CAPACITY = 1024;
-    private static final DataHandler EMPTY_DATA_HANDLER = (buffer, offset, length, sessionId, flags) -> {};
+    private static final DataHandler EMPTY_DATA_HANDLER = (buffer, offset, length, sessionId, flags) -> {
+    };
 
     private static final int RING_BUFFER_SZ = (16 * 1024) + RingBufferDescriptor.TRAILER_LENGTH;
     private static final int BROADCAST_BUFFER_SZ = (16 * 1024) + BroadcastBufferDescriptor.TRAILER_LENGTH;
@@ -89,11 +90,10 @@ public class AeronTest extends MockBufferUsage
     @Before
     public void setUp() throws Exception
     {
-        final Aeron.Context ctx =
-            new Aeron.Context()
-                .toClientBuffer(toClientReceiver)
-                .toDriverBuffer(toDriverBuffer)
-                .bufferManager(mockBufferUsage);
+        final Aeron.Context ctx = new Aeron.Context()
+            .toClientBuffer(toClientReceiver)
+            .toDriverBuffer(toDriverBuffer)
+            .bufferManager(mockBufferUsage);
 
         ctx.counterLabelsBuffer(counterLabelsBuffer)
            .countersBuffer(counterValuesBuffer);
@@ -111,7 +111,7 @@ public class AeronTest extends MockBufferUsage
 
     @Ignore("port to a proper unit test")
     @Test
-    public void receivingEnoughPacketsCausesSubscriberBufferRoll() throws Exception
+    public void receivingEnoughPacketsCausesSubscriberBufferRoll()
     {
         channel1Handler = sessionAssertingHandler();
 
@@ -151,7 +151,7 @@ public class AeronTest extends MockBufferUsage
 
     @Ignore("port to a proper unit test")
     @Test
-    public void subscriberBufferRollsShouldNotAffectOtherSessions() throws Exception
+    public void subscriberBufferRollsShouldNotAffectOtherSessions()
     {
         channel1Handler = eitherSessionAssertingHandler();
 

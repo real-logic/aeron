@@ -25,11 +25,10 @@ public class EventReaderApp
 {
     public static void main(final String args[]) throws Exception
     {
-        final EventReader.Context ctx =
-            new EventReader.Context()
-                .deleteOnExit(true)
-                .idleStrategy(Configuration.eventReaderIdleStrategy())
-                .eventHandler(System.out::println);
+        final EventReader.Context ctx = new EventReader.Context()
+            .deleteOnExit(true)
+            .idleStrategy(Configuration.eventReaderIdleStrategy())
+            .eventHandler(System.out::println);
 
         try (final EventReader eventReader = new EventReader(ctx))
         {

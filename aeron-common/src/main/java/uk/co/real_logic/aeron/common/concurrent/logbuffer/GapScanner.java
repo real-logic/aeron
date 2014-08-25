@@ -98,7 +98,8 @@ public class GapScanner extends LogBuffer
         return tailVolatile() >= capacity();
     }
 
-    private static int scanGap(final AtomicBuffer logBuffer, final GapHandler handler, final int offset, final int highWaterMark)
+    private static int scanGap(
+        final AtomicBuffer logBuffer, final GapHandler handler, final int offset, final int highWaterMark)
     {
         int gapLength = 0;
         int alignedFrameLength;

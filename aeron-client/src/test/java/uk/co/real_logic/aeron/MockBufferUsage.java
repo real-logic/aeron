@@ -52,10 +52,12 @@ public class MockBufferUsage
             when(mockBufferUsage.newBuffer(eq(SESSION_ID_2 + "-state-" + i), anyInt(), anyInt()))
                 .thenAnswer(answer(stateBuffersSession2[i]));
 
-            appendersSession1[i] = new LogAppender(logBuffersSession1[i], stateBuffersSession1[i],
-                                                   DataHeaderFlyweight.DEFAULT_HEADER_NULL_IDS, MAX_FRAME_LENGTH);
-            appendersSession2[i] = new LogAppender(logBuffersSession2[i], stateBuffersSession2[i],
-                                                   DataHeaderFlyweight.DEFAULT_HEADER_NULL_IDS, MAX_FRAME_LENGTH);
+            appendersSession1[i] = new LogAppender(
+                logBuffersSession1[i], stateBuffersSession1[i],
+                DataHeaderFlyweight.DEFAULT_HEADER_NULL_IDS, MAX_FRAME_LENGTH);
+            appendersSession2[i] = new LogAppender(
+                logBuffersSession2[i], stateBuffersSession2[i],
+                DataHeaderFlyweight.DEFAULT_HEADER_NULL_IDS, MAX_FRAME_LENGTH);
         }
     }
 

@@ -28,5 +28,5 @@ public interface NakMessageSender
      * @param termOffset for the NAK
      * @param length     for the NAK
      */
-    void send(final int termId, final int termOffset, final int length);
+    void send(int termId, int termOffset, int length);
 }

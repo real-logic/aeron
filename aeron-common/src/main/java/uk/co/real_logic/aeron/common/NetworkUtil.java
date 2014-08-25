@@ -70,7 +70,7 @@ public class NetworkUtil
         }
         catch (final Exception ex)
         {
-            ex.printStackTrace();
+            throw new RuntimeException(ex);
         }
 
         if (null != savedIfc)

@@ -53,10 +53,11 @@ public class ClientProxy
         this.logger = logger;
     }
 
-    public void onError(final ErrorCode errorCode,
-                        final String errorMessage,
-                        final Flyweight offendingFlyweight,
-                        final int offendingFlyweightLength)
+    public void onError(
+        final ErrorCode errorCode,
+        final String errorMessage,
+        final Flyweight offendingFlyweight,
+        final int offendingFlyweightLength)
     {
         final byte[] errorBytes = errorMessage.getBytes();
         final int frameLength = ErrorFlyweight.HEADER_LENGTH + offendingFlyweightLength + errorBytes.length;
@@ -70,14 +71,15 @@ public class ClientProxy
         transmitter.transmit(ON_ERROR, tmpBuffer, 0, errorFlyweight.frameLength());
     }
 
-    public void onNewTermBuffers(final int msgTypeId,
-                                 final int sessionId,
-                                 final int streamId,
-                                 final int termId,
-                                 final String channel,
-                                 final TermBuffers termBuffers,
-                                 final long correlationId,
-                                 final int positionCounterId)
+    public void onNewTermBuffers(
+        final int msgTypeId,
+        final int sessionId,
+        final int streamId,
+        final int termId,
+        final String channel,
+        final TermBuffers termBuffers,
+        final long correlationId,
+        final int positionCounterId)
     {
         logBuffersMessage.wrap(tmpBuffer, 0);
         logBuffersMessage.sessionId(sessionId)
@@ -88,10 +90,12 @@ public class ClientProxy
         termBuffers.appendBufferLocationsTo(logBuffersMessage);
         logBuffersMessage.channel(channel);
 
-        logger.log(msgTypeId == ON_NEW_PUBLICATION ?
-                   EventCode.CMD_OUT_NEW_PUBLICATION_BUFFER_NOTIFICATION :
-                   EventCode.CMD_OUT_NEW_SUBSCRIPTION_BUFFER_NOTIFICATION,
-                tmpBuffer, 0, logBuffersMessage.length());
+        logger.log(
+            msgTypeId == ON_NEW_PUBLICATION ?
+                EventCode.CMD_OUT_NEW_PUBLICATION_BUFFER_NOTIFICATION : EventCode.CMD_OUT_NEW_SUBSCRIPTION_BUFFER_NOTIFICATION,
+            tmpBuffer,
+            0,
+            logBuffersMessage.length());
 
         transmitter.transmit(msgTypeId, tmpBuffer, 0, logBuffersMessage.length());
     }
@@ -107,9 +111,8 @@ public class ClientProxy
         transmitter.transmit(ON_OPERATION_SUCCESS, tmpBuffer, 0, CorrelatedMessageFlyweight.LENGTH);
     }
 
-    public void onInactiveConnection(final int sessionId,
-                                     final int streamId,
-                                     final String channel)
+    public void onInactiveConnection(
+        final int sessionId, final int streamId, final String channel)
     {
         connectionMessage.wrap(tmpBuffer, 0);
         connectionMessage.sessionId(sessionId)

@@ -36,10 +36,9 @@ public class DriverProxyTest
 
     private static final int STREAM_ID = 1;
     private static final int SESSION_ID = 2;
-    private static final int TERM_ID = 4;
     private static final long CORRELATION_ID = 3;
-    private final RingBuffer conductorBuffer =
-        new ManyToOneRingBuffer(new AtomicBuffer(ByteBuffer.allocateDirect(TRAILER_LENGTH + 1024)));
+    private final RingBuffer conductorBuffer = new ManyToOneRingBuffer(
+        new AtomicBuffer(ByteBuffer.allocateDirect(TRAILER_LENGTH + 1024)));
     private final DriverProxy conductor = new DriverProxy(conductorBuffer);
 
     @Test

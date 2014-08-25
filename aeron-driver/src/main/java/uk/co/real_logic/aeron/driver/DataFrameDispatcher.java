@@ -96,10 +96,8 @@ public class DataFrameDispatcher
         }
     }
 
-    public void onDataFrame(final DataHeaderFlyweight dataHeader,
-                            final AtomicBuffer buffer,
-                            final int length,
-                            final InetSocketAddress srcAddress)
+    public void onDataFrame(
+        final DataHeaderFlyweight dataHeader, final AtomicBuffer buffer, final int length, final InetSocketAddress srcAddress)
     {
         final int streamId = dataHeader.streamId();
         final Int2ObjectHashMap<DriverConnection> connectionBySessionIdMap = connectionsByStreamIdMap.get(streamId);
@@ -112,8 +110,7 @@ public class DataFrameDispatcher
 
             if (null != connection)
             {
-                if (length > DataHeaderFlyweight.HEADER_LENGTH ||
-                    dataHeader.headerType() == HeaderFlyweight.HDR_TYPE_PAD)
+                if (length > DataHeaderFlyweight.HEADER_LENGTH || dataHeader.headerType() == HeaderFlyweight.HDR_TYPE_PAD)
                 {
                     connection.insertIntoTerm(termId, dataHeader.termOffset(), buffer, length);
                 }

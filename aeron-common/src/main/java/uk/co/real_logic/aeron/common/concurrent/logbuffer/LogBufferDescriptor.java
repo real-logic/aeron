@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 
-import static java.lang.Integer.valueOf;
 import static uk.co.real_logic.aeron.common.BitUtil.CACHE_LINE_SIZE;
 import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
@@ -27,25 +26,39 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor
  */
 public class LogBufferDescriptor
 {
-    /** The log is currently clean or in use. */
+    /**
+     * The log is currently clean or in use.
+     */
     public static final int CLEAN = 0;
 
-    /** The log is dirty and requires cleaning. */
+    /**
+     * The log is dirty and requires cleaning.
+     */
     public static final int NEEDS_CLEANING = 1;
 
-    /** The log is in the process of being cleaned. */
+    /**
+     * The log is in the process of being cleaned.
+     */
     public static final int IN_CLEANING = 2;
 
-    /** Offset within the trailer where the tail value is stored. */
+    /**
+     * Offset within the trailer where the tail value is stored.
+     */
     public static final int TAIL_COUNTER_OFFSET;
 
-    /** Offset within the trailer where the high water mark is stored. */
+    /**
+     * Offset within the trailer where the high water mark is stored.
+     */
     public static final int HIGH_WATER_MARK_OFFSET;
 
-    /** Offset within the trailer where current status is stored */
+    /**
+     * Offset within the trailer where current status is stored
+     */
     public static final int STATUS_OFFSET;
 
-    /** Total length of the state buffer in bytes. */
+    /**
+     * Total length of the state buffer in bytes.
+     */
     public static final int STATE_BUFFER_LENGTH;
 
     static
@@ -56,10 +69,14 @@ public class LogBufferDescriptor
         STATE_BUFFER_LENGTH = CACHE_LINE_SIZE * 2;
     }
 
-    /** Minimum buffer size for the log */
+    /**
+     * Minimum buffer size for the log
+     */
     public static final int MIN_LOG_SIZE = 64 * 1024; // TODO: make a sensible default
 
-    /** Padding frame type to indicate end of the log is not in use. */
+    /**
+     * Padding frame type to indicate end of the log is not in use.
+     */
     public static final int PADDING_FRAME_TYPE = 0;
 
     /**
@@ -73,15 +90,19 @@ public class LogBufferDescriptor
         final int capacity = buffer.capacity();
         if (capacity < MIN_LOG_SIZE)
         {
-            final String s = String.format("Log buffer capacity less than min size of %d, capacity=%d",
-                                           MIN_LOG_SIZE, capacity);
+            final String s = String.format(
+                "Log buffer capacity less than min size of %d, capacity=%d",
+                MIN_LOG_SIZE,
+                capacity);
             throw new IllegalStateException(s);
         }
 
         if ((capacity & (FRAME_ALIGNMENT - 1)) != 0)
         {
-            final String s = String.format("Log buffer capacity not a multiple of %d, capacity=%d",
-                                           FRAME_ALIGNMENT, capacity);
+            final String s = String.format(
+                "Log buffer capacity not a multiple of %d, capacity=%d",
+                FRAME_ALIGNMENT,
+                capacity);
             throw new IllegalStateException(s);
         }
     }
@@ -97,8 +118,10 @@ public class LogBufferDescriptor
         final int capacity = buffer.capacity();
         if (capacity < STATE_BUFFER_LENGTH)
         {
-            final String s = String.format("State buffer capacity less than min size of %d, capacity=%d",
-                                           valueOf(STATE_BUFFER_LENGTH), valueOf(capacity));
+            final String s = String.format(
+                "State buffer capacity less than min size of %d, capacity=%d",
+                STATE_BUFFER_LENGTH,
+                capacity);
             throw new IllegalStateException(s);
         }
     }

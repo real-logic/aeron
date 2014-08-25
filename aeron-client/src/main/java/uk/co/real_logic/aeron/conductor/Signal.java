@@ -1,7 +1,7 @@
 package uk.co.real_logic.aeron.conductor;
 
 /**
- * .
+ * Signal a waiting thread that an event has occurred which it has been waiting on.
  */
 public class Signal
 {
@@ -34,9 +34,9 @@ public class Signal
         {
             wait(awaitTimeout);
         }
-        catch (InterruptedException e)
+        catch (final InterruptedException ex)
         {
-            throw new RuntimeException(e);
+            throw new RuntimeException(ex);
         }
         finally
         {

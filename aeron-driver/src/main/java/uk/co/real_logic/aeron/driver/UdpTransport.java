@@ -70,18 +70,27 @@ public final class UdpTransport implements AutoCloseable
     /**
      * Construct a transport for use with receiving and processing data frames
      *
-     * @param udpChannel of the transport
+     * @param udpChannel       of the transport
      * @param dataFrameHandler to call when data frames are received
-     * @param logger for logging
-     * @param lossGenerator for loss generation
+     * @param logger           for logging
+     * @param lossGenerator    for loss generation
      */
-    public UdpTransport(final UdpChannel udpChannel,
-                        final DataFrameHandler dataFrameHandler,
-                        final EventLogger logger,
-                        final LossGenerator lossGenerator)
+    public UdpTransport(
+        final UdpChannel udpChannel,
+        final DataFrameHandler dataFrameHandler,
+        final EventLogger logger,
+        final LossGenerator lossGenerator)
     {
-        this(udpChannel, dataFrameHandler, null, null, logger,
-             udpChannel.remoteData(), udpChannel.remoteData(), lossGenerator, null);
+        this(
+            udpChannel,
+            dataFrameHandler,
+            null,
+            null,
+            logger,
+            udpChannel.remoteData(),
+            udpChannel.remoteData(),
+            lossGenerator,
+            null);
     }
 
     /**
@@ -89,31 +98,41 @@ public final class UdpTransport implements AutoCloseable
      *
      * Does not register
      *
-     * @param udpChannel of the transport
-     * @param smFrameHandler to call when status message frames are received
+     * @param udpChannel      of the transport
+     * @param smFrameHandler  to call when status message frames are received
      * @param nakFrameHandler to call when NAK frames are received
-     * @param logger for logging
-     * @param lossGenerator for loss generation
+     * @param logger          for logging
+     * @param lossGenerator   for loss generation
      */
-    public UdpTransport(final UdpChannel udpChannel,
-                        final StatusMessageFrameHandler smFrameHandler,
-                        final NakFrameHandler nakFrameHandler,
-                        final EventLogger logger,
-                        final LossGenerator lossGenerator)
+    public UdpTransport(
+        final UdpChannel udpChannel,
+        final StatusMessageFrameHandler smFrameHandler,
+        final NakFrameHandler nakFrameHandler,
+        final EventLogger logger,
+        final LossGenerator lossGenerator)
     {
-        this(udpChannel, null, smFrameHandler, nakFrameHandler, logger,
-             udpChannel.remoteControl(), udpChannel.localControl(), null, lossGenerator);
+        this(
+            udpChannel,
+            null,
+            smFrameHandler,
+            nakFrameHandler,
+            logger,
+            udpChannel.remoteControl(),
+            udpChannel.localControl(),
+            null,
+            lossGenerator);
     }
 
-    private UdpTransport(final UdpChannel udpChannel,
-                         final DataFrameHandler dataFrameHandler,
-                         final StatusMessageFrameHandler smFrameHandler,
-                         final NakFrameHandler nakFrameHandler,
-                         final EventLogger logger,
-                         final InetSocketAddress endPointSocketAddress,
-                         final InetSocketAddress bindAddress,
-                         final LossGenerator dataLossGenerator,
-                         final LossGenerator controlLossGenerator)
+    private UdpTransport(
+        final UdpChannel udpChannel,
+        final DataFrameHandler dataFrameHandler,
+        final StatusMessageFrameHandler smFrameHandler,
+        final NakFrameHandler nakFrameHandler,
+        final EventLogger logger,
+        final InetSocketAddress endPointSocketAddress,
+        final InetSocketAddress bindAddress,
+        final LossGenerator dataLossGenerator,
+        final LossGenerator controlLossGenerator)
     {
         this.udpChannel = udpChannel;
         this.logger = logger;
@@ -171,7 +190,7 @@ public final class UdpTransport implements AutoCloseable
     /**
      * Send contents of {@link ByteBuffer} to remote address
      *
-     * @param buffer to send
+     * @param buffer        to send
      * @param remoteAddress to send to
      * @return number of bytes sent
      */

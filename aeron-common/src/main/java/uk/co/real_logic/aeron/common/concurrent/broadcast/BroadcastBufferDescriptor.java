@@ -42,8 +42,7 @@ public class BroadcastBufferDescriptor
     {
         if (capacity < 2 || 1 != Integer.bitCount(capacity))
         {
-            final String msg =
-                "Capacity must be a positive power of 2 + TRAILER_LENGTH: capacity=" + capacity;
+            final String msg = "Capacity must be a positive power of 2 + TRAILER_LENGTH: capacity=" + capacity;
             throw new IllegalStateException(msg);
         }
     }

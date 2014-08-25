@@ -2,7 +2,6 @@ package uk.co.real_logic.aeron;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.verification.VerificationMode;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.common.status.PositionReporter;
@@ -68,7 +67,7 @@ public class SubscriptionTest
     }
 
     @Test
-    public void shouldReadNothingWhenTheresNoData()
+    public void shouldReadNothingWhenThereIsNoData()
     {
         onTermBuffersMapped(SESSION_ID_1);
 
@@ -81,7 +80,7 @@ public class SubscriptionTest
         onTermBuffersMapped(SESSION_ID_1);
 
         when(readers[1].read(any(), anyInt())).then(
-            invocation ->
+            (invocation) ->
             {
                 FrameHandler handler = (FrameHandler) invocation.getArguments()[0];
                 handler.onFrame(atomicReadBuffer, 0, READ_BUFFER_CAPACITY);
@@ -99,7 +98,7 @@ public class SubscriptionTest
         onTermBuffersMapped(SESSION_ID_2);
 
         when(readers[1].read(any(), anyInt())).then(
-            invocation ->
+            (invocation) ->
             {
                 FrameHandler handler = (FrameHandler) invocation.getArguments()[0];
                 handler.onFrame(atomicReadBuffer, 0, READ_BUFFER_CAPACITY);
@@ -112,13 +111,5 @@ public class SubscriptionTest
     private void onTermBuffersMapped(final int sessionId1)
     {
         subscription.onTermBuffersMapped(sessionId1, TERM_ID_1, readers, reporter, managedBuffers);
-    }
-
-    private void verifyBuffersUnmapped(final VerificationMode times) throws Exception
-    {
-        for (ManagedBuffer buffer : managedBuffers)
-        {
-            verify(buffer, times).close();
-        }
     }
 }

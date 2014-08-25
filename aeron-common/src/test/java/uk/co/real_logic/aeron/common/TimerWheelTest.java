@@ -227,7 +227,7 @@ public class TimerWheelTest
         final Runnable task1 = () -> firedTimestamp1.set(wheel.now());
         final Runnable task2 = () -> firedTimestamp2.set(wheel.now());
 
-        TimerWheel.Timer timer = wheel.newTimeout(15, TimeUnit.MILLISECONDS, task1);
+        final TimerWheel.Timer timer = wheel.newTimeout(15, TimeUnit.MILLISECONDS, task1);
 
         processTimersUntil(wheel, ONE_MS_OF_NS, () -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(50));
 
@@ -255,7 +255,7 @@ public class TimerWheelTest
         final TimerWheel wheel = new TimerWheel(this::getControlTimestamp, 1, TimeUnit.MILLISECONDS, 8);
         final Runnable task = wheel::now;
 
-        TimerWheel.Timer timer = wheel.newTimeout(15, TimeUnit.MILLISECONDS, task);
+        final TimerWheel.Timer timer = wheel.newTimeout(15, TimeUnit.MILLISECONDS, task);
         wheel.rescheduleTimeout(23, TimeUnit.MILLISECONDS, timer);
     }
 
@@ -273,6 +273,6 @@ public class TimerWheelTest
             wheel.expireTimers();
         }
 
-        return (wheel.now() - startTime);
+        return wheel.now() - startTime;
     }
 }

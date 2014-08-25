@@ -24,7 +24,6 @@ import java.net.InetSocketAddress;
  *
  * Max of right edges.
  * No tracking of receivers.
- *
  */
 public class DefaultMulticastSenderFlowControl implements SenderFlowControl
 {
@@ -32,14 +31,14 @@ public class DefaultMulticastSenderFlowControl implements SenderFlowControl
     private int positionBitsToShift;
     private int initialTermId;
 
-    /** {@inheritDoc} */
-    public long onStatusMessage(final int termId,
-                                final int highestContiguousTermOffset,
-                                final int receiverWindowSize,
-                                final InetSocketAddress address)
+    /**
+     * {@inheritDoc}
+     */
+    public long onStatusMessage(
+        final int termId, final int highestContiguousTermOffset, final int receiverWindowSize, final InetSocketAddress address)
     {
         final long position =
-                TermHelper.calculatePosition(termId, highestContiguousTermOffset, positionBitsToShift, initialTermId);
+            TermHelper.calculatePosition(termId, highestContiguousTermOffset, positionBitsToShift, initialTermId);
         final long newPositionLimit = position + receiverWindowSize;
 
         positionLimit = Math.max(positionLimit, newPositionLimit);
@@ -47,7 +46,9 @@ public class DefaultMulticastSenderFlowControl implements SenderFlowControl
         return positionLimit;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     public long initialPositionLimit(final int initialTermId, final int termBufferCapacity)
     {
         this.initialTermId = initialTermId;

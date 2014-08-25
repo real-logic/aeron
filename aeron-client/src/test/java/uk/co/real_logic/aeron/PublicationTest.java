@@ -66,7 +66,8 @@ public class PublicationTest
             managedBuffers[i] = mock(ManagedBuffer.class);
         }
 
-        publication = new Publication(conductor, CHANNEL, STREAM_ID_1, SESSION_ID_1, TERM_ID_1, appenders, limit, managedBuffers);
+        publication = new Publication(
+            conductor, CHANNEL, STREAM_ID_1, SESSION_ID_1, TERM_ID_1, appenders, limit, managedBuffers);
     }
 
     @Test
@@ -138,7 +139,7 @@ public class PublicationTest
 
     private void verifyBuffersUnmapped(final VerificationMode times) throws Exception
     {
-        for (ManagedBuffer buffer : managedBuffers)
+        for (final ManagedBuffer buffer : managedBuffers)
         {
             verify(buffer, times).close();
         }

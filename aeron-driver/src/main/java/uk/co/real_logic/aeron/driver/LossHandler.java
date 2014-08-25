@@ -59,12 +59,13 @@ public class LossHandler
      * @param delayGenerator   to use for delay determination
      * @param nakMessageSender to call when sending a NAK is indicated
      */
-    public LossHandler(final GapScanner[] scanners,
-                       final TimerWheel wheel,
-                       final FeedbackDelayGenerator delayGenerator,
-                       final NakMessageSender nakMessageSender,
-                       final int activeTermId,
-                       final SystemCounters systemCounters)
+    public LossHandler(
+        final GapScanner[] scanners,
+        final TimerWheel wheel,
+        final FeedbackDelayGenerator delayGenerator,
+        final NakMessageSender nakMessageSender,
+        final int activeTermId,
+        final SystemCounters systemCounters)
     {
         this.scanners = scanners;
         this.wheel = wheel;
@@ -115,8 +116,8 @@ public class LossHandler
         {
             // Account for 0 length heartbeat packet
             final int tail = scanner.tailVolatile();
-            final long tailPosition =
-                TermHelper.calculatePosition(activeTermId, tail, positionBitsToShift, initialTermId);
+            final long tailPosition = TermHelper.calculatePosition(
+                activeTermId, tail, positionBitsToShift, initialTermId);
             final long currentHighPosition = highestPosition.get();
 
             if (currentHighPosition > tailPosition)
@@ -246,11 +247,11 @@ public class LossHandler
         wheel.rescheduleTimeout(delay, TimeUnit.NANOSECONDS, timer, onTimerExpireFunc);
     }
 
-    static class Gap
+    private static final class Gap
     {
-        private int termId;
-        private int termOffset;
-        private int length;
+        int termId;
+        int termOffset;
+        int length;
 
         public void reset(final int termId, final int termOffset, final int length)
         {

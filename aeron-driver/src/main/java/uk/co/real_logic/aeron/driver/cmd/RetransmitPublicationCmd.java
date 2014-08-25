@@ -25,10 +25,8 @@ public class RetransmitPublicationCmd
     private final int termOffset;
     private final int length;
 
-    public RetransmitPublicationCmd(final DriverPublication publication,
-                                    final int termId,
-                                    final int termOffset,
-                                    final int length)
+    public RetransmitPublicationCmd(
+        final DriverPublication publication, final int termId, final int termOffset, final int length)
     {
         this.publication = publication;
         this.termId = termId;

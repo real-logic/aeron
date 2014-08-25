@@ -73,11 +73,11 @@ public class SenderTest
 
     private long currentTimestamp = 0;
 
-    private final TimerWheel wheel =
-        new TimerWheel(() -> currentTimestamp,
-                       Configuration.CONDUCTOR_TICK_DURATION_US,
-                       TimeUnit.MICROSECONDS,
-                       Configuration.CONDUCTOR_TICKS_PER_WHEEL);
+    private final TimerWheel wheel = new TimerWheel(
+        () -> currentTimestamp,
+        Configuration.CONDUCTOR_TICK_DURATION_US,
+        TimeUnit.MICROSECONDS,
+        Configuration.CONDUCTOR_TICKS_PER_WHEEL);
 
     private final Queue<ByteBuffer> receivedFrames = new ArrayDeque<>();
 
@@ -103,10 +103,11 @@ public class SenderTest
     @Before
     public void setUp() throws Exception
     {
-        sender = new Sender(new MediaDriver.Context()
-                                .senderCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
-                                .publications(publications)
-                                .eventLogger(mockLogger));
+        sender = new Sender(
+            new MediaDriver.Context()
+                .senderCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
+                .publications(publications)
+                .eventLogger(mockLogger));
 
         logAppenders =
             termBuffers.stream()

@@ -31,5 +31,5 @@ public interface LossGenerator
      * @param length of frame on wire
      * @return true to drop, false to process
      */
-    public boolean shouldDropFrame(final InetSocketAddress address, final int length);
+    boolean shouldDropFrame(InetSocketAddress address, int length);
 }

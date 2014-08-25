@@ -49,15 +49,13 @@ public class EventLogger
 
     public EventLogger(final File bufferLocation, final long enabledEventCodes)
     {
-        MappedByteBuffer tmpEventBuffer;
-
+        MappedByteBuffer tmpEventBuffer = null;
         try
         {
             tmpEventBuffer = IoUtil.mapExistingFile(bufferLocation, "event-buffer");
         }
-        catch (final Exception ex)
+        catch (final Exception ignore)
         {
-            tmpEventBuffer = null;
         }
 
         if (null != tmpEventBuffer)
@@ -129,11 +127,8 @@ public class EventLogger
         }
     }
 
-    public void log(final EventCode code,
-                    final String format,
-                    final Object first,
-                    final Object second,
-                    final Object third)
+    public void log(
+        final EventCode code, final String format, final Object first, final Object second, final Object third)
     {
         if (isEnabled(code, enabledEventCodes))
         {
@@ -184,5 +179,4 @@ public class EventLogger
         final long tagBit = code.tagBit();
         return (enabledEventCodes & tagBit) == tagBit;
     }
-
 }

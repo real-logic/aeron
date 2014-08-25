@@ -282,8 +282,7 @@ public class MediaDriver implements AutoCloseable
                 if (null == eventLogger)
                 {
                     eventLogger = new EventLogger(
-                        EventConfiguration.bufferLocationFile(),
-                        EventConfiguration.getEnabledEventCodes());
+                        EventConfiguration.bufferLocationFile(), EventConfiguration.getEnabledEventCodes());
                 }
 
                 receiverNioSelector(new NioSelector());

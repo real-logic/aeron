@@ -45,18 +45,13 @@ public class RandomLossGenerator implements LossGenerator
      */
     public RandomLossGenerator(final double lossRate, final long lossSeed)
     {
-        this.random = (-1 == lossSeed) ? new Random() : new Random(lossSeed);
+        this.random = -1 == lossSeed ? new Random() : new Random(lossSeed);
         this.lossRate = lossRate;
     }
 
     /** {@inheritDoc} */
     public boolean shouldDropFrame(final InetSocketAddress address, final int length)
     {
-        if (random.nextDouble() <= lossRate)
-        {
-            return true;
-        }
-
-        return false;
+        return random.nextDouble() <= lossRate;
     }
 }

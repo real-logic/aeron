@@ -229,15 +229,14 @@ public class Configuration
      * Timeout for client liveness in nanoseconds
      */
     public static final long CLIENT_LIVENESS_TIMEOUT_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(5000);
-    public static final long CLIENT_LIVENESS_TIMEOUT_NS =
-        getLong(CLIENT_LIVENESS_TIMEOUT_PROP_NAME, CLIENT_LIVENESS_TIMEOUT_DEFAULT_NS);
-
+    public static final long CLIENT_LIVENESS_TIMEOUT_NS = getLong(
+        CLIENT_LIVENESS_TIMEOUT_PROP_NAME, CLIENT_LIVENESS_TIMEOUT_DEFAULT_NS);
     /**
      * Timeout for connection liveness in nanoseconds
      */
     public static final long CONNECTION_LIVENESS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
-    public static final long CONNECTION_LIVENESS_TIMEOUT_NS =
-        getLong(CONNECTION_LIVENESS_TIMEOUT_PROP_NAME, CONNECTION_LIVENESS_TIMEOUT_DEFAULT_NS);
+    public static final long CONNECTION_LIVENESS_TIMEOUT_NS = getLong(
+        CONNECTION_LIVENESS_TIMEOUT_PROP_NAME, CONNECTION_LIVENESS_TIMEOUT_DEFAULT_NS);
 
     /**
      * ticksPerWheel for TimerWheel in conductor thread
@@ -253,8 +252,8 @@ public class Configuration
      * {@link IdleStrategy} to be employed by agents.
      */
     public static final String AGENT_IDLE_STRATEGY_PROP_NAME = "aeron.agent.idle.strategy";
-    public static final String AGENT_IDLE_STRATEGY =
-        getProperty(AGENT_IDLE_STRATEGY_PROP_NAME, "uk.co.real_logic.aeron.common.BackoffIdleStrategy");
+    public static final String AGENT_IDLE_STRATEGY = getProperty(
+        AGENT_IDLE_STRATEGY_PROP_NAME, "uk.co.real_logic.aeron.common.BackoffIdleStrategy");
 
     public static final long AGENT_IDLE_MAX_SPINS = 20;
     public static final long AGENT_IDLE_MAX_YIELDS = 50;
@@ -323,8 +322,8 @@ public class Configuration
         switch (AGENT_IDLE_STRATEGY)
         {
             case "uk.co.real_logic.aeron.common.BackoffIdleStrategy":
-                return new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS,
-                                               AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS);
+                return new BackoffIdleStrategy(
+                    AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS, AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS);
 
             default:
                 try

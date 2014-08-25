@@ -61,13 +61,11 @@ public class DriverConductor extends Agent
     /**
      * Unicast NAK delay is immediate initial with delayed subsequent delay
      */
-    public static final StaticDelayGenerator NAK_UNICAST_DELAY_GENERATOR =
-        new StaticDelayGenerator(Configuration.NAK_UNICAST_DELAY_DEFAULT_NS, true);
+    public static final StaticDelayGenerator NAK_UNICAST_DELAY_GENERATOR = new StaticDelayGenerator(
+        Configuration.NAK_UNICAST_DELAY_DEFAULT_NS, true);
 
-    public static final OptimalMulticastDelayGenerator NAK_MULTICAST_DELAY_GENERATOR =
-        new OptimalMulticastDelayGenerator(Configuration.NAK_MAX_BACKOFF_DEFAULT,
-                                           Configuration.NAK_GROUPSIZE_DEFAULT,
-                                           Configuration.NAK_GRTT_DEFAULT);
+    public static final OptimalMulticastDelayGenerator NAK_MULTICAST_DELAY_GENERATOR = new OptimalMulticastDelayGenerator(
+        Configuration.NAK_MAX_BACKOFF_DEFAULT, Configuration.NAK_GROUPSIZE_DEFAULT, Configuration.NAK_GRTT_DEFAULT);
 
     /**
      * Source uses same for unicast and multicast. For now.
@@ -337,25 +335,27 @@ public class DriverConductor extends Agent
         SendChannelEndpoint channelEndpoint = sendChannelEndpointByHash.get(udpChannel.consistentHash());
         if (null == channelEndpoint)
         {
-            channelEndpoint =
-                new SendChannelEndpoint(udpChannel,
-                                        nioSelector,
-                                        logger,
-                                        Configuration.createLossGenerator(controlLossRate, controlLossSeed),
-                                        systemCounters);
+            channelEndpoint = new SendChannelEndpoint(
+                udpChannel,
+                nioSelector,
+                logger,
+                Configuration.createLossGenerator(controlLossRate, controlLossSeed),
+                systemCounters);
 
             sendChannelEndpointByHash.put(udpChannel.consistentHash(), channelEndpoint);
         }
         else if (!channelEndpoint.udpChannel().equals(udpChannel))
         {
-            throw new ControlProtocolException(ErrorCode.PUBLICATION_STREAM_ALREADY_EXISTS,
-                                               "channels hash same, but channels actually different");
+            throw new ControlProtocolException(
+                ErrorCode.PUBLICATION_STREAM_ALREADY_EXISTS,
+                "channels hash same, but channels actually different");
         }
 
         if (null != channelEndpoint.getPublication(sessionId, streamId))
         {
-            throw new ControlProtocolException(ErrorCode.PUBLICATION_STREAM_ALREADY_EXISTS,
-                                               "publication and session already exist on channel");
+            throw new ControlProtocolException(
+                ErrorCode.PUBLICATION_STREAM_ALREADY_EXISTS,
+                "publication and session already exist on channel");
         }
 
         final ClientLiveness clientLiveness = getOrAddClient(clientId);
@@ -370,28 +370,29 @@ public class DriverConductor extends Agent
         final SenderFlowControl senderFlowControl =
             udpChannel.isMulticast() ? multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
 
-        final DriverPublication publication =
-            new DriverPublication(channelEndpoint,
-                                  timerWheel,
-                                  termBuffers,
-                                  positionReporter,
-                                  clientLiveness,
-                                  sessionId,
-                                  streamId,
-                                  initialTermId,
-                                  HEADER_LENGTH,
-                                  mtuLength,
-                                  senderFlowControl.initialPositionLimit(initialTermId, capacity),
-                                  logger,
-                                  systemCounters);
+        final DriverPublication publication = new DriverPublication(
+            channelEndpoint,
+            timerWheel,
+            termBuffers,
+            positionReporter,
+            clientLiveness,
+            sessionId,
+            streamId,
+            initialTermId,
+            HEADER_LENGTH,
+            mtuLength,
+            senderFlowControl.initialPositionLimit(initialTermId, capacity),
+            logger,
+            systemCounters);
 
-        final RetransmitHandler retransmitHandler =
-            new RetransmitHandler(timerWheel,
-                                  systemCounters, DriverConductor.RETRANS_UNICAST_DELAY_GENERATOR,
-                                  DriverConductor.RETRANS_UNICAST_LINGER_GENERATOR,
-                                  composeNewRetransmitSender(publication),
-                                  initialTermId,
-                                  capacity);
+        final RetransmitHandler retransmitHandler = new RetransmitHandler(
+            timerWheel,
+            systemCounters,
+            DriverConductor.RETRANS_UNICAST_DELAY_GENERATOR,
+            DriverConductor.RETRANS_UNICAST_LINGER_GENERATOR,
+            composeNewRetransmitSender(publication),
+            initialTermId,
+            capacity);
 
         channelEndpoint.addPublication(publication, retransmitHandler, senderFlowControl);
 
@@ -563,11 +564,12 @@ public class DriverConductor extends Agent
                         {
                             final SendChannelEndpoint channelEndpoint = publication.sendChannelEndpoint();
 
-                            logger.log(EventCode.REMOVE_PUBLICATION_CLEANUP,
-                                       "%s %x:%x",
-                                       channelEndpoint.udpChannel().originalUriAsString(),
-                                       publication.sessionId(),
-                                       publication.streamId());
+                            logger.log(
+                                EventCode.REMOVE_PUBLICATION_CLEANUP,
+                                "%s %x:%x",
+                                channelEndpoint.udpChannel().originalUriAsString(),
+                                publication.sessionId(),
+                                publication.streamId());
 
                             channelEndpoint.removePublication(publication.sessionId(), publication.streamId());
                             publications.remove(publication);
@@ -608,11 +610,12 @@ public class DriverConductor extends Agent
                     final ReceiveChannelEndpoint channelEndpoint = subscription.receiveChannelEndpoint();
                     final int streamId = subscription.streamId();
 
-                    logger.log(EventCode.REMOVE_SUBSCRIPTION_CLEANUP,
-                               "%s %x [%x]",
-                               channelEndpoint.udpChannel().originalUriAsString(),
-                               subscription.streamId(),
-                               subscription.correlationId());
+                    logger.log(
+                        EventCode.REMOVE_SUBSCRIPTION_CLEANUP,
+                        "%s %x [%x]",
+                        channelEndpoint.udpChannel().originalUriAsString(),
+                        subscription.streamId(),
+                        subscription.correlationId());
 
                     subscriptions.remove(subscription);
                     subscriptionByCorrelationIdMap.remove(subscription.correlationId());
@@ -695,11 +698,12 @@ public class DriverConductor extends Agent
                     case DriverConnection.LINGER:
                         if (connection.timeOfLastStatusChange() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS < now)
                         {
-                            logger.log(EventCode.REMOVE_CONNECTION_CLEANUP,
-                                       "%s %x:%x",
-                                       connection.receiveChannelEndpoint().udpChannel().originalUriAsString(),
-                                       connection.sessionId(),
-                                       connection.streamId());
+                            logger.log(
+                                EventCode.REMOVE_CONNECTION_CLEANUP,
+                                "%s %x:%x",
+                                connection.receiveChannelEndpoint().udpChannel().originalUriAsString(),
+                                connection.sessionId(),
+                                connection.streamId());
 
                             connections.remove(connection);
                             connection.close();
@@ -755,32 +759,30 @@ public class DriverConductor extends Agent
                        .map((rawLog) -> new GapScanner(rawLog.logBuffer(), rawLog.stateBuffer()))
                        .toArray(GapScanner[]::new);
 
-        final LossHandler lossHandler =
-            new LossHandler(
-                gapScanners,
-                timerWheel,
-                udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
-                channelEndpoint.composeNakMessageSender(controlAddress, sessionId, streamId),
-                initialTermId,
-                systemCounters);
+        final LossHandler lossHandler = new LossHandler(
+            gapScanners,
+            timerWheel,
+            udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
+            channelEndpoint.composeNakMessageSender(controlAddress, sessionId, streamId),
+            initialTermId,
+            systemCounters);
 
-        final DriverConnection connection =
-            new DriverConnection(
-                channelEndpoint,
-                sessionId,
-                streamId,
-                initialTermId,
-                initialWindowSize,
-                statusMessageTimeout,
-                termBuffers,
-                lossHandler,
-                channelEndpoint.composeStatusMessageSender(controlAddress, sessionId, streamId),
-                new BufferPositionIndicator(countersBuffer, subscriberPositionCounterId, countersManager),
-                new BufferPositionReporter(countersBuffer, contiguousReceivedCounterId, countersManager),
-                new BufferPositionReporter(countersBuffer, highestReceivedCounterId, countersManager),
-                timerWheel::now,
-                systemCounters,
-                logger);
+        final DriverConnection connection = new DriverConnection(
+            channelEndpoint,
+            sessionId,
+            streamId,
+            initialTermId,
+            initialWindowSize,
+            statusMessageTimeout,
+            termBuffers,
+            lossHandler,
+            channelEndpoint.composeStatusMessageSender(controlAddress, sessionId, streamId),
+            new BufferPositionIndicator(countersBuffer, subscriberPositionCounterId, countersManager),
+            new BufferPositionReporter(countersBuffer, contiguousReceivedCounterId, countersManager),
+            new BufferPositionReporter(countersBuffer, highestReceivedCounterId, countersManager),
+            timerWheel::now,
+            systemCounters,
+            logger);
 
         connections.add(connection);
 
@@ -799,16 +801,15 @@ public class DriverConductor extends Agent
 
     private RetransmitSender composeNewRetransmitSender(final DriverPublication publication)
     {
-        return
-            (termId, termOffset, length) ->
-            {
-                final RetransmitPublicationCmd cmd = new RetransmitPublicationCmd(publication, termId, termOffset, length);
+        return (termId, termOffset, length) ->
+        {
+            final RetransmitPublicationCmd cmd = new RetransmitPublicationCmd(publication, termId, termOffset, length);
 
-                while (!senderProxy.retransmit(cmd))
-                {
-                    systemCounters.senderProxyFails().orderedIncrement();
-                    Thread.yield();
-                }
-            };
+            while (!senderProxy.retransmit(cmd))
+            {
+                systemCounters.senderProxyFails().orderedIncrement();
+                Thread.yield();
+            }
+        };
     }
 }

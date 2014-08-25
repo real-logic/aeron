@@ -40,7 +40,7 @@ public interface RingBuffer
      * @return true if written to the ring-buffer, or false if insufficient space exists.
      * @throws IllegalArgumentException if the length is greater than {@link RingBuffer#maxMsgLength()}
      */
-    boolean write(final int msgTypeId, final AtomicBuffer srcBuffer, final int srcIndex, final int length);
+    boolean write(int msgTypeId, AtomicBuffer srcBuffer, int srcIndex, int length);
 
     /**
      * Read as many messages as are available from the ring buffer.
@@ -48,7 +48,7 @@ public interface RingBuffer
      * @param handler to be called for processing each message in turn.
      * @return the number of messages that have been processed.
      */
-    int read(final MessageHandler handler);
+    int read(MessageHandler handler);
 
     /**
      * Read as many messages as are available from the ring buffer to up a supplied maximum.
@@ -57,7 +57,7 @@ public interface RingBuffer
      * @param messageCountLimit the number of messages will be read in a single invocation.
      * @return the number of messages that have been processed.
      */
-    int read(final MessageHandler handler, final int messageCountLimit);
+    int read(MessageHandler handler, int messageCountLimit);
 
     /**
      * The maximum message length in bytes supported by the underlying ring buffer.

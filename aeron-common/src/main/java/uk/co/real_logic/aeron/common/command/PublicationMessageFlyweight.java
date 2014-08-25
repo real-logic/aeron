@@ -65,6 +65,7 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
     public PublicationMessageFlyweight sessionId(final int sessionId)
     {
         atomicBuffer().putInt(offset() + SESSION_ID_FIELD_OFFSET, sessionId, ByteOrder.LITTLE_ENDIAN);
+
         return this;
     }
 
@@ -87,6 +88,7 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
     public PublicationMessageFlyweight streamId(final int streamId)
     {
         atomicBuffer().putInt(offset() + STREAM_ID_FIELD_OFFSET, streamId, ByteOrder.LITTLE_ENDIAN);
+
         return this;
     }
 
@@ -109,6 +111,7 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
     public PublicationMessageFlyweight channel(final String channel)
     {
         lengthOfChannel = stringPut(offset() + CHANNEL_OFFSET, channel, ByteOrder.LITTLE_ENDIAN);
+
         return this;
     }
 

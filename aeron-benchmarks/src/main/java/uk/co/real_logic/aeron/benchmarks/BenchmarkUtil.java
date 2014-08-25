@@ -31,17 +31,14 @@ public class BenchmarkUtil
         }
     }
 
-    public static void exchangeMessagesBetweenClients(final Aeron publishingClient,
-                                                      final Aeron consumingClient,
-                                                      final AtomicBuffer publishingBuffer)
+    public static void exchangeMessagesBetweenClients(
+        final Aeron publishingClient, final Aeron consumingClient, final AtomicBuffer publishingBuffer)
     {
         exchangeMessagesBetweenClients(publishingClient, consumingClient, publishingBuffer, MESSAGES_PER_RUN);
     }
 
-    public static void exchangeMessagesBetweenClients(final Aeron publishingClient,
-                                                      final Aeron consumingClient,
-                                                      final AtomicBuffer publishingBuffer,
-                                                      final int messagesPerRun)
+    public static void exchangeMessagesBetweenClients(
+        final Aeron publishingClient, final Aeron consumingClient, final AtomicBuffer publishingBuffer, final int messagesPerRun)
     {
         clear(publishingBuffer);
 
@@ -121,5 +118,4 @@ public class BenchmarkUtil
                     }
                 };
     }
-
 }

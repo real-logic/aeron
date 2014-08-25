@@ -20,8 +20,6 @@ import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 
 import java.nio.ByteOrder;
 
-import static java.lang.Integer.valueOf;
-
 /**
  * Description of the structure for message framing in a log buffer.
  *
@@ -48,41 +46,62 @@ import static java.lang.Integer.valueOf;
  *
  * The (B)egin and (E)nd flags are used for message fragmentation. R is for reserved bit.
  * Both are set for a message that does not span frames.
- *
  */
 public class FrameDescriptor
 {
-    /** Alignment as a multiple of bytes for each frame. The length field will store the unaligned length in bytes. */
+    /**
+     * Alignment as a multiple of bytes for each frame. The length field will store the unaligned length in bytes.
+     */
     public static final int FRAME_ALIGNMENT = 8;
 
-    /** Word alignment for fields. */
+    /**
+     * Word alignment for fields.
+     */
     public static final int WORD_ALIGNMENT = BitUtil.SIZE_OF_LONG;
 
-    /** Beginning fragment of a frame. */
+    /**
+     * Beginning fragment of a frame.
+     */
     public static final byte BEGIN_FRAG = (byte)0b1000_0000;
 
-    /** End fragment of a frame. */
+    /**
+     * End fragment of a frame.
+     */
     public static final byte END_FRAG = (byte)0b0100_0000;
 
-    /** End fragment of a frame. */
+    /**
+     * End fragment of a frame.
+     */
     public static final byte UNFRAGMENTED = (byte)(BEGIN_FRAG | END_FRAG);
 
-    /** Length in bytes for the base header fields. */
+    /**
+     * Length in bytes for the base header fields.
+     */
     public static final int BASE_HEADER_LENGTH = 12;
 
-    /** Offset within a frame at which the version field begins */
+    /**
+     * Offset within a frame at which the version field begins
+     */
     public static final int VERSION_OFFSET = 0;
 
-    /** Offset within a frame at which the flags field begins */
+    /**
+     * Offset within a frame at which the flags field begins
+     */
     public static final int FLAGS_OFFSET = 1;
 
-    /** Offset within a frame at which the type field begins */
+    /**
+     * Offset within a frame at which the type field begins
+     */
     public static final int TYPE_OFFSET = 2;
 
-    /** Offset within a frame at which the length field begins */
+    /**
+     * Offset within a frame at which the length field begins
+     */
     public static final int LENGTH_OFFSET = 4;
 
-    /** Offset within a frame at which the term offset field begins */
+    /**
+     * Offset within a frame at which the term offset field begins
+     */
     public static final int TERM_OFFSET = 8;
 
     /**
@@ -107,15 +126,19 @@ public class FrameDescriptor
     {
         if (length < BASE_HEADER_LENGTH)
         {
-            final String s = String.format("Frame header length must not be less than %d, length=%d",
-                                           valueOf(BASE_HEADER_LENGTH), valueOf(length));
+            final String s = String.format(
+                "Frame header length must not be less than %d, length=%d",
+                BASE_HEADER_LENGTH,
+                length);
             throw new IllegalStateException(s);
         }
 
         if (length % WORD_ALIGNMENT != 0)
         {
-            final String s = String.format("Frame header length must be a multiple of %d, length=%d",
-                                           valueOf(WORD_ALIGNMENT), valueOf(length));
+            final String s = String.format(
+                "Frame header length must be a multiple of %d, length=%d",
+                WORD_ALIGNMENT,
+                length);
             throw new IllegalStateException(s);
         }
     }
@@ -130,8 +153,10 @@ public class FrameDescriptor
     {
         if ((length & (FRAME_ALIGNMENT - 1)) != 0)
         {
-            final String s = String.format("Max frame length must be a multiple of %d, length=%d",
-                                           valueOf(FRAME_ALIGNMENT), valueOf(length));
+            final String s = String.format(
+                "Max frame length must be a multiple of %d, length=%d",
+                FRAME_ALIGNMENT,
+                length);
             throw new IllegalStateException(s);
         }
     }
@@ -194,7 +219,7 @@ public class FrameDescriptor
     /**
      * Busy spin on a frame length header until it is non zero and return value.
      *
-     * @param logBuffer containing the frame.
+     * @param logBuffer   containing the frame.
      * @param frameOffset at which a frame begins.
      * @return the value of the frame length header.
      */

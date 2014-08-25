@@ -40,11 +40,8 @@ public class ExampleUtil
         return
             (subscription) ->
             {
-                final BackoffIdleStrategy idleStrategy =
-                    new BackoffIdleStrategy(100,
-                                            100,
-                                            TimeUnit.MICROSECONDS.toNanos(1),
-                                            TimeUnit.MICROSECONDS.toNanos(100));
+                final BackoffIdleStrategy idleStrategy = new BackoffIdleStrategy(
+                    100, 100, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
 
                 try
                 {
@@ -74,8 +71,9 @@ public class ExampleUtil
             final byte[] data = new byte[length];
             buffer.getBytes(offset, data);
 
-            System.out.println(String.format("message to stream %d from session %x (%d@%d) <<%s>>",
-                                             streamId, sessionId, length, offset, new String(data)));
+            System.out.println(String.format(
+                "message to stream %d from session %x (%d@%d) <<%s>>",
+                streamId, sessionId, length, offset, new String(data)));
         };
     }
 
@@ -100,11 +98,12 @@ public class ExampleUtil
      * @param message   indicating what the error was
      * @param cause     of the error
      */
-    public static void printError(final String channel,
-                                  final int sessionId,
-                                  final int streamId,
-                                  final String message,
-                                  final HeaderFlyweight cause)
+    public static void printError(
+        final String channel,
+        final int sessionId,
+        final int streamId,
+        final String message,
+        final HeaderFlyweight cause)
     {
         System.out.println(message);
     }
@@ -117,12 +116,14 @@ public class ExampleUtil
      * @param totalMessages  being reported
      * @param totalBytes     being reported
      */
-    public static void printRate(final double messagesPerSec,
-                                 final double bytesPerSec,
-                                 final long totalMessages,
-                                 final long totalBytes)
+    public static void printRate(
+        final double messagesPerSec,
+        final double bytesPerSec,
+        final long totalMessages,
+        final long totalBytes)
     {
-        System.out.println(String.format("%.02g msgs/sec, %.02g bytes/sec, totals %d messages %d MB",
+        System.out.println(String.format(
+            "%.02g msgs/sec, %.02g bytes/sec, totals %d messages %d MB",
             messagesPerSec, bytesPerSec, totalMessages, totalBytes / (1024 * 1024)));
     }
 
@@ -135,7 +136,9 @@ public class ExampleUtil
      */
     public static void printNewConnection(final String channel, final int sessionId, final int streamId)
     {
-        System.out.println(String.format("new connection on %s streamId %d sessionId %x", channel, streamId, sessionId));
+        System.out.println(String.format(
+            "new connection on %s streamId %d sessionId %x",
+            channel, streamId, sessionId));
     }
 
     /**
@@ -147,6 +150,8 @@ public class ExampleUtil
      */
     public static void printInactiveConnection(final String channel, final int sessionId, final int streamId)
     {
-        System.out.println(String.format("inactive connection on %s streamId %d sessionId %x", channel, streamId, sessionId));
+        System.out.println(String.format(
+            "inactive connection on %s streamId %d sessionId %x",
+            channel, streamId, sessionId));
     }
 }

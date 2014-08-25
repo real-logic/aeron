@@ -28,5 +28,5 @@ public interface MessageHandler
      * @param index at which the encoded message begins.
      * @param length in bytes of the encoded message.
      */
-    void onMessage(final int msgTypeId, final AtomicBuffer buffer, final int index, final int length);
+    void onMessage(int msgTypeId, AtomicBuffer buffer, int index, int length);
 }

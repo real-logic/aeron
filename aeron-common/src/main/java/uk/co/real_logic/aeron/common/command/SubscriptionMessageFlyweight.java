@@ -63,6 +63,7 @@ public class SubscriptionMessageFlyweight extends CorrelatedMessageFlyweight
     public SubscriptionMessageFlyweight registrationCorrelationId(final long correlationId)
     {
         atomicBuffer().putLong(offset() + REGISTRATION_CORRELATION_ID_OFFSET, correlationId, LITTLE_ENDIAN);
+
         return this;
     }
 
@@ -85,6 +86,7 @@ public class SubscriptionMessageFlyweight extends CorrelatedMessageFlyweight
     public SubscriptionMessageFlyweight streamId(final int streamId)
     {
         atomicBuffer().putInt(offset() + STREAM_ID_OFFSET, streamId, LITTLE_ENDIAN);
+
         return this;
     }
 
@@ -107,6 +109,7 @@ public class SubscriptionMessageFlyweight extends CorrelatedMessageFlyweight
     public SubscriptionMessageFlyweight channel(final String channel)
     {
         lengthOfChannel = stringPut(offset() + CHANNEL_OFFSET, channel, LITTLE_ENDIAN);
+
         return this;
     }
 

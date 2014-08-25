@@ -38,13 +38,19 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
  */
 public class DriverConnection implements AutoCloseable
 {
-    /** connection is active */
+    /**
+     * connection is active
+     */
     public static final int ACTIVE = 1;
 
-    /** connection is inactive. Publication side has timed out. */
+    /**
+     * connection is inactive. Publication side has timed out.
+     */
     public static final int INACTIVE = 2;
 
-    /** connection has been drained or timeout has occurred and is being lingered */
+    /**
+     * connection has been drained or timeout has occurred and is being lingered
+     */
     public static final int LINGER = 3;
 
     private final ReceiveChannelEndpoint channelEndpoint;
@@ -82,21 +88,22 @@ public class DriverConnection implements AutoCloseable
 
     private volatile boolean statusMessagesEnabled = false;
 
-    public DriverConnection(final ReceiveChannelEndpoint channelEndpoint,
-                            final int sessionId,
-                            final int streamId,
-                            final int initialTermId,
-                            final int initialWindowSize,
-                            final long statusMessageTimeout,
-                            final TermBuffers termBuffers,
-                            final LossHandler lossHandler,
-                            final StatusMessageSender statusMessageSender,
-                            final PositionIndicator subscriberPosition,
-                            final PositionReporter contiguousReceivedPosition,
-                            final PositionReporter highestReceivedPosition,
-                            final LongSupplier clock,
-                            final SystemCounters systemCounters,
-                            final EventLogger logger)
+    public DriverConnection(
+        final ReceiveChannelEndpoint channelEndpoint,
+        final int sessionId,
+        final int streamId,
+        final int initialTermId,
+        final int initialWindowSize,
+        final long statusMessageTimeout,
+        final TermBuffers termBuffers,
+        final LossHandler lossHandler,
+        final StatusMessageSender statusMessageSender,
+        final PositionIndicator subscriberPosition,
+        final PositionReporter contiguousReceivedPosition,
+        final PositionReporter highestReceivedPosition,
+        final LongSupplier clock,
+        final SystemCounters systemCounters,
+        final EventLogger logger)
     {
         this.channelEndpoint = channelEndpoint;
         this.sessionId = sessionId;
@@ -116,9 +123,10 @@ public class DriverConnection implements AutoCloseable
         this.hwmIndex = this.activeIndex = termIdToBufferIndex(initialTermId);
         this.hwmTermId = initialTermId;
 
-        rebuilders = termBuffers.stream()
-                                .map((rawLog) -> new LogRebuilder(rawLog.logBuffer(), rawLog.stateBuffer()))
-                                .toArray(LogRebuilder[]::new);
+        rebuilders =
+            termBuffers.stream()
+                       .map((rawLog) -> new LogRebuilder(rawLog.logBuffer(), rawLog.stateBuffer()))
+                       .toArray(LogRebuilder[]::new);
         this.lossHandler = lossHandler;
         this.statusMessageSender = statusMessageSender;
         this.statusMessageTimeout = statusMessageTimeout;
@@ -195,7 +203,9 @@ public class DriverConnection implements AutoCloseable
         timeOfLastStatusChange = now;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     public void close()
     {
         contiguousReceivedPosition.close();
@@ -326,7 +336,7 @@ public class DriverConnection implements AutoCloseable
         final int currentSmTermId = TermHelper.calculateTermIdFromPosition(position, positionBitsToShift, initialTermId);
         final int currentSmTail = TermHelper.calculateTermOffsetFromPosition(position, positionBitsToShift);
 
-        if (0 == lastSmTimestamp ||  currentSmTermId != lastSmTermId ||
+        if (0 == lastSmTimestamp || currentSmTermId != lastSmTermId ||
             (position - lastSmPosition) > currentGain || (lastSmTimestamp + statusMessageTimeout) < now)
         {
             return sendStatusMessage(currentSmTermId, currentSmTail, position, currentWindowSize, now);
@@ -354,6 +364,7 @@ public class DriverConnection implements AutoCloseable
 
     /**
      * Called from the {@link DriverConductor} thread to grab the time of the last frame for liveness
+     *
      * @return time of last frame from the source
      */
     public long timeOfLastFrame()
@@ -361,11 +372,12 @@ public class DriverConnection implements AutoCloseable
         return timeOfLastFrame.get();
     }
 
-    private int sendStatusMessage(final int termId,
-                                  final int termOffset,
-                                  final long position,
-                                  final int windowSize,
-                                  final long now)
+    private int sendStatusMessage(
+        final int termId,
+        final int termOffset,
+        final long position,
+        final int windowSize,
+        final long now)
     {
         statusMessageSender.send(termId, termOffset, windowSize);
 
@@ -405,8 +417,13 @@ public class DriverConnection implements AutoCloseable
 
         if (isFlowControlOverRun)
         {
-            logger.log(EventCode.FLOW_CONTROL_OVERRUN,
-                       "overrun %x > %x + %d", proposedPosition, subscriberPosition.position(), currentWindowSize);
+            logger.log(
+                EventCode.FLOW_CONTROL_OVERRUN,
+                "overrun %x > %x + %d",
+                proposedPosition,
+                subscriberPosition.position(),
+                currentWindowSize);
+
             systemCounters.flowControlOverRuns().orderedIncrement();
         }
 

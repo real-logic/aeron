@@ -127,8 +127,8 @@ public class BroadcastTransmitter
         buffer.putLongOrdered(tailCounterIndex, tail + recordLength);
     }
 
-    private static void insertPaddingRecord(final AtomicBuffer buffer, final long tail,
-                                            final int recordOffset, final int remainingBuffer)
+    private static void insertPaddingRecord(
+        final AtomicBuffer buffer, final long tail, final int recordOffset, final int remainingBuffer)
     {
         buffer.putLongOrdered(tailSequenceOffset(recordOffset), tail);
         buffer.putInt(recLengthOffset(recordOffset), remainingBuffer);

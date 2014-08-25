@@ -15,12 +15,10 @@
  */
 package uk.co.real_logic.aeron.conductor;
 
-import java.io.IOException;
-
 /**
- * Interface for encapsulating the strategy of mapping ByteBuffers for Session, Channel, and Term.
+ * Interface for encapsulating the strategy of mapping ByteBuffers at a giving location.
  */
 public interface BufferManager
 {
-    ManagedBuffer newBuffer(final String location, final int offset, final int length);
+    ManagedBuffer newBuffer(String location, int offset, int length);
 }

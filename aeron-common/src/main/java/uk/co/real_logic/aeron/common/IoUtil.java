@@ -138,9 +138,8 @@ public class IoUtil
      * @param descriptionLabel to associate with the directory for any exceptions and callback.
      * @param callback         to call if directory exists passing back absolute path and descriptionLabel.
      */
-    public static void ensureDirectoryIsRecreated(final File directory,
-                                                  final String descriptionLabel,
-                                                  final BiConsumer<String, String> callback)
+    public static void ensureDirectoryIsRecreated(
+        final File directory, final String descriptionLabel, final BiConsumer<String, String> callback)
     {
         if (directory.exists())
         {
@@ -233,10 +232,8 @@ public class IoUtil
      * @param size             length to map region
      * @return {@link java.nio.MappedByteBuffer} for the file
      */
-    public static MappedByteBuffer mapExistingFile(final File location,
-                                                   final String descriptionLabel,
-                                                   final int offset,
-                                                   final int size)
+    public static MappedByteBuffer mapExistingFile(
+        final File location, final String descriptionLabel, final int offset, final int size)
     {
         checkFileExists(location, descriptionLabel);
 
@@ -282,7 +279,8 @@ public class IoUtil
     {
         if (!file.exists())
         {
-            throw new IllegalStateException(String.format("Missing file for %1$s: %2$s", name, file.getAbsolutePath()));
+            final String msg = String.format("Missing file for %1$s: %2$s", name, file.getAbsolutePath());
+            throw new IllegalStateException(msg);
         }
     }
 

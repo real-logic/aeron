@@ -40,11 +40,14 @@ public class CollectionUtilTest
     {
         final Map<Integer, Integer> ints = new HashMap<>();
         ints.put(0, 0);
-        final Integer result = CollectionUtil.getOrDefault(ints, 0, x ->
-        {
-            Assert.fail("Shouldn't be called");
-            return x + 1;
-        });
+        final Integer result = CollectionUtil.getOrDefault(
+            ints,
+            0,
+            (x) ->
+            {
+                Assert.fail("Shouldn't be called");
+                return x + 1;
+            });
 
         assertThat(result, is(0));
     }

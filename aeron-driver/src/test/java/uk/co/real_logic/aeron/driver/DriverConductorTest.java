@@ -34,7 +34,6 @@ import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBufferDescriptor;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
@@ -68,8 +67,8 @@ public class DriverConductorTest
     private static final long CLIENT_ID = 1433;
     public static final int BUFFER_SIZE = 1024 * 1024;
 
-    private final ByteBuffer toDriverBuffer =
-        ByteBuffer.allocate(Configuration.COMMAND_BUFFER_SZ + RingBufferDescriptor.TRAILER_LENGTH);
+    private final ByteBuffer toDriverBuffer = ByteBuffer.allocate(
+        Configuration.COMMAND_BUFFER_SZ + RingBufferDescriptor.TRAILER_LENGTH);
 
     private final NioSelector nioSelector = mock(NioSelector.class);
     private final TermBuffersFactory mockTermBuffersFactory = mock(TermBuffersFactory.class);
@@ -87,8 +86,8 @@ public class DriverConductorTest
     private final EventLogger mockConductorLogger = mock(EventLogger.class);
 
     private long currentTime;
-    private final TimerWheel wheel = new TimerWheel(() -> currentTime,
-        CONDUCTOR_TICK_DURATION_US, TimeUnit.MICROSECONDS, CONDUCTOR_TICKS_PER_WHEEL);
+    private final TimerWheel wheel = new TimerWheel(
+        () -> currentTime, CONDUCTOR_TICK_DURATION_US, TimeUnit.MICROSECONDS, CONDUCTOR_TICKS_PER_WHEEL);
 
     private DriverConductor driverConductor;
     private Receiver receiver;
@@ -152,7 +151,8 @@ public class DriverConductorTest
         assertThat(publications.get(0).sessionId(), is(1));
         assertThat(publications.get(0).streamId(), is(2));
 
-        verify(mockClientProxy).onNewTermBuffers(eq(ControlProtocolEvents.ON_NEW_PUBLICATION),
+        verify(mockClientProxy).onNewTermBuffers(
+            eq(ControlProtocolEvents.ON_NEW_PUBLICATION),
             eq(1), eq(2), anyInt(), eq(CHANNEL_URI + 4000),
             any(), anyLong(), anyInt());
     }
@@ -305,8 +305,8 @@ public class DriverConductorTest
         assertThat(publications.get(0).sessionId(), is(1));
         assertThat(publications.get(0).streamId(), is(2));
 
-        verify(mockClientProxy)
-            .onError(eq(ErrorCode.PUBLICATION_STREAM_ALREADY_EXISTS), argThat(not(isEmptyOrNullString())), any(), anyInt());
+        verify(mockClientProxy).onError(
+            eq(ErrorCode.PUBLICATION_STREAM_ALREADY_EXISTS), argThat(not(isEmptyOrNullString())), any(), anyInt());
         verifyNeverSucceeds();
         verifyExceptionLogged();
     }
@@ -387,8 +387,8 @@ public class DriverConductorTest
         assertThat(publications.get(0).sessionId(), is(1));
         assertThat(publications.get(0).streamId(), is(2));
 
-        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(Configuration.PUBLICATION_LINGER_NS +
-            CLIENT_LIVENESS_TIMEOUT_NS * 2));
+        processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(
+            Configuration.PUBLICATION_LINGER_NS + CLIENT_LIVENESS_TIMEOUT_NS * 2));
 
         assertThat(publications.size(), is(0));
         assertNull(driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
@@ -472,12 +472,12 @@ public class DriverConductorTest
         verify(mockClientProxy, never()).operationSucceeded(anyLong());
     }
 
-    private void writePublicationMessage(final int msgTypeId,
-                                         final int sessionId,
-                                         final int streamId,
-                                         final int port,
-                                         final long correlationId)
-        throws IOException
+    private void writePublicationMessage(
+        final int msgTypeId,
+        final int sessionId,
+        final int streamId,
+        final int port,
+        final long correlationId)
     {
         publicationMessage.wrap(writeBuffer, 0);
         publicationMessage.streamId(streamId);
@@ -489,11 +489,11 @@ public class DriverConductorTest
         fromClientCommands.write(msgTypeId, writeBuffer, 0, publicationMessage.length());
     }
 
-    private void writeSubscriptionMessage(final int msgTypeId,
-                                          final String channel,
-                                          final int streamId,
-                                          final long registrationCorrelationId)
-        throws IOException
+    private void writeSubscriptionMessage(
+        final int msgTypeId,
+        final String channel,
+        final int streamId,
+        final long registrationCorrelationId)
     {
         subscriptionMessage.wrap(writeBuffer, 0);
         subscriptionMessage.streamId(streamId)
@@ -506,7 +506,6 @@ public class DriverConductorTest
     }
 
     private void writeKeepaliveClientMessage()
-        throws IOException
     {
         correlatedMessage.wrap(writeBuffer, 0);
         correlatedMessage.clientId(CLIENT_ID);

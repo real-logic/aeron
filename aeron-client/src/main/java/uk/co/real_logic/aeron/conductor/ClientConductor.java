@@ -69,18 +69,19 @@ public class ClientConductor extends Agent implements DriverListener
 
     private final TimerWheel.Timer keepaliveTimer;
 
-    public ClientConductor(final IdleStrategy idleStrategy,
-                           final CopyBroadcastReceiver broadcastReceiver,
-                           final BufferManager bufferManager,
-                           final AtomicBuffer counterValuesBuffer,
-                           final DriverProxy driverProxy,
-                           final Signal correlationSignal,
-                           final TimerWheel timerWheel,
-                           final Consumer<Exception> errorHandler,
-                           final NewConnectionHandler newConnectionHandler,
-                           final InactiveConnectionHandler inactiveConnectionHandler,
-                           final long awaitTimeout,
-                           final int mtuLength)
+    public ClientConductor(
+        final IdleStrategy idleStrategy,
+        final CopyBroadcastReceiver broadcastReceiver,
+        final BufferManager bufferManager,
+        final AtomicBuffer counterValuesBuffer,
+        final DriverProxy driverProxy,
+        final Signal correlationSignal,
+        final TimerWheel timerWheel,
+        final Consumer<Exception> errorHandler,
+        final NewConnectionHandler newConnectionHandler,
+        final InactiveConnectionHandler inactiveConnectionHandler,
+        final long awaitTimeout,
+        final int mtuLength)
     {
         super(idleStrategy, errorHandler);
 
@@ -177,12 +178,13 @@ public class ClientConductor extends Agent implements DriverListener
         awaitOperationSucceeded();
     }
 
-    public void onNewPublication(final String channel,
-                                 final int sessionId,
-                                 final int streamId,
-                                 final int termId,
-                                 final int limitPositionIndicatorOffset,
-                                 final LogBuffersMessageFlyweight logBuffersMessage)
+    public void onNewPublication(
+        final String channel,
+        final int sessionId,
+        final int streamId,
+        final int termId,
+        final int limitPositionIndicatorOffset,
+        final LogBuffersMessageFlyweight logBuffersMessage)
     {
         final LogAppender[] logs = new LogAppender[BUFFER_COUNT];
         final ManagedBuffer[] managedBuffers = new ManagedBuffer[BUFFER_COUNT * 2];
@@ -204,11 +206,12 @@ public class ClientConductor extends Agent implements DriverListener
         correlationSignal.signal();
     }
 
-    public void onNewConnection(final String channel,
-                                final int sessionId,
-                                final int streamId,
-                                final int initialTermId,
-                                final LogBuffersMessageFlyweight message)
+    public void onNewConnection(
+        final String channel,
+        final int sessionId,
+        final int streamId,
+        final int initialTermId,
+        final LogBuffersMessageFlyweight message)
     {
         final Subscription subscription = subscriptionMap.get(channel, streamId);
         if (null != subscription && !subscription.isConnected(sessionId))
@@ -249,10 +252,8 @@ public class ClientConductor extends Agent implements DriverListener
         correlationSignal.signal();
     }
 
-    public void onInactiveConnection(final String channel,
-                                     final int sessionId,
-                                     final int streamId,
-                                     final ConnectionMessageFlyweight connectionMessage)
+    public void onInactiveConnection(
+        final String channel, final int sessionId, final int streamId, final ConnectionMessageFlyweight connectionMessage)
     {
         final Subscription subscription = subscriptionMap.get(channel, streamId);
 

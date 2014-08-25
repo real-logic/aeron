@@ -114,14 +114,15 @@ public class PubAndSubTest
                 fragmentsRead[0] += subscription.poll(10);
                 Thread.yield();
             },
-            Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(900));
+            Integer.MAX_VALUE,
+            TimeUnit.MILLISECONDS.toNanos(900));
 
-        verify(dataHandler)
-            .onData(anyObject(),
-                    eq(DataHeaderFlyweight.HEADER_LENGTH),
-                    eq(BitUtil.SIZE_OF_INT),
-                    eq(SESSION_ID),
-                    eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+        verify(dataHandler).onData(
+            anyObject(),
+            eq(DataHeaderFlyweight.HEADER_LENGTH),
+            eq(BitUtil.SIZE_OF_INT),
+            eq(SESSION_ID),
+            eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
     }
 
     @Theory
@@ -152,15 +153,16 @@ public class PubAndSubTest
                     fragmentsRead[0] += subscription.poll(10);
                     Thread.yield();
                 },
-                Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
+                Integer.MAX_VALUE,
+                TimeUnit.MILLISECONDS.toNanos(500));
         }
 
-        verify(dataHandler, times(numMessagesToSend))
-            .onData(anyObject(),
-                    anyInt(),
-                    eq(messageLength),
-                    eq(SESSION_ID),
-                    eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+        verify(dataHandler, times(numMessagesToSend)).onData(
+            anyObject(),
+            anyInt(),
+            eq(messageLength),
+            eq(SESSION_ID),
+            eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
     }
 
     @Theory
@@ -193,15 +195,16 @@ public class PubAndSubTest
                     fragmentsRead[0] += subscription.poll(10);
                     Thread.yield();
                 },
-                Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(900));
+                Integer.MAX_VALUE,
+                TimeUnit.MILLISECONDS.toNanos(900));
         }
 
-        verify(dataHandler, times(numMessagesToSend))
-            .onData(anyObject(),
-                anyInt(),
-                eq(messageLength),
-                eq(SESSION_ID),
-                eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+        verify(dataHandler, times(numMessagesToSend)).onData(
+            anyObject(),
+            anyInt(),
+            eq(messageLength),
+            eq(SESSION_ID),
+            eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
     }
 
     @Theory
@@ -239,15 +242,16 @@ public class PubAndSubTest
                     fragmentsRead[0] += subscription.poll(10);
                     Thread.yield();
                 },
-                Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(900));
+                Integer.MAX_VALUE,
+                TimeUnit.MILLISECONDS.toNanos(900));
         }
 
-        verify(dataHandler, times(numMessagesToSend))
-            .onData(anyObject(),
-                anyInt(),
-                eq(messageLength),
-                eq(SESSION_ID),
-                eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+        verify(dataHandler, times(numMessagesToSend)).onData(
+            anyObject(),
+            anyInt(),
+            eq(messageLength),
+            eq(SESSION_ID),
+            eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
     }
 
     @Theory
@@ -283,7 +287,8 @@ public class PubAndSubTest
                     fragmentsRead[0] += subscription.poll(10);
                     Thread.yield();
                 },
-                Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(900));
+                Integer.MAX_VALUE,
+                TimeUnit.MILLISECONDS.toNanos(900));
         }
 
         while (!publication.offer(buffer, 0, messageLength))
@@ -299,14 +304,15 @@ public class PubAndSubTest
                 fragmentsRead[0] += subscription.poll(10);
                 Thread.yield();
             },
-            Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(900));
+            Integer.MAX_VALUE,
+            TimeUnit.MILLISECONDS.toNanos(900));
 
-        verify(dataHandler, times(numMessagesToSend))
-            .onData(anyObject(),
-                    anyInt(),
-                    eq(messageLength),
-                    eq(SESSION_ID),
-                    eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+        verify(dataHandler, times(numMessagesToSend)).onData(
+            anyObject(),
+            anyInt(),
+            eq(messageLength),
+            eq(SESSION_ID),
+            eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
     }
 
     @Theory
@@ -342,15 +348,16 @@ public class PubAndSubTest
                     fragmentsRead[0] += subscription.poll(10);
                     Thread.yield();
                 },
-                Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
+                Integer.MAX_VALUE,
+                TimeUnit.MILLISECONDS.toNanos(500));
         }
 
-        verify(dataHandler, times(numMessagesToSend))
-            .onData(anyObject(),
-                    anyInt(),
-                    eq(messageLength),
-                    eq(SESSION_ID),
-                    eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+        verify(dataHandler, times(numMessagesToSend)).onData(
+            anyObject(),
+            anyInt(),
+            eq(messageLength),
+            eq(SESSION_ID),
+            eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
     }
 
     @Theory
@@ -391,15 +398,16 @@ public class PubAndSubTest
                     fragmentsRead[0] += subscription.poll(10);
                     Thread.yield();
                 },
-                Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(900));
+                Integer.MAX_VALUE,
+                TimeUnit.MILLISECONDS.toNanos(900));
         }
 
-        verify(dataHandler, times(numMessagesToSend))
-            .onData(anyObject(),
-                    anyInt(),
-                    eq(messageLength),
-                    eq(SESSION_ID),
-                    eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+        verify(dataHandler, times(numMessagesToSend)).onData(
+            anyObject(),
+            anyInt(),
+            eq(messageLength),
+            eq(SESSION_ID),
+            eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
     }
 
     @Theory
@@ -449,13 +457,14 @@ public class PubAndSubTest
                 fragmentsRead[0] += subscription.poll(10);
                 Thread.yield();
             },
-            Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
+            Integer.MAX_VALUE,
+            TimeUnit.MILLISECONDS.toNanos(500));
 
-        verify(dataHandler, times(messagesToReceive))
-            .onData(anyObject(),
-                    anyInt(),
-                    eq(messageLength),
-                    eq(SESSION_ID),
-                    eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+        verify(dataHandler, times(messagesToReceive)).onData(
+            anyObject(),
+            anyInt(),
+            eq(messageLength),
+            eq(SESSION_ID),
+            eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
     }
 }

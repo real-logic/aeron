@@ -33,10 +33,11 @@ public class OptimalMulticastDelayGeneratorTest
     @Test
     public void shouldNotExceedTmaxBackoff()
     {
-        IntStream.range(0, 100000).forEach((i) ->
-        {
-            final double delay = generator.generateNewOptimalDelay();
-            assertThat(delay, lessThanOrEqualTo((double)MAX_BACKOFF));
-        });
+        IntStream.range(0, 100000).forEach(
+            (i) ->
+            {
+                final double delay = generator.generateNewOptimalDelay();
+                assertThat(delay, lessThanOrEqualTo((double)MAX_BACKOFF));
+            });
     }
 }

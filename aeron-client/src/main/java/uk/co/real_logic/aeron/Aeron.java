@@ -58,19 +58,19 @@ public final class Aeron implements AutoCloseable
 
         final TimerWheel wheel = new TimerWheel(CONDUCTOR_TICK_DURATION_US, TimeUnit.MICROSECONDS, CONDUCTOR_TICKS_PER_WHEEL);
 
-        conductor =
-            new ClientConductor(ctx.idleStrategy,
-                                ctx.toClientBuffer,
-                                ctx.bufferManager,
-                                ctx.countersBuffer(),
-                                new DriverProxy(ctx.toDriverBuffer),
-                                new Signal(),
-                                wheel,
-                                ctx.errorHandler,
-                                ctx.newConnectionHandler,
-                                ctx.inactiveConnectionHandler,
-                                ctx.mediaDriverTimeout(),
-                                ctx.mtuLength());
+        conductor = new ClientConductor(
+            ctx.idleStrategy,
+            ctx.toClientBuffer,
+            ctx.bufferManager,
+            ctx.countersBuffer(),
+            new DriverProxy(ctx.toDriverBuffer),
+            new Signal(),
+            wheel,
+            ctx.errorHandler,
+            ctx.newConnectionHandler,
+            ctx.inactiveConnectionHandler,
+            ctx.mediaDriverTimeout(),
+            ctx.mtuLength());
 
         this.ctx = ctx;
     }
@@ -93,7 +93,7 @@ public final class Aeron implements AutoCloseable
      *
      * Threads for interacting with the media driver are run via the the provided {@link Executor}.
      *
-     * @param ctx for configuration of the client.
+     * @param ctx      for configuration of the client.
      * @param executor to run the internal threads for communicating with the media driver.
      * @return the new {@link Aeron} instance connected to the Media Driver.
      */

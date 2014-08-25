@@ -184,7 +184,7 @@ public class CommonContext implements AutoCloseable
         return counterLabelsBuffer;
     }
 
-    public CommonContext counterLabelsBuffer(AtomicBuffer counterLabelsBuffer)
+    public CommonContext counterLabelsBuffer(final AtomicBuffer counterLabelsBuffer)
     {
         this.counterLabelsBuffer = counterLabelsBuffer;
         return this;
@@ -195,7 +195,7 @@ public class CommonContext implements AutoCloseable
         return countersBuffer;
     }
 
-    public CommonContext countersBuffer(AtomicBuffer countersBuffer)
+    public CommonContext countersBuffer(final AtomicBuffer countersBuffer)
     {
         this.countersBuffer = countersBuffer;
         return this;

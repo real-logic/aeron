@@ -239,13 +239,17 @@ public class UdpChannel
         return canonicalForm;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     public int hashCode()
     {
         return (int)(consistentHash ^ (consistentHash >>> 32));
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     public boolean equals(Object obj)
     {
         if (null != obj && obj instanceof UdpChannel)
@@ -258,7 +262,9 @@ public class UdpChannel
         return false;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     public String toString()
     {
         return canonicalForm;
@@ -281,11 +287,12 @@ public class UdpChannel
      */
     public static String canonicalise(final InetSocketAddress localData, final InetSocketAddress remoteData)
     {
-        return String.format("UDP-%1$s-%2$d-%3$s-%4$d",
-                             BitUtil.toHex(localData.getAddress().getAddress()),
-                             localData.getPort(),
-                             BitUtil.toHex(remoteData.getAddress().getAddress()),
-                             remoteData.getPort());
+        return String.format(
+            "UDP-%1$s-%2$d-%3$s-%4$d",
+            BitUtil.toHex(localData.getAddress().getAddress()),
+            localData.getPort(),
+            BitUtil.toHex(remoteData.getAddress().getAddress()),
+            remoteData.getPort());
     }
 
     /**

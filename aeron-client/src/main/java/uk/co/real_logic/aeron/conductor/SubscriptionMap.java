@@ -25,7 +25,7 @@ import java.util.function.Function;
 import static uk.co.real_logic.aeron.common.collections.CollectionUtil.getOrDefault;
 
 /**
- * Threadsafe.
+ * Threadsafe for getting to {@link uk.co.real_logic.aeron.Subscription}s by channel and streamId.
  */
 public class SubscriptionMap
 {

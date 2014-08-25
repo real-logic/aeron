@@ -34,12 +34,14 @@ import java.util.stream.IntStream;
  */
 public class RetransmitHandler
 {
-    /** Maximum number of concurrent retransmits */
+    /**
+     * Maximum number of concurrent retransmits
+     */
     public static final int MAX_RETRANSMITS = Configuration.MAX_RETRANSMITS_DEFAULT;
 
     private final TimerWheel timerWheel;
     private final Queue<RetransmitAction> retransmitActionPool = new OneToOneConcurrentArrayQueue<>(MAX_RETRANSMITS);
-    private final Long2ObjectHashMap<RetransmitAction>  activeRetransmitByPositionMap = new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<RetransmitAction> activeRetransmitByPositionMap = new Long2ObjectHashMap<>();
     private final SystemCounters systemCounters;
     private final FeedbackDelayGenerator delayGenerator;
     private final FeedbackDelayGenerator lingerTimeoutGenerator;
@@ -50,18 +52,20 @@ public class RetransmitHandler
 
     /**
      * Create a retransmit handler.
-     *  @param timerWheel for timers
-     * @param systemCounters for recording significant events.
-     * @param delayGenerator to use for delay determination
+     *
+     * @param timerWheel             for timers
+     * @param systemCounters         for recording significant events.
+     * @param delayGenerator         to use for delay determination
      * @param lingerTimeoutGenerator to use for linger timeout
      */
-    public RetransmitHandler(final TimerWheel timerWheel,
-                             final SystemCounters systemCounters,
-                             final FeedbackDelayGenerator delayGenerator,
-                             final FeedbackDelayGenerator lingerTimeoutGenerator,
-                             final RetransmitSender retransmitSender,
-                             final int initialTermId,
-                             final int capacity)
+    public RetransmitHandler(
+        final TimerWheel timerWheel,
+        final SystemCounters systemCounters,
+        final FeedbackDelayGenerator delayGenerator,
+        final FeedbackDelayGenerator lingerTimeoutGenerator,
+        final RetransmitSender retransmitSender,
+        final int initialTermId,
+        final int capacity)
     {
         this.timerWheel = timerWheel;
         this.systemCounters = systemCounters;
@@ -89,9 +93,9 @@ public class RetransmitHandler
     /**
      * Called on reception of a NAK to start retransmits handling.
      *
-     * @param termId from the NAK and the term id of the buffer to retransmit from
+     * @param termId     from the NAK and the term id of the buffer to retransmit from
      * @param termOffset from the NAK and the offset of the data to retransmit
-     * @param length of the missing data
+     * @param length     of the missing data
      */
     public void onNak(final int termId, final int termOffset, final int length)
     {
@@ -130,7 +134,7 @@ public class RetransmitHandler
      *
      * NOTE: Currently only called from unit tests. Would be used for retransmitting from receivers for NAK suppression
      *
-     * @param termId of the data
+     * @param termId     of the data
      * @param termOffset of the data
      */
     public void onRetransmitReceived(final int termId, final int termOffset)
@@ -182,7 +186,7 @@ public class RetransmitHandler
         INACTIVE
     }
 
-    class RetransmitAction
+    final class RetransmitAction
     {
         int termId;
         int termOffset;

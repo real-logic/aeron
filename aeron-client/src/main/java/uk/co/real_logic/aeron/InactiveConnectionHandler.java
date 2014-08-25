@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron;
 
 /**
- * Interface for delivery of inactive source events to a {@link uk.co.real_logic.aeron.Subscription}
+ * Interface for delivery of inactive connection events to a {@link uk.co.real_logic.aeron.Subscription}
  */
 public interface InactiveConnectionHandler
 {

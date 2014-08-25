@@ -49,13 +49,14 @@ class MappedRawLog implements RawLog
 
     private final EventLogger logger;
 
-    MappedRawLog(final File logFile,
-                 final File stateFile,
-                 final FileChannel logFileChannel,
-                 final FileChannel stateFileChannel,
-                 final MappedByteBuffer logBuffer,
-                 final MappedByteBuffer stateBuffer,
-                 final EventLogger logger)
+    MappedRawLog(
+        final File logFile,
+        final File stateFile,
+        final FileChannel logFileChannel,
+        final FileChannel stateFileChannel,
+        final MappedByteBuffer logBuffer,
+        final MappedByteBuffer stateBuffer,
+        final EventLogger logger)
     {
         this.logFile = logFile;
         this.stateFile = stateFile;
@@ -136,10 +137,8 @@ class MappedRawLog implements RawLog
         bufferInformation(index + BUFFER_COUNT, newBufferMessage, mappedStateBuffer, stateFile);
     }
 
-    private void bufferInformation(final int index,
-                                   final LogBuffersMessageFlyweight newBufferMessage,
-                                   final MappedByteBuffer buffer,
-                                   final File file)
+    private void bufferInformation(
+        final int index, final LogBuffersMessageFlyweight newBufferMessage, final MappedByteBuffer buffer, final File file)
     {
         final int offset = buffer.position();
         newBufferMessage.bufferOffset(index, offset);

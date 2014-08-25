@@ -52,7 +52,7 @@ public class TimerWheel
 
     private final long mask;
     private final long startTime;
-    private final long tickDurationInNanos;
+    private final long tickDurationInNs;
     private final LongSupplier clock;
     private final Timer[][] wheel;
 
@@ -64,11 +64,8 @@ public class TimerWheel
      * @param tickDuration  of each tick of the wheel
      * @param timeUnit      for the tick duration
      * @param ticksPerWheel of the wheel. Must be a power of 2.
-     * @throws IllegalArgumentException if {@code ticksPerWheel} is not a power of 2.
      */
-    public TimerWheel(final long tickDuration,
-                      final TimeUnit timeUnit,
-                      final int ticksPerWheel)
+    public TimerWheel(final long tickDuration, final TimeUnit timeUnit, final int ticksPerWheel)
     {
         this(System::nanoTime, tickDuration, timeUnit, ticksPerWheel);
     }
@@ -82,25 +79,22 @@ public class TimerWheel
      * @param tickDuration  of each tick of the wheel
      * @param timeUnit      for the tick duration
      * @param ticksPerWheel of the wheel. Must be a power of 2.
-     * @throws IllegalArgumentException if {@code ticksPerWheel} is not a power of 2.
      */
-    public TimerWheel(final LongSupplier clock,
-                      final long tickDuration,
-                      final TimeUnit timeUnit,
-                      final int ticksPerWheel)
+    public TimerWheel(final LongSupplier clock, final long tickDuration, final TimeUnit timeUnit, final int ticksPerWheel)
     {
         checkTicksPerWheel(ticksPerWheel);
 
         this.mask = ticksPerWheel - 1;
         this.clock = clock;
         this.startTime = clock.getAsLong();
-        this.tickDurationInNanos = timeUnit.toNanos(tickDuration);
+        this.tickDurationInNs = timeUnit.toNanos(tickDuration);
 
-        if (tickDurationInNanos >= (Long.MAX_VALUE / ticksPerWheel))
+        if (tickDurationInNs >= (Long.MAX_VALUE / ticksPerWheel))
         {
             throw new IllegalArgumentException(
-                String.format("tickDuration: %d (expected: 0 < tickDurationInNanos < %d",
-                              tickDuration, Long.MAX_VALUE / ticksPerWheel));
+                String.format("tickDuration: %d (expected: 0 < tickDurationInNs < %d",
+                    tickDuration,
+                    Long.MAX_VALUE / ticksPerWheel));
         }
 
         wheel = new Timer[ticksPerWheel][];
@@ -194,7 +188,7 @@ public class TimerWheel
      */
     public long calculateDelayInMs()
     {
-        final long deadline = tickDurationInNanos * (currentTick + 1);
+        final long deadline = tickDurationInNs * (currentTick + 1);
 
         return ((deadline - now()) + 999999) / 1000000;
     }
@@ -298,7 +292,7 @@ public class TimerWheel
             this.deadline = deadline;
             this.task = task;
 
-            final long calculatedIndex = deadline / tickDurationInNanos;
+            final long calculatedIndex = deadline / tickDurationInNs;
             final long ticks = Math.max(calculatedIndex, currentTick);
             this.wheelIndex = (int)(ticks & mask);
             this.remainingRounds = (calculatedIndex - currentTick) / wheel.length;

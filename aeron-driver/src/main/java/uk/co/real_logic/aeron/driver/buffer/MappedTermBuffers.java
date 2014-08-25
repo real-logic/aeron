@@ -46,12 +46,13 @@ class MappedTermBuffers implements TermBuffers
     private final MappedRawLog[] buffers;
     private final EventLogger logger;
 
-    MappedTermBuffers(final File directory,
-                      final FileChannel logTemplate,
-                      final int logBufferLength,
-                      final FileChannel stateTemplate,
-                      final int stateBufferSize,
-                      final EventLogger logger)
+    MappedTermBuffers(
+        final File directory,
+        final FileChannel logTemplate,
+        final int logBufferLength,
+        final FileChannel stateTemplate,
+        final int stateBufferSize,
+        final EventLogger logger)
     {
         this.logger = logger;
         IoUtil.ensureDirectoryExists(directory, "buffer directory");
@@ -64,10 +65,10 @@ class MappedTermBuffers implements TermBuffers
         {
             requireEqual(logTemplate.size(), logBufferLength);
             requireEqual(stateTemplate.size(), stateBufferSize);
+
             final MappedRawLog active = newTerm("0", directory);
             final MappedRawLog clean = newTerm("1", directory);
             final MappedRawLog dirty = newTerm("2", directory);
-
 
             buffers = new MappedRawLog[]{active, clean, dirty};
         }
@@ -106,10 +107,16 @@ class MappedTermBuffers implements TermBuffers
     }
 
     public static void reset(final FileChannel channel, final FileChannel template, final long bufferSize)
-        throws IOException
     {
-        channel.position(0);
-        template.transferTo(0, bufferSize, channel);
+        try
+        {
+            channel.position(0);
+            template.transferTo(0, bufferSize, channel);
+        }
+        catch (final IOException ex)
+        {
+            throw new RuntimeException(ex);
+        }
     }
 
     private void requireEqual(final long a, final long b)
@@ -120,20 +127,28 @@ class MappedTermBuffers implements TermBuffers
         }
     }
 
-    private MappedRawLog newTerm(final String prefix, final File directory) throws IOException
+    private MappedRawLog newTerm(final String prefix, final File directory)
     {
-        final File logFile = new File(directory, prefix + LOG_SUFFIX);
-        final File stateFile = new File(directory, prefix + STATE_SUFFIX);
-        final FileChannel logFileChannel = openBufferFile(logFile);
-        final FileChannel stateFileChannel = openBufferFile(stateFile);
+        try
+        {
+            final File logFile = new File(directory, prefix + LOG_SUFFIX);
+            final File stateFile = new File(directory, prefix + STATE_SUFFIX);
+            final FileChannel logFileChannel = openBufferFile(logFile);
+            final FileChannel stateFileChannel = openBufferFile(stateFile);
 
-        return new MappedRawLog(logFile,
-                                stateFile,
-                                logFileChannel,
-                                stateFileChannel,
-                                mapBufferFile(logFileChannel, logBufferLength),
-                                mapBufferFile(stateFileChannel, stateBufferLength),
-                                logger);
+            return new MappedRawLog(
+                logFile,
+                stateFile,
+                logFileChannel,
+                stateFileChannel,
+                mapBufferFile(logFileChannel, logBufferLength),
+                mapBufferFile(stateFileChannel, stateBufferLength),
+                logger);
+        }
+        catch (final IOException ex)
+        {
+            throw new RuntimeException(ex);
+        }
     }
 
     private FileChannel openBufferFile(final File file) throws FileNotFoundException
@@ -142,10 +157,16 @@ class MappedTermBuffers implements TermBuffers
     }
 
     private MappedByteBuffer mapBufferFile(final FileChannel channel, final long bufferSize)
-        throws IOException
     {
         reset(channel, logTemplate, bufferSize);
 
-        return channel.map(READ_WRITE, 0, bufferSize);
+        try
+        {
+            return channel.map(READ_WRITE, 0, bufferSize);
+        }
+        catch (final IOException ex)
+        {
+            throw new RuntimeException(ex);
+        }
     }
 }

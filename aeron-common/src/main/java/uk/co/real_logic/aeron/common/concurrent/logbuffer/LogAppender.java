@@ -57,15 +57,13 @@ public class LogAppender extends LogBuffer
     /**
      * Construct a view over a log buffer and state buffer for appending frames.
      *
-     * @param logBuffer for where messages are stored.
-     * @param stateBuffer for where the state of writers is stored manage concurrency.
-     * @param defaultHeader to be applied for each frame logged.
+     * @param logBuffer      for where messages are stored.
+     * @param stateBuffer    for where the state of writers is stored manage concurrency.
+     * @param defaultHeader  to be applied for each frame logged.
      * @param maxFrameLength maximum frame length supported by the underlying transport.
      */
-    public LogAppender(final AtomicBuffer logBuffer,
-                       final AtomicBuffer stateBuffer,
-                       final byte[] defaultHeader,
-                       final int maxFrameLength)
+    public LogAppender(
+        final AtomicBuffer logBuffer, final AtomicBuffer stateBuffer, final byte[] defaultHeader, final int maxFrameLength)
     {
         super(logBuffer, stateBuffer);
 
@@ -124,7 +122,7 @@ public class LogAppender extends LogBuffer
      *
      * @param srcBuffer containing the encoded message.
      * @param srcOffset at which the encoded message begins.
-     * @param length of the message in bytes.
+     * @param length    of the message in bytes.
      * @return SUCCESS if appended in the log, FAILURE if not appended in the log, TRIPPED if first failure.
      * @throws IllegalArgumentException if the length is greater than {@link #maxMessageLength()}
      */
@@ -207,10 +205,11 @@ public class LogAppender extends LogBuffer
             final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
 
             logBuffer.putBytes(frameOffset, defaultHeader, 0, headerLength);
-            logBuffer.putBytes(frameOffset + headerLength,
-                              srcBuffer,
-                              srcOffset + (length - remaining),
-                              bytesToWrite);
+            logBuffer.putBytes(
+                frameOffset + headerLength,
+                srcBuffer,
+                srcOffset + (length - remaining),
+                bytesToWrite);
 
             if (remaining <= maxPayload)
             {
@@ -279,7 +278,10 @@ public class LogAppender extends LogBuffer
     {
         if (length > maxMessageLength)
         {
-            final String s = String.format("encoded message exceeds maxMessageLength of %d, length=%d", maxMessageLength, length);
+            final String s = String.format(
+                "encoded message exceeds maxMessageLength of %d, length=%d",
+                maxMessageLength,
+                length);
 
             throw new IllegalArgumentException(s);
         }

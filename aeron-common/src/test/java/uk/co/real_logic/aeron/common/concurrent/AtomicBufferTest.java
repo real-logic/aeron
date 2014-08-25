@@ -53,8 +53,8 @@ public class AtomicBufferTest
     public static final AtomicBuffer DIRECT_BYTE_BUFFER = new AtomicBuffer(ByteBuffer.allocateDirect(BUFFER_CAPACITY));
 
     @DataPoint
-    public static final AtomicBuffer HEAP_BYTE_BUFFER_SLICE =
-        new AtomicBuffer(((ByteBuffer)(ByteBuffer.allocate(BUFFER_CAPACITY * 2).position(BUFFER_CAPACITY))).slice());
+    public static final AtomicBuffer HEAP_BYTE_BUFFER_SLICE = new AtomicBuffer(
+        ((ByteBuffer)(ByteBuffer.allocate(BUFFER_CAPACITY * 2).position(BUFFER_CAPACITY))).slice());
 
     @Theory
     public void shouldGetCapacity(final AtomicBuffer buffer)

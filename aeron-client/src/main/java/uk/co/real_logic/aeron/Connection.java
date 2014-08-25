@@ -47,12 +47,13 @@ public class Connection
 
     private int activeIndex;
 
-    public Connection(final LogReader[] readers,
-                      final int sessionId,
-                      final int initialTermId,
-                      final DataHandler dataHandler,
-                      final PositionReporter positionReporter,
-                      final ManagedBuffer[] managedBuffers)
+    public Connection(
+        final LogReader[] readers,
+        final int sessionId,
+        final int initialTermId,
+        final DataHandler dataHandler,
+        final PositionReporter positionReporter,
+        final ManagedBuffer[] managedBuffers)
     {
         this.logReaders = readers;
         this.sessionId = sessionId;

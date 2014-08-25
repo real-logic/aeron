@@ -52,10 +52,8 @@ public class BackoffIdleStrategy implements IdleStrategy
      * @param minParkPeriodNs to use when initiating parking
      * @param maxParkPeriodNs to use when parking
      */
-    public BackoffIdleStrategy(final long maxSpins,
-                               final long maxYields,
-                               final long minParkPeriodNs,
-                               final long maxParkPeriodNs)
+    public BackoffIdleStrategy(
+        final long maxSpins, final long maxYields, final long minParkPeriodNs, final long maxParkPeriodNs)
     {
         this.maxSpins = maxSpins;
         this.maxYields = maxYields;

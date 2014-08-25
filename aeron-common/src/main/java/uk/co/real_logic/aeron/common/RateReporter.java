@@ -16,7 +16,6 @@
 package uk.co.real_logic.aeron.common;
 
 import java.util.concurrent.locks.LockSupport;
-import java.util.function.BiConsumer;
 
 /**
  * Tracker and reporter of rates.
@@ -39,15 +38,14 @@ public class RateReporter implements Runnable
          * @param totalMessages since beginning of reporting
          * @param totalBytes since beginning of reporting
          */
-        void onReport(final double messagesPerSec, final double bytesPerSec,
-                      final long totalMessages, final long totalBytes);
+        void onReport(double messagesPerSec, double bytesPerSec, long totalMessages, long totalBytes);
     }
 
     private final long reportIntervalNs;
     private final long parkNs;
-    private final Reporter reportingFunction;
+    private final Reporter reportingFunc;
 
-    private volatile boolean done = false;
+    private volatile boolean halt = false;
     private volatile long totalBytes;
     private volatile long totalMessages;
     private long lastTotalBytes;
@@ -58,13 +56,13 @@ public class RateReporter implements Runnable
      * Create a rate reporter with the given report interval in nanoseconds and the reporting function.
      *
      * @param reportInterval in nanoseconds
-     * @param reportingFunction to call for reporting rates
+     * @param reportingFunc to call for reporting rates
      */
-    public RateReporter(final long reportInterval, final Reporter reportingFunction)
+    public RateReporter(final long reportInterval, final Reporter reportingFunc)
     {
         this.reportIntervalNs = reportInterval;
         this.parkNs = reportInterval;
-        this.reportingFunction = reportingFunction;
+        this.reportingFunc = reportingFunc;
         lastTimestamp = System.nanoTime();
     }
 
@@ -86,13 +84,13 @@ public class RateReporter implements Runnable
             final double messagesPerSec = ((currentTotalMessages - lastTotalMessages) * reportIntervalNs) / (double)timeSpanNs;
             final double bytesPerSec = ((currentTotalBytes - lastTotalBytes) * reportIntervalNs) / (double)timeSpanNs;
 
-            reportingFunction.onReport(messagesPerSec, bytesPerSec, currentTotalMessages, currentTotalBytes);
+            reportingFunc.onReport(messagesPerSec, bytesPerSec, currentTotalMessages, currentTotalBytes);
 
             lastTotalBytes = currentTotalBytes;
             lastTotalMessages = currentTotalMessages;
             lastTimestamp = currentTimestamp;
         }
-        while (!done);
+        while (!halt);
     }
 
     /**
@@ -100,7 +98,7 @@ public class RateReporter implements Runnable
      */
     public void halt()
     {
-        done = true;
+        halt = true;
     }
 
     /**

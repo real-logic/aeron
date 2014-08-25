@@ -175,8 +175,7 @@ public class ManyToOneRingBufferTest
 
         when(buffer.getLongVolatile(HEAD_COUNTER_INDEX)).thenReturn(head);
         when(buffer.getLongVolatile(TAIL_COUNTER_INDEX)).thenReturn(tail);
-        when(buffer.compareAndSetLong(TAIL_COUNTER_INDEX, tail, tail + recordLength + ALIGNMENT))
-            .thenReturn(Boolean.TRUE);
+        when(buffer.compareAndSetLong(TAIL_COUNTER_INDEX, tail, tail + recordLength + ALIGNMENT)).thenReturn(Boolean.TRUE);
 
         final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[1024]);
 

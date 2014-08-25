@@ -161,7 +161,8 @@ public class SubUnicastTest
         SystemTestHelper.executeUntil(
             () -> receivedFrames.size() > 0,
             subscriptionPollWithYield,
-            Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
+            Integer.MAX_VALUE,
+            TimeUnit.MILLISECONDS.toNanos(500));
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(1));
@@ -199,7 +200,8 @@ public class SubUnicastTest
         SystemTestHelper.executeUntil(
             () -> receivedFrames.size() >= 3,
             subscriptionPollWithYield,
-            Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
+            Integer.MAX_VALUE,
+            TimeUnit.MILLISECONDS.toNanos(500));
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(3));
@@ -237,7 +239,8 @@ public class SubUnicastTest
         SystemTestHelper.executeUntil(
             () -> receivedFrames.size() > 0,
             subscriptionPollWithYield,
-            Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
+            Integer.MAX_VALUE,
+            TimeUnit.MILLISECONDS.toNanos(500));
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(1));
@@ -292,7 +295,8 @@ public class SubUnicastTest
         SystemTestHelper.executeUntil(
             () -> receivedFrames.size() > 0,
             subscriptionPollWithYield,
-            Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
+            Integer.MAX_VALUE,
+            TimeUnit.MILLISECONDS.toNanos(500));
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(1));
@@ -317,7 +321,8 @@ public class SubUnicastTest
         SystemTestHelper.executeUntil(
             () -> receivedFrames.size() >= 2,
             subscriptionPollWithYield,
-            Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
+            Integer.MAX_VALUE,
+            TimeUnit.MILLISECONDS.toNanos(500));
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(2));

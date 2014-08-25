@@ -43,10 +43,11 @@ public class ReceiveChannelEndpoint implements AutoCloseable
     private final StatusMessageFlyweight smHeader = new StatusMessageFlyweight();
     private final NakFlyweight nakHeader = new NakFlyweight();
 
-    public ReceiveChannelEndpoint(final UdpChannel udpChannel,
-                                  final DriverConductorProxy conductorProxy,
-                                  final EventLogger logger,
-                                  final LossGenerator lossGenerator)
+    public ReceiveChannelEndpoint(
+        final UdpChannel udpChannel,
+        final DriverConductorProxy conductorProxy,
+        final EventLogger logger,
+        final LossGenerator lossGenerator)
     {
         smHeader.wrap(smBuffer, 0);
         nakHeader.wrap(nakBuffer, 0);
@@ -145,18 +146,19 @@ public class ReceiveChannelEndpoint implements AutoCloseable
     }
 
     public NakMessageSender composeNakMessageSender(final InetSocketAddress controlAddress,
-                                                    final int sessionId,
-                                                    final int streamId)
+        final int sessionId,
+        final int streamId)
     {
         return (termId, termOffset, length) -> sendNak(controlAddress, sessionId, streamId, termId, termOffset, length);
     }
 
-    private void sendStatusMessage(final InetSocketAddress controlAddress,
-                                   final int sessionId,
-                                   final int streamId,
-                                   final int termId,
-                                   final int termOffset,
-                                   final int window)
+    private void sendStatusMessage(
+        final InetSocketAddress controlAddress,
+        final int sessionId,
+        final int streamId,
+        final int termId,
+        final int termOffset,
+        final int window)
     {
         smHeader.sessionId(sessionId)
                 .streamId(streamId)
@@ -175,16 +177,17 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         final int bytesSent = udpTransport.sendTo(smBuffer, controlAddress);
         if (bytesSent < frameLength)
         {
-            logger.log(EventCode.FRAME_OUT_INCOMPLETE_SENDTO, "sendStatusMessage %d/%d", bytesSent, frameLength);
+            logger.log(EventCode.FRAME_OUT_INCOMPLETE_SEND, "sendStatusMessage %d/%d", bytesSent, frameLength);
         }
     }
 
-    private void sendNak(final InetSocketAddress controlAddress,
-                         final int sessionId,
-                         final int streamId,
-                         final int termId,
-                         final int termOffset,
-                         final int length)
+    private void sendNak(
+        final InetSocketAddress controlAddress,
+        final int sessionId,
+        final int streamId,
+        final int termId,
+        final int termOffset,
+        final int length)
     {
         nakHeader.streamId(streamId)
                  .sessionId(sessionId)
@@ -204,7 +207,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
 
         if (bytesSent < frameLength)
         {
-            logger.log(EventCode.FRAME_OUT_INCOMPLETE_SENDTO, "sendNak %d/%d", bytesSent, frameLength);
+            logger.log(EventCode.FRAME_OUT_INCOMPLETE_SEND, "sendNak %d/%d", bytesSent, frameLength);
         }
     }
 }

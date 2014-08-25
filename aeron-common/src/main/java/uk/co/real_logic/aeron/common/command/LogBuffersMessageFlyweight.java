@@ -167,6 +167,7 @@ public class LogBuffersMessageFlyweight extends Flyweight
     public LogBuffersMessageFlyweight correlationId(final long correlationId)
     {
         atomicBuffer().putLong(offset() + CORRELATION_ID_OFFSET, correlationId, ByteOrder.LITTLE_ENDIAN);
+
         return this;
     }
 
@@ -187,6 +188,7 @@ public class LogBuffersMessageFlyweight extends Flyweight
     public LogBuffersMessageFlyweight sessionId(final int sessionId)
     {
         atomicBuffer().putInt(offset() + SESSION_ID_OFFSET, sessionId, LITTLE_ENDIAN);
+
         return this;
     }
 
@@ -209,6 +211,7 @@ public class LogBuffersMessageFlyweight extends Flyweight
     public LogBuffersMessageFlyweight streamId(final int streamId)
     {
         atomicBuffer().putInt(offset() + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
+
         return this;
     }
 
@@ -231,6 +234,7 @@ public class LogBuffersMessageFlyweight extends Flyweight
     public LogBuffersMessageFlyweight termId(final int termId)
     {
         atomicBuffer().putInt(offset() + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
+
         return this;
     }
 
@@ -253,6 +257,7 @@ public class LogBuffersMessageFlyweight extends Flyweight
     public LogBuffersMessageFlyweight positionCounterId(final int positionCounterId)
     {
         atomicBuffer().putInt(offset() + POSITION_COUNTER_ID_OFFSET, positionCounterId, LITTLE_ENDIAN);
+
         return this;
     }
 
@@ -264,6 +269,7 @@ public class LogBuffersMessageFlyweight extends Flyweight
     private LogBuffersMessageFlyweight relativeIntField(final int index, final int value, final int fieldOffset)
     {
         atomicBuffer().putInt(relativeOffset(index, fieldOffset), value, LITTLE_ENDIAN);
+
         return this;
     }
 
@@ -291,6 +297,7 @@ public class LogBuffersMessageFlyweight extends Flyweight
     {
         final int start = locationPointer(index);
         final int length = locationPointer(index + 1) - start;
+
         return atomicBuffer().getStringWithoutLength(offset() + start, length);
     }
 
@@ -301,8 +308,10 @@ public class LogBuffersMessageFlyweight extends Flyweight
         {
             throw new IllegalStateException("Previous location been hasn't been set yet at index " + index);
         }
+
         final int length = atomicBuffer().putStringWithoutLength(offset() + start, value);
         locationPointer(index + 1, start + length);
+
         return this;
     }
 

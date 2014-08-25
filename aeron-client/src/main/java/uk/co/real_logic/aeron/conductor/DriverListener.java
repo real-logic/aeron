@@ -24,23 +24,19 @@ import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
  */
 public interface DriverListener
 {
-    void onNewPublication(String channel,
-                          int sessionId,
-                          int streamId,
-                          int termId,
-                          int positionIndicatorId,
-                          LogBuffersMessageFlyweight logBuffersMessage);
+    void onNewPublication(
+        String channel,
+        int sessionId,
+        int streamId,
+        int termId,
+        int positionIndicatorId,
+        LogBuffersMessageFlyweight logBuffersMessage);
 
-    void onNewConnection(String channel,
-                         int sessionId,
-                         int streamId,
-                         int termId,
-                         LogBuffersMessageFlyweight logBuffersMessage);
+    void onNewConnection(
+        String channel, int sessionId, int streamId, int termId, LogBuffersMessageFlyweight logBuffersMessage);
 
-    void onInactiveConnection(String channel,
-                              int sessionId,
-                              int streamId,
-                              ConnectionMessageFlyweight connectionMessage);
+    void onInactiveConnection(
+        String channel, int sessionId, int streamId, ConnectionMessageFlyweight connectionMessage);
 
     void onError(ErrorCode errorCode, String message);
 

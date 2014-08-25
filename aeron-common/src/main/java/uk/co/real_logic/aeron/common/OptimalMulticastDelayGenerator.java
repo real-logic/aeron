@@ -30,8 +30,8 @@ package uk.co.real_logic.aeron.common;
  * double RandomBackoff(double maxBackoffT, double groupSize)
  * {
  *     double lambda = log(groupSize) + 1;
- *     double x = UniformRand(lambda/maxBackoffT) + lambda / (maxBackoffT*(exp(lambda)-1));
- *     return ((maxBackoffT/lambda) * log(x*(exp(lambda)-1)*(maxBackoffT/lambda)));
+ *     double x = UniformRand(lambda / maxBackoffT) + lambda / (maxBackoffT * (exp(lambda) - 1));
+ *     return ((maxBackoffT / lambda) * log( x * (exp(lambda) - 1) * (maxBackoffT / lambda)));
  * }
  * </code>
  *
@@ -43,7 +43,7 @@ package uk.co.real_logic.aeron.common;
  * - GRTT is a constant (could be configurable as a system property)
  *
  * N (the expected number of feedback messages per RTT) is
- *   N = exp(1.2 * L / (2*maxBackoffT/GRTT))
+ *   N = exp(1.2 * L / (2 * maxBackoffT/GRTT))
  *
  * Assumptions:
  * maxBackoffT = K * GRTT (K >= 1)

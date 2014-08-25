@@ -81,9 +81,8 @@ public class ReceiverTest
 
     private final TermBuffers termBuffers = newTestTermBuffers(LOG_BUFFER_SIZE, LogBufferDescriptor.STATE_BUFFER_LENGTH);
     private final EventLogger mockLogger = mock(EventLogger.class);
-    private final TimerWheel timerWheel =
-        new TimerWheel(clock, Configuration.CONDUCTOR_TICK_DURATION_US,
-            TimeUnit.MICROSECONDS, Configuration.CONDUCTOR_TICKS_PER_WHEEL);
+    private final TimerWheel timerWheel = new TimerWheel(
+        clock, Configuration.CONDUCTOR_TICK_DURATION_US, TimeUnit.MICROSECONDS, Configuration.CONDUCTOR_TICKS_PER_WHEEL);
 
     private LogReader[] logReaders;
     private DatagramChannel senderChannel;
@@ -91,7 +90,7 @@ public class ReceiverTest
     private InetSocketAddress senderAddress = new InetSocketAddress("localhost", 40123);
     private Receiver receiver;
     private ReceiverProxy receiverProxy;
-    private OneToOneConcurrentArrayQueue<? super Object> toConductorQueue;
+    private OneToOneConcurrentArrayQueue<Object> toConductorQueue;
 
     private ReceiveChannelEndpoint receiveChannelEndpoint;
 
@@ -125,14 +124,13 @@ public class ReceiverTest
         senderChannel.bind(senderAddress);
         senderChannel.configureBlocking(false);
 
-        logReaders = termBuffers.stream()
-                                .map((rawLog) -> new LogReader(rawLog.logBuffer(), rawLog.stateBuffer()))
-                                .toArray(LogReader[]::new);
+        logReaders =
+            termBuffers.stream()
+                       .map((rawLog) -> new LogReader(rawLog.logBuffer(), rawLog.stateBuffer()))
+                       .toArray(LogReader[]::new);
 
-        receiveChannelEndpoint = new ReceiveChannelEndpoint(UdpChannel.parse(URI),
-                                                            driverConductorProxy,
-                                                            mockLogger,
-                                                            (address, length) -> false);
+        receiveChannelEndpoint = new ReceiveChannelEndpoint(
+            UdpChannel.parse(URI), driverConductorProxy, mockLogger, (address, length) -> false);
     }
 
     @After
@@ -156,23 +154,22 @@ public class ReceiverTest
 
         receiveChannelEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
-        final DriverConnection connection =
-            new DriverConnection(
-                receiveChannelEndpoint,
-                SESSION_ID,
-                STREAM_ID,
-                TERM_ID,
-                INITIAL_WINDOW_SIZE,
-                STATUS_MESSAGE_TIMEOUT,
-                termBuffers,
-                mockLossHandler,
-                receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
-                POSITION_INDICATOR,
-                mockContiguousReceivedPosition,
-                mockHighestReceivedPosition,
-                clock,
-                mockSystemCounters,
-                mockLogger);
+        final DriverConnection connection = new DriverConnection(
+            receiveChannelEndpoint,
+            SESSION_ID,
+            STREAM_ID,
+            TERM_ID,
+            INITIAL_WINDOW_SIZE,
+            STATUS_MESSAGE_TIMEOUT,
+            termBuffers,
+            mockLossHandler,
+            receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
+            POSITION_INDICATOR,
+            mockContiguousReceivedPosition,
+            mockHighestReceivedPosition,
+            clock,
+            mockSystemCounters,
+            mockLogger);
 
         final int messagesRead = toConductorQueue.drain(
             (e) ->
@@ -263,8 +260,8 @@ public class ReceiverTest
                 assertThat(dataHeader.sessionId(), is(SESSION_ID));
                 assertThat(dataHeader.termOffset(), is(0));
                 assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
-            }, Integer.MAX_VALUE
-        );
+            },
+            Integer.MAX_VALUE);
 
         assertThat(messagesRead, is(1));
     }
@@ -327,8 +324,8 @@ public class ReceiverTest
                 assertThat(dataHeader.sessionId(), is(SESSION_ID));
                 assertThat(dataHeader.termOffset(), is(0));
                 assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
-            }, Integer.MAX_VALUE
-        );
+            },
+            Integer.MAX_VALUE);
 
         assertThat(messagesRead, is(1));
     }
@@ -391,8 +388,8 @@ public class ReceiverTest
                 assertThat(dataHeader.sessionId(), is(SESSION_ID));
                 assertThat(dataHeader.termOffset(), is(0));
                 assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
-            }, Integer.MAX_VALUE
-        );
+            },
+            Integer.MAX_VALUE);
 
         assertThat(messagesRead, is(1));
     }

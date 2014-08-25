@@ -37,11 +37,12 @@ public class Subscription implements AutoCloseable
 
     private int roundRobinIndex = 0;
 
-    public Subscription(final ClientConductor clientConductor,
-                        final DataHandler dataHandler,
-                        final String channel,
-                        final int streamId,
-                        final long correlationId)
+    public Subscription(
+        final ClientConductor clientConductor,
+        final DataHandler dataHandler,
+        final String channel,
+        final int streamId,
+        final long correlationId)
     {
         this.clientConductor = clientConductor;
         this.dataHandler = dataHandler;
@@ -99,11 +100,12 @@ public class Subscription implements AutoCloseable
         return connections.doLimitedAction(roundRobinIndex, fragmentCountLimit, Connection::poll);
     }
 
-    public void onTermBuffersMapped(final int sessionId,
-                                    final int termId,
-                                    final LogReader[] logReaders,
-                                    final PositionReporter positionReporter,
-                                    final ManagedBuffer[] managedBuffers)
+    public void onTermBuffersMapped(
+        final int sessionId,
+        final int termId,
+        final LogReader[] logReaders,
+        final PositionReporter positionReporter,
+        final ManagedBuffer[] managedBuffers)
     {
         connections.add(new Connection(logReaders, sessionId, termId, dataHandler, positionReporter, managedBuffers));
     }

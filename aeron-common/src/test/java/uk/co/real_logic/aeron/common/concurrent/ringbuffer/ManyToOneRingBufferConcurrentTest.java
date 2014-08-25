@@ -60,8 +60,7 @@ public class ManyToOneRingBufferConcurrentTest
                     {
                         ringBuffer.nextCorrelationId();
                     }
-                }
-            );
+                });
 
             threads[i].start();
         }

@@ -89,10 +89,7 @@ public class DriverListenerAdapter implements MessageHandler
             case ON_INACTIVE_CONNECTION:
                 connectionMessage.wrap(buffer, index);
                 listener.onInactiveConnection(
-                    connectionMessage.channel(),
-                    connectionMessage.sessionId(),
-                    connectionMessage.streamId(),
-                    connectionMessage);
+                    connectionMessage.channel(), connectionMessage.sessionId(), connectionMessage.streamId(), connectionMessage);
                 break;
 
             case ON_ERROR:
@@ -104,10 +101,8 @@ public class DriverListenerAdapter implements MessageHandler
         }
     }
 
-    private void onError(final AtomicBuffer buffer,
-                         final int index,
-                         final DriverListener listener,
-                         final long activeCorrelationId)
+    private void onError(
+        final AtomicBuffer buffer, final int index, final DriverListener listener, final long activeCorrelationId)
     {
         errorHeader.wrap(buffer, index);
         final ErrorCode errorCode = errorHeader.errorCode();

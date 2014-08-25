@@ -43,6 +43,7 @@ public class CorrelatedMessageFlyweight extends Flyweight
     public CorrelatedMessageFlyweight clientId(final long clientId)
     {
         atomicBuffer().putLong(offset() + CLIENT_ID_FIELD_OFFSET, clientId, ByteOrder.LITTLE_ENDIAN);
+
         return this;
     }
 
@@ -65,6 +66,7 @@ public class CorrelatedMessageFlyweight extends Flyweight
     public CorrelatedMessageFlyweight correlationId(final long correlationId)
     {
         atomicBuffer().putLong(offset() + CORRELATION_ID_FIELD_OFFSET, correlationId, ByteOrder.LITTLE_ENDIAN);
+
         return this;
     }
 }

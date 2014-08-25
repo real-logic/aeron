@@ -136,6 +136,7 @@ public class PubUnicastTest
                 assertThat(buffer.position(), is(DataHeaderFlyweight.HEADER_LENGTH));
                 termId.set(dataHeader.termId());
                 receivedZeroLengthData.incrementAndGet();
+
                 return true;
             });
 
@@ -159,6 +160,7 @@ public class PubUnicastTest
                     assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
                     assertThat(buffer.position(), is(ALIGNED_FRAME_LENGTH));
                     receivedDataFrames.incrementAndGet();
+
                     return true;
                 }
 
@@ -192,6 +194,7 @@ public class PubUnicastTest
                 assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH));
                 termId.set(dataHeader.termId());
                 receivedZeroLengthData.incrementAndGet();
+
                 return true;
             });
 
@@ -211,8 +214,10 @@ public class PubUnicastTest
                 {
                     assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
                     receivedDataFrames.incrementAndGet();
+
                     return true;
                 }
+
                 return false;
             });
 
@@ -237,6 +242,7 @@ public class PubUnicastTest
                     assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length));
                     assertThat(buffer.position(), is(ALIGNED_FRAME_LENGTH));
                     receivedDataFrames.incrementAndGet();
+
                     return true;
                 }
 
@@ -258,7 +264,7 @@ public class PubUnicastTest
                      .sessionId(SESSION_ID)
                      .frameLength(StatusMessageFlyweight.HEADER_LENGTH)
                      .headerType(HeaderFlyweight.HDR_TYPE_SM)
-                     .flags((short) 0)
+                     .flags((short)0)
                      .version(HeaderFlyweight.CURRENT_VERSION);
 
         smBuffer.position(0);
@@ -280,7 +286,7 @@ public class PubUnicastTest
                  .sessionId(SESSION_ID)
                  .frameLength(NakFlyweight.HEADER_LENGTH)
                  .headerType(HeaderFlyweight.HDR_TYPE_NAK)
-                 .flags((short) 0)
+                 .flags((short)0)
                  .version(HeaderFlyweight.CURRENT_VERSION);
 
         nakBuffer.position(0);

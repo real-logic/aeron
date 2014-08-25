@@ -17,7 +17,7 @@
 package uk.co.real_logic.aeron.driver;
 
 /**
- * Client status tracking
+ * Client library status tracking
  */
 public class ClientLiveness
 {

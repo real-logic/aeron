@@ -34,11 +34,12 @@ public class SendChannelEndpoint implements AutoCloseable
     private final BiInt2ObjectMap<PublicationAssembly> assemblyByStreamAndSessionIdMap = new BiInt2ObjectMap<>();
     private final SystemCounters systemCounters;
 
-    public SendChannelEndpoint(final UdpChannel udpChannel,
-                               final NioSelector nioSelector,
-                               final EventLogger logger,
-                               final LossGenerator lossGenerator,
-                               final SystemCounters systemCounters)
+    public SendChannelEndpoint(
+        final UdpChannel udpChannel,
+        final NioSelector nioSelector,
+        final EventLogger logger,
+        final LossGenerator lossGenerator,
+        final SystemCounters systemCounters)
     {
         this.systemCounters = systemCounters;
         this.transport = new UdpTransport(udpChannel, this::onStatusMessageFrame, this::onNakFrame, logger, lossGenerator);
@@ -78,9 +79,10 @@ public class SendChannelEndpoint implements AutoCloseable
         return null;
     }
 
-    public void addPublication(final DriverPublication publication,
-                               final RetransmitHandler retransmitHandler,
-                               final SenderFlowControl senderFlowControl)
+    public void addPublication(
+        final DriverPublication publication,
+        final RetransmitHandler retransmitHandler,
+        final SenderFlowControl senderFlowControl)
     {
         assemblyByStreamAndSessionIdMap.put(
             publication.sessionId(), publication.streamId(),
@@ -105,28 +107,23 @@ public class SendChannelEndpoint implements AutoCloseable
         return assemblyByStreamAndSessionIdMap.size();
     }
 
-    private void onStatusMessageFrame(final StatusMessageFlyweight header,
-                                      final AtomicBuffer buffer,
-                                      final int length,
-                                      final InetSocketAddress srcAddress)
+    private void onStatusMessageFrame(
+        final StatusMessageFlyweight header, final AtomicBuffer buffer, final int length, final InetSocketAddress srcAddress)
     {
         final PublicationAssembly assembly = assemblyByStreamAndSessionIdMap.get(header.sessionId(), header.streamId());
 
         if (null != assembly)
         {
-            final long limit =
-                assembly.senderFlowControl.onStatusMessage(
-                    header.termId(), header.highestContiguousTermOffset(), header.receiverWindowSize(), srcAddress);
+            final long limit = assembly.senderFlowControl.onStatusMessage(
+                header.termId(), header.highestContiguousTermOffset(), header.receiverWindowSize(), srcAddress);
 
             assembly.publication.updatePositionLimitFromStatusMessage(limit);
             systemCounters.statusMessagesReceived().orderedIncrement();
         }
     }
 
-    private void onNakFrame(final NakFlyweight nak,
-                            final AtomicBuffer buffer,
-                            final int length,
-                            final InetSocketAddress srcAddress)
+    private void onNakFrame(
+        final NakFlyweight nak, final AtomicBuffer buffer, final int length, final InetSocketAddress srcAddress)
     {
         final PublicationAssembly assembly = assemblyByStreamAndSessionIdMap.get(nak.sessionId(), nak.streamId());
 
@@ -137,15 +134,16 @@ public class SendChannelEndpoint implements AutoCloseable
         }
     }
 
-    private static class PublicationAssembly
+    private static final class PublicationAssembly
     {
         final DriverPublication publication;
         final RetransmitHandler retransmitHandler;
         final SenderFlowControl senderFlowControl;
 
-        public PublicationAssembly(final DriverPublication publication,
-                                   final RetransmitHandler retransmitHandler,
-                                   final SenderFlowControl senderFlowControl)
+        public PublicationAssembly(
+            final DriverPublication publication,
+            final RetransmitHandler retransmitHandler,
+            final SenderFlowControl senderFlowControl)
         {
             this.publication = publication;
             this.retransmitHandler = retransmitHandler;

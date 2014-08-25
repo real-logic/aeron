@@ -55,31 +55,31 @@ public class EventConfiguration
      */
     public static final String ENABLED_LOGGER_EVENT_CODES_PROPERTY_NAME = "aeron.event.log";
 
-    public static final Set<EventCode> PRODUCTION_LOGGER_EVENT_CODES =
-        EnumSet.of(EXCEPTION,
-                   MALFORMED_FRAME_LENGTH,
-                   ERROR_DELETING_FILE,
-                   FRAME_OUT_INCOMPLETE_SENDTO,
-                   FLOW_CONTROL_OVERRUN);
+    public static final Set<EventCode> PRODUCTION_LOGGER_EVENT_CODES = EnumSet.of(
+        EXCEPTION,
+        MALFORMED_FRAME_LENGTH,
+        ERROR_DELETING_FILE,
+        FRAME_OUT_INCOMPLETE_SEND,
+        FLOW_CONTROL_OVERRUN);
 
-    public static final Set<EventCode> ADMIN_ONLY_EVENT_CODES =
-        EnumSet.of(EXCEPTION,
-                   MALFORMED_FRAME_LENGTH,
-                   CMD_IN_ADD_PUBLICATION,
-                   CMD_IN_ADD_SUBSCRIPTION,
-                   CMD_IN_KEEPALIVE_CLIENT,
-                   CMD_IN_REMOVE_PUBLICATION,
-                   CMD_IN_REMOVE_SUBSCRIPTION,
-                   REMOVE_CONNECTION_CLEANUP,
-                   REMOVE_PUBLICATION_CLEANUP,
-                   REMOVE_SUBSCRIPTION_CLEANUP,
-                   CMD_OUT_NEW_PUBLICATION_BUFFER_NOTIFICATION,
-                   CMD_OUT_NEW_SUBSCRIPTION_BUFFER_NOTIFICATION,
-                   CMD_OUT_ON_INACTIVE_CONNECTION,
-                   CMD_OUT_ON_OPERATION_SUCCESS,
-                   ERROR_DELETING_FILE,
-                   FRAME_OUT_INCOMPLETE_SENDTO,
-                   FLOW_CONTROL_OVERRUN);
+    public static final Set<EventCode> ADMIN_ONLY_EVENT_CODES = EnumSet.of(
+        EXCEPTION,
+        MALFORMED_FRAME_LENGTH,
+        CMD_IN_ADD_PUBLICATION,
+        CMD_IN_ADD_SUBSCRIPTION,
+        CMD_IN_KEEPALIVE_CLIENT,
+        CMD_IN_REMOVE_PUBLICATION,
+        CMD_IN_REMOVE_SUBSCRIPTION,
+        REMOVE_CONNECTION_CLEANUP,
+        REMOVE_PUBLICATION_CLEANUP,
+        REMOVE_SUBSCRIPTION_CLEANUP,
+        CMD_OUT_NEW_PUBLICATION_BUFFER_NOTIFICATION,
+        CMD_OUT_NEW_SUBSCRIPTION_BUFFER_NOTIFICATION,
+        CMD_OUT_ON_INACTIVE_CONNECTION,
+        CMD_OUT_ON_OPERATION_SUCCESS,
+        ERROR_DELETING_FILE,
+        FRAME_OUT_INCOMPLETE_SEND,
+        FLOW_CONTROL_OVERRUN);
 
     public static final Set<EventCode> ALL_LOGGER_EVENT_CODES = EnumSet.allOf(EventCode.class);
 

@@ -13,7 +13,7 @@ public class EventCodeTest
     public void allTagsBitsAreUnique()
     {
         final Set<Long> seenTagBits = new HashSet<>();
-        for (EventCode code : EventCode.values())
+        for (final EventCode code : EventCode.values())
         {
             assertTrue(seenTagBits.add(code.tagBit()));
         }

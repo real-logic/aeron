@@ -93,9 +93,10 @@ public class EventReader extends Agent implements MessageHandler
 
     public static class Context
     {
-        private File eventsFile =
-            new File(System.getProperty(EventConfiguration.LOCATION_PROPERTY_NAME, EventConfiguration.LOCATION_DEFAULT));
-        private long bufferSize = Long.getLong(EventConfiguration.BUFFER_SIZE_PROPERTY_NAME,
+        private File eventsFile = new File(
+            System.getProperty(EventConfiguration.LOCATION_PROPERTY_NAME, EventConfiguration.LOCATION_DEFAULT));
+        private long bufferSize = Long.getLong(
+            EventConfiguration.BUFFER_SIZE_PROPERTY_NAME,
             EventConfiguration.BUFFER_SIZE_DEFAULT) + RingBufferDescriptor.TRAILER_LENGTH;
         private boolean deleteOnExit = Boolean.getBoolean(EventConfiguration.DELETE_ON_EXIT_PROPERTY_NAME);
         private boolean warnIfEventsFileExists = false;

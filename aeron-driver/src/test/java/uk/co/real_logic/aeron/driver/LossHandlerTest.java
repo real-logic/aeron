@@ -46,6 +46,7 @@ public class LossHandlerTest
     private static final int LOG_BUFFER_SIZE = LogBufferDescriptor.MIN_LOG_SIZE;
     private static final int POSITION_BITS_TO_SHIFT = Integer.numberOfTrailingZeros(LOG_BUFFER_SIZE);
     private static final byte[] DATA = new byte[36];
+
     static
     {
         for (int i = 0; i < DATA.length; i++)
@@ -60,11 +61,11 @@ public class LossHandlerTest
     private static final int STREAM_ID = 0xC400E;
     private static final int TERM_ID = 0xEE81D;
 
-    private static final StaticDelayGenerator delayGenerator =
-        new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(20), false);
+    private static final StaticDelayGenerator delayGenerator = new StaticDelayGenerator(
+        TimeUnit.MILLISECONDS.toNanos(20), false);
 
-    private static final StaticDelayGenerator delayGeneratorWithImmediate =
-        new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(20), true);
+    private static final StaticDelayGenerator delayGeneratorWithImmediate = new StaticDelayGenerator(
+        TimeUnit.MILLISECONDS.toNanos(20), true);
 
     private final LogRebuilder[] rebuilders = new LogRebuilder[TermHelper.BUFFER_COUNT];
     private final GapScanner[] scanners = new GapScanner[TermHelper.BUFFER_COUNT];
@@ -88,10 +89,11 @@ public class LossHandlerTest
             scanners[i] = new GapScanner(logBuffer, stateBuffer);
         }
 
-        wheel = new TimerWheel(() -> currentTime,
-                               Configuration.CONDUCTOR_TICK_DURATION_US,
-                               TimeUnit.MICROSECONDS,
-                               Configuration.CONDUCTOR_TICKS_PER_WHEEL);
+        wheel = new TimerWheel(
+            () -> currentTime,
+            Configuration.CONDUCTOR_TICK_DURATION_US,
+            TimeUnit.MICROSECONDS,
+            Configuration.CONDUCTOR_TICKS_PER_WHEEL);
 
         nakMessageSender = mock(NakMessageSender.class);
 
@@ -451,6 +453,6 @@ public class LossHandlerTest
             wheel.expireTimers();
         }
 
-        return (wheel.now() - startTime);
+        return wheel.now() - startTime;
     }
 }

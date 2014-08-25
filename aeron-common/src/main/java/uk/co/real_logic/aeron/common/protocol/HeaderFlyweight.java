@@ -85,6 +85,7 @@ public class HeaderFlyweight extends Flyweight
     public HeaderFlyweight version(final short ver)
     {
         uint8Put(offset() + VERSION_FIELD_OFFSET, ver);
+
         return this;
     }
 
@@ -107,6 +108,7 @@ public class HeaderFlyweight extends Flyweight
     public HeaderFlyweight flags(final short flags)
     {
         uint8Put(offset() + FLAGS_FIELD_OFFSET, flags);
+
         return this;
     }
 
@@ -129,6 +131,7 @@ public class HeaderFlyweight extends Flyweight
     public HeaderFlyweight headerType(final int type)
     {
         uint16Put(offset() + TYPE_FIELD_OFFSET, (short)type, LITTLE_ENDIAN);
+
         return this;
     }
 
@@ -151,6 +154,7 @@ public class HeaderFlyweight extends Flyweight
     public HeaderFlyweight frameLength(final int length)
     {
         uint32Put(offset() + FRAME_LENGTH_FIELD_OFFSET, length, LITTLE_ENDIAN);
+
         return this;
     }
 }

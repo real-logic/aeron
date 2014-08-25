@@ -25,10 +25,11 @@ public class DriverSubscription
     private final long correlationId;
     private final ClientLiveness clientLiveness;
 
-    public DriverSubscription(final ReceiveChannelEndpoint channelEndpoint,
-                              final ClientLiveness clientLiveness,
-                              final int streamId,
-                              final long correlationId)
+    public DriverSubscription(
+        final ReceiveChannelEndpoint channelEndpoint,
+        final ClientLiveness clientLiveness,
+        final int streamId,
+        final long correlationId)
     {
         this.channelEndpoint = channelEndpoint;
         this.streamId = streamId;

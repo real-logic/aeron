@@ -64,11 +64,8 @@ public class FileMappingConvention
         return subscriptionsDir;
     }
 
-    public static File streamLocation(final File rootDir,
-                                      final int sessionId,
-                                      final int streamId,
-                                      final boolean createIfMissing,
-                                      final String channelDirName)
+    public static File streamLocation(
+        final File rootDir, final int sessionId, final int streamId, final boolean createIfMissing, final String channelDirName)
     {
         final File channelDir = new File(rootDir, channelDirName);
         final File sessionDir = new File(channelDir, Integer.toString(sessionId));

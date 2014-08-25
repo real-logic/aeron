@@ -44,10 +44,9 @@ public class RateSubscriber
 
         final ExecutorService executor = Executors.newFixedThreadPool(2);
 
-        final Aeron.Context ctx =
-            new Aeron.Context()
-                .newConnectionHandler(ExampleUtil::printNewConnection)
-                .inactiveConnectionHandler(ExampleUtil::printInactiveConnection);
+        final Aeron.Context ctx = new Aeron.Context()
+            .newConnectionHandler(ExampleUtil::printNewConnection)
+            .inactiveConnectionHandler(ExampleUtil::printInactiveConnection);
 
         System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID);
 

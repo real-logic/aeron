@@ -96,10 +96,8 @@ public class AllocationSoakTestRunner
         }.start();
     }
 
-    public static void printRateOnPause(final double messagesPerSec,
-                                        final double bytesPerSec,
-                                        final long totalMessages,
-                                        final long totalBytes)
+    public static void printRateOnPause(
+        final double messagesPerSec, final double bytesPerSec, final long totalMessages, final long totalBytes)
     {
         if (messagesPerSec == 0.0 || bytesPerSec == 0.0)
         {

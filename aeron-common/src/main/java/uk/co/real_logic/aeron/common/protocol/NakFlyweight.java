@@ -51,6 +51,7 @@ public class NakFlyweight extends HeaderFlyweight
     public NakFlyweight sessionId(final int sessionId)
     {
         atomicBuffer().putInt(offset() + SESSION_ID_FIELD_OFFSET, sessionId, LITTLE_ENDIAN);
+
         return this;
     }
 
@@ -73,6 +74,7 @@ public class NakFlyweight extends HeaderFlyweight
     public NakFlyweight streamId(final int streamId)
     {
         atomicBuffer().putInt(offset() + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
+
         return this;
     }
 
@@ -93,6 +95,7 @@ public class NakFlyweight extends HeaderFlyweight
     public NakFlyweight termId(final int termId)
     {
         atomicBuffer().putInt(offset() + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
+
         return this;
     }
 
@@ -113,6 +116,7 @@ public class NakFlyweight extends HeaderFlyweight
     public NakFlyweight termOffset(final int termOffset)
     {
         atomicBuffer().putInt(offset() + TERM_OFFSET_FIELD_OFFSET, termOffset, LITTLE_ENDIAN);
+
         return this;
     }
 
@@ -134,6 +138,7 @@ public class NakFlyweight extends HeaderFlyweight
     public NakFlyweight length(final int length)
     {
         atomicBuffer().putInt(offset() + LENGTH_FIELD_OFFSET, length, LITTLE_ENDIAN);
+
         return this;
     }
 }

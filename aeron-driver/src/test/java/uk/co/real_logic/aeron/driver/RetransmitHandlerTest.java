@@ -57,8 +57,8 @@ public class RetransmitHandlerTest
     private final AtomicBuffer logBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(LOG_BUFFER_SIZE));
     private final AtomicBuffer stateBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(STATE_BUFFER_SIZE));
 
-    private final LogAppender logAppender =
-        new LogAppender(logBuffer, stateBuffer, DataHeaderFlyweight.DEFAULT_HEADER_NULL_IDS, 1024);
+    private final LogAppender logAppender = new LogAppender(
+        logBuffer, stateBuffer, DataHeaderFlyweight.DEFAULT_HEADER_NULL_IDS, 1024);
     private final LogRebuilder logRebuilder = new LogRebuilder(logBuffer, stateBuffer);
 
     private final AtomicBuffer rcvBuffer = new AtomicBuffer(new byte[MESSAGE_LENGTH]);
@@ -67,16 +67,17 @@ public class RetransmitHandlerTest
 
     private long currentTime;
 
-    private final TimerWheel wheel = new TimerWheel(() -> currentTime,
-                                                    Configuration.CONDUCTOR_TICK_DURATION_US,
-                                                    TimeUnit.MICROSECONDS,
-                                                    Configuration.CONDUCTOR_TICKS_PER_WHEEL);
+    private final TimerWheel wheel = new TimerWheel(
+        () -> currentTime,
+        Configuration.CONDUCTOR_TICK_DURATION_US,
+        TimeUnit.MICROSECONDS,
+        Configuration.CONDUCTOR_TICKS_PER_WHEEL);
 
     private final RetransmitSender retransmitSender = mock(RetransmitSender.class);
     private final SystemCounters systemCounters = mock(SystemCounters.class);
 
-    private RetransmitHandler handler =
-        new RetransmitHandler(wheel, systemCounters, delayGenerator, lingerGenerator, retransmitSender, TERM_ID, LOG_BUFFER_SIZE);
+    private RetransmitHandler handler = new RetransmitHandler(
+        wheel, systemCounters, delayGenerator, lingerGenerator, retransmitSender, TERM_ID, LOG_BUFFER_SIZE);
 
     @DataPoint
     public static final BiConsumer<RetransmitHandlerTest, Integer> senderAddDataFrame = (h, i) -> h.addSentDataFrame();

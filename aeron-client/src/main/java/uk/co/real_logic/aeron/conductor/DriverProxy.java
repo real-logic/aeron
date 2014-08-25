@@ -108,10 +108,8 @@ public class DriverProxy
         return correlationId;
     }
 
-    private long sendSubscriptionMessage(final int msgTypeId,
-                                         final String channel,
-                                         final int streamId,
-                                         final long registrationCorrelationId)
+    private long sendSubscriptionMessage(
+        final int msgTypeId, final String channel, final int streamId, final long registrationCorrelationId)
     {
         final long correlationId = driverCommandBuffer.nextCorrelationId();
 

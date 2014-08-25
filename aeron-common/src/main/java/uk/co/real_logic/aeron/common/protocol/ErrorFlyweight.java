@@ -51,6 +51,7 @@ public class ErrorFlyweight extends HeaderFlyweight
     public ErrorFlyweight errorCode(final ErrorCode code)
     {
         uint8Put(offset() + ERROR_CODE_FIELD_OFFSET, code.value());
+
         return this;
     }
 
@@ -73,6 +74,7 @@ public class ErrorFlyweight extends HeaderFlyweight
     public ErrorFlyweight offendingHeaderFrameLength(final int length)
     {
         uint32Put(offset() + OFFENDING_HDR_FRAME_LENGTH_FIELD_OFFSET, length, LITTLE_ENDIAN);
+
         return this;
     }
 
@@ -98,6 +100,7 @@ public class ErrorFlyweight extends HeaderFlyweight
     public ErrorFlyweight offendingHeader(final HeaderFlyweight header, final int maxLength)
     {
         final int length = Math.min(header.frameLength(), maxLength);
+
         return offendingFlyweight(header, length);
     }
 
@@ -115,6 +118,7 @@ public class ErrorFlyweight extends HeaderFlyweight
     {
         offendingHeaderFrameLength(length);
         copyFlyweight(offendingFlyweight, offendingHeaderOffset(), length);
+
         return this;
     }
 
@@ -141,6 +145,7 @@ public class ErrorFlyweight extends HeaderFlyweight
     public ErrorFlyweight errorMessage(final byte[] errorMessage)
     {
         atomicBuffer().putBytes(errorMessageOffset(), errorMessage, 0, errorMessage.length);
+
         return this;
     }
 
@@ -165,6 +170,7 @@ public class ErrorFlyweight extends HeaderFlyweight
         final byte[] bytes = new byte[len];
 
         atomicBuffer().getBytes(errorMessageOffset(), bytes, 0, len);
+
         return bytes;
     }
 

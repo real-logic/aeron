@@ -51,17 +51,17 @@ public class Publication implements AutoCloseable
     private int refCount = 1;
     private int activeIndex;
 
-    public Publication(final ClientConductor clientConductor,
-                       final String channel,
-                       final int streamId,
-                       final int sessionId,
-                       final int initialTermId,
-                       final LogAppender[] logAppenders,
-                       final PositionIndicator limit,
-                       final ManagedBuffer[] managedBuffers)
+    public Publication(
+        final ClientConductor clientConductor,
+        final String channel,
+        final int streamId,
+        final int sessionId,
+        final int initialTermId,
+        final LogAppender[] logAppenders,
+        final PositionIndicator limit,
+        final ManagedBuffer[] managedBuffers)
     {
         this.clientConductor = clientConductor;
-
         this.channel = channel;
         this.streamId = streamId;
         this.sessionId = sessionId;

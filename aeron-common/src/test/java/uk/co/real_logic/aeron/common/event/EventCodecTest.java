@@ -53,7 +53,7 @@ public class EventCodecTest
     public void dissectAsStringShouldContainTheValuesEncoded()
     {
         final int size = EventCodec.encode(buffer, MESSAGE);
-        final String written = EventCodec.dissectAsString(EventCode.FRAME_OUT_INCOMPLETE_SENDTO, buffer, 0, size);
+        final String written = EventCodec.dissectAsString(EventCode.FRAME_OUT_INCOMPLETE_SEND, buffer, 0, size);
 
         assertThat(written, containsString(MESSAGE));
     }

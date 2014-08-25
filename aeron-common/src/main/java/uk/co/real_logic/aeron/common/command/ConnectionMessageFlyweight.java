@@ -61,6 +61,7 @@ public class ConnectionMessageFlyweight extends Flyweight
     public ConnectionMessageFlyweight sessionId(final int sessionId)
     {
         atomicBuffer().putInt(offset() + SESSION_ID_OFFSET, sessionId, ByteOrder.LITTLE_ENDIAN);
+
         return this;
     }
 
@@ -83,6 +84,7 @@ public class ConnectionMessageFlyweight extends Flyweight
     public ConnectionMessageFlyweight streamId(final int streamId)
     {
         atomicBuffer().putInt(offset() + STREAM_ID_FIELD_OFFSET, streamId, ByteOrder.LITTLE_ENDIAN);
+
         return this;
     }
 
@@ -96,6 +98,7 @@ public class ConnectionMessageFlyweight extends Flyweight
         final int channelOffset = offset() + CHANNEL_OFFSET;
         final int length = atomicBuffer().getInt(channelOffset, ByteOrder.LITTLE_ENDIAN);
         lengthOfChannel = SIZE_OF_INT + length;
+
         return atomicBuffer().getString(channelOffset, length);
     }
 
@@ -108,6 +111,7 @@ public class ConnectionMessageFlyweight extends Flyweight
     public ConnectionMessageFlyweight channel(final String channel)
     {
         lengthOfChannel = stringPut(offset() + CHANNEL_OFFSET, channel, ByteOrder.LITTLE_ENDIAN);
+
         return this;
     }
 

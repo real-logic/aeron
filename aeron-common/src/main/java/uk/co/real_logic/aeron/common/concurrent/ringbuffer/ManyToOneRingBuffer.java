@@ -27,10 +27,14 @@ import static uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBufferDesc
  */
 public class ManyToOneRingBuffer implements RingBuffer
 {
-    /** Record type is padding to prevent fragmentation in the buffer. */
+    /**
+     * Record type is padding to prevent fragmentation in the buffer.
+     */
     public static final int PADDING_MSG_TYPE_ID = -1;
 
-    /** Buffer has insufficient capacity to record a message. */
+    /**
+     * Buffer has insufficient capacity to record a message.
+     */
     public static final int INSUFFICIENT_CAPACITY = -1;
 
     private final AtomicBuffer buffer;
@@ -171,8 +175,10 @@ public class ManyToOneRingBuffer implements RingBuffer
     {
         if (length > maxMsgLength)
         {
-            final String msg = String.format("encoded message exceeds maxMsgLength of %d, length=%d",
-                                             maxMsgLength, length);
+            final String msg = String.format(
+                "encoded message exceeds maxMsgLength of %d, length=%d",
+                maxMsgLength,
+                length);
 
             throw new IllegalArgumentException(msg);
         }
@@ -214,7 +220,7 @@ public class ManyToOneRingBuffer implements RingBuffer
 
         if (0 != padding)
         {
-            writePaddingRecord( buffer, tailIndex, padding);
+            writePaddingRecord(buffer, tailIndex, padding);
             tailIndex = 0;
         }
 
@@ -258,7 +264,7 @@ public class ManyToOneRingBuffer implements RingBuffer
     }
 
     private static void writeMsg(final AtomicBuffer buffer, final int recordIndex,
-                                 final AtomicBuffer srcBuffer, final int srcIndex, final int length)
+        final AtomicBuffer srcBuffer, final int srcIndex, final int length)
     {
         buffer.putBytes(encodedMsgOffset(recordIndex), srcBuffer, srcIndex, length);
     }

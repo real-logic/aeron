@@ -50,10 +50,8 @@ public class TermHelper
      * @param initialTermId the initial term id that this stream started on
      * @return the absolute position in bytes
      */
-    public static long calculatePosition(final int activeTermId,
-                                         final int currentTail,
-                                         final int positionBitsToShift,
-                                         final int initialTermId)
+    public static long calculatePosition(
+        final int activeTermId, final int currentTail, final int positionBitsToShift, final int initialTermId)
     {
         final long termCount = activeTermId - initialTermId; // copes with negative activeTermId on rollover
 
@@ -83,6 +81,7 @@ public class TermHelper
     public static int calculateTermOffsetFromPosition(final long position, final int positionBitsToShift)
     {
         final int mask = (1 << positionBitsToShift) - 1;
+
         return (int)(position & mask);
     }
 

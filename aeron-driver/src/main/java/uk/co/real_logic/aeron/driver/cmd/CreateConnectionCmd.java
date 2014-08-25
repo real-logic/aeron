@@ -27,11 +27,12 @@ public class CreateConnectionCmd
     private final InetSocketAddress controlAddress;
     private final ReceiveChannelEndpoint channelEndpoint;
 
-    public CreateConnectionCmd(final int sessionId,
-                               final int streamId,
-                               final int termId,
-                               final InetSocketAddress controlAddress,
-                               final ReceiveChannelEndpoint channelEndpoint)
+    public CreateConnectionCmd(
+        final int sessionId,
+        final int streamId,
+        final int termId,
+        final InetSocketAddress controlAddress,
+        final ReceiveChannelEndpoint channelEndpoint)
     {
         this.sessionId = sessionId;
         this.streamId = streamId;

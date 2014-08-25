@@ -168,7 +168,8 @@ public class SubMulticastTest
         SystemTestHelper.executeUntil(
             () -> (receivedFrames.size() > 0),
             subscriptionPollWithYield,
-            Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
+            Integer.MAX_VALUE,
+            TimeUnit.MILLISECONDS.toNanos(500));
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(1));
@@ -206,7 +207,8 @@ public class SubMulticastTest
         SystemTestHelper.executeUntil(
             () -> receivedFrames.size() >= 3,
             subscriptionPollWithYield,
-            Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
+            Integer.MAX_VALUE,
+            TimeUnit.MILLISECONDS.toNanos(500));
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(3));
@@ -231,6 +233,7 @@ public class SubMulticastTest
                 statusMessage.wrap(buffer, 0);
                 assertThat(statusMessage.headerType(), is(HeaderFlyweight.HDR_TYPE_SM));
                 statusMessagesSeen.incrementAndGet();
+
                 return true;
             });
 
@@ -243,7 +246,8 @@ public class SubMulticastTest
         SystemTestHelper.executeUntil(
             () -> receivedFrames.size() > 0,
             subscriptionPollWithYield,
-            Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
+            Integer.MAX_VALUE,
+            TimeUnit.MILLISECONDS.toNanos(500));
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(1));
@@ -256,7 +260,6 @@ public class SubMulticastTest
                 nakHeader.wrap(buffer, 0);
                 assertThat(nakHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_NAK));
                 assertThat(nakHeader.frameLength(), is(NakFlyweight.HEADER_LENGTH));
-//                    assertThat(buffer.position(), is(nakHeader.frameLength()));
                 assertThat(nakHeader.streamId(), is(STREAM_ID));
                 assertThat(nakHeader.sessionId(), is(SESSION_ID));
                 assertThat(nakHeader.termId(), is(TERM_ID));
@@ -300,7 +303,8 @@ public class SubMulticastTest
         SystemTestHelper.executeUntil(
             () -> receivedFrames.size() > 0,
             subscriptionPollWithYield,
-            Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
+            Integer.MAX_VALUE,
+            TimeUnit.MILLISECONDS.toNanos(500));
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(1));
@@ -325,7 +329,8 @@ public class SubMulticastTest
         SystemTestHelper.executeUntil(
             () -> receivedFrames.size() >= 2,
             subscriptionPollWithYield,
-            Integer.MAX_VALUE, TimeUnit.MILLISECONDS.toNanos(500));
+            Integer.MAX_VALUE,
+            TimeUnit.MILLISECONDS.toNanos(500));
 
         // assert the received Data Frames are correct
         assertThat(receivedFrames.size(), is(2));

@@ -50,6 +50,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     public StatusMessageFlyweight sessionId(final int sessionId)
     {
         atomicBuffer().putInt(offset() + SESSION_ID_FIELD_OFFSET, sessionId, LITTLE_ENDIAN);
+
         return this;
     }
 
@@ -72,6 +73,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     public StatusMessageFlyweight streamId(final int streamId)
     {
         atomicBuffer().putInt(offset() + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
+
         return this;
     }
 
@@ -94,6 +96,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     public StatusMessageFlyweight highestContiguousTermOffset(final int termOffset)
     {
         atomicBuffer().putInt(offset() + CONTIGUOUS_TERM_OFFSET_FIELD_OFFSET, termOffset, LITTLE_ENDIAN);
+
         return this;
     }
 
@@ -116,6 +119,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     public StatusMessageFlyweight termId(final int termId)
     {
         atomicBuffer().putInt(offset() + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
+
         return this;
     }
 
@@ -138,6 +142,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     public StatusMessageFlyweight receiverWindowSize(final int receiverWindowSize)
     {
         atomicBuffer().putInt(offset() + RECEIVER_WINDOW_FIELD_OFFSET, receiverWindowSize, LITTLE_ENDIAN);
+
         return this;
     }
 }

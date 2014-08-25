@@ -38,6 +38,7 @@ public class Flyweight
     {
         atomicBuffer.wrap(buffer);
         offset = 0;
+
         return this;
     }
 
@@ -50,6 +51,7 @@ public class Flyweight
     {
         atomicBuffer.wrap(buffer);
         this.offset = offset;
+
         return this;
     }
 
@@ -57,6 +59,7 @@ public class Flyweight
     {
         atomicBuffer.wrap(buffer);
         this.offset = offset;
+
         return this;
     }
 

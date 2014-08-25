@@ -271,6 +271,9 @@ public class DriverConnection implements AutoCloseable
         final long currentPosition = position(currentRebuilder.tail());
         final long proposedPosition = packetPosition + length;
 
+        // heartbeats will trigger an underrun. So, bump this here.
+        timeOfLastFrame.lazySet(clock.getAsLong());
+
         if (isFlowControlUnderRun(packetPosition, currentPosition) || isFlowControlOverRun(proposedPosition))
         {
             return;
@@ -301,14 +304,11 @@ public class DriverConnection implements AutoCloseable
         highestPositionCandidate(proposedPosition);
     }
 
-    /**
+    /*
      * Inform the loss handler that a potentially new high position in the stream has been reached.
-     *
-     * @param proposedPosition for the new candidate high position.
      */
     private void highestPositionCandidate(final long proposedPosition)
     {
-        timeOfLastFrame.lazySet(clock.getAsLong());
         highestReceivedPosition.position(lossHandler.highestPositionCandidate(proposedPosition));
     }
 

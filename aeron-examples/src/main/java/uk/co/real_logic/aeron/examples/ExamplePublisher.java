@@ -32,6 +32,7 @@ public class ExamplePublisher
     private static final int STREAM_ID = ExampleConfiguration.STREAM_ID;
     private static final String CHANNEL = ExampleConfiguration.CHANNEL;
     private static final long NUMBER_OF_MESSAGES = ExampleConfiguration.NUMBER_OF_MESSAGES;
+    private static final long LINGER_TIMEOUT_MS = ExampleConfiguration.LINGER_TIMEOUT_MS;
     private static final boolean EMBEDDED_MEDIA_DRIVER = ExampleConfiguration.EMBEDDED_MEDIA_DRIVER;
 
     private static final AtomicBuffer BUFFER = new AtomicBuffer(ByteBuffer.allocateDirect(256));
@@ -65,6 +66,14 @@ public class ExamplePublisher
                 }
 
                 Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+            }
+
+            System.out.println("Done sending.");
+
+            if (0 < LINGER_TIMEOUT_MS)
+            {
+                System.out.println("Lingering for " + LINGER_TIMEOUT_MS + " milliseconds...");
+                Thread.sleep(LINGER_TIMEOUT_MS);
             }
         }
 

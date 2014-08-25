@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import uk.co.real_logic.aeron.common.collections.BiInt2ObjectMap;
 import uk.co.real_logic.aeron.common.collections.Int2ObjectHashMap;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
@@ -32,7 +33,7 @@ public class DataFrameDispatcher
 {
     private static final String INIT_IN_PROGRESS = "Connection initialisation in progress";
 
-    private final Int2ObjectHashMap<String> initialisationInProgressMap = new Int2ObjectHashMap<>();
+    private final BiInt2ObjectMap<String> initialisationInProgressMap = new BiInt2ObjectMap<>();
     private final Int2ObjectHashMap<Int2ObjectHashMap<DriverConnection>> connectionsByStreamIdMap = new Int2ObjectHashMap<>();
     private final DriverConductorProxy conductorProxy;
     private final ReceiveChannelEndpoint channelEndpoint;
@@ -71,28 +72,34 @@ public class DataFrameDispatcher
 
     public void addConnection(final DriverConnection connection)
     {
-        final Int2ObjectHashMap<DriverConnection> connectionBySessionIdMap = connectionsByStreamIdMap.get(connection.streamId());
+        final int sessionId = connection.sessionId();
+        final int streamId = connection.streamId();
+
+        final Int2ObjectHashMap<DriverConnection> connectionBySessionIdMap = connectionsByStreamIdMap.get(streamId);
 
         if (null == connectionBySessionIdMap)
         {
-            throw new IllegalStateException("No connectionBySessionIdMap registered on " + connection.streamId());
+            throw new IllegalStateException("No connectionBySessionIdMap registered on " + streamId);
         }
 
-        connectionBySessionIdMap.put(connection.sessionId(), connection);
-        initialisationInProgressMap.remove(connection.sessionId());
+        connectionBySessionIdMap.put(sessionId, connection);
+        initialisationInProgressMap.remove(sessionId, streamId);
 
         connection.enableStatusMessages();
     }
 
     public void removeConnection(final DriverConnection connection)
     {
-        final Int2ObjectHashMap<DriverConnection> connectionBySessionIdMap = connectionsByStreamIdMap.get(connection.streamId());
+        final int sessionId = connection.sessionId();
+        final int streamId = connection.streamId();
+
+        final Int2ObjectHashMap<DriverConnection> connectionBySessionIdMap = connectionsByStreamIdMap.get(streamId);
 
         if (null != connectionBySessionIdMap)
         {
             connection.disableStatusMessages();
-            connectionBySessionIdMap.remove(connection.sessionId());
-            initialisationInProgressMap.remove(connection.sessionId());
+            connectionBySessionIdMap.remove(sessionId);
+            initialisationInProgressMap.remove(sessionId, streamId);
         }
     }
 
@@ -115,7 +122,7 @@ public class DataFrameDispatcher
                     connection.insertIntoTerm(termId, dataHeader.termOffset(), buffer, length);
                 }
             }
-            else if (null == initialisationInProgressMap.get(sessionId))
+            else if (null == initialisationInProgressMap.get(sessionId, streamId))
             {
                 createConnection(srcAddress, streamId, sessionId, termId);
             }
@@ -128,7 +135,7 @@ public class DataFrameDispatcher
         final InetSocketAddress controlAddress =
             transport.isMulticast() ? transport.udpChannel().remoteControl() : srcAddress;
 
-        initialisationInProgressMap.put(sessionId, INIT_IN_PROGRESS);
+        initialisationInProgressMap.put(sessionId, streamId, INIT_IN_PROGRESS);
         conductorProxy.createConnection(sessionId, streamId, termId, controlAddress, channelEndpoint);
     }
 }

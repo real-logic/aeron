@@ -615,6 +615,7 @@ public class DriverConductor extends Agent
                                subscription.correlationId());
 
                     subscriptions.remove(subscription);
+                    subscriptionByCorrelationIdMap.remove(subscription.correlationId());
 
                     if (0 == channelEndpoint.decRefToStream(streamId))
                     {

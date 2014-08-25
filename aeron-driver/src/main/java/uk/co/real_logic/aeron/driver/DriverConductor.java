@@ -347,15 +347,13 @@ public class DriverConductor extends Agent
         else if (!channelEndpoint.udpChannel().equals(udpChannel))
         {
             throw new ControlProtocolException(
-                ErrorCode.PUBLICATION_STREAM_ALREADY_EXISTS,
-                "channels hash same, but channels actually different");
+                ErrorCode.PUBLICATION_STREAM_ALREADY_EXISTS, "channels hash same, but channels actually different");
         }
 
         if (null != channelEndpoint.getPublication(sessionId, streamId))
         {
             throw new ControlProtocolException(
-                ErrorCode.PUBLICATION_STREAM_ALREADY_EXISTS,
-                "publication and session already exist on channel");
+                ErrorCode.PUBLICATION_STREAM_ALREADY_EXISTS, "publication and session already exist on channel");
         }
 
         final ClientLiveness clientLiveness = getOrAddClient(clientId);
@@ -364,8 +362,7 @@ public class DriverConductor extends Agent
         final TermBuffers termBuffers = termBuffersFactory.newPublication(canonicalForm, sessionId, streamId);
 
         final int positionCounterId = allocatePositionCounter("publisher limit", channel, sessionId, streamId);
-        final PositionReporter positionReporter =
-            new BufferPositionReporter(countersBuffer, positionCounterId, countersManager);
+        final PositionReporter positionReporter = new BufferPositionReporter(countersBuffer, positionCounterId, countersManager);
 
         final SenderFlowControl senderFlowControl =
             udpChannel.isMulticast() ? multicastSenderFlowControl.get() : unicastSenderFlowControl.get();

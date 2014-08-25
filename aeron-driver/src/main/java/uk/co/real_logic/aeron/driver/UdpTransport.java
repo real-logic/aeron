@@ -19,10 +19,7 @@ import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.common.event.EventCode;
 import uk.co.real_logic.aeron.common.event.EventLogger;
-import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
-import uk.co.real_logic.aeron.common.protocol.NakFlyweight;
-import uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight;
+import uk.co.real_logic.aeron.common.protocol.*;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -33,8 +30,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 
-import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.HDR_TYPE_NAK;
-import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.HDR_TYPE_SM;
+import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.*;
 
 /**
  * Transport abstraction for UDP sources and receivers.
@@ -55,10 +51,12 @@ public final class UdpTransport implements AutoCloseable
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final NakFlyweight nakHeader = new NakFlyweight();
     private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
+    private final SetupFlyweight setupHeader = new SetupFlyweight();
 
     private final DataFrameHandler dataFrameHandler;
     private final StatusMessageFrameHandler smFrameHandler;
     private final NakFrameHandler nakFrameHandler;
+    private final SetupFrameHandler setupFrameHandler;
 
     private final LossGenerator dataLossGenerator;
     private final LossGenerator controlLossGenerator;
@@ -78,12 +76,14 @@ public final class UdpTransport implements AutoCloseable
     public UdpTransport(
         final UdpChannel udpChannel,
         final DataFrameHandler dataFrameHandler,
+        final SetupFrameHandler setupFrameHandler,
         final EventLogger logger,
         final LossGenerator lossGenerator)
     {
         this(
             udpChannel,
             dataFrameHandler,
+            setupFrameHandler,
             null,
             null,
             logger,
@@ -114,6 +114,7 @@ public final class UdpTransport implements AutoCloseable
         this(
             udpChannel,
             null,
+            null,
             smFrameHandler,
             nakFrameHandler,
             logger,
@@ -126,6 +127,7 @@ public final class UdpTransport implements AutoCloseable
     private UdpTransport(
         final UdpChannel udpChannel,
         final DataFrameHandler dataFrameHandler,
+        final SetupFrameHandler setupFrameHandler,
         final StatusMessageFrameHandler smFrameHandler,
         final NakFrameHandler nakFrameHandler,
         final EventLogger logger,
@@ -137,6 +139,7 @@ public final class UdpTransport implements AutoCloseable
         this.udpChannel = udpChannel;
         this.logger = logger;
         this.dataFrameHandler = dataFrameHandler;
+        this.setupFrameHandler = setupFrameHandler;
         this.smFrameHandler = smFrameHandler;
         this.nakFrameHandler = nakFrameHandler;
         this.dataLossGenerator = dataLossGenerator;
@@ -146,6 +149,7 @@ public final class UdpTransport implements AutoCloseable
         dataHeader.wrap(readBuffer, 0);
         nakHeader.wrap(readBuffer, 0);
         statusMessage.wrap(readBuffer, 0);
+        setupHeader.wrap(readBuffer, 0);
 
         try
         {
@@ -278,10 +282,16 @@ public final class UdpTransport implements AutoCloseable
             return 0;
         }
 
-        if (header.headerType() == HeaderFlyweight.HDR_TYPE_DATA || header.headerType() == HeaderFlyweight.HDR_TYPE_PAD)
+        switch (header.headerType())
         {
-            dataFrameHandler.onFrame(dataHeader, readBuffer, length, srcAddress);
-            return 1;
+            case HDR_TYPE_PAD:
+            case HDR_TYPE_DATA:
+                dataFrameHandler.onFrame(dataHeader, readBuffer, length, srcAddress);
+                return 1;
+
+            case HDR_TYPE_SETUP:
+                setupFrameHandler.onFrame(setupHeader, readBuffer, length, srcAddress);
+                return 1;
         }
 
         return 0;

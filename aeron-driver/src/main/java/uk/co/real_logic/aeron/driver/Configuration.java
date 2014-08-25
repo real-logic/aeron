@@ -263,6 +263,15 @@ public class Configuration
     /** Capacity for the command queues used between driver agents. */
     public static final int CMD_QUEUE_CAPACITY = 1024;
 
+    /** Timeout on cleaning up pending SETUP state on subscriber */
+    public static final long PENDING_SETUPS_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(1000);
+
+    /** Timeout between SETUP frames for publications during initial setup phase */
+    public static final long PUBLICATION_SETUP_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(100);
+
+    /** Timeout between heartbeats for publications */
+    public static final long PUBLICATION_HEARTBEAT_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(200);
+
     /**
      * How far ahead the receiver can get from the subscriber position.
      *

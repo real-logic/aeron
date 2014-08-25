@@ -18,10 +18,7 @@ package uk.co.real_logic.aeron.common.event;
 import uk.co.real_logic.aeron.common.BitUtil;
 import uk.co.real_logic.aeron.common.command.*;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
-import uk.co.real_logic.aeron.common.protocol.NakFlyweight;
-import uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight;
+import uk.co.real_logic.aeron.common.protocol.*;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -45,6 +42,8 @@ public class EventCodec
         ThreadLocal.withInitial(StatusMessageFlyweight::new);
     private final static ThreadLocal<NakFlyweight> nakHeader =
         ThreadLocal.withInitial(NakFlyweight::new);
+    private final static ThreadLocal<SetupFlyweight> setupHeader =
+        ThreadLocal.withInitial(SetupFlyweight::new);
 
     private final static ThreadLocal<PublicationMessageFlyweight> pubMessage =
         ThreadLocal.withInitial(PublicationMessageFlyweight::new);
@@ -184,6 +183,12 @@ public class EventCodec
                 final NakFlyweight nakFrame = nakHeader.get();
                 nakFrame.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(nakFrame));
+                break;
+
+            case HeaderFlyweight.HDR_TYPE_SETUP:
+                final SetupFlyweight setupFrame = setupHeader.get();
+                setupFrame.wrap(buffer, offset + relativeOffset);
+                builder.append(dissect(setupFrame));
                 break;
 
             default:
@@ -444,6 +449,16 @@ public class EventCodec
             header.termId(),
             header.termOffset(),
             header.length());
+    }
+
+    private static String dissect(final SetupFlyweight header)
+    {
+        return String.format("SETUP %x len %d %x:%x:%x",
+            header.flags(),
+            header.frameLength(),
+            header.sessionId(),
+            header.streamId(),
+            header.termId());
     }
 
     private static String dissect(final PublicationMessageFlyweight command)

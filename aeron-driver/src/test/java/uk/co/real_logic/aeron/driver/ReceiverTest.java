@@ -28,6 +28,7 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.common.protocol.SetupFlyweight;
 import uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight;
 import uk.co.real_logic.aeron.common.status.PositionIndicator;
 import uk.co.real_logic.aeron.common.status.PositionReporter;
@@ -72,9 +73,12 @@ public class ReceiverTest
     private final PositionReporter mockHighestReceivedPosition = mock(PositionReporter.class);
     private final ByteBuffer dataFrameBuffer = ByteBuffer.allocate(2 * 1024);
     private final AtomicBuffer dataBuffer = new AtomicBuffer(dataFrameBuffer);
+    private final ByteBuffer setupFrameBuffer = ByteBuffer.allocate(SetupFlyweight.HEADER_LENGTH);
+    private final AtomicBuffer setupBuffer = new AtomicBuffer(setupFrameBuffer);
 
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final StatusMessageFlyweight statusHeader = new StatusMessageFlyweight();
+    private final SetupFlyweight setupHeader = new SetupFlyweight();
 
     private long currentTime = 0;
     private final LongSupplier clock = () -> currentTime;
@@ -101,7 +105,7 @@ public class ReceiverTest
             .thenReturn(TermHelper.calculatePosition(TERM_ID, 0, Integer.numberOfTrailingZeros(LOG_BUFFER_SIZE), TERM_ID));
         when(mockLossHandler.activeTermId()).thenReturn(TERM_ID);
         when(mockSystemCounters.statusMessagesSent()).thenReturn(mock(AtomicCounter.class));
-
+        when(mockSystemCounters.flowControlUnderRuns()).thenReturn(mock(AtomicCounter.class));
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
@@ -143,16 +147,15 @@ public class ReceiverTest
     }
 
     @Test
-    public void shouldCreateRcvTermAndSendSmOnZeroLengthData() throws Exception
+    public void shouldCreateRcvTermAndSendSmOnSetup() throws Exception
     {
         receiverProxy.registerMediaEndpoint(receiveChannelEndpoint);
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
 
         receiver.doWork();
 
-        fillDataFrame(dataHeader, 0, NO_PAYLOAD);
-
-        receiveChannelEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
+        fillSetupFrame(setupHeader);
+        receiveChannelEndpoint.onSetupFrame(setupHeader, setupBuffer, setupHeader.frameLength(), senderAddress);
 
         final DriverConnection connection = new DriverConnection(
             receiveChannelEndpoint,
@@ -213,9 +216,8 @@ public class ReceiverTest
 
         receiver.doWork();
 
-        fillDataFrame(dataHeader, 0, NO_PAYLOAD);
-
-        receiveChannelEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
+        fillSetupFrame(setupHeader);
+        receiveChannelEndpoint.onSetupFrame(setupHeader, setupBuffer, setupHeader.frameLength(), senderAddress);
 
         int messagesRead = toConductorQueue.drain(
             (e) ->
@@ -274,9 +276,8 @@ public class ReceiverTest
 
         receiver.doWork();
 
-        fillDataFrame(dataHeader, 0, NO_PAYLOAD);
-
-        receiveChannelEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
+        fillSetupFrame(setupHeader);
+        receiveChannelEndpoint.onSetupFrame(setupHeader, setupBuffer, setupHeader.frameLength(), senderAddress);
 
         int messagesRead = toConductorQueue.drain(
             (e) ->
@@ -311,7 +312,7 @@ public class ReceiverTest
         fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);  // initial data frame
         receiveChannelEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
-        fillDataFrame(dataHeader, 0, NO_PAYLOAD);  // heartbeat with same term offset
+        fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);  // heartbeat with same term offset
         receiveChannelEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
         messagesRead = logReaders[0].read(
@@ -338,9 +339,8 @@ public class ReceiverTest
 
         receiver.doWork();
 
-        fillDataFrame(dataHeader, 0, NO_PAYLOAD);
-
-        receiveChannelEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
+        fillSetupFrame(setupHeader);
+        receiveChannelEndpoint.onSetupFrame(setupHeader, setupBuffer, setupHeader.frameLength(), senderAddress);
 
         int messagesRead = toConductorQueue.drain(
             (e) ->
@@ -372,7 +372,7 @@ public class ReceiverTest
 
         receiver.doWork();
 
-        fillDataFrame(dataHeader, 0, NO_PAYLOAD);  // heartbeat with same term offset
+        fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);  // heartbeat with same term offset
         receiveChannelEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
         fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);  // initial data frame
@@ -410,5 +410,17 @@ public class ReceiverTest
         {
             dataBuffer.putBytes(header.dataOffset(), payload);
         }
+    }
+
+    private void fillSetupFrame(final SetupFlyweight header)
+    {
+        header.wrap(setupBuffer, 0);
+        header.streamId(STREAM_ID)
+              .sessionId(SESSION_ID)
+              .termId(TERM_ID)
+              .frameLength(SetupFlyweight.HEADER_LENGTH)
+              .headerType(HeaderFlyweight.HDR_TYPE_SETUP)
+              .flags((byte)0)
+              .version(HeaderFlyweight.CURRENT_VERSION);
     }
 }

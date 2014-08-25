@@ -19,7 +19,7 @@ import uk.co.real_logic.aeron.common.collections.BiInt2ObjectMap;
 import uk.co.real_logic.aeron.common.collections.Int2ObjectHashMap;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.common.protocol.SetupFlyweight;
 import uk.co.real_logic.aeron.driver.exceptions.UnknownSubscriptionException;
 
 import java.net.InetSocketAddress;
@@ -31,9 +31,10 @@ import java.net.InetSocketAddress;
  */
 public class DataFrameDispatcher
 {
-    private static final String INIT_IN_PROGRESS = "Connection initialisation in progress";
+    private static final Integer PENDING_SETUP_FRAME = 1;
+    private static final Integer INIT_IN_PROGRESS = 2;
 
-    private final BiInt2ObjectMap<String> initialisationInProgressMap = new BiInt2ObjectMap<>();
+    private final BiInt2ObjectMap<Integer> initialisationInProgressMap = new BiInt2ObjectMap<>();
     private final Int2ObjectHashMap<Int2ObjectHashMap<DriverConnection>> connectionsByStreamIdMap = new Int2ObjectHashMap<>();
     private final DriverConductorProxy conductorProxy;
     private final ReceiveChannelEndpoint channelEndpoint;
@@ -103,30 +104,67 @@ public class DataFrameDispatcher
         }
     }
 
-    public void onDataFrame(
-        final DataHeaderFlyweight dataHeader, final AtomicBuffer buffer, final int length, final InetSocketAddress srcAddress)
+    public void removePendingSetup(final int sessionId, final int streamId)
     {
-        final int streamId = dataHeader.streamId();
+        if (PENDING_SETUP_FRAME.equals(initialisationInProgressMap.get(sessionId, streamId)))
+        {
+            initialisationInProgressMap.remove(sessionId, streamId);
+        }
+    }
+
+    public void onDataFrame(
+        final DataHeaderFlyweight header, final AtomicBuffer buffer, final int length, final InetSocketAddress srcAddress)
+    {
+        final int streamId = header.streamId();
         final Int2ObjectHashMap<DriverConnection> connectionBySessionIdMap = connectionsByStreamIdMap.get(streamId);
 
         if (null != connectionBySessionIdMap)
         {
-            final int sessionId = dataHeader.sessionId();
-            final int termId = dataHeader.termId();
+            final int sessionId = header.sessionId();
+            final int termId = header.termId();
             final DriverConnection connection = connectionBySessionIdMap.get(sessionId);
 
             if (null != connection)
             {
-                if (length > DataHeaderFlyweight.HEADER_LENGTH || dataHeader.headerType() == HeaderFlyweight.HDR_TYPE_PAD)
-                {
-                    connection.insertIntoTerm(termId, dataHeader.termOffset(), buffer, length);
-                }
+                connection.insertIntoTerm(termId, header.termOffset(), buffer, length);
             }
             else if (null == initialisationInProgressMap.get(sessionId, streamId))
+            {
+                // don't know about this session at all, so elicit a SETUP from the source before doing anything
+                elicitSetupFromSource(srcAddress, streamId, sessionId);
+            }
+        }
+    }
+
+    public void onSetupFrame(
+        final SetupFlyweight header, final AtomicBuffer buffer, final int length, final InetSocketAddress srcAddress)
+    {
+        final int streamId = header.streamId();
+        final Int2ObjectHashMap<DriverConnection> connectionBySessionIdMap = connectionsByStreamIdMap.get(streamId);
+
+        if (null != connectionBySessionIdMap)
+        {
+            final int sessionId = header.sessionId();
+            final int termId = header.termId();
+            final DriverConnection connection = connectionBySessionIdMap.get(sessionId);
+
+            // once connection setup, this should short circuit around the rest of the check equals should catch null
+            // and return false
+            if (null == connection && !INIT_IN_PROGRESS.equals(initialisationInProgressMap.get(sessionId, streamId)))
             {
                 createConnection(srcAddress, streamId, sessionId, termId);
             }
         }
+    }
+
+    private void elicitSetupFromSource(final InetSocketAddress srcAddress, final int streamId, final int sessionId)
+    {
+        final UdpTransport transport = channelEndpoint.udpTransport();
+        final InetSocketAddress controlAddress =
+            transport.isMulticast() ? transport.udpChannel().remoteControl() : srcAddress;
+
+        initialisationInProgressMap.put(sessionId, streamId, PENDING_SETUP_FRAME);
+        conductorProxy.elicitSetupFromSource(sessionId, streamId, controlAddress, channelEndpoint);
     }
 
     private void createConnection(final InetSocketAddress srcAddress, final int streamId, final int sessionId, final int termId)
@@ -135,7 +173,7 @@ public class DataFrameDispatcher
         final InetSocketAddress controlAddress =
             transport.isMulticast() ? transport.udpChannel().remoteControl() : srcAddress;
 
-        initialisationInProgressMap.put(sessionId, streamId, INIT_IN_PROGRESS);
+        initialisationInProgressMap.put(sessionId, streamId, INIT_IN_PROGRESS); // will replace elicit if needed
         conductorProxy.createConnection(sessionId, streamId, termId, controlAddress, channelEndpoint);
     }
 }

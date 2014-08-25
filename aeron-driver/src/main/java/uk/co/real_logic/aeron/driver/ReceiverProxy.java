@@ -55,4 +55,9 @@ public class ReceiverProxy
     {
         return commandQueue.offer(new RegisterReceiveChannelEndpointCmd(mediaEndpoint));
     }
+
+    public boolean removePendingSetup(final RemovePendingSetupCmd cmd)
+    {
+        return commandQueue.offer(cmd);
+    }
 }

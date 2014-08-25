@@ -21,10 +21,7 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.common.BitUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
-import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
-import uk.co.real_logic.aeron.common.protocol.NakFlyweight;
-import uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight;
+import uk.co.real_logic.aeron.common.protocol.*;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.net.InetSocketAddress;
@@ -80,6 +77,7 @@ public class SubUnicastTest
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
     private final NakFlyweight nakHeader = new NakFlyweight();
+    private final SetupFlyweight setupHeader = new SetupFlyweight();
 
     private final IntConsumer subscriptionPollWithYield =
         (i) ->
@@ -131,8 +129,7 @@ public class SubUnicastTest
     @Test(timeout = 1000)
     public void shouldReceiveCorrectlyFormedSingleDataFrame() throws Exception
     {
-        // send some 0 length data frame
-        sendDataFrame(0, NO_PAYLOAD);
+        sendSetupFrame();
 
         final AtomicInteger statusMessagesSeen = new AtomicInteger();
 
@@ -172,8 +169,7 @@ public class SubUnicastTest
     @Test(timeout = 1000)
     public void shouldReceiveMultipleDataFrames() throws Exception
     {
-        // send some 0 length data frame
-        sendDataFrame(0, NO_PAYLOAD);
+        sendSetupFrame();
 
         final AtomicInteger statusMessagesSeen = new AtomicInteger();
 
@@ -213,8 +209,7 @@ public class SubUnicastTest
     @Test(timeout = 1000)
     public void shouldSendNaksForMissingData() throws Exception
     {
-        // send some 0 length data frame
-        sendDataFrame(0, NO_PAYLOAD);
+        sendSetupFrame();
 
         final AtomicInteger statusMessagesSeen = new AtomicInteger();
         final AtomicInteger naksSeen = new AtomicInteger();
@@ -269,8 +264,7 @@ public class SubUnicastTest
     @Test(timeout = 1000)
     public void shouldReceiveRetransmitAndDeliver() throws Exception
     {
-        // send some 0 length data frame
-        sendDataFrame(0, NO_PAYLOAD);
+        sendSetupFrame();
 
         final AtomicInteger statusMessagesSeen = new AtomicInteger();
         final AtomicInteger naksSeen = new AtomicInteger();
@@ -356,5 +350,26 @@ public class SubUnicastTest
         final int bytesSent = senderChannel.send(dataBuffer, rcvAddress);
 
         assertThat(bytesSent, is(frameLength));
+    }
+
+    private void sendSetupFrame() throws Exception
+    {
+        final ByteBuffer setupBuffer = ByteBuffer.allocate(SetupFlyweight.HEADER_LENGTH);
+        final AtomicBuffer setupAtomicBuffer = new AtomicBuffer(setupBuffer);
+
+        setupHeader.wrap(setupAtomicBuffer, 0);
+        setupHeader.termId(TERM_ID)
+                   .streamId(STREAM_ID)
+                   .sessionId(SESSION_ID)
+                   .frameLength(SetupFlyweight.HEADER_LENGTH)
+                   .headerType(HeaderFlyweight.HDR_TYPE_SETUP)
+                   .flags((byte)0)
+                   .version(HeaderFlyweight.CURRENT_VERSION);
+
+        setupBuffer.position(0);
+        setupBuffer.limit(SetupFlyweight.HEADER_LENGTH);
+        final int bytesSent = senderChannel.send(setupBuffer, rcvAddress);
+
+        assertThat(bytesSent, is(SetupFlyweight.HEADER_LENGTH));
     }
 }

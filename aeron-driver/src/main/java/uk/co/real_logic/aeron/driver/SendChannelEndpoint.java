@@ -114,10 +114,18 @@ public class SendChannelEndpoint implements AutoCloseable
 
         if (null != assembly)
         {
-            final long limit = assembly.senderFlowControl.onStatusMessage(
-                header.termId(), header.highestContiguousTermOffset(), header.receiverWindowSize(), srcAddress);
+            if (StatusMessageFlyweight.SEND_SETUP_FLAG == (header.flags() & StatusMessageFlyweight.SEND_SETUP_FLAG))
+            {
+                assembly.publication.sendSetupFrame();
+            }
+            else
+            {
+                final long limit = assembly.senderFlowControl.onStatusMessage(
+                    header.termId(), header.highestContiguousTermOffset(), header.receiverWindowSize(), srcAddress);
 
-            assembly.publication.updatePositionLimitFromStatusMessage(limit);
+                assembly.publication.updatePositionLimitFromStatusMessage(limit);
+            }
+
             systemCounters.statusMessagesReceived().orderedIncrement();
         }
     }

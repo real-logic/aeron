@@ -29,6 +29,7 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.common.protocol.SetupFlyweight;
 import uk.co.real_logic.aeron.common.status.BufferPositionReporter;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 
@@ -84,6 +85,7 @@ public class SenderTest
     private final UdpChannel udpChannel = UdpChannel.parse("udp://localhost:40123");
     private final InetSocketAddress rcvAddress = udpChannel.remoteData();
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
+    private final SetupFlyweight setupHeader = new SetupFlyweight();
     private final SystemCounters mockSystemCounters = mock(SystemCounters.class);
 
     private Answer<Integer> saveByteBufferAnswer =
@@ -98,7 +100,6 @@ public class SenderTest
             // we don't pass on the args, so don't reset buffer.position() back
             return size;
         };
-
 
     @Before
     public void setUp() throws Exception
@@ -150,37 +151,36 @@ public class SenderTest
     }
 
     @Test
-    public void shouldSendZeroLengthDataFrameOnChannelWhenTimeoutWithoutStatusMessage() throws Exception
+    public void shouldSendSetupFrameOnChannelWhenTimeoutWithoutStatusMessage() throws Exception
     {
-        currentTimestamp += TimeUnit.MILLISECONDS.toNanos(DriverPublication.INITIAL_HEARTBEAT_TIMEOUT_MS) - 1;
+        currentTimestamp += Configuration.PUBLICATION_SETUP_TIMEOUT_NS - 1;
         sender.doWork();
         assertThat(receivedFrames.size(), is(0));
         currentTimestamp += 10;
         sender.doWork();
         assertThat(receivedFrames.size(), is(1));
 
-        dataHeader.wrap(receivedFrames.remove(), 0);
-        assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH));
-        assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
-        assertThat(dataHeader.streamId(), is(STREAM_ID));
-        assertThat(dataHeader.sessionId(), is(SESSION_ID));
-        assertThat(dataHeader.termOffset(), is(offsetOfMessage(1)));
-        assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
-        assertThat(dataHeader.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
-        assertThat(dataHeader.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
+        setupHeader.wrap(receivedFrames.remove(), 0);
+        assertThat(setupHeader.frameLength(), is(SetupFlyweight.HEADER_LENGTH));
+        assertThat(setupHeader.termId(), is(INITIAL_TERM_ID));
+        assertThat(setupHeader.streamId(), is(STREAM_ID));
+        assertThat(setupHeader.sessionId(), is(SESSION_ID));
+        assertThat(setupHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_SETUP));
+        assertThat(setupHeader.flags(), is((short)0));
+        assertThat(setupHeader.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
     }
 
     @Test
-    public void shouldSendMultipleZeroLengthDataFramesOnChannelWhenTimeoutWithoutStatusMessage() throws Exception
+    public void shouldSendMultipleSetupFramesOnChannelWhenTimeoutWithoutStatusMessage() throws Exception
     {
-        currentTimestamp += TimeUnit.MILLISECONDS.toNanos(DriverPublication.INITIAL_HEARTBEAT_TIMEOUT_MS) - 1;
+        currentTimestamp += Configuration.PUBLICATION_SETUP_TIMEOUT_NS - 1;
         sender.doWork();
         assertThat(receivedFrames.size(), is(0));
         currentTimestamp += 10;
         sender.doWork();
         assertThat(receivedFrames.size(), is(1));
 
-        currentTimestamp += TimeUnit.MILLISECONDS.toNanos(DriverPublication.INITIAL_HEARTBEAT_TIMEOUT_MS) - 1;
+        currentTimestamp += Configuration.PUBLICATION_SETUP_TIMEOUT_NS - 1;
         sender.doWork();
         currentTimestamp += 10;
         sender.doWork();
@@ -189,9 +189,9 @@ public class SenderTest
     }
 
     @Test
-    public void shouldNotSendZeroLengthDataFrameAfterReceivingStatusMessage() throws Exception
+    public void shouldNotSendSetupFrameAfterReceivingStatusMessage() throws Exception
     {
-        currentTimestamp += TimeUnit.MILLISECONDS.toNanos(DriverPublication.HEARTBEAT_TIMEOUT_MS);
+        currentTimestamp += Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
 
         publication.updatePositionLimitFromStatusMessage(
             spySenderFlowControl.onStatusMessage(INITIAL_TERM_ID, 0, 0, rcvAddress));
@@ -360,7 +360,7 @@ public class SenderTest
     }
 
     @Test
-    public void shouldSendZeroLengthDataFrameAsHeartbeatWhenIdle() throws Exception
+    public void shouldSendLastDataFrameAsHeartbeatWhenIdle() throws Exception
     {
         publication.updatePositionLimitFromStatusMessage(
             spySenderFlowControl.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress));
@@ -374,7 +374,7 @@ public class SenderTest
         assertThat(receivedFrames.size(), is(1));  // should send now
         receivedFrames.remove();                   // skip data frame
 
-        currentTimestamp += TimeUnit.MILLISECONDS.toNanos(DriverPublication.HEARTBEAT_TIMEOUT_MS) - 1;
+        currentTimestamp += Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(0));  // should not send yet
@@ -384,12 +384,12 @@ public class SenderTest
         assertThat(receivedFrames.size(), greaterThanOrEqualTo(1));  // should send now
 
         dataHeader.wrap(new AtomicBuffer(receivedFrames.remove()), 0);
-        assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH));
-        assertThat(dataHeader.termOffset(), is(offsetOfMessage(2)));
+        assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
+        assertThat(dataHeader.termOffset(), is(offsetOfMessage(1)));
     }
 
     @Test
-    public void shouldSendMultipleZeroLengthDataFrameAsHeartbeatsWhenIdle()
+    public void shouldSendMultipleDataFramesAsHeartbeatsWhenIdle()
     {
         publication.updatePositionLimitFromStatusMessage(
             spySenderFlowControl.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress));
@@ -403,7 +403,7 @@ public class SenderTest
         assertThat(receivedFrames.size(), is(1));  // should send now
         receivedFrames.remove();                   // skip data frame
 
-        currentTimestamp += TimeUnit.MILLISECONDS.toNanos(DriverPublication.HEARTBEAT_TIMEOUT_MS) - 1;
+        currentTimestamp += Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
         sender.doWork();
         assertThat(receivedFrames.size(), is(0));  // should not send yet
         currentTimestamp += 10;
@@ -411,10 +411,10 @@ public class SenderTest
         assertThat(receivedFrames.size(), greaterThanOrEqualTo(1));  // should send now
 
         dataHeader.wrap(new AtomicBuffer(receivedFrames.remove()), 0);
-        assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH));
-        assertThat(dataHeader.termOffset(), is(offsetOfMessage(2)));
+        assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
+        assertThat(dataHeader.termOffset(), is(offsetOfMessage(1)));
 
-        currentTimestamp += TimeUnit.MILLISECONDS.toNanos(DriverPublication.HEARTBEAT_TIMEOUT_MS) - 1;
+        currentTimestamp += Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
         sender.doWork();
         assertThat(receivedFrames.size(), is(0));  // should not send yet
         currentTimestamp += 10;
@@ -422,8 +422,8 @@ public class SenderTest
         assertThat(receivedFrames.size(), greaterThanOrEqualTo(1));  // should send now
 
         dataHeader.wrap(new AtomicBuffer(receivedFrames.remove()), 0);
-        assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH));
-        assertThat(dataHeader.termOffset(), is(offsetOfMessage(2)));
+        assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
+        assertThat(dataHeader.termOffset(), is(offsetOfMessage(1)));
     }
 
     private int offsetOfMessage(final int offset)

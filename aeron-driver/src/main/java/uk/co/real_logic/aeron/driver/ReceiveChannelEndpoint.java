@@ -19,10 +19,7 @@ import uk.co.real_logic.aeron.common.collections.Int2ObjectHashMap;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.event.EventCode;
 import uk.co.real_logic.aeron.common.event.EventLogger;
-import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
-import uk.co.real_logic.aeron.common.protocol.NakFlyweight;
-import uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight;
+import uk.co.real_logic.aeron.common.protocol.*;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -53,7 +50,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         nakHeader.wrap(nakBuffer, 0);
 
         this.logger = logger;
-        this.udpTransport = new UdpTransport(udpChannel, this::onDataFrame, logger, lossGenerator);
+        this.udpTransport = new UdpTransport(udpChannel, this::onDataFrame, this::onSetupFrame, logger, lossGenerator);
         this.dispatcher = new DataFrameDispatcher(conductorProxy, this);
     }
 
@@ -139,17 +136,30 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         dispatcher.onDataFrame(header, buffer, length, srcAddress);
     }
 
+    public void onSetupFrame(
+        final SetupFlyweight header, final AtomicBuffer buffer, final int length, final InetSocketAddress srcAddress)
+    {
+        dispatcher.onSetupFrame(header, buffer, length, srcAddress);
+    }
+
     public StatusMessageSender composeStatusMessageSender(
         final InetSocketAddress controlAddress, final int sessionId, final int streamId)
     {
-        return (termId, termOffset, window) -> sendStatusMessage(controlAddress, sessionId, streamId, termId, termOffset, window);
+        return (termId, termOffset, window) ->
+            sendStatusMessage(controlAddress, sessionId, streamId, termId, termOffset, window, (byte)0);
     }
 
-    public NakMessageSender composeNakMessageSender(final InetSocketAddress controlAddress,
+    public NakMessageSender composeNakMessageSender(
+        final InetSocketAddress controlAddress,
         final int sessionId,
         final int streamId)
     {
         return (termId, termOffset, length) -> sendNak(controlAddress, sessionId, streamId, termId, termOffset, length);
+    }
+
+    public void sendSetupElicitingSm(final InetSocketAddress controlAddress, final int sessionId, final int streamId)
+    {
+        sendStatusMessage(controlAddress, sessionId, streamId, 0, 0, 0, StatusMessageFlyweight.SEND_SETUP_FLAG);
     }
 
     private void sendStatusMessage(
@@ -158,7 +168,8 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         final int streamId,
         final int termId,
         final int termOffset,
-        final int window)
+        final int window,
+        final short flags)
     {
         smHeader.sessionId(sessionId)
                 .streamId(streamId)
@@ -167,7 +178,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
                 .receiverWindowSize(window)
                 .headerType(HeaderFlyweight.HDR_TYPE_SM)
                 .frameLength(StatusMessageFlyweight.HEADER_LENGTH)
-                .flags((byte)0)
+                .flags(flags)
                 .version(HeaderFlyweight.CURRENT_VERSION);
 
         final int frameLength = smHeader.frameLength();

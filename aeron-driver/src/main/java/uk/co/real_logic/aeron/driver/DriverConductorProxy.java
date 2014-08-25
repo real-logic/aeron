@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.driver.cmd.CreateConnectionCmd;
+import uk.co.real_logic.aeron.driver.cmd.ElicitSetupFromSourceCmd;
 
 import java.net.InetSocketAddress;
 import java.util.Queue;
@@ -40,5 +41,14 @@ public class DriverConductorProxy
         final ReceiveChannelEndpoint channelEndpoint)
     {
         return commandQueue.offer(new CreateConnectionCmd(sessionId, streamId, termId, controlAddress, channelEndpoint));
+    }
+
+    public boolean elicitSetupFromSource(
+        final int sessionId,
+        final int streamId,
+        final InetSocketAddress controlAddress,
+        final ReceiveChannelEndpoint channelEndpoint)
+    {
+        return commandQueue.offer(new ElicitSetupFromSourceCmd(sessionId, streamId, controlAddress, channelEndpoint));
     }
 }

@@ -31,10 +31,7 @@ import uk.co.real_logic.aeron.common.status.BufferPositionReporter;
 import uk.co.real_logic.aeron.common.status.PositionReporter;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
-import uk.co.real_logic.aeron.driver.cmd.ClosePublicationCmd;
-import uk.co.real_logic.aeron.driver.cmd.CreateConnectionCmd;
-import uk.co.real_logic.aeron.driver.cmd.NewConnectionCmd;
-import uk.co.real_logic.aeron.driver.cmd.RetransmitPublicationCmd;
+import uk.co.real_logic.aeron.driver.cmd.*;
 import uk.co.real_logic.aeron.driver.exceptions.ControlProtocolException;
 import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
 
@@ -57,7 +54,7 @@ import static uk.co.real_logic.aeron.driver.MediaDriver.Context;
 public class DriverConductor extends Agent
 {
     public static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
-    public static final int CHECK_TIMEOUT_MS = 1000;  // how often to check liveness
+    public static final int CHECK_TIMEOUT_MS = 1000;  // how often to check liveness & cleanup
 
     /**
      * Unicast NAK delay is immediate initial with delayed subsequent delay
@@ -91,6 +88,7 @@ public class DriverConductor extends Agent
     private final AtomicArray<ClientLiveness> clients = new AtomicArray<>();
     private final AtomicArray<DriverSubscription> subscriptions;
     private final AtomicArray<DriverPublication> publications;
+    private final AtomicArray<ElicitSetupFromSourceCmd> pendingSetups;
 
     private final Supplier<SenderFlowControl> unicastSenderFlowControl;
     private final Supplier<SenderFlowControl> multicastSenderFlowControl;
@@ -111,6 +109,7 @@ public class DriverConductor extends Agent
     private final TimerWheel.Timer subscriptionCheckTimer;
     private final TimerWheel.Timer connectionCheckTimer;
     private final TimerWheel.Timer clientLivenessCheckTimer;
+    private final TimerWheel.Timer pendingSetupsTimer;
     private final CountersManager countersManager;
     private final AtomicBuffer countersBuffer;
     private final EventLogger logger;
@@ -143,9 +142,11 @@ public class DriverConductor extends Agent
         subscriptionCheckTimer = newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onCheckSubscriptions);
         connectionCheckTimer = newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onCheckConnections);
         clientLivenessCheckTimer = newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onLivenessCheckClients);
+        pendingSetupsTimer = newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onPendingSetupsCheck);
 
         publications = ctx.publications();
         subscriptions = ctx.subscriptions();
+        pendingSetups = new AtomicArray<>();
         fromClientCommands = ctx.fromClientCommands();
         clientProxy = ctx.clientProxy();
         conductorProxy = ctx.driverConductorProxy();
@@ -160,6 +161,7 @@ public class DriverConductor extends Agent
         onReceiverCommandFunc = this::onReceiverCommand;
         onClientCommandFunc = this::onClientCommand;
         sendPendingStatusMessagesFunc = (connection) -> connection.sendPendingStatusMessages(timerWheel.now());
+
     }
 
     public void onReceiverCommand(Object obj)
@@ -167,6 +169,10 @@ public class DriverConductor extends Agent
         if (obj instanceof CreateConnectionCmd)
         {
             onCreateConnection((CreateConnectionCmd)obj);
+        }
+        else if (obj instanceof ElicitSetupFromSourceCmd)
+        {
+            onElicitSetupFromSource((ElicitSetupFromSourceCmd)obj);
         }
     }
 
@@ -727,6 +733,32 @@ public class DriverConductor extends Agent
         rescheduleTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, clientLivenessCheckTimer);
     }
 
+    private void onPendingSetupsCheck()
+    {
+        final long now = timerWheel.now();
+
+        pendingSetups.forEach(
+            (cmd) ->
+            {
+                if (cmd.timeOfSm() +  Configuration.PENDING_SETUPS_TIMEOUT_NS < now)
+                {
+                    pendingSetups.remove(cmd);
+
+                    final RemovePendingSetupCmd removeCmd =
+                        new RemovePendingSetupCmd(cmd.channelEndpoint(), cmd.sessionId(), cmd.streamId());
+
+                    while (!receiverProxy.removePendingSetup(removeCmd))
+                    {
+                        systemCounters.receiverProxyFails().orderedIncrement();
+                        Thread.yield();
+                    }
+                }
+            }
+        );
+
+        rescheduleTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, pendingSetupsTimer);
+    }
+
     private void onCreateConnection(final CreateConnectionCmd cmd)
     {
         final int sessionId = cmd.sessionId();
@@ -785,6 +817,19 @@ public class DriverConductor extends Agent
             systemCounters.receiverProxyFails().orderedIncrement();
             Thread.yield();
         }
+    }
+
+    private void onElicitSetupFromSource(final ElicitSetupFromSourceCmd cmd)
+    {
+        final int sessionId = cmd.sessionId();
+        final int streamId = cmd.streamId();
+        final InetSocketAddress controlAddress = cmd.controlAddress();
+        final ReceiveChannelEndpoint channelEndpoint = cmd.channelEndpoint();
+
+        channelEndpoint.sendSetupElicitingSm(controlAddress, sessionId, streamId);
+        cmd.timeOfSm(timerWheel.now());
+
+        pendingSetups.add(cmd);
     }
 
     private int allocatePositionCounter(final String type, final String dirName, final int sessionId, final int streamId)

@@ -24,6 +24,7 @@ import uk.co.real_logic.aeron.common.event.EventCode;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.common.protocol.SetupFlyweight;
 import uk.co.real_logic.aeron.common.status.PositionReporter;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
@@ -33,7 +34,6 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static uk.co.real_logic.aeron.common.TermHelper.termIdToBufferIndex;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogScanner.AvailabilityHandler;
@@ -43,18 +43,6 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogScanner.Avai
  */
 public class DriverPublication implements AutoCloseable
 {
-    /**
-     * Initial heartbeat timeout (cancelled by SM)
-     */
-    public static final int INITIAL_HEARTBEAT_TIMEOUT_MS = 100;
-    public static final long INITIAL_HEARTBEAT_TIMEOUT_NS = MILLISECONDS.toNanos(INITIAL_HEARTBEAT_TIMEOUT_MS);
-
-    /**
-     * Heartbeat after data sent
-     */
-    public static final int HEARTBEAT_TIMEOUT_MS = 200;
-    public static final long HEARTBEAT_TIMEOUT_NS = MILLISECONDS.toNanos(HEARTBEAT_TIMEOUT_MS);
-
     /**
      * Publication is still active.
      */
@@ -77,8 +65,7 @@ public class DriverPublication implements AutoCloseable
     private final int headerLength;
     private final int mtuLength;
 
-    private final ByteBuffer scratchByteBuffer = ByteBuffer.allocateDirect(DataHeaderFlyweight.HEADER_LENGTH);
-    private final AtomicBuffer scratchAtomicBuffer = new AtomicBuffer(scratchByteBuffer);
+    private final ByteBuffer setupFrameBuffer = ByteBuffer.allocateDirect(DataHeaderFlyweight.HEADER_LENGTH);
     private final LogScanner[] logScanners = new LogScanner[TermHelper.BUFFER_COUNT];
     private final LogScanner[] retransmitLogScanners = new LogScanner[TermHelper.BUFFER_COUNT];
     private final ByteBuffer[] sendBuffers = new ByteBuffer[TermHelper.BUFFER_COUNT];
@@ -89,7 +76,7 @@ public class DriverPublication implements AutoCloseable
     private final PositionReporter publisherLimitReporter;
     private final ClientLiveness clientLiveness;
 
-    private final DataHeaderFlyweight heartbeatHeader = new DataHeaderFlyweight();
+    private final SetupFlyweight setupHeader = new SetupFlyweight();
 
     private final int positionBitsToShift;
     private final int initialTermId;
@@ -168,6 +155,9 @@ public class DriverPublication implements AutoCloseable
         lastSentTermId = initialTermId;
         lastSentTermOffset = 0;
         lastSentLength = 0;
+
+        setupHeader.wrap(new AtomicBuffer(setupFrameBuffer), 0);
+        constructSetupFrame();
     }
 
     public void close()
@@ -305,13 +295,39 @@ public class DriverPublication implements AutoCloseable
         }
     }
 
+    // called from either Sender thread (initial setup) or Conductor thread (in response to SEND_SETUP_FLAG in SMs)
+    public void sendSetupFrame()
+    {
+        setupHeader.termId(activeTermId.get()); // update the termId field
+
+        setupFrameBuffer.limit(setupHeader.frameLength());
+        setupFrameBuffer.position(0);
+
+        final int bytesSent = channelEndpoint.sendTo(setupFrameBuffer, dstAddress);
+        systemCounters.heartbeatsSent().orderedIncrement();
+
+        if (setupHeader.frameLength() != bytesSent)
+        {
+            logger.log(
+                EventCode.FRAME_OUT_INCOMPLETE_SEND,
+                "sendSetupFrame %d/%d",
+                bytesSent,
+                setupHeader.frameLength());
+        }
+
+        updateTimeOfLastSendOrSetup(timerWheel.now());
+    }
+
     private boolean heartbeatCheck()
     {
-        final long timeout = statusMessagesReceivedCount > 0 ? HEARTBEAT_TIMEOUT_NS : INITIAL_HEARTBEAT_TIMEOUT_NS;
+        final long timeout =
+            statusMessagesReceivedCount > 0 ?
+                Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS :
+                Configuration.PUBLICATION_SETUP_TIMEOUT_NS;
 
         if (timeOfLastSendOrHeartbeat + timeout < timerWheel.now())
         {
-            sendHeartbeat();
+            sendSetupFrameOrHeartbeat();
             return true;
         }
 
@@ -360,7 +376,7 @@ public class DriverPublication implements AutoCloseable
             logger.log(EventCode.FRAME_OUT_INCOMPLETE_SEND, "onSendTransmissionUnit %d/%d", bytesSent, length);
         }
 
-        updateTimeOfLastSendOrHeartbeat(timerWheel.now());
+        updateTimeOfLastSendOrSetup(timerWheel.now());
         lastSentTermId = activeTermId.get();
         lastSentTermOffset = offset;
         lastSentLength = length;
@@ -379,11 +395,11 @@ public class DriverPublication implements AutoCloseable
         }
     }
 
-    private void sendHeartbeat()
+    private void sendSetupFrameOrHeartbeat()
     {
-        if (initialTermId == lastSentTermId && 0 == lastSentTermOffset)
+        if (0 == lastSentLength && 0 == lastSentTermOffset && initialTermId == lastSentTermId)
         {
-            sendZeroLengthDataFrame();
+            sendSetupFrame();
         }
         else
         {
@@ -396,43 +412,22 @@ public class DriverPublication implements AutoCloseable
 
                 scanner.scanNext(onSendRetransmitFunc, Math.min(lastSentLength, mtuLength));
 
-                updateTimeOfLastSendOrHeartbeat(timerWheel.now());
+                updateTimeOfLastSendOrSetup(timerWheel.now());
             }
         }
     }
 
-    private void sendZeroLengthDataFrame()
+    private void constructSetupFrame()
     {
-        // called from conductor thread on timeout
-        // used for both initial setup 0 length data as well as heartbeats
-        // send 0 length data frame with current termOffset
-        heartbeatHeader.wrap(scratchAtomicBuffer, 0);
+        setupHeader.sessionId(sessionId)
+                   .streamId(streamId)
+                   .termId(activeTermId.get())
+                   .frameLength(SetupFlyweight.HEADER_LENGTH)
+                   .headerType(HeaderFlyweight.HDR_TYPE_SETUP)
+                   .flags((byte) 0)
+                   .version(HeaderFlyweight.CURRENT_VERSION);
 
-        heartbeatHeader.sessionId(sessionId)
-                       .streamId(streamId)
-                       .termId(activeTermId.get())
-                       .termOffset(logScanners[activeIndex].offset())
-                       .frameLength(DataHeaderFlyweight.HEADER_LENGTH)
-                       .headerType(HeaderFlyweight.HDR_TYPE_DATA)
-                       .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
-                       .version(HeaderFlyweight.CURRENT_VERSION);
-
-        scratchByteBuffer.position(0);
-        scratchByteBuffer.limit(DataHeaderFlyweight.HEADER_LENGTH);
-
-        final int bytesSent = channelEndpoint.sendTo(scratchByteBuffer, dstAddress);
-        systemCounters.heartbeatsSent().orderedIncrement();
-
-        if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
-        {
-            logger.log(
-                EventCode.FRAME_OUT_INCOMPLETE_SEND,
-                "sendHeartbeat %d/%d",
-                bytesSent,
-                DataHeaderFlyweight.HEADER_LENGTH);
-        }
-
-        updateTimeOfLastSendOrHeartbeat(timerWheel.now());
+        // TODO: add in term buffer size and possibly other settings in the SETUP frame
     }
 
     private long positionForActiveTerm(final int termOffset)
@@ -440,7 +435,7 @@ public class DriverPublication implements AutoCloseable
         return TermHelper.calculatePosition(activeTermId.get(), termOffset, positionBitsToShift, initialTermId);
     }
 
-    private void updateTimeOfLastSendOrHeartbeat(final long time)
+    private void updateTimeOfLastSendOrSetup(final long time)
     {
         timeOfLastSendOrHeartbeat = time;
     }

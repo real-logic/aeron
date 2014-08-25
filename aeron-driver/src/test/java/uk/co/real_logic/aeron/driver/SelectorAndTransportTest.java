@@ -59,6 +59,7 @@ public class SelectorAndTransportTest
     private final EventLogger mockTransportLogger = mock(EventLogger.class);
 
     private final DataFrameHandler mockDataFrameHandler = mock(DataFrameHandler.class);
+    private final SetupFrameHandler mockSetupFrameHandler = mock(SetupFrameHandler.class);
     private final NakFrameHandler mockNakFrameHandler = mock(NakFrameHandler.class);
     private final StatusMessageFrameHandler mockStatusMessageFrameHandler = mock(StatusMessageFrameHandler.class);
 
@@ -98,7 +99,7 @@ public class SelectorAndTransportTest
     public void shouldHandleBasicSetupAndTeardown() throws Exception
     {
         nioSelector = new NioSelector();
-        rcv = new UdpTransport(RCV_DST, mockDataFrameHandler, mockTransportLogger, NO_LOSS);
+        rcv = new UdpTransport(RCV_DST, mockDataFrameHandler, mockSetupFrameHandler, mockTransportLogger, NO_LOSS);
         src = new UdpTransport(SRC_DST, mockStatusMessageFrameHandler, mockNakFrameHandler, mockTransportLogger, NO_LOSS);
 
         rcv.registerForRead(nioSelector);
@@ -126,7 +127,7 @@ public class SelectorAndTransportTest
             };
 
         nioSelector = new NioSelector();
-        rcv = new UdpTransport(RCV_DST, dataFrameHandler, mockTransportLogger, NO_LOSS);
+        rcv = new UdpTransport(RCV_DST, dataFrameHandler, mockSetupFrameHandler, mockTransportLogger, NO_LOSS);
         src = new UdpTransport(SRC_DST, mockStatusMessageFrameHandler, mockNakFrameHandler, mockTransportLogger, NO_LOSS);
 
         rcv.registerForRead(nioSelector);
@@ -172,7 +173,7 @@ public class SelectorAndTransportTest
             };
 
         nioSelector = new NioSelector();
-        rcv = new UdpTransport(RCV_DST, dataFrameHandler, mockTransportLogger, NO_LOSS);
+        rcv = new UdpTransport(RCV_DST, dataFrameHandler, mockSetupFrameHandler, mockTransportLogger, NO_LOSS);
         src = new UdpTransport(SRC_DST, mockStatusMessageFrameHandler, mockNakFrameHandler, mockTransportLogger, NO_LOSS);
 
         rcv.registerForRead(nioSelector);
@@ -221,7 +222,7 @@ public class SelectorAndTransportTest
             };
 
         nioSelector = new NioSelector();
-        rcv = new UdpTransport(RCV_DST, mockDataFrameHandler, mockTransportLogger, NO_LOSS);
+        rcv = new UdpTransport(RCV_DST, mockDataFrameHandler, mockSetupFrameHandler, mockTransportLogger, NO_LOSS);
         src = new UdpTransport(SRC_DST, statusMessageFrameHandler, mockNakFrameHandler, mockTransportLogger, NO_LOSS);
 
         rcv.registerForRead(nioSelector);

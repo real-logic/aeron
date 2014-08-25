@@ -64,6 +64,10 @@ public class Receiver extends Agent
         {
             onRemoveConnection((RemoveConnectionCmd) obj);
         }
+        else if (obj instanceof RemovePendingSetupCmd)
+        {
+            onRemovePendingSetup((RemovePendingSetupCmd) obj);
+        }
     }
 
     public int doWork() throws Exception
@@ -113,5 +117,12 @@ public class Receiver extends Agent
     private void onRegisterMediaSubscriptionEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
         channelEndpoint.registerForRead(nioSelector);
+    }
+
+    private void onRemovePendingSetup(final RemovePendingSetupCmd cmd)
+    {
+        final ReceiveChannelEndpoint channelEndpoint = cmd.channelEndpoint();
+
+        channelEndpoint.dispatcher().removePendingSetup(cmd.sessionId(), cmd.streamId());
     }
 }

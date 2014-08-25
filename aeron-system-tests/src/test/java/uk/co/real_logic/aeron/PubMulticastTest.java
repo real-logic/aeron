@@ -20,10 +20,7 @@ import org.junit.Before;
 import org.junit.Test;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
-import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
-import uk.co.real_logic.aeron.common.protocol.NakFlyweight;
-import uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight;
+import uk.co.real_logic.aeron.common.protocol.*;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.net.InetAddress;
@@ -67,6 +64,7 @@ public class PubMulticastTest
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
     private final NakFlyweight nakHeader = new NakFlyweight();
+    private final SetupFlyweight setupHeader = new SetupFlyweight();
 
     @Before
     public void setupClientAndMediaDriver() throws Exception
@@ -123,21 +121,21 @@ public class PubMulticastTest
         }
 
         final AtomicInteger termId = new AtomicInteger();
-        final AtomicInteger receivedZeroLengthData = new AtomicInteger();
+        final AtomicInteger receivedSetupFrames = new AtomicInteger();
 
-        // should only see 0 length data until SM is sent
+        // should only see SETUP until SM is sent
         DatagramTestHelper.receiveUntil(receiverChannel,
             (buffer) ->
             {
-                dataHeader.wrap(buffer, 0);
-                if (dataHeader.headerType() == HeaderFlyweight.HDR_TYPE_DATA)
+                setupHeader.wrap(buffer, 0);
+                if (setupHeader.headerType() == HeaderFlyweight.HDR_TYPE_SETUP)
                 {
-                    assertThat(dataHeader.streamId(), is(STREAM_ID));
-                    assertThat(dataHeader.sessionId(), is(SESSION_ID));
-                    termId.set(dataHeader.termId());
-                    assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH));
-                    assertThat(buffer.position(), is(DataHeaderFlyweight.HEADER_LENGTH));
-                    receivedZeroLengthData.incrementAndGet();
+                    assertThat(setupHeader.streamId(), is(STREAM_ID));
+                    assertThat(setupHeader.sessionId(), is(SESSION_ID));
+                    termId.set(setupHeader.termId());
+                    assertThat(setupHeader.frameLength(), is(SetupFlyweight.HEADER_LENGTH));
+                    assertThat(buffer.position(), is(SetupFlyweight.HEADER_LENGTH));
+                    receivedSetupFrames.incrementAndGet();
 
                     return true;
                 }
@@ -145,7 +143,7 @@ public class PubMulticastTest
                 return false;
             });
 
-        assertThat(receivedZeroLengthData.get(), greaterThanOrEqualTo(1));
+        assertThat(receivedSetupFrames.get(), greaterThanOrEqualTo(1));
 
         // send SM
         sendSM(termId.get());
@@ -189,19 +187,19 @@ public class PubMulticastTest
         }
 
         final AtomicInteger termId = new AtomicInteger();
-        final AtomicInteger receivedZeroLengthData = new AtomicInteger();
+        final AtomicInteger receivedSetupFrames = new AtomicInteger();
         final AtomicInteger receivedDataFrames = new AtomicInteger();
 
-        // should only see 0 length data until SM is sent
+        // should only see SETUP until SM is sent
         DatagramTestHelper.receiveUntil(receiverChannel,
             (buffer) ->
             {
-                dataHeader.wrap(buffer, 0);
-                if (dataHeader.headerType() == HeaderFlyweight.HDR_TYPE_DATA &&
-                    dataHeader.frameLength() == DataHeaderFlyweight.HEADER_LENGTH)
+                setupHeader.wrap(buffer, 0);
+                if (setupHeader.headerType() == HeaderFlyweight.HDR_TYPE_SETUP &&
+                    setupHeader.frameLength() == SetupFlyweight.HEADER_LENGTH)
                 {
-                    termId.set(dataHeader.termId());
-                    receivedZeroLengthData.incrementAndGet();
+                    termId.set(setupHeader.termId());
+                    receivedSetupFrames.incrementAndGet();
 
                     return true;
                 }
@@ -209,7 +207,7 @@ public class PubMulticastTest
                 return false;
             });
 
-        assertThat(receivedZeroLengthData.get(), greaterThanOrEqualTo(1));
+        assertThat(receivedSetupFrames.get(), greaterThanOrEqualTo(1));
 
         // send SM
         sendSM(termId.get());

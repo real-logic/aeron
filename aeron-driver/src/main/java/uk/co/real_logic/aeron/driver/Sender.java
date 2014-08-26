@@ -28,11 +28,11 @@ import java.util.function.Consumer;
  */
 public class Sender extends Agent
 {
+    private final Consumer<Object> processConductorCommandsFunc = this::processConductorCommands;
     private final AtomicArray<DriverPublication> publications;
     private final OneToOneConcurrentArrayQueue<Object> commandQueue;
-    private int roundRobinIndex = 0;
 
-    private Consumer<Object> processConductorCommandsFunc;
+    private int roundRobinIndex = 0;
 
     public Sender(final MediaDriver.Context ctx)
     {
@@ -40,7 +40,6 @@ public class Sender extends Agent
 
         this.publications = ctx.publications();
         this.commandQueue = ctx.senderCommandQueue();
-        processConductorCommandsFunc = this::processConductorCommands;
     }
 
     public int doWork()

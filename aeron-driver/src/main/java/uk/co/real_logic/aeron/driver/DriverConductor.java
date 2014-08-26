@@ -346,7 +346,7 @@ public class DriverConductor extends Agent
 
     private ClientLiveness getOrAddClient(final long clientId)
     {
-        ClientLiveness clientLiveness = findClient(clientId);
+        ClientLiveness clientLiveness = findClient(clients, clientId);
 
         if (null == clientLiveness)
         {
@@ -357,10 +357,11 @@ public class DriverConductor extends Agent
         return clientLiveness;
     }
 
-    private ClientLiveness findClient(final long clientId)
+    private static ClientLiveness findClient(final ArrayList<ClientLiveness> clients, final long clientId)
     {
-        for (final ClientLiveness clientLiveness : clients)
+        for (int i = 0, size = clients.size(); i < size; i++)
         {
+            final ClientLiveness clientLiveness = clients.get(i);
             if (clientLiveness.clientId() == clientId)
             {
                 return clientLiveness;
@@ -543,7 +544,7 @@ public class DriverConductor extends Agent
 
     private void onKeepaliveClient(final long clientId)
     {
-        final ClientLiveness clientLiveness = findClient(clientId);
+        final ClientLiveness clientLiveness = findClient(clients, clientId);
 
         if (null != clientLiveness)
         {

@@ -36,6 +36,7 @@ import uk.co.real_logic.aeron.driver.exceptions.ControlProtocolException;
 import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -88,7 +89,7 @@ public class DriverConductor extends Agent
     private final AtomicArray<ClientLiveness> clients = new AtomicArray<>();
     private final AtomicArray<DriverSubscription> subscriptions;
     private final AtomicArray<DriverPublication> publications;
-    private final AtomicArray<ElicitSetupFromSourceCmd> pendingSetups;
+    private final ArrayList<ElicitSetupFromSourceCmd> pendingSetups = new ArrayList<>();
 
     private final Supplier<SenderFlowControl> unicastSenderFlowControl;
     private final Supplier<SenderFlowControl> multicastSenderFlowControl;
@@ -146,7 +147,6 @@ public class DriverConductor extends Agent
 
         publications = ctx.publications();
         subscriptions = ctx.subscriptions();
-        pendingSetups = new AtomicArray<>();
         fromClientCommands = ctx.fromClientCommands();
         clientProxy = ctx.clientProxy();
         conductorProxy = ctx.driverConductorProxy();
@@ -735,24 +735,24 @@ public class DriverConductor extends Agent
     {
         final long now = timerWheel.now();
 
-        pendingSetups.forEach(
-            (cmd) ->
+        for (int i = pendingSetups.size() - 1; i >= 0; i--)
+        {
+            final ElicitSetupFromSourceCmd cmd = pendingSetups.get(i);
+
+            if (cmd.timeOfStatusMessage() + Configuration.PENDING_SETUPS_TIMEOUT_NS < now)
             {
-                if (cmd.timeOfStatusMessage() +  Configuration.PENDING_SETUPS_TIMEOUT_NS < now)
+                pendingSetups.remove(cmd);
+
+                final RemovePendingSetupCmd removeCmd = new RemovePendingSetupCmd(
+                    cmd.channelEndpoint(), cmd.sessionId(), cmd.streamId());
+
+                while (!receiverProxy.removePendingSetup(removeCmd))
                 {
-                    pendingSetups.remove(cmd);
-
-                    final RemovePendingSetupCmd removeCmd =
-                        new RemovePendingSetupCmd(cmd.channelEndpoint(), cmd.sessionId(), cmd.streamId());
-
-                    while (!receiverProxy.removePendingSetup(removeCmd))
-                    {
-                        systemCounters.receiverProxyFails().orderedIncrement();
-                        Thread.yield();
-                    }
+                    systemCounters.receiverProxyFails().orderedIncrement();
+                    Thread.yield();
                 }
             }
-        );
+        }
 
         rescheduleTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, pendingSetupsTimer);
     }

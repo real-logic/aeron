@@ -269,8 +269,8 @@ public class DriverConductor extends Agent
     {
         int workCount = nioSelector.processKeys();
 
-        workCount += processFromClientCommandBuffer();
-        workCount += processFromReceiverCommandQueue();
+        workCount += fromClientCommands.read(onClientCommandFunc);
+        workCount += commandQueue.drain(onReceiverCommandFunc);
         workCount += processTimers();
 
         final ArrayList<DriverConnection> connections = this.connections;
@@ -313,16 +313,6 @@ public class DriverConductor extends Agent
     public NioSelector nioSelector()
     {
         return nioSelector;
-    }
-
-    private int processFromReceiverCommandQueue()
-    {
-        return commandQueue.drain(onReceiverCommandFunc);
-    }
-
-    private int processFromClientCommandBuffer()
-    {
-        return fromClientCommands.read(onClientCommandFunc);
     }
 
     private int processTimers()

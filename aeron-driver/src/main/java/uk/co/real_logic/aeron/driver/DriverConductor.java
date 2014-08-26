@@ -654,7 +654,7 @@ public class DriverConductor extends Agent
 
                 switch (connection.status())
                 {
-                    case DriverConnection.ACTIVE:
+                    case ACTIVE:
                         if (connection.timeOfLastFrame() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS < now)
                         {
                             while (!receiverProxy.removeConnection(connection))
@@ -663,12 +663,12 @@ public class DriverConductor extends Agent
                                 Thread.yield();
                             }
 
-                            connection.status(DriverConnection.INACTIVE);
+                            connection.status(DriverConnection.Status.INACTIVE);
                             connection.timeOfLastStatusChange(now);
 
                             if (connection.remaining() == 0)
                             {
-                                connection.status(DriverConnection.LINGER);
+                                connection.status(DriverConnection.Status.LINGER);
                                 connection.timeOfLastStatusChange(now);
 
                                 clientProxy.onInactiveConnection(
@@ -679,11 +679,11 @@ public class DriverConductor extends Agent
                         }
                         break;
 
-                    case DriverConnection.INACTIVE:
+                    case INACTIVE:
                         if (connection.remaining() == 0 ||
                             connection.timeOfLastStatusChange() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS < now)
                         {
-                            connection.status(DriverConnection.LINGER);
+                            connection.status(DriverConnection.Status.LINGER);
                             connection.timeOfLastStatusChange(now);
 
                             clientProxy.onInactiveConnection(
@@ -693,7 +693,7 @@ public class DriverConductor extends Agent
                         }
                         break;
 
-                    case DriverConnection.LINGER:
+                    case LINGER:
                         if (connection.timeOfLastStatusChange() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS < now)
                         {
                             logger.log(
@@ -772,8 +772,8 @@ public class DriverConductor extends Agent
 
         final String channel = udpChannel.originalUriAsString();
         final int subscriberPositionCounterId = allocatePositionCounter("subscriber", channel, sessionId, streamId);
-        final int completedReceivedCounterId = allocatePositionCounter("completed received", channel, sessionId, streamId);
-        final int highestReceivedCounterId = allocatePositionCounter("highest received", channel, sessionId, streamId);
+        final int receivedCompleteCounterId = allocatePositionCounter("received complete", channel, sessionId, streamId);
+        final int receivedHwmCounterId = allocatePositionCounter("received hwm", channel, sessionId, streamId);
 
         clientProxy.onNewTermBuffers(
             ON_NEW_CONNECTION, sessionId, streamId, initialTermId, channel, termBuffers, 0, subscriberPositionCounterId);
@@ -802,8 +802,8 @@ public class DriverConductor extends Agent
             lossHandler,
             channelEndpoint.composeStatusMessageSender(controlAddress, sessionId, streamId),
             new BufferPositionIndicator(countersBuffer, subscriberPositionCounterId, countersManager),
-            new BufferPositionReporter(countersBuffer, completedReceivedCounterId, countersManager),
-            new BufferPositionReporter(countersBuffer, highestReceivedCounterId, countersManager),
+            new BufferPositionReporter(countersBuffer, receivedCompleteCounterId, countersManager),
+            new BufferPositionReporter(countersBuffer, receivedHwmCounterId, countersManager),
             timerWheel::now,
             systemCounters,
             logger);

@@ -39,7 +39,7 @@ public class LossHandler
     private final Gap scannedGap = new Gap();
     private final Gap activeGap = new Gap();
     private final FeedbackDelayGenerator delayGenerator;
-    private final AtomicLong highestPosition;
+    private final AtomicLong hwmPosition;
     private final int positionBitsToShift;
     private final int initialTermId;
 
@@ -74,7 +74,7 @@ public class LossHandler
         this.delayGenerator = delayGenerator;
         this.nakMessageSender = nakMessageSender;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(scanners[0].capacity());
-        this.highestPosition = new AtomicLong(TermHelper.calculatePosition(activeTermId, 0, positionBitsToShift, activeTermId));
+        this.hwmPosition = new AtomicLong(TermHelper.calculatePosition(activeTermId, 0, positionBitsToShift, activeTermId));
 
         this.activeIndex = TermHelper.termIdToBufferIndex(activeTermId);
         this.activeTermId = activeTermId;
@@ -116,15 +116,14 @@ public class LossHandler
         {
             // Account for 0 length heartbeat packet
             final int tail = scanner.tailVolatile();
-            final long tailPosition = TermHelper.calculatePosition(
-                activeTermId, tail, positionBitsToShift, initialTermId);
-            final long currentHighPosition = highestPosition.get();
+            final long tailPosition = TermHelper.calculatePosition(activeTermId, tail, positionBitsToShift, initialTermId);
+            final long currentHwmPosition = hwmPosition.get();
 
-            if (currentHighPosition > tailPosition)
+            if (currentHwmPosition > tailPosition)
             {
                 if (!timer.isActive() || !activeGap.matches(activeTermId, tail))
                 {
-                    activateGap(activeTermId, tail, (int)(currentHighPosition - tailPosition));
+                    activateGap(activeTermId, tail, (int)(currentHwmPosition - tailPosition));
                 }
             }
             else if (timer.isActive())
@@ -176,10 +175,10 @@ public class LossHandler
      * @param position new position in the stream
      * @return the highest position after checking the new candidate
      */
-    public long highestPositionCandidate(final long position)
+    public long hwmCandidate(final long position)
     {
-        final long highestPosition = Math.max(this.highestPosition.get(), position);
-        this.highestPosition.lazySet(highestPosition);
+        final long highestPosition = Math.max(this.hwmPosition.get(), position);
+        this.hwmPosition.lazySet(highestPosition);
 
         return highestPosition;
     }

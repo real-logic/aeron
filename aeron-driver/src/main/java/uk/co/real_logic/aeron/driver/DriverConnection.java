@@ -38,20 +38,7 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
  */
 public class DriverConnection implements AutoCloseable
 {
-    /**
-     * connection is active
-     */
-    public static final int ACTIVE = 1;
-
-    /**
-     * connection is inactive. Publication side has timed out.
-     */
-    public static final int INACTIVE = 2;
-
-    /**
-     * connection has been drained or timeout has occurred and is being lingered
-     */
-    public static final int LINGER = 3;
+    public enum Status {ACTIVE, INACTIVE, LINGER}
 
     private final ReceiveChannelEndpoint channelEndpoint;
     private final int sessionId;
@@ -60,7 +47,7 @@ public class DriverConnection implements AutoCloseable
     private final PositionIndicator subscriberPosition;
     private final LongSupplier clock;
     private final PositionReporter completedPosition;
-    private final PositionReporter highestReceivedPosition;
+    private final PositionReporter hwmPosition;
     private final SystemCounters systemCounters;
     private final EventLogger logger;
 
@@ -69,7 +56,7 @@ public class DriverConnection implements AutoCloseable
     private int activeIndex;
     private int hwmTermId;
     private int hwmIndex;
-    private int status;
+    private Status status;
     private long timeOfLastStatusChange;
 
     private final LogRebuilder[] rebuilders;
@@ -100,7 +87,7 @@ public class DriverConnection implements AutoCloseable
         final StatusMessageSender statusMessageSender,
         final PositionIndicator subscriberPosition,
         final PositionReporter completedPosition,
-        final PositionReporter highestReceivedPosition,
+        final PositionReporter hwmPosition,
         final LongSupplier clock,
         final SystemCounters systemCounters,
         final EventLogger logger)
@@ -111,10 +98,10 @@ public class DriverConnection implements AutoCloseable
         this.termBuffers = termBuffers;
         this.subscriberPosition = subscriberPosition;
         this.completedPosition = completedPosition;
-        this.highestReceivedPosition = highestReceivedPosition;
+        this.hwmPosition = hwmPosition;
         this.systemCounters = systemCounters;
         this.logger = logger;
-        this.status = ACTIVE;
+        this.status = Status.ACTIVE;
         this.timeOfLastStatusChange = clock.getAsLong();
 
         this.clock = clock;
@@ -168,7 +155,7 @@ public class DriverConnection implements AutoCloseable
      *
      * @return status of the connection
      */
-    public int status()
+    public Status status()
     {
         return status;
     }
@@ -178,7 +165,7 @@ public class DriverConnection implements AutoCloseable
      *
      * @param status of the connection
      */
-    public void status(final int status)
+    public void status(final Status status)
     {
         this.status = status;
     }
@@ -209,7 +196,7 @@ public class DriverConnection implements AutoCloseable
     public void close()
     {
         completedPosition.close();
-        highestReceivedPosition.close();
+        hwmPosition.close();
         termBuffers.close();
         subscriberPosition.close();
     }
@@ -300,16 +287,16 @@ public class DriverConnection implements AutoCloseable
             rebuilders[hwmIndex].insert(buffer, 0, length);
         }
 
-        highestPositionCandidate(proposedPosition);
+        hwmCandidate(proposedPosition);
     }
 
     /*
      * Inform the loss handler that a potentially new high position in the stream has been reached.
      */
-    private void highestPositionCandidate(final long proposedPosition)
+    private void hwmCandidate(final long proposedPosition)
     {
         timeOfLastFrame.lazySet(clock.getAsLong());
-        highestReceivedPosition.position(lossHandler.highestPositionCandidate(proposedPosition));
+        hwmPosition.position(lossHandler.hwmCandidate(proposedPosition));
     }
 
     /**

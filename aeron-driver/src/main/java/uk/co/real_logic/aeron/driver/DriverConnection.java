@@ -59,7 +59,7 @@ public class DriverConnection implements AutoCloseable
     private final TermBuffers termBuffers;
     private final PositionIndicator subscriberPosition;
     private final LongSupplier clock;
-    private final PositionReporter contiguousReceivedPosition;
+    private final PositionReporter completedPosition;
     private final PositionReporter highestReceivedPosition;
     private final SystemCounters systemCounters;
     private final EventLogger logger;
@@ -99,7 +99,7 @@ public class DriverConnection implements AutoCloseable
         final LossHandler lossHandler,
         final StatusMessageSender statusMessageSender,
         final PositionIndicator subscriberPosition,
-        final PositionReporter contiguousReceivedPosition,
+        final PositionReporter completedPosition,
         final PositionReporter highestReceivedPosition,
         final LongSupplier clock,
         final SystemCounters systemCounters,
@@ -110,7 +110,7 @@ public class DriverConnection implements AutoCloseable
         this.streamId = streamId;
         this.termBuffers = termBuffers;
         this.subscriberPosition = subscriberPosition;
-        this.contiguousReceivedPosition = contiguousReceivedPosition;
+        this.completedPosition = completedPosition;
         this.highestReceivedPosition = highestReceivedPosition;
         this.systemCounters = systemCounters;
         this.logger = logger;
@@ -208,7 +208,7 @@ public class DriverConnection implements AutoCloseable
      */
     public void close()
     {
-        contiguousReceivedPosition.close();
+        completedPosition.close();
         highestReceivedPosition.close();
         termBuffers.close();
         subscriberPosition.close();
@@ -252,8 +252,8 @@ public class DriverConnection implements AutoCloseable
     public long remaining()
     {
         // TODO: needs to account for multiple subscriberPosition values (multiple subscribers) when needed
-        final long contiguousReceivedPosition = lossHandler.tailPosition();
-        return Math.max(contiguousReceivedPosition - subscriberPosition.position(), 0);
+        final long completedPosition = lossHandler.tailPosition();
+        return Math.max(completedPosition - subscriberPosition.position(), 0);
     }
 
     /**
@@ -281,7 +281,7 @@ public class DriverConnection implements AutoCloseable
         if (termId == activeTermId)
         {
             currentRebuilder.insert(buffer, 0, length);
-            contiguousReceivedPosition.position(lossHandler.tailPosition());
+            completedPosition.position(lossHandler.tailPosition());
 
             if (currentRebuilder.isComplete())
             {

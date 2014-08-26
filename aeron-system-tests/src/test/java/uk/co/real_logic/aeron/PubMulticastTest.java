@@ -265,7 +265,7 @@ public class PubMulticastTest
         statusMessage.wrap(new AtomicBuffer(smBuffer), 0);
 
         statusMessage.receiverWindowSize(1000)
-                     .highestContiguousTermOffset(0)
+                     .completedTermOffset(0)
                      .termId(termId)
                      .streamId(STREAM_ID)
                      .sessionId(SESSION_ID)

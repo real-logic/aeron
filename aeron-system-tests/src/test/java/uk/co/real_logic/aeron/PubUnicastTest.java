@@ -51,7 +51,6 @@ public class PubUnicastTest
         align(DataHeaderFlyweight.HEADER_LENGTH + PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT);
 
     private final AtomicBuffer payload = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
-
     private final InetSocketAddress srcAddress = new InetSocketAddress(HOST, SRC_PORT);
 
     private Aeron producingClient;
@@ -256,7 +255,7 @@ public class PubUnicastTest
         statusMessage.wrap(new AtomicBuffer(smBuffer), 0);
 
         statusMessage.receiverWindowSize(1000)
-                     .highestContiguousTermOffset(0)
+                     .completedTermOffset(0)
                      .termId(termId)
                      .streamId(STREAM_ID)
                      .sessionId(SESSION_ID)

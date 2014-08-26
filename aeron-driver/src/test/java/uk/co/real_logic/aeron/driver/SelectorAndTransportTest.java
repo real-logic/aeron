@@ -233,7 +233,7 @@ public class SelectorAndTransportTest
                      .sessionId(SESSION_ID)
                      .termId(TERM_ID)
                      .receiverWindowSize(1000)
-                     .highestContiguousTermOffset(0)
+                     .completedTermOffset(0)
                      .version(HeaderFlyweight.CURRENT_VERSION)
                      .flags((short)0)
                      .headerType(HeaderFlyweight.HDR_TYPE_SM)

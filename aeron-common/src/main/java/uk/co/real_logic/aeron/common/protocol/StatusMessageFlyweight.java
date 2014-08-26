@@ -33,7 +33,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     private static final int SESSION_ID_FIELD_OFFSET = 8;
     private static final int STREAM_ID_FIELD_OFFSET = 12;
     private static final int TERM_ID_FIELD_OFFSET = 16;
-    private static final int CONTIGUOUS_TERM_OFFSET_FIELD_OFFSET = 20;
+    private static final int COMPLETED_TERM_OFFSET_FIELD_OFFSET = 20;
     private static final int RECEIVER_WINDOW_FIELD_OFFSET = 24;
 
     /**
@@ -81,24 +81,24 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     }
 
     /**
-     * return highest contiguous term offset field
+     * return highest completed term offset field
      *
-     * @return highest contiguous term offset field
+     * @return highest completed term offset field
      */
-    public int highestContiguousTermOffset()
+    public int completedTermOffset()
     {
-        return atomicBuffer().getInt(offset() + CONTIGUOUS_TERM_OFFSET_FIELD_OFFSET, LITTLE_ENDIAN);
+        return atomicBuffer().getInt(offset() + COMPLETED_TERM_OFFSET_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
-     * set highest contiguous term offset field
+     * set highest completed term offset field
      *
      * @param termOffset field value
      * @return flyweight
      */
-    public StatusMessageFlyweight highestContiguousTermOffset(final int termOffset)
+    public StatusMessageFlyweight completedTermOffset(final int termOffset)
     {
-        atomicBuffer().putInt(offset() + CONTIGUOUS_TERM_OFFSET_FIELD_OFFSET, termOffset, LITTLE_ENDIAN);
+        atomicBuffer().putInt(offset() + COMPLETED_TERM_OFFSET_FIELD_OFFSET, termOffset, LITTLE_ENDIAN);
 
         return this;
     }

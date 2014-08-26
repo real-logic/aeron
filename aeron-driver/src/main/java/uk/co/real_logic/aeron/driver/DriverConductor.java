@@ -773,7 +773,7 @@ public class DriverConductor extends Agent
 
         final String channel = udpChannel.originalUriAsString();
         final int subscriberPositionCounterId = allocatePositionCounter("subscriber", channel, sessionId, streamId);
-        final int contiguousReceivedCounterId = allocatePositionCounter("contiguous received", channel, sessionId, streamId);
+        final int completedReceivedCounterId = allocatePositionCounter("completed received", channel, sessionId, streamId);
         final int highestReceivedCounterId = allocatePositionCounter("highest received", channel, sessionId, streamId);
 
         clientProxy.onNewTermBuffers(
@@ -803,7 +803,7 @@ public class DriverConductor extends Agent
             lossHandler,
             channelEndpoint.composeStatusMessageSender(controlAddress, sessionId, streamId),
             new BufferPositionIndicator(countersBuffer, subscriberPositionCounterId, countersManager),
-            new BufferPositionReporter(countersBuffer, contiguousReceivedCounterId, countersManager),
+            new BufferPositionReporter(countersBuffer, completedReceivedCounterId, countersManager),
             new BufferPositionReporter(countersBuffer, highestReceivedCounterId, countersManager),
             timerWheel::now,
             systemCounters,

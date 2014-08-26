@@ -435,7 +435,7 @@ public class EventCodec
             header.sessionId(),
             header.streamId(),
             header.termId(),
-            header.highestContiguousTermOffset(),
+            header.completedTermOffset(),
             header.receiverWindowSize());
     }
 

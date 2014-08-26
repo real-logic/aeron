@@ -35,10 +35,10 @@ public class DefaultMulticastSenderFlowControl implements SenderFlowControl
      * {@inheritDoc}
      */
     public long onStatusMessage(
-        final int termId, final int highestContiguousTermOffset, final int receiverWindowSize, final InetSocketAddress address)
+        final int termId, final int completedTermOffset, final int receiverWindowSize, final InetSocketAddress address)
     {
         final long position =
-            TermHelper.calculatePosition(termId, highestContiguousTermOffset, positionBitsToShift, initialTermId);
+            TermHelper.calculatePosition(termId, completedTermOffset, positionBitsToShift, initialTermId);
         final long newPositionLimit = position + receiverWindowSize;
 
         positionLimit = Math.max(positionLimit, newPositionLimit);

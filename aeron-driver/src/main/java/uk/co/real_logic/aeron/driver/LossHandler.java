@@ -188,7 +188,7 @@ public class LossHandler
      *
      * @return current tail position
      */
-    public long tailPosition()
+    public long completedPosition()
     {
         final int tail = scanners[activeIndex].tailVolatile();
         return TermHelper.calculatePosition(activeTermId, tail, positionBitsToShift, initialTermId);

@@ -239,7 +239,7 @@ public class DriverConnection implements AutoCloseable
     public long remaining()
     {
         // TODO: needs to account for multiple subscriberPosition values (multiple subscribers) when needed
-        final long completedPosition = lossHandler.tailPosition();
+        final long completedPosition = lossHandler.completedPosition();
         return Math.max(completedPosition - subscriberPosition.position(), 0);
     }
 
@@ -268,7 +268,7 @@ public class DriverConnection implements AutoCloseable
         if (termId == activeTermId)
         {
             currentRebuilder.insert(buffer, 0, length);
-            completedPosition.position(lossHandler.tailPosition());
+            completedPosition.position(lossHandler.completedPosition());
 
             if (currentRebuilder.isComplete())
             {

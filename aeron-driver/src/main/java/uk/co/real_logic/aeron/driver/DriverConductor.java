@@ -739,7 +739,7 @@ public class DriverConductor extends Agent
         pendingSetups.forEach(
             (cmd) ->
             {
-                if (cmd.timeOfSm() +  Configuration.PENDING_SETUPS_TIMEOUT_NS < now)
+                if (cmd.timeOfStatusMessage() +  Configuration.PENDING_SETUPS_TIMEOUT_NS < now)
                 {
                     pendingSetups.remove(cmd);
 
@@ -826,7 +826,7 @@ public class DriverConductor extends Agent
         final ReceiveChannelEndpoint channelEndpoint = cmd.channelEndpoint();
 
         channelEndpoint.sendSetupElicitingSm(controlAddress, sessionId, streamId);
-        cmd.timeOfSm(timerWheel.now());
+        cmd.timeOfStatusMessage(timerWheel.now());
 
         pendingSetups.add(cmd);
     }

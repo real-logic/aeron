@@ -26,7 +26,7 @@ public class ElicitSetupFromSourceCmd
     private final InetSocketAddress controlAddress;
     private final ReceiveChannelEndpoint channelEndpoint;
 
-    private long timeOfSm;
+    private long timeOfStatusMessage;
 
     public ElicitSetupFromSourceCmd(
         final int sessionId,
@@ -60,13 +60,13 @@ public class ElicitSetupFromSourceCmd
         return channelEndpoint;
     }
 
-    public long timeOfSm()
+    public long timeOfStatusMessage()
     {
-        return timeOfSm;
+        return timeOfStatusMessage;
     }
 
-    public void timeOfSm(final long now)
+    public void timeOfStatusMessage(final long now)
     {
-        timeOfSm = now;
+        timeOfStatusMessage = now;
     }
 }

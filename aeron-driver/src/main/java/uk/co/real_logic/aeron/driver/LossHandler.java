@@ -75,7 +75,6 @@ public class LossHandler
         this.nakMessageSender = nakMessageSender;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(scanners[0].capacity());
         this.hwmPosition = new AtomicLong(TermHelper.calculatePosition(activeTermId, 0, positionBitsToShift, activeTermId));
-
         this.activeIndex = TermHelper.termIdToBufferIndex(activeTermId);
         this.activeTermId = activeTermId;
         this.initialTermId = activeTermId;

@@ -106,7 +106,7 @@ public class DriverConductor extends Agent
     private final TimerWheel.Timer publicationCheckTimer;
     private final TimerWheel.Timer subscriptionCheckTimer;
     private final TimerWheel.Timer connectionCheckTimer;
-    private final TimerWheel.Timer clientLivenessCheckTimer;
+    private final TimerWheel.Timer clientCheckTimer;
     private final TimerWheel.Timer pendingSetupsTimer;
     private final CountersManager countersManager;
     private final AtomicBuffer countersBuffer;
@@ -138,8 +138,8 @@ public class DriverConductor extends Agent
         publicationCheckTimer = newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onCheckPublications);
         subscriptionCheckTimer = newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onCheckSubscriptions);
         connectionCheckTimer = newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onCheckConnections);
-        clientLivenessCheckTimer = newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onLivenessCheckClients);
-        pendingSetupsTimer = newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onPendingSetupsCheck);
+        clientCheckTimer = newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onCheckClients);
+        pendingSetupsTimer = newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onCheckPendingSetups);
 
         publications = ctx.publications();
         fromClientCommands = ctx.fromClientCommands();
@@ -746,7 +746,7 @@ public class DriverConductor extends Agent
         rescheduleTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, connectionCheckTimer);
     }
 
-    private void onLivenessCheckClients()
+    private void onCheckClients()
     {
         final long now = timerWheel.now();
 
@@ -760,10 +760,10 @@ public class DriverConductor extends Agent
             }
         }
 
-        rescheduleTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, clientLivenessCheckTimer);
+        rescheduleTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, clientCheckTimer);
     }
 
-    private void onPendingSetupsCheck()
+    private void onCheckPendingSetups()
     {
         final long now = timerWheel.now();
 

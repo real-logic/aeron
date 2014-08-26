@@ -395,7 +395,7 @@ public class DriverConductor extends Agent
         channelEndpoint.addPublication(publication, retransmitHandler, senderFlowControl);
 
         clientProxy.onNewTermBuffers(
-            ON_NEW_PUBLICATION, sessionId, streamId, initialTermId, channel, termBuffers, correlationId, positionCounterId);
+            ON_NEW_PUBLICATION, channel, streamId, sessionId, initialTermId, termBuffers, correlationId, positionCounterId);
 
         publications.add(publication);
     }
@@ -455,9 +455,9 @@ public class DriverConductor extends Agent
         }
 
         final ClientLiveness clientLiveness = getOrAddClient(clientId);
-        final int initialCount = channelEndpoint.incRefToStream(streamId);
+        final int refCount = channelEndpoint.incRefToStream(streamId);
 
-        if (1 == initialCount)
+        if (1 == refCount)
         {
             while (!receiverProxy.addSubscription(channelEndpoint, streamId))
             {
@@ -498,8 +498,8 @@ public class DriverConductor extends Agent
         }
         subscriptions.remove(subscription);
 
-        final int count = channelEndpoint.decRefToStream(streamId);
-        if (0 == count)
+        final int refCount = channelEndpoint.decRefToStream(streamId);
+        if (0 == refCount)
         {
             while (!receiverProxy.removeSubscription(channelEndpoint, streamId))
             {
@@ -776,7 +776,7 @@ public class DriverConductor extends Agent
         final int receivedHwmCounterId = allocatePositionCounter("received hwm", channel, sessionId, streamId);
 
         clientProxy.onNewTermBuffers(
-            ON_NEW_CONNECTION, sessionId, streamId, initialTermId, channel, termBuffers, 0, subscriberPositionCounterId);
+            ON_NEW_CONNECTION, channel, streamId, sessionId, initialTermId, termBuffers, 0, subscriberPositionCounterId);
 
         final GapScanner[] gapScanners =
             termBuffers.stream()

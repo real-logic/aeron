@@ -21,11 +21,11 @@ package uk.co.real_logic.aeron;
 public interface InactiveConnectionHandler
 {
     /**
-     * Method called by Aeron to deliver notification that a source has gone inactive
+     * Method called by Aeron to deliver notification that a source has gone inactive.
      *
      * @param channel of the inactive source
-     * @param sessionId of the inactive source
      * @param streamId of the inactive stream
+     * @param sessionId of the inactive source
      */
-    void onInactiveConnection(final String channel, final int sessionId, final int streamId);
+    void onInactiveConnection(final String channel, final int streamId, final int sessionId);
 }

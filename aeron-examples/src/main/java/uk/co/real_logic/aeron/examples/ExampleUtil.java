@@ -93,15 +93,15 @@ public class ExampleUtil
      * Generic error handler that just prints message to stdout.
      *
      * @param channel   for the error
-     * @param sessionId for the error, if source
      * @param streamId  for the error
+     * @param sessionId for the error, if source
      * @param message   indicating what the error was
      * @param cause     of the error
      */
     public static void printError(
         final String channel,
-        final int sessionId,
         final int streamId,
+        final int sessionId,
         final String message,
         final HeaderFlyweight cause)
     {
@@ -129,12 +129,11 @@ public class ExampleUtil
 
     /**
      * Print the information for a new connection to stdout.
-     *
-     * @param channel   for the connection
-     * @param sessionId for the connection publication
+     *  @param channel   for the connection
      * @param streamId  for the stream
+     * @param sessionId for the connection publication
      */
-    public static void printNewConnection(final String channel, final int sessionId, final int streamId)
+    public static void printNewConnection(final String channel, final int streamId, final int sessionId)
     {
         System.out.println(String.format(
             "new connection on %s streamId %d sessionId %x",
@@ -143,12 +142,11 @@ public class ExampleUtil
 
     /**
      * Print the information for an inactive connection to stdout.
-     *
-     * @param channel   for the connection
-     * @param sessionId for the connection publication
+     *  @param channel   for the connection
      * @param streamId  for the stream
+     * @param sessionId for the connection publication
      */
-    public static void printInactiveConnection(final String channel, final int sessionId, final int streamId)
+    public static void printInactiveConnection(final String channel, final int streamId, final int sessionId)
     {
         System.out.println(String.format(
             "inactive connection on %s streamId %d sessionId %x",

@@ -21,11 +21,11 @@ package uk.co.real_logic.aeron;
 public interface NewConnectionHandler
 {
     /**
-     * Method called by Aeron to deliver notification of a new connected session
+     * Method called by Aeron to deliver notification of a new connected session.
      *
      * @param channel for the source
-     * @param sessionId for the source
      * @param streamId for the source
+     * @param sessionId for the source
      */
-    void onNewConnection(final String channel, final int sessionId, final int streamId);
+    void onNewConnection(final String channel, final int streamId, final int sessionId);
 }

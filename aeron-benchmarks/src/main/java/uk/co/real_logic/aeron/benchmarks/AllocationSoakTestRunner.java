@@ -104,5 +104,4 @@ public class AllocationSoakTestRunner
             System.out.println(String.format("%.02g msgs/sec, %.02g bytes/sec", messagesPerSec, bytesPerSec));
         }
     }
-
 }

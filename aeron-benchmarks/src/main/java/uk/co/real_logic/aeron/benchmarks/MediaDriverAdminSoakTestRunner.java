@@ -36,7 +36,7 @@ public class MediaDriverAdminSoakTestRunner
 {
     private static final AtomicBuffer PUBLISHING_BUFFER = new AtomicBuffer(ByteBuffer.allocateDirect(256));
 
-    public static void main(String[] args) throws Exception
+    public static void main(final String[] args) throws Exception
     {
         BenchmarkUtil.useSharedMemoryOnLinux();
 

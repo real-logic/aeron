@@ -96,26 +96,27 @@ public class BenchmarkUtil
 
     public static Consumer<Subscription> subscriberLoop(final int limit)
     {
-        return  (subscription) ->
-                {
-                    final BackoffIdleStrategy idleStrategy =
-                            new BackoffIdleStrategy(100,
-                                    100,
-                                    TimeUnit.MICROSECONDS.toNanos(1),
-                                    TimeUnit.MICROSECONDS.toNanos(100));
+        return
+            (subscription) ->
+            {
+                final BackoffIdleStrategy idleStrategy = new BackoffIdleStrategy(
+                    100,
+                    100,
+                    TimeUnit.MICROSECONDS.toNanos(1),
+                    TimeUnit.MICROSECONDS.toNanos(100));
 
-                    try
+                try
+                {
+                    while (true)
                     {
-                        while (true)
-                        {
-                            final int fragmentsRead = subscription.poll(limit);
-                            idleStrategy.idle(fragmentsRead);
-                        }
+                        final int fragmentsRead = subscription.poll(limit);
+                        idleStrategy.idle(fragmentsRead);
                     }
-                    catch (final Exception ex)
-                    {
-                        ex.printStackTrace();
-                    }
-                };
+                }
+                catch (final Exception ex)
+                {
+                    ex.printStackTrace();
+                }
+            };
     }
 }

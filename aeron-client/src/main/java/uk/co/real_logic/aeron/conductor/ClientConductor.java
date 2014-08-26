@@ -109,7 +109,7 @@ public class ClientConductor extends Agent implements DriverListener
         return workCount;
     }
 
-    public synchronized Publication addPublication(final String channel, final int sessionId, final int streamId)
+    public synchronized Publication addPublication(final String channel, final int streamId, final int sessionId)
     {
         Publication publication = publicationMap.get(channel, sessionId, streamId);
 
@@ -177,8 +177,8 @@ public class ClientConductor extends Agent implements DriverListener
 
     public void onNewPublication(
         final String channel,
-        final int sessionId,
         final int streamId,
+        final int sessionId,
         final int termId,
         final int limitPositionIndicatorOffset,
         final LogBuffersMessageFlyweight logBuffersMessage)
@@ -205,8 +205,8 @@ public class ClientConductor extends Agent implements DriverListener
 
     public void onNewConnection(
         final String channel,
-        final int sessionId,
         final int streamId,
+        final int sessionId,
         final int initialTermId,
         final LogBuffersMessageFlyweight message)
     {
@@ -226,13 +226,13 @@ public class ClientConductor extends Agent implements DriverListener
                 managedBuffers[i * 2 + 1] = stateBuffer;
             }
 
-            final PositionReporter positionReporter =
-                new BufferPositionReporter(counterValuesBuffer, message.positionCounterId());
+            final PositionReporter positionReporter = new BufferPositionReporter(
+                counterValuesBuffer, message.positionCounterId());
             subscription.onTermBuffersMapped(sessionId, initialTermId, logs, positionReporter, managedBuffers);
 
             if (null != newConnectionHandler)
             {
-                newConnectionHandler.onNewConnection(channel, sessionId, streamId);
+                newConnectionHandler.onNewConnection(channel, streamId, sessionId);
             }
         }
     }
@@ -250,7 +250,7 @@ public class ClientConductor extends Agent implements DriverListener
     }
 
     public void onInactiveConnection(
-        final String channel, final int sessionId, final int streamId, final ConnectionMessageFlyweight connectionMessage)
+        final String channel, final int streamId, final int sessionId, final ConnectionMessageFlyweight connectionMessage)
     {
         final Subscription subscription = subscriptionMap.get(channel, streamId);
 
@@ -258,7 +258,7 @@ public class ClientConductor extends Agent implements DriverListener
         {
             if (null != inactiveConnectionHandler)
             {
-                inactiveConnectionHandler.onInactiveConnection(channel, sessionId, streamId);
+                inactiveConnectionHandler.onInactiveConnection(channel, streamId, sessionId);
             }
         }
     }

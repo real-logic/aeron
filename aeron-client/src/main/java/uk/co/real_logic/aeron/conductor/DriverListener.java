@@ -26,17 +26,15 @@ public interface DriverListener
 {
     void onNewPublication(
         String channel,
-        int sessionId,
         int streamId,
+        int sessionId,
         int termId,
         int positionIndicatorId,
         LogBuffersMessageFlyweight logBuffersMessage);
 
-    void onNewConnection(
-        String channel, int sessionId, int streamId, int termId, LogBuffersMessageFlyweight logBuffersMessage);
+    void onNewConnection(String channel, int streamId, int sessionId, int termId, LogBuffersMessageFlyweight logBuffersMessage);
 
-    void onInactiveConnection(
-        String channel, int sessionId, int streamId, ConnectionMessageFlyweight connectionMessage);
+    void onInactiveConnection(String channel, int streamId, int sessionId, ConnectionMessageFlyweight connectionMessage);
 
     void onError(ErrorCode errorCode, String message);
 

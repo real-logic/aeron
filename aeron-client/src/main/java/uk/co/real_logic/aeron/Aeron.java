@@ -44,7 +44,7 @@ public final class Aeron implements AutoCloseable
     private static final int CONDUCTOR_TICKS_PER_WHEEL = 1024;
     private static final int CONDUCTOR_TICK_DURATION_US = 10_000;
 
-    private static final long UNSET_TIMEOUT = -1;
+    private static final long NULL_TIMEOUT = -1;
     private static final long DEFAULT_MEDIA_DRIVER_TIMEOUT = 10_000;
 
     private final ClientConductor conductor;
@@ -119,7 +119,21 @@ public final class Aeron implements AutoCloseable
 
     /**
      * Add a {@link Publication} for publishing messages to subscribers.
-     * <p>
+     *
+     * A session id will be generated for this publication.
+     *
+     * @param channel   for receiving the messages known to the media layer.
+     * @param streamId  within the channel scope.
+     * @return the new Publication.
+     */
+    public Publication addPublication(final String channel, final int streamId)
+    {
+        return conductor.addPublication(channel, streamId, 0);
+    }
+
+    /**
+     * Add a {@link Publication} for publishing messages to subscribers.
+     *
      * If the sessionId is 0, then a random one will be generated.
      *
      * @param channel   for receiving the messages known to the media layer.
@@ -136,7 +150,7 @@ public final class Aeron implements AutoCloseable
             sessionIdToRequest = BitUtil.generateRandomisedId();
         }
 
-        return conductor.addPublication(channel, sessionIdToRequest, streamId);
+        return conductor.addPublication(channel, streamId, sessionIdToRequest);
     }
 
     /**
@@ -192,19 +206,19 @@ public final class Aeron implements AutoCloseable
         private Consumer<Exception> errorHandler;
         private NewConnectionHandler newConnectionHandler;
         private InactiveConnectionHandler inactiveConnectionHandler;
-        private long mediaDriverTimeout = UNSET_TIMEOUT;
+        private long mediaDriverTimeout = NULL_TIMEOUT;
 
         public Context conclude()
         {
             super.conclude();
 
-            if (mediaDriverTimeout == UNSET_TIMEOUT)
-            {
-                mediaDriverTimeout = DEFAULT_MEDIA_DRIVER_TIMEOUT;
-            }
-
             try
             {
+                if (mediaDriverTimeout == NULL_TIMEOUT)
+                {
+                    mediaDriverTimeout = DEFAULT_MEDIA_DRIVER_TIMEOUT;
+                }
+
                 if (null == idleStrategy)
                 {
                     idleStrategy = new BackoffIdleStrategy(IDLE_MAX_SPINS, IDLE_MAX_YIELDS, IDLE_MIN_PARK_NS, IDLE_MAX_PARK_NS);

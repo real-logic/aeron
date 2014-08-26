@@ -221,8 +221,8 @@ public class ClientConductorTest extends MockBufferUsage
     @Test
     public void closingAPublicationDoesNotRemoveOtherPublications() throws Exception
     {
-        Publication publication = conductor.addPublication(CHANNEL, SESSION_ID_1, STREAM_ID_1);
-        conductor.addPublication(CHANNEL, SESSION_ID_2, STREAM_ID_2);
+        Publication publication = conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
+        conductor.addPublication(CHANNEL, STREAM_ID_2, SESSION_ID_2);
 
         willNotifyOperationSucceeded();
 
@@ -292,9 +292,9 @@ public class ClientConductorTest extends MockBufferUsage
 
         assertFalse(subscription.hasNoConnections());
 
-        conductor.onInactiveConnection(CHANNEL, SESSION_ID_1, STREAM_ID_1, null);
+        conductor.onInactiveConnection(CHANNEL, STREAM_ID_1, SESSION_ID_1, null);
 
-        verify(mockInactiveConnectionHandler).onInactiveConnection(CHANNEL, SESSION_ID_1, STREAM_ID_1);
+        verify(mockInactiveConnectionHandler).onInactiveConnection(CHANNEL, STREAM_ID_1, SESSION_ID_1);
         assertTrue(subscription.hasNoConnections());
         assertFalse(subscription.isConnected(SESSION_ID_1));
     }
@@ -365,6 +365,6 @@ public class ClientConductorTest extends MockBufferUsage
 
     private Publication addPublication()
     {
-        return conductor.addPublication(CHANNEL, SESSION_ID_1, STREAM_ID_1);
+        return conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
     }
 }

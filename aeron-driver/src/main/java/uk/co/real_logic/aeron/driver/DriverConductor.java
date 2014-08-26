@@ -508,7 +508,6 @@ public class DriverConductor extends Agent
             throw new ControlProtocolException(SUBSCRIBER_NOT_REGISTERED, "subscriptions unknown for stream");
         }
 
-
         final DriverSubscription subscription = removeSubscription(subscriptions, registrationCorrelationId);
         if (null == subscription)
         {

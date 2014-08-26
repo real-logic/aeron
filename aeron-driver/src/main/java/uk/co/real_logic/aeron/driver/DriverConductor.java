@@ -741,7 +741,7 @@ public class DriverConductor extends Agent
 
             if (cmd.timeOfStatusMessage() + Configuration.PENDING_SETUPS_TIMEOUT_NS < now)
             {
-                pendingSetups.remove(cmd);
+                pendingSetups.remove(i);
 
                 final RemovePendingSetupCmd removeCmd = new RemovePendingSetupCmd(
                     cmd.channelEndpoint(), cmd.sessionId(), cmd.streamId());

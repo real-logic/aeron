@@ -17,14 +17,14 @@
 package uk.co.real_logic.aeron.driver;
 
 /**
- * Client library status tracking
+ * Aeron client library tracker.
  */
-public class ClientLiveness
+public class AeronClient
 {
     private final long clientId;
     private long timeOfLastKeepalive;
 
-    public ClientLiveness(final long clientId, final long now)
+    public AeronClient(final long clientId, final long now)
     {
         this.clientId = clientId;
         this.timeOfLastKeepalive = now;

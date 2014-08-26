@@ -125,7 +125,7 @@ public class SenderTest
             wheel,
             termBuffers,
             mock(BufferPositionReporter.class),
-            mock(ClientLiveness.class),
+            mock(AeronClient.class),
             SESSION_ID,
             STREAM_ID,
             INITIAL_TERM_ID,

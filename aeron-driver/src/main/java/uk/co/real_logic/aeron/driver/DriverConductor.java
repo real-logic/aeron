@@ -85,7 +85,7 @@ public class DriverConductor extends Agent
     private final AtomicArray<DriverPublication> publications;
     private final ArrayList<DriverSubscription> subscriptions = new ArrayList<>();
     private final ArrayList<DriverConnection> connections = new ArrayList<>();
-    private final ArrayList<ClientLiveness> clients = new ArrayList<>();
+    private final ArrayList<AeronClient> clients = new ArrayList<>();
     private final ArrayList<ElicitSetupFromSourceCmd> pendingSetups = new ArrayList<>();
 
     private final Supplier<SenderFlowControl> unicastSenderFlowControl;
@@ -337,27 +337,27 @@ public class DriverConductor extends Agent
         timerWheel.rescheduleTimeout(delay, timeUnit, timer);
     }
 
-    private ClientLiveness getOrAddClient(final long clientId)
+    private AeronClient getOrAddClient(final long clientId)
     {
-        ClientLiveness clientLiveness = findClient(clients, clientId);
+        AeronClient aeronClient = findClient(clients, clientId);
 
-        if (null == clientLiveness)
+        if (null == aeronClient)
         {
-            clientLiveness = new ClientLiveness(clientId, timerWheel.now());
-            clients.add(clientLiveness);
+            aeronClient = new AeronClient(clientId, timerWheel.now());
+            clients.add(aeronClient);
         }
 
-        return clientLiveness;
+        return aeronClient;
     }
 
-    private static ClientLiveness findClient(final ArrayList<ClientLiveness> clients, final long clientId)
+    private static AeronClient findClient(final ArrayList<AeronClient> clients, final long clientId)
     {
         for (int i = 0, size = clients.size(); i < size; i++)
         {
-            final ClientLiveness clientLiveness = clients.get(i);
-            if (clientLiveness.clientId() == clientId)
+            final AeronClient aeronClient = clients.get(i);
+            if (aeronClient.clientId() == clientId)
             {
-                return clientLiveness;
+                return aeronClient;
             }
         }
 
@@ -387,7 +387,7 @@ public class DriverConductor extends Agent
                 ErrorCode.PUBLICATION_STREAM_ALREADY_EXISTS, "publication and session already exist on channel");
         }
 
-        final ClientLiveness clientLiveness = getOrAddClient(clientId);
+        final AeronClient aeronClient = getOrAddClient(clientId);
         final int initialTermId = BitUtil.generateRandomisedId();
         final String canonicalForm = udpChannel.canonicalForm();
         final TermBuffers termBuffers = termBuffersFactory.newPublication(canonicalForm, sessionId, streamId);
@@ -403,7 +403,7 @@ public class DriverConductor extends Agent
             timerWheel,
             termBuffers,
             positionReporter,
-            clientLiveness,
+            aeronClient,
             sessionId,
             streamId,
             initialTermId,
@@ -475,7 +475,7 @@ public class DriverConductor extends Agent
             }
         }
 
-        final ClientLiveness clientLiveness = getOrAddClient(clientId);
+        final AeronClient aeronClient = getOrAddClient(clientId);
         final int refCount = channelEndpoint.incRefToStream(streamId);
 
         if (1 == refCount)
@@ -487,7 +487,7 @@ public class DriverConductor extends Agent
             }
         }
 
-        final DriverSubscription subscription = new DriverSubscription(channelEndpoint, clientLiveness, streamId, correlationId);
+        final DriverSubscription subscription = new DriverSubscription(channelEndpoint, aeronClient, streamId, correlationId);
         subscriptions.add(subscription);
 
         clientProxy.operationSucceeded(correlationId);
@@ -553,11 +553,11 @@ public class DriverConductor extends Agent
 
     private void onKeepaliveClient(final long clientId)
     {
-        final ClientLiveness clientLiveness = findClient(clients, clientId);
+        final AeronClient aeronClient = findClient(clients, clientId);
 
-        if (null != clientLiveness)
+        if (null != aeronClient)
         {
-            clientLiveness.timeOfLastKeepalive(timerWheel.now());
+            aeronClient.timeOfLastKeepalive(timerWheel.now());
         }
     }
 
@@ -752,9 +752,9 @@ public class DriverConductor extends Agent
 
         for (int i = clients.size() - 1; i >= 0; i--)
         {
-            final ClientLiveness clientLiveness = clients.get(i);
+            final AeronClient aeronClient = clients.get(i);
 
-            if (clientLiveness.timeOfLastKeepalive() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS < now)
+            if (aeronClient.timeOfLastKeepalive() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS < now)
             {
                 clients.remove(i);
             }

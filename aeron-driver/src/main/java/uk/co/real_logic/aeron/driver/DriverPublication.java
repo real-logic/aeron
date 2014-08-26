@@ -61,7 +61,7 @@ public class DriverPublication implements AutoCloseable
     private final SendChannelEndpoint channelEndpoint;
     private final TermBuffers termBuffers;
     private final PositionReporter publisherLimitReporter;
-    private final ClientLiveness clientLiveness;
+    private final AeronClient aeronClient;
 
     private final SetupFlyweight setupHeader = new SetupFlyweight();
 
@@ -93,7 +93,7 @@ public class DriverPublication implements AutoCloseable
         final TimerWheel timerWheel,
         final TermBuffers termBuffers,
         final PositionReporter publisherLimitReporter,
-        final ClientLiveness clientLiveness,
+        final AeronClient aeronClient,
         final int sessionId,
         final int streamId,
         final int initialTermId,
@@ -110,7 +110,7 @@ public class DriverPublication implements AutoCloseable
         this.dstAddress = channelEndpoint.udpChannel().remoteData();
         this.timerWheel = timerWheel;
         this.publisherLimitReporter = publisherLimitReporter;
-        this.clientLiveness = clientLiveness;
+        this.aeronClient = aeronClient;
         this.sessionId = sessionId;
         this.streamId = streamId;
         this.headerLength = headerLength;
@@ -227,7 +227,7 @@ public class DriverPublication implements AutoCloseable
 
     public long timeOfLastKeepaliveFromClient()
     {
-        return clientLiveness.timeOfLastKeepalive();
+        return aeronClient.timeOfLastKeepalive();
     }
 
     public Status status()

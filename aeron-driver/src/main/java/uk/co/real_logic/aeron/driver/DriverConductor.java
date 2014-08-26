@@ -161,7 +161,6 @@ public class DriverConductor extends Agent
         onReceiverCommandFunc = this::onReceiverCommand;
         onClientCommandFunc = this::onClientCommand;
         sendPendingStatusMessagesFunc = (connection) -> connection.sendPendingStatusMessages(timerWheel.now());
-
     }
 
     public void onReceiverCommand(Object obj)

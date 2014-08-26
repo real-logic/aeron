@@ -16,7 +16,6 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.*;
-import uk.co.real_logic.aeron.common.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
@@ -82,7 +81,6 @@ public class DriverConductor extends Agent
     private final RingBuffer fromClientCommands;
     private final HashMap<String, SendChannelEndpoint> sendChannelEndpointByChannelMap = new HashMap<>();
     private final HashMap<String, ReceiveChannelEndpoint> receiveChannelEndpointByChannelMap = new HashMap<>();
-    private final Long2ObjectHashMap<DriverSubscription> subscriptionByCorrelationIdMap = new Long2ObjectHashMap<>();
     private final TimerWheel timerWheel;
     private final AtomicArray<DriverPublication> publications;
     private final ArrayList<DriverSubscription> subscriptions = new ArrayList<>();
@@ -500,7 +498,6 @@ public class DriverConductor extends Agent
         }
 
         final DriverSubscription subscription = new DriverSubscription(channelEndpoint, clientLiveness, streamId, correlationId);
-        subscriptionByCorrelationIdMap.put(correlationId, subscription);
         subscriptions.add(subscription);
 
         clientProxy.operationSucceeded(correlationId);
@@ -521,12 +518,12 @@ public class DriverConductor extends Agent
             throw new ControlProtocolException(SUBSCRIBER_NOT_REGISTERED, "subscriptions unknown for stream");
         }
 
-        final DriverSubscription subscription = subscriptionByCorrelationIdMap.remove(registrationCorrelationId);
+
+        final DriverSubscription subscription = removeSubscription(subscriptions, registrationCorrelationId);
         if (null == subscription)
         {
             throw new ControlProtocolException(SUBSCRIBER_NOT_REGISTERED, "subscription not registered");
         }
-        subscriptions.remove(subscription);
 
         final int refCount = channelEndpoint.decRefToStream(streamId);
         if (0 == refCount)
@@ -545,6 +542,23 @@ public class DriverConductor extends Agent
         }
 
         clientProxy.operationSucceeded(correlationId);
+    }
+
+    private DriverSubscription removeSubscription(
+        final ArrayList<DriverSubscription> subscriptions, final long registrationCorrelationId)
+    {
+        for (int i = 0, size = subscriptions.size(); i < size; i++)
+        {
+            final DriverSubscription subscription = subscriptions.get(i);
+
+            if (subscription.correlationId() == registrationCorrelationId)
+            {
+                subscriptions.remove(i);
+                return subscription;
+            }
+        }
+
+        return null;
     }
 
     private void onKeepaliveClient(final long clientId)
@@ -646,7 +660,6 @@ public class DriverConductor extends Agent
                     subscription.correlationId());
 
                 subscriptions.remove(i);
-                subscriptionByCorrelationIdMap.remove(subscription.correlationId());
 
                 if (0 == channelEndpoint.decRefToStream(streamId))
                 {

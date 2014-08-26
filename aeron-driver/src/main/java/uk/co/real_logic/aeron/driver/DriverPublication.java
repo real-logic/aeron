@@ -43,20 +43,7 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogScanner.Avai
  */
 public class DriverPublication implements AutoCloseable
 {
-    /**
-     * Publication is still active.
-     */
-    public static final int ACTIVE = 1;
-
-    /**
-     * Client is now closed and stream should be flushed and then cleaned up.
-     */
-    public static final int EOF = 2;
-
-    /**
-     * Publication has been flushed to the media.
-     */
-    public static final int FLUSHED = 3;
+    public enum Status {ACTIVE, EOF, FLUSHED}
 
     private final TimerWheel timerWheel;
     private final int sessionId;
@@ -82,13 +69,13 @@ public class DriverPublication implements AutoCloseable
     private final int initialTermId;
     private final EventLogger logger;
     private final SystemCounters systemCounters;
-    private final AtomicInteger status = new AtomicInteger(ACTIVE);
     private final int termWindowSize;
     private final InetSocketAddress dstAddress;
 
     private final AvailabilityHandler sendTransmissionUnitFunc;
     private final AvailabilityHandler onSendRetransmitFunc;
 
+    private volatile Status status = Status.ACTIVE;
     private int activeIndex = 0;
     private int retransmitIndex = 0;
     private int statusMessagesReceivedCount = 0;
@@ -170,7 +157,7 @@ public class DriverPublication implements AutoCloseable
     {
         int workCount = 0;
 
-        if (status() != FLUSHED)
+        if (status != Status.FLUSHED)
         {
             final int availableWindow = (int)(positionLimit.get() - sentPosition);
             final int scanLimit = Math.min(availableWindow, mtuLength);
@@ -243,19 +230,19 @@ public class DriverPublication implements AutoCloseable
         return clientLiveness.timeOfLastKeepalive();
     }
 
-    public int status()
+    public Status status()
     {
-        return status.get();
+        return status;
     }
 
-    public void status(final int status)
+    public void status(final Status status)
     {
-        this.status.lazySet(status);
+        this.status = status;
     }
 
     public boolean isFlushed()
     {
-        return status() != ACTIVE && logScanners[activeIndex].remaining() == 0;
+        return status != Status.ACTIVE && logScanners[activeIndex].remaining() == 0;
     }
 
     public int statusMessagesSeenCount()

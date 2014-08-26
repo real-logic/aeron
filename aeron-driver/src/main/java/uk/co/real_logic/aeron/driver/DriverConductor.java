@@ -419,11 +419,11 @@ public class DriverConductor extends Agent
             throw new ControlProtocolException(PUBLICATION_STREAM_UNKNOWN, "session and publication unknown for channel");
         }
 
-        publication.status(DriverPublication.EOF);
+        publication.status(DriverPublication.Status.EOF);
 
         if (publication.isFlushed() || publication.statusMessagesSeenCount() == 0)
         {
-            publication.status(DriverPublication.FLUSHED);
+            publication.status(DriverPublication.Status.FLUSHED);
             publication.timeOfFlush(timerWheel.now());
         }
 
@@ -537,27 +537,27 @@ public class DriverConductor extends Agent
             {
                 switch (publication.status())
                 {
-                    case DriverPublication.ACTIVE:
+                    case ACTIVE:
                         if (publication.timeOfLastKeepaliveFromClient() + Configuration.CLIENT_LIVENESS_TIMEOUT_NS < now)
                         {
-                            publication.status(DriverPublication.EOF);
+                            publication.status(DriverPublication.Status.EOF);
                             if (publication.isFlushed() || publication.statusMessagesSeenCount() == 0)
                             {
-                                publication.status(DriverPublication.FLUSHED);
+                                publication.status(DriverPublication.Status.FLUSHED);
                                 publication.timeOfFlush(now);
                             }
                         }
                         break;
 
-                    case DriverPublication.EOF:
+                    case EOF:
                         if (publication.isFlushed() || publication.statusMessagesSeenCount() == 0)
                         {
-                            publication.status(DriverPublication.FLUSHED);
+                            publication.status(DriverPublication.Status.FLUSHED);
                             publication.timeOfFlush(now);
                         }
                         break;
 
-                    case DriverPublication.FLUSHED:
+                    case FLUSHED:
                         if (publication.timeOfFlush() + Configuration.PUBLICATION_LINGER_NS < now)
                         {
                             final SendChannelEndpoint channelEndpoint = publication.sendChannelEndpoint();

@@ -105,6 +105,11 @@ public class EventConfiguration
         return makeTagBitSet(getEnabledEventCodes(System.getProperty(ENABLED_LOGGER_EVENT_CODES_PROPERTY_NAME)));
     }
 
+    public static long enabledEventCodes(final String enabledLoggerEventCodes)
+    {
+        return makeTagBitSet(getEnabledEventCodes(enabledLoggerEventCodes));
+    }
+
     public static File bufferLocationFile()
     {
         return new File(System.getProperty(LOCATION_PROPERTY_NAME, LOCATION_DEFAULT));

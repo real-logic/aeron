@@ -97,9 +97,10 @@ public class MediaDriver implements AutoCloseable
 
         ensureDirectoriesAreRecreated();
 
-        // event reader needs to be created before the event logger gets created or we could disabled logging prematurely
+        // event reader needs to be created before the event logger gets created or we could disable logging prematurely
         eventReader = new EventReader(
             new EventReader.Context()
+                .eventsFile(ctx.eventLocationsFile)
                 .idleStrategy(Configuration.eventReaderIdleStrategy())
                 .deleteOnExit(ctx.dirsDeleteOnExit())
                 .eventHandler(ctx.eventConsumer));
@@ -238,6 +239,7 @@ public class MediaDriver implements AutoCloseable
         private AtomicArray<DriverPublication> publications;
         private ClientProxy clientProxy;
         private RingBuffer fromClientCommands;
+        private File eventLocationsFile;
 
         private MappedByteBuffer toClientsBuffer;
         private MappedByteBuffer toDriverBuffer;
@@ -250,6 +252,7 @@ public class MediaDriver implements AutoCloseable
         private long statusMessageTimeout;
         private long dataLossSeed;
         private long controlLossSeed;
+        private long eventEnabledCodes;
         private double dataLossRate;
         private double controlLossRate;
 
@@ -268,6 +271,9 @@ public class MediaDriver implements AutoCloseable
             controlLossSeed(Configuration.controlLossSeed());
 
             eventConsumer = System.out::println;
+            eventLocationsFile = EventConfiguration.bufferLocationFile();
+            eventEnabledCodes = EventConfiguration.getEnabledEventCodes();
+
             warnIfDirectoriesExist = true;
         }
 
@@ -279,8 +285,7 @@ public class MediaDriver implements AutoCloseable
 
                 if (null == eventLogger)
                 {
-                    eventLogger = new EventLogger(
-                        EventConfiguration.bufferLocationFile(), EventConfiguration.getEnabledEventCodes());
+                    eventLogger = new EventLogger(eventLocationsFile, eventEnabledCodes);
                 }
 
                 receiverNioSelector(new NioSelector());
@@ -545,6 +550,18 @@ public class MediaDriver implements AutoCloseable
         public Context controlLossSeed(final long lossSeed)
         {
             this.controlLossSeed = lossSeed;
+            return this;
+        }
+
+        public Context eventLocationsFile(final File eventLocationsFile)
+        {
+            this.eventLocationsFile = eventLocationsFile;
+            return this;
+        }
+
+        public Context eventEnabledCodes(final long eventEnabledCodes)
+        {
+            this.eventEnabledCodes = eventEnabledCodes;
             return this;
         }
 

@@ -41,7 +41,6 @@ import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.function.ToIntFunction;
 
 import static uk.co.real_logic.aeron.common.ErrorCode.*;
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.*;
@@ -84,9 +83,9 @@ public class DriverConductor extends Agent
     private final HashMap<String, ReceiveChannelEndpoint> receiveChannelEndpointByChannelMap = new HashMap<>();
     private final Long2ObjectHashMap<DriverSubscription> subscriptionByCorrelationIdMap = new Long2ObjectHashMap<>();
     private final TimerWheel timerWheel;
-    private final AtomicArray<DriverConnection> connections = new AtomicArray<>();
     private final AtomicArray<DriverSubscription> subscriptions;
     private final AtomicArray<DriverPublication> publications;
+    private final ArrayList<DriverConnection> connections = new ArrayList<>();
     private final ArrayList<ClientLiveness> clients = new ArrayList<>();
     private final ArrayList<ElicitSetupFromSourceCmd> pendingSetups = new ArrayList<>();
 
@@ -117,7 +116,6 @@ public class DriverConductor extends Agent
 
     private final Consumer<Object> onReceiverCommandFunc;
     private final MessageHandler onClientCommandFunc;
-    private final ToIntFunction<DriverConnection> sendPendingStatusMessagesFunc;
 
     public DriverConductor(final Context ctx)
     {
@@ -159,7 +157,6 @@ public class DriverConductor extends Agent
 
         onReceiverCommandFunc = this::onReceiverCommand;
         onClientCommandFunc = this::onClientCommand;
-        sendPendingStatusMessagesFunc = (connection) -> connection.sendPendingStatusMessages(timerWheel.now());
     }
 
     public void onReceiverCommand(Object obj)
@@ -204,7 +201,8 @@ public class DriverConductor extends Agent
                     onRemovePublication(
                         publicationMessageFlyweight.channel(),
                         publicationMessageFlyweight.sessionId(),
-                        publicationMessageFlyweight.streamId());
+                        publicationMessageFlyweight.streamId(),
+                        publicationMessageFlyweight.correlationId());
                     break;
 
                 case ADD_SUBSCRIPTION:
@@ -225,7 +223,8 @@ public class DriverConductor extends Agent
                     onRemoveSubscription(
                         subscriptionMessageFlyweight.channel(),
                         subscriptionMessageFlyweight.streamId(),
-                        subscriptionMessageFlyweight.registrationCorrelationId());
+                        subscriptionMessageFlyweight.registrationCorrelationId(),
+                        subscriptionMessageFlyweight.correlationId());
                     break;
 
                 case KEEPALIVE_CLIENT:
@@ -271,9 +270,22 @@ public class DriverConductor extends Agent
         workCount += processFromReceiverCommandQueue();
         workCount += processTimers();
 
-        workCount += connections.doAction(sendPendingStatusMessagesFunc);
-        workCount += connections.doAction(DriverConnection::scanForGaps);
-        workCount += connections.doAction(DriverConnection::cleanLogBuffer);
+        final ArrayList<DriverConnection> connections = this.connections;
+        final long now = timerWheel.now();
+        for (int i = 0, size = connections.size(); i < size; i++)
+        {
+            workCount += connections.get(i).sendPendingStatusMessages(now);
+        }
+
+        for (int i = 0, size = connections.size(); i < size; i++)
+        {
+            workCount += connections.get(i).scanForGaps();
+        }
+
+        for (int i = 0, size = connections.size(); i < size; i++)
+        {
+            workCount += connections.get(i).cleanLogBuffer();
+        }
 
         workCount += publications.doAction(DriverPublication::cleanLogBuffer);
 
@@ -424,7 +436,7 @@ public class DriverConductor extends Agent
         publications.add(publication);
     }
 
-    private void onRemovePublication(final String channel, final int sessionId, final int streamId)
+    private void onRemovePublication(final String channel, final int sessionId, final int streamId, final long correlationId)
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel);
         final SendChannelEndpoint channelEndpoint = sendChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
@@ -447,7 +459,7 @@ public class DriverConductor extends Agent
             publication.timeOfFlush(timerWheel.now());
         }
 
-        clientProxy.operationSucceeded(publicationMessage.correlationId());
+        clientProxy.operationSucceeded(correlationId);
     }
 
     private void onAddSubscription(final String channel, final int streamId, final long correlationId, final long clientId)
@@ -488,7 +500,8 @@ public class DriverConductor extends Agent
         clientProxy.operationSucceeded(correlationId);
     }
 
-    private void onRemoveSubscription(final String channel, final int streamId, final long registrationCorrelationId)
+    private void onRemoveSubscription(
+        final String channel, final int streamId, final long registrationCorrelationId, final long correlationId)
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel);
         final ReceiveChannelEndpoint channelEndpoint = receiveChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
@@ -525,7 +538,7 @@ public class DriverConductor extends Agent
             channelEndpoint.close();
         }
 
-        clientProxy.operationSucceeded(subscriptionMessage.correlationId());
+        clientProxy.operationSucceeded(correlationId);
     }
 
     private void onKeepaliveClient(final long clientId)
@@ -649,49 +662,35 @@ public class DriverConductor extends Agent
         rescheduleTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, subscriptionCheckTimer);
     }
 
+    /*
+     *  Stage 1: initial timeout of publisher (after timeout): ACTIVE -> INACTIVE
+     *  Stage 2: check for remaining == 0 OR timeout: INACTIVE -> LINGER (ON_INACTIVE_CONNECTION sent)
+     *  Stage 3: timeout (cleanup)
+     */
     private void onCheckConnections()
     {
         final long now = timerWheel.now();
+        final ArrayList<DriverConnection> connections = this.connections;
 
-        connections.forEach(
-            (connection) ->
+        for (int i = connections.size() - 1; i >= 0; i--)
+        {
+            final DriverConnection connection = connections.get(i);
+
+            switch (connection.status())
             {
-                /*
-                 *  Stage 1: initial timeout of publisher (after timeout): ACTIVE -> INACTIVE
-                 *  Stage 2: check for remaining == 0 OR timeout: INACTIVE -> LINGER (ON_INACTIVE_CONNECTION sent)
-                 *  Stage 3: timeout (cleanup)
-                 */
-
-                switch (connection.status())
-                {
-                    case ACTIVE:
-                        if (connection.timeOfLastFrame() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS < now)
+                case ACTIVE:
+                    if (connection.timeOfLastFrame() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS < now)
+                    {
+                        while (!receiverProxy.removeConnection(connection))
                         {
-                            while (!receiverProxy.removeConnection(connection))
-                            {
-                                systemCounters.receiverProxyFails().orderedIncrement();
-                                Thread.yield();
-                            }
-
-                            connection.status(DriverConnection.Status.INACTIVE);
-                            connection.timeOfLastStatusChange(now);
-
-                            if (connection.remaining() == 0)
-                            {
-                                connection.status(DriverConnection.Status.LINGER);
-                                connection.timeOfLastStatusChange(now);
-
-                                clientProxy.onInactiveConnection(
-                                    connection.sessionId(),
-                                    connection.streamId(),
-                                    connection.receiveChannelEndpoint().udpChannel().originalUriAsString());
-                            }
+                            systemCounters.receiverProxyFails().orderedIncrement();
+                            Thread.yield();
                         }
-                        break;
 
-                    case INACTIVE:
-                        if (connection.remaining() == 0 ||
-                            connection.timeOfLastStatusChange() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS < now)
+                        connection.status(DriverConnection.Status.INACTIVE);
+                        connection.timeOfLastStatusChange(now);
+
+                        if (connection.remaining() == 0)
                         {
                             connection.status(DriverConnection.Status.LINGER);
                             connection.timeOfLastStatusChange(now);
@@ -701,25 +700,39 @@ public class DriverConductor extends Agent
                                 connection.streamId(),
                                 connection.receiveChannelEndpoint().udpChannel().originalUriAsString());
                         }
-                        break;
+                    }
+                    break;
 
-                    case LINGER:
-                        if (connection.timeOfLastStatusChange() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS < now)
-                        {
-                            logger.log(
-                                EventCode.REMOVE_CONNECTION_CLEANUP,
-                                "%s %x:%x",
-                                connection.receiveChannelEndpoint().udpChannel().originalUriAsString(),
-                                connection.sessionId(),
-                                connection.streamId());
+                case INACTIVE:
+                    if (connection.remaining() == 0 ||
+                        connection.timeOfLastStatusChange() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS < now)
+                    {
+                        connection.status(DriverConnection.Status.LINGER);
+                        connection.timeOfLastStatusChange(now);
 
-                            connections.remove(connection);
-                            connection.close();
-                        }
-                        break;
-                }
+                        clientProxy.onInactiveConnection(
+                            connection.sessionId(),
+                            connection.streamId(),
+                            connection.receiveChannelEndpoint().udpChannel().originalUriAsString());
+                    }
+                    break;
+
+                case LINGER:
+                    if (connection.timeOfLastStatusChange() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS < now)
+                    {
+                        logger.log(
+                            EventCode.REMOVE_CONNECTION_CLEANUP,
+                            "%s %x:%x",
+                            connection.receiveChannelEndpoint().udpChannel().originalUriAsString(),
+                            connection.sessionId(),
+                            connection.streamId());
+
+                        connections.remove(i);
+                        connection.close();
+                    }
+                    break;
             }
-        );
+        }
 
         rescheduleTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, connectionCheckTimer);
     }

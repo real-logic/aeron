@@ -178,44 +178,62 @@ public class DriverConductor extends Agent
     public void onClientCommand(final int msgTypeId, final AtomicBuffer buffer, final int index, final int length)
     {
         Flyweight flyweight = null;
+        final PublicationMessageFlyweight publicationMessageFlyweight = publicationMessage;
+        final SubscriptionMessageFlyweight subscriptionMessageFlyweight = subscriptionMessage;
+        final CorrelatedMessageFlyweight correlatedMessageFlyweight = correlatedMessage;
 
         try
         {
             switch (msgTypeId)
             {
                 case ADD_PUBLICATION:
-                    publicationMessage.wrap(buffer, index);
+                    publicationMessageFlyweight.wrap(buffer, index);
                     logger.log(EventCode.CMD_IN_ADD_PUBLICATION, buffer, index, length);
-                    flyweight = publicationMessage;
-                    onAddPublication(publicationMessage);
+                    flyweight = publicationMessageFlyweight;
+                    onAddPublication(
+                        publicationMessageFlyweight.channel(),
+                        publicationMessageFlyweight.sessionId(),
+                        publicationMessageFlyweight.streamId(),
+                        publicationMessageFlyweight.correlationId(),
+                        publicationMessageFlyweight.clientId());
                     break;
 
                 case REMOVE_PUBLICATION:
-                    publicationMessage.wrap(buffer, index);
+                    publicationMessageFlyweight.wrap(buffer, index);
                     logger.log(EventCode.CMD_IN_REMOVE_PUBLICATION, buffer, index, length);
-                    flyweight = publicationMessage;
-                    onRemovePublication(publicationMessage);
+                    flyweight = publicationMessageFlyweight;
+                    onRemovePublication(
+                        publicationMessageFlyweight.channel(),
+                        publicationMessageFlyweight.sessionId(),
+                        publicationMessageFlyweight.streamId());
                     break;
 
                 case ADD_SUBSCRIPTION:
-                    subscriptionMessage.wrap(buffer, index);
+                    subscriptionMessageFlyweight.wrap(buffer, index);
                     logger.log(EventCode.CMD_IN_ADD_SUBSCRIPTION, buffer, index, length);
-                    flyweight = subscriptionMessage;
-                    onAddSubscription(subscriptionMessage);
+                    flyweight = subscriptionMessageFlyweight;
+                    onAddSubscription(
+                        subscriptionMessageFlyweight.channel(),
+                        subscriptionMessageFlyweight.streamId(),
+                        subscriptionMessageFlyweight.correlationId(),
+                        subscriptionMessageFlyweight.clientId());
                     break;
 
                 case REMOVE_SUBSCRIPTION:
-                    subscriptionMessage.wrap(buffer, index);
+                    subscriptionMessageFlyweight.wrap(buffer, index);
                     logger.log(EventCode.CMD_IN_REMOVE_SUBSCRIPTION, buffer, index, length);
-                    flyweight = subscriptionMessage;
-                    onRemoveSubscription(subscriptionMessage);
+                    flyweight = subscriptionMessageFlyweight;
+                    onRemoveSubscription(
+                        subscriptionMessageFlyweight.channel(),
+                        subscriptionMessageFlyweight.streamId(),
+                        subscriptionMessageFlyweight.registrationCorrelationId());
                     break;
 
                 case KEEPALIVE_CLIENT:
-                    correlatedMessage.wrap(buffer, index);
+                    correlatedMessageFlyweight.wrap(buffer, index);
                     logger.log(EventCode.CMD_IN_KEEPALIVE_CLIENT, buffer, index, length);
-                    flyweight = correlatedMessage;
-                    onKeepaliveClient(correlatedMessage);
+                    flyweight = correlatedMessageFlyweight;
+                    onKeepaliveClient(correlatedMessageFlyweight.clientId());
                     break;
             }
         }
@@ -329,14 +347,9 @@ public class DriverConductor extends Agent
         return clientLiveness;
     }
 
-    private void onAddPublication(final PublicationMessageFlyweight publicationMessage)
+    private void onAddPublication(
+        final String channel, final int sessionId,  final int streamId, final long correlationId, final long clientId)
     {
-        final String channel = publicationMessage.channel();
-        final int sessionId = publicationMessage.sessionId();
-        final int streamId = publicationMessage.streamId();
-        final long correlationId = publicationMessage.correlationId();
-        final long clientId = publicationMessage.clientId();
-
         final UdpChannel udpChannel = UdpChannel.parse(channel);
         SendChannelEndpoint channelEndpoint = sendChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
         if (null == channelEndpoint)
@@ -400,12 +413,8 @@ public class DriverConductor extends Agent
         publications.add(publication);
     }
 
-    private void onRemovePublication(final PublicationMessageFlyweight publicationMessage)
+    private void onRemovePublication(final String channel, final int sessionId, final int streamId)
     {
-        final String channel = publicationMessage.channel();
-        final int sessionId = publicationMessage.sessionId();
-        final int streamId = publicationMessage.streamId();
-
         final UdpChannel udpChannel = UdpChannel.parse(channel);
         final SendChannelEndpoint channelEndpoint = sendChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
         if (null == channelEndpoint)
@@ -430,13 +439,8 @@ public class DriverConductor extends Agent
         clientProxy.operationSucceeded(publicationMessage.correlationId());
     }
 
-    private void onAddSubscription(final SubscriptionMessageFlyweight subscriptionMessage)
+    private void onAddSubscription(final String channel, final int streamId, final long correlationId, final long clientId)
     {
-        final String channel = subscriptionMessage.channel();
-        final int streamId = subscriptionMessage.streamId();
-        final long correlationId = subscriptionMessage.correlationId();
-        final long clientId = subscriptionMessage.clientId();
-
         final UdpChannel udpChannel = UdpChannel.parse(channel);
         ReceiveChannelEndpoint channelEndpoint = receiveChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
 
@@ -473,12 +477,8 @@ public class DriverConductor extends Agent
         clientProxy.operationSucceeded(correlationId);
     }
 
-    private void onRemoveSubscription(final SubscriptionMessageFlyweight subscriptionMessage)
+    private void onRemoveSubscription(final String channel, final int streamId, final long registrationCorrelationId)
     {
-        final String channel = subscriptionMessage.channel();
-        final int streamId = subscriptionMessage.streamId();
-        final long registrationCorrelationId = subscriptionMessage.registrationCorrelationId();
-
         final UdpChannel udpChannel = UdpChannel.parse(channel);
         final ReceiveChannelEndpoint channelEndpoint = receiveChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
         if (null == channelEndpoint)
@@ -517,9 +517,8 @@ public class DriverConductor extends Agent
         clientProxy.operationSucceeded(subscriptionMessage.correlationId());
     }
 
-    private void onKeepaliveClient(final CorrelatedMessageFlyweight correlatedMessage)
+    private void onKeepaliveClient(final long clientId)
     {
-        final long clientId = correlatedMessage.clientId();
         final ClientLiveness clientLiveness = clientLivenessByClientId.get(clientId);
 
         if (null != clientLiveness)

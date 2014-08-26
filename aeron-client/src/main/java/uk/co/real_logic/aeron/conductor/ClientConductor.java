@@ -143,10 +143,9 @@ public class ClientConductor extends Agent implements DriverListener
         final int sessionId = publication.sessionId();
 
         activeCorrelationId = driverProxy.removePublication(channel, streamId, sessionId);
+        publicationMap.remove(channel, sessionId, streamId);
 
         awaitOperationSucceeded();
-
-        publicationMap.remove(channel, sessionId, streamId);
     }
 
     public synchronized Subscription addSubscription(final String channel, final int streamId, final DataHandler handler)
@@ -156,9 +155,7 @@ public class ClientConductor extends Agent implements DriverListener
         if (null == subscription)
         {
             activeCorrelationId = driverProxy.addSubscription(channel, streamId);
-
             subscription = new Subscription(this, handler, channel, streamId, activeCorrelationId);
-
             subscriptionMap.put(channel, streamId, subscription);
 
             awaitOperationSucceeded();

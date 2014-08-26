@@ -80,15 +80,14 @@ public class DriverConductor extends Agent
     private final NioSelector nioSelector;
     private final TermBuffersFactory termBuffersFactory;
     private final RingBuffer fromClientCommands;
-    private final Long2ObjectHashMap<ClientLiveness> clientLivenessByClientId = new Long2ObjectHashMap<>();
     private final HashMap<String, SendChannelEndpoint> sendChannelEndpointByChannelMap = new HashMap<>();
     private final HashMap<String, ReceiveChannelEndpoint> receiveChannelEndpointByChannelMap = new HashMap<>();
     private final Long2ObjectHashMap<DriverSubscription> subscriptionByCorrelationIdMap = new Long2ObjectHashMap<>();
     private final TimerWheel timerWheel;
     private final AtomicArray<DriverConnection> connections = new AtomicArray<>();
-    private final AtomicArray<ClientLiveness> clients = new AtomicArray<>();
     private final AtomicArray<DriverSubscription> subscriptions;
     private final AtomicArray<DriverPublication> publications;
+    private final ArrayList<ClientLiveness> clients = new ArrayList<>();
     private final ArrayList<ElicitSetupFromSourceCmd> pendingSetups = new ArrayList<>();
 
     private final Supplier<SenderFlowControl> unicastSenderFlowControl;
@@ -335,16 +334,28 @@ public class DriverConductor extends Agent
 
     private ClientLiveness getOrAddClient(final long clientId)
     {
-        ClientLiveness clientLiveness = clientLivenessByClientId.get(clientId);
+        ClientLiveness clientLiveness = findClient(clientId);
 
         if (null == clientLiveness)
         {
             clientLiveness = new ClientLiveness(clientId, timerWheel.now());
-            clientLivenessByClientId.put(clientId, clientLiveness);
             clients.add(clientLiveness);
         }
 
         return clientLiveness;
+    }
+
+    private ClientLiveness findClient(final long clientId)
+    {
+        for (final ClientLiveness clientLiveness : clients)
+        {
+            if (clientLiveness.clientId() == clientId)
+            {
+                return clientLiveness;
+            }
+        }
+
+        return  null;
     }
 
     private void onAddPublication(
@@ -519,7 +530,7 @@ public class DriverConductor extends Agent
 
     private void onKeepaliveClient(final long clientId)
     {
-        final ClientLiveness clientLiveness = clientLivenessByClientId.get(clientId);
+        final ClientLiveness clientLiveness = findClient(clientId);
 
         if (null != clientLiveness)
         {
@@ -717,16 +728,15 @@ public class DriverConductor extends Agent
     {
         final long now = timerWheel.now();
 
-        clients.forEach(
-            (clientLiveness) ->
+        for (int i = clients.size() - 1; i >= 0; i--)
+        {
+            final ClientLiveness clientLiveness = clients.get(i);
+
+            if (clientLiveness.timeOfLastKeepalive() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS < now)
             {
-                if (clientLiveness.timeOfLastKeepalive() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS < now)
-                {
-                    clientLivenessByClientId.remove(clientLiveness.clientId());
-                    clients.remove(clientLiveness);
-                }
+                clients.remove(i);
             }
-        );
+        }
 
         rescheduleTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, clientLivenessCheckTimer);
     }

@@ -38,6 +38,7 @@ import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -83,8 +84,8 @@ public class DriverConductor extends Agent
     private final HashMap<String, ReceiveChannelEndpoint> receiveChannelEndpointByChannelMap = new HashMap<>();
     private final Long2ObjectHashMap<DriverSubscription> subscriptionByCorrelationIdMap = new Long2ObjectHashMap<>();
     private final TimerWheel timerWheel;
-    private final AtomicArray<DriverSubscription> subscriptions;
     private final AtomicArray<DriverPublication> publications;
+    private final ArrayList<DriverSubscription> subscriptions = new ArrayList<>();
     private final ArrayList<DriverConnection> connections = new ArrayList<>();
     private final ArrayList<ClientLiveness> clients = new ArrayList<>();
     private final ArrayList<ElicitSetupFromSourceCmd> pendingSetups = new ArrayList<>();
@@ -143,7 +144,6 @@ public class DriverConductor extends Agent
         pendingSetupsTimer = newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onPendingSetupsCheck);
 
         publications = ctx.publications();
-        subscriptions = ctx.subscriptions();
         fromClientCommands = ctx.fromClientCommands();
         clientProxy = ctx.clientProxy();
         conductorProxy = ctx.driverConductorProxy();
@@ -157,6 +157,11 @@ public class DriverConductor extends Agent
 
         onReceiverCommandFunc = this::onReceiverCommand;
         onClientCommandFunc = this::onClientCommand;
+    }
+
+    public List<DriverSubscription> subscriptions()
+    {
+        return subscriptions;
     }
 
     public void onReceiverCommand(Object obj)
@@ -622,43 +627,43 @@ public class DriverConductor extends Agent
     private void onCheckSubscriptions()
     {
         final long now = timerWheel.now();
+        final ArrayList<DriverSubscription> subscriptions = this.subscriptions;
 
-        // the array should be removed from safely
-        subscriptions.forEach(
-            (subscription) ->
+        for (int i = subscriptions.size() - 1; i >= 0; i--)
+        {
+            final DriverSubscription subscription = subscriptions.get(i);
+
+            if (subscription.timeOfLastKeepaliveFromClient() + Configuration.CLIENT_LIVENESS_TIMEOUT_NS < now)
             {
-                if (subscription.timeOfLastKeepaliveFromClient() + Configuration.CLIENT_LIVENESS_TIMEOUT_NS < now)
+                final ReceiveChannelEndpoint channelEndpoint = subscription.receiveChannelEndpoint();
+                final int streamId = subscription.streamId();
+
+                logger.log(
+                    EventCode.REMOVE_SUBSCRIPTION_CLEANUP,
+                    "%s %x [%x]",
+                    channelEndpoint.udpChannel().originalUriAsString(),
+                    subscription.streamId(),
+                    subscription.correlationId());
+
+                subscriptions.remove(i);
+                subscriptionByCorrelationIdMap.remove(subscription.correlationId());
+
+                if (0 == channelEndpoint.decRefToStream(streamId))
                 {
-                    final ReceiveChannelEndpoint channelEndpoint = subscription.receiveChannelEndpoint();
-                    final int streamId = subscription.streamId();
-
-                    logger.log(
-                        EventCode.REMOVE_SUBSCRIPTION_CLEANUP,
-                        "%s %x [%x]",
-                        channelEndpoint.udpChannel().originalUriAsString(),
-                        subscription.streamId(),
-                        subscription.correlationId());
-
-                    subscriptions.remove(subscription);
-                    subscriptionByCorrelationIdMap.remove(subscription.correlationId());
-
-                    if (0 == channelEndpoint.decRefToStream(streamId))
+                    while (!receiverProxy.removeSubscription(channelEndpoint, streamId))
                     {
-                        while (!receiverProxy.removeSubscription(channelEndpoint, streamId))
-                        {
-                            systemCounters.receiverProxyFails().orderedIncrement();
-                            Thread.yield();
-                        }
-                    }
-
-                    if (channelEndpoint.streamCount() == 0)
-                    {
-                        receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
-                        channelEndpoint.close();
+                        systemCounters.receiverProxyFails().orderedIncrement();
+                        Thread.yield();
                     }
                 }
+
+                if (channelEndpoint.streamCount() == 0)
+                {
+                    receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
+                    channelEndpoint.close();
+                }
             }
-        );
+        }
 
         rescheduleTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, subscriptionCheckTimer);
     }

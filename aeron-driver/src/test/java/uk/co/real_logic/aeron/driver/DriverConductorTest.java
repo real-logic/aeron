@@ -82,7 +82,6 @@ public class DriverConductorTest
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(256));
 
     private final AtomicArray<DriverPublication> publications = new AtomicArray<>();
-    private final AtomicArray<DriverSubscription> subscriptions = new AtomicArray<>();
     private final EventLogger mockConductorLogger = mock(EventLogger.class);
 
     private long currentTime;
@@ -113,7 +112,6 @@ public class DriverConductorTest
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .senderCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .publications(publications)
-            .subscriptions(subscriptions)
             .eventLogger(mockConductorLogger)
             .termBuffersFactory(mockTermBuffersFactory)
             .countersManager(countersManager);
@@ -427,12 +425,12 @@ public class DriverConductorTest
         driverConductor.doWork();
         receiver.doWork();
 
-        assertThat(subscriptions.size(), is(1));
+        assertThat(driverConductor.subscriptions().size(), is(1));
         assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
 
         processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(CLIENT_LIVENESS_TIMEOUT_NS * 2));
 
-        assertThat(subscriptions.size(), is(0));
+        assertThat(driverConductor.subscriptions().size(), is(0));
         assertNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
     }
 
@@ -444,7 +442,7 @@ public class DriverConductorTest
         driverConductor.doWork();
         receiver.doWork();
 
-        assertThat(subscriptions.size(), is(1));
+        assertThat(driverConductor.subscriptions().size(), is(1));
         assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
 
         processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(CLIENT_LIVENESS_TIMEOUT_NS / 1));
@@ -457,7 +455,7 @@ public class DriverConductorTest
 
         processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(CLIENT_LIVENESS_TIMEOUT_NS * 2));
 
-        assertThat(subscriptions.size(), is(1));
+        assertThat(driverConductor.subscriptions().size(), is(1));
         assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
     }
 

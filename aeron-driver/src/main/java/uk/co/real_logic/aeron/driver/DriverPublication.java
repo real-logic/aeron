@@ -70,6 +70,7 @@ public class DriverPublication implements AutoCloseable
     private final EventLogger logger;
     private final SystemCounters systemCounters;
     private final int termWindowSize;
+    private final int termCapacity;
     private final InetSocketAddress dstAddress;
 
     private final AvailabilityHandler sendTransmissionUnitFunc;
@@ -125,7 +126,7 @@ public class DriverPublication implements AutoCloseable
             sendBuffers[i] = duplicateLogBuffer(rawLogs[i]);
         }
 
-        final int termCapacity = logScanners[0].capacity();
+        termCapacity = logScanners[0].capacity();
         positionLimit = new AtomicLong(initialPositionLimit);
         activeTermId = new AtomicInteger(initialTermId);
 
@@ -409,12 +410,11 @@ public class DriverPublication implements AutoCloseable
         setupHeader.sessionId(sessionId)
                    .streamId(streamId)
                    .termId(activeTermId.get())
+                   .termSize(termCapacity)
                    .frameLength(SetupFlyweight.HEADER_LENGTH)
                    .headerType(HeaderFlyweight.HDR_TYPE_SETUP)
                    .flags((byte) 0)
                    .version(HeaderFlyweight.CURRENT_VERSION);
-
-        // TODO: add in term buffer size and possibly other settings in the SETUP frame
     }
 
     private long positionForActiveTerm(final int termOffset)

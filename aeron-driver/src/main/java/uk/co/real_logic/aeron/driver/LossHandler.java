@@ -113,7 +113,6 @@ public class LossHandler
         }
         else
         {
-            // Account for 0 length heartbeat packet
             final int tail = scanner.tailVolatile();
             final long tailPosition = TermHelper.calculatePosition(activeTermId, tail, positionBitsToShift, initialTermId);
             final long currentHwmPosition = hwmPosition.get();

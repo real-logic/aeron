@@ -71,6 +71,11 @@ You can run the `ExamplePublisher` from a command line
 You can run the `ExampleSubscriber` from a command line
 
     $ java -cp aeron-examples/build/libs/examples.jar uk.co.real_logic.aeron.examples.ExampleSubscriber
+    
+You can run the `AeronStat` utility to read system counters from a command line
+    
+    $ java -cp aeron-examples/build/libs/examples.jar uk.co.real_logic.aeron.examples.AeronStat
+
 
 Media Driver Packaging
 ----------------------

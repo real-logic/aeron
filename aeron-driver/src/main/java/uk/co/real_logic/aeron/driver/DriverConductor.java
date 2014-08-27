@@ -53,7 +53,6 @@ import static uk.co.real_logic.aeron.driver.MediaDriver.Context;
  */
 public class DriverConductor extends Agent
 {
-    public static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
     public static final int CHECK_TIMEOUT_MS = 1000;  // how often to check liveness & cleanup
 
     /**
@@ -157,9 +156,29 @@ public class DriverConductor extends Agent
         onClientCommandFunc = this::onClientCommand;
     }
 
+    public void onClose()
+    {
+        termBuffersFactory.close();
+        publications.forEach(DriverPublication::close);
+        connections.forEach(DriverConnection::close);
+        sendChannelEndpointByChannelMap.values().forEach(SendChannelEndpoint::close);
+        receiveChannelEndpointByChannelMap.values().forEach(ReceiveChannelEndpoint::close);
+        systemCounters.close();
+    }
+
     public List<DriverSubscription> subscriptions()
     {
         return subscriptions;
+    }
+
+    public SendChannelEndpoint senderChannelEndpoint(final UdpChannel channel)
+    {
+        return sendChannelEndpointByChannelMap.get(channel.canonicalForm());
+    }
+
+    public ReceiveChannelEndpoint receiverChannelEndpoint(final UdpChannel channel)
+    {
+        return receiveChannelEndpointByChannelMap.get(channel.canonicalForm());
     }
 
     public void onReceiverCommand(Object obj)
@@ -170,11 +189,47 @@ public class DriverConductor extends Agent
         }
         else if (obj instanceof ElicitSetupFromSourceCmd)
         {
-            onElicitSetupFromSource((ElicitSetupFromSourceCmd)obj);
+            onElicitSetupFromSender((ElicitSetupFromSourceCmd)obj);
         }
     }
 
-    public void onClientCommand(final int msgTypeId, final AtomicBuffer buffer, final int index, final int length)
+    public NioSelector nioSelector()
+    {
+        return nioSelector;
+    }
+
+    public int doWork() throws Exception
+    {
+        int workCount = 0;
+
+        workCount += nioSelector.processKeys();
+        workCount += fromClientCommands.read(onClientCommandFunc);
+        workCount += commandQueue.drain(onReceiverCommandFunc);
+        workCount += processTimers();
+
+        final ArrayList<DriverConnection> connections = this.connections;
+        final long now = timerWheel.now();
+        for (int i = 0, size = connections.size(); i < size; i++)
+        {
+            workCount += connections.get(i).sendPendingStatusMessages(now);
+        }
+
+        for (int i = 0, size = connections.size(); i < size; i++)
+        {
+            workCount += connections.get(i).scanForGaps();
+        }
+
+        for (int i = 0, size = connections.size(); i < size; i++)
+        {
+            workCount += connections.get(i).cleanLogBuffer();
+        }
+
+        workCount += publications.doAction(DriverPublication::cleanLogBuffer);
+
+        return workCount;
+    }
+
+    private void onClientCommand(final int msgTypeId, final AtomicBuffer buffer, final int index, final int length)
     {
         Flyweight flyweight = null;
         final PublicationMessageFlyweight publicationMessageFlyweight = publicationMessage;
@@ -234,7 +289,7 @@ public class DriverConductor extends Agent
                     correlatedMessageFlyweight.wrap(buffer, index);
                     logger.log(EventCode.CMD_IN_KEEPALIVE_CLIENT, buffer, index, length);
                     flyweight = correlatedMessageFlyweight;
-                    onKeepaliveClient(correlatedMessageFlyweight.clientId());
+                    onClientKeepalive(correlatedMessageFlyweight.clientId());
                     break;
             }
         }
@@ -255,66 +310,6 @@ public class DriverConductor extends Agent
         }
     }
 
-    public SendChannelEndpoint senderChannelEndpoint(final UdpChannel channel)
-    {
-        return sendChannelEndpointByChannelMap.get(channel.canonicalForm());
-    }
-
-    public ReceiveChannelEndpoint receiverChannelEndpoint(final UdpChannel channel)
-    {
-        return receiveChannelEndpointByChannelMap.get(channel.canonicalForm());
-    }
-
-    public int doWork() throws Exception
-    {
-        int workCount = nioSelector.processKeys();
-
-        workCount += fromClientCommands.read(onClientCommandFunc);
-        workCount += commandQueue.drain(onReceiverCommandFunc);
-        workCount += processTimers();
-
-        final ArrayList<DriverConnection> connections = this.connections;
-        final long now = timerWheel.now();
-        for (int i = 0, size = connections.size(); i < size; i++)
-        {
-            workCount += connections.get(i).sendPendingStatusMessages(now);
-        }
-
-        for (int i = 0, size = connections.size(); i < size; i++)
-        {
-            workCount += connections.get(i).scanForGaps();
-        }
-
-        for (int i = 0, size = connections.size(); i < size; i++)
-        {
-            workCount += connections.get(i).cleanLogBuffer();
-        }
-
-        workCount += publications.doAction(DriverPublication::cleanLogBuffer);
-
-        return workCount;
-    }
-
-    public void onClose()
-    {
-        termBuffersFactory.close();
-        publications.forEach(DriverPublication::close);
-        connections.forEach(DriverConnection::close);
-        sendChannelEndpointByChannelMap.values().forEach(SendChannelEndpoint::close);
-        receiveChannelEndpointByChannelMap.values().forEach(ReceiveChannelEndpoint::close);
-        systemCounters.close();
-    }
-
-    /**
-     * Return the {@link NioSelector} in use by this conductor thread.
-     *
-     * @return the {@link NioSelector} in use by this conductor thread
-     */
-    public NioSelector nioSelector()
-    {
-        return nioSelector;
-    }
-
     private int processTimers()
     {
         int workCount = 0;
@@ -327,42 +322,6 @@ public class DriverConductor extends Agent
         return workCount;
     }
 
-    private TimerWheel.Timer newTimeout(final long delay, final TimeUnit timeUnit, final Runnable task)
-    {
-        return timerWheel.newTimeout(delay, timeUnit, task);
-    }
-
-    private void rescheduleTimeout(final long delay, final TimeUnit timeUnit, final TimerWheel.Timer timer)
-    {
-        timerWheel.rescheduleTimeout(delay, timeUnit, timer);
-    }
-
-    private AeronClient getOrAddClient(final long clientId)
-    {
-        AeronClient aeronClient = findClient(clients, clientId);
-
-        if (null == aeronClient)
-        {
-            aeronClient = new AeronClient(clientId, timerWheel.now());
-            clients.add(aeronClient);
-        }
-
-        return aeronClient;
-    }
-
-    private static AeronClient findClient(final ArrayList<AeronClient> clients, final long clientId)
-    {
-        for (int i = 0, size = clients.size(); i < size; i++)
-        {
-            final AeronClient aeronClient = clients.get(i);
-            if (aeronClient.clientId() == clientId)
-            {
-                return aeronClient;
-            }
-        }
-
-        return  null;
-    }
 
     private void onAddPublication(
         final String channel, final int sessionId,  final int streamId, final long correlationId, final long clientId)
@@ -407,7 +366,7 @@ public class DriverConductor extends Agent
             sessionId,
             streamId,
             initialTermId,
-            HEADER_LENGTH,
+            DataHeaderFlyweight.HEADER_LENGTH,
             mtuLength,
             senderFlowControl.initialPositionLimit(initialTermId, capacity),
             logger,
@@ -533,24 +492,67 @@ public class DriverConductor extends Agent
         clientProxy.operationSucceeded(correlationId);
     }
 
-    private DriverSubscription removeSubscription(
-        final ArrayList<DriverSubscription> subscriptions, final long registrationCorrelationId)
+    private void onCreateConnection(final CreateConnectionCmd cmd)
     {
-        for (int i = 0, size = subscriptions.size(); i < size; i++)
+        final int sessionId = cmd.sessionId();
+        final int streamId = cmd.streamId();
+        final int initialTermId = cmd.termId();
+        final InetSocketAddress controlAddress = cmd.controlAddress();
+        final ReceiveChannelEndpoint channelEndpoint = cmd.channelEndpoint();
+        final UdpChannel udpChannel = channelEndpoint.udpChannel();
+
+        final String canonicalForm = udpChannel.canonicalForm();
+        final TermBuffers termBuffers = termBuffersFactory.newConnection(canonicalForm, sessionId, streamId);
+
+        final String channel = udpChannel.originalUriAsString();
+        final int subscriberPositionCounterId = allocatePositionCounter("subscriber", channel, sessionId, streamId);
+        final int receivedCompleteCounterId = allocatePositionCounter("received complete", channel, sessionId, streamId);
+        final int receivedHwmCounterId = allocatePositionCounter("received hwm", channel, sessionId, streamId);
+
+        clientProxy.onNewTermBuffers(
+            ON_NEW_CONNECTION, channel, streamId, sessionId, initialTermId, termBuffers, 0, subscriberPositionCounterId);
+
+        final GapScanner[] gapScanners =
+            termBuffers.stream()
+                       .map((rawLog) -> new GapScanner(rawLog.logBuffer(), rawLog.stateBuffer()))
+                       .toArray(GapScanner[]::new);
+
+        final LossHandler lossHandler = new LossHandler(
+            gapScanners,
+            timerWheel,
+            udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
+            channelEndpoint.composeNakMessageSender(controlAddress, sessionId, streamId),
+            initialTermId,
+            systemCounters);
+
+        final DriverConnection connection = new DriverConnection(
+            channelEndpoint,
+            sessionId,
+            streamId,
+            initialTermId,
+            initialWindowSize,
+            statusMessageTimeout,
+            termBuffers,
+            lossHandler,
+            channelEndpoint.composeStatusMessageSender(controlAddress, sessionId, streamId),
+            new BufferPositionIndicator(countersBuffer, subscriberPositionCounterId, countersManager),
+            new BufferPositionReporter(countersBuffer, receivedCompleteCounterId, countersManager),
+            new BufferPositionReporter(countersBuffer, receivedHwmCounterId, countersManager),
+            timerWheel::now,
+            systemCounters,
+            logger);
+
+        connections.add(connection);
+
+        final NewConnectionCmd newConnectionCmd = new NewConnectionCmd(channelEndpoint, connection);
+        while (!receiverProxy.newConnection(newConnectionCmd))
         {
-            final DriverSubscription subscription = subscriptions.get(i);
-
-            if (subscription.correlationId() == registrationCorrelationId)
-            {
-                subscriptions.remove(i);
-                return subscription;
-            }
+            systemCounters.receiverProxyFails().orderedIncrement();
+            Thread.yield();
         }
-
-        return null;
     }
 
-    private void onKeepaliveClient(final long clientId)
+    private void onClientKeepalive(final long clientId)
     {
         final AeronClient aeronClient = findClient(clients, clientId);
 
@@ -625,8 +627,6 @@ public class DriverConductor extends Agent
         rescheduleTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, publicationCheckTimer);
     }
 
-    // check of Subscriptions
-    // remove from dispatcher, but leave connections to timeout independently
     private void onCheckSubscriptions()
     {
         final long now = timerWheel.now();
@@ -670,11 +670,6 @@ public class DriverConductor extends Agent
         rescheduleTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, subscriptionCheckTimer);
     }
 
-    /*
-     *  Stage 1: initial timeout of publisher (after timeout): ACTIVE -> INACTIVE
-     *  Stage 2: check for remaining == 0 OR timeout: INACTIVE -> LINGER (ON_INACTIVE_CONNECTION sent)
-     *  Stage 3: timeout (cleanup)
-     */
     private void onCheckConnections()
     {
         final long now = timerWheel.now();
@@ -788,82 +783,76 @@ public class DriverConductor extends Agent
         rescheduleTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, pendingSetupsTimer);
     }
 
-    private void onCreateConnection(final CreateConnectionCmd cmd)
-    {
-        final int sessionId = cmd.sessionId();
-        final int streamId = cmd.streamId();
-        final int initialTermId = cmd.termId();
-        final InetSocketAddress controlAddress = cmd.controlAddress();
-        final ReceiveChannelEndpoint channelEndpoint = cmd.channelEndpoint();
-        final UdpChannel udpChannel = channelEndpoint.udpChannel();
-
-        final String canonicalForm = udpChannel.canonicalForm();
-        final TermBuffers termBuffers = termBuffersFactory.newConnection(canonicalForm, sessionId, streamId);
-
-        final String channel = udpChannel.originalUriAsString();
-        final int subscriberPositionCounterId = allocatePositionCounter("subscriber", channel, sessionId, streamId);
-        final int receivedCompleteCounterId = allocatePositionCounter("received complete", channel, sessionId, streamId);
-        final int receivedHwmCounterId = allocatePositionCounter("received hwm", channel, sessionId, streamId);
-
-        clientProxy.onNewTermBuffers(
-            ON_NEW_CONNECTION, channel, streamId, sessionId, initialTermId, termBuffers, 0, subscriberPositionCounterId);
-
-        final GapScanner[] gapScanners =
-            termBuffers.stream()
-                       .map((rawLog) -> new GapScanner(rawLog.logBuffer(), rawLog.stateBuffer()))
-                       .toArray(GapScanner[]::new);
-
-        final LossHandler lossHandler = new LossHandler(
-            gapScanners,
-            timerWheel,
-            udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
-            channelEndpoint.composeNakMessageSender(controlAddress, sessionId, streamId),
-            initialTermId,
-            systemCounters);
-
-        final DriverConnection connection = new DriverConnection(
-            channelEndpoint,
-            sessionId,
-            streamId,
-            initialTermId,
-            initialWindowSize,
-            statusMessageTimeout,
-            termBuffers,
-            lossHandler,
-            channelEndpoint.composeStatusMessageSender(controlAddress, sessionId, streamId),
-            new BufferPositionIndicator(countersBuffer, subscriberPositionCounterId, countersManager),
-            new BufferPositionReporter(countersBuffer, receivedCompleteCounterId, countersManager),
-            new BufferPositionReporter(countersBuffer, receivedHwmCounterId, countersManager),
-            timerWheel::now,
-            systemCounters,
-            logger);
-
-        connections.add(connection);
-
-        final NewConnectionCmd newConnectionCmd = new NewConnectionCmd(channelEndpoint, connection);
-        while (!receiverProxy.newConnection(newConnectionCmd))
-        {
-            systemCounters.receiverProxyFails().orderedIncrement();
-            Thread.yield();
-        }
-    }
-
-    private void onElicitSetupFromSource(final ElicitSetupFromSourceCmd cmd)
+    private void onElicitSetupFromSender(final ElicitSetupFromSourceCmd cmd)
     {
         final int sessionId = cmd.sessionId();
         final int streamId = cmd.streamId();
         final InetSocketAddress controlAddress = cmd.controlAddress();
         final ReceiveChannelEndpoint channelEndpoint = cmd.channelEndpoint();
 
-        channelEndpoint.sendSetupElicitingSm(controlAddress, sessionId, streamId);
+        channelEndpoint.sendSetupElicitingStatusMessage(controlAddress, sessionId, streamId);
         cmd.timeOfStatusMessage(timerWheel.now());
 
         pendingSetups.add(cmd);
     }
 
+    private TimerWheel.Timer newTimeout(final long delay, final TimeUnit timeUnit, final Runnable task)
+    {
+        return timerWheel.newTimeout(delay, timeUnit, task);
+    }
+
+    private void rescheduleTimeout(final long delay, final TimeUnit timeUnit, final TimerWheel.Timer timer)
+    {
+        timerWheel.rescheduleTimeout(delay, timeUnit, timer);
+    }
+
+    private AeronClient getOrAddClient(final long clientId)
+    {
+        AeronClient aeronClient = findClient(clients, clientId);
+
+        if (null == aeronClient)
+        {
+            aeronClient = new AeronClient(clientId, timerWheel.now());
+            clients.add(aeronClient);
+        }
+
+        return aeronClient;
+    }
+
+    private static AeronClient findClient(final ArrayList<AeronClient> clients, final long clientId)
+    {
+        for (int i = 0, size = clients.size(); i < size; i++)
+        {
+            final AeronClient aeronClient = clients.get(i);
+            if (aeronClient.clientId() == clientId)
+            {
+                return aeronClient;
+            }
+        }
+
+        return  null;
+    }
+
     private int allocatePositionCounter(final String type, final String dirName, final int sessionId, final int streamId)
     {
         return countersManager.allocate(String.format("%s position: %s %x %x", type, dirName, sessionId, streamId));
+    }
+
+    private DriverSubscription removeSubscription(
+        final ArrayList<DriverSubscription> subscriptions, final long registrationCorrelationId)
+    {
+        for (int i = 0, size = subscriptions.size(); i < size; i++)
+        {
+            final DriverSubscription subscription = subscriptions.get(i);
+
+            if (subscription.correlationId() == registrationCorrelationId)
+            {
+                subscriptions.remove(i);
+                return subscription;
+            }
+        }
+
+        return null;
     }
 
     private RetransmitSender composeNewRetransmitSender(final DriverPublication publication)

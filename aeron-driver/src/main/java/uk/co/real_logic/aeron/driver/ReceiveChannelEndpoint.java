@@ -157,7 +157,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         return (termId, termOffset, length) -> sendNak(controlAddress, sessionId, streamId, termId, termOffset, length);
     }
 
-    public void sendSetupElicitingSm(final InetSocketAddress controlAddress, final int sessionId, final int streamId)
+    public void sendSetupElicitingStatusMessage(final InetSocketAddress controlAddress, final int sessionId, final int streamId)
     {
         sendStatusMessage(controlAddress, sessionId, streamId, 0, 0, 0, StatusMessageFlyweight.SEND_SETUP_FLAG);
     }

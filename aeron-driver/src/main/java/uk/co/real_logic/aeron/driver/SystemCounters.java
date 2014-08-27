@@ -107,7 +107,7 @@ public class SystemCounters implements AutoCloseable
 
     public AtomicCounter flowControlUnderRuns()
     {
-        return flowControlOverRuns;
+        return flowControlUnderRuns;
     }
 
     public AtomicCounter flowControlOverRuns()

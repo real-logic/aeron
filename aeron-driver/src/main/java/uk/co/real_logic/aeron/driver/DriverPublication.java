@@ -45,6 +45,8 @@ public class DriverPublication implements AutoCloseable
 {
     public enum Status {ACTIVE, EOF, FLUSHED}
 
+    private final long id;
+
     private final TimerWheel timerWheel;
     private final int sessionId;
     private final int streamId;
@@ -90,6 +92,7 @@ public class DriverPublication implements AutoCloseable
     private int lastSentLength;
 
     public DriverPublication(
+        final long id,
         final SendChannelEndpoint channelEndpoint,
         final TimerWheel timerWheel,
         final TermBuffers termBuffers,
@@ -104,6 +107,7 @@ public class DriverPublication implements AutoCloseable
         final EventLogger logger,
         final SystemCounters systemCounters)
     {
+        this.id = id;
         this.channelEndpoint = channelEndpoint;
         this.termBuffers = termBuffers;
         this.logger = logger;
@@ -146,6 +150,11 @@ public class DriverPublication implements AutoCloseable
 
         setupHeader.wrap(new AtomicBuffer(setupFrameBuffer), 0);
         constructSetupFrame();
+    }
+
+    public long id()
+    {
+        return id;
     }
 
     public void close()

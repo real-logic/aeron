@@ -352,6 +352,7 @@ public class DriverConductor extends Agent
             udpChannel.isMulticast() ? multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
 
         final DriverPublication publication = new DriverPublication(
+            correlationId,
             channelEndpoint,
             timerWheel,
             termBuffers,
@@ -440,7 +441,7 @@ public class DriverConductor extends Agent
             }
         }
 
-        final DriverSubscription subscription = new DriverSubscription(channelEndpoint, aeronClient, streamId, correlationId);
+        final DriverSubscription subscription = new DriverSubscription(correlationId, channelEndpoint, aeronClient, streamId);
         subscriptions.add(subscription);
 
         clientProxy.operationSucceeded(correlationId);
@@ -640,7 +641,7 @@ public class DriverConductor extends Agent
                     "%s %x [%x]",
                     channelEndpoint.udpChannel().originalUriAsString(),
                     subscription.streamId(),
-                    subscription.correlationId());
+                    subscription.id());
 
                 subscriptions.remove(i);
 
@@ -839,7 +840,7 @@ public class DriverConductor extends Agent
         {
             final DriverSubscription subscription = subscriptions.get(i);
 
-            if (subscription.correlationId() == registrationCorrelationId)
+            if (subscription.id() == registrationCorrelationId)
             {
                 subscriptions.remove(i);
                 return subscription;

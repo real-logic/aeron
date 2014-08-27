@@ -58,6 +58,7 @@ public class SenderTest
 
     private static final byte[] HEADER = DataHeaderFlyweight.createDefaultHeader(SESSION_ID, STREAM_ID, INITIAL_TERM_ID);
     private static final int ALIGNED_FRAME_LENGTH = align(HEADER.length + PAYLOAD.length, FRAME_ALIGNMENT);
+    private static final long PUBLICATION_ID = 7L;
 
     private final EventLogger mockLogger = mock(EventLogger.class);
 
@@ -121,6 +122,7 @@ public class SenderTest
         when(mockSystemCounters.heartbeatsSent()).thenReturn(mock(AtomicCounter.class));
 
         publication = new DriverPublication(
+            PUBLICATION_ID,
             mockSendChannelEndpoint,
             wheel,
             termBuffers,

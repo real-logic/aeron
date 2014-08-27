@@ -165,11 +165,13 @@ public class DriverConductor extends Agent
         systemCounters.close();
     }
 
+    // TODO fix test to use proper collaboration assertions.
     public List<DriverSubscription> subscriptions()
     {
         return subscriptions;
     }
 
+    // TODO fix test to use proper collaboration assertions.
     public List<DriverPublication> publications()
     {
         return publications;

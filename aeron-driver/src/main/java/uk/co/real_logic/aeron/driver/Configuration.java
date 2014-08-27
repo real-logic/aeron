@@ -75,7 +75,7 @@ public class Configuration
     /**
      * Property name for SO_RCVBUF setting on UDP sockets
      */
-    public static final String SOCKET_RCVBUF_PROP_NAME = "aeron.socket.so_rcvbuf";
+    public static final String SOCKET_RCVBUF_SZ_PROP_NAME = "aeron.socket.so_rcvbuf";
 
     /**
      * Property name for linger timeout for publications
@@ -216,8 +216,8 @@ public class Configuration
     /**
      * 0 means use OS default.
      */
-    public static final int SOCKET_RCVBUF_DEFAULT = 0;
-    public static final int SOCKET_RCVBUF = getInteger(SOCKET_RCVBUF_PROP_NAME, SOCKET_RCVBUF_DEFAULT);
+    public static final int SOCKET_RCVBUF_SZ_DEFAULT = 0;
+    public static final int SOCKET_RCVBUF_SZ = getInteger(SOCKET_RCVBUF_SZ_PROP_NAME, SOCKET_RCVBUF_SZ_DEFAULT);
 
     /**
      * Time for publications to linger before cleanup

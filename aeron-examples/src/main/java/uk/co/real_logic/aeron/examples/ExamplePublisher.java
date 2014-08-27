@@ -46,7 +46,7 @@ public class ExamplePublisher
         System.out.println("Publishing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
         try (final Aeron aeron = Aeron.connect(ctx);
-             final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID, 0))
+             final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
         {
             for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
             {

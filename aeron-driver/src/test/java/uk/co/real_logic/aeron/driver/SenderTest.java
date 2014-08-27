@@ -20,7 +20,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
 import uk.co.real_logic.aeron.common.TimerWheel;
-import uk.co.real_logic.aeron.common.concurrent.AtomicArray;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.AtomicCounter;
 import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
@@ -32,6 +31,7 @@ import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.SetupFlyweight;
 import uk.co.real_logic.aeron.common.status.BufferPositionReporter;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
+import uk.co.real_logic.aeron.driver.cmd.NewPublicationCmd;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -62,8 +62,6 @@ public class SenderTest
 
     private final EventLogger mockLogger = mock(EventLogger.class);
 
-    private final AtomicArray<DriverPublication> publications = new AtomicArray<>();
-
     private final TermBuffers termBuffers =
         BufferAndFrameHelper.newTestTermBuffers(LOG_BUFFER_SIZE, LogBufferDescriptor.STATE_BUFFER_LENGTH);
 
@@ -88,16 +86,17 @@ public class SenderTest
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final SetupFlyweight setupHeader = new SetupFlyweight();
     private final SystemCounters mockSystemCounters = mock(SystemCounters.class);
+    private final OneToOneConcurrentArrayQueue<Object> senderCommandQueue = new OneToOneConcurrentArrayQueue<>(1024);
 
     private Answer<Integer> saveByteBufferAnswer =
         (invocation) ->
         {
-            Object args[] = invocation.getArguments();
-
+            final Object args[] = invocation.getArguments();
             final ByteBuffer buffer = (ByteBuffer)args[0];
 
             final int size = buffer.limit() - buffer.position();
             receivedFrames.add(ByteBuffer.allocate(size).put(buffer));
+
             // we don't pass on the args, so don't reset buffer.position() back
             return size;
         };
@@ -107,8 +106,7 @@ public class SenderTest
     {
         sender = new Sender(
             new MediaDriver.Context()
-                .senderCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
-                .publications(publications)
+                .senderCommandQueue(senderCommandQueue)
                 .eventLogger(mockLogger));
 
         logAppenders =
@@ -137,19 +135,13 @@ public class SenderTest
             mockLogger,
             mockSystemCounters);
 
-        publications.add(publication);
+        senderCommandQueue.offer(new NewPublicationCmd(publication));
     }
 
     @After
     public void tearDown() throws Exception
     {
         sender.close();
-    }
-
-    @Test
-    public void shouldAddAndRemovePublication()
-    {
-        publications.remove(publication);
     }
 
     @Test

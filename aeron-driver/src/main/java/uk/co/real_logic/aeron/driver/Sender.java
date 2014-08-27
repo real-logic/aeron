@@ -16,11 +16,12 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.Agent;
-import uk.co.real_logic.aeron.common.concurrent.AtomicArray;
 import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.driver.cmd.ClosePublicationCmd;
+import uk.co.real_logic.aeron.driver.cmd.NewPublicationCmd;
 import uk.co.real_logic.aeron.driver.cmd.RetransmitPublicationCmd;
 
+import java.util.ArrayList;
 import java.util.function.Consumer;
 
 /**
@@ -29,7 +30,7 @@ import java.util.function.Consumer;
 public class Sender extends Agent
 {
     private final Consumer<Object> processConductorCommandsFunc = this::processConductorCommands;
-    private final AtomicArray<DriverPublication> publications;
+    private final ArrayList<DriverPublication> publications = new ArrayList<>();
     private final OneToOneConcurrentArrayQueue<Object> commandQueue;
 
     private int roundRobinIndex = 0;
@@ -38,24 +39,47 @@ public class Sender extends Agent
     {
         super(ctx.senderIdleStrategy(), ctx.eventLoggerException());
 
-        this.publications = ctx.publications();
         this.commandQueue = ctx.senderCommandQueue();
     }
 
     public int doWork()
     {
+        int workCount = 0;
+
+        workCount += commandQueue.drain(processConductorCommandsFunc);
+        workCount += doSend();
+
+        return workCount;
+    }
+
+    private int doSend()
+    {
+        int workCount = 0;
+        final ArrayList<DriverPublication> publications = this.publications;
+        final int arrayLength = publications.size();
+
         roundRobinIndex++;
-        if (publications.size() < roundRobinIndex)
+        if (publications.size() <= roundRobinIndex)
         {
             roundRobinIndex = 0;
         }
 
-        int workCount = 0;
+        if (arrayLength > 0)
+        {
+            int i = roundRobinIndex;
+            do
+            {
+                workCount += publications.get(i).send();
 
-        workCount += commandQueue.drain(processConductorCommandsFunc);
-        workCount += publications.doAction(roundRobinIndex, DriverPublication::send);
+                if (++i == arrayLength)
+                {
+                    i = 0;
+                }
+            }
+            while (i != roundRobinIndex);
+        }
 
-        return  workCount;
+        return workCount;
     }
 
     private void processConductorCommands(final Object obj)
@@ -65,9 +89,15 @@ public class Sender extends Agent
             final RetransmitPublicationCmd cmd = (RetransmitPublicationCmd)obj;
             cmd.publication().onRetransmit(cmd.termId(), cmd.termOffset(), cmd.length());
         }
+        if (obj instanceof NewPublicationCmd)
+        {
+            final NewPublicationCmd cmd = (NewPublicationCmd)obj;
+            publications.add(cmd.publication());
+        }
         else if (obj instanceof ClosePublicationCmd)
         {
             final ClosePublicationCmd cmd = (ClosePublicationCmd)obj;
+            publications.remove(cmd.publication());
             cmd.publication().close();
         }
     }

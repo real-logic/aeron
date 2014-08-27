@@ -107,7 +107,6 @@ public class MediaDriver implements AutoCloseable
 
         ctx.unicastSenderFlowControl(UnicastSenderFlowControl::new)
            .multicastSenderFlowControl(UnicastSenderFlowControl::new)
-           .publications(new AtomicArray<>())
            .conductorTimerWheel(Configuration.newConductorTimerWheel())
            .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
            .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
@@ -241,7 +240,6 @@ public class MediaDriver implements AutoCloseable
         private IdleStrategy conductorIdleStrategy;
         private IdleStrategy senderIdleStrategy;
         private IdleStrategy receiverIdleStrategy;
-        private AtomicArray<DriverPublication> publications;
         private ClientProxy clientProxy;
         private RingBuffer fromClientCommands;
         private File eventLocationsFile;
@@ -474,12 +472,6 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context publications(final AtomicArray<DriverPublication> publications)
-        {
-            this.publications = publications;
-            return this;
-        }
-
         public Context clientProxy(final ClientProxy clientProxy)
         {
             this.clientProxy = clientProxy;
@@ -643,11 +635,6 @@ public class MediaDriver implements AutoCloseable
         public IdleStrategy receiverIdleStrategy()
         {
             return receiverIdleStrategy;
-        }
-
-        public AtomicArray<DriverPublication> publications()
-        {
-            return publications;
         }
 
         public ClientProxy clientProxy()

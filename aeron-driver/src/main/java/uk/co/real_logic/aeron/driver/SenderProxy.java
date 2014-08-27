@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.driver.cmd.ClosePublicationCmd;
+import uk.co.real_logic.aeron.driver.cmd.NewPublicationCmd;
 import uk.co.real_logic.aeron.driver.cmd.RetransmitPublicationCmd;
 
 import java.util.Queue;
@@ -25,9 +26,9 @@ import java.util.Queue;
  */
 public class SenderProxy
 {
-    private final Queue<? super Object> commandQueue;
+    private final Queue<Object> commandQueue;
 
-    public SenderProxy(final Queue<? super Object> commandQueue)
+    public SenderProxy(final Queue<Object> commandQueue)
     {
         this.commandQueue = commandQueue;
     }
@@ -38,6 +39,11 @@ public class SenderProxy
     }
 
     public boolean closePublication(final ClosePublicationCmd cmd)
+    {
+        return commandQueue.offer(cmd);
+    }
+
+    public boolean newPublication(final NewPublicationCmd cmd)
     {
         return commandQueue.offer(cmd);
     }

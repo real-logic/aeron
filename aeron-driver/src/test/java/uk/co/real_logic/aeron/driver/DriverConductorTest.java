@@ -24,7 +24,6 @@ import uk.co.real_logic.aeron.common.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
-import uk.co.real_logic.aeron.common.concurrent.AtomicArray;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.CountersManager;
 import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
@@ -81,7 +80,6 @@ public class DriverConductorTest
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(256));
 
-    private final AtomicArray<DriverPublication> publications = new AtomicArray<>();
     private final EventLogger mockConductorLogger = mock(EventLogger.class);
 
     private long currentTime;
@@ -111,7 +109,6 @@ public class DriverConductorTest
             .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .senderCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
-            .publications(publications)
             .eventLogger(mockConductorLogger)
             .termBuffersFactory(mockTermBuffersFactory)
             .countersManager(countersManager);
@@ -142,10 +139,10 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        assertThat(publications.size(), is(1));
-        assertNotNull(publications.get(0));
-        assertThat(publications.get(0).sessionId(), is(1));
-        assertThat(publications.get(0).streamId(), is(2));
+        assertThat(driverConductor.publications().size(), is(1));
+        assertNotNull(driverConductor.publications().get(0));
+        assertThat(driverConductor.publications().get(0).sessionId(), is(1));
+        assertThat(driverConductor.publications().get(0).streamId(), is(2));
 
         verify(mockClientProxy).onNewTermBuffers(
             eq(ControlProtocolEvents.ON_NEW_PUBLICATION),
@@ -188,7 +185,7 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        assertThat(publications.size(), is(4));
+        assertThat(driverConductor.publications().size(), is(4));
     }
 
     @Test
@@ -202,7 +199,7 @@ public class DriverConductorTest
         processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(CLIENT_LIVENESS_TIMEOUT_NS));
         processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(CLIENT_LIVENESS_TIMEOUT_NS * 2));
 
-        assertThat(publications.size(), is(0));
+        assertThat(driverConductor.publications().size(), is(0));
         assertNull(driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4005)));
     }
 
@@ -224,7 +221,7 @@ public class DriverConductorTest
         processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(CLIENT_LIVENESS_TIMEOUT_NS));
         processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(CLIENT_LIVENESS_TIMEOUT_NS * 2));
 
-        assertThat(publications.size(), is(0));
+        assertThat(driverConductor.publications().size(), is(0));
     }
 
     @Test
@@ -296,10 +293,10 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        assertThat(publications.size(), is(1));
-        assertNotNull(publications.get(0));
-        assertThat(publications.get(0).sessionId(), is(1));
-        assertThat(publications.get(0).streamId(), is(2));
+        assertThat(driverConductor.publications().size(), is(1));
+        assertNotNull(driverConductor.publications().get(0));
+        assertThat(driverConductor.publications().get(0).sessionId(), is(1));
+        assertThat(driverConductor.publications().get(0).streamId(), is(2));
 
         verify(mockClientProxy).onError(
             eq(ErrorCode.PUBLICATION_STREAM_ALREADY_EXISTS), argThat(not(isEmptyOrNullString())), any(), anyInt());
@@ -314,7 +311,7 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        assertThat(publications.size(), is(0));
+        assertThat(driverConductor.publications().size(), is(0));
 
         verify(mockClientProxy).onError(eq(INVALID_CHANNEL), argThat(not(isEmptyOrNullString())), any(), anyInt());
         verifyNeverSucceeds();
@@ -329,10 +326,10 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        assertThat(publications.size(), is(1));
-        assertNotNull(publications.get(0));
-        assertThat(publications.get(0).sessionId(), is(1));
-        assertThat(publications.get(0).streamId(), is(2));
+        assertThat(driverConductor.publications().size(), is(1));
+        assertNotNull(driverConductor.publications().get(0));
+        assertThat(driverConductor.publications().get(0).sessionId(), is(1));
+        assertThat(driverConductor.publications().get(0).streamId(), is(2));
 
         verify(mockClientProxy).onError(eq(PUBLICATION_STREAM_UNKNOWN), argThat(not(isEmptyOrNullString())), any(), anyInt());
         verifyNeverSucceeds();
@@ -347,10 +344,10 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        assertThat(publications.size(), is(1));
-        assertNotNull(publications.get(0));
-        assertThat(publications.get(0).sessionId(), is(1));
-        assertThat(publications.get(0).streamId(), is(2));
+        assertThat(driverConductor.publications().size(), is(1));
+        assertNotNull(driverConductor.publications().get(0));
+        assertThat(driverConductor.publications().get(0).sessionId(), is(1));
+        assertThat(driverConductor.publications().get(0).streamId(), is(2));
 
         verify(mockClientProxy).onError(eq(PUBLICATION_STREAM_UNKNOWN), argThat(not(isEmptyOrNullString())), any(), anyInt());
         verifyNeverSucceeds();
@@ -378,15 +375,15 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        assertThat(publications.size(), is(1));
-        assertNotNull(publications.get(0));
-        assertThat(publications.get(0).sessionId(), is(1));
-        assertThat(publications.get(0).streamId(), is(2));
+        assertThat(driverConductor.publications().size(), is(1));
+        assertNotNull(driverConductor.publications().get(0));
+        assertThat(driverConductor.publications().get(0).sessionId(), is(1));
+        assertThat(driverConductor.publications().get(0).streamId(), is(2));
 
         processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(
             Configuration.PUBLICATION_LINGER_NS + CLIENT_LIVENESS_TIMEOUT_NS * 2));
 
-        assertThat(publications.size(), is(0));
+        assertThat(driverConductor.publications().size(), is(0));
         assertNull(driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
     }
 
@@ -397,10 +394,10 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        assertThat(publications.size(), is(1));
-        assertNotNull(publications.get(0));
-        assertThat(publications.get(0).sessionId(), is(1));
-        assertThat(publications.get(0).streamId(), is(2));
+        assertThat(driverConductor.publications().size(), is(1));
+        assertNotNull(driverConductor.publications().get(0));
+        assertThat(driverConductor.publications().get(0).sessionId(), is(1));
+        assertThat(driverConductor.publications().get(0).streamId(), is(2));
 
         processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(CLIENT_LIVENESS_TIMEOUT_NS / 2));
 
@@ -412,7 +409,7 @@ public class DriverConductorTest
 
         processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(CLIENT_LIVENESS_TIMEOUT_NS * 2));
 
-        assertThat(publications.size(), is(1));
+        assertThat(driverConductor.publications().size(), is(1));
     }
 
     @Test

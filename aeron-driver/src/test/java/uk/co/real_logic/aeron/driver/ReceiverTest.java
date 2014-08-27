@@ -142,7 +142,6 @@ public class ReceiverTest
         receiveChannelEndpoint.close();
         senderChannel.close();
         receiver.close();
-        receiver.nioSelector().selectNowWithoutProcessing();
     }
 
     @Test

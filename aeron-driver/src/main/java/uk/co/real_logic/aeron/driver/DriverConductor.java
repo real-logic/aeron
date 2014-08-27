@@ -193,11 +193,6 @@ public class DriverConductor extends Agent
         }
     }
 
-    public NioSelector nioSelector()
-    {
-        return nioSelector;
-    }
-
     public int doWork() throws Exception
     {
         int workCount = 0;
@@ -321,7 +316,6 @@ public class DriverConductor extends Agent
 
         return workCount;
     }
-
 
     private void onAddPublication(
         final String channel, final int sessionId,  final int streamId, final long correlationId, final long clientId)

@@ -151,8 +151,7 @@ public class MediaDriver implements AutoCloseable
             shutdown(receiverThread, receiver);
             shutdown(conductorThread, conductor);
 
-            receiver.nioSelector().selectNowWithoutProcessing();
-            conductor.nioSelector().selectNowWithoutProcessing();
+            freeSocketsForReuseOnWindows();
             ctx.close();
 
             shutdown(eventReaderThread, eventReader);
@@ -162,6 +161,12 @@ public class MediaDriver implements AutoCloseable
         {
             throw new RuntimeException(ex);
         }
+    }
+
+    private void freeSocketsForReuseOnWindows()
+    {
+        ctx.receiverNioSelector().selectNowWithoutProcessing();
+        ctx.conductorNioSelector().selectNowWithoutProcessing();
     }
 
     private MediaDriver start()

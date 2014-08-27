@@ -80,16 +80,6 @@ public class Receiver extends Agent
         return commandQueue.drain(onConductorCommandFunc);
     }
 
-    /**
-     * Return the {@link NioSelector} in use by the thread
-     *
-     * @return the {@link NioSelector} in use by the thread
-     */
-    public NioSelector nioSelector()
-    {
-        return nioSelector;
-    }
-
     private void onAddSubscription(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
     {
         channelEndpoint.dispatcher().addSubscription(streamId);

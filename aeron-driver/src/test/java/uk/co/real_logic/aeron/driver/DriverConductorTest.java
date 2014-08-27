@@ -132,9 +132,7 @@ public class DriverConductorTest
     public void tearDown() throws Exception
     {
         receiver.close();
-        receiver.nioSelector().selectNowWithoutProcessing();
         driverConductor.close();
-        driverConductor.nioSelector().selectNowWithoutProcessing();
     }
 
     @Test

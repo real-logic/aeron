@@ -91,8 +91,7 @@ public class Subscription implements AutoCloseable
      */
     public int poll(final int fragmentCountLimit)
     {
-        roundRobinIndex++;
-        if (connections.size() == roundRobinIndex)
+        if (connections.size() >= ++roundRobinIndex)
         {
             roundRobinIndex = 0;
         }

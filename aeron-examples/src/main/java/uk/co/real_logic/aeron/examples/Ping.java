@@ -48,6 +48,7 @@ public class Ping
     private static final long NUMBER_OF_MESSAGES = ExampleConfiguration.NUMBER_OF_MESSAGES;
     private static final int MESSAGE_LENGTH = ExampleConfiguration.MESSAGE_LENGTH;
     private static final int FRAME_COUNT_LIMIT = ExampleConfiguration.FRAME_COUNT_LIMIT;
+    private static final long LINGER_TIMEOUT_MS = ExampleConfiguration.LINGER_TIMEOUT_MS;
     private static final boolean EMBEDDED_MEDIA_DRIVER = ExampleConfiguration.EMBEDDED_MEDIA_DRIVER;
 
     private static final AtomicBuffer ATOMIC_BUFFER = new AtomicBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
@@ -73,24 +74,57 @@ public class Ping
         {
             final Future future = executor.submit(() -> runSubscriber(pongSubscription));
 
+            System.out.println("Warming up... " + NUMBER_OF_MESSAGES + " messages");
+
             for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
             {
                 do
                 {
                     ATOMIC_BUFFER.putLong(0, System.nanoTime());
                 }
-                while (!pingPublication.offer(ATOMIC_BUFFER, 0, BitUtil.SIZE_OF_LONG));
+                while (!pingPublication.offer(ATOMIC_BUFFER, 0, MESSAGE_LENGTH));
 
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1));
+            }
+
+            System.out.println("Warm now.");
+
+            if (0 < LINGER_TIMEOUT_MS)
+            {
+                System.out.println("Lingering for " + LINGER_TIMEOUT_MS + " milliseconds...");
+                Thread.sleep(LINGER_TIMEOUT_MS);
+            }
+
+            System.out.println("Pinging " + NUMBER_OF_MESSAGES + " messages");
+
+            histogram.reset();
+
+            for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
+            {
+                do
+                {
+                    ATOMIC_BUFFER.putLong(0, System.nanoTime());
+                }
+                while (!pingPublication.offer(ATOMIC_BUFFER, 0, MESSAGE_LENGTH));
+
+                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1));
+            }
+
+            System.out.println("Done streaming.");
+
+            if (0 < LINGER_TIMEOUT_MS)
+            {
+                System.out.println("Lingering for " + LINGER_TIMEOUT_MS + " milliseconds...");
+                Thread.sleep(LINGER_TIMEOUT_MS);
             }
 
             haltSubscriberLoop = true;
             future.get();
         }
 
-        System.out.println("Done playing... Histogram of latencies in 10s of nanoseconds.");
+        System.out.println("Done playing... Histogram of latencies in microseconds.");
 
-        histogram.outputPercentileDistribution(System.out, 100.0);
+        histogram.outputPercentileDistribution(System.out, 1000.0);
 
         CloseHelper.quietClose(driver);
         executor.shutdown();

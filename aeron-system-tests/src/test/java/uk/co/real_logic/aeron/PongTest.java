@@ -79,12 +79,12 @@ public class PongTest
     {
         if (null != pingPublication)
         {
-            pingPublication.release();
+            pingPublication.close();
         }
 
         if (null != pongPublication)
         {
-            pongPublication.release();
+            pongPublication.close();
         }
 
         if (null != pingSubscription)

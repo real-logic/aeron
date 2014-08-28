@@ -76,7 +76,7 @@ public class PubAndSubTest
     {
         if (null != publication)
         {
-            publication.release();
+            publication.close();
         }
 
         if (null != subscription)

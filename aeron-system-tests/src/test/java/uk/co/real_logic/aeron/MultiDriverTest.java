@@ -19,7 +19,6 @@ package uk.co.real_logic.aeron;
 import org.junit.After;
 import org.junit.Test;
 import uk.co.real_logic.aeron.common.IoUtil;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.io.File;
@@ -49,7 +48,6 @@ public class MultiDriverTest
     private Subscription subscription;
     private Publication publication;
 
-    private AtomicBuffer buffer = new AtomicBuffer(new byte[4096]);
     private DataHandler dataHandler = mock(DataHandler.class);
 
     private void setup(final String channel)
@@ -90,7 +88,7 @@ public class MultiDriverTest
     {
         if (null != publication)
         {
-            publication.release();
+            publication.close();
         }
 
         if (null != subscription)

@@ -116,7 +116,7 @@ public class PublicationTest
     @Test
     public void shouldUnmapBuffersWhenReleased() throws Exception
     {
-        publication.release();
+        publication.close();
         verifyBuffersUnmapped(times(1));
     }
 
@@ -124,7 +124,7 @@ public class PublicationTest
     public void shouldNotUnmapBuffersBeforeLastRelease() throws Exception
     {
         publication.incRef();
-        publication.release();
+        publication.close();
         verifyBuffersUnmapped(never());
     }
 
@@ -132,9 +132,9 @@ public class PublicationTest
     public void shouldUnmapBuffersWithMultipleReferences() throws Exception
     {
         publication.incRef();
-        publication.release();
+        publication.close();
 
-        publication.release();
+        publication.close();
         verifyBuffersUnmapped(times(1));
     }
 

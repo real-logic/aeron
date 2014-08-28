@@ -153,23 +153,23 @@ public class ClientConductorTest extends MockBufferUsage
     }
 
     @Test
-    public void releasingPublicationShouldNotifyMediaDriver() throws Exception
+    public void closingPublicationShouldNotifyMediaDriver() throws Exception
     {
         Publication publication = addPublication();
         willNotifyOperationSucceeded();
 
-        publication.release();
+        publication.close();
 
         driverProxy.removePublication(CORRELATION_ID);
     }
 
     @Test
-    public void releasingPublicationShouldPurgeCache() throws Exception
+    public void closingPublicationShouldPurgeCache() throws Exception
     {
         Publication firstPublication = addPublication();
 
         willNotifyOperationSucceeded();
-        firstPublication.release();
+        firstPublication.close();
 
         willNotifyNewBuffer(STREAM_ID_1, SESSION_ID_1, CORRELATION_ID);
         Publication secondPublication = addPublication();
@@ -190,21 +190,21 @@ public class ClientConductorTest extends MockBufferUsage
                 return null;
             }).when(signal).await(anyLong());
 
-        publication.release();
+        publication.close();
     }
 
     @Test
-    public void publicationsOnlyClosedOnLastRelease() throws Exception
+    public void publicationsOnlyRemovedOnLastClose() throws Exception
     {
         Publication publication = addPublication();
         addPublication();
 
-        publication.release();
+        publication.close();
         verify(driverProxy, never()).removePublication(CORRELATION_ID);
 
         willNotifyOperationSucceeded();
 
-        publication.release();
+        publication.close();
         verify(driverProxy).removePublication(CORRELATION_ID);
     }
 
@@ -217,7 +217,7 @@ public class ClientConductorTest extends MockBufferUsage
         conductor.addPublication(CHANNEL, STREAM_ID_2, SESSION_ID_2);
 
         willNotifyOperationSucceeded();
-        publication.release();
+        publication.close();
 
         verify(driverProxy).removePublication(CORRELATION_ID);
 

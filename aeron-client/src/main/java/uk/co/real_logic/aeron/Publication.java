@@ -40,7 +40,7 @@ public class Publication implements AutoCloseable
     private final int streamId;
     private final int sessionId;
     private final ManagedBuffer[] managedBuffers;
-    private final long correlationId;
+    private final long registrationId;
     private final LogAppender[] logAppenders;
     private final PositionIndicator limit;
     private final AtomicInteger activeTermId;
@@ -53,22 +53,22 @@ public class Publication implements AutoCloseable
     private int activeIndex;
 
     public Publication(
-            final ClientConductor clientConductor,
-            final String channel,
-            final int streamId,
-            final int sessionId,
-            final int initialTermId,
-            final LogAppender[] logAppenders,
-            final PositionIndicator limit,
-            final ManagedBuffer[] managedBuffers,
-            final long correlationId)
+        final ClientConductor clientConductor,
+        final String channel,
+        final int streamId,
+        final int sessionId,
+        final int initialTermId,
+        final LogAppender[] logAppenders,
+        final PositionIndicator limit,
+        final ManagedBuffer[] managedBuffers,
+        final long registrationId)
     {
         this.clientConductor = clientConductor;
         this.channel = channel;
         this.streamId = streamId;
         this.sessionId = sessionId;
         this.managedBuffers = managedBuffers;
-        this.correlationId = correlationId;
+        this.registrationId = registrationId;
         this.activeTermId = new AtomicInteger(initialTermId);
         this.logAppenders = logAppenders;
         this.limit = limit;
@@ -108,9 +108,9 @@ public class Publication implements AutoCloseable
         return sessionId;
     }
 
-    public long correlationId()
+    public long registrationId()
     {
-        return correlationId;
+        return registrationId;
     }
 
     public void close()
@@ -118,11 +118,7 @@ public class Publication implements AutoCloseable
         release();
     }
 
-    /**
-     * Release this reference to the {@link Publication}. To be called by the end using publisher.
-     * If all references are released then the associated buffers can be released.
-     */
-    public void release()
+    private void release()
     {
         synchronized (clientConductor)
         {
@@ -189,14 +185,7 @@ public class Publication implements AutoCloseable
     {
         for (final ManagedBuffer managedBuffer : managedBuffers)
         {
-            try
-            {
-                managedBuffer.close();
-            }
-            catch (final Exception ex)
-            {
-                throw new IllegalStateException(ex);
-            }
+            managedBuffer.close();
         }
     }
 

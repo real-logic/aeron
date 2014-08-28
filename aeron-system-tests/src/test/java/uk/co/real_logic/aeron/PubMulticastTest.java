@@ -97,7 +97,7 @@ public class PubMulticastTest
     {
         if (null != publication)
         {
-            publication.release();
+            publication.close();
         }
 
         producingClient.close();

@@ -141,7 +141,7 @@ public class ClientConductor extends Agent implements DriverListener
         final String channel = publication.channel();
         final int streamId = publication.streamId();
         final int sessionId = publication.sessionId();
-        final long registrationId = publication.correlationId();
+        final long registrationId = publication.registrationId();
 
         activeCorrelationId = driverProxy.removePublication(registrationId);
         publicationMap.remove(channel, sessionId, streamId);

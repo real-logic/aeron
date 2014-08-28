@@ -21,7 +21,10 @@ import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.RemoveMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
-import uk.co.real_logic.aeron.common.concurrent.*;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.CountersManager;
+import uk.co.real_logic.aeron.common.concurrent.MessageHandler;
+import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.common.event.EventCode;
@@ -370,7 +373,6 @@ public class DriverConductor extends Agent
                     timerWheel,
                     termBuffers,
                     positionReporter,
-                    aeronClient,
                     sessionId,
                     streamId,
                     initialTermId,
@@ -582,6 +584,7 @@ public class DriverConductor extends Agent
     {
         final long now = timerWheel.now();
 
+
         final ArrayList<DriverPublication> publications = this.publications;
 
         for (int i = publications.size() - 1; i >= 0; i--)
@@ -590,7 +593,7 @@ public class DriverConductor extends Agent
 
             if(!publication.hasRefs())
             {
-                if (publication.checkFinishedSending())
+                if (publication.checkFinishedSending(now))
                 {
                     if (publication.timeOfFlush() + Configuration.PUBLICATION_LINGER_NS < now)
                     {

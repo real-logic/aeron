@@ -95,7 +95,6 @@ public class DriverPublication implements AutoCloseable
         final TimerWheel timerWheel,
         final TermBuffers termBuffers,
         final PositionReporter publisherLimitReporter,
-        final AeronClient aeronClient,
         final int sessionId,
         final int streamId,
         final int initialTermId,
@@ -235,16 +234,6 @@ public class DriverPublication implements AutoCloseable
     public boolean isFlushed()
     {
         return refCount == 0 && logScanners[activeIndex].remaining() == 0;
-    }
-
-    public int statusMessagesSeenCount()
-    {
-        return statusMessagesReceivedCount;
-    }
-
-    public void timeOfFlush(final long timestamp)
-    {
-        timeOfFlush = timestamp;
     }
 
     public long timeOfFlush()
@@ -428,17 +417,13 @@ public class DriverPublication implements AutoCloseable
         return ++refCount;
     }
 
-    public boolean isActive()
-    {
-        return isActive;
-    }
-
-    public boolean checkFinishedSending()
+    public boolean checkFinishedSending(final long now)
     {
         boolean isFlushed = isFlushed();
-        if (isFlushed)
+        if (isActive && isFlushed)
         {
             isActive = false;
+            timeOfFlush = now;
         }
         return isFlushed;
     }

@@ -21,13 +21,16 @@ import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.BitUtil;
+import uk.co.real_logic.aeron.common.BusySpinIdleStrategy;
 import uk.co.real_logic.aeron.common.CloseHelper;
+import uk.co.real_logic.aeron.common.IdleStrategy;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
@@ -51,6 +54,8 @@ public class Ping
 
     static Histogram histogram = new Histogram(TimeUnit.MILLISECONDS.toNanos(500), 3);
 
+    static volatile boolean haltSubscriberLoop = false;
+
     public static void main(final String[] args) throws Exception
     {
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
@@ -66,7 +71,7 @@ public class Ping
              final Publication pingPublication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);
              final Subscription pongSubscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID, Ping::pongHandler))
         {
-            executor.execute(() -> ExampleUtil.subscriberLoop(FRAME_COUNT_LIMIT).accept(pongSubscription));
+            final Future future = executor.submit(() -> runSubscriber(pongSubscription));
 
             for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
             {
@@ -78,6 +83,9 @@ public class Ping
 
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1));
             }
+
+            haltSubscriberLoop = true;
+            future.get();
         }
 
         System.out.println("Done playing... Histogram of latencies in 10s of nanoseconds.");
@@ -95,5 +103,16 @@ public class Ping
         final long rttNs = System.nanoTime() - pingTimestamp;
 
         histogram.recordValue(rttNs);
+    }
+
+    public static void runSubscriber(final Subscription pongSubscription)
+    {
+        final IdleStrategy subscriptionIdler = new BusySpinIdleStrategy();
+
+        while (!haltSubscriberLoop)
+        {
+            final int workCount = pongSubscription.poll(FRAME_COUNT_LIMIT);
+            subscriptionIdler.idle(workCount);
+        }
     }
 }

@@ -231,11 +231,6 @@ public class DriverPublication implements AutoCloseable
         return 0;
     }
 
-    public boolean isFlushed()
-    {
-        return refCount == 0 && logScanners[activeIndex].remaining() == 0;
-    }
-
     public long timeOfFlush()
     {
         return timeOfFlush;
@@ -414,23 +409,28 @@ public class DriverPublication implements AutoCloseable
 
     public int incRef()
     {
-        return ++refCount;
-    }
+        final int i = ++refCount;
 
-    public boolean checkFinishedSending(final long now)
-    {
-        boolean isFlushed = isFlushed();
-        if (isActive && isFlushed)
+        if (i == 1)
         {
-            isActive = false;
-            timeOfFlush = now;
+            timeOfFlush = 0;
+            isActive = true;
         }
-        return isFlushed;
+
+        return i;
     }
 
-    public boolean hasRefs()
+    public boolean isUnreferencedAndFlushed(final long now)
     {
-        return refCount > 0;
+        final boolean isFlushed = refCount == 0 && logScanners[activeIndex].remaining() == 0;
+
+        if (isFlushed && isActive)
+        {
+            timeOfFlush = now;
+            isActive = false;
+        }
+
+        return isFlushed;
     }
 
     public int initialTermId()

@@ -415,8 +415,7 @@ public class DriverConductor extends Agent
         publicationRegistrations.put(correlationId, new PublicationRegistration(publication, aeronClient, correlationId));
     }
 
-    private void onRemovePublication(
-        final long registrationId, final long correlationId)
+    private void onRemovePublication(final long registrationId, final long correlationId)
     {
         final PublicationRegistration registration = publicationRegistrations.remove(registrationId);
         if (registration == null)
@@ -591,37 +590,32 @@ public class DriverConductor extends Agent
         {
             final DriverPublication publication = publications.get(i);
 
-            if (!publication.hasRefs())
+            if (publication.isUnreferencedAndFlushed(now) &&
+                now > (publication.timeOfFlush() + Configuration.PUBLICATION_LINGER_NS))
             {
-                if (publication.checkFinishedSending(now))
+                final SendChannelEndpoint channelEndpoint = publication.sendChannelEndpoint();
+
+                logger.log(
+                    EventCode.REMOVE_PUBLICATION_CLEANUP,
+                    "%s %x:%x",
+                    channelEndpoint.udpChannel().originalUriAsString(),
+                    publication.sessionId(),
+                    publication.streamId());
+
+                channelEndpoint.removePublication(publication.sessionId(), publication.streamId());
+                publications.remove(i);
+
+                final ClosePublicationCmd cmd = new ClosePublicationCmd(publication);
+                while (!senderProxy.closePublication(cmd))
                 {
-                    if (publication.timeOfFlush() + Configuration.PUBLICATION_LINGER_NS < now)
-                    {
-                        final SendChannelEndpoint channelEndpoint = publication.sendChannelEndpoint();
+                    systemCounters.senderProxyFails().orderedIncrement();
+                    Thread.yield();
+                }
 
-                        logger.log(
-                            EventCode.REMOVE_PUBLICATION_CLEANUP,
-                            "%s %x:%x",
-                            channelEndpoint.udpChannel().originalUriAsString(),
-                            publication.sessionId(),
-                            publication.streamId());
-
-                        channelEndpoint.removePublication(publication.sessionId(), publication.streamId());
-                        publications.remove(i);
-
-                        final ClosePublicationCmd cmd = new ClosePublicationCmd(publication);
-                        while (!senderProxy.closePublication(cmd))
-                        {
-                            systemCounters.senderProxyFails().orderedIncrement();
-                            Thread.yield();
-                        }
-
-                        if (channelEndpoint.sessionCount() == 0)
-                        {
-                            sendChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
-                            channelEndpoint.close();
-                        }
-                    }
+                if (channelEndpoint.sessionCount() == 0)
+                {
+                    sendChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
+                    channelEndpoint.close();
                 }
             }
         }

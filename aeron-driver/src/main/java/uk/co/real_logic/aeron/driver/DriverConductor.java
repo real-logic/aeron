@@ -393,8 +393,6 @@ public class DriverConductor extends Agent
 
             channelEndpoint.addPublication(publication, retransmitHandler, senderFlowControl);
 
-            clientProxy.onNewTermBuffers(
-                    ON_NEW_PUBLICATION, channel, streamId, sessionId, initialTermId, termBuffers, correlationId, positionCounterId);
 
             publications.add(publication);
 
@@ -407,9 +405,15 @@ public class DriverConductor extends Agent
         }
 
         publication.incRef();
+        final int initialTermId = publication.initialTermId();
+        final TermBuffers termBuffers = publication.termBuffers();
+        final int positionCounterId = publication.positionCounterId();
+
+        clientProxy.onNewTermBuffers(
+                ON_NEW_PUBLICATION, channel, streamId, sessionId, initialTermId, termBuffers, correlationId, positionCounterId);
+
         publicationRegistrations.put(correlationId, new PublicationRegistration(
                 publication, aeronClient, correlationId));
-
     }
 
     private void onRemovePublication(

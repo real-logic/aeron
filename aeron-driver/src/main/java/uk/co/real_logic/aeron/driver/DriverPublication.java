@@ -432,4 +432,21 @@ public class DriverPublication implements AutoCloseable
     {
         return refCount > 0;
     }
+
+
+    public int initialTermId()
+    {
+        return initialTermId;
+    }
+
+    public TermBuffers termBuffers()
+    {
+        return termBuffers;
+    }
+
+    public int positionCounterId()
+    {
+        return publisherLimitReporter.id();
+    }
+
 }

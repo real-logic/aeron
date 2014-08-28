@@ -33,4 +33,6 @@ public interface PositionReporter extends AutoCloseable
      * Close down and free any underlying resources.
      */
     void close();
+
+    int id();
 }

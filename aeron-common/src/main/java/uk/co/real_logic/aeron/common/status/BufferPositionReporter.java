@@ -50,4 +50,9 @@ public class BufferPositionReporter implements PositionReporter
     {
         countersManager.free(counterId);
     }
+
+    public int id()
+    {
+        return counterId;
+    }
 }

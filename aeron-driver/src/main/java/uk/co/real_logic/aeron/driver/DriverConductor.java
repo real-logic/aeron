@@ -110,12 +110,7 @@ public class DriverConductor extends Agent
     private final long controlLossSeed;
     private final double dataLossRate;
     private final double controlLossRate;
-    private final TimerWheel.Timer publicationCheckTimer;
-    private final TimerWheel.Timer publicationRegistrationCheckTimer;
-    private final TimerWheel.Timer subscriptionCheckTimer;
-    private final TimerWheel.Timer connectionCheckTimer;
-    private final TimerWheel.Timer clientCheckTimer;
-    private final TimerWheel.Timer pendingSetupsTimer;
+    private final TimerWheel.Timer checkTimeoutTimer;
     private final CountersManager countersManager;
     private final AtomicBuffer countersBuffer;
     private final EventLogger logger;
@@ -143,13 +138,7 @@ public class DriverConductor extends Agent
         this.countersBuffer = ctx.countersBuffer();
 
         timerWheel = ctx.conductorTimerWheel();
-        // TODO: can these become a single timer?
-        publicationCheckTimer = newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onCheckPublications);
-        publicationRegistrationCheckTimer = newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onCheckPublicationRegistrations);
-        subscriptionCheckTimer = newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onCheckSubscriptions);
-        connectionCheckTimer = newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onCheckConnections);
-        clientCheckTimer = newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onCheckClients);
-        pendingSetupsTimer = newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onCheckPendingSetups);
+        checkTimeoutTimer = timerWheel.newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onCheckTimeouts);
 
         fromClientCommands = ctx.fromClientCommands();
         clientProxy = ctx.clientProxy();
@@ -243,6 +232,18 @@ public class DriverConductor extends Agent
         }
 
         return workCount;
+    }
+
+    private void onCheckTimeouts()
+    {
+        onCheckClients();
+        onCheckPublications();
+        onCheckPublicationRegistrations();
+        onCheckSubscriptions();
+        onCheckConnections();
+        onCheckPendingSetups();
+
+        timerWheel.rescheduleTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, checkTimeoutTimer);
     }
 
     private void onClientCommand(final int msgTypeId, final AtomicBuffer buffer, final int index, final int length)
@@ -577,8 +578,6 @@ public class DriverConductor extends Agent
                 iter.remove();
             }
         }
-
-        rescheduleTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, publicationRegistrationCheckTimer);
     }
 
     private void onCheckPublications()
@@ -619,8 +618,6 @@ public class DriverConductor extends Agent
                 }
             }
         }
-
-        rescheduleTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, publicationCheckTimer);
     }
 
     private void onCheckSubscriptions()
@@ -662,8 +659,6 @@ public class DriverConductor extends Agent
                 }
             }
         }
-
-        rescheduleTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, subscriptionCheckTimer);
     }
 
     private void onCheckConnections()
@@ -732,8 +727,6 @@ public class DriverConductor extends Agent
                     break;
             }
         }
-
-        rescheduleTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, connectionCheckTimer);
     }
 
     private void onCheckClients()
@@ -749,8 +742,6 @@ public class DriverConductor extends Agent
                 clients.remove(i);
             }
         }
-
-        rescheduleTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, clientCheckTimer);
     }
 
     private void onCheckPendingSetups()
@@ -775,8 +766,6 @@ public class DriverConductor extends Agent
                 }
             }
         }
-
-        rescheduleTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, pendingSetupsTimer);
     }
 
     private void onElicitSetupFromSender(final ElicitSetupFromSourceCmd cmd)
@@ -790,16 +779,6 @@ public class DriverConductor extends Agent
         cmd.timeOfStatusMessage(timerWheel.now());
 
         pendingSetups.add(cmd);
-    }
-
-    private TimerWheel.Timer newTimeout(final long delay, final TimeUnit timeUnit, final Runnable task)
-    {
-        return timerWheel.newTimeout(delay, timeUnit, task);
-    }
-
-    private void rescheduleTimeout(final long delay, final TimeUnit timeUnit, final TimerWheel.Timer timer)
-    {
-        timerWheel.rescheduleTimeout(delay, timeUnit, timer);
     }
 
     private AeronClient getOrAddClient(final long clientId)

@@ -170,20 +170,20 @@ public class ClientConductor extends Agent implements DriverListener
         final String channel = subscription.channel();
         final int streamId = subscription.streamId();
 
-        activeCorrelationId = driverProxy.removeSubscription(channel, streamId, subscription.correlationId());
+        activeCorrelationId = driverProxy.removeSubscription(channel, streamId, subscription.registrationId());
         subscriptionMap.remove(channel, streamId);
 
         awaitOperationSucceeded();
     }
 
     public void onNewPublication(
-            final String channel,
-            final int streamId,
-            final int sessionId,
-            final int termId,
-            final int limitPositionIndicatorOffset,
-            final LogBuffersMessageFlyweight logBuffersMessage,
-            final long correlationId)
+        final String channel,
+        final int streamId,
+        final int sessionId,
+        final int termId,
+        final int limitPositionIndicatorOffset,
+        final LogBuffersMessageFlyweight logBuffersMessage,
+        final long correlationId)
     {
         final LogAppender[] logs = new LogAppender[BUFFER_COUNT];
         final ManagedBuffer[] managedBuffers = new ManagedBuffer[BUFFER_COUNT * 2];
@@ -201,7 +201,7 @@ public class ClientConductor extends Agent implements DriverListener
 
         final PositionIndicator limit = new BufferPositionIndicator(counterValuesBuffer, limitPositionIndicatorOffset);
         addedPublication = new Publication(
-                this, channel, streamId, sessionId, termId, logs, limit, managedBuffers, correlationId);
+            this, channel, streamId, sessionId, termId, logs, limit, managedBuffers, correlationId);
 
         correlationSignal.signal();
     }

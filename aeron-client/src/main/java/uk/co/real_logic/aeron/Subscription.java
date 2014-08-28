@@ -30,7 +30,7 @@ public class Subscription implements AutoCloseable
 {
     private final String channel;
     private final int streamId;
-    private final long correlationId;
+    private final long registrationId;
     private final AtomicArray<Connection> connections = new AtomicArray<>();
     private final DataHandler dataHandler;
     private final ClientConductor clientConductor;
@@ -42,13 +42,13 @@ public class Subscription implements AutoCloseable
         final DataHandler dataHandler,
         final String channel,
         final int streamId,
-        final long correlationId)
+        final long registrationId)
     {
         this.clientConductor = clientConductor;
         this.dataHandler = dataHandler;
         this.channel = channel;
         this.streamId = streamId;
-        this.correlationId = correlationId;
+        this.registrationId = registrationId;
     }
 
     public String channel()
@@ -61,9 +61,9 @@ public class Subscription implements AutoCloseable
         return streamId;
     }
 
-    public long correlationId()
+    public long registrationId()
     {
-        return correlationId;
+        return registrationId;
     }
 
     /**

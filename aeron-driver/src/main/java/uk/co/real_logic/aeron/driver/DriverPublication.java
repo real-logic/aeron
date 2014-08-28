@@ -393,7 +393,7 @@ public class DriverPublication implements AutoCloseable
                    .termSize(termCapacity)
                    .frameLength(SetupFlyweight.HEADER_LENGTH)
                    .headerType(HeaderFlyweight.HDR_TYPE_SETUP)
-                   .flags((byte) 0)
+                   .flags((byte)0)
                    .version(HeaderFlyweight.CURRENT_VERSION);
     }
 
@@ -432,7 +432,6 @@ public class DriverPublication implements AutoCloseable
     {
         return refCount > 0;
     }
-
 
     public int initialTermId()
     {

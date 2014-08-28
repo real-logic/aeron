@@ -112,14 +112,7 @@ public class Connection
     {
         for (final ManagedBuffer managedBuffer : managedBuffers)
         {
-            try
-            {
-                managedBuffer.close();
-            }
-            catch (final Exception ex)
-            {
-                throw new IllegalStateException(ex);
-            }
+            managedBuffer.close();
         }
     }
 }

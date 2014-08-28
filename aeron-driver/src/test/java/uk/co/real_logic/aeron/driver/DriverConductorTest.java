@@ -15,11 +15,9 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import uk.co.real_logic.aeron.common.ErrorCode;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.command.*;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
@@ -30,7 +28,6 @@ import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBufferDescriptor;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
-import uk.co.real_logic.aeron.driver.cmd.ClosePublicationCmd;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
@@ -442,7 +439,6 @@ public class DriverConductorTest
         assertThat(driverConductor.subscriptions().size(), is(1));
         assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
     }
-
 
     private void verifyExceptionLogged()
     {

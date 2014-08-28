@@ -27,5 +27,5 @@ public interface InactiveConnectionHandler
      * @param streamId of the inactive stream
      * @param sessionId of the inactive source
      */
-    void onInactiveConnection(final String channel, final int streamId, final int sessionId);
+    void onInactiveConnection(String channel, int streamId, int sessionId);
 }

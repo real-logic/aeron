@@ -171,6 +171,7 @@ project(':aeron-benchmarks') {
     dependencies {
         compile project(':aeron-client'), project(':aeron-driver')
         compile 'org.openjdk.jmh:jmh-core:0.4.2'
+        compile 'org.hdrhistogram:HdrHistogram:1.2.1'
     }
 
     shadow {

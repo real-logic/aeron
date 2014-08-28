@@ -46,6 +46,7 @@ import static uk.co.real_logic.aeron.common.ErrorCode.*;
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.driver.Configuration.RETRANS_UNICAST_DELAY_DEFAULT_NS;
 import static uk.co.real_logic.aeron.driver.Configuration.RETRANS_UNICAST_LINGER_DEFAULT_NS;
+import static uk.co.real_logic.aeron.driver.Configuration.subscriptionTermWindowSize;
 import static uk.co.real_logic.aeron.driver.MediaDriver.Context;
 
 /**
@@ -284,8 +285,6 @@ public class DriverConductor extends Agent
                     logger.log(EventCode.CMD_IN_REMOVE_SUBSCRIPTION, buffer, index, length);
                     flyweight = subscriptionMessageFlyweight;
                     onRemoveSubscription(
-                        subscriptionMessageFlyweight.channel(),
-                        subscriptionMessageFlyweight.streamId(),
                         subscriptionMessageFlyweight.registrationCorrelationId(),
                         subscriptionMessageFlyweight.correlationId());
                     break;
@@ -465,7 +464,7 @@ public class DriverConductor extends Agent
     }
 
     private void onRemoveSubscription(
-        final String channel, final int streamId, final long registrationCorrelationId, final long correlationId)
+            final long registrationCorrelationId, final long correlationId)
     {
         final DriverSubscription subscription = removeSubscription(subscriptions, registrationCorrelationId);
         if (null == subscription)
@@ -475,10 +474,10 @@ public class DriverConductor extends Agent
 
         final ReceiveChannelEndpoint channelEndpoint = subscription.receiveChannelEndpoint();
 
-        final int refCount = channelEndpoint.decRefToStream(streamId);
+        final int refCount = channelEndpoint.decRefToStream(subscription);
         if (0 == refCount)
         {
-            while (!receiverProxy.removeSubscription(channelEndpoint, streamId))
+            while (!receiverProxy.removeSubscription(channelEndpoint, subscription.streamId()));
             {
                 systemCounters.receiverProxyFails().orderedIncrement();
                 Thread.yield();
@@ -654,7 +653,7 @@ public class DriverConductor extends Agent
 
                 subscriptions.remove(i);
 
-                if (0 == channelEndpoint.decRefToStream(streamId))
+                if (0 == channelEndpoint.decRefToStream(subscription))
                 {
                     while (!receiverProxy.removeSubscription(channelEndpoint, streamId))
                     {

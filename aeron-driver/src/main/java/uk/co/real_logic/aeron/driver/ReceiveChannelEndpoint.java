@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.collections.Int2ObjectHashMap;
+import uk.co.real_logic.aeron.common.collections.MutableInteger;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.event.EventCode;
 import uk.co.real_logic.aeron.common.event.EventLogger;
@@ -33,7 +34,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
     private final DataFrameDispatcher dispatcher;
     private final EventLogger logger;
 
-    private final Int2ObjectHashMap<Integer> refCountByStreamIdMap = new Int2ObjectHashMap<>();
+    private final Int2ObjectHashMap<MutableInteger> refCountByStreamIdMap = new Int2ObjectHashMap<>();
 
     private final ByteBuffer smBuffer = ByteBuffer.allocateDirect(StatusMessageFlyweight.HEADER_LENGTH);
     private final ByteBuffer nakBuffer = ByteBuffer.allocateDirect(NakFlyweight.HEADER_LENGTH);
@@ -81,48 +82,48 @@ public class ReceiveChannelEndpoint implements AutoCloseable
 
     public int getRefCountToStream(final int streamId)
     {
-        final Integer count = refCountByStreamIdMap.get(streamId);
+        final MutableInteger count = refCountByStreamIdMap.get(streamId);
 
         if (null == count)
         {
             return 0;
         }
 
-        return count;
+        return count.value;
     }
 
     public int incRefToStream(final int streamId)
     {
-        Integer count = refCountByStreamIdMap.get(streamId);
+        MutableInteger count = refCountByStreamIdMap.get(streamId);
 
-        count = (null == count) ? 1 : count + 1;
+        if(null == count) {
+            count = new MutableInteger();
+            refCountByStreamIdMap.put(streamId, count);
+        }
 
-        refCountByStreamIdMap.put(streamId, count);
+        count.value++;
 
-        return count;
+        return count.value;
     }
 
-    public int decRefToStream(final int streamId)
+    public int decRefToStream(final DriverSubscription subscription)
     {
-        Integer count = refCountByStreamIdMap.get(streamId);
+        final int streamId = subscription.streamId();
+        MutableInteger count = refCountByStreamIdMap.get(streamId);
 
         if (null == count)
         {
             throw new IllegalStateException("Could not find channel Id to decrement: " + streamId);
         }
 
-        count--;
+        count.value--;
 
-        if (0 == count)
+        if (0 == count.value)
         {
             refCountByStreamIdMap.remove(streamId);
         }
-        else
-        {
-            refCountByStreamIdMap.put(streamId, count);
-        }
 
-        return count;
+        return count.value;
     }
 
     public int streamCount()

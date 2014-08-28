@@ -475,7 +475,7 @@ public class DriverConductor extends Agent
 
         final ReceiveChannelEndpoint channelEndpoint = subscription.receiveChannelEndpoint();
 
-        final int refCount = channelEndpoint.decRefToStream(subscription);
+        final int refCount = channelEndpoint.decRefToStream(subscription.streamId());
         if (0 == refCount)
         {
             while (!receiverProxy.removeSubscription(channelEndpoint, subscription.streamId()))
@@ -643,7 +643,7 @@ public class DriverConductor extends Agent
 
                 subscriptions.remove(i);
 
-                if (0 == channelEndpoint.decRefToStream(subscription))
+                if (0 == channelEndpoint.decRefToStream(subscription.streamId()))
                 {
                     while (!receiverProxy.removeSubscription(channelEndpoint, streamId))
                     {

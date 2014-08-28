@@ -80,23 +80,12 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         return dispatcher;
     }
 
-    public int getRefCountToStream(final int streamId)
-    {
-        final MutableInteger count = refCountByStreamIdMap.get(streamId);
-
-        if (null == count)
-        {
-            return 0;
-        }
-
-        return count.value;
-    }
-
     public int incRefToStream(final int streamId)
     {
         MutableInteger count = refCountByStreamIdMap.get(streamId);
 
-        if(null == count) {
+        if (null == count)
+        {
             count = new MutableInteger();
             refCountByStreamIdMap.put(streamId, count);
         }
@@ -106,14 +95,13 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         return count.value;
     }
 
-    public int decRefToStream(final DriverSubscription subscription)
+    public int decRefToStream(final int streamId)
     {
-        final int streamId = subscription.streamId();
         MutableInteger count = refCountByStreamIdMap.get(streamId);
 
         if (null == count)
         {
-            throw new IllegalStateException("Could not find channel Id to decrement: " + streamId);
+            throw new IllegalStateException("Could not find stream Id to decrement: " + streamId);
         }
 
         count.value--;

@@ -330,14 +330,7 @@ public final class Aeron implements AutoCloseable
             IoUtil.unmap(defaultCounterLabelsBuffer);
             IoUtil.unmap(defaultCounterValuesBuffer);
 
-            try
-            {
-                super.close();
-            }
-            catch (final Exception ex)
-            {
-                throw new RuntimeException(ex);
-            }
+            super.close();
         }
     }
 }

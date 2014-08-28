@@ -396,7 +396,6 @@ public class DriverConductor extends Agent
                 capacity);
 
             channelEndpoint.addPublication(publication, retransmitHandler, senderFlowControl);
-
             publications.add(publication);
 
             final NewPublicationCmd cmd = new NewPublicationCmd(publication);
@@ -407,6 +406,14 @@ public class DriverConductor extends Agent
             }
         }
 
+        final PublicationRegistration existingRegistration =
+            publicationRegistrations.put(correlationId, new PublicationRegistration(publication, aeronClient));
+        if (null != existingRegistration)
+        {
+            publicationRegistrations.put(correlationId, existingRegistration);
+            throw new ControlProtocolException(GENERIC_ERROR, "correlation id already in use.");
+        }
+
         publication.incRef();
         final int initialTermId = publication.initialTermId();
         final TermBuffers termBuffers = publication.termBuffers();
@@ -414,8 +421,6 @@ public class DriverConductor extends Agent
 
         clientProxy.onNewTermBuffers(
             ON_NEW_PUBLICATION, channel, streamId, sessionId, initialTermId, termBuffers, correlationId, positionCounterId);
-
-        publicationRegistrations.put(correlationId, new PublicationRegistration(publication, aeronClient, correlationId));
     }
 
     private void onRemovePublication(final long registrationId, final long correlationId)
@@ -573,7 +578,7 @@ public class DriverConductor extends Agent
         while (iter.hasNext())
         {
             final PublicationRegistration registration = iter.next();
-            if (registration.checkKeepaliveTimeout(now))
+            if (registration.hasClientTimedOut(now))
             {
                 iter.remove();
             }

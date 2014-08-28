@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.conductor;
+package uk.co.real_logic.aeron;
 
 /**
  * Interface for encapsulating the strategy of mapping ByteBuffers at a giving location.
  */
-public interface BufferManager
+interface BufferManager
 {
     ManagedBuffer newBuffer(String location, int offset, int length);
 }

@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.conductor;
+package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.*;
 import uk.co.real_logic.aeron.common.*;
 import uk.co.real_logic.aeron.common.collections.ConnectionMap;
 import uk.co.real_logic.aeron.common.command.ConnectionMessageFlyweight;
@@ -41,7 +40,7 @@ import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
  * Client conductor takes responses and notifications from media driver and acts on them. As well as passes commands
  * to the media driver.
  */
-public class ClientConductor extends Agent implements DriverListener
+class ClientConductor extends Agent implements DriverListener
 {
     public static final int KEEPALIVE_TIMEOUT_MS = 500;
 

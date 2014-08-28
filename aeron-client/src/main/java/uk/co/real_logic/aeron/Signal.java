@@ -1,9 +1,9 @@
-package uk.co.real_logic.aeron.conductor;
+package uk.co.real_logic.aeron;
 
 /**
  * Signal a waiting thread that an event has occurred which it has been waiting on.
  */
-public class Signal
+class Signal
 {
     private boolean signalRaised;
 

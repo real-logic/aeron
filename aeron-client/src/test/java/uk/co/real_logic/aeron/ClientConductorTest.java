@@ -28,9 +28,6 @@ import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastReceiver;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.aeron.common.protocol.ErrorFlyweight;
-import uk.co.real_logic.aeron.conductor.ClientConductor;
-import uk.co.real_logic.aeron.conductor.DriverProxy;
-import uk.co.real_logic.aeron.conductor.Signal;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
 import uk.co.real_logic.aeron.exceptions.RegistrationException;
 

@@ -21,7 +21,6 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.status.PositionReporter;
-import uk.co.real_logic.aeron.conductor.ManagedBuffer;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -32,7 +31,7 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor
 /**
  * A Connection from a publisher to a subscriber.
  */
-public class Connection
+class Connection
 {
     public static final int HEADER_LENGTH = BitUtil.align(DataHeaderFlyweight.HEADER_LENGTH, WORD_ALIGNMENT);
 

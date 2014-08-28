@@ -21,8 +21,6 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.status.PositionIndicator;
-import uk.co.real_logic.aeron.conductor.ClientConductor;
-import uk.co.real_logic.aeron.conductor.ManagedBuffer;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -133,7 +131,7 @@ public class Publication implements AutoCloseable
     /**
      * Accessed by the client conductor.
      */
-    public void incRef()
+    void incRef()
     {
         synchronized (clientConductor)
         {

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.conductor;
+package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.common.IoUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
@@ -29,7 +29,7 @@ import static uk.co.real_logic.aeron.common.IoUtil.mapExistingFile;
  *
  * Note: Not thread-safe - Methods only called from ClientConductor
  */
-public class MappedBufferManager implements BufferManager
+class MappedBufferManager implements BufferManager
 {
     public ManagedBuffer newBuffer(final String location, final int offset, final int length)
     {

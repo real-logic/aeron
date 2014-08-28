@@ -18,8 +18,6 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.aeron.common.concurrent.AtomicArray;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.common.status.PositionReporter;
-import uk.co.real_logic.aeron.conductor.ClientConductor;
-import uk.co.real_logic.aeron.conductor.ManagedBuffer;
 
 /**
  * Aeron Subscriber API for receiving messages from publishers on a given channel and streamId pair.
@@ -99,7 +97,7 @@ public class Subscription implements AutoCloseable
         return connections.doLimitedAction(roundRobinIndex, fragmentCountLimit, Connection::poll);
     }
 
-    public void onTermBuffersMapped(
+    void onTermBuffersMapped(
         final int sessionId,
         final int termId,
         final LogReader[] logReaders,
@@ -109,7 +107,7 @@ public class Subscription implements AutoCloseable
         connections.add(new Connection(logReaders, sessionId, termId, dataHandler, positionReporter, managedBuffers));
     }
 
-    public boolean isConnected(final int sessionId)
+    boolean isConnected(final int sessionId)
     {
         return null != connections.findFirst((e) -> e.sessionId() == sessionId);
     }
@@ -120,7 +118,7 @@ public class Subscription implements AutoCloseable
      * @param sessionId for connection to be removed.
      * @return true if it removed something, false otherwise
      */
-    public boolean removeConnection(final int sessionId)
+    boolean removeConnection(final int sessionId)
     {
         final Connection connection = connections.remove(conn -> conn.sessionId() == sessionId);
         if (connection != null)

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.conductor;
+package uk.co.real_logic.aeron;
 
 import org.junit.Test;
 import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
@@ -53,14 +53,14 @@ public class DriverProxyTest
     {
         conductor.removePublication(CORRELATION_ID);
         assertReadsOneMessage(
-                (msgTypeId, buffer, index, length) ->
-                {
-                    final RemoveMessageFlyweight message = new RemoveMessageFlyweight();
-                    message.wrap(buffer, index);
+            (msgTypeId, buffer, index, length) ->
+            {
+                final RemoveMessageFlyweight message = new RemoveMessageFlyweight();
+                message.wrap(buffer, index);
 
-                    assertThat(msgTypeId, is(REMOVE_PUBLICATION));
-                    assertThat(message.registrationCorrelationId(), is(CORRELATION_ID));
-                }
+                assertThat(msgTypeId, is(REMOVE_PUBLICATION));
+                assertThat(message.registrationCorrelationId(), is(CORRELATION_ID));
+            }
         );
     }
 

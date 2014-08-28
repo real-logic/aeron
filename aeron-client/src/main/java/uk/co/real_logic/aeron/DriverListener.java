@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.conductor;
+package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.common.ErrorCode;
 import uk.co.real_logic.aeron.common.command.ConnectionMessageFlyweight;
@@ -22,7 +22,7 @@ import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
 /**
  * Callback interface for receiving messages from the driver.
  */
-public interface DriverListener
+interface DriverListener
 {
     void onNewPublication(
             String channel,

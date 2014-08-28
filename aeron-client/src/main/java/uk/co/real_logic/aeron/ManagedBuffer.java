@@ -1,8 +1,8 @@
-package uk.co.real_logic.aeron.conductor;
+package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 
-public interface ManagedBuffer extends AutoCloseable
+interface ManagedBuffer extends AutoCloseable
 {
     AtomicBuffer buffer();
 

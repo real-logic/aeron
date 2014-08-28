@@ -362,7 +362,8 @@ public class DriverConductor extends Agent
             final TermBuffers termBuffers = termBuffersFactory.newPublication(canonicalForm, sessionId, streamId);
 
             final int positionCounterId = allocatePositionCounter("publisher limit", channel, sessionId, streamId);
-            final PositionReporter positionReporter = new BufferPositionReporter(countersBuffer, positionCounterId, countersManager);
+            final PositionReporter positionReporter = new BufferPositionReporter(
+                countersBuffer, positionCounterId, countersManager);
 
             final SenderFlowControl senderFlowControl =
                 udpChannel.isMulticast() ? multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
@@ -393,7 +394,6 @@ public class DriverConductor extends Agent
 
             channelEndpoint.addPublication(publication, retransmitHandler, senderFlowControl);
 
-
             publications.add(publication);
 
             final NewPublicationCmd cmd = new NewPublicationCmd(publication);
@@ -412,8 +412,7 @@ public class DriverConductor extends Agent
         clientProxy.onNewTermBuffers(
             ON_NEW_PUBLICATION, channel, streamId, sessionId, initialTermId, termBuffers, correlationId, positionCounterId);
 
-        publicationRegistrations.put(correlationId, new PublicationRegistration(
-            publication, aeronClient, correlationId));
+        publicationRegistrations.put(correlationId, new PublicationRegistration(publication, aeronClient, correlationId));
     }
 
     private void onRemovePublication(
@@ -570,13 +569,13 @@ public class DriverConductor extends Agent
         final long now = timerWheel.now();
 
         // TODO: remove values() iteration
-        final Iterator<PublicationRegistration> registrations = publicationRegistrations.values().iterator();
-        while (registrations.hasNext())
+        final Iterator<PublicationRegistration> iter = publicationRegistrations.values().iterator();
+        while (iter.hasNext())
         {
-            PublicationRegistration registration = registrations.next();
+            final PublicationRegistration registration = iter.next();
             if (registration.checkKeepaliveTimeout(now))
             {
-                registrations.remove();
+                iter.remove();
             }
         }
 
@@ -586,8 +585,6 @@ public class DriverConductor extends Agent
     private void onCheckPublications()
     {
         final long now = timerWheel.now();
-
-
         final ArrayList<DriverPublication> publications = this.publications;
 
         for (int i = publications.size() - 1; i >= 0; i--)

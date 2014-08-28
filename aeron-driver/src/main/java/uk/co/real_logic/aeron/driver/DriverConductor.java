@@ -467,23 +467,13 @@ public class DriverConductor extends Agent
     private void onRemoveSubscription(
         final String channel, final int streamId, final long registrationCorrelationId, final long correlationId)
     {
-        final UdpChannel udpChannel = UdpChannel.parse(channel);
-        final ReceiveChannelEndpoint channelEndpoint = receiveChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
-        if (null == channelEndpoint)
-        {
-            throw new ControlProtocolException(INVALID_CHANNEL, "channel unknown");
-        }
-
-        if (channelEndpoint.getRefCountToStream(streamId) == 0)
-        {
-            throw new ControlProtocolException(SUBSCRIBER_NOT_REGISTERED, "subscriptions unknown for stream");
-        }
-
         final DriverSubscription subscription = removeSubscription(subscriptions, registrationCorrelationId);
         if (null == subscription)
         {
             throw new ControlProtocolException(SUBSCRIBER_NOT_REGISTERED, "subscription not registered");
         }
+
+        final ReceiveChannelEndpoint channelEndpoint = subscription.receiveChannelEndpoint();
 
         final int refCount = channelEndpoint.decRefToStream(streamId);
         if (0 == refCount)
@@ -497,7 +487,7 @@ public class DriverConductor extends Agent
 
         if (channelEndpoint.streamCount() == 0)
         {
-            receiveChannelEndpointByChannelMap.remove(udpChannel.canonicalForm());
+            receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpTransport().udpChannel().canonicalForm());
             channelEndpoint.close();
         }
 

@@ -24,6 +24,12 @@ public class ExampleConfiguration
 {
     public static final String CHANNEL_PROP = "aeron.example.channel";
     public static final String STREAM_ID_PROP = "aeron.example.streamId";
+
+    public static final String PING_CHANNEL_PROP = "aeron.example.ping.channel";
+    public static final String PONG_CHANNEL_PROP = "aeron.example.pong.channel";
+    public static final String PING_STREAM_ID_PROP = "aeron.example.ping.streamId";
+    public static final String PONG_STREAM_ID_PROP = "aeron.example.pong.streamId";
+
     public static final String FRAME_COUNT_LIMIT_PROP = "aeron.example.frameCountLimit";
     public static final String MESSAGE_LENGTH_PROP = "aeron.example.messageLength";
     public static final String NUMBER_OF_MESSAGES_PROP = "aeron.example.numberOfMessages";
@@ -31,7 +37,11 @@ public class ExampleConfiguration
     public static final String EMBEDDED_MEDIA_DRIVER_PROP = "aeron.example.embeddedMediaDriver";
 
     public static final String CHANNEL;
+    public static final String PING_CHANNEL;
+    public static final String PONG_CHANNEL;
     public static final int STREAM_ID;
+    public static final int PING_STREAM_ID;
+    public static final int PONG_STREAM_ID;
     public static final int FRAME_COUNT_LIMIT;
     public static final int MESSAGE_LENGTH;
     public static final long NUMBER_OF_MESSAGES;
@@ -42,6 +52,10 @@ public class ExampleConfiguration
     {
         CHANNEL = System.getProperty(CHANNEL_PROP, "udp://localhost:40123");
         STREAM_ID = Integer.getInteger(STREAM_ID_PROP, 10);
+        PING_CHANNEL = System.getProperty(PING_CHANNEL_PROP, "udp://localhost:40123");
+        PONG_CHANNEL = System.getProperty(PONG_CHANNEL_PROP, "udp://localhost:40124");
+        PING_STREAM_ID = Integer.getInteger(PING_STREAM_ID_PROP, 10);
+        PONG_STREAM_ID = Integer.getInteger(PONG_STREAM_ID_PROP, 10);
         FRAME_COUNT_LIMIT = Integer.getInteger(FRAME_COUNT_LIMIT_PROP, 10);
         MESSAGE_LENGTH = Integer.getInteger(MESSAGE_LENGTH_PROP, 256);
         NUMBER_OF_MESSAGES = Long.getLong(NUMBER_OF_MESSAGES_PROP, 10_000_000);

@@ -336,7 +336,7 @@ public class DriverConductor extends Agent
     }
 
     private void onAddPublication(
-        final String channel, final int sessionId,  final int streamId, final long correlationId, final long clientId)
+        final String channel, final int sessionId, final int streamId, final long correlationId, final long clientId)
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel);
         SendChannelEndpoint channelEndpoint = sendChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
@@ -362,37 +362,37 @@ public class DriverConductor extends Agent
             final TermBuffers termBuffers = termBuffersFactory.newPublication(canonicalForm, sessionId, streamId);
 
             final int positionCounterId = allocatePositionCounter("publisher limit", channel, sessionId, streamId);
-            final PositionReporter positionReporter = new BufferPositionReporter(countersBuffer, positionCounterId, countersManager);
+            final PositionReporter positionReporter = new BufferPositionReporter(
+                countersBuffer, positionCounterId, countersManager);
 
             final SenderFlowControl senderFlowControl =
-                    udpChannel.isMulticast() ? multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
+                udpChannel.isMulticast() ? multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
 
             publication = new DriverPublication(
-                    correlationId,
-                    channelEndpoint,
-                    timerWheel,
-                    termBuffers,
-                    positionReporter,
-                    sessionId,
-                    streamId,
-                    initialTermId,
-                    DataHeaderFlyweight.HEADER_LENGTH,
-                    mtuLength,
-                    senderFlowControl.initialPositionLimit(initialTermId, capacity),
-                    logger,
-                    systemCounters);
+                correlationId,
+                channelEndpoint,
+                timerWheel,
+                termBuffers,
+                positionReporter,
+                sessionId,
+                streamId,
+                initialTermId,
+                DataHeaderFlyweight.HEADER_LENGTH,
+                mtuLength,
+                senderFlowControl.initialPositionLimit(initialTermId, capacity),
+                logger,
+                systemCounters);
 
             final RetransmitHandler retransmitHandler = new RetransmitHandler(
-                    timerWheel,
-                    systemCounters,
-                    DriverConductor.RETRANS_UNICAST_DELAY_GENERATOR,
-                    DriverConductor.RETRANS_UNICAST_LINGER_GENERATOR,
-                    composeNewRetransmitSender(publication),
-                    initialTermId,
-                    capacity);
+                timerWheel,
+                systemCounters,
+                DriverConductor.RETRANS_UNICAST_DELAY_GENERATOR,
+                DriverConductor.RETRANS_UNICAST_LINGER_GENERATOR,
+                composeNewRetransmitSender(publication),
+                initialTermId,
+                capacity);
 
             channelEndpoint.addPublication(publication, retransmitHandler, senderFlowControl);
-
 
             publications.add(publication);
 
@@ -410,14 +410,13 @@ public class DriverConductor extends Agent
         final int positionCounterId = publication.positionCounterId();
 
         clientProxy.onNewTermBuffers(
-                ON_NEW_PUBLICATION, channel, streamId, sessionId, initialTermId, termBuffers, correlationId, positionCounterId);
+            ON_NEW_PUBLICATION, channel, streamId, sessionId, initialTermId, termBuffers, correlationId, positionCounterId);
 
-        publicationRegistrations.put(correlationId, new PublicationRegistration(
-                publication, aeronClient, correlationId));
+        publicationRegistrations.put(correlationId, new PublicationRegistration(publication, aeronClient, correlationId));
     }
 
     private void onRemovePublication(
-            final long registrationId, final long correlationId)
+        final long registrationId, final long correlationId)
     {
         final PublicationRegistration registration = publicationRegistrations.remove(registrationId);
         if (registration == null)
@@ -466,8 +465,7 @@ public class DriverConductor extends Agent
         clientProxy.operationSucceeded(correlationId);
     }
 
-    private void onRemoveSubscription(
-            final long registrationCorrelationId, final long correlationId)
+    private void onRemoveSubscription(final long registrationCorrelationId, final long correlationId)
     {
         final DriverSubscription subscription = removeSubscription(subscriptions, registrationCorrelationId);
         if (null == subscription)
@@ -571,13 +569,13 @@ public class DriverConductor extends Agent
         final long now = timerWheel.now();
 
         // TODO: remove values() iteration
-        final Iterator<PublicationRegistration> registrations = publicationRegistrations.values().iterator();
-        while(registrations.hasNext())
+        final Iterator<PublicationRegistration> iter = publicationRegistrations.values().iterator();
+        while (iter.hasNext())
         {
-            PublicationRegistration registration = registrations.next();
+            final PublicationRegistration registration = iter.next();
             if (registration.checkKeepaliveTimeout(now))
             {
-                registrations.remove();
+                iter.remove();
             }
         }
 
@@ -587,15 +585,13 @@ public class DriverConductor extends Agent
     private void onCheckPublications()
     {
         final long now = timerWheel.now();
-
-
         final ArrayList<DriverPublication> publications = this.publications;
 
         for (int i = publications.size() - 1; i >= 0; i--)
         {
             final DriverPublication publication = publications.get(i);
 
-            if(!publication.hasRefs())
+            if (!publication.hasRefs())
             {
                 if (publication.checkFinishedSending(now))
                 {
@@ -604,11 +600,11 @@ public class DriverConductor extends Agent
                         final SendChannelEndpoint channelEndpoint = publication.sendChannelEndpoint();
 
                         logger.log(
-                                EventCode.REMOVE_PUBLICATION_CLEANUP,
-                                "%s %x:%x",
-                                channelEndpoint.udpChannel().originalUriAsString(),
-                                publication.sessionId(),
-                                publication.streamId());
+                            EventCode.REMOVE_PUBLICATION_CLEANUP,
+                            "%s %x:%x",
+                            channelEndpoint.udpChannel().originalUriAsString(),
+                            publication.sessionId(),
+                            publication.streamId());
 
                         channelEndpoint.removePublication(publication.sessionId(), publication.streamId());
                         publications.remove(i);
@@ -836,7 +832,7 @@ public class DriverConductor extends Agent
             }
         }
 
-        return  null;
+        return null;
     }
 
     private int allocatePositionCounter(final String type, final String dirName, final int sessionId, final int streamId)

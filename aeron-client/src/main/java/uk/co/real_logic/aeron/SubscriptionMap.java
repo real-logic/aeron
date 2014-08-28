@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.collections.Int2ObjectHashMap;
 
 import java.util.HashMap;

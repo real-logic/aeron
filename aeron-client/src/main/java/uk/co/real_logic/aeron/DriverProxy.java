@@ -74,7 +74,7 @@ class DriverProxy
         removeMessage.correlationId(correlationId);
         removeMessage.registrationCorrelationId(registrationId);
 
-        if (!driverCommandBuffer.write(REMOVE_PUBLICATION, writeBuffer, 0, removeMessage.length()))
+        if (!driverCommandBuffer.write(REMOVE_PUBLICATION, writeBuffer, 0, RemoveMessageFlyweight.length()))
         {
             throw new IllegalStateException("could not write publication message");
         }

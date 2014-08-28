@@ -236,12 +236,14 @@ public class DriverConductor extends Agent
 
     private void onCheckTimeouts()
     {
-        onCheckClients();
-        onCheckPublications();
-        onCheckPublicationRegistrations();
-        onCheckSubscriptions();
-        onCheckConnections();
-        onCheckPendingSetups();
+        final long now = timerWheel.now();
+
+        onCheckClients(now);
+        onCheckPublications(now);
+        onCheckPublicationRegistrations(now);
+        onCheckSubscriptions(now);
+        onCheckConnections(now);
+        onCheckPendingSetups(now);
 
         timerWheel.rescheduleTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, checkTimeoutTimer);
     }
@@ -564,10 +566,8 @@ public class DriverConductor extends Agent
         }
     }
 
-    private void onCheckPublicationRegistrations()
+    private void onCheckPublicationRegistrations(final long now)
     {
-        final long now = timerWheel.now();
-
         // TODO: remove values() iteration
         final Iterator<PublicationRegistration> iter = publicationRegistrations.values().iterator();
         while (iter.hasNext())
@@ -580,9 +580,8 @@ public class DriverConductor extends Agent
         }
     }
 
-    private void onCheckPublications()
+    private void onCheckPublications(final long now)
     {
-        final long now = timerWheel.now();
         final ArrayList<DriverPublication> publications = this.publications;
 
         for (int i = publications.size() - 1; i >= 0; i--)
@@ -620,9 +619,8 @@ public class DriverConductor extends Agent
         }
     }
 
-    private void onCheckSubscriptions()
+    private void onCheckSubscriptions(final long now)
     {
-        final long now = timerWheel.now();
         final ArrayList<DriverSubscription> subscriptions = this.subscriptions;
 
         for (int i = subscriptions.size() - 1; i >= 0; i--)
@@ -661,9 +659,8 @@ public class DriverConductor extends Agent
         }
     }
 
-    private void onCheckConnections()
+    private void onCheckConnections(final long now)
     {
-        final long now = timerWheel.now();
         final ArrayList<DriverConnection> connections = this.connections;
 
         for (int i = connections.size() - 1; i >= 0; i--)
@@ -729,10 +726,8 @@ public class DriverConductor extends Agent
         }
     }
 
-    private void onCheckClients()
+    private void onCheckClients(final long now)
     {
-        final long now = timerWheel.now();
-
         for (int i = clients.size() - 1; i >= 0; i--)
         {
             final AeronClient aeronClient = clients.get(i);
@@ -744,10 +739,8 @@ public class DriverConductor extends Agent
         }
     }
 
-    private void onCheckPendingSetups()
+    private void onCheckPendingSetups(final long now)
     {
-        final long now = timerWheel.now();
-
         for (int i = pendingSetups.size() - 1; i >= 0; i--)
         {
             final ElicitSetupFromSourceCmd cmd = pendingSetups.get(i);

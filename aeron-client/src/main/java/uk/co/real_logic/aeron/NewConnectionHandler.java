@@ -27,5 +27,5 @@ public interface NewConnectionHandler
      * @param streamId for the source
      * @param sessionId for the source
      */
-    void onNewConnection(final String channel, final int streamId, final int sessionId);
+    void onNewConnection(String channel, int streamId, int sessionId);
 }

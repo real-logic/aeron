@@ -16,4 +16,22 @@ public class PublicationRegistration
         this.registrationId = registrationId;
     }
 
+    public void remove()
+    {
+        publication.decRef();
+    }
+
+    public boolean checkKeepaliveTimeout(final long now)
+    {
+        if (client.hasTimedOut(now))
+        {
+            publication.decRef();
+            return true;
+        }
+
+        return false;
+    }
+
+
+
 }

@@ -44,4 +44,9 @@ public class AeronClient
     {
         timeOfLastKeepalive = now;
     }
+
+    public boolean hasTimedOut(final long now)
+    {
+        return timeOfLastKeepalive() + Configuration.CLIENT_LIVENESS_TIMEOUT_NS < now;
+    }
 }

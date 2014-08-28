@@ -40,6 +40,7 @@ public class Publication implements AutoCloseable
     private final int streamId;
     private final int sessionId;
     private final ManagedBuffer[] managedBuffers;
+    private final long correlationId;
     private final LogAppender[] logAppenders;
     private final PositionIndicator limit;
     private final AtomicInteger activeTermId;
@@ -52,20 +53,22 @@ public class Publication implements AutoCloseable
     private int activeIndex;
 
     public Publication(
-        final ClientConductor clientConductor,
-        final String channel,
-        final int streamId,
-        final int sessionId,
-        final int initialTermId,
-        final LogAppender[] logAppenders,
-        final PositionIndicator limit,
-        final ManagedBuffer[] managedBuffers)
+            final ClientConductor clientConductor,
+            final String channel,
+            final int streamId,
+            final int sessionId,
+            final int initialTermId,
+            final LogAppender[] logAppenders,
+            final PositionIndicator limit,
+            final ManagedBuffer[] managedBuffers,
+            final long correlationId)
     {
         this.clientConductor = clientConductor;
         this.channel = channel;
         this.streamId = streamId;
         this.sessionId = sessionId;
         this.managedBuffers = managedBuffers;
+        this.correlationId = correlationId;
         this.activeTermId = new AtomicInteger(initialTermId);
         this.logAppenders = logAppenders;
         this.limit = limit;
@@ -103,6 +106,11 @@ public class Publication implements AutoCloseable
     public int sessionId()
     {
         return sessionId;
+    }
+
+    public long correlationId()
+    {
+        return correlationId;
     }
 
     public void close()

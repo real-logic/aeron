@@ -15,15 +15,13 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import uk.co.real_logic.aeron.common.ErrorCode;
 import uk.co.real_logic.aeron.common.TimerWheel;
-import uk.co.real_logic.aeron.common.command.ControlProtocolEvents;
-import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
-import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
-import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
+import uk.co.real_logic.aeron.common.command.*;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.CountersManager;
 import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
@@ -32,6 +30,7 @@ import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBufferDescriptor;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
+import uk.co.real_logic.aeron.driver.cmd.ClosePublicationCmd;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
@@ -42,7 +41,9 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.common.ErrorCode.INVALID_CHANNEL;
-import static uk.co.real_logic.aeron.common.ErrorCode.PUBLICATION_STREAM_UNKNOWN;
+import static uk.co.real_logic.aeron.common.ErrorCode.PUBLICATION_UNKNOWN;
+import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ADD_PUBLICATION;
+import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.REMOVE_PUBLICATION;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
 import static uk.co.real_logic.aeron.driver.Configuration.*;
 
@@ -77,10 +78,14 @@ public class DriverConductorTest
 
     private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
     private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
+    private final RemoveMessageFlyweight removeMessage = new RemoveMessageFlyweight();
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
     private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(256));
 
     private final EventLogger mockConductorLogger = mock(EventLogger.class);
+
+    private final SenderProxy senderProxy = mock(SenderProxy.class);
+    private final ReceiverProxy receiverProxy = mock(ReceiverProxy.class);
 
     private long currentTime;
     private final TimerWheel wheel = new TimerWheel(
@@ -106,9 +111,9 @@ public class DriverConductorTest
             .unicastSenderFlowControl(UnicastSenderFlowControl::new)
             .multicastSenderFlowControl(DefaultMulticastSenderFlowControl::new)
             .conductorTimerWheel(wheel)
+            // TODO: remove
             .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
-            .senderCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .eventLogger(mockConductorLogger)
             .termBuffersFactory(mockTermBuffersFactory)
             .countersManager(countersManager);
@@ -117,12 +122,23 @@ public class DriverConductorTest
         ctx.clientProxy(mockClientProxy);
         ctx.countersBuffer(counterBuffer);
 
-        ctx.receiverProxy(new ReceiverProxy(ctx.receiverCommandQueue()));
-        ctx.senderProxy(new SenderProxy(ctx.senderCommandQueue()));
+        ctx.receiverProxy(receiverProxy);
+        ctx.senderProxy(senderProxy);
         ctx.driverConductorProxy(new DriverConductorProxy(ctx.conductorCommandQueue()));
 
         receiver = new Receiver(ctx);
         driverConductor = new DriverConductor(ctx);
+
+        when(senderProxy.newPublication(any())).thenReturn(true);
+        when(senderProxy.closePublication(any())).thenReturn(true);
+        when(senderProxy.retransmit(any())).thenReturn(true);
+
+        when(receiverProxy.addSubscription(any(), anyInt())).thenReturn(true);
+        when(receiverProxy.newConnection(any())).thenReturn(true);
+        when(receiverProxy.registerMediaEndpoint(any())).thenReturn(true);
+        when(receiverProxy.removeConnection(any())).thenReturn(true);
+        when(receiverProxy.removePendingSetup(any())).thenReturn(true);
+        when(receiverProxy.removeSubscription(any(), anyInt())).thenReturn(true);
     }
 
     @After
@@ -135,7 +151,7 @@ public class DriverConductorTest
     @Test
     public void shouldBeAbleToAddSinglePublication() throws Exception
     {
-        writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4000, CORRELATION_ID_1);
+        writePublicationMessage(ADD_PUBLICATION, 1, 2, 4000, CORRELATION_ID_1);
 
         driverConductor.doWork();
 
@@ -178,10 +194,10 @@ public class DriverConductorTest
     @Test
     public void shouldBeAbleToAddMultipleStreams() throws Exception
     {
-        writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4001, CORRELATION_ID_1);
-        writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 3, 4002, CORRELATION_ID_2);
-        writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 3, 2, 4003, CORRELATION_ID_3);
-        writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 3, 4, 4004, CORRELATION_ID_4);
+        writePublicationMessage(ADD_PUBLICATION, 1, 2, 4001, CORRELATION_ID_1);
+        writePublicationMessage(ADD_PUBLICATION, 1, 3, 4002, CORRELATION_ID_2);
+        writePublicationMessage(ADD_PUBLICATION, 3, 2, 4003, CORRELATION_ID_3);
+        writePublicationMessage(ADD_PUBLICATION, 3, 4, 4004, CORRELATION_ID_4);
 
         driverConductor.doWork();
 
@@ -191,8 +207,8 @@ public class DriverConductorTest
     @Test
     public void shouldBeAbleToRemoveSingleStream() throws Exception
     {
-        writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4005, CORRELATION_ID_1);
-        writePublicationMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1, 2, 4005, CORRELATION_ID_1);
+        writePublicationMessage(ADD_PUBLICATION, 1, 2, 4005, CORRELATION_ID_1);
+        writePublicationMessage(REMOVE_PUBLICATION, 1, 2, 4005, CORRELATION_ID_1);
 
         driverConductor.doWork();
 
@@ -206,22 +222,31 @@ public class DriverConductorTest
     @Test
     public void shouldBeAbleToRemoveMultipleStreams() throws Exception
     {
-        writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4006, CORRELATION_ID_1);
-        writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 3, 4007, CORRELATION_ID_2);
-        writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 3, 2, 4008, CORRELATION_ID_3);
-        writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 3, 4, 4008, CORRELATION_ID_4);
+        writePublicationMessage(ADD_PUBLICATION, 1, 2, 4006, CORRELATION_ID_1);
+        writePublicationMessage(ADD_PUBLICATION, 1, 3, 4007, CORRELATION_ID_2);
+        writePublicationMessage(ADD_PUBLICATION, 3, 2, 4008, CORRELATION_ID_3);
+        writePublicationMessage(ADD_PUBLICATION, 3, 4, 4008, CORRELATION_ID_4);
 
-        writePublicationMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1, 2, 4006, CORRELATION_ID_1);
-        writePublicationMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1, 3, 4007, CORRELATION_ID_2);
-        writePublicationMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 3, 2, 4008, CORRELATION_ID_3);
-        writePublicationMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 3, 4, 4008, CORRELATION_ID_4);
+        removePublicationMessage(CORRELATION_ID_1);
+        removePublicationMessage(CORRELATION_ID_2);
+        removePublicationMessage(CORRELATION_ID_3);
+        removePublicationMessage(CORRELATION_ID_4);
 
         driverConductor.doWork();
 
         processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(CLIENT_LIVENESS_TIMEOUT_NS));
         processTimersUntil(() -> wheel.now() >= TimeUnit.NANOSECONDS.toNanos(CLIENT_LIVENESS_TIMEOUT_NS * 2));
 
-        assertThat(driverConductor.publications().size(), is(0));
+        verify(senderProxy, times(4)).closePublication(any());
+    }
+
+    // TODO: check publication refs from 0 to 1
+
+    private void removePublicationMessage(final long registrationId)
+    {
+        removeMessage.wrap(writeBuffer, 0);
+        removeMessage.registrationCorrelationId(registrationId);
+        assertTrue(fromClientCommands.write(REMOVE_PUBLICATION, writeBuffer, 0, RemoveMessageFlyweight.length()));
     }
 
     @Test
@@ -286,43 +311,10 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldErrorOnAddDuplicateChannelOnExistingSession() throws Exception
-    {
-        writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4000, CORRELATION_ID_1);
-        writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4000, CORRELATION_ID_1);
-
-        driverConductor.doWork();
-
-        assertThat(driverConductor.publications().size(), is(1));
-        assertNotNull(driverConductor.publications().get(0));
-        assertThat(driverConductor.publications().get(0).sessionId(), is(1));
-        assertThat(driverConductor.publications().get(0).streamId(), is(2));
-
-        verify(mockClientProxy).onError(
-            eq(ErrorCode.PUBLICATION_STREAM_ALREADY_EXISTS), argThat(not(isEmptyOrNullString())), any(), anyInt());
-        verifyNeverSucceeds();
-        verifyExceptionLogged();
-    }
-
-    @Test
-    public void shouldErrorOnRemoveChannelOnUnknownChannel() throws Exception
-    {
-        writePublicationMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1, 2, 4000, CORRELATION_ID_1);
-
-        driverConductor.doWork();
-
-        assertThat(driverConductor.publications().size(), is(0));
-
-        verify(mockClientProxy).onError(eq(INVALID_CHANNEL), argThat(not(isEmptyOrNullString())), any(), anyInt());
-        verifyNeverSucceeds();
-        verifyExceptionLogged();
-    }
-
-    @Test
     public void shouldErrorOnRemoveChannelOnUnknownSessionId() throws Exception
     {
-        writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4000, CORRELATION_ID_1);
-        writePublicationMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 2, 2, 4000, CORRELATION_ID_1);
+        writePublicationMessage(ADD_PUBLICATION, 1, 2, 4000, CORRELATION_ID_1);
+        writePublicationMessage(REMOVE_PUBLICATION, 2, 2, 4000, CORRELATION_ID_1);
 
         driverConductor.doWork();
 
@@ -331,7 +323,7 @@ public class DriverConductorTest
         assertThat(driverConductor.publications().get(0).sessionId(), is(1));
         assertThat(driverConductor.publications().get(0).streamId(), is(2));
 
-        verify(mockClientProxy).onError(eq(PUBLICATION_STREAM_UNKNOWN), argThat(not(isEmptyOrNullString())), any(), anyInt());
+        verify(mockClientProxy).onError(eq(PUBLICATION_UNKNOWN), argThat(not(isEmptyOrNullString())), any(), anyInt());
         verifyNeverSucceeds();
         verifyExceptionLogged();
     }
@@ -339,8 +331,8 @@ public class DriverConductorTest
     @Test
     public void shouldErrorOnRemoveChannelOnUnknownStreamId() throws Exception
     {
-        writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4000, CORRELATION_ID_1);
-        writePublicationMessage(ControlProtocolEvents.REMOVE_PUBLICATION, 1, 3, 4000, CORRELATION_ID_1);
+        writePublicationMessage(ADD_PUBLICATION, 1, 2, 4000, CORRELATION_ID_1);
+        writePublicationMessage(REMOVE_PUBLICATION, 1, 3, 4000, CORRELATION_ID_1);
 
         driverConductor.doWork();
 
@@ -349,7 +341,7 @@ public class DriverConductorTest
         assertThat(driverConductor.publications().get(0).sessionId(), is(1));
         assertThat(driverConductor.publications().get(0).streamId(), is(2));
 
-        verify(mockClientProxy).onError(eq(PUBLICATION_STREAM_UNKNOWN), argThat(not(isEmptyOrNullString())), any(), anyInt());
+        verify(mockClientProxy).onError(eq(PUBLICATION_UNKNOWN), argThat(not(isEmptyOrNullString())), any(), anyInt());
         verifyNeverSucceeds();
         verifyExceptionLogged();
     }
@@ -371,7 +363,7 @@ public class DriverConductorTest
     @Test
     public void shouldTimeoutPublication() throws Exception
     {
-        writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4000, CORRELATION_ID_1);
+        writePublicationMessage(ADD_PUBLICATION, 1, 2, 4000, CORRELATION_ID_1);
 
         driverConductor.doWork();
 
@@ -390,7 +382,7 @@ public class DriverConductorTest
     @Test
     public void shouldNotTimeoutPublicationOnKeepAlive() throws Exception
     {
-        writePublicationMessage(ControlProtocolEvents.ADD_PUBLICATION, 1, 2, 4000, CORRELATION_ID_1);
+        writePublicationMessage(ADD_PUBLICATION, 1, 2, 4000, CORRELATION_ID_1);
 
         driverConductor.doWork();
 

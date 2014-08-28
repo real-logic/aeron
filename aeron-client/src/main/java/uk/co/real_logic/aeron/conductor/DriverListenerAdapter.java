@@ -70,7 +70,8 @@ public class DriverListenerAdapter implements MessageHandler
 
                 if (msgTypeId == ON_NEW_PUBLICATION && logBuffersMessage.correlationId() == activeCorrelationId)
                 {
-                    listener.onNewPublication(channel, streamId, sessionId, termId, positionCounterId, logBuffersMessage);
+                    listener.onNewPublication(
+                            channel, streamId, sessionId, termId, positionCounterId, logBuffersMessage, activeCorrelationId);
                 }
                 else if (msgTypeId == ON_NEW_CONNECTION)
                 {

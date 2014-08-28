@@ -43,7 +43,6 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.common.ErrorCode.INVALID_CHANNEL;
-import static uk.co.real_logic.aeron.common.ErrorCode.PUBLICATION_STREAM_ALREADY_EXISTS;
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ON_NEW_CONNECTION;
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ON_NEW_PUBLICATION;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
@@ -59,6 +58,8 @@ public class ClientConductorTest extends MockBufferUsage
 
     private static final int BROADCAST_BUFFER_SZ = (16 * 1024) + BroadcastBufferDescriptor.TRAILER_LENGTH;
     private static final long CORRELATION_ID = 2000;
+    private static final long CORRELATION_ID_2 = 2002;
+
     private static final int AWAIT_TIMEOUT = 100;
     private static final int MTU_LENGTH = 1280; // from CommonContext
 
@@ -91,10 +92,12 @@ public class ClientConductorTest extends MockBufferUsage
         driverProxy = mock(DriverProxy.class);
         signal = mock(Signal.class);
 
-        when(driverProxy.addPublication(any(), anyInt(), anyInt())).thenReturn(CORRELATION_ID);
+        when(driverProxy.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1)).thenReturn(CORRELATION_ID);
+        when(driverProxy.addPublication(CHANNEL, STREAM_ID_2, SESSION_ID_2)).thenReturn(CORRELATION_ID_2);
+
         when(driverProxy.addSubscription(any(), anyInt())).thenReturn(CORRELATION_ID);
 
-        willNotifyNewBuffer();
+        willNotifyNewBuffer(STREAM_ID_1, SESSION_ID_1, CORRELATION_ID);
 
         conductor = new ClientConductor(
             idleStrategy,
@@ -140,19 +143,6 @@ public class ClientConductorTest extends MockBufferUsage
         addPublication();
     }
 
-    @Test(expected = RegistrationException.class)
-    public void shouldFailToAddPublicationOnMediaDriverError()
-    {
-        doAnswer(
-            (invocation) ->
-            {
-                conductor.onError(PUBLICATION_STREAM_ALREADY_EXISTS, "publication and session already exist on channel");
-                return null;
-            }).when(signal).await(anyLong());
-
-        addPublication();
-    }
-
     @Test
     public void conductorCachesPublicationInstances()
     {
@@ -170,7 +160,7 @@ public class ClientConductorTest extends MockBufferUsage
 
         publication.release();
 
-        (driverProxy).removePublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
+        driverProxy.removePublication(CORRELATION_ID);
     }
 
     @Test
@@ -181,7 +171,7 @@ public class ClientConductorTest extends MockBufferUsage
         willNotifyOperationSucceeded();
         firstPublication.release();
 
-        willNotifyNewBuffer();
+        willNotifyNewBuffer(STREAM_ID_1, SESSION_ID_1, CORRELATION_ID);
         Publication secondPublication = addPublication();
 
         assertThat(firstPublication, not(sameInstance(secondPublication)));
@@ -210,27 +200,28 @@ public class ClientConductorTest extends MockBufferUsage
         addPublication();
 
         publication.release();
-        verify(driverProxy, never()).removePublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
+        verify(driverProxy, never()).removePublication(CORRELATION_ID);
 
         willNotifyOperationSucceeded();
 
         publication.release();
-        verify(driverProxy).removePublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
+        verify(driverProxy).removePublication(CORRELATION_ID);
     }
 
     @Test
     public void closingAPublicationDoesNotRemoveOtherPublications() throws Exception
     {
         Publication publication = conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
+
+        willNotifyNewBuffer(STREAM_ID_2, SESSION_ID_2, CORRELATION_ID_2);
         conductor.addPublication(CHANNEL, STREAM_ID_2, SESSION_ID_2);
 
         willNotifyOperationSucceeded();
-
         publication.release();
 
-        verify(driverProxy).removePublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
+        verify(driverProxy).removePublication(CORRELATION_ID);
 
-        verify(driverProxy, never()).removePublication(CHANNEL, STREAM_ID_2, SESSION_ID_2);
+        verify(driverProxy, never()).removePublication(CORRELATION_ID_2);
     }
 
     // ---------------------------------
@@ -287,7 +278,7 @@ public class ClientConductorTest extends MockBufferUsage
 
         Subscription subscription = addSubscription();
 
-        sendNewBufferNotification(ON_NEW_CONNECTION, SESSION_ID_1, TERM_ID_1);
+        sendNewBufferNotification(ON_NEW_CONNECTION, SESSION_ID_1, TERM_ID_1, STREAM_ID_1, CORRELATION_ID);
         conductor.doWork();
 
         assertFalse(subscription.hasNoConnections());
@@ -304,11 +295,11 @@ public class ClientConductorTest extends MockBufferUsage
         return conductor.addSubscription(CHANNEL, STREAM_ID_1, dataHandler);
     }
 
-    private void sendNewBufferNotification(final int msgTypeId, final int sessionId, final int termId)
+    private void sendNewBufferNotification(final int msgTypeId, final int sessionId, final int termId, final int streamId, final long correlationId)
     {
-        newBufferMessage.streamId(STREAM_ID_1)
+        newBufferMessage.streamId(streamId)
                         .sessionId(sessionId)
-                        .correlationId(CORRELATION_ID)
+                        .correlationId(correlationId)
                         .termId(termId);
 
         IntStream.range(0, TermHelper.BUFFER_COUNT).forEach(
@@ -352,12 +343,12 @@ public class ClientConductorTest extends MockBufferUsage
             }).when(signal).await(anyLong());
     }
 
-    private void willNotifyNewBuffer()
+    private void willNotifyNewBuffer(final int streamId, final int sessionId, final long correlationId)
     {
         doAnswer(
             invocation ->
             {
-                sendNewBufferNotification(ON_NEW_PUBLICATION, SESSION_ID_1, TERM_ID_1);
+                sendNewBufferNotification(ON_NEW_PUBLICATION, sessionId, TERM_ID_1, streamId, correlationId);
                 conductor.doWork();
                 return null;
             }).when(signal).await(anyLong());

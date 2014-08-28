@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.conductor;
 
 import org.junit.Test;
 import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
+import uk.co.real_logic.aeron.common.command.RemoveMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.MessageHandler;
@@ -50,7 +51,17 @@ public class DriverProxyTest
     @Test
     public void threadSendsRemoveChannelMessage()
     {
-        threadSendsChannelMessage(() -> conductor.removePublication(CHANNEL, STREAM_ID, SESSION_ID), REMOVE_PUBLICATION);
+        conductor.removePublication(CORRELATION_ID);
+        assertReadsOneMessage(
+                (msgTypeId, buffer, index, length) ->
+                {
+                    final RemoveMessageFlyweight message = new RemoveMessageFlyweight();
+                    message.wrap(buffer, index);
+
+                    assertThat(msgTypeId, is(REMOVE_PUBLICATION));
+                    assertThat(message.registrationCorrelationId(), is(CORRELATION_ID));
+                }
+        );
     }
 
     private void threadSendsChannelMessage(final Runnable sendMessage, final int expectedMsgTypeId)

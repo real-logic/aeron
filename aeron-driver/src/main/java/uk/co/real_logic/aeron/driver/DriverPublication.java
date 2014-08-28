@@ -43,8 +43,6 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogScanner.Avai
  */
 public class DriverPublication implements AutoCloseable
 {
-    public enum Status {ACTIVE, EOF, FLUSHED}
-
     private final long id;
 
     private final TimerWheel timerWheel;
@@ -63,7 +61,6 @@ public class DriverPublication implements AutoCloseable
     private final SendChannelEndpoint channelEndpoint;
     private final TermBuffers termBuffers;
     private final PositionReporter publisherLimitReporter;
-    private final AeronClient aeronClient;
 
     private final SetupFlyweight setupHeader = new SetupFlyweight();
 
@@ -78,7 +75,7 @@ public class DriverPublication implements AutoCloseable
     private final AvailabilityHandler sendTransmissionUnitFunc;
     private final AvailabilityHandler onSendRetransmitFunc;
 
-    private volatile Status status = Status.ACTIVE;
+    private volatile boolean isActive = true;
     private int activeIndex = 0;
     private int retransmitIndex = 0;
     private int statusMessagesReceivedCount = 0;
@@ -90,6 +87,7 @@ public class DriverPublication implements AutoCloseable
     private int lastSentTermId;
     private int lastSentTermOffset;
     private int lastSentLength;
+    private int refCount = 0;
 
     public DriverPublication(
         final long id,
@@ -115,7 +113,6 @@ public class DriverPublication implements AutoCloseable
         this.dstAddress = channelEndpoint.udpChannel().remoteData();
         this.timerWheel = timerWheel;
         this.publisherLimitReporter = publisherLimitReporter;
-        this.aeronClient = aeronClient;
         this.sessionId = sessionId;
         this.streamId = streamId;
         this.headerLength = headerLength;
@@ -167,7 +164,7 @@ public class DriverPublication implements AutoCloseable
     {
         int workCount = 0;
 
-        if (status != Status.FLUSHED)
+        if (isActive)
         {
             final int availableWindow = (int)(positionLimit.get() - sentPosition);
             final int scanLimit = Math.min(availableWindow, mtuLength);
@@ -235,24 +232,9 @@ public class DriverPublication implements AutoCloseable
         return 0;
     }
 
-    public long timeOfLastKeepaliveFromClient()
-    {
-        return aeronClient.timeOfLastKeepalive();
-    }
-
-    public Status status()
-    {
-        return status;
-    }
-
-    public void status(final Status status)
-    {
-        this.status = status;
-    }
-
     public boolean isFlushed()
     {
-        return status != Status.ACTIVE && logScanners[activeIndex].remaining() == 0;
+        return refCount == 0 && logScanners[activeIndex].remaining() == 0;
     }
 
     public int statusMessagesSeenCount()
@@ -434,5 +416,35 @@ public class DriverPublication implements AutoCloseable
     private void updateTimeOfLastSendOrSetup(final long time)
     {
         timeOfLastSendOrHeartbeat = time;
+    }
+
+    public int decRef()
+    {
+        return --refCount;
+    }
+
+    public int incRef()
+    {
+        return ++refCount;
+    }
+
+    public boolean isActive()
+    {
+        return isActive;
+    }
+
+    public boolean checkFinishedSending()
+    {
+        boolean isFlushed = isFlushed();
+        if (isFlushed)
+        {
+            isActive = false;
+        }
+        return isFlushed;
+    }
+
+    public boolean hasRefs()
+    {
+        return refCount > 0;
     }
 }

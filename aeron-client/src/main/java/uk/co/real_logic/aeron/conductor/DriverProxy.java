@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.conductor;
 
 import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
+import uk.co.real_logic.aeron.common.command.RemoveMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
@@ -43,6 +44,8 @@ public class DriverProxy
     private final AtomicBuffer keepaliveBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(MSG_BUFFER_CAPACITY));
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
 
+    private final RemoveMessageFlyweight removeMessage = new RemoveMessageFlyweight();
+
     private final RingBuffer driverCommandBuffer;
 
     private final long clientId;
@@ -55,6 +58,7 @@ public class DriverProxy
         subscriptionMessage.wrap(writeBuffer, 0);
 
         correlatedMessage.wrap(keepaliveBuffer, 0);
+        removeMessage.wrap(writeBuffer, 0);
 
         clientId = driverCommandBuffer.nextCorrelationId();
     }
@@ -64,9 +68,18 @@ public class DriverProxy
         return sendPublicationMessage(channel, streamId, sessionId, ADD_PUBLICATION);
     }
 
-    public long removePublication(final String channel, final int streamId, final int sessionId)
+    public long removePublication(final long registrationId)
     {
-        return sendPublicationMessage(channel, streamId, sessionId, REMOVE_PUBLICATION);
+        final long correlationId = driverCommandBuffer.nextCorrelationId();
+        removeMessage.correlationId(correlationId);
+        removeMessage.registrationCorrelationId(registrationId);
+
+        if (!driverCommandBuffer.write(REMOVE_PUBLICATION, writeBuffer, 0, removeMessage.length()))
+        {
+            throw new IllegalStateException("could not write publication message");
+        }
+
+        return correlationId;
     }
 
     public long addSubscription(final String channel, final int streamId)
@@ -96,8 +109,8 @@ public class DriverProxy
 
         publicationMessage.clientId(clientId);
         publicationMessage.correlationId(correlationId);
-        publicationMessage.sessionId(sessionId);
         publicationMessage.streamId(streamId);
+        publicationMessage.sessionId(sessionId);
         publicationMessage.channel(channel);
 
         if (!driverCommandBuffer.write(msgTypeId, writeBuffer, 0, publicationMessage.length()))

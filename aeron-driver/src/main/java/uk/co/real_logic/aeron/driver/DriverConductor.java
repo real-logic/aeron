@@ -16,8 +16,10 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.*;
+import uk.co.real_logic.aeron.common.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
+import uk.co.real_logic.aeron.common.command.RemoveMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.*;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner;
@@ -37,6 +39,7 @@ import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -46,7 +49,6 @@ import static uk.co.real_logic.aeron.common.ErrorCode.*;
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.driver.Configuration.RETRANS_UNICAST_DELAY_DEFAULT_NS;
 import static uk.co.real_logic.aeron.driver.Configuration.RETRANS_UNICAST_LINGER_DEFAULT_NS;
-import static uk.co.real_logic.aeron.driver.Configuration.subscriptionTermWindowSize;
 import static uk.co.real_logic.aeron.driver.MediaDriver.Context;
 
 /**
@@ -83,6 +85,7 @@ public class DriverConductor extends Agent
     private final HashMap<String, ReceiveChannelEndpoint> receiveChannelEndpointByChannelMap = new HashMap<>();
     private final TimerWheel timerWheel;
     private final ArrayList<DriverPublication> publications = new ArrayList<>();
+    private final Long2ObjectHashMap<PublicationRegistration> publicationRegistrations = new Long2ObjectHashMap<>();
     private final ArrayList<DriverSubscription> subscriptions = new ArrayList<>();
     private final ArrayList<DriverConnection> connections = new ArrayList<>();
     private final ArrayList<AeronClient> clients = new ArrayList<>();
@@ -94,6 +97,7 @@ public class DriverConductor extends Agent
     private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
     private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
+    private final RemoveMessageFlyweight removeMessage = new RemoveMessageFlyweight();
 
     private final int mtuLength;
     private final int capacity;
@@ -104,6 +108,7 @@ public class DriverConductor extends Agent
     private final double dataLossRate;
     private final double controlLossRate;
     private final TimerWheel.Timer publicationCheckTimer;
+    private final TimerWheel.Timer publicationRegistrationCheckTimer;
     private final TimerWheel.Timer subscriptionCheckTimer;
     private final TimerWheel.Timer connectionCheckTimer;
     private final TimerWheel.Timer clientCheckTimer;
@@ -111,8 +116,8 @@ public class DriverConductor extends Agent
     private final CountersManager countersManager;
     private final AtomicBuffer countersBuffer;
     private final EventLogger logger;
-    private final SystemCounters systemCounters;
 
+    private final SystemCounters systemCounters;
     private final Consumer<Object> onReceiverCommandFunc;
     private final MessageHandler onClientCommandFunc;
 
@@ -135,7 +140,9 @@ public class DriverConductor extends Agent
         this.countersBuffer = ctx.countersBuffer();
 
         timerWheel = ctx.conductorTimerWheel();
+        // TODO: can these become a single timer?
         publicationCheckTimer = newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onCheckPublications);
+        publicationRegistrationCheckTimer = newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onCheckPublicationRegistrations);
         subscriptionCheckTimer = newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onCheckSubscriptions);
         connectionCheckTimer = newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onCheckConnections);
         clientCheckTimer = newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onCheckClients);
@@ -241,6 +248,7 @@ public class DriverConductor extends Agent
         final PublicationMessageFlyweight publicationMessageFlyweight = publicationMessage;
         final SubscriptionMessageFlyweight subscriptionMessageFlyweight = subscriptionMessage;
         final CorrelatedMessageFlyweight correlatedMessageFlyweight = correlatedMessage;
+        final RemoveMessageFlyweight removeMessageFlyweight = removeMessage;
 
         try
         {
@@ -259,14 +267,12 @@ public class DriverConductor extends Agent
                     break;
 
                 case REMOVE_PUBLICATION:
-                    publicationMessageFlyweight.wrap(buffer, index);
+                    removeMessageFlyweight.wrap(buffer, index);
                     logger.log(EventCode.CMD_IN_REMOVE_PUBLICATION, buffer, index, length);
-                    flyweight = publicationMessageFlyweight;
+                    flyweight = removeMessageFlyweight;
                     onRemovePublication(
-                        publicationMessageFlyweight.channel(),
-                        publicationMessageFlyweight.sessionId(),
-                        publicationMessageFlyweight.streamId(),
-                        publicationMessageFlyweight.correlationId());
+                        removeMessageFlyweight.registrationCorrelationId(),
+                        removeMessageFlyweight.correlationId());
                     break;
 
                 case ADD_SUBSCRIPTION:
@@ -343,85 +349,76 @@ public class DriverConductor extends Agent
             sendChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
         }
 
-        if (null != channelEndpoint.getPublication(sessionId, streamId))
-        {
-            throw new ControlProtocolException(
-                ErrorCode.PUBLICATION_STREAM_ALREADY_EXISTS, "publication and session already exist on channel");
-        }
-
         final AeronClient aeronClient = getOrAddClient(clientId);
-        final int initialTermId = BitUtil.generateRandomisedId();
-        final String canonicalForm = udpChannel.canonicalForm();
-        final TermBuffers termBuffers = termBuffersFactory.newPublication(canonicalForm, sessionId, streamId);
 
-        final int positionCounterId = allocatePositionCounter("publisher limit", channel, sessionId, streamId);
-        final PositionReporter positionReporter = new BufferPositionReporter(countersBuffer, positionCounterId, countersManager);
-
-        final SenderFlowControl senderFlowControl =
-            udpChannel.isMulticast() ? multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
-
-        final DriverPublication publication = new DriverPublication(
-            correlationId,
-            channelEndpoint,
-            timerWheel,
-            termBuffers,
-            positionReporter,
-            aeronClient,
-            sessionId,
-            streamId,
-            initialTermId,
-            DataHeaderFlyweight.HEADER_LENGTH,
-            mtuLength,
-            senderFlowControl.initialPositionLimit(initialTermId, capacity),
-            logger,
-            systemCounters);
-
-        final RetransmitHandler retransmitHandler = new RetransmitHandler(
-            timerWheel,
-            systemCounters,
-            DriverConductor.RETRANS_UNICAST_DELAY_GENERATOR,
-            DriverConductor.RETRANS_UNICAST_LINGER_GENERATOR,
-            composeNewRetransmitSender(publication),
-            initialTermId,
-            capacity);
-
-        channelEndpoint.addPublication(publication, retransmitHandler, senderFlowControl);
-
-        clientProxy.onNewTermBuffers(
-            ON_NEW_PUBLICATION, channel, streamId, sessionId, initialTermId, termBuffers, correlationId, positionCounterId);
-
-        publications.add(publication);
-
-        final NewPublicationCmd cmd = new NewPublicationCmd(publication);
-        while (!senderProxy.newPublication(cmd))
+        DriverPublication publication = channelEndpoint.getPublication(sessionId, streamId);
+        if (publication == null)
         {
-            systemCounters.senderProxyFails().orderedIncrement();
-            Thread.yield();
+            final int initialTermId = BitUtil.generateRandomisedId();
+            final String canonicalForm = udpChannel.canonicalForm();
+            final TermBuffers termBuffers = termBuffersFactory.newPublication(canonicalForm, sessionId, streamId);
+
+            final int positionCounterId = allocatePositionCounter("publisher limit", channel, sessionId, streamId);
+            final PositionReporter positionReporter = new BufferPositionReporter(countersBuffer, positionCounterId, countersManager);
+
+            final SenderFlowControl senderFlowControl =
+                    udpChannel.isMulticast() ? multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
+
+            publication = new DriverPublication(
+                    correlationId,
+                    channelEndpoint,
+                    timerWheel,
+                    termBuffers,
+                    positionReporter,
+                    aeronClient,
+                    sessionId,
+                    streamId,
+                    initialTermId,
+                    DataHeaderFlyweight.HEADER_LENGTH,
+                    mtuLength,
+                    senderFlowControl.initialPositionLimit(initialTermId, capacity),
+                    logger,
+                    systemCounters);
+
+            final RetransmitHandler retransmitHandler = new RetransmitHandler(
+                    timerWheel,
+                    systemCounters,
+                    DriverConductor.RETRANS_UNICAST_DELAY_GENERATOR,
+                    DriverConductor.RETRANS_UNICAST_LINGER_GENERATOR,
+                    composeNewRetransmitSender(publication),
+                    initialTermId,
+                    capacity);
+
+            channelEndpoint.addPublication(publication, retransmitHandler, senderFlowControl);
+
+            clientProxy.onNewTermBuffers(
+                    ON_NEW_PUBLICATION, channel, streamId, sessionId, initialTermId, termBuffers, correlationId, positionCounterId);
+
+            publications.add(publication);
+
+            final NewPublicationCmd cmd = new NewPublicationCmd(publication);
+            while (!senderProxy.newPublication(cmd))
+            {
+                systemCounters.senderProxyFails().orderedIncrement();
+                Thread.yield();
+            }
         }
+
+        publication.incRef();
+        publicationRegistrations.put(correlationId, new PublicationRegistration(
+                publication, aeronClient, correlationId));
+
     }
 
-    private void onRemovePublication(final String channel, final int sessionId, final int streamId, final long correlationId)
+    private void onRemovePublication(
+            final long registrationId, final long correlationId)
     {
-        final UdpChannel udpChannel = UdpChannel.parse(channel);
-        final SendChannelEndpoint channelEndpoint = sendChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
-        if (null == channelEndpoint)
+        final PublicationRegistration registration = publicationRegistrations.remove(registrationId);
+        if (registration == null)
         {
-            throw new ControlProtocolException(INVALID_CHANNEL, "channel unknown");
+            throw new ControlProtocolException(PUBLICATION_UNKNOWN, "unknown registration");
         }
-
-        final DriverPublication publication = channelEndpoint.getPublication(sessionId, streamId);
-        if (null == publication)
-        {
-            throw new ControlProtocolException(PUBLICATION_STREAM_UNKNOWN, "session and publication unknown for channel");
-        }
-
-        publication.status(DriverPublication.Status.EOF);
-
-        if (publication.isFlushed() || publication.statusMessagesSeenCount() == 0)
-        {
-            publication.status(DriverPublication.Status.FLUSHED);
-            publication.timeOfFlush(timerWheel.now());
-        }
+        registration.remove();
 
         clientProxy.operationSucceeded(correlationId);
     }
@@ -563,6 +560,24 @@ public class DriverConductor extends Agent
         }
     }
 
+    private void onCheckPublicationRegistrations()
+    {
+        final long now = timerWheel.now();
+
+        // TODO: remove values() iteration
+        final Iterator<PublicationRegistration> registrations = publicationRegistrations.values().iterator();
+        while(registrations.hasNext())
+        {
+            PublicationRegistration registration = registrations.next();
+            if (registration.checkKeepaliveTimeout(now))
+            {
+                registrations.remove();
+            }
+        }
+
+        rescheduleTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, publicationRegistrationCheckTimer);
+    }
+
     private void onCheckPublications()
     {
         final long now = timerWheel.now();
@@ -573,39 +588,20 @@ public class DriverConductor extends Agent
         {
             final DriverPublication publication = publications.get(i);
 
-            switch (publication.status())
+            if(!publication.hasRefs())
             {
-                case ACTIVE:
-                    if (publication.timeOfLastKeepaliveFromClient() + Configuration.CLIENT_LIVENESS_TIMEOUT_NS < now)
-                    {
-                        publication.status(DriverPublication.Status.EOF);
-                        if (publication.isFlushed() || publication.statusMessagesSeenCount() == 0)
-                        {
-                            publication.status(DriverPublication.Status.FLUSHED);
-                            publication.timeOfFlush(now);
-                        }
-                    }
-                    break;
-
-                case EOF:
-                    if (publication.isFlushed() || publication.statusMessagesSeenCount() == 0)
-                    {
-                        publication.status(DriverPublication.Status.FLUSHED);
-                        publication.timeOfFlush(now);
-                    }
-                    break;
-
-                case FLUSHED:
+                if (publication.checkFinishedSending())
+                {
                     if (publication.timeOfFlush() + Configuration.PUBLICATION_LINGER_NS < now)
                     {
                         final SendChannelEndpoint channelEndpoint = publication.sendChannelEndpoint();
 
                         logger.log(
-                            EventCode.REMOVE_PUBLICATION_CLEANUP,
-                            "%s %x:%x",
-                            channelEndpoint.udpChannel().originalUriAsString(),
-                            publication.sessionId(),
-                            publication.streamId());
+                                EventCode.REMOVE_PUBLICATION_CLEANUP,
+                                "%s %x:%x",
+                                channelEndpoint.udpChannel().originalUriAsString(),
+                                publication.sessionId(),
+                                publication.streamId());
 
                         channelEndpoint.removePublication(publication.sessionId(), publication.streamId());
                         publications.remove(i);
@@ -623,7 +619,7 @@ public class DriverConductor extends Agent
                             channelEndpoint.close();
                         }
                     }
-                    break;
+                }
             }
         }
 

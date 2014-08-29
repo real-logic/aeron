@@ -29,6 +29,7 @@ public class ExampleConfiguration
     public static final String PONG_CHANNEL_PROP = "aeron.example.pong.channel";
     public static final String PING_STREAM_ID_PROP = "aeron.example.ping.streamId";
     public static final String PONG_STREAM_ID_PROP = "aeron.example.pong.streamId";
+    public static final String WARMUP_NUMBER_OF_MESSAGES_PROP = "aeron.example.warmup.numberOfMessages";
 
     public static final String FRAME_COUNT_LIMIT_PROP = "aeron.example.frameCountLimit";
     public static final String MESSAGE_LENGTH_PROP = "aeron.example.messageLength";
@@ -45,6 +46,7 @@ public class ExampleConfiguration
     public static final int FRAME_COUNT_LIMIT;
     public static final int MESSAGE_LENGTH;
     public static final long NUMBER_OF_MESSAGES;
+    public static final long WARMUP_NUMBER_OF_MESSAGES;
     public static final long LINGER_TIMEOUT_MS;
     public static final boolean EMBEDDED_MEDIA_DRIVER;
 
@@ -59,6 +61,7 @@ public class ExampleConfiguration
         FRAME_COUNT_LIMIT = Integer.getInteger(FRAME_COUNT_LIMIT_PROP, 10);
         MESSAGE_LENGTH = Integer.getInteger(MESSAGE_LENGTH_PROP, 256);
         NUMBER_OF_MESSAGES = Long.getLong(NUMBER_OF_MESSAGES_PROP, 10_000_000);
+        WARMUP_NUMBER_OF_MESSAGES = Long.getLong(WARMUP_NUMBER_OF_MESSAGES_PROP, 10_000);
         LINGER_TIMEOUT_MS = Long.getLong(LINGER_TIMEOUT_MS_PROP, TimeUnit.SECONDS.toMillis(5));
         EMBEDDED_MEDIA_DRIVER = Boolean.getBoolean(EMBEDDED_MEDIA_DRIVER_PROP);
     }

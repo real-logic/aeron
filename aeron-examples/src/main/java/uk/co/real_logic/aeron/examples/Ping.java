@@ -20,7 +20,6 @@ import org.HdrHistogram.Histogram;
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.aeron.common.BitUtil;
 import uk.co.real_logic.aeron.common.BusySpinIdleStrategy;
 import uk.co.real_logic.aeron.common.CloseHelper;
 import uk.co.real_logic.aeron.common.IdleStrategy;
@@ -46,6 +45,7 @@ public class Ping
     private static final String PING_CHANNEL = ExampleConfiguration.PING_CHANNEL;
     private static final String PONG_CHANNEL = ExampleConfiguration.PONG_CHANNEL;
     private static final long NUMBER_OF_MESSAGES = ExampleConfiguration.NUMBER_OF_MESSAGES;
+    private static final long WARMUP_NUMBER_OF_MESSAGES = ExampleConfiguration.WARMUP_NUMBER_OF_MESSAGES;
     private static final int MESSAGE_LENGTH = ExampleConfiguration.MESSAGE_LENGTH;
     private static final int FRAME_COUNT_LIMIT = ExampleConfiguration.FRAME_COUNT_LIMIT;
     private static final long LINGER_TIMEOUT_MS = ExampleConfiguration.LINGER_TIMEOUT_MS;
@@ -74,9 +74,9 @@ public class Ping
         {
             final Future future = executor.submit(() -> runSubscriber(pongSubscription));
 
-            System.out.println("Warming up... " + NUMBER_OF_MESSAGES + " messages");
+            System.out.println("Warming up... " + WARMUP_NUMBER_OF_MESSAGES + " messages");
 
-            for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
+            for (int i = 0; i < WARMUP_NUMBER_OF_MESSAGES; i++)
             {
                 do
                 {

@@ -42,6 +42,7 @@ class Signal
     {
         if (signalRaised)
         {
+            signalRaised = false;
             return;
         }
 

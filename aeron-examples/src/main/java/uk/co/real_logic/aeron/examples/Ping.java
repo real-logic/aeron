@@ -122,7 +122,7 @@ public class Ping
             future.get();
         }
 
-        System.out.println("Done playing... Histogram of latencies in microseconds.");
+        System.out.println("Done playing... Histogram of RTT latencies in microseconds.");
 
         histogram.outputPercentileDistribution(System.out, 1000.0);
 

@@ -42,9 +42,10 @@ class Signal
     {
         try
         {
+            final long beginTime = System.currentTimeMillis();
             while (!signalRaised)
             {
-                wait(awaitTimeout);
+                wait(awaitTimeout - (System.currentTimeMillis() - beginTime));
             }
         }
         catch (final InterruptedException ex)

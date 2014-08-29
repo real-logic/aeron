@@ -171,6 +171,14 @@ public class ManyToOneRingBuffer implements RingBuffer
         return buffer.getAndAddLong(correlationIdCounterIndex, 1);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public AtomicBuffer buffer()
+    {
+        return buffer;
+    }
+
     private void checkMsgLength(final int length)
     {
         if (length > maxMsgLength)

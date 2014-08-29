@@ -153,6 +153,12 @@ public class DriverConductor extends Agent
 
         onReceiverCommandFunc = this::onReceiverCommand;
         onClientCommandFunc = this::onClientCommand;
+
+        final AtomicBuffer buffer = fromClientCommands.buffer();
+        publicationMessage.wrap(buffer, 0);
+        subscriptionMessage.wrap(buffer, 0);
+        correlatedMessage.wrap(buffer, 0);
+        removeMessage.wrap(buffer, 0);
     }
 
     public void onClose()
@@ -251,19 +257,19 @@ public class DriverConductor extends Agent
     private void onClientCommand(final int msgTypeId, final AtomicBuffer buffer, final int index, final int length)
     {
         Flyweight flyweight = null;
-        final PublicationMessageFlyweight publicationMessageFlyweight = publicationMessage;
-        final SubscriptionMessageFlyweight subscriptionMessageFlyweight = subscriptionMessage;
-        final CorrelatedMessageFlyweight correlatedMessageFlyweight = correlatedMessage;
-        final RemoveMessageFlyweight removeMessageFlyweight = removeMessage;
 
         try
         {
             switch (msgTypeId)
             {
                 case ADD_PUBLICATION:
+                {
                     logger.log(EventCode.CMD_IN_ADD_PUBLICATION, buffer, index, length);
-                    publicationMessageFlyweight.wrap(buffer, index);
+
+                    final PublicationMessageFlyweight publicationMessageFlyweight = publicationMessage;
+                    publicationMessageFlyweight.offset(index);
                     flyweight = publicationMessageFlyweight;
+
                     onAddPublication(
                         publicationMessageFlyweight.channel(),
                         publicationMessageFlyweight.sessionId(),
@@ -271,42 +277,59 @@ public class DriverConductor extends Agent
                         publicationMessageFlyweight.correlationId(),
                         publicationMessageFlyweight.clientId());
                     break;
+                }
 
                 case REMOVE_PUBLICATION:
+                {
                     logger.log(EventCode.CMD_IN_REMOVE_PUBLICATION, buffer, index, length);
-                    removeMessageFlyweight.wrap(buffer, index);
+
+                    final RemoveMessageFlyweight removeMessageFlyweight = removeMessage;
+                    removeMessageFlyweight.offset(index);
                     flyweight = removeMessageFlyweight;
-                    onRemovePublication(
-                        removeMessageFlyweight.registrationId(),
-                        removeMessageFlyweight.correlationId());
+
+                    onRemovePublication(removeMessageFlyweight.registrationId(), removeMessageFlyweight.correlationId());
                     break;
+                }
 
                 case ADD_SUBSCRIPTION:
+                {
                     logger.log(EventCode.CMD_IN_ADD_SUBSCRIPTION, buffer, index, length);
-                    subscriptionMessageFlyweight.wrap(buffer, index);
+
+                    final SubscriptionMessageFlyweight subscriptionMessageFlyweight = subscriptionMessage;
+                    subscriptionMessageFlyweight.offset(index);
                     flyweight = subscriptionMessageFlyweight;
+
                     onAddSubscription(
                         subscriptionMessageFlyweight.channel(),
                         subscriptionMessageFlyweight.streamId(),
                         subscriptionMessageFlyweight.correlationId(),
                         subscriptionMessageFlyweight.clientId());
                     break;
+                }
 
                 case REMOVE_SUBSCRIPTION:
+                {
                     logger.log(EventCode.CMD_IN_REMOVE_SUBSCRIPTION, buffer, index, length);
-                    removeMessageFlyweight.wrap(buffer, index);
+
+                    final RemoveMessageFlyweight removeMessageFlyweight = removeMessage;
+                    removeMessageFlyweight.offset(index);
                     flyweight = removeMessageFlyweight;
-                    onRemoveSubscription(
-                        removeMessageFlyweight.registrationId(),
-                        removeMessageFlyweight.correlationId());
+
+                    onRemoveSubscription(removeMessageFlyweight.registrationId(), removeMessageFlyweight.correlationId());
                     break;
+                }
 
                 case KEEPALIVE_CLIENT:
+                {
                     logger.log(EventCode.CMD_IN_KEEPALIVE_CLIENT, buffer, index, length);
-                    correlatedMessageFlyweight.wrap(buffer, index);
+
+                    final CorrelatedMessageFlyweight correlatedMessageFlyweight = correlatedMessage;
+                    correlatedMessageFlyweight.offset(index);
                     flyweight = correlatedMessageFlyweight;
+
                     onClientKeepalive(correlatedMessageFlyweight.clientId());
                     break;
+                }
             }
         }
         catch (final ControlProtocolException ex)

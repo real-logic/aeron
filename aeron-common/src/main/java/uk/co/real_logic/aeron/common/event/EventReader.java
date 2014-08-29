@@ -19,6 +19,7 @@ import uk.co.real_logic.aeron.common.Agent;
 import uk.co.real_logic.aeron.common.IdleStrategy;
 import uk.co.real_logic.aeron.common.IoUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.AtomicCounter;
 import uk.co.real_logic.aeron.common.concurrent.MessageHandler;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBufferDescriptor;
@@ -36,17 +37,17 @@ public class EventReader extends Agent implements MessageHandler
     private final ManyToOneRingBuffer ringBuffer;
     private final Consumer<String> handler;
 
-    public EventReader(final Context context)
+    public EventReader(final Context ctx)
     {
-        super(context.idleStrategy(), Throwable::printStackTrace);
+        super(ctx.idleStrategy(), Throwable::printStackTrace, ctx.exceptionsCounter());
 
-        handler = context.eventHandler();
+        handler = ctx.eventHandler();
 
-        final File eventsFile = context.eventsFile();
+        final File eventsFile = ctx.eventsFile();
 
         if (eventsFile.exists())
         {
-            if (context.warnIfEventsFileExists)
+            if (ctx.warnIfEventsFileExists)
             {
                 System.err.println("WARNING: existing event buffer at: " + eventsFile);
             }
@@ -55,10 +56,10 @@ public class EventReader extends Agent implements MessageHandler
         }
         else
         {
-            buffer = IoUtil.mapNewFile(eventsFile, context.size());
+            buffer = IoUtil.mapNewFile(eventsFile, ctx.size());
         }
 
-        if (context.deleteOnExit())
+        if (ctx.deleteOnExit())
         {
             eventsFile.deleteOnExit();
         }
@@ -100,6 +101,7 @@ public class EventReader extends Agent implements MessageHandler
             EventConfiguration.BUFFER_SIZE_DEFAULT) + RingBufferDescriptor.TRAILER_LENGTH;
         private boolean deleteOnExit = Boolean.getBoolean(EventConfiguration.DELETE_ON_EXIT_PROPERTY_NAME);
         private boolean warnIfEventsFileExists = false;
+        private AtomicCounter exceptionsCounter;
 
         private IdleStrategy idleStrategy;
         private Consumer<String> eventHandler;
@@ -140,6 +142,12 @@ public class EventReader extends Agent implements MessageHandler
             return this;
         }
 
+        public Context exceptionsCounter(final AtomicCounter exceptionsCounter)
+        {
+            this.exceptionsCounter = exceptionsCounter;
+            return this;
+        }
+
         public File eventsFile()
         {
             return eventsFile;
@@ -168,6 +176,11 @@ public class EventReader extends Agent implements MessageHandler
         public boolean warnIfEventsFileExists()
         {
             return warnIfEventsFileExists;
+        }
+
+        public AtomicCounter exceptionsCounter()
+        {
+            return exceptionsCounter;
         }
     }
 }

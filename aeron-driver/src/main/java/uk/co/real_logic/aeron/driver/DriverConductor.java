@@ -121,7 +121,7 @@ public class DriverConductor extends Agent
 
     public DriverConductor(final Context ctx)
     {
-        super(ctx.conductorIdleStrategy(), ctx.eventLoggerException());
+        super(ctx.conductorIdleStrategy(), ctx.exceptionConsumer(), ctx.systemCounters().driverExceptions());
 
         this.commandQueue = ctx.conductorCommandQueue();
         this.receiverProxy = ctx.receiverProxy();
@@ -149,7 +149,7 @@ public class DriverConductor extends Agent
         controlLossRate = ctx.controlLossRate();
         controlLossSeed = ctx.controlLossSeed();
 
-        systemCounters = new SystemCounters(countersManager);
+        systemCounters = ctx.systemCounters();
 
         onReceiverCommandFunc = this::onReceiverCommand;
         onClientCommandFunc = this::onClientCommand;
@@ -168,7 +168,6 @@ public class DriverConductor extends Agent
         connections.forEach(DriverConnection::close);
         sendChannelEndpointByChannelMap.values().forEach(SendChannelEndpoint::close);
         receiveChannelEndpointByChannelMap.values().forEach(ReceiveChannelEndpoint::close);
-        systemCounters.close();
     }
 
     // TODO fix test to use proper collaboration assertions.

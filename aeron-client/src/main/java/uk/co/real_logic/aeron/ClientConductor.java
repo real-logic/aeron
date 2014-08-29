@@ -82,7 +82,7 @@ class ClientConductor extends Agent implements DriverListener
         final long awaitTimeout,
         final int mtuLength)
     {
-        super(idleStrategy, errorHandler);
+        super(idleStrategy, errorHandler, null);
 
         this.counterValuesBuffer = counterValuesBuffer;
         this.correlationSignal = correlationSignal;

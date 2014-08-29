@@ -106,6 +106,7 @@ public class SenderTest
     {
         sender = new Sender(
             new MediaDriver.Context()
+                .systemCounters(mock(SystemCounters.class))
                 .senderCommandQueue(senderCommandQueue)
                 .eventLogger(mockLogger));
 

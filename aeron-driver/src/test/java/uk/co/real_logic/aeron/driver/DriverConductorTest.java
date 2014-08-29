@@ -118,6 +118,7 @@ public class DriverConductorTest
         ctx.fromClientCommands(fromClientCommands);
         ctx.clientProxy(mockClientProxy);
         ctx.countersBuffer(counterBuffer);
+        ctx.systemCounters(mock(SystemCounters.class));
 
         ctx.receiverProxy(receiverProxy);
         ctx.senderProxy(senderProxy);

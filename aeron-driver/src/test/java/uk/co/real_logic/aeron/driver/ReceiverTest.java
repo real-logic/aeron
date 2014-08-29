@@ -112,6 +112,7 @@ public class ReceiverTest
             .conductorNioSelector(mockNioSelector)
             .termBuffersFactory(mockTermBuffersFactory)
             .conductorTimerWheel(timerWheel)
+            .systemCounters(mock(SystemCounters.class))
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .eventLogger(mockLogger);
 

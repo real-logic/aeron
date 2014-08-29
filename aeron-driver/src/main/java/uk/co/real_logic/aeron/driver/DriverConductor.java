@@ -261,8 +261,8 @@ public class DriverConductor extends Agent
             switch (msgTypeId)
             {
                 case ADD_PUBLICATION:
-                    publicationMessageFlyweight.wrap(buffer, index);
                     logger.log(EventCode.CMD_IN_ADD_PUBLICATION, buffer, index, length);
+                    publicationMessageFlyweight.wrap(buffer, index);
                     flyweight = publicationMessageFlyweight;
                     onAddPublication(
                         publicationMessageFlyweight.channel(),
@@ -273,17 +273,17 @@ public class DriverConductor extends Agent
                     break;
 
                 case REMOVE_PUBLICATION:
-                    removeMessageFlyweight.wrap(buffer, index);
                     logger.log(EventCode.CMD_IN_REMOVE_PUBLICATION, buffer, index, length);
+                    removeMessageFlyweight.wrap(buffer, index);
                     flyweight = removeMessageFlyweight;
                     onRemovePublication(
-                        removeMessageFlyweight.registrationCorrelationId(),
+                        removeMessageFlyweight.registrationId(),
                         removeMessageFlyweight.correlationId());
                     break;
 
                 case ADD_SUBSCRIPTION:
-                    subscriptionMessageFlyweight.wrap(buffer, index);
                     logger.log(EventCode.CMD_IN_ADD_SUBSCRIPTION, buffer, index, length);
+                    subscriptionMessageFlyweight.wrap(buffer, index);
                     flyweight = subscriptionMessageFlyweight;
                     onAddSubscription(
                         subscriptionMessageFlyweight.channel(),
@@ -293,17 +293,17 @@ public class DriverConductor extends Agent
                     break;
 
                 case REMOVE_SUBSCRIPTION:
-                    subscriptionMessageFlyweight.wrap(buffer, index);
                     logger.log(EventCode.CMD_IN_REMOVE_SUBSCRIPTION, buffer, index, length);
-                    flyweight = subscriptionMessageFlyweight;
+                    removeMessageFlyweight.wrap(buffer, index);
+                    flyweight = removeMessageFlyweight;
                     onRemoveSubscription(
-                        subscriptionMessageFlyweight.registrationCorrelationId(),
-                        subscriptionMessageFlyweight.correlationId());
+                        removeMessageFlyweight.registrationId(),
+                        removeMessageFlyweight.correlationId());
                     break;
 
                 case KEEPALIVE_CLIENT:
-                    correlatedMessageFlyweight.wrap(buffer, index);
                     logger.log(EventCode.CMD_IN_KEEPALIVE_CLIENT, buffer, index, length);
+                    correlatedMessageFlyweight.wrap(buffer, index);
                     flyweight = correlatedMessageFlyweight;
                     onClientKeepalive(correlatedMessageFlyweight.clientId());
                     break;

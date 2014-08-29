@@ -240,7 +240,7 @@ public class DriverConductorTest
     private void removePublicationMessage(final long registrationId)
     {
         removeMessage.wrap(writeBuffer, 0);
-        removeMessage.registrationCorrelationId(registrationId);
+        removeMessage.registrationId(registrationId);
         assertTrue(fromClientCommands.write(REMOVE_PUBLICATION, writeBuffer, 0, RemoveMessageFlyweight.length()));
     }
 

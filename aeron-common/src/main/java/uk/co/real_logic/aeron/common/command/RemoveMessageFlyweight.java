@@ -16,11 +16,10 @@
 package uk.co.real_logic.aeron.common.command;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_LONG;
 
 /**
- * Control message for adding or removing a subscription.
+ * Control message for removing a Publication or Subscription.
  *
  * <p>
  * 0                   1                   2                   3
@@ -30,32 +29,32 @@ import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_LONG;
  * +---------------------------------------------------------------+
  * |                    Command Correlation ID                     |
  * +---------------------------------------------------------------+
- * |                  Registration Correlation ID                  |
+ * |                         Registration ID                       |
  * +---------------------------------------------------------------+
  */
 public class RemoveMessageFlyweight extends CorrelatedMessageFlyweight
 {
-    private static final int REGISTRATION_CORRELATION_ID_OFFSET = CORRELATION_ID_FIELD_OFFSET + SIZE_OF_LONG;
+    private static final int REGISTRATION_ID_OFFSET = CORRELATION_ID_FIELD_OFFSET + SIZE_OF_LONG;
 
     /**
-     * return correlation id used in registration field
+     * Get the registration id field
      *
-     * @return correlation id field
+     * @return registration id field
      */
-    public long registrationCorrelationId()
+    public long registrationId()
     {
-        return atomicBuffer().getLong(offset() + REGISTRATION_CORRELATION_ID_OFFSET, LITTLE_ENDIAN);
+        return atomicBuffer().getLong(offset() + REGISTRATION_ID_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
-     * set registration correlation id field
+     * Set registration  id field
      *
-     * @param correlationId field value
+     * @param registrationId field value
      * @return flyweight
      */
-    public RemoveMessageFlyweight registrationCorrelationId(final long correlationId)
+    public RemoveMessageFlyweight registrationId(final long registrationId)
     {
-        atomicBuffer().putLong(offset() + REGISTRATION_CORRELATION_ID_OFFSET, correlationId, LITTLE_ENDIAN);
+        atomicBuffer().putLong(offset() + REGISTRATION_ID_OFFSET, registrationId, LITTLE_ENDIAN);
 
         return this;
     }

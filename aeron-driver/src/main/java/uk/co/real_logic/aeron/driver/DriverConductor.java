@@ -537,7 +537,7 @@ public class DriverConductor extends Agent
 
         final String channel = udpChannel.originalUriAsString();
         final int subscriberPositionCounterId = allocatePositionCounter("subscriber", channel, sessionId, streamId);
-        final int receivedCompleteCounterId = allocatePositionCounter("receiver complete", channel, sessionId, streamId);
+        final int receivedCompleteCounterId = allocatePositionCounter("receiver", channel, sessionId, streamId);
         final int receivedHwmCounterId = allocatePositionCounter("receiver hwm", channel, sessionId, streamId);
 
         clientProxy.onNewTermBuffers(

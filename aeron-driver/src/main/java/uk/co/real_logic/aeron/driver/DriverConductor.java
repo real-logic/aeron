@@ -833,14 +833,13 @@ public class DriverConductor extends Agent
         return countersManager.allocate(String.format("%s pos: %s %x %x", type, dirName, sessionId, streamId));
     }
 
-    private DriverSubscription removeSubscription(
-        final ArrayList<DriverSubscription> subscriptions, final long registrationCorrelationId)
+    private DriverSubscription removeSubscription(final ArrayList<DriverSubscription> subscriptions, final long registrationId)
     {
         for (int i = 0, size = subscriptions.size(); i < size; i++)
         {
             final DriverSubscription subscription = subscriptions.get(i);
 
-            if (subscription.id() == registrationCorrelationId)
+            if (subscription.id() == registrationId)
             {
                 subscriptions.remove(i);
                 return subscription;

@@ -46,8 +46,8 @@ public class SystemCounters implements AutoCloseable
         retransmitsSent = countersManager.newCounter("Retransmits sent");
         flowControlUnderRuns = countersManager.newCounter("Flow control under runs");
         flowControlOverRuns = countersManager.newCounter("Flow control over runs");
-        subscriptionCleaningLate = countersManager.newCounter("Subscription cleaning late");
-        invalidPackets = countersManager.newCounter("Invalid packet");
+        subscriptionCleaningLate = countersManager.newCounter("Term cleaning late");
+        invalidPackets = countersManager.newCounter("Invalid packets");
         driverExceptions = countersManager.newCounter("Driver Exceptions");
     }
 

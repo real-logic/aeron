@@ -73,6 +73,11 @@ public class Flyweight
         return offset;
     }
 
+    public void offset(final int offset)
+    {
+        this.offset = offset;
+    }
+
     protected void copyFlyweight(final Flyweight srcFlyweight, final int index, final int length)
     {
         atomicBuffer.putBytes(index, srcFlyweight.atomicBuffer, srcFlyweight.offset, length);

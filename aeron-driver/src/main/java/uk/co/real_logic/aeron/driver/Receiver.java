@@ -32,7 +32,7 @@ public class Receiver extends Agent
 
     public Receiver(final MediaDriver.Context ctx)
     {
-        super(ctx.receiverIdleStrategy(), ctx.eventLoggerException());
+        super(ctx.receiverIdleStrategy(), ctx.exceptionConsumer(), ctx.systemCounters().driverExceptions());
 
         this.nioSelector = ctx.receiverNioSelector();
         this.commandQueue = ctx.receiverCommandQueue();

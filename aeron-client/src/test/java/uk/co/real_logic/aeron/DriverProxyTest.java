@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron;
 import org.junit.Test;
 import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.RemoveMessageFlyweight;
-import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.MessageHandler;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.ManyToOneRingBuffer;
@@ -59,7 +58,7 @@ public class DriverProxyTest
                 message.wrap(buffer, index);
 
                 assertThat(msgTypeId, is(REMOVE_PUBLICATION));
-                assertThat(message.registrationCorrelationId(), is(CORRELATION_ID));
+                assertThat(message.registrationId(), is(CORRELATION_ID));
             }
         );
     }
@@ -85,18 +84,16 @@ public class DriverProxyTest
     @Test
     public void threadSendsRemoveSubscriberMessage()
     {
-        conductor.removeSubscription(CHANNEL, STREAM_ID, CORRELATION_ID);
+        conductor.removeSubscription(CORRELATION_ID);
 
         assertReadsOneMessage(
             (msgTypeId, buffer, index, length) ->
             {
-                final SubscriptionMessageFlyweight subscriberMessage = new SubscriptionMessageFlyweight();
-                subscriberMessage.wrap(buffer, index);
+                final RemoveMessageFlyweight removeMessage = new RemoveMessageFlyweight();
+                removeMessage.wrap(buffer, index);
 
                 assertThat(msgTypeId, is(REMOVE_SUBSCRIPTION));
-                assertThat(subscriberMessage.channel(), is(CHANNEL));
-                assertThat(subscriberMessage.streamId(), is(STREAM_ID));
-                assertThat(subscriberMessage.registrationCorrelationId(), is(CORRELATION_ID));
+                assertThat(removeMessage.registrationId(), is(CORRELATION_ID));
             }
         );
     }

@@ -244,7 +244,7 @@ public class ClientConductorTest extends MockBufferUsage
 
         subscription.close();
 
-        verify(driverProxy).removeSubscription(CHANNEL, STREAM_ID_1, CORRELATION_ID);
+        verify(driverProxy).removeSubscription(CORRELATION_ID);
     }
 
     @Test(expected = DriverTimeoutException.class)

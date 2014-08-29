@@ -50,7 +50,7 @@ public class MultiDriverTest
 
     private DataHandler dataHandler = mock(DataHandler.class);
 
-    private void setup(final String channel)
+    private void launch(final String channel)
     {
         final String baseDirA = IoUtil.tmpDirName() + "aeron-system-tests" + File.separator + "A";
         final String baseDirB = IoUtil.tmpDirName() + "aeron-system-tests" + File.separator + "B";
@@ -105,6 +105,6 @@ public class MultiDriverTest
     @Test(timeout = 10000)
     public void shouldSpinUpAndShutdown()
     {
-        setup(UNICAST_URI);
+        launch(UNICAST_URI);
     }
 }

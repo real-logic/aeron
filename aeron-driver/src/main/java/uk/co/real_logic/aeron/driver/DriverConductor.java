@@ -121,7 +121,7 @@ public class DriverConductor extends Agent
 
     public DriverConductor(final Context ctx)
     {
-        super(ctx.conductorIdleStrategy(), ctx.eventLoggerException());
+        super(ctx.conductorIdleStrategy(), ctx.exceptionConsumer(), ctx.systemCounters().driverExceptions());
 
         this.commandQueue = ctx.conductorCommandQueue();
         this.receiverProxy = ctx.receiverProxy();
@@ -149,10 +149,16 @@ public class DriverConductor extends Agent
         controlLossRate = ctx.controlLossRate();
         controlLossSeed = ctx.controlLossSeed();
 
-        systemCounters = new SystemCounters(countersManager);
+        systemCounters = ctx.systemCounters();
 
         onReceiverCommandFunc = this::onReceiverCommand;
         onClientCommandFunc = this::onClientCommand;
+
+        final AtomicBuffer buffer = fromClientCommands.buffer();
+        publicationMessage.wrap(buffer, 0);
+        subscriptionMessage.wrap(buffer, 0);
+        correlatedMessage.wrap(buffer, 0);
+        removeMessage.wrap(buffer, 0);
     }
 
     public void onClose()
@@ -162,7 +168,6 @@ public class DriverConductor extends Agent
         connections.forEach(DriverConnection::close);
         sendChannelEndpointByChannelMap.values().forEach(SendChannelEndpoint::close);
         receiveChannelEndpointByChannelMap.values().forEach(ReceiveChannelEndpoint::close);
-        systemCounters.close();
     }
 
     // TODO fix test to use proper collaboration assertions.
@@ -251,19 +256,19 @@ public class DriverConductor extends Agent
     private void onClientCommand(final int msgTypeId, final AtomicBuffer buffer, final int index, final int length)
     {
         Flyweight flyweight = null;
-        final PublicationMessageFlyweight publicationMessageFlyweight = publicationMessage;
-        final SubscriptionMessageFlyweight subscriptionMessageFlyweight = subscriptionMessage;
-        final CorrelatedMessageFlyweight correlatedMessageFlyweight = correlatedMessage;
-        final RemoveMessageFlyweight removeMessageFlyweight = removeMessage;
 
         try
         {
             switch (msgTypeId)
             {
                 case ADD_PUBLICATION:
-                    publicationMessageFlyweight.wrap(buffer, index);
+                {
                     logger.log(EventCode.CMD_IN_ADD_PUBLICATION, buffer, index, length);
+
+                    final PublicationMessageFlyweight publicationMessageFlyweight = publicationMessage;
+                    publicationMessageFlyweight.offset(index);
                     flyweight = publicationMessageFlyweight;
+
                     onAddPublication(
                         publicationMessageFlyweight.channel(),
                         publicationMessageFlyweight.sessionId(),
@@ -271,42 +276,59 @@ public class DriverConductor extends Agent
                         publicationMessageFlyweight.correlationId(),
                         publicationMessageFlyweight.clientId());
                     break;
+                }
 
                 case REMOVE_PUBLICATION:
-                    removeMessageFlyweight.wrap(buffer, index);
+                {
                     logger.log(EventCode.CMD_IN_REMOVE_PUBLICATION, buffer, index, length);
+
+                    final RemoveMessageFlyweight removeMessageFlyweight = removeMessage;
+                    removeMessageFlyweight.offset(index);
                     flyweight = removeMessageFlyweight;
-                    onRemovePublication(
-                        removeMessageFlyweight.registrationCorrelationId(),
-                        removeMessageFlyweight.correlationId());
+
+                    onRemovePublication(removeMessageFlyweight.registrationId(), removeMessageFlyweight.correlationId());
                     break;
+                }
 
                 case ADD_SUBSCRIPTION:
-                    subscriptionMessageFlyweight.wrap(buffer, index);
+                {
                     logger.log(EventCode.CMD_IN_ADD_SUBSCRIPTION, buffer, index, length);
+
+                    final SubscriptionMessageFlyweight subscriptionMessageFlyweight = subscriptionMessage;
+                    subscriptionMessageFlyweight.offset(index);
                     flyweight = subscriptionMessageFlyweight;
+
                     onAddSubscription(
                         subscriptionMessageFlyweight.channel(),
                         subscriptionMessageFlyweight.streamId(),
                         subscriptionMessageFlyweight.correlationId(),
                         subscriptionMessageFlyweight.clientId());
                     break;
+                }
 
                 case REMOVE_SUBSCRIPTION:
-                    subscriptionMessageFlyweight.wrap(buffer, index);
+                {
                     logger.log(EventCode.CMD_IN_REMOVE_SUBSCRIPTION, buffer, index, length);
-                    flyweight = subscriptionMessageFlyweight;
-                    onRemoveSubscription(
-                        subscriptionMessageFlyweight.registrationCorrelationId(),
-                        subscriptionMessageFlyweight.correlationId());
+
+                    final RemoveMessageFlyweight removeMessageFlyweight = removeMessage;
+                    removeMessageFlyweight.offset(index);
+                    flyweight = removeMessageFlyweight;
+
+                    onRemoveSubscription(removeMessageFlyweight.registrationId(), removeMessageFlyweight.correlationId());
                     break;
+                }
 
                 case KEEPALIVE_CLIENT:
-                    correlatedMessageFlyweight.wrap(buffer, index);
+                {
                     logger.log(EventCode.CMD_IN_KEEPALIVE_CLIENT, buffer, index, length);
+
+                    final CorrelatedMessageFlyweight correlatedMessageFlyweight = correlatedMessage;
+                    correlatedMessageFlyweight.offset(index);
                     flyweight = correlatedMessageFlyweight;
+
                     onClientKeepalive(correlatedMessageFlyweight.clientId());
                     break;
+                }
             }
         }
         catch (final ControlProtocolException ex)
@@ -515,7 +537,7 @@ public class DriverConductor extends Agent
 
         final String channel = udpChannel.originalUriAsString();
         final int subscriberPositionCounterId = allocatePositionCounter("subscriber", channel, sessionId, streamId);
-        final int receivedCompleteCounterId = allocatePositionCounter("receiver complete", channel, sessionId, streamId);
+        final int receivedCompleteCounterId = allocatePositionCounter("receiver", channel, sessionId, streamId);
         final int receivedHwmCounterId = allocatePositionCounter("receiver hwm", channel, sessionId, streamId);
 
         clientProxy.onNewTermBuffers(
@@ -808,17 +830,16 @@ public class DriverConductor extends Agent
 
     private int allocatePositionCounter(final String type, final String dirName, final int sessionId, final int streamId)
     {
-        return countersManager.allocate(String.format("%s position: %s %x %x", type, dirName, sessionId, streamId));
+        return countersManager.allocate(String.format("%s pos: %s %x %x", type, dirName, sessionId, streamId));
     }
 
-    private DriverSubscription removeSubscription(
-        final ArrayList<DriverSubscription> subscriptions, final long registrationCorrelationId)
+    private DriverSubscription removeSubscription(final ArrayList<DriverSubscription> subscriptions, final long registrationId)
     {
         for (int i = 0, size = subscriptions.size(); i < size; i++)
         {
             final DriverSubscription subscription = subscriptions.get(i);
 
-            if (subscription.id() == registrationCorrelationId)
+            if (subscription.id() == registrationId)
             {
                 subscriptions.remove(i);
                 return subscription;

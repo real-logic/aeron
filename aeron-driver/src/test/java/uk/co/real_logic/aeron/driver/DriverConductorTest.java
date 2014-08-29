@@ -118,6 +118,7 @@ public class DriverConductorTest
         ctx.fromClientCommands(fromClientCommands);
         ctx.clientProxy(mockClientProxy);
         ctx.countersBuffer(counterBuffer);
+        ctx.systemCounters(mock(SystemCounters.class));
 
         ctx.receiverProxy(receiverProxy);
         ctx.senderProxy(senderProxy);
@@ -240,7 +241,7 @@ public class DriverConductorTest
     private void removePublicationMessage(final long registrationId)
     {
         removeMessage.wrap(writeBuffer, 0);
-        removeMessage.registrationCorrelationId(registrationId);
+        removeMessage.registrationId(registrationId);
         assertTrue(fromClientCommands.write(REMOVE_PUBLICATION, writeBuffer, 0, RemoveMessageFlyweight.length()));
     }
 

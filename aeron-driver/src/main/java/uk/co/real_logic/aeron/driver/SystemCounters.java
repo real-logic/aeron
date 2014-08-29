@@ -32,6 +32,7 @@ public class SystemCounters implements AutoCloseable
     private final AtomicCounter flowControlOverRuns;
     private final AtomicCounter subscriptionCleaningLate;
     private final AtomicCounter invalidPackets;
+    private final AtomicCounter driverExceptions;
 
     public SystemCounters(final CountersManager countersManager)
     {
@@ -45,8 +46,9 @@ public class SystemCounters implements AutoCloseable
         retransmitsSent = countersManager.newCounter("Retransmits sent");
         flowControlUnderRuns = countersManager.newCounter("Flow control under runs");
         flowControlOverRuns = countersManager.newCounter("Flow control over runs");
-        subscriptionCleaningLate = countersManager.newCounter("Subscription cleaning late");
-        invalidPackets = countersManager.newCounter("Invalid packet");
+        subscriptionCleaningLate = countersManager.newCounter("Term cleaning late");
+        invalidPackets = countersManager.newCounter("Invalid packets");
+        driverExceptions = countersManager.newCounter("Driver Exceptions");
     }
 
     public void close()
@@ -63,6 +65,7 @@ public class SystemCounters implements AutoCloseable
         flowControlOverRuns.close();
         subscriptionCleaningLate.close();
         invalidPackets.close();
+        driverExceptions.close();
     }
 
     public AtomicCounter receiverProxyFails()
@@ -123,5 +126,10 @@ public class SystemCounters implements AutoCloseable
     public AtomicCounter invalidPackets()
     {
         return invalidPackets;
+    }
+
+    public AtomicCounter driverExceptions()
+    {
+        return driverExceptions;
     }
 }

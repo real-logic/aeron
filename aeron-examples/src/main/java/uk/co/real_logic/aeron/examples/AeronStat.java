@@ -52,7 +52,7 @@ public class AeronStat
                     final int offset = CountersManager.counterOffset(id);
                     final long value = valuesBuffer.getLongVolatile(offset);
 
-                    System.out.println(String.format("[%f] %d[%d]:\t%s: %,d", timestamp, id, offset, label, value));
+                    System.out.println(String.format("[%f] %d:\t%s: %,d", timestamp, id, label, value));
                 });
 
             Thread.sleep(1000);

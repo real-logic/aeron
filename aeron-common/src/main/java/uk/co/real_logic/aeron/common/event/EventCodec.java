@@ -139,8 +139,7 @@ public class EventCodec
         return relativeOffset;
     }
 
-    private static int putStackTraceElement(
-        final AtomicBuffer encodingBuffer, final StackTraceElement stack, int relativeOffset)
+    private static int putStackTraceElement(final AtomicBuffer encodingBuffer, final StackTraceElement stack, int relativeOffset)
     {
         encodingBuffer.putInt(relativeOffset, stack.getLineNumber(), LITTLE_ENDIAN);
         relativeOffset += SIZE_OF_INT;

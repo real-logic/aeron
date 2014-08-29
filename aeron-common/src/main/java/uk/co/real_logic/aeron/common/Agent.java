@@ -15,6 +15,8 @@
  */
 package uk.co.real_logic.aeron.common;
 
+import uk.co.real_logic.aeron.common.concurrent.AtomicCounter;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -26,20 +28,22 @@ public abstract class Agent implements Runnable, AutoCloseable
 {
     private final IdleStrategy idleStrategy;
     private final Consumer<Exception> exceptionHandler;
+    private final AtomicCounter exceptionCounter;
     private volatile CountDownLatch latch;
 
     private volatile boolean running;
 
     /**
      * Create an agent passing in {@link IdleStrategy}
-     *
-     * @param idleStrategy to use for Agent run loop
+     *  @param idleStrategy to use for Agent run loop
      * @param exceptionHandler to be called if an {@link Exception} is encountered
+     * @param exceptionCounter for reporting how many exceptions have been seen.
      */
-    public Agent(final IdleStrategy idleStrategy, final Consumer<Exception> exceptionHandler)
+    public Agent(final IdleStrategy idleStrategy, final Consumer<Exception> exceptionHandler, final AtomicCounter exceptionCounter)
     {
         this.idleStrategy = idleStrategy;
         this.exceptionHandler = exceptionHandler;
+        this.exceptionCounter = exceptionCounter;
     }
 
     /**
@@ -66,6 +70,11 @@ public abstract class Agent implements Runnable, AutoCloseable
             }
             catch (final Exception ex)
             {
+                if (null != exceptionCounter)
+                {
+                    exceptionCounter.increment();
+                }
+
                 exceptionHandler.accept(ex);
             }
         }

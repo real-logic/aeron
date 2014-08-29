@@ -74,4 +74,11 @@ public interface RingBuffer
      * @return the next value in the correlation sequence.
      */
     long nextCorrelationId();
+
+    /**
+     * Get the underlying buffer used by the RingBuffer for storage.
+     *
+     * @return the underlying buffer used by the RingBuffer for storage.
+     */
+    AtomicBuffer buffer();
 }

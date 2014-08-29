@@ -97,14 +97,6 @@ public class MediaDriver implements AutoCloseable
 
         ensureDirectoriesAreRecreated();
 
-        // event reader needs to be created before the event logger gets created or we could disable logging prematurely
-        eventReader = new EventReader(
-            new EventReader.Context()
-                .eventsFile(ctx.eventLocationsFile)
-                .idleStrategy(Configuration.eventReaderIdleStrategy())
-                .deleteOnExit(ctx.dirsDeleteOnExit())
-                .eventHandler(ctx.eventConsumer));
-
         ctx.unicastSenderFlowControl(UnicastSenderFlowControl::new)
            .multicastSenderFlowControl(UnicastSenderFlowControl::new)
            .conductorTimerWheel(Configuration.newConductorTimerWheel())
@@ -112,6 +104,15 @@ public class MediaDriver implements AutoCloseable
            .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
            .senderCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
            .conclude();
+
+        // event reader needs to be created before the event logger gets created or we could disable logging prematurely
+        eventReader = new EventReader(
+            new EventReader.Context()
+                .eventsFile(ctx.eventLocationsFile)
+                .exceptionsCounter(ctx.systemCounters().driverExceptions())
+                .idleStrategy(Configuration.eventReaderIdleStrategy())
+                .deleteOnExit(ctx.dirsDeleteOnExit())
+                .eventHandler(ctx.eventConsumer));
 
         receiver = new Receiver(ctx);
         sender = new Sender(ctx);
@@ -249,6 +250,7 @@ public class MediaDriver implements AutoCloseable
         private MappedByteBuffer counterLabelsByteBuffer;
         private MappedByteBuffer counterValuesByteBuffer;
         private CountersManager countersManager;
+        private SystemCounters systemCounters;
 
         private int termBufferSize;
         private int initialWindowSize;
@@ -357,6 +359,11 @@ public class MediaDriver implements AutoCloseable
                     }
 
                     countersManager(new CountersManager(counterLabelsBuffer(), countersBuffer()));
+                }
+
+                if (null == systemCounters)
+                {
+                    systemCounters = new SystemCounters(countersManager);
                 }
 
                 if (null == conductorIdleStrategy)
@@ -562,6 +569,12 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
+        public Context systemCounters(final SystemCounters systemCounters)
+        {
+            this.systemCounters = systemCounters;
+            return this;
+        }
+
         public OneToOneConcurrentArrayQueue<Object> conductorCommandQueue()
         {
             return conductorCommandQueue;
@@ -677,7 +690,7 @@ public class MediaDriver implements AutoCloseable
             return eventLogger;
         }
 
-        public Consumer<Exception> eventLoggerException()
+        public Consumer<Exception> exceptionConsumer()
         {
             return eventLogger::logException;
         }
@@ -702,6 +715,11 @@ public class MediaDriver implements AutoCloseable
             return controlLossSeed;
         }
 
+        public SystemCounters systemCounters()
+        {
+            return systemCounters;
+        }
+
         public void close()
         {
             if (null != toClientsBuffer)
@@ -712,6 +730,11 @@ public class MediaDriver implements AutoCloseable
             if (null != toDriverBuffer)
             {
                 IoUtil.unmap(toDriverBuffer);
+            }
+
+            if (null != systemCounters)
+            {
+                systemCounters.close();
             }
 
             if (null != counterLabelsByteBuffer)

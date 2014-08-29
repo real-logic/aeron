@@ -82,7 +82,7 @@ class ClientConductor extends Agent implements DriverListener
         final long awaitTimeout,
         final int mtuLength)
     {
-        super(idleStrategy, errorHandler);
+        super(idleStrategy, errorHandler, null);
 
         this.counterValuesBuffer = counterValuesBuffer;
         this.correlationSignal = correlationSignal;
@@ -137,12 +137,12 @@ class ClientConductor extends Agent implements DriverListener
 
     public synchronized void releasePublication(final Publication publication)
     {
+        activeCorrelationId = driverProxy.removePublication(publication.registrationId());
+
         final String channel = publication.channel();
         final int streamId = publication.streamId();
         final int sessionId = publication.sessionId();
-        final long registrationId = publication.registrationId();
 
-        activeCorrelationId = driverProxy.removePublication(registrationId);
         publicationMap.remove(channel, sessionId, streamId);
 
         awaitOperationSucceeded();
@@ -166,10 +166,11 @@ class ClientConductor extends Agent implements DriverListener
 
     public synchronized void releaseSubscription(final Subscription subscription)
     {
+        activeCorrelationId = driverProxy.removeSubscription(subscription.registrationId());
+
         final String channel = subscription.channel();
         final int streamId = subscription.streamId();
 
-        activeCorrelationId = driverProxy.removeSubscription(channel, streamId, subscription.registrationId());
         subscriptionMap.remove(channel, streamId);
 
         awaitOperationSucceeded();

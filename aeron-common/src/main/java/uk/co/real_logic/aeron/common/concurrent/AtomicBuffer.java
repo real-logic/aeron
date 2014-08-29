@@ -33,6 +33,7 @@ public class AtomicBuffer
     public static final String DISABLE_BOUNDS_CHECKS_PROP_NAME = "aeron.disable.bounds.checks";
     public static final boolean DISABLE_BOUNDS_CHECKS = Boolean.getBoolean(DISABLE_BOUNDS_CHECKS_PROP_NAME);
 
+    private static final byte[] NULL_BYTES = "null".getBytes(StandardCharsets.UTF_8);
     private static final ByteOrder NATIVE_BYTE_ORDER = ByteOrder.nativeOrder();
     private static final Unsafe UNSAFE = UnsafeAccess.UNSAFE;
     private static final long ARRAY_BASE_OFFSET = UNSAFE.arrayBaseOffset(byte[].class);
@@ -67,7 +68,7 @@ public class AtomicBuffer
     /**
      * Attach a view to an off-heap memory region by address.
      *
-     * @param address where the memory begins off-heap
+     * @param address  where the memory begins off-heap
      * @param capacity of the buffer from the given address
      */
     public AtomicBuffer(final long address, final int capacity)
@@ -125,7 +126,7 @@ public class AtomicBuffer
     /**
      * Attach a view to an off-heap memory region by address.
      *
-     * @param address where the memory begins off-heap
+     * @param address  where the memory begins off-heap
      * @param capacity of the buffer from the given address
      */
     public void wrap(final long address, final int capacity)
@@ -152,9 +153,9 @@ public class AtomicBuffer
     /**
      * Set a region of memory to a given byte value.
      *
-     * @param index at which to start.
+     * @param index  at which to start.
      * @param length of the run of bytes to set.
-     * @param value the memory will be set to.
+     * @param value  the memory will be set to.
      */
     public void setMemory(final int index, final int length, final byte value)
     {
@@ -237,7 +238,7 @@ public class AtomicBuffer
     /**
      * Get the value at a given index.
      *
-     * @param index in bytes from which to get.
+     * @param index     in bytes from which to get.
      * @param byteOrder of the value to be read.
      * @return the value for at a given index
      */
@@ -257,8 +258,8 @@ public class AtomicBuffer
     /**
      * Put a value to a given index.
      *
-     * @param index in bytes for where to put.
-     * @param value for at a given index
+     * @param index     in bytes for where to put.
+     * @param value     for at a given index
      * @param byteOrder of the value when written
      */
     public void putLong(final int index, final long value, final ByteOrder byteOrder)
@@ -278,7 +279,6 @@ public class AtomicBuffer
      * Get the value at a given index.
      *
      * @param index in bytes from which to get.
-
      * @return the value for at a given index
      */
     public long getLong(final int index)
@@ -343,9 +343,9 @@ public class AtomicBuffer
     /**
      * Atomic compare and set of a long given an expected value.
      *
-     * @param index in bytes for where to put.
+     * @param index         in bytes for where to put.
      * @param expectedValue at to be compared
-     * @param updateValue to be exchanged
+     * @param updateValue   to be exchanged
      * @return set successful or not
      */
     public boolean compareAndSetLong(final int index, final long expectedValue, final long updateValue)
@@ -389,7 +389,7 @@ public class AtomicBuffer
     /**
      * Get the value at a given index.
      *
-     * @param index in bytes from which to get.
+     * @param index     in bytes from which to get.
      * @param byteOrder of the value to be read.
      * @return the value at a given index.
      */
@@ -409,8 +409,8 @@ public class AtomicBuffer
     /**
      * Put a value to a given index.
      *
-     * @param index in bytes for where to put.
-     * @param value to be written
+     * @param index     in bytes for where to put.
+     * @param value     to be written
      * @param byteOrder of the value when written
      */
     public void putInt(final int index, final int value, final ByteOrder byteOrder)
@@ -430,7 +430,6 @@ public class AtomicBuffer
      * Get the value at a given index.
      *
      * @param index in bytes from which to get.
-
      * @return the value for at a given index
      */
     public int getInt(final int index)
@@ -495,9 +494,9 @@ public class AtomicBuffer
     /**
      * Atomic compare and set of a int given an expected value.
      *
-     * @param index in bytes for where to put.
+     * @param index         in bytes for where to put.
      * @param expectedValue at to be compared
-     * @param updateValue to be exchanged
+     * @param updateValue   to be exchanged
      * @return successful or not
      */
     public boolean compareAndSetInt(final int index, final int expectedValue, final int updateValue)
@@ -541,7 +540,7 @@ public class AtomicBuffer
     /**
      * Get the value at a given index.
      *
-     * @param index in bytes from which to get.
+     * @param index     in bytes from which to get.
      * @param byteOrder of the value to be read.
      * @return the value at a given index.
      */
@@ -563,8 +562,8 @@ public class AtomicBuffer
     /**
      * Put a value to a given index.
      *
-     * @param index in bytes for where to put.
-     * @param value to be written
+     * @param index     in bytes for where to put.
+     * @param value     to be written
      * @param byteOrder of the value when written.
      */
     public void putDouble(final int index, final double value, final ByteOrder byteOrder)
@@ -613,7 +612,7 @@ public class AtomicBuffer
     /**
      * Get the value at a given index.
      *
-     * @param index in bytes from which to get.
+     * @param index     in bytes from which to get.
      * @param byteOrder of the value to be read.
      * @return the value at a given index.
      */
@@ -635,8 +634,8 @@ public class AtomicBuffer
     /**
      * Put a value to a given index.
      *
-     * @param index in bytes for where to put.
-     * @param value to be written
+     * @param index     in bytes for where to put.
+     * @param value     to be written
      * @param byteOrder of the value when written.
      */
     public void putFloat(final int index, final float value, final ByteOrder byteOrder)
@@ -685,7 +684,7 @@ public class AtomicBuffer
     /**
      * Get the value at a given index.
      *
-     * @param index in bytes from which to get.
+     * @param index     in bytes from which to get.
      * @param byteOrder of the value to be read.
      * @return the value at a given index.
      */
@@ -705,8 +704,8 @@ public class AtomicBuffer
     /**
      * Put a value to a given index.
      *
-     * @param index in bytes for where to put.
-     * @param value to be written
+     * @param index     in bytes for where to put.
+     * @param value     to be written
      * @param byteOrder of the value when written.
      */
     public void putShort(final int index, final short value, final ByteOrder byteOrder)
@@ -839,10 +838,10 @@ public class AtomicBuffer
     /**
      * Get bytes from this {@link AtomicBuffer} into the provided {@link AtomicBuffer} at given indices.
      *
-     * @param index in this buffer to begin getting the bytes.
+     * @param index     in this buffer to begin getting the bytes.
      * @param dstBuffer to which the bytes will be copied.
-     * @param dstIndex in the channel buffer to which the byte copy will begin.
-     * @param length of the bytes to be copied.
+     * @param dstIndex  in the channel buffer to which the byte copy will begin.
+     * @param length    of the bytes to be copied.
      */
     public void getBytes(final int index, final AtomicBuffer dstBuffer, final int dstIndex, final int length)
     {
@@ -914,7 +913,7 @@ public class AtomicBuffer
 
         boundsCheck(index, count);
 
-        UNSAFE.copyMemory(src, ARRAY_BASE_OFFSET + offset, byteArray, addressOffset + index,  count);
+        UNSAFE.copyMemory(src, ARRAY_BASE_OFFSET + offset, byteArray, addressOffset + index, count);
 
         return count;
     }
@@ -989,11 +988,12 @@ public class AtomicBuffer
         boundsCheck(index, length);
         srcBuffer.boundsCheck(srcIndex, length);
 
-        UNSAFE.copyMemory(srcBuffer.byteArray,
-                          srcBuffer.addressOffset + srcIndex,
-                          byteArray,
-                          addressOffset + index,
-                          length);
+        UNSAFE.copyMemory(
+            srcBuffer.byteArray,
+            srcBuffer.addressOffset + srcIndex,
+            byteArray,
+            addressOffset + index,
+            length);
     }
 
     public String getString(final int offset, final ByteOrder byteOrder)
@@ -1018,7 +1018,7 @@ public class AtomicBuffer
 
     public int putString(final int offset, final String value, final int maximumEncodedSize, final ByteOrder byteOrder)
     {
-        final byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        final byte[] bytes = value != null ? value.getBytes(StandardCharsets.UTF_8) : NULL_BYTES;
         if (bytes.length > maximumEncodedSize)
         {
             throw new IllegalArgumentException("Encoded string larger than maximum size: " + maximumEncodedSize);
@@ -1039,7 +1039,7 @@ public class AtomicBuffer
 
     public int putStringWithoutLength(final int offset, final String value)
     {
-        final byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        final byte[] bytes = value != null ? value.getBytes(StandardCharsets.UTF_8) : NULL_BYTES;
 
         return putBytes(offset, bytes);
     }

@@ -631,7 +631,12 @@ public class Long2ObjectHashMap<V>
         {
             if (isPositionValid)
             {
-                Long2ObjectHashMap.this.remove(keys[getPosition()]);
+                final int position = getPosition();
+                values[position] = null;
+                --size;
+
+                compactChain(position);
+
                 isPositionValid = false;
             }
             else

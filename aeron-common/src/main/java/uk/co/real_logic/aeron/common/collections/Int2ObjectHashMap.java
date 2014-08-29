@@ -631,7 +631,12 @@ public class Int2ObjectHashMap<V>
         {
             if (isPositionValid)
             {
-                Int2ObjectHashMap.this.remove(keys[getPosition()]);
+                final int position = getPosition();
+                values[position] = null;
+                --size;
+
+                compactChain(position);
+
                 isPositionValid = false;
             }
             else

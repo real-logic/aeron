@@ -40,15 +40,12 @@ class Signal
 
     public synchronized void await(final long awaitTimeout)
     {
-        if (signalRaised)
-        {
-            signalRaised = false;
-            return;
-        }
-
         try
         {
-            wait(awaitTimeout);
+            while (!signalRaised)
+            {
+                wait(awaitTimeout);
+            }
         }
         catch (final InterruptedException ex)
         {

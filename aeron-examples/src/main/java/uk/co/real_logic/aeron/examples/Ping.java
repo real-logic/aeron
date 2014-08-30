@@ -56,9 +56,6 @@ public class Ping
 
     private static Histogram histogram = new Histogram(TimeUnit.MILLISECONDS.toNanos(500), 3);
 
-    private static volatile boolean haltSubscriber = false;
-    private static int messagesReceived = 0;
-
     public static void main(final String[] args) throws Exception
     {
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
@@ -72,7 +69,8 @@ public class Ping
              final Publication pingPublication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);
              final Subscription pongSubscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID, Ping::pongHandler))
         {
-            final Future future = executor.submit(() -> runSubscriber(pongSubscription));
+            final int totalWarmupMessages = WARMUP_NUMBER_OF_MESSAGES * WARMUP_NUMBER_OF_ITERATIONS;
+            final Future warmup = executor.submit(() -> runSubscriber(pongSubscription, totalWarmupMessages));
 
             System.out.println(
                 "Warming up... " + WARMUP_NUMBER_OF_ITERATIONS + " iterations of " + WARMUP_NUMBER_OF_MESSAGES + " messages");
@@ -88,8 +86,12 @@ public class Ping
                 Thread.sleep(LINGER_TIMEOUT_MS);
             }
 
+            warmup.get();
+            histogram.reset();
+
             System.out.println("Pinging " + NUMBER_OF_MESSAGES + " messages");
 
+            final Future timedRun = executor.submit(() -> runSubscriber(pongSubscription, NUMBER_OF_MESSAGES));
             sendMessages(pingPublication, NUMBER_OF_MESSAGES);
 
             System.out.println("Done streaming.");
@@ -100,8 +102,7 @@ public class Ping
                 Thread.sleep(LINGER_TIMEOUT_MS);
             }
 
-            haltSubscriber = true;
-            future.get();
+            timedRun.get();
         }
 
         System.out.println("Done playing... Histogram of RTT latencies in microseconds.");
@@ -133,21 +134,22 @@ public class Ping
         final long rttNs = System.nanoTime() - pingTimestamp;
 
         histogram.recordValue(rttNs);
-
-        if ((WARMUP_NUMBER_OF_MESSAGES * WARMUP_NUMBER_OF_ITERATIONS) == ++messagesReceived)
-        {
-            histogram.reset();
-        }
     }
 
-    public static void runSubscriber(final Subscription pongSubscription)
+    public static void runSubscriber(final Subscription pongSubscription, final int numMessages)
     {
-        final IdleStrategy subscriptionIdler = new BusySpinIdleStrategy();
+        final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
 
-        while (!haltSubscriber)
+        int totalFragments = 0;
+        do
         {
-            final int workCount = pongSubscription.poll(FRAGMENT_COUNT_LIMIT);
-            subscriptionIdler.idle(workCount);
+            final int fragmentsRead = pongSubscription.poll(FRAGMENT_COUNT_LIMIT);
+            totalFragments += fragmentsRead;
+            if (fragmentsRead == 0)
+            {
+                idleStrategy.idle(fragmentsRead);
+            }
         }
+        while (totalFragments < numMessages);
     }
 }

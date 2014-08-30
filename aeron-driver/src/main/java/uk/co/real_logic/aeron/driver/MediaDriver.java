@@ -15,10 +15,10 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import sun.misc.Signal;
 import uk.co.real_logic.aeron.common.*;
 import uk.co.real_logic.aeron.common.concurrent.*;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastTransmitter;
-import uk.co.real_logic.aeron.common.concurrent.console.CommandBarrier;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.common.event.EventConfiguration;
@@ -28,6 +28,7 @@ import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
 
 import java.io.File;
 import java.nio.MappedByteBuffer;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -69,6 +70,8 @@ public class MediaDriver implements AutoCloseable
     private Thread receiverThread;
     private Thread eventReaderThread;
 
+    private static volatile boolean running = true;
+
     /**
      * Start Media Driver as a stand-alone process.
      *
@@ -78,7 +81,22 @@ public class MediaDriver implements AutoCloseable
     {
         try (final MediaDriver ignored = MediaDriver.launch())
         {
-            new CommandBarrier("Type 'quit' to terminate").await("quit");
+            final Thread mainThread = Thread.currentThread();
+
+            Signal.handle(
+                new Signal("INT"),
+                (signal) ->
+                {
+                    running = false;
+                    LockSupport.unpark(mainThread);
+                });
+
+            while (running)
+            {
+                LockSupport.park();
+            }
+
+            System.out.println("Shutdown Driver...");
         }
     }
 

@@ -89,7 +89,7 @@ public class GapScanner extends LogBuffer
     }
 
     /**
-     * Is the log complete with now gaps?
+     * Is the log complete with ticks gaps?
      *
      * @return true is he log is complete with no gaps otherwise false.
      */

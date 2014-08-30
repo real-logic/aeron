@@ -130,7 +130,7 @@ public class DriverPublication implements AutoCloseable
         positionLimit = new AtomicLong(initialPositionLimit);
         activeTermId = new AtomicInteger(initialTermId);
 
-        timeOfLastSendOrHeartbeat = timerWheel.now();
+        timeOfLastSendOrHeartbeat = timerWheel.clock().time();
 
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
         this.initialTermId = initialTermId;
@@ -278,7 +278,7 @@ public class DriverPublication implements AutoCloseable
                 setupHeader.frameLength());
         }
 
-        updateTimeOfLastSendOrSetup(timerWheel.now());
+        updateTimeOfLastSendOrSetup(timerWheel.clock().time());
     }
 
     private boolean heartbeatCheck()
@@ -288,7 +288,7 @@ public class DriverPublication implements AutoCloseable
                 Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS :
                 Configuration.PUBLICATION_SETUP_TIMEOUT_NS;
 
-        if (timeOfLastSendOrHeartbeat + timeout < timerWheel.now())
+        if (timeOfLastSendOrHeartbeat + timeout < timerWheel.clock().time())
         {
             sendSetupFrameOrHeartbeat();
             return true;
@@ -339,7 +339,7 @@ public class DriverPublication implements AutoCloseable
             logger.log(EventCode.FRAME_OUT_INCOMPLETE_SEND, "onSendTransmissionUnit %d/%d", bytesSent, length);
         }
 
-        updateTimeOfLastSendOrSetup(timerWheel.now());
+        updateTimeOfLastSendOrSetup(timerWheel.clock().time());
         lastSentTermId = activeTermId.get();
         lastSentTermOffset = offset;
         lastSentLength = length;
@@ -375,7 +375,7 @@ public class DriverPublication implements AutoCloseable
 
                 scanner.scanNext(onSendRetransmitFunc, Math.min(lastSentLength, mtuLength));
 
-                updateTimeOfLastSendOrSetup(timerWheel.now());
+                updateTimeOfLastSendOrSetup(timerWheel.clock().time());
             }
         }
     }

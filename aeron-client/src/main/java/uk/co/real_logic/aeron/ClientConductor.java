@@ -42,13 +42,13 @@ import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
  */
 class ClientConductor extends Agent implements DriverListener
 {
-    public static final int KEEPALIVE_TIMEOUT_MS = 500;
-
+    private static final int KEEPALIVE_TIMEOUT_MS = 500;
     private static final long NO_CORRELATION_ID = -1;
 
     private final DriverListenerAdapter driverListenerAdapter;
     private final BufferManager bufferManager;
-    private final long awaitTimeout;
+    private final long driverTimeoutMs;
+    private final long driverTimeoutNs;
     private final ConnectionMap<String, Publication> publicationMap = new ConnectionMap<>(); // Guarded by this
     private final SubscriptionMap subscriptionMap = new SubscriptionMap();
 
@@ -67,6 +67,7 @@ class ClientConductor extends Agent implements DriverListener
     private RegistrationException registrationException; // Guarded by this
 
     private final TimerWheel.Timer keepaliveTimer;
+    private volatile boolean driverActive = true;
 
     public ClientConductor(
         final IdleStrategy idleStrategy,
@@ -79,7 +80,7 @@ class ClientConductor extends Agent implements DriverListener
         final Consumer<Exception> errorHandler,
         final NewConnectionHandler newConnectionHandler,
         final InactiveConnectionHandler inactiveConnectionHandler,
-        final long awaitTimeout,
+        final long driverTimeoutMs,
         final int mtuLength)
     {
         super(idleStrategy, errorHandler, null);
@@ -91,7 +92,8 @@ class ClientConductor extends Agent implements DriverListener
         this.timerWheel = timerWheel;
         this.newConnectionHandler = newConnectionHandler;
         this.inactiveConnectionHandler = inactiveConnectionHandler;
-        this.awaitTimeout = awaitTimeout;
+        this.driverTimeoutMs = driverTimeoutMs;
+        this.driverTimeoutNs = TimeUnit.MILLISECONDS.toNanos(driverTimeoutMs);
         this.mtuLength = mtuLength;
 
         this.driverListenerAdapter = new DriverListenerAdapter(broadcastReceiver, this);
@@ -102,14 +104,16 @@ class ClientConductor extends Agent implements DriverListener
     {
         int workCount = 0;
 
-        workCount += driverListenerAdapter.receiveMessages(activeCorrelationId);
         workCount += processTimers();
+        workCount += driverListenerAdapter.receiveMessages(activeCorrelationId);
 
         return workCount;
     }
 
     public synchronized Publication addPublication(final String channel, final int streamId, final int sessionId)
     {
+        verifyDriverActive();
+
         Publication publication = publicationMap.get(channel, sessionId, streamId);
 
         if (publication == null)
@@ -137,6 +141,8 @@ class ClientConductor extends Agent implements DriverListener
 
     public synchronized void releasePublication(final Publication publication)
     {
+        verifyDriverActive();
+
         activeCorrelationId = driverProxy.removePublication(publication.registrationId());
 
         final String channel = publication.channel();
@@ -150,6 +156,8 @@ class ClientConductor extends Agent implements DriverListener
 
     public synchronized Subscription addSubscription(final String channel, final int streamId, final DataHandler handler)
     {
+        verifyDriverActive();
+
         Subscription subscription = subscriptionMap.get(channel, streamId);
 
         if (null == subscription)
@@ -166,6 +174,8 @@ class ClientConductor extends Agent implements DriverListener
 
     public synchronized void releaseSubscription(final Subscription subscription)
     {
+        verifyDriverActive();
+
         activeCorrelationId = driverProxy.removeSubscription(subscription.registrationId());
 
         final String channel = subscription.channel();
@@ -268,7 +278,7 @@ class ClientConductor extends Agent implements DriverListener
 
     private void await(final long startTime)
     {
-        correlationSignal.await(awaitTimeout);
+        correlationSignal.await(driverTimeoutMs);
         checkDriverTimeout(startTime);
         checkRegistrationException();
     }
@@ -296,9 +306,9 @@ class ClientConductor extends Agent implements DriverListener
 
     private void checkDriverTimeout(final long startTime)
     {
-        if ((System.currentTimeMillis() - startTime) > awaitTimeout)
+        if ((System.currentTimeMillis() - startTime) > driverTimeoutMs)
         {
-            final String msg = String.format("No response from media driver within %d ms", awaitTimeout);
+            final String msg = String.format("No response from media driver within %d ms", driverTimeoutMs);
             throw new DriverTimeoutException(msg);
         }
     }
@@ -326,8 +336,31 @@ class ClientConductor extends Agent implements DriverListener
 
     private void onKeepalive()
     {
-        driverProxy.keepaliveClient();
+        driverProxy.sendClientKeepalive();
+        checkDriverHeartbeat();
 
         timerWheel.rescheduleTimeout(KEEPALIVE_TIMEOUT_MS, TimeUnit.MILLISECONDS, keepaliveTimer);
+    }
+
+    private void checkDriverHeartbeat()
+    {
+        final long now = timerWheel.clock().time();
+        final long currentDriverKeepaliveTime = driverProxy.timeOfLastDriverKeepaliveNs();
+
+        if (driverActive && now > (currentDriverKeepaliveTime + driverTimeoutNs))
+        {
+            driverActive = false;
+
+            final String msg = String.format("Driver has been inactive for over %dms", driverTimeoutMs);
+            exceptionHandler().accept(new DriverTimeoutException(msg));
+        }
+    }
+
+    private void verifyDriverActive()
+    {
+        if (!driverActive)
+        {
+            throw new DriverTimeoutException("Driver is inactive");
+        }
     }
 }

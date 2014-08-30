@@ -89,7 +89,7 @@ public class Ping
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1));
             }
 
-            System.out.println("Warm now.");
+            System.out.println("Warm ticks.");
 
             if (0 < LINGER_TIMEOUT_MS)
             {

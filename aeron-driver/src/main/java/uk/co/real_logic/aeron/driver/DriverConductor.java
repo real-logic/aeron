@@ -59,7 +59,7 @@ import static uk.co.real_logic.aeron.driver.MediaDriver.Context;
  */
 public class DriverConductor extends Agent
 {
-    public static final int CHECK_TIMEOUT_MS = 1000;  // how often to check liveness & cleanup
+    public static final int HEARTBEAT_TIMEOUT_MS = 1000;  // how often to check liveness & cleanup
 
     /**
      * Unicast NAK delay is immediate initial with delayed subsequent delay
@@ -71,7 +71,7 @@ public class DriverConductor extends Agent
         Configuration.NAK_MAX_BACKOFF_DEFAULT, Configuration.NAK_GROUPSIZE_DEFAULT, Configuration.NAK_GRTT_DEFAULT);
 
     /**
-     * Source uses same for unicast and multicast. For now.
+     * Source uses same for unicast and multicast. For ticks.
      */
     public static final FeedbackDelayGenerator RETRANS_UNICAST_DELAY_GENERATOR = () -> RETRANS_UNICAST_DELAY_DEFAULT_NS;
     public static final FeedbackDelayGenerator RETRANS_UNICAST_LINGER_GENERATOR = () -> RETRANS_UNICAST_LINGER_DEFAULT_NS;
@@ -83,7 +83,7 @@ public class DriverConductor extends Agent
     private final DriverConductorProxy conductorProxy;
     private final NioSelector nioSelector;
     private final TermBuffersFactory termBuffersFactory;
-    private final RingBuffer fromClientCommands;
+    private final RingBuffer toDriverCommands;
     private final HashMap<String, SendChannelEndpoint> sendChannelEndpointByChannelMap = new HashMap<>();
     private final HashMap<String, ReceiveChannelEndpoint> receiveChannelEndpointByChannelMap = new HashMap<>();
     private final TimerWheel timerWheel;
@@ -138,9 +138,9 @@ public class DriverConductor extends Agent
         this.countersBuffer = ctx.countersBuffer();
 
         timerWheel = ctx.conductorTimerWheel();
-        checkTimeoutTimer = timerWheel.newTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onCheckTimeouts);
+        checkTimeoutTimer = timerWheel.newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheckTimeouts);
 
-        fromClientCommands = ctx.fromClientCommands();
+        toDriverCommands = ctx.toDriverCommands();
         clientProxy = ctx.clientProxy();
         conductorProxy = ctx.driverConductorProxy();
         logger = ctx.eventLogger();
@@ -154,11 +154,13 @@ public class DriverConductor extends Agent
         onReceiverCommandFunc = this::onReceiverCommand;
         onClientCommandFunc = this::onClientCommand;
 
-        final AtomicBuffer buffer = fromClientCommands.buffer();
+        final AtomicBuffer buffer = toDriverCommands.buffer();
         publicationMessage.wrap(buffer, 0);
         subscriptionMessage.wrap(buffer, 0);
         correlatedMessage.wrap(buffer, 0);
         removeMessage.wrap(buffer, 0);
+
+        toDriverCommands.consumerHeartbeatTimeNs(timerWheel.clock().time());
     }
 
     public void onClose()
@@ -209,12 +211,12 @@ public class DriverConductor extends Agent
         int workCount = 0;
 
         workCount += nioSelector.processKeys();
-        workCount += fromClientCommands.read(onClientCommandFunc);
+        workCount += toDriverCommands.read(onClientCommandFunc);
         workCount += commandQueue.drain(onReceiverCommandFunc);
         workCount += processTimers();
 
         final ArrayList<DriverConnection> connections = this.connections;
-        final long now = timerWheel.now();
+        final long now = timerWheel.clock().time();
         for (int i = 0, size = connections.size(); i < size; i++)
         {
             workCount += connections.get(i).sendPendingStatusMessages(now);
@@ -239,9 +241,11 @@ public class DriverConductor extends Agent
         return workCount;
     }
 
-    private void onCheckTimeouts()
+    private void onHeartbeatCheckTimeouts()
     {
-        final long now = timerWheel.now();
+        final long now = timerWheel.clock().time();
+
+        toDriverCommands.consumerHeartbeatTimeNs(now);
 
         onCheckClients(now);
         onCheckPublications(now);
@@ -250,7 +254,7 @@ public class DriverConductor extends Agent
         onCheckConnections(now);
         onCheckPendingSetups(now);
 
-        timerWheel.rescheduleTimeout(CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS, checkTimeoutTimer);
+        timerWheel.rescheduleTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, checkTimeoutTimer);
     }
 
     private void onClientCommand(final int msgTypeId, final AtomicBuffer buffer, final int index, final int length)
@@ -318,7 +322,7 @@ public class DriverConductor extends Agent
                     break;
                 }
 
-                case KEEPALIVE_CLIENT:
+                case CLIENT_KEEPALIVE:
                 {
                     logger.log(EventCode.CMD_IN_KEEPALIVE_CLIENT, buffer, index, length);
 
@@ -569,7 +573,7 @@ public class DriverConductor extends Agent
             new BufferPositionIndicator(countersBuffer, subscriberPositionCounterId, countersManager),
             new BufferPositionReporter(countersBuffer, receivedCompleteCounterId, countersManager),
             new BufferPositionReporter(countersBuffer, receivedHwmCounterId, countersManager),
-            timerWheel::now,
+            timerWheel.clock(),
             systemCounters,
             logger);
 
@@ -589,7 +593,7 @@ public class DriverConductor extends Agent
 
         if (null != aeronClient)
         {
-            aeronClient.timeOfLastKeepalive(timerWheel.now());
+            aeronClient.timeOfLastKeepalive(timerWheel.clock().time());
         }
     }
 
@@ -796,7 +800,7 @@ public class DriverConductor extends Agent
         final ReceiveChannelEndpoint channelEndpoint = cmd.channelEndpoint();
 
         channelEndpoint.sendSetupElicitingStatusMessage(controlAddress, sessionId, streamId);
-        cmd.timeOfStatusMessage(timerWheel.now());
+        cmd.timeOfStatusMessage(timerWheel.clock().time());
 
         pendingSetups.add(cmd);
     }
@@ -807,7 +811,7 @@ public class DriverConductor extends Agent
 
         if (null == aeronClient)
         {
-            aeronClient = new AeronClient(clientId, timerWheel.now());
+            aeronClient = new AeronClient(clientId, timerWheel.clock().time());
             clients.add(aeronClient);
         }
 

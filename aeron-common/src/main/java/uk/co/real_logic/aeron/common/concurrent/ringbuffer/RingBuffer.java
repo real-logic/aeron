@@ -81,4 +81,18 @@ public interface RingBuffer
      * @return the underlying buffer used by the RingBuffer for storage.
      */
     AtomicBuffer buffer();
+
+    /**
+     * Set the time of the last consumer heartbeat.
+     *
+     * @param time of the last consumer heartbeat.
+     */
+    void consumerHeartbeatTimeNs(long time);
+
+    /**
+     * The time of the last consumer heartbeat.
+     *
+     * @return the time of the last consumer heartbeat.
+     */
+    long consumerHeartbeatTimeNs();
 }

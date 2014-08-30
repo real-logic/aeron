@@ -45,13 +45,13 @@ class DriverProxy
     private final AtomicBuffer keepaliveBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(MSG_BUFFER_CAPACITY));
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
 
-    private final RingBuffer driverCommandBuffer;
+    private final RingBuffer toDriverCommandBuffer;
 
     private final long clientId;
 
-    public DriverProxy(final RingBuffer driverCommandBuffer)
+    public DriverProxy(final RingBuffer toDriverCommandBuffer)
     {
-        this.driverCommandBuffer = driverCommandBuffer;
+        this.toDriverCommandBuffer = toDriverCommandBuffer;
 
         publicationMessage.wrap(writeBuffer, 0);
         subscriptionMessage.wrap(writeBuffer, 0);
@@ -59,7 +59,12 @@ class DriverProxy
         correlatedMessage.wrap(keepaliveBuffer, 0);
         removeMessage.wrap(writeBuffer, 0);
 
-        clientId = driverCommandBuffer.nextCorrelationId();
+        clientId = toDriverCommandBuffer.nextCorrelationId();
+    }
+
+    public long timeOfLastDriverKeepaliveNs()
+    {
+        return toDriverCommandBuffer.consumerHeartbeatTimeNs();
     }
 
     public long addPublication(final String channel, final int streamId, final int sessionId)
@@ -69,11 +74,11 @@ class DriverProxy
 
     public long removePublication(final long registrationId)
     {
-        final long correlationId = driverCommandBuffer.nextCorrelationId();
+        final long correlationId = toDriverCommandBuffer.nextCorrelationId();
         removeMessage.correlationId(correlationId);
         removeMessage.registrationId(registrationId);
 
-        if (!driverCommandBuffer.write(REMOVE_PUBLICATION, writeBuffer, 0, RemoveMessageFlyweight.length()))
+        if (!toDriverCommandBuffer.write(REMOVE_PUBLICATION, writeBuffer, 0, RemoveMessageFlyweight.length()))
         {
             throw new IllegalStateException("could not write publication remove message");
         }
@@ -88,11 +93,11 @@ class DriverProxy
 
     public long removeSubscription(final long registrationId)
     {
-        final long correlationId = driverCommandBuffer.nextCorrelationId();
+        final long correlationId = toDriverCommandBuffer.nextCorrelationId();
         removeMessage.correlationId(correlationId);
         removeMessage.registrationId(registrationId);
 
-        if (!driverCommandBuffer.write(REMOVE_SUBSCRIPTION, writeBuffer, 0, RemoveMessageFlyweight.length()))
+        if (!toDriverCommandBuffer.write(REMOVE_SUBSCRIPTION, writeBuffer, 0, RemoveMessageFlyweight.length()))
         {
             throw new IllegalStateException("could not write subscription remove message");
         }
@@ -100,12 +105,12 @@ class DriverProxy
         return correlationId;
     }
 
-    public void keepaliveClient()
+    public void sendClientKeepalive()
     {
         correlatedMessage.clientId(clientId);
         correlatedMessage.correlationId(0);
 
-        if (!driverCommandBuffer.write(KEEPALIVE_CLIENT, keepaliveBuffer, 0, CorrelatedMessageFlyweight.LENGTH))
+        if (!toDriverCommandBuffer.write(CLIENT_KEEPALIVE, keepaliveBuffer, 0, CorrelatedMessageFlyweight.LENGTH))
         {
             throw new IllegalStateException("could not write keepalive message");
         }
@@ -113,7 +118,7 @@ class DriverProxy
 
     private long sendPublicationMessage(final String channel, final int streamId, final int sessionId, final int msgTypeId)
     {
-        final long correlationId = driverCommandBuffer.nextCorrelationId();
+        final long correlationId = toDriverCommandBuffer.nextCorrelationId();
 
         publicationMessage.clientId(clientId);
         publicationMessage.correlationId(correlationId);
@@ -121,7 +126,7 @@ class DriverProxy
         publicationMessage.sessionId(sessionId);
         publicationMessage.channel(channel);
 
-        if (!driverCommandBuffer.write(msgTypeId, writeBuffer, 0, publicationMessage.length()))
+        if (!toDriverCommandBuffer.write(msgTypeId, writeBuffer, 0, publicationMessage.length()))
         {
             throw new IllegalStateException("could not write publication message");
         }
@@ -129,10 +134,9 @@ class DriverProxy
         return correlationId;
     }
 
-    private long sendSubscriptionMessage(
-        final int msgTypeId, final String channel, final int streamId, final long registrationId)
+    private long sendSubscriptionMessage(final int msgTypeId, final String channel, final int streamId, final long registrationId)
     {
-        final long correlationId = driverCommandBuffer.nextCorrelationId();
+        final long correlationId = toDriverCommandBuffer.nextCorrelationId();
 
         subscriptionMessage.clientId(clientId);
         subscriptionMessage.registrationCorrelationId(registrationId);
@@ -140,7 +144,7 @@ class DriverProxy
         subscriptionMessage.streamId(streamId);
         subscriptionMessage.channel(channel);
 
-        if (!driverCommandBuffer.write(msgTypeId, writeBuffer, 0, subscriptionMessage.length()))
+        if (!toDriverCommandBuffer.write(msgTypeId, writeBuffer, 0, subscriptionMessage.length()))
         {
             throw new IllegalStateException("could not write subscription message");
         }

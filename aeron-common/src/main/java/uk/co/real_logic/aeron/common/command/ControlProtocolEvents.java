@@ -32,7 +32,7 @@ public class ControlProtocolEvents
     /** Remove Subscriber */
     public static final int REMOVE_SUBSCRIPTION = 0x05;
     /** Keepalive from Client */
-    public static final int KEEPALIVE_CLIENT = 0x06;
+    public static final int CLIENT_KEEPALIVE = 0x06;
 
     // Media Driver to Clients
 

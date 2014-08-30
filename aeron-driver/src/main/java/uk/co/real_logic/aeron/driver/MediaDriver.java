@@ -114,9 +114,9 @@ public class MediaDriver implements AutoCloseable
                 .deleteOnExit(ctx.dirsDeleteOnExit())
                 .eventHandler(ctx.eventConsumer));
 
-        receiver = new Receiver(ctx);
-        sender = new Sender(ctx);
         conductor = new DriverConductor(ctx);
+        sender = new Sender(ctx);
+        receiver = new Receiver(ctx);
     }
 
     /**
@@ -242,7 +242,7 @@ public class MediaDriver implements AutoCloseable
         private IdleStrategy senderIdleStrategy;
         private IdleStrategy receiverIdleStrategy;
         private ClientProxy clientProxy;
-        private RingBuffer fromClientCommands;
+        private RingBuffer toDriverCommands;
         private File eventLocationsFile;
 
         private MappedByteBuffer toClientsBuffer;
@@ -316,7 +316,7 @@ public class MediaDriver implements AutoCloseable
 
                 toDriverBuffer = mapNewFile(toDriverFile(), Configuration.CONDUCTOR_BUFFER_SZ);
 
-                fromClientCommands(new ManyToOneRingBuffer(new AtomicBuffer(toDriverBuffer)));
+                toDriverCommands(new ManyToOneRingBuffer(new AtomicBuffer(toDriverBuffer)));
 
                 receiverProxy(new ReceiverProxy(receiverCommandQueue()));
                 senderProxy(new SenderProxy(senderCommandQueue()));
@@ -485,9 +485,9 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context fromClientCommands(final RingBuffer fromClientCommands)
+        public Context toDriverCommands(final RingBuffer toDriverCommands)
         {
-            this.fromClientCommands = fromClientCommands;
+            this.toDriverCommands = toDriverCommands;
             return this;
         }
 
@@ -655,9 +655,9 @@ public class MediaDriver implements AutoCloseable
             return clientProxy;
         }
 
-        public RingBuffer fromClientCommands()
+        public RingBuffer toDriverCommands()
         {
-            return fromClientCommands;
+            return toDriverCommands;
         }
 
         public CountersManager countersManager()

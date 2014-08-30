@@ -47,6 +47,16 @@ public abstract class Agent implements Runnable, AutoCloseable
     }
 
     /**
+     * Get the exception handler for this agent.
+     *
+     * @return the exception handler for this agent.
+     */
+    public Consumer<Exception> exceptionHandler()
+    {
+        return exceptionHandler;
+    }
+
+    /**
      * Run the Agent logic
      *
      * This method does not return until the run loop is stopped via {@link #close()} or {@link Thread#interrupt()}.

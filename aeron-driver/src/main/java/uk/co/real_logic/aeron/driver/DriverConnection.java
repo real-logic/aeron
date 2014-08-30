@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.NanoClock;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogRebuilder;
 import uk.co.real_logic.aeron.common.event.EventCode;
@@ -27,7 +28,6 @@ import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.LongSupplier;
 
 import static uk.co.real_logic.aeron.common.TermHelper.*;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.IN_CLEANING;
@@ -45,7 +45,7 @@ public class DriverConnection implements AutoCloseable
     private final int streamId;
     private final TermBuffers termBuffers;
     private final PositionIndicator subscriberPosition;
-    private final LongSupplier clock;
+    private final NanoClock clock;
     private final PositionReporter completedPosition;
     private final PositionReporter hwmPosition;
     private final SystemCounters systemCounters;
@@ -88,7 +88,7 @@ public class DriverConnection implements AutoCloseable
         final PositionIndicator subscriberPosition,
         final PositionReporter completedPosition,
         final PositionReporter hwmPosition,
-        final LongSupplier clock,
+        final NanoClock clock,
         final SystemCounters systemCounters,
         final EventLogger logger)
     {
@@ -102,11 +102,11 @@ public class DriverConnection implements AutoCloseable
         this.systemCounters = systemCounters;
         this.logger = logger;
         this.status = Status.ACTIVE;
-        this.timeOfLastStatusChange = clock.getAsLong();
+        this.timeOfLastStatusChange = clock.time();
 
         this.clock = clock;
         activeTermId.lazySet(initialTermId);
-        timeOfLastFrame.lazySet(clock.getAsLong());
+        timeOfLastFrame.lazySet(clock.time());
         this.hwmIndex = this.activeIndex = termIdToBufferIndex(initialTermId);
         this.hwmTermId = initialTermId;
 
@@ -295,7 +295,7 @@ public class DriverConnection implements AutoCloseable
      */
     private void hwmCandidate(final long proposedPosition)
     {
-        timeOfLastFrame.lazySet(clock.getAsLong());
+        timeOfLastFrame.lazySet(clock.time());
         hwmPosition.position(lossHandler.hwmCandidate(proposedPosition));
     }
 
@@ -392,7 +392,7 @@ public class DriverConnection implements AutoCloseable
 
         if (isHeartbeat)
         {
-            timeOfLastFrame.lazySet(clock.getAsLong());
+            timeOfLastFrame.lazySet(clock.time());
         }
 
         return isHeartbeat;

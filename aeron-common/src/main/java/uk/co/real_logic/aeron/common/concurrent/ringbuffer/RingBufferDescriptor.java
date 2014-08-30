@@ -33,6 +33,9 @@ public class RingBufferDescriptor
     /** Offset within the trailer for where the head value is stored. */
     public static final int CORRELATION_COUNTER_OFFSET;
 
+    /** Offset within the trailer for where the consumer heartbeat time value is stored. */
+    public static final int CONSUMER_HEARTBEAT_OFFSET;
+
     /** Total length of the trailer in bytes. */
     public static final int TRAILER_LENGTH;
 
@@ -46,6 +49,9 @@ public class RingBufferDescriptor
 
         offset += BitUtil.CACHE_LINE_SIZE;
         CORRELATION_COUNTER_OFFSET = offset;
+
+        offset += BitUtil.CACHE_LINE_SIZE;
+        CONSUMER_HEARTBEAT_OFFSET = offset;
 
         offset += BitUtil.CACHE_LINE_SIZE;
         TRAILER_LENGTH = offset;

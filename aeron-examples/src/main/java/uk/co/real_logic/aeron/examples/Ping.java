@@ -31,6 +31,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
 /**
@@ -56,6 +57,7 @@ public class Ping
     static Histogram histogram = new Histogram(TimeUnit.MILLISECONDS.toNanos(500), 3);
 
     static volatile boolean haltSubscriberLoop = false;
+    static int messagesReceived = 0;
 
     public static void main(final String[] args) throws Exception
     {
@@ -97,8 +99,6 @@ public class Ping
 
             System.out.println("Pinging " + NUMBER_OF_MESSAGES + " messages");
 
-            histogram.reset();
-
             for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
             {
                 do
@@ -137,6 +137,11 @@ public class Ping
         final long rttNs = System.nanoTime() - pingTimestamp;
 
         histogram.recordValue(rttNs);
+
+        if (WARMUP_NUMBER_OF_MESSAGES == ++messagesReceived)
+        {
+            histogram.reset();
+        }
     }
 
     public static void runSubscriber(final Subscription pongSubscription)

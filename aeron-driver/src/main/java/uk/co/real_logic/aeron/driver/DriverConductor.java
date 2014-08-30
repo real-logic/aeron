@@ -399,7 +399,7 @@ public class DriverConductor extends Agent
             publication = new DriverPublication(
                 correlationId,
                 channelEndpoint,
-                timerWheel,
+                clock,
                 termBuffers,
                 positionReporter,
                 sessionId,

@@ -123,7 +123,7 @@ public class SenderTest
         publication = new DriverPublication(
             PUBLICATION_ID,
             mockSendChannelEndpoint,
-            wheel,
+            wheel.clock(),
             termBuffers,
             mock(BufferPositionReporter.class),
                 SESSION_ID,

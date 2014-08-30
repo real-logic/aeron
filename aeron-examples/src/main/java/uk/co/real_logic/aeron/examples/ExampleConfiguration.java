@@ -29,11 +29,12 @@ public class ExampleConfiguration
     public static final String PONG_CHANNEL_PROP = "aeron.example.pong.channel";
     public static final String PING_STREAM_ID_PROP = "aeron.example.ping.streamId";
     public static final String PONG_STREAM_ID_PROP = "aeron.example.pong.streamId";
-    public static final String WARMUP_NUMBER_OF_MESSAGES_PROP = "aeron.example.warmup.numberOfMessages";
+    public static final String WARMUP_NUMBER_OF_MESSAGES_PROP = "aeron.example.warmup.messages";
+    public static final String WARMUP_NUMBER_OF_ITERATIONS_PROP = "aeron.example.warmup.iterations";
 
     public static final String FRAME_COUNT_LIMIT_PROP = "aeron.example.frameCountLimit";
     public static final String MESSAGE_LENGTH_PROP = "aeron.example.messageLength";
-    public static final String NUMBER_OF_MESSAGES_PROP = "aeron.example.numberOfMessages";
+    public static final String NUMBER_OF_MESSAGES_PROP = "aeron.example.messages";
     public static final String LINGER_TIMEOUT_MS_PROP = "aeron.example.lingerTimeout";
     public static final String EMBEDDED_MEDIA_DRIVER_PROP = "aeron.example.embeddedMediaDriver";
 
@@ -43,10 +44,11 @@ public class ExampleConfiguration
     public static final int STREAM_ID;
     public static final int PING_STREAM_ID;
     public static final int PONG_STREAM_ID;
-    public static final int FRAME_COUNT_LIMIT;
+    public static final int FRAGMENT_COUNT_LIMIT;
     public static final int MESSAGE_LENGTH;
-    public static final long NUMBER_OF_MESSAGES;
-    public static final long WARMUP_NUMBER_OF_MESSAGES;
+    public static final int NUMBER_OF_MESSAGES;
+    public static final int WARMUP_NUMBER_OF_MESSAGES;
+    public static final int WARMUP_NUMBER_OF_ITERATIONS;
     public static final long LINGER_TIMEOUT_MS;
     public static final boolean EMBEDDED_MEDIA_DRIVER;
 
@@ -58,10 +60,11 @@ public class ExampleConfiguration
         PONG_CHANNEL = System.getProperty(PONG_CHANNEL_PROP, "udp://localhost:40124");
         PING_STREAM_ID = Integer.getInteger(PING_STREAM_ID_PROP, 10);
         PONG_STREAM_ID = Integer.getInteger(PONG_STREAM_ID_PROP, 10);
-        FRAME_COUNT_LIMIT = Integer.getInteger(FRAME_COUNT_LIMIT_PROP, 10);
+        FRAGMENT_COUNT_LIMIT = Integer.getInteger(FRAME_COUNT_LIMIT_PROP, 10);
         MESSAGE_LENGTH = Integer.getInteger(MESSAGE_LENGTH_PROP, 256);
-        NUMBER_OF_MESSAGES = Long.getLong(NUMBER_OF_MESSAGES_PROP, 10_000_000);
-        WARMUP_NUMBER_OF_MESSAGES = Long.getLong(WARMUP_NUMBER_OF_MESSAGES_PROP, 10_000);
+        NUMBER_OF_MESSAGES = Integer.getInteger(NUMBER_OF_MESSAGES_PROP, 10_000_000);
+        WARMUP_NUMBER_OF_MESSAGES = Integer.getInteger(WARMUP_NUMBER_OF_MESSAGES_PROP, 5_000);
+        WARMUP_NUMBER_OF_ITERATIONS = Integer.getInteger(WARMUP_NUMBER_OF_ITERATIONS_PROP, 3);
         LINGER_TIMEOUT_MS = Long.getLong(LINGER_TIMEOUT_MS_PROP, TimeUnit.SECONDS.toMillis(5));
         EMBEDDED_MEDIA_DRIVER = Boolean.getBoolean(EMBEDDED_MEDIA_DRIVER_PROP);
     }

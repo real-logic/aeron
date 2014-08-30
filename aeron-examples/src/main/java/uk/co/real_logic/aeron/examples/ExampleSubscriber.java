@@ -30,7 +30,7 @@ public class ExampleSubscriber
 {
     private static final int STREAM_ID = ExampleConfiguration.STREAM_ID;
     private static final String CHANNEL = ExampleConfiguration.CHANNEL;
-    private static final int FRAME_COUNT_LIMIT = ExampleConfiguration.FRAME_COUNT_LIMIT;
+    private static final int FRAGMENT_COUNT_LIMIT = ExampleConfiguration.FRAGMENT_COUNT_LIMIT;
     private static final boolean EMBEDDED_MEDIA_DRIVER = ExampleConfiguration.EMBEDDED_MEDIA_DRIVER;
 
     public static void main(final String[] args) throws Exception
@@ -48,7 +48,7 @@ public class ExampleSubscriber
              final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, dataHandler))
         {
             // run the subscriber thread from here
-            ExampleUtil.subscriberLoop(FRAME_COUNT_LIMIT).accept(subscription);
+            ExampleUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT).accept(subscription);
         }
 
         CloseHelper.quietClose(driver);

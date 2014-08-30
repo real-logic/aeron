@@ -33,7 +33,7 @@ public class Pong
     private static final int PONG_STREAM_ID = ExampleConfiguration.PONG_STREAM_ID;
     private static final String PING_CHANNEL = ExampleConfiguration.PING_CHANNEL;
     private static final String PONG_CHANNEL = ExampleConfiguration.PONG_CHANNEL;
-    private static final int FRAME_COUNT_LIMIT = ExampleConfiguration.FRAME_COUNT_LIMIT;
+    private static final int FRAME_COUNT_LIMIT = ExampleConfiguration.FRAGMENT_COUNT_LIMIT;
     private static final boolean EMBEDDED_MEDIA_DRIVER = ExampleConfiguration.EMBEDDED_MEDIA_DRIVER;
 
     private static final BusySpinIdleStrategy PING_HANDLER_IDLER = new BusySpinIdleStrategy();
@@ -43,7 +43,7 @@ public class Pong
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
 
         final Aeron.Context ctx = new Aeron.Context();
-        final BusySpinIdleStrategy subscriptionIdler = new BusySpinIdleStrategy();
+        final BusySpinIdleStrategy idleStrategy = new BusySpinIdleStrategy();
 
         System.out.println("Subscribing Ping at " + PING_CHANNEL + " on stream Id " + PING_STREAM_ID);
         System.out.println("Publishing Pong at " + PONG_CHANNEL + " on stream Id " + PONG_STREAM_ID);
@@ -57,7 +57,7 @@ public class Pong
             while (true)
             {
                 final int workCount = pingSubscription.poll(FRAME_COUNT_LIMIT);
-                subscriptionIdler.idle(workCount);
+                idleStrategy.idle(workCount);
             }
         }
 

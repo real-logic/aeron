@@ -178,7 +178,7 @@ public class ReceiverTest
             {
                 final CreateConnectionCmd cmd = (CreateConnectionCmd)e;
 
-                assertThat(cmd.channelEndpoint().udpTransport().udpChannel(), is(UDP_CHANNEL));
+                assertThat(cmd.channelEndpoint().udpChannel(), is(UDP_CHANNEL));
                 assertThat(cmd.streamId(), is(STREAM_ID));
                 assertThat(cmd.sessionId(), is(SESSION_ID));
                 assertThat(cmd.termId(), is(TERM_ID));

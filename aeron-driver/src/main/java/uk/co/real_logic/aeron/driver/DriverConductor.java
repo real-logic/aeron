@@ -519,7 +519,7 @@ public class DriverConductor extends Agent
 
         if (channelEndpoint.streamCount() == 0)
         {
-            receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpTransport().udpChannel().canonicalForm());
+            receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
             channelEndpoint.close();
         }
 

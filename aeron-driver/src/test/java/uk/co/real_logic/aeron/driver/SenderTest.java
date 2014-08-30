@@ -123,7 +123,7 @@ public class SenderTest
         publication = new DriverPublication(
             PUBLICATION_ID,
             mockSendChannelEndpoint,
-            wheel,
+            wheel.clock(),
             termBuffers,
             mock(BufferPositionReporter.class),
                 SESSION_ID,
@@ -365,7 +365,7 @@ public class SenderTest
         assertThat(logAppenders[0].append(buffer, 0, PAYLOAD.length), is(SUCCESS));
         sender.doWork();
 
-        assertThat(receivedFrames.size(), is(1));  // should send now
+        assertThat(receivedFrames.size(), is(1));  // should send ticks
         receivedFrames.remove();                   // skip data frame
 
         currentTimestamp += Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
@@ -375,7 +375,7 @@ public class SenderTest
         currentTimestamp += 10;
         sender.doWork();
 
-        assertThat(receivedFrames.size(), greaterThanOrEqualTo(1));  // should send now
+        assertThat(receivedFrames.size(), greaterThanOrEqualTo(1));  // should send ticks
 
         dataHeader.wrap(new AtomicBuffer(receivedFrames.remove()), 0);
         assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
@@ -394,7 +394,7 @@ public class SenderTest
         assertThat(logAppenders[0].append(buffer, 0, PAYLOAD.length), is(SUCCESS));
         sender.doWork();
 
-        assertThat(receivedFrames.size(), is(1));  // should send now
+        assertThat(receivedFrames.size(), is(1));  // should send ticks
         receivedFrames.remove();                   // skip data frame
 
         currentTimestamp += Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
@@ -402,7 +402,7 @@ public class SenderTest
         assertThat(receivedFrames.size(), is(0));  // should not send yet
         currentTimestamp += 10;
         sender.doWork();
-        assertThat(receivedFrames.size(), greaterThanOrEqualTo(1));  // should send now
+        assertThat(receivedFrames.size(), greaterThanOrEqualTo(1));  // should send ticks
 
         dataHeader.wrap(new AtomicBuffer(receivedFrames.remove()), 0);
         assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
@@ -413,7 +413,7 @@ public class SenderTest
         assertThat(receivedFrames.size(), is(0));  // should not send yet
         currentTimestamp += 10;
         sender.doWork();
-        assertThat(receivedFrames.size(), greaterThanOrEqualTo(1));  // should send now
+        assertThat(receivedFrames.size(), greaterThanOrEqualTo(1));  // should send ticks
 
         dataHeader.wrap(new AtomicBuffer(receivedFrames.remove()), 0);
         assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));

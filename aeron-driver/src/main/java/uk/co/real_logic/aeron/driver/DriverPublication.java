@@ -16,8 +16,8 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.TermHelper;
-import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.NanoClock;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogScanner;
 import uk.co.real_logic.aeron.common.event.EventCode;
@@ -45,7 +45,7 @@ public class DriverPublication implements AutoCloseable
 {
     private final long id;
 
-    private final TimerWheel timerWheel;
+    private final NanoClock clock;
     private final int sessionId;
     private final int streamId;
     private final AtomicInteger activeTermId;
@@ -92,7 +92,7 @@ public class DriverPublication implements AutoCloseable
     public DriverPublication(
         final long id,
         final SendChannelEndpoint channelEndpoint,
-        final TimerWheel timerWheel,
+        final NanoClock clock,
         final TermBuffers termBuffers,
         final PositionReporter publisherLimitReporter,
         final int sessionId,
@@ -110,7 +110,7 @@ public class DriverPublication implements AutoCloseable
         this.logger = logger;
         this.systemCounters = systemCounters;
         this.dstAddress = channelEndpoint.udpChannel().remoteData();
-        this.timerWheel = timerWheel;
+        this.clock = clock;
         this.publisherLimitReporter = publisherLimitReporter;
         this.sessionId = sessionId;
         this.streamId = streamId;
@@ -130,7 +130,7 @@ public class DriverPublication implements AutoCloseable
         positionLimit = new AtomicLong(initialPositionLimit);
         activeTermId = new AtomicInteger(initialTermId);
 
-        timeOfLastSendOrHeartbeat = timerWheel.now();
+        timeOfLastSendOrHeartbeat = clock.time();
 
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
         this.initialTermId = initialTermId;
@@ -278,7 +278,7 @@ public class DriverPublication implements AutoCloseable
                 setupHeader.frameLength());
         }
 
-        updateTimeOfLastSendOrSetup(timerWheel.now());
+        updateTimeOfLastSendOrSetup(clock.time());
     }
 
     private boolean heartbeatCheck()
@@ -288,7 +288,7 @@ public class DriverPublication implements AutoCloseable
                 Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS :
                 Configuration.PUBLICATION_SETUP_TIMEOUT_NS;
 
-        if (timeOfLastSendOrHeartbeat + timeout < timerWheel.now())
+        if (timeOfLastSendOrHeartbeat + timeout < clock.time())
         {
             sendSetupFrameOrHeartbeat();
             return true;
@@ -339,7 +339,7 @@ public class DriverPublication implements AutoCloseable
             logger.log(EventCode.FRAME_OUT_INCOMPLETE_SEND, "onSendTransmissionUnit %d/%d", bytesSent, length);
         }
 
-        updateTimeOfLastSendOrSetup(timerWheel.now());
+        updateTimeOfLastSendOrSetup(clock.time());
         lastSentTermId = activeTermId.get();
         lastSentTermOffset = offset;
         lastSentLength = length;
@@ -375,7 +375,7 @@ public class DriverPublication implements AutoCloseable
 
                 scanner.scanNext(onSendRetransmitFunc, Math.min(lastSentLength, mtuLength));
 
-                updateTimeOfLastSendOrSetup(timerWheel.now());
+                updateTimeOfLastSendOrSetup(clock.time());
             }
         }
     }

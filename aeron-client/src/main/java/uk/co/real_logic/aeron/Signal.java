@@ -38,6 +38,11 @@ class Signal
         this.notify();
     }
 
+    /**
+     * Await a signal with a timeout value in milliseconds.
+     *
+     * @param awaitTimeout in milliseconds.
+     */
     public synchronized void await(final long awaitTimeout)
     {
         try

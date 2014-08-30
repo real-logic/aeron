@@ -445,6 +445,7 @@ public class PubAndSubTest
             {
                 break;
             }
+
             messagesSent++;
         }
 

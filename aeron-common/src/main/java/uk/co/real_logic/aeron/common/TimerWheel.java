@@ -15,9 +15,11 @@
  */
 package uk.co.real_logic.aeron.common;
 
+import uk.co.real_logic.aeron.common.concurrent.NanoClock;
+import uk.co.real_logic.aeron.common.concurrent.SystemNanoClock;
+
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
-import java.util.function.LongSupplier;
 
 /**
  * Timer Wheel (NOT thread safe)
@@ -53,7 +55,7 @@ public class TimerWheel
     private final long mask;
     private final long startTime;
     private final long tickDurationInNs;
-    private final LongSupplier clock;
+    private final NanoClock clock;
     private final Timer[][] wheel;
 
     private long currentTick;
@@ -67,7 +69,7 @@ public class TimerWheel
      */
     public TimerWheel(final long tickDuration, final TimeUnit timeUnit, final int ticksPerWheel)
     {
-        this(System::nanoTime, tickDuration, timeUnit, ticksPerWheel);
+        this(new SystemNanoClock(), tickDuration, timeUnit, ticksPerWheel);
     }
 
     /**
@@ -80,13 +82,13 @@ public class TimerWheel
      * @param timeUnit      for the tick duration
      * @param ticksPerWheel of the wheel. Must be a power of 2.
      */
-    public TimerWheel(final LongSupplier clock, final long tickDuration, final TimeUnit timeUnit, final int ticksPerWheel)
+    public TimerWheel(final NanoClock clock, final long tickDuration, final TimeUnit timeUnit, final int ticksPerWheel)
     {
         checkTicksPerWheel(ticksPerWheel);
 
         this.mask = ticksPerWheel - 1;
         this.clock = clock;
-        this.startTime = clock.getAsLong();
+        this.startTime = clock.time();
         this.tickDurationInNs = timeUnit.toNanos(tickDuration);
 
         if (tickDurationInNs >= (Long.MAX_VALUE / ticksPerWheel))
@@ -106,13 +108,23 @@ public class TimerWheel
     }
 
     /**
+     * Get the {@link NanoClock} used by this timer wheel.
+     *
+     * @return the {@link NanoClock} used by this timer wheel.
+     */
+    public NanoClock clock()
+    {
+        return clock;
+    }
+
+    /**
      * Return the current time as number of nanoseconds since start of the wheel.
      *
      * @return number of nanoseconds since start of the wheel
      */
-    public long now()
+    private long ticks()
     {
-        return clock.getAsLong() - startTime;
+        return clock.time() - startTime;
     }
 
     /**
@@ -137,7 +149,7 @@ public class TimerWheel
      */
     public Timer newTimeout(final long delay, final TimeUnit unit, final Runnable task)
     {
-        final long deadline = now() + unit.toNanos(delay);
+        final long deadline = ticks() + unit.toNanos(delay);
         final Timer timeout = new Timer(deadline, task);
 
         wheel[timeout.wheelIndex] = addTimeoutToArray(wheel[timeout.wheelIndex], timeout);
@@ -174,7 +186,7 @@ public class TimerWheel
             throw new IllegalArgumentException("timer is active");
         }
 
-        final long deadline = now() + unit.toNanos(delay);
+        final long deadline = ticks() + unit.toNanos(delay);
 
         timer.reset(deadline, task);
 
@@ -190,7 +202,7 @@ public class TimerWheel
     {
         final long deadline = tickDurationInNs * (currentTick + 1);
 
-        return ((deadline - now()) + 999999) / 1000000;
+        return ((deadline - ticks()) + 999999) / 1000000;
     }
 
     /**
@@ -201,7 +213,7 @@ public class TimerWheel
     public int expireTimers()
     {
         int timersExpired = 0;
-        final long now = now();
+        final long now = ticks();
 
         for (final Timer timer : wheel[(int)(currentTick & mask)])
         {

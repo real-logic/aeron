@@ -91,8 +91,8 @@ public class EventLogger
         }
     }
 
-    public void log(final EventCode code, final ByteBuffer buffer, final int offset,
-                    final int length, final InetSocketAddress dstAddress)
+    public void log(
+        final EventCode code, final ByteBuffer buffer, final int offset, final int length, final InetSocketAddress dstAddress)
     {
         if (isEnabled(code, enabledEventCodes))
         {

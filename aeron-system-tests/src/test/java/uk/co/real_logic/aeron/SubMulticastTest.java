@@ -161,7 +161,7 @@ public class SubMulticastTest
         // send single Data Frame
         sendDataFrame(0, PAYLOAD);
 
-        // now poll data into app
+        // ticks poll data into app
         SystemTestHelper.executeUntil(
             () -> (receivedFrames.size() > 0),
             subscriptionPollWithYield,
@@ -199,7 +199,7 @@ public class SubMulticastTest
             sendDataFrame(i * ALIGNED_FRAME_LENGTH, PAYLOAD);
         }
 
-        // now poll data into app
+        // ticks poll data into app
         SystemTestHelper.executeUntil(
             () -> receivedFrames.size() >= 3,
             subscriptionPollWithYield,
@@ -237,7 +237,7 @@ public class SubMulticastTest
         sendDataFrame(0, PAYLOAD);
         sendDataFrame(2 * ALIGNED_FRAME_LENGTH, PAYLOAD);
 
-        // now poll data into app
+        // ticks poll data into app
         SystemTestHelper.executeUntil(
             () -> receivedFrames.size() > 0,
             subscriptionPollWithYield,
@@ -293,7 +293,7 @@ public class SubMulticastTest
         sendDataFrame(0, PAYLOAD);
         sendDataFrame(2 * ALIGNED_FRAME_LENGTH, PAYLOAD);
 
-        // now poll data into app
+        // ticks poll data into app
         SystemTestHelper.executeUntil(
             () -> receivedFrames.size() > 0,
             subscriptionPollWithYield,
@@ -319,7 +319,7 @@ public class SubMulticastTest
 
         sendDataFrame(ALIGNED_FRAME_LENGTH, PAYLOAD);
 
-        // now poll data into app
+        // ticks poll data into app
         SystemTestHelper.executeUntil(
             () -> receivedFrames.size() >= 2,
             subscriptionPollWithYield,

@@ -13,19 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package uk.co.real_logic.aeron.common.concurrent;
 
-checkstyle {
-    // lambdas break checkstyle currently. Grrrr!
-    ignoreFailures = true
-}
-
-compileJava {
-    // Suppress warnings about using Unsafe and sun.misc
-    options.compilerArgs << '-XDignore.symbol.file'
-    options.fork = true
-    options.forkOptions.executable = 'javac'
-}
-
-test {
-    jvmArgs '-Djava.net.preferIPv4Stack=true'
+/**
+ * A {@link NanoClock} the delegates to {@link System#nanoTime()}.
+ *
+ * Instances are threadsafe.
+ */
+public class SystemNanoClock implements NanoClock
+{
+    public long time()
+    {
+        return System.nanoTime();
+    }
 }

@@ -13,19 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package uk.co.real_logic.aeron.common.concurrent;
 
-checkstyle {
-    // lambdas break checkstyle currently. Grrrr!
-    ignoreFailures = true
-}
-
-compileJava {
-    // Suppress warnings about using Unsafe and sun.misc
-    options.compilerArgs << '-XDignore.symbol.file'
-    options.fork = true
-    options.forkOptions.executable = 'javac'
-}
-
-test {
-    jvmArgs '-Djava.net.preferIPv4Stack=true'
+/**
+ * Functional interface for return the current time as system wide monotonic tick of 1 nanosecond precision.
+ */
+@FunctionalInterface
+public interface NanoClock
+{
+    /**
+     * The number of ticks in nanoseconds the clock has advanced since starting.
+     *
+     * @return number of ticks in nanoseconds the clock has advanced since starting.
+     */
+    long time();
 }

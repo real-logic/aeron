@@ -112,7 +112,7 @@ public class LossHandlerTest
     public void shouldNotSendNakWhenBufferIsEmpty()
     {
         handler.scan();
-        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
+        processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(100));
         verifyZeroInteractions(nakMessageSender);
     }
 
@@ -123,7 +123,7 @@ public class LossHandlerTest
         insertDataFrame(offsetOfMessage(2));
 
         handler.scan();
-        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(40));
+        processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(40));
 
         verify(nakMessageSender).send(TERM_ID, offsetOfMessage(1), gapLength());
     }
@@ -135,7 +135,7 @@ public class LossHandlerTest
         insertDataFrame(offsetOfMessage(2));
 
         handler.scan();
-        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(60));
+        processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(60));
 
         verify(nakMessageSender, atLeast(2)).send(TERM_ID, offsetOfMessage(1), gapLength());
     }
@@ -147,9 +147,9 @@ public class LossHandlerTest
         insertDataFrame(offsetOfMessage(2));
 
         handler.scan();
-        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(20));
+        processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(20));
         handler.onNak(TERM_ID, offsetOfMessage(1));
-        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(20));
+        processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(20));
 
         verifyZeroInteractions(nakMessageSender);
     }
@@ -161,10 +161,10 @@ public class LossHandlerTest
         insertDataFrame(offsetOfMessage(2));
 
         handler.scan();
-        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(20));
+        processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(20));
         insertDataFrame(offsetOfMessage(1));
         handler.scan();
-        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
+        processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(100));
 
         verifyZeroInteractions(nakMessageSender);
     }
@@ -178,10 +178,10 @@ public class LossHandlerTest
         insertDataFrame(offsetOfMessage(6));
 
         handler.scan();
-        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(40));
+        processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(40));
         insertDataFrame(offsetOfMessage(1));
         handler.scan();
-        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(80));
+        processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(80));
 
         InOrder inOrder = inOrder(nakMessageSender);
         inOrder.verify(nakMessageSender, atLeast(1)).send(TERM_ID, offsetOfMessage(1), gapLength());
@@ -196,11 +196,11 @@ public class LossHandlerTest
         insertDataFrame(offsetOfMessage(2));
 
         handler.scan();
-        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(20));
+        processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(20));
         insertDataFrame(offsetOfMessage(4));
         insertDataFrame(offsetOfMessage(1));
         handler.scan();
-        processTimersUntil(() -> wheel.now() >= TimeUnit.MILLISECONDS.toNanos(100));
+        processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(100));
 
         verify(nakMessageSender, atLeast(1)).send(TERM_ID, offsetOfMessage(3), gapLength());
     }
@@ -287,7 +287,7 @@ public class LossHandlerTest
             insertDataFrame(offsetOfMessage(i++));
             offset += ALIGNED_FRAME_LENGTH;
         }
-        insertPaddingFrame(offsetOfMessage(i));  // and now pad to end of buffer
+        insertPaddingFrame(offsetOfMessage(i));  // and ticks pad to end of buffer
 
         assertTrue(rebuilders[activeIndex].isComplete());
         assertThat(handler.scan(), is(1));
@@ -441,7 +441,7 @@ public class LossHandlerTest
 
     private long processTimersUntil(final BooleanSupplier condition)
     {
-        final long startTime = wheel.now();
+        final long startTime = wheel.clock().time();
 
         while (!condition.getAsBoolean())
         {
@@ -453,6 +453,6 @@ public class LossHandlerTest
             wheel.expireTimers();
         }
 
-        return wheel.now() - startTime;
+        return wheel.clock().time() - startTime;
     }
 }

@@ -127,7 +127,7 @@ public final class Aeron implements AutoCloseable
      */
     public Publication addPublication(final String channel, final int streamId)
     {
-        return conductor.addPublication(channel, streamId, 0);
+        return addPublication(channel, streamId, 0);
     }
 
     /**

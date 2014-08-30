@@ -44,25 +44,22 @@ public class Ping
     private static final int PONG_STREAM_ID = ExampleConfiguration.PONG_STREAM_ID;
     private static final String PING_CHANNEL = ExampleConfiguration.PING_CHANNEL;
     private static final String PONG_CHANNEL = ExampleConfiguration.PONG_CHANNEL;
-    private static final long NUMBER_OF_MESSAGES = ExampleConfiguration.NUMBER_OF_MESSAGES;
-    private static final long WARMUP_NUMBER_OF_MESSAGES = ExampleConfiguration.WARMUP_NUMBER_OF_MESSAGES;
+    private static final int NUMBER_OF_MESSAGES = ExampleConfiguration.NUMBER_OF_MESSAGES;
+    private static final int WARMUP_NUMBER_OF_MESSAGES = ExampleConfiguration.WARMUP_NUMBER_OF_MESSAGES;
+    private static final int WARMUP_NUMBER_OF_ITERATIONS = ExampleConfiguration.WARMUP_NUMBER_OF_ITERATIONS;
     private static final int MESSAGE_LENGTH = ExampleConfiguration.MESSAGE_LENGTH;
-    private static final int FRAME_COUNT_LIMIT = ExampleConfiguration.FRAME_COUNT_LIMIT;
+    private static final int FRAGMENT_COUNT_LIMIT = ExampleConfiguration.FRAGMENT_COUNT_LIMIT;
     private static final long LINGER_TIMEOUT_MS = ExampleConfiguration.LINGER_TIMEOUT_MS;
     private static final boolean EMBEDDED_MEDIA_DRIVER = ExampleConfiguration.EMBEDDED_MEDIA_DRIVER;
 
     private static final AtomicBuffer ATOMIC_BUFFER = new AtomicBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
 
-    static Histogram histogram = new Histogram(TimeUnit.MILLISECONDS.toNanos(500), 3);
-
-    static volatile boolean haltSubscriberLoop = false;
+    private static Histogram histogram = new Histogram(TimeUnit.MILLISECONDS.toNanos(500), 3);
 
     public static void main(final String[] args) throws Exception
     {
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
-
-        final ExecutorService executor = Executors.newFixedThreadPool(2);
-
+        final ExecutorService executor = Executors.newSingleThreadExecutor();
         final Aeron.Context ctx = new Aeron.Context();
 
         System.out.println("Publishing Ping at " + PING_CHANNEL + " on stream Id " + PING_STREAM_ID);
@@ -72,22 +69,16 @@ public class Ping
              final Publication pingPublication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);
              final Subscription pongSubscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID, Ping::pongHandler))
         {
-            final Future future = executor.submit(() -> runSubscriber(pongSubscription));
+            final int totalWarmupMessages = WARMUP_NUMBER_OF_MESSAGES * WARMUP_NUMBER_OF_ITERATIONS;
+            final Future warmup = executor.submit(() -> runSubscriber(pongSubscription, totalWarmupMessages));
 
-            System.out.println("Warming up... " + WARMUP_NUMBER_OF_MESSAGES + " messages");
+            System.out.println(
+                "Warming up... " + WARMUP_NUMBER_OF_ITERATIONS + " iterations of " + WARMUP_NUMBER_OF_MESSAGES + " messages");
 
-            for (int i = 0; i < WARMUP_NUMBER_OF_MESSAGES; i++)
+            for (int i = 0; i < WARMUP_NUMBER_OF_ITERATIONS; i++)
             {
-                do
-                {
-                    ATOMIC_BUFFER.putLong(0, System.nanoTime());
-                }
-                while (!pingPublication.offer(ATOMIC_BUFFER, 0, MESSAGE_LENGTH));
-
-                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1));
+                sendMessages(pingPublication, WARMUP_NUMBER_OF_MESSAGES);
             }
-
-            System.out.println("Warm now.");
 
             if (0 < LINGER_TIMEOUT_MS)
             {
@@ -95,20 +86,13 @@ public class Ping
                 Thread.sleep(LINGER_TIMEOUT_MS);
             }
 
-            System.out.println("Pinging " + NUMBER_OF_MESSAGES + " messages");
-
+            warmup.get();
             histogram.reset();
 
-            for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
-            {
-                do
-                {
-                    ATOMIC_BUFFER.putLong(0, System.nanoTime());
-                }
-                while (!pingPublication.offer(ATOMIC_BUFFER, 0, MESSAGE_LENGTH));
+            System.out.println("Pinging " + NUMBER_OF_MESSAGES + " messages");
 
-                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1));
-            }
+            final Future timedRun = executor.submit(() -> runSubscriber(pongSubscription, NUMBER_OF_MESSAGES));
+            sendMessages(pingPublication, NUMBER_OF_MESSAGES);
 
             System.out.println("Done streaming.");
 
@@ -118,16 +102,29 @@ public class Ping
                 Thread.sleep(LINGER_TIMEOUT_MS);
             }
 
-            haltSubscriberLoop = true;
-            future.get();
+            timedRun.get();
         }
 
         System.out.println("Done playing... Histogram of RTT latencies in microseconds.");
 
         histogram.outputPercentileDistribution(System.out, 1000.0);
 
-        CloseHelper.quietClose(driver);
         executor.shutdown();
+        CloseHelper.quietClose(driver);
+    }
+
+    public static void sendMessages(final Publication pingPublication, final int numMessages)
+    {
+        for (int i = 0; i < numMessages; i++)
+        {
+            do
+            {
+                ATOMIC_BUFFER.putLong(0, System.nanoTime());
+            }
+            while (!pingPublication.offer(ATOMIC_BUFFER, 0, MESSAGE_LENGTH));
+
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1));
+        }
     }
 
     public static void pongHandler(
@@ -139,14 +136,20 @@ public class Ping
         histogram.recordValue(rttNs);
     }
 
-    public static void runSubscriber(final Subscription pongSubscription)
+    public static void runSubscriber(final Subscription pongSubscription, final int numMessages)
     {
-        final IdleStrategy subscriptionIdler = new BusySpinIdleStrategy();
+        final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
 
-        while (!haltSubscriberLoop)
+        int totalFragments = 0;
+        do
         {
-            final int workCount = pongSubscription.poll(FRAME_COUNT_LIMIT);
-            subscriptionIdler.idle(workCount);
+            final int fragmentsRead = pongSubscription.poll(FRAGMENT_COUNT_LIMIT);
+            totalFragments += fragmentsRead;
+            if (fragmentsRead == 0)
+            {
+                idleStrategy.idle(fragmentsRead);
+            }
         }
+        while (totalFragments < numMessages);
     }
 }

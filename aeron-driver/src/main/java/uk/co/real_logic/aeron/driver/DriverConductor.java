@@ -21,10 +21,7 @@ import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.RemoveMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.common.concurrent.CountersManager;
-import uk.co.real_logic.aeron.common.concurrent.MessageHandler;
-import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.aeron.common.concurrent.*;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.common.event.EventCode;
@@ -118,6 +115,7 @@ public class DriverConductor extends Agent
     private final SystemCounters systemCounters;
     private final Consumer<Object> onReceiverCommandFunc;
     private final MessageHandler onClientCommandFunc;
+    private final NanoClock clock;
 
     public DriverConductor(final Context ctx)
     {
@@ -138,6 +136,7 @@ public class DriverConductor extends Agent
         this.countersBuffer = ctx.countersBuffer();
 
         timerWheel = ctx.conductorTimerWheel();
+        this.clock = timerWheel.clock();
         checkTimeoutTimer = timerWheel.newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheckTimeouts);
 
         toDriverCommands = ctx.toDriverCommands();
@@ -160,7 +159,7 @@ public class DriverConductor extends Agent
         correlatedMessage.wrap(buffer, 0);
         removeMessage.wrap(buffer, 0);
 
-        toDriverCommands.consumerHeartbeatTimeNs(timerWheel.clock().time());
+        toDriverCommands.consumerHeartbeatTimeNs(clock.time());
     }
 
     public void onClose()
@@ -216,7 +215,7 @@ public class DriverConductor extends Agent
         workCount += processTimers();
 
         final ArrayList<DriverConnection> connections = this.connections;
-        final long now = timerWheel.clock().time();
+        final long now = clock.time();
         for (int i = 0, size = connections.size(); i < size; i++)
         {
             workCount += connections.get(i).sendPendingStatusMessages(now);
@@ -243,7 +242,7 @@ public class DriverConductor extends Agent
 
     private void onHeartbeatCheckTimeouts()
     {
-        final long now = timerWheel.clock().time();
+        final long now = clock.time();
 
         toDriverCommands.consumerHeartbeatTimeNs(now);
 
@@ -573,7 +572,7 @@ public class DriverConductor extends Agent
             new BufferPositionIndicator(countersBuffer, subscriberPositionCounterId, countersManager),
             new BufferPositionReporter(countersBuffer, receivedCompleteCounterId, countersManager),
             new BufferPositionReporter(countersBuffer, receivedHwmCounterId, countersManager),
-            timerWheel.clock(),
+            clock,
             systemCounters,
             logger);
 
@@ -593,7 +592,7 @@ public class DriverConductor extends Agent
 
         if (null != aeronClient)
         {
-            aeronClient.timeOfLastKeepalive(timerWheel.clock().time());
+            aeronClient.timeOfLastKeepalive(clock.time());
         }
     }
 
@@ -800,7 +799,7 @@ public class DriverConductor extends Agent
         final ReceiveChannelEndpoint channelEndpoint = cmd.channelEndpoint();
 
         channelEndpoint.sendSetupElicitingStatusMessage(controlAddress, sessionId, streamId);
-        cmd.timeOfStatusMessage(timerWheel.clock().time());
+        cmd.timeOfStatusMessage(clock.time());
 
         pendingSetups.add(cmd);
     }
@@ -811,7 +810,7 @@ public class DriverConductor extends Agent
 
         if (null == aeronClient)
         {
-            aeronClient = new AeronClient(clientId, timerWheel.clock().time());
+            aeronClient = new AeronClient(clientId, clock.time());
             clients.add(aeronClient);
         }
 

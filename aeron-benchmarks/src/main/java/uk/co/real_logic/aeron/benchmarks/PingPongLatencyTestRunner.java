@@ -20,13 +20,13 @@ import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.DataHandler;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.aeron.common.BackoffIdleStrategy;
 import uk.co.real_logic.aeron.common.BitUtil;
+import uk.co.real_logic.aeron.common.BusySpinIdleStrategy;
+import uk.co.real_logic.aeron.common.IdleStrategy;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.TimeUnit;
 
 import static uk.co.real_logic.aeron.benchmarks.BenchmarkUtil.*;
 
@@ -53,9 +53,9 @@ public class PingPongLatencyTestRunner
 
         try (final MediaDriver driver = MediaDriver.launch();
              final Aeron publishingClient = Aeron.connect(new Aeron.Context());
-             final Aeron consumingClient = Aeron.connect(new Aeron.Context());
+             final Aeron subscribingClient = Aeron.connect(new Aeron.Context());
              final Publication publication = publishingClient.addPublication(CHANNEL, STREAM_ID);
-             final Subscription subscription = consumingClient.addSubscription(CHANNEL, STREAM_ID, handler))
+             final Subscription subscription = subscribingClient.addSubscription(CHANNEL, STREAM_ID, handler))
         {
             publish(publication);
             subscribe(subscription, histogram);
@@ -73,44 +73,33 @@ public class PingPongLatencyTestRunner
         {
             public void run()
             {
-                final BackoffIdleStrategy idleStrategy = new BackoffIdleStrategy(
-                    100,
-                    100,
-                    TimeUnit.MICROSECONDS.toNanos(1),
-                    TimeUnit.MICROSECONDS.toNanos(100));
+                final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
 
-                try
+                int i = 0;
+
+                while (true)
                 {
-                    int i = 0;
-
-                    while (true)
+                    final int fragmentsRead = subscription.poll(1);
+                    if (fragmentsRead == 1)
                     {
-                        final int fragmentsRead = subscription.poll(1);
-                        if (fragmentsRead == 1)
+                        final long readTime = System.nanoTime();
+                        long transportTime = readTime - sentTime;
+                        histogram.recordValue(transportTime / 1000);
+
+                        if ((i % 1_000_000) == 0)
                         {
-                            final long readTime = System.nanoTime();
-                            long transportTime = readTime - sentTime;
-                            histogram.recordValue(transportTime / 1000);
-
-                            if ((i % 1_000_000) == 0)
-                            {
-                                System.out.printf(
-                                    "Worst: %d, 99.9: %d, 99: %d, 50: %d\n",
-                                    histogram.getMaxValue(),
-                                    histogram.getValueAtPercentile(99.9),
-                                    histogram.getValueAtPercentile(99),
-                                    histogram.getValueAtPercentile(50));
-                            }
-
-                            i++;
+                            System.out.printf(
+                                "Worst: %d, 99.9: %d, 99: %d, 50: %d\n",
+                                histogram.getMaxValue(),
+                                histogram.getValueAtPercentile(99.9),
+                                histogram.getValueAtPercentile(99),
+                                histogram.getValueAtPercentile(50));
                         }
 
-                        idleStrategy.idle(fragmentsRead);
+                        i++;
                     }
-                }
-                catch (final Throwable ex)
-                {
-                    ex.printStackTrace();
+
+                    idleStrategy.idle(fragmentsRead);
                 }
             }
         }.start();

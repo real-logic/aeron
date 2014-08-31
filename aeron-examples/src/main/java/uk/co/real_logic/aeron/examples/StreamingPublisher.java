@@ -91,7 +91,6 @@ public class StreamingPublisher
             }
             while (barrier.await());
 
-
             reporter.halt();
         }
 

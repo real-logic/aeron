@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.BackoffIdleStrategy;
+import uk.co.real_logic.aeron.common.BitUtil;
 import uk.co.real_logic.aeron.common.IdleStrategy;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastBufferDescriptor;
@@ -301,7 +302,7 @@ public class Configuration
      */
     public static void validateTermBufferSize(final int size)
     {
-        if (size < 2 || 1 != Integer.bitCount(size))
+        if (!BitUtil.isPowerOfTwo(size))
         {
             throw new IllegalStateException("Term buffer size must be a positive power of 2: " + size);
         }

@@ -598,7 +598,6 @@ public class DriverConductor extends Agent
 
     private void onCheckPublicationRegistrations(final long now)
     {
-        // TODO: remove values() iteration
         final Iterator<PublicationRegistration> iter = publicationRegistrations.values().iterator();
         while (iter.hasNext())
         {

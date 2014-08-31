@@ -23,7 +23,8 @@ import java.util.function.Supplier;
 import static java.util.Objects.requireNonNull;
 
 /**
- * {@link java.util.Map} implementation specialised for long keys using open addressing and linear probing for cache efficient access.
+ * {@link java.util.Map} implementation specialised for long keys using open addressing and
+ * linear probing for cache efficient access.
  *
  * @param <V> values stored in the {@link java.util.Map}
  */
@@ -38,6 +39,11 @@ public class Long2ObjectHashMap<V>
 
     private long[] keys;
     private Object[] values;
+
+    // Cached to avoid allocation.
+    private final ValueCollection<V> valueCollection = new ValueCollection<>();
+    private final KeySet keySet = new KeySet();
+    private final EntrySet<V> entrySet = new EntrySet<>();
 
     public Long2ObjectHashMap()
     {
@@ -335,7 +341,7 @@ public class Long2ObjectHashMap<V>
      */
     public KeySet keySet()
     {
-        return new KeySet();
+        return keySet;
     }
 
     /**
@@ -343,7 +349,7 @@ public class Long2ObjectHashMap<V>
      */
     public Collection<V> values()
     {
-        return new ValueCollection<>();
+        return valueCollection;
     }
 
     /**
@@ -351,7 +357,7 @@ public class Long2ObjectHashMap<V>
      */
     public Set<Entry<Long, V>> entrySet()
     {
-        return new EntrySet<>();
+        return entrySet;
     }
 
     /**
@@ -362,7 +368,7 @@ public class Long2ObjectHashMap<V>
         final StringBuilder sb = new StringBuilder();
         sb.append('{');
 
-        for (Map.Entry<Long, V> entry : entrySet())
+        for (final Map.Entry<Long, V> entry : entrySet())
         {
             sb.append(entry.getKey().longValue());
             sb.append('=');

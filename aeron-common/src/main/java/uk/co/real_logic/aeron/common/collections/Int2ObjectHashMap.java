@@ -41,6 +41,11 @@ public class Int2ObjectHashMap<V>
     private int[] keys;
     private Object[] values;
 
+    // Cached to avoid allocation.
+    private final ValueCollection<V> valueCollection = new ValueCollection<>();
+    private final KeySet keySet = new KeySet();
+    private final EntrySet<V> entrySet = new EntrySet<>();
+
     public Int2ObjectHashMap()
     {
         this(8, 0.6);
@@ -337,7 +342,7 @@ public class Int2ObjectHashMap<V>
      */
     public KeySet keySet()
     {
-        return new KeySet();
+        return keySet;
     }
 
     /**
@@ -345,7 +350,7 @@ public class Int2ObjectHashMap<V>
      */
     public Collection<V> values()
     {
-        return new ValueCollection<>();
+        return valueCollection;
     }
 
     /**
@@ -353,7 +358,7 @@ public class Int2ObjectHashMap<V>
      */
     public Set<Entry<Integer, V>> entrySet()
     {
-        return new EntrySet<>();
+        return entrySet;
     }
 
     /**
@@ -364,7 +369,7 @@ public class Int2ObjectHashMap<V>
         final StringBuilder sb = new StringBuilder();
         sb.append('{');
 
-        for (Entry<Integer, V> entry : entrySet())
+        for (final Entry<Integer, V> entry : entrySet())
         {
             sb.append(entry.getKey().intValue());
             sb.append('=');

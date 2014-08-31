@@ -22,7 +22,6 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogScanner;
 import uk.co.real_logic.aeron.common.event.EventCode;
 import uk.co.real_logic.aeron.common.event.EventLogger;
-import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.SetupFlyweight;
 import uk.co.real_logic.aeron.common.status.PositionReporter;
@@ -35,7 +34,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static uk.co.real_logic.aeron.common.TermHelper.termIdToBufferIndex;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.IN_CLEANING;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.NEEDS_CLEANING;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogScanner.AvailabilityHandler;
 
 /**
@@ -52,7 +52,7 @@ public class DriverPublication implements AutoCloseable
     private final int headerLength;
     private final int mtuLength;
 
-    private final ByteBuffer setupFrameBuffer = ByteBuffer.allocateDirect(DataHeaderFlyweight.HEADER_LENGTH);
+    private final ByteBuffer setupFrameBuffer = ByteBuffer.allocateDirect(SetupFlyweight.HEADER_LENGTH);
     private final LogScanner[] logScanners = new LogScanner[TermHelper.BUFFER_COUNT];
     private final LogScanner[] retransmitLogScanners = new LogScanner[TermHelper.BUFFER_COUNT];
     private final ByteBuffer[] sendBuffers = new ByteBuffer[TermHelper.BUFFER_COUNT];
@@ -261,7 +261,8 @@ public class DriverPublication implements AutoCloseable
     // called from either Sender thread (initial setup) or Conductor thread (in response to SEND_SETUP_FLAG in SMs)
     public void sendSetupFrame()
     {
-        setupHeader.termId(activeTermId.get()); // update the termId field
+        setupHeader.termId(activeTermId.get());                       // update the termId field
+        setupHeader.termOffset(lastSentTermOffset + lastSentLength);  // update the termOffset field
 
         setupFrameBuffer.limit(setupHeader.frameLength());
         setupFrameBuffer.position(0);
@@ -385,6 +386,7 @@ public class DriverPublication implements AutoCloseable
         setupHeader.sessionId(sessionId)
                    .streamId(streamId)
                    .termId(activeTermId.get())
+                   .termOffset(0)
                    .termSize(termCapacity)
                    .frameLength(SetupFlyweight.HEADER_LENGTH)
                    .headerType(HeaderFlyweight.HDR_TYPE_SETUP)

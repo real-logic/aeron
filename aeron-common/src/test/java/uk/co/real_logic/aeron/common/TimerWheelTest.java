@@ -77,7 +77,6 @@ public class TimerWheelTest
         assertThat(firedTimestamp.get(), is(TimeUnit.MILLISECONDS.toNanos(6)));
     }
 
-    @Ignore
     @Test(timeout = 1000)
     public void shouldHandleNonZeroStartTime()
     {
@@ -91,7 +90,7 @@ public class TimerWheelTest
         processTimersUntil(wheel, ONE_MS_OF_NS, () -> firedTimestamp.get() != -1);
 
         // this is the first tick after the timer, so it should be on this edge
-        assertThat(firedTimestamp.get(), is(TimeUnit.MILLISECONDS.toNanos(6)));  // relative to start time
+        assertThat(firedTimestamp.get(), is(TimeUnit.MILLISECONDS.toNanos(106)));  // relative to start time
     }
 
     @Test

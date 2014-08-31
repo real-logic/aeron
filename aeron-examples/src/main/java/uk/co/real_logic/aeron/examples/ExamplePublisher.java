@@ -30,7 +30,6 @@ import java.util.concurrent.TimeUnit;
 public class ExamplePublisher
 {
     private static final int STREAM_ID = ExampleConfiguration.STREAM_ID;
-    private static final int SESSION_ID = 7;
     private static final String CHANNEL = ExampleConfiguration.CHANNEL;
     private static final long NUMBER_OF_MESSAGES = ExampleConfiguration.NUMBER_OF_MESSAGES;
     private static final long LINGER_TIMEOUT_MS = ExampleConfiguration.LINGER_TIMEOUT_MS;
@@ -47,7 +46,7 @@ public class ExamplePublisher
         System.out.println("Publishing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
         try (final Aeron aeron = Aeron.connect(ctx);
-             final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID, SESSION_ID))
+             final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
         {
             for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
             {

@@ -74,6 +74,7 @@ public class DriverConnection implements AutoCloseable
     private int currentGain;
 
     private volatile boolean statusMessagesEnabled = false;
+    private volatile boolean scanForGapsEnabled = true;
 
     public DriverConnection(
         final ReceiveChannelEndpoint channelEndpoint,
@@ -228,7 +229,12 @@ public class DriverConnection implements AutoCloseable
      */
     public int scanForGaps()
     {
-        return lossHandler.scan();
+        if (scanForGapsEnabled)
+        {
+            return lossHandler.scan();
+        }
+
+        return 0;
     }
 
     /**
@@ -347,6 +353,14 @@ public class DriverConnection implements AutoCloseable
     public void disableStatusMessages()
     {
         statusMessagesEnabled = false;
+    }
+
+    /**
+     * Called from the {@link Receiver} thread once removed from dispatcher to stop sending NAKs
+     */
+    public void disableScanForGaps()
+    {
+        scanForGapsEnabled = false;
     }
 
     /**

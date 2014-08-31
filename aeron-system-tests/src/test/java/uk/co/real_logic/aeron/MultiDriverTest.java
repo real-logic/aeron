@@ -59,7 +59,6 @@ public class MultiDriverTest
         driverAContext.adminDirName(baseDirA + File.separator + "conductor");
         driverAContext.dataDirName(baseDirA + File.separator + "data");
         driverAContext.countersDirName(baseDirA + File.separator + "counters");
-        driverAContext.eventLocationsFile(new File(baseDirA + File.separator + "events"));
 
         aeronAContext.adminDirName(driverAContext.adminDirName());
         aeronAContext.dataDirName(driverAContext.dataDirName());
@@ -69,7 +68,6 @@ public class MultiDriverTest
         driverBContext.adminDirName(baseDirB + File.separator + "conductor");
         driverBContext.dataDirName(baseDirB + File.separator + "data");
         driverBContext.countersDirName(baseDirB + File.separator + "counters");
-        driverBContext.eventLocationsFile(new File(baseDirB + File.separator + "events"));
 
         aeronBContext.adminDirName(driverBContext.adminDirName());
         aeronBContext.dataDirName(driverBContext.dataDirName());

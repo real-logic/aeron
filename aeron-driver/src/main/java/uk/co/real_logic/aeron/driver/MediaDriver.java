@@ -27,7 +27,10 @@ import uk.co.real_logic.aeron.common.event.EventReader;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -116,21 +119,18 @@ public class MediaDriver implements AutoCloseable
         ensureDirectoriesAreRecreated();
 
         ctx.unicastSenderFlowControl(UnicastSenderFlowControl::new)
-           .multicastSenderFlowControl(UnicastSenderFlowControl::new)
-           .conductorTimerWheel(Configuration.newConductorTimerWheel())
-           .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
-           .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
-           .senderCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
-           .conclude();
+            .multicastSenderFlowControl(UnicastSenderFlowControl::new)
+            .conductorTimerWheel(Configuration.newConductorTimerWheel())
+            .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
+            .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
+            .senderCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
+            .conclude();
 
-        // event reader needs to be created before the event logger gets created or we could disable logging prematurely
         eventReader = new EventReader(
-            new EventReader.Context()
-                .eventsFile(ctx.eventLocationsFile)
-                .exceptionsCounter(ctx.systemCounters().driverExceptions())
-                .idleStrategy(Configuration.eventReaderIdleStrategy())
-                .deleteOnExit(ctx.dirsDeleteOnExit())
-                .eventHandler(ctx.eventConsumer));
+            ctx.eventByteBuffer(),
+            Configuration.eventReaderIdleStrategy(),
+            ctx.systemCounters().driverExceptions(),
+            ctx.eventConsumer());
 
         conductor = new DriverConductor(ctx);
         sender = new Sender(ctx);
@@ -261,21 +261,22 @@ public class MediaDriver implements AutoCloseable
         private IdleStrategy receiverIdleStrategy;
         private ClientProxy clientProxy;
         private RingBuffer toDriverCommands;
-        private File eventLocationsFile;
 
         private MappedByteBuffer toClientsBuffer;
         private MappedByteBuffer toDriverBuffer;
         private MappedByteBuffer counterLabelsByteBuffer;
         private MappedByteBuffer counterValuesByteBuffer;
+        private ByteBuffer eventByteBuffer;
         private CountersManager countersManager;
         private SystemCounters systemCounters;
 
         private int termBufferSize;
         private int initialWindowSize;
+        private int eventBufferSize;
         private long statusMessageTimeout;
         private long dataLossSeed;
         private long controlLossSeed;
-        private long eventEnabledCodes;
+        private long eventCodes;
         private double dataLossRate;
         private double controlLossRate;
 
@@ -294,8 +295,8 @@ public class MediaDriver implements AutoCloseable
             controlLossSeed(Configuration.controlLossSeed());
 
             eventConsumer = System.out::println;
-            eventLocationsFile = EventConfiguration.bufferLocationFile();
-            eventEnabledCodes = EventConfiguration.getEnabledEventCodes();
+            eventBufferSize = EventConfiguration.bufferSize();
+            eventCodes = EventConfiguration.getEnabledEventCodes();
 
             warnIfDirectoriesExist = true;
         }
@@ -308,7 +309,12 @@ public class MediaDriver implements AutoCloseable
 
                 if (null == eventLogger)
                 {
-                    eventLogger = new EventLogger(eventLocationsFile, eventEnabledCodes);
+                    if (null == eventByteBuffer)
+                    {
+                        eventByteBuffer = ByteBuffer.allocateDirect(eventBufferSize);
+                    }
+
+                    eventLogger = new EventLogger(eventByteBuffer, eventCodes);
                 }
 
                 receiverNioSelector(new NioSelector());
@@ -551,6 +557,24 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
+        public Context eventByteBuffer(final ByteBuffer buffer)
+        {
+            this.eventByteBuffer = buffer;
+            return this;
+        }
+
+        public Context eventCodes(final long eventCodes)
+        {
+            this.eventCodes = eventCodes;
+            return this;
+        }
+
+        public Context eventBufferSize(final int size)
+        {
+            this.eventBufferSize = size;
+            return this;
+        }
+
         public Context dataLossRate(final double lossRate)
         {
             this.dataLossRate = lossRate;
@@ -572,18 +596,6 @@ public class MediaDriver implements AutoCloseable
         public Context controlLossSeed(final long lossSeed)
         {
             this.controlLossSeed = lossSeed;
-            return this;
-        }
-
-        public Context eventLocationsFile(final File eventLocationsFile)
-        {
-            this.eventLocationsFile = eventLocationsFile;
-            return this;
-        }
-
-        public Context eventEnabledCodes(final long eventEnabledCodes)
-        {
-            this.eventEnabledCodes = eventEnabledCodes;
             return this;
         }
 
@@ -738,6 +750,21 @@ public class MediaDriver implements AutoCloseable
             return systemCounters;
         }
 
+        public Consumer<String> eventConsumer()
+        {
+            return eventConsumer;
+        }
+
+        public int eventBufferSize()
+        {
+            return eventBufferSize;
+        }
+
+        public ByteBuffer eventByteBuffer()
+        {
+            return eventByteBuffer;
+        }
+
         public void close()
         {
             if (null != toClientsBuffer)
@@ -763,11 +790,6 @@ public class MediaDriver implements AutoCloseable
             if (null != counterValuesByteBuffer)
             {
                 IoUtil.unmap(counterValuesByteBuffer);
-            }
-
-            if (null != eventLogger)
-            {
-                eventLogger.close();
             }
 
             super.close();

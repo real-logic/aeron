@@ -21,6 +21,7 @@ import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastReceiver;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
 
 import java.io.File;
 import java.nio.MappedByteBuffer;
@@ -35,6 +36,17 @@ import static uk.co.real_logic.aeron.common.IoUtil.mapExistingFile;
  */
 public final class Aeron implements AutoCloseable
 {
+    public static final Consumer<Exception> DEFAULT_ERROR_HANDLER = (throwable) ->
+    {
+        throwable.printStackTrace();
+        if (throwable instanceof DriverTimeoutException)
+        {
+            System.err.printf(
+                "\n***\n*** Timeout from the Media Driver - is it currently running? Exiting.\n***\n");
+            System.exit(-1);
+        }
+    };
+
     private static final long IDLE_MAX_SPINS = 0;
     private static final long IDLE_MAX_YIELDS = 0;
     private static final long IDLE_MIN_PARK_NS = TimeUnit.NANOSECONDS.toNanos(1);
@@ -255,7 +267,7 @@ public final class Aeron implements AutoCloseable
 
                 if (null == errorHandler)
                 {
-                    errorHandler = Throwable::printStackTrace;
+                    errorHandler = DEFAULT_ERROR_HANDLER;
                 }
             }
             catch (final Exception ex)

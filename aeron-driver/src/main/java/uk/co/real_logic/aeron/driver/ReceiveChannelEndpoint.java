@@ -41,6 +41,8 @@ public class ReceiveChannelEndpoint implements AutoCloseable
     private final StatusMessageFlyweight smHeader = new StatusMessageFlyweight();
     private final NakFlyweight nakHeader = new NakFlyweight();
 
+    private boolean closed = false;
+
     public ReceiveChannelEndpoint(
         final UdpChannel udpChannel,
         final DriverConductorProxy conductorProxy,
@@ -67,6 +69,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
 
     public void close()
     {
+        closed = true;
         udpTransport.close();
     }
 
@@ -160,6 +163,11 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         final int window,
         final short flags)
     {
+        if (closed)
+        {
+            return;
+        }
+
         smHeader.sessionId(sessionId)
                 .streamId(streamId)
                 .termId(termId)
@@ -189,6 +197,11 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         final int termOffset,
         final int length)
     {
+        if (closed)
+        {
+            return;
+        }
+
         nakHeader.streamId(streamId)
                  .sessionId(sessionId)
                  .termId(termId)

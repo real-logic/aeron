@@ -445,7 +445,15 @@ public class DriverConductor extends Agent
         final int positionCounterId = publication.publisherLimitCounterId();
 
         clientProxy.onNewTermBuffers(
-            ON_NEW_PUBLICATION, channel, streamId, sessionId, initialTermId, termBuffers, correlationId, positionCounterId);
+            ON_NEW_PUBLICATION,
+            channel,
+            streamId,
+            sessionId,
+            initialTermId,
+            0,
+            termBuffers,
+            correlationId,
+            positionCounterId);
     }
 
     private void onRemovePublication(final long registrationId, final long correlationId)
@@ -531,6 +539,8 @@ public class DriverConductor extends Agent
         final int sessionId = cmd.sessionId();
         final int streamId = cmd.streamId();
         final int initialTermId = cmd.termId();
+        final int initialTermOffset = cmd.termOffset();
+        final int termSize = cmd.termSize();
         final InetSocketAddress controlAddress = cmd.controlAddress();
         final ReceiveChannelEndpoint channelEndpoint = cmd.channelEndpoint();
         final UdpChannel udpChannel = channelEndpoint.udpChannel();
@@ -542,9 +552,20 @@ public class DriverConductor extends Agent
         final int subscriberPositionCounterId = allocatePositionCounter("subscriber", channel, sessionId, streamId);
         final int receivedCompleteCounterId = allocatePositionCounter("receiver", channel, sessionId, streamId);
         final int receivedHwmCounterId = allocatePositionCounter("receiver hwm", channel, sessionId, streamId);
+        final long initialPosition =
+            TermHelper.calculatePosition(
+                initialTermId, initialTermOffset, Integer.numberOfTrailingZeros(termSize), initialTermId);
 
         clientProxy.onNewTermBuffers(
-            ON_NEW_CONNECTION, channel, streamId, sessionId, initialTermId, termBuffers, 0, subscriberPositionCounterId);
+            ON_NEW_CONNECTION,
+            channel,
+            streamId,
+            sessionId,
+            initialTermId,
+            initialPosition,
+            termBuffers,
+            0,
+            subscriberPositionCounterId);
 
         final GapScanner[] gapScanners =
             termBuffers.stream()
@@ -557,6 +578,7 @@ public class DriverConductor extends Agent
             udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
             channelEndpoint.composeNakMessageSender(controlAddress, sessionId, streamId),
             initialTermId,
+            initialTermOffset,
             systemCounters);
 
         final DriverConnection connection = new DriverConnection(
@@ -564,6 +586,7 @@ public class DriverConductor extends Agent
             sessionId,
             streamId,
             initialTermId,
+            initialTermOffset,
             initialWindowSize,
             statusMessageTimeout,
             termBuffers,

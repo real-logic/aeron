@@ -81,6 +81,7 @@ public class DriverConnection implements AutoCloseable
         final int sessionId,
         final int streamId,
         final int initialTermId,
+        final int initialTermOffset,
         final int initialWindowSize,
         final long statusMessageTimeout,
         final TermBuffers termBuffers,
@@ -133,7 +134,18 @@ public class DriverConnection implements AutoCloseable
 
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
         this.initialTermId = initialTermId;
-        this.lastSmPosition = TermHelper.calculatePosition(initialTermId, 0, positionBitsToShift, initialTermId);
+
+        final long initialPosition = TermHelper.calculatePosition(
+            initialTermId, initialTermOffset, positionBitsToShift, initialTermId);
+
+        this.lastSmPosition = initialPosition;
+
+        // set the initial termOffset in the active rebuilder (this will reflect on the GapScanner also)
+        rebuilders[activeIndex].tail(initialTermOffset);
+
+        // set hwmPosition and completedPosition from initial position calculated from initialOffset
+        this.completedPosition.position(initialPosition);
+        this.hwmPosition.position(initialPosition);
     }
 
     public ReceiveChannelEndpoint receiveChannelEndpoint()

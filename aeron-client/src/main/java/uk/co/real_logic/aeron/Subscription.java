@@ -99,12 +99,14 @@ public class Subscription implements AutoCloseable
 
     void onTermBuffersMapped(
         final int sessionId,
-        final int termId,
+        final int initialTermId,
+        final long initialPosition,
         final LogReader[] logReaders,
         final PositionReporter positionReporter,
         final ManagedBuffer[] managedBuffers)
     {
-        connections.add(new Connection(logReaders, sessionId, termId, dataHandler, positionReporter, managedBuffers));
+        connections.add(
+            new Connection(logReaders, sessionId, initialTermId, initialPosition, dataHandler, positionReporter, managedBuffers));
     }
 
     boolean isConnected(final int sessionId)

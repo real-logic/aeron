@@ -67,15 +67,16 @@ class DriverListenerAdapter implements MessageHandler
                 final int streamId = logBuffersMessage.streamId();
                 final int termId = logBuffersMessage.termId();
                 final int positionCounterId = logBuffersMessage.positionCounterId();
+                final long initialPosition = logBuffersMessage.initialPosition();
 
                 if (msgTypeId == ON_NEW_PUBLICATION && logBuffersMessage.correlationId() == activeCorrelationId)
                 {
                     listener.onNewPublication(
-                            channel, streamId, sessionId, termId, positionCounterId, logBuffersMessage, activeCorrelationId);
+                        channel, streamId, sessionId, termId, positionCounterId, logBuffersMessage, activeCorrelationId);
                 }
                 else if (msgTypeId == ON_NEW_CONNECTION)
                 {
-                    listener.onNewConnection(channel, streamId, sessionId, termId, logBuffersMessage);
+                    listener.onNewConnection(channel, streamId, sessionId, termId, initialPosition, logBuffersMessage);
                 }
                 break;
 

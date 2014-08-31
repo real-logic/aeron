@@ -33,7 +33,13 @@ interface DriverListener
             LogBuffersMessageFlyweight logBuffersMessage,
             long correlationId);
 
-    void onNewConnection(String channel, int streamId, int sessionId, int termId, LogBuffersMessageFlyweight logBuffersMessage);
+    void onNewConnection(
+            String channel,
+            int streamId,
+            int sessionId,
+            int termId,
+            long initialPosition,
+            LogBuffersMessageFlyweight logBuffersMessage);
 
     void onInactiveConnection(String channel, int streamId, int sessionId, ConnectionMessageFlyweight connectionMessage);
 

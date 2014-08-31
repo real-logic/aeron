@@ -161,7 +161,7 @@ public class DriverConductorTest
         verify(mockClientProxy).onNewTermBuffers(
             eq(ControlProtocolEvents.ON_NEW_PUBLICATION),
             eq(CHANNEL_URI + 4000), eq(2), eq(1), anyInt(),
-            any(), anyLong(), anyInt());
+            eq(0L), any(), anyLong(), anyInt());
     }
 
     @Test

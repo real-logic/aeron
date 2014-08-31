@@ -221,6 +221,7 @@ class ClientConductor extends Agent implements DriverListener
         final int streamId,
         final int sessionId,
         final int initialTermId,
+        final long initialPosition,
         final LogBuffersMessageFlyweight message)
     {
         final Subscription subscription = subscriptionMap.get(channel, streamId);
@@ -241,7 +242,8 @@ class ClientConductor extends Agent implements DriverListener
 
             final PositionReporter positionReporter = new BufferPositionReporter(
                 counterValuesBuffer, message.positionCounterId());
-            subscription.onTermBuffersMapped(sessionId, initialTermId, logs, positionReporter, managedBuffers);
+            subscription.onTermBuffersMapped(
+                sessionId, initialTermId, initialPosition, logs, positionReporter, managedBuffers);
 
             if (null != newConnectionHandler)
             {

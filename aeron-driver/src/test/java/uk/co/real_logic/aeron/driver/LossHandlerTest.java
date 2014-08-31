@@ -60,6 +60,7 @@ public class LossHandlerTest
     private static final int SESSION_ID = 0x5E55101D;
     private static final int STREAM_ID = 0xC400E;
     private static final int TERM_ID = 0xEE81D;
+    private static final int INITIAL_TERM_OFFSET = 0;
 
     private static final StaticDelayGenerator delayGenerator = new StaticDelayGenerator(
         TimeUnit.MILLISECONDS.toNanos(20), false);
@@ -98,7 +99,8 @@ public class LossHandlerTest
         nakMessageSender = mock(NakMessageSender.class);
 
         final AtomicBuffer rcvBuffer = new AtomicBuffer(new byte[MESSAGE_LENGTH]);
-        handler = new LossHandler(scanners, wheel, delayGenerator, nakMessageSender, TERM_ID, mockSystemCounters);
+        handler =
+            new LossHandler(scanners, wheel, delayGenerator, nakMessageSender, TERM_ID, INITIAL_TERM_OFFSET, mockSystemCounters);
         dataHeader.wrap(rcvBuffer, 0);
     }
 
@@ -389,9 +391,34 @@ public class LossHandlerTest
         verify(nakMessageSender).send(TERM_ID, offset, LOG_BUFFER_SIZE - offset);
     }
 
+    @Test
+    public void shouldHandleNonZeroInitialTermOffset()
+    {
+        rebuilders[activeIndex].tail(offsetOfMessage(2));
+        handler = getLossHandlerWithImmediateAndTermOffset(offsetOfMessage(2));
+
+        insertDataFrame(offsetOfMessage(2));
+        insertDataFrame(offsetOfMessage(4));
+
+        handler.scan();
+
+        verify(nakMessageSender).send(TERM_ID, offsetOfMessage(3), gapLength());
+        verifyNoMoreInteractions(nakMessageSender);
+
+        assertThat(handler.completedPosition(), is((long)offsetOfMessage(3)));
+        assertThat(handler.hwmCandidate((long)offsetOfMessage(5)), is((long)offsetOfMessage(5)));
+    }
+
     private LossHandler getLossHandlerWithImmediate()
     {
-        return new LossHandler(scanners, wheel, delayGeneratorWithImmediate, nakMessageSender, TERM_ID, mockSystemCounters);
+        return new LossHandler(
+            scanners, wheel, delayGeneratorWithImmediate, nakMessageSender, TERM_ID, INITIAL_TERM_OFFSET, mockSystemCounters);
+    }
+
+    private LossHandler getLossHandlerWithImmediateAndTermOffset(final int initialTermOffset)
+    {
+        return new LossHandler(
+            scanners, wheel, delayGeneratorWithImmediate, nakMessageSender, TERM_ID, initialTermOffset, mockSystemCounters);
     }
 
     private void insertDataFrame(final int offset)

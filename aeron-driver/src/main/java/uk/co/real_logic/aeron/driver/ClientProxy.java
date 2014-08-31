@@ -77,6 +77,7 @@ public class ClientProxy
         final int streamId,
         final int sessionId,
         final int termId,
+        final long initialPosition,
         final TermBuffers termBuffers,
         final long correlationId,
         final int positionCounterId)
@@ -84,6 +85,7 @@ public class ClientProxy
         logBuffersMessage.wrap(tmpBuffer, 0);
         logBuffersMessage.sessionId(sessionId)
                          .streamId(streamId)
+                         .initialPosition(initialPosition)
                          .correlationId(correlationId)
                          .termId(termId)
                          .positionCounterId(positionCounterId);

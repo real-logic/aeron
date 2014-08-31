@@ -153,7 +153,7 @@ public class DataFrameDispatcher
             // and return false
             if (null == connection && !INIT_IN_PROGRESS.equals(initialisationInProgressMap.get(sessionId, streamId)))
             {
-                createConnection(srcAddress, streamId, sessionId, termId, header.termSize());
+                createConnection(srcAddress, streamId, sessionId, termId, header.termOffset(), header.termSize());
             }
         }
     }
@@ -173,6 +173,7 @@ public class DataFrameDispatcher
         final int streamId,
         final int sessionId,
         final int termId,
+        final int termOffset,
         final int termSize)
     {
         final UdpTransport transport = channelEndpoint.udpTransport();
@@ -180,6 +181,7 @@ public class DataFrameDispatcher
             transport.isMulticast() ? transport.udpChannel().remoteControl() : srcAddress;
 
         initialisationInProgressMap.put(sessionId, streamId, INIT_IN_PROGRESS); // will replace elicit if needed
-        conductorProxy.createConnection(sessionId, streamId, termId, termSize, controlAddress, channelEndpoint);
+        conductorProxy.createConnection(
+                sessionId, streamId, termId, termOffset, termSize, controlAddress, channelEndpoint);
     }
 }

@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.common.BitUtil;
+import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
@@ -50,6 +51,7 @@ class Connection
         final LogReader[] readers,
         final int sessionId,
         final int initialTermId,
+        final long initialPosition,
         final DataHandler dataHandler,
         final PositionReporter positionReporter,
         final ManagedBuffer[] managedBuffers)
@@ -59,11 +61,16 @@ class Connection
         this.dataHandler = dataHandler;
         this.positionReporter = positionReporter;
         this.managedBuffers = managedBuffers;
-        this.activeTermId = new AtomicInteger(initialTermId);
-        this.activeIndex = termIdToBufferIndex(initialTermId);
-
         this.positionBitsToShift = Integer.numberOfTrailingZeros(logReaders[0].capacity());
         this.initialTermId = initialTermId;
+
+        final int currentTermId = TermHelper.calculateTermIdFromPosition(initialPosition, positionBitsToShift, initialTermId);
+        final int initialTermOffset = TermHelper.calculateTermOffsetFromPosition(initialPosition, positionBitsToShift);
+        this.activeTermId = new AtomicInteger(currentTermId);
+        this.activeIndex = termIdToBufferIndex(currentTermId);   // we could be joining late, so use current term
+
+        logReaders[activeIndex].seek(initialTermOffset);
+        this.positionReporter.position(initialPosition);
     }
 
     public int sessionId()

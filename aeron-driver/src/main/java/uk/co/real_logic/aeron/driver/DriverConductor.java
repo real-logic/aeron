@@ -442,7 +442,7 @@ public class DriverConductor extends Agent
         publication.incRef();
         final int initialTermId = publication.initialTermId();
         final TermBuffers termBuffers = publication.termBuffers();
-        final int positionCounterId = publication.positionCounterId();
+        final int positionCounterId = publication.publisherLimitCounterId();
 
         clientProxy.onNewTermBuffers(
             ON_NEW_PUBLICATION, channel, streamId, sessionId, initialTermId, termBuffers, correlationId, positionCounterId);

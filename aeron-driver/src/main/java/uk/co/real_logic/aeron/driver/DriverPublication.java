@@ -328,8 +328,6 @@ public class DriverPublication implements AutoCloseable
 
     private void onSendTransmissionUnit(final AtomicBuffer buffer, final int offset, final int length)
     {
-        // at this point sendBuffer wraps the same underlying
-        // ByteBuffer as the buffer parameter
         final ByteBuffer sendBuffer = sendBuffers[activeIndex];
         sendBuffer.limit(offset + length);
         sendBuffer.position(offset);
@@ -445,7 +443,7 @@ public class DriverPublication implements AutoCloseable
         return termBuffers;
     }
 
-    public int positionCounterId()
+    public int publisherLimitCounterId()
     {
         return publisherLimitReporter.id();
     }

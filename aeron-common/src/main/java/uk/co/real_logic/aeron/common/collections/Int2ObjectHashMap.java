@@ -566,8 +566,8 @@ public class Int2ObjectHashMap<V>
         private int posCounter;
         private int stopCounter;
         private boolean isPositionValid = false;
-        private final int[] keys = Int2ObjectHashMap.this.keys;
-        private final Object[] values = Int2ObjectHashMap.this.values;
+        protected final int[] keys = Int2ObjectHashMap.this.keys;
+        protected final Object[] values = Int2ObjectHashMap.this.values;
 
         protected AbstractIterator()
         {

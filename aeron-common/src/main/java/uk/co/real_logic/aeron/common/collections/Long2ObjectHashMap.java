@@ -566,8 +566,8 @@ public class Long2ObjectHashMap<V>
         private int posCounter;
         private int stopCounter;
         private boolean isPositionValid = false;
-        private final long[] keys = Long2ObjectHashMap.this.keys;
-        private final Object[] values = Long2ObjectHashMap.this.values;
+        protected final long[] keys = Long2ObjectHashMap.this.keys;
+        protected final Object[] values = Long2ObjectHashMap.this.values;
 
         protected AbstractIterator()
         {

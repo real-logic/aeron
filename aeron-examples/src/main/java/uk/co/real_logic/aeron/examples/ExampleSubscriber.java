@@ -45,7 +45,7 @@ public class ExampleSubscriber
             .inactiveConnectionHandler(ExampleUtil::printInactiveConnection);
 
         final AtomicBoolean running = new AtomicBoolean(true);
-        SigInt.register(() -> running.lazySet(false));
+        SigInt.register(() -> running.set(false));
 
         System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID);
 

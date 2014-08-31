@@ -19,9 +19,11 @@ import uk.co.real_logic.aeron.common.CommonContext;
 import uk.co.real_logic.aeron.common.IoUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.CountersManager;
+import uk.co.real_logic.aeron.common.concurrent.SigInt;
 
 import java.io.File;
 import java.nio.MappedByteBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * App to print out status counters and labels
@@ -42,7 +44,10 @@ public class AeronStat
         final AtomicBuffer valuesBuffer = new AtomicBuffer(valuesByteBuffer);
         final CountersManager countersManager = new CountersManager(new AtomicBuffer(labelsByteBuffer), valuesBuffer);
 
-        while (true)
+        final AtomicBoolean running = new AtomicBoolean(true);
+        SigInt.register(() -> running.set(false));
+
+        while (running.get())
         {
             final double timestamp = System.nanoTime() / 1000_000_000.0d;
 

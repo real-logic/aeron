@@ -59,7 +59,7 @@ public class RateSubscriber
             () ->
             {
                 reporter.halt();
-                running.lazySet(false);
+                running.set(false);
             });
 
         try (final Aeron aeron = Aeron.connect(ctx, executor);

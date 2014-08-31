@@ -113,7 +113,7 @@ public class Ping
         CloseHelper.quietClose(driver);
     }
 
-    public static void sendMessages(final Publication pingPublication, final int numMessages)
+    private static void sendMessages(final Publication pingPublication, final int numMessages)
     {
         for (int i = 0; i < numMessages; i++)
         {
@@ -127,7 +127,7 @@ public class Ping
         }
     }
 
-    public static void pongHandler(
+    private static void pongHandler(
         final AtomicBuffer buffer, final int offset, final int length, final int sessionId, final byte flags)
     {
         final long pingTimestamp = buffer.getLong(offset);
@@ -136,7 +136,7 @@ public class Ping
         histogram.recordValue(rttNs);
     }
 
-    public static void runSubscriber(final Subscription pongSubscription, final int numMessages)
+    private static void runSubscriber(final Subscription pongSubscription, final int numMessages)
     {
         final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
 

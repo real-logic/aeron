@@ -24,6 +24,8 @@ import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.SigInt;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 /**
  * Pong component of Ping-Pong.
  *
@@ -39,7 +41,6 @@ public class Pong
     private static final boolean EMBEDDED_MEDIA_DRIVER = ExampleConfiguration.EMBEDDED_MEDIA_DRIVER;
 
     private static final BusySpinIdleStrategy PING_HANDLER_IDLE_STRATEGY = new BusySpinIdleStrategy();
-    private static volatile boolean running = true;
 
     public static void main(final String[] args) throws Exception
     {
@@ -51,7 +52,8 @@ public class Pong
         System.out.println("Subscribing Ping at " + PING_CHANNEL + " on stream Id " + PING_STREAM_ID);
         System.out.println("Publishing Pong at " + PONG_CHANNEL + " on stream Id " + PONG_STREAM_ID);
 
-        SigInt.register(() -> running = false);
+        final AtomicBoolean running = new AtomicBoolean(true);
+        SigInt.register(() -> running.set(false));
 
         try (final Aeron aeron = Aeron.connect(ctx);
              final Publication pongPublication = aeron.addPublication(PONG_CHANNEL, PONG_STREAM_ID);
@@ -59,7 +61,7 @@ public class Pong
                  (buffer, offset, length, sessionId, flags) ->
                      pingHandler(pongPublication, buffer, offset, length, sessionId, flags)))
         {
-            while (running)
+            while (running.get())
             {
                 final int fragmentsRead = pingSubscription.poll(FRAME_COUNT_LIMIT);
                 idleStrategy.idle(fragmentsRead);

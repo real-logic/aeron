@@ -50,10 +50,7 @@ public class ExampleUtil
                     while (running.get())
                     {
                         final int fragmentsRead = subscription.poll(limit);
-                        if (0 == fragmentsRead)
-                        {
-                            idleStrategy.idle(fragmentsRead);
-                        }
+                        idleStrategy.idle(fragmentsRead);
                     }
                 }
                 catch (final Exception ex)
@@ -76,9 +73,10 @@ public class ExampleUtil
             final byte[] data = new byte[length];
             buffer.getBytes(offset, data);
 
-            System.out.println(String.format(
-                "message to stream %d from session %x (%d@%d) <<%s>>",
-                streamId, sessionId, length, offset, new String(data)));
+            System.out.println(
+                String.format(
+                    "message to stream %d from session %x (%d@%d) <<%s>>",
+                    streamId, sessionId, length, offset, new String(data)));
         };
     }
 
@@ -127,34 +125,39 @@ public class ExampleUtil
         final long totalMessages,
         final long totalBytes)
     {
-        System.out.println(String.format(
-            "%.02g msgs/sec, %.02g bytes/sec, totals %d messages %d MB",
-            messagesPerSec, bytesPerSec, totalMessages, totalBytes / (1024 * 1024)));
+        System.out.println(
+            String.format(
+                "%.02g msgs/sec, %.02g bytes/sec, totals %d messages %d MB",
+                messagesPerSec, bytesPerSec, totalMessages, totalBytes / (1024 * 1024)));
     }
 
     /**
      * Print the information for a new connection to stdout.
-     *  @param channel   for the connection
+     *
+     * @param channel   for the connection
      * @param streamId  for the stream
      * @param sessionId for the connection publication
      */
     public static void printNewConnection(final String channel, final int streamId, final int sessionId)
     {
-        System.out.println(String.format(
-            "new connection on %s streamId %d sessionId %x",
-            channel, streamId, sessionId));
+        System.out.println(
+            String.format(
+                "new connection on %s streamId %d sessionId %x",
+                channel, streamId, sessionId));
     }
 
     /**
      * Print the information for an inactive connection to stdout.
-     *  @param channel   for the connection
+     *
+     * @param channel   for the connection
      * @param streamId  for the stream
      * @param sessionId for the connection publication
      */
     public static void printInactiveConnection(final String channel, final int streamId, final int sessionId)
     {
-        System.out.println(String.format(
-            "inactive connection on %s streamId %d sessionId %x",
-            channel, streamId, sessionId));
+        System.out.println(
+            String.format(
+                "inactive connection on %s streamId %d sessionId %x",
+                channel, streamId, sessionId));
     }
 }

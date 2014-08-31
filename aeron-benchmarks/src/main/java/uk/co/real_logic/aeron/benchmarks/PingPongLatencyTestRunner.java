@@ -22,14 +22,12 @@ import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.BackoffIdleStrategy;
 import uk.co.real_logic.aeron.common.BitUtil;
-import uk.co.real_logic.aeron.common.RateReporter;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static uk.co.real_logic.aeron.benchmarks.BenchmarkUtil.*;
 
 /**
@@ -37,18 +35,16 @@ import static uk.co.real_logic.aeron.benchmarks.BenchmarkUtil.*;
  *
  * For infinite amount of time: Send a messages
  */
-// TODO: parameterise by backoff strategies
+// TODO: parametrise by backoff strategies
 public class PingPongLatencyTestRunner
 {
     private static final int CAPACITY = BitUtil.SIZE_OF_LONG;
     private static final AtomicBuffer PUBLISHING_BUFFER = new AtomicBuffer(ByteBuffer.allocateDirect(CAPACITY));
-    private static final int MAX_BATCH_SIZE = 10;
     private static final int NUMBER_OF_MESSAGES = 100_000_000;
 
     private static long sentTime;
 
-
-    public static void main(String[] args) throws Exception
+    public static void main(final String[] args) throws Exception
     {
         BenchmarkUtil.useSharedMemoryOnLinux();
 
@@ -62,7 +58,6 @@ public class PingPongLatencyTestRunner
              final Subscription subscription = consumingClient.addSubscription(CHANNEL, STREAM_ID, handler))
         {
             publish(publication);
-
             subscribe(subscription, histogram);
 
             while (true)
@@ -81,15 +76,15 @@ public class PingPongLatencyTestRunner
 
     private static void subscribe(final Subscription subscription, final Histogram histogram)
     {
-        new Thread("Subscriber")
+        new Thread("subscriber")
         {
             public void run()
             {
                 final BackoffIdleStrategy idleStrategy = new BackoffIdleStrategy(
-                        100,
-                        100,
-                        TimeUnit.MICROSECONDS.toNanos(1),
-                        TimeUnit.MICROSECONDS.toNanos(100));
+                    100,
+                    100,
+                    TimeUnit.MICROSECONDS.toNanos(1),
+                    TimeUnit.MICROSECONDS.toNanos(100));
 
                 try
                 {
@@ -98,7 +93,8 @@ public class PingPongLatencyTestRunner
                     while (true)
                     {
                         final int fragmentsRead = subscription.poll(1);
-                        if (fragmentsRead == 1) {
+                        if (fragmentsRead == 1)
+                        {
                             final long readTime = System.nanoTime();
                             long transportTime = readTime - sentTime;
                             histogram.recordValue(transportTime / 1000);
@@ -106,11 +102,11 @@ public class PingPongLatencyTestRunner
                             if ((i % 1_000_000) == 0)
                             {
                                 System.out.printf(
-                                        "Worst: %d, 99.9: %d, 99: %d, 50: %d\n",
-                                        histogram.getMaxValue(),
-                                        histogram.getValueAtPercentile(99.9),
-                                        histogram.getValueAtPercentile(99),
-                                        histogram.getValueAtPercentile(50));
+                                    "Worst: %d, 99.9: %d, 99: %d, 50: %d\n",
+                                    histogram.getMaxValue(),
+                                    histogram.getValueAtPercentile(99.9),
+                                    histogram.getValueAtPercentile(99),
+                                    histogram.getValueAtPercentile(50));
                             }
 
                             i++;
@@ -129,7 +125,7 @@ public class PingPongLatencyTestRunner
 
     private static void publish(final Publication publication)
     {
-        new Thread("Publisher")
+        new Thread("publisher")
         {
             public void run()
             {

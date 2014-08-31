@@ -38,7 +38,7 @@ public class Pong
     private static final int FRAME_COUNT_LIMIT = ExampleConfiguration.FRAGMENT_COUNT_LIMIT;
     private static final boolean EMBEDDED_MEDIA_DRIVER = ExampleConfiguration.EMBEDDED_MEDIA_DRIVER;
 
-    private static final BusySpinIdleStrategy PING_HANDLER_IDLER = new BusySpinIdleStrategy();
+    private static final BusySpinIdleStrategy PING_HANDLER_IDLE_STRATEGY = new BusySpinIdleStrategy();
     private static volatile boolean running = true;
 
     public static void main(final String[] args) throws Exception
@@ -62,10 +62,7 @@ public class Pong
             while (running)
             {
                 final int fragmentsRead = pingSubscription.poll(FRAME_COUNT_LIMIT);
-                if (0 == fragmentsRead)
-                {
-                    idleStrategy.idle(fragmentsRead);
-                }
+                idleStrategy.idle(fragmentsRead);
             }
 
             System.out.println("Shutting down...");
@@ -84,7 +81,7 @@ public class Pong
     {
         while (!pongPublication.offer(buffer, offset, length))
         {
-            PING_HANDLER_IDLER.idle(0);
+            PING_HANDLER_IDLE_STRATEGY.idle(0);
         }
     }
 }

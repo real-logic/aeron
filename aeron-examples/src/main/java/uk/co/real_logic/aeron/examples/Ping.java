@@ -145,10 +145,7 @@ public class Ping
         {
             final int fragmentsRead = pongSubscription.poll(FRAGMENT_COUNT_LIMIT);
             totalFragments += fragmentsRead;
-            if (fragmentsRead == 0)
-            {
-                idleStrategy.idle(fragmentsRead);
-            }
+            idleStrategy.idle(fragmentsRead);
         }
         while (totalFragments < numMessages);
     }

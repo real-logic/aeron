@@ -62,14 +62,7 @@ public class PingPongLatencyTestRunner
 
             while (true)
             {
-                try
-                {
-                    Thread.sleep(Long.MAX_VALUE);
-                }
-                catch (Throwable e)
-                {
-                    e.printStackTrace();
-                }
+                Thread.sleep(Long.MAX_VALUE);
             }
         }
     }

@@ -20,11 +20,13 @@ import uk.co.real_logic.aeron.DataHandler;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.CloseHelper;
 import uk.co.real_logic.aeron.common.RateReporter;
+import uk.co.real_logic.aeron.common.concurrent.SigInt;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static uk.co.real_logic.aeron.examples.ExampleUtil.rateReporterHandler;
 
@@ -41,7 +43,6 @@ public class RateSubscriber
     public static void main(final String[] args) throws Exception
     {
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
-
         final ExecutorService executor = Executors.newFixedThreadPool(2);
 
         final Aeron.Context ctx = new Aeron.Context()
@@ -53,16 +54,26 @@ public class RateSubscriber
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), ExampleUtil::printRate);
         final DataHandler rateReporterHandler = rateReporterHandler(reporter);
 
+        final AtomicBoolean running = new AtomicBoolean(true);
+        SigInt.register(
+            () ->
+            {
+                reporter.halt();
+                running.lazySet(false);
+            });
+
         try (final Aeron aeron = Aeron.connect(ctx, executor);
              final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, rateReporterHandler))
         {
-            executor.execute(() -> ExampleUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT).accept(subscription));
+            executor.execute(() -> ExampleUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription));
 
             // run the rate reporter loop
             reporter.run();
+
+            System.out.println("Shutting down...");
         }
 
-        CloseHelper.quietClose(driver);
         executor.shutdown();
+        CloseHelper.quietClose(driver);
     }
 }

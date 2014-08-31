@@ -18,10 +18,12 @@ package uk.co.real_logic.aeron.examples;
 import uk.co.real_logic.aeron.DataHandler;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.BackoffIdleStrategy;
+import uk.co.real_logic.aeron.common.IdleStrategy;
 import uk.co.real_logic.aeron.common.RateReporter;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 /**
@@ -35,20 +37,23 @@ public class ExampleUtil
      * @param limit passed to {@link Subscription#poll(int)}
      * @return loop function
      */
-    public static Consumer<Subscription> subscriberLoop(final int limit)
+    public static Consumer<Subscription> subscriberLoop(final int limit, final AtomicBoolean running)
     {
         return
             (subscription) ->
             {
-                final BackoffIdleStrategy idleStrategy = new BackoffIdleStrategy(
+                final IdleStrategy idleStrategy = new BackoffIdleStrategy(
                     100, 100, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
 
                 try
                 {
-                    while (true)
+                    while (running.get())
                     {
                         final int fragmentsRead = subscription.poll(limit);
-                        idleStrategy.idle(fragmentsRead);
+                        if (0 == fragmentsRead)
+                        {
+                            idleStrategy.idle(fragmentsRead);
+                        }
                     }
                 }
                 catch (final Exception ex)

@@ -19,7 +19,10 @@ import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.DataHandler;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.CloseHelper;
+import uk.co.real_logic.aeron.common.concurrent.SigInt;
 import uk.co.real_logic.aeron.driver.MediaDriver;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static uk.co.real_logic.aeron.examples.ExampleUtil.printStringMessage;
 
@@ -41,6 +44,9 @@ public class ExampleSubscriber
             .newConnectionHandler(ExampleUtil::printNewConnection)
             .inactiveConnectionHandler(ExampleUtil::printInactiveConnection);
 
+        final AtomicBoolean running = new AtomicBoolean(true);
+        SigInt.register(() -> running.lazySet(false));
+
         System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
         final DataHandler dataHandler = printStringMessage(STREAM_ID);
@@ -48,7 +54,9 @@ public class ExampleSubscriber
              final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, dataHandler))
         {
             // run the subscriber thread from here
-            ExampleUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT).accept(subscription);
+            ExampleUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription);
+
+            System.out.println("Shutting down...");
         }
 
         CloseHelper.quietClose(driver);

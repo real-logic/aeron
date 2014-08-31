@@ -68,6 +68,7 @@ public class DataFrameDispatcher
         for (final DriverConnection connection : connectionBySessionIdMap.values())
         {
             connection.disableStatusMessages();
+            connection.disableScanForGaps();
         }
     }
 

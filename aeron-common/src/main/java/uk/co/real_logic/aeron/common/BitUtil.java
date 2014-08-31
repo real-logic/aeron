@@ -134,31 +134,25 @@ public class BitUtil
     }
 
     /**
-     * Generate a consistent hash of the bytes that is represented as a long.
+     * Is a number even.
      *
-     * Not guaranteed to be unique. But should be reasonably unique and consistent.
-     *
-     * @param bytes bytes to hash over
-     * @return long representation of hash
+     * @param value to check.
+     * @return true if the number is even otherwise false.
      */
-    public static long generateConsistentHash(final byte[] bytes)
+    public static boolean isEven(final int value)
     {
-        final byte[] digest = MESSAGE_DIGEST.get().digest(bytes);
-
-        // truncate by taking first 8 bytes
-        return ((long)digest[0] << 56) |
-               ((long)digest[1] << 48) |
-               ((long)digest[2] << 40) |
-               ((long)digest[3] << 32) |
-               ((long)digest[4] << 24) |
-               ((long)digest[5] << 16) |
-               ((long)digest[6] << 8)  |
-               ((long)digest[7]);
+        return (value & LAST_DIGIT_MASK) == 0;
     }
 
-    public static boolean isEven(int number)
+    /**
+     * Is a value a positive power of two.
+     *
+     * @param value to be checked.
+     * @return true if the number is a positive power of two otherwise false.
+     */
+    public static boolean isPowerOfTwo(final int value)
     {
-        return (number & LAST_DIGIT_MASK) == 0;
+        return value > 0 && ((value & (~value + 1)) == value);
     }
 
     /**

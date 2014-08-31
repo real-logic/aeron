@@ -39,7 +39,10 @@ public abstract class Agent implements Runnable, AutoCloseable
      * @param exceptionHandler to be called if an {@link Exception} is encountered
      * @param exceptionCounter for reporting how many exceptions have been seen.
      */
-    public Agent(final IdleStrategy idleStrategy, final Consumer<Exception> exceptionHandler, final AtomicCounter exceptionCounter)
+    public Agent(
+            final IdleStrategy idleStrategy,
+            final Consumer<Exception> exceptionHandler,
+            final AtomicCounter exceptionCounter)
     {
         this.idleStrategy = idleStrategy;
         this.exceptionHandler = exceptionHandler;

@@ -43,41 +43,13 @@ public class EventLogger
      */
     private static final int INVOKING_METHOD_INDEX = 2;
 
-    private final MappedByteBuffer eventBuffer;
     private final ManyToOneRingBuffer ringBuffer;
     private final long enabledEventCodes;
 
-    public EventLogger(final File bufferLocation, final long enabledEventCodes)
+    public EventLogger(final ByteBuffer buffer, final long enabledEventCodes)
     {
-        MappedByteBuffer tmpEventBuffer = null;
-        try
-        {
-            tmpEventBuffer = IoUtil.mapExistingFile(bufferLocation, "event-buffer");
-        }
-        catch (final Exception ignore)
-        {
-        }
-
-        if (null != tmpEventBuffer)
-        {
-            this.eventBuffer = tmpEventBuffer;
-            this.ringBuffer = new ManyToOneRingBuffer(new AtomicBuffer(eventBuffer));
-            this.enabledEventCodes = enabledEventCodes;
-        }
-        else
-        {
-            this.eventBuffer = null;
-            this.ringBuffer = null;
-            this.enabledEventCodes = 0L;
-        }
-    }
-
-    public void close()
-    {
-        if (null != eventBuffer)
-        {
-            IoUtil.unmap(eventBuffer);
-        }
+        this.ringBuffer = new ManyToOneRingBuffer(new AtomicBuffer(buffer));
+        this.enabledEventCodes = enabledEventCodes;
     }
 
     public void log(final EventCode code, final AtomicBuffer buffer, final int offset, final int length)

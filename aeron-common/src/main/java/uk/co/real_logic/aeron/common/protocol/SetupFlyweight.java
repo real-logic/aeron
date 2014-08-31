@@ -26,12 +26,36 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 public class SetupFlyweight extends HeaderFlyweight
 {
     /** Size of the Setup Header */
-    public static final int HEADER_LENGTH = 24;
+    public static final int HEADER_LENGTH = 28;
 
-    private static final int SESSION_ID_FIELD_OFFSET = 8;
-    private static final int STREAM_ID_FIELD_OFFSET = 12;
-    private static final int TERM_ID_FIELD_OFFSET = 16;
-    private static final int TERM_SIZE_FIELD_OFFSET = 20;
+    private static final int TERM_OFFSET_FIELD_OFFSET = 8;
+    private static final int SESSION_ID_FIELD_OFFSET = 12;
+    private static final int STREAM_ID_FIELD_OFFSET = 16;
+    private static final int TERM_ID_FIELD_OFFSET = 20;
+    private static final int TERM_SIZE_FIELD_OFFSET = 24;
+
+    /**
+     * return term offset field
+     *
+     * @return term offset field
+     */
+    public int termOffset()
+    {
+        return atomicBuffer().getInt(offset() + TERM_OFFSET_FIELD_OFFSET, LITTLE_ENDIAN);
+    }
+
+    /**
+     * set term offset field
+     *
+     * @param termOffset field value
+     * @return flyweight
+     */
+    public SetupFlyweight termOffset(final int termOffset)
+    {
+        atomicBuffer().putInt(offset() + TERM_OFFSET_FIELD_OFFSET, termOffset, LITTLE_ENDIAN);
+
+        return this;
+    }
 
     /**
      * return session id field

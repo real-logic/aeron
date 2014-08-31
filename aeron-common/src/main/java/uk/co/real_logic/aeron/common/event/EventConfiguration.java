@@ -15,9 +15,8 @@
  */
 package uk.co.real_logic.aeron.common.event;
 
-import uk.co.real_logic.aeron.common.IoUtil;
+import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBufferDescriptor;
 
-import java.io.File;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -31,19 +30,9 @@ import static uk.co.real_logic.aeron.common.event.EventCode.*;
 public class EventConfiguration
 {
     /**
-     * Event Buffer location system property name
-     */
-    public static final String LOCATION_PROPERTY_NAME = "aeron.event.buffer.location";
-
-    /**
      * Event Buffer size system property name
      */
     public static final String BUFFER_SIZE_PROPERTY_NAME = "aeron.event.buffer.size";
-
-    /**
-     * Event Buffer location deleted on exit system property name
-     */
-    public static final String DELETE_ON_EXIT_PROPERTY_NAME = "aeron.event.buffer.delete-on-exit";
 
     /**
      * Event tags system property name. This is either:
@@ -84,14 +73,9 @@ public class EventConfiguration
     public static final Set<EventCode> ALL_LOGGER_EVENT_CODES = EnumSet.allOf(EventCode.class);
 
     /**
-     * Event Buffer default location
-     */
-    public static final String LOCATION_DEFAULT = IoUtil.tmpDirName() + "aeron" + File.separator + "event-buffer";
-
-    /**
      * Event Buffer default size (in bytes)
      */
-    public static final long BUFFER_SIZE_DEFAULT = 65536;
+    public static final int BUFFER_SIZE_DEFAULT = 65536;
 
     /**
      * Maximum length of an event in bytes
@@ -110,9 +94,11 @@ public class EventConfiguration
         return makeTagBitSet(getEnabledEventCodes(enabledLoggerEventCodes));
     }
 
-    public static File bufferLocationFile()
+    public static int bufferSize()
     {
-        return new File(System.getProperty(LOCATION_PROPERTY_NAME, LOCATION_DEFAULT));
+        return Integer.getInteger(
+                EventConfiguration.BUFFER_SIZE_PROPERTY_NAME,
+                EventConfiguration.BUFFER_SIZE_DEFAULT) + RingBufferDescriptor.TRAILER_LENGTH;
     }
 
     static long makeTagBitSet(final Set<EventCode> eventCodes)

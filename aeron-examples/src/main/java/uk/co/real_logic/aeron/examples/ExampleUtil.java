@@ -26,11 +26,28 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+import static uk.co.real_logic.aeron.common.CommonContext.ADMIN_DIR_PROP_NAME;
+import static uk.co.real_logic.aeron.common.CommonContext.COUNTERS_DIR_PROP_NAME;
+import static uk.co.real_logic.aeron.common.CommonContext.DATA_DIR_PROP_NAME;
+
 /**
  * Utility functions for examples
  */
 public class ExampleUtil
 {
+    /**
+     * Use shared memory on Linux to avoid contention on the page cache.
+     */
+    public static void useSharedMemoryOnLinux()
+    {
+        if ("Linux".equalsIgnoreCase(System.getProperty("os.name")))
+        {
+            System.setProperty(ADMIN_DIR_PROP_NAME, "/dev/shm/aeron/conductor");
+            System.setProperty(COUNTERS_DIR_PROP_NAME, "/dev/shm/aeron/counters");
+            System.setProperty(DATA_DIR_PROP_NAME, "/dev/shm/aeron/data");
+        }
+    }
+
     /**
      * Return a reusable, parameterized event loop that calls {@link Thread#yield()} when no messages are received
      *
@@ -43,7 +60,7 @@ public class ExampleUtil
             (subscription) ->
             {
                 final IdleStrategy idleStrategy = new BackoffIdleStrategy(
-                    100, 100, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
+                    100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
 
                 try
                 {

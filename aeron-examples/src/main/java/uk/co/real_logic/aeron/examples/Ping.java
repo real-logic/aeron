@@ -54,7 +54,7 @@ public class Ping
 
     private static final AtomicBuffer ATOMIC_BUFFER = new AtomicBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
 
-    private static Histogram histogram = new Histogram(TimeUnit.MILLISECONDS.toNanos(500), 3);
+    private static Histogram histogram = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
 
     public static void main(final String[] args) throws Exception
     {

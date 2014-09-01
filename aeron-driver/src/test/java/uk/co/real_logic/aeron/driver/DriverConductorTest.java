@@ -94,7 +94,7 @@ public class DriverConductorTest
     @Before
     public void setUp() throws Exception
     {
-        when(mockTermBuffersFactory.newPublication(anyObject(), anyInt(), anyInt()))
+        when(mockTermBuffersFactory.newPublication(anyObject(), anyInt(), anyInt(), anyInt()))
             .thenReturn(BufferAndFrameHelper.newTestTermBuffers(TERM_BUFFER_SZ, STATE_BUFFER_LENGTH));
 
         currentTime = 0;
@@ -161,7 +161,7 @@ public class DriverConductorTest
         verify(mockClientProxy).onNewTermBuffers(
             eq(ControlProtocolEvents.ON_NEW_PUBLICATION),
             eq(CHANNEL_URI + 4000), eq(2), eq(1), anyInt(),
-            any(), anyLong(), anyInt());
+            eq(0L), any(), anyLong(), anyInt());
     }
 
     @Test

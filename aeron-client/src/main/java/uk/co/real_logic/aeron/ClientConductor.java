@@ -221,7 +221,9 @@ class ClientConductor extends Agent implements DriverListener
         final int streamId,
         final int sessionId,
         final int initialTermId,
-        final LogBuffersMessageFlyweight message)
+        final long initialPosition,
+        final LogBuffersMessageFlyweight message,
+        final long correlationId)
     {
         final Subscription subscription = subscriptionMap.get(channel, streamId);
         if (null != subscription && !subscription.isConnected(sessionId))
@@ -241,7 +243,8 @@ class ClientConductor extends Agent implements DriverListener
 
             final PositionReporter positionReporter = new BufferPositionReporter(
                 counterValuesBuffer, message.positionCounterId());
-            subscription.onTermBuffersMapped(sessionId, initialTermId, logs, positionReporter, managedBuffers);
+            subscription.onTermBuffersMapped(
+                sessionId, initialTermId, initialPosition, correlationId, logs, positionReporter, managedBuffers);
 
             if (null != newConnectionHandler)
             {
@@ -263,11 +266,15 @@ class ClientConductor extends Agent implements DriverListener
     }
 
     public void onInactiveConnection(
-        final String channel, final int streamId, final int sessionId, final ConnectionMessageFlyweight connectionMessage)
+        final String channel,
+        final int streamId,
+        final int sessionId,
+        final ConnectionMessageFlyweight connectionMessage,
+        final long correlationId)
     {
         final Subscription subscription = subscriptionMap.get(channel, streamId);
 
-        if (null != subscription && subscription.removeConnection(sessionId))
+        if (null != subscription && subscription.removeConnection(sessionId, correlationId))
         {
             if (null != inactiveConnectionHandler)
             {

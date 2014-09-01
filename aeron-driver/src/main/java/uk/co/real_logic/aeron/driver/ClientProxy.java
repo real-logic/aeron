@@ -77,6 +77,7 @@ public class ClientProxy
         final int streamId,
         final int sessionId,
         final int termId,
+        final long initialPosition,
         final TermBuffers termBuffers,
         final long correlationId,
         final int positionCounterId)
@@ -84,6 +85,7 @@ public class ClientProxy
         logBuffersMessage.wrap(tmpBuffer, 0);
         logBuffersMessage.sessionId(sessionId)
                          .streamId(streamId)
+                         .initialPosition(initialPosition)
                          .correlationId(correlationId)
                          .termId(termId)
                          .positionCounterId(positionCounterId);
@@ -109,10 +111,11 @@ public class ClientProxy
         transmitter.transmit(ON_OPERATION_SUCCESS, tmpBuffer, 0, CorrelatedMessageFlyweight.LENGTH);
     }
 
-    public void onInactiveConnection(final int sessionId, final int streamId, final String channel)
+    public void onInactiveConnection(final long correlationId, final int sessionId, final int streamId, final String channel)
     {
         connectionMessage.wrap(tmpBuffer, 0);
-        connectionMessage.sessionId(sessionId)
+        connectionMessage.correlationId(correlationId)
+                         .sessionId(sessionId)
                          .streamId(streamId)
                          .channel(channel);
 

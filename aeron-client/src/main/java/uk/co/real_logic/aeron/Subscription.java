@@ -99,12 +99,23 @@ public class Subscription implements AutoCloseable
 
     void onTermBuffersMapped(
         final int sessionId,
-        final int termId,
+        final int initialTermId,
+        final long initialPosition,
+        final long correlationId,
         final LogReader[] logReaders,
         final PositionReporter positionReporter,
         final ManagedBuffer[] managedBuffers)
     {
-        connections.add(new Connection(logReaders, sessionId, termId, dataHandler, positionReporter, managedBuffers));
+        connections.add(
+            new Connection(
+                logReaders,
+                sessionId,
+                initialTermId,
+                initialPosition,
+                correlationId,
+                dataHandler,
+                positionReporter,
+                managedBuffers));
     }
 
     boolean isConnected(final int sessionId)
@@ -115,12 +126,15 @@ public class Subscription implements AutoCloseable
     /**
      * Remove a connection with the given sessionId
      *
-     * @param sessionId for connection to be removed.
+     * @param sessionId     for connection to be removed
+     * @param correlationId for connection to be removed
      * @return true if it removed something, false otherwise
      */
-    boolean removeConnection(final int sessionId)
+    boolean removeConnection(final int sessionId, final long correlationId)
     {
-        final Connection connection = connections.remove(conn -> conn.sessionId() == sessionId);
+        final Connection connection =
+            connections.remove(conn -> conn.sessionId() == sessionId && conn.correlationId() == correlationId);
+
         if (connection != null)
         {
             connection.close();

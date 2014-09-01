@@ -65,17 +65,34 @@ public class FileMappingConvention
     }
 
     public static File streamLocation(
-        final File rootDir, final int sessionId, final int streamId, final boolean createIfMissing, final String channelDirName)
+        final File rootDir,
+        final int sessionId,
+        final int streamId,
+        final long correlationId,
+        final boolean createIfMissing,
+        final String channelDirName)
     {
         final File channelDir = new File(rootDir, channelDirName);
-        final File sessionDir = new File(channelDir, Integer.toString(sessionId));
-        final File streamDir = new File(sessionDir, Integer.toString(streamId));
+        final File sessionDir = new File(channelDir, toHexString(sessionId));
+        final File streamDir = new File(sessionDir, toHexString(streamId));
+        final File correlationIdDir = new File(streamDir, toHexString(correlationId));
 
         if (createIfMissing)
         {
-            IoUtil.ensureDirectoryExists(streamDir, "channel");
+            IoUtil.ensureDirectoryExists(correlationIdDir, "channel");
         }
 
-        return streamDir;
+        return correlationIdDir;
     }
+
+    private static String toHexString(final int value)
+    {
+        return String.format("%X", value);
+    }
+
+    private static String toHexString(final long value)
+    {
+        return String.format("%X", value);
+    }
+
 }

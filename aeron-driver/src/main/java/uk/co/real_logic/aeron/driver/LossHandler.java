@@ -54,17 +54,21 @@ public class LossHandler
     /**
      * Create a loss handler for a channel.
      *
-     * @param scanners         for the gaps attached to LogBuffers
-     * @param wheel            for timer management
-     * @param delayGenerator   to use for delay determination
-     * @param nakMessageSender to call when sending a NAK is indicated
+     * @param scanners          for the gaps attached to LogBuffers
+     * @param wheel             for timer management
+     * @param delayGenerator    to use for delay determination
+     * @param nakMessageSender  to call when sending a NAK is indicated
+     * @param initialTermId     to use
+     * @param initialTermOffset to use
+     * @param systemCounters    to use for tracking purposes
      */
     public LossHandler(
         final GapScanner[] scanners,
         final TimerWheel wheel,
         final FeedbackDelayGenerator delayGenerator,
         final NakMessageSender nakMessageSender,
-        final int activeTermId,
+        final int initialTermId,
+        final int initialTermOffset,
         final SystemCounters systemCounters)
     {
         this.scanners = scanners;
@@ -74,10 +78,12 @@ public class LossHandler
         this.delayGenerator = delayGenerator;
         this.nakMessageSender = nakMessageSender;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(scanners[0].capacity());
-        this.hwmPosition = new AtomicLong(TermHelper.calculatePosition(activeTermId, 0, positionBitsToShift, activeTermId));
-        this.activeIndex = TermHelper.termIdToBufferIndex(activeTermId);
-        this.activeTermId = activeTermId;
-        this.initialTermId = activeTermId;
+        this.hwmPosition =
+            new AtomicLong(
+                TermHelper.calculatePosition(initialTermId, initialTermOffset, positionBitsToShift, initialTermId));
+        this.activeIndex = TermHelper.termIdToBufferIndex(initialTermId);
+        this.activeTermId = initialTermId;
+        this.initialTermId = initialTermId;
         onGapFunc = this::onGap;
         onTimerExpireFunc = this::onTimerExpire;
     }

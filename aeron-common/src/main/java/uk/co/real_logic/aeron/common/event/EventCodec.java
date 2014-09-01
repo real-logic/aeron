@@ -490,11 +490,12 @@ public class EventCodec
                          command.location(i), command.bufferLength(i), command.bufferOffset(i)))
                      .collect(Collectors.joining("\n    "));
 
-        return String.format("%s %x:%x:%x %x [%x]\n    %s",
+        return String.format("%s %x:%x:%x @%x %x [%x]\n    %s",
             command.channel(),
             command.sessionId(),
             command.streamId(),
             command.termId(),
+            command.initialPosition(),
             command.positionCounterId(),
             command.correlationId(),
             locations);
@@ -507,6 +508,10 @@ public class EventCodec
 
     private static String dissect(final ConnectionMessageFlyweight command)
     {
-        return String.format("%s %x:%x", command.channel(), command.sessionId(), command.streamId());
+        return String.format("%s %x:%x [%x]",
+            command.channel(),
+            command.sessionId(),
+            command.streamId(),
+            command.correlationId());
     }
 }

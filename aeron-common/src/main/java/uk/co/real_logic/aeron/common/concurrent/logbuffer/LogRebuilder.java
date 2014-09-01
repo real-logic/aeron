@@ -45,6 +45,16 @@ public class LogRebuilder extends LogBuffer
     }
 
     /**
+     * Set the starting tail offset.
+     *
+     * @param offset to start tail at
+     */
+    public void tail(final int offset)
+    {
+        putTailOrdered(stateBuffer(), offset);
+    }
+
+    /**
      * Insert a packet of frames into the log at the appropriate offset as indicated by the term offset header.
      *
      * The tail and high-water-mark will be updated as appropriate. Data can be consumed up to the the tail. The

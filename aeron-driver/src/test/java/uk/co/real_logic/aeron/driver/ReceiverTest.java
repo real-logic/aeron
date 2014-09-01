@@ -24,6 +24,7 @@ import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.AtomicCounter;
 import uk.co.real_logic.aeron.common.concurrent.NanoClock;
 import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.common.event.EventLogger;
@@ -47,8 +48,11 @@ import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertNotNull;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static uk.co.real_logic.aeron.common.BitUtil.align;
 import static uk.co.real_logic.aeron.driver.BufferAndFrameHelper.newTestTermBuffers;
 
 public class ReceiverTest
@@ -56,9 +60,12 @@ public class ReceiverTest
     private static final int LOG_BUFFER_SIZE = LogBufferDescriptor.MIN_LOG_SIZE;
     private static final String URI = "udp://localhost:45678";
     private static final UdpChannel UDP_CHANNEL = UdpChannel.parse(URI);
+    private static final long CORRELATION_ID = 20;
     private static final int STREAM_ID = 10;
     private static final int TERM_ID = 3;
     private static final int SESSION_ID = 1;
+    private static final int INITIAL_TERM_OFFSET = 0;
+    private static final int ACTIVE_INDEX = TermHelper.termIdToBufferIndex(TERM_ID);
     private static final byte[] FAKE_PAYLOAD = "Hello there, message!".getBytes();
     private static final int INITIAL_WINDOW_SIZE = Configuration.INITIAL_WINDOW_SIZE_DEFAULT;
     private static final long STATUS_MESSAGE_TIMEOUT = Configuration.STATUS_MESSAGE_TIMEOUT_DEFAULT_NS;
@@ -158,9 +165,11 @@ public class ReceiverTest
 
         final DriverConnection connection = new DriverConnection(
             receiveChannelEndpoint,
+            CORRELATION_ID,
             SESSION_ID,
             STREAM_ID,
             TERM_ID,
+            INITIAL_TERM_OFFSET,
             INITIAL_WINDOW_SIZE,
             STATUS_MESSAGE_TIMEOUT,
             termBuffers,
@@ -228,9 +237,11 @@ public class ReceiverTest
                         receiveChannelEndpoint,
                         new DriverConnection(
                             receiveChannelEndpoint,
+                            CORRELATION_ID,
                             SESSION_ID,
                             STREAM_ID,
                             TERM_ID,
+                            INITIAL_TERM_OFFSET,
                             INITIAL_WINDOW_SIZE,
                             STATUS_MESSAGE_TIMEOUT,
                             termBuffers,
@@ -251,7 +262,7 @@ public class ReceiverTest
         fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);
         receiveChannelEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
-        messagesRead = logReaders[0].read(
+        messagesRead = logReaders[ACTIVE_INDEX].read(
             (buffer, offset, length) ->
             {
                 dataHeader.wrap(buffer, offset);
@@ -288,9 +299,11 @@ public class ReceiverTest
                         (receiveChannelEndpoint,
                             new DriverConnection(
                                 receiveChannelEndpoint,
+                                CORRELATION_ID,
                                 SESSION_ID,
                                 STREAM_ID,
                                 TERM_ID,
+                                INITIAL_TERM_OFFSET,
                                 INITIAL_WINDOW_SIZE,
                                 STATUS_MESSAGE_TIMEOUT,
                                 termBuffers,
@@ -314,7 +327,7 @@ public class ReceiverTest
         fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);  // heartbeat with same term offset
         receiveChannelEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
-        messagesRead = logReaders[0].read(
+        messagesRead = logReaders[ACTIVE_INDEX].read(
             (buffer, offset, length) ->
             {
                 dataHeader.wrap(buffer, offset);
@@ -351,9 +364,11 @@ public class ReceiverTest
                         receiveChannelEndpoint,
                         new DriverConnection(
                             receiveChannelEndpoint,
+                            CORRELATION_ID,
                             SESSION_ID,
                             STREAM_ID,
                             TERM_ID,
+                            INITIAL_TERM_OFFSET,
                             INITIAL_WINDOW_SIZE,
                             STATUS_MESSAGE_TIMEOUT,
                             termBuffers,
@@ -377,7 +392,7 @@ public class ReceiverTest
         fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);  // initial data frame
         receiveChannelEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
-        messagesRead = logReaders[0].read(
+        messagesRead = logReaders[ACTIVE_INDEX].read(
             (buffer, offset, length) ->
             {
                 dataHeader.wrap(buffer, offset);
@@ -389,6 +404,86 @@ public class ReceiverTest
                 assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
             },
             Integer.MAX_VALUE);
+
+        assertThat(messagesRead, is(1));
+    }
+
+    @Test
+    public void shouldHandleNonZeroTermOffsetCorrectly() throws Exception
+    {
+        final int initialTermOffset = align(LOG_BUFFER_SIZE / 16, FrameDescriptor.FRAME_ALIGNMENT);
+        final int alignedDataFrameLength =
+            align(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT);
+
+        when(mockLossHandler.completedPosition()).thenReturn((long)(initialTermOffset + alignedDataFrameLength));
+        when(mockLossHandler.hwmCandidate(
+            initialTermOffset + alignedDataFrameLength)).thenReturn((long)(initialTermOffset + alignedDataFrameLength));
+
+        receiverProxy.registerMediaEndpoint(receiveChannelEndpoint);
+        receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
+
+        receiver.doWork();
+
+        fillSetupFrame(setupHeader, initialTermOffset);
+        receiveChannelEndpoint.onSetupFrame(setupHeader, setupBuffer, setupHeader.frameLength(), senderAddress);
+
+        int messagesRead = toConductorQueue.drain(
+            (e) ->
+            {
+                assertTrue(e instanceof CreateConnectionCmd);
+                // pass in new term buffer from conductor, which should trigger SM
+                receiverProxy.newConnection(
+                    new NewConnectionCmd(
+                        receiveChannelEndpoint,
+                        new DriverConnection(
+                            receiveChannelEndpoint,
+                            CORRELATION_ID,
+                            SESSION_ID,
+                            STREAM_ID,
+                            TERM_ID,
+                            initialTermOffset,
+                            INITIAL_WINDOW_SIZE,
+                            STATUS_MESSAGE_TIMEOUT,
+                            termBuffers,
+                            mockLossHandler,
+                            receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
+                            POSITION_INDICATOR,
+                            mockCompletedReceivedPosition,
+                            mockHighestReceivedPosition,
+                            clock,
+                            mockSystemCounters,
+                            mockLogger)));
+            });
+
+        assertThat(messagesRead, is(1));
+
+        verify(mockCompletedReceivedPosition).position(initialTermOffset);
+        verify(mockHighestReceivedPosition).position(initialTermOffset);
+
+        receiver.doWork();
+
+        fillDataFrame(dataHeader, initialTermOffset, FAKE_PAYLOAD);  // initial data frame
+        receiveChannelEndpoint.onDataFrame(dataHeader, dataBuffer, alignedDataFrameLength, senderAddress);
+
+        verify(mockLossHandler).hwmCandidate(initialTermOffset + alignedDataFrameLength);
+
+        verify(mockCompletedReceivedPosition).position(initialTermOffset + alignedDataFrameLength);
+        verify(mockHighestReceivedPosition).position(initialTermOffset + alignedDataFrameLength);
+
+        logReaders[ACTIVE_INDEX].seek(initialTermOffset);
+
+        messagesRead = logReaders[ACTIVE_INDEX].read(
+                (buffer, offset, length) ->
+                {
+                    dataHeader.wrap(buffer, offset);
+                    assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
+                    assertThat(dataHeader.termId(), is(TERM_ID));
+                    assertThat(dataHeader.streamId(), is(STREAM_ID));
+                    assertThat(dataHeader.sessionId(), is(SESSION_ID));
+                    assertThat(dataHeader.termOffset(), is(initialTermOffset));
+                    assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
+                },
+                Integer.MAX_VALUE);
 
         assertThat(messagesRead, is(1));
     }
@@ -413,10 +508,16 @@ public class ReceiverTest
 
     private void fillSetupFrame(final SetupFlyweight header)
     {
+        fillSetupFrame(header, 0);
+    }
+
+    private void fillSetupFrame(final SetupFlyweight header, final int termOffset)
+    {
         header.wrap(setupBuffer, 0);
         header.streamId(STREAM_ID)
               .sessionId(SESSION_ID)
               .termId(TERM_ID)
+              .termOffset(termOffset)
               .frameLength(SetupFlyweight.HEADER_LENGTH)
               .headerType(HeaderFlyweight.HDR_TYPE_SETUP)
               .flags((byte)0)

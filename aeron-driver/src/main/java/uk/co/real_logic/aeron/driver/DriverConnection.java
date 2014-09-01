@@ -41,6 +41,7 @@ public class DriverConnection implements AutoCloseable
     public enum Status {ACTIVE, INACTIVE, LINGER}
 
     private final ReceiveChannelEndpoint channelEndpoint;
+    private final long correlationId;
     private final int sessionId;
     private final int streamId;
     private final TermBuffers termBuffers;
@@ -78,9 +79,11 @@ public class DriverConnection implements AutoCloseable
 
     public DriverConnection(
         final ReceiveChannelEndpoint channelEndpoint,
+        final long correlationId,
         final int sessionId,
         final int streamId,
         final int initialTermId,
+        final int initialTermOffset,
         final int initialWindowSize,
         final long statusMessageTimeout,
         final TermBuffers termBuffers,
@@ -94,6 +97,7 @@ public class DriverConnection implements AutoCloseable
         final EventLogger logger)
     {
         this.channelEndpoint = channelEndpoint;
+        this.correlationId = correlationId;
         this.sessionId = sessionId;
         this.streamId = streamId;
         this.termBuffers = termBuffers;
@@ -133,12 +137,28 @@ public class DriverConnection implements AutoCloseable
 
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
         this.initialTermId = initialTermId;
-        this.lastSmPosition = TermHelper.calculatePosition(initialTermId, 0, positionBitsToShift, initialTermId);
+
+        final long initialPosition = TermHelper.calculatePosition(
+            initialTermId, initialTermOffset, positionBitsToShift, initialTermId);
+
+        this.lastSmPosition = initialPosition;
+
+        // set the initial termOffset in the active rebuilder (this will reflect on the GapScanner also)
+        rebuilders[activeIndex].tail(initialTermOffset);
+
+        // set hwmPosition and completedPosition from initial position calculated from initialOffset
+        this.completedPosition.position(initialPosition);
+        this.hwmPosition.position(initialPosition);
     }
 
     public ReceiveChannelEndpoint receiveChannelEndpoint()
     {
         return channelEndpoint;
+    }
+
+    public long correlationId()
+    {
+        return correlationId;
     }
 
     public int sessionId()

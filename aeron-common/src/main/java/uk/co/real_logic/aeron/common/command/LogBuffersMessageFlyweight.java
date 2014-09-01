@@ -35,6 +35,9 @@ import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_LONG;
  * |                         Correlation ID                        |
  * |                                                               |
  * +---------------------------------------------------------------+
+ * |                        Initial Position                       |
+ * |                                                               |
+ * +---------------------------------------------------------------+
  * |                          Session ID                           |
  * +---------------------------------------------------------------+
  * |                           Stream ID                           |
@@ -108,7 +111,8 @@ public class LogBuffersMessageFlyweight extends Flyweight
     private static final int NUM_FILES = 6;
 
     private static final int CORRELATION_ID_OFFSET = 0;
-    private static final int SESSION_ID_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
+    private static final int INITIAL_POSITION_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
+    private static final int SESSION_ID_OFFSET = INITIAL_POSITION_OFFSET + SIZE_OF_LONG;
     private static final int STREAM_ID_FIELD_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
     private static final int TERM_ID_FIELD_OFFSET = STREAM_ID_FIELD_OFFSET + SIZE_OF_INT;
     private static final int POSITION_COUNTER_ID_OFFSET = TERM_ID_FIELD_OFFSET + SIZE_OF_INT;
@@ -167,6 +171,29 @@ public class LogBuffersMessageFlyweight extends Flyweight
     public LogBuffersMessageFlyweight correlationId(final long correlationId)
     {
         atomicBuffer().putLong(offset() + CORRELATION_ID_OFFSET, correlationId, ByteOrder.LITTLE_ENDIAN);
+
+        return this;
+    }
+
+    /**
+     * return initial position field
+     *
+     * @return initial position field
+     */
+    public long initialPosition()
+    {
+        return atomicBuffer().getLong(offset() + INITIAL_POSITION_OFFSET, ByteOrder.LITTLE_ENDIAN);
+    }
+
+    /**
+     * set initial position field
+     *
+     * @param initialPosition field value
+     * @return flyweight
+     */
+    public LogBuffersMessageFlyweight initialPosition(final long initialPosition)
+    {
+        atomicBuffer().putLong(offset() + INITIAL_POSITION_OFFSET, initialPosition, ByteOrder.LITTLE_ENDIAN);
 
         return this;
     }

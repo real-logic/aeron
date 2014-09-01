@@ -2,6 +2,7 @@ package uk.co.real_logic.aeron;
 
 import org.junit.Before;
 import org.junit.Test;
+import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.common.status.PositionReporter;
@@ -23,7 +24,9 @@ public class SubscriptionTest
     private static final int SESSION_ID_1 = 13;
     private static final int SESSION_ID_2 = 14;
     private static final int TERM_ID_1 = 1;
-    private static final long CORRELATION_ID = 100;
+    private static final int ACTIVE_INDEX = TermHelper.termIdToBufferIndex(TERM_ID_1);
+    private static final long SUBSCRIPTION_CORRELATION_ID = 100;
+    private static final long CONNECTION_CORRELATION_ID = 101;
     private static final int READ_BUFFER_CAPACITY = 1024;
     public static final byte FLAGS = (byte) 0;
     public static final int FRAGMENT_COUNT_LIMIT = Integer.MAX_VALUE;
@@ -55,7 +58,7 @@ public class SubscriptionTest
             managedBuffers[i] = mock(ManagedBuffer.class);
         }
 
-        subscription = new Subscription(conductor, dataHandler, CHANNEL, STREAM_ID_1, CORRELATION_ID);
+        subscription = new Subscription(conductor, dataHandler, CHANNEL, STREAM_ID_1, SUBSCRIPTION_CORRELATION_ID);
     }
 
     @Test
@@ -77,7 +80,7 @@ public class SubscriptionTest
     {
         onTermBuffersMapped(SESSION_ID_1);
 
-        when(readers[1].read(any(), anyInt())).then(
+        when(readers[ACTIVE_INDEX].read(any(), anyInt())).then(
             (invocation) ->
             {
                 FrameHandler handler = (FrameHandler) invocation.getArguments()[0];
@@ -95,7 +98,7 @@ public class SubscriptionTest
         onTermBuffersMapped(SESSION_ID_1);
         onTermBuffersMapped(SESSION_ID_2);
 
-        when(readers[1].read(any(), anyInt())).then(
+        when(readers[ACTIVE_INDEX].read(any(), anyInt())).then(
             (invocation) ->
             {
                 FrameHandler handler = (FrameHandler) invocation.getArguments()[0];
@@ -108,6 +111,7 @@ public class SubscriptionTest
 
     private void onTermBuffersMapped(final int sessionId1)
     {
-        subscription.onTermBuffersMapped(sessionId1, TERM_ID_1, readers, reporter, managedBuffers);
+        subscription.onTermBuffersMapped(
+            sessionId1, TERM_ID_1, 0, CONNECTION_CORRELATION_ID, readers, reporter, managedBuffers);
     }
 }

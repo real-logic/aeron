@@ -25,7 +25,8 @@ public class SubscriptionTest
     private static final int SESSION_ID_2 = 14;
     private static final int TERM_ID_1 = 1;
     private static final int ACTIVE_INDEX = TermHelper.termIdToBufferIndex(TERM_ID_1);
-    private static final long CORRELATION_ID = 100;
+    private static final long SUBSCRIPTION_CORRELATION_ID = 100;
+    private static final long CONNECTION_CORRELATION_ID = 101;
     private static final int READ_BUFFER_CAPACITY = 1024;
     public static final byte FLAGS = (byte) 0;
     public static final int FRAGMENT_COUNT_LIMIT = Integer.MAX_VALUE;
@@ -57,7 +58,7 @@ public class SubscriptionTest
             managedBuffers[i] = mock(ManagedBuffer.class);
         }
 
-        subscription = new Subscription(conductor, dataHandler, CHANNEL, STREAM_ID_1, CORRELATION_ID);
+        subscription = new Subscription(conductor, dataHandler, CHANNEL, STREAM_ID_1, SUBSCRIPTION_CORRELATION_ID);
     }
 
     @Test
@@ -110,6 +111,7 @@ public class SubscriptionTest
 
     private void onTermBuffersMapped(final int sessionId1)
     {
-        subscription.onTermBuffersMapped(sessionId1, TERM_ID_1, 0, readers, reporter, managedBuffers);
+        subscription.onTermBuffersMapped(
+            sessionId1, TERM_ID_1, 0, CONNECTION_CORRELATION_ID, readers, reporter, managedBuffers);
     }
 }

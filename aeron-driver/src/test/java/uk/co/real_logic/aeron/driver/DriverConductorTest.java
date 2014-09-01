@@ -94,7 +94,7 @@ public class DriverConductorTest
     @Before
     public void setUp() throws Exception
     {
-        when(mockTermBuffersFactory.newPublication(anyObject(), anyInt(), anyInt()))
+        when(mockTermBuffersFactory.newPublication(anyObject(), anyInt(), anyInt(), anyInt()))
             .thenReturn(BufferAndFrameHelper.newTestTermBuffers(TERM_BUFFER_SZ, STATE_BUFFER_LENGTH));
 
         currentTime = 0;

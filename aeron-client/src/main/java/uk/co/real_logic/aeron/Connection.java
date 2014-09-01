@@ -38,6 +38,7 @@ class Connection
 
     private final LogReader[] logReaders;
     private final int sessionId;
+    private final long correlationId;
     private final DataHandler dataHandler;
     private final PositionReporter positionReporter;
     private final ManagedBuffer[] managedBuffers;
@@ -52,11 +53,13 @@ class Connection
         final int sessionId,
         final int initialTermId,
         final long initialPosition,
+        final long correlationId,
         final DataHandler dataHandler,
         final PositionReporter positionReporter,
         final ManagedBuffer[] managedBuffers)
     {
         this.logReaders = readers;
+        this.correlationId = correlationId;
         this.sessionId = sessionId;
         this.dataHandler = dataHandler;
         this.positionReporter = positionReporter;
@@ -76,6 +79,11 @@ class Connection
     public int sessionId()
     {
         return sessionId;
+    }
+
+    public long correlationId()
+    {
+        return correlationId;
     }
 
     public int poll(final int fragmentCountLimit)

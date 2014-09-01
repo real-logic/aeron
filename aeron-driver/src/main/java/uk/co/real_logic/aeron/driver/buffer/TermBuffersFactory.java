@@ -74,27 +74,30 @@ public class TermBuffersFactory implements AutoCloseable
     /**
      * Create new {@link TermBuffers} in the publications directory for the supplied triplet.
      *
-     * @param channel address on the media to send to.
-     * @param sessionId under which transmissions are made.
-     * @param streamId within the channel address to separate message flows.
+     * @param channel       address on the media to send to.
+     * @param sessionId     under which transmissions are made.
+     * @param streamId      within the channel address to separate message flows.
+     * @param correlationId to use to distinguish this publication
      * @return the newly allocated {@link TermBuffers}
      */
-    public TermBuffers newPublication(final String channel, final int sessionId, final int streamId)
+    public TermBuffers newPublication(
+        final String channel, final int sessionId, final int streamId, final long correlationId)
     {
-        return newInstance(channel, sessionId, streamId, publicationsDir);
+        return newInstance(channel, sessionId, streamId, correlationId, publicationsDir);
     }
 
     /**
      * Create new {@link TermBuffers} in the subscriptions directory for the supplied triplet.
      *
-     * @param channel address on the media to listened to.
-     * @param sessionId under which transmissions are made.
-     * @param streamId within the channel address to separate message flows.
+     * @param channel       address on the media to listened to.
+     * @param sessionId     under which transmissions are made.
+     * @param streamId      within the channel address to separate message flows.
+     * @param correlationId to use to distinguish this connection
      * @return the newly allocated {@link TermBuffers}
      */
-    public TermBuffers newConnection(final String channel, final int sessionId, final int streamId)
+    public TermBuffers newConnection(final String channel, final int sessionId, final int streamId, final long correlationId)
     {
-        return newInstance(channel, sessionId, streamId, subscriptionsDir);
+        return newInstance(channel, sessionId, streamId, correlationId, subscriptionsDir);
     }
 
     private FileChannel createTemplateFile(final String dataDir, final String name, final long size)
@@ -105,9 +108,10 @@ public class TermBuffersFactory implements AutoCloseable
         return IoUtil.createEmptyFile(templateFile, size);
     }
 
-    private TermBuffers newInstance(final String channel, final int sessionId, final int streamId, final File rootDir)
+    private TermBuffers newInstance(
+            final String channel, final int sessionId, final int streamId, final long correlationId, final File rootDir)
     {
-        final File dir = streamLocation(rootDir, sessionId, streamId, true, channel);
+        final File dir = streamLocation(rootDir, sessionId, streamId, correlationId, true, channel);
 
         return new MappedTermBuffers(dir, logTemplate, termBufferSize, stateTemplate, STATE_BUFFER_LENGTH, logger);
     }

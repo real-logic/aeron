@@ -387,7 +387,8 @@ public class DriverConductor extends Agent
         {
             final int initialTermId = BitUtil.generateRandomisedId();
             final String canonicalForm = udpChannel.canonicalForm();
-            final TermBuffers termBuffers = termBuffersFactory.newPublication(canonicalForm, sessionId, streamId);
+            final TermBuffers termBuffers =
+                termBuffersFactory.newPublication(canonicalForm, sessionId, streamId, correlationId);
 
             final int positionCounterId = allocatePositionCounter("publisher limit", channel, sessionId, streamId);
             final PositionReporter positionReporter = new BufferPositionReporter(
@@ -546,7 +547,9 @@ public class DriverConductor extends Agent
         final UdpChannel udpChannel = channelEndpoint.udpChannel();
 
         final String canonicalForm = udpChannel.canonicalForm();
-        final TermBuffers termBuffers = termBuffersFactory.newConnection(canonicalForm, sessionId, streamId);
+        final long correlationId = generateCreationCorrelationId();
+        final TermBuffers termBuffers =
+            termBuffersFactory.newConnection(canonicalForm, sessionId, streamId, correlationId);
 
         final String channel = udpChannel.originalUriAsString();
         final int subscriberPositionCounterId = allocatePositionCounter("subscriber", channel, sessionId, streamId);
@@ -564,7 +567,7 @@ public class DriverConductor extends Agent
             initialTermId,
             initialPosition,
             termBuffers,
-            0,
+            correlationId,
             subscriberPositionCounterId);
 
         final GapScanner[] gapScanners =
@@ -583,6 +586,7 @@ public class DriverConductor extends Agent
 
         final DriverConnection connection = new DriverConnection(
             channelEndpoint,
+            correlationId,
             sessionId,
             streamId,
             initialTermId,
@@ -739,6 +743,7 @@ public class DriverConductor extends Agent
                             connection.timeOfLastStatusChange(now);
 
                             clientProxy.onInactiveConnection(
+                                connection.correlationId(),
                                 connection.sessionId(),
                                 connection.streamId(),
                                 connection.receiveChannelEndpoint().udpChannel().originalUriAsString());
@@ -754,6 +759,7 @@ public class DriverConductor extends Agent
                         connection.timeOfLastStatusChange(now);
 
                         clientProxy.onInactiveConnection(
+                            connection.correlationId(),
                             connection.sessionId(),
                             connection.streamId(),
                             connection.receiveChannelEndpoint().udpChannel().originalUriAsString());
@@ -886,5 +892,10 @@ public class DriverConductor extends Agent
                 Thread.yield();
             }
         };
+    }
+
+    private long generateCreationCorrelationId()
+    {
+        return toDriverCommands.nextCorrelationId();
     }
 }

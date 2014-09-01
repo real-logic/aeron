@@ -508,6 +508,10 @@ public class EventCodec
 
     private static String dissect(final ConnectionMessageFlyweight command)
     {
-        return String.format("%s %x:%x", command.channel(), command.sessionId(), command.streamId());
+        return String.format("%s %x:%x [%x]",
+            command.channel(),
+            command.sessionId(),
+            command.streamId(),
+            command.correlationId());
     }
 }

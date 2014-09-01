@@ -280,7 +280,7 @@ public class ClientConductorTest extends MockBufferUsage
 
         assertFalse(subscription.hasNoConnections());
 
-        conductor.onInactiveConnection(CHANNEL, STREAM_ID_1, SESSION_ID_1, null);
+        conductor.onInactiveConnection(CHANNEL, STREAM_ID_1, SESSION_ID_1, null, CORRELATION_ID);
 
         verify(mockInactiveConnectionHandler).onInactiveConnection(CHANNEL, STREAM_ID_1, SESSION_ID_1);
         assertTrue(subscription.hasNoConnections());

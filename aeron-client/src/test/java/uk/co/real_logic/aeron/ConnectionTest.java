@@ -55,6 +55,7 @@ public class ConnectionTest
 
     private static final int MESSAGE_LENGTH = DataHeaderFlyweight.HEADER_LENGTH + DATA.length;
     private static final int ALIGNED_FRAME_LENGTH = align(MESSAGE_LENGTH, FrameDescriptor.FRAME_ALIGNMENT);
+    private static final long CORRELATION_ID = 0xC044E1AL;
     private static final int SESSION_ID = 0x5E55101D;
     private static final int STREAM_ID = 0xC400E;
     private static final int INITIAL_TERM_ID = 0xEE81D;
@@ -170,7 +171,8 @@ public class ConnectionTest
     public Connection createConnection(final long initialPosition)
     {
         return new Connection(
-            readers, SESSION_ID, INITIAL_TERM_ID, initialPosition, mockDataHandler, mockPositionReporter, managedBuffers);
+            readers, SESSION_ID, INITIAL_TERM_ID, initialPosition, CORRELATION_ID,
+            mockDataHandler, mockPositionReporter, managedBuffers);
     }
 
     private void insertDataFrame(final int offset)

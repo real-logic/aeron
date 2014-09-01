@@ -39,9 +39,15 @@ interface DriverListener
             int sessionId,
             int termId,
             long initialPosition,
-            LogBuffersMessageFlyweight logBuffersMessage);
+            LogBuffersMessageFlyweight logBuffersMessage,
+            long correlationId);
 
-    void onInactiveConnection(String channel, int streamId, int sessionId, ConnectionMessageFlyweight connectionMessage);
+    void onInactiveConnection(
+            String channel,
+            int streamId,
+            int sessionId,
+            ConnectionMessageFlyweight connectionMessage,
+            long correlationId);
 
     void onError(ErrorCode errorCode, String message);
 

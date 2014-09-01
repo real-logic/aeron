@@ -36,7 +36,8 @@ public class TermBuffersFactoryTest
 {
     private static final String CHANNEL = "udp://localhost:4321";
     private static final int SESSION_ID = 100;
-    private static final int STREAM_ID = 100;
+    private static final int STREAM_ID = 101;
+    private static final int CREATION_ID = 102;
     private static final File DATA_DIR = new File(IoUtil.tmpDirName(), "dataDirName");
     private static final int TERM_BUFFER_SZ = Configuration.TERM_BUFFER_SZ_DEFAULT;
     private TermBuffersFactory termBuffersFactory;
@@ -60,7 +61,8 @@ public class TermBuffersFactoryTest
     public void mappedFilesAreCorrectSizeAndZeroed() throws Exception
     {
         final String canonicalForm = udpChannel.canonicalForm();
-        final TermBuffers termBuffers = termBuffersFactory.newPublication(canonicalForm, SESSION_ID, STREAM_ID);
+        final TermBuffers termBuffers =
+            termBuffersFactory.newPublication(canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID);
 
         termBuffers.stream().forEach(
             (rawLog) ->

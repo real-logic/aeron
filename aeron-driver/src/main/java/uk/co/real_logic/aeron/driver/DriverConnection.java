@@ -41,6 +41,7 @@ public class DriverConnection implements AutoCloseable
     public enum Status {ACTIVE, INACTIVE, LINGER}
 
     private final ReceiveChannelEndpoint channelEndpoint;
+    private final long correlationId;
     private final int sessionId;
     private final int streamId;
     private final TermBuffers termBuffers;
@@ -78,6 +79,7 @@ public class DriverConnection implements AutoCloseable
 
     public DriverConnection(
         final ReceiveChannelEndpoint channelEndpoint,
+        final long correlationId,
         final int sessionId,
         final int streamId,
         final int initialTermId,
@@ -95,6 +97,7 @@ public class DriverConnection implements AutoCloseable
         final EventLogger logger)
     {
         this.channelEndpoint = channelEndpoint;
+        this.correlationId = correlationId;
         this.sessionId = sessionId;
         this.streamId = streamId;
         this.termBuffers = termBuffers;
@@ -151,6 +154,11 @@ public class DriverConnection implements AutoCloseable
     public ReceiveChannelEndpoint receiveChannelEndpoint()
     {
         return channelEndpoint;
+    }
+
+    public long correlationId()
+    {
+        return correlationId;
     }
 
     public int sessionId()

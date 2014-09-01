@@ -60,6 +60,7 @@ public class ReceiverTest
     private static final int LOG_BUFFER_SIZE = LogBufferDescriptor.MIN_LOG_SIZE;
     private static final String URI = "udp://localhost:45678";
     private static final UdpChannel UDP_CHANNEL = UdpChannel.parse(URI);
+    private static final long CORRELATION_ID = 20;
     private static final int STREAM_ID = 10;
     private static final int TERM_ID = 3;
     private static final int SESSION_ID = 1;
@@ -164,6 +165,7 @@ public class ReceiverTest
 
         final DriverConnection connection = new DriverConnection(
             receiveChannelEndpoint,
+            CORRELATION_ID,
             SESSION_ID,
             STREAM_ID,
             TERM_ID,
@@ -235,6 +237,7 @@ public class ReceiverTest
                         receiveChannelEndpoint,
                         new DriverConnection(
                             receiveChannelEndpoint,
+                            CORRELATION_ID,
                             SESSION_ID,
                             STREAM_ID,
                             TERM_ID,
@@ -296,6 +299,7 @@ public class ReceiverTest
                         (receiveChannelEndpoint,
                             new DriverConnection(
                                 receiveChannelEndpoint,
+                                CORRELATION_ID,
                                 SESSION_ID,
                                 STREAM_ID,
                                 TERM_ID,
@@ -360,6 +364,7 @@ public class ReceiverTest
                         receiveChannelEndpoint,
                         new DriverConnection(
                             receiveChannelEndpoint,
+                            CORRELATION_ID,
                             SESSION_ID,
                             STREAM_ID,
                             TERM_ID,
@@ -432,6 +437,7 @@ public class ReceiverTest
                         receiveChannelEndpoint,
                         new DriverConnection(
                             receiveChannelEndpoint,
+                            CORRELATION_ID,
                             SESSION_ID,
                             STREAM_ID,
                             TERM_ID,

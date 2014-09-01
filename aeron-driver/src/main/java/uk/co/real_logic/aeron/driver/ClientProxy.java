@@ -111,10 +111,11 @@ public class ClientProxy
         transmitter.transmit(ON_OPERATION_SUCCESS, tmpBuffer, 0, CorrelatedMessageFlyweight.LENGTH);
     }
 
-    public void onInactiveConnection(final int sessionId, final int streamId, final String channel)
+    public void onInactiveConnection(final long correlationId, final int sessionId, final int streamId, final String channel)
     {
         connectionMessage.wrap(tmpBuffer, 0);
-        connectionMessage.sessionId(sessionId)
+        connectionMessage.correlationId(correlationId)
+                         .sessionId(sessionId)
                          .streamId(streamId)
                          .channel(channel);
 

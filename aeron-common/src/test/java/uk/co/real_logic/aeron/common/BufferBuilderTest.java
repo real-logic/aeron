@@ -24,7 +24,7 @@ import java.util.Arrays;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertThat;
-import static uk.co.real_logic.aeron.common.BufferBuilder.RESIZE_ALIGNMENT;
+import static uk.co.real_logic.aeron.common.BufferBuilder.INITIAL_CAPACITY;
 
 public class BufferBuilderTest
 {
@@ -33,16 +33,15 @@ public class BufferBuilderTest
     @Test
     public void shouldInitialiseToDefaultValues()
     {
-        assertThat(bufferBuilder.resizeAlignment(), is(RESIZE_ALIGNMENT));
-        assertThat(bufferBuilder.capacity(), is(RESIZE_ALIGNMENT));
-        assertThat(bufferBuilder.buffer().capacity(), is(RESIZE_ALIGNMENT));
+        assertThat(bufferBuilder.capacity(), is(INITIAL_CAPACITY));
+        assertThat(bufferBuilder.buffer().capacity(), is(INITIAL_CAPACITY));
         assertThat(bufferBuilder.limit(), is(0));
     }
 
     @Test
     public void shouldAppendNothingForZeroLength()
     {
-        final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[RESIZE_ALIGNMENT]);
+        final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[INITIAL_CAPACITY]);
 
         bufferBuilder.append(srcBuffer, 0, 0);
 
@@ -52,7 +51,7 @@ public class BufferBuilderTest
     @Test
     public void shouldAppendThenReset()
     {
-        final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[RESIZE_ALIGNMENT]);
+        final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[INITIAL_CAPACITY]);
 
         bufferBuilder.append(srcBuffer, 0, srcBuffer.capacity());
 
@@ -66,7 +65,7 @@ public class BufferBuilderTest
     @Test
     public void shouldAppendOneBufferWithoutResizing()
     {
-        final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[RESIZE_ALIGNMENT]);
+        final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[INITIAL_CAPACITY]);
         final byte[] bytes = "Hello World".getBytes(StandardCharsets.UTF_8);
         srcBuffer.putBytes(0, bytes, 0, bytes.length);
 
@@ -76,14 +75,14 @@ public class BufferBuilderTest
         bufferBuilder.buffer().getBytes(0, temp, 0, bytes.length);
 
         assertThat(bufferBuilder.limit(), is(bytes.length));
-        assertThat(bufferBuilder.capacity(), is(RESIZE_ALIGNMENT));
+        assertThat(bufferBuilder.capacity(), is(INITIAL_CAPACITY));
         assertArrayEquals(temp, bytes);
     }
 
     @Test
     public void shouldAppendTwoBuffersWithoutResizing()
     {
-        final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[RESIZE_ALIGNMENT]);
+        final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[INITIAL_CAPACITY]);
         final byte[] bytes = "1111111122222222".getBytes(StandardCharsets.UTF_8);
         srcBuffer.putBytes(0, bytes, 0, bytes.length);
 
@@ -94,7 +93,7 @@ public class BufferBuilderTest
         bufferBuilder.buffer().getBytes(0, temp, 0, bytes.length);
 
         assertThat(bufferBuilder.limit(), is(bytes.length));
-        assertThat(bufferBuilder.capacity(), is(RESIZE_ALIGNMENT));
+        assertThat(bufferBuilder.capacity(), is(INITIAL_CAPACITY));
         assertArrayEquals(temp, bytes);
     }
 

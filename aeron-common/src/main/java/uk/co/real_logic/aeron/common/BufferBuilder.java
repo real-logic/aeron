@@ -24,8 +24,8 @@ import java.util.Arrays;
  */
 public class BufferBuilder
 {
-    public static final int RESIZE_ALIGNMENT = 1024;
-    private final int resizeAlignment;
+    public static final int INITIAL_CAPACITY = 4096;
+
     private final AtomicBuffer atomicBuffer;
 
     private byte[] buffer;
@@ -33,39 +33,23 @@ public class BufferBuilder
     private int capacity;
 
     /**
-     * Construct a buffer builder with a default growth increment of {@link #RESIZE_ALIGNMENT}
+     * Construct a buffer builder with a default growth increment of {@link #INITIAL_CAPACITY}
      */
     public BufferBuilder()
     {
-        this(RESIZE_ALIGNMENT);
+        this(INITIAL_CAPACITY);
     }
 
     /**
-     * Construct a buffer builder with a given growth increment that must be a power of 2.
+     * Construct a buffer builder with an initial capacity that will be rounded up to the nearest power of 2.
      *
-     * @param resizeAlignment by which the buffer will grow capacity as the limit increases.
+     * @param initialCapacity at which the capacity will start.
      */
-    public BufferBuilder(final int resizeAlignment)
+    public BufferBuilder(final int initialCapacity)
     {
-        if (!BitUtil.isPowerOfTwo(resizeAlignment))
-        {
-            throw new IllegalArgumentException("Increment multiple must be power of two.");
-        }
-
-        this.resizeAlignment = resizeAlignment;
-        capacity = resizeAlignment;
-        buffer = new byte[resizeAlignment];
+        capacity = BitUtil.findNextPositivePowerOfTwo(initialCapacity);
+        buffer = new byte[capacity];
         atomicBuffer = new AtomicBuffer(buffer);
-    }
-
-    /**
-     * The resize alignment multiple to be used for growth.
-     *
-     * @return resize alignment multiple to be used for growth.
-     */
-    public int resizeAlignment()
-    {
-        return resizeAlignment;
     }
 
     /**
@@ -110,6 +94,20 @@ public class BufferBuilder
     }
 
     /**
+     * Compact the buffer to reclaim unused space above the limit.
+     *
+     * @return the builder for fluent API usage.
+     */
+    public BufferBuilder compact()
+    {
+        capacity = Math.max(INITIAL_CAPACITY, BitUtil.findNextPositivePowerOfTwo(limit));
+        buffer = Arrays.copyOf(buffer, capacity);
+        atomicBuffer.wrap(buffer);
+
+        return this;
+    }
+
+    /**
      * Append a source buffer to the end of the internal buffer, resizing the internal buffer as required.
      *
      * @param srcBuffer from which to copy.
@@ -139,12 +137,23 @@ public class BufferBuilder
 
         if (requiredCapacity > capacity)
         {
-            final int newCapacity = BitUtil.align(requiredCapacity, resizeAlignment);
+            final int newCapacity = findSuitableCapacity(capacity, requiredCapacity);
             final byte[] newBuffer = Arrays.copyOf(buffer, newCapacity);
 
             capacity = newCapacity;
             buffer = newBuffer;
             atomicBuffer.wrap(newBuffer);
         }
+    }
+
+    private static int findSuitableCapacity(int capacity, final int requiredCapacity)
+    {
+        do
+        {
+            capacity <<= 1;
+        }
+        while (capacity < requiredCapacity);
+
+        return capacity;
     }
 }

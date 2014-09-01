@@ -40,7 +40,7 @@ class Connection
     private final int sessionId;
     private final long correlationId;
     private final DataHandler dataHandler;
-    private final PositionReporter positionReporter;
+    private final PositionReporter subscriberPosition;
     private final ManagedBuffer[] managedBuffers;
     private final AtomicInteger activeTermId;
     private final int positionBitsToShift;
@@ -55,14 +55,14 @@ class Connection
         final long initialPosition,
         final long correlationId,
         final DataHandler dataHandler,
-        final PositionReporter positionReporter,
+        final PositionReporter subscriberPosition,
         final ManagedBuffer[] managedBuffers)
     {
         this.logReaders = readers;
         this.correlationId = correlationId;
         this.sessionId = sessionId;
         this.dataHandler = dataHandler;
-        this.positionReporter = positionReporter;
+        this.subscriberPosition = subscriberPosition;
         this.managedBuffers = managedBuffers;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(logReaders[0].capacity());
         this.initialTermId = initialTermId;
@@ -70,10 +70,10 @@ class Connection
         final int currentTermId = TermHelper.calculateTermIdFromPosition(initialPosition, positionBitsToShift, initialTermId);
         final int initialTermOffset = TermHelper.calculateTermOffsetFromPosition(initialPosition, positionBitsToShift);
         this.activeTermId = new AtomicInteger(currentTermId);
-        this.activeIndex = termIdToBufferIndex(currentTermId);   // we could be joining late, so use current term
+        this.activeIndex = termIdToBufferIndex(currentTermId);
 
         logReaders[activeIndex].seek(initialTermOffset);
-        this.positionReporter.position(initialPosition);
+        subscriberPosition.position(initialPosition);
     }
 
     public int sessionId()
@@ -109,7 +109,7 @@ class Connection
         if (messagesRead > 0)
         {
             final long position = calculatePosition(activeTermId, logReader.offset(), positionBitsToShift, initialTermId);
-            positionReporter.position(position);
+            subscriberPosition.position(position);
         }
 
         return messagesRead;

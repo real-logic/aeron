@@ -548,16 +548,16 @@ public class DriverConductor extends Agent
 
         final String canonicalForm = udpChannel.canonicalForm();
         final long correlationId = generateCreationCorrelationId();
-        final TermBuffers termBuffers =
-            termBuffersFactory.newConnection(canonicalForm, sessionId, streamId, correlationId);
+        final TermBuffers termBuffers = termBuffersFactory.newConnection(canonicalForm, sessionId, streamId, correlationId);
 
         final String channel = udpChannel.originalUriAsString();
         final int subscriberPositionCounterId = allocatePositionCounter("subscriber", channel, sessionId, streamId);
-        final int receivedCompleteCounterId = allocatePositionCounter("receiver", channel, sessionId, streamId);
-        final int receivedHwmCounterId = allocatePositionCounter("receiver hwm", channel, sessionId, streamId);
-        final long initialPosition =
-            TermHelper.calculatePosition(
+        final int receiverCompleteCounterId = allocatePositionCounter("receiver", channel, sessionId, streamId);
+        final int receiverHwmCounterId = allocatePositionCounter("receiver hwm", channel, sessionId, streamId);
+        final long initialPosition = TermHelper.calculatePosition(
                 initialTermId, initialTermOffset, Integer.numberOfTrailingZeros(termSize), initialTermId);
+
+        countersManager.setCounterValue(subscriberPositionCounterId, initialPosition);
 
         clientProxy.onNewTermBuffers(
             ON_NEW_CONNECTION,
@@ -597,8 +597,8 @@ public class DriverConductor extends Agent
             lossHandler,
             channelEndpoint.composeStatusMessageSender(controlAddress, sessionId, streamId),
             new BufferPositionIndicator(countersBuffer, subscriberPositionCounterId, countersManager),
-            new BufferPositionReporter(countersBuffer, receivedCompleteCounterId, countersManager),
-            new BufferPositionReporter(countersBuffer, receivedHwmCounterId, countersManager),
+            new BufferPositionReporter(countersBuffer, receiverCompleteCounterId, countersManager),
+            new BufferPositionReporter(countersBuffer, receiverHwmCounterId, countersManager),
             clock,
             systemCounters,
             logger);

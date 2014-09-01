@@ -80,8 +80,7 @@ public class TermBuffersFactory implements AutoCloseable
      * @param correlationId to use to distinguish this publication
      * @return the newly allocated {@link TermBuffers}
      */
-    public TermBuffers newPublication(
-        final String channel, final int sessionId, final int streamId, final long correlationId)
+    public TermBuffers newPublication(final String channel, final int sessionId, final int streamId, final long correlationId)
     {
         return newInstance(channel, sessionId, streamId, correlationId, publicationsDir);
     }

@@ -122,17 +122,12 @@ public class DriverConnection implements AutoCloseable
         this.lossHandler = lossHandler;
         this.statusMessageSender = statusMessageSender;
         this.statusMessageTimeout = statusMessageTimeout;
-
-        // attaching this term buffer will send an SM, so save the params set for comparison
         this.lastSmTermId = initialTermId;
         this.lastSmTimestamp = 0;
 
         final int termCapacity = rebuilders[0].capacity();
 
-        // how big of a window to advertise to the sender
         this.currentWindowSize = Math.min(termCapacity, initialWindowSize);
-
-        // trip of sending an SM as messages come in
         this.currentGain = Math.min(currentWindowSize / 4, termCapacity / 4);
 
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
@@ -143,10 +138,7 @@ public class DriverConnection implements AutoCloseable
 
         this.lastSmPosition = initialPosition;
 
-        // set the initial termOffset in the active rebuilder (this will reflect on the GapScanner also)
         rebuilders[activeIndex].tail(initialTermOffset);
-
-        // set hwmPosition and completedPosition from initial position calculated from initialOffset
         this.completedPosition.position(initialPosition);
         this.hwmPosition.position(initialPosition);
     }

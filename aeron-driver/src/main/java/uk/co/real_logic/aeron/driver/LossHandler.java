@@ -78,8 +78,7 @@ public class LossHandler
         this.delayGenerator = delayGenerator;
         this.nakMessageSender = nakMessageSender;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(scanners[0].capacity());
-        this.hwmPosition =
-            new AtomicLong(
+        this.hwmPosition = new AtomicLong(
                 TermHelper.calculatePosition(initialTermId, initialTermOffset, positionBitsToShift, initialTermId));
         this.activeIndex = TermHelper.termIdToBufferIndex(initialTermId);
         this.activeTermId = initialTermId;
@@ -108,14 +107,14 @@ public class LossHandler
                 activateGap(gap.termId, gap.termOffset, gap.length);
             }
 
-            return 0; // got a gap to handle, we are good until this is fixed
+            return 0;
         }
         else if (scanner.isComplete())
         {
             activeIndex = TermHelper.rotateNext(activeIndex);
             activeTermId = activeTermId + 1;
 
-            return 1; // signal another scan should be done soon
+            return 1;
         }
         else
         {
@@ -136,7 +135,7 @@ public class LossHandler
             }
         }
 
-        return 0; // We processed gaps so don't do it again too soon.
+        return 0;
     }
 
     /**
@@ -207,7 +206,7 @@ public class LossHandler
     {
         scannedGap.reset(activeTermId, offset, length);
 
-        return false;  // only do one gap and have it stop
+        return false;
     }
 
     private void activateGap(final int termId, final int termOffset, final int length)

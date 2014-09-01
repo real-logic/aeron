@@ -128,6 +128,17 @@ public class CountersManager
         }
     }
 
+    /**
+     * Set an {@link AtomicCounter} value based on counterId.
+     *
+     * @param counterId to be set.
+     * @param value to set for the counter.
+     */
+    public void setCounterValue(final int counterId, final long value)
+    {
+        countersBuffer.putLongOrdered(counterOffset(counterId), value);
+    }
+
     private int labelOffset(final int counterId)
     {
         return counterId * LABEL_SIZE;
@@ -142,4 +153,5 @@ public class CountersManager
 
         return freeList.pop();
     }
+
 }

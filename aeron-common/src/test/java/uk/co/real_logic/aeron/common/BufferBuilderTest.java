@@ -22,6 +22,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertThat;
 import static uk.co.real_logic.aeron.common.BufferBuilder.INITIAL_CAPACITY;
@@ -158,5 +160,37 @@ public class BufferBuilderTest
         assertThat(bufferBuilder.limit(), is(firstLength + secondLength));
         assertThat(bufferBuilder.capacity(), is(bufferSize));
         assertArrayEquals(temp, buffer);
+    }
+
+    @Test
+    public void shouldCompactBufferToLowerLimit()
+    {
+        final int bufferSize = INITIAL_CAPACITY / 2;
+        final byte[] buffer = new byte[bufferSize];
+        final AtomicBuffer srcBuffer = new AtomicBuffer(buffer);
+
+        final BufferBuilder bufferBuilder = new BufferBuilder();
+
+        final int bufferCount = 5;
+        for (int i = 0; i < bufferCount; i++)
+        {
+            bufferBuilder.append(srcBuffer, 0, buffer.length);
+        }
+
+        final int expectedLimit = buffer.length * bufferCount;
+        assertThat(bufferBuilder.limit(), is(expectedLimit));
+        final int expandedCapacity = bufferBuilder.capacity();
+        assertThat(expandedCapacity, greaterThan(expectedLimit));
+
+        bufferBuilder.reset();
+
+        bufferBuilder.append(srcBuffer, 0, buffer.length);
+        bufferBuilder.append(srcBuffer, 0, buffer.length);
+        bufferBuilder.append(srcBuffer, 0, buffer.length);
+
+        bufferBuilder.compact();
+
+        assertThat(bufferBuilder.limit(), is(buffer.length * 3));
+        assertThat(bufferBuilder.capacity(), lessThan(expandedCapacity));
     }
 }

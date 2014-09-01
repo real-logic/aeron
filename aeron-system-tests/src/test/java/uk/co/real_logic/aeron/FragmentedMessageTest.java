@@ -76,12 +76,13 @@ public class FragmentedMessageTest
                 Thread.yield();
             }
 
+            final int expectedFragmentsBecauseOfHeader = 5;
             int numFragments = 0;
             do
             {
                 numFragments += subscription.poll(FRAGMENT_COUNT_LIMIT);
             }
-            while (numFragments < 4);
+            while (numFragments < expectedFragmentsBecauseOfHeader);
 
             final ArgumentCaptor<AtomicBuffer> argument = ArgumentCaptor.forClass(AtomicBuffer.class);
 

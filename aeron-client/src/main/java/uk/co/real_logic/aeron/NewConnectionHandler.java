@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron;
 /**
  * Interface for delivery of new connection events to a {@link Aeron} instance.
  */
+@FunctionalInterface
 public interface NewConnectionHandler
 {
     /**

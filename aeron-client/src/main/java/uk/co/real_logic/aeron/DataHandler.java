@@ -23,6 +23,7 @@ import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
  * Each fragment delivered will be a whole message if it is under MTU size. If larger than MTU side then it will come
  * as a series of fragments ordered withing a session.
  */
+@FunctionalInterface
 public interface DataHandler
 {
     /**

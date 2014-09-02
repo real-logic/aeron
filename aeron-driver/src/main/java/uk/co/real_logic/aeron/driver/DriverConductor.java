@@ -40,7 +40,6 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -452,8 +451,8 @@ public class DriverConductor extends Agent
         {
             throw new ControlProtocolException(PUBLICATION_UNKNOWN, "unknown registration");
         }
-        registration.remove();
 
+        registration.remove();
         clientProxy.operationSucceeded(correlationId);
     }
 
@@ -476,9 +475,7 @@ public class DriverConductor extends Agent
             }
         }
 
-        final AeronClient aeronClient = getOrAddClient(clientId);
         final int refCount = channelEndpoint.incRefToStream(streamId);
-
         if (1 == refCount)
         {
             while (!receiverProxy.addSubscription(channelEndpoint, streamId))
@@ -488,9 +485,7 @@ public class DriverConductor extends Agent
             }
         }
 
-        final DriverSubscription subscription = new DriverSubscription(correlationId, channelEndpoint, aeronClient, streamId);
-        subscriptions.add(subscription);
-
+        subscriptions.add(new DriverSubscription(correlationId, channelEndpoint, getOrAddClient(clientId), streamId));
         clientProxy.operationSucceeded(correlationId);
     }
 

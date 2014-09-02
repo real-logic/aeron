@@ -47,19 +47,15 @@ public class DataFrameDispatcher
 
     public void addSubscription(final int streamId)
     {
-        Int2ObjectHashMap<DriverConnection> connectionBySessionIdMap = connectionsByStreamIdMap.get(streamId);
-
-        if (null == connectionBySessionIdMap)
+        if (null == connectionsByStreamIdMap.get(streamId))
         {
-            connectionBySessionIdMap = new Int2ObjectHashMap<>();
-            connectionsByStreamIdMap.put(streamId, connectionBySessionIdMap);
+            connectionsByStreamIdMap.put(streamId, new Int2ObjectHashMap<>());
         }
     }
 
     public void removeSubscription(final int streamId)
     {
         final Int2ObjectHashMap<DriverConnection> connectionBySessionIdMap = connectionsByStreamIdMap.remove(streamId);
-
         if (null == connectionBySessionIdMap)
         {
             throw new UnknownSubscriptionException("No connectionBySessionIdMap registered on " + streamId);
@@ -78,7 +74,6 @@ public class DataFrameDispatcher
         final int streamId = connection.streamId();
 
         final Int2ObjectHashMap<DriverConnection> connectionBySessionIdMap = connectionsByStreamIdMap.get(streamId);
-
         if (null == connectionBySessionIdMap)
         {
             throw new IllegalStateException("No connectionBySessionIdMap registered on " + streamId);
@@ -96,7 +91,6 @@ public class DataFrameDispatcher
         final int streamId = connection.streamId();
 
         final Int2ObjectHashMap<DriverConnection> connectionBySessionIdMap = connectionsByStreamIdMap.get(streamId);
-
         if (null != connectionBySessionIdMap)
         {
             connection.disableStatusMessages();
@@ -131,7 +125,6 @@ public class DataFrameDispatcher
             }
             else if (null == initialisationInProgressMap.get(sessionId, streamId))
             {
-                // don't know about this session at all, so elicit a SETUP from the source before doing anything
                 elicitSetupFromSource(srcAddress, streamId, sessionId);
             }
         }
@@ -149,8 +142,6 @@ public class DataFrameDispatcher
             final int termId = header.termId();
             final DriverConnection connection = connectionBySessionIdMap.get(sessionId);
 
-            // once connection setup, this should short circuit around the rest of the check equals should catch null
-            // and return false
             if (null == connection && !INIT_IN_PROGRESS.equals(initialisationInProgressMap.get(sessionId, streamId)))
             {
                 createConnection(srcAddress, streamId, sessionId, termId, header.termOffset(), header.termSize());
@@ -180,7 +171,7 @@ public class DataFrameDispatcher
         final InetSocketAddress controlAddress =
             transport.isMulticast() ? transport.udpChannel().remoteControl() : srcAddress;
 
-        initialisationInProgressMap.put(sessionId, streamId, INIT_IN_PROGRESS); // will replace elicit if needed
+        initialisationInProgressMap.put(sessionId, streamId, INIT_IN_PROGRESS);
         conductorProxy.createConnection(
                 sessionId, streamId, termId, termOffset, termSize, controlAddress, channelEndpoint);
     }

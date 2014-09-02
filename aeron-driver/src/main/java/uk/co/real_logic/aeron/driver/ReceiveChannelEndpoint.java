@@ -41,7 +41,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
     private final StatusMessageFlyweight smHeader = new StatusMessageFlyweight();
     private final NakFlyweight nakHeader = new NakFlyweight();
 
-    private boolean closed = false;
+    private boolean closed = false; // TODO: Should this be volatile? I don't think so but worth checking.
 
     public ReceiveChannelEndpoint(
         final UdpChannel udpChannel,
@@ -100,7 +100,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
 
     public int decRefToStream(final int streamId)
     {
-        MutableInteger count = refCountByStreamIdMap.get(streamId);
+        final MutableInteger count = refCountByStreamIdMap.get(streamId);
 
         if (null == count)
         {
@@ -142,9 +142,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
     }
 
     public NakMessageSender composeNakMessageSender(
-        final InetSocketAddress controlAddress,
-        final int sessionId,
-        final int streamId)
+        final InetSocketAddress controlAddress, final int sessionId, final int streamId)
     {
         return (termId, termOffset, length) -> sendNak(controlAddress, sessionId, streamId, termId, termOffset, length);
     }
@@ -161,7 +159,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         final int termId,
         final int termOffset,
         final int window,
-        final short flags)
+        final short flags) // TODO: why not just a byte?
     {
         if (closed)
         {
@@ -183,7 +181,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         smBuffer.limit(frameLength);
 
         final int bytesSent = udpTransport.sendTo(smBuffer, controlAddress);
-        if (bytesSent < frameLength)
+        if (bytesSent < frameLength) // TODO should we not retry?
         {
             logger.log(EventCode.FRAME_OUT_INCOMPLETE_SEND, "sendStatusMessage %d/%d", bytesSent, frameLength);
         }
@@ -217,8 +215,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         nakBuffer.limit(frameLength);
 
         final int bytesSent = udpTransport.sendTo(nakBuffer, controlAddress);
-
-        if (bytesSent < frameLength)
+        if (bytesSent < frameLength) // TODO should we not retry?
         {
             logger.log(EventCode.FRAME_OUT_INCOMPLETE_SEND, "sendNak %d/%d", bytesSent, frameLength);
         }

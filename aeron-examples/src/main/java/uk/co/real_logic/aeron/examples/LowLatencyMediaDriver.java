@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.examples;
 
+import uk.co.real_logic.aeron.common.BackoffIdleStrategy;
 import uk.co.real_logic.aeron.common.BusySpinIdleStrategy;
 import uk.co.real_logic.aeron.common.concurrent.SigIntBarrier;
 import uk.co.real_logic.aeron.driver.MediaDriver;
@@ -26,8 +27,8 @@ public class LowLatencyMediaDriver
         ExamplesUtil.useSharedMemoryOnLinux();
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
-            .conductorIdleStrategy(new BusySpinIdleStrategy())
-//            .conductorIdleStrategy(new BackoffIdleStrategy(10, 10, 1, 1))
+//            .conductorIdleStrategy(new BusySpinIdleStrategy())
+            .conductorIdleStrategy(new BackoffIdleStrategy(10, 1, 1, 1))
             .receiverIdleStrategy(new BusySpinIdleStrategy())
             .senderIdleStrategy(new BusySpinIdleStrategy());
 

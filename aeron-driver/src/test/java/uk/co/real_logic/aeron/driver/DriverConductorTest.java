@@ -396,12 +396,12 @@ public class DriverConductorTest
         driverConductor.doWork();
         receiver.doWork();
 
-        assertThat(driverConductor.subscriptions().size(), is(1));
+        verifyReceiverSubscribes();
         assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
 
         processTimersUntil(() -> wheel.clock().time() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
-        assertThat(driverConductor.subscriptions().size(), is(0));
+        verifyReceiverUnsubscribes(times(1));
         assertNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
     }
 
@@ -413,8 +413,8 @@ public class DriverConductorTest
         driverConductor.doWork();
         receiver.doWork();
 
-        assertThat(driverConductor.subscriptions().size(), is(1));
         assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
+        verifyReceiverSubscribes();
 
         processTimersUntil(() -> wheel.clock().time() >= CLIENT_LIVENESS_TIMEOUT_NS / 1);
 
@@ -426,8 +426,18 @@ public class DriverConductorTest
 
         processTimersUntil(() -> wheel.clock().time() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
-        assertThat(driverConductor.subscriptions().size(), is(1));
+        verifyReceiverUnsubscribes(never());
         assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
+    }
+
+    private void verifyReceiverUnsubscribes(final VerificationMode times)
+    {
+        verify(receiverProxy, times).removeSubscription(any(), anyInt());
+    }
+
+    private void verifyReceiverSubscribes()
+    {
+        verify(receiverProxy).addSubscription(any(), eq(STREAM_ID_1));
     }
 
     private void verifyPublicationClosed(final VerificationMode times)

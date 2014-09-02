@@ -171,12 +171,6 @@ public class DriverConductor extends Agent
         receiveChannelEndpointByChannelMap.values().forEach(ReceiveChannelEndpoint::close);
     }
 
-    // TODO fix test to use proper collaboration assertions.
-    public List<DriverSubscription> subscriptions()
-    {
-        return subscriptions;
-    }
-
     public SendChannelEndpoint senderChannelEndpoint(final UdpChannel channel)
     {
         return sendChannelEndpointByChannelMap.get(channel.canonicalForm());

@@ -28,7 +28,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static uk.co.real_logic.aeron.examples.ExampleUtil.rateReporterHandler;
+import static uk.co.real_logic.aeron.examples.ExamplesUtil.rateReporterHandler;
 
 /**
  * Example that displays current rate while receiving data
@@ -46,12 +46,12 @@ public class RateSubscriber
         final ExecutorService executor = Executors.newFixedThreadPool(2);
 
         final Aeron.Context ctx = new Aeron.Context()
-            .newConnectionHandler(ExampleUtil::printNewConnection)
-            .inactiveConnectionHandler(ExampleUtil::printInactiveConnection);
+            .newConnectionHandler(ExamplesUtil::printNewConnection)
+            .inactiveConnectionHandler(ExamplesUtil::printInactiveConnection);
 
         System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
-        final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), ExampleUtil::printRate);
+        final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), ExamplesUtil::printRate);
         final DataHandler rateReporterHandler = rateReporterHandler(reporter);
 
         final AtomicBoolean running = new AtomicBoolean(true);
@@ -65,7 +65,7 @@ public class RateSubscriber
         try (final Aeron aeron = Aeron.connect(ctx, executor);
              final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, rateReporterHandler))
         {
-            executor.execute(() -> ExampleUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription));
+            executor.execute(() -> ExamplesUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription));
 
             // run the rate reporter loop
             reporter.run();

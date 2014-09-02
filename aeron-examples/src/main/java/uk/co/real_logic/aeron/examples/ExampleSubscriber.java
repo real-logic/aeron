@@ -24,7 +24,7 @@ import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static uk.co.real_logic.aeron.examples.ExampleUtil.printStringMessage;
+import static uk.co.real_logic.aeron.examples.ExamplesUtil.printStringMessage;
 
 /**
  * Example Aeron subscriber application
@@ -41,8 +41,8 @@ public class ExampleSubscriber
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
 
         final Aeron.Context ctx = new Aeron.Context()
-            .newConnectionHandler(ExampleUtil::printNewConnection)
-            .inactiveConnectionHandler(ExampleUtil::printInactiveConnection);
+            .newConnectionHandler(ExamplesUtil::printNewConnection)
+            .inactiveConnectionHandler(ExamplesUtil::printInactiveConnection);
 
         final AtomicBoolean running = new AtomicBoolean(true);
         SigInt.register(() -> running.set(false));
@@ -54,7 +54,7 @@ public class ExampleSubscriber
              final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, dataHandler))
         {
             // run the subscriber thread from here
-            ExampleUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription);
+            ExamplesUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription);
 
             System.out.println("Shutting down...");
         }

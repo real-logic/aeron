@@ -33,7 +33,7 @@ import static uk.co.real_logic.aeron.common.CommonContext.DATA_DIR_PROP_NAME;
 /**
  * Utility functions for examples
  */
-public class ExampleUtil
+public class ExamplesUtil
 {
     /**
      * Use shared memory on Linux to avoid contention on the page cache.

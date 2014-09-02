@@ -39,6 +39,8 @@ public class ExamplePublisher
 
     public static void main(final String[] args) throws Exception
     {
+        ExamplesUtil.useSharedMemoryOnLinux();
+
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
 
         final Aeron.Context ctx = new Aeron.Context();

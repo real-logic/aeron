@@ -32,6 +32,8 @@ public class AeronStat
 {
     public static void main(final String[] args) throws Exception
     {
+        ExamplesUtil.useSharedMemoryOnLinux();
+
         final File labelsFile = CommonContext.newDefaultLabelsFile();
         final File valuesFile = CommonContext.newDefaultValuesFile();
 

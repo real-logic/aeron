@@ -42,9 +42,20 @@ public class ExamplesUtil
     {
         if ("Linux".equalsIgnoreCase(System.getProperty("os.name")))
         {
-            System.setProperty(ADMIN_DIR_PROP_NAME, "/dev/shm/aeron/conductor");
-            System.setProperty(COUNTERS_DIR_PROP_NAME, "/dev/shm/aeron/counters");
-            System.setProperty(DATA_DIR_PROP_NAME, "/dev/shm/aeron/data");
+            if (null == System.getProperty(ADMIN_DIR_PROP_NAME))
+            {
+                System.setProperty(ADMIN_DIR_PROP_NAME, "/dev/shm/aeron/conductor");
+            }
+
+            if (null == System.getProperty(COUNTERS_DIR_PROP_NAME))
+            {
+                System.setProperty(COUNTERS_DIR_PROP_NAME, "/dev/shm/aeron/counters");
+            }
+
+            if (null == System.getProperty(DATA_DIR_PROP_NAME))
+            {
+                System.setProperty(DATA_DIR_PROP_NAME, "/dev/shm/aeron/data");
+            }
         }
     }
 

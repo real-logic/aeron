@@ -18,6 +18,8 @@ package uk.co.real_logic.aeron.driver;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.verification.VerificationMode;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.command.*;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
@@ -28,6 +30,7 @@ import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBufferDescriptor;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
+import uk.co.real_logic.aeron.driver.cmd.NewPublicationCmd;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
@@ -153,15 +156,12 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        assertThat(driverConductor.publications().size(), is(1));
-        assertNotNull(driverConductor.publications().get(0));
-        assertThat(driverConductor.publications().get(0).sessionId(), is(1));
-        assertThat(driverConductor.publications().get(0).streamId(), is(2));
+        verifySenderNotifiedOfNewPublication();
 
         verify(mockClientProxy).onNewTermBuffers(
-            eq(ControlProtocolEvents.ON_NEW_PUBLICATION),
-            eq(CHANNEL_URI + 4000), eq(2), eq(1), anyInt(),
-            eq(0L), any(), anyLong(), anyInt());
+                eq(ControlProtocolEvents.ON_NEW_PUBLICATION),
+                eq(CHANNEL_URI + 4000), eq(2), eq(1), anyInt(),
+                eq(0L), any(), anyLong(), anyInt());
     }
 
     @Test
@@ -199,7 +199,7 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        assertThat(driverConductor.publications().size(), is(4));
+        verify(senderProxy, times(4)).newPublication(any());
     }
 
     @Test
@@ -212,7 +212,7 @@ public class DriverConductorTest
 
         processTimersUntil(() -> wheel.clock().time() >= CLIENT_LIVENESS_TIMEOUT_NS + PUBLICATION_LINGER_NS * 2);
 
-        assertThat(driverConductor.publications().size(), is(0));
+        verify(senderProxy).closePublication(any());
         assertNull(driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4005)));
     }
 
@@ -314,10 +314,7 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        assertThat(driverConductor.publications().size(), is(1));
-        assertNotNull(driverConductor.publications().get(0));
-        assertThat(driverConductor.publications().get(0).sessionId(), is(1));
-        assertThat(driverConductor.publications().get(0).streamId(), is(2));
+        verifySenderNotifiedOfNewPublication();
 
         verify(mockClientProxy).onError(eq(PUBLICATION_UNKNOWN), argThat(not(isEmptyOrNullString())), any(), anyInt());
         verifyNeverSucceeds();
@@ -332,11 +329,7 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        assertThat(driverConductor.publications().size(), is(1));
-        assertNotNull(driverConductor.publications().get(0));
-        assertThat(driverConductor.publications().get(0).sessionId(), is(1));
-        assertThat(driverConductor.publications().get(0).streamId(), is(2));
-
+        verifyPublicationClosed(never());
         verify(mockClientProxy).onError(eq(PUBLICATION_UNKNOWN), argThat(not(isEmptyOrNullString())), any(), anyInt());
         verifyNeverSucceeds();
         verifyExceptionLogged();
@@ -351,6 +344,8 @@ public class DriverConductorTest
         receiver.doWork();
         driverConductor.doWork();
 
+        verify(senderProxy, never()).newPublication(any());
+
         verify(mockClientProxy).onError(eq(INVALID_CHANNEL), argThat(not(isEmptyOrNullString())), any(), anyInt());
         verifyNeverSucceeds();
         verifyExceptionLogged();
@@ -363,14 +358,11 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        assertThat(driverConductor.publications().size(), is(1));
-        assertNotNull(driverConductor.publications().get(0));
-        assertThat(driverConductor.publications().get(0).sessionId(), is(1));
-        assertThat(driverConductor.publications().get(0).streamId(), is(2));
+        verifySenderNotifiedOfNewPublication();
 
         processTimersUntil(() -> wheel.clock().time() >= Configuration.PUBLICATION_LINGER_NS + CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
-        assertThat(driverConductor.publications().size(), is(0));
+        verifyPublicationClosed(times(1));
         assertNull(driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
     }
 
@@ -381,10 +373,7 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        assertThat(driverConductor.publications().size(), is(1));
-        assertNotNull(driverConductor.publications().get(0));
-        assertThat(driverConductor.publications().get(0).sessionId(), is(1));
-        assertThat(driverConductor.publications().get(0).streamId(), is(2));
+        verifySenderNotifiedOfNewPublication();
 
         processTimersUntil(() -> wheel.clock().time() >= CLIENT_LIVENESS_TIMEOUT_NS / 2);
 
@@ -396,7 +385,7 @@ public class DriverConductorTest
 
         processTimersUntil(() -> wheel.clock().time() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
-        assertThat(driverConductor.publications().size(), is(1));
+        verifyPublicationClosed(never());
     }
 
     @Test
@@ -441,6 +430,11 @@ public class DriverConductorTest
         assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
     }
 
+    private void verifyPublicationClosed(final VerificationMode times)
+    {
+        verify(senderProxy, times).closePublication(any());
+    }
+
     private void verifyExceptionLogged()
     {
         verify(mockConductorLogger).logException(any());
@@ -466,6 +460,17 @@ public class DriverConductorTest
         publicationMessage.correlationId(correlationId);
 
         fromClientCommands.write(msgTypeId, writeBuffer, 0, publicationMessage.length());
+    }
+
+    private void verifySenderNotifiedOfNewPublication()
+    {
+        final ArgumentCaptor<NewPublicationCmd> captor = ArgumentCaptor.forClass(NewPublicationCmd.class);
+        verify(senderProxy, times(1)).newPublication(captor.capture());
+
+        final DriverPublication publication = captor.getValue().publication();
+        assertThat(publication.sessionId(), is(1));
+        assertThat(publication.streamId(), is(2));
+        assertThat(publication.id(), is(CORRELATION_ID_1));
     }
 
     private void writeSubscriptionMessage(
@@ -509,4 +514,5 @@ public class DriverConductorTest
 
         return wheel.clock().time() - startTime;
     }
+
 }

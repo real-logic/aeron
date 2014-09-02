@@ -177,12 +177,6 @@ public class DriverConductor extends Agent
         return subscriptions;
     }
 
-    // TODO fix test to use proper collaboration assertions.
-    public List<DriverPublication> publications()
-    {
-        return publications;
-    }
-
     public SendChannelEndpoint senderChannelEndpoint(final UdpChannel channel)
     {
         return sendChannelEndpointByChannelMap.get(channel.canonicalForm());

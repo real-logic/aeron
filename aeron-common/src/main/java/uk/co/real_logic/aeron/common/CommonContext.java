@@ -34,20 +34,27 @@ import static java.lang.System.getProperty;
  */
 public class CommonContext implements AutoCloseable
 {
+    /** Top level Aeron directory */
+    public static final String AERON_DIR_PROP_NAME = "aeron.dir";
+
+    public static final String DATA_DIR_NAME = "data";
+    public static final String CONDUCTOR_DIR_NAME = "conductor";
+    public static final String COUNTERS_DIR_NAME = "counters";
+
     /** Directory of the data buffers */
     public static final String DATA_DIR_PROP_NAME = "aeron.dir.data";
     /** Default directory for data buffers */
-    public static final String DATA_DIR_PROP_DEFAULT = IoUtil.tmpDirName() + "aeron" + File.separator + "data";
+    public static final String DATA_DIR_PROP_DEFAULT = IoUtil.tmpDirName() + "aeron" + File.separator + DATA_DIR_NAME;
 
     /** Directory of the conductor buffers */
     public static final String ADMIN_DIR_PROP_NAME = "aeron.dir.conductor";
     /** Default directory for conductor buffers */
-    public static final String ADMIN_DIR_PROP_DEFAULT = IoUtil.tmpDirName() + "aeron" + File.separator + "conductor";
+    public static final String ADMIN_DIR_PROP_DEFAULT = IoUtil.tmpDirName() + "aeron" + File.separator + CONDUCTOR_DIR_NAME;
 
     /** Directory for the counters */
     public static final String COUNTERS_DIR_PROP_NAME = "aeron.dir.counters";
     /** Default directory for conductor buffers */
-    public static final String COUNTERS_DIR_PROP_DEFAULT = IoUtil.tmpDirName() + "aeron" + File.separator + "counters";
+    public static final String COUNTERS_DIR_PROP_DEFAULT = IoUtil.tmpDirName() + "aeron" + File.separator + COUNTERS_DIR_NAME;
 
     /** Length of the maximum transport unit of the media driver's protocol */
     private static final String MTU_LENGTH_PROP_NAME = "aeron.mtu.length";
@@ -77,9 +84,21 @@ public class CommonContext implements AutoCloseable
 
     public CommonContext()
     {
-        dataDirName(getProperty(DATA_DIR_PROP_NAME, DATA_DIR_PROP_DEFAULT));
-        adminDirName(getProperty(ADMIN_DIR_PROP_NAME, ADMIN_DIR_PROP_DEFAULT));
-        countersDirName(getProperty(COUNTERS_DIR_PROP_NAME, COUNTERS_DIR_PROP_DEFAULT));
+        final String aeronDir = getProperty(AERON_DIR_PROP_NAME);
+
+        if (null == aeronDir)
+        {
+            dataDirName(getProperty(DATA_DIR_PROP_NAME, DATA_DIR_PROP_DEFAULT));
+            adminDirName(getProperty(ADMIN_DIR_PROP_NAME, ADMIN_DIR_PROP_DEFAULT));
+            countersDirName(getProperty(COUNTERS_DIR_PROP_NAME, COUNTERS_DIR_PROP_DEFAULT));
+        }
+        else
+        {
+            dataDirName(getProperty(DATA_DIR_PROP_NAME, aeronDir + File.separator + DATA_DIR_NAME));
+            adminDirName(getProperty(ADMIN_DIR_PROP_NAME, aeronDir + File.separator + CONDUCTOR_DIR_NAME));
+            countersDirName(getProperty(COUNTERS_DIR_PROP_NAME, aeronDir + File.separator + COUNTERS_DIR_NAME));
+        }
+
         mtuLength(getInteger(MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT));
         dirsDeleteOnExit(getBoolean(DIRS_DELETE_ON_EXIT_PROP_NAME));
     }

@@ -182,7 +182,8 @@ public final class UdpTransport implements AutoCloseable
         }
         catch (final IOException ex)
         {
-            throw new RuntimeException(ex);
+            throw new RuntimeException(
+                String.format("channel \"%s\" : %s", udpChannel.originalUriAsString(), ex.toString()), ex);
         }
     }
 

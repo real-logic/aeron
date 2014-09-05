@@ -16,8 +16,19 @@
 
 defaultTasks 'clean', 'build'
 
-group = aeronGroup
-version = aeronVersion
+apply plugin: 'maven'
+apply plugin: 'signing'
+
+ext {
+    group = aeronGroup
+    version = aeronVersion
+
+    if (!project.hasProperty('ossrhUsername'))
+        ossrhUsername = ''
+
+    if (!project.hasProperty('ossrhPassword'))
+        ossrhPassword = ''
+}
 
 allprojects {
     apply plugin: 'eclipse'
@@ -218,6 +229,64 @@ task(runEx, dependsOn: project(':aeron-examples').'build', type: JavaExec) {
             'aeron.event.buffer.location': baseDir + '-events',
             'aeron.dir.delete.on.exit': System.properties['aeron.dir.delete.on.exit'],
             'aeron.event.log': System.properties['aeron.event.log'])
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                authentication(userName: ossrhUsername, password: ossrhPassword)
+            }
+
+            snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                authentication(userName: ossrhUsername, password: ossrhPassword)
+            }
+
+            pom.project {
+                name = 'Aeron'
+                packaging = 'pom'
+                // optionally artifactId can be defined here
+                description = 'Efficient reliable unicast and multicast transport protocol.'
+                url = 'https://github.com/real-logic/Aeron'
+
+                scm {
+                    connection = 'scm:git:https://github.com/real-logic/Aeron.git'
+                    developerConnection = 'scm:git:https://github.com/real-logic/Aeron.git'
+                    url = 'https://github.com/real-logic/Aeron.git'
+                }
+
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = 'tmontgomery'
+                        name = 'Todd L. Montgomery'
+                        email = 'tmont@nard.net'
+                        url = 'https://github.com/tmontgomery'
+                    }
+                    developer {
+                        id = 'mjpt777'
+                        name = 'Martin Thompson'
+                        email = 'mjpt777@gmail.com'
+                        url = 'https://github.com/mjpt777'
+                    }
+                    developer {
+                        id = 'RichardWarburton'
+                        name = 'Richard Warburton'
+                        email = ''
+                        url = 'https://github.com/RichardWarburton'
+                    }
+                }
+            }
+        }
+    }
 }
 
 task wrapper(type: Wrapper) {

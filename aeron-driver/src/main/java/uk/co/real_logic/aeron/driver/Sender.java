@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.Agent;
+import uk.co.real_logic.aeron.common.concurrent.AtomicCounter;
 import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.driver.cmd.ClosePublicationCmd;
 import uk.co.real_logic.aeron.driver.cmd.NewPublicationCmd;
@@ -32,6 +33,7 @@ public class Sender extends Agent
     private final Consumer<Object> processConductorCommandsFunc = this::processConductorCommands;
     private final ArrayList<DriverPublication> publications = new ArrayList<>();
     private final OneToOneConcurrentArrayQueue<Object> commandQueue;
+    private final AtomicCounter bytesSent;
 
     private int roundRobinIndex = 0;
 
@@ -40,6 +42,7 @@ public class Sender extends Agent
         super(ctx.senderIdleStrategy(), ctx.exceptionConsumer(), ctx.systemCounters().driverExceptions());
 
         this.commandQueue = ctx.senderCommandQueue();
+        this.bytesSent = ctx.systemCounters().bytesSent();
     }
 
     public int doWork()
@@ -77,6 +80,11 @@ public class Sender extends Agent
                 }
             }
             while (i != roundRobinIndex);
+        }
+
+        if (workCount > 0)
+        {
+            bytesSent.setOrdered(bytesSent.get() + workCount);
         }
 
         return workCount;

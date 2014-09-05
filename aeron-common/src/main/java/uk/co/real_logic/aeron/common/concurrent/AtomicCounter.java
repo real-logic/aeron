@@ -36,6 +36,26 @@ public class AtomicCounter implements AutoCloseable
     }
 
     /**
+     * Set the counter with volatile semantics.
+     *
+     * @param value to be set with volatile semantics.
+     */
+    public void set(final long value)
+    {
+        buffer.putLongVolatile(offset, value);
+    }
+
+    /**
+     * Set the counter with ordered semantics.
+     *
+     * @param value to be set with ordered semantics.
+     */
+    public void setOrdered(final long value)
+    {
+        buffer.putLongOrdered(offset, value);
+    }
+
+    /**
      * Get the latest value for the counter.
      *
      * @return the latest value for the counter.

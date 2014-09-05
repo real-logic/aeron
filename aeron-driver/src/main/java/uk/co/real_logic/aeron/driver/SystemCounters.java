@@ -20,6 +20,7 @@ import uk.co.real_logic.aeron.common.concurrent.CountersManager;
 
 public class SystemCounters implements AutoCloseable
 {
+    private final AtomicCounter bytesSent;
     private final AtomicCounter receiverProxyFails;
     private final AtomicCounter senderProxyFails;
     private final AtomicCounter naksSent;
@@ -36,6 +37,7 @@ public class SystemCounters implements AutoCloseable
 
     public SystemCounters(final CountersManager countersManager)
     {
+        bytesSent = countersManager.newCounter("bytes sent");
         receiverProxyFails = countersManager.newCounter("Failed offers to ReceiverProxy");
         senderProxyFails = countersManager.newCounter("Failed offers to SenderProxy");
         naksSent = countersManager.newCounter("NAKs sent");
@@ -53,6 +55,7 @@ public class SystemCounters implements AutoCloseable
 
     public void close()
     {
+        bytesSent.close();
         receiverProxyFails.close();
         senderProxyFails.close();
         naksSent.close();
@@ -66,6 +69,11 @@ public class SystemCounters implements AutoCloseable
         subscriptionCleaningLate.close();
         invalidPackets.close();
         driverExceptions.close();
+    }
+
+    public AtomicCounter bytesSent()
+    {
+        return bytesSent;
     }
 
     public AtomicCounter receiverProxyFails()

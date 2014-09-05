@@ -104,9 +104,15 @@ public class SenderTest
     @Before
     public void setUp() throws Exception
     {
+        final SendChannelEndpoint mockSendChannelEndpoint = mock(SendChannelEndpoint.class);
+        when(mockSendChannelEndpoint.udpChannel()).thenReturn(udpChannel);
+        when(mockSendChannelEndpoint.sendTo(anyObject(), anyObject())).thenAnswer(saveByteBufferAnswer);
+        when(mockSystemCounters.heartbeatsSent()).thenReturn(mock(AtomicCounter.class));
+        when(mockSystemCounters.bytesSent()).thenReturn(mock(AtomicCounter.class));
+
         sender = new Sender(
             new MediaDriver.Context()
-                .systemCounters(mock(SystemCounters.class))
+                .systemCounters(mockSystemCounters)
                 .senderCommandQueue(senderCommandQueue)
                 .eventLogger(mockLogger));
 
@@ -115,18 +121,13 @@ public class SenderTest
                        .map((log) -> new LogAppender(log.logBuffer(), log.stateBuffer(), HEADER, MAX_FRAME_LENGTH))
                        .toArray(LogAppender[]::new);
 
-        final SendChannelEndpoint mockSendChannelEndpoint = mock(SendChannelEndpoint.class);
-        when(mockSendChannelEndpoint.udpChannel()).thenReturn(udpChannel);
-        when(mockSendChannelEndpoint.sendTo(anyObject(), anyObject())).thenAnswer(saveByteBufferAnswer);
-        when(mockSystemCounters.heartbeatsSent()).thenReturn(mock(AtomicCounter.class));
-
         publication = new DriverPublication(
             PUBLICATION_ID,
             mockSendChannelEndpoint,
             wheel.clock(),
             termBuffers,
             mock(BufferPositionReporter.class),
-                SESSION_ID,
+            SESSION_ID,
             STREAM_ID,
             INITIAL_TERM_ID,
             HEADER.length,

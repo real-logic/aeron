@@ -280,7 +280,7 @@ uploadArchives {
                     developer {
                         id = 'RichardWarburton'
                         name = 'Richard Warburton'
-                        email = ''
+                        email = 'richard.warburton@gmail.com'
                         url = 'https://github.com/RichardWarburton'
                     }
                 }

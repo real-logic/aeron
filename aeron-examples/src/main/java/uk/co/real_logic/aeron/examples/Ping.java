@@ -27,10 +27,7 @@ import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.locks.LockSupport;
 
 /**
@@ -56,16 +53,20 @@ public class Ping
 
     private static Histogram histogram = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
 
+    private static CountDownLatch pongConnectionLatch = new CountDownLatch(1);
+
     public static void main(final String[] args) throws Exception
     {
         ExamplesUtil.useSharedMemoryOnLinux();
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
         final ExecutorService executor = Executors.newSingleThreadExecutor();
-        final Aeron.Context ctx = new Aeron.Context();
+        final Aeron.Context ctx = new Aeron.Context()
+            .newConnectionHandler(Ping::newPongConnectionHandler);
 
         System.out.println("Publishing Ping at " + PING_CHANNEL + " on stream Id " + PING_STREAM_ID);
         System.out.println("Subscribing Pong at " + PONG_CHANNEL + " on stream Id " + PONG_STREAM_ID);
+        System.out.println("Message size of " + MESSAGE_LENGTH + " bytes");
 
         try (final Aeron aeron = Aeron.connect(ctx);
              final Publication pingPublication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);
@@ -73,6 +74,10 @@ public class Ping
         {
             final int totalWarmupMessages = WARMUP_NUMBER_OF_MESSAGES * WARMUP_NUMBER_OF_ITERATIONS;
             final Future warmup = executor.submit(() -> runSubscriber(pongSubscription, totalWarmupMessages));
+
+            System.out.println("Waiting for new connection from Pong...");
+
+            pongConnectionLatch.await();
 
             System.out.println(
                 "Warming up... " + WARMUP_NUMBER_OF_ITERATIONS + " iterations of " + WARMUP_NUMBER_OF_MESSAGES + " messages");
@@ -150,5 +155,13 @@ public class Ping
             idleStrategy.idle(fragmentsRead);
         }
         while (totalFragments < numMessages);
+    }
+
+    private static void newPongConnectionHandler(final String channel, final int streamId, final int sessionId)
+    {
+        if (channel.equals(PONG_CHANNEL) && PONG_STREAM_ID == streamId)
+        {
+            pongConnectionLatch.countDown();
+        }
     }
 }

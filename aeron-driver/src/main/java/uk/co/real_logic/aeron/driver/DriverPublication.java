@@ -268,7 +268,6 @@ public class DriverPublication implements AutoCloseable
         setupFrameBuffer.position(0);
 
         final int bytesSent = channelEndpoint.sendTo(setupFrameBuffer, dstAddress);
-        systemCounters.heartbeatsSent().orderedIncrement();
 
         if (setupHeader.frameLength() != bytesSent)
         {
@@ -374,6 +373,7 @@ public class DriverPublication implements AutoCloseable
 
                 scanner.scanNext(onSendRetransmitFunc, Math.min(lastSentLength, mtuLength));
 
+                systemCounters.heartbeatsSent().orderedIncrement();
                 updateTimeOfLastSendOrSetup(clock.time());
             }
         }

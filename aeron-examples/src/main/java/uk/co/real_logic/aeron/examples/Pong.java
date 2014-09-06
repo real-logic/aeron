@@ -15,9 +15,7 @@
  */
 package uk.co.real_logic.aeron.examples;
 
-import uk.co.real_logic.aeron.Aeron;
-import uk.co.real_logic.aeron.Publication;
-import uk.co.real_logic.aeron.Subscription;
+import uk.co.real_logic.aeron.*;
 import uk.co.real_logic.aeron.common.BusySpinIdleStrategy;
 import uk.co.real_logic.aeron.common.CloseHelper;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
@@ -60,8 +58,8 @@ public class Pong
         try (final Aeron aeron = Aeron.connect(ctx);
              final Publication pongPublication = aeron.addPublication(PONG_CHANNEL, PONG_STREAM_ID);
              final Subscription pingSubscription = aeron.addSubscription(PING_CHANNEL, PING_STREAM_ID,
-                 (buffer, offset, length, sessionId, flags) ->
-                     pingHandler(pongPublication, buffer, offset, length, sessionId, flags)))
+                 new FragmentAssemblyAdapter((buffer, offset, length, sessionId, flags) ->
+                     pingHandler(pongPublication, buffer, offset, length, sessionId, flags))))
         {
             while (running.get())
             {

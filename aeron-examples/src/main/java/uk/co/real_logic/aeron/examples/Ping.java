@@ -53,7 +53,7 @@ public class Ping
 
     private static CountDownLatch pongConnectionLatch = new CountDownLatch(1);
 
-    private static volatile boolean pongSubscriberDone = false;
+    private static long numPongsReceived = 0;
 
     public static void main(final String[] args) throws Exception
     {
@@ -75,7 +75,7 @@ public class Ping
              final Subscription pongSubscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID, dataHandler))
         {
             final int totalWarmupMessages = WARMUP_NUMBER_OF_MESSAGES * WARMUP_NUMBER_OF_ITERATIONS;
-            final Future warmup = executor.submit(() -> runSubscriber(pongSubscription));
+            final Future warmup = executor.submit(() -> runSubscriber(pongSubscription, totalWarmupMessages));
 
             System.out.println("Waiting for new connection from Pong...");
 
@@ -95,14 +95,13 @@ public class Ping
                 Thread.sleep(LINGER_TIMEOUT_MS);
             }
 
-            pongSubscriberDone = true;
             warmup.get();
             histogram.reset();
-            pongSubscriberDone = false;
+            numPongsReceived = 0;
 
             System.out.println("Pinging " + NUMBER_OF_MESSAGES + " messages");
 
-            final Future timedRun = executor.submit(() -> runSubscriber(pongSubscription));
+            final Future timedRun = executor.submit(() -> runSubscriber(pongSubscription, NUMBER_OF_MESSAGES));
             sendMessages(pingPublication, NUMBER_OF_MESSAGES);
 
             System.out.println("Done streaming.");
@@ -113,7 +112,6 @@ public class Ping
                 Thread.sleep(LINGER_TIMEOUT_MS);
             }
 
-            pongSubscriberDone = true;
             timedRun.get();
         }
 
@@ -146,17 +144,19 @@ public class Ping
         final long rttNs = System.nanoTime() - pingTimestamp;
 
         histogram.recordValue(rttNs);
+        numPongsReceived++;
     }
 
-    private static void runSubscriber(final Subscription pongSubscription)
+    private static void runSubscriber(final Subscription pongSubscription, final long numMessages)
     {
         final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
 
-        while (!pongSubscriberDone)
+        do
         {
             final int fragmentsRead = pongSubscription.poll(FRAGMENT_COUNT_LIMIT);
             idleStrategy.idle(fragmentsRead);
         }
+        while (numPongsReceived < numMessages);
     }
 
     private static void newPongConnectionHandler(final String channel, final int streamId, final int sessionId)

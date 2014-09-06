@@ -126,7 +126,7 @@ public class NioSelector implements AutoCloseable
                     handledFrames += ((IntSupplier)key.attachment()).getAsInt();
                 }
 
-                iter.remove();  // just remove here. If we ever add TCP, then will be cleaner.
+                iter.remove();
             }
         }
 

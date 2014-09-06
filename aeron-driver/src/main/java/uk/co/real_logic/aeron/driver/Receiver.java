@@ -72,12 +72,7 @@ public class Receiver extends Agent
 
     public int doWork() throws Exception
     {
-        return nioSelector.processKeys() + processConductorCommands();
-    }
-
-    private int processConductorCommands()
-    {
-        return commandQueue.drain(onConductorCommandFunc);
+        return commandQueue.drain(onConductorCommandFunc) + nioSelector.processKeys();
     }
 
     private void onAddSubscription(final ReceiveChannelEndpoint channelEndpoint, final int streamId)

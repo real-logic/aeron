@@ -124,6 +124,8 @@ public class SelectorAndTransportTest
                 assertThat(header.termId(), is(TERM_ID));
                 assertThat(header.dataOffset(), is(FRAME_LENGTH));
                 dataHeadersReceived.incrementAndGet();
+
+                return length;
             };
 
         nioSelector = new NioSelector();
@@ -170,6 +172,8 @@ public class SelectorAndTransportTest
                 assertThat(header.termId(), is(TERM_ID));
                 assertThat(length, is(2 * BitUtil.align(FRAME_LENGTH, FrameDescriptor.FRAME_ALIGNMENT)));
                 dataHeadersReceived.incrementAndGet();
+
+                return length;
             };
 
         nioSelector = new NioSelector();

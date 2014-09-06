@@ -112,6 +112,7 @@ public class ReceiverTest
         when(mockLossHandler.activeTermId()).thenReturn(TERM_ID);
         when(mockSystemCounters.statusMessagesSent()).thenReturn(mock(AtomicCounter.class));
         when(mockSystemCounters.flowControlUnderRuns()).thenReturn(mock(AtomicCounter.class));
+        when(mockSystemCounters.bytesReceived()).thenReturn(mock(AtomicCounter.class));
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
@@ -119,7 +120,7 @@ public class ReceiverTest
             .conductorNioSelector(mockNioSelector)
             .termBuffersFactory(mockTermBuffersFactory)
             .conductorTimerWheel(timerWheel)
-            .systemCounters(mock(SystemCounters.class))
+            .systemCounters(mockSystemCounters)
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .eventLogger(mockLogger);
 

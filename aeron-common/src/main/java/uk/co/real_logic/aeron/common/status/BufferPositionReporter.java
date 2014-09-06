@@ -46,6 +46,11 @@ public class BufferPositionReporter implements PositionReporter
         buffer.putLongOrdered(offset, value);
     }
 
+    public long position()
+    {
+        return buffer.getLongVolatile(offset);
+    }
+
     public void close()
     {
         countersManager.free(counterId);

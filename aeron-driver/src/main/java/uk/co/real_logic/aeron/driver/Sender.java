@@ -33,7 +33,7 @@ public class Sender extends Agent
     private final Consumer<Object> processConductorCommandsFunc = this::processConductorCommands;
     private final ArrayList<DriverPublication> publications = new ArrayList<>();
     private final OneToOneConcurrentArrayQueue<Object> commandQueue;
-    private final AtomicCounter bytesSent;
+    private final AtomicCounter totalBytesSent;
 
     private int roundRobinIndex = 0;
 
@@ -42,7 +42,7 @@ public class Sender extends Agent
         super(ctx.senderIdleStrategy(), ctx.exceptionConsumer(), ctx.systemCounters().driverExceptions());
 
         this.commandQueue = ctx.senderCommandQueue();
-        this.bytesSent = ctx.systemCounters().bytesSent();
+        this.totalBytesSent = ctx.systemCounters().bytesSent();
     }
 
     public int doWork()
@@ -57,7 +57,7 @@ public class Sender extends Agent
 
     private int doSend()
     {
-        int workCount = 0;
+        int bytesSent = 0;
         final ArrayList<DriverPublication> publications = this.publications;
         final int arrayLength = publications.size();
 
@@ -72,7 +72,7 @@ public class Sender extends Agent
             int i = roundRobinIndex;
             do
             {
-                workCount += publications.get(i).send();
+                bytesSent += publications.get(i).send();
 
                 if (++i == arrayLength)
                 {
@@ -82,12 +82,9 @@ public class Sender extends Agent
             while (i != roundRobinIndex);
         }
 
-        if (workCount > 0)
-        {
-            bytesSent.setOrdered(bytesSent.get() + workCount);
-        }
+        totalBytesSent.setOrdered(totalBytesSent.get() + bytesSent);
 
-        return workCount;
+        return bytesSent;
     }
 
     private void processConductorCommands(final Object obj)

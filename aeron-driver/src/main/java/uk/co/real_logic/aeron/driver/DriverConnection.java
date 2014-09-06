@@ -257,8 +257,7 @@ public class DriverConnection implements AutoCloseable
     public long remaining()
     {
         // TODO: needs to account for multiple subscriberPosition values (multiple subscribers) when needed
-        final long completedPosition = lossHandler.completedPosition();
-        return Math.max(completedPosition - subscriberPosition.position(), 0);
+        return Math.max(completedPosition.position() - subscriberPosition.position(), 0);
     }
 
     /**
@@ -266,9 +265,11 @@ public class DriverConnection implements AutoCloseable
      *
      * @param buffer for the data frame
      * @param length of the data frame on the wire
+     * @return number of bytes inserted
      */
-    public void insertIntoTerm(final int termId, final int termOffset, final AtomicBuffer buffer, final int length)
+    public int insertIntoTerm(final int termId, final int termOffset, final AtomicBuffer buffer, final int length)
     {
+        int bytesInserted = 0;
         final LogRebuilder currentRebuilder = rebuilders[activeIndex];
         final int activeTermId = this.activeTermId.get();
 
@@ -280,13 +281,18 @@ public class DriverConnection implements AutoCloseable
             isFlowControlUnderRun(packetPosition, currentPosition) ||
             isFlowControlOverRun(proposedPosition))
         {
-            return;
+            return 0;
         }
 
         if (termId == activeTermId)
         {
+            final long oldCompletedPosition = completedPosition.position();
             currentRebuilder.insert(buffer, 0, length);
-            completedPosition.position(lossHandler.completedPosition());
+            final long newCompletedPosition = lossHandler.completedPosition();
+
+            bytesInserted = (int)(newCompletedPosition - oldCompletedPosition);
+
+            completedPosition.position(newCompletedPosition);
 
             if (currentRebuilder.isComplete())
             {
@@ -306,6 +312,8 @@ public class DriverConnection implements AutoCloseable
         }
 
         hwmCandidate(proposedPosition);
+
+        return bytesInserted;
     }
 
     /*

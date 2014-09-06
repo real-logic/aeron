@@ -22,9 +22,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.verification.VerificationMode;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.command.*;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.common.concurrent.CountersManager;
-import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.aeron.common.concurrent.*;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBufferDescriptor;
@@ -121,7 +119,10 @@ public class DriverConductorTest
         ctx.toDriverCommands(fromClientCommands);
         ctx.clientProxy(mockClientProxy);
         ctx.countersBuffer(counterBuffer);
-        ctx.systemCounters(mock(SystemCounters.class));
+
+        SystemCounters mockSystemCounters = mock(SystemCounters.class);
+        ctx.systemCounters(mockSystemCounters);
+        when(mockSystemCounters.bytesReceived()).thenReturn(mock(AtomicCounter.class));
 
         ctx.receiverProxy(receiverProxy);
         ctx.senderProxy(senderProxy);

@@ -287,12 +287,11 @@ public final class UdpTransport implements AutoCloseable
         {
             case HDR_TYPE_PAD:
             case HDR_TYPE_DATA:
-                dataFrameHandler.onFrame(dataHeader, readBuffer, length, srcAddress);
-                return 1;
+                return dataFrameHandler.onFrame(dataHeader, readBuffer, length, srcAddress);
 
             case HDR_TYPE_SETUP:
                 setupFrameHandler.onFrame(setupHeader, readBuffer, length, srcAddress);
-                return 1;
+                break;
         }
 
         return 0;

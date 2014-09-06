@@ -30,6 +30,14 @@ public interface PositionReporter extends AutoCloseable
     void position(long value);
 
     /**
+     * Get the value of the current position of the component.
+     *
+     * @return the value of the current position of the component.
+     */
+    long position();
+
+
+    /**
      * Close down and free any underlying resources.
      */
     void close();

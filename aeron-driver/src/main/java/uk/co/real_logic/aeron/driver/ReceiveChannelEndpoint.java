@@ -122,10 +122,10 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         return refCountByStreamIdMap.size();
     }
 
-    public void onDataFrame(
+    public int onDataFrame(
         final DataHeaderFlyweight header, final AtomicBuffer buffer, final int length, final InetSocketAddress srcAddress)
     {
-        dispatcher.onDataFrame(header, buffer, length, srcAddress);
+        return dispatcher.onDataFrame(header, buffer, length, srcAddress);
     }
 
     public void onSetupFrame(

@@ -107,7 +107,7 @@ public class DataFrameDispatcher
         }
     }
 
-    public void onDataFrame(
+    public int onDataFrame(
         final DataHeaderFlyweight header, final AtomicBuffer buffer, final int length, final InetSocketAddress srcAddress)
     {
         final int streamId = header.streamId();
@@ -121,13 +121,15 @@ public class DataFrameDispatcher
 
             if (null != connection)
             {
-                connection.insertIntoTerm(termId, header.termOffset(), buffer, length);
+                return connection.insertIntoTerm(termId, header.termOffset(), buffer, length);
             }
             else if (null == initialisationInProgressMap.get(sessionId, streamId))
             {
                 elicitSetupFromSource(srcAddress, streamId, sessionId);
             }
         }
+
+        return 0;
     }
 
     public void onSetupFrame(

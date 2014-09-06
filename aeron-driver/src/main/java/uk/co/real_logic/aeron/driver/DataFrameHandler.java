@@ -24,12 +24,13 @@ import java.net.InetSocketAddress;
 public interface DataFrameHandler
 {
     /**
-     * Handle a Data Frame.
+     * Handle a Data Frame from the network.
      *
      * @param header of the first Data Frame in the message (may be re-wrapped if needed)
      * @param buffer holding the data (always starts at 0 offset)
      * @param length of the Frame (may be longer than the header frame length)
      * @param srcAddress of the Frame
+     * @return the number of bytes received.
      */
-    void onFrame(DataHeaderFlyweight header, AtomicBuffer buffer, int length, InetSocketAddress srcAddress);
+    int onFrame(DataHeaderFlyweight header, AtomicBuffer buffer, int length, InetSocketAddress srcAddress);
 }

@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.Agent;
+import uk.co.real_logic.aeron.common.concurrent.AtomicCounter;
 import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.driver.cmd.*;
 
@@ -29,6 +30,7 @@ public class Receiver extends Agent
     private final NioSelector nioSelector;
     private final OneToOneConcurrentArrayQueue<Object> commandQueue;
     private final Consumer<Object> onConductorCommandFunc;
+    private final AtomicCounter totalBytesReceived;
 
     public Receiver(final MediaDriver.Context ctx)
     {
@@ -36,6 +38,8 @@ public class Receiver extends Agent
 
         this.nioSelector = ctx.receiverNioSelector();
         this.commandQueue = ctx.receiverCommandQueue();
+        this.totalBytesReceived = ctx.systemCounters().bytesReceived();
+
         onConductorCommandFunc = this::onConductorCommand;
     }
 
@@ -72,7 +76,12 @@ public class Receiver extends Agent
 
     public int doWork() throws Exception
     {
-        return commandQueue.drain(onConductorCommandFunc) + nioSelector.processKeys();
+        final int workCount = commandQueue.drain(onConductorCommandFunc);
+        final int bytesReceived = nioSelector.processKeys();
+
+        totalBytesReceived.setOrdered(totalBytesReceived.get() + bytesReceived);
+
+        return workCount + bytesReceived;
     }
 
     private void onAddSubscription(final ReceiveChannelEndpoint channelEndpoint, final int streamId)

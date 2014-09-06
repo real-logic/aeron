@@ -53,7 +53,7 @@ public class Ping
 
     private static CountDownLatch pongConnectionLatch = new CountDownLatch(1);
 
-    private static long numPongsReceived = 0;
+    private static long numPongsReceived;
 
     public static void main(final String[] args) throws Exception
     {
@@ -97,7 +97,6 @@ public class Ping
 
             warmup.get();
             histogram.reset();
-            numPongsReceived = 0;
 
             System.out.println("Pinging " + NUMBER_OF_MESSAGES + " messages");
 
@@ -151,6 +150,7 @@ public class Ping
     {
         final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
 
+        numPongsReceived = 0; // incremented in handler
         do
         {
             final int fragmentsRead = pongSubscription.poll(FRAGMENT_COUNT_LIMIT);

@@ -37,7 +37,7 @@ public class SystemCounters implements AutoCloseable
 
     public SystemCounters(final CountersManager countersManager)
     {
-        bytesSent = countersManager.newCounter("bytes sent");
+        bytesSent = countersManager.newCounter("Bytes sent");
         receiverProxyFails = countersManager.newCounter("Failed offers to ReceiverProxy");
         senderProxyFails = countersManager.newCounter("Failed offers to SenderProxy");
         naksSent = countersManager.newCounter("NAKs sent");

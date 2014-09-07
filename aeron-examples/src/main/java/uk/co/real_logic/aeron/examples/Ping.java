@@ -51,7 +51,7 @@ public class Ping
     private static final Histogram HISTOGRAM = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
     private static final CountDownLatch PONG_CONNECTION_LATCH = new CountDownLatch(1);
 
-    private static long numPongsReceived;
+    private static int numPongsReceived;
 
     public static void main(final String[] args) throws Exception
     {
@@ -144,7 +144,7 @@ public class Ping
         numPongsReceived++;
     }
 
-    private static void runSubscriber(final Subscription pongSubscription, final long numMessages)
+    private static void runSubscriber(final Subscription pongSubscription, final int numMessages)
     {
         final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
 

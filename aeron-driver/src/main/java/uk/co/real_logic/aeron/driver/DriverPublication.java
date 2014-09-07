@@ -81,7 +81,7 @@ public class DriverPublication implements AutoCloseable
     private int statusMessagesReceivedCount = 0;
 
     private long timeOfLastSendOrHeartbeat;
-    private long sentPosition = 0;
+    private long lastSentPosition = 0;
     private long timeOfFlush = 0;
 
     private int lastSentTermId;
@@ -165,7 +165,7 @@ public class DriverPublication implements AutoCloseable
 
         if (isActive)
         {
-            final int availableWindow = (int)(positionLimit.get() - sentPosition);
+            final int availableWindow = (int)(positionLimit.get() - lastSentPosition);
             final int scanLimit = Math.min(availableWindow, mtuLength);
 
             LogScanner scanner = logScanners[activeIndex];
@@ -180,9 +180,9 @@ public class DriverPublication implements AutoCloseable
             }
 
             final long position = positionForActiveTerm(scanner.offset());
-            bytesSent = (int)(position - sentPosition);
+            bytesSent = (int)(position - lastSentPosition);
 
-            sentPosition = position;
+            lastSentPosition = position;
             publisherLimitReporter.position(position + termWindowSize);
 
             if (0 == bytesSent)
@@ -260,11 +260,10 @@ public class DriverPublication implements AutoCloseable
         }
     }
 
-    // called from either Sender thread (initial setup) or Conductor thread (in response to SEND_SETUP_FLAG in SMs)
     public void sendSetupFrame()
     {
-        setupHeader.termId(activeTermId.get());                       // update the termId field
-        setupHeader.termOffset(lastSentTermOffset + lastSentLength);  // update the termOffset field
+        setupHeader.termId(activeTermId.get());
+        setupHeader.termOffset(lastSentTermOffset + lastSentLength);
 
         setupFrameBuffer.limit(setupHeader.frameLength());
         setupFrameBuffer.position(0);
@@ -445,5 +444,4 @@ public class DriverPublication implements AutoCloseable
     {
         return publisherLimitReporter.id();
     }
-
 }

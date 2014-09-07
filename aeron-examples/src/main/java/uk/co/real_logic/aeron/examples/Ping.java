@@ -48,8 +48,8 @@ public class Ping
     private static final boolean EMBEDDED_MEDIA_DRIVER = ExampleConfiguration.EMBEDDED_MEDIA_DRIVER;
 
     private static final AtomicBuffer ATOMIC_BUFFER = new AtomicBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
-    private static final Histogram histogram = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
-    private static final CountDownLatch pongConnectionLatch = new CountDownLatch(1);
+    private static final Histogram HISTOGRAM = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
+    private static final CountDownLatch PONG_CONNECTION_LATCH = new CountDownLatch(1);
 
     private static long numPongsReceived;
 
@@ -77,7 +77,7 @@ public class Ping
 
             System.out.println("Waiting for new connection from Pong...");
 
-            pongConnectionLatch.await();
+            PONG_CONNECTION_LATCH.await();
 
             System.out.println(
                 "Warming up... " + WARMUP_NUMBER_OF_ITERATIONS + " iterations of " + WARMUP_NUMBER_OF_MESSAGES + " messages");
@@ -94,7 +94,7 @@ public class Ping
             }
 
             warmup.get();
-            histogram.reset();
+            HISTOGRAM.reset();
 
             System.out.println("Pinging " + NUMBER_OF_MESSAGES + " messages");
 
@@ -114,7 +114,7 @@ public class Ping
 
         System.out.println("Done playing... Histogram of RTT latencies in microseconds.");
 
-        histogram.outputPercentileDistribution(System.out, 1000.0);
+        HISTOGRAM.outputPercentileDistribution(System.out, 1000.0);
 
         executor.shutdown();
         CloseHelper.quietClose(driver);
@@ -140,7 +140,7 @@ public class Ping
         final long pingTimestamp = buffer.getLong(offset);
         final long rttNs = System.nanoTime() - pingTimestamp;
 
-        histogram.recordValue(rttNs);
+        HISTOGRAM.recordValue(rttNs);
         numPongsReceived++;
     }
 
@@ -161,7 +161,7 @@ public class Ping
     {
         if (channel.equals(PONG_CHANNEL) && PONG_STREAM_ID == streamId)
         {
-            pongConnectionLatch.countDown();
+            PONG_CONNECTION_LATCH.countDown();
         }
     }
 }

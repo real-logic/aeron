@@ -287,10 +287,9 @@ public class DriverConnection implements AutoCloseable
         {
             final long oldCompletedPosition = completedPosition.position();
             currentRebuilder.insert(buffer, 0, length);
+
             final long newCompletedPosition = lossHandler.completedPosition();
-
             bytesInserted = (int)(newCompletedPosition - oldCompletedPosition);
-
             completedPosition.position(newCompletedPosition);
 
             if (currentRebuilder.isComplete())

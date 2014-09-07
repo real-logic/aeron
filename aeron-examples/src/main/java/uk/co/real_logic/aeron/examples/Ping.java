@@ -148,7 +148,7 @@ public class Ping
     {
         final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
 
-        numPongsReceived = 0; // incremented in handler
+        numPongsReceived = 0;
         do
         {
             final int fragmentsRead = pongSubscription.poll(FRAGMENT_COUNT_LIMIT);

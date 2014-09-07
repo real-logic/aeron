@@ -161,7 +161,7 @@ public class DriverPublication implements AutoCloseable
 
     public int send()
     {
-        int workCount = 0;
+        int bytesSent = 0;
 
         if (isActive)
         {
@@ -169,7 +169,7 @@ public class DriverPublication implements AutoCloseable
             final int scanLimit = Math.min(availableWindow, mtuLength);
 
             LogScanner scanner = logScanners[activeIndex];
-            workCount += scanner.scanNext(sendTransmissionUnitFunc, scanLimit);
+            bytesSent += scanner.scanNext(sendTransmissionUnitFunc, scanLimit);
 
             if (scanner.isComplete())
             {
@@ -183,13 +183,13 @@ public class DriverPublication implements AutoCloseable
             sentPosition = position;
             publisherLimitReporter.position(position + termWindowSize);
 
-            if (0 == workCount)
+            if (0 == bytesSent)
             {
                 heartbeatCheck();
             }
         }
 
-        return workCount;
+        return bytesSent;
     }
 
     public SendChannelEndpoint sendChannelEndpoint()

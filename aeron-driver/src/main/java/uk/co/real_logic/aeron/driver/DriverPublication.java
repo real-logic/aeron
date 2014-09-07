@@ -211,8 +211,8 @@ public class DriverPublication implements AutoCloseable
 
     public void updatePositionLimitFromStatusMessage(final long limit)
     {
-        positionLimit.lazySet(limit);
         statusMessagesReceivedCount++;
+        positionLimit.lazySet(limit);
     }
 
     /**

@@ -37,9 +37,6 @@ public class DataHeaderFlyweight extends HeaderFlyweight
     /** End Flag */
     public static final short END_FLAG = 0x40;
 
-    /** Retransmit Flag */
-    public static final short RETRANSMIT_FLAG = 0x20;
-
     /** Begin and End Flags */
     public static final short BEGIN_AND_END_FLAGS = BEGIN_FLAG | END_FLAG;
 

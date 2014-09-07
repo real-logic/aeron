@@ -393,11 +393,7 @@ public class DriverConnection implements AutoCloseable
     }
 
     private int sendStatusMessage(
-        final int termId,
-        final int termOffset,
-        final long position,
-        final int windowSize,
-        final long now)
+        final int termId, final int termOffset, final long position, final int windowSize, final long now)
     {
         statusMessageSender.send(termId, termOffset, windowSize);
 
@@ -449,11 +445,7 @@ public class DriverConnection implements AutoCloseable
 
         if (isFlowControlOverRun)
         {
-            logger.logOverRun(
-                proposedPosition,
-                subscriberPosition.position(),
-                currentWindowSize);
-
+            logger.logOverRun(proposedPosition, subscriberPosition.position(), currentWindowSize);
             systemCounters.flowControlOverRuns().orderedIncrement();
         }
 

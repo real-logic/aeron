@@ -169,7 +169,7 @@ public class DriverPublication implements AutoCloseable
             final int scanLimit = Math.min(availableWindow, mtuLength);
 
             LogScanner scanner = logScanners[activeIndex];
-            bytesSent += scanner.scanNext(sendTransmissionUnitFunc, scanLimit);
+            scanner.scanNext(sendTransmissionUnitFunc, scanLimit);
 
             if (scanner.isComplete())
             {
@@ -180,6 +180,8 @@ public class DriverPublication implements AutoCloseable
             }
 
             final long position = positionForActiveTerm(scanner.offset());
+            bytesSent = (int)(position - sentPosition);
+
             sentPosition = position;
             publisherLimitReporter.position(position + termWindowSize);
 

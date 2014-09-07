@@ -48,10 +48,8 @@ public class Ping
     private static final boolean EMBEDDED_MEDIA_DRIVER = ExampleConfiguration.EMBEDDED_MEDIA_DRIVER;
 
     private static final AtomicBuffer ATOMIC_BUFFER = new AtomicBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
-
-    private static Histogram histogram = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
-
-    private static CountDownLatch pongConnectionLatch = new CountDownLatch(1);
+    private static final Histogram histogram = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
+    private static final CountDownLatch pongConnectionLatch = new CountDownLatch(1);
 
     private static long numPongsReceived;
 

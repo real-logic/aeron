@@ -98,7 +98,8 @@ class MappedRawLog implements RawLog
             }
             else
             {
-                logger.log(EventCode.ERROR_DELETING_FILE, "Unable to delete %s or %s", logFile, stateFile);
+                logger.log(EventCode.ERROR_DELETING_FILE, logFile);
+                logger.log(EventCode.ERROR_DELETING_FILE, stateFile);
             }
         }
         catch (final IOException ex)
@@ -122,7 +123,7 @@ class MappedRawLog implements RawLog
             }
             else
             {
-                logger.log(EventCode.ERROR_DELETING_FILE, "Unable to delete %s", directory);
+                logger.log(EventCode.ERROR_DELETING_FILE, directory);
             }
         }
     }

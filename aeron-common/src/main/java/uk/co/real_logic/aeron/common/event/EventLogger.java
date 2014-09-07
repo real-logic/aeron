@@ -15,14 +15,12 @@
  */
 package uk.co.real_logic.aeron.common.event;
 
-import uk.co.real_logic.aeron.common.IoUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.ManyToOneRingBuffer;
 
 import java.io.File;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
 
 import static uk.co.real_logic.aeron.common.event.EventCode.EXCEPTION;
 import static uk.co.real_logic.aeron.common.event.EventCode.INVOCATION;
@@ -75,44 +73,52 @@ public class EventLogger
         }
     }
 
-    public void log(final EventCode code, final String value)
+    public void log(final EventCode code, final File file)
     {
         if (isEnabled(code, enabledEventCodes))
         {
-            logString(code, value);
+            logString(code, file.toString());
         }
     }
 
-    public void log(final EventCode code, final String format, final Object first)
+    public void logIncompleteSend(final CharSequence type, final int sent, final int expected)
     {
-        if (isEnabled(code, enabledEventCodes))
+        if (isEnabled(EventCode.FRAME_OUT_INCOMPLETE_SEND, enabledEventCodes))
         {
-            logString(code, String.format(format, first));
+            logString(EventCode.FRAME_OUT_INCOMPLETE_SEND, String.format("%s %d/%d", type, sent, expected));
         }
     }
 
-    public void log(final EventCode code, final String format, final Object first, final Object second)
+    public void logPublicationRemoval(final CharSequence uri, final int sessionId, final int streamId)
     {
-        if (isEnabled(code, enabledEventCodes))
+        if (isEnabled(EventCode.REMOVE_PUBLICATION_CLEANUP, enabledEventCodes))
         {
-            logString(code, String.format(format, first, second));
+            logString(EventCode.REMOVE_PUBLICATION_CLEANUP, String.format("%s %x:%x", uri, sessionId, streamId));
         }
     }
 
-    public void log(
-        final EventCode code, final String format, final Object first, final Object second, final Object third)
+    public void logSubscriptionRemoval(final CharSequence uri, final int streamId, final long id)
     {
-        if (isEnabled(code, enabledEventCodes))
+        if (isEnabled(EventCode.REMOVE_SUBSCRIPTION_CLEANUP, enabledEventCodes))
         {
-            logString(code, String.format(format, first, second, third));
+            logString(EventCode.REMOVE_SUBSCRIPTION_CLEANUP, String.format("%s %x %d", uri, streamId, id));
         }
     }
 
-    private void logString(final EventCode code, final String value)
+    public void logConnectionRemoval(final CharSequence uri, final int sessionId, final int streamId)
     {
-        final AtomicBuffer encodedBuffer = encodingBuffer.get();
-        final int encodingLength = EventCodec.encode(encodedBuffer, value);
-        ringBuffer.write(code.id(), encodedBuffer, 0, encodingLength);
+        if (isEnabled(EventCode.REMOVE_CONNECTION_CLEANUP, enabledEventCodes))
+        {
+            logString(EventCode.REMOVE_CONNECTION_CLEANUP, String.format("%s %x:%x", uri, sessionId, streamId));
+        }
+    }
+
+    public void logOverRun(final long proposedPos, final long subscriberPos, final long windowSize)
+    {
+        if (isEnabled(EventCode.FLOW_CONTROL_OVERRUN, enabledEventCodes))
+        {
+            logString(EventCode.FLOW_CONTROL_OVERRUN, String.format("%x > %x + %d", proposedPos, subscriberPos, windowSize));
+        }
     }
 
     public void logInvocation()
@@ -144,6 +150,13 @@ public class EventLogger
         {
             ex.printStackTrace();
         }
+    }
+
+    private void logString(final EventCode code, final String value)
+    {
+        final AtomicBuffer encodedBuffer = encodingBuffer.get();
+        final int encodingLength = EventCodec.encode(encodedBuffer, value);
+        ringBuffer.write(code.id(), encodedBuffer, 0, encodingLength);
     }
 
     private static boolean isEnabled(final EventCode code, final long enabledEventCodes)

@@ -159,7 +159,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         final int termId,
         final int termOffset,
         final int window,
-        final short flags) // TODO: why not just a byte?
+        final short flags) // TODO: why not just a byte? because it is unsigned
     {
         if (closed)
         {
@@ -181,9 +181,9 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         smBuffer.limit(frameLength);
 
         final int bytesSent = udpTransport.sendTo(smBuffer, controlAddress);
-        if (bytesSent < frameLength) // TODO should we not retry?
+        if (bytesSent < frameLength) // TODO should we not retry? no
         {
-            logger.log(EventCode.FRAME_OUT_INCOMPLETE_SEND, "sendStatusMessage %d/%d", bytesSent, frameLength);
+            logger.logIncompleteSend("sendStatusMessage", bytesSent, frameLength);
         }
     }
 
@@ -215,9 +215,9 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         nakBuffer.limit(frameLength);
 
         final int bytesSent = udpTransport.sendTo(nakBuffer, controlAddress);
-        if (bytesSent < frameLength) // TODO should we not retry?
+        if (bytesSent < frameLength) // TODO should we not retry? no
         {
-            logger.log(EventCode.FRAME_OUT_INCOMPLETE_SEND, "sendNak %d/%d", bytesSent, frameLength);
+            logger.logIncompleteSend("sendNak", bytesSent, frameLength);
         }
     }
 }

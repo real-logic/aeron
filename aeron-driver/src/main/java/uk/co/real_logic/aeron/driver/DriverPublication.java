@@ -271,11 +271,7 @@ public class DriverPublication implements AutoCloseable
 
         if (setupHeader.frameLength() != bytesSent)
         {
-            logger.log(
-                EventCode.FRAME_OUT_INCOMPLETE_SEND,
-                "sendSetupFrame %d/%d",
-                bytesSent,
-                setupHeader.frameLength());
+            logger.logIncompleteSend("sendSetupFrame", bytesSent, setupHeader.frameLength());
         }
 
         updateTimeOfLastSendOrSetup(clock.time());
@@ -334,7 +330,7 @@ public class DriverPublication implements AutoCloseable
         final int bytesSent = channelEndpoint.sendTo(sendBuffer, dstAddress);
         if (length != bytesSent)
         {
-            logger.log(EventCode.FRAME_OUT_INCOMPLETE_SEND, "onSendTransmissionUnit %d/%d", bytesSent, length);
+            logger.logIncompleteSend("onSendTransmissionUnit", bytesSent, length);
         }
 
         updateTimeOfLastSendOrSetup(clock.time());
@@ -352,7 +348,7 @@ public class DriverPublication implements AutoCloseable
         final int bytesSent = channelEndpoint.sendTo(termRetransmitBuffer, dstAddress);
         if (bytesSent != length)
         {
-            logger.log(EventCode.FRAME_OUT_INCOMPLETE_SEND, "onSendRetransmit %d/%d", bytesSent, length);
+            logger.logIncompleteSend("onSendTransmit", bytesSent, length);
         }
     }
 

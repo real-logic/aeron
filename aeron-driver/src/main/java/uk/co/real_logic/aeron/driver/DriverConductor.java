@@ -632,9 +632,7 @@ public class DriverConductor extends Agent
             {
                 final SendChannelEndpoint channelEndpoint = publication.sendChannelEndpoint();
 
-                logger.log(
-                    EventCode.REMOVE_PUBLICATION_CLEANUP,
-                    "%s %x:%x",
+                logger.logPublicationRemoval(
                     channelEndpoint.udpChannel().originalUriAsString(),
                     publication.sessionId(),
                     publication.streamId());
@@ -671,9 +669,7 @@ public class DriverConductor extends Agent
                 final ReceiveChannelEndpoint channelEndpoint = subscription.receiveChannelEndpoint();
                 final int streamId = subscription.streamId();
 
-                logger.log(
-                    EventCode.REMOVE_SUBSCRIPTION_CLEANUP,
-                    "%s %x [%x]",
+                logger.logSubscriptionRemoval(
                     channelEndpoint.udpChannel().originalUriAsString(),
                     subscription.streamId(),
                     subscription.id());
@@ -752,9 +748,7 @@ public class DriverConductor extends Agent
                 case LINGER:
                     if (connection.timeOfLastStatusChange() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS < now)
                     {
-                        logger.log(
-                            EventCode.REMOVE_CONNECTION_CLEANUP,
-                            "%s %x:%x",
+                        logger.logConnectionRemoval(
                             connection.receiveChannelEndpoint().udpChannel().originalUriAsString(),
                             connection.sessionId(),
                             connection.streamId());

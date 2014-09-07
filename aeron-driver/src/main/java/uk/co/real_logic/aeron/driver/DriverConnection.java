@@ -450,9 +450,7 @@ public class DriverConnection implements AutoCloseable
 
         if (isFlowControlOverRun)
         {
-            logger.log(
-                EventCode.FLOW_CONTROL_OVERRUN,
-                "overrun %x > %x + %d",
+            logger.logOverRun(
                 proposedPosition,
                 subscriberPosition.position(),
                 currentWindowSize);

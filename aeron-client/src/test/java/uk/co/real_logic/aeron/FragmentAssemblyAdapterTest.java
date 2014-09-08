@@ -108,4 +108,28 @@ public class FragmentAssemblyAdapterTest
         assertTrue(adapter.freeSessionBuffer(sessionId));
         assertFalse(adapter.freeSessionBuffer(sessionId));
     }
+
+    @Test(expected = IllegalStateException.class)
+    public void shouldThrowExceptionIfEndFragComesBeforeBeginFrag()
+    {
+        final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[1024]);
+        final int offset = 0;
+        final int length = srcBuffer.capacity() / 2;
+        final int sessionId = 1234;
+        final byte flags = FrameDescriptor.END_FRAG;
+
+        adapter.onData(srcBuffer, offset, length, sessionId, flags);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void shouldThrowExceptionIfMidFragComesBeforeBeginFrag()
+    {
+        final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[1024]);
+        final int offset = 0;
+        final int length = srcBuffer.capacity() / 2;
+        final int sessionId = 1234;
+        final byte flags = 0;
+
+        adapter.onData(srcBuffer, offset, length, sessionId, flags);
+    }
 }

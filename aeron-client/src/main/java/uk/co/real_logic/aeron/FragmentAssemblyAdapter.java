@@ -76,14 +76,14 @@ public class FragmentAssemblyAdapter implements DataHandler
         }
         else if ((flags & END_FRAG) == END_FRAG)
         {
-            final BufferBuilder builder = builderBySessionIdMap.getOrDefault(sessionId, builderSupplier);
+            final BufferBuilder builder = getExistingBuilder(sessionId);
             builder.append(buffer, offset, length);
-
             delegate.onData(builder.buffer(), 0, builder.limit(), sessionId, (byte)(flags | UNFRAGMENTED));
+            builder.reset();
         }
         else
         {
-            final BufferBuilder builder = builderBySessionIdMap.getOrDefault(sessionId, builderSupplier);
+            final BufferBuilder builder = getExistingBuilder(sessionId);
             builder.append(buffer, offset, length);
         }
     }
@@ -98,5 +98,16 @@ public class FragmentAssemblyAdapter implements DataHandler
     public boolean freeSessionBuffer(final int sessionId)
     {
         return null != builderBySessionIdMap.remove(sessionId);
+    }
+
+    private BufferBuilder getExistingBuilder(final int sessionId)
+    {
+        final BufferBuilder builder = builderBySessionIdMap.get(sessionId);
+        if (null == builder || builder.limit() == 0)
+        {
+            throw new IllegalStateException("Begin frag not seen on session id: " + sessionId);
+        }
+
+        return builder;
     }
 }

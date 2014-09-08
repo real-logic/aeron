@@ -51,9 +51,14 @@ public class ReceiverProxy
         return commandQueue.offer(new RemoveConnectionCmd(connection.receiveChannelEndpoint(), connection));
     }
 
-    public boolean registerMediaEndpoint(final ReceiveChannelEndpoint mediaEndpoint)
+    public boolean registerMediaEndpoint(final RegisterReceiveChannelEndpointCmd cmd)
     {
-        return commandQueue.offer(new RegisterReceiveChannelEndpointCmd(mediaEndpoint));
+        return commandQueue.offer(cmd);
+    }
+
+    public boolean closeMediaEndpoint(final CloseReceiveChannelEndpointCmd cmd)
+    {
+        return commandQueue.offer(cmd);
     }
 
     public boolean removePendingSetup(final RemovePendingSetupCmd cmd)

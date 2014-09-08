@@ -468,7 +468,9 @@ public class DriverConductor extends Agent
 
             receiveChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
 
-            while (!receiverProxy.registerMediaEndpoint(channelEndpoint))
+            final RegisterReceiveChannelEndpointCmd registerCmd =
+                new RegisterReceiveChannelEndpointCmd(channelEndpoint);
+            while (!receiverProxy.registerMediaEndpoint(registerCmd))
             {
                 systemCounters.receiverProxyFails().orderedIncrement();
                 Thread.yield();
@@ -512,7 +514,15 @@ public class DriverConductor extends Agent
         if (channelEndpoint.streamCount() == 0)
         {
             receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
-            channelEndpoint.close();
+
+            final CloseReceiveChannelEndpointCmd cancelCmd =
+                new CloseReceiveChannelEndpointCmd(channelEndpoint);
+
+            while (!receiverProxy.closeMediaEndpoint(cancelCmd))
+            {
+                systemCounters.receiverProxyFails().orderedIncrement();
+                Thread.yield();
+            }
         }
 
         clientProxy.operationSucceeded(correlationId);
@@ -688,7 +698,15 @@ public class DriverConductor extends Agent
                 if (channelEndpoint.streamCount() == 0)
                 {
                     receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
-                    channelEndpoint.close();
+
+                    final CloseReceiveChannelEndpointCmd cancelCmd =
+                        new CloseReceiveChannelEndpointCmd(channelEndpoint);
+
+                    while (!receiverProxy.closeMediaEndpoint(cancelCmd))
+                    {
+                        systemCounters.receiverProxyFails().orderedIncrement();
+                        Thread.yield();
+                    }
                 }
             }
         }

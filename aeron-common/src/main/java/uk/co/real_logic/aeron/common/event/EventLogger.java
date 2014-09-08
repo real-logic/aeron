@@ -46,8 +46,16 @@ public class EventLogger
 
     public EventLogger(final ByteBuffer buffer, final long enabledEventCodes)
     {
-        this.ringBuffer = new ManyToOneRingBuffer(new AtomicBuffer(buffer));
-        this.enabledEventCodes = enabledEventCodes;
+        if (null != buffer)
+        {
+            this.ringBuffer = new ManyToOneRingBuffer(new AtomicBuffer(buffer));
+            this.enabledEventCodes = enabledEventCodes;
+        }
+        else
+        {
+            this.ringBuffer = null;
+            this.enabledEventCodes = 0;
+        }
     }
 
     public void log(final EventCode code, final AtomicBuffer buffer, final int offset, final int length)

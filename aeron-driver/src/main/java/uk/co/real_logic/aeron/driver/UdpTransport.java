@@ -187,6 +187,11 @@ public final class UdpTransport implements AutoCloseable
         }
     }
 
+    /**
+     * Return underlying {@link UdpChannel}
+     *
+     * @return underlying channel
+     */
     public UdpChannel udpChannel()
     {
         return udpChannel;

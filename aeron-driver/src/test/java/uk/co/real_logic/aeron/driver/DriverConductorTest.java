@@ -19,6 +19,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.mockito.verification.VerificationMode;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.command.*;
@@ -28,6 +30,7 @@ import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBufferDescriptor;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
+import uk.co.real_logic.aeron.driver.cmd.CloseReceiveChannelEndpointCmd;
 import uk.co.real_logic.aeron.driver.cmd.NewPublicationCmd;
 
 import java.nio.ByteBuffer;
@@ -92,6 +95,15 @@ public class DriverConductorTest
     private DriverConductor driverConductor;
     private Receiver receiver;
 
+    private final Answer<Boolean> closeChannelEndpointAnswer =
+        (invocation) ->
+        {
+            final Object args[] = invocation.getArguments();
+            final CloseReceiveChannelEndpointCmd cmd = (CloseReceiveChannelEndpointCmd)args[0];
+            cmd.receiveChannelEndpoint().close();
+            return true;
+        };
+
     @Before
     public void setUp() throws Exception
     {
@@ -141,6 +153,7 @@ public class DriverConductorTest
         when(receiverProxy.removeConnection(any())).thenReturn(true);
         when(receiverProxy.removePendingSetup(any())).thenReturn(true);
         when(receiverProxy.removeSubscription(any(), anyInt())).thenReturn(true);
+        when(receiverProxy.closeMediaEndpoint(any())).thenAnswer(closeChannelEndpointAnswer);
     }
 
     @After

@@ -72,6 +72,11 @@ public class Receiver extends Agent
         {
             onRemovePendingSetup((RemovePendingSetupCmd) obj);
         }
+        else if (obj instanceof CloseReceiveChannelEndpointCmd)
+        {
+            final CloseReceiveChannelEndpointCmd cmd = (CloseReceiveChannelEndpointCmd)obj;
+            onCloseMediaSubscriptionEndpoint(cmd.receiveChannelEndpoint());
+        }
     }
 
     public int doWork() throws Exception
@@ -118,5 +123,10 @@ public class Receiver extends Agent
         final ReceiveChannelEndpoint channelEndpoint = cmd.channelEndpoint();
 
         channelEndpoint.dispatcher().removePendingSetup(cmd.sessionId(), cmd.streamId());
+    }
+
+    private void onCloseMediaSubscriptionEndpoint(final ReceiveChannelEndpoint channelEndpoint)
+    {
+        channelEndpoint.close();
     }
 }

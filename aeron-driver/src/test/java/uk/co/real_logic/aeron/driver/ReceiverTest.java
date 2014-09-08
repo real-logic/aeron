@@ -38,6 +38,7 @@ import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
 import uk.co.real_logic.aeron.driver.cmd.CreateConnectionCmd;
 import uk.co.real_logic.aeron.driver.cmd.NewConnectionCmd;
+import uk.co.real_logic.aeron.driver.cmd.RegisterReceiveChannelEndpointCmd;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -156,7 +157,7 @@ public class ReceiverTest
     @Test
     public void shouldCreateRcvTermAndSendSmOnSetup() throws Exception
     {
-        receiverProxy.registerMediaEndpoint(receiveChannelEndpoint);
+        receiverProxy.registerMediaEndpoint(new RegisterReceiveChannelEndpointCmd(receiveChannelEndpoint));
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
 
         receiver.doWork();
@@ -220,7 +221,7 @@ public class ReceiverTest
     @Test
     public void shouldInsertDataIntoLogAfterInitialExchange() throws Exception
     {
-        receiverProxy.registerMediaEndpoint(receiveChannelEndpoint);
+        receiverProxy.registerMediaEndpoint(new RegisterReceiveChannelEndpointCmd(receiveChannelEndpoint));
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
 
         receiver.doWork();
@@ -282,7 +283,7 @@ public class ReceiverTest
     @Test
     public void shouldNotOverwriteDataFrameWithHeartbeat() throws Exception
     {
-        receiverProxy.registerMediaEndpoint(receiveChannelEndpoint);
+        receiverProxy.registerMediaEndpoint(new RegisterReceiveChannelEndpointCmd(receiveChannelEndpoint));
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
 
         receiver.doWork();
@@ -347,7 +348,7 @@ public class ReceiverTest
     @Test
     public void shouldOverwriteHeartbeatWithDataFrame() throws Exception
     {
-        receiverProxy.registerMediaEndpoint(receiveChannelEndpoint);
+        receiverProxy.registerMediaEndpoint(new RegisterReceiveChannelEndpointCmd(receiveChannelEndpoint));
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
 
         receiver.doWork();
@@ -420,7 +421,7 @@ public class ReceiverTest
         when(mockLossHandler.hwmCandidate(
             initialTermOffset + alignedDataFrameLength)).thenReturn((long)(initialTermOffset + alignedDataFrameLength));
 
-        receiverProxy.registerMediaEndpoint(receiveChannelEndpoint);
+        receiverProxy.registerMediaEndpoint(new RegisterReceiveChannelEndpointCmd(receiveChannelEndpoint));
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
 
         receiver.doWork();

@@ -60,7 +60,7 @@ public class PubAndSubTest
     private AtomicBuffer buffer = new AtomicBuffer(new byte[4096]);
     private DataHandler dataHandler = mock(DataHandler.class);
 
-    private void setup(final String channel) throws Exception
+    private void launch(final String channel) throws Exception
     {
         context.dirsDeleteOnExit(true);
 
@@ -93,14 +93,14 @@ public class PubAndSubTest
     @Test(timeout = 10000)
     public void shouldSpinUpAndShutdown(final String channel) throws Exception
     {
-        setup(channel);
+        launch(channel);
     }
 
     @Theory
     @Test(timeout = 10000)
     public void shouldReceivePublishedMessage(final String channel) throws Exception
     {
-        setup(channel);
+        launch(channel);
 
         buffer.putInt(0, 1);
 
@@ -136,7 +136,7 @@ public class PubAndSubTest
 
         context.termBufferSize(termBufferSize);
 
-        setup(channel);
+        launch(channel);
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
@@ -178,7 +178,7 @@ public class PubAndSubTest
         context.dataLossRate(0.10);                // 10% data loss
         context.dataLossSeed(0xdeadbeefL);         // predictable seed
 
-        setup(channel);
+        launch(channel);
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
@@ -222,7 +222,7 @@ public class PubAndSubTest
         context.dataLossRate(0.10);                // 10% data loss
         context.dataLossSeed(0xcafebabeL);         // predictable seed
 
-        setup(channel);
+        launch(channel);
 
         for (int i = 0; i < numBatches; i++)
         {
@@ -267,7 +267,7 @@ public class PubAndSubTest
 
         context.termBufferSize(termBufferSize);
 
-        setup(channel);
+        launch(channel);
 
         for (int i = 0; i < numBatchesPerTerm; i++)
         {
@@ -331,7 +331,7 @@ public class PubAndSubTest
 
         context.termBufferSize(termBufferSize);
 
-        setup(channel);
+        launch(channel);
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
@@ -378,7 +378,7 @@ public class PubAndSubTest
 
         context.termBufferSize(termBufferSize);
 
-        setup(channel);
+        launch(channel);
 
         for (int i = 0; i < numBatchesPerTerm; i++)
         {
@@ -426,7 +426,7 @@ public class PubAndSubTest
 
         context.termBufferSize(termBufferSize);
 
-        setup(channel);
+        launch(channel);
 
         for (int i = 0; i < numMessagesPerTerm; i++)
         {

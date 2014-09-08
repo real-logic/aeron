@@ -92,7 +92,6 @@ public class LogReader extends LogBuffer
                 {
                     ++framesCounter;
                     handler.onFrame(logBuffer, offset, frameLength);
-
                 }
             }
             finally

@@ -26,6 +26,7 @@ import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertTrue;
@@ -467,5 +468,81 @@ public class PubAndSubTest
             eq(messageLength),
             eq(SESSION_ID),
             eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+    }
+
+    @Theory
+    @Test(timeout = 10000)
+    public void shouldReceivePublishedMessageOneForOneWithReSubscription(final String channel) throws Exception
+    {
+        final int termBufferSize = 64 * 1024;
+        final int numMessagesInTermBuffer = 64;
+        final int messageLength = (termBufferSize / numMessagesInTermBuffer) - DataHeaderFlyweight.HEADER_LENGTH;
+        final int numMessagesToSendStageOne = numMessagesInTermBuffer / 2;
+        final int numMessagesToSendStageTwo = numMessagesInTermBuffer;
+        final CountDownLatch newConnectionLatch = new CountDownLatch(1);
+        final int stage[] = { 1 };
+
+        context.termBufferSize(termBufferSize);
+        subscribingAeronContext.newConnectionHandler(
+            (c, streamId, sessionId) ->
+            {
+                if (2 == stage[0])
+                {
+                    newConnectionLatch.countDown();
+                }
+            });
+
+        launch(channel);
+
+        for (int i = 0; i < numMessagesToSendStageOne; i++)
+        {
+            while (!publication.offer(buffer, 0, messageLength))
+            {
+                Thread.yield();
+            }
+
+            final int fragmentsRead[] = new int[1];
+            SystemTestHelper.executeUntil(
+                () -> fragmentsRead[0] > 0,
+                (j) ->
+                {
+                    fragmentsRead[0] += subscription.poll(10);
+                    Thread.yield();
+                },
+                Integer.MAX_VALUE,
+                TimeUnit.MILLISECONDS.toNanos(900));
+        }
+
+        subscription.close();
+        stage[0] = 2;
+        subscription = subscribingClient.addSubscription(channel, STREAM_ID, dataHandler);
+
+        newConnectionLatch.await();
+
+        for (int i = 0; i < numMessagesToSendStageTwo; i++)
+        {
+            while (!publication.offer(buffer, 0, messageLength))
+            {
+                Thread.yield();
+            }
+
+            final int fragmentsRead[] = new int[1];
+            SystemTestHelper.executeUntil(
+                () -> fragmentsRead[0] > 0,
+                (j) ->
+                {
+                    fragmentsRead[0] += subscription.poll(10);
+                    Thread.yield();
+                },
+                Integer.MAX_VALUE,
+                TimeUnit.MILLISECONDS.toNanos(900));
+        }
+
+        verify(dataHandler, times(numMessagesToSendStageOne + numMessagesToSendStageTwo)).onData(
+            anyObject(),
+            anyInt(),
+            eq(messageLength),
+            eq(SESSION_ID),
+            eq((byte) DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
     }
 }

@@ -66,11 +66,11 @@ public class FileMappingConvention
 
     public static File streamLocation(
         final File rootDir,
+        final String channelDirName,
         final int sessionId,
         final int streamId,
         final long correlationId,
-        final boolean createIfMissing,
-        final String channelDirName)
+        final boolean createIfMissing)
     {
         final File channelDir = new File(rootDir, channelDirName);
         final File sessionDir = new File(channelDir, toHexString(sessionId));

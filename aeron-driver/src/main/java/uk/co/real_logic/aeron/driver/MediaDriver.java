@@ -251,7 +251,8 @@ public class MediaDriver implements AutoCloseable
         private CountersManager countersManager;
         private SystemCounters systemCounters;
 
-        private int termBufferSize;
+        private int publicationTermBufferSize;
+        private int maxConnectionTermBufferSize;
         private int initialWindowSize;
         private int eventBufferSize;
         private long statusMessageTimeout;
@@ -268,6 +269,7 @@ public class MediaDriver implements AutoCloseable
         public Context()
         {
             termBufferSize(Configuration.termBufferSize());
+            termBufferSizeMax(Configuration.termBufferSizeMax());
             initialWindowSize(Configuration.initialWindowSize());
             statusMessageTimeout(Configuration.statusMessageTimeout());
             dataLossRate(Configuration.dataLossRate());
@@ -327,7 +329,9 @@ public class MediaDriver implements AutoCloseable
                 senderProxy(new SenderProxy(senderCommandQueue()));
                 driverConductorProxy(new DriverConductorProxy(conductorCommandQueue));
 
-                termBuffersFactory(new TermBuffersFactory(dataDirName(), termBufferSize, eventLogger));
+                termBuffersFactory(
+                    new TermBuffersFactory(
+                        dataDirName(), publicationTermBufferSize, maxConnectionTermBufferSize, eventLogger));
 
                 if (countersManager() == null)
                 {
@@ -504,7 +508,13 @@ public class MediaDriver implements AutoCloseable
 
         public Context termBufferSize(final int termBufferSize)
         {
-            this.termBufferSize = termBufferSize;
+            this.publicationTermBufferSize = termBufferSize;
+            return this;
+        }
+
+        public Context termBufferSizeMax(final int termBufferSizeMax)
+        {
+            this.maxConnectionTermBufferSize = termBufferSizeMax;
             return this;
         }
 
@@ -678,7 +688,12 @@ public class MediaDriver implements AutoCloseable
 
         public int termBufferSize()
         {
-            return termBufferSize;
+            return publicationTermBufferSize;
+        }
+
+        public int termBufferSizeMax()
+        {
+            return maxConnectionTermBufferSize;
         }
 
         public int initialWindowSize()

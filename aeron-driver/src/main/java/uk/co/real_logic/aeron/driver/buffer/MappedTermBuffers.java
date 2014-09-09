@@ -63,8 +63,8 @@ class MappedTermBuffers implements TermBuffers
 
         try
         {
-            requireEqual(logTemplate.size(), logBufferLength);
-            requireEqual(stateTemplate.size(), stateBufferSize);
+            checkSizeLogBuffer(logTemplate.size(), logBufferLength);
+            checkSizeStateBuffer(stateTemplate.size(), stateBufferSize);
 
             final MappedRawLog active = newTerm("0", directory);
             final MappedRawLog clean = newTerm("1", directory);
@@ -119,11 +119,19 @@ class MappedTermBuffers implements TermBuffers
         }
     }
 
-    private void requireEqual(final long a, final long b)
+    private static void checkSizeLogBuffer(final long templateSize, final long desiredSize)
     {
-        if (a != b)
+        if (desiredSize > templateSize)
         {
-            throw new IllegalArgumentException("Values aren't equal: " + a + " and " + b);
+            throw new IllegalArgumentException("Desired size (" + desiredSize + ") > template size: " + templateSize);
+        }
+    }
+
+    private static void checkSizeStateBuffer(final long templateSize, final long desiredSize)
+    {
+        if (desiredSize != templateSize)
+        {
+            throw new IllegalArgumentException("Values aren't equal: " + desiredSize + " and " + templateSize);
         }
     }
 

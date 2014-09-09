@@ -40,6 +40,7 @@ public class TermBuffersFactoryTest
     private static final int CREATION_ID = 102;
     private static final File DATA_DIR = new File(IoUtil.tmpDirName(), "dataDirName");
     private static final int TERM_BUFFER_SZ = Configuration.TERM_BUFFER_SZ_DEFAULT;
+    private static final int TERM_BUFFER_SZ_MAX = Configuration.TERM_BUFFER_SZ_MAX_DEFAULT;
     private TermBuffersFactory termBuffersFactory;
     private UdpChannel udpChannel = UdpChannel.parse(CHANNEL);
     private EventLogger logger = mock(EventLogger.class);
@@ -48,7 +49,8 @@ public class TermBuffersFactoryTest
     public void createDataDir()
     {
         IoUtil.ensureDirectoryExists(DATA_DIR, "data");
-        termBuffersFactory = new TermBuffersFactory(DATA_DIR.getAbsolutePath(), TERM_BUFFER_SZ, logger);
+        termBuffersFactory =
+            new TermBuffersFactory(DATA_DIR.getAbsolutePath(), TERM_BUFFER_SZ, TERM_BUFFER_SZ_MAX, logger);
     }
 
     @After
@@ -58,7 +60,7 @@ public class TermBuffersFactoryTest
     }
 
     @Test
-    public void mappedFilesAreCorrectSizeAndZeroed() throws Exception
+    public void shouldCreateCorrectSizeAndZeroedFilesForPublication() throws Exception
     {
         final String canonicalForm = udpChannel.canonicalForm();
         final TermBuffers termBuffers =
@@ -79,5 +81,40 @@ public class TermBuffersFactoryTest
                 assertThat(state.getByte(0), is((byte)0));
                 assertThat(state.getByte(LogBufferDescriptor.STATE_BUFFER_LENGTH - 1), is((byte)0));
             });
+    }
+
+    @Test
+    public void shouldCreateCorrectSizeAndZeroedFilesForConnection() throws Exception
+    {
+        final String canonicalForm = udpChannel.canonicalForm();
+        final int maxConnectionTermBufferSize = TERM_BUFFER_SZ / 2;
+        final TermBuffers termBuffers =
+            termBuffersFactory.newConnection(
+                canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, maxConnectionTermBufferSize);
+
+        termBuffers.stream().forEach(
+            (rawLog) ->
+            {
+                final AtomicBuffer log = rawLog.logBuffer();
+
+                assertThat(log.capacity(), is(maxConnectionTermBufferSize));
+                assertThat(log.getByte(0), is((byte)0));
+                assertThat(log.getByte(maxConnectionTermBufferSize - 1), is((byte)0));
+
+                final AtomicBuffer state = rawLog.stateBuffer();
+
+                assertThat(state.capacity(), is(LogBufferDescriptor.STATE_BUFFER_LENGTH));
+                assertThat(state.getByte(0), is((byte)0));
+                assertThat(state.getByte(LogBufferDescriptor.STATE_BUFFER_LENGTH - 1), is((byte)0));
+            });
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldExceptionIfRequestedTermBufferSizeGreaterThanMax()
+    {
+        final String canonicalForm = udpChannel.canonicalForm();
+        final int maxConnectionTermBufferSize = TERM_BUFFER_SZ_MAX * 2;
+        termBuffersFactory.newConnection(
+            canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, maxConnectionTermBufferSize);
     }
 }

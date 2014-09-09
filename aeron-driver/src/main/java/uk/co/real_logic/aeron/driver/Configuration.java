@@ -39,9 +39,14 @@ public class Configuration
     public static final String READ_BUFFER_SZ_PROP_NAME = "aeron.rcv.buffer.size";
 
     /**
-     * Size (in bytes) of the log buffers for terms
+     * Size (in bytes) of the log buffers for publication terms
      */
     public static final String TERM_BUFFER_SZ_PROP_NAME = "aeron.term.buffer.size";
+
+    /**
+     * Size (in bytes) of the log buffers for terms for incoming connections
+     */
+    public static final String TERM_BUFFER_SZ_MAX_PROP_NAME = "aeron.term.buffer.size.max";
 
     /**
      * Size (in bytes) of the command buffers between threads
@@ -135,6 +140,11 @@ public class Configuration
      * Default term buffer size.
      */
     public static final int TERM_BUFFER_SZ_DEFAULT = 16 * 1024 * 1024;
+
+    /**
+     * Default term buffer size max.
+     */
+    public static final int TERM_BUFFER_SZ_MAX_DEFAULT = 16 * 1024 * 1024;
 
     /**
      * Default buffer size for command buffers between threads
@@ -355,6 +365,11 @@ public class Configuration
     public static int termBufferSize()
     {
         return getInteger(TERM_BUFFER_SZ_PROP_NAME, TERM_BUFFER_SZ_DEFAULT);
+    }
+
+    public static int termBufferSizeMax()
+    {
+        return getInteger(TERM_BUFFER_SZ_MAX_PROP_NAME, TERM_BUFFER_SZ_MAX_DEFAULT);
     }
 
     public static int initialWindowSize()

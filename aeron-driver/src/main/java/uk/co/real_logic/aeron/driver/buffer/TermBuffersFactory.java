@@ -35,10 +35,15 @@ public class TermBuffersFactory implements AutoCloseable
     private final File publicationsDir;
     private final File subscriptionsDir;
 
-    private final int termBufferSize;
+    private final int publicationTermBufferSize;
+    private final int maxConnectionTermBufferSize;
     private final EventLogger logger;
 
-    public TermBuffersFactory(final String dataDirectoryName, final int termBufferSize, final EventLogger logger)
+    public TermBuffersFactory(
+        final String dataDirectoryName,
+        final int publicationTermBufferSize,
+        final int maxConnectionTermBufferSize,
+        final EventLogger logger)
     {
         this.logger = logger;
 
@@ -49,9 +54,11 @@ public class TermBuffersFactory implements AutoCloseable
         IoUtil.ensureDirectoryExists(publicationsDir, FileMappingConvention.PUBLICATIONS);
         IoUtil.ensureDirectoryExists(subscriptionsDir, FileMappingConvention.SUBSCRIPTIONS);
 
-        this.termBufferSize = termBufferSize;
+        this.publicationTermBufferSize = publicationTermBufferSize;
+        this.maxConnectionTermBufferSize = maxConnectionTermBufferSize;
 
-        logTemplate = createTemplateFile(dataDirectoryName, "logTemplate", termBufferSize);
+        final int templateSize = Math.max(publicationTermBufferSize, maxConnectionTermBufferSize);
+        logTemplate = createTemplateFile(dataDirectoryName, "logTemplate", templateSize);
         stateTemplate = createTemplateFile(dataDirectoryName, "stateTemplate", STATE_BUFFER_LENGTH);
     }
 
@@ -80,23 +87,39 @@ public class TermBuffersFactory implements AutoCloseable
      * @param correlationId to use to distinguish this publication
      * @return the newly allocated {@link TermBuffers}
      */
-    public TermBuffers newPublication(final String channel, final int sessionId, final int streamId, final long correlationId)
+    public TermBuffers newPublication(
+        final String channel,
+        final int sessionId,
+        final int streamId,
+        final long correlationId)
     {
-        return newInstance(channel, sessionId, streamId, correlationId, publicationsDir);
+        return newInstance(publicationsDir, channel, sessionId, streamId, correlationId, publicationTermBufferSize);
     }
 
     /**
      * Create new {@link TermBuffers} in the subscriptions directory for the supplied triplet.
      *
-     * @param channel       address on the media to listened to.
-     * @param sessionId     under which transmissions are made.
-     * @param streamId      within the channel address to separate message flows.
-     * @param correlationId to use to distinguish this connection
+     * @param channel        address on the media to listened to.
+     * @param sessionId      under which transmissions are made.
+     * @param streamId       within the channel address to separate message flows.
+     * @param correlationId  to use to distinguish this connection
+     * @param termBufferSize to use for the log buffer
      * @return the newly allocated {@link TermBuffers}
      */
-    public TermBuffers newConnection(final String channel, final int sessionId, final int streamId, final long correlationId)
+    public TermBuffers newConnection(
+        final String channel,
+        final int sessionId,
+        final int streamId,
+        final long correlationId,
+        final int termBufferSize)
     {
-        return newInstance(channel, sessionId, streamId, correlationId, subscriptionsDir);
+        if (maxConnectionTermBufferSize < termBufferSize)
+        {
+            throw new IllegalArgumentException(
+                "term buffer size larger than max: " + termBufferSize + " > " + maxConnectionTermBufferSize);
+        }
+
+        return newInstance(subscriptionsDir, channel, sessionId, streamId, correlationId, termBufferSize);
     }
 
     private FileChannel createTemplateFile(final String dataDir, final String name, final long size)
@@ -108,10 +131,16 @@ public class TermBuffersFactory implements AutoCloseable
     }
 
     private TermBuffers newInstance(
-            final String channel, final int sessionId, final int streamId, final long correlationId, final File rootDir)
+        final File rootDir,
+        final String channel,
+        final int sessionId,
+        final int streamId,
+        final long correlationId,
+        final int termBufferSize)
     {
-        final File dir = streamLocation(rootDir, sessionId, streamId, correlationId, true, channel);
+        final File dir = streamLocation(rootDir, channel, sessionId, streamId, correlationId, true);
 
-        return new MappedTermBuffers(dir, logTemplate, termBufferSize, stateTemplate, STATE_BUFFER_LENGTH, logger);
+        return new MappedTermBuffers(
+            dir, logTemplate, termBufferSize, stateTemplate, STATE_BUFFER_LENGTH, logger);
     }
 }

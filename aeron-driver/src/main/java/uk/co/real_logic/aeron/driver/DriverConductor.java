@@ -48,6 +48,7 @@ import static uk.co.real_logic.aeron.common.ErrorCode.*;
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.driver.Configuration.RETRANS_UNICAST_DELAY_DEFAULT_NS;
 import static uk.co.real_logic.aeron.driver.Configuration.RETRANS_UNICAST_LINGER_DEFAULT_NS;
+import static uk.co.real_logic.aeron.driver.Configuration.termBufferSize;
 import static uk.co.real_logic.aeron.driver.MediaDriver.Context;
 
 /**
@@ -534,21 +535,22 @@ public class DriverConductor extends Agent
         final int streamId = cmd.streamId();
         final int initialTermId = cmd.termId();
         final int initialTermOffset = cmd.termOffset();
-        final int termSize = cmd.termSize();
+        final int termBufferSize = cmd.termSize();
         final InetSocketAddress controlAddress = cmd.controlAddress();
         final ReceiveChannelEndpoint channelEndpoint = cmd.channelEndpoint();
         final UdpChannel udpChannel = channelEndpoint.udpChannel();
 
         final String canonicalForm = udpChannel.canonicalForm();
         final long correlationId = generateCreationCorrelationId();
-        final TermBuffers termBuffers = termBuffersFactory.newConnection(canonicalForm, sessionId, streamId, correlationId);
+        final TermBuffers termBuffers =
+            termBuffersFactory.newConnection(canonicalForm, sessionId, streamId, correlationId, termBufferSize);
 
         final String channel = udpChannel.originalUriAsString();
         final int subscriberPositionCounterId = allocatePositionCounter("subscriber", channel, sessionId, streamId);
         final int receiverCompleteCounterId = allocatePositionCounter("receiver", channel, sessionId, streamId);
         final int receiverHwmCounterId = allocatePositionCounter("receiver hwm", channel, sessionId, streamId);
         final long initialPosition = TermHelper.calculatePosition(
-                initialTermId, initialTermOffset, Integer.numberOfTrailingZeros(termSize), initialTermId);
+                initialTermId, initialTermOffset, Integer.numberOfTrailingZeros(termBufferSize), initialTermId);
 
         countersManager.setCounterValue(subscriberPositionCounterId, initialPosition);
 

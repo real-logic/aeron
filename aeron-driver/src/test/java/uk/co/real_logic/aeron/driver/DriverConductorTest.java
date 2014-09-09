@@ -93,7 +93,6 @@ public class DriverConductorTest
         () -> currentTime, CONDUCTOR_TICK_DURATION_US, TimeUnit.MICROSECONDS, CONDUCTOR_TICKS_PER_WHEEL);
 
     private DriverConductor driverConductor;
-    private Receiver receiver;
 
     private final Answer<Boolean> closeChannelEndpointAnswer =
         (invocation) ->
@@ -123,7 +122,6 @@ public class DriverConductorTest
             .conductorTimerWheel(wheel)
             // TODO: remove
             .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
-            .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .eventLogger(mockConductorLogger)
             .termBuffersFactory(mockTermBuffersFactory)
             .countersManager(countersManager);
@@ -140,7 +138,6 @@ public class DriverConductorTest
         ctx.senderProxy(senderProxy);
         ctx.driverConductorProxy(new DriverConductorProxy(ctx.conductorCommandQueue()));
 
-        receiver = new Receiver(ctx);
         driverConductor = new DriverConductor(ctx);
 
         when(senderProxy.newPublication(any())).thenReturn(true);
@@ -159,7 +156,6 @@ public class DriverConductorTest
     @After
     public void tearDown() throws Exception
     {
-        receiver.close();
         driverConductor.close();
     }
 
@@ -184,7 +180,6 @@ public class DriverConductorTest
         writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, CORRELATION_ID_1);
 
         driverConductor.doWork();
-        receiver.doWork();
 
         verify(mockClientProxy).operationSucceeded(CORRELATION_ID_1);
 
@@ -198,7 +193,6 @@ public class DriverConductorTest
         writeSubscriptionMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, CORRELATION_ID_1);
 
         driverConductor.doWork();
-        receiver.doWork();
 
         assertNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
     }
@@ -269,7 +263,6 @@ public class DriverConductorTest
         writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_3, CORRELATION_ID_3);
 
         driverConductor.doWork();
-        receiver.doWork();
 
         final ReceiveChannelEndpoint channelEndpoint = driverConductor.receiverChannelEndpoint(udpChannel);
 
@@ -280,7 +273,6 @@ public class DriverConductorTest
         writeSubscriptionMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_2, CORRELATION_ID_2);
 
         driverConductor.doWork();
-        receiver.doWork();
 
         assertNotNull(driverConductor.receiverChannelEndpoint(udpChannel));
         assertThat(channelEndpoint.streamCount(), is(1));
@@ -296,7 +288,6 @@ public class DriverConductorTest
         writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_3, CORRELATION_ID_3);
 
         driverConductor.doWork();
-        receiver.doWork();
 
         final ReceiveChannelEndpoint channelEndpoint = driverConductor.receiverChannelEndpoint(udpChannel);
 
@@ -307,7 +298,6 @@ public class DriverConductorTest
         writeSubscriptionMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_3, CORRELATION_ID_3);
 
         driverConductor.doWork();
-        receiver.doWork();
 
         assertNotNull(driverConductor.receiverChannelEndpoint(udpChannel));
         assertThat(channelEndpoint.streamCount(), is(1));
@@ -315,7 +305,6 @@ public class DriverConductorTest
         writeSubscriptionMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, CORRELATION_ID_1);
 
         driverConductor.doWork();
-        receiver.doWork();
 
         assertNull(driverConductor.receiverChannelEndpoint(udpChannel));
     }
@@ -355,7 +344,6 @@ public class DriverConductorTest
         writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, INVALID_URI, STREAM_ID_1, CORRELATION_ID_1);
 
         driverConductor.doWork();
-        receiver.doWork();
         driverConductor.doWork();
 
         verify(senderProxy, never()).newPublication(any());
@@ -408,7 +396,6 @@ public class DriverConductorTest
         writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, CORRELATION_ID_1);
 
         driverConductor.doWork();
-        receiver.doWork();
 
         verifyReceiverSubscribes();
         assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
@@ -425,7 +412,6 @@ public class DriverConductorTest
         writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, CORRELATION_ID_1);
 
         driverConductor.doWork();
-        receiver.doWork();
 
         assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
         verifyReceiverSubscribes();

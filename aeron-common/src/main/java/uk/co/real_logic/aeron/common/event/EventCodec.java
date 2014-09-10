@@ -519,7 +519,7 @@ public class EventCodec
                 command.sessionId(),
                 command.streamId(),
                 command.termId(),
-                command.positionCounterId(),
+                command.positionIndicatorCount(),
                 command.correlationId(),
                 locations);
     }

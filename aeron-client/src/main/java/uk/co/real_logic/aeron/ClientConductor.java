@@ -19,7 +19,6 @@ import uk.co.real_logic.aeron.common.*;
 import uk.co.real_logic.aeron.common.collections.ConnectionMap;
 import uk.co.real_logic.aeron.common.command.ConnectionMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.ConnectionReadyFlyweight;
-import uk.co.real_logic.aeron.common.command.PublicationReadyFlyweight;
 import uk.co.real_logic.aeron.common.command.ReadyFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.CopyBroadcastReceiver;
@@ -239,7 +238,7 @@ class ClientConductor extends Agent implements DriverListener
                 }
 
                 final PositionReporter subscriberPosition = new BufferPositionReporter(
-                        counterValuesBuffer, message.positionCounterId());
+                        counterValuesBuffer, message.positionIndicatorCount());
 
                 subscription.onTermBuffersMapped(
                         sessionId, initialTermId, initialPosition, correlationId, logs, subscriberPosition, managedBuffers);

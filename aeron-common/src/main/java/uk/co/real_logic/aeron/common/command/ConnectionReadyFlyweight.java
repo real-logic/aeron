@@ -44,7 +44,7 @@ import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_LONG;
  * +---------------------------------------------------------------+
  * |                           Term ID                             |
  * +---------------------------------------------------------------+
- * |                   Position Indicator Offset                   |
+ * |                   Position Indicators Count                   |
  * +---------------------------------------------------------------+
  * |                          File Offset 0                        |
  * +---------------------------------------------------------------+
@@ -105,6 +105,18 @@ import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_LONG;
  * |                            Channel                          ...
  * |                                                             ...
  * +---------------------------------------------------------------+
+ * |                     Position Indicator Id 0                 ...
+ * +---------------------------------------------------------------+
+ * |                         Registration Id 0                   ...
+ * |                                                             ...
+ * +---------------------------------------------------------------+
+ * |                     Position Indicator Id 1                 ...
+ * +---------------------------------------------------------------+
+ * |                         Registration Id 1                   ...
+ * |                                                             ...
+ * +---------------------------------------------------------------+
+ * |                                                             ...
+ * Up to "Position Indicators Count" entries of this form
  */
 public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweight
 {
@@ -115,11 +127,12 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
     private static final int SESSION_ID_OFFSET = INITIAL_POSITION_OFFSET + SIZE_OF_LONG;
     private static final int STREAM_ID_FIELD_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
     private static final int TERM_ID_FIELD_OFFSET = STREAM_ID_FIELD_OFFSET + SIZE_OF_INT;
-    private static final int POSITION_COUNTER_ID_OFFSET = TERM_ID_FIELD_OFFSET + SIZE_OF_INT;
-    private static final int FILE_OFFSETS_FIELDS_OFFSET = POSITION_COUNTER_ID_OFFSET + SIZE_OF_INT;
+    private static final int POSITION_INDICATOR_COUNT_OFFSET = TERM_ID_FIELD_OFFSET + SIZE_OF_INT;
+    private static final int FILE_OFFSETS_FIELDS_OFFSET = POSITION_INDICATOR_COUNT_OFFSET + SIZE_OF_INT;
     private static final int BUFFER_LENGTHS_FIELDS_OFFSET = FILE_OFFSETS_FIELDS_OFFSET + (NUM_FILES * SIZE_OF_INT);
     private static final int LOCATION_POINTER_FIELDS_OFFSET = BUFFER_LENGTHS_FIELDS_OFFSET + (NUM_FILES * SIZE_OF_INT);
     private static final int LOCATION_0_FIELD_OFFSET = LOCATION_POINTER_FIELDS_OFFSET + (8 * SIZE_OF_INT);
+    private static final int POSITION_INDICATOR_FIELD_SIZE = SIZE_OF_LONG + SIZE_OF_INT;
 
     /**
      * Contains both log buffers and state buffers
@@ -266,24 +279,24 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
     }
 
     /**
-     * return position counter id field
+     * return the number of position indicators
      *
-     * @return position counter id field
+     * @return the number of position indicators
      */
-    public int positionCounterId()
+    public int positionIndicatorCount()
     {
-        return atomicBuffer().getInt(offset() + POSITION_COUNTER_ID_OFFSET, LITTLE_ENDIAN);
+        return atomicBuffer().getInt(offset() + POSITION_INDICATOR_COUNT_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
-     * set position counter id field
+     * set the number of position indicators
      *
-     * @param positionCounterId field value
+     * @param value the number of position indicators
      * @return flyweight
      */
-    public ConnectionReadyFlyweight positionCounterId(final int positionCounterId)
+    public ConnectionReadyFlyweight positionIndicatorCount(final int value)
     {
-        atomicBuffer().putInt(offset() + POSITION_COUNTER_ID_OFFSET, positionCounterId, LITTLE_ENDIAN);
+        atomicBuffer().putInt(offset() + POSITION_INDICATOR_COUNT_OFFSET, value, LITTLE_ENDIAN);
 
         return this;
     }
@@ -352,6 +365,38 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
         return location(CHANNEL_INDEX, value);
     }
 
+    public ConnectionReadyFlyweight positionIndicatorCounterId(int index, int id)
+    {
+        atomicBuffer().putInt(positionIndicatorOffset(index), id);
+        return this;
+    }
+
+    public int positionIndicatorCounterId(int index)
+    {
+        return atomicBuffer().getInt(positionIndicatorOffset(index));
+    }
+
+    public ConnectionReadyFlyweight positionIndicatorRegistrationId(int index, long id)
+    {
+        atomicBuffer().putLong(positionIndicatorOffset(index), id);
+        return this;
+    }
+
+    public long positionIndicatorRegistrationId(int index)
+    {
+        return atomicBuffer().getLong(positionIndicatorOffset(index));
+    }
+
+    private int positionIndicatorOffset(int index)
+    {
+        return endOfChannel() + index * POSITION_INDICATOR_FIELD_SIZE;
+    }
+
+    private int endOfChannel()
+    {
+        return locationPointer(CHANNEL_INDEX + 1);
+    }
+
     /**
      * Get the length of the current message
      *
@@ -361,6 +406,7 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
      */
     public int length()
     {
-        return locationPointer(CHANNEL_INDEX + 1);
+        return positionIndicatorOffset(positionIndicatorCount() + 1);
     }
+
 }

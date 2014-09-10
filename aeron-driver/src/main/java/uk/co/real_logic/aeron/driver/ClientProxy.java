@@ -94,7 +94,7 @@ public class ClientProxy
                          .correlationId(correlationId)
                          .termId(termId)
                 // TODO
-                         .positionCounterId(positions.get(0).positionCounterId());
+                         .positionIndicatorCount(positions.get(0).positionCounterId());
         termBuffers.appendBufferLocationsTo(connectionReady);
         connectionReady.channel(channel);
 

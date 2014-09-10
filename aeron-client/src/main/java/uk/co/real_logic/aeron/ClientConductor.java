@@ -50,7 +50,7 @@ class ClientConductor extends Agent implements DriverListener
     private final long driverTimeoutMs;
     private final long driverTimeoutNs;
     private final ConnectionMap<String, Publication> publicationMap = new ConnectionMap<>(); // Guarded by this
-    private final SubscriptionMap subscriptionMap = new SubscriptionMap();
+    private final ActiveSubscriptions activeSubscriptions = new ActiveSubscriptions();
 
     private final AtomicBuffer counterValuesBuffer;
     private final DriverProxy driverProxy;
@@ -158,17 +158,11 @@ class ClientConductor extends Agent implements DriverListener
     {
         verifyDriverActive();
 
-        Subscription subscription = subscriptionMap.get(channel, streamId);
+        activeCorrelationId = driverProxy.addSubscription(channel, streamId);
+        Subscription subscription = new Subscription(this, handler, channel, streamId, activeCorrelationId);
+        activeSubscriptions.add(subscription);
 
-        if (null == subscription)
-        {
-            activeCorrelationId = driverProxy.addSubscription(channel, streamId);
-            subscription = new Subscription(this, handler, channel, streamId, activeCorrelationId);
-            subscriptionMap.put(channel, streamId, subscription);
-
-            awaitOperationSucceeded();
-        }
-
+        awaitOperationSucceeded();
         return subscription;
     }
 
@@ -181,7 +175,7 @@ class ClientConductor extends Agent implements DriverListener
         final String channel = subscription.channel();
         final int streamId = subscription.streamId();
 
-        subscriptionMap.remove(channel, streamId);
+        activeSubscriptions.remove(subscription);
 
         awaitOperationSucceeded();
     }
@@ -225,33 +219,35 @@ class ClientConductor extends Agent implements DriverListener
         final LogBuffersMessageFlyweight message,
         final long correlationId)
     {
-        final Subscription subscription = subscriptionMap.get(channel, streamId);
-        if (null != subscription && !subscription.isConnected(sessionId))
+        activeSubscriptions.forEach(channel, streamId, subscription ->
         {
-            final LogReader[] logs = new LogReader[BUFFER_COUNT];
-            final ManagedBuffer[] managedBuffers = new ManagedBuffer[BUFFER_COUNT * 2];
-
-            for (int i = 0; i < BUFFER_COUNT; i++)
+            if (null != subscription && !subscription.isConnected(sessionId))
             {
-                final ManagedBuffer logBuffer = mapBuffer(message, i);
-                final ManagedBuffer stateBuffer = mapBuffer(message, i + TermHelper.BUFFER_COUNT);
+                final LogReader[] logs = new LogReader[BUFFER_COUNT];
+                final ManagedBuffer[] managedBuffers = new ManagedBuffer[BUFFER_COUNT * 2];
 
-                logs[i] = new LogReader(logBuffer.buffer(), stateBuffer.buffer());
-                managedBuffers[i * 2] = logBuffer;
-                managedBuffers[i * 2 + 1] = stateBuffer;
+                for (int i = 0; i < BUFFER_COUNT; i++)
+                {
+                    final ManagedBuffer logBuffer = mapBuffer(message, i);
+                    final ManagedBuffer stateBuffer = mapBuffer(message, i + TermHelper.BUFFER_COUNT);
+
+                    logs[i] = new LogReader(logBuffer.buffer(), stateBuffer.buffer());
+                    managedBuffers[i * 2] = logBuffer;
+                    managedBuffers[i * 2 + 1] = stateBuffer;
+                }
+
+                final PositionReporter subscriberPosition = new BufferPositionReporter(
+                        counterValuesBuffer, message.positionCounterId());
+
+                subscription.onTermBuffersMapped(
+                        sessionId, initialTermId, initialPosition, correlationId, logs, subscriberPosition, managedBuffers);
+
+                if (null != newConnectionHandler)
+                {
+                    newConnectionHandler.onNewConnection(channel, streamId, sessionId);
+                }
             }
-
-            final PositionReporter subscriberPosition = new BufferPositionReporter(
-                counterValuesBuffer, message.positionCounterId());
-
-            subscription.onTermBuffersMapped(
-                sessionId, initialTermId, initialPosition, correlationId, logs, subscriberPosition, managedBuffers);
-
-            if (null != newConnectionHandler)
-            {
-                newConnectionHandler.onNewConnection(channel, streamId, sessionId);
-            }
-        }
+        });
     }
 
     public void onError(final ErrorCode errorCode, final String message)
@@ -273,15 +269,16 @@ class ClientConductor extends Agent implements DriverListener
         final ConnectionMessageFlyweight connectionMessage,
         final long correlationId)
     {
-        final Subscription subscription = subscriptionMap.get(channel, streamId);
-
-        if (null != subscription && subscription.removeConnection(sessionId, correlationId))
+        activeSubscriptions.forEach(channel, streamId, subscription ->
         {
-            if (null != inactiveConnectionHandler)
+            if (subscription.removeConnection(sessionId, correlationId))
             {
-                inactiveConnectionHandler.onInactiveConnection(channel, streamId, sessionId);
+                if (null != inactiveConnectionHandler)
+                {
+                    inactiveConnectionHandler.onInactiveConnection(channel, streamId, sessionId);
+                }
             }
-        }
+        });
     }
 
     private void await(final long startTime)

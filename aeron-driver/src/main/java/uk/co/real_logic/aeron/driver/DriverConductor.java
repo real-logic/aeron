@@ -469,9 +469,7 @@ public class DriverConductor extends Agent
 
             receiveChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
 
-            final RegisterReceiveChannelEndpointCmd registerCmd =
-                new RegisterReceiveChannelEndpointCmd(channelEndpoint);
-            receiverProxy.registerMediaEndpoint(registerCmd);
+            receiverProxy.registerMediaEndpoint(channelEndpoint);
         }
 
         channelEndpoint.incRefToStream(streamId);
@@ -521,10 +519,7 @@ public class DriverConductor extends Agent
         {
             receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
 
-            final CloseReceiveChannelEndpointCmd cancelCmd =
-                new CloseReceiveChannelEndpointCmd(channelEndpoint);
-
-            receiverProxy.closeMediaEndpoint(cancelCmd);
+            receiverProxy.closeMediaEndpoint(channelEndpoint);
 
             while (!channelEndpoint.isClosed())
             {
@@ -624,8 +619,7 @@ public class DriverConductor extends Agent
             subscriberPosition.subscription().addConnection(connection, subscriberPosition.positionIndicator());
         });
 
-        final NewConnectionCmd newConnectionCmd = new NewConnectionCmd(channelEndpoint, connection);
-        receiverProxy.newConnection(newConnectionCmd);
+        receiverProxy.newConnection(channelEndpoint, connection);
     }
 
     private void onClientKeepalive(final long clientId)
@@ -719,10 +713,7 @@ public class DriverConductor extends Agent
                 {
                     receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
 
-                    final CloseReceiveChannelEndpointCmd cancelCmd =
-                        new CloseReceiveChannelEndpointCmd(channelEndpoint);
-
-                    receiverProxy.closeMediaEndpoint(cancelCmd);
+                    receiverProxy.closeMediaEndpoint(channelEndpoint);
                 }
             }
         }
@@ -814,10 +805,7 @@ public class DriverConductor extends Agent
             {
                 pendingSetups.remove(i);
 
-                final RemovePendingSetupCmd removeCmd = new RemovePendingSetupCmd(
-                    cmd.channelEndpoint(), cmd.sessionId(), cmd.streamId());
-
-                receiverProxy.removePendingSetup(removeCmd);
+                receiverProxy.removePendingSetup(cmd.channelEndpoint(), cmd.sessionId(), cmd.streamId());
             }
         }
     }

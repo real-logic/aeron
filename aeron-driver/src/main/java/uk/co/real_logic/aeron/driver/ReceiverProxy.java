@@ -23,7 +23,6 @@ import java.util.Queue;
 /**
  * Proxy for writing into the Receiver Thread's command buffer.
  */
-// TODO: put all the command object creation inside
 public class ReceiverProxy
 {
     private final Queue<? super Object> commandQueue;
@@ -45,9 +44,9 @@ public class ReceiverProxy
         offerCommand(new RemoveSubscriptionCmd(mediaEndpoint, streamId));
     }
 
-    public void newConnection(final NewConnectionCmd e)
+    public void newConnection(final ReceiveChannelEndpoint channelEndpoint, final DriverConnection connection)
     {
-        offerCommand(e);
+        offerCommand(new NewConnectionCmd(channelEndpoint, connection));
     }
 
     public void removeConnection(final DriverConnection connection)
@@ -55,19 +54,19 @@ public class ReceiverProxy
         offerCommand(new RemoveConnectionCmd(connection.receiveChannelEndpoint(), connection));
     }
 
-    public void registerMediaEndpoint(final RegisterReceiveChannelEndpointCmd cmd)
+    public void registerMediaEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
-        offerCommand(cmd);
+        offerCommand(new RegisterReceiveChannelEndpointCmd(channelEndpoint));
     }
 
-    public void closeMediaEndpoint(final CloseReceiveChannelEndpointCmd cmd)
+    public void closeMediaEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
-        offerCommand(cmd);
+        offerCommand(new CloseReceiveChannelEndpointCmd(channelEndpoint));
     }
 
-    public void removePendingSetup(final RemovePendingSetupCmd cmd)
+    public void removePendingSetup(final ReceiveChannelEndpoint channelEndpoint, final int sessionId, final int streamId)
     {
-        offerCommand(cmd);
+        offerCommand(new RemovePendingSetupCmd(channelEndpoint, sessionId, streamId));
     }
 
     public void closeSubscription(final DriverSubscription subscription)

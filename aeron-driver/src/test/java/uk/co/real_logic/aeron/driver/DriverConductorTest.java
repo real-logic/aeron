@@ -97,8 +97,8 @@ public class DriverConductorTest
         (invocation) ->
         {
             final Object args[] = invocation.getArguments();
-            final CloseReceiveChannelEndpointCmd cmd = (CloseReceiveChannelEndpointCmd)args[0];
-            cmd.receiveChannelEndpoint().close();
+            final ReceiveChannelEndpoint channelEndpoint = (ReceiveChannelEndpoint)args[0];
+            channelEndpoint.close();
             return null;
         };
 

@@ -49,13 +49,14 @@ public class EventCodec
         ThreadLocal.withInitial(PublicationMessageFlyweight::new);
     private final static ThreadLocal<SubscriptionMessageFlyweight> subMessage =
         ThreadLocal.withInitial(SubscriptionMessageFlyweight::new);
-    private final static ThreadLocal<LogBuffersMessageFlyweight> newBufferMessage =
-        ThreadLocal.withInitial(LogBuffersMessageFlyweight::new);
+    private final static ThreadLocal<PublicationReadyFlyweight> publicationReady =
+        ThreadLocal.withInitial(PublicationReadyFlyweight::new);
+    private final static ThreadLocal<ConnectionReadyFlyweight> connectionReady =
+            ThreadLocal.withInitial(ConnectionReadyFlyweight::new);
     private final static ThreadLocal<CorrelatedMessageFlyweight> correlatedMsg =
         ThreadLocal.withInitial(CorrelatedMessageFlyweight::new);
     private final static ThreadLocal<ConnectionMessageFlyweight> connectionMsg =
         ThreadLocal.withInitial(ConnectionMessageFlyweight::new);
-
 
     private final static int LOG_HEADER_LENGTH = 16;
     private final static int SOCKET_ADDRESS_MAX_LENGTH = 24;
@@ -221,11 +222,16 @@ public class EventCodec
                 builder.append(dissect(subCommand));
                 break;
 
-            case CMD_OUT_NEW_PUBLICATION_BUFFER_NOTIFICATION:
-            case CMD_OUT_NEW_SUBSCRIPTION_BUFFER_NOTIFICATION:
-                final LogBuffersMessageFlyweight newBuffer = newBufferMessage.get();
+            case CMD_OUT_PUBLICATION_READY:
+                final PublicationReadyFlyweight newBuffer = publicationReady.get();
                 newBuffer.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(newBuffer));
+                break;
+
+            case CMD_OUT_CONNECTION_READY:
+                final ConnectionReadyFlyweight connectionReadyCommand = connectionReady.get();
+                connectionReadyCommand.wrap(buffer, offset + relativeOffset);
+                builder.append(dissect(connectionReadyCommand));
                 break;
 
             case CMD_OUT_ON_OPERATION_SUCCESS:
@@ -482,7 +488,7 @@ public class EventCodec
             command.correlationId());
     }
 
-    private static String dissect(final LogBuffersMessageFlyweight command)
+    private static String dissect(final PublicationReadyFlyweight command)
     {
         final String locations =
             IntStream.range(0, 6)
@@ -490,15 +496,32 @@ public class EventCodec
                          command.location(i), command.bufferLength(i), command.bufferOffset(i)))
                      .collect(Collectors.joining("\n    "));
 
-        return String.format("%s %x:%x:%x @%x %x [%x]\n    %s",
+        return String.format("%s %x:%x:%x %x [%x]\n    %s",
             command.channel(),
             command.sessionId(),
             command.streamId(),
             command.termId(),
-            command.initialPosition(),
             command.positionCounterId(),
             command.correlationId(),
             locations);
+    }
+
+    private static String dissect(final ConnectionReadyFlyweight command)
+    {
+        final String locations =
+                IntStream.range(0, 6)
+                        .mapToObj((i) -> String.format("{%s, %d@%x}",
+                                command.location(i), command.bufferLength(i), command.bufferOffset(i)))
+                        .collect(Collectors.joining("\n    "));
+
+        return String.format("%s %x:%x:%x %x [%x]\n    %s",
+                command.channel(),
+                command.sessionId(),
+                command.streamId(),
+                command.termId(),
+                command.positionCounterId(),
+                command.correlationId(),
+                locations);
     }
 
     private static String dissect(final CorrelatedMessageFlyweight command)

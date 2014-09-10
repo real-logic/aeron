@@ -25,6 +25,7 @@ import uk.co.real_logic.aeron.common.status.PositionIndicator;
 import uk.co.real_logic.aeron.common.status.PositionReporter;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -88,7 +89,7 @@ public class DriverConnection implements AutoCloseable
         final TermBuffers termBuffers,
         final LossHandler lossHandler,
         final StatusMessageSender statusMessageSender,
-        final PositionIndicator subscriberPosition,
+        final PositionIndicator positionIndicator,
         final PositionReporter completedPosition,
         final PositionReporter hwmPosition,
         final NanoClock clock,
@@ -100,7 +101,8 @@ public class DriverConnection implements AutoCloseable
         this.sessionId = sessionId;
         this.streamId = streamId;
         this.termBuffers = termBuffers;
-        this.subscriberPosition = subscriberPosition;
+        // TODO
+        this.subscriberPosition = positionIndicator;
         this.completedPosition = completedPosition;
         this.hwmPosition = hwmPosition;
         this.systemCounters = systemCounters;

@@ -15,7 +15,8 @@
  */
 package uk.co.real_logic.aeron.driver.buffer;
 
-import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
+import uk.co.real_logic.aeron.common.command.PublicationReadyFlyweight;
+import uk.co.real_logic.aeron.common.command.ReadyFlyweight;
 
 import java.util.stream.Stream;
 
@@ -28,7 +29,7 @@ public interface TermBuffers extends AutoCloseable
 
     RawLog[] buffers();
 
-    void appendBufferLocationsTo(final LogBuffersMessageFlyweight logBuffersMessage);
+    void appendBufferLocationsTo(final ReadyFlyweight readyFlyweight);
 
     void close();
 }

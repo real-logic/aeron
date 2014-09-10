@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.common;
 
 import org.junit.Test;
-import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
+import uk.co.real_logic.aeron.common.command.PublicationReadyFlyweight;
 import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
@@ -43,8 +43,8 @@ public class FlyweightTest
     private final PublicationMessageFlyweight decodePublication = new PublicationMessageFlyweight();
     private final ErrorFlyweight encodeError = new ErrorFlyweight();
     private final ErrorFlyweight decodeError = new ErrorFlyweight();
-    private final LogBuffersMessageFlyweight encodeNewBuffer = new LogBuffersMessageFlyweight();
-    private final LogBuffersMessageFlyweight decodeNewBuffer = new LogBuffersMessageFlyweight();
+    private final PublicationReadyFlyweight encodeNewBuffer = new PublicationReadyFlyweight();
+    private final PublicationReadyFlyweight decodeNewBuffer = new PublicationReadyFlyweight();
     private final NakFlyweight encodeNakHeader = new NakFlyweight();
     private final NakFlyweight decodeNakHeader = new NakFlyweight();
 

@@ -56,4 +56,9 @@ public class DriverSubscription
     {
         return aeronClient.timeOfLastKeepalive();
     }
+
+    public boolean matches(final int streamId, final ReceiveChannelEndpoint channelEndpoint)
+    {
+        return streamId() == streamId && receiveChannelEndpoint() == channelEndpoint;
+    }
 }

@@ -70,6 +70,7 @@ public class ReceiverTest
     private static final byte[] FAKE_PAYLOAD = "Hello there, message!".getBytes();
     private static final int INITIAL_WINDOW_SIZE = Configuration.INITIAL_WINDOW_SIZE_DEFAULT;
     private static final long STATUS_MESSAGE_TIMEOUT = Configuration.STATUS_MESSAGE_TIMEOUT_DEFAULT_NS;
+
     private static final PositionIndicator POSITION_INDICATOR = mock(PositionIndicator.class);
 
     private final LossHandler mockLossHandler = mock(LossHandler.class);

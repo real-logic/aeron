@@ -35,9 +35,6 @@ import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_LONG;
  * |                         Correlation ID                        |
  * |                                                               |
  * +---------------------------------------------------------------+
- * |                        Initial Position                       |
- * |                                                               |
- * +---------------------------------------------------------------+
  * |                          Session ID                           |
  * +---------------------------------------------------------------+
  * |                           Stream ID                           |
@@ -106,13 +103,12 @@ import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_LONG;
  * |                                                             ...
  * +---------------------------------------------------------------+
  */
-public class LogBuffersMessageFlyweight extends Flyweight
+public class PublicationReadyFlyweight extends Flyweight implements ReadyFlyweight
 {
     private static final int NUM_FILES = 6;
 
     private static final int CORRELATION_ID_OFFSET = 0;
-    private static final int INITIAL_POSITION_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
-    private static final int SESSION_ID_OFFSET = INITIAL_POSITION_OFFSET + SIZE_OF_LONG;
+    private static final int SESSION_ID_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
     private static final int STREAM_ID_FIELD_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
     private static final int TERM_ID_FIELD_OFFSET = STREAM_ID_FIELD_OFFSET + SIZE_OF_INT;
     private static final int POSITION_COUNTER_ID_OFFSET = TERM_ID_FIELD_OFFSET + SIZE_OF_INT;
@@ -137,7 +133,7 @@ public class LogBuffersMessageFlyweight extends Flyweight
         return relativeIntField(index, FILE_OFFSETS_FIELDS_OFFSET);
     }
 
-    public LogBuffersMessageFlyweight bufferOffset(final int index, final int value)
+    public PublicationReadyFlyweight bufferOffset(final int index, final int value)
     {
         return relativeIntField(index, value, FILE_OFFSETS_FIELDS_OFFSET);
     }
@@ -147,7 +143,7 @@ public class LogBuffersMessageFlyweight extends Flyweight
         return relativeIntField(index, BUFFER_LENGTHS_FIELDS_OFFSET);
     }
 
-    public LogBuffersMessageFlyweight bufferLength(final int index, final int value)
+    public PublicationReadyFlyweight bufferLength(final int index, final int value)
     {
         return relativeIntField(index, value, BUFFER_LENGTHS_FIELDS_OFFSET);
     }
@@ -168,32 +164,9 @@ public class LogBuffersMessageFlyweight extends Flyweight
      * @param correlationId field value
      * @return flyweight
      */
-    public LogBuffersMessageFlyweight correlationId(final long correlationId)
+    public PublicationReadyFlyweight correlationId(final long correlationId)
     {
         atomicBuffer().putLong(offset() + CORRELATION_ID_OFFSET, correlationId, ByteOrder.LITTLE_ENDIAN);
-
-        return this;
-    }
-
-    /**
-     * return initial position field
-     *
-     * @return initial position field
-     */
-    public long initialPosition()
-    {
-        return atomicBuffer().getLong(offset() + INITIAL_POSITION_OFFSET, ByteOrder.LITTLE_ENDIAN);
-    }
-
-    /**
-     * set initial position field
-     *
-     * @param initialPosition field value
-     * @return flyweight
-     */
-    public LogBuffersMessageFlyweight initialPosition(final long initialPosition)
-    {
-        atomicBuffer().putLong(offset() + INITIAL_POSITION_OFFSET, initialPosition, ByteOrder.LITTLE_ENDIAN);
 
         return this;
     }
@@ -212,7 +185,7 @@ public class LogBuffersMessageFlyweight extends Flyweight
      * @param sessionId field value
      * @return flyweight
      */
-    public LogBuffersMessageFlyweight sessionId(final int sessionId)
+    public PublicationReadyFlyweight sessionId(final int sessionId)
     {
         atomicBuffer().putInt(offset() + SESSION_ID_OFFSET, sessionId, LITTLE_ENDIAN);
 
@@ -235,7 +208,7 @@ public class LogBuffersMessageFlyweight extends Flyweight
      * @param streamId field value
      * @return flyweight
      */
-    public LogBuffersMessageFlyweight streamId(final int streamId)
+    public PublicationReadyFlyweight streamId(final int streamId)
     {
         atomicBuffer().putInt(offset() + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
 
@@ -258,7 +231,7 @@ public class LogBuffersMessageFlyweight extends Flyweight
      * @param termId field value
      * @return flyweight
      */
-    public LogBuffersMessageFlyweight termId(final int termId)
+    public PublicationReadyFlyweight termId(final int termId)
     {
         atomicBuffer().putInt(offset() + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
 
@@ -281,7 +254,7 @@ public class LogBuffersMessageFlyweight extends Flyweight
      * @param positionCounterId field value
      * @return flyweight
      */
-    public LogBuffersMessageFlyweight positionCounterId(final int positionCounterId)
+    public ReadyFlyweight positionCounterId(final int positionCounterId)
     {
         atomicBuffer().putInt(offset() + POSITION_COUNTER_ID_OFFSET, positionCounterId, LITTLE_ENDIAN);
 
@@ -293,7 +266,7 @@ public class LogBuffersMessageFlyweight extends Flyweight
         return atomicBuffer().getInt(relativeOffset(index, fieldOffset), LITTLE_ENDIAN);
     }
 
-    private LogBuffersMessageFlyweight relativeIntField(final int index, final int value, final int fieldOffset)
+    private PublicationReadyFlyweight relativeIntField(final int index, final int value, final int fieldOffset)
     {
         atomicBuffer().putInt(relativeOffset(index, fieldOffset), value, LITTLE_ENDIAN);
 
@@ -315,7 +288,7 @@ public class LogBuffersMessageFlyweight extends Flyweight
         return relativeIntField(index, LOCATION_POINTER_FIELDS_OFFSET);
     }
 
-    private LogBuffersMessageFlyweight locationPointer(final int index, final int value)
+    private ReadyFlyweight locationPointer(final int index, final int value)
     {
         return relativeIntField(index, value, LOCATION_POINTER_FIELDS_OFFSET);
     }
@@ -328,7 +301,7 @@ public class LogBuffersMessageFlyweight extends Flyweight
         return atomicBuffer().getStringWithoutLength(offset() + start, length);
     }
 
-    public LogBuffersMessageFlyweight location(final int index, final String value)
+    public PublicationReadyFlyweight location(final int index, final String value)
     {
         final int start = locationPointer(index);
         if (start == 0)
@@ -347,7 +320,7 @@ public class LogBuffersMessageFlyweight extends Flyweight
         return location(CHANNEL_INDEX);
     }
 
-    public LogBuffersMessageFlyweight channel(final String value)
+    public ReadyFlyweight channel(final String value)
     {
         return location(CHANNEL_INDEX, value);
     }

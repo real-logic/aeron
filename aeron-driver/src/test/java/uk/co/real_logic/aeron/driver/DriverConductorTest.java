@@ -19,7 +19,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.mockito.verification.VerificationMode;
 import uk.co.real_logic.aeron.common.TimerWheel;
@@ -168,10 +167,9 @@ public class DriverConductorTest
 
         verifySenderNotifiedOfNewPublication();
 
-        verify(mockClientProxy).onNewTermBuffers(
-                eq(ControlProtocolEvents.ON_NEW_PUBLICATION),
+        verify(mockClientProxy).onPublicationReady(
                 eq(CHANNEL_URI + 4000), eq(2), eq(1), anyInt(),
-                eq(0L), any(), anyLong(), anyInt());
+                any(), anyLong(), anyInt());
     }
 
     @Test

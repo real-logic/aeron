@@ -21,7 +21,9 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.common.IdleStrategy;
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.TimerWheel;
-import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
+import uk.co.real_logic.aeron.common.command.ConnectionReadyFlyweight;
+import uk.co.real_logic.aeron.common.command.PublicationReadyFlyweight;
+import uk.co.real_logic.aeron.common.command.ReadyFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastBufferDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastReceiver;
@@ -40,8 +42,8 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.common.ErrorCode.INVALID_CHANNEL;
-import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ON_NEW_CONNECTION;
-import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ON_NEW_PUBLICATION;
+import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ON_CONNECTION_READY;
+import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ON_PUBLICATION_READY;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
 
 public class ClientConductorTest extends MockBufferUsage
@@ -60,7 +62,8 @@ public class ClientConductorTest extends MockBufferUsage
     private static final int AWAIT_TIMEOUT = 100;
     private static final int MTU_LENGTH = 1280; // from CommonContext
 
-    private final LogBuffersMessageFlyweight newBufferMessage = new LogBuffersMessageFlyweight();
+    private final PublicationReadyFlyweight publicationReady = new PublicationReadyFlyweight();
+    private final ConnectionReadyFlyweight connectionReady = new ConnectionReadyFlyweight();
     private final ErrorFlyweight errorHeader = new ErrorFlyweight();
 
     private final ByteBuffer sendBuffer = ByteBuffer.allocate(SEND_BUFFER_CAPACITY);
@@ -110,7 +113,8 @@ public class ClientConductorTest extends MockBufferUsage
             AWAIT_TIMEOUT,
             MTU_LENGTH);
 
-        newBufferMessage.wrap(atomicSendBuffer, 0);
+        publicationReady.wrap(atomicSendBuffer, 0);
+        connectionReady.wrap(atomicSendBuffer, 0);
         errorHeader.wrap(atomicSendBuffer, 0);
     }
 
@@ -275,7 +279,7 @@ public class ClientConductorTest extends MockBufferUsage
 
         Subscription subscription = addSubscription();
 
-        sendNewBufferNotification(ON_NEW_CONNECTION, SESSION_ID_1, TERM_ID_1, STREAM_ID_1, CORRELATION_ID);
+        sendConnectionReady(SESSION_ID_1, TERM_ID_1, STREAM_ID_1, CORRELATION_ID);
         conductor.doWork();
 
         assertFalse(subscription.hasNoConnections());
@@ -292,32 +296,49 @@ public class ClientConductorTest extends MockBufferUsage
         return conductor.addSubscription(CHANNEL, STREAM_ID_1, dataHandler);
     }
 
-    private void sendNewBufferNotification(final int msgTypeId, final int sessionId, final int termId, final int streamId, final long correlationId)
+    private void sendPublicationReady(final int sessionId, final int termId, final int streamId, final long correlationId)
     {
-        newBufferMessage.streamId(streamId)
+        publicationReady.streamId(streamId)
                         .sessionId(sessionId)
                         .correlationId(correlationId)
                         .termId(termId);
 
+        addBuffers(sessionId, publicationReady);
+        publicationReady.channel(CHANNEL);
+
+        toClientTransmitter.transmit(ON_PUBLICATION_READY, atomicSendBuffer, 0, publicationReady.length());
+    }
+
+    private void sendConnectionReady(final int sessionId, final int termId, final int streamId, final long correlationId)
+    {
+        connectionReady.streamId(streamId)
+                       .sessionId(sessionId)
+                       .correlationId(correlationId)
+                       .termId(termId);
+
+        addBuffers(sessionId, connectionReady);
+        connectionReady.channel(CHANNEL);
+
+        toClientTransmitter.transmit(ON_CONNECTION_READY, atomicSendBuffer, 0, connectionReady.length());
+    }
+
+    private static void addBuffers(final int sessionId, final ReadyFlyweight message)
+    {
+        IntStream.range(0, TermHelper.BUFFER_COUNT).forEach(
+                (i) ->
+                {
+                message.location(i, sessionId + "-log-" + i);
+                message.bufferOffset(i, 0);
+                message.bufferLength(i, LOG_BUFFER_SZ);
+                });
+
         IntStream.range(0, TermHelper.BUFFER_COUNT).forEach(
             (i) ->
             {
-                newBufferMessage.location(i, sessionId + "-log-" + i);
-                newBufferMessage.bufferOffset(i, 0);
-                newBufferMessage.bufferLength(i, LOG_BUFFER_SZ);
+                message.location(i + TermHelper.BUFFER_COUNT, sessionId + "-state-" + i);
+                message.bufferOffset(i + TermHelper.BUFFER_COUNT, 0);
+                message.bufferLength(i + TermHelper.BUFFER_COUNT, STATE_BUFFER_LENGTH);
             });
-
-        IntStream.range(0, TermHelper.BUFFER_COUNT).forEach(
-            (i) ->
-            {
-                newBufferMessage.location(i + TermHelper.BUFFER_COUNT, sessionId + "-state-" + i);
-                newBufferMessage.bufferOffset(i + TermHelper.BUFFER_COUNT, 0);
-                newBufferMessage.bufferLength(i + TermHelper.BUFFER_COUNT, STATE_BUFFER_LENGTH);
-            });
-
-        newBufferMessage.channel(CHANNEL);
-
-        toClientTransmitter.transmit(msgTypeId, atomicSendBuffer, 0, newBufferMessage.length());
     }
 
     private void willSignalTimeOut()
@@ -345,7 +366,7 @@ public class ClientConductorTest extends MockBufferUsage
         doAnswer(
             invocation ->
             {
-                sendNewBufferNotification(ON_NEW_PUBLICATION, sessionId, TERM_ID_1, streamId, correlationId);
+                sendPublicationReady(sessionId, TERM_ID_1, streamId, correlationId);
                 conductor.doWork();
                 return null;
             }).when(signal).await(anyLong());

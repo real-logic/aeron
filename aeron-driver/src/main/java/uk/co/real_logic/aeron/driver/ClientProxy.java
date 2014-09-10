@@ -19,7 +19,8 @@ import uk.co.real_logic.aeron.common.ErrorCode;
 import uk.co.real_logic.aeron.common.Flyweight;
 import uk.co.real_logic.aeron.common.command.ConnectionMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
-import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
+import uk.co.real_logic.aeron.common.command.PublicationReadyFlyweight;
+import uk.co.real_logic.aeron.common.command.ConnectionReadyFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.aeron.common.event.EventCode;
@@ -28,8 +29,11 @@ import uk.co.real_logic.aeron.common.protocol.ErrorFlyweight;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.*;
+import static uk.co.real_logic.aeron.common.event.EventCode.CMD_OUT_CONNECTION_READY;
+import static uk.co.real_logic.aeron.common.event.EventCode.CMD_OUT_PUBLICATION_READY;
 
 /**
  * Proxy for communicating from the driver to the client conductor.
@@ -42,7 +46,8 @@ public class ClientProxy
     private final BroadcastTransmitter transmitter;
 
     private final ErrorFlyweight errorFlyweight = new ErrorFlyweight();
-    private final LogBuffersMessageFlyweight logBuffersMessage = new LogBuffersMessageFlyweight();
+    private final PublicationReadyFlyweight publicationReady = new PublicationReadyFlyweight();
+    private final ConnectionReadyFlyweight connectionReady = new ConnectionReadyFlyweight();
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
     private final ConnectionMessageFlyweight connectionMessage = new ConnectionMessageFlyweight();
     private final EventLogger logger;
@@ -71,33 +76,53 @@ public class ClientProxy
         transmitter.transmit(ON_ERROR, tmpBuffer, 0, errorFlyweight.frameLength());
     }
 
-    public void onNewTermBuffers(
-        final int msgTypeId,
-        final String channel,
-        final int streamId,
-        final int sessionId,
-        final int termId,
-        final long initialPosition,
-        final TermBuffers termBuffers,
-        final long correlationId,
-        final int positionCounterId)
+    public void onConnectionReady(
+            final String channel,
+            final int streamId,
+            final int sessionId,
+            final int termId,
+            final long initialPosition,
+            final TermBuffers termBuffers,
+            final long correlationId,
+            final List<SubscriptionPosition> positions)
     {
-        logBuffersMessage.wrap(tmpBuffer, 0);
-        logBuffersMessage.sessionId(sessionId)
+
+        connectionReady.wrap(tmpBuffer, 0);
+        connectionReady.sessionId(sessionId)
                          .streamId(streamId)
                          .initialPosition(initialPosition)
                          .correlationId(correlationId)
                          .termId(termId)
-                         .positionCounterId(positionCounterId);
-        termBuffers.appendBufferLocationsTo(logBuffersMessage);
-        logBuffersMessage.channel(channel);
+                // TODO
+                         .positionCounterId(positions.get(0).positionCounterId());
+        termBuffers.appendBufferLocationsTo(connectionReady);
+        connectionReady.channel(channel);
 
-        final EventCode eventCode = msgTypeId == ON_NEW_PUBLICATION ?
-            EventCode.CMD_OUT_NEW_PUBLICATION_BUFFER_NOTIFICATION : EventCode.CMD_OUT_NEW_SUBSCRIPTION_BUFFER_NOTIFICATION;
+        logger.log(CMD_OUT_CONNECTION_READY, tmpBuffer, 0, connectionReady.length());
+        transmitter.transmit(ON_CONNECTION_READY, tmpBuffer, 0, connectionReady.length());
+    }
 
-        logger.log(eventCode, tmpBuffer, 0, logBuffersMessage.length());
+    public void onPublicationReady(
+            final String channel,
+            final int streamId,
+            final int sessionId,
+            final int termId,
+            final TermBuffers termBuffers,
+            final long correlationId,
+            final int positionCounterId)
+    {
+        publicationReady.wrap(tmpBuffer, 0);
+        publicationReady.sessionId(sessionId)
+                .streamId(streamId)
+                .correlationId(correlationId)
+                .termId(termId)
+                .positionCounterId(positionCounterId);
+        termBuffers.appendBufferLocationsTo(publicationReady);
+        publicationReady.channel(channel);
 
-        transmitter.transmit(msgTypeId, tmpBuffer, 0, logBuffersMessage.length());
+        logger.log(CMD_OUT_PUBLICATION_READY, tmpBuffer, 0, publicationReady.length());
+
+        transmitter.transmit(ON_PUBLICATION_READY, tmpBuffer, 0, publicationReady.length());
     }
 
     public void operationSucceeded(final long correlationId)

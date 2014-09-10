@@ -17,8 +17,9 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.common.ErrorCode;
 import uk.co.real_logic.aeron.common.command.ConnectionMessageFlyweight;
+import uk.co.real_logic.aeron.common.command.ConnectionReadyFlyweight;
 import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
-import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
+import uk.co.real_logic.aeron.common.command.PublicationReadyFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.MessageHandler;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.CopyBroadcastReceiver;
@@ -34,7 +35,8 @@ class DriverListenerAdapter implements MessageHandler
     private final CopyBroadcastReceiver broadcastReceiver;
 
     private final ErrorFlyweight errorHeader = new ErrorFlyweight();
-    private final LogBuffersMessageFlyweight logBuffersMessage = new LogBuffersMessageFlyweight();
+    private final PublicationReadyFlyweight publicationReady = new PublicationReadyFlyweight();
+    private final ConnectionReadyFlyweight connectionReady = new ConnectionReadyFlyweight();
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
     private final ConnectionMessageFlyweight connectionMessage = new ConnectionMessageFlyweight();
     private final DriverListener listener;
@@ -58,29 +60,41 @@ class DriverListenerAdapter implements MessageHandler
     {
         switch (msgTypeId)
         {
-            case ON_NEW_CONNECTION:
-            case ON_NEW_PUBLICATION:
-                logBuffersMessage.wrap(buffer, index);
+            case ON_PUBLICATION_READY:
+            {
+                publicationReady.wrap(buffer, index);
 
-                final String channel = logBuffersMessage.channel();
-                final int sessionId = logBuffersMessage.sessionId();
-                final int streamId = logBuffersMessage.streamId();
-                final int termId = logBuffersMessage.termId();
-                final int positionCounterId = logBuffersMessage.positionCounterId();
-                final long initialPosition = logBuffersMessage.initialPosition();
-                final long correlationId = logBuffersMessage.correlationId();
+                final long correlationId = publicationReady.correlationId();
 
-                if (msgTypeId == ON_NEW_PUBLICATION && correlationId == activeCorrelationId)
+                if (activeCorrelationId == correlationId)
                 {
+                    final String channel = publicationReady.channel();
+                    final int sessionId = publicationReady.sessionId();
+                    final int streamId = publicationReady.streamId();
+                    final int termId = publicationReady.termId();
+                    final int positionCounterId = publicationReady.positionCounterId();
+
                     listener.onNewPublication(
-                        channel, streamId, sessionId, termId, positionCounterId, logBuffersMessage, activeCorrelationId);
-                }
-                else if (msgTypeId == ON_NEW_CONNECTION)
-                {
-                    listener.onNewConnection(
-                        channel, streamId, sessionId, termId, initialPosition, logBuffersMessage, correlationId);
+                            channel, streamId, sessionId, termId, positionCounterId, publicationReady, activeCorrelationId);
                 }
                 break;
+            }
+
+            case ON_CONNECTION_READY:
+            {
+                connectionReady.wrap(buffer, index);
+
+                final String channel = connectionReady.channel();
+                final int sessionId = connectionReady.sessionId();
+                final int streamId = connectionReady.streamId();
+                final int termId = connectionReady.termId();
+                final long initialPosition = connectionReady.initialPosition();
+                final long correlationId = connectionReady.correlationId();
+
+                listener.onNewConnection(
+                        channel, streamId, sessionId, termId, initialPosition, connectionReady, correlationId);
+                break;
+            }
 
             case ON_OPERATION_SUCCESS:
                 correlatedMessage.wrap(buffer, index);

@@ -29,6 +29,7 @@ import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.status.BufferPositionIndicator;
 import uk.co.real_logic.aeron.common.status.BufferPositionReporter;
+import uk.co.real_logic.aeron.common.status.PositionIndicator;
 import uk.co.real_logic.aeron.common.status.PositionReporter;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
@@ -40,15 +41,16 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import static java.util.stream.Collectors.toList;
 import static uk.co.real_logic.aeron.common.ErrorCode.*;
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.driver.Configuration.RETRANS_UNICAST_DELAY_DEFAULT_NS;
 import static uk.co.real_logic.aeron.driver.Configuration.RETRANS_UNICAST_LINGER_DEFAULT_NS;
-import static uk.co.real_logic.aeron.driver.Configuration.termBufferSize;
 import static uk.co.real_logic.aeron.driver.MediaDriver.Context;
 
 /**
@@ -185,7 +187,7 @@ public class DriverConductor extends Agent
     {
         if (obj instanceof CreateConnectionCmd)
         {
-            onCreateConnection((CreateConnectionCmd)obj);
+            onCreateConnection((CreateConnectionCmd) obj);
         }
         else if (obj instanceof ElicitSetupFromSourceCmd)
         {
@@ -433,16 +435,14 @@ public class DriverConductor extends Agent
         final TermBuffers termBuffers = publication.termBuffers();
         final int positionCounterId = publication.publisherLimitCounterId();
 
-        clientProxy.onNewTermBuffers(
-            ON_NEW_PUBLICATION,
-            channel,
-            streamId,
-            sessionId,
-            initialTermId,
-            0,
-            termBuffers,
-            correlationId,
-            positionCounterId);
+        clientProxy.onPublicationReady(
+                channel,
+                streamId,
+                sessionId,
+                initialTermId,
+                termBuffers,
+                correlationId,
+                positionCounterId);
     }
 
     private void onRemovePublication(final long registrationId, final long correlationId)
@@ -544,31 +544,39 @@ public class DriverConductor extends Agent
         final InetSocketAddress controlAddress = cmd.controlAddress();
         final ReceiveChannelEndpoint channelEndpoint = cmd.channelEndpoint();
         final UdpChannel udpChannel = channelEndpoint.udpChannel();
+        final String channel = udpChannel.originalUriAsString();
 
         final String canonicalForm = udpChannel.canonicalForm();
         final long correlationId = generateCreationCorrelationId();
         final TermBuffers termBuffers =
             termBuffersFactory.newConnection(canonicalForm, sessionId, streamId, correlationId, termBufferSize);
-
-        final String channel = udpChannel.originalUriAsString();
-        final int subscriberPositionCounterId = allocatePositionCounter("subscriber", channel, sessionId, streamId);
-        final int receiverCompleteCounterId = allocatePositionCounter("receiver", channel, sessionId, streamId);
-        final int receiverHwmCounterId = allocatePositionCounter("receiver hwm", channel, sessionId, streamId);
         final long initialPosition = TermHelper.calculatePosition(
                 initialTermId, initialTermOffset, Integer.numberOfTrailingZeros(termBufferSize), initialTermId);
 
-        countersManager.setCounterValue(subscriberPositionCounterId, initialPosition);
+        final List<SubscriptionPosition> positions = subscriptions
+            .stream()
+            .filter(subscription -> subscription.matches(streamId, channelEndpoint))
+            .map(subscription ->
+            {
+                final int subscriberPositionCounterId = allocatePositionCounter("subscriber", channel, sessionId, streamId);
+                final BufferPositionIndicator indicator = new BufferPositionIndicator(countersBuffer, subscriberPositionCounterId, countersManager);
+                countersManager.setCounterValue(subscriberPositionCounterId, initialPosition);
+                return new SubscriptionPosition(subscription.id(), subscriberPositionCounterId, indicator);
+            })
+            .collect(toList());
 
-        clientProxy.onNewTermBuffers(
-            ON_NEW_CONNECTION,
-            channel,
-            streamId,
-            sessionId,
-            initialTermId,
-            initialPosition,
-            termBuffers,
-            correlationId,
-            subscriberPositionCounterId);
+        final int receiverCompleteCounterId = allocatePositionCounter("receiver", channel, sessionId, streamId);
+        final int receiverHwmCounterId = allocatePositionCounter("receiver hwm", channel, sessionId, streamId);
+
+        clientProxy.onConnectionReady(
+                channel,
+                streamId,
+                sessionId,
+                initialTermId,
+                initialPosition,
+                termBuffers,
+                correlationId,
+                positions);
 
         final GapScanner[] gapScanners =
             termBuffers.stream()
@@ -584,6 +592,8 @@ public class DriverConductor extends Agent
             initialTermOffset,
             systemCounters);
 
+        // TODO
+        final PositionIndicator positionIndicator = positions.get(0).positionIndicator();
         final DriverConnection connection = new DriverConnection(
             channelEndpoint,
             correlationId,
@@ -596,7 +606,7 @@ public class DriverConductor extends Agent
             termBuffers,
             lossHandler,
             channelEndpoint.composeStatusMessageSender(controlAddress, sessionId, streamId),
-            new BufferPositionIndicator(countersBuffer, subscriberPositionCounterId, countersManager),
+            positionIndicator,
             new BufferPositionReporter(countersBuffer, receiverCompleteCounterId, countersManager),
             new BufferPositionReporter(countersBuffer, receiverHwmCounterId, countersManager),
             clock,

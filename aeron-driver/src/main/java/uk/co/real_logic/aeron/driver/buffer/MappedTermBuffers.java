@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.driver.buffer;
 
 import uk.co.real_logic.aeron.common.IoUtil;
-import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
+import uk.co.real_logic.aeron.common.command.ReadyFlyweight;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 
 import java.io.File;
@@ -93,7 +93,7 @@ class MappedTermBuffers implements TermBuffers
         return buffers;
     }
 
-    public void appendBufferLocationsTo(final LogBuffersMessageFlyweight logBuffersMessage)
+    public void appendBufferLocationsTo(final ReadyFlyweight logBuffersMessage)
     {
         for (int i = 0; i < BUFFER_COUNT; i++)
         {

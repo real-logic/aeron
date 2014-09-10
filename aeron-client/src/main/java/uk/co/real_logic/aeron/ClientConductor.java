@@ -18,7 +18,9 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.aeron.common.*;
 import uk.co.real_logic.aeron.common.collections.ConnectionMap;
 import uk.co.real_logic.aeron.common.command.ConnectionMessageFlyweight;
-import uk.co.real_logic.aeron.common.command.LogBuffersMessageFlyweight;
+import uk.co.real_logic.aeron.common.command.ConnectionReadyFlyweight;
+import uk.co.real_logic.aeron.common.command.PublicationReadyFlyweight;
+import uk.co.real_logic.aeron.common.command.ReadyFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
@@ -186,7 +188,7 @@ class ClientConductor extends Agent implements DriverListener
         final int sessionId,
         final int termId,
         final int limitPositionIndicatorOffset,
-        final LogBuffersMessageFlyweight logBuffersMessage,
+        final ReadyFlyweight logBuffersMessage,
         final long correlationId)
     {
         final LogAppender[] logs = new LogAppender[BUFFER_COUNT];
@@ -211,13 +213,13 @@ class ClientConductor extends Agent implements DriverListener
     }
 
     public void onNewConnection(
-        final String channel,
-        final int streamId,
-        final int sessionId,
-        final int initialTermId,
-        final long initialPosition,
-        final LogBuffersMessageFlyweight message,
-        final long correlationId)
+            final String channel,
+            final int streamId,
+            final int sessionId,
+            final int initialTermId,
+            final long initialPosition,
+            final ConnectionReadyFlyweight message,
+            final long correlationId)
     {
         activeSubscriptions.forEach(channel, streamId, subscription ->
         {
@@ -318,7 +320,7 @@ class ClientConductor extends Agent implements DriverListener
         }
     }
 
-    private ManagedBuffer mapBuffer(final LogBuffersMessageFlyweight logBuffersMessage, final int index)
+    private ManagedBuffer mapBuffer(final ReadyFlyweight logBuffersMessage, final int index)
     {
         final String location = logBuffersMessage.location(index);
         final int offset = logBuffersMessage.bufferOffset(index);

@@ -24,6 +24,7 @@ public class SystemCounters implements AutoCloseable
     private final AtomicCounter bytesReceived;
     private final AtomicCounter receiverProxyFails;
     private final AtomicCounter senderProxyFails;
+    private final AtomicCounter conductorProxyFails;
     private final AtomicCounter naksSent;
     private final AtomicCounter naksReceived;
     private final AtomicCounter retransmitsSent;
@@ -42,6 +43,7 @@ public class SystemCounters implements AutoCloseable
         bytesReceived = countersManager.newCounter("Bytes received");
         receiverProxyFails = countersManager.newCounter("Failed offers to ReceiverProxy");
         senderProxyFails = countersManager.newCounter("Failed offers to SenderProxy");
+        conductorProxyFails = countersManager.newCounter("Failed offers to DriverConductorProxy");
         naksSent = countersManager.newCounter("NAKs sent");
         naksReceived = countersManager.newCounter("NAKs received");
         statusMessagesSent = countersManager.newCounter("SMs sent");
@@ -61,6 +63,7 @@ public class SystemCounters implements AutoCloseable
         bytesReceived.close();
         receiverProxyFails.close();
         senderProxyFails.close();
+        conductorProxyFails.close();
         naksSent.close();
         naksReceived.close();
         statusMessagesSent.close();
@@ -92,6 +95,11 @@ public class SystemCounters implements AutoCloseable
     public AtomicCounter senderProxyFails()
     {
         return senderProxyFails;
+    }
+
+    public AtomicCounter conductorProxyFails()
+    {
+        return conductorProxyFails;
     }
 
     public AtomicCounter naksSent()

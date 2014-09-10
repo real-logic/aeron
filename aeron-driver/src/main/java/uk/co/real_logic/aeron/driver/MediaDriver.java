@@ -369,7 +369,8 @@ public class MediaDriver implements AutoCloseable
 
                 receiverProxy(new ReceiverProxy(receiverCommandQueue(), systemCounters.receiverProxyFails()));
                 senderProxy(new SenderProxy(senderCommandQueue(), systemCounters.senderProxyFails()));
-                driverConductorProxy(new DriverConductorProxy(conductorCommandQueue));
+                driverConductorProxy(new DriverConductorProxy(
+                    conductorCommandQueue, systemCounters.conductorProxyFails()));
 
                 termBuffersFactory(
                         new TermBuffersFactory(

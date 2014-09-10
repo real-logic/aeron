@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import uk.co.real_logic.aeron.common.concurrent.AtomicCounter;
 import uk.co.real_logic.aeron.driver.cmd.CreateConnectionCmd;
 import uk.co.real_logic.aeron.driver.cmd.ElicitSetupFromSourceCmd;
 
@@ -27,13 +28,15 @@ import java.util.Queue;
 public class DriverConductorProxy
 {
     private final Queue<? super Object> commandQueue;
+    private final AtomicCounter failCount;
 
-    public DriverConductorProxy(final Queue<? super Object> commandQueue)
+    public DriverConductorProxy(final Queue<? super Object> commandQueue, final AtomicCounter failCount)
     {
         this.commandQueue = commandQueue;
+        this.failCount = failCount;
     }
 
-    public boolean createConnection(
+    public void createConnection(
         final int sessionId,
         final int streamId,
         final int termId,
@@ -42,16 +45,26 @@ public class DriverConductorProxy
         final InetSocketAddress controlAddress,
         final ReceiveChannelEndpoint channelEndpoint)
     {
-        return commandQueue.offer(
-            new CreateConnectionCmd(sessionId, streamId, termId, termOffset, termSize, controlAddress, channelEndpoint));
+        offerCommand(
+            new CreateConnectionCmd(
+                sessionId, streamId, termId, termOffset, termSize, controlAddress, channelEndpoint));
     }
 
-    public boolean elicitSetupFromSource(
+    public void elicitSetupFromSource(
         final int sessionId,
         final int streamId,
         final InetSocketAddress controlAddress,
         final ReceiveChannelEndpoint channelEndpoint)
     {
-        return commandQueue.offer(new ElicitSetupFromSourceCmd(sessionId, streamId, controlAddress, channelEndpoint));
+        offerCommand(new ElicitSetupFromSourceCmd(sessionId, streamId, controlAddress, channelEndpoint));
+    }
+
+    private void offerCommand(Object cmd)
+    {
+        while (!commandQueue.offer(cmd))
+        {
+            failCount.orderedIncrement();
+            Thread.yield();
+        }
     }
 }

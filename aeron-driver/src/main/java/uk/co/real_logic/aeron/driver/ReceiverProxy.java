@@ -21,7 +21,7 @@ import uk.co.real_logic.aeron.driver.cmd.*;
 import java.util.Queue;
 
 /**
- * Proxy for writing into the Receiver Thread's command buffer.
+ * Proxy for offering into the Receiver Thread's command queue.
  */
 public class ReceiverProxy
 {
@@ -82,5 +82,4 @@ public class ReceiverProxy
             Thread.yield();
         }
     }
-
 }

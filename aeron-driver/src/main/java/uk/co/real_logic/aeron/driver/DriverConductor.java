@@ -414,12 +414,7 @@ public class DriverConductor extends Agent
             channelEndpoint.addPublication(publication, retransmitHandler, senderFlowControl);
             publications.add(publication);
 
-            final NewPublicationCmd cmd = new NewPublicationCmd(publication);
-            while (!senderProxy.newPublication(cmd))
-            {
-                systemCounters.senderProxyFails().orderedIncrement();
-                Thread.yield();
-            }
+            senderProxy.newPublication(publication);
         }
 
         final PublicationRegistration existingRegistration =
@@ -666,12 +661,7 @@ public class DriverConductor extends Agent
                 channelEndpoint.removePublication(publication.sessionId(), publication.streamId());
                 publications.remove(i);
 
-                final ClosePublicationCmd cmd = new ClosePublicationCmd(publication);
-                while (!senderProxy.closePublication(cmd))
-                {
-                    systemCounters.senderProxyFails().orderedIncrement();
-                    Thread.yield();
-                }
+                senderProxy.closePublication(publication);
 
                 if (channelEndpoint.sessionCount() == 0)
                 {
@@ -873,16 +863,7 @@ public class DriverConductor extends Agent
 
     private RetransmitSender composeNewRetransmitSender(final DriverPublication publication)
     {
-        return (termId, termOffset, length) ->
-        {
-            final RetransmitPublicationCmd cmd = new RetransmitPublicationCmd(publication, termId, termOffset, length);
-
-            while (!senderProxy.retransmit(cmd))
-            {
-                systemCounters.senderProxyFails().orderedIncrement();
-                Thread.yield();
-            }
-        };
+        return (termId, termOffset, length) -> senderProxy.retransmit(publication, termId, termOffset, length);
     }
 
     private long generateCreationCorrelationId()

@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import uk.co.real_logic.aeron.common.concurrent.AtomicCounter;
 import uk.co.real_logic.aeron.driver.cmd.ClosePublicationCmd;
 import uk.co.real_logic.aeron.driver.cmd.NewPublicationCmd;
 import uk.co.real_logic.aeron.driver.cmd.RetransmitPublicationCmd;
@@ -22,29 +23,40 @@ import uk.co.real_logic.aeron.driver.cmd.RetransmitPublicationCmd;
 import java.util.Queue;
 
 /**
- * Proxy for writing into the Sender Thread's command buffer.
+ * Proxy for offering into the Sender Thread's command queue.
  */
 public class SenderProxy
 {
     private final Queue<Object> commandQueue;
+    private final AtomicCounter failCount;
 
-    public SenderProxy(final Queue<Object> commandQueue)
+    public SenderProxy(final Queue<Object> commandQueue, final AtomicCounter failCount)
     {
         this.commandQueue = commandQueue;
+        this.failCount = failCount;
     }
 
-    public boolean retransmit(final RetransmitPublicationCmd cmd)
+    public void retransmit(final DriverPublication publication, final int termId, final int termOffset, final int length)
     {
-        return commandQueue.offer(cmd);
+        offerCommand(new RetransmitPublicationCmd(publication, termId, termOffset, length));
     }
 
-    public boolean closePublication(final ClosePublicationCmd cmd)
+    public void closePublication(final DriverPublication publication)
     {
-        return commandQueue.offer(cmd);
+        offerCommand(new ClosePublicationCmd(publication));
     }
 
-    public boolean newPublication(final NewPublicationCmd cmd)
+    public void newPublication(final DriverPublication publication)
     {
-        return commandQueue.offer(cmd);
+        offerCommand(new NewPublicationCmd(publication));
+    }
+
+    private void offerCommand(Object cmd)
+    {
+        while (!commandQueue.offer(cmd))
+        {
+            failCount.orderedIncrement();
+            Thread.yield();
+        }
     }
 }

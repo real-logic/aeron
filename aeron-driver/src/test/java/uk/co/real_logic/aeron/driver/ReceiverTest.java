@@ -158,7 +158,7 @@ public class ReceiverTest
     @Test
     public void shouldCreateRcvTermAndSendSmOnSetup() throws Exception
     {
-        receiverProxy.registerMediaEndpoint(new RegisterReceiveChannelEndpointCmd(receiveChannelEndpoint));
+        receiverProxy.registerMediaEndpoint(receiveChannelEndpoint);
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
 
         receiver.doWork();
@@ -196,7 +196,7 @@ public class ReceiverTest
                 assertThat(cmd.termId(), is(TERM_ID));
 
                 // pass in new term buffer from conductor, which should trigger SM
-                receiverProxy.newConnection(new NewConnectionCmd(receiveChannelEndpoint, connection));
+                receiverProxy.newConnection(receiveChannelEndpoint, connection);
             });
 
         assertThat(messagesRead, is(1));
@@ -222,7 +222,7 @@ public class ReceiverTest
     @Test
     public void shouldInsertDataIntoLogAfterInitialExchange() throws Exception
     {
-        receiverProxy.registerMediaEndpoint(new RegisterReceiveChannelEndpointCmd(receiveChannelEndpoint));
+        receiverProxy.registerMediaEndpoint(receiveChannelEndpoint);
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
 
         receiver.doWork();
@@ -236,26 +236,25 @@ public class ReceiverTest
                 assertTrue(e instanceof CreateConnectionCmd);
                 // pass in new term buffer from conductor, which should trigger SM
                 receiverProxy.newConnection(
-                    new NewConnectionCmd(
+                    receiveChannelEndpoint,
+                    new DriverConnection(
                         receiveChannelEndpoint,
-                        new DriverConnection(
-                            receiveChannelEndpoint,
-                            CORRELATION_ID,
-                            SESSION_ID,
-                            STREAM_ID,
-                            TERM_ID,
-                            INITIAL_TERM_OFFSET,
-                            INITIAL_WINDOW_SIZE,
-                            STATUS_MESSAGE_TIMEOUT,
-                            termBuffers,
-                            mockLossHandler,
-                            receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
-                                POSITION_INDICATORS,
-                            mockCompletedReceivedPosition,
-                            mockHighestReceivedPosition,
-                            clock,
-                            mockSystemCounters,
-                            mockLogger)));
+                        CORRELATION_ID,
+                        SESSION_ID,
+                        STREAM_ID,
+                        TERM_ID,
+                        INITIAL_TERM_OFFSET,
+                        INITIAL_WINDOW_SIZE,
+                        STATUS_MESSAGE_TIMEOUT,
+                        termBuffers,
+                        mockLossHandler,
+                        receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
+                            POSITION_INDICATORS,
+                        mockCompletedReceivedPosition,
+                        mockHighestReceivedPosition,
+                        clock,
+                        mockSystemCounters,
+                        mockLogger));
             });
 
         assertThat(messagesRead, is(1));
@@ -284,7 +283,7 @@ public class ReceiverTest
     @Test
     public void shouldNotOverwriteDataFrameWithHeartbeat() throws Exception
     {
-        receiverProxy.registerMediaEndpoint(new RegisterReceiveChannelEndpointCmd(receiveChannelEndpoint));
+        receiverProxy.registerMediaEndpoint(receiveChannelEndpoint);
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
 
         receiver.doWork();
@@ -298,26 +297,25 @@ public class ReceiverTest
                 assertTrue(e instanceof CreateConnectionCmd);
                 // pass in new term buffer from conductor, which should trigger SM
                 receiverProxy.newConnection(
-                    new NewConnectionCmd
-                        (receiveChannelEndpoint,
-                            new DriverConnection(
-                                receiveChannelEndpoint,
-                                CORRELATION_ID,
-                                SESSION_ID,
-                                STREAM_ID,
-                                TERM_ID,
-                                INITIAL_TERM_OFFSET,
-                                INITIAL_WINDOW_SIZE,
-                                STATUS_MESSAGE_TIMEOUT,
-                                termBuffers,
-                                mockLossHandler,
-                                receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
-                                    POSITION_INDICATORS,
-                                mockCompletedReceivedPosition,
-                                mockHighestReceivedPosition,
-                                clock,
-                                mockSystemCounters,
-                                mockLogger)));
+                    receiveChannelEndpoint,
+                        new DriverConnection(
+                            receiveChannelEndpoint,
+                            CORRELATION_ID,
+                            SESSION_ID,
+                            STREAM_ID,
+                            TERM_ID,
+                            INITIAL_TERM_OFFSET,
+                            INITIAL_WINDOW_SIZE,
+                            STATUS_MESSAGE_TIMEOUT,
+                            termBuffers,
+                            mockLossHandler,
+                            receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
+                                POSITION_INDICATORS,
+                            mockCompletedReceivedPosition,
+                            mockHighestReceivedPosition,
+                            clock,
+                            mockSystemCounters,
+                            mockLogger));
             });
 
         assertThat(messagesRead, is(1));
@@ -349,7 +347,7 @@ public class ReceiverTest
     @Test
     public void shouldOverwriteHeartbeatWithDataFrame() throws Exception
     {
-        receiverProxy.registerMediaEndpoint(new RegisterReceiveChannelEndpointCmd(receiveChannelEndpoint));
+        receiverProxy.registerMediaEndpoint(receiveChannelEndpoint);
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
 
         receiver.doWork();
@@ -363,26 +361,25 @@ public class ReceiverTest
                 assertTrue(e instanceof CreateConnectionCmd);
                 // pass in new term buffer from conductor, which should trigger SM
                 receiverProxy.newConnection(
-                    new NewConnectionCmd(
+                    receiveChannelEndpoint,
+                    new DriverConnection(
                         receiveChannelEndpoint,
-                        new DriverConnection(
-                            receiveChannelEndpoint,
-                            CORRELATION_ID,
-                            SESSION_ID,
-                            STREAM_ID,
-                            TERM_ID,
-                            INITIAL_TERM_OFFSET,
-                            INITIAL_WINDOW_SIZE,
-                            STATUS_MESSAGE_TIMEOUT,
-                            termBuffers,
-                            mockLossHandler,
-                            receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
-                                POSITION_INDICATORS,
-                            mockCompletedReceivedPosition,
-                            mockHighestReceivedPosition,
-                            clock,
-                            mockSystemCounters,
-                            mockLogger)));
+                        CORRELATION_ID,
+                        SESSION_ID,
+                        STREAM_ID,
+                        TERM_ID,
+                        INITIAL_TERM_OFFSET,
+                        INITIAL_WINDOW_SIZE,
+                        STATUS_MESSAGE_TIMEOUT,
+                        termBuffers,
+                        mockLossHandler,
+                        receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
+                            POSITION_INDICATORS,
+                        mockCompletedReceivedPosition,
+                        mockHighestReceivedPosition,
+                        clock,
+                        mockSystemCounters,
+                        mockLogger));
             });
 
         assertThat(messagesRead, is(1));
@@ -422,7 +419,7 @@ public class ReceiverTest
         when(mockLossHandler.hwmCandidate(
             initialTermOffset + alignedDataFrameLength)).thenReturn((long)(initialTermOffset + alignedDataFrameLength));
 
-        receiverProxy.registerMediaEndpoint(new RegisterReceiveChannelEndpointCmd(receiveChannelEndpoint));
+        receiverProxy.registerMediaEndpoint(receiveChannelEndpoint);
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
 
         receiver.doWork();
@@ -436,26 +433,25 @@ public class ReceiverTest
                 assertTrue(e instanceof CreateConnectionCmd);
                 // pass in new term buffer from conductor, which should trigger SM
                 receiverProxy.newConnection(
-                    new NewConnectionCmd(
+                    receiveChannelEndpoint,
+                    new DriverConnection(
                         receiveChannelEndpoint,
-                        new DriverConnection(
-                            receiveChannelEndpoint,
-                            CORRELATION_ID,
-                            SESSION_ID,
-                            STREAM_ID,
-                            TERM_ID,
-                            initialTermOffset,
-                            INITIAL_WINDOW_SIZE,
-                            STATUS_MESSAGE_TIMEOUT,
-                            termBuffers,
-                            mockLossHandler,
-                            receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
-                                POSITION_INDICATORS,
-                            mockCompletedReceivedPosition,
-                            mockHighestReceivedPosition,
-                            clock,
-                            mockSystemCounters,
-                            mockLogger)));
+                        CORRELATION_ID,
+                        SESSION_ID,
+                        STREAM_ID,
+                        TERM_ID,
+                        initialTermOffset,
+                        INITIAL_WINDOW_SIZE,
+                        STATUS_MESSAGE_TIMEOUT,
+                        termBuffers,
+                        mockLossHandler,
+                        receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
+                            POSITION_INDICATORS,
+                        mockCompletedReceivedPosition,
+                        mockHighestReceivedPosition,
+                        clock,
+                        mockSystemCounters,
+                        mockLogger));
             });
 
         assertThat(messagesRead, is(1));

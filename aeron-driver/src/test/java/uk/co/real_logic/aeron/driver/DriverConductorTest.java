@@ -23,14 +23,15 @@ import org.mockito.stubbing.Answer;
 import org.mockito.verification.VerificationMode;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.command.*;
-import uk.co.real_logic.aeron.common.concurrent.*;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.AtomicCounter;
+import uk.co.real_logic.aeron.common.concurrent.CountersManager;
+import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBufferDescriptor;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
-import uk.co.real_logic.aeron.driver.cmd.CloseReceiveChannelEndpointCmd;
-import uk.co.real_logic.aeron.driver.cmd.NewPublicationCmd;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
@@ -97,8 +98,8 @@ public class DriverConductorTest
         (invocation) ->
         {
             final Object args[] = invocation.getArguments();
-            final CloseReceiveChannelEndpointCmd cmd = (CloseReceiveChannelEndpointCmd)args[0];
-            cmd.receiveChannelEndpoint().close();
+            final ReceiveChannelEndpoint channelEndpoint = (ReceiveChannelEndpoint)args[0];
+            channelEndpoint.close();
             return null;
         };
 
@@ -139,10 +140,6 @@ public class DriverConductorTest
 
         driverConductor = new DriverConductor(ctx);
 
-        when(senderProxy.newPublication(any())).thenReturn(true);
-        when(senderProxy.closePublication(any())).thenReturn(true);
-        when(senderProxy.retransmit(any())).thenReturn(true);
-
         doAnswer(closeChannelEndpointAnswer).when(receiverProxy).closeMediaEndpoint(any());
     }
 
@@ -162,8 +159,8 @@ public class DriverConductorTest
         verifySenderNotifiedOfNewPublication();
 
         verify(mockClientProxy).onPublicationReady(
-                eq(CHANNEL_URI + 4000), eq(2), eq(1), anyInt(),
-                any(), anyLong(), anyInt());
+            eq(CHANNEL_URI + 4000), eq(2), eq(1), anyInt(),
+            any(), anyLong(), anyInt());
     }
 
     @Test
@@ -466,10 +463,10 @@ public class DriverConductorTest
 
     private void verifySenderNotifiedOfNewPublication()
     {
-        final ArgumentCaptor<NewPublicationCmd> captor = ArgumentCaptor.forClass(NewPublicationCmd.class);
+        final ArgumentCaptor<DriverPublication> captor = ArgumentCaptor.forClass(DriverPublication.class);
         verify(senderProxy, times(1)).newPublication(captor.capture());
 
-        final DriverPublication publication = captor.getValue().publication();
+        final DriverPublication publication = captor.getValue();
         assertThat(publication.sessionId(), is(1));
         assertThat(publication.streamId(), is(2));
         assertThat(publication.id(), is(CORRELATION_ID_1));

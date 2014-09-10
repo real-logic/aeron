@@ -414,12 +414,7 @@ public class DriverConductor extends Agent
             channelEndpoint.addPublication(publication, retransmitHandler, senderFlowControl);
             publications.add(publication);
 
-            final NewPublicationCmd cmd = new NewPublicationCmd(publication);
-            while (!senderProxy.newPublication(cmd))
-            {
-                systemCounters.senderProxyFails().orderedIncrement();
-                Thread.yield();
-            }
+            senderProxy.newPublication(publication);
         }
 
         final PublicationRegistration existingRegistration =
@@ -469,9 +464,7 @@ public class DriverConductor extends Agent
 
             receiveChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
 
-            final RegisterReceiveChannelEndpointCmd registerCmd =
-                new RegisterReceiveChannelEndpointCmd(channelEndpoint);
-            receiverProxy.registerMediaEndpoint(registerCmd);
+            receiverProxy.registerMediaEndpoint(channelEndpoint);
         }
 
         channelEndpoint.incRefToStream(streamId);
@@ -521,10 +514,7 @@ public class DriverConductor extends Agent
         {
             receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
 
-            final CloseReceiveChannelEndpointCmd cancelCmd =
-                new CloseReceiveChannelEndpointCmd(channelEndpoint);
-
-            receiverProxy.closeMediaEndpoint(cancelCmd);
+            receiverProxy.closeMediaEndpoint(channelEndpoint);
 
             while (!channelEndpoint.isClosed())
             {
@@ -624,8 +614,7 @@ public class DriverConductor extends Agent
             subscriberPosition.subscription().addConnection(connection, subscriberPosition.positionIndicator());
         });
 
-        final NewConnectionCmd newConnectionCmd = new NewConnectionCmd(channelEndpoint, connection);
-        receiverProxy.newConnection(newConnectionCmd);
+        receiverProxy.newConnection(channelEndpoint, connection);
     }
 
     private void onClientKeepalive(final long clientId)
@@ -672,12 +661,7 @@ public class DriverConductor extends Agent
                 channelEndpoint.removePublication(publication.sessionId(), publication.streamId());
                 publications.remove(i);
 
-                final ClosePublicationCmd cmd = new ClosePublicationCmd(publication);
-                while (!senderProxy.closePublication(cmd))
-                {
-                    systemCounters.senderProxyFails().orderedIncrement();
-                    Thread.yield();
-                }
+                senderProxy.closePublication(publication);
 
                 if (channelEndpoint.sessionCount() == 0)
                 {
@@ -719,10 +703,7 @@ public class DriverConductor extends Agent
                 {
                     receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
 
-                    final CloseReceiveChannelEndpointCmd cancelCmd =
-                        new CloseReceiveChannelEndpointCmd(channelEndpoint);
-
-                    receiverProxy.closeMediaEndpoint(cancelCmd);
+                    receiverProxy.closeMediaEndpoint(channelEndpoint);
                 }
             }
         }
@@ -814,10 +795,7 @@ public class DriverConductor extends Agent
             {
                 pendingSetups.remove(i);
 
-                final RemovePendingSetupCmd removeCmd = new RemovePendingSetupCmd(
-                    cmd.channelEndpoint(), cmd.sessionId(), cmd.streamId());
-
-                receiverProxy.removePendingSetup(removeCmd);
+                receiverProxy.removePendingSetup(cmd.channelEndpoint(), cmd.sessionId(), cmd.streamId());
             }
         }
     }
@@ -885,16 +863,7 @@ public class DriverConductor extends Agent
 
     private RetransmitSender composeNewRetransmitSender(final DriverPublication publication)
     {
-        return (termId, termOffset, length) ->
-        {
-            final RetransmitPublicationCmd cmd = new RetransmitPublicationCmd(publication, termId, termOffset, length);
-
-            while (!senderProxy.retransmit(cmd))
-            {
-                systemCounters.senderProxyFails().orderedIncrement();
-                Thread.yield();
-            }
-        };
+        return (termId, termOffset, length) -> senderProxy.retransmit(publication, termId, termOffset, length);
     }
 
     private long generateCreationCorrelationId()

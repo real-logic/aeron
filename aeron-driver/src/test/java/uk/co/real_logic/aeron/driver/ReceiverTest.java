@@ -49,7 +49,6 @@ import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertNotNull;
-import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -72,6 +71,7 @@ public class ReceiverTest
     private static final long STATUS_MESSAGE_TIMEOUT = Configuration.STATUS_MESSAGE_TIMEOUT_DEFAULT_NS;
 
     private static final PositionIndicator POSITION_INDICATOR = mock(PositionIndicator.class);
+    private static final PositionIndicator[] POSITION_INDICATORS = { POSITION_INDICATOR };
 
     private final LossHandler mockLossHandler = mock(LossHandler.class);
     private final NioSelector mockNioSelector = mock(NioSelector.class);
@@ -178,7 +178,7 @@ public class ReceiverTest
             termBuffers,
             mockLossHandler,
             receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
-            POSITION_INDICATOR,
+                POSITION_INDICATORS,
             mockCompletedReceivedPosition,
             mockHighestReceivedPosition,
             clock,
@@ -250,7 +250,7 @@ public class ReceiverTest
                             termBuffers,
                             mockLossHandler,
                             receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
-                            POSITION_INDICATOR,
+                                POSITION_INDICATORS,
                             mockCompletedReceivedPosition,
                             mockHighestReceivedPosition,
                             clock,
@@ -312,7 +312,7 @@ public class ReceiverTest
                                 termBuffers,
                                 mockLossHandler,
                                 receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
-                                POSITION_INDICATOR,
+                                    POSITION_INDICATORS,
                                 mockCompletedReceivedPosition,
                                 mockHighestReceivedPosition,
                                 clock,
@@ -377,7 +377,7 @@ public class ReceiverTest
                             termBuffers,
                             mockLossHandler,
                             receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
-                            POSITION_INDICATOR,
+                                POSITION_INDICATORS,
                             mockCompletedReceivedPosition,
                             mockHighestReceivedPosition,
                             clock,
@@ -450,7 +450,7 @@ public class ReceiverTest
                             termBuffers,
                             mockLossHandler,
                             receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
-                            POSITION_INDICATOR,
+                                POSITION_INDICATORS,
                             mockCompletedReceivedPosition,
                             mockHighestReceivedPosition,
                             clock,

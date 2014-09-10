@@ -488,6 +488,7 @@ public class DriverConductor extends Agent
             }
         }
 
+        // TODO: add existing connections to subscription
         subscriptions.add(new DriverSubscription(correlationId, channelEndpoint, getOrAddClient(clientId), streamId));
         clientProxy.operationSucceeded(correlationId);
     }
@@ -499,6 +500,8 @@ public class DriverConductor extends Agent
         {
             throw new ControlProtocolException(SUBSCRIBER_NOT_REGISTERED, "subscription not registered");
         }
+
+        receiverProxy.closeSubscription(subscription);
 
         final ReceiveChannelEndpoint channelEndpoint = subscription.receiveChannelEndpoint();
 
@@ -561,7 +564,7 @@ public class DriverConductor extends Agent
                 final int subscriberPositionCounterId = allocatePositionCounter("subscriber", channel, sessionId, streamId);
                 final BufferPositionIndicator indicator = new BufferPositionIndicator(countersBuffer, subscriberPositionCounterId, countersManager);
                 countersManager.setCounterValue(subscriberPositionCounterId, initialPosition);
-                return new SubscriptionPosition(subscription.id(), subscriberPositionCounterId, indicator);
+                return new SubscriptionPosition(subscription, subscriberPositionCounterId, indicator);
             })
             .collect(toList());
 
@@ -592,8 +595,11 @@ public class DriverConductor extends Agent
             initialTermOffset,
             systemCounters);
 
-        // TODO
-        final PositionIndicator positionIndicator = positions.get(0).positionIndicator();
+        final PositionIndicator[] positionIndicators = positions
+                .stream()
+                .map(SubscriptionPosition::positionIndicator)
+                .toArray(PositionIndicator[]::new);
+
         final DriverConnection connection = new DriverConnection(
             channelEndpoint,
             correlationId,
@@ -606,7 +612,7 @@ public class DriverConductor extends Agent
             termBuffers,
             lossHandler,
             channelEndpoint.composeStatusMessageSender(controlAddress, sessionId, streamId),
-            positionIndicator,
+            positionIndicators,
             new BufferPositionReporter(countersBuffer, receiverCompleteCounterId, countersManager),
             new BufferPositionReporter(countersBuffer, receiverHwmCounterId, countersManager),
             clock,
@@ -614,6 +620,11 @@ public class DriverConductor extends Agent
             logger);
 
         connections.add(connection);
+
+        positions.forEach(subscriberPosition ->
+        {
+            subscriberPosition.subscription().addConnection(connection, subscriberPosition.positionIndicator());
+        });
 
         final NewConnectionCmd newConnectionCmd = new NewConnectionCmd(channelEndpoint, connection);
         while (!receiverProxy.newConnection(newConnectionCmd))
@@ -702,6 +713,8 @@ public class DriverConductor extends Agent
                     subscription.id());
 
                 subscriptions.remove(i);
+
+                receiverProxy.closeSubscription(subscription);
 
                 if (0 == channelEndpoint.decRefToStream(subscription.streamId()))
                 {

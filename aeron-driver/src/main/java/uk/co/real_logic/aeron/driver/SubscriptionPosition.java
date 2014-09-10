@@ -1,6 +1,5 @@
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.status.BufferPositionIndicator;
 import uk.co.real_logic.aeron.common.status.PositionIndicator;
 
 /**
@@ -8,14 +7,15 @@ import uk.co.real_logic.aeron.common.status.PositionIndicator;
  */
 public final class SubscriptionPosition
 {
-    private final long registrationId;
+
+    private final DriverSubscription subscription;
     private final int positionCounterId;
     private final PositionIndicator positionIndicator;
 
     public SubscriptionPosition(
-        final long registrationId, final int positionCounterId, final PositionIndicator positionIndicator)
+        final DriverSubscription subscription, final int positionCounterId, final PositionIndicator positionIndicator)
     {
-        this.registrationId = registrationId;
+        this.subscription = subscription;
         this.positionCounterId = positionCounterId;
         this.positionIndicator = positionIndicator;
     }
@@ -30,8 +30,8 @@ public final class SubscriptionPosition
         return positionCounterId;
     }
 
-    public long registrationId()
+    public DriverSubscription subscription()
     {
-        return registrationId;
+        return subscription;
     }
 }

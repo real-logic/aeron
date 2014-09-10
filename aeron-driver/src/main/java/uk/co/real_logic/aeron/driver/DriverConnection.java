@@ -25,9 +25,11 @@ import uk.co.real_logic.aeron.common.status.PositionIndicator;
 import uk.co.real_logic.aeron.common.status.PositionReporter;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 
 import static uk.co.real_logic.aeron.common.TermHelper.*;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.IN_CLEANING;
@@ -45,7 +47,7 @@ public class DriverConnection implements AutoCloseable
     private final int sessionId;
     private final int streamId;
     private final TermBuffers termBuffers;
-    private final PositionIndicator subscriberPosition;
+    private PositionIndicator[] subscriberPositions;
     private final NanoClock clock;
     private final PositionReporter completedPosition;
     private final PositionReporter hwmPosition;
@@ -89,7 +91,7 @@ public class DriverConnection implements AutoCloseable
         final TermBuffers termBuffers,
         final LossHandler lossHandler,
         final StatusMessageSender statusMessageSender,
-        final PositionIndicator positionIndicator,
+        final PositionIndicator[] positions,
         final PositionReporter completedPosition,
         final PositionReporter hwmPosition,
         final NanoClock clock,
@@ -101,8 +103,7 @@ public class DriverConnection implements AutoCloseable
         this.sessionId = sessionId;
         this.streamId = streamId;
         this.termBuffers = termBuffers;
-        // TODO
-        this.subscriberPosition = positionIndicator;
+        this.subscriberPositions = positions;
         this.completedPosition = completedPosition;
         this.hwmPosition = hwmPosition;
         this.systemCounters = systemCounters;
@@ -212,7 +213,7 @@ public class DriverConnection implements AutoCloseable
         completedPosition.close();
         hwmPosition.close();
         termBuffers.close();
-        subscriberPosition.close();
+        Stream.of(subscriberPositions).forEach(PositionIndicator::close);
     }
 
     /**
@@ -257,8 +258,7 @@ public class DriverConnection implements AutoCloseable
      */
     public long remaining()
     {
-        // TODO: needs to account for multiple subscriberPosition values (multiple subscribers) when needed
-        return Math.max(completedPosition.position() - subscriberPosition.position(), 0);
+        return Math.max(completedPosition.position() - subscribersPosition(), 0);
     }
 
     /**
@@ -345,7 +345,7 @@ public class DriverConnection implements AutoCloseable
          * - send SM when haven't sent an SM in status message timeout
          */
 
-        final long position = subscriberPosition.position();
+        final long position = subscribersPosition();
         final int currentSmTermId = TermHelper.calculateTermIdFromPosition(position, positionBitsToShift, initialTermId);
         final int currentSmTail = TermHelper.calculateTermOffsetFromPosition(position, positionBitsToShift);
 
@@ -357,6 +357,16 @@ public class DriverConnection implements AutoCloseable
 
         // invert the work count logic. We want to appear to be less busy once we send an SM
         return 1;
+    }
+
+    private long subscribersPosition()
+    {
+        long position = Long.MAX_VALUE;
+        for (final PositionIndicator indicator : subscriberPositions)
+        {
+            position = Math.min(position, indicator.position());
+        }
+        return position;
     }
 
     /**
@@ -442,11 +452,12 @@ public class DriverConnection implements AutoCloseable
 
     private boolean isFlowControlOverRun(final long proposedPosition)
     {
-        final boolean isFlowControlOverRun = proposedPosition > (subscriberPosition.position() + currentWindowSize);
+        final long subscribersPosition = subscribersPosition();
+        final boolean isFlowControlOverRun = proposedPosition > (subscribersPosition + currentWindowSize);
 
         if (isFlowControlOverRun)
         {
-            logger.logOverRun(proposedPosition, subscriberPosition.position(), currentWindowSize);
+            logger.logOverRun(proposedPosition, subscribersPosition, currentWindowSize);
             systemCounters.flowControlOverRuns().orderedIncrement();
         }
 
@@ -470,4 +481,20 @@ public class DriverConnection implements AutoCloseable
 
         return nextIndex;
     }
+
+    public void remove(final PositionIndicator indicator)
+    {
+        final PositionIndicator[] oldPositions = subscriberPositions;
+        final PositionIndicator[] newPositions = new PositionIndicator[oldPositions.length - 1];
+        for (int i = 0, j = 0; i < oldPositions.length; i++)
+        {
+            if (oldPositions[i] != indicator)
+            {
+                newPositions[j] = oldPositions[i];
+                j++;
+            }
+        }
+        subscriberPositions = newPositions;
+    }
+
 }

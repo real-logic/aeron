@@ -77,6 +77,10 @@ public class Receiver extends Agent
             final CloseReceiveChannelEndpointCmd cmd = (CloseReceiveChannelEndpointCmd)obj;
             onCloseMediaSubscriptionEndpoint(cmd.receiveChannelEndpoint());
         }
+        else if (obj instanceof CloseSubscriptionCmd)
+        {
+            onCloseSubscription((CloseSubscriptionCmd) obj);
+        }
     }
 
     public int doWork() throws Exception
@@ -96,7 +100,7 @@ public class Receiver extends Agent
 
     private void onRemoveSubscription(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
     {
-        channelEndpoint.dispatcher().removeSubscription(streamId);
+        channelEndpoint.dispatcher().onRemoveSubscription(streamId);
     }
 
     private void onNewConnection(final NewConnectionCmd cmd)
@@ -128,5 +132,10 @@ public class Receiver extends Agent
     private void onCloseMediaSubscriptionEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
         channelEndpoint.close();
+    }
+
+    private void onCloseSubscription(final CloseSubscriptionCmd closeSubscription)
+    {
+        closeSubscription.subscription().close();
     }
 }

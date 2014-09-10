@@ -22,6 +22,8 @@ import java.util.Queue;
 /**
  * Proxy for writing into the Receiver Thread's command buffer.
  */
+// TODO: put all the command object creation inside
+// TODO: pull in receiver proxy retry loop
 public class ReceiverProxy
 {
     private final Queue<? super Object> commandQueue;
@@ -65,4 +67,10 @@ public class ReceiverProxy
     {
         return commandQueue.offer(cmd);
     }
+
+    public void closeSubscription(final DriverSubscription subscription)
+    {
+        commandQueue.offer(new CloseSubscriptionCmd(subscription));
+    }
+
 }

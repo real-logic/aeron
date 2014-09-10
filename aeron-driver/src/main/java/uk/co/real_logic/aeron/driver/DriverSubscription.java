@@ -15,6 +15,12 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import uk.co.real_logic.aeron.common.status.PositionIndicator;
+
+import java.util.HashMap;
+import java.util.IdentityHashMap;
+import java.util.Map;
+
 /**
  * Analogue of the client Subscription for the driver used for liveness tracking
  */
@@ -24,6 +30,7 @@ public class DriverSubscription
     private final ReceiveChannelEndpoint channelEndpoint;
     private final int streamId;
     private final AeronClient aeronClient;
+    private final Map<DriverConnection, PositionIndicator> positionIndicatorByConnection = new IdentityHashMap<>();
 
     public DriverSubscription(
         final long id,
@@ -60,5 +67,15 @@ public class DriverSubscription
     public boolean matches(final int streamId, final ReceiveChannelEndpoint channelEndpoint)
     {
         return streamId() == streamId && receiveChannelEndpoint() == channelEndpoint;
+    }
+
+    public void addConnection(final DriverConnection connection, final PositionIndicator positionIndicator)
+    {
+        positionIndicatorByConnection.put(connection, positionIndicator);
+    }
+
+    public void close()
+    {
+        positionIndicatorByConnection.forEach((connection, indicator) -> connection.remove(indicator));
     }
 }

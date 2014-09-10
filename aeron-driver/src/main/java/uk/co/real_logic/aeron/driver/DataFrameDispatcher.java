@@ -53,7 +53,7 @@ public class DataFrameDispatcher
         }
     }
 
-    public void removeSubscription(final int streamId)
+    public void onRemoveSubscription(final int streamId)
     {
         final Int2ObjectHashMap<DriverConnection> connectionBySessionIdMap = connectionsByStreamIdMap.remove(streamId);
         if (null == connectionBySessionIdMap)

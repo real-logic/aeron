@@ -237,6 +237,7 @@ class ClientConductor extends Agent implements DriverListener
                     managedBuffers[i * 2 + 1] = stateBuffer;
                 }
 
+                // TODO: wire up n position reporters
                 final PositionReporter subscriberPosition = new BufferPositionReporter(
                         counterValuesBuffer, message.positionIndicatorCounterId(0));
 

@@ -38,10 +38,7 @@ import uk.co.real_logic.aeron.driver.exceptions.ControlProtocolException;
 import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -483,10 +480,25 @@ public class DriverConductor extends Agent
                         countersBuffer, subscriberPositionCounterId, countersManager);
                 connection.addSubscription(indicator);
                 subscription.addConnection(connection, indicator);
+
+                final List<SubscriptionPosition> positions =
+                        Arrays.asList(new SubscriptionPosition(subscription, subscriberPositionCounterId, indicator));
+
+                // TODO: notify the aeron client that it has sources
+                final TermBuffers termBuffers = null; // TODO: termBuffersFactory.get()
+
+                clientProxy.onConnectionReady(
+                        channel,
+                        streamId,
+                        connection.sessionId(),
+                        connection.initialTermId(),
+                        // TODO: figure out if the initial position is what's wanted, possibly the current position?
+                        connection.initialPosition(),
+                        termBuffers,
+                        correlationId,
+                        positions);
             }
         }
-
-        // TODO: notify the aeron client that it has sources
 
         subscriptions.add(subscription);
         clientProxy.operationSucceeded(correlationId);

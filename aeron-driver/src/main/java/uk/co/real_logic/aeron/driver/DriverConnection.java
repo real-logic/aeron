@@ -67,6 +67,7 @@ public class DriverConnection implements AutoCloseable
     private final StatusMessageSender statusMessageSender;
 
     private final int positionBitsToShift;
+    private final long initialPosition;
     private final int initialTermId;
     private final long statusMessageTimeout;
 
@@ -135,7 +136,7 @@ public class DriverConnection implements AutoCloseable
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
         this.initialTermId = initialTermId;
 
-        final long initialPosition = TermHelper.calculatePosition(
+        initialPosition = TermHelper.calculatePosition(
             initialTermId, initialTermOffset, positionBitsToShift, initialTermId);
 
         this.lastSmPosition = initialPosition;
@@ -510,6 +511,16 @@ public class DriverConnection implements AutoCloseable
         System.arraycopy(oldPositions, 0, newPositions, 0, length);
         newPositions[length] = indicator;
         subscriberPositions = newPositions;
+    }
+
+    public long initialPosition()
+    {
+        return initialPosition;
+    }
+
+    public int initialTermId()
+    {
+        return initialTermId;
     }
 
 }

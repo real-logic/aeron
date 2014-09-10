@@ -238,7 +238,7 @@ class ClientConductor extends Agent implements DriverListener
                 }
 
                 final PositionReporter subscriberPosition = new BufferPositionReporter(
-                        counterValuesBuffer, message.positionIndicatorCount());
+                        counterValuesBuffer, message.positionIndicatorCounterId(0));
 
                 subscription.onTermBuffersMapped(
                         sessionId, initialTermId, initialPosition, correlationId, logs, subscriberPosition, managedBuffers);

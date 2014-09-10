@@ -378,13 +378,13 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
 
     public ConnectionReadyFlyweight positionIndicatorRegistrationId(int index, long id)
     {
-        atomicBuffer().putLong(positionIndicatorOffset(index), id);
+        atomicBuffer().putLong(positionIndicatorOffset(index) + SIZE_OF_INT, id);
         return this;
     }
 
     public long positionIndicatorRegistrationId(int index)
     {
-        return atomicBuffer().getLong(positionIndicatorOffset(index));
+        return atomicBuffer().getLong(positionIndicatorOffset(index) + SIZE_OF_INT);
     }
 
     private int positionIndicatorOffset(int index)

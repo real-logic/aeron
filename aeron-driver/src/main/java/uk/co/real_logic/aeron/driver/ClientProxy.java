@@ -92,11 +92,17 @@ public class ClientProxy
                          .streamId(streamId)
                          .initialPosition(initialPosition)
                          .correlationId(correlationId)
-                         .termId(termId)
-                // TODO
-                         .positionIndicatorCount(positions.get(0).positionCounterId());
+                         .termId(termId);
         termBuffers.appendBufferLocationsTo(connectionReady);
         connectionReady.channel(channel);
+
+        connectionReady.positionIndicatorCount(positions.size());
+        for (int i = 0; i < positions.size(); i++)
+        {
+            SubscriptionPosition position = positions.get(i);
+            connectionReady.positionIndicatorCounterId(i, position.positionCounterId());
+            connectionReady.positionIndicatorRegistrationId(i, position.subscription().id());
+        }
 
         logger.log(CMD_OUT_CONNECTION_READY, tmpBuffer, 0, connectionReady.length());
         transmitter.transmit(ON_CONNECTION_READY, tmpBuffer, 0, connectionReady.length());

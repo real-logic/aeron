@@ -165,6 +165,11 @@ public class DriverConnection implements AutoCloseable
         return streamId;
     }
 
+    public boolean matches(final int streamId, final ReceiveChannelEndpoint channelEndpoint)
+    {
+        return this.streamId == streamId && this.channelEndpoint == channelEndpoint;
+    }
+
     /**
      * Return status of the connection. Retrieved by {@link DriverConductor}.
      *
@@ -482,7 +487,7 @@ public class DriverConnection implements AutoCloseable
         return nextIndex;
     }
 
-    public void remove(final PositionIndicator indicator)
+    public void removeSubscription(final PositionIndicator indicator)
     {
         final PositionIndicator[] oldPositions = subscriberPositions;
         final PositionIndicator[] newPositions = new PositionIndicator[oldPositions.length - 1];
@@ -494,6 +499,16 @@ public class DriverConnection implements AutoCloseable
                 j++;
             }
         }
+        subscriberPositions = newPositions;
+    }
+
+    public void addSubscription(final PositionIndicator indicator)
+    {
+        final PositionIndicator[] oldPositions = subscriberPositions;
+        final int length = oldPositions.length;
+        final PositionIndicator[] newPositions = new PositionIndicator[length + 1];
+        System.arraycopy(oldPositions, 0, newPositions, 0, length);
+        newPositions[length] = indicator;
         subscriberPositions = newPositions;
     }
 

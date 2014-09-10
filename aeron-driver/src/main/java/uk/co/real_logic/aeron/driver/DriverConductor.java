@@ -474,14 +474,28 @@ public class DriverConductor extends Agent
             receiverProxy.registerMediaEndpoint(registerCmd);
         }
 
-        final int refCount = channelEndpoint.incRefToStream(streamId);
-        if (1 == refCount)
+        channelEndpoint.incRefToStream(streamId);
+        receiverProxy.addSubscription(channelEndpoint, streamId);
+
+        final DriverSubscription subscription
+                = new DriverSubscription(correlationId, channelEndpoint, getOrAddClient(clientId), streamId);
+
+        for (DriverConnection connection : connections)
         {
-            receiverProxy.addSubscription(channelEndpoint, streamId);
+            if (connection.matches(streamId, channelEndpoint))
+            {
+                final int subscriberPositionCounterId = allocatePositionCounter(
+                        "subscriber", channel, connection.sessionId(), streamId);
+                final BufferPositionIndicator indicator = new BufferPositionIndicator(
+                        countersBuffer, subscriberPositionCounterId, countersManager);
+                connection.addSubscription(indicator);
+                subscription.addConnection(connection, indicator);
+            }
         }
 
-        // TODO: add existing connections to subscription
-        subscriptions.add(new DriverSubscription(correlationId, channelEndpoint, getOrAddClient(clientId), streamId));
+        // TODO: notify the aeron client that it has sources
+
+        subscriptions.add(subscription);
         clientProxy.operationSucceeded(correlationId);
     }
 

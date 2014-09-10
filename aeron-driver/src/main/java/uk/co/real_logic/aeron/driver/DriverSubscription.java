@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.status.PositionIndicator;
 
-import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
@@ -76,6 +75,6 @@ public class DriverSubscription
 
     public void close()
     {
-        positionIndicatorByConnection.forEach((connection, indicator) -> connection.remove(indicator));
+        positionIndicatorByConnection.forEach((connection, indicator) -> connection.removeSubscription(indicator));
     }
 }

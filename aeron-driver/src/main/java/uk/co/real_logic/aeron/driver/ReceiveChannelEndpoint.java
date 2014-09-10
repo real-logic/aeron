@@ -40,7 +40,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
     private final StatusMessageFlyweight smHeader = new StatusMessageFlyweight();
     private final NakFlyweight nakHeader = new NakFlyweight();
 
-    private boolean closed = false; // TODO: Should this be volatile? I don't think so but worth checking.
+    private volatile boolean closed = false;
 
     public ReceiveChannelEndpoint(
         final UdpChannel udpChannel,
@@ -68,8 +68,8 @@ public class ReceiveChannelEndpoint implements AutoCloseable
 
     public void close()
     {
-        closed = true;
         udpTransport.close();
+        closed = true;
     }
 
     public void registerForRead(final NioSelector nioSelector)
@@ -146,7 +146,8 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         return (termId, termOffset, length) -> sendNak(controlAddress, sessionId, streamId, termId, termOffset, length);
     }
 
-    public void sendSetupElicitingStatusMessage(final InetSocketAddress controlAddress, final int sessionId, final int streamId)
+    public void sendSetupElicitingStatusMessage(
+            final InetSocketAddress controlAddress, final int sessionId, final int streamId)
     {
         sendStatusMessage(controlAddress, sessionId, streamId, 0, 0, 0, StatusMessageFlyweight.SEND_SETUP_FLAG);
     }
@@ -219,4 +220,10 @@ public class ReceiveChannelEndpoint implements AutoCloseable
             logger.logIncompleteSend("sendNak", bytesSent, frameLength);
         }
     }
+
+    public boolean isClosed()
+    {
+        return closed;
+    }
+
 }

@@ -524,6 +524,11 @@ public class DriverConductor extends Agent
                 systemCounters.receiverProxyFails().orderedIncrement();
                 Thread.yield();
             }
+
+            while (!channelEndpoint.isClosed())
+            {
+                Thread.yield();
+            }
         }
 
         clientProxy.operationSucceeded(correlationId);

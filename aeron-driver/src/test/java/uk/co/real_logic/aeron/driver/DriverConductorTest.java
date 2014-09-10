@@ -93,13 +93,13 @@ public class DriverConductorTest
 
     private DriverConductor driverConductor;
 
-    private final Answer<Boolean> closeChannelEndpointAnswer =
+    private final Answer<Void> closeChannelEndpointAnswer =
         (invocation) ->
         {
             final Object args[] = invocation.getArguments();
             final CloseReceiveChannelEndpointCmd cmd = (CloseReceiveChannelEndpointCmd)args[0];
             cmd.receiveChannelEndpoint().close();
-            return true;
+            return null;
         };
 
     @Before
@@ -143,13 +143,7 @@ public class DriverConductorTest
         when(senderProxy.closePublication(any())).thenReturn(true);
         when(senderProxy.retransmit(any())).thenReturn(true);
 
-        when(receiverProxy.addSubscription(any(), anyInt())).thenReturn(true);
-        when(receiverProxy.newConnection(any())).thenReturn(true);
-        when(receiverProxy.registerMediaEndpoint(any())).thenReturn(true);
-        when(receiverProxy.removeConnection(any())).thenReturn(true);
-        when(receiverProxy.removePendingSetup(any())).thenReturn(true);
-        when(receiverProxy.removeSubscription(any(), anyInt())).thenReturn(true);
-        when(receiverProxy.closeMediaEndpoint(any())).thenAnswer(closeChannelEndpointAnswer);
+        doAnswer(closeChannelEndpointAnswer).when(receiverProxy).closeMediaEndpoint(any());
     }
 
     @After

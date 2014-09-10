@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import uk.co.real_logic.aeron.common.concurrent.AtomicCounter;
 import uk.co.real_logic.aeron.driver.cmd.*;
 
 import java.util.Queue;
@@ -23,54 +24,64 @@ import java.util.Queue;
  * Proxy for writing into the Receiver Thread's command buffer.
  */
 // TODO: put all the command object creation inside
-// TODO: pull in receiver proxy retry loop
 public class ReceiverProxy
 {
     private final Queue<? super Object> commandQueue;
+    private final AtomicCounter failCount;
 
-    public ReceiverProxy(final Queue<? super Object> commandQueue)
+    public ReceiverProxy(final Queue<? super Object> commandQueue, final AtomicCounter failCount)
     {
         this.commandQueue = commandQueue;
+        this.failCount = failCount;
     }
 
-    public boolean addSubscription(final ReceiveChannelEndpoint mediaEndpoint, final int streamId)
+    public void addSubscription(final ReceiveChannelEndpoint mediaEndpoint, final int streamId)
     {
-        return commandQueue.offer(new AddSubscriptionCmd(mediaEndpoint, streamId));
+        offerCommand(new AddSubscriptionCmd(mediaEndpoint, streamId));
     }
 
-    public boolean removeSubscription(final ReceiveChannelEndpoint mediaEndpoint, final int streamId)
+    public void removeSubscription(final ReceiveChannelEndpoint mediaEndpoint, final int streamId)
     {
-        return commandQueue.offer(new RemoveSubscriptionCmd(mediaEndpoint, streamId));
+        offerCommand(new RemoveSubscriptionCmd(mediaEndpoint, streamId));
     }
 
-    public boolean newConnection(final NewConnectionCmd e)
+    public void newConnection(final NewConnectionCmd e)
     {
-        return commandQueue.offer(e);
+        offerCommand(e);
     }
 
-    public boolean removeConnection(final DriverConnection connection)
+    public void removeConnection(final DriverConnection connection)
     {
-        return commandQueue.offer(new RemoveConnectionCmd(connection.receiveChannelEndpoint(), connection));
+        offerCommand(new RemoveConnectionCmd(connection.receiveChannelEndpoint(), connection));
     }
 
-    public boolean registerMediaEndpoint(final RegisterReceiveChannelEndpointCmd cmd)
+    public void registerMediaEndpoint(final RegisterReceiveChannelEndpointCmd cmd)
     {
-        return commandQueue.offer(cmd);
+        offerCommand(cmd);
     }
 
-    public boolean closeMediaEndpoint(final CloseReceiveChannelEndpointCmd cmd)
+    public void closeMediaEndpoint(final CloseReceiveChannelEndpointCmd cmd)
     {
-        return commandQueue.offer(cmd);
+        offerCommand(cmd);
     }
 
-    public boolean removePendingSetup(final RemovePendingSetupCmd cmd)
+    public void removePendingSetup(final RemovePendingSetupCmd cmd)
     {
-        return commandQueue.offer(cmd);
+        offerCommand(cmd);
     }
 
     public void closeSubscription(final DriverSubscription subscription)
     {
-        commandQueue.offer(new CloseSubscriptionCmd(subscription));
+        offerCommand(new CloseSubscriptionCmd(subscription));
+    }
+
+    private void offerCommand(Object cmd)
+    {
+        while (!commandQueue.offer(cmd))
+        {
+            failCount.orderedIncrement();
+            Thread.yield();
+        }
     }
 
 }

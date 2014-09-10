@@ -325,14 +325,6 @@ public class MediaDriver implements AutoCloseable
 
                 toDriverCommands(new ManyToOneRingBuffer(new AtomicBuffer(toDriverBuffer)));
 
-                receiverProxy(new ReceiverProxy(receiverCommandQueue()));
-                senderProxy(new SenderProxy(senderCommandQueue()));
-                driverConductorProxy(new DriverConductorProxy(conductorCommandQueue));
-
-                termBuffersFactory(
-                    new TermBuffersFactory(
-                        dataDirName(), publicationTermBufferSize, maxConnectionTermBufferSize, eventLogger));
-
                 if (countersManager() == null)
                 {
                     if (counterLabelsBuffer() == null)
@@ -374,6 +366,14 @@ public class MediaDriver implements AutoCloseable
                 {
                     systemCounters = new SystemCounters(countersManager);
                 }
+
+                receiverProxy(new ReceiverProxy(receiverCommandQueue(), systemCounters.receiverProxyFails()));
+                senderProxy(new SenderProxy(senderCommandQueue()));
+                driverConductorProxy(new DriverConductorProxy(conductorCommandQueue));
+
+                termBuffersFactory(
+                        new TermBuffersFactory(
+                                dataDirName(), publicationTermBufferSize, maxConnectionTermBufferSize, eventLogger));
 
                 if (null == conductorIdleStrategy)
                 {

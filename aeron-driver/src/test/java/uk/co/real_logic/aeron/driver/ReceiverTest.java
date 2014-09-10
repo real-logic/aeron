@@ -130,7 +130,7 @@ public class ReceiverTest
         final DriverConductorProxy driverConductorProxy = new DriverConductorProxy(toConductorQueue);
         ctx.driverConductorProxy(driverConductorProxy);
 
-        receiverProxy = new ReceiverProxy(ctx.receiverCommandQueue());
+        receiverProxy = new ReceiverProxy(ctx.receiverCommandQueue(), mock(AtomicCounter.class));
 
         receiver = new Receiver(ctx);
 

@@ -184,7 +184,7 @@ class ClientConductor extends Agent implements DriverListener
         final int sessionId,
         final int termId,
         final int limitPositionIndicatorOffset,
-        final ReadyFlyweight logBuffersMessage,
+        final ReadyFlyweight message,
         final long correlationId)
     {
         final LogAppender[] logs = new LogAppender[BUFFER_COUNT];
@@ -192,8 +192,8 @@ class ClientConductor extends Agent implements DriverListener
 
         for (int i = 0; i < BUFFER_COUNT; i++)
         {
-            final ManagedBuffer logBuffer = mapBuffer(logBuffersMessage, i);
-            final ManagedBuffer stateBuffer = mapBuffer(logBuffersMessage, i + TermHelper.BUFFER_COUNT);
+            final ManagedBuffer logBuffer = mapBuffer(message, i);
+            final ManagedBuffer stateBuffer = mapBuffer(message, i + TermHelper.BUFFER_COUNT);
             final byte[] header = DataHeaderFlyweight.createDefaultHeader(sessionId, streamId, termId);
 
             logs[i] = new LogAppender(logBuffer.buffer(), stateBuffer.buffer(), header, mtuLength);
@@ -277,19 +277,20 @@ class ClientConductor extends Agent implements DriverListener
         final String channel,
         final int streamId,
         final int sessionId,
-        final ConnectionMessageFlyweight connectionMessage,
+        final ConnectionMessageFlyweight message,
         final long correlationId)
     {
-        activeSubscriptions.forEach(channel, streamId, subscription ->
-        {
-            if (subscription.removeConnection(sessionId, correlationId))
+        activeSubscriptions.forEach(channel, streamId,
+            (subscription) ->
             {
-                if (null != inactiveConnectionHandler)
+                if (subscription.removeConnection(sessionId, correlationId))
                 {
-                    inactiveConnectionHandler.onInactiveConnection(channel, streamId, sessionId);
+                    if (null != inactiveConnectionHandler)
+                    {
+                        inactiveConnectionHandler.onInactiveConnection(channel, streamId, sessionId);
+                    }
                 }
-            }
-        });
+            });
     }
 
     private void await(final long startTime)

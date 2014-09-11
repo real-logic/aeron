@@ -29,7 +29,7 @@ public class NewConnectionCmd
         this.connection = connection;
     }
 
-    public ReceiveChannelEndpoint receiveChannelEndpoint()
+    public ReceiveChannelEndpoint channelEndpoint()
     {
         return channelEndpoint;
     }

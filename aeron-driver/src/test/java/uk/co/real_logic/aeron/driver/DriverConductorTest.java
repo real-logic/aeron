@@ -42,7 +42,7 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.common.ErrorCode.INVALID_CHANNEL;
-import static uk.co.real_logic.aeron.common.ErrorCode.PUBLICATION_UNKNOWN;
+import static uk.co.real_logic.aeron.common.ErrorCode.UNKNOWN_PUBLICATION;
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ADD_PUBLICATION;
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.REMOVE_PUBLICATION;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
@@ -308,7 +308,7 @@ public class DriverConductorTest
 
         verifySenderNotifiedOfNewPublication();
 
-        verify(mockClientProxy).onError(eq(PUBLICATION_UNKNOWN), argThat(not(isEmptyOrNullString())), any(), anyInt());
+        verify(mockClientProxy).onError(eq(UNKNOWN_PUBLICATION), argThat(not(isEmptyOrNullString())), any(), anyInt());
         verifyNeverSucceeds();
         verifyExceptionLogged();
     }
@@ -322,7 +322,7 @@ public class DriverConductorTest
         driverConductor.doWork();
 
         verifyPublicationClosed(never());
-        verify(mockClientProxy).onError(eq(PUBLICATION_UNKNOWN), argThat(not(isEmptyOrNullString())), any(), anyInt());
+        verify(mockClientProxy).onError(eq(UNKNOWN_PUBLICATION), argThat(not(isEmptyOrNullString())), any(), anyInt());
         verifyNeverSucceeds();
         verifyExceptionLogged();
     }

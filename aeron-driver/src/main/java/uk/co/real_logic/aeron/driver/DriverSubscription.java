@@ -25,27 +25,27 @@ import java.util.Map;
  */
 public class DriverSubscription
 {
-    private final long id;
+    private final long registrationId;
     private final ReceiveChannelEndpoint channelEndpoint;
     private final int streamId;
     private final AeronClient aeronClient;
     private final Map<DriverConnection, PositionIndicator> positionIndicatorByConnection = new IdentityHashMap<>();
 
     public DriverSubscription(
-        final long id,
+        final long registrationId,
         final ReceiveChannelEndpoint channelEndpoint,
         final AeronClient aeronClient,
         final int streamId)
     {
-        this.id = id;
+        this.registrationId = registrationId;
         this.channelEndpoint = channelEndpoint;
         this.streamId = streamId;
         this.aeronClient = aeronClient;
     }
 
-    public long id()
+    public long registrationId()
     {
-        return id;
+        return registrationId;
     }
 
     public ReceiveChannelEndpoint receiveChannelEndpoint()

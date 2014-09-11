@@ -18,16 +18,15 @@ package uk.co.real_logic.aeron.driver;
 import uk.co.real_logic.aeron.common.status.PositionIndicator;
 
 /**
- * .
+ * Consumption position a subscriber has got to within a {@link DriverSubscription}.
  */
-public final class SubscriptionPosition
+public final class SubscriberPosition
 {
-
     private final DriverSubscription subscription;
     private final int positionCounterId;
     private final PositionIndicator positionIndicator;
 
-    public SubscriptionPosition(
+    public SubscriberPosition(
         final DriverSubscription subscription, final int positionCounterId, final PositionIndicator positionIndicator)
     {
         this.subscription = subscription;

@@ -172,10 +172,6 @@ class ClientConductor extends Agent implements DriverListener
         verifyDriverActive();
 
         activeCorrelationId = driverProxy.removeSubscription(subscription.registrationId());
-
-        final String channel = subscription.channel();
-        final int streamId = subscription.streamId();
-
         activeSubscriptions.remove(subscription);
 
         awaitOperationSucceeded();
@@ -212,13 +208,13 @@ class ClientConductor extends Agent implements DriverListener
     }
 
     public void onNewConnection(
-            final String channel,
-            final int streamId,
-            final int sessionId,
-            final int initialTermId,
-            final long initialPosition,
-            final ConnectionReadyFlyweight message,
-            final long correlationId)
+        final String channel,
+        final int streamId,
+        final int sessionId,
+        final int initialTermId,
+        final long initialPosition,
+        final ConnectionReadyFlyweight message,
+        final long correlationId)
     {
         activeSubscriptions.forEach(channel, streamId, subscription ->
         {
@@ -239,10 +235,10 @@ class ClientConductor extends Agent implements DriverListener
 
                 // TODO: wire up n position reporters
                 final PositionReporter subscriberPosition = new BufferPositionReporter(
-                        counterValuesBuffer, message.positionIndicatorCounterId(0));
+                    counterValuesBuffer, message.positionIndicatorCounterId(0));
 
                 subscription.onTermBuffersMapped(
-                        sessionId, initialTermId, initialPosition, correlationId, logs, subscriberPosition, managedBuffers);
+                    sessionId, initialTermId, initialPosition, correlationId, logs, subscriberPosition, managedBuffers);
 
                 if (null != newConnectionHandler)
                 {
@@ -354,7 +350,7 @@ class ClientConductor extends Agent implements DriverListener
         final long now = timerWheel.clock().time();
         final long currentDriverKeepaliveTime = driverProxy.timeOfLastDriverKeepaliveNs();
 
-        if (driverActive && now > (currentDriverKeepaliveTime + driverTimeoutNs))
+        if (driverActive && (now > (currentDriverKeepaliveTime + driverTimeoutNs)))
         {
             driverActive = false;
 

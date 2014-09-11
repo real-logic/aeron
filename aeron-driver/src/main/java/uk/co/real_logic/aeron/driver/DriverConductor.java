@@ -184,7 +184,16 @@ public class DriverConductor extends Agent
     {
         if (obj instanceof CreateConnectionCmd)
         {
-            onCreateConnection((CreateConnectionCmd) obj);
+            final CreateConnectionCmd cmd = (CreateConnectionCmd)obj;
+
+            onCreateConnection(
+                cmd.sessionId(),
+                cmd.streamId(),
+                cmd.termId(),
+                cmd.termOffset(),
+                cmd.termSize(),
+                cmd.controlAddress(),
+                cmd.channelEndpoint());
         }
         else if (obj instanceof ElicitSetupFromSourceCmd)
         {
@@ -368,7 +377,6 @@ public class DriverConductor extends Agent
         }
 
         final AeronClient aeronClient = getOrAddClient(clientId);
-
         DriverPublication publication = channelEndpoint.getPublication(sessionId, streamId);
         if (publication == null)
         {
@@ -419,22 +427,19 @@ public class DriverConductor extends Agent
         if (null != existingRegistration)
         {
             publicationRegistrations.put(correlationId, existingRegistration);
-            throw new ControlProtocolException(GENERIC_ERROR, "correlation id already in use.");
+            throw new ControlProtocolException(GENERIC_ERROR, "registration id already in use.");
         }
 
         publication.incRef();
-        final int initialTermId = publication.initialTermId();
-        final TermBuffers termBuffers = publication.termBuffers();
-        final int positionCounterId = publication.publisherLimitCounterId();
 
         clientProxy.onPublicationReady(
-                channel,
-                streamId,
-                sessionId,
-                initialTermId,
-                termBuffers,
-                correlationId,
-                positionCounterId);
+            channel,
+            streamId,
+            sessionId,
+            publication.initialTermId(),
+            publication.termBuffers(),
+            correlationId,
+            publication.publisherLimitCounterId());
     }
 
     private void onRemovePublication(final long registrationId, final long correlationId)
@@ -442,7 +447,7 @@ public class DriverConductor extends Agent
         final PublicationRegistration registration = publicationRegistrations.remove(registrationId);
         if (registration == null)
         {
-            throw new ControlProtocolException(PUBLICATION_UNKNOWN, "unknown registration");
+            throw new ControlProtocolException(UNKNOWN_PUBLICATION, "Unknown publication: " + registrationId);
         }
 
         registration.remove();
@@ -460,7 +465,6 @@ public class DriverConductor extends Agent
                 udpChannel, conductorProxy, logger, Configuration.createLossGenerator(dataLossRate, dataLossSeed));
 
             receiveChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
-
             receiverProxy.registerMediaEndpoint(channelEndpoint);
         }
 
@@ -468,35 +472,35 @@ public class DriverConductor extends Agent
         receiverProxy.addSubscription(channelEndpoint, streamId);
 
         final DriverSubscription subscription
-                = new DriverSubscription(correlationId, channelEndpoint, getOrAddClient(clientId), streamId);
+            = new DriverSubscription(correlationId, channelEndpoint, getOrAddClient(clientId), streamId);
 
-        for (DriverConnection connection : connections)
+        for (final DriverConnection connection : connections)
         {
             if (connection.matches(streamId, channelEndpoint))
             {
                 final int subscriberPositionCounterId = allocatePositionCounter(
-                        "subscriber", channel, connection.sessionId(), streamId);
+                    "subscriber", channel, connection.sessionId(), streamId);
                 final BufferPositionIndicator indicator = new BufferPositionIndicator(
-                        countersBuffer, subscriberPositionCounterId, countersManager);
+                    countersBuffer, subscriberPositionCounterId, countersManager);
                 connection.addSubscription(indicator);
                 subscription.addConnection(connection, indicator);
 
-                final List<SubscriptionPosition> positions =
-                        Arrays.asList(new SubscriptionPosition(subscription, subscriberPositionCounterId, indicator));
+                final List<SubscriberPosition> subscriberPositions =
+                    Arrays.asList(new SubscriberPosition(subscription, subscriberPositionCounterId, indicator));
 
                 // TODO: notify the aeron client that it has sources
                 final TermBuffers termBuffers = null; // TODO: termBuffersFactory.get()
 
                 clientProxy.onConnectionReady(
-                        channel,
-                        streamId,
-                        connection.sessionId(),
-                        connection.initialTermId(),
-                        // TODO: figure out if the initial position is what's wanted, possibly the current position?
-                        connection.initialPosition(),
-                        termBuffers,
-                        correlationId,
-                        positions);
+                    channel,
+                    streamId,
+                    connection.sessionId(),
+                    connection.initialTermId(),
+                    // TODO: figure out if the initial position is what's wanted, possibly the current position?
+                    connection.initialPosition(),
+                    termBuffers,
+                    correlationId,
+                    subscriberPositions);
             }
         }
 
@@ -504,16 +508,15 @@ public class DriverConductor extends Agent
         clientProxy.operationSucceeded(correlationId);
     }
 
-    private void onRemoveSubscription(final long registrationCorrelationId, final long correlationId)
+    private void onRemoveSubscription(final long registrationId, final long correlationId)
     {
-        final DriverSubscription subscription = removeSubscription(subscriptions, registrationCorrelationId);
+        final DriverSubscription subscription = removeSubscription(subscriptions, registrationId);
         if (null == subscription)
         {
-            throw new ControlProtocolException(SUBSCRIBER_NOT_REGISTERED, "subscription not registered");
+            throw new ControlProtocolException(UNKNOWN_SUBSCRIPTION, "Unknown subscription: " + registrationId);
         }
 
         receiverProxy.closeSubscription(subscription);
-
         final ReceiveChannelEndpoint channelEndpoint = subscription.receiveChannelEndpoint();
 
         final int refCount = channelEndpoint.decRefToStream(subscription.streamId());
@@ -525,7 +528,6 @@ public class DriverConductor extends Agent
         if (channelEndpoint.streamCount() == 0)
         {
             receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
-
             receiverProxy.closeMediaEndpoint(channelEndpoint);
 
             while (!channelEndpoint.isClosed())
@@ -537,34 +539,36 @@ public class DriverConductor extends Agent
         clientProxy.operationSucceeded(correlationId);
     }
 
-    private void onCreateConnection(final CreateConnectionCmd cmd)
+    private void onCreateConnection(
+        final int sessionId,
+        final int streamId,
+        final int initialTermId,
+        final int initialTermOffset,
+        final int termBufferSize,
+        final InetSocketAddress controlAddress,
+        final ReceiveChannelEndpoint channelEndpoint)
     {
-        final int sessionId = cmd.sessionId();
-        final int streamId = cmd.streamId();
-        final int initialTermId = cmd.termId();
-        final int initialTermOffset = cmd.termOffset();
-        final int termBufferSize = cmd.termSize();
-        final InetSocketAddress controlAddress = cmd.controlAddress();
-        final ReceiveChannelEndpoint channelEndpoint = cmd.channelEndpoint();
         final UdpChannel udpChannel = channelEndpoint.udpChannel();
-        final String channel = udpChannel.originalUriAsString();
-
+        final String channel = udpChannel.originalUriString();
         final String canonicalForm = udpChannel.canonicalForm();
         final long correlationId = generateCreationCorrelationId();
-        final TermBuffers termBuffers =
-            termBuffersFactory.newConnection(canonicalForm, sessionId, streamId, correlationId, termBufferSize);
-        final long initialPosition = TermHelper.calculatePosition(
-                initialTermId, initialTermOffset, Integer.numberOfTrailingZeros(termBufferSize), initialTermId);
 
-        final List<SubscriptionPosition> positions = subscriptions
+        final TermBuffers termBuffers = termBuffersFactory.newConnection(
+            canonicalForm, sessionId, streamId, correlationId, termBufferSize);
+        final long initialPosition = TermHelper.calculatePosition(
+            initialTermId, initialTermOffset, Integer.numberOfTrailingZeros(termBufferSize), initialTermId);
+
+        final List<SubscriberPosition> subscriberPositions = subscriptions
             .stream()
             .filter(subscription -> subscription.matches(streamId, channelEndpoint))
-            .map(subscription ->
+            .map((subscription) ->
             {
                 final int subscriberPositionCounterId = allocatePositionCounter("subscriber", channel, sessionId, streamId);
-                final BufferPositionIndicator indicator = new BufferPositionIndicator(countersBuffer, subscriberPositionCounterId, countersManager);
+                final BufferPositionIndicator indicator = new BufferPositionIndicator(
+                    countersBuffer, subscriberPositionCounterId, countersManager);
                 countersManager.setCounterValue(subscriberPositionCounterId, initialPosition);
-                return new SubscriptionPosition(subscription, subscriberPositionCounterId, indicator);
+
+                return new SubscriberPosition(subscription, subscriberPositionCounterId, indicator);
             })
             .collect(toList());
 
@@ -572,19 +576,19 @@ public class DriverConductor extends Agent
         final int receiverHwmCounterId = allocatePositionCounter("receiver hwm", channel, sessionId, streamId);
 
         clientProxy.onConnectionReady(
-                channel,
-                streamId,
-                sessionId,
-                initialTermId,
-                initialPosition,
-                termBuffers,
-                correlationId,
-                positions);
+            channel,
+            streamId,
+            sessionId,
+            initialTermId,
+            initialPosition,
+            termBuffers,
+            correlationId,
+            subscriberPositions);
 
-        final GapScanner[] gapScanners =
-            termBuffers.stream()
-                       .map((rawLog) -> new GapScanner(rawLog.logBuffer(), rawLog.stateBuffer()))
-                       .toArray(GapScanner[]::new);
+        final GapScanner[] gapScanners = termBuffers
+            .stream()
+            .map((rawLog) -> new GapScanner(rawLog.logBuffer(), rawLog.stateBuffer()))
+            .toArray(GapScanner[]::new);
 
         final LossHandler lossHandler = new LossHandler(
             gapScanners,
@@ -595,10 +599,10 @@ public class DriverConductor extends Agent
             initialTermOffset,
             systemCounters);
 
-        final PositionIndicator[] positionIndicators = positions
-                .stream()
-                .map(SubscriptionPosition::positionIndicator)
-                .toArray(PositionIndicator[]::new);
+        final PositionIndicator[] positionIndicators = subscriberPositions
+            .stream()
+            .map(SubscriberPosition::positionIndicator)
+            .toArray(PositionIndicator[]::new);
 
         final DriverConnection connection = new DriverConnection(
             channelEndpoint,
@@ -621,10 +625,8 @@ public class DriverConductor extends Agent
 
         connections.add(connection);
 
-        positions.forEach(subscriberPosition ->
-        {
-            subscriberPosition.subscription().addConnection(connection, subscriberPosition.positionIndicator());
-        });
+        subscriberPositions.forEach((subscriberPosition) ->
+            subscriberPosition.subscription().addConnection(connection, subscriberPosition.positionIndicator()));
 
         receiverProxy.newConnection(channelEndpoint, connection);
     }
@@ -632,7 +634,6 @@ public class DriverConductor extends Agent
     private void onClientKeepalive(final long clientId)
     {
         final AeronClient aeronClient = findClient(clients, clientId);
-
         if (null != aeronClient)
         {
             aeronClient.timeOfLastKeepalive(clock.time());
@@ -655,7 +656,6 @@ public class DriverConductor extends Agent
     private void onCheckPublications(final long now)
     {
         final ArrayList<DriverPublication> publications = this.publications;
-
         for (int i = publications.size() - 1; i >= 0; i--)
         {
             final DriverPublication publication = publications.get(i);
@@ -666,7 +666,7 @@ public class DriverConductor extends Agent
                 final SendChannelEndpoint channelEndpoint = publication.sendChannelEndpoint();
 
                 logger.logPublicationRemoval(
-                    channelEndpoint.udpChannel().originalUriAsString(),
+                    channelEndpoint.udpChannel().originalUriString(),
                     publication.sessionId(),
                     publication.streamId());
 
@@ -687,23 +687,21 @@ public class DriverConductor extends Agent
     private void onCheckSubscriptions(final long now)
     {
         final ArrayList<DriverSubscription> subscriptions = this.subscriptions;
-
         for (int i = subscriptions.size() - 1; i >= 0; i--)
         {
             final DriverSubscription subscription = subscriptions.get(i);
 
-            if (subscription.timeOfLastKeepaliveFromClient() + Configuration.CLIENT_LIVENESS_TIMEOUT_NS < now)
+            if (now > (subscription.timeOfLastKeepaliveFromClient() + Configuration.CLIENT_LIVENESS_TIMEOUT_NS))
             {
                 final ReceiveChannelEndpoint channelEndpoint = subscription.receiveChannelEndpoint();
                 final int streamId = subscription.streamId();
 
                 logger.logSubscriptionRemoval(
-                    channelEndpoint.udpChannel().originalUriAsString(),
+                    channelEndpoint.udpChannel().originalUriString(),
                     subscription.streamId(),
-                    subscription.id());
+                    subscription.registrationId());
 
                 subscriptions.remove(i);
-
                 receiverProxy.closeSubscription(subscription);
 
                 if (0 == channelEndpoint.decRefToStream(subscription.streamId()))
@@ -714,7 +712,6 @@ public class DriverConductor extends Agent
                 if (channelEndpoint.streamCount() == 0)
                 {
                     receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
-
                     receiverProxy.closeMediaEndpoint(channelEndpoint);
                 }
             }
@@ -724,7 +721,6 @@ public class DriverConductor extends Agent
     private void onCheckConnections(final long now)
     {
         final ArrayList<DriverConnection> connections = this.connections;
-
         for (int i = connections.size() - 1; i >= 0; i--)
         {
             final DriverConnection connection = connections.get(i);
@@ -732,7 +728,7 @@ public class DriverConductor extends Agent
             switch (connection.status())
             {
                 case ACTIVE:
-                    if (connection.timeOfLastFrame() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS < now)
+                    if (now > (connection.timeOfLastFrame() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS))
                     {
                         receiverProxy.removeConnection(connection);
 
@@ -742,20 +738,19 @@ public class DriverConductor extends Agent
                         if (connection.remaining() == 0)
                         {
                             connection.status(DriverConnection.Status.LINGER);
-                            connection.timeOfLastStatusChange(now);
 
                             clientProxy.onInactiveConnection(
                                 connection.correlationId(),
                                 connection.sessionId(),
                                 connection.streamId(),
-                                connection.receiveChannelEndpoint().udpChannel().originalUriAsString());
+                                connection.receiveChannelEndpoint().udpChannel().originalUriString());
                         }
                     }
                     break;
 
                 case INACTIVE:
                     if (connection.remaining() == 0 ||
-                        connection.timeOfLastStatusChange() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS < now)
+                        now > (connection.timeOfLastStatusChange() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS))
                     {
                         connection.status(DriverConnection.Status.LINGER);
                         connection.timeOfLastStatusChange(now);
@@ -764,15 +759,15 @@ public class DriverConductor extends Agent
                             connection.correlationId(),
                             connection.sessionId(),
                             connection.streamId(),
-                            connection.receiveChannelEndpoint().udpChannel().originalUriAsString());
+                            connection.receiveChannelEndpoint().udpChannel().originalUriString());
                     }
                     break;
 
                 case LINGER:
-                    if (connection.timeOfLastStatusChange() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS < now)
+                    if (now > (connection.timeOfLastStatusChange() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS))
                     {
                         logger.logConnectionRemoval(
-                            connection.receiveChannelEndpoint().udpChannel().originalUriAsString(),
+                            connection.receiveChannelEndpoint().udpChannel().originalUriString(),
                             connection.sessionId(),
                             connection.streamId());
 
@@ -790,7 +785,7 @@ public class DriverConductor extends Agent
         {
             final AeronClient aeronClient = clients.get(i);
 
-            if (aeronClient.timeOfLastKeepalive() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS < now)
+            if (now > (aeronClient.timeOfLastKeepalive() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS))
             {
                 clients.remove(i);
             }
@@ -803,7 +798,7 @@ public class DriverConductor extends Agent
         {
             final ElicitSetupFromSourceCmd cmd = pendingSetups.get(i);
 
-            if (cmd.timeOfStatusMessage() + Configuration.PENDING_SETUPS_TIMEOUT_NS < now)
+            if (now > (cmd.timeOfStatusMessage() + Configuration.PENDING_SETUPS_TIMEOUT_NS))
             {
                 pendingSetups.remove(i);
 
@@ -828,7 +823,6 @@ public class DriverConductor extends Agent
     private AeronClient getOrAddClient(final long clientId)
     {
         AeronClient aeronClient = findClient(clients, clientId);
-
         if (null == aeronClient)
         {
             aeronClient = new AeronClient(clientId, clock.time());
@@ -857,20 +851,21 @@ public class DriverConductor extends Agent
         return countersManager.allocate(String.format("%s pos: %s %x %x", type, dirName, sessionId, streamId));
     }
 
-    private DriverSubscription removeSubscription(final ArrayList<DriverSubscription> subscriptions, final long registrationId)
+    private static DriverSubscription removeSubscription(
+        final ArrayList<DriverSubscription> subscriptions, final long registrationId)
     {
+        DriverSubscription subscription = null;
         for (int i = 0, size = subscriptions.size(); i < size; i++)
         {
-            final DriverSubscription subscription = subscriptions.get(i);
-
-            if (subscription.id() == registrationId)
+            subscription = subscriptions.get(i);
+            if (subscription.registrationId() == registrationId)
             {
                 subscriptions.remove(i);
-                return subscription;
+                break;
             }
         }
 
-        return null;
+        return subscription;
     }
 
     private RetransmitSender composeNewRetransmitSender(final DriverPublication publication)

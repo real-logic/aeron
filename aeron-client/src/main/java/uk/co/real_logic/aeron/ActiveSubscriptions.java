@@ -38,18 +38,14 @@ class ActiveSubscriptions
     public synchronized void forEach(final String channel, final int streamId, final Consumer<Subscription> handler)
     {
         final Int2ObjectHashMap<List<Subscription>> subscriptionByStreamIdMap = subscriptionByChannelMap.get(channel);
-        if (subscriptionByStreamIdMap == null)
+        if (null != subscriptionByStreamIdMap)
         {
-            return;
+            final List<Subscription> subscriptions = subscriptionByStreamIdMap.get(streamId);
+            if (null != subscriptions)
+            {
+                subscriptions.forEach(handler);
+            }
         }
-
-        final List<Subscription> subscriptions = subscriptionByStreamIdMap.get(streamId);
-        if (subscriptions == null)
-        {
-            return;
-        }
-
-        subscriptions.forEach(handler);
     }
 
     public synchronized void add(final Subscription subscription)
@@ -65,25 +61,21 @@ class ActiveSubscriptions
         final int streamId = subscription.streamId();
 
         final Int2ObjectHashMap<List<Subscription>> subscriptionByStreamIdMap = subscriptionByChannelMap.get(channel);
-        if (subscriptionByStreamIdMap == null)
+        if (null != subscriptionByStreamIdMap)
         {
-            return;
-        }
-
-        final List<Subscription> subscriptions = subscriptionByStreamIdMap.get(streamId);
-        if (subscriptions.remove(subscription) && subscriptions.isEmpty())
-        {
-            subscriptionByStreamIdMap.remove(streamId);
-
-            if (subscriptionByStreamIdMap.isEmpty())
+            final List<Subscription> subscriptions = subscriptionByStreamIdMap.get(streamId);
+            if (subscriptions.remove(subscription) && subscriptions.isEmpty())
             {
                 subscriptionByStreamIdMap.remove(streamId);
                 if (subscriptionByStreamIdMap.isEmpty())
                 {
-                    subscriptionByChannelMap.remove(channel);
+                    subscriptionByStreamIdMap.remove(streamId);
+                    if (subscriptionByStreamIdMap.isEmpty())
+                    {
+                        subscriptionByChannelMap.remove(channel);
+                    }
                 }
             }
         }
-
     }
 }

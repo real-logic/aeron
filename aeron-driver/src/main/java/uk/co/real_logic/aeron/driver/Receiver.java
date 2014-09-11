@@ -47,7 +47,8 @@ public class Receiver extends Agent
     {
         if (obj instanceof NewConnectionCmd)
         {
-            onNewConnection((NewConnectionCmd) obj);
+            final NewConnectionCmd cmd = (NewConnectionCmd)obj;
+            onNewConnection(cmd.channelEndpoint(), cmd.connection());
         }
         else if (obj instanceof AddSubscriptionCmd)
         {
@@ -66,11 +67,13 @@ public class Receiver extends Agent
         }
         else if (obj instanceof RemoveConnectionCmd)
         {
-            onRemoveConnection((RemoveConnectionCmd) obj);
+            final RemoveConnectionCmd cmd = (RemoveConnectionCmd)obj;
+            onRemoveConnection(cmd.channelEndpoint(), cmd.connection());
         }
         else if (obj instanceof RemovePendingSetupCmd)
         {
-            onRemovePendingSetup((RemovePendingSetupCmd) obj);
+            final RemovePendingSetupCmd cmd = (RemovePendingSetupCmd)obj;
+            onRemovePendingSetup(cmd.channelEndpoint(), cmd.sessionId(), cmd.streamId());
         }
         else if (obj instanceof CloseReceiveChannelEndpointCmd)
         {
@@ -79,7 +82,8 @@ public class Receiver extends Agent
         }
         else if (obj instanceof CloseSubscriptionCmd)
         {
-            onCloseSubscription((CloseSubscriptionCmd) obj);
+            final CloseSubscriptionCmd cmd = (CloseSubscriptionCmd)obj;
+            onCloseSubscription(cmd.subscription());
         }
     }
 
@@ -103,18 +107,15 @@ public class Receiver extends Agent
         channelEndpoint.dispatcher().onRemoveSubscription(streamId);
     }
 
-    private void onNewConnection(final NewConnectionCmd cmd)
+    private void onNewConnection(final ReceiveChannelEndpoint channelEndpoint, final DriverConnection connection)
     {
-        final ReceiveChannelEndpoint channelEndpoint = cmd.receiveChannelEndpoint();
-
-        channelEndpoint.dispatcher().addConnection(cmd.connection());
+        channelEndpoint.dispatcher().addConnection(connection);
     }
 
-    private void onRemoveConnection(final RemoveConnectionCmd cmd)
+    private void onRemoveConnection(final ReceiveChannelEndpoint channelEndpoint, final DriverConnection connection)
     {
-        final ReceiveChannelEndpoint channelEndpoint = cmd.receiveChannelEndpoint();
 
-        channelEndpoint.dispatcher().removeConnection(cmd.connection());
+        channelEndpoint.dispatcher().removeConnection(connection);
     }
 
     private void onRegisterMediaSubscriptionEndpoint(final ReceiveChannelEndpoint channelEndpoint)
@@ -122,11 +123,9 @@ public class Receiver extends Agent
         channelEndpoint.registerForRead(nioSelector);
     }
 
-    private void onRemovePendingSetup(final RemovePendingSetupCmd cmd)
+    private void onRemovePendingSetup(final ReceiveChannelEndpoint channelEndpoint, final int sessionId, final int streamId)
     {
-        final ReceiveChannelEndpoint channelEndpoint = cmd.channelEndpoint();
-
-        channelEndpoint.dispatcher().removePendingSetup(cmd.sessionId(), cmd.streamId());
+        channelEndpoint.dispatcher().removePendingSetup(sessionId, streamId);
     }
 
     private void onCloseMediaSubscriptionEndpoint(final ReceiveChannelEndpoint channelEndpoint)
@@ -134,8 +133,8 @@ public class Receiver extends Agent
         channelEndpoint.close();
     }
 
-    private void onCloseSubscription(final CloseSubscriptionCmd closeSubscription)
+    private void onCloseSubscription(final DriverSubscription subscription)
     {
-        closeSubscription.subscription().close();
+        subscription.close();
     }
 }

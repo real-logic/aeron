@@ -93,7 +93,7 @@ public class RetransmitHandler
     /**
      * Called on reception of a NAK to start retransmits handling.
      *
-     * @param termId     from the NAK and the term id of the buffer to retransmit from
+     * @param termId     from the NAK and the term registrationId of the buffer to retransmit from
      * @param termOffset from the NAK and the offset of the data to retransmit
      * @param length     of the missing data
      */

@@ -25,8 +25,6 @@ import uk.co.real_logic.aeron.common.status.PositionIndicator;
 import uk.co.real_logic.aeron.common.status.PositionReporter;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
@@ -40,7 +38,10 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
  */
 public class DriverConnection implements AutoCloseable
 {
-    public enum Status {ACTIVE, INACTIVE, LINGER}
+    public enum Status
+    {
+        ACTIVE, INACTIVE, LINGER
+    }
 
     private final ReceiveChannelEndpoint channelEndpoint;
     private final long correlationId;
@@ -92,7 +93,7 @@ public class DriverConnection implements AutoCloseable
         final TermBuffers termBuffers,
         final LossHandler lossHandler,
         final StatusMessageSender statusMessageSender,
-        final PositionIndicator[] positions,
+        final PositionIndicator[] subscriberPositions,
         final PositionReporter completedPosition,
         final PositionReporter hwmPosition,
         final NanoClock clock,
@@ -104,7 +105,7 @@ public class DriverConnection implements AutoCloseable
         this.sessionId = sessionId;
         this.streamId = streamId;
         this.termBuffers = termBuffers;
-        this.subscriberPositions = positions;
+        this.subscriberPositions = subscriberPositions;
         this.completedPosition = completedPosition;
         this.hwmPosition = hwmPosition;
         this.systemCounters = systemCounters;
@@ -118,10 +119,10 @@ public class DriverConnection implements AutoCloseable
         this.hwmIndex = this.activeIndex = termIdToBufferIndex(initialTermId);
         this.hwmTermId = initialTermId;
 
-        rebuilders =
-            termBuffers.stream()
-                       .map((rawLog) -> new LogRebuilder(rawLog.logBuffer(), rawLog.stateBuffer()))
-                       .toArray(LogRebuilder[]::new);
+        rebuilders = termBuffers
+            .stream()
+            .map((rawLog) -> new LogRebuilder(rawLog.logBuffer(), rawLog.stateBuffer()))
+            .toArray(LogRebuilder[]::new);
         this.lossHandler = lossHandler;
         this.statusMessageSender = statusMessageSender;
         this.statusMessageTimeout = statusMessageTimeout;
@@ -135,10 +136,7 @@ public class DriverConnection implements AutoCloseable
 
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
         this.initialTermId = initialTermId;
-
-        initialPosition = TermHelper.calculatePosition(
-            initialTermId, initialTermOffset, positionBitsToShift, initialTermId);
-
+        initialPosition = TermHelper.calculatePosition(initialTermId, initialTermOffset, positionBitsToShift, initialTermId);
         this.lastSmPosition = initialPosition;
 
         rebuilders[activeIndex].tail(initialTermOffset);
@@ -409,6 +407,63 @@ public class DriverConnection implements AutoCloseable
         return timeOfLastFrame.get();
     }
 
+    /**
+     * Remove a {@link PositionIndicator} for a subscriber that has been removed so it is not tracked for flow control.
+     *
+     * @param subscriberPosition for the subscriber that has been removed.
+     */
+    public void removeSubscription(final PositionIndicator subscriberPosition)
+    {
+        final PositionIndicator[] oldPositions = subscriberPositions;
+        final PositionIndicator[] newPositions = new PositionIndicator[oldPositions.length - 1];
+        for (int i = 0, j = 0; i < oldPositions.length; i++)
+        {
+            if (oldPositions[i] != subscriberPosition)
+            {
+                newPositions[j] = oldPositions[i];
+                j++;
+            }
+        }
+
+        subscriberPositions = newPositions;
+        subscriberPosition.close();
+    }
+
+    /**
+     * Add a new subscriber to this connection so their position can be tracked for flow control.
+     *
+     * @param subscriberPosition for the subscriber to be added.
+     */
+    public void addSubscription(final PositionIndicator subscriberPosition)
+    {
+        final PositionIndicator[] oldPositions = subscriberPositions;
+        final int length = oldPositions.length;
+        final PositionIndicator[] newPositions = new PositionIndicator[length + 1];
+        System.arraycopy(oldPositions, 0, newPositions, 0, length);
+        newPositions[length] = subscriberPosition;
+        subscriberPositions = newPositions;
+    }
+
+    /**
+     * Initial position this connection started at.
+     *
+     * @return the initial position this connection started at.
+     */
+    public long initialPosition()
+    {
+        return initialPosition;
+    }
+
+    /**
+     * The initial term id this connection started at.
+     *
+     * @return the initial term id this connection started at.
+     */
+    public int initialTermId()
+    {
+        return initialTermId;
+    }
+
     private int sendStatusMessage(
         final int termId, final int termOffset, final long position, final int windowSize, final long now)
     {
@@ -487,40 +542,4 @@ public class DriverConnection implements AutoCloseable
 
         return nextIndex;
     }
-
-    public void removeSubscription(final PositionIndicator indicator)
-    {
-        final PositionIndicator[] oldPositions = subscriberPositions;
-        final PositionIndicator[] newPositions = new PositionIndicator[oldPositions.length - 1];
-        for (int i = 0, j = 0; i < oldPositions.length; i++)
-        {
-            if (oldPositions[i] != indicator)
-            {
-                newPositions[j] = oldPositions[i];
-                j++;
-            }
-        }
-        subscriberPositions = newPositions;
-    }
-
-    public void addSubscription(final PositionIndicator indicator)
-    {
-        final PositionIndicator[] oldPositions = subscriberPositions;
-        final int length = oldPositions.length;
-        final PositionIndicator[] newPositions = new PositionIndicator[length + 1];
-        System.arraycopy(oldPositions, 0, newPositions, 0, length);
-        newPositions[length] = indicator;
-        subscriberPositions = newPositions;
-    }
-
-    public long initialPosition()
-    {
-        return initialPosition;
-    }
-
-    public int initialTermId()
-    {
-        return initialTermId;
-    }
-
 }

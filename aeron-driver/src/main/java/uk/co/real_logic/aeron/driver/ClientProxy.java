@@ -40,7 +40,7 @@ import static uk.co.real_logic.aeron.common.event.EventCode.CMD_OUT_PUBLICATION_
  */
 public class ClientProxy
 {
-    private static final int WRITE_BUFFER_CAPACITY = 1024;
+    private static final int WRITE_BUFFER_CAPACITY = 4096;
 
     private final AtomicBuffer tmpBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
     private final BroadcastTransmitter transmitter;
@@ -77,31 +77,30 @@ public class ClientProxy
     }
 
     public void onConnectionReady(
-            final String channel,
-            final int streamId,
-            final int sessionId,
-            final int termId,
-            final long initialPosition,
-            final TermBuffers termBuffers,
-            final long correlationId,
-            final List<SubscriptionPosition> positions)
+        final String channel,
+        final int streamId,
+        final int sessionId,
+        final int termId,
+        final long initialPosition,
+        final TermBuffers termBuffers,
+        final long correlationId,
+        final List<SubscriberPosition> subscriberPositions)
     {
-
         connectionReady.wrap(tmpBuffer, 0);
         connectionReady.sessionId(sessionId)
-                         .streamId(streamId)
-                         .initialPosition(initialPosition)
-                         .correlationId(correlationId)
-                         .termId(termId);
+                       .streamId(streamId)
+                       .initialPosition(initialPosition)
+                       .correlationId(correlationId)
+                       .termId(termId);
         termBuffers.appendBufferLocationsTo(connectionReady);
         connectionReady.channel(channel);
 
-        connectionReady.positionIndicatorCount(positions.size());
-        for (int i = 0; i < positions.size(); i++)
+        connectionReady.positionIndicatorCount(subscriberPositions.size());
+        for (int i = 0, size = subscriberPositions.size(); i < size; i++)
         {
-            SubscriptionPosition position = positions.get(i);
+            final SubscriberPosition position = subscriberPositions.get(i);
             connectionReady.positionIndicatorCounterId(i, position.positionCounterId());
-            connectionReady.positionIndicatorRegistrationId(i, position.subscription().id());
+            connectionReady.positionIndicatorRegistrationId(i, position.subscription().registrationId());
         }
 
         logger.log(CMD_OUT_CONNECTION_READY, tmpBuffer, 0, connectionReady.length());
@@ -109,20 +108,20 @@ public class ClientProxy
     }
 
     public void onPublicationReady(
-            final String channel,
-            final int streamId,
-            final int sessionId,
-            final int termId,
-            final TermBuffers termBuffers,
-            final long correlationId,
-            final int positionCounterId)
+        final String channel,
+        final int streamId,
+        final int sessionId,
+        final int termId,
+        final TermBuffers termBuffers,
+        final long correlationId,
+        final int positionCounterId)
     {
         publicationReady.wrap(tmpBuffer, 0);
         publicationReady.sessionId(sessionId)
-                .streamId(streamId)
-                .correlationId(correlationId)
-                .termId(termId)
-                .positionCounterId(positionCounterId);
+                        .streamId(streamId)
+                        .correlationId(correlationId)
+                        .termId(termId)
+                        .positionCounterId(positionCounterId);
         termBuffers.appendBufferLocationsTo(publicationReady);
         publicationReady.channel(channel);
 

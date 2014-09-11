@@ -230,9 +230,7 @@ public class UdpChannel
 
         final UdpChannel that = (UdpChannel)o;
 
-        if (canonicalForm != null ? !canonicalForm.equals(that.canonicalForm) : that.canonicalForm != null) return false;
-
-        return true;
+        return !(canonicalForm != null ? !canonicalForm.equals(that.canonicalForm) : that.canonicalForm != null);
     }
 
     public int hashCode()
@@ -299,7 +297,7 @@ public class UdpChannel
      *
      * @return the original uri
      */
-    public String originalUriAsString()
+    public String originalUriString()
     {
         return uriStr;
     }

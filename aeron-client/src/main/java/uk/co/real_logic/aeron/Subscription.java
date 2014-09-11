@@ -36,13 +36,13 @@ public class Subscription implements AutoCloseable
     private int roundRobinIndex = 0;
 
     public Subscription(
-        final ClientConductor clientConductor,
+        final ClientConductor conductor,
         final DataHandler dataHandler,
         final String channel,
         final int streamId,
         final long registrationId)
     {
-        this.clientConductor = clientConductor;
+        this.clientConductor = conductor;
         this.dataHandler = dataHandler;
         this.channel = channel;
         this.streamId = streamId;
@@ -97,7 +97,7 @@ public class Subscription implements AutoCloseable
         return connections.doLimitedAction(roundRobinIndex, fragmentCountLimit, Connection::poll);
     }
 
-    void onTermBuffersMapped(
+    void onConnectionReady(
         final int sessionId,
         final int initialTermId,
         final long initialPosition,

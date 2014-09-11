@@ -35,7 +35,7 @@ import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_LONG;
  * |                         Correlation ID                        |
  * |                                                               |
  * +---------------------------------------------------------------+
- * |                        Initial Position                       |
+ * |                        Joining Position                       |
  * |                                                               |
  * +---------------------------------------------------------------+
  * |                          Session ID                           |
@@ -123,8 +123,8 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
     private static final int NUM_FILES = 6;
 
     private static final int CORRELATION_ID_OFFSET = 0;
-    private static final int INITIAL_POSITION_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
-    private static final int SESSION_ID_OFFSET = INITIAL_POSITION_OFFSET + SIZE_OF_LONG;
+    private static final int JOINING_POSITION_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
+    private static final int SESSION_ID_OFFSET = JOINING_POSITION_OFFSET + SIZE_OF_LONG;
     private static final int STREAM_ID_FIELD_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
     private static final int TERM_ID_FIELD_OFFSET = STREAM_ID_FIELD_OFFSET + SIZE_OF_INT;
     private static final int POSITION_INDICATOR_COUNT_OFFSET = TERM_ID_FIELD_OFFSET + SIZE_OF_INT;
@@ -189,24 +189,24 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
     }
 
     /**
-     * return initial position field
+     * The joining position value
      *
-     * @return initial position field
+     * @return joining position value
      */
-    public long initialPosition()
+    public long joiningPosition()
     {
-        return atomicBuffer().getLong(offset() + INITIAL_POSITION_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return atomicBuffer().getLong(offset() + JOINING_POSITION_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
-     * set initial position field
+     * set joining position field
      *
-     * @param initialPosition field value
+     * @param joiningPosition field value
      * @return flyweight
      */
-    public ConnectionReadyFlyweight initialPosition(final long initialPosition)
+    public ConnectionReadyFlyweight joiningPosition(final long joiningPosition)
     {
-        atomicBuffer().putLong(offset() + INITIAL_POSITION_OFFSET, initialPosition, ByteOrder.LITTLE_ENDIAN);
+        atomicBuffer().putLong(offset() + JOINING_POSITION_OFFSET, joiningPosition, ByteOrder.LITTLE_ENDIAN);
 
         return this;
     }
@@ -365,29 +365,31 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
         return location(CHANNEL_INDEX, value);
     }
 
-    public ConnectionReadyFlyweight positionIndicatorCounterId(int index, int id)
+    public ConnectionReadyFlyweight positionIndicatorCounterId(final int index, final int id)
     {
         atomicBuffer().putInt(positionIndicatorOffset(index), id);
+
         return this;
     }
 
-    public int positionIndicatorCounterId(int index)
+    public int positionIndicatorCounterId(final int index)
     {
         return atomicBuffer().getInt(positionIndicatorOffset(index));
     }
 
-    public ConnectionReadyFlyweight positionIndicatorRegistrationId(int index, long id)
+    public ConnectionReadyFlyweight positionIndicatorRegistrationId(final int index, final long id)
     {
         atomicBuffer().putLong(positionIndicatorOffset(index) + SIZE_OF_INT, id);
+
         return this;
     }
 
-    public long positionIndicatorRegistrationId(int index)
+    public long positionIndicatorRegistrationId(final int index)
     {
         return atomicBuffer().getLong(positionIndicatorOffset(index) + SIZE_OF_INT);
     }
 
-    private int positionIndicatorOffset(int index)
+    private int positionIndicatorOffset(final int index)
     {
         return endOfChannel() + index * POSITION_INDICATOR_FIELD_SIZE;
     }
@@ -408,5 +410,4 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
     {
         return positionIndicatorOffset(positionIndicatorCount() + 1);
     }
-
 }

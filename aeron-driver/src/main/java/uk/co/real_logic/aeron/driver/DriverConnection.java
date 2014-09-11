@@ -144,29 +144,61 @@ public class DriverConnection implements AutoCloseable
         this.hwmPosition.position(initialPosition);
     }
 
-    public ReceiveChannelEndpoint receiveChannelEndpoint()
-    {
-        return channelEndpoint;
-    }
-
     public long correlationId()
     {
         return correlationId;
     }
 
+    /**
+     * The {@link ReceiveChannelEndpoint} to which the connection belongs.
+     *
+     * @return {@link ReceiveChannelEndpoint} to which the connection belongs.
+     */
+    public ReceiveChannelEndpoint receiveChannelEndpoint()
+    {
+        return channelEndpoint;
+    }
+
+    /**
+     * The session id of the channel from a publisher.
+     *
+     * @return session id of the channel from a publisher.
+     */
     public int sessionId()
     {
         return sessionId;
     }
 
+    /**
+     * The stream id of this connection within a channel.
+     *
+     * @return stream id of this connection within a channel.
+     */
     public int streamId()
     {
         return streamId;
     }
 
-    public boolean matches(final int streamId, final ReceiveChannelEndpoint channelEndpoint)
+    /**
+     * Does this connection match a given {@link ReceiveChannelEndpoint} and stream id?
+     *
+     * @param channelEndpoint to match by identity.
+     * @param streamId to match on value.
+     * @return true on a match otherwise false.
+     */
+    public boolean matches(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
     {
         return this.streamId == streamId && this.channelEndpoint == channelEndpoint;
+    }
+
+    /**
+     * Get the {@link TermBuffers} the back this connection.
+     *
+     * @return the {@link TermBuffers} the back this connection.
+     */
+    public TermBuffers termBuffers()
+    {
+        return termBuffers;
     }
 
     /**
@@ -362,17 +394,6 @@ public class DriverConnection implements AutoCloseable
         // invert the work count logic. We want to appear to be less busy once we send an SM
         return 1;
     }
-
-    private long subscribersPosition()
-    {
-        long position = Long.MAX_VALUE;
-        for (final PositionIndicator indicator : subscriberPositions)
-        {
-            position = Math.min(position, indicator.position());
-        }
-        return position;
-    }
-
     /**
      * Called from the {@link Receiver} thread once added to dispatcher
      */
@@ -452,6 +473,16 @@ public class DriverConnection implements AutoCloseable
     public long initialPosition()
     {
         return initialPosition;
+    }
+
+    /**
+     * The position up to which the current stream rebuild is complete for reception.
+     *
+     * @return the position up to which the current stream rebuild is complete for reception.
+     */
+    public long completedPosition()
+    {
+        return completedPosition.position();
     }
 
     /**
@@ -541,5 +572,17 @@ public class DriverConnection implements AutoCloseable
         rebuilders[rotatePrevious(activeIndex)].statusOrdered(NEEDS_CLEANING);
 
         return nextIndex;
+    }
+
+
+    private long subscribersPosition()
+    {
+        long position = Long.MAX_VALUE;
+        for (final PositionIndicator indicator : subscriberPositions)
+        {
+            position = Math.min(position, indicator.position());
+        }
+
+        return position;
     }
 }

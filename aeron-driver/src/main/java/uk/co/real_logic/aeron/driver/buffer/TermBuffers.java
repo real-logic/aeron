@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.driver.buffer;
 
-import uk.co.real_logic.aeron.common.command.PublicationReadyFlyweight;
 import uk.co.real_logic.aeron.common.command.ReadyFlyweight;
 
 import java.util.stream.Stream;

@@ -88,11 +88,11 @@ class DriverListenerAdapter implements MessageHandler
                 final int sessionId = connectionReady.sessionId();
                 final int streamId = connectionReady.streamId();
                 final int termId = connectionReady.termId();
-                final long initialPosition = connectionReady.initialPosition();
+                final long joiningPosition = connectionReady.joiningPosition();
                 final long correlationId = connectionReady.correlationId();
 
                 listener.onNewConnection(
-                        channel, streamId, sessionId, termId, initialPosition, connectionReady, correlationId);
+                        channel, streamId, sessionId, termId, joiningPosition, connectionReady, correlationId);
                 break;
             }
 

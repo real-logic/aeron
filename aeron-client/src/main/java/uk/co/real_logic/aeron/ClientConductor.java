@@ -164,6 +164,7 @@ class ClientConductor extends Agent implements DriverListener
         activeSubscriptions.add(subscription);
 
         awaitOperationSucceeded();
+
         return subscription;
     }
 
@@ -216,36 +217,48 @@ class ClientConductor extends Agent implements DriverListener
         final ConnectionReadyFlyweight message,
         final long correlationId)
     {
-        activeSubscriptions.forEach(channel, streamId, subscription ->
-        {
-            if (null != subscription && !subscription.isConnected(sessionId))
+        activeSubscriptions.forEach(channel, streamId,
+            (subscription) ->
             {
-                final LogReader[] logs = new LogReader[BUFFER_COUNT];
-                final ManagedBuffer[] managedBuffers = new ManagedBuffer[BUFFER_COUNT * 2];
-
-                for (int i = 0; i < BUFFER_COUNT; i++)
+                if (null != subscription && !subscription.isConnected(sessionId))
                 {
-                    final ManagedBuffer logBuffer = mapBuffer(message, i);
-                    final ManagedBuffer stateBuffer = mapBuffer(message, i + TermHelper.BUFFER_COUNT);
+                    PositionReporter positionReporter = null;
+                    for (int i = 0, size = message.positionIndicatorCount(); i < size; i++)
+                    {
+                        if (subscription.registrationId() == message.positionIndicatorRegistrationId(i))
+                        {
+                            positionReporter = new BufferPositionReporter(
+                                counterValuesBuffer, message.positionIndicatorCounterId(i));
 
-                    logs[i] = new LogReader(logBuffer.buffer(), stateBuffer.buffer());
-                    managedBuffers[i * 2] = logBuffer;
-                    managedBuffers[i * 2 + 1] = stateBuffer;
+                            break;
+                        }
+                    }
+
+                    if (null != positionReporter)
+                    {
+                        final LogReader[] logs = new LogReader[BUFFER_COUNT];
+                        final ManagedBuffer[] managedBuffers = new ManagedBuffer[BUFFER_COUNT * 2];
+
+                        for (int i = 0; i < BUFFER_COUNT; i++)
+                        {
+                            final ManagedBuffer logBuffer = mapBuffer(message, i);
+                            final ManagedBuffer stateBuffer = mapBuffer(message, i + TermHelper.BUFFER_COUNT);
+
+                            logs[i] = new LogReader(logBuffer.buffer(), stateBuffer.buffer());
+                            managedBuffers[i * 2] = logBuffer;
+                            managedBuffers[i * 2 + 1] = stateBuffer;
+                        }
+
+                        subscription.onConnectionReady(
+                            sessionId, initialTermId, initialPosition, correlationId, logs, positionReporter, managedBuffers);
+
+                        if (null != newConnectionHandler)
+                        {
+                            newConnectionHandler.onNewConnection(channel, streamId, sessionId);
+                        }
+                    }
                 }
-
-                // TODO: wire up n position reporters
-                final PositionReporter subscriberPosition = new BufferPositionReporter(
-                    counterValuesBuffer, message.positionIndicatorCounterId(0));
-
-                subscription.onTermBuffersMapped(
-                    sessionId, initialTermId, initialPosition, correlationId, logs, subscriberPosition, managedBuffers);
-
-                if (null != newConnectionHandler)
-                {
-                    newConnectionHandler.onNewConnection(channel, streamId, sessionId);
-                }
-            }
-        });
+            });
     }
 
     public void onError(final ErrorCode errorCode, final String message)

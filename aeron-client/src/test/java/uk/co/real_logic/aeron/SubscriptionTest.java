@@ -111,7 +111,7 @@ public class SubscriptionTest
 
     private void onTermBuffersMapped(final int sessionId1)
     {
-        subscription.onTermBuffersMapped(
+        subscription.onConnectionReady(
             sessionId1, TERM_ID_1, 0, CONNECTION_CORRELATION_ID, readers, reporter, managedBuffers);
     }
 }

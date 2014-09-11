@@ -81,7 +81,7 @@ public class ClientProxy
         final int streamId,
         final int sessionId,
         final int termId,
-        final long initialPosition,
+        final long joiningPosition,
         final TermBuffers termBuffers,
         final long correlationId,
         final List<SubscriberPosition> subscriberPositions)
@@ -89,7 +89,7 @@ public class ClientProxy
         connectionReady.wrap(tmpBuffer, 0);
         connectionReady.sessionId(sessionId)
                        .streamId(streamId)
-                       .initialPosition(initialPosition)
+                       .joiningPosition(joiningPosition)
                        .correlationId(correlationId)
                        .termId(termId);
         termBuffers.appendBufferLocationsTo(connectionReady);

@@ -42,5 +42,10 @@ public interface PositionReporter extends AutoCloseable
      */
     void close();
 
+    /**
+     * Identifier for this position counter.
+     *
+     * @return the identifier for this position.
+     */
     int id();
 }

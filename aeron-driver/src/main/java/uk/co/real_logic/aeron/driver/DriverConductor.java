@@ -461,8 +461,8 @@ public class DriverConductor extends Agent
 
         if (null == channelEndpoint)
         {
-            channelEndpoint = new ReceiveChannelEndpoint(
-                udpChannel, conductorProxy, logger, Configuration.createLossGenerator(dataLossRate, dataLossSeed));
+            final LossGenerator lossGenerator = Configuration.createLossGenerator(dataLossRate, dataLossSeed);
+            channelEndpoint = new ReceiveChannelEndpoint(udpChannel, conductorProxy, logger, lossGenerator);
 
             receiveChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
             receiverProxy.registerMediaEndpoint(channelEndpoint);
@@ -471,12 +471,15 @@ public class DriverConductor extends Agent
         channelEndpoint.incRefToStream(streamId);
         receiverProxy.addSubscription(channelEndpoint, streamId);
 
-        final DriverSubscription subscription
-            = new DriverSubscription(correlationId, channelEndpoint, getOrAddClient(clientId), streamId);
+        final AeronClient client = getOrAddClient(clientId);
+        final DriverSubscription subscription = new DriverSubscription(correlationId, channelEndpoint, client, streamId);
+
+        subscriptions.add(subscription);
+        clientProxy.operationSucceeded(correlationId);
 
         for (final DriverConnection connection : connections)
         {
-            if (connection.matches(streamId, channelEndpoint))
+            if (connection.matches(channelEndpoint, streamId))
             {
                 final int subscriberPositionCounterId = allocatePositionCounter(
                     "subscriber", channel, connection.sessionId(), streamId);
@@ -485,27 +488,17 @@ public class DriverConductor extends Agent
                 connection.addSubscription(indicator);
                 subscription.addConnection(connection, indicator);
 
-                final List<SubscriberPosition> subscriberPositions =
-                    Arrays.asList(new SubscriberPosition(subscription, subscriberPositionCounterId, indicator));
-
-                // TODO: notify the aeron client that it has sources
-                final TermBuffers termBuffers = null; // TODO: termBuffersFactory.get()
-
                 clientProxy.onConnectionReady(
                     channel,
                     streamId,
                     connection.sessionId(),
                     connection.initialTermId(),
-                    // TODO: figure out if the initial position is what's wanted, possibly the current position?
-                    connection.initialPosition(),
-                    termBuffers,
+                    connection.completedPosition(),
+                    connection.termBuffers(),
                     correlationId,
-                    subscriberPositions);
+                    Arrays.asList(new SubscriberPosition(subscription, subscriberPositionCounterId, indicator)));
             }
         }
-
-        subscriptions.add(subscription);
-        clientProxy.operationSucceeded(correlationId);
     }
 
     private void onRemoveSubscription(final long registrationId, final long correlationId)
@@ -550,37 +543,36 @@ public class DriverConductor extends Agent
     {
         final UdpChannel udpChannel = channelEndpoint.udpChannel();
         final String channel = udpChannel.originalUriString();
-        final String canonicalForm = udpChannel.canonicalForm();
         final long correlationId = generateCreationCorrelationId();
 
         final TermBuffers termBuffers = termBuffersFactory.newConnection(
-            canonicalForm, sessionId, streamId, correlationId, termBufferSize);
-        final long initialPosition = TermHelper.calculatePosition(
+            udpChannel.canonicalForm(), sessionId, streamId, correlationId, termBufferSize);
+        final long joiningPosition = TermHelper.calculatePosition(
             initialTermId, initialTermOffset, Integer.numberOfTrailingZeros(termBufferSize), initialTermId);
 
         final List<SubscriberPosition> subscriberPositions = subscriptions
             .stream()
-            .filter(subscription -> subscription.matches(streamId, channelEndpoint))
+            .filter((subscription) -> subscription.matches(streamId, channelEndpoint))
             .map((subscription) ->
             {
-                final int subscriberPositionCounterId = allocatePositionCounter("subscriber", channel, sessionId, streamId);
+                final int positionCounterId = allocatePositionCounter("subscriber", channel, sessionId, streamId);
                 final BufferPositionIndicator indicator = new BufferPositionIndicator(
-                    countersBuffer, subscriberPositionCounterId, countersManager);
-                countersManager.setCounterValue(subscriberPositionCounterId, initialPosition);
+                    countersBuffer, positionCounterId, countersManager);
+                countersManager.setCounterValue(positionCounterId, joiningPosition);
 
-                return new SubscriberPosition(subscription, subscriberPositionCounterId, indicator);
+                return new SubscriberPosition(subscription, positionCounterId, indicator);
             })
             .collect(toList());
 
-        final int receiverCompleteCounterId = allocatePositionCounter("receiver", channel, sessionId, streamId);
-        final int receiverHwmCounterId = allocatePositionCounter("receiver hwm", channel, sessionId, streamId);
+        final int receiverCompletedCounterId = allocatePositionCounter("receiver", channel, sessionId, streamId);
+        final int receiverHwmCounterId = allocatePositionCounter("receive-hwm", channel, sessionId, streamId);
 
         clientProxy.onConnectionReady(
             channel,
             streamId,
             sessionId,
             initialTermId,
-            initialPosition,
+            joiningPosition,
             termBuffers,
             correlationId,
             subscriberPositions);
@@ -599,11 +591,6 @@ public class DriverConductor extends Agent
             initialTermOffset,
             systemCounters);
 
-        final PositionIndicator[] positionIndicators = subscriberPositions
-            .stream()
-            .map(SubscriberPosition::positionIndicator)
-            .toArray(PositionIndicator[]::new);
-
         final DriverConnection connection = new DriverConnection(
             channelEndpoint,
             correlationId,
@@ -616,8 +603,8 @@ public class DriverConductor extends Agent
             termBuffers,
             lossHandler,
             channelEndpoint.composeStatusMessageSender(controlAddress, sessionId, streamId),
-            positionIndicators,
-            new BufferPositionReporter(countersBuffer, receiverCompleteCounterId, countersManager),
+            subscriberPositions.stream().map(SubscriberPosition::positionIndicator).toArray(PositionIndicator[]::new),
+            new BufferPositionReporter(countersBuffer, receiverCompletedCounterId, countersManager),
             new BufferPositionReporter(countersBuffer, receiverHwmCounterId, countersManager),
             clock,
             systemCounters,

@@ -94,7 +94,6 @@ public class ClientConductorTest extends MockBufferUsage
 
         when(driverProxy.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1)).thenReturn(CORRELATION_ID);
         when(driverProxy.addPublication(CHANNEL, STREAM_ID_2, SESSION_ID_2)).thenReturn(CORRELATION_ID_2);
-
         when(driverProxy.addSubscription(any(), anyInt())).thenReturn(CORRELATION_ID);
 
         willNotifyNewBuffer(STREAM_ID_1, SESSION_ID_1, CORRELATION_ID);
@@ -147,8 +146,8 @@ public class ClientConductorTest extends MockBufferUsage
     @Test
     public void conductorCachesPublicationInstances()
     {
-        Publication firstPublication = addPublication();
-        Publication secondPublication = addPublication();
+        final Publication firstPublication = addPublication();
+        final Publication secondPublication = addPublication();
 
         assertThat(firstPublication, sameInstance(secondPublication));
     }
@@ -156,7 +155,7 @@ public class ClientConductorTest extends MockBufferUsage
     @Test
     public void closingPublicationShouldNotifyMediaDriver() throws Exception
     {
-        Publication publication = addPublication();
+        final Publication publication = addPublication();
         willNotifyOperationSucceeded();
 
         publication.close();
@@ -167,13 +166,13 @@ public class ClientConductorTest extends MockBufferUsage
     @Test
     public void closingPublicationShouldPurgeCache() throws Exception
     {
-        Publication firstPublication = addPublication();
+        final Publication firstPublication = addPublication();
 
         willNotifyOperationSucceeded();
         firstPublication.close();
 
         willNotifyNewBuffer(STREAM_ID_1, SESSION_ID_1, CORRELATION_ID);
-        Publication secondPublication = addPublication();
+        final Publication secondPublication = addPublication();
 
         assertThat(firstPublication, not(sameInstance(secondPublication)));
     }
@@ -181,8 +180,7 @@ public class ClientConductorTest extends MockBufferUsage
     @Test(expected = RegistrationException.class)
     public void shouldFailToRemoveOnMediaDriverError()
     {
-
-        Publication publication = addPublication();
+        final Publication publication = addPublication();
 
         doAnswer(
             (invocation) ->
@@ -197,7 +195,7 @@ public class ClientConductorTest extends MockBufferUsage
     @Test
     public void publicationsOnlyRemovedOnLastClose() throws Exception
     {
-        Publication publication = addPublication();
+        final Publication publication = addPublication();
         addPublication();
 
         publication.close();
@@ -212,7 +210,7 @@ public class ClientConductorTest extends MockBufferUsage
     @Test
     public void closingAPublicationDoesNotRemoveOtherPublications() throws Exception
     {
-        Publication publication = conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
+        final Publication publication = conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
 
         willNotifyNewBuffer(STREAM_ID_2, SESSION_ID_2, CORRELATION_ID_2);
         conductor.addPublication(CHANNEL, STREAM_ID_2, SESSION_ID_2);
@@ -221,7 +219,6 @@ public class ClientConductorTest extends MockBufferUsage
         publication.close();
 
         verify(driverProxy).removePublication(CORRELATION_ID);
-
         verify(driverProxy, never()).removePublication(CORRELATION_ID_2);
     }
 
@@ -277,7 +274,7 @@ public class ClientConductorTest extends MockBufferUsage
     {
         willNotifyOperationSucceeded();
 
-        Subscription subscription = addSubscription();
+        final Subscription subscription = addSubscription();
 
         sendConnectionReady(SESSION_ID_1, TERM_ID_1, STREAM_ID_1, CORRELATION_ID);
         conductor.doWork();
@@ -319,18 +316,22 @@ public class ClientConductorTest extends MockBufferUsage
         addBuffers(sessionId, connectionReady);
         connectionReady.channel(CHANNEL);
 
+        connectionReady.positionIndicatorCount(1);
+        connectionReady.positionIndicatorCounterId(0, 0);
+        connectionReady.positionIndicatorRegistrationId(0, correlationId);
+
         toClientTransmitter.transmit(ON_CONNECTION_READY, atomicSendBuffer, 0, connectionReady.length());
     }
 
     private static void addBuffers(final int sessionId, final ReadyFlyweight message)
     {
         IntStream.range(0, TermHelper.BUFFER_COUNT).forEach(
-                (i) ->
-                {
+            (i) ->
+            {
                 message.location(i, sessionId + "-log-" + i);
                 message.bufferOffset(i, 0);
                 message.bufferLength(i, LOG_BUFFER_SZ);
-                });
+            });
 
         IntStream.range(0, TermHelper.BUFFER_COUNT).forEach(
             (i) ->

@@ -29,7 +29,7 @@ import java.nio.ByteBuffer;
  */
 public class SendChannelEndpoint implements AutoCloseable
 {
-    private final UdpTransport transport;
+    private final UdpChannelTransport transport;
     private final UdpChannel udpChannel;
     private final BiInt2ObjectMap<PublicationAssembly> assemblyByStreamAndSessionIdMap = new BiInt2ObjectMap<>();
     private final SystemCounters systemCounters;
@@ -42,7 +42,8 @@ public class SendChannelEndpoint implements AutoCloseable
         final SystemCounters systemCounters)
     {
         this.systemCounters = systemCounters;
-        this.transport = new UdpTransport(udpChannel, this::onStatusMessageFrame, this::onNakFrame, logger, lossGenerator);
+        this.transport = new SenderUdpChannelTransport(
+            udpChannel, this::onStatusMessageFrame, this::onNakFrame, logger, lossGenerator);
         this.transport.registerForRead(nioSelector);
         this.udpChannel = udpChannel;
     }
@@ -93,13 +94,14 @@ public class SendChannelEndpoint implements AutoCloseable
     {
         final PublicationAssembly assembly = assemblyByStreamAndSessionIdMap.remove(sessionId, streamId);
 
+        DriverPublication publication = null;
         if (null != assembly)
         {
             assembly.retransmitHandler.close();
-            return assembly.publication;
+            publication = assembly.publication;
         }
 
-        return null;
+        return publication;
     }
 
     public int sessionCount()

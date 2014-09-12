@@ -153,7 +153,7 @@ public class DataFrameDispatcher
 
     private void elicitSetupFromSource(final InetSocketAddress srcAddress, final int streamId, final int sessionId)
     {
-        final UdpTransport transport = channelEndpoint.udpTransport();
+        final UdpChannelTransport transport = channelEndpoint.transport();
         final InetSocketAddress controlAddress =
             transport.isMulticast() ? transport.udpChannel().remoteControl() : srcAddress;
 
@@ -169,7 +169,7 @@ public class DataFrameDispatcher
         final int termOffset,
         final int termSize)
     {
-        final UdpTransport transport = channelEndpoint.udpTransport();
+        final UdpChannelTransport transport = channelEndpoint.transport();
         final InetSocketAddress controlAddress =
             transport.isMulticast() ? transport.udpChannel().remoteControl() : srcAddress;
 

@@ -64,23 +64,23 @@ public class SelectorAndTransportTest
     private final StatusMessageFrameHandler mockStatusMessageFrameHandler = mock(StatusMessageFrameHandler.class);
 
     private NioSelector nioSelector;
-    private UdpTransport src;
-    private UdpTransport rcv;
+    private SenderUdpChannelTransport senderTransport;
+    private ReceiverUdpChannelTransport receiverTransport;
 
     @After
     public void tearDown()
     {
         try
         {
-            if (null != src)
+            if (null != senderTransport)
             {
-                src.close();
+                senderTransport.close();
                 processLoop(nioSelector, 5);
             }
 
-            if (null != rcv)
+            if (null != receiverTransport)
             {
-                rcv.close();
+                receiverTransport.close();
                 processLoop(nioSelector, 5);
             }
 
@@ -99,11 +99,13 @@ public class SelectorAndTransportTest
     public void shouldHandleBasicSetupAndTeardown() throws Exception
     {
         nioSelector = new NioSelector();
-        rcv = new UdpTransport(RCV_DST, mockDataFrameHandler, mockSetupFrameHandler, mockTransportLogger, NO_LOSS);
-        src = new UdpTransport(SRC_DST, mockStatusMessageFrameHandler, mockNakFrameHandler, mockTransportLogger, NO_LOSS);
+        receiverTransport = new ReceiverUdpChannelTransport(
+            RCV_DST, mockDataFrameHandler, mockSetupFrameHandler, mockTransportLogger, NO_LOSS);
+        senderTransport = new SenderUdpChannelTransport(
+            SRC_DST, mockStatusMessageFrameHandler, mockNakFrameHandler, mockTransportLogger, NO_LOSS);
 
-        rcv.registerForRead(nioSelector);
-        src.registerForRead(nioSelector);
+        receiverTransport.registerForRead(nioSelector);
+        senderTransport.registerForRead(nioSelector);
 
         processLoop(nioSelector, 5);
     }
@@ -129,11 +131,13 @@ public class SelectorAndTransportTest
             };
 
         nioSelector = new NioSelector();
-        rcv = new UdpTransport(RCV_DST, dataFrameHandler, mockSetupFrameHandler, mockTransportLogger, NO_LOSS);
-        src = new UdpTransport(SRC_DST, mockStatusMessageFrameHandler, mockNakFrameHandler, mockTransportLogger, NO_LOSS);
+        receiverTransport = new ReceiverUdpChannelTransport(
+            RCV_DST, dataFrameHandler, mockSetupFrameHandler, mockTransportLogger, NO_LOSS);
+        senderTransport = new SenderUdpChannelTransport(
+            SRC_DST, mockStatusMessageFrameHandler, mockNakFrameHandler, mockTransportLogger, NO_LOSS);
 
-        rcv.registerForRead(nioSelector);
-        src.registerForRead(nioSelector);
+        receiverTransport.registerForRead(nioSelector);
+        senderTransport.registerForRead(nioSelector);
 
         encodeDataHeader.wrap(buffer, 0);
         encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
@@ -146,7 +150,7 @@ public class SelectorAndTransportTest
         byteBuffer.position(0).limit(FRAME_LENGTH);
 
         processLoop(nioSelector, 5);
-        src.sendTo(byteBuffer, srcRemoteAddress);
+        senderTransport.sendTo(byteBuffer, srcRemoteAddress);
         while (dataHeadersReceived.get() < 1)
         {
             processLoop(nioSelector, 1);
@@ -177,11 +181,13 @@ public class SelectorAndTransportTest
             };
 
         nioSelector = new NioSelector();
-        rcv = new UdpTransport(RCV_DST, dataFrameHandler, mockSetupFrameHandler, mockTransportLogger, NO_LOSS);
-        src = new UdpTransport(SRC_DST, mockStatusMessageFrameHandler, mockNakFrameHandler, mockTransportLogger, NO_LOSS);
+        receiverTransport = new ReceiverUdpChannelTransport(
+            RCV_DST, dataFrameHandler, mockSetupFrameHandler, mockTransportLogger, NO_LOSS);
+        senderTransport = new SenderUdpChannelTransport(
+            SRC_DST, mockStatusMessageFrameHandler, mockNakFrameHandler, mockTransportLogger, NO_LOSS);
 
-        rcv.registerForRead(nioSelector);
-        src.registerForRead(nioSelector);
+        receiverTransport.registerForRead(nioSelector);
+        senderTransport.registerForRead(nioSelector);
 
         encodeDataHeader.wrap(buffer, 0);
         encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
@@ -204,7 +210,7 @@ public class SelectorAndTransportTest
         byteBuffer.position(0).limit(2 * BitUtil.align(FRAME_LENGTH, FrameDescriptor.FRAME_ALIGNMENT));
 
         processLoop(nioSelector, 5);
-        src.sendTo(byteBuffer, srcRemoteAddress);
+        senderTransport.sendTo(byteBuffer, srcRemoteAddress);
         while (dataHeadersReceived.get() < 1)
         {
             processLoop(nioSelector, 1);
@@ -226,11 +232,13 @@ public class SelectorAndTransportTest
             };
 
         nioSelector = new NioSelector();
-        rcv = new UdpTransport(RCV_DST, mockDataFrameHandler, mockSetupFrameHandler, mockTransportLogger, NO_LOSS);
-        src = new UdpTransport(SRC_DST, statusMessageFrameHandler, mockNakFrameHandler, mockTransportLogger, NO_LOSS);
+        receiverTransport = new ReceiverUdpChannelTransport(
+            RCV_DST, mockDataFrameHandler, mockSetupFrameHandler, mockTransportLogger, NO_LOSS);
+        senderTransport = new SenderUdpChannelTransport(
+            SRC_DST, statusMessageFrameHandler, mockNakFrameHandler, mockTransportLogger, NO_LOSS);
 
-        rcv.registerForRead(nioSelector);
-        src.registerForRead(nioSelector);
+        receiverTransport.registerForRead(nioSelector);
+        senderTransport.registerForRead(nioSelector);
 
         statusMessage.wrap(buffer, 0);
         statusMessage.streamId(STREAM_ID)
@@ -245,7 +253,7 @@ public class SelectorAndTransportTest
         byteBuffer.position(0).limit(statusMessage.frameLength());
 
         processLoop(nioSelector, 5);
-        rcv.sendTo(byteBuffer, rcvRemoteAddress);
+        receiverTransport.sendTo(byteBuffer, rcvRemoteAddress);
         while (controlHeadersReceived.get() < 1)
         {
             processLoop(nioSelector, 1);

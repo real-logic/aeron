@@ -29,7 +29,7 @@ import java.nio.ByteBuffer;
  */
 public class ReceiveChannelEndpoint implements AutoCloseable
 {
-    private final UdpTransport udpTransport;
+    private final UdpChannelTransport transport;
     private final DataFrameDispatcher dispatcher;
     private final EventLogger logger;
 
@@ -52,29 +52,29 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         nakHeader.wrap(nakBuffer, 0);
 
         this.logger = logger;
-        this.udpTransport = new UdpTransport(udpChannel, this::onDataFrame, this::onSetupFrame, logger, lossGenerator);
+        this.transport = new ReceiverUdpChannelTransport(udpChannel, this::onDataFrame, this::onSetupFrame, logger, lossGenerator);
         this.dispatcher = new DataFrameDispatcher(conductorProxy, this);
     }
 
-    public UdpTransport udpTransport()
+    public UdpChannelTransport transport()
     {
-        return udpTransport;
+        return transport;
     }
 
     public UdpChannel udpChannel()
     {
-        return udpTransport.udpChannel();
+        return transport.udpChannel();
     }
 
     public void close()
     {
-        udpTransport.close();
+        transport.close();
         closed = true;
     }
 
     public void registerForRead(final NioSelector nioSelector)
     {
-        udpTransport.registerForRead(nioSelector);
+        transport.registerForRead(nioSelector);
     }
 
     public DataFrameDispatcher dispatcher()
@@ -180,7 +180,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         smBuffer.position(0);
         smBuffer.limit(frameLength);
 
-        final int bytesSent = udpTransport.sendTo(smBuffer, controlAddress);
+        final int bytesSent = transport.sendTo(smBuffer, controlAddress);
         if (bytesSent < frameLength)
         {
             logger.logIncompleteSend("sendStatusMessage", bytesSent, frameLength);
@@ -214,7 +214,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         nakBuffer.position(0);
         nakBuffer.limit(frameLength);
 
-        final int bytesSent = udpTransport.sendTo(nakBuffer, controlAddress);
+        final int bytesSent = transport.sendTo(nakBuffer, controlAddress);
         if (bytesSent < frameLength)
         {
             logger.logIncompleteSend("sendNak", bytesSent, frameLength);
